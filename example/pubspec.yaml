@@ -1,0 +1,29 @@
+name: liquid_glass_widgets_example
+description: Example app showcasing Apple Liquid Glass widgets
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Local package
+  liquid_glass_widgets:
+    path: ../
+
+  # Required dependencies
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/wallpaper.jpg
+    - assets/wallpaper_dark.jpg

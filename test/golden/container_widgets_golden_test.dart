@@ -1,0 +1,164 @@
+@Tags(['golden'])
+library;
+
+import 'package:alchemist/alchemist.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:liquid_glass_widgets/widgets/containers/glass_card.dart';
+import 'package:liquid_glass_widgets/widgets/containers/glass_container.dart';
+import 'package:liquid_glass_widgets/widgets/containers/glass_panel.dart';
+import 'package:flutter/material.dart';
+import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+
+import '../shared/test_helpers.dart';
+
+void main() {
+  goldenTest(
+    'GlassContainer renders correctly',
+    fileName: 'glass_container',
+    pumpBeforeTest: pumpOnce,
+    builder: () => GoldenTestGroup(
+      scenarioConstraints: testScenarioConstraints,
+      children: [
+        GoldenTestScenario(
+          name: 'default',
+          child: buildWithGradientBackground(
+            LiquidGlassLayer(
+              fake: true,
+              settings: defaultTestGlassSettings,
+              child: const GlassContainer(
+                width: 200,
+                height: 150,
+                child: Center(
+                  child: Text(
+                    'Container',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        GoldenTestScenario(
+          name: 'with_padding',
+          child: buildWithGradientBackground(
+            LiquidGlassLayer(
+              fake: true,
+              settings: defaultTestGlassSettings,
+              child: const GlassContainer(
+                width: 200,
+                height: 150,
+                padding: EdgeInsets.all(24),
+                child: Text(
+                  'Padded\nContainer',
+                  style: TextStyle(color: Colors.white),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  goldenTest(
+    'GlassCard renders correctly',
+    fileName: 'glass_card',
+    pumpBeforeTest: pumpOnce,
+    builder: () => GoldenTestGroup(
+      scenarioConstraints: testScenarioConstraints,
+      children: [
+        GoldenTestScenario(
+          name: 'default',
+          child: buildWithGradientBackground(
+            LiquidGlassLayer(
+              fake: true,
+              settings: defaultTestGlassSettings,
+              child: const GlassCard(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Card Title',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Card content goes here',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        GoldenTestScenario(
+          name: 'no_padding',
+          child: buildWithGradientBackground(
+            LiquidGlassLayer(
+              fake: true,
+              settings: defaultTestGlassSettings,
+              child: const GlassCard(
+                padding: EdgeInsets.zero,
+                width: 200,
+                height: 150,
+                child: Center(
+                  child: Text(
+                    'No Padding',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  goldenTest(
+    'GlassPanel renders correctly',
+    fileName: 'glass_panel',
+    pumpBeforeTest: pumpOnce,
+    builder: () => GoldenTestGroup(
+      scenarioConstraints: testScenarioConstraints,
+      children: [
+        GoldenTestScenario(
+          name: 'default',
+          child: buildWithGradientBackground(
+            LiquidGlassLayer(
+              fake: true,
+              settings: defaultTestGlassSettings,
+              child: const GlassPanel(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Panel Title',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Panel content with more generous padding',
+                      style: TextStyle(color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}

@@ -1,0 +1,215 @@
+import 'package:liquid_glass_widgets/types/glass_quality.dart';
+import 'package:liquid_glass_widgets/widgets/input/glass_search_bar.dart';
+import 'package:liquid_glass_widgets/widgets/input/glass_text_field.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+
+import '../../shared/test_helpers.dart';
+
+void main() {
+  group('GlassSearchBar', () {
+    testWidgets('can be instantiated with default parameters', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: LiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: const GlassSearchBar(),
+          ),
+        ),
+      );
+
+      expect(find.byType(GlassSearchBar), findsOneWidget);
+    });
+
+    testWidgets('displays placeholder text', (tester) async {
+      const placeholder = 'Search messages';
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: LiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: const GlassSearchBar(
+              placeholder: placeholder,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text(placeholder), findsOneWidget);
+    });
+
+    testWidgets('displays search icon', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: LiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: const GlassSearchBar(),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(CupertinoIcons.search), findsOneWidget);
+    });
+
+    testWidgets('calls onChanged when text changes', (tester) async {
+      var searchText = '';
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: LiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: GlassSearchBar(
+              onChanged: (value) => searchText = value,
+            ),
+          ),
+        ),
+      );
+
+      await tester.enterText(
+        find.byType(TextField).first,
+        'flutter',
+      );
+
+      expect(searchText, equals('flutter'));
+    });
+
+    testWidgets('shows clear button when text is entered', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: LiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: const GlassSearchBar(),
+          ),
+        ),
+      );
+
+      // Initially, clear button should not be visible (opacity 0)
+      await tester.enterText(find.byType(TextField).first, 'test');
+      await tester.pumpAndSettle();
+
+      // Clear button should now be visible
+      expect(find.byIcon(CupertinoIcons.clear_circled_solid), findsOneWidget);
+    });
+
+    testWidgets('clears text when clear button is tapped', (tester) async {
+      final controller = TextEditingController(text: 'initial text');
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: Center(
+            child: SizedBox(
+              width: 300,
+              child: LiquidGlassLayer(
+                fake: true,
+                settings: defaultTestGlassSettings,
+                child: GlassSearchBar(
+                  controller: controller,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Find the clear button by looking for the GestureDetector with the clear icon
+      final clearIcon = find.descendant(
+        of: find.byType(GlassTextField),
+        matching: find.byIcon(CupertinoIcons.clear_circled_solid),
+      );
+
+      // The GestureDetector is the parent of the Opacity which contains the icon
+      await tester.tap(clearIcon.hitTestable());
+      await tester.pumpAndSettle();
+
+      expect(controller.text, isEmpty);
+    });
+
+    testWidgets('shows cancel button when focused and showsCancelButton true',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: Center(
+            child: SizedBox(
+              width: 400,
+              child: LiquidGlassLayer(
+                fake: true,
+                settings: defaultTestGlassSettings,
+                child: const GlassSearchBar(
+                  showsCancelButton: true,
+                  autofocus: true,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Wait for autofocus and animations
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+
+      // Cancel button should appear
+      expect(find.text('Cancel'), findsOneWidget);
+    });
+
+    testWidgets('calls onCancel when cancel button is tapped', (tester) async {
+      var cancelled = false;
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: Center(
+            child: SizedBox(
+              width: 400,
+              child: LiquidGlassLayer(
+                fake: true,
+                settings: defaultTestGlassSettings,
+                child: GlassSearchBar(
+                  showsCancelButton: true,
+                  autofocus: true,
+                  onCancel: () => cancelled = true,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Wait for autofocus and animations
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+
+      // Tap cancel
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(cancelled, isTrue);
+    });
+
+    testWidgets('works in standalone mode', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: const GlassSearchBar(
+            useOwnLayer: true,
+          ),
+        ),
+      );
+
+      expect(find.byType(GlassSearchBar), findsOneWidget);
+    });
+
+    test('defaults are correct', () {
+      const searchBar = GlassSearchBar();
+
+      expect(searchBar.placeholder, equals('Search'));
+      expect(searchBar.showsCancelButton, isFalse);
+      expect(searchBar.autofocus, isFalse);
+      expect(searchBar.enabled, isTrue);
+      expect(searchBar.height, equals(44.0));
+      expect(searchBar.cancelButtonText, equals('Cancel'));
+      expect(searchBar.useOwnLayer, isFalse);
+      expect(searchBar.quality, equals(GlassQuality.standard));
+    });
+  });
+}
