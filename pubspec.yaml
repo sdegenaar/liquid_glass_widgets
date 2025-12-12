@@ -1,6 +1,6 @@
 name: liquid_glass_widgets
 description: A comprehensive Flutter package implementing Apple's Liquid Glass design system with 15 beautiful, glass-morphic widgets for modern iOS-style UIs.
-version: 0.1.5-dev.1
+version: 0.1.5-dev.2
 
 homepage: https://github.com/sdegenaar/liquid_glass_widgets
 repository: https://github.com/sdegenaar/liquid_glass_widgets

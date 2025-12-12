@@ -1,4 +1,4 @@
-## 0.1.5-dev.1
+# 0.1.5-dev.2
 
  - **TEST**: Added comprehensive test coverage for all widget categories
    - Widget behavior tests for all 15 components (containers, interactive, input, overlays, surfaces)
