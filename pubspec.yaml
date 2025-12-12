@@ -7,10 +7,10 @@ repository: https://github.com/sdegenaar/liquid_glass_widgets
 issue_tracker: https://github.com/sdegenaar/liquid_glass_widgets/issues
 
 topics:
-  - ui
+  - liquid-glass
   - widgets
   - glassmorphism
-  - ios
+  - flutter
   - apple
 
 environment:
