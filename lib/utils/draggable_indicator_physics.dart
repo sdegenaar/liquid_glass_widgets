@@ -2,6 +2,10 @@
 // existing code patterns in the codebase.
 // ignore_for_file: deprecated_member_use
 
+// Physics calculations adapted from example code in the liquid_glass_renderer
+// package by whynotmake-it team (https://github.com/whynotmake-it/flutter_liquid_glass).
+// Used under MIT License.
+
 import 'package:flutter/widgets.dart';
 
 /// Shared physics and animation utilities for draggable indicators.
