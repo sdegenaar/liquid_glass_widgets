@@ -7,7 +7,7 @@ A comprehensive Flutter package implementing Apple's Liquid Glass design system 
 
 ## Features
 
-- **16 Widgets** organized into five categories
+- **22 Widgets** organized into five categories
 - **Two Quality Modes** for performance optimization
 - **Flexible Layer System** for efficient rendering
 - **Highly Customizable** appearance with extensive glass settings
@@ -34,7 +34,11 @@ User interaction components:
 ### Input
 Text input components:
 - `GlassTextField` - Text input field
+- `GlassTextArea` - Multi-line text input area
+- `GlassPasswordField` - Secure text input with visibility toggle
 - `GlassSearchBar` - Search-specific input
+- `GlassPicker` - Scrollable item selector
+- `GlassFormField` - Form field wrapper for validation
 
 ### Overlays
 Modal and floating UI:
@@ -46,6 +50,8 @@ Navigation and app structure:
 - `GlassAppBar` - Top app bar
 - `GlassBottomBar` - Bottom navigation bar
 - `GlassTabBar` - Tab navigation bar
+- `GlassSideBar` - Vertical navigation sidebar
+- `GlassToolbar` - Action toolbar for tools and controls
 
 ## Installation
 
@@ -53,7 +59,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  liquid_glass_widgets: ^0.1.5-dev.3
+  liquid_glass_widgets: ^0.1.5-dev.4
 ```
 
 Then run:

@@ -11,7 +11,11 @@ export 'widgets/containers/glass_card.dart';
 export 'widgets/containers/glass_container.dart';
 export 'widgets/containers/glass_panel.dart';
 // Widgets - Input
+export 'widgets/input/glass_form_field.dart';
+export 'widgets/input/glass_password_field.dart';
+export 'widgets/input/glass_picker.dart';
 export 'widgets/input/glass_search_bar.dart';
+export 'widgets/input/glass_text_area.dart';
 export 'widgets/input/glass_text_field.dart';
 // Widgets - Interactive
 export 'widgets/interactive/glass_button.dart';
@@ -26,4 +30,6 @@ export 'widgets/overlays/glass_sheet.dart';
 // Widgets - Surfaces
 export 'widgets/surfaces/glass_app_bar.dart';
 export 'widgets/surfaces/glass_bottom_bar.dart';
+export 'widgets/surfaces/glass_side_bar.dart';
 export 'widgets/surfaces/glass_tab_bar.dart';
+export 'widgets/surfaces/glass_toolbar.dart';

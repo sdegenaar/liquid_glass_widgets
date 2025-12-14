@@ -1,0 +1,170 @@
+import 'package:flutter/material.dart';
+import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+
+import '../../types/glass_quality.dart';
+
+/// A glass morphism toolbar following Apple's iOS 26 design patterns.
+///
+/// [GlassToolbar] provides a sophisticated bottom toolbar for actions,
+/// utilizing the liquid glass material. It is typically used at the bottom
+/// of the screen to present a set of actions relevant to the current context.
+///
+/// Unlike [GlassBottomBar] which is for navigation, [GlassToolbar] is for
+/// actions (e.g., "Edit", "Share", "Delete").
+///
+/// ## Key Features
+///
+/// - **Liquid Glass Material**: Translucent, blurring background that floats
+///   over content.
+/// - **Flexible Layout**: Supports any children, typically [GlassButton]s.
+/// - **Customizable**: Control height, alignment, and glass settings.
+/// - **iOS 26 Compliance**: Matches the visual style of system toolbars.
+///
+/// ## Usage
+///
+/// ### Basic Usage
+/// ```dart
+/// Scaffold(
+///   body: Container(), // Your content
+///   bottomNavigationBar: GlassToolbar(
+///     children: [
+///       GlassButton.icon(
+///         icon: CupertinoIcons.share,
+///         onTap: () {},
+///         label: 'Share',
+///       ),
+///       const Spacer(), // Use Spacer for layout control
+///       GlassButton.icon(
+///         icon: CupertinoIcons.add,
+///         onTap: () {},
+///         label: 'Add',
+///       ),
+///     ],
+///   ),
+/// )
+/// ```
+///
+/// ### Custom Alignment
+/// ```dart
+/// GlassToolbar(
+///   alignment: MainAxisAlignment.spaceAround,
+///   children: [
+///     // ... buttons
+///   ],
+/// )
+/// ```
+class GlassToolbar extends StatelessWidget {
+  /// Creates a glass toolbar.
+  const GlassToolbar({
+    required this.children,
+    super.key,
+    this.height = 44.0, // Standard iOS toolbar height (usually + safe area)
+    this.alignment = MainAxisAlignment.spaceBetween,
+    this.glassSettings,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    this.quality = GlassQuality.premium,
+    this.backgroundColor,
+  });
+
+  /// The action buttons to display in the toolbar.
+  ///
+  /// Typically [GlassButton]s or [IconButton]s.
+  /// Use [Spacer] widgets to control spacing between items if [alignment]
+  /// is set to [MainAxisAlignment.spaceBetween] (the default).
+  final List<Widget> children;
+
+  /// Height of the toolbar content area.
+  ///
+  /// Does not include safe area insets (bottom padding).
+  /// Defaults to 44.0, which is the standard iOS toolbar height.
+  final double height;
+
+  /// How the children should be placed along the horizontal axis.
+  ///
+  /// Defaults to [MainAxisAlignment.spaceBetween].
+  final MainAxisAlignment alignment;
+
+  /// Glass effect settings.
+  ///
+  /// If null, uses optimized defaults for toolbars.
+  final LiquidGlassSettings? glassSettings;
+
+  /// Padding around the content.
+  ///
+  /// Defaults to symmetric(horizontal: 16, vertical: 8).
+  final EdgeInsetsGeometry padding;
+
+  /// Rendering quality for the glass effect.
+  ///
+  /// Defaults to [GlassQuality.premium].
+  final GlassQuality quality;
+
+  /// Optional background color override.
+  ///
+  /// If provided, this color is mixed with the glass effect.
+  /// If null, a default iOS-style translucent tint is used.
+  final Color? backgroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    // Standard iOS toolbar glass settings with high blur
+    final effectiveSettings = glassSettings ??
+        const LiquidGlassSettings(
+          thickness: 25,
+          blur: 20, // High blur for toolbar material
+          chromaticAberration: 0.2,
+          lightIntensity: 0.35,
+          refractiveIndex: 1.5,
+          saturation: 1.2,
+          glassColor: Colors.white10,
+        );
+
+    // Background color blending
+    // iOS toolbars often have a very subtle tint
+    final effectiveBackgroundColor =
+        backgroundColor ?? Colors.grey.withAlpha(20);
+
+    return LiquidGlassLayer(
+      settings: effectiveSettings,
+      fake: quality.usesBackdropFilter,
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(
+            top: BorderSide(
+              color: Colors.white12, // Subtle top divider
+              width: 0.5,
+            ),
+          ),
+        ),
+        child: Stack(
+          children: [
+            // Glass Background Layer
+            Positioned.fill(
+              child: LiquidGlass.grouped(
+                // Toolbar is typically a full-width rectangle
+                shape: const LiquidRoundedRectangle(borderRadius: 0),
+                child: Container(color: effectiveBackgroundColor),
+              ),
+            ),
+
+            // Content Layer
+            SafeArea(
+              top: false,
+              child: SizedBox(
+                height: height,
+                child: Padding(
+                  padding: padding,
+                  child: Row(
+                    mainAxisAlignment: alignment,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: children,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

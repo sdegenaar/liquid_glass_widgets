@@ -1,3 +1,22 @@
+# 0.1.5-dev.4
+
+ - **FEAT**: Added Liquid Glass Input Suite
+   - `GlassFormField`: Wrapper for labels, error text, and helper content
+   - `GlassPasswordField`: Secure input with built-in visibility toggle and lock icon
+   - `GlassTextArea`: Optimized multi-line input with smart padding and scrolling
+   - `GlassPicker`: iOS-style selector with glass container and modal integration
+   - `GlassPicker`: Supports "own layer" mode for premium transparency effects
+
+ - **FEAT**: Added `GlassSideBar` widget
+   - Vertical navigation surface with glass effect
+   - Supports header, footer, and scrollable item list
+   - Auto-layout for standard sidebar items with icons and labels
+
+ - **FEAT**: Enhanced Configurability
+   - Refactored all input widgets to expose standard `TextField` properties (focus, actions, styles)
+   - Updated `GlassTabBar` to support custom `borderRadius` and `indicatorBorderRadius`
+   - Exposed granular `indicatorSettings` in `GlassTabBar` for fine-tuned glass effects
+
 # 0.1.5-dev.3
 
  - **FEAT**: Added `GlassTabBar` widget

@@ -3,7 +3,9 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:motor/motor.dart';
 
 import '../../types/glass_quality.dart';
+import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
+import '../shared/glass_interactive_indicator.dart';
 
 /// A glass morphism tab bar following Apple's iOS design patterns.
 ///
@@ -112,6 +114,9 @@ class GlassTabBar extends StatefulWidget {
     this.settings,
     this.useOwnLayer = false,
     this.quality = GlassQuality.standard,
+    this.borderRadius,
+    this.indicatorBorderRadius,
+    this.indicatorSettings,
   })  : assert(tabs.length >= 2, 'GlassTabBar requires at least 2 tabs'),
         assert(
           selectedIndex >= 0 && selectedIndex < tabs.length,
@@ -172,6 +177,15 @@ class GlassTabBar extends StatefulWidget {
   /// Rendering quality for the glass effect.
   final GlassQuality quality;
 
+  /// BorderRadius of the tab bar.
+  final BorderRadius? borderRadius;
+
+  /// BorderRadius of the sliding indicator.
+  final BorderRadius? indicatorBorderRadius;
+
+  /// Glass settings for the sliding indicator.
+  final LiquidGlassSettings? indicatorSettings;
+
   @override
   State<GlassTabBar> createState() => _GlassTabBarState();
 }
@@ -228,12 +242,14 @@ class _GlassTabBarState extends State<GlassTabBar> {
         ? Colors.white12
         : widget.backgroundColor;
 
+    final borderRadius =
+        widget.borderRadius ?? BorderRadius.circular(widget.height / 2.2);
+
     final content = Container(
       height: widget.height,
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius:
-            BorderRadius.circular(widget.height / 2.2), // Rounded like iOS
+        borderRadius: borderRadius,
       ),
       padding: widget.indicatorPadding,
       child: _TabBarContent(
@@ -250,6 +266,9 @@ class _GlassTabBarState extends State<GlassTabBar> {
         iconSize: widget.iconSize,
         labelPadding: widget.labelPadding,
         quality: widget.quality,
+        // Pass new props
+        indicatorBorderRadius: widget.indicatorBorderRadius,
+        indicatorSettings: widget.indicatorSettings,
       ),
     );
 
@@ -284,6 +303,8 @@ class _TabBarContent extends StatefulWidget {
     required this.iconSize,
     required this.labelPadding,
     required this.quality,
+    this.indicatorBorderRadius,
+    this.indicatorSettings,
   });
 
   final List<GlassTab> tabs;
@@ -299,6 +320,8 @@ class _TabBarContent extends StatefulWidget {
   final double iconSize;
   final EdgeInsetsGeometry labelPadding;
   final GlassQuality quality;
+  final BorderRadius? indicatorBorderRadius;
+  final LiquidGlassSettings? indicatorSettings;
 
   @override
   State<_TabBarContent> createState() => _TabBarContentState();
@@ -307,14 +330,11 @@ class _TabBarContent extends StatefulWidget {
 class _TabBarContentState extends State<_TabBarContent> {
   bool _isDown = false;
   bool _isDragging = false;
-
-  // Current horizontal alignment of the indicator (-1 to 1)
   late double _xAlign = _computeXAlignmentForTab(widget.selectedIndex);
 
   @override
   void didUpdateWidget(_TabBarContent oldWidget) {
     super.didUpdateWidget(oldWidget);
-
     if (oldWidget.selectedIndex != widget.selectedIndex ||
         oldWidget.tabs.length != widget.tabs.length) {
       setState(() {
@@ -353,7 +373,6 @@ class _TabBarContentState extends State<_TabBarContent> {
     final box = context.findRenderObject()! as RenderBox;
     final currentRelativeX = (_xAlign + 1) / 2;
     final tabWidth = 1.0 / widget.tabs.length;
-
     final indicatorWidth = 1.0 / widget.tabs.length;
     final draggableRange = 1.0 - indicatorWidth;
     final velocityX =
@@ -378,12 +397,10 @@ class _TabBarContentState extends State<_TabBarContent> {
 
     final local = box.globalToLocal(globalPosition);
     final relativeX = (local.dx / box.size.width).clamp(0.0, 1.0);
-
     final indicatorWidth = 1.0 / widget.tabs.length;
     final draggableRange = 1.0 - indicatorWidth;
 
     if (draggableRange <= 0) return 0.0;
-
     final alignment = (relativeX / draggableRange - 0.5) * 2;
     return alignment.clamp(-1.0, 1.0);
   }
@@ -460,31 +477,36 @@ class _TabBarContentState extends State<_TabBarContent> {
               return Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  // Subtle background indicator (always shown when not dragging)
+                  // Background indicator
                   if (thickness < 1)
-                    _IndicatorTransform(
+                    GlassInteractiveIndicator(
                       velocity: velocity,
-                      tabCount: widget.tabs.length,
+                      itemCount: widget.tabs.length,
                       alignment: alignment,
                       thickness: thickness,
                       quality: widget.quality,
                       indicatorColor: indicatorColor,
                       isBackgroundIndicator: true,
+                      borderRadius:
+                          widget.indicatorBorderRadius?.topLeft.x ?? 16,
+                      glassSettings: widget.indicatorSettings,
                     ),
 
-                  // Glass indicator (bottom layer)
+                  // Glass indicator
                   if (thickness > 0)
-                    _IndicatorTransform(
+                    GlassInteractiveIndicator(
                       velocity: velocity,
-                      tabCount: widget.tabs.length,
+                      itemCount: widget.tabs.length,
                       alignment: alignment,
                       thickness: thickness,
                       quality: widget.quality,
                       indicatorColor: indicatorColor,
                       isBackgroundIndicator: false,
+                      borderRadius:
+                          widget.indicatorBorderRadius?.topLeft.x ?? 16,
+                      glassSettings: widget.indicatorSettings,
                     ),
 
-                  // Tab labels (top layer - sharp and clear)
                   child!,
                 ],
               );
@@ -512,7 +534,6 @@ class _TabBarContentState extends State<_TabBarContent> {
       (index) {
         final tab = widget.tabs[index];
         final isSelected = index == widget.selectedIndex;
-
         return _TabItem(
           tab: tab,
           isSelected: isSelected,
@@ -538,125 +559,6 @@ class _TabBarContentState extends State<_TabBarContent> {
     );
   }
 }
-
-// =============================================================================
-// Indicator Transform with Jelly Physics
-// =============================================================================
-
-class _IndicatorTransform extends StatelessWidget {
-  const _IndicatorTransform({
-    required this.velocity,
-    required this.tabCount,
-    required this.alignment,
-    required this.thickness,
-    required this.quality,
-    required this.indicatorColor,
-    required this.isBackgroundIndicator,
-  });
-
-  final double velocity;
-  final int tabCount;
-  final Alignment alignment;
-  final double thickness;
-  final GlassQuality quality;
-  final Color indicatorColor;
-  final bool isBackgroundIndicator;
-
-  @override
-  Widget build(BuildContext context) {
-    final rect = RelativeRect.lerp(
-      RelativeRect.fill,
-      const RelativeRect.fromLTRB(-8, -8, -8, -8),
-      thickness,
-    );
-
-    Widget indicatorChild;
-
-    if (isBackgroundIndicator) {
-      // Simple colored background (shown when not dragging)
-      indicatorChild = AnimatedOpacity(
-        duration: const Duration(milliseconds: 120),
-        opacity: thickness <= 0.2 ? 1 : 0,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: indicatorColor,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: const SizedBox.expand(),
-        ),
-      );
-    } else {
-      // Glass indicator with glow (shown when dragging)
-      indicatorChild = LiquidGlass.withOwnLayer(
-        fake: quality.usesBackdropFilter,
-        settings: LiquidGlassSettings(
-          visibility: thickness,
-          glassColor: const Color.from(
-            alpha: 0.15,
-            red: 1,
-            green: 1,
-            blue: 1,
-          ),
-          refractiveIndex: 1.15,
-          lightIntensity: 2,
-          chromaticAberration: 0.5,
-          blur: 0,
-        ),
-        shape: const LiquidRoundedSuperellipse(borderRadius: 16),
-        child: const SizedBox.expand(),
-      );
-    }
-
-    return Positioned.fill(
-      child: FractionallySizedBox(
-        widthFactor: 1 / tabCount,
-        alignment: alignment,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Positioned.fromRelativeRect(
-              rect: rect!,
-              child: SingleMotionBuilder(
-                motion: const Motion.bouncySpring(
-                  duration: Duration(milliseconds: 600),
-                ),
-                value: velocity,
-                builder: (context, velocity, child) {
-                  return Transform(
-                    alignment: Alignment.center,
-                    transform: _buildJellyTransform(
-                      velocity: Offset(velocity, 0),
-                      maxDistortion: 0.8,
-                      velocityScale: 10,
-                    ),
-                    child: child,
-                  );
-                },
-                child: indicatorChild,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Matrix4 _buildJellyTransform({
-    required Offset velocity,
-    double maxDistortion = 0.7,
-    double velocityScale = 1000.0,
-  }) {
-    return DraggableIndicatorPhysics.buildJellyTransform(
-      velocity: velocity,
-      maxDistortion: maxDistortion,
-      velocityScale: velocityScale,
-    );
-  }
-}
-
-// =============================================================================
-// Tab Item Widget
-// =============================================================================
 
 class _TabItem extends StatelessWidget {
   const _TabItem({
@@ -737,10 +639,6 @@ class _TabItem extends StatelessWidget {
     );
   }
 }
-
-// =============================================================================
-// Tab Configuration Class
-// =============================================================================
 
 /// Configuration for a tab in [GlassTabBar].
 class GlassTab {

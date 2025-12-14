@@ -3,7 +3,9 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:motor/motor.dart';
 
 import '../../types/glass_quality.dart';
+import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
+import '../shared/glass_interactive_indicator.dart';
 
 /// A glass morphism segmented control following Apple's design patterns.
 ///
@@ -456,52 +458,28 @@ class _SegmentedControlContentState extends State<_SegmentedControlContent> {
                 children: [
                   // Subtle background indicator (shown when not dragging)
                   if (thickness < 1)
-                    _IndicatorTransform(
+                    GlassInteractiveIndicator(
                       velocity: velocity,
-                      segmentCount: widget.segments.length,
+                      itemCount: widget.segments.length,
                       alignment: alignment,
                       thickness: thickness,
-                      child: AnimatedOpacity(
-                        duration: const Duration(milliseconds: 120),
-                        opacity: thickness <= .2 ? 1 : 0,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: indicatorColor,
-                            borderRadius:
-                                BorderRadius.circular(indicatorRadius),
-                          ),
-                          child: const SizedBox.expand(),
-                        ),
-                      ),
+                      quality: widget.quality,
+                      indicatorColor: indicatorColor,
+                      isBackgroundIndicator: true,
+                      borderRadius: indicatorRadius,
                     ),
 
                   // Glass indicator with glow (shown when dragging)
                   if (thickness > 0)
-                    _IndicatorTransform(
+                    GlassInteractiveIndicator(
                       velocity: velocity,
-                      segmentCount: widget.segments.length,
+                      itemCount: widget.segments.length,
                       alignment: alignment,
                       thickness: thickness,
-                      child: LiquidGlass.withOwnLayer(
-                        fake: widget.quality.usesBackdropFilter,
-                        settings: LiquidGlassSettings(
-                          visibility: thickness,
-                          glassColor: const Color.from(
-                            alpha: .15,
-                            red: 1,
-                            green: 1,
-                            blue: 1,
-                          ),
-                          refractiveIndex: 1.15,
-                          lightIntensity: 2,
-                          chromaticAberration: .5,
-                          blur: 0,
-                        ),
-                        shape: LiquidRoundedSuperellipse(
-                          borderRadius: indicatorRadius * 2,
-                        ),
-                        child: const GlassGlow(child: SizedBox.expand()),
-                      ),
+                      quality: widget.quality,
+                      indicatorColor: indicatorColor,
+                      isBackgroundIndicator: false,
+                      borderRadius: indicatorRadius,
                     ),
 
                   // Segment labels (always on top, not affected by glass)
@@ -560,74 +538,3 @@ class _SegmentedControlContentState extends State<_SegmentedControlContent> {
 // =============================================================================
 
 /// Applies jelly transform with organic squash and stretch based on velocity.
-class _IndicatorTransform extends StatelessWidget {
-  const _IndicatorTransform({
-    required this.velocity,
-    required this.segmentCount,
-    required this.alignment,
-    required this.thickness,
-    required this.child,
-  });
-
-  final double velocity;
-  final int segmentCount;
-  final Alignment alignment;
-  final double thickness;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    // Expand indicator bounds during drag for visual emphasis
-    final rect = RelativeRect.lerp(
-      RelativeRect.fill,
-      const RelativeRect.fromLTRB(-8, -8, -8, -8),
-      thickness,
-    );
-
-    return Positioned.fill(
-      child: FractionallySizedBox(
-        widthFactor: 1 / segmentCount,
-        alignment: alignment,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Positioned.fromRelativeRect(
-              rect: rect!,
-              child: SingleMotionBuilder(
-                motion: const Motion.bouncySpring(
-                  duration: Duration(milliseconds: 600),
-                ),
-                value: velocity,
-                builder: (context, velocity, child) {
-                  return Transform(
-                    alignment: Alignment.center,
-                    transform: _buildJellyTransform(
-                      velocity: Offset(velocity, 0),
-                      maxDistortion: .8,
-                      velocityScale: 10,
-                    ),
-                    child: child,
-                  );
-                },
-                child: child,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Creates a jelly transform matrix based on velocity.
-  Matrix4 _buildJellyTransform({
-    required Offset velocity,
-    double maxDistortion = 0.7,
-    double velocityScale = 1000.0,
-  }) {
-    return DraggableIndicatorPhysics.buildJellyTransform(
-      velocity: velocity,
-      maxDistortion: maxDistortion,
-      velocityScale: velocityScale,
-    );
-  }
-}

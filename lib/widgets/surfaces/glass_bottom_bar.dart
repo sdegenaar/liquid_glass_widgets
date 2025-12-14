@@ -16,6 +16,7 @@ import 'package:motor/motor.dart';
 import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
 import '../interactive/glass_button.dart';
+import '../shared/glass_interactive_indicator.dart';
 
 /// A glass morphism bottom navigation bar following Apple's design patterns.
 ///
@@ -794,7 +795,8 @@ class _TabIndicatorState extends State<_TabIndicator> {
   Widget build(BuildContext context) {
     final theme = CupertinoTheme.of(context);
     final indicatorColor = widget.indicatorColor ??
-        theme.textTheme.textStyle.color?.withValues(alpha: .1);
+        theme.textTheme.textStyle.color?.withValues(alpha: .1) ??
+        Colors.white.withValues(alpha: 0.1);
     final targetAlignment = _computeXAlignmentForTab(widget.tabIndex);
 
     return GestureDetector(
@@ -829,53 +831,34 @@ class _TabIndicatorState extends State<_TabIndicator> {
               return Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  // Subtle background indicator (shown when not dragging)
+                  // Subtle background indicator                  // Background indicator
                   if (thickness < 1)
-                    _IndicatorTransform(
+                    GlassInteractiveIndicator(
                       velocity: velocity,
-                      tabCount: widget.tabCount,
+                      itemCount: widget.tabCount,
                       alignment: alignment,
                       thickness: thickness,
-                      child: AnimatedOpacity(
-                        duration: const Duration(milliseconds: 120),
-                        opacity: widget.visible && thickness <= .2 ? 1 : 0,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: indicatorColor,
-                            borderRadius: BorderRadius.circular(64),
-                          ),
-                          child: const SizedBox.expand(),
-                        ),
-                      ),
+                      quality: widget.quality,
+                      indicatorColor: indicatorColor,
+                      isBackgroundIndicator: true,
+                      borderRadius: 16, // Default for BottomBar
+                      padding: const EdgeInsets.all(4),
+                      expansion: 14,
                     ),
 
-                  // Glass indicator with glow (shown when dragging)
+                  // Glass indicator
                   if (thickness > 0)
-                    _IndicatorTransform(
+                    GlassInteractiveIndicator(
                       velocity: velocity,
-                      tabCount: widget.tabCount,
+                      itemCount: widget.tabCount,
                       alignment: alignment,
                       thickness: thickness,
-                      child: LiquidGlass.withOwnLayer(
-                        fake: widget.quality.usesBackdropFilter,
-                        settings: LiquidGlassSettings(
-                          visibility: thickness,
-                          glassColor: const Color.from(
-                            alpha: .1,
-                            red: 1,
-                            green: 1,
-                            blue: 1,
-                          ),
-                          refractiveIndex: 1.15,
-                          lightIntensity: 2,
-                          chromaticAberration: .5,
-                          blur: 0,
-                        ),
-                        shape: const LiquidRoundedSuperellipse(
-                          borderRadius: 64,
-                        ),
-                        child: const GlassGlow(child: SizedBox.expand()),
-                      ),
+                      quality: widget.quality,
+                      indicatorColor: indicatorColor,
+                      isBackgroundIndicator: false,
+                      borderRadius: 16,
+                      padding: const EdgeInsets.all(4),
+                      expansion: 14,
                     ),
 
                   // Tab bar content (rendered LAST so it appears on top)
@@ -903,78 +886,3 @@ class _TabIndicatorState extends State<_TabIndicator> {
 /// - Objects stretch perpendicular to movement
 ///
 /// Used by [_IndicatorTransform] to animate the draggable indicator.
-class _IndicatorTransform extends StatelessWidget {
-  const _IndicatorTransform({
-    required this.velocity,
-    required this.tabCount,
-    required this.alignment,
-    required this.thickness,
-    required this.child,
-  });
-
-  final double velocity;
-  final int tabCount;
-  final Alignment alignment;
-  final double thickness;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    // Expand indicator bounds during drag for visual emphasis
-    final rect = RelativeRect.lerp(
-      RelativeRect.fill,
-      const RelativeRect.fromLTRB(-14, -14, -14, -14),
-      thickness,
-    );
-
-    return Positioned.fill(
-      left: 4,
-      right: 4,
-      top: 4,
-      bottom: 4,
-      child: FractionallySizedBox(
-        widthFactor: 1 / tabCount,
-        alignment: alignment,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Positioned.fromRelativeRect(
-              rect: rect!,
-              child: SingleMotionBuilder(
-                motion: const Motion.bouncySpring(
-                  duration: Duration(milliseconds: 600),
-                ),
-                value: velocity,
-                builder: (context, velocity, child) {
-                  return Transform(
-                    alignment: Alignment.center,
-                    transform: _buildJellyTransform(
-                      velocity: Offset(velocity, 0),
-                      maxDistortion: .8,
-                      velocityScale: 10,
-                    ),
-                    child: child,
-                  );
-                },
-                child: child,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Creates a jelly transform matrix based on velocity.
-  Matrix4 _buildJellyTransform({
-    required Offset velocity,
-    double maxDistortion = 0.7,
-    double velocityScale = 1000.0,
-  }) {
-    return DraggableIndicatorPhysics.buildJellyTransform(
-      velocity: velocity,
-      maxDistortion: maxDistortion,
-      velocityScale: velocityScale,
-    );
-  }
-}
