@@ -3,7 +3,6 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:motor/motor.dart';
 
 import '../../types/glass_quality.dart';
-import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
 import '../shared/glass_interactive_indicator.dart';
 

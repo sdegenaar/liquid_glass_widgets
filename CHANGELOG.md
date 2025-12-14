@@ -1,3 +1,10 @@
+# 0.1.5-dev.5
+
+ - **CHORE**: Code cleanup and documentation improvements
+   - Improved header documentation for `GlassFormField`
+   - General code polish and comment updates across input widgets
+   - Fixed layout regressions in surfaces/overlays
+
 # 0.1.5-dev.4
 
  - **FEAT**: Added Liquid Glass Input Suite
@@ -16,6 +23,15 @@
    - Refactored all input widgets to expose standard `TextField` properties (focus, actions, styles)
    - Updated `GlassTabBar` to support custom `borderRadius` and `indicatorBorderRadius`
    - Exposed granular `indicatorSettings` in `GlassTabBar` for fine-tuned glass effects
+
+ - **FEAT**: Added `GlassToolbar` widget
+   - Standard iOS-style action toolbar
+   - Supports transparent background and safe area integration
+
+ - **REFACTOR**: Shared Indicator Logic
+   - Extracted `GlassInteractiveIndicator` to `lib/widgets/shared/`
+   - Unified jelly physics implementation across BottomBar, TabBar, and SegmentedControl
+   - Standardized on `LiquidRoundedSuperellipse` for smoother indicator shapes
 
 # 0.1.5-dev.3
 

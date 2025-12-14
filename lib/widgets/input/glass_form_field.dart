@@ -1,10 +1,47 @@
 import 'package:flutter/material.dart';
-import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
-/// A form field wrapper for glass inputs.
+/// A standard form field wrapper for glass inputs following iOS design patterns.
 ///
-/// [GlassFormField] provides a standard way to display labels, helper text, and
-/// validation errors around a glass input widget (like [GlassTextField]).
+/// [GlassFormField] wraps input widgets (like [GlassTextField], [GlassPicker],
+/// etc.) with a standard label, error text, and helper text layout. It ensures
+/// consistent spacing and typography across all form inputs in an application.
+///
+/// ## Key Features
+///
+/// - **Consistent Typography**: Uses standard iOS-style weights and colors for labels
+/// - **Validation Support**: Displays error text in red when provided
+/// - **Helper Text**: Optional secondary text for hints or instructions
+/// - **Flexible Layout**: Works with any child widget
+///
+/// ## Usage
+///
+/// ### Basic Usage
+/// ```dart
+/// GlassFormField(
+///   label: 'Email Address',
+///   child: GlassTextField(
+///     placeholder: 'name@example.com',
+///   ),
+/// )
+/// ```
+///
+/// ### With Validation Error
+/// ```dart
+/// GlassFormField(
+///   label: 'Password',
+///   errorText: isPasswordValid ? null : 'Password must be at least 8 chars',
+///   child: GlassPasswordField(),
+/// )
+/// ```
+///
+/// ### With Helper Text
+/// ```dart
+/// GlassFormField(
+///   label: 'Username',
+///   helperText: 'This will be visible to other users',
+///   child: GlassTextField(),
+/// )
+/// ```
 class GlassFormField extends StatelessWidget {
   /// Creates a form field wrapper.
   const GlassFormField({

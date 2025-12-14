@@ -1,9 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
-import '../interactive/glass_button.dart';
 
 /// A vertical navigation sidebar following Apple's iOS 26 liquid glass design guidelines.
 ///
@@ -242,9 +240,8 @@ class GlassSideBarItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final effectiveSelectedColor = selectedColor ??
-        theme.colorScheme.primary.withValues(alpha: 0.8) ??
-        Colors.white;
+    final effectiveSelectedColor =
+        selectedColor ?? theme.colorScheme.primary.withValues(alpha: 0.8);
     final effectiveUnselectedColor = unselectedColor ?? Colors.white70;
 
     return Padding(
