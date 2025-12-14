@@ -1,3 +1,18 @@
+# 0.1.5-dev.3
+
+ - **FEAT**: Added `GlassTabBar` widget
+   - Horizontal tab navigation bar for page switching
+   - Support for icons, labels, or both (icons above labels)
+   - Smooth animated indicator with bouncySpring motion
+   - Scrollable mode for many tabs (5+)
+   - Auto-scroll to selected tab when index changes
+   - Sharp text rendering above glass effect
+   - Customizable label styles, icon colors, and indicator appearance
+   - Dual-mode rendering (grouped/standalone)
+   - Supports both quality modes (standard/premium)
+   - Comprehensive test coverage (widget + golden tests)
+   - Integrated into example app surfaces page with interactive demos
+
 # 0.1.5-dev.2
 
  - **TEST**: Added comprehensive test coverage for all widget categories
