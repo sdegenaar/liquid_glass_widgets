@@ -221,17 +221,23 @@ class _GlassTextFieldState extends State<GlassTextField> {
     super.dispose();
   }
 
+  static const _defaultSettings = LiquidGlassSettings(blur: 8);
+
+  static const _defaultTextStyle = TextStyle(
+    color: Color.fromRGBO(255, 255, 255, 0.9), // Colors.white with 0.9 alpha
+    fontSize: 16,
+  );
+
+  static const _defaultPlaceholderStyle = TextStyle(
+    color: Color.fromRGBO(255, 255, 255, 0.5), // Colors.white with 0.5 alpha
+    fontSize: 16,
+  );
+
   @override
   Widget build(BuildContext context) {
-    final defaultTextStyle = TextStyle(
-      color: Colors.white.withValues(alpha: 0.9),
-      fontSize: 16,
-    );
-
-    final defaultPlaceholderStyle = TextStyle(
-      color: Colors.white.withValues(alpha: 0.5),
-      fontSize: 16,
-    );
+    // Use static constants for default styles
+    final defaultTextStyle = _defaultTextStyle;
+    final defaultPlaceholderStyle = _defaultPlaceholderStyle;
 
     // Build text field content
     final textFieldContent = Padding(
@@ -289,10 +295,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
     final glassWidget = widget.useOwnLayer
         ? LiquidGlass.withOwnLayer(
             shape: widget.shape,
-            settings: widget.settings ??
-                const LiquidGlassSettings(
-                  blur: 8,
-                ),
+            settings: widget.settings ?? _defaultSettings,
             fake: widget.quality.usesBackdropFilter,
             child: textFieldContent,
           )

@@ -143,12 +143,16 @@ class GlassPicker extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             Expanded(
-              child: CupertinoPicker(
+              child: CupertinoPicker.builder(
                 itemExtent: 40,
                 onSelectedItemChanged: (index) {
                   // Handle live update if needed
                 },
-                children: items.map(itemBuilder).toList(),
+                itemBuilder: (context, index) {
+                  if (index < 0 || index >= items.length) return null;
+                  return itemBuilder(items[index]);
+                },
+                childCount: items.length,
               ),
             ),
           ],

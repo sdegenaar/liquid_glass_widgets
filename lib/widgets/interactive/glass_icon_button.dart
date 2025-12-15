@@ -244,10 +244,12 @@ class GlassIconButton extends StatelessWidget {
     );
   }
 
+  static const _defaultOval = LiquidOval();
+
   LiquidShape _buildShape() {
     switch (shape) {
       case GlassIconButtonShape.circle:
-        return const LiquidOval();
+        return _defaultOval;
       case GlassIconButtonShape.roundedSquare:
         return LiquidRoundedSuperellipse(
           borderRadius: borderRadius,

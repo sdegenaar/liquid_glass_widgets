@@ -92,7 +92,7 @@ class GlassCard extends StatelessWidget {
     this.child,
     this.padding = const EdgeInsets.all(16),
     this.margin,
-    this.shape = const LiquidRoundedSuperellipse(borderRadius: 12),
+    this.shape = _defaultShape,
     this.settings,
     this.useOwnLayer = false,
     this.quality = GlassQuality.standard,
@@ -150,6 +150,8 @@ class GlassCard extends StatelessWidget {
   /// Defaults to [LiquidRoundedSuperellipse] with 12px border radius, matching
   /// Apple's standard card corner radius.
   final LiquidShape shape;
+
+  static const _defaultShape = LiquidRoundedSuperellipse(borderRadius: 12);
 
   /// Glass effect settings (only used when [useOwnLayer] is true).
   ///

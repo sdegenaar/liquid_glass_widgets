@@ -178,6 +178,9 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// context.
   final GlassQuality quality;
 
+  static const _appBarShape = LiquidRoundedRectangle(borderRadius: 0);
+  static const _defaultSettings = LiquidGlassSettings(blur: 15);
+
   @override
   Widget build(BuildContext context) {
     // Build the app bar content
@@ -220,16 +223,13 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
     // Apply glass effect
     final glassWidget = useOwnLayer
         ? LiquidGlass.withOwnLayer(
-            shape: const LiquidRoundedRectangle(borderRadius: 0),
-            settings: settings ??
-                const LiquidGlassSettings(
-                  blur: 15,
-                ),
+            shape: _appBarShape,
+            settings: settings ?? _defaultSettings,
             fake: quality.usesBackdropFilter,
             child: appBarContent,
           )
         : LiquidGlass.grouped(
-            shape: const LiquidRoundedRectangle(borderRadius: 0),
+            shape: _appBarShape,
             child: appBarContent,
           );
 

@@ -147,6 +147,8 @@ class GlassDialog extends StatelessWidget {
           'GlassDialog must have 1-3 actions',
         );
 
+  static const _actionButtonShape = LiquidRoundedSuperellipse(borderRadius: 12);
+
   // ===========================================================================
   // Content Properties
   // ===========================================================================
@@ -382,7 +384,7 @@ class GlassDialog extends StatelessWidget {
     return GlassButton.custom(
       onTap: action.onPressed,
       height: 44,
-      shape: const LiquidRoundedSuperellipse(borderRadius: 12),
+      shape: _actionButtonShape,
       glowColor: glowColor,
       child: Text(
         action.label,

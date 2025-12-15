@@ -105,19 +105,20 @@ class GlassToolbar extends StatelessWidget {
   /// If null, a default iOS-style translucent tint is used.
   final Color? backgroundColor;
 
+  static const _defaultSettings = LiquidGlassSettings(
+    thickness: 25,
+    blur: 20, // High blur for toolbar material
+    chromaticAberration: 0.2,
+    lightIntensity: 0.35,
+    refractiveIndex: 1.5,
+    saturation: 1.2,
+    glassColor: Colors.white10,
+  );
+
   @override
   Widget build(BuildContext context) {
     // Standard iOS toolbar glass settings with high blur
-    final effectiveSettings = glassSettings ??
-        const LiquidGlassSettings(
-          thickness: 25,
-          blur: 20, // High blur for toolbar material
-          chromaticAberration: 0.2,
-          lightIntensity: 0.35,
-          refractiveIndex: 1.5,
-          saturation: 1.2,
-          glassColor: Colors.white10,
-        );
+    final effectiveSettings = glassSettings ?? _defaultSettings;
 
     // Background color blending
     // iOS toolbars often have a very subtle tint

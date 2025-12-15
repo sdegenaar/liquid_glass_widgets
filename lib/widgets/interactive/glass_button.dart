@@ -343,6 +343,8 @@ class GlassButton extends StatelessWidget {
   /// Defaults to [HitTestBehavior.opaque].
   final HitTestBehavior glowHitTestBehavior;
 
+  static const _defaultSettings = LiquidGlassSettings();
+
   @override
   Widget build(BuildContext context) {
     // Build the content widget (either icon or custom child)
@@ -363,7 +365,7 @@ class GlassButton extends StatelessWidget {
     final glassWidget = useOwnLayer
         ? LiquidGlass.withOwnLayer(
             shape: shape,
-            settings: settings ?? const LiquidGlassSettings(),
+            settings: settings ?? _defaultSettings,
             fake: quality.usesBackdropFilter,
             child: GlassGlow(
               glowColor: glowColor,

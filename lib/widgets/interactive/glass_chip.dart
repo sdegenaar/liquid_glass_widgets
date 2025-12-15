@@ -226,6 +226,8 @@ class GlassChip extends StatelessWidget {
   /// Defaults to 0.8 (subtle glow for chips).
   final double glowRadius;
 
+  static const _chipShape = LiquidRoundedSuperellipse(borderRadius: 100);
+
   @override
   Widget build(BuildContext context) {
     final effectiveIconColor = iconColor ?? Colors.white.withValues(alpha: 0.9);
@@ -294,9 +296,7 @@ class GlassChip extends StatelessWidget {
       child: IntrinsicHeight(
         child: GlassButton.custom(
           onTap: onTap ?? (onDeleted != null ? () {} : () {}),
-          shape: const LiquidRoundedSuperellipse(
-            borderRadius: 100, // Pill shape
-          ),
+          shape: _chipShape,
           settings: settings,
           useOwnLayer: useOwnLayer,
           quality: quality,

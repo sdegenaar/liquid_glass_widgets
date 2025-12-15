@@ -1,3 +1,11 @@
+# 0.1.5-dev.6
+
+ - **PERF**: Comprehensive Allocation Optimization
+   - Implemented `static const` defaults for Shapes, Settings, and Styles across 9 core widgets (`GlassButton`, `GlassIconButton`, `GlassChip`, `GlassTextField`, `GlassPasswordField`, `GlassCard`, `GlassAppBar`, `GlassToolbar`, `GlassDialog`).
+   - Significantly reduced object allocation pressure during rebuilds and animations.
+   - **GlassPicker**: Switched to `CupertinoPicker.builder` for efficient O(1) lazy loading of large item lists.
+   - **GlassInteractiveIndicator**: Optimized physics settings allocation to reduce per-frame GC overhead.
+
 # 0.1.5-dev.5
 
  - **CHORE**: Code cleanup and documentation improvements
