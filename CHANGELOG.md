@@ -1,3 +1,25 @@
+# 0.1.5-dev.7
+
+ - **FEAT**: Added Liquid Glass Menu System
+   - **GlassMenu**: iOS 26 liquid glass morphing context menu
+     - True morphing animation: button seamlessly transforms into menu
+     - Critically damped spring physics (Stiffness: 180, Damping: 27) - zero bounce
+     - Liquid swoop effect: 8px downward curve with easeOutCubic timing
+     - Triple-layer clipping with width constraints for zero visual artifacts
+     - Position-aware: expands from button location with automatic alignment
+     - Scrollable content support with iOS-style ClampingScrollPhysics
+   - **GlassMenuItem**: Configurable menu action items
+     - Support for icons, destructive styling, and trailing widgets
+     - Customizable height (defaults to 44px iOS standard)
+   - **GlassPullDownButton**: Convenient wrapper for menu triggers
+     - Integrates GlassMenu with specialized button styling
+     - Auto-closing menu behavior and onSelected callback
+   - **GlassButtonGroup**: Cohesive container for grouping related actions
+     - "Joined" style layout for toolbar commands (e.g., Bold/Italic/Underline)
+     - Automatically manages dividers between items
+   - **GlassButton**: Added `style` property with `GlassButtonStyle.transparent`
+     - Allows buttons to blend into groups without double-glass rendering artifacts
+
 # 0.1.5-dev.6
 
  - **PERF**: Comprehensive Allocation Optimization

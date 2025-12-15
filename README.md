@@ -1,13 +1,13 @@
 # Liquid Glass Widgets
 
-A comprehensive Flutter package implementing Apple's Liquid Glass design system with 15 beautiful, composable glass-morphic widgets.
+A comprehensive Flutter package implementing Apple's Liquid Glass design system with 26 beautiful, composable glass-morphic widgets.
 
 [![pub package](https://img.shields.io/pub/v/liquid_glass_widgets.svg)](https://pub.dev/packages/liquid_glass_widgets)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ## Features
 
-- **22 Widgets** organized into five categories
+- **26 Widgets** organized into five categories
 - **Two Quality Modes** for performance optimization
 - **Flexible Layer System** for efficient rendering
 - **Highly Customizable** appearance with extensive glass settings
@@ -30,6 +30,8 @@ User interaction components:
 - `GlassSwitch` - Toggle control
 - `GlassSlider` - Range selection
 - `GlassSegmentedControl` - Multi-option selector
+- `GlassPullDownButton` - Menu trigger button with dropdown
+- `GlassButtonGroup` - Container for grouping related buttons
 
 ### Input
 Text input components:
@@ -44,6 +46,8 @@ Text input components:
 Modal and floating UI:
 - `GlassDialog` - Modal dialog
 - `GlassSheet` - Bottom sheet / modal sheet
+- `GlassMenu` - iOS 26 morphing context menu
+- `GlassMenuItem` - Individual menu action item
 
 ### Surfaces
 Navigation and app structure:
@@ -59,7 +63,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  liquid_glass_widgets: ^0.1.5-dev.6
+  liquid_glass_widgets: ^0.1.5-dev.7
 ```
 
 Then run:

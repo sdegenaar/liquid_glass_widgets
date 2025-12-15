@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
+import '../../types/glass_button_style.dart';
 
 /// Glass morphism button with scale animation and glow effects.
 ///
@@ -104,6 +105,7 @@ class GlassButton extends StatelessWidget {
     this.glowRadius = 1.0,
     this.glowHitTestBehavior = HitTestBehavior.opaque,
     this.enabled = true,
+    this.style = GlassButtonStyle.filled,
   }) : child = null;
 
   /// Creates a glass button with custom content.
@@ -148,6 +150,7 @@ class GlassButton extends StatelessWidget {
     this.glowRadius = 1.0,
     this.glowHitTestBehavior = HitTestBehavior.opaque,
     this.enabled = true,
+    this.style = GlassButtonStyle.filled,
   })  : icon = null,
         iconSize = 24.0,
         iconColor = Colors.white;
@@ -256,6 +259,12 @@ class GlassButton extends StatelessWidget {
   /// Use [GlassQuality.premium] for shader-based glass in static layouts only.
   final GlassQuality quality;
 
+  /// The visual style of the button.
+  ///
+  /// Use [GlassButtonStyle.transparent] when grouping buttons to avoid
+  /// double-drawing glass backgrounds.
+  final GlassButtonStyle style;
+
   // ===========================================================================
   // LiquidStretch Properties (Animation & Interaction)
   // ===========================================================================
@@ -362,27 +371,39 @@ class GlassButton extends StatelessWidget {
     );
 
     // Build the glass effect widget
-    final glassWidget = useOwnLayer
-        ? LiquidGlass.withOwnLayer(
-            shape: shape,
-            settings: settings ?? _defaultSettings,
-            fake: quality.usesBackdropFilter,
-            child: GlassGlow(
-              glowColor: glowColor,
-              glowRadius: glowRadius,
-              hitTestBehavior: glowHitTestBehavior,
-              child: contentWidget,
-            ),
-          )
-        : LiquidGlass.grouped(
-            shape: shape,
-            child: GlassGlow(
-              glowColor: glowColor,
-              glowRadius: glowRadius,
-              hitTestBehavior: glowHitTestBehavior,
-              child: contentWidget,
-            ),
-          );
+    Widget glassWidget;
+
+    if (style == GlassButtonStyle.transparent) {
+      // Just interaction effects, no glass shape
+      glassWidget = GlassGlow(
+        glowColor: glowColor,
+        glowRadius: glowRadius,
+        hitTestBehavior: glowHitTestBehavior,
+        child: contentWidget,
+      );
+    } else {
+      glassWidget = useOwnLayer
+          ? LiquidGlass.withOwnLayer(
+              shape: shape,
+              settings: settings ?? _defaultSettings,
+              fake: quality.usesBackdropFilter,
+              child: GlassGlow(
+                glowColor: glowColor,
+                glowRadius: glowRadius,
+                hitTestBehavior: glowHitTestBehavior,
+                child: contentWidget,
+              ),
+            )
+          : LiquidGlass.grouped(
+              shape: shape,
+              child: GlassGlow(
+                glowColor: glowColor,
+                glowRadius: glowRadius,
+                hitTestBehavior: glowHitTestBehavior,
+                child: contentWidget,
+              ),
+            );
+    }
 
     // Wrap with stretch animation
     final stretchWidget = LiquidStretch(

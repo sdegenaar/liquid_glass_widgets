@@ -680,6 +680,20 @@ class _InteractivePageState extends State<InteractivePage> {
 
                           const SizedBox(height: 40),
 
+                          // GlassButtonGroup Section
+                          const _SectionTitle(title: 'GlassButtonGroup'),
+                          const SizedBox(height: 16),
+                          _ButtonGroupDemosCard(),
+
+                          const SizedBox(height: 40),
+
+                          // GlassPullDownButton Section
+                          const _SectionTitle(title: 'GlassPullDownButton'),
+                          const SizedBox(height: 16),
+                          _PullDownButtonDemosCard(),
+
+                          const SizedBox(height: 40),
+
                           // GlassSwitch Section
                           const _SectionTitle(title: 'GlassSwitch'),
                           const SizedBox(height: 16),
@@ -1346,6 +1360,180 @@ class _ChipDemosCardState extends State<_ChipDemosCard> {
               const SizedBox(height: 8),
               Text(
                 'Selected: ${_selectedFilters.join(", ")}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+// =============================================================================
+// Button Group Demos Widget
+// =============================================================================
+
+class _ButtonGroupDemosCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        GlassCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Joined Group (Toolbar)',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Center(
+                child: GlassButtonGroup(
+                  useOwnLayer: true, // Needs own layer to draw background
+                  children: [
+                    GlassButton(
+                      icon: CupertinoIcons.bold,
+                      style: GlassButtonStyle.transparent,
+                      onTap: () {},
+                    ),
+                    GlassButton(
+                      icon: CupertinoIcons.italic,
+                      style: GlassButtonStyle.transparent,
+                      onTap: () {},
+                    ),
+                    GlassButton(
+                      icon: CupertinoIcons.underline,
+                      style: GlassButtonStyle.transparent,
+                      onTap: () {},
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        GlassCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Navigation Group',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Center(
+                child: GlassButtonGroup(
+                  useOwnLayer: true,
+                  borderRadius: 20,
+                  children: [
+                    GlassButton(
+                      icon: CupertinoIcons.back,
+                      style: GlassButtonStyle.transparent,
+                      width: 60,
+                      onTap: () {},
+                    ),
+                    GlassButton(
+                      icon: CupertinoIcons.forward,
+                      style: GlassButtonStyle.transparent,
+                      width: 60,
+                      onTap: () {},
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// =============================================================================
+// Pull Down Button Demos Widget
+// =============================================================================
+
+class _PullDownButtonDemosCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        GlassCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Toolbar Actions',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  GlassPullDownButton(
+                    icon: CupertinoIcons.ellipsis_circle,
+                    items: [
+                      GlassMenuItem(
+                        title: 'Copy',
+                        icon: CupertinoIcons.doc_on_doc,
+                        onTap: () {},
+                      ),
+                      GlassMenuItem(
+                        title: 'Share',
+                        icon: CupertinoIcons.share,
+                        onTap: () {},
+                      ),
+                      GlassMenuItem(
+                        title: 'Delete',
+                        icon: CupertinoIcons.trash,
+                        isDestructive: true,
+                        onTap: () {},
+                      ),
+                    ],
+                  ),
+                  GlassPullDownButton(
+                    label: 'Sort By',
+                    icon: CupertinoIcons.arrow_up_arrow_down,
+                    buttonWidth: 120,
+                    items: [
+                      GlassMenuItem(
+                        title: 'Name',
+                        onTap: () {},
+                        trailing: Icon(CupertinoIcons.checkmark_alt,
+                            size: 16, color: Colors.white),
+                      ),
+                      GlassMenuItem(
+                        title: 'Date',
+                        onTap: () {},
+                      ),
+                      GlassMenuItem(
+                        title: 'Size',
+                        onTap: () {},
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Tap to reveal fluid menu',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.white.withValues(alpha: 0.6),

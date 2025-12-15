@@ -13,6 +13,7 @@ class OverlaysPage extends StatefulWidget {
 
 class _OverlaysPageState extends State<OverlaysPage> {
   String _lastSheetResult = 'None';
+  String _lastMenuSelection = 'None';
   String _lastDialogResult = 'None';
 
   void _showBasicSheet() {
@@ -1076,6 +1077,186 @@ class _OverlaysPageState extends State<OverlaysPage> {
                       ),
                     ),
 
+                    const SizedBox(height: 40),
+
+                    // GlassMenu Section
+                    const _SectionTitle(title: 'GlassMenu'),
+                    const SizedBox(height: 16),
+                    GlassCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Basic Menu',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Liquid menu that morphs from the trigger button.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withValues(alpha: 0.7),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Align(
+                            alignment: AlignmentGeometry.centerRight,
+                            child: GlassMenu(
+                              triggerBuilder: (context, toggle) => GlassButton(
+                                icon: CupertinoIcons.ellipsis,
+                                onTap: toggle,
+                                label: 'Options',
+                              ),
+                              items: [
+                                GlassMenuItem(
+                                  icon: CupertinoIcons.share,
+                                  title: 'Share',
+                                  onTap: () => setState(
+                                      () => _lastMenuSelection = 'Share'),
+                                ),
+                                GlassMenuItem(
+                                  icon: CupertinoIcons.pen,
+                                  title: 'Edit',
+                                  onTap: () => setState(
+                                      () => _lastMenuSelection = 'Edit'),
+                                ),
+                                GlassMenuItem(
+                                  icon: CupertinoIcons.trash,
+                                  title: 'Delete',
+                                  isDestructive: true,
+                                  onTap: () => setState(
+                                      () => _lastMenuSelection = 'Delete'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    GlassCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Custom Width & Style',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Menu with wider layout and custom glass settings.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withValues(alpha: 0.7),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Center(
+                            child: GlassMenu(
+                              menuWidth: 250,
+                              glassSettings: const LiquidGlassSettings(
+                                blur: 20,
+                                glassColor: Colors.blue,
+                                thickness: 30,
+                              ),
+                              triggerBuilder: (context, toggle) =>
+                                  GlassButton.custom(
+                                onTap: toggle,
+                                width: 140,
+                                height: 44,
+                                glowColor: Colors.blue.withValues(alpha: 0.3),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text('Account',
+                                        style: TextStyle(color: Colors.white)),
+                                    SizedBox(width: 8),
+                                    Icon(CupertinoIcons.chevron_down,
+                                        size: 14, color: Colors.white),
+                                  ],
+                                ),
+                              ),
+                              items: [
+                                GlassMenuItem(
+                                  icon: CupertinoIcons.person_circle,
+                                  title: 'Profile Settings',
+                                  onTap: () => setState(
+                                      () => _lastMenuSelection = 'Profile'),
+                                ),
+                                GlassMenuItem(
+                                  icon: CupertinoIcons.bell,
+                                  title: 'Notifications',
+                                  trailing: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Text('2',
+                                        style: TextStyle(
+                                            fontSize: 12, color: Colors.white)),
+                                  ),
+                                  onTap: () => setState(() =>
+                                      _lastMenuSelection = 'Notifications'),
+                                ),
+                                GlassMenuItem(
+                                  icon: CupertinoIcons.gear,
+                                  title: 'Preferences',
+                                  onTap: () => setState(
+                                      () => _lastMenuSelection = 'Preferences'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    GlassCard(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            CupertinoIcons.info_circle_fill,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Menu Selection',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _lastMenuSelection,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 100),
                   ],
                 ),

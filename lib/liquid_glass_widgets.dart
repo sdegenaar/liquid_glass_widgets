@@ -24,8 +24,13 @@ export 'widgets/interactive/glass_icon_button.dart';
 export 'widgets/interactive/glass_segmented_control.dart';
 export 'widgets/interactive/glass_slider.dart';
 export 'widgets/interactive/glass_switch.dart';
+export 'widgets/interactive/glass_pull_down_button.dart';
+export 'widgets/interactive/glass_button_group.dart';
+export 'types/glass_button_style.dart';
 // Widgets - Overlays
 export 'widgets/overlays/glass_dialog.dart';
+export 'widgets/overlays/glass_menu.dart';
+export 'widgets/overlays/glass_menu_item.dart';
 export 'widgets/overlays/glass_sheet.dart';
 // Widgets - Surfaces
 export 'widgets/surfaces/glass_app_bar.dart';
