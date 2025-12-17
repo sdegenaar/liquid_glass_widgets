@@ -53,6 +53,10 @@ class GlassFormField extends StatelessWidget {
     this.crossAxisAlignment = CrossAxisAlignment.start,
   });
 
+  // Cache default helper text color to avoid allocations
+  static const _defaultHelperTextColor =
+      Color(0x99FFFFFF); // white.withValues(alpha: 0.6)
+
   /// The input widget (e.g., GlassTextField).
   final Widget child;
 
@@ -104,9 +108,9 @@ class GlassFormField extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             helperText!,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
-              color: Colors.white.withValues(alpha: 0.6),
+              color: _defaultHelperTextColor,
             ),
           ),
         ],

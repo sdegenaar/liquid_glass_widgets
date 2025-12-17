@@ -218,6 +218,9 @@ class GlassSegmentedControl extends StatefulWidget {
 }
 
 class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
+  // Cache default background color to avoid allocations
+  static const _defaultBackgroundColor = Color(0x1FFFFFFF); // Colors.white12
+
   @override
   Widget build(BuildContext context) {
     // Use custom glass settings or optimized defaults
@@ -230,7 +233,7 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
           refractiveIndex: 1.15,
         );
 
-    final backgroundColor = widget.backgroundColor ?? Colors.white12;
+    final backgroundColor = widget.backgroundColor ?? _defaultBackgroundColor;
 
     // Build the control
     final control = Container(
@@ -297,6 +300,12 @@ class _SegmentedControlContent extends StatefulWidget {
 }
 
 class _SegmentedControlContentState extends State<_SegmentedControlContent> {
+  // Cache default colors to avoid allocations
+  static const _defaultIndicatorColor =
+      Color(0x33FFFFFF); // white.withValues(alpha: 0.2)
+  static const _defaultUnselectedTextColor =
+      Color(0x99FFFFFF); // white.withValues(alpha: 0.6)
+
   bool _isDown = false;
   bool _isDragging = false;
 
@@ -403,8 +412,7 @@ class _SegmentedControlContentState extends State<_SegmentedControlContent> {
 
   @override
   Widget build(BuildContext context) {
-    final indicatorColor =
-        widget.indicatorColor ?? Colors.white.withValues(alpha: 0.2);
+    final indicatorColor = widget.indicatorColor ?? _defaultIndicatorColor;
     final targetAlignment = _computeXAlignmentForSegment(widget.selectedIndex);
 
     // Indicator should be slightly less rounded than container for proper
@@ -419,10 +427,10 @@ class _SegmentedControlContentState extends State<_SegmentedControlContent> {
         );
 
     final unselectedTextStyle = widget.unselectedTextStyle ??
-        TextStyle(
+        const TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w500,
-          color: Colors.white.withValues(alpha: 0.6),
+          color: _defaultUnselectedTextColor,
         );
 
     return GestureDetector(
@@ -490,23 +498,25 @@ class _SegmentedControlContentState extends State<_SegmentedControlContent> {
               children: [
                 for (var i = 0; i < widget.segments.length; i++)
                   Expanded(
-                    child: GestureDetector(
-                      onTap: () => _onSegmentTap(i),
-                      behavior: HitTestBehavior.opaque,
-                      child: Semantics(
-                        button: true,
-                        selected: widget.selectedIndex == i,
-                        label: widget.segments[i],
-                        child: Center(
-                          child: AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 200),
-                            style: widget.selectedIndex == i
-                                ? selectedTextStyle
-                                : unselectedTextStyle,
-                            child: Text(
-                              widget.segments[i],
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                    child: RepaintBoundary(
+                      child: GestureDetector(
+                        onTap: () => _onSegmentTap(i),
+                        behavior: HitTestBehavior.opaque,
+                        child: Semantics(
+                          button: true,
+                          selected: widget.selectedIndex == i,
+                          label: widget.segments[i],
+                          child: Center(
+                            child: AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 200),
+                              style: widget.selectedIndex == i
+                                  ? selectedTextStyle
+                                  : unselectedTextStyle,
+                              child: Text(
+                                widget.segments[i],
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ),
                         ),

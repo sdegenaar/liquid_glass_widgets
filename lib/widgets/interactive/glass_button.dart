@@ -406,16 +406,19 @@ class GlassButton extends StatelessWidget {
     }
 
     // Wrap with stretch animation
-    final stretchWidget = LiquidStretch(
-      interactionScale: interactionScale,
-      stretch: stretch,
-      resistance: resistance,
-      hitTestBehavior: stretchHitTestBehavior,
-      child: Semantics(
-        button: true,
-        label: label.isNotEmpty ? label : null,
-        enabled: enabled,
-        child: glassWidget,
+    // Performance: RepaintBoundary isolates button animations from parent
+    final stretchWidget = RepaintBoundary(
+      child: LiquidStretch(
+        interactionScale: interactionScale,
+        stretch: stretch,
+        resistance: resistance,
+        hitTestBehavior: stretchHitTestBehavior,
+        child: Semantics(
+          button: true,
+          label: label.isNotEmpty ? label : null,
+          enabled: enabled,
+          child: glassWidget,
+        ),
       ),
     );
 

@@ -321,6 +321,9 @@ class GlassBottomBar extends StatefulWidget {
 }
 
 class _GlassBottomBarState extends State<GlassBottomBar> {
+  // Cache default glass color to avoid allocations
+  static const _defaultGlassColor = Color(0x3DFFFFFF); // Colors.white24
+
   @override
   Widget build(BuildContext context) {
     // Use custom glass settings or optimized defaults for bottom bars
@@ -334,7 +337,7 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
           saturation: 0.7,
           ambientStrength: 1,
           lightAngle: 0.25 * math.pi,
-          glassColor: Colors.white24,
+          glassColor: _defaultGlassColor,
         );
 
     return LiquidGlassLayer(
@@ -378,19 +381,21 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
                           children: [
                             for (var i = 0; i < widget.tabs.length; i++)
                               Expanded(
-                                child: _BottomBarTab(
-                                  tab: widget.tabs[i],
-                                  selected: widget.selectedIndex == i,
-                                  selectedIconColor: widget.selectedIconColor,
-                                  unselectedIconColor:
-                                      widget.unselectedIconColor,
-                                  iconSize: widget.iconSize,
-                                  textStyle: widget.textStyle,
-                                  glowDuration: widget.glowDuration,
-                                  glowBlurRadius: widget.glowBlurRadius,
-                                  glowSpreadRadius: widget.glowSpreadRadius,
-                                  glowOpacity: widget.glowOpacity,
-                                  onTap: () => widget.onTabSelected(i),
+                                child: RepaintBoundary(
+                                  child: _BottomBarTab(
+                                    tab: widget.tabs[i],
+                                    selected: widget.selectedIndex == i,
+                                    selectedIconColor: widget.selectedIconColor,
+                                    unselectedIconColor:
+                                        widget.unselectedIconColor,
+                                    iconSize: widget.iconSize,
+                                    textStyle: widget.textStyle,
+                                    glowDuration: widget.glowDuration,
+                                    glowBlurRadius: widget.glowBlurRadius,
+                                    glowSpreadRadius: widget.glowSpreadRadius,
+                                    glowOpacity: widget.glowOpacity,
+                                    onTap: () => widget.onTabSelected(i),
+                                  ),
                                 ),
                               ),
                           ],
@@ -544,30 +549,32 @@ class _BottomBarTab extends StatelessWidget {
                         right: -24,
                         left: -24,
                         bottom: -24,
-                        child: AnimatedContainer(
-                          duration: glowDuration,
-                          transformAlignment: Alignment.center,
-                          curve: Curves.easeOutCirc,
-                          transform: selected
-                              ? Matrix4.identity()
-                              : (Matrix4.identity()
-                                ..scale(0.4)
-                                ..rotateZ(-math.pi)),
-                          child: AnimatedOpacity(
+                        child: RepaintBoundary(
+                          child: AnimatedContainer(
                             duration: glowDuration,
-                            opacity: selected ? 1 : 0,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: tab.glowColor!.withOpacity(
-                                      selected ? glowOpacity : 0,
+                            transformAlignment: Alignment.center,
+                            curve: Curves.easeOutCirc,
+                            transform: selected
+                                ? Matrix4.identity()
+                                : (Matrix4.identity()
+                                  ..scale(0.4)
+                                  ..rotateZ(-math.pi)),
+                            child: AnimatedOpacity(
+                              duration: glowDuration,
+                              opacity: selected ? 1 : 0,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: tab.glowColor!.withOpacity(
+                                        selected ? glowOpacity : 0,
+                                      ),
+                                      blurRadius: glowBlurRadius,
+                                      spreadRadius: glowSpreadRadius,
                                     ),
-                                    blurRadius: glowBlurRadius,
-                                    spreadRadius: glowSpreadRadius,
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -693,6 +700,10 @@ class _TabIndicator extends StatefulWidget {
 }
 
 class _TabIndicatorState extends State<_TabIndicator> {
+  // Cache fallback indicator color to avoid allocations
+  static const _fallbackIndicatorColor =
+      Color(0x1AFFFFFF); // white.withValues(alpha: 0.1)
+
   bool _isDown = false;
   bool _isDragging = false;
 
@@ -796,7 +807,7 @@ class _TabIndicatorState extends State<_TabIndicator> {
     final theme = CupertinoTheme.of(context);
     final indicatorColor = widget.indicatorColor ??
         theme.textTheme.textStyle.color?.withValues(alpha: .1) ??
-        Colors.white.withValues(alpha: 0.1);
+        _fallbackIndicatorColor;
     final targetAlignment = _computeXAlignmentForTab(widget.tabIndex);
 
     return GestureDetector(

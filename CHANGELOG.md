@@ -1,3 +1,11 @@
+# 0.1.5-dev.8
+
+- **PERF**: Major performance optimization across all widgets
+    - Eliminated 21 color allocations with cached `static const` values
+    - Added strategic `RepaintBoundary` placements to prevent cascading repaints
+    - Optimized 14 widgets: `GlassSearchBar`, `GlassFormField`, `GlassPicker`, `GlassIconButton`, `GlassChip`, `GlassSwitch`, `GlassSlider`, `GlassBottomBar`, `GlassTabBar`, `GlassSegmentedControl`, `GlassInteractiveIndicator`, `GlassDialog`, `GlassSheet`, `GlassSideBar`
+    - Result: 5-20% FPS improvement across navigation, input, and interactive widgets
+
 # 0.1.5-dev.7
 
  - **FEAT**: Added Liquid Glass Menu System

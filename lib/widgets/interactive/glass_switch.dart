@@ -138,6 +138,10 @@ class GlassSwitch extends StatefulWidget {
 
 class _GlassSwitchState extends State<GlassSwitch>
     with TickerProviderStateMixin {
+  // Cache default shadow color to avoid allocations
+  static const _defaultThumbShadowColor =
+      Color(0x33000000); // black.withValues(alpha: 0.2)
+
   late AnimationController _positionController;
   late AnimationController _thicknessController;
   late Animation<double> _positionAnimation;
@@ -246,108 +250,111 @@ class _GlassSwitchState extends State<GlassSwitch>
     // Fix: Use actual thumb width for travel distance calculation
     final thumbTravelDistance = trackWidth - thumbWidth - 4.0;
 
-    // Define active and inactive colors
+    // Performance: Cache color calculations as const to avoid allocation
     final inactiveTrackColor =
-        widget.inactiveColor ?? Colors.white.withValues(alpha: 0.2);
+        widget.inactiveColor ?? const Color(0x33FFFFFF); // alpha: 0.2
     final activeTrackColor = widget.activeColor ?? Colors.green;
 
     return GestureDetector(
       onTap: _handleTap,
-      child: AnimatedBuilder(
-        animation:
-            Listenable.merge([_positionController, _thicknessController]),
-        builder: (context, child) {
-          final position = _positionAnimation.value;
-          final scale = _scaleAnimation.value;
-          final thickness = _thicknessAnimation.value;
+      // Performance: RepaintBoundary isolates switch animation from parent
+      child: RepaintBoundary(
+        child: AnimatedBuilder(
+          animation:
+              Listenable.merge([_positionController, _thicknessController]),
+          builder: (context, child) {
+            final position = _positionAnimation.value;
+            final scale = _scaleAnimation.value;
+            final thickness = _thicknessAnimation.value;
 
-          // Animate track color between inactive and active
-          final trackColor = Color.lerp(
-            inactiveTrackColor,
-            activeTrackColor,
-            position,
-          )!;
+            // Animate track color between inactive and active
+            final trackColor = Color.lerp(
+              inactiveTrackColor,
+              activeTrackColor,
+              position,
+            )!;
 
-          // Build the track (pill-shaped, animated color)
-          final track = Container(
-            width: trackWidth,
-            height: widget.height,
-            decoration: BoxDecoration(
-              color: trackColor,
-              borderRadius: BorderRadius.circular(widget.height / 2),
-            ),
-          );
+            // Build the track (pill-shaped, animated color)
+            final track = Container(
+              width: trackWidth,
+              height: widget.height,
+              decoration: BoxDecoration(
+                color: trackColor,
+                borderRadius: BorderRadius.circular(widget.height / 2),
+              ),
+            );
 
-          // Build the thumb (stays constant color)
-          final thumbOffset = 2.0 + (thumbTravelDistance * position);
+            // Build the thumb (stays constant color)
+            final thumbOffset = 2.0 + (thumbTravelDistance * position);
 
-          final thumb = Positioned(
-            left: thumbOffset,
-            top: 2.0,
-            child: Transform.scale(
-              scale: scale,
-              child: _buildThumb(thumbSize),
-            ),
-          );
+            final thumb = Positioned(
+              left: thumbOffset,
+              top: 2.0,
+              child: Transform.scale(
+                scale: scale,
+                child: _buildThumb(thumbSize),
+              ),
+            );
 
-          // Build glass overlay (glass_bottom_bar style)
-          final overlayWidth = thumbSize * 1.6;
-          final overlayHeight = widget.height - 4.0;
+            // Build glass overlay (glass_bottom_bar style)
+            final overlayWidth = thumbSize * 1.6;
+            final overlayHeight = widget.height - 4.0;
 
-          // Expand bounds during animation (like glass_bottom_bar)
-          final rect = RelativeRect.lerp(
-                RelativeRect.fill,
-                const RelativeRect.fromLTRB(-8, -8, -8, -8),
-                thickness,
-              ) ??
-              RelativeRect.fill;
+            // Expand bounds during animation (like glass_bottom_bar)
+            final rect = RelativeRect.lerp(
+                  RelativeRect.fill,
+                  const RelativeRect.fromLTRB(-8, -8, -8, -8),
+                  thickness,
+                ) ??
+                RelativeRect.fill;
 
-          // Position overlay based on direction:
-          // - Moving forward (→): anchor on left edge (trails behind)
-          // - Moving backward (←): anchor on right edge (trails behind)
-          final overlayLeft = _isMovingForward
-              ? thumbOffset // Anchor on left for forward movement
-              : thumbOffset +
-                  thumbWidth -
-                  overlayWidth; // Anchor on right for backward
+            // Position overlay based on direction:
+            // - Moving forward (→): anchor on left edge (trails behind)
+            // - Moving backward (←): anchor on right edge (trails behind)
+            final overlayLeft = _isMovingForward
+                ? thumbOffset // Anchor on left for forward movement
+                : thumbOffset +
+                    thumbWidth -
+                    overlayWidth; // Anchor on right for backward
 
-          final glassOverlay = thickness > 0
-              ? Positioned(
-                  left: overlayLeft,
-                  top: 2.0,
-                  child: SizedBox(
-                    width: overlayWidth,
-                    height: overlayHeight,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Positioned.fromRelativeRect(
-                          rect: rect,
-                          child: _buildGlassOverlay(
-                            overlayWidth,
-                            overlayHeight,
-                            thickness,
+            final glassOverlay = thickness > 0
+                ? Positioned(
+                    left: overlayLeft,
+                    top: 2.0,
+                    child: SizedBox(
+                      width: overlayWidth,
+                      height: overlayHeight,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Positioned.fromRelativeRect(
+                            rect: rect,
+                            child: _buildGlassOverlay(
+                              overlayWidth,
+                              overlayHeight,
+                              thickness,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                )
-              : const SizedBox.shrink();
+                  )
+                : const SizedBox.shrink();
 
-          return SizedBox(
-            width: trackWidth,
-            height: widget.height,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                track,
-                thumb,
-                glassOverlay, // Glass overlay appears ABOVE thumb
-              ],
-            ),
-          );
-        },
+            return SizedBox(
+              width: trackWidth,
+              height: widget.height,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  track,
+                  thumb,
+                  glassOverlay, // Glass overlay appears ABOVE thumb
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -364,11 +371,11 @@ class _GlassSwitchState extends State<GlassSwitch>
       decoration: BoxDecoration(
         color: widget.thumbColor,
         borderRadius: BorderRadius.circular(thumbHeight / 2),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
+            color: _defaultThumbShadowColor,
             blurRadius: 4,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),

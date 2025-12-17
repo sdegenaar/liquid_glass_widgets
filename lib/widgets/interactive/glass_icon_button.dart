@@ -101,6 +101,14 @@ class GlassIconButton extends StatelessWidget {
     this.quality = GlassQuality.standard,
   });
 
+  // Cache default colors to avoid allocations
+  static const _defaultIconColorEnabled =
+      Color(0xFFFFFFFF); // white.withValues(alpha: 1.0)
+  static const _defaultIconColorDisabled =
+      Color(0x4DFFFFFF); // white.withValues(alpha: 0.3)
+  static const _defaultGlowColor =
+      Color(0x4DFFFFFF); // white.withValues(alpha: 0.3)
+
   // ===========================================================================
   // Content Properties
   // ===========================================================================
@@ -196,14 +204,12 @@ class GlassIconButton extends StatelessWidget {
     final iconWidget = Icon(
       icon,
       size: effectiveIconSize,
-      color: Colors.white.withValues(
-        alpha: isEnabled ? 1.0 : 0.3,
-      ),
+      color: isEnabled ? _defaultIconColorEnabled : _defaultIconColorDisabled,
     );
 
     // Build glow layer
     final withGlow = GlassGlow(
-      glowColor: glowColor ?? Colors.white.withValues(alpha: 0.3),
+      glowColor: glowColor ?? _defaultGlowColor,
       glowRadius: glowRadius,
       child: iconWidget,
     );

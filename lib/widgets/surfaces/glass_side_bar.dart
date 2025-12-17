@@ -205,6 +205,10 @@ class GlassSideBarItem extends StatelessWidget {
     this.borderRadius = 12.0,
   });
 
+  // Cache default selection background color to avoid allocations
+  static const _defaultSelectionColor =
+      Color(0x1AFFFFFF); // white.withValues(alpha: 0.1)
+
   /// Icon to display.
   final IconData icon;
 
@@ -254,7 +258,7 @@ class GlassSideBarItem extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected
                 ? (selectedColor?.withValues(alpha: 0.15) ??
-                    Colors.white.withValues(alpha: 0.1))
+                    _defaultSelectionColor)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(borderRadius),
           ),

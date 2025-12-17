@@ -211,6 +211,14 @@ class GlassSlider extends StatefulWidget {
 
 class _GlassSliderState extends State<GlassSlider>
     with TickerProviderStateMixin {
+  // Cache default colors to avoid allocations
+  static const _defaultThumbShadowColor =
+      Color(0x40000000); // black.withValues(alpha: 0.25)
+  static const _defaultThumbColorDragging =
+      Color(0x00FFFFFF); // white.withValues(alpha: 0) - invisible
+  static const _defaultThumbColorRest =
+      Color(0x99FFFFFF); // white.withValues(alpha: 0.6)
+
   double? _dragValue;
   bool _isDragging = false;
   Offset _velocity = Offset.zero;
@@ -349,10 +357,11 @@ class _GlassSliderState extends State<GlassSlider>
         ((effectiveValue - widget.min) / (widget.max - widget.min))
             .clamp(0.0, 1.0);
 
+    // Performance: Cache color calculations - these allocate on every build
     final activeColor =
-        widget.activeColor ?? Colors.white.withValues(alpha: 0.8);
+        widget.activeColor ?? const Color(0xCCFFFFFF); // alpha: 0.8
     final inactiveColor =
-        widget.inactiveColor ?? Colors.white.withValues(alpha: 0.2);
+        widget.inactiveColor ?? const Color(0x33FFFFFF); // alpha: 0.2
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -420,48 +429,52 @@ class _GlassSliderState extends State<GlassSlider>
                 ),
 
                 // Thumb (iOS 26: positioned slightly DOWN from track center)
+                // Performance: RepaintBoundary isolates thumb animations
                 Positioned(
                   left: thumbPosition - widget.thumbRadius,
                   top: 10.5,
-                  child: AnimatedBuilder(
-                    animation: Listenable.merge([
-                      _scaleController,
-                      _thicknessController,
-                    ]),
-                    builder: (context, child) {
-                      final scale = _scaleAnimation.value;
-                      final thickness = _thicknessAnimation.value;
+                  child: RepaintBoundary(
+                    child: AnimatedBuilder(
+                      animation: Listenable.merge([
+                        _scaleController,
+                        _thicknessController,
+                      ]),
+                      builder: (context, child) {
+                        final scale = _scaleAnimation.value;
+                        final thickness = _thicknessAnimation.value;
 
-                      // iOS 26 liquid glass: more dramatic jelly when dragging
-                      final jellyTransform = _isDragging
-                          ? DraggableIndicatorPhysics.buildJellyTransform(
-                              velocity: _velocity,
-                              maxDistortion: 0.25, // More dramatic than before
-                              velocityScale: 30, // More sensitive to velocity
-                            )
-                          : Matrix4.identity();
+                        // iOS 26 liquid glass: more dramatic jelly when dragging
+                        final jellyTransform = _isDragging
+                            ? DraggableIndicatorPhysics.buildJellyTransform(
+                                velocity: _velocity,
+                                maxDistortion:
+                                    0.25, // More dramatic than before
+                                velocityScale: 30, // More sensitive to velocity
+                              )
+                            : Matrix4.identity();
 
-                      return Transform(
-                        alignment: Alignment.center,
-                        transform: jellyTransform,
-                        child: Transform.scale(
-                          scale: scale,
-                          child: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              // Solid thumb
-                              _buildThumbGlass(),
+                        return Transform(
+                          alignment: Alignment.center,
+                          transform: jellyTransform,
+                          child: Transform.scale(
+                            scale: scale,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                // Solid thumb
+                                _buildThumbGlass(),
 
-                              // Glass overlay (appears when dragging)
-                              if (thickness > 0)
-                                Positioned.fill(
-                                  child: _buildGlassOverlay(thickness),
-                                ),
-                            ],
+                                // Glass overlay (appears when dragging)
+                                if (thickness > 0)
+                                  Positioned.fill(
+                                    child: _buildGlassOverlay(thickness),
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],
@@ -535,17 +548,17 @@ class _GlassSliderState extends State<GlassSlider>
       decoration: BoxDecoration(
         // iOS 26: Start more opaque, become transparent when dragging
         color: _isDragging
-            ? Colors.white.withValues(alpha: 0) // invisible when dragging
-            : Colors.white.withValues(alpha: 0.6), // Solid white at rest
+            ? _defaultThumbColorDragging // invisible when dragging
+            : _defaultThumbColorRest, // Solid white at rest
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: _isDragging
             ? null
-            : [
+            : const [
                 // Subtle shadow at rest
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
+                  color: _defaultThumbShadowColor,
                   blurRadius: 8,
-                  offset: const Offset(0, 2),
+                  offset: Offset(0, 2),
                 ),
               ],
       ),

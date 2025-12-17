@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
@@ -221,6 +220,14 @@ class GlassSearchBar extends StatefulWidget {
 
 class _GlassSearchBarState extends State<GlassSearchBar>
     with SingleTickerProviderStateMixin {
+  // Cache default colors to avoid allocations
+  static const _defaultSearchIconColor =
+      Color(0x99FFFFFF); // white.withValues(alpha: 0.6)
+  static const _defaultClearIconColor =
+      Color(0x99FFFFFF); // white.withValues(alpha: 0.6)
+  static const _defaultCancelButtonColor =
+      Color(0xE6FFFFFF); // white.withValues(alpha: 0.9)
+
   late TextEditingController _controller;
   late AnimationController _clearButtonController;
   late FocusNode _focusNode;
@@ -297,12 +304,10 @@ class _GlassSearchBarState extends State<GlassSearchBar>
 
   @override
   Widget build(BuildContext context) {
-    final searchIconColor =
-        widget.searchIconColor ?? Colors.white.withValues(alpha: 0.6);
-    final clearIconColor =
-        widget.clearIconColor ?? Colors.white.withValues(alpha: 0.6);
+    final searchIconColor = widget.searchIconColor ?? _defaultSearchIconColor;
+    final clearIconColor = widget.clearIconColor ?? _defaultClearIconColor;
     final cancelButtonColor =
-        widget.cancelButtonColor ?? Colors.white.withValues(alpha: 0.9);
+        widget.cancelButtonColor ?? _defaultCancelButtonColor;
 
     return Row(
       children: [
@@ -319,26 +324,28 @@ class _GlassSearchBarState extends State<GlassSearchBar>
                 size: 20,
                 color: searchIconColor,
               ),
-              suffixIcon: AnimatedBuilder(
-                animation: _clearButtonController,
-                builder: (context, child) {
-                  final animation = CurvedAnimation(
-                    parent: _clearButtonController,
-                    curve: Curves.easeInOut,
-                  );
+              suffixIcon: RepaintBoundary(
+                child: AnimatedBuilder(
+                  animation: _clearButtonController,
+                  builder: (context, child) {
+                    final animation = CurvedAnimation(
+                      parent: _clearButtonController,
+                      curve: Curves.easeInOut,
+                    );
 
-                  return Opacity(
-                    opacity: animation.value,
-                    child: Transform.scale(
-                      scale: animation.value,
-                      child: Icon(
-                        CupertinoIcons.clear_circled_solid,
-                        size: 18,
-                        color: clearIconColor,
+                    return Opacity(
+                      opacity: animation.value,
+                      child: Transform.scale(
+                        scale: animation.value,
+                        child: Icon(
+                          CupertinoIcons.clear_circled_solid,
+                          size: 18,
+                          color: clearIconColor,
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
               onSuffixTap: _handleClear,
               onChanged: widget.onChanged,

@@ -290,6 +290,10 @@ class _GlassDragIndicator extends StatelessWidget {
     this.color,
   });
 
+  // Cache default drag indicator color to avoid allocations
+  static const _defaultColor =
+      Color(0x4DFFFFFF); // white.withValues(alpha: 0.3)
+
   final Color? color;
 
   @override
@@ -298,7 +302,7 @@ class _GlassDragIndicator extends StatelessWidget {
       width: 36,
       height: 5,
       decoration: BoxDecoration(
-        color: color ?? Colors.white.withValues(alpha: 0.3),
+        color: color ?? _defaultColor,
         borderRadius: BorderRadius.circular(2.5),
       ),
     );

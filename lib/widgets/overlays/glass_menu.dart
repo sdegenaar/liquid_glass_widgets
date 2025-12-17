@@ -315,21 +315,20 @@ class _GlassMenuState extends State<GlassMenu>
       thickness: 30,
     );
 
-    return GlassContainer(
-      useOwnLayer: true,
-      settings: widget.glassSettings ?? defaultSettings,
-      quality: widget.quality,
-      width: currentWidth,
-      height: currentHeight, // Constrained during morph, natural when open
-      shape: LiquidRoundedSuperellipse(borderRadius: currentBorderRadius),
-      clipBehavior: Clip.hardEdge, // Force hard clipping to prevent overflow
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(currentBorderRadius),
-        clipBehavior:
-            Clip.hardEdge, // Double clipping for guaranteed no overflow
+    // Performance optimization: RepaintBoundary isolates morphing animation
+    // from parent widget rebuilds, reducing GPU overhead
+    return RepaintBoundary(
+      child: GlassContainer(
+        useOwnLayer: true,
+        settings: widget.glassSettings ?? defaultSettings,
+        quality: widget.quality,
+        width: currentWidth,
+        height: currentHeight, // Constrained during morph, natural when open
+        shape: LiquidRoundedSuperellipse(borderRadius: currentBorderRadius),
+        clipBehavior: Clip.hardEdge, // Primary clipping layer
         child: Stack(
           alignment: _morphAlignment, // Align internal stack content
-          clipBehavior: Clip.hardEdge, // Clip at Stack level too
+          clipBehavior: Clip.hardEdge, // Secondary safety net for overflow
           children: [
             // Button content - ONLY when container is nearly button-sized
             // iOS 26: button never visible during morph, only at absolute end

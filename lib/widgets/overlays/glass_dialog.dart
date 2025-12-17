@@ -149,6 +149,16 @@ class GlassDialog extends StatelessWidget {
 
   static const _actionButtonShape = LiquidRoundedSuperellipse(borderRadius: 12);
 
+  // Cache default colors to avoid allocations
+  static const _defaultMessageColor =
+      Color(0xB3FFFFFF); // white.withValues(alpha: 0.7)
+  static const _defaultGlowColor =
+      Color(0x4DFFFFFF); // white.withValues(alpha: 0.3)
+  static const _destructiveGlowColor =
+      Color(0x4DFF0000); // red.withValues(alpha: 0.3)
+  static const _primaryGlowColor =
+      Color(0x4D0000FF); // blue.withValues(alpha: 0.3)
+
   // ===========================================================================
   // Content Properties
   // ===========================================================================
@@ -309,9 +319,9 @@ class GlassDialog extends StatelessWidget {
                 if (message != null) ...[
                   Text(
                     message!,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.7),
+                      color: _defaultMessageColor,
                       height: 1.4,
                     ),
                     textAlign: TextAlign.center,
@@ -374,11 +384,11 @@ class GlassDialog extends StatelessWidget {
 
   Widget _buildActionButton(GlassDialogAction action) {
     // Determine button styling based on action type
-    var glowColor = Colors.white.withValues(alpha: 0.3);
+    var glowColor = _defaultGlowColor;
     if (action.isDestructive) {
-      glowColor = Colors.red.withValues(alpha: 0.3);
+      glowColor = _destructiveGlowColor;
     } else if (action.isPrimary) {
-      glowColor = Colors.blue.withValues(alpha: 0.3);
+      glowColor = _primaryGlowColor;
     }
 
     return GlassButton.custom(

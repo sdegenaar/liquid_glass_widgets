@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
@@ -111,6 +110,18 @@ class GlassChip extends StatelessWidget {
     this.stretch = 0.3,
     this.glowRadius = 0.8,
   });
+
+  // Cache default colors to avoid allocations
+  static const _defaultIconColor =
+      Color(0xE6FFFFFF); // white.withValues(alpha: 0.9)
+  static const _defaultLabelColor =
+      Color(0xE6FFFFFF); // white.withValues(alpha: 0.9)
+  static const _defaultSelectedColor =
+      Color(0x4DFFFFFF); // white.withValues(alpha: 0.3)
+  static const _defaultGlowColorSelected =
+      Color(0x4DFFFFFF); // white.withValues(alpha: 0.3)
+  static const _defaultGlowColorUnselected =
+      Color(0x33FFFFFF); // white.withValues(alpha: 0.2)
 
   // ===========================================================================
   // Chip Properties
@@ -230,11 +241,11 @@ class GlassChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveIconColor = iconColor ?? Colors.white.withValues(alpha: 0.9);
+    final effectiveIconColor = iconColor ?? _defaultIconColor;
     final effectiveLabelStyle = labelStyle ??
-        TextStyle(
+        const TextStyle(
           fontSize: 14,
-          color: Colors.white.withValues(alpha: 0.9),
+          color: _defaultLabelColor,
           fontWeight: FontWeight.w500,
         );
 
@@ -283,7 +294,7 @@ class GlassChip extends StatelessWidget {
     final contentWithSelection = selected
         ? Container(
             decoration: BoxDecoration(
-              color: selectedColor ?? Colors.white.withValues(alpha: 0.3),
+              color: selectedColor ?? _defaultSelectedColor,
               borderRadius: BorderRadius.circular(100),
             ),
             child: chipContent,
@@ -304,8 +315,8 @@ class GlassChip extends StatelessWidget {
           stretch: stretch,
           glowRadius: glowRadius,
           glowColor: selected
-              ? (selectedColor ?? Colors.white).withValues(alpha: 0.3)
-              : Colors.white.withValues(alpha: 0.2),
+              ? (selectedColor ?? _defaultGlowColorSelected)
+              : _defaultGlowColorUnselected,
           enabled: isInteractive,
           width: double.infinity, // Expand to intrinsic width
           height: double.infinity, // Expand to intrinsic height

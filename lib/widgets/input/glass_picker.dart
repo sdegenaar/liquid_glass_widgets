@@ -26,6 +26,10 @@ class GlassPicker extends StatelessWidget {
     this.shape = const LiquidRoundedSuperellipse(borderRadius: 10),
   });
 
+  // Cache default placeholder color to avoid allocations
+  static const _defaultPlaceholderColor =
+      Color(0x80FFFFFF); // white.withValues(alpha: 0.5)
+
   /// The currently selected text value.
   final String? value;
 
@@ -71,7 +75,7 @@ class GlassPicker extends StatelessWidget {
         textStyle ?? const TextStyle(fontSize: 16, color: Colors.white);
 
     final effectivePlaceholderStyle = placeholderStyle ??
-        TextStyle(fontSize: 16, color: Colors.white.withValues(alpha: 0.5));
+        const TextStyle(fontSize: 16, color: _defaultPlaceholderColor);
 
     final child = Container(
       height: height,

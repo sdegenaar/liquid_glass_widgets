@@ -140,24 +140,26 @@ class GlassInteractiveIndicator extends StatelessWidget {
                   children: [
                     Positioned.fromRelativeRect(
                       rect: rect!,
-                      child: SingleMotionBuilder(
-                        motion: const Motion.bouncySpring(
-                          duration: Duration(milliseconds: 600),
+                      child: RepaintBoundary(
+                        child: SingleMotionBuilder(
+                          motion: const Motion.bouncySpring(
+                            duration: Duration(milliseconds: 600),
+                          ),
+                          value: velocity,
+                          builder: (context, velocity, child) {
+                            return Transform(
+                              alignment: Alignment.center,
+                              transform:
+                                  DraggableIndicatorPhysics.buildJellyTransform(
+                                velocity: Offset(velocity, 0),
+                                maxDistortion: 0.8,
+                                velocityScale: 10,
+                              ),
+                              child: child,
+                            );
+                          },
+                          child: indicatorChild,
                         ),
-                        value: velocity,
-                        builder: (context, velocity, child) {
-                          return Transform(
-                            alignment: Alignment.center,
-                            transform:
-                                DraggableIndicatorPhysics.buildJellyTransform(
-                              velocity: Offset(velocity, 0),
-                              maxDistortion: 0.8,
-                              velocityScale: 10,
-                            ),
-                            child: child,
-                          );
-                        },
-                        child: indicatorChild,
                       ),
                     ),
                   ],

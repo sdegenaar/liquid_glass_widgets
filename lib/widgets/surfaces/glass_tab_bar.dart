@@ -190,6 +190,9 @@ class GlassTabBar extends StatefulWidget {
 }
 
 class _GlassTabBarState extends State<GlassTabBar> {
+  // Cache default background color to avoid allocations
+  static const _defaultBackgroundColor = Color(0x1FFFFFFF); // Colors.white12
+
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -238,7 +241,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
         );
 
     final backgroundColor = widget.backgroundColor == Colors.transparent
-        ? Colors.white12
+        ? _defaultBackgroundColor
         : widget.backgroundColor;
 
     final borderRadius =
@@ -327,6 +330,14 @@ class _TabBarContent extends StatefulWidget {
 }
 
 class _TabBarContentState extends State<_TabBarContent> {
+  // Cache default colors to avoid allocations
+  static const _defaultIndicatorColor =
+      Color(0x33FFFFFF); // white.withValues(alpha: 0.2)
+  static const _defaultUnselectedTextColor =
+      Color(0x99FFFFFF); // white.withValues(alpha: 0.6)
+  static const _defaultUnselectedIconColor =
+      Color(0x99FFFFFF); // white.withValues(alpha: 0.6)
+
   bool _isDown = false;
   bool _isDragging = false;
   late double _xAlign = _computeXAlignmentForTab(widget.selectedIndex);
@@ -425,8 +436,7 @@ class _TabBarContentState extends State<_TabBarContent> {
 
   @override
   Widget build(BuildContext context) {
-    final indicatorColor =
-        widget.indicatorColor ?? Colors.white.withValues(alpha: 0.2);
+    final indicatorColor = widget.indicatorColor ?? _defaultIndicatorColor;
     final targetAlignment = _computeXAlignmentForTab(widget.selectedIndex);
 
     final selectedLabelStyle = widget.selectedLabelStyle ??
@@ -437,15 +447,15 @@ class _TabBarContentState extends State<_TabBarContent> {
         );
 
     final unselectedLabelStyle = widget.unselectedLabelStyle ??
-        TextStyle(
+        const TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w500,
-          color: Colors.white.withValues(alpha: 0.6),
+          color: _defaultUnselectedTextColor,
         );
 
     final selectedIconColor = widget.selectedIconColor ?? Colors.white;
     final unselectedIconColor =
-        widget.unselectedIconColor ?? Colors.white.withValues(alpha: 0.6);
+        widget.unselectedIconColor ?? _defaultUnselectedIconColor;
 
     return GestureDetector(
       onHorizontalDragDown: _onDragDown,
@@ -533,14 +543,16 @@ class _TabBarContentState extends State<_TabBarContent> {
       (index) {
         final tab = widget.tabs[index];
         final isSelected = index == widget.selectedIndex;
-        return _TabItem(
-          tab: tab,
-          isSelected: isSelected,
-          onTap: () => _onTabTap(index),
-          labelStyle: isSelected ? selectedStyle : unselectedStyle,
-          iconColor: isSelected ? selectedIconColor : unselectedIconColor,
-          iconSize: widget.iconSize,
-          padding: widget.labelPadding,
+        return RepaintBoundary(
+          child: _TabItem(
+            tab: tab,
+            isSelected: isSelected,
+            onTap: () => _onTabTap(index),
+            labelStyle: isSelected ? selectedStyle : unselectedStyle,
+            iconColor: isSelected ? selectedIconColor : unselectedIconColor,
+            iconSize: widget.iconSize,
+            padding: widget.labelPadding,
+          ),
         );
       },
     );
