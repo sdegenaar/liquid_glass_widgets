@@ -1,3 +1,15 @@
+# 0.1.5-dev.11
+
+- **PERF**: Performance optimizations for `GlassBottomBar` and indicator animations
+    - Eliminated expensive `context.findAncestorWidgetOfExactType()` call that was executed on every animation frame
+    - Cached `LiquidRoundedSuperellipse` shape to avoid recreation during indicator animations
+    - Cached default `LiquidGlassSettings` as static const to reduce allocations on every build
+- **FIX**: Fixed indicator flash when setting `indicatorSettings` explicitly
+    - Fixed `GlassInteractiveIndicator` to always apply visibility animation regardless of custom settings
+    - Ensures smooth fade transitions when custom indicator settings are provided
+
+## 0.1.5-dev.10 (Retracted)
+
 # 0.1.5-dev.9
 
 - **FIX**: Fixed `GlassBottomBar` indicator layering issue

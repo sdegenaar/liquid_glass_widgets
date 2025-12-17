@@ -334,24 +334,25 @@ class GlassBottomBar extends StatefulWidget {
 }
 
 class _GlassBottomBarState extends State<GlassBottomBar> {
-  // Cache default glass color to avoid allocations
+  // Cache default glass color and settings to avoid allocations on every build
   static const _defaultGlassColor = Color(0x3DFFFFFF); // Colors.white24
+  static const _defaultLightAngle = 0.7853981633974483; // 0.25 * pi
+  static const _defaultGlassSettings = LiquidGlassSettings(
+    thickness: 30,
+    blur: 3,
+    chromaticAberration: 0.3,
+    lightIntensity: 0.6,
+    refractiveIndex: 1.59,
+    saturation: 0.7,
+    ambientStrength: 1,
+    lightAngle: _defaultLightAngle,
+    glassColor: _defaultGlassColor,
+  );
 
   @override
   Widget build(BuildContext context) {
-    // Use custom glass settings or optimized defaults for bottom bars
-    final glassSettings = widget.glassSettings ??
-        const LiquidGlassSettings(
-          thickness: 30,
-          blur: 3,
-          chromaticAberration: 0.3,
-          lightIntensity: 0.6,
-          refractiveIndex: 1.59,
-          saturation: 0.7,
-          ambientStrength: 1,
-          lightAngle: 0.25 * math.pi,
-          glassColor: _defaultGlassColor,
-        );
+    // Use custom glass settings or cached defaults for bottom bars
+    final glassSettings = widget.glassSettings ?? _defaultGlassSettings;
 
     return LiquidGlassLayer(
       settings: glassSettings,
@@ -716,6 +717,10 @@ class _TabIndicatorState extends State<_TabIndicator> {
   // Current horizontal alignment of the indicator (-1 to 1)
   late double _xAlign = _computeXAlignmentForTab(widget.tabIndex);
 
+  // Cached shape to avoid recreation on every animation frame
+  late LiquidRoundedSuperellipse _barShape =
+      LiquidRoundedSuperellipse(borderRadius: widget.barBorderRadius);
+
   @override
   void didUpdateWidget(covariant _TabIndicator oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -726,6 +731,12 @@ class _TabIndicatorState extends State<_TabIndicator> {
       setState(() {
         _xAlign = _computeXAlignmentForTab(widget.tabIndex);
       });
+    }
+
+    // Update cached shape if border radius changes
+    if (oldWidget.barBorderRadius != widget.barBorderRadius) {
+      _barShape =
+          LiquidRoundedSuperellipse(borderRadius: widget.barBorderRadius);
     }
   }
 
@@ -816,17 +827,11 @@ class _TabIndicatorState extends State<_TabIndicator> {
         _fallbackIndicatorColor;
     final targetAlignment = _computeXAlignmentForTab(widget.tabIndex);
 
-    // Calculate indicator radius from parent widget's barBorderRadius
-    // Access the parent GlassBottomBar to get barBorderRadius
-    // The indicator should match the bar's radius to maintain proper proportions
-    final parentBottomBar =
-        context.findAncestorWidgetOfExactType<GlassBottomBar>();
-    final barRadius = parentBottomBar?.barBorderRadius ?? 32;
-
     // GlassInteractiveIndicator multiplies by 2 for the glass superellipse shape,
     // but uses the value directly for the background DecoratedBox.
-    final backgroundRadius = barRadius * 2; // 64
-    final glassRadius = barRadius; // 32 → becomes 64 after internal *2
+    final backgroundRadius = widget.barBorderRadius * 2; // 64
+    final glassRadius =
+        widget.barBorderRadius; // 32 → becomes 64 after internal *2
 
     return GestureDetector(
       onHorizontalDragDown: _onDragDown,
@@ -864,9 +869,7 @@ class _TabIndicatorState extends State<_TabIndicator> {
                   Positioned.fill(
                     child: LiquidGlass.grouped(
                       clipBehavior: Clip.none,
-                      shape: LiquidRoundedSuperellipse(
-                        borderRadius: widget.barBorderRadius,
-                      ),
+                      shape: _barShape,
                       child: const SizedBox.expand(),
                     ),
                   ),

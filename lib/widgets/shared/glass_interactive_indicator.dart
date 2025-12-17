@@ -116,10 +116,9 @@ class GlassInteractiveIndicator extends StatelessWidget {
 
       indicatorChild = LiquidGlass.withOwnLayer(
         fake: quality.usesBackdropFilter,
-        settings: glassSettings ??
-            _baseGlassSettings.copyWith(
-              visibility: thickness,
-            ),
+        settings: (glassSettings ?? _baseGlassSettings).copyWith(
+          visibility: thickness,
+        ),
         shape: shape,
         child: const GlassGlow(child: SizedBox.expand()),
       );
