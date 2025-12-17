@@ -1,3 +1,11 @@
+# 0.1.5-dev.9
+
+- **FIX**: Fixed `GlassBottomBar` indicator layering issue
+    - Interactive indicator now renders above the glass bar background
+    - Resolves z-index issue affecting both `GlassQuality.standard` and `GlassQuality.premium`
+- **REFACTOR**: Improved `indicatorSettings` consistency across interactive widgets
+    - Standardized indicator glass settings API in `GlassBottomBar`, `GlassTabBar`, and `GlassSegmentedControl`
+
 # 0.1.5-dev.8
 
 - **PERF**: Major performance optimization across all widgets

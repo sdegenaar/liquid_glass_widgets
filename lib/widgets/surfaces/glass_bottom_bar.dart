@@ -138,6 +138,7 @@ class GlassBottomBar extends StatefulWidget {
     this.glassSettings,
     this.showIndicator = true,
     this.indicatorColor,
+    this.indicatorSettings,
     this.selectedIconColor = Colors.white,
     this.unselectedIconColor = Colors.white,
     this.iconSize = 24,
@@ -264,6 +265,18 @@ class GlassBottomBar extends StatefulWidget {
   /// If null, defaults to a semi-transparent color from the theme.
   final Color? indicatorColor;
 
+  /// Glass settings for the draggable indicator.
+  ///
+  /// If null, uses optimized defaults for the indicator:
+  /// - glassColor: Color.from(alpha: 0.1, red: 1, green: 1, blue: 1)
+  /// - saturation: 1.5
+  /// - refractiveIndex: 1.15
+  /// - thickness: 20
+  /// - lightIntensity: 2
+  /// - chromaticAberration: 0.5
+  /// - blur: 0
+  final LiquidGlassSettings? indicatorSettings;
+
   // ===========================================================================
   // Tab Style Properties
   // ===========================================================================
@@ -361,46 +374,31 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
                   tabIndex: widget.selectedIndex,
                   tabCount: widget.tabs.length,
                   indicatorColor: widget.indicatorColor,
+                  indicatorSettings: widget.indicatorSettings,
                   onTabChanged: widget.onTabSelected,
-                  child: Stack(
-                    clipBehavior: Clip.none,
+                  barHeight: widget.barHeight,
+                  barBorderRadius: widget.barBorderRadius,
+                  tabPadding: widget.tabPadding,
+                  child: Row(
                     children: [
-                      Positioned.fill(
-                        child: LiquidGlass.grouped(
-                          clipBehavior: Clip.none,
-                          shape: LiquidRoundedSuperellipse(
-                            borderRadius: widget.barBorderRadius,
+                      for (var i = 0; i < widget.tabs.length; i++)
+                        Expanded(
+                          child: RepaintBoundary(
+                            child: _BottomBarTab(
+                              tab: widget.tabs[i],
+                              selected: widget.selectedIndex == i,
+                              selectedIconColor: widget.selectedIconColor,
+                              unselectedIconColor: widget.unselectedIconColor,
+                              iconSize: widget.iconSize,
+                              textStyle: widget.textStyle,
+                              glowDuration: widget.glowDuration,
+                              glowBlurRadius: widget.glowBlurRadius,
+                              glowSpreadRadius: widget.glowSpreadRadius,
+                              glowOpacity: widget.glowOpacity,
+                              onTap: () => widget.onTabSelected(i),
+                            ),
                           ),
-                          child: const SizedBox.expand(),
                         ),
-                      ),
-                      Container(
-                        padding: widget.tabPadding,
-                        height: widget.barHeight,
-                        child: Row(
-                          children: [
-                            for (var i = 0; i < widget.tabs.length; i++)
-                              Expanded(
-                                child: RepaintBoundary(
-                                  child: _BottomBarTab(
-                                    tab: widget.tabs[i],
-                                    selected: widget.selectedIndex == i,
-                                    selectedIconColor: widget.selectedIconColor,
-                                    unselectedIconColor:
-                                        widget.unselectedIconColor,
-                                    iconSize: widget.iconSize,
-                                    textStyle: widget.textStyle,
-                                    glowDuration: widget.glowDuration,
-                                    glowBlurRadius: widget.glowBlurRadius,
-                                    glowSpreadRadius: widget.glowSpreadRadius,
-                                    glowOpacity: widget.glowOpacity,
-                                    onTap: () => widget.onTabSelected(i),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -685,6 +683,10 @@ class _TabIndicator extends StatefulWidget {
     required this.visible,
     required this.indicatorColor,
     required this.quality,
+    required this.barHeight,
+    required this.barBorderRadius,
+    required this.tabPadding,
+    this.indicatorSettings,
   });
 
   final int tabIndex;
@@ -692,8 +694,12 @@ class _TabIndicator extends StatefulWidget {
   final bool visible;
   final Widget child;
   final Color? indicatorColor;
+  final LiquidGlassSettings? indicatorSettings;
   final ValueChanged<int> onTabChanged;
   final GlassQuality quality;
+  final double barHeight;
+  final double barBorderRadius;
+  final EdgeInsetsGeometry tabPadding;
 
   @override
   State<_TabIndicator> createState() => _TabIndicatorState();
@@ -810,6 +816,18 @@ class _TabIndicatorState extends State<_TabIndicator> {
         _fallbackIndicatorColor;
     final targetAlignment = _computeXAlignmentForTab(widget.tabIndex);
 
+    // Calculate indicator radius from parent widget's barBorderRadius
+    // Access the parent GlassBottomBar to get barBorderRadius
+    // The indicator should match the bar's radius to maintain proper proportions
+    final parentBottomBar =
+        context.findAncestorWidgetOfExactType<GlassBottomBar>();
+    final barRadius = parentBottomBar?.barBorderRadius ?? 32;
+
+    // GlassInteractiveIndicator multiplies by 2 for the glass superellipse shape,
+    // but uses the value directly for the background DecoratedBox.
+    final backgroundRadius = barRadius * 2; // 64
+    final glassRadius = barRadius; // 32 → becomes 64 after internal *2
+
     return GestureDetector(
       onHorizontalDragDown: _onDragDown,
       onHorizontalDragUpdate: _onDragUpdate,
@@ -842,7 +860,18 @@ class _TabIndicatorState extends State<_TabIndicator> {
               return Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  // Subtle background indicator                  // Background indicator
+                  // Glass bar background (rendered FIRST to be at the bottom)
+                  Positioned.fill(
+                    child: LiquidGlass.grouped(
+                      clipBehavior: Clip.none,
+                      shape: LiquidRoundedSuperellipse(
+                        borderRadius: widget.barBorderRadius,
+                      ),
+                      child: const SizedBox.expand(),
+                    ),
+                  ),
+
+                  // Subtle background indicator (rendered SECOND)
                   if (thickness < 1)
                     GlassInteractiveIndicator(
                       velocity: velocity,
@@ -852,12 +881,12 @@ class _TabIndicatorState extends State<_TabIndicator> {
                       quality: widget.quality,
                       indicatorColor: indicatorColor,
                       isBackgroundIndicator: true,
-                      borderRadius: 16, // Default for BottomBar
+                      borderRadius: backgroundRadius,
                       padding: const EdgeInsets.all(4),
                       expansion: 14,
                     ),
 
-                  // Glass indicator
+                  // Glass indicator (rendered THIRD)
                   if (thickness > 0)
                     GlassInteractiveIndicator(
                       velocity: velocity,
@@ -867,13 +896,18 @@ class _TabIndicatorState extends State<_TabIndicator> {
                       quality: widget.quality,
                       indicatorColor: indicatorColor,
                       isBackgroundIndicator: false,
-                      borderRadius: 16,
+                      borderRadius: glassRadius,
                       padding: const EdgeInsets.all(4),
                       expansion: 14,
+                      glassSettings: widget.indicatorSettings,
                     ),
 
-                  // Tab bar content (rendered LAST so it appears on top)
-                  child!,
+                  // Tab bar content (rendered LAST to appear on top)
+                  Container(
+                    padding: widget.tabPadding,
+                    height: widget.barHeight,
+                    child: child!,
+                  ),
                 ],
               );
             },

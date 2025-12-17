@@ -63,7 +63,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  liquid_glass_widgets: ^0.1.5-dev.8
+  liquid_glass_widgets: ^0.1.5-dev.9
 ```
 
 Then run:

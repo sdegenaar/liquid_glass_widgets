@@ -110,6 +110,7 @@ class GlassSegmentedControl extends StatefulWidget {
     this.unselectedTextStyle,
     this.backgroundColor,
     this.indicatorColor,
+    this.indicatorSettings,
     this.glassSettings,
     this.useOwnLayer = false,
     this.quality = GlassQuality.standard,
@@ -186,6 +187,18 @@ class GlassSegmentedControl extends StatefulWidget {
   /// If null, uses a semi-transparent color from the theme.
   final Color? indicatorColor;
 
+  /// Glass settings for the draggable indicator.
+  ///
+  /// If null, uses optimized defaults for the indicator:
+  /// - glassColor: Color.from(alpha: 0.1, red: 1, green: 1, blue: 1)
+  /// - saturation: 1.5
+  /// - refractiveIndex: 1.15
+  /// - thickness: 20
+  /// - lightIntensity: 2
+  /// - chromaticAberration: 0.5
+  /// - blur: 0
+  final LiquidGlassSettings? indicatorSettings;
+
   // ===========================================================================
   // Glass Effect Properties
   // ===========================================================================
@@ -250,6 +263,7 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
         selectedTextStyle: widget.selectedTextStyle,
         unselectedTextStyle: widget.unselectedTextStyle,
         indicatorColor: widget.indicatorColor,
+        indicatorSettings: widget.indicatorSettings,
         borderRadius: widget.borderRadius,
         quality: widget.quality,
       ),
@@ -283,6 +297,7 @@ class _SegmentedControlContent extends StatefulWidget {
     required this.indicatorColor,
     required this.borderRadius,
     required this.quality,
+    this.indicatorSettings,
   });
 
   final List<String> segments;
@@ -291,6 +306,7 @@ class _SegmentedControlContent extends StatefulWidget {
   final TextStyle? selectedTextStyle;
   final TextStyle? unselectedTextStyle;
   final Color? indicatorColor;
+  final LiquidGlassSettings? indicatorSettings;
   final double borderRadius;
   final GlassQuality quality;
 
@@ -474,6 +490,7 @@ class _SegmentedControlContentState extends State<_SegmentedControlContent> {
                       indicatorColor: indicatorColor,
                       isBackgroundIndicator: true,
                       borderRadius: indicatorRadius,
+                      glassSettings: widget.indicatorSettings,
                     ),
 
                   // Glass indicator with glow (shown when dragging)
@@ -487,6 +504,7 @@ class _SegmentedControlContentState extends State<_SegmentedControlContent> {
                       indicatorColor: indicatorColor,
                       isBackgroundIndicator: false,
                       borderRadius: indicatorRadius,
+                      glassSettings: widget.indicatorSettings,
                     ),
 
                   // Segment labels (always on top, not affected by glass)
