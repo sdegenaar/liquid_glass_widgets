@@ -201,8 +201,8 @@ class _GlassMenuState extends State<GlassMenu>
     // Determine alignment based on horizontal screen position
     // This ensures menu doesn't overflow screen edges
     final position = renderBox.localToGlobal(Offset.zero);
-    final screenWidth = MediaQuery.maybeOf(context)?.size.width ??
-                        double.infinity;
+    final screenWidth =
+        MediaQuery.maybeOf(context)?.size.width ?? double.infinity;
 
     // If button is on the right half of the screen, align menu to top-right
     // Otherwise align to top-left (default)
