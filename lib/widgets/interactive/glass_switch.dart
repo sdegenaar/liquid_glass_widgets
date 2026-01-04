@@ -416,7 +416,7 @@ class _GlassSwitchState extends State<GlassSwitch>
         ),
         refractiveIndex: 1.2, // Thin delicate rim (iOS 26 aesthetic)
         thickness: 20,
-        lightAngle: 90, // Vertical light for top/bottom highlights
+        lightAngle: 120, //
         lightIntensity: 2, // Same as Impeller (calibrated shader)
         blur: 0,
       );
@@ -439,7 +439,7 @@ class _GlassSwitchState extends State<GlassSwitch>
         ),
         refractiveIndex: 1.15, // Actual refraction (subtle)
         thickness: 10,
-        lightAngle: 90,
+        lightAngle: 120,
         lightIntensity: 2,
         chromaticAberration: .5,
         blur: 0,

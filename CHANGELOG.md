@@ -1,3 +1,10 @@
+# 0.2.0-dev.2
+
+- **REFACTOR**: Standardized light angle to 120° for interactive widgets
+    - Updated default `lightAngle` from 90° to 120° for improved visual depth
+    - Applied consistently across `GlassInteractiveIndicator`, `GlassSegmentedControl`, and `GlassSwitch`
+    - Better matches Apple's design aesthetics with enhanced depth perception
+
 # 0.2.0-dev.1
 
 - **FEAT**: Universal Platform Support with Lightweight Glass Shader
@@ -11,7 +18,6 @@
       - Premium + Skia/Web → Lightweight shader (automatic fallback)
       - Standard → Always lightweight shader (recommended default)
     - **AdaptiveLiquidGlassLayer**: Drop-in replacement for `LiquidGlassLayer` ensuring proper rendering on all platforms
-      - Prevents FakeGlass (solid color) fallback on Web and Skia
       - Provides scope for grouped widgets while maintaining visual fidelity
     - **Interactive Glow Support**: Shader-based glow effects for button press states on Skia/Web
       - Matches Impeller's `GlassGlow` behavior using shader saturation parameter

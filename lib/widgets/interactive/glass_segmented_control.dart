@@ -251,12 +251,12 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
     // Use custom glass settings or optimized defaults
     final glassSettings = widget.glassSettings ??
         const LiquidGlassSettings(
-          thickness: 30,
-          blur: 3,
-          chromaticAberration: 0.5,
-          lightIntensity: 2,
-          refractiveIndex: 1.15,
-        );
+            thickness: 30,
+            blur: 3,
+            chromaticAberration: 0.5,
+            lightIntensity: 2,
+            refractiveIndex: 1.15,
+            lightAngle: 120);
 
     final backgroundColor = widget.backgroundColor ?? _defaultBackgroundColor;
 

@@ -78,7 +78,7 @@ class GlassInteractiveIndicator extends StatelessWidget {
     refractiveIndex: 1.15,
     lightIntensity: 2,
     chromaticAberration: 0.5,
-    lightAngle: 90,
+    lightAngle: 120,
     blur: 0,
   );
 
