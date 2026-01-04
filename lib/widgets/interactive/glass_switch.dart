@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
+import '../shared/adaptive_glass.dart';
+import '../shared/lightweight_liquid_glass.dart';
 
 /// A glass toggle switch with Apple's signature jump animation.
 ///
@@ -15,7 +17,7 @@ import '../../types/glass_quality.dart';
 ///
 /// ### Grouped Mode (default)
 /// ```dart
-/// LiquidGlassLayer(
+/// AdaptiveLiquidGlassLayer(
 ///   settings: LiquidGlassSettings(...),
 ///   child: Column(
 ///     children: [
@@ -317,29 +319,30 @@ class _GlassSwitchState extends State<GlassSwitch>
                     thumbWidth -
                     overlayWidth; // Anchor on right for backward
 
-            final glassOverlay = thickness > 0
-                ? Positioned(
-                    left: overlayLeft,
-                    top: 2.0,
-                    child: SizedBox(
-                      width: overlayWidth,
-                      height: overlayHeight,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Positioned.fromRelativeRect(
-                            rect: rect,
-                            child: _buildGlassOverlay(
-                              overlayWidth,
-                              overlayHeight,
-                              thickness,
-                            ),
-                          ),
-                        ],
+            final glassOverlay = Positioned(
+              left: overlayLeft,
+              top: 2.0,
+              child: Opacity(
+                opacity: thickness > 0 ? 1.0 : 0.0, // Stable mounting
+                child: SizedBox(
+                  width: overlayWidth,
+                  height: overlayHeight,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned.fromRelativeRect(
+                        rect: rect,
+                        child: _buildGlassOverlay(
+                          overlayWidth,
+                          overlayHeight,
+                          thickness,
+                        ),
                       ),
-                    ),
-                  )
-                : const SizedBox.shrink();
+                    ],
+                  ),
+                ),
+              ),
+            );
 
             return SizedBox(
               width: trackWidth,
@@ -389,32 +392,66 @@ class _GlassSwitchState extends State<GlassSwitch>
   /// Very clear, white glass that goes above and below the thumb nicely.
   Widget _buildGlassOverlay(double width, double height, double thickness) {
     // Use glass_bottom_bar's exact approach: visibility controlled by thickness
-    return LiquidGlass.withOwnLayer(
-      fake: widget.quality.usesBackdropFilter,
-      shape: LiquidRoundedSuperellipse(
-        borderRadius: widget.height,
+    final overlayShape = LiquidRoundedSuperellipse(
+      borderRadius: widget.height,
+    );
+
+    final overlayContent = GlassGlow(
+      child: SizedBox(
+        width: width,
+        height: height,
       ),
-      settings: LiquidGlassSettings(
+    );
+
+    if (widget.quality.usesLightweightShader) {
+      // Lightweight shader settings (Skia renderer)
+      // refractiveIndex controls rim prominence: 0.7 = thin/delicate, 2.0 = bold/heavy
+      final lightweightSettings = LiquidGlassSettings(
         visibility: thickness,
-        // Controlled by animation like glass_bottom_bar
         glassColor: const Color.from(
           alpha: .1,
           red: 1,
           green: 1,
           blue: 1,
         ),
-        refractiveIndex: 1.15,
+        refractiveIndex: 1.2, // Thin delicate rim (iOS 26 aesthetic)
+        thickness: 20,
+        lightAngle: 90, // Vertical light for top/bottom highlights
+        lightIntensity: 2, // Same as Impeller (calibrated shader)
+        blur: 0,
+      );
+
+      return LightweightLiquidGlass(
+        shape: overlayShape,
+        settings: lightweightSettings,
+        child: overlayContent,
+      );
+    } else {
+      // Premium shader settings (Impeller renderer)
+      // refractiveIndex is used for actual light refraction
+      final premiumSettings = LiquidGlassSettings(
+        visibility: thickness,
+        glassColor: const Color.from(
+          alpha: .1,
+          red: 1,
+          green: 1,
+          blue: 1,
+        ),
+        refractiveIndex: 1.15, // Actual refraction (subtle)
         thickness: 10,
+        lightAngle: 90,
         lightIntensity: 2,
         chromaticAberration: .5,
         blur: 0,
-      ),
-      child: GlassGlow(
-        child: SizedBox(
-          width: width,
-          height: height,
-        ),
-      ),
-    );
+      );
+
+      return AdaptiveGlass(
+        shape: overlayShape,
+        settings: premiumSettings,
+        quality: GlassQuality.premium,
+        useOwnLayer: true,
+        child: overlayContent,
+      );
+    }
   }
 }

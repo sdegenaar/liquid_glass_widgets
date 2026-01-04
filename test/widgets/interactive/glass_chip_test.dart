@@ -2,7 +2,7 @@ import 'package:liquid_glass_widgets/types/glass_quality.dart';
 import 'package:liquid_glass_widgets/widgets/interactive/glass_chip.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
 import '../../shared/test_helpers.dart';
 
@@ -11,7 +11,7 @@ void main() {
     testWidgets('can be instantiated with required parameters', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const GlassChip(
               label: 'Test Chip',
@@ -29,7 +29,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const GlassChip(
               label: testLabel,
@@ -44,7 +44,7 @@ void main() {
     testWidgets('displays leading icon when provided', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const GlassChip(
               label: 'Favorite',
@@ -63,7 +63,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassChip(
               label: 'Tag',
@@ -86,7 +86,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassChip(
               label: 'Filter',
@@ -105,7 +105,7 @@ void main() {
     testWidgets('shows selection state when selected', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassChip(
               label: 'Selected',

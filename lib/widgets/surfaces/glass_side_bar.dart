@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
+import '../shared/adaptive_glass.dart';
+import '../shared/adaptive_liquid_glass_layer.dart';
 
 /// A vertical navigation sidebar following Apple's iOS 26 liquid glass design guidelines.
 ///
@@ -129,9 +131,9 @@ class GlassSideBar extends StatelessWidget {
 
     return SizedBox(
       width: width,
-      child: LiquidGlassLayer(
+      child: AdaptiveLiquidGlassLayer(
         settings: effectiveSettings,
-        fake: quality.usesBackdropFilter,
+        quality: quality,
         child: Container(
           decoration: BoxDecoration(
             border: border ??
@@ -146,8 +148,9 @@ class GlassSideBar extends StatelessWidget {
             children: [
               // Glass Background Layer
               Positioned.fill(
-                child: LiquidGlass.grouped(
+                child: AdaptiveGlass.grouped(
                   shape: const LiquidRoundedRectangle(borderRadius: 0),
+                  quality: quality,
                   child: Container(color: effectiveBackgroundColor),
                 ),
               ),

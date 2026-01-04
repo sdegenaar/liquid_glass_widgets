@@ -8,7 +8,7 @@ import 'package:liquid_glass_widgets/widgets/surfaces/glass_app_bar.dart';
 import 'package:liquid_glass_widgets/widgets/surfaces/glass_bottom_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
 import '../shared/test_helpers.dart';
 
@@ -24,8 +24,7 @@ void main() {
         GoldenTestScenario(
           name: 'centered_title',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: const Material(
                 color: Colors.transparent,
@@ -42,8 +41,7 @@ void main() {
         GoldenTestScenario(
           name: 'with_actions',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: Material(
                 color: Colors.transparent,

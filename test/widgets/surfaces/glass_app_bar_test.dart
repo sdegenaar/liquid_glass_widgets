@@ -3,7 +3,7 @@ import 'package:liquid_glass_widgets/widgets/interactive/glass_button.dart';
 import 'package:liquid_glass_widgets/widgets/surfaces/glass_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
 import '../../shared/test_helpers.dart';
 
@@ -12,7 +12,7 @@ void main() {
     testWidgets('can be instantiated with default parameters', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const Scaffold(
               appBar: GlassAppBar(),
@@ -27,7 +27,7 @@ void main() {
     testWidgets('displays title', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const Scaffold(
               appBar: GlassAppBar(
@@ -44,7 +44,7 @@ void main() {
     testWidgets('displays leading widget', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: Scaffold(
               appBar: GlassAppBar(
@@ -65,7 +65,7 @@ void main() {
     testWidgets('displays actions', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: Scaffold(
               appBar: GlassAppBar(
@@ -87,7 +87,7 @@ void main() {
     testWidgets('centers title by default', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const Scaffold(
               appBar: GlassAppBar(
@@ -111,7 +111,7 @@ void main() {
     testWidgets('left-aligns title when centerTitle is false', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const Scaffold(
               appBar: GlassAppBar(

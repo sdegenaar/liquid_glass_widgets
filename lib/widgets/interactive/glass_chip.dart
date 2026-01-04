@@ -58,7 +58,7 @@ import 'glass_button.dart';
 ///
 /// ### Within LiquidGlassLayer (Grouped Mode)
 /// ```dart
-/// LiquidGlassLayer(
+/// AdaptiveLiquidGlassLayer(
 ///   settings: LiquidGlassSettings(
 ///     thickness: 30,
 ///     blur: 3,

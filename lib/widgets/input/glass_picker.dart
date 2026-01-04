@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import '../../types/glass_quality.dart';
+import '../shared/adaptive_glass.dart';
 
 /// A glass picker widget following iOS design patterns.
 ///
@@ -103,17 +104,13 @@ class GlassPicker extends StatelessWidget {
       ),
     );
 
-    final glassWidget = useOwnLayer
-        ? LiquidGlass.withOwnLayer(
-            shape: shape,
-            settings: glassSettings ?? const LiquidGlassSettings(blur: 8),
-            fake: quality.usesBackdropFilter,
-            child: child,
-          )
-        : LiquidGlass.grouped(
-            shape: shape,
-            child: child,
-          );
+    final glassWidget = AdaptiveGlass(
+      shape: shape,
+      settings: glassSettings ?? const LiquidGlassSettings(blur: 8),
+      quality: quality,
+      useOwnLayer: useOwnLayer,
+      child: child,
+    );
 
     return GestureDetector(
       onTap: onTap,

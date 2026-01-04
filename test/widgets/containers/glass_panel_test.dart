@@ -2,7 +2,7 @@ import 'package:liquid_glass_widgets/types/glass_quality.dart';
 import 'package:liquid_glass_widgets/widgets/containers/glass_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
 import '../../shared/test_helpers.dart';
 
@@ -11,7 +11,7 @@ void main() {
     testWidgets('can be instantiated with default parameters', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const GlassPanel(),
           ),
@@ -26,7 +26,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const GlassPanel(
               child: Text(testText),
@@ -41,7 +41,7 @@ void main() {
     testWidgets('has default padding of 24', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const GlassPanel(
               child: Text('Content'),
@@ -58,7 +58,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const GlassPanel(
               padding: customPadding,

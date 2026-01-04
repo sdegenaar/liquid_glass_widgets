@@ -2,10 +2,17 @@
 library;
 
 // Export liquid_glass_renderer primitives
-export 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+export 'package:liquid_glass_renderer/liquid_glass_renderer.dart'
+    hide FakeGlass;
 
 // Types
 export 'types/glass_quality.dart';
+
+// Shared widgets
+export 'widgets/shared/adaptive_glass.dart';
+export 'widgets/shared/adaptive_liquid_glass_layer.dart';
+export 'widgets/shared/lightweight_liquid_glass.dart';
+
 // Widgets - Containers
 export 'widgets/containers/glass_card.dart';
 export 'widgets/containers/glass_container.dart';

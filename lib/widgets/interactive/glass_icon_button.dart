@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
+import 'glass_button.dart';
 
 /// A glass morphism icon button following Apple's iOS 26 design patterns.
 ///
@@ -63,7 +64,7 @@ import '../../types/glass_quality.dart';
 ///
 /// ### In a Toolbar (Grouped Mode)
 /// ```dart
-/// LiquidGlassLayer(
+/// AdaptiveLiquidGlassLayer(
 ///   settings: LiquidGlassSettings(...),
 ///   child: Row(
 ///     children: [
@@ -207,46 +208,21 @@ class GlassIconButton extends StatelessWidget {
       color: isEnabled ? _defaultIconColorEnabled : _defaultIconColorDisabled,
     );
 
-    // Build glow layer
-    final withGlow = GlassGlow(
+    final glassShape = _buildShape();
+
+    return GlassButton.custom(
+      onTap: onPressed ?? () {},
+      enabled: isEnabled,
+      width: size,
+      height: size,
+      shape: glassShape,
+      settings: settings,
+      useOwnLayer: useOwnLayer,
+      quality: quality,
+      interactionScale: interactionScale,
       glowColor: glowColor ?? _defaultGlowColor,
       glowRadius: glowRadius,
       child: iconWidget,
-    );
-
-    // Build glass shape
-    final glassShape = _buildShape();
-    final withGlass = useOwnLayer
-        ? LiquidGlass.withOwnLayer(
-            shape: glassShape,
-            settings: settings ?? const LiquidGlassSettings(),
-            fake: quality.usesBackdropFilter,
-            child: withGlow,
-          )
-        : LiquidGlass.grouped(
-            shape: glassShape,
-            child: withGlow,
-          );
-
-    // Build stretch animation
-    final withStretch = LiquidStretch(
-      interactionScale: isEnabled ? interactionScale : 1.0,
-      child: Semantics(
-        button: true,
-        enabled: isEnabled,
-        child: withGlass,
-      ),
-    );
-
-    // Build gesture handling
-    return GestureDetector(
-      onTap: isEnabled ? onPressed : null,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: size,
-        height: size,
-        child: withStretch,
-      ),
     );
   }
 

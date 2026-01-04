@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:liquid_glass_widgets_example/constants/glass_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -7,14 +8,9 @@ class InputsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LiquidGlassLayer(
-      fake: true,
-      settings: const LiquidGlassSettings(
-        blur: 6,
-        thickness: 30,
-        lightIntensity: 0.4,
-        glassColor: Colors.white10,
-      ),
+    return AdaptiveLiquidGlassLayer(
+      // Widgets inside use LightweightLiquidGlass (standard) or full shader (premium)
+      settings: RecommendedGlassSettings.input,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: const GlassAppBar(

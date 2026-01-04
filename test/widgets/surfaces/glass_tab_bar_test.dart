@@ -12,7 +12,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: settingsWithoutLighting,
             child: GlassTabBar(
               tabs: const [
@@ -38,7 +38,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: settingsWithoutLighting,
             child: StatefulBuilder(
               builder: (context, setState) {
@@ -77,7 +77,7 @@ void main() {
     testWidgets('renders with icons only', (WidgetTester tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: settingsWithoutLighting,
             child: GlassTabBar(
               tabs: const [
@@ -100,7 +100,7 @@ void main() {
     testWidgets('renders with icons and labels', (WidgetTester tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: settingsWithoutLighting,
             child: GlassTabBar(
               height: 56, // Taller for icon + label
@@ -146,7 +146,7 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: settingsWithoutLighting,
             child: GlassTabBar(
               tabs: const [
@@ -177,7 +177,7 @@ void main() {
     testWidgets('renders scrollable tabs', (WidgetTester tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: settingsWithoutLighting,
             child: GlassTabBar(
               isScrollable: true,
@@ -200,7 +200,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: settingsWithoutLighting,
             child: GlassTabBar(
               height: customHeight,
@@ -225,7 +225,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: settingsWithoutLighting,
             child: StatefulBuilder(
               builder: (context, setState) {
@@ -259,7 +259,7 @@ void main() {
     testWidgets('respects quality setting', (WidgetTester tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: settingsWithoutLighting,
             child: GlassTabBar(
               tabs: const [
@@ -326,7 +326,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: settingsWithoutLighting,
             child: StatefulBuilder(
               builder: (context, setState) {
@@ -364,7 +364,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: settingsWithoutLighting,
             child: GlassTabBar(
               tabs: const [

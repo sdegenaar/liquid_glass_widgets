@@ -11,7 +11,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: LiquidGlassLayer(
+          body: AdaptiveLiquidGlassLayer(
             child: Center(
               child: GlassPullDownButton(
                 label: 'Options',

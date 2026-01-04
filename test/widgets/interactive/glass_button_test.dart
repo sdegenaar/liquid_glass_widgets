@@ -3,7 +3,7 @@ import 'package:liquid_glass_widgets/widgets/interactive/glass_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
 import '../../shared/test_helpers.dart';
 
@@ -12,7 +12,7 @@ void main() {
     testWidgets('can be instantiated with required parameters', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassButton(
               icon: CupertinoIcons.heart,
@@ -29,7 +29,7 @@ void main() {
     testWidgets('displays icon correctly', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassButton(
               icon: Icons.star,
@@ -47,7 +47,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassButton(
               icon: Icons.add,
@@ -68,7 +68,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassButton(
               icon: Icons.add,
@@ -88,7 +88,7 @@ void main() {
     testWidgets('renders with reduced opacity when disabled', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassButton(
               icon: Icons.add,
@@ -99,14 +99,14 @@ void main() {
         ),
       );
 
-      final opacity = tester.widget<Opacity>(
-        find.ancestor(
-          of: find.byType(LiquidStretch),
+      final opacities = tester.widgetList<Opacity>(
+        find.descendant(
+          of: find.byType(GlassButton),
           matching: find.byType(Opacity),
         ),
       );
 
-      expect(opacity.opacity, equals(0.5));
+      expect(opacities.any((o) => o.opacity == 0.5), isTrue);
     });
 
     testWidgets('GlassButton.custom displays custom child', (tester) async {
@@ -114,7 +114,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassButton.custom(
               onTap: () {},
@@ -133,7 +133,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassButton(
               icon: Icons.star,
@@ -163,7 +163,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassButton(
               icon: Icons.add,

@@ -1,8 +1,7 @@
-import 'dart:math' as math;
-
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:liquid_glass_widgets_example/constants/glass_settings.dart';
 
 class OverlaysPage extends StatefulWidget {
   const OverlaysPage({super.key});
@@ -19,13 +18,7 @@ class _OverlaysPageState extends State<OverlaysPage> {
   void _showBasicSheet() {
     GlassSheet.show(
       context: context,
-      settings: const LiquidGlassSettings(
-        thickness: 30,
-        blur: 15,
-        glassColor: Colors.white24,
-        lightIntensity: 1.2,
-        ambientStrength: 0.7,
-      ),
+      settings: RecommendedGlassSettings.overlay,
       builder: (context) => Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -84,13 +77,7 @@ class _OverlaysPageState extends State<OverlaysPage> {
   void _showCustomHeightSheet() {
     GlassSheet.show(
       context: context,
-      settings: const LiquidGlassSettings(
-        thickness: 30,
-        blur: 15,
-        glassColor: Colors.white24,
-        lightIntensity: 1.2,
-        ambientStrength: 0.7,
-      ),
+      settings: RecommendedGlassSettings.overlay,
       builder: (context) => Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -140,13 +127,7 @@ class _OverlaysPageState extends State<OverlaysPage> {
     GlassSheet.show(
       context: context,
       isScrollControlled: true,
-      settings: const LiquidGlassSettings(
-        thickness: 30,
-        blur: 15,
-        glassColor: Colors.blue,
-        lightIntensity: 1.2,
-        ambientStrength: 0.7,
-      ),
+      settings: RecommendedGlassSettings.overlay,
       builder: (context) => SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -214,13 +195,7 @@ class _OverlaysPageState extends State<OverlaysPage> {
   void _showNonDismissibleSheet() {
     GlassSheet.show(
       context: context,
-      settings: const LiquidGlassSettings(
-        thickness: 30,
-        blur: 15,
-        glassColor: Colors.white24,
-        lightIntensity: 1.2,
-        ambientStrength: 0.7,
-      ),
+      settings: RecommendedGlassSettings.overlay,
       isDismissible: false,
       enableDrag: false,
       showDragIndicator: false,
@@ -305,13 +280,7 @@ class _OverlaysPageState extends State<OverlaysPage> {
   void _showScrollableSheet() {
     GlassSheet.show(
       context: context,
-      settings: const LiquidGlassSettings(
-        thickness: 30,
-        blur: 15,
-        glassColor: Colors.white24,
-        lightIntensity: 1.2,
-        ambientStrength: 0.7,
-      ),
+      settings: RecommendedGlassSettings.overlay,
       isScrollControlled: true,
       builder: (context) => SizedBox(
         height: MediaQuery.of(context).size.height * 0.7,
@@ -503,12 +472,7 @@ class _OverlaysPageState extends State<OverlaysPage> {
       context: context,
       title: 'Custom Glass',
       message: 'This dialog uses custom glass settings with purple tint.',
-      settings: const LiquidGlassSettings(
-        thickness: 30,
-        blur: 15,
-        glassColor: Colors.purple,
-        lightIntensity: 1.2,
-      ),
+      settings: RecommendedGlassSettings.overlay,
       actions: [
         GlassDialogAction(
           label: 'Close',
@@ -580,15 +544,9 @@ class _OverlaysPageState extends State<OverlaysPage> {
 
   @override
   Widget build(BuildContext context) {
-    return LiquidGlassLayer(
-      fake: true, // Use backdrop filter for scrollable content
-      settings: const LiquidGlassSettings(
-          blur: 6,
-          thickness: 30,
-          ambientStrength: 0.5,
-          lightAngle: 0.25 * math.pi,
-          glassColor: Color.fromRGBO(255, 255, 255, 0.10),
-          lightIntensity: .5),
+    return AdaptiveLiquidGlassLayer(
+      settings: RecommendedGlassSettings.overlay,
+      quality: GlassQuality.standard,
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(

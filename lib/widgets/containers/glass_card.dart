@@ -20,7 +20,7 @@ import 'glass_container.dart';
 /// Uses [LiquidGlass.grouped] and inherits settings from parent
 /// [LiquidGlassLayer]:
 /// ```dart
-/// LiquidGlassLayer(
+/// AdaptiveLiquidGlassLayer(
 ///   settings: LiquidGlassSettings(...),
 ///   child: ListView(
 ///     children: [
@@ -178,10 +178,11 @@ class GlassCard extends StatelessWidget {
 
   /// Rendering quality for the glass effect.
   ///
-  /// Defaults to [GlassQuality.standard], which uses backdrop filter rendering.
-  /// This works reliably in all contexts, including scrollable lists.
+  /// Defaults to [GlassQuality.standard], which uses the lightweight fragment
+  /// shader. This works reliably in all contexts, including scrollable lists.
   ///
-  /// Use [GlassQuality.premium] for shader-based glass in static layouts only.
+  /// Use [GlassQuality.premium] for full-pipeline shader with texture capture
+  /// and chromatic aberration (Impeller only) in static layouts.
   final GlassQuality quality;
 
   /// The clipping behavior for the card.

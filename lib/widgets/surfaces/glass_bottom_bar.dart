@@ -16,6 +16,8 @@ import 'package:motor/motor.dart';
 import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
 import '../interactive/glass_button.dart';
+import '../shared/adaptive_glass.dart';
+import '../shared/adaptive_liquid_glass_layer.dart';
 import '../shared/glass_interactive_indicator.dart';
 
 /// A glass morphism bottom navigation bar following Apple's design patterns.
@@ -40,7 +42,7 @@ import '../shared/glass_interactive_indicator.dart';
 ///
 /// ### Basic Usage
 /// ```dart
-/// LiquidGlassLayer(
+/// AdaptiveLiquidGlassLayer(
 ///   settings: LiquidGlassSettings(
 ///     thickness: 30,
 ///     blur: 3,
@@ -354,65 +356,64 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
     // Use custom glass settings or cached defaults for bottom bars
     final glassSettings = widget.glassSettings ?? _defaultGlassSettings;
 
-    return LiquidGlassLayer(
+    return AdaptiveLiquidGlassLayer(
       settings: glassSettings,
-      fake: widget.quality.usesBackdropFilter,
-      child: LiquidGlassBlendGroup(
-        blend: widget.blendAmount,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: widget.horizontalPadding,
-            vertical: widget.verticalPadding,
-          ),
-          child: Row(
-            spacing: widget.spacing,
-            children: [
-              // Main tab bar with draggable indicator
-              Expanded(
-                child: _TabIndicator(
-                  quality: widget.quality,
-                  visible: widget.showIndicator,
-                  tabIndex: widget.selectedIndex,
-                  tabCount: widget.tabs.length,
-                  indicatorColor: widget.indicatorColor,
-                  indicatorSettings: widget.indicatorSettings,
-                  onTabChanged: widget.onTabSelected,
-                  barHeight: widget.barHeight,
-                  barBorderRadius: widget.barBorderRadius,
-                  tabPadding: widget.tabPadding,
-                  child: Row(
-                    children: [
-                      for (var i = 0; i < widget.tabs.length; i++)
-                        Expanded(
-                          child: RepaintBoundary(
-                            child: _BottomBarTab(
-                              tab: widget.tabs[i],
-                              selected: widget.selectedIndex == i,
-                              selectedIconColor: widget.selectedIconColor,
-                              unselectedIconColor: widget.unselectedIconColor,
-                              iconSize: widget.iconSize,
-                              textStyle: widget.textStyle,
-                              glowDuration: widget.glowDuration,
-                              glowBlurRadius: widget.glowBlurRadius,
-                              glowSpreadRadius: widget.glowSpreadRadius,
-                              glowOpacity: widget.glowOpacity,
-                              onTap: () => widget.onTabSelected(i),
-                            ),
+      quality: widget.quality,
+      blendAmount:
+          widget.blendAmount, // Impeller-only (gracefully ignored on Skia)
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: widget.horizontalPadding,
+          vertical: widget.verticalPadding,
+        ),
+        child: Row(
+          spacing: widget.spacing,
+          children: [
+            // Main tab bar with draggable indicator
+            Expanded(
+              child: _TabIndicator(
+                quality: widget.quality,
+                visible: widget.showIndicator,
+                tabIndex: widget.selectedIndex,
+                tabCount: widget.tabs.length,
+                indicatorColor: widget.indicatorColor,
+                indicatorSettings: widget.indicatorSettings,
+                onTabChanged: widget.onTabSelected,
+                barHeight: widget.barHeight,
+                barBorderRadius: widget.barBorderRadius,
+                tabPadding: widget.tabPadding,
+                child: Row(
+                  children: [
+                    for (var i = 0; i < widget.tabs.length; i++)
+                      Expanded(
+                        child: RepaintBoundary(
+                          child: _BottomBarTab(
+                            tab: widget.tabs[i],
+                            selected: widget.selectedIndex == i,
+                            selectedIconColor: widget.selectedIconColor,
+                            unselectedIconColor: widget.unselectedIconColor,
+                            iconSize: widget.iconSize,
+                            textStyle: widget.textStyle,
+                            glowDuration: widget.glowDuration,
+                            glowBlurRadius: widget.glowBlurRadius,
+                            glowSpreadRadius: widget.glowSpreadRadius,
+                            glowOpacity: widget.glowOpacity,
+                            onTap: () => widget.onTabSelected(i),
                           ),
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
               ),
+            ),
 
-              // Optional extra button
-              if (widget.extraButton != null)
-                _ExtraButton(
-                  config: widget.extraButton!,
-                  quality: widget.quality,
-                ),
-            ],
-          ),
+            // Optional extra button
+            if (widget.extraButton != null)
+              _ExtraButton(
+                config: widget.extraButton!,
+                quality: widget.quality,
+              ),
+          ],
         ),
       ),
     );
@@ -865,45 +866,41 @@ class _TabIndicatorState extends State<_TabIndicator> {
               return Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  // Glass bar background (rendered FIRST to be at the bottom)
+                  // Use AdaptiveGlass instead of LiquidGlass.grouped
+                  // Positionedye.fill(
+                  //   child: AdaptiveGlass(
+                  //     quality: widget.quality,
+                  //     shape: _barShape,
+                  //     settings: const LiquidGlassSettings(), // Inherits
+                  //     useOwnLayer: false,
+                  //     child: const SizedBox.expand(),
+                  //   ),
+                  // ),
                   Positioned.fill(
-                    child: LiquidGlass.grouped(
-                      clipBehavior: Clip.none,
+                    child: AdaptiveGlass.grouped(
+                      quality: widget.quality,
                       shape: _barShape,
                       child: const SizedBox.expand(),
                     ),
                   ),
 
-                  // Subtle background indicator (rendered SECOND)
-                  if (thickness < 1)
-                    GlassInteractiveIndicator(
-                      velocity: velocity,
-                      itemCount: widget.tabCount,
-                      alignment: alignment,
-                      thickness: thickness,
-                      quality: widget.quality,
-                      indicatorColor: indicatorColor,
-                      isBackgroundIndicator: true,
-                      borderRadius: backgroundRadius,
-                      padding: const EdgeInsets.all(4),
-                      expansion: 14,
-                    ),
-
-                  // Glass indicator (rendered THIRD)
-                  if (thickness > 0)
-                    GlassInteractiveIndicator(
-                      velocity: velocity,
-                      itemCount: widget.tabCount,
-                      alignment: alignment,
-                      thickness: thickness,
-                      quality: widget.quality,
-                      indicatorColor: indicatorColor,
-                      isBackgroundIndicator: false,
-                      borderRadius: glassRadius,
-                      padding: const EdgeInsets.all(4),
-                      expansion: 14,
-                      glassSettings: widget.indicatorSettings,
-                    ),
+                  // Unified Glass Indicator with jelly physics
+                  // The internal cross-fade in GlassInteractiveIndicator prevents flickering
+                  GlassInteractiveIndicator(
+                    velocity: velocity,
+                    itemCount: widget.tabCount,
+                    alignment: alignment,
+                    thickness: thickness,
+                    quality: widget.quality,
+                    indicatorColor: indicatorColor,
+                    isBackgroundIndicator:
+                        false, // Internal logic now handles both
+                    borderRadius:
+                        thickness < 1 ? backgroundRadius : glassRadius,
+                    padding: const EdgeInsets.all(4),
+                    expansion: 14,
+                    glassSettings: widget.indicatorSettings,
+                  ),
 
                   // Tab bar content (rendered LAST to appear on top)
                   Container(

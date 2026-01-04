@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:motor/motor.dart';
 
 import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
+import 'adaptive_glass.dart';
 
 /// A shared component that renders the interactive "Jelly" indicator
 /// used in [GlassTabBar], [GlassSegmentedControl], and [GlassBottomBar].
@@ -76,6 +78,7 @@ class GlassInteractiveIndicator extends StatelessWidget {
     refractiveIndex: 1.15,
     lightIntensity: 2,
     chromaticAberration: 0.5,
+    lightAngle: 90,
     blur: 0,
   );
 
@@ -93,36 +96,55 @@ class GlassInteractiveIndicator extends StatelessWidget {
       thickness,
     );
 
-    Widget indicatorChild;
-
-    if (isBackgroundIndicator) {
-      // Fade out background indicator when drag becomes active
-      indicatorChild = AnimatedOpacity(
-        duration: const Duration(milliseconds: 120),
-        opacity: thickness <= 0.2 ? 1 : 0,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: indicatorColor,
-            borderRadius: BorderRadius.circular(borderRadius),
-          ),
-          child: const SizedBox.expand(),
+    // 1. Background Indicator (Resting state)
+    // Fade out as thickness increases
+    final backgroundOpacity = (1.0 - (thickness / 0.15)).clamp(0.0, 1.0);
+    final backgroundIndicator = Opacity(
+      opacity: backgroundOpacity,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: indicatorColor,
+          borderRadius: BorderRadius.circular(borderRadius),
         ),
-      );
-    } else {
-      // Render glass indicator
-      final shape = useSuperellipse
-          ? LiquidRoundedSuperellipse(borderRadius: borderRadius * 2)
-          : LiquidRoundedRectangle(borderRadius: borderRadius);
+        child: const SizedBox.expand(),
+      ),
+    );
 
-      indicatorChild = LiquidGlass.withOwnLayer(
-        fake: quality.usesBackdropFilter,
-        settings: (glassSettings ?? _baseGlassSettings).copyWith(
-          visibility: thickness,
-        ),
-        shape: shape,
-        child: const GlassGlow(child: SizedBox.expand()),
-      );
-    }
+    // 2. Glass Indicator (Active/Dragging state)
+    final glassOpacity = thickness.clamp(0.0, 1.0);
+    final shape = useSuperellipse
+        ? LiquidRoundedSuperellipse(borderRadius: borderRadius * 2)
+        : LiquidRoundedRectangle(borderRadius: borderRadius);
+
+    final indicatorSettings = glassSettings ?? _baseGlassSettings;
+
+    // Use AdaptiveGlass for proper Impeller/Skia fallback
+    // Premium quality on iOS with Impeller → best quality
+    // Premium quality on web/Skia → lightweight shader (not FakeGlass!)
+    final glassWidget = AdaptiveGlass(
+      shape: shape,
+      settings: indicatorSettings,
+      quality: quality,
+      useOwnLayer: !kIsWeb, // Indicators always use their own layer
+      child: const GlassGlow(child: SizedBox.expand()),
+    );
+
+    final interactiveIndicator = Opacity(
+      opacity: glassOpacity,
+      // Only mount the glass widget when we need it
+      // Added cross-fade buffer to ensure smooth transition
+      child: thickness > 0.05
+          ? RepaintBoundary(child: glassWidget)
+          : const SizedBox.expand(),
+    );
+
+    // Unified indicator child
+    final indicatorChild = Stack(
+      children: [
+        if (backgroundOpacity > 0) backgroundIndicator,
+        if (glassOpacity > 0.05) interactiveIndicator,
+      ],
+    );
 
     return Positioned.fill(
       child: Padding(

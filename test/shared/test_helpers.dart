@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
 /// Standard constraints for golden test scenarios
 final testScenarioConstraints = BoxConstraints.tight(const Size(500, 500));
@@ -68,8 +69,8 @@ Widget buildWithGradientBackground(Widget child) {
 Widget buildWithGradientAndGlass(Widget child,
     {LiquidGlassSettings? settings}) {
   return buildWithGradientBackground(
-    LiquidGlassLayer(
-      fake: true, // Use backdrop filter for tests
+    AdaptiveLiquidGlassLayer(
+      // Use backdrop filter for tests
       settings: settings ?? defaultTestGlassSettings,
       child: child,
     ),
@@ -103,8 +104,8 @@ Widget createTestAppWithGlassLayer({
 }) {
   return createTestApp(
     theme: theme,
-    child: LiquidGlassLayer(
-      fake: true, // Use backdrop filter to avoid shader issues in tests
+    child: AdaptiveLiquidGlassLayer(
+      // Use backdrop filter to avoid shader issues in tests
       settings: settings ?? defaultTestGlassSettings,
       child: child,
     ),

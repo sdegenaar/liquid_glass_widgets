@@ -4,6 +4,7 @@ import 'package:motor/motor.dart';
 
 import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
+import '../shared/adaptive_liquid_glass_layer.dart';
 import '../shared/glass_interactive_indicator.dart';
 
 /// A glass morphism segmented control following Apple's design patterns.
@@ -20,6 +21,17 @@ import '../shared/glass_interactive_indicator.dart';
 /// - **Sharp Text**: Selected text stays sharp above the glass
 /// - **Flexible Sizing**: Automatically sizes segments evenly
 /// - **Customizable Appearance**: Full control over colors, sizes, and effects
+///
+/// ## Performance Note
+///
+/// When placing inside glass containers (GlassCard, GlassPanel) with blur,
+/// use one of these approaches for best performance:
+/// - Set parent container to `quality: GlassQuality.premium` (no BackdropFilter)
+/// - Or set parent settings to `blur: 0` (skips BackdropFilter)
+/// - Or place outside glass containers (like bottom bars)
+///
+/// Standard quality glass containers with blur may show minor flicker during
+/// indicator animations due to BackdropFilter recomposition.
 ///
 /// ## Usage
 ///
@@ -38,7 +50,7 @@ import '../shared/glass_interactive_indicator.dart';
 ///
 /// ### Within LiquidGlassLayer (Grouped Mode)
 /// ```dart
-/// LiquidGlassLayer(
+/// AdaptiveLiquidGlassLayer(
 ///   settings: LiquidGlassSettings(
 ///     thickness: 30,
 ///     blur: 3,
@@ -269,16 +281,20 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
       ),
     );
 
+    // Isolate from parent glass containers (e.g., GlassCard)
+    // Prevents indicator animations from triggering parent BackdropFilter recomposition
+    final isolatedControl = RepaintBoundary(child: control);
+
     // Wrap with layer if needed
     if (widget.useOwnLayer) {
-      return LiquidGlassLayer(
+      return AdaptiveLiquidGlassLayer(
         settings: glassSettings,
-        fake: widget.quality.usesBackdropFilter,
-        child: control,
+        quality: widget.quality,
+        child: isolatedControl,
       );
     }
 
-    return control;
+    return isolatedControl;
   }
 }
 
@@ -476,11 +492,16 @@ class _SegmentedControlContentState extends State<_SegmentedControlContent> {
                 ? 1.0
                 : 0.0,
             builder: (context, thickness, child) {
-              return Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  // Subtle background indicator (shown when not dragging)
-                  if (thickness < 1)
+              // Wrap entire indicator stack in RepaintBoundary to prevent
+              // background and glass indicators from causing separate flickers
+              return RepaintBoundary(
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    // Subtle background indicator (shown when not dragging)
+                    // Parent isolation prevents flickering with GlassCard
+                    // Unified Glass Indicator with jelly physics
+                    // The internal cross-fade in GlassInteractiveIndicator prevents flickering
                     GlassInteractiveIndicator(
                       velocity: velocity,
                       itemCount: widget.segments.length,
@@ -488,28 +509,16 @@ class _SegmentedControlContentState extends State<_SegmentedControlContent> {
                       thickness: thickness,
                       quality: widget.quality,
                       indicatorColor: indicatorColor,
-                      isBackgroundIndicator: true,
+                      isBackgroundIndicator:
+                          false, // Internal logic now handles both
                       borderRadius: indicatorRadius,
                       glassSettings: widget.indicatorSettings,
                     ),
 
-                  // Glass indicator with glow (shown when dragging)
-                  if (thickness > 0)
-                    GlassInteractiveIndicator(
-                      velocity: velocity,
-                      itemCount: widget.segments.length,
-                      alignment: alignment,
-                      thickness: thickness,
-                      quality: widget.quality,
-                      indicatorColor: indicatorColor,
-                      isBackgroundIndicator: false,
-                      borderRadius: indicatorRadius,
-                      glassSettings: widget.indicatorSettings,
-                    ),
-
-                  // Segment labels (always on top, not affected by glass)
-                  child!,
-                ],
+                    // Segment labels (always on top, not affected by glass)
+                    child!,
+                  ],
+                ),
               );
             },
             child: Row(

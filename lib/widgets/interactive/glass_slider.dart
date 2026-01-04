@@ -6,6 +6,8 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
+import '../shared/adaptive_glass.dart';
+import '../shared/inherited_liquid_glass.dart';
 
 /// A glass morphism slider following Apple's iOS 26 design patterns.
 ///
@@ -53,7 +55,7 @@ import '../../utils/draggable_indicator_physics.dart';
 ///
 /// ### Within LiquidGlassLayer (Grouped Mode)
 /// ```dart
-/// LiquidGlassLayer(
+/// AdaptiveLiquidGlassLayer(
 ///   settings: LiquidGlassSettings(
 ///     thickness: 30,
 ///     blur: 3,
@@ -199,10 +201,11 @@ class GlassSlider extends StatefulWidget {
 
   /// Rendering quality for the glass effect.
   ///
-  /// Defaults to [GlassQuality.standard], which uses backdrop filter rendering.
-  /// This works reliably in all contexts, including scrollable lists.
+  /// Defaults to [GlassQuality.standard], which uses the lightweight fragment
+  /// shader. This works reliably in all contexts, including scrollable lists.
   ///
-  /// Use [GlassQuality.premium] for shader-based glass in static layouts only.
+  /// Use [GlassQuality.premium] for full-pipeline shader with texture capture
+  /// and chromatic aberration (Impeller only) in static layouts.
   final GlassQuality quality;
 
   @override
@@ -214,10 +217,6 @@ class _GlassSliderState extends State<GlassSlider>
   // Cache default colors to avoid allocations
   static const _defaultThumbShadowColor =
       Color(0x40000000); // black.withValues(alpha: 0.25)
-  static const _defaultThumbColorDragging =
-      Color(0x00FFFFFF); // white.withValues(alpha: 0) - invisible
-  static const _defaultThumbColorRest =
-      Color(0x99FFFFFF); // white.withValues(alpha: 0.6)
 
   double? _dragValue;
   bool _isDragging = false;
@@ -496,26 +495,19 @@ class _GlassSliderState extends State<GlassSlider>
       ),
     );
 
-    if (widget.useOwnLayer) {
-      return LiquidGlass.withOwnLayer(
-        shape: LiquidRoundedRectangle(
-          borderRadius: widget.trackHeight / 2,
-        ),
-        settings: widget.settings ??
-            const LiquidGlassSettings(
-              blur: 8,
-            ),
-        fake: widget.quality.usesBackdropFilter,
-        child: trackWidget,
-      );
-    } else {
-      return LiquidGlass.grouped(
-        shape: LiquidRoundedRectangle(
-          borderRadius: widget.trackHeight / 2,
-        ),
-        child: trackWidget,
-      );
-    }
+    final trackShape = LiquidRoundedRectangle(
+      borderRadius: widget.trackHeight / 2,
+    );
+    final trackSettings =
+        widget.settings ?? InheritedLiquidGlass.ofOrDefault(context);
+
+    return AdaptiveGlass(
+      shape: trackShape,
+      settings: trackSettings,
+      quality: widget.quality,
+      useOwnLayer: widget.useOwnLayer,
+      child: trackWidget,
+    );
   }
 
   Widget _buildThumbGlass() {
@@ -524,21 +516,36 @@ class _GlassSliderState extends State<GlassSlider>
     final thumbHeight = widget.thumbRadius * 1.6; // Shorter height
     final borderRadius = thumbHeight / 2 - 2;
 
-    // iOS 26 behavior: Solid white → Pure transparent glass when dragging
-    // At rest: opaque white pill
-    // When dragging: almost completely transparent with strong glass effects
+    // iOS 26 behavior: Solid white pill → Transparent glass when dragging
+    // At rest: subtle glass on bright white pill
+    // When dragging: strong glass effects with transparency
     final glassColor = _isDragging
         ? const Color.from(alpha: 0.1, red: 1, green: 1, blue: 1) // transparent
-        : const Color.from(alpha: 1, red: 1, green: 1, blue: 1); // opaque
+        : const Color.from(
+            alpha: 0.15, red: 1, green: 1, blue: 1); // very subtle tint at rest
+
+    final lightWightShader = widget.quality.usesLightweightShader;
 
     // Strong refraction when liquid
-    final refractiveIndex = _isDragging ? 1.15 : 1.15;
+    // Skia fallback needs a higher multiplier to match the "pop" of real refraction
+    final refractiveIndex = _isDragging
+        ? (lightWightShader ? 1.2 : 1.15)
+        : 0.7; // Thin delicate rim at rest
+
     // Rainbow edges when liquid
-    final chromaticAberration = _isDragging ? 0.5 : 0.2;
+    final chromaticAberration =
+        _isDragging ? 0.5 : 0.0; // No aberration at rest
+
     // Thicker glass depth when liquid
-    final thickness = _isDragging ? 10.0 : 25.0;
+    final thickness =
+        _isDragging ? (lightWightShader ? 20.0 : 10.0) : 5.0; // Minimal at rest
+
     // Bright highlights when liquid
-    final lightIntensity = _isDragging ? 2.0 : 1.8;
+    // Skia fallback needs punchier highlights to compensate for lack of backdrop sampling
+    final lightIntensity = _isDragging
+        ? (lightWightShader ? 0.5 : 2.0)
+        : 0.5; // Subtle lighting at rest
+
     // Less blur (sharper) when liquid
     final blur = _isDragging ? 0.0 : 2.0;
 
@@ -546,10 +553,11 @@ class _GlassSliderState extends State<GlassSlider>
       width: thumbWidth,
       height: thumbHeight,
       decoration: BoxDecoration(
-        // iOS 26: Start more opaque, become transparent when dragging
+        // iOS 26: Start opaque white, become transparent when dragging
+        // Match the glassColor for consistent appearance
         color: _isDragging
-            ? _defaultThumbColorDragging // invisible when dragging
-            : _defaultThumbColorRest, // Solid white at rest
+            ? Colors.transparent // invisible when dragging
+            : Colors.white.withValues(alpha: 0.85), // Bright white at rest
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: _isDragging
             ? null
@@ -571,22 +579,26 @@ class _GlassSliderState extends State<GlassSlider>
     );
 
     // Use liquid glass with dramatic animated properties
-    //if (widget.useOwnLayer) {
-    return LiquidGlass.withOwnLayer(
-      fake: widget.quality.usesBackdropFilter,
-      shape: LiquidRoundedSuperellipse(
-        borderRadius: borderRadius,
-      ),
-      settings: LiquidGlassSettings(
-        glassColor: glassColor,
-        refractiveIndex: refractiveIndex,
-        thickness: thickness,
-        lightIntensity: lightIntensity,
-        chromaticAberration: chromaticAberration,
-        blur: blur,
-        // saturation: 1.3,
-        // ambientStrength: 0.7,
-      ),
+    final thumbShape = LiquidRoundedSuperellipse(
+      borderRadius: borderRadius,
+    );
+    final thumbSettings = LiquidGlassSettings(
+      glassColor: glassColor,
+      refractiveIndex: refractiveIndex,
+      thickness: thickness,
+      lightIntensity: lightIntensity,
+      chromaticAberration: chromaticAberration,
+      blur: blur,
+      lightAngle: 90,
+      ambientStrength:
+          _isDragging ? 0.3 : 0.8, // Bright at rest, darker when dragging
+    );
+
+    return AdaptiveGlass(
+      shape: thumbShape,
+      settings: thumbSettings,
+      quality: widget.quality,
+      useOwnLayer: true, // Thumb always uses its own layer
       child: thumbContent,
     );
   }

@@ -4,6 +4,7 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import '../../types/glass_quality.dart';
 import '../containers/glass_card.dart';
 import '../interactive/glass_button.dart';
+import '../shared/adaptive_liquid_glass_layer.dart';
 
 /// A glass morphism alert dialog following Apple's iOS design patterns.
 ///
@@ -295,9 +296,9 @@ class GlassDialog extends StatelessWidget {
           settings: settings,
           quality: quality,
           padding: const EdgeInsets.all(20),
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: settings ?? const LiquidGlassSettings(),
-            fake: quality.usesBackdropFilter,
+            quality: quality,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

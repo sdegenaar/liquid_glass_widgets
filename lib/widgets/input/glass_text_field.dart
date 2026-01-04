@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
+import '../shared/adaptive_glass.dart';
+import '../shared/inherited_liquid_glass.dart';
 
 /// A glass text field widget following Apple's input field design.
 ///
@@ -13,7 +15,7 @@ import '../../types/glass_quality.dart';
 ///
 /// ### Grouped Mode (default)
 /// ```dart
-/// LiquidGlassLayer(
+/// AdaptiveLiquidGlassLayer(
 ///   settings: LiquidGlassSettings(...),
 ///   child: Column(
 ///     children: [
@@ -221,8 +223,6 @@ class _GlassTextFieldState extends State<GlassTextField> {
     super.dispose();
   }
 
-  static const _defaultSettings = LiquidGlassSettings(blur: 8);
-
   static const _defaultTextStyle = TextStyle(
     color: Color.fromRGBO(255, 255, 255, 0.9), // Colors.white with 0.9 alpha
     fontSize: 16,
@@ -292,17 +292,13 @@ class _GlassTextFieldState extends State<GlassTextField> {
     );
 
     // Apply glass effect
-    final glassWidget = widget.useOwnLayer
-        ? LiquidGlass.withOwnLayer(
-            shape: widget.shape,
-            settings: widget.settings ?? _defaultSettings,
-            fake: widget.quality.usesBackdropFilter,
-            child: textFieldContent,
-          )
-        : LiquidGlass.grouped(
-            shape: widget.shape,
-            child: textFieldContent,
-          );
+    final glassWidget = AdaptiveGlass(
+      shape: widget.shape,
+      settings: widget.settings ?? InheritedLiquidGlass.ofOrDefault(context),
+      quality: widget.quality,
+      useOwnLayer: widget.useOwnLayer,
+      child: textFieldContent,
+    );
 
     return Opacity(
       opacity: widget.enabled ? 1.0 : 0.5,

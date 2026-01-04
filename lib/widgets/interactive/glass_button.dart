@@ -4,16 +4,25 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
 import '../../types/glass_button_style.dart';
+import '../shared/adaptive_glass.dart';
+import '../shared/inherited_liquid_glass.dart';
 
 /// Glass morphism button with scale animation and glow effects.
 ///
 /// This button provides a complete liquid glass experience with:
 /// - Liquid glass visual effect with customizable settings
 /// - Scale animation (squash & stretch) when pressed
-/// - Touch-responsive glow effect on interaction
+/// - Touch-responsive glow effect on interaction (Impeller) or shader-based
+///   glow (Skia)
 /// - Full control over all animation and visual properties
 /// - Accessibility support with semantic labels
 /// - Flexible content support (icon or custom child)
+///
+/// ## Platform Rendering
+///
+/// The glow effect adapts to the platform:
+/// - **Impeller**: Uses advanced compositing via [GlassGlow]
+/// - **Skia/Web**: Animates shader saturation parameter for frosted glow
 ///
 /// ## Usage Modes
 ///
@@ -21,7 +30,7 @@ import '../../types/glass_button_style.dart';
 /// Uses [LiquidGlass.grouped] and inherits settings from parent
 /// [LiquidGlassLayer]:
 /// ```dart
-/// LiquidGlassLayer(
+/// AdaptiveLiquidGlassLayer(
 ///   settings: LiquidGlassSettings(...),
 ///   child: Column(
 ///     children: [
@@ -80,7 +89,7 @@ import '../../types/glass_button_style.dart';
 ///   child: Text('Click Me', style: TextStyle(color: Colors.white)),
 /// )
 /// ```
-class GlassButton extends StatelessWidget {
+class GlassButton extends StatefulWidget {
   /// Creates a glass button with an icon.
   const GlassButton({
     required this.icon,
@@ -352,89 +361,141 @@ class GlassButton extends StatelessWidget {
   /// Defaults to [HitTestBehavior.opaque].
   final HitTestBehavior glowHitTestBehavior;
 
-  static const _defaultSettings = LiquidGlassSettings();
+  @override
+  State<GlassButton> createState() => _GlassButtonState();
+}
+
+class _GlassButtonState extends State<GlassButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _saturationController;
+  late final Animation<double> _saturationAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _saturationController = AnimationController(
+      duration: const Duration(milliseconds: 50), // Fast, instant response
+      vsync: this,
+    );
+    _saturationAnimation = CurvedAnimation(
+      parent: _saturationController,
+      curve: Curves.easeOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _saturationController.dispose();
+    super.dispose();
+  }
+
+  void _handleTapDown(TapDownDetails details) {
+    if (!widget.enabled) return;
+    _saturationController.forward();
+  }
+
+  void _handleTapUp(TapUpDetails details) {
+    if (!widget.enabled) return;
+    _saturationController.reverse();
+  }
+
+  void _handleTapCancel() {
+    if (!widget.enabled) return;
+    _saturationController.reverse();
+  }
 
   @override
   Widget build(BuildContext context) {
     // Build the content widget (either icon or custom child)
     final contentWidget = SizedBox(
-      height: height,
-      width: width,
+      height: widget.height,
+      width: widget.width,
       child: Center(
-        child: child ??
+        child: widget.child ??
             Icon(
-              icon,
-              size: iconSize,
-              color: iconColor,
+              widget.icon,
+              size: widget.iconSize,
+              color: widget.iconColor,
             ),
       ),
     );
 
-    // Build the glass effect widget
-    Widget glassWidget;
+    // Animate the glass effect with saturation for Skia glow
+    return AnimatedBuilder(
+      animation: _saturationAnimation,
+      builder: (context, _) {
+        // Merge animated saturation into settings for Skia shader glow
+        // Inherit settings from parent layer when not explicitly provided
+        final baseSettings =
+            widget.settings ?? InheritedLiquidGlass.ofOrDefault(context);
+        final saturationValue = _saturationAnimation.value;
+        final animatedSettings = baseSettings.copyWith(
+          saturation: saturationValue,
+        );
 
-    if (style == GlassButtonStyle.transparent) {
-      // Just interaction effects, no glass shape
-      glassWidget = GlassGlow(
-        glowColor: glowColor,
-        glowRadius: glowRadius,
-        hitTestBehavior: glowHitTestBehavior,
-        child: contentWidget,
-      );
-    } else {
-      glassWidget = useOwnLayer
-          ? LiquidGlass.withOwnLayer(
-              shape: shape,
-              settings: settings ?? _defaultSettings,
-              fake: quality.usesBackdropFilter,
-              child: GlassGlow(
-                glowColor: glowColor,
-                glowRadius: glowRadius,
-                hitTestBehavior: glowHitTestBehavior,
-                child: contentWidget,
-              ),
-            )
-          : LiquidGlass.grouped(
-              shape: shape,
-              child: GlassGlow(
-                glowColor: glowColor,
-                glowRadius: glowRadius,
-                hitTestBehavior: glowHitTestBehavior,
-                child: contentWidget,
-              ),
-            );
-    }
+        // Build the glass effect widget
+        Widget glassWidget;
 
-    // Wrap with stretch animation
-    // Performance: RepaintBoundary isolates button animations from parent
-    final stretchWidget = RepaintBoundary(
-      child: LiquidStretch(
-        interactionScale: interactionScale,
-        stretch: stretch,
-        resistance: resistance,
-        hitTestBehavior: stretchHitTestBehavior,
-        child: Semantics(
-          button: true,
-          label: label.isNotEmpty ? label : null,
-          enabled: enabled,
-          child: glassWidget,
-        ),
-      ),
-    );
-
-    // Apply opacity when disabled
-    final finalWidget = enabled
-        ? stretchWidget
-        : Opacity(
-            opacity: 0.5,
-            child: stretchWidget,
+        if (widget.style == GlassButtonStyle.transparent) {
+          // Just interaction effects, no glass shape
+          glassWidget = GlassGlow(
+            glowColor: widget.glowColor,
+            glowRadius: widget.glowRadius,
+            hitTestBehavior: widget.glowHitTestBehavior,
+            child: contentWidget,
+          );
+        } else {
+          final glowContent = GlassGlow(
+            glowColor: widget.glowColor,
+            glowRadius: widget.glowRadius,
+            hitTestBehavior: widget.glowHitTestBehavior,
+            child: contentWidget,
           );
 
-    // Wrap with gesture detector
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      behavior: HitTestBehavior.opaque,
-      child: finalWidget,
+          glassWidget = AdaptiveGlass(
+            shape: widget.shape,
+            settings: animatedSettings,
+            quality: widget.quality,
+            useOwnLayer: widget.useOwnLayer,
+            child: glowContent,
+          );
+        }
+
+        // Wrap with stretch animation
+        // Performance: RepaintBoundary isolates button animations from parent
+        final stretchWidget = RepaintBoundary(
+          child: LiquidStretch(
+            interactionScale: widget.interactionScale,
+            stretch: widget.stretch,
+            resistance: widget.resistance,
+            hitTestBehavior: widget.stretchHitTestBehavior,
+            child: Semantics(
+              button: true,
+              label: widget.label.isNotEmpty ? widget.label : null,
+              enabled: widget.enabled,
+              child: glassWidget,
+            ),
+          ),
+        );
+
+        // Apply opacity when disabled
+        final finalWidget = widget.enabled
+            ? stretchWidget
+            : Opacity(
+                opacity: 0.5,
+                child: stretchWidget,
+              );
+
+        // Wrap with gesture detector
+        return GestureDetector(
+          onTap: widget.enabled ? widget.onTap : null,
+          onTapDown: _handleTapDown,
+          onTapUp: _handleTapUp,
+          onTapCancel: _handleTapCancel,
+          behavior: HitTestBehavior.opaque,
+          child: finalWidget,
+        );
+      },
     );
   }
 }

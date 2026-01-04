@@ -5,7 +5,7 @@ import 'package:alchemist/alchemist.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/widgets/input/glass_text_field.dart';
 import 'package:flutter/material.dart';
-import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
 import '../shared/test_helpers.dart';
 
@@ -20,8 +20,7 @@ void main() {
         GoldenTestScenario(
           name: 'default',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: const GlassTextField(
                 placeholder: 'Enter text...',
@@ -32,8 +31,7 @@ void main() {
         GoldenTestScenario(
           name: 'with_prefix_icon',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: const GlassTextField(
                 placeholder: 'Search...',
@@ -45,8 +43,7 @@ void main() {
         GoldenTestScenario(
           name: 'with_prefix_and_suffix',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: const GlassTextField(
                 placeholder: 'Email',
@@ -59,8 +56,7 @@ void main() {
         GoldenTestScenario(
           name: 'disabled',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: const GlassTextField(
                 placeholder: 'Disabled field',

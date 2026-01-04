@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
+import '../shared/adaptive_liquid_glass_layer.dart';
+import '../shared/adaptive_glass.dart';
 
 /// A glass morphism bottom sheet following Apple's iOS 26 design patterns.
 ///
@@ -246,37 +248,43 @@ class GlassSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LiquidGlass.withOwnLayer(
-      shape: const LiquidRoundedSuperellipse(borderRadius: 20),
-      settings: settings ?? const LiquidGlassSettings(),
-      fake: quality.usesBackdropFilter,
-      child: LiquidGlassLayer(
-        settings: settings ?? const LiquidGlassSettings(),
-        fake: quality.usesBackdropFilter,
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (showDragIndicator) ...[
-                const SizedBox(height: 8),
-                _GlassDragIndicator(
-                  color: dragIndicatorColor,
-                ),
-                const SizedBox(height: 8),
-              ] else
-                const SizedBox(height: 16),
-              if (padding != null)
-                Padding(
-                  padding: padding!,
-                  child: child,
-                )
-              else
-                child,
+    const shape = LiquidRoundedSuperellipse(borderRadius: 20);
+    final effectiveSettings = settings ?? const LiquidGlassSettings();
+
+    final sheetContent = AdaptiveLiquidGlassLayer(
+      settings: effectiveSettings,
+      quality: quality,
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showDragIndicator) ...[
+              const SizedBox(height: 8),
+              _GlassDragIndicator(
+                color: dragIndicatorColor,
+              ),
+              const SizedBox(height: 8),
+            ] else
               const SizedBox(height: 16),
-            ],
-          ),
+            if (padding != null)
+              Padding(
+                padding: padding!,
+                child: child,
+              )
+            else
+              child,
+            const SizedBox(height: 16),
+          ],
         ),
       ),
+    );
+
+    return AdaptiveGlass(
+      shape: shape,
+      settings: effectiveSettings,
+      quality: quality,
+      useOwnLayer: true,
+      child: sheetContent,
     );
   }
 }

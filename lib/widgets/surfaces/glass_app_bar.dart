@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
+import '../shared/adaptive_glass.dart';
 
 /// A glass morphism app bar following Apple's navigation bar design.
 ///
@@ -14,7 +15,7 @@ import '../../types/glass_quality.dart';
 ///
 /// ### Grouped Mode (requires wrapping Scaffold in LiquidGlassLayer)
 /// ```dart
-/// LiquidGlassLayer(
+/// AdaptiveLiquidGlassLayer(
 ///   settings: LiquidGlassSettings(...),
 ///   child: Scaffold(
 ///     appBar: GlassAppBar(
@@ -221,17 +222,13 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
     );
 
     // Apply glass effect
-    final glassWidget = useOwnLayer
-        ? LiquidGlass.withOwnLayer(
-            shape: _appBarShape,
-            settings: settings ?? _defaultSettings,
-            fake: quality.usesBackdropFilter,
-            child: appBarContent,
-          )
-        : LiquidGlass.grouped(
-            shape: _appBarShape,
-            child: appBarContent,
-          );
+    final glassWidget = AdaptiveGlass(
+      shape: _appBarShape,
+      settings: settings ?? _defaultSettings,
+      quality: quality,
+      useOwnLayer: useOwnLayer,
+      child: appBarContent,
+    );
 
     return ColoredBox(
       color: backgroundColor,

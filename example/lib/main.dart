@@ -1,15 +1,20 @@
-import 'dart:math' as math;
-
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:liquid_glass_widgets_example/constants/glass_settings.dart';
 import 'package:liquid_glass_widgets_example/pages/containers_page.dart';
 import 'package:liquid_glass_widgets_example/pages/input_page.dart';
 import 'package:liquid_glass_widgets_example/pages/interactive_page.dart';
 import 'package:liquid_glass_widgets_example/pages/overlays_page.dart';
 import 'package:liquid_glass_widgets_example/pages/surfaces_page.dart';
 
-void main() {
+void main() async {
+  // Ensure Flutter bindings are initialized before loading shaders
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Populate the LightweightLiquidGlass global static cache
+  await LightweightLiquidGlass.preWarm();
+
   runApp(const AppleLiquidGlassShowcaseApp());
 }
 
@@ -67,17 +72,9 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage> {
         extendBody: true,
         body: _pages[_selectedIndex],
         bottomNavigationBar: GlassBottomBar(
-          quality: GlassQuality.premium,
+          quality: GlassQuality.premium, // Static surface - premium looks great
           indicatorColor: Colors.black26,
-          glassSettings: LiquidGlassSettings(
-            refractiveIndex: 1.21,
-            thickness: 30,
-            blur: 4,
-            saturation: 1.5,
-            ambientStrength: .5,
-            lightAngle: 0.25 * math.pi,
-            glassColor: Colors.black26,
-          ),
+          glassSettings: RecommendedGlassSettings.bottomBar,
           tabs: [
             GlassBottomBarTab(
               label: 'Home',
@@ -132,15 +129,9 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LiquidGlassLayer(
-      fake: true, // Use backdrop filter for scrollable content
-      settings: const LiquidGlassSettings(
-          blur: 4,
-          thickness: 30,
-          ambientStrength: 0.5,
-          lightAngle: 0.25 * math.pi,
-          glassColor: Color.fromRGBO(255, 255, 255, 0.10),
-          lightIntensity: .5),
+    return AdaptiveLiquidGlassLayer(
+      settings: RecommendedGlassSettings.standard,
+      quality: GlassQuality.standard, // Scrollable content - use standard
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(

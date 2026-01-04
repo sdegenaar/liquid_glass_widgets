@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
+import '../shared/adaptive_glass.dart';
+import '../shared/adaptive_liquid_glass_layer.dart';
 
 /// A glass morphism toolbar following Apple's iOS 26 design patterns.
 ///
@@ -125,9 +127,9 @@ class GlassToolbar extends StatelessWidget {
     final effectiveBackgroundColor =
         backgroundColor ?? Colors.grey.withAlpha(20);
 
-    return LiquidGlassLayer(
+    return AdaptiveLiquidGlassLayer(
       settings: effectiveSettings,
-      fake: quality.usesBackdropFilter,
+      quality: quality,
       child: Container(
         decoration: const BoxDecoration(
           border: Border(
@@ -141,9 +143,10 @@ class GlassToolbar extends StatelessWidget {
           children: [
             // Glass Background Layer
             Positioned.fill(
-              child: LiquidGlass.grouped(
+              child: AdaptiveGlass.grouped(
                 // Toolbar is typically a full-width rectangle
                 shape: const LiquidRoundedRectangle(borderRadius: 0),
+                quality: quality,
                 child: Container(color: effectiveBackgroundColor),
               ),
             ),

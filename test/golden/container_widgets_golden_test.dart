@@ -7,7 +7,7 @@ import 'package:liquid_glass_widgets/widgets/containers/glass_card.dart';
 import 'package:liquid_glass_widgets/widgets/containers/glass_container.dart';
 import 'package:liquid_glass_widgets/widgets/containers/glass_panel.dart';
 import 'package:flutter/material.dart';
-import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
 import '../shared/test_helpers.dart';
 
@@ -22,8 +22,7 @@ void main() {
         GoldenTestScenario(
           name: 'default',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: const GlassContainer(
                 width: 200,
@@ -41,8 +40,7 @@ void main() {
         GoldenTestScenario(
           name: 'with_padding',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: const GlassContainer(
                 width: 200,
@@ -71,8 +69,7 @@ void main() {
         GoldenTestScenario(
           name: 'default',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: const GlassCard(
                 child: Column(
@@ -100,8 +97,7 @@ void main() {
         GoldenTestScenario(
           name: 'no_padding',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: const GlassCard(
                 padding: EdgeInsets.zero,
@@ -131,8 +127,7 @@ void main() {
         GoldenTestScenario(
           name: 'default',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: const GlassPanel(
                 child: Column(

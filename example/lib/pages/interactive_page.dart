@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:liquid_glass_widgets_example/constants/glass_settings.dart';
 
 class InteractivePage extends StatefulWidget {
   const InteractivePage({super.key});
@@ -43,15 +44,9 @@ class _InteractivePageState extends State<InteractivePage> {
         // STANDARD QUALITY (Scrollable Content)
         // =====================================================================
         Expanded(
-          child: LiquidGlassLayer(
-            fake: true, // Use backdrop filter for scrollable content
-            settings: const LiquidGlassSettings(
-                blur: 6,
-                thickness: 30,
-                ambientStrength: 0.5,
-                lightAngle: 0.25 * math.pi,
-                glassColor: Color.fromRGBO(255, 255, 255, 0.10),
-                lightIntensity: .5),
+          child: AdaptiveLiquidGlassLayer(
+            settings: RecommendedGlassSettings.interactive,
+            quality: GlassQuality.standard,
             child: CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(
@@ -878,8 +873,8 @@ class _PremiumShowcase extends StatelessWidget {
       ),
       child: SafeArea(
         bottom: false,
-        child: LiquidGlassLayer(
-          fake: false, // PREMIUM: Use shader-based glass
+        child: AdaptiveLiquidGlassLayer(
+          // PREMIUM: Use shader-based glass
           settings: const LiquidGlassSettings(
             blur: 5,
             thickness: 40,

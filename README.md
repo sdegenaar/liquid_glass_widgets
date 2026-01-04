@@ -63,7 +63,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  liquid_glass_widgets: ^0.1.5-dev.11
+  liquid_glass_widgets: ^0.2.0-dev.1
 ```
 
 Then run:
@@ -73,6 +73,24 @@ flutter pub get
 ```
 
 ## Quick Start
+
+### Preventing White Flash (Important!)
+
+To eliminate the brief white flash when glass widgets first appear, precache the lightweight shader at app startup:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Precache shader to prevent loading flash
+  await LightweightLiquidGlass.preWarm();
+
+  runApp(const MyApp());
+}
+```
 
 ### Basic Usage
 
@@ -100,10 +118,10 @@ class MyApp extends StatelessWidget {
 
 ### Grouped Widgets (Recommended for Multiple Glass Elements)
 
-When you have multiple glass widgets, wrap them in a `LiquidGlassLayer` for better performance:
+When you have multiple glass widgets, wrap them in an `AdaptiveLiquidGlassLayer` for better performance:
 
 ```dart
-LiquidGlassLayer(
+AdaptiveLiquidGlassLayer(
   settings: LiquidGlassSettings(
     thickness: 0.8,
     blur: 12.0,
@@ -141,11 +159,27 @@ GlassContainer(
 )
 ```
 
+## Platform Support
+
+This package works seamlessly across **all Flutter platforms** with optimized rendering:
+
+- ✅ **iOS** (Native Impeller & Skia)
+- ✅ **Android** (Native Impeller & Skia)
+- ✅ **macOS** (Native Impeller & Skia)
+- ✅ **Web** (CanvasKit with per-widget shader instances)
+- ✅ **Windows** (Skia)
+- ✅ **Linux** (Skia)
+
+**Adaptive Rendering:**
+- **Impeller** (iOS/Android): Full shader pipeline with texture capture and chromatic aberration
+- **Skia & Web**: High-performance lightweight fragment shader
+- Platform detection is automatic—no configuration needed
+
 ## Glass Quality Modes
 
 The package provides two quality modes optimized for different use cases:
 
-### Standard Quality (Default)
+### Standard Quality (Default, Recommended)
 ```dart
 GlassContainer(
   quality: GlassQuality.standard,
@@ -153,12 +187,12 @@ GlassContainer(
 )
 ```
 
-- Uses Flutter's `BackdropFilter`
-- Lightweight and reliable
+- Uses lightweight fragment shader for iOS 26 accurate glass effects
+- Works universally across all platforms (native, Skia, web)
 - **Use for**: Lists, forms, scrollable content, interactive widgets
-- **Recommended default** for most use cases
+- **Recommended default** for 95% of use cases
 
-### Premium Quality
+### Premium Quality (Static Layouts Only)
 ```dart
 GlassAppBar(
   quality: GlassQuality.premium,
@@ -166,11 +200,11 @@ GlassAppBar(
 )
 ```
 
-- Uses custom shaders and texture capture
-- Higher visual quality with enhanced lighting effects
-- More computationally expensive
-- **Use only for**: Static, non-scrollable layouts (headers, footers, hero sections)
-- **Warning**: May not render correctly in scrollable contexts
+- **Impeller (iOS/macOS native)**: Full shader pipeline with texture capture and chromatic aberration
+- **Skia/Web**: Automatically falls back to lightweight shader (same as standard quality)
+- Higher visual quality on capable platforms
+- **Use only for**: Static, non-scrollable layouts (app bars, bottom bars, hero sections)
+- **Warning**: May not render correctly in scrollable contexts on Impeller
 
 ## Customization
 
@@ -272,7 +306,7 @@ GlassSegmentedControl(
 
 ## Complete Example
 
-See the [example](example/) directory for a full showcase app demonstrating all widgets with a beautiful wallpaper background. Run it with:
+See the [example](example/) directory for a full showcase app demonstrating all widgets. Run it with:
 
 ```bash
 cd example
@@ -285,7 +319,7 @@ flutter run
 
 All widgets support two rendering modes:
 
-- **Grouped Mode** (`useOwnLayer: false`, default): Multiple widgets share the same rendering context via parent `LiquidGlassLayer`. More performant for many glass elements.
+- **Grouped Mode** (`useOwnLayer: false`, default): Multiple widgets share the same rendering context via parent `AdaptiveLiquidGlassLayer`. More performant for many glass elements.
 
 - **Standalone Mode** (`useOwnLayer: true`): Each widget creates its own independent rendering context. Use for single widgets or different settings per widget.
 
@@ -295,10 +329,11 @@ Widgets use `LiquidShape` for customizable shapes, with `LiquidRoundedSuperellip
 
 ## Performance Tips
 
-1. **Use Grouped Mode** when you have multiple glass widgets - wrap them in `LiquidGlassLayer`
-2. **Use Standard Quality** for scrollable content and interactive widgets
-3. **Reserve Premium Quality** for static elements like app bars and hero sections
-4. **Limit glass widget depth** - avoid deeply nesting glass effects
+1. **Precache the shader** at app startup with `await LightweightLiquidGlass.preWarm()` to eliminate loading flash
+2. **Use Grouped Mode** when you have multiple glass widgets - wrap them in `AdaptiveLiquidGlassLayer`
+3. **Use Standard Quality** for scrollable content and interactive widgets (it's already very high quality!)
+4. **Reserve Premium Quality** for static elements like app bars where you want Impeller's advanced features
+5. **Limit glass widget depth** - avoid deeply nesting glass effects
 
 ## Dependencies
 

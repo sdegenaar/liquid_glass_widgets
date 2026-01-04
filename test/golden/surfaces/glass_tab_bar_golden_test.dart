@@ -20,7 +20,7 @@ void main() {
             name: 'first tab selected',
             child: buildWithGradientBackground(
               Center(
-                child: LiquidGlassLayer(
+                child: AdaptiveLiquidGlassLayer(
                   settings: settingsWithoutLighting,
                   child: GlassTabBar(
                     tabs: const [
@@ -39,7 +39,7 @@ void main() {
             name: 'middle tab selected',
             child: buildWithGradientBackground(
               Center(
-                child: LiquidGlassLayer(
+                child: AdaptiveLiquidGlassLayer(
                   settings: settingsWithoutLighting,
                   child: GlassTabBar(
                     tabs: const [
@@ -69,7 +69,7 @@ void main() {
             name: 'home selected',
             child: buildWithGradientBackground(
               Center(
-                child: LiquidGlassLayer(
+                child: AdaptiveLiquidGlassLayer(
                   settings: settingsWithoutLighting,
                   child: GlassTabBar(
                     tabs: const [
@@ -100,7 +100,7 @@ void main() {
             name: 'first selected',
             child: buildWithGradientBackground(
               Center(
-                child: LiquidGlassLayer(
+                child: AdaptiveLiquidGlassLayer(
                   settings: settingsWithoutLighting,
                   child: GlassTabBar(
                     height: 56,
@@ -131,7 +131,7 @@ void main() {
             name: 'custom colors',
             child: buildWithGradientBackground(
               Center(
-                child: LiquidGlassLayer(
+                child: AdaptiveLiquidGlassLayer(
                   settings: settingsWithoutLighting,
                   child: GlassTabBar(
                     height: 60,
@@ -173,7 +173,7 @@ void main() {
             name: 'many tabs',
             child: buildWithGradientBackground(
               Center(
-                child: LiquidGlassLayer(
+                child: AdaptiveLiquidGlassLayer(
                   settings: settingsWithoutLighting,
                   child: GlassTabBar(
                     isScrollable: true,

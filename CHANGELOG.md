@@ -1,3 +1,43 @@
+# 0.2.0-dev.1
+
+- **FEAT**: Universal Platform Support with Lightweight Glass Shader
+    - **Lightweight Fragment Shader**: High-performance shader-based rendering now works on all platforms (Web/CanvasKit, Skia, Impeller)
+      - Faster than BackdropFilter while delivering iOS 26-accurate glass aesthetics
+      - Matrix-synced coordinate system eliminates drift during parent transformations
+      - Dual-specular highlights, rim lighting, and physics-based thickness response
+      - Per-widget shader instances on Web (CanvasKit requirement), shared instance on native
+    - **AdaptiveGlass**: Intelligent rendering path selection based on platform capabilities
+      - Premium + Impeller → Full shader pipeline with texture capture and chromatic aberration
+      - Premium + Skia/Web → Lightweight shader (automatic fallback)
+      - Standard → Always lightweight shader (recommended default)
+    - **AdaptiveLiquidGlassLayer**: Drop-in replacement for `LiquidGlassLayer` ensuring proper rendering on all platforms
+      - Prevents FakeGlass (solid color) fallback on Web and Skia
+      - Provides scope for grouped widgets while maintaining visual fidelity
+    - **Interactive Glow Support**: Shader-based glow effects for button press states on Skia/Web
+      - Matches Impeller's `GlassGlow` behavior using shader saturation parameter
+      - Enables full interactive feedback across all platforms
+
+- **REFACTOR**: Completed lightweight shader migration across all widgets
+    - Migrated `GlassSideBar`, `GlassToolbar`, and `GlassSwitch` to use `AdaptiveGlass`
+    - Standardized on `AdaptiveLiquidGlassLayer` throughout example app and documentation
+    - All 26 widgets now deliver consistent glass quality on Web, Skia, and Impeller
+
+- **DOCS**: Comprehensive documentation updates
+    - Added Platform Support section to README (iOS, Android, macOS, Web, Windows, Linux)
+    - Updated Quick Start with shader precaching guide (`LightweightLiquidGlass.preWarm()`)
+    - Corrected quality mode descriptions across 5 widgets and README
+    - Clarified that `GlassQuality.standard` uses lightweight shader, not BackdropFilter
+    - Added platform-specific rendering behavior notes for premium quality
+
+- **PERF**: Optimized web rendering pipeline
+    - Per-widget shader lifecycle management on Web (CanvasKit requirement)
+    - Eliminated coordinate drift with zero-latency physical coordinate mapping
+
+- **FIX**: Resolved platform-specific rendering issues
+    - Fixed glass widgets appearing as solid semi-transparent boxes on Web when using premium quality
+    - Fixed coordinate synchronization during parent transformations (LiquidStretch, scroll, etc.)
+    - Ensured draggable indicators and navigation bars maintain glass appearance on Web and Skia
+
 # 0.1.5-dev.11
 
 - **PERF**: Performance optimizations for `GlassBottomBar` and indicator animations

@@ -101,7 +101,7 @@ Most widgets support both modes:
 Multiple glass widgets share a `LiquidGlassLayer` for better performance:
 
 ```dart
-LiquidGlassLayer(
+AdaptiveLiquidGlassLayer(
   settings: LiquidGlassSettings(...),
   child: Column(
     children: [
@@ -134,12 +134,19 @@ This example follows Apple's design philosophy of **composable primitives**:
 
 ## Platform Support
 
-- ✅ iOS
-- ✅ macOS
-- ✅ Android (Impeller only)
-- ❌ Web
-- ❌ Windows
-- ❌ Linux
+This package works seamlessly across **all Flutter platforms** with optimized rendering:
+
+- ✅ **iOS** (Native Impeller & Skia)
+- ✅ **Android** (Native Impeller & Skia)
+- ✅ **macOS** (Native Impeller & Skia)
+- ✅ **Web** (CanvasKit with per-widget shader instances)
+- ✅ **Windows** (Skia)
+- ✅ **Linux** (Skia)
+
+**Adaptive Rendering:**
+- **Impeller** (iOS/Android): Full shader pipeline with texture capture and chromatic aberration
+- **Skia & Web**: High-performance lightweight fragment shader
+- Platform detection is automatic—no configuration needed
 
 ## Learn More
 

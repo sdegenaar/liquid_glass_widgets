@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+import 'package:liquid_glass_widgets_example/constants/glass_settings.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:flutter/cupertino.dart';
@@ -30,15 +30,9 @@ class _InputPageState extends State<InputPage> {
 
   @override
   Widget build(BuildContext context) {
-    return LiquidGlassLayer(
-      fake: true, // Use backdrop filter for scrollable content
-      settings: const LiquidGlassSettings(
-          blur: 6,
-          thickness: 30,
-          ambientStrength: 0.5,
-          lightAngle: 0.25 * math.pi,
-          glassColor: Color.fromRGBO(255, 255, 255, 0.10),
-          lightIntensity: .5),
+    return AdaptiveLiquidGlassLayer(
+      settings: RecommendedGlassSettings.input,
+      quality: GlassQuality.standard,
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(

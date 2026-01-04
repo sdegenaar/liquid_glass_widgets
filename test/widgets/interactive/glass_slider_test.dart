@@ -1,7 +1,7 @@
 import 'package:liquid_glass_widgets/types/glass_quality.dart';
 import 'package:liquid_glass_widgets/widgets/interactive/glass_slider.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
 import '../../shared/test_helpers.dart';
 
@@ -10,7 +10,7 @@ void main() {
     testWidgets('can be instantiated with required parameters', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassSlider(
               value: 0.5,
@@ -28,7 +28,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassSlider(
               value: value,
@@ -53,7 +53,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassSlider(
               value: 0.5,
@@ -79,7 +79,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassSlider(
               value: value,
@@ -99,7 +99,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassSlider(
               value: value,

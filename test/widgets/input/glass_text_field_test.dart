@@ -2,7 +2,7 @@ import 'package:liquid_glass_widgets/types/glass_quality.dart';
 import 'package:liquid_glass_widgets/widgets/input/glass_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
 import '../../shared/test_helpers.dart';
 
@@ -11,7 +11,7 @@ void main() {
     testWidgets('can be instantiated with default parameters', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const GlassTextField(),
           ),
@@ -26,7 +26,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const GlassTextField(
               placeholder: placeholder,
@@ -41,7 +41,7 @@ void main() {
     testWidgets('displays prefix icon when provided', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const GlassTextField(
               prefixIcon: Icon(Icons.search),
@@ -56,7 +56,7 @@ void main() {
     testWidgets('displays suffix icon when provided', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const GlassTextField(
               suffixIcon: Icon(Icons.clear),
@@ -73,7 +73,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassTextField(
               onChanged: (value) => text = value,
@@ -92,7 +92,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassTextField(
               onSubmitted: (value) => submitted = value,
@@ -112,7 +112,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassTextField(
               suffixIcon: const Icon(Icons.clear),
@@ -131,7 +131,7 @@ void main() {
     testWidgets('respects obscureText for password fields', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const GlassTextField(
               obscureText: true,
@@ -147,7 +147,7 @@ void main() {
     testWidgets('respects enabled state', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const GlassTextField(
               enabled: false,

@@ -6,6 +6,7 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
 import '../containers/glass_container.dart';
+import '../shared/inherited_liquid_glass.dart';
 import 'glass_menu_item.dart';
 
 /// A liquid glass context menu that morphs from its trigger button.
@@ -16,12 +17,12 @@ import 'glass_menu_item.dart';
 ///
 /// ## Features
 /// - **True morphing**: Button transforms into menu (not overlay)
-/// - **Spring physics**: Critically damped motion (stiffness: 180, damping: 27) - no bounce
-/// - **Snappy timing**: iOS 26-accurate speed with no sluggishness
-/// - **Liquid swoop**: Subtle 8px downward curve with easeOutCubic timing
+/// - **Smooth spring physics**: Gentle settle with no harsh bounces (stiffness: 300, damping: 24)
+/// - **Liquid swoop**: Subtle 5px parabolic arc for seamless down-and-up motion
 /// - **Seamless crossfade**: Button only appears at final 5% to preserve morph illusion
 /// - **Dimension interpolation**: Width, height, and border radius morph smoothly
 /// - **Position aware**: Menu expands from button position
+/// - **Settings inheritance**: Inherits parent layer settings like GlassCard (thin rim by default)
 /// - **No button animation**: Trigger button remains static, only shape morphs
 class GlassMenu extends StatefulWidget {
   /// The widget that triggers the menu.
@@ -94,14 +95,20 @@ class _GlassMenuState extends State<GlassMenu>
   Size? _triggerSize;
   double? _triggerBorderRadius;
 
-  // iOS 26 Liquid Glass spring physics
-  // - Damping: 27.0 for critically damped motion (no bounce/overshoot)
-  // - Stiffness: 180.0 for snappy iOS-accurate speed
-  // - Critical damping = 2 * sqrt(stiffness * mass) = ~26.83
+  // iOS 26 Liquid Glass smooth spring physics
+  // Gentle, fluid motion with subtle overshoot - NOT harsh bounces
+  //
+  // Response: ~0.35s (smooth, not too fast)
+  // DampingFraction: 0.7 (slightly underdamped = gentle settle, no harsh bounce)
+  // Result: Seamless liquid feel that complements the swoop curve
+  //
+  // Conversion to Flutter SpringSimulation:
+  // - stiffness: 300 (smooth, not too snappy)
+  // - damping: 2 * 0.7 * sqrt(300) ≈ 24.2
   final _springDescription = const SpringDescription(
     mass: 1.0,
-    stiffness: 180.0,
-    damping: 27.0, // Slightly overdamped for silky-smooth motion
+    stiffness: 300.0, // Smooth motion (not too fast)
+    damping: 24.0, // Gentle settle (no harsh bounce)
   );
 
   Alignment _morphAlignment = Alignment.topLeft;
@@ -181,22 +188,28 @@ class _GlassMenuState extends State<GlassMenu>
   }
 
   void _openMenu() {
-    // Capture geometry and screen position
+    // Capture geometry and screen position for morphing
     final renderBox = context.findRenderObject() as RenderBox?;
-    if (renderBox != null) {
-      _triggerSize = renderBox.size;
-      _triggerBorderRadius = _triggerSize!.height / 2;
+    if (renderBox == null || !renderBox.hasSize) {
+      // Safety: Cannot open menu if render box is not ready
+      return;
+    }
 
-      // Determine alignment based on horizontal screen position
-      final position = renderBox.localToGlobal(Offset.zero);
-      final screenWidth = MediaQuery.of(context).size.width;
+    _triggerSize = renderBox.size;
+    _triggerBorderRadius = _triggerSize!.height / 2;
 
-      // If button is on the right half of the screen, align menu to top-right
-      if (position.dx > screenWidth / 2) {
-        _morphAlignment = Alignment.topRight;
-      } else {
-        _morphAlignment = Alignment.topLeft;
-      }
+    // Determine alignment based on horizontal screen position
+    // This ensures menu doesn't overflow screen edges
+    final position = renderBox.localToGlobal(Offset.zero);
+    final screenWidth = MediaQuery.maybeOf(context)?.size.width ??
+                        double.infinity;
+
+    // If button is on the right half of the screen, align menu to top-right
+    // Otherwise align to top-left (default)
+    if (screenWidth.isFinite && position.dx > screenWidth / 2) {
+      _morphAlignment = Alignment.topRight;
+    } else {
+      _morphAlignment = Alignment.topLeft;
     }
 
     _overlayController.show();
@@ -211,7 +224,6 @@ class _GlassMenuState extends State<GlassMenu>
     if (_triggerSize == null) return const SizedBox.shrink();
 
     // Clamp animation value to prevent overshoot artifacts
-    // No bounce: spring is critically damped
     final value = _animationController.value.clamp(0.0, 1.0);
 
     return Stack(
@@ -237,9 +249,9 @@ class _GlassMenuState extends State<GlassMenu>
           targetAnchor: _morphAlignment,
           followerAnchor: _morphAlignment,
           // iOS 26 "liquid swoop" offset:
-          // - Eased curve creates smooth, gravity-like drop when opening
-          // - Subtle 8px vertical displacement at peak
-          // - No linear interpolation - uses easeOutCubic for fluid motion
+          // - Parabolic curve creates smooth, gravity-like arc
+          // - Subtle 5px vertical displacement at peak (t=0.5)
+          // - Seamless in both directions (opening and closing)
           offset: Offset(0, _calculateSwoopOffset(value)),
           child: _buildMorphingContainer(value),
         ),
@@ -249,16 +261,22 @@ class _GlassMenuState extends State<GlassMenu>
 
   /// Calculates the vertical "swoop" offset for liquid glass morphing.
   ///
-  /// Apple's iOS 26 liquid glass uses a subtle downward curve when morphing open,
-  /// creating the illusion of liquid "drooping" under its own weight before settling.
-  /// Uses easeOutCubic for smooth deceleration.
+  /// iOS 26 uses a gentle parabolic curve that creates a subtle "liquid droop"
+  /// effect during morphing. This is NOT a bounce - it's a smooth arc that
+  /// complements the spring physics for a seamless feel.
+  ///
+  /// The curve peaks at mid-animation (t=0.5) and smoothly returns to zero
+  /// at both ends, creating a natural "swoop down and up" motion.
   double _calculateSwoopOffset(double t) {
-    // easeOutCubic: 1 - (1-t)^3
-    // Creates smooth deceleration (fast start, slow end)
-    final easedValue = 1 - (1 - t) * (1 - t) * (1 - t);
+    // Parabolic curve: peaks at t=0.5, zero at t=0 and t=1
+    // This creates a smooth down-and-up arc without harsh direction changes
+    // Formula: -4 * (t - 0.5)² + 1, scaled by amplitude
+    final parabola = 1.0 - 4.0 * (t - 0.5) * (t - 0.5);
 
-    // 8px peak displacement - subtle but noticeable
-    return easedValue * 8.0;
+    // Gentle 5px peak displacement for subtle liquid feel
+    // Opening: swoops down then up (parabola is always positive)
+    // Closing: same smooth curve in reverse (no jarring direction change)
+    return parabola * 5.0;
   }
 
   /// Calculates the total height of the menu content.
@@ -297,91 +315,101 @@ class _GlassMenuState extends State<GlassMenu>
       value,
     )!;
 
-    // iOS 26 Crossfade Timing - Studied from actual implementation
-    // Key insight: There's a "content gap" during morph where NEITHER content shows
-    // This prevents any visual artifacts and keeps focus on the morphing shape
-
-    // Button content: Only when container is nearly button-sized (value < 0.02)
-    // This prevents button from flashing in oversized glass container
-    final buttonOpacity = (1.0 - (value / 0.02)).clamp(0.0, 1.0);
-
-    // Menu content: Fades in when container is nearly full width (0.7 -> 1.0)
-    // iOS 26: Content waits for shape, then reveals quickly
+    // iOS 26 Crossfade Timing + Material Fade
+    // Problem: Empty morphing container still visible (glowing blob) during closing
+    // Solution: Fade glass material opacity as container shrinks
+    //
+    // Menu content: Fades in 0.7→1.0 opening, exits cleanly when closing
     final menuOpacity = ((value - 0.7) / 0.3).clamp(0.0, 1.0);
 
-    // Use efficient glass settings
-    const defaultSettings = LiquidGlassSettings(
-      blur: 20,
-      thickness: 30,
-    );
+    // Glass container opacity: Fully visible when menu open, fades during closing
+    // - value > 0.3: Fully visible (1.0)
+    // - value 0.3→0: Fades out to transparent
+    // - Result: No "empty glowing blob" - seamless fade to real button
+    final containerOpacity = (value / 0.3).clamp(0.0, 1.0);
+
+    // Inherit settings from context (like GlassCard/GlassContainer)
+    // If user provides custom settings, use those. Otherwise, check for inherited
+    // settings from parent layer. If none, use subtle overlay defaults.
+    // This matches the pattern used by all other glass widgets.
+    //
+    // CRITICAL FIX: Old code used hardcoded blur:20, thickness:30 which created
+    // a thick border. Now uses thin delicate rim (refractiveIndex: 0.7) matching
+    // iOS 26 aesthetic and other widgets like GlassCard.
+    final inheritedSettings = InheritedLiquidGlass.of(context);
+    final effectiveSettings = widget.glassSettings ??
+        inheritedSettings ??
+        const LiquidGlassSettings(
+          blur: 10,
+          thickness: 10,
+          glassColor: Color.fromRGBO(255, 255, 255, 0.12),
+          lightAngle: 135,
+          lightIntensity: 0.7,
+          ambientStrength: 0.4,
+          saturation: 1.2,
+          refractiveIndex: 0.7, // Thin rim - iOS 26 delicate aesthetic
+          chromaticAberration: 0.0,
+        );
 
     // Performance optimization: RepaintBoundary isolates morphing animation
     // from parent widget rebuilds, reducing GPU overhead
     return RepaintBoundary(
-      child: GlassContainer(
-        useOwnLayer: true,
-        settings: widget.glassSettings ?? defaultSettings,
-        quality: widget.quality,
-        width: currentWidth,
-        height: currentHeight, // Constrained during morph, natural when open
-        shape: LiquidRoundedSuperellipse(borderRadius: currentBorderRadius),
-        clipBehavior: Clip.hardEdge, // Primary clipping layer
-        child: Stack(
-          alignment: _morphAlignment, // Align internal stack content
-          clipBehavior: Clip.hardEdge, // Secondary safety net for overflow
-          children: [
-            // Button content - ONLY when container is nearly button-sized
-            // iOS 26: button never visible during morph, only at absolute end
-            if (value < 0.02)
-              Opacity(
-                opacity: buttonOpacity,
-                child: SizedBox(
-                  width: _triggerSize!.width, // Use trigger width
-                  height: _triggerSize!.height,
-                  child: Center(
-                    child: widget.triggerBuilder != null
-                        ? widget.triggerBuilder!(context, _toggleMenu)
-                        : widget.trigger,
-                  ),
-                ),
-              ),
-
-            // Menu content - waits for container to be nearly full width
-            // Width-constrained BEFORE layout to prevent overflow
-            if (value > 0.65)
-              Opacity(
-                opacity: menuOpacity,
-                child: SizedBox(
-                  width: currentWidth, // Force exact container width
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                    child: SingleChildScrollView(
-                      physics:
-                          const ClampingScrollPhysics(), // iOS-style scrolling
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: widget.items.map((item) {
-                          return GlassMenuItem(
-                            key: item.key,
-                            title: item.title,
-                            icon: item.icon,
-                            isDestructive: item.isDestructive,
-                            trailing: item.trailing,
-                            height: item.height,
-                            onTap: () {
-                              item.onTap();
-                              _closeMenu();
-                            },
-                          );
-                        }).toList(),
+      child: Opacity(
+        opacity: containerOpacity, // Fade entire container during closing
+        child: GlassContainer(
+          useOwnLayer: true,
+          settings: effectiveSettings,
+          quality: widget.quality,
+          width: currentWidth,
+          height: currentHeight, // Constrained during morph, natural when open
+          shape: LiquidRoundedSuperellipse(borderRadius: currentBorderRadius),
+          clipBehavior: Clip.antiAlias, // Smooth anti-aliased edges
+          child: Stack(
+            alignment: _morphAlignment, // Align internal stack content
+            clipBehavior:
+                Clip.antiAlias, // Smooth clipping for overflow protection
+            children: [
+              // Menu content - waits for container to be nearly full width
+              // Width-constrained BEFORE layout to prevent overflow
+              //
+              // NOTE: We do NOT render the button inside this container during closing
+              // because it would create double-glass (container glass + button glass).
+              // The real trigger button (outside overlay) becomes visible at value < 0.05
+              if (value > 0.65)
+                Opacity(
+                  opacity: menuOpacity,
+                  child: SizedBox(
+                    width: currentWidth, // Force exact container width
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 8),
+                      child: SingleChildScrollView(
+                        physics:
+                            const ClampingScrollPhysics(), // iOS-style scrolling
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: widget.items.map((item) {
+                            return GlassMenuItem(
+                              key: item.key,
+                              title: item.title,
+                              icon: item.icon,
+                              isDestructive: item.isDestructive,
+                              trailing: item.trailing,
+                              height: item.height,
+                              onTap: () {
+                                item.onTap();
+                                _closeMenu();
+                              },
+                            );
+                          }).toList(),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

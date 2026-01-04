@@ -49,7 +49,7 @@ import 'glass_text_field.dart';
 ///
 /// ### Within LiquidGlassLayer (Grouped Mode)
 /// ```dart
-/// LiquidGlassLayer(
+/// AdaptiveLiquidGlassLayer(
 ///   settings: LiquidGlassSettings(
 ///     thickness: 30,
 ///     blur: 8,
@@ -208,10 +208,11 @@ class GlassSearchBar extends StatefulWidget {
 
   /// Rendering quality for the glass effect.
   ///
-  /// Defaults to [GlassQuality.standard], which uses backdrop filter rendering.
-  /// This works reliably in all contexts, including scrollable lists.
+  /// Defaults to [GlassQuality.standard], which uses the lightweight fragment
+  /// shader. This works reliably in all contexts, including scrollable lists.
   ///
-  /// Use [GlassQuality.premium] for shader-based glass in static layouts only.
+  /// Use [GlassQuality.premium] for full-pipeline shader with texture capture
+  /// and chromatic aberration (Impeller only) in static layouts.
   final GlassQuality quality;
 
   @override

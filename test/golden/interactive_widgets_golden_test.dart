@@ -12,7 +12,7 @@ import 'package:liquid_glass_widgets/widgets/interactive/glass_switch.dart';
 import 'package:liquid_glass_widgets/widgets/input/glass_search_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
 import '../shared/test_helpers.dart';
 
@@ -27,8 +27,7 @@ void main() {
         GoldenTestScenario(
           name: 'default',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: GlassButton(
                 icon: CupertinoIcons.heart,
@@ -40,8 +39,7 @@ void main() {
         GoldenTestScenario(
           name: 'disabled',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: GlassButton(
                 icon: CupertinoIcons.heart,
@@ -54,8 +52,7 @@ void main() {
         GoldenTestScenario(
           name: 'custom_child',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: GlassButton.custom(
                 onTap: () {},
@@ -83,8 +80,7 @@ void main() {
         GoldenTestScenario(
           name: 'circle',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: GlassIconButton(
                 icon: Icons.favorite,
@@ -96,8 +92,7 @@ void main() {
         GoldenTestScenario(
           name: 'rounded_square',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: GlassIconButton(
                 icon: Icons.settings,
@@ -110,8 +105,7 @@ void main() {
         GoldenTestScenario(
           name: 'disabled',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: GlassIconButton(
                 icon: Icons.delete,
@@ -134,8 +128,7 @@ void main() {
         GoldenTestScenario(
           name: 'off',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: GlassSwitch(
                 value: false,
@@ -147,8 +140,7 @@ void main() {
         GoldenTestScenario(
           name: 'on',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: GlassSwitch(
                 value: true,
@@ -171,8 +163,7 @@ void main() {
         GoldenTestScenario(
           name: 'default',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: const GlassChip(
                 label: 'Flutter',
@@ -183,8 +174,7 @@ void main() {
         GoldenTestScenario(
           name: 'with_icon',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: const GlassChip(
                 label: 'Favorite',
@@ -196,8 +186,7 @@ void main() {
         GoldenTestScenario(
           name: 'selected',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: GlassChip(
                 label: 'Selected',
@@ -210,8 +199,7 @@ void main() {
         GoldenTestScenario(
           name: 'with_delete',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: GlassChip(
                 label: 'Tag',
@@ -234,8 +222,7 @@ void main() {
         GoldenTestScenario(
           name: '0_percent',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: GlassSlider(
                 value: 0.0,
@@ -247,8 +234,7 @@ void main() {
         GoldenTestScenario(
           name: '50_percent',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: GlassSlider(
                 value: 0.5,
@@ -260,8 +246,7 @@ void main() {
         GoldenTestScenario(
           name: '100_percent',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: GlassSlider(
                 value: 1.0,
@@ -319,8 +304,7 @@ void main() {
         GoldenTestScenario(
           name: 'default',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: const GlassSearchBar(),
             ),
@@ -329,8 +313,7 @@ void main() {
         GoldenTestScenario(
           name: 'with_placeholder',
           child: buildWithGradientBackground(
-            LiquidGlassLayer(
-              fake: true,
+            AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
               child: const GlassSearchBar(
                 placeholder: 'Search messages',

@@ -8,8 +8,7 @@ void main() {
     testWidgets('GlassPasswordField toggles visibility', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: LiquidGlassLayer(
-            fake: true,
+          home: AdaptiveLiquidGlassLayer(
             settings: const LiquidGlassSettings(),
             child: const Scaffold(
               body: GlassPasswordField(),
@@ -38,8 +37,7 @@ void main() {
     testWidgets('GlassTextArea renders multi-line', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: LiquidGlassLayer(
-            fake: true,
+          home: AdaptiveLiquidGlassLayer(
             settings: const LiquidGlassSettings(),
             child: const Scaffold(
               body: GlassTextArea(minLines: 3, maxLines: 5),
@@ -60,8 +58,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: LiquidGlassLayer(
-            fake: true,
+          home: AdaptiveLiquidGlassLayer(
             settings: const LiquidGlassSettings(),
             child: const Scaffold(
               body: GlassFormField(
@@ -83,8 +80,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: LiquidGlassLayer(
-            fake: true,
+          home: AdaptiveLiquidGlassLayer(
             settings: const LiquidGlassSettings(),
             child: Scaffold(
               body: GlassPicker(

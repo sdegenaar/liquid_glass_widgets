@@ -4,6 +4,7 @@ import 'package:motor/motor.dart';
 
 import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
+import '../shared/adaptive_liquid_glass_layer.dart';
 import '../shared/glass_interactive_indicator.dart';
 
 /// A glass morphism tab bar following Apple's iOS design patterns.
@@ -56,7 +57,7 @@ import '../shared/glass_interactive_indicator.dart';
 ///
 /// ### Within LiquidGlassLayer (Grouped Mode)
 /// ```dart
-/// LiquidGlassLayer(
+/// AdaptiveLiquidGlassLayer(
 ///   settings: LiquidGlassSettings(
 ///     thickness: 0.8,
 ///     blur: 12.0,
@@ -275,9 +276,9 @@ class _GlassTabBarState extends State<GlassTabBar> {
     );
 
     if (widget.useOwnLayer) {
-      return LiquidGlassLayer(
+      return AdaptiveLiquidGlassLayer(
         settings: glassSettings,
-        fake: widget.quality.usesBackdropFilter,
+        quality: widget.quality,
         child: content,
       );
     }
@@ -486,35 +487,20 @@ class _TabBarContentState extends State<_TabBarContent> {
               return Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  // Background indicator
-                  if (thickness < 1)
-                    GlassInteractiveIndicator(
-                      velocity: velocity,
-                      itemCount: widget.tabs.length,
-                      alignment: alignment,
-                      thickness: thickness,
-                      quality: widget.quality,
-                      indicatorColor: indicatorColor,
-                      isBackgroundIndicator: true,
-                      borderRadius:
-                          widget.indicatorBorderRadius?.topLeft.x ?? 16,
-                      glassSettings: widget.indicatorSettings,
-                    ),
-
-                  // Glass indicator
-                  if (thickness > 0)
-                    GlassInteractiveIndicator(
-                      velocity: velocity,
-                      itemCount: widget.tabs.length,
-                      alignment: alignment,
-                      thickness: thickness,
-                      quality: widget.quality,
-                      indicatorColor: indicatorColor,
-                      isBackgroundIndicator: false,
-                      borderRadius:
-                          widget.indicatorBorderRadius?.topLeft.x ?? 16,
-                      glassSettings: widget.indicatorSettings,
-                    ),
+                  // Unified Glass Indicator with jelly physics
+                  // The internal cross-fade in GlassInteractiveIndicator prevents flickering
+                  GlassInteractiveIndicator(
+                    velocity: velocity,
+                    itemCount: widget.tabs.length,
+                    alignment: alignment,
+                    thickness: thickness,
+                    quality: widget.quality,
+                    indicatorColor: indicatorColor,
+                    isBackgroundIndicator:
+                        false, // Internal logic now handles both
+                    borderRadius: widget.indicatorBorderRadius?.topLeft.x ?? 16,
+                    glassSettings: widget.indicatorSettings,
+                  ),
 
                   child!,
                 ],

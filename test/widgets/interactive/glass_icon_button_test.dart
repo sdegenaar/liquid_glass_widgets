@@ -2,7 +2,7 @@ import 'package:liquid_glass_widgets/types/glass_quality.dart';
 import 'package:liquid_glass_widgets/widgets/interactive/glass_icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
 import '../../shared/test_helpers.dart';
 
@@ -11,7 +11,7 @@ void main() {
     testWidgets('can be instantiated with required parameters', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassIconButton(
               icon: Icons.favorite,
@@ -30,7 +30,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassIconButton(
               icon: Icons.add,
@@ -49,7 +49,7 @@ void main() {
     testWidgets('does not call onPressed when null (disabled)', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassIconButton(
               icon: Icons.add,
@@ -69,7 +69,7 @@ void main() {
     testWidgets('renders circle shape by default', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassIconButton(
               icon: Icons.star,
@@ -85,7 +85,7 @@ void main() {
     testWidgets('renders rounded square shape when specified', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassIconButton(
               icon: Icons.star,
@@ -104,7 +104,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassIconButton(
               icon: Icons.star,
@@ -131,7 +131,7 @@ void main() {
     testWidgets('has proper semantics', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassIconButton(
               icon: Icons.add,

@@ -4,7 +4,7 @@ import 'package:liquid_glass_widgets/widgets/input/glass_text_field.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
 import '../../shared/test_helpers.dart';
 
@@ -13,7 +13,7 @@ void main() {
     testWidgets('can be instantiated with default parameters', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const GlassSearchBar(),
           ),
@@ -28,7 +28,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const GlassSearchBar(
               placeholder: placeholder,
@@ -43,7 +43,7 @@ void main() {
     testWidgets('displays search icon', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const GlassSearchBar(),
           ),
@@ -58,7 +58,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassSearchBar(
               onChanged: (value) => searchText = value,
@@ -78,7 +78,7 @@ void main() {
     testWidgets('shows clear button when text is entered', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassLayer(
+          child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const GlassSearchBar(),
           ),
@@ -101,8 +101,7 @@ void main() {
           child: Center(
             child: SizedBox(
               width: 300,
-              child: LiquidGlassLayer(
-                fake: true,
+              child: AdaptiveLiquidGlassLayer(
                 settings: defaultTestGlassSettings,
                 child: GlassSearchBar(
                   controller: controller,
@@ -135,8 +134,7 @@ void main() {
           child: Center(
             child: SizedBox(
               width: 400,
-              child: LiquidGlassLayer(
-                fake: true,
+              child: AdaptiveLiquidGlassLayer(
                 settings: defaultTestGlassSettings,
                 child: const GlassSearchBar(
                   showsCancelButton: true,
@@ -163,8 +161,7 @@ void main() {
           child: Center(
             child: SizedBox(
               width: 400,
-              child: LiquidGlassLayer(
-                fake: true,
+              child: AdaptiveLiquidGlassLayer(
                 settings: defaultTestGlassSettings,
                 child: GlassSearchBar(
                   showsCancelButton: true,

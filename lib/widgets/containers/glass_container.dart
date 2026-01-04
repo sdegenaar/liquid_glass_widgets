@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:liquid_glass_renderer/liquid_glass_renderer.dart'
+    hide FakeGlass;
 
 import '../../types/glass_quality.dart';
+import '../shared/adaptive_glass.dart';
+import '../shared/inherited_liquid_glass.dart';
 
 /// A foundational glass container widget following Apple's liquid glass design.
 ///
@@ -15,7 +18,7 @@ import '../../types/glass_quality.dart';
 /// Uses [LiquidGlass.grouped] and inherits settings from parent
 /// [LiquidGlassLayer]:
 /// ```dart
-/// LiquidGlassLayer(
+/// AdaptiveLiquidGlassLayer(
 ///   settings: LiquidGlassSettings(...),
 ///   child: Column(
 ///     children: [
@@ -162,10 +165,12 @@ class GlassContainer extends StatelessWidget {
 
   /// Rendering quality for the glass effect.
   ///
-  /// Defaults to [GlassQuality.standard], which uses backdrop filter rendering.
-  /// This works reliably in all contexts, including scrollable lists.
+  /// Defaults to [GlassQuality.standard], which uses the lightweight fragment
+  /// shader. This is 5-10x faster than BackdropFilter and works reliably in
+  /// all contexts, including scrollable lists.
   ///
-  /// Use [GlassQuality.premium] for shader-based glass in static layouts only.
+  /// Use [GlassQuality.premium] for full-pipeline shader with texture capture
+  /// and chromatic aberration (Impeller only) in static layouts.
   final GlassQuality quality;
 
   /// The clipping behavior for the container.
@@ -202,20 +207,17 @@ class GlassContainer extends StatelessWidget {
       );
     }
 
-    // 4. Apply glass effect
-    Widget glassWidget = useOwnLayer
-        ? LiquidGlass.withOwnLayer(
-            shape: shape,
-            settings: settings ?? const LiquidGlassSettings(),
-            fake: quality.usesBackdropFilter,
-            clipBehavior: clipBehavior,
-            child: content,
-          )
-        : LiquidGlass.grouped(
-            shape: shape,
-            clipBehavior: clipBehavior,
-            child: content,
-          );
+    // 4. Apply glass effect with adaptive fallback
+    // Premium quality uses Impeller on iOS/macOS, falls back to lightweight shader on web
+    // Standard quality always uses lightweight shader
+    Widget glassWidget = AdaptiveGlass(
+      shape: shape,
+      settings: settings ?? InheritedLiquidGlass.ofOrDefault(context),
+      quality: quality,
+      useOwnLayer: useOwnLayer,
+      clipBehavior: clipBehavior,
+      child: content,
+    );
 
     // 5. Apply width/height constraints
     if (width != null || height != null) {
