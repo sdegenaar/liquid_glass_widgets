@@ -5,6 +5,9 @@ library;
 export 'package:liquid_glass_renderer/liquid_glass_renderer.dart'
     hide FakeGlass;
 
+// Setup and Configuration
+export 'liquid_glass_setup.dart';
+
 // Types
 export 'types/glass_quality.dart';
 

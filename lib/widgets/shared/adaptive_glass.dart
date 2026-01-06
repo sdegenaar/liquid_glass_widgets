@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../../types/glass_quality.dart';
 import 'lightweight_liquid_glass.dart';
+import 'inherited_liquid_glass.dart';
 
 /// Adaptive glass widget that intelligently chooses between premium and
 /// lightweight shaders based on renderer capabilities.
@@ -25,6 +26,8 @@ class AdaptiveGlass extends StatelessWidget {
     this.quality = GlassQuality.standard,
     this.useOwnLayer = true,
     this.clipBehavior = Clip.antiAlias,
+    this.allowElevation = true,
+    this.glowIntensity = 0.0,
     super.key,
   });
 
@@ -34,6 +37,18 @@ class AdaptiveGlass extends StatelessWidget {
   final GlassQuality quality;
   final bool useOwnLayer;
   final Clip clipBehavior;
+
+  /// Whether to allow "Specular Elevation" when in a grouped context.
+  /// Should be true for interactive objects (buttons) and false for layers/containers.
+  final bool allowElevation;
+
+  /// Interactive glow intensity for Skia/Web (0.0-1.0).
+  ///
+  /// On Impeller, this is ignored and [GlassGlow] widget is used instead.
+  /// On Skia/Web, this controls shader-based button press feedback.
+  ///
+  /// Defaults to 0.0 (no glow).
+  final double glowIntensity;
 
   /// Detects if Impeller rendering engine is active.
   ///
@@ -50,6 +65,7 @@ class AdaptiveGlass extends StatelessWidget {
     required Widget child,
     GlassQuality quality = GlassQuality.standard,
     Clip clipBehavior = Clip.antiAlias,
+    double glowIntensity = 0.0,
   }) {
     return AdaptiveGlass(
       shape: shape,
@@ -57,6 +73,7 @@ class AdaptiveGlass extends StatelessWidget {
       quality: quality,
       useOwnLayer: false,
       clipBehavior: clipBehavior,
+      glowIntensity: glowIntensity,
       child: child,
     );
   }
@@ -72,13 +89,62 @@ class AdaptiveGlass extends StatelessWidget {
         !kIsWeb && _canUseImpeller && quality == GlassQuality.premium;
 
     if (!canUsePremiumShader) {
-      // Skia path or Standard path: Use our high-performance shader
-      // Always use explicit settings to support animations (saturation, etc.)
-      // Each widget gets its own shader instance on Skia - this is acceptable
-      // performance-wise and necessary for per-widget animations
+      // 1. Detect Grouped Elevation
+      // When a parent provides the blur (Batch-Blur Optimization), we lose the
+      // "double-darkening" effect of nested blurs. We compensate with the
+      // densityFactor parameter (0.0-1.0) which triggers synthetic density physics
+      // in the shader to make elevated widgets "pop" against the background.
+      final inherited =
+          context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+      final bool shouldElevate =
+          allowElevation && (inherited?.isBlurProvidedByAncestor ?? false);
+
+      // Calculate density factor for shader (0.0 = normal, 1.0 = elevated)
+      final double densityFactor = shouldElevate ? 1.0 : 0.0;
+
+      // Apply subtle elevation boost to settings (preserves saturation!)
+      final color = settings.effectiveGlassColor;
+      final effectiveSettings = shouldElevate
+          ? LiquidGlassSettings(
+              glassColor:
+                  color.withValues(alpha: (color.a + 0.2).clamp(0.0, 1.0)),
+              refractiveIndex: settings.refractiveIndex,
+              thickness: settings.effectiveThickness,
+              lightAngle: settings.lightAngle,
+              lightIntensity:
+                  (settings.effectiveLightIntensity * 1.2).clamp(0.0, 10.0),
+              chromaticAberration: settings.chromaticAberration,
+              blur: settings.effectiveBlur,
+              visibility: settings.visibility,
+              saturation:
+                  settings.effectiveSaturation, // Preserve user saturation!
+              ambientStrength:
+                  (settings.effectiveAmbientStrength * 0.4).clamp(0.0, 1.0),
+            )
+          : settings;
+
+      // PIPELINE HAND-OFF (The Secret Sauce)
+      // If this is a container (allowElevation=false), we are providing a blur
+      // for all our children to use. We update the InheritedLiquidGlass tree.
+      if (!allowElevation) {
+        return LightweightLiquidGlass(
+          shape: shape,
+          settings: effectiveSettings,
+          densityFactor: 0.0, // Containers are never elevated
+          glowIntensity: 0.0, // Containers don't glow
+          child: InheritedLiquidGlass(
+            settings: effectiveSettings,
+            isBlurProvidedByAncestor: true,
+            child: child,
+          ),
+        );
+      }
+
       return LightweightLiquidGlass(
         shape: shape,
-        settings: settings,
+        settings: effectiveSettings,
+        densityFactor: densityFactor, // 0.0 or 1.0 based on elevation
+        glowIntensity: glowIntensity, // Pass through from button animation
         child: child,
       );
     }

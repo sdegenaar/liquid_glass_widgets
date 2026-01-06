@@ -420,82 +420,74 @@ class _GlassButtonState extends State<GlassButton>
       ),
     );
 
-    // Animate the glass effect with saturation for Skia glow
-    return AnimatedBuilder(
+    // 2. Build the inner content (Glow + Icon/Child)
+    // This part is static relative to the glass saturation pulse
+    final glowContent = GlassGlow(
+      glowColor: widget.glowColor,
+      glowRadius: widget.glowRadius,
+      hitTestBehavior: widget.glowHitTestBehavior,
+      child: contentWidget,
+    );
+
+    // 3. Animate ONLY the glass settings that change during interaction
+    final glassWidget = AnimatedBuilder(
       animation: _saturationAnimation,
-      builder: (context, _) {
-        // Merge animated saturation into settings for Skia shader glow
-        // Inherit settings from parent layer when not explicitly provided
-        final baseSettings =
-            widget.settings ?? InheritedLiquidGlass.ofOrDefault(context);
-        final saturationValue = _saturationAnimation.value;
-        final animatedSettings = baseSettings.copyWith(
-          saturation: saturationValue,
-        );
-
-        // Build the glass effect widget
-        Widget glassWidget;
-
+      child: glowContent,
+      builder: (context, child) {
         if (widget.style == GlassButtonStyle.transparent) {
-          // Just interaction effects, no glass shape
-          glassWidget = GlassGlow(
-            glowColor: widget.glowColor,
-            glowRadius: widget.glowRadius,
-            hitTestBehavior: widget.glowHitTestBehavior,
-            child: contentWidget,
-          );
-        } else {
-          final glowContent = GlassGlow(
-            glowColor: widget.glowColor,
-            glowRadius: widget.glowRadius,
-            hitTestBehavior: widget.glowHitTestBehavior,
-            child: contentWidget,
-          );
-
-          glassWidget = AdaptiveGlass(
-            shape: widget.shape,
-            settings: animatedSettings,
-            quality: widget.quality,
-            useOwnLayer: widget.useOwnLayer,
-            child: glowContent,
-          );
+          return child!;
         }
 
-        // Wrap with stretch animation
-        // Performance: RepaintBoundary isolates button animations from parent
-        final stretchWidget = RepaintBoundary(
-          child: LiquidStretch(
-            interactionScale: widget.interactionScale,
-            stretch: widget.stretch,
-            resistance: widget.resistance,
-            hitTestBehavior: widget.stretchHitTestBehavior,
-            child: Semantics(
-              button: true,
-              label: widget.label.isNotEmpty ? widget.label : null,
-              enabled: widget.enabled,
-              child: glassWidget,
-            ),
-          ),
-        );
+        final baseSettings =
+            widget.settings ?? InheritedLiquidGlass.ofOrDefault(context);
 
-        // Apply opacity when disabled
-        final finalWidget = widget.enabled
-            ? stretchWidget
-            : Opacity(
-                opacity: 0.5,
-                child: stretchWidget,
-              );
-
-        // Wrap with gesture detector
-        return GestureDetector(
-          onTap: widget.enabled ? widget.onTap : null,
-          onTapDown: _handleTapDown,
-          onTapUp: _handleTapUp,
-          onTapCancel: _handleTapCancel,
-          behavior: HitTestBehavior.opaque,
-          child: finalWidget,
+        // Pass glow intensity directly to AdaptiveGlass for Skia shader feedback.
+        // On Impeller, GlassGlow widget is used instead (separate from glass effect).
+        // On Skia/Web, glowIntensity controls shader-based additive brightness.
+        return AdaptiveGlass(
+          shape: widget.shape,
+          settings: baseSettings, // Preserve user's saturation setting!
+          quality: widget.quality,
+          useOwnLayer: widget.useOwnLayer,
+          glowIntensity: _saturationAnimation.value, // 0.0-1.0 animation
+          child: child!,
         );
       },
+    );
+
+    // 4. Wrap with stretch animation and interaction containers
+    // These remain outside the AnimatedBuilder to prevent redundant rebuilds
+    final stretchWidget = RepaintBoundary(
+      child: LiquidStretch(
+        interactionScale: widget.interactionScale,
+        stretch: widget.stretch,
+        resistance: widget.resistance,
+        hitTestBehavior: widget.stretchHitTestBehavior,
+        child: Semantics(
+          button: true,
+          label: widget.label.isNotEmpty ? widget.label : null,
+          enabled: widget.enabled,
+          child: glassWidget,
+        ),
+      ),
+    );
+
+    // Apply opacity when disabled
+    final finalWidget = widget.enabled
+        ? stretchWidget
+        : Opacity(
+            opacity: 0.5,
+            child: stretchWidget,
+          );
+
+    // Wrap with gesture detector
+    return GestureDetector(
+      onTap: widget.enabled ? widget.onTap : null,
+      onTapDown: _handleTapDown,
+      onTapUp: _handleTapUp,
+      onTapCancel: _handleTapCancel,
+      behavior: HitTestBehavior.opaque,
+      child: finalWidget,
     );
   }
 }

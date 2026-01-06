@@ -125,6 +125,7 @@ class GlassInteractiveIndicator extends StatelessWidget {
       shape: shape,
       settings: indicatorSettings,
       quality: quality,
+      allowElevation: false,
       useOwnLayer: !kIsWeb, // Indicators always use their own layer
       child: const GlassGlow(child: SizedBox.expand()),
     );

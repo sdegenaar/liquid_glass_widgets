@@ -61,9 +61,9 @@ Navigation and app structure:
 
 Add to your `pubspec.yaml`:
 
-```yaml
+```yamlcan you
 dependencies:
-  liquid_glass_widgets: ^0.2.0-dev.2
+  liquid_glass_widgets: ^0.2.1-dev.1
 ```
 
 Then run:
@@ -85,8 +85,7 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Precache shader to prevent loading flash
-  await LightweightLiquidGlass.preWarm();
+  await LiquidGlassWidgets.initialize();
 
   runApp(const MyApp());
 }
@@ -329,7 +328,7 @@ Widgets use `LiquidShape` for customizable shapes, with `LiquidRoundedSuperellip
 
 ## Performance Tips
 
-1. **Precache the shader** at app startup with `await LightweightLiquidGlass.preWarm()` to eliminate loading flash
+1. **Precache the shader** at app startup with `await LiquidGlassWidgets.initialize();` to eliminate loading flash
 2. **Use Grouped Mode** when you have multiple glass widgets - wrap them in `AdaptiveLiquidGlassLayer`
 3. **Use Standard Quality** for scrollable content and interactive widgets (it's already very high quality!)
 4. **Reserve Premium Quality** for static elements like app bars where you want Impeller's advanced features

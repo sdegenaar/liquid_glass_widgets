@@ -76,20 +76,24 @@ class AdaptiveLiquidGlassLayer extends StatelessWidget {
     final bool useFullRenderer =
         _canUseImpeller && quality == GlassQuality.premium;
 
+    // On Skia/Web, we want to provide a single BackdropFilter for the whole layer
+    // to avoid each child doing its own expensive blur.
+    Widget content = child;
+
     // Root Provider: Always exists to satisfy assertions for grouped widgets.
-    // When fake is true, it provides the InheritedWidget scope without enabling
-    // the heavy backdrop-texture based rendering logic.
     return LiquidGlassLayer(
       settings: settings,
       fake: !useFullRenderer,
       child: InheritedLiquidGlass(
         settings: settings,
+        isBlurProvidedByAncestor:
+            false, // Root never provides the blur; containers do.
         child: useFullRenderer
             ? LiquidGlassBlendGroup(
                 blend: blendAmount,
-                child: child,
+                child: content,
               )
-            : child, // On Skia/web, children use LightweightLiquidGlass directly
+            : content,
       ),
     );
   }

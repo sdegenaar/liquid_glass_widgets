@@ -227,6 +227,7 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
       settings: settings ?? _defaultSettings,
       quality: quality,
       useOwnLayer: useOwnLayer,
+      allowElevation: false, // Surfaces don't pop
       child: appBarContent,
     );
 

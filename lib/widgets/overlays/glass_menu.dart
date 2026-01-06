@@ -332,10 +332,6 @@ class _GlassMenuState extends State<GlassMenu>
     // If user provides custom settings, use those. Otherwise, check for inherited
     // settings from parent layer. If none, use subtle overlay defaults.
     // This matches the pattern used by all other glass widgets.
-    //
-    // CRITICAL FIX: Old code used hardcoded blur:20, thickness:30 which created
-    // a thick border. Now uses thin delicate rim (refractiveIndex: 0.7) matching
-    // iOS 26 aesthetic and other widgets like GlassCard.
     final inheritedSettings = InheritedLiquidGlass.of(context);
     final effectiveSettings = widget.glassSettings ??
         inheritedSettings ??
@@ -356,59 +352,72 @@ class _GlassMenuState extends State<GlassMenu>
     return RepaintBoundary(
       child: Opacity(
         opacity: containerOpacity, // Fade entire container during closing
-        child: GlassContainer(
-          useOwnLayer: true,
-          settings: effectiveSettings,
-          quality: widget.quality,
-          width: currentWidth,
-          height: currentHeight, // Constrained during morph, natural when open
-          shape: LiquidRoundedSuperellipse(borderRadius: currentBorderRadius),
-          clipBehavior: Clip.antiAlias, // Smooth anti-aliased edges
-          child: Stack(
-            alignment: _morphAlignment, // Align internal stack content
-            clipBehavior:
-                Clip.antiAlias, // Smooth clipping for overflow protection
-            children: [
-              // Menu content - waits for container to be nearly full width
-              // Width-constrained BEFORE layout to prevent overflow
-              //
-              // NOTE: We do NOT render the button inside this container during closing
-              // because it would create double-glass (container glass + button glass).
-              // The real trigger button (outside overlay) becomes visible at value < 0.05
-              if (value > 0.65)
-                Opacity(
-                  opacity: menuOpacity,
-                  child: SizedBox(
-                    width: currentWidth, // Force exact container width
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 8, horizontal: 8),
-                      child: SingleChildScrollView(
-                        physics:
-                            const ClampingScrollPhysics(), // iOS-style scrolling
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: widget.items.map((item) {
-                            return GlassMenuItem(
-                              key: item.key,
-                              title: item.title,
-                              icon: item.icon,
-                              isDestructive: item.isDestructive,
-                              trailing: item.trailing,
-                              height: item.height,
-                              onTap: () {
-                                item.onTap();
-                                _closeMenu();
-                              },
-                            );
-                          }).toList(),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(currentBorderRadius),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(
+              sigmaX: effectiveSettings.blur,
+              sigmaY: effectiveSettings.blur,
+            ),
+            child: GlassContainer(
+              useOwnLayer: true,
+              settings: effectiveSettings,
+              quality: widget.quality,
+              allowElevation:
+                  false, // Menu is overlay - don't darken when outside parent
+              width: currentWidth,
+              height:
+                  currentHeight, // Constrained during morph, natural when open
+              shape:
+                  LiquidRoundedSuperellipse(borderRadius: currentBorderRadius),
+              clipBehavior: Clip.antiAlias, // Smooth anti-aliased edges
+              child: Stack(
+                alignment: _morphAlignment, // Align internal stack content
+                clipBehavior:
+                    Clip.antiAlias, // Smooth clipping for overflow protection
+                children: [
+                  // Menu content - waits for container to be nearly full width
+                  // Width-constrained BEFORE layout to prevent overflow
+                  //
+                  // NOTE: We do NOT render the button inside this container during closing
+                  // because it would create double-glass (container glass + button glass).
+                  // The real trigger button (outside overlay) becomes visible at value < 0.05
+                  if (value > 0.65)
+                    Opacity(
+                      opacity: menuOpacity,
+                      child: SizedBox(
+                        width: currentWidth, // Force exact container width
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 8, horizontal: 8),
+                          child: SingleChildScrollView(
+                            physics:
+                                const ClampingScrollPhysics(), // iOS-style scrolling
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: widget.items.map((item) {
+                                return GlassMenuItem(
+                                  key: item.key,
+                                  title: item.title,
+                                  icon: item.icon,
+                                  isDestructive: item.isDestructive,
+                                  trailing: item.trailing,
+                                  height: item.height,
+                                  onTap: () {
+                                    item.onTap();
+                                    _closeMenu();
+                                  },
+                                );
+                              }).toList(),
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-            ],
+                ],
+              ),
+            ),
           ),
         ),
       ),

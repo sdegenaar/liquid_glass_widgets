@@ -88,6 +88,7 @@ class GlassContainer extends StatelessWidget {
     this.quality = GlassQuality.standard,
     this.clipBehavior = Clip.none,
     this.alignment,
+    this.allowElevation = false,
   });
 
   // ===========================================================================
@@ -186,6 +187,17 @@ class GlassContainer extends StatelessWidget {
   /// Defaults to [Clip.none].
   final Clip clipBehavior;
 
+  /// Whether to allow elevation effects when in a grouped context.
+  ///
+  /// When false (default), the container won't darken or add rim effects
+  /// when inside another glass container. This is correct for most containers
+  /// as they are surfaces, not interactive elements.
+  ///
+  /// Set to true only for special cases where elevation is needed.
+  ///
+  /// Defaults to false.
+  final bool allowElevation;
+
   @override
   Widget build(BuildContext context) {
     // 1. Start with the child content
@@ -216,6 +228,7 @@ class GlassContainer extends StatelessWidget {
       quality: quality,
       useOwnLayer: useOwnLayer,
       clipBehavior: clipBehavior,
+      allowElevation: allowElevation, // Configurable elevation behavior
       child: content,
     );
 

@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import '../../liquid_glass_setup.dart';
 
 /// A custom inherited widget that provides [LiquidGlassSettings] to descendants.
 ///
@@ -11,12 +12,17 @@ class InheritedLiquidGlass extends InheritedWidget {
   /// Creates an inherited widget that holds [LiquidGlassSettings].
   const InheritedLiquidGlass({
     required this.settings,
+    this.isBlurProvidedByAncestor = false,
     required super.child,
     super.key,
   });
 
   /// The glass settings to share with the subtree.
   final LiquidGlassSettings settings;
+
+  /// Whether a parent layer is already providing the backdrop blur.
+  /// Used for performance optimization to avoid redundant BackdropFilters.
+  final bool isBlurProvidedByAncestor;
 
   /// Retrieves the nearest [LiquidGlassSettings] from the ancestor tree.
   ///
@@ -41,13 +47,16 @@ class InheritedLiquidGlass extends InheritedWidget {
   }
 
   /// Retrieves the [LiquidGlassSettings] from the ancestor tree, falling back to
-  /// a default instance if none is found.
+  /// [LiquidGlassWidgets.globalSettings] or a default instance if none is found.
   static LiquidGlassSettings ofOrDefault(BuildContext context) {
-    return of(context) ?? const LiquidGlassSettings();
+    return of(context) ??
+        LiquidGlassWidgets.globalSettings ??
+        const LiquidGlassSettings();
   }
 
   @override
   bool updateShouldNotify(InheritedLiquidGlass oldWidget) {
-    return settings != oldWidget.settings;
+    return settings != oldWidget.settings ||
+        isBlurProvidedByAncestor != oldWidget.isBlurProvidedByAncestor;
   }
 }

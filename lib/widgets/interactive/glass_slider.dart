@@ -368,115 +368,147 @@ class _GlassSliderState extends State<GlassSlider>
         final thumbPosition =
             widget.thumbRadius + (trackWidth * normalizedValue);
 
-        return GestureDetector(
-          onHorizontalDragStart: _handleDragStart,
-          onHorizontalDragUpdate: (details) =>
-              _handleDragUpdate(details, constraints),
-          onHorizontalDragEnd: _handleDragEnd,
-          child: SizedBox(
-            height: widget.thumbRadius * 2 + 16,
-            width: constraints.maxWidth,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                // Track (centered vertically)
-                Positioned.fill(
-                  child: Center(
-                    child: SizedBox(
-                      height: widget.trackHeight,
-                      child: Stack(
-                        children: [
-                          // Full inactive track (background)
-                          Positioned.fill(
-                            child: _buildTrackGlass(
-                              borderRadius: BorderRadius.circular(
-                                widget.trackHeight / 2,
-                              ),
-                              color: inactiveColor,
-                            ),
-                          ),
+        // Calculate step size for accessibility increase/decrease
+        final step = (widget.max - widget.min) / (widget.divisions ?? 10);
+        final increasedValue =
+            (widget.value + step).clamp(widget.min, widget.max);
+        final decreasedValue =
+            (widget.value - step).clamp(widget.min, widget.max);
 
-                          // Active track (extends under thumb - visible
-                          // through glass)
-                          if (normalizedValue > 0)
-                            Positioned(
-                              left: 0,
-                              right:
-                                  constraints.maxWidth * (1 - normalizedValue),
-                              top: 0,
-                              bottom: 0,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: activeColor,
-                                  borderRadius: BorderRadius.horizontal(
-                                    left: Radius.circular(
-                                      widget.trackHeight / 2,
+        // Calculate normalized percentages for semantics
+        final normalizedIncreased =
+            ((increasedValue - widget.min) / (widget.max - widget.min))
+                .clamp(0.0, 1.0);
+        final normalizedDecreased =
+            ((decreasedValue - widget.min) / (widget.max - widget.min))
+                .clamp(0.0, 1.0);
+
+        return Semantics(
+          label: widget.label ?? 'Slider',
+          value: '${(normalizedValue * 100).round()}%',
+          increasedValue: '${(normalizedIncreased * 100).round()}%',
+          decreasedValue: '${(normalizedDecreased * 100).round()}%',
+          onIncrease: widget.onChanged != null
+              ? () {
+                  widget.onChanged!(increasedValue);
+                }
+              : null,
+          onDecrease: widget.onChanged != null
+              ? () {
+                  widget.onChanged!(decreasedValue);
+                }
+              : null,
+          child: GestureDetector(
+            onHorizontalDragStart: _handleDragStart,
+            onHorizontalDragUpdate: (details) =>
+                _handleDragUpdate(details, constraints),
+            onHorizontalDragEnd: _handleDragEnd,
+            child: SizedBox(
+              height: widget.thumbRadius * 2 + 16,
+              width: constraints.maxWidth,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // Track (centered vertically)
+                  Positioned.fill(
+                    child: Center(
+                      child: SizedBox(
+                        height: widget.trackHeight,
+                        child: Stack(
+                          children: [
+                            // Full inactive track (background)
+                            Positioned.fill(
+                              child: _buildTrackGlass(
+                                borderRadius: BorderRadius.circular(
+                                  widget.trackHeight / 2,
+                                ),
+                                color: inactiveColor,
+                              ),
+                            ),
+
+                            // Active track (extends under thumb - visible
+                            // through glass)
+                            if (normalizedValue > 0)
+                              Positioned(
+                                left: 0,
+                                right: constraints.maxWidth *
+                                    (1 - normalizedValue),
+                                top: 0,
+                                bottom: 0,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: activeColor,
+                                    borderRadius: BorderRadius.horizontal(
+                                      left: Radius.circular(
+                                        widget.trackHeight / 2,
+                                      ),
+                                      right: normalizedValue >= 1.0
+                                          ? Radius.circular(
+                                              widget.trackHeight / 2,
+                                            )
+                                          : Radius.zero,
                                     ),
-                                    right: normalizedValue >= 1.0
-                                        ? Radius.circular(
-                                            widget.trackHeight / 2,
-                                          )
-                                        : Radius.zero,
                                   ),
                                 ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
 
-                // Thumb (iOS 26: positioned slightly DOWN from track center)
-                // Performance: RepaintBoundary isolates thumb animations
-                Positioned(
-                  left: thumbPosition - widget.thumbRadius,
-                  top: 10.5,
-                  child: RepaintBoundary(
-                    child: AnimatedBuilder(
-                      animation: Listenable.merge([
-                        _scaleController,
-                        _thicknessController,
-                      ]),
-                      builder: (context, child) {
-                        final scale = _scaleAnimation.value;
-                        final thickness = _thicknessAnimation.value;
+                  // Thumb (iOS 26: positioned slightly DOWN from track center)
+                  // Performance: RepaintBoundary isolates thumb animations
+                  Positioned(
+                    left: thumbPosition - widget.thumbRadius,
+                    top: 10.5,
+                    child: RepaintBoundary(
+                      child: AnimatedBuilder(
+                        animation: Listenable.merge([
+                          _scaleController,
+                          _thicknessController,
+                        ]),
+                        builder: (context, child) {
+                          final scale = _scaleAnimation.value;
+                          final thickness = _thicknessAnimation.value;
 
-                        // iOS 26 liquid glass: more dramatic jelly when dragging
-                        final jellyTransform = _isDragging
-                            ? DraggableIndicatorPhysics.buildJellyTransform(
-                                velocity: _velocity,
-                                maxDistortion:
-                                    0.25, // More dramatic than before
-                                velocityScale: 30, // More sensitive to velocity
-                              )
-                            : Matrix4.identity();
+                          // iOS 26 liquid glass: more dramatic jelly when dragging
+                          final jellyTransform = _isDragging
+                              ? DraggableIndicatorPhysics.buildJellyTransform(
+                                  velocity: _velocity,
+                                  maxDistortion:
+                                      0.25, // More dramatic than before
+                                  velocityScale:
+                                      30, // More sensitive to velocity
+                                )
+                              : Matrix4.identity();
 
-                        return Transform(
-                          alignment: Alignment.center,
-                          transform: jellyTransform,
-                          child: Transform.scale(
-                            scale: scale,
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                // Solid thumb
-                                _buildThumbGlass(),
+                          return Transform(
+                            alignment: Alignment.center,
+                            transform: jellyTransform,
+                            child: Transform.scale(
+                              scale: scale,
+                              child: Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  // Solid thumb
+                                  _buildThumbGlass(),
 
-                                // Glass overlay (appears when dragging)
-                                if (thickness > 0)
-                                  Positioned.fill(
-                                    child: _buildGlassOverlay(thickness),
-                                  ),
-                              ],
+                                  // Glass overlay (appears when dragging)
+                                  if (thickness > 0)
+                                    Positioned.fill(
+                                      child: _buildGlassOverlay(thickness),
+                                    ),
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -524,12 +556,12 @@ class _GlassSliderState extends State<GlassSlider>
         : const Color.from(
             alpha: 0.15, red: 1, green: 1, blue: 1); // very subtle tint at rest
 
-    final lightWightShader = widget.quality.usesLightweightShader;
+    final lightWeightShader = widget.quality.usesLightweightShader;
 
     // Strong refraction when liquid
     // Skia fallback needs a higher multiplier to match the "pop" of real refraction
     final refractiveIndex = _isDragging
-        ? (lightWightShader ? 1.2 : 1.15)
+        ? (lightWeightShader ? 1.2 : 1.15)
         : 0.7; // Thin delicate rim at rest
 
     // Rainbow edges when liquid
@@ -537,13 +569,14 @@ class _GlassSliderState extends State<GlassSlider>
         _isDragging ? 0.5 : 0.0; // No aberration at rest
 
     // Thicker glass depth when liquid
-    final thickness =
-        _isDragging ? (lightWightShader ? 20.0 : 10.0) : 5.0; // Minimal at rest
+    final thickness = _isDragging
+        ? (lightWeightShader ? 20.0 : 10.0)
+        : 5.0; // Minimal at rest
 
     // Bright highlights when liquid
     // Skia fallback needs punchier highlights to compensate for lack of backdrop sampling
     final lightIntensity = _isDragging
-        ? (lightWightShader ? 0.5 : 2.0)
+        ? (lightWeightShader ? 1.5 : 2.0)
         : 0.5; // Subtle lighting at rest
 
     // Less blur (sharper) when liquid
@@ -589,7 +622,7 @@ class _GlassSliderState extends State<GlassSlider>
       lightIntensity: lightIntensity,
       chromaticAberration: chromaticAberration,
       blur: blur,
-      lightAngle: 90,
+      lightAngle: 135,
       ambientStrength:
           _isDragging ? 0.3 : 0.8, // Bright at rest, darker when dragging
     );
@@ -599,6 +632,7 @@ class _GlassSliderState extends State<GlassSlider>
       settings: thumbSettings,
       quality: widget.quality,
       useOwnLayer: true, // Thumb always uses its own layer
+      allowElevation: false, // Don't darken thumb when inside containers
       child: thumbContent,
     );
   }

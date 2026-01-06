@@ -344,16 +344,22 @@ class _GlassSwitchState extends State<GlassSwitch>
               ),
             );
 
-            return SizedBox(
-              width: trackWidth,
-              height: widget.height,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  track,
-                  thumb,
-                  glassOverlay, // Glass overlay appears ABOVE thumb
-                ],
+            return Semantics(
+              label: 'Switch',
+              toggled: widget.value,
+              enabled: true,
+              onTap: _handleTap,
+              child: SizedBox(
+                width: trackWidth,
+                height: widget.height,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    track,
+                    thumb,
+                    glassOverlay, // Glass overlay appears ABOVE thumb
+                  ],
+                ),
               ),
             );
           },
@@ -416,7 +422,7 @@ class _GlassSwitchState extends State<GlassSwitch>
         ),
         refractiveIndex: 1.2, // Thin delicate rim (iOS 26 aesthetic)
         thickness: 20,
-        lightAngle: 120, //
+        lightAngle: 135, //
         lightIntensity: 2, // Same as Impeller (calibrated shader)
         blur: 0,
       );

@@ -12,8 +12,8 @@ void main() async {
   // Ensure Flutter bindings are initialized before loading shaders
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Populate the LightweightLiquidGlass global static cache
-  await LightweightLiquidGlass.preWarm();
+  // Initializes the Liquid Glass library.
+  await LiquidGlassWidgets.initialize();
 
   runApp(const AppleLiquidGlassShowcaseApp());
 }

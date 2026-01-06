@@ -15,12 +15,21 @@ import 'inherited_liquid_glass.dart';
 ///
 /// This widget uses a custom fragment shader to achieve iOS 26 liquid glass
 /// aesthetics while being 5-10x faster than BackdropFilter-based approaches.
+///
+/// **Lightweight-Specific Parameters:**
+/// - [glowIntensity]: Interactive glow strength (0.0-1.0, button press feedback)
+/// - [densityFactor]: Elevation physics (0.0-1.0, simulates nested blur darkening)
+///
+/// These parameters are only used by the lightweight shader (Skia/Web).
+/// On Impeller, glow is handled by [GlassGlow] widget and density is not needed.
 class LightweightLiquidGlass extends StatefulWidget {
   /// Creates a lightweight liquid glass effect widget.
   const LightweightLiquidGlass({
     required this.child,
     required this.shape,
     this.settings = const LiquidGlassSettings(),
+    this.glowIntensity = 0.0,
+    this.densityFactor = 0.0,
     super.key,
   });
 
@@ -29,6 +38,8 @@ class LightweightLiquidGlass extends StatefulWidget {
   const LightweightLiquidGlass.inLayer({
     required this.child,
     required this.shape,
+    this.glowIntensity = 0.0,
+    this.densityFactor = 0.0,
     super.key,
   }) : settings = null;
 
@@ -40,6 +51,29 @@ class LightweightLiquidGlass extends StatefulWidget {
 
   /// The glass effect settings.
   final LiquidGlassSettings? settings;
+
+  /// Interactive glow intensity for button press feedback (Skia/Web only).
+  ///
+  /// Range: 0.0 (no glow) to 1.0 (full glow)
+  ///
+  /// On Impeller, use [GlassGlow] widget instead. This parameter is ignored.
+  /// On Skia/Web, this controls shader-based glow effect.
+  ///
+  /// Defaults to 0.0.
+  final double glowIntensity;
+
+  /// Density factor for elevation physics (Skia/Web only).
+  ///
+  /// Range: 0.0 (normal) to 1.0 (fully elevated)
+  ///
+  /// When a parent container provides blur (batch-blur optimization), elevated
+  /// buttons use this to simulate the "double-darkening" effect of nested
+  /// BackdropFilters without the O(n) performance cost.
+  ///
+  /// On Impeller, this is not needed as each widget can have its own blur.
+  ///
+  /// Defaults to 0.0.
+  final double densityFactor;
 
   // Cache the FragmentProgram (compiled shader code) globally
   static ui.FragmentProgram? _cachedProgram;
@@ -127,9 +161,16 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass> {
 
   @override
   Widget build(BuildContext context) {
+    final inherited =
+        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
     final settings =
-        widget.settings ?? InheritedLiquidGlass.ofOrDefault(context);
+        widget.settings ?? inherited?.settings ?? const LiquidGlassSettings();
     final shader = _activeShader;
+
+    // Optimization: Skip local blur if provided by ancestor and settings match
+    final bool skipBlur = (inherited?.isBlurProvidedByAncestor ?? false) &&
+        (widget.settings == null ||
+            widget.settings?.blur == inherited?.settings.blur);
 
     if (shader == null) {
       // Shader not ready yet - show fallback
@@ -148,6 +189,9 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass> {
         shader: shader,
         settings: settings,
         shape: widget.shape,
+        skipBlur: skipBlur,
+        glowIntensity: widget.glowIntensity,
+        densityFactor: widget.densityFactor,
         child: widget.child,
       ),
     );
@@ -159,12 +203,18 @@ class _LightweightGlassEffect extends SingleChildRenderObjectWidget {
     required this.shader,
     required this.settings,
     required this.shape,
+    required this.skipBlur,
+    required this.glowIntensity,
+    required this.densityFactor,
     required super.child,
   });
 
   final ui.FragmentShader shader;
   final LiquidGlassSettings settings;
   final LiquidShape shape;
+  final bool skipBlur;
+  final double glowIntensity;
+  final double densityFactor;
 
   @override
   RenderObject createRenderObject(BuildContext context) {
@@ -172,6 +222,9 @@ class _LightweightGlassEffect extends SingleChildRenderObjectWidget {
       shader: shader,
       settings: settings,
       shape: shape,
+      skipBlur: skipBlur,
+      glowIntensity: glowIntensity,
+      densityFactor: densityFactor,
     );
   }
 
@@ -183,7 +236,10 @@ class _LightweightGlassEffect extends SingleChildRenderObjectWidget {
     renderObject
       ..shader = shader
       ..settings = settings
-      ..shape = shape;
+      ..shape = shape
+      ..skipBlur = skipBlur
+      ..glowIntensity = glowIntensity
+      ..densityFactor = densityFactor;
   }
 }
 
@@ -192,9 +248,15 @@ class _RenderLightweightGlass extends RenderProxyBox {
     required ui.FragmentShader shader,
     required LiquidGlassSettings settings,
     required LiquidShape shape,
+    required bool skipBlur,
+    required double glowIntensity,
+    required double densityFactor,
   })  : _shader = shader,
         _settings = settings,
-        _shape = shape;
+        _shape = shape,
+        _skipBlur = skipBlur,
+        _glowIntensity = glowIntensity,
+        _densityFactor = densityFactor;
 
   ui.FragmentShader _shader;
   ui.FragmentShader get shader => _shader;
@@ -220,59 +282,80 @@ class _RenderLightweightGlass extends RenderProxyBox {
     markNeedsPaint();
   }
 
+  bool _skipBlur;
+  bool get skipBlur => _skipBlur;
+  set skipBlur(bool value) {
+    if (_skipBlur == value) return;
+    _skipBlur = value;
+    markNeedsPaint();
+  }
+
+  double _glowIntensity;
+  double get glowIntensity => _glowIntensity;
+  set glowIntensity(double value) {
+    if (_glowIntensity == value) return;
+    _glowIntensity = value;
+    markNeedsPaint();
+  }
+
+  double _densityFactor;
+  double get densityFactor => _densityFactor;
+  set densityFactor(double value) {
+    if (_densityFactor == value) return;
+    _densityFactor = value;
+    markNeedsPaint();
+  }
+
   @override
   bool get alwaysNeedsCompositing => true;
 
   @override
   void paint(PaintingContext context, Offset offset) {
     if (child != null) {
-      // 1. Decoupled Backdrop Blur (Isolation Pass)
+      // 1. Establish the Backdrop Pass
       final blurSigma = _settings.effectiveBlur;
-      if (blurSigma > 0) {
+      if (blurSigma > 0 && !_skipBlur) {
         context.pushLayer(
           BackdropFilterLayer(
             filter: ui.ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
           ),
-          (context, offset) {},
+          (context, offset) {
+            // Paint Child & Shader inside the blur context
+            _paintGlassContent(context, offset);
+          },
           offset,
         );
+      } else {
+        // No blur needed or skip requested - just paint content
+        _paintGlassContent(context, offset);
       }
-
-      // 2. Center Content Pass (Child content)
-      super.paint(context, offset);
-
-      // 3. Zero-Latency Matrix-Synced Shader Overlay
-      // Instead of localToGlobal (which is unsafe in paint), we extract the
-      // current canvas transformation. This includes all parent offsets,
-      // scrolls, and scales (like from LiquidStretch).
-      final canvas = context.canvas;
-      final matrix = canvas.getTransform();
-
-      // Extraction: 12, 13 are the physical window translation.
-      // 0, 5 are the horizontal/vertical scale (includes DPR).
-      final canvasPhysicalX = matrix[12];
-      final canvasPhysicalY = matrix[13];
-      final scaleX = matrix[0];
-      final scaleY = matrix[5];
-
-      // Calculate absolute screen physical origin of THIS widget
-      // (Accounting for the 'offset' passed into the paint method)
-      final uOrigin = Offset(
-        canvasPhysicalX + (offset.dx * scaleX),
-        canvasPhysicalY + (offset.dy * scaleY),
-      );
-
-      // The logical-to-physical ratio (includes DPR and any parent transforms like LiquidStretch)
-      final uScale = Offset(scaleX, scaleY);
-
-      _updateShaderUniforms(size, uOrigin, uScale);
-
-      final paint = Paint()..shader = _shader;
-
-      // We draw the shader at the SAME offset where the child was painted.
-      // This ensures the clipping rect matches the widget bounds.
-      canvas.drawRect(offset & size, paint);
     }
+  }
+
+  void _paintGlassContent(PaintingContext context, Offset offset) {
+    // 2. Center Content Pass (Child content)
+    super.paint(context, offset);
+
+    // 3. Zero-Latency Matrix-Synced Shader Overlay
+    final canvas = context.canvas;
+    final matrix = canvas.getTransform();
+
+    final canvasPhysicalX = matrix[12];
+    final canvasPhysicalY = matrix[13];
+    final scaleX = matrix[0];
+    final scaleY = matrix[5];
+
+    final uOrigin = Offset(
+      canvasPhysicalX + (offset.dx * scaleX),
+      canvasPhysicalY + (offset.dy * scaleY),
+    );
+
+    final uScale = Offset(scaleX, scaleY);
+
+    _updateShaderUniforms(size, uOrigin, uScale);
+
+    final paint = Paint()..shader = _shader;
+    canvas.drawRect(offset & size, paint);
   }
 
   void _updateShaderUniforms(
@@ -345,5 +428,11 @@ class _RenderLightweightGlass extends RenderProxyBox {
     // 16, 17: uScale (vec2) - Physical Scale (Includes DPR + Transforms)
     _shader.setFloat(index++, physicalScale.dx);
     _shader.setFloat(index++, physicalScale.dy);
+
+    // 18: uGlowIntensity (float) - Interactive glow strength (0.0-1.0)
+    _shader.setFloat(index++, _glowIntensity.clamp(0.0, 1.0));
+
+    // 19: uDensityFactor (float) - Elevation physics (0.0-1.0)
+    _shader.setFloat(index++, _densityFactor.clamp(0.0, 1.0));
   }
 }
