@@ -134,7 +134,7 @@ class GlassBottomBar extends StatefulWidget {
     this.horizontalPadding = 20,
     this.verticalPadding = 20,
     this.barHeight = 64,
-    this.barBorderRadius = 32,
+    this.barBorderRadius = _defaultBarBorderRadius,
     this.tabPadding = const EdgeInsets.symmetric(horizontal: 4),
     this.blendAmount = 10,
     this.glassSettings,
@@ -208,6 +208,7 @@ class GlassBottomBar extends StatefulWidget {
   /// Border radius of the tab bar.
   ///
   /// Defaults to 32 for a pill-shaped appearance.
+  static const _defaultBarBorderRadius = 32.0;
   final double barBorderRadius;
 
   /// Internal padding of the tab bar.
@@ -412,6 +413,12 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
               _ExtraButton(
                 config: widget.extraButton!,
                 quality: widget.quality,
+                iconColor:
+                    widget.extraButton!.iconColor ?? widget.unselectedIconColor,
+                borderRadius: widget.barBorderRadius ==
+                        GlassBottomBar._defaultBarBorderRadius
+                    ? null
+                    : widget.barBorderRadius,
               ),
           ],
         ),
@@ -471,6 +478,7 @@ class GlassBottomBarExtraButton {
     required this.icon,
     required this.onTap,
     required this.label,
+    this.iconColor,
     this.size = 64,
   });
 
@@ -482,6 +490,11 @@ class GlassBottomBarExtraButton {
 
   /// Accessibility label for the button.
   final String label;
+
+  /// Color used for the button's icon.
+  ///
+  /// Defaults to GlassBottomBar.unselectedIconColor.
+  final Color? iconColor;
 
   /// Width and height of the button.
   ///
@@ -652,10 +665,14 @@ class _ExtraButton extends StatelessWidget {
   const _ExtraButton({
     required this.config,
     required this.quality,
+    required this.iconColor,
+    this.borderRadius,
   });
 
   final GlassBottomBarExtraButton config;
   final GlassQuality quality;
+  final Color iconColor;
+  final double? borderRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -667,6 +684,10 @@ class _ExtraButton extends StatelessWidget {
       width: config.size,
       height: config.size,
       quality: quality,
+      iconColor: iconColor,
+      shape: borderRadius == null
+          ? const LiquidOval()
+          : LiquidRoundedRectangle(borderRadius: borderRadius!),
     );
   }
 }
