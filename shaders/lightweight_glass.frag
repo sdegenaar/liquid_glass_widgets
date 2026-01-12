@@ -15,17 +15,18 @@ uniform vec2 uSize;                 // 0, 1 (Logical Size)
 uniform vec2 uOrigin;               // 2, 3 (Physical Screen Origin)
 uniform vec4 uGlassColor;           // 4, 5, 6, 7
 uniform float uThickness;           // 8
-uniform float uLightAngle;          // 9 (radians)
-uniform float uLightIntensity;      // 10
-uniform float uAmbientStrength;     // 11
-uniform float uSaturation;          // 12 (Color saturation: <1.0=desaturated, 1.0=normal, >1.0=vivid)
+uniform vec2 uLightDirection;      // 9, 10 [cos(angle), -sin(angle)]
+uniform float uLightIntensity;      // 11
+uniform float uAmbientStrength;     // 12
+uniform float uSaturation;          // 13 (Color saturation: <1.0=desaturated, 1.0=normal, >1.0=vivid)
                                      //    Now matches Impeller's behavior!
-uniform float uRefractiveIndex;     // 13 (Rim prominence: 0.7=subtle, 1.0=normal, 2.0=pronounced)
-uniform float uChromaticAberration; // 14 (Impeller-only, ignored in lightweight shader)
-uniform float uCornerRadius;        // 15 (logical pixels)
-uniform vec2 uScale;                // 16, 17 (Physical scale including DPR)
-uniform float uGlowIntensity;       // 18 (Interactive glow: 0.0=off, 1.0=full, button press feedback)
-uniform float uDensityFactor;       // 19 (Elevation physics: 0.0=normal, 1.0=elevated, nested blur simulation) 
+uniform float uRefractiveIndex;     // 14 (Rim prominence: 0.7=subtle, 1.0=normal, 2.0=pronounced)
+uniform float uChromaticAberration; // 15 (Impeller-only, ignored in lightweight shader)
+uniform float uCornerRadius;        // 16 (logical pixels)
+uniform vec2 uScale;                // 17, 18 (Physical scale including DPR)
+uniform float uGlowIntensity;       // 19 (Interactive glow: 0.0=off, 1.0=full, button press feedback)
+uniform float uDensityFactor;       // 20 (Elevation physics: 0.0=normal, 1.0=elevated, nested blur simulation) 
+uniform float uIndicatorWeight;     // 21 (0.0=normal, 1.0=thick/bright indicator style)
 
 // -----------------------------------------------------------------------------
 // iOS 26 LIQUID GLASS: AESTHETIC PARAMETERS (ORIGINAL CALIBRATION)
@@ -83,10 +84,12 @@ void main() {
   vec2 p = localLogical - halfSize;
   vec2 closest = clamp(p, -innerHalfSize, innerHalfSize);
   vec2 grad = p - closest;
-  vec2 n = (length(grad) > kNormalThreshold) ? normalize(grad) : vec2(0.0);
+  vec2 surfaceNormal = (length(grad) > kNormalThreshold) ? normalize(grad) : vec2(0.0);
 
   // ---- STAGE 3: HAIRLINE MASK ----
-  float borderMask = 1.0 - smoothstep(0.0, smoothing, abs(dist) - kBorderThickness);
+  float effectiveBorder = kBorderThickness + uIndicatorWeight * 0.5;
+  float effectiveSmoothing = smoothing * (1.0 + uIndicatorWeight * 0.5);
+  float borderMask = 1.0 - smoothstep(0.0, effectiveSmoothing, abs(dist) - effectiveBorder);
 
   // ---- STAGE 3.5: SYNTHETIC DENSITY PHYSICS ----
   // Performance Optimization: When a parent container provides blur (Batch-Blur O(1) optimization),
@@ -108,10 +111,10 @@ void main() {
   float specularSharpness = (1.0 + (thicknessNorm - 1.0) * 0.15) * (1.0 + densityFactor * 0.2);
 
   // ---- STAGE 4: DETERMINISTIC LIGHTING ----
-  vec2 lightDir = vec2(cos(uLightAngle), -sin(uLightAngle));
-  float lightCatch = max(dot(n, lightDir), 0.0);
+  // uLightDirection is passed from Dart as [cos(angle), -sin(angle)]
+  float lightCatch = max(dot(surfaceNormal, uLightDirection), 0.0);
   float keySpecular = pow(lightCatch, kSpecularPowerPrimary * specularSharpness) * uLightIntensity;
-  float kickCatch = max(dot(n, -lightDir), 0.0);
+  float kickCatch = max(dot(surfaceNormal, -uLightDirection), 0.0);
   float kickSpecular = pow(kickCatch, kSpecularPowerKick * specularSharpness) * uLightIntensity * kKickIntensity;
 
   // ---- STAGE 5: BODY LAYER (WITH SYNTHETIC DENSITY) ----
@@ -145,6 +148,9 @@ void main() {
 
   // ---- STAGE 7: FINAL COMPOSITE ----
   vec3 finalColor = mix(bodyColor, rimColorBase, rimAlphaBase);
+  
+  // Indicator-specific luminous boost when uIndicatorWeight is 1.0
+  finalColor += vec3(0.05) * uIndicatorWeight;
   float finalAlpha = max(bodyAlpha, rimAlphaBase * kCompositeRimAlpha);
 
   // STAGE 7.5: INTERACTIVE GLOW (Branchless for GPU efficiency)

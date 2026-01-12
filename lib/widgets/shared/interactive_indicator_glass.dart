@@ -13,7 +13,6 @@ import '../../widgets/interactive/liquid_glass_scope.dart';
 import 'inherited_liquid_glass.dart';
 
 import '../../types/glass_quality.dart';
-import 'lightweight_liquid_glass.dart';
 
 /// Enhanced glass renderer specifically for interactive indicators.
 ///
@@ -30,6 +29,7 @@ class InteractiveIndicatorGlass extends StatefulWidget {
     required this.interactionIntensity,
     required this.child,
     this.quality = GlassQuality.standard,
+    this.densityFactor = 0.0,
     this.backgroundKey,
     super.key,
   });
@@ -38,6 +38,9 @@ class InteractiveIndicatorGlass extends StatefulWidget {
   final LiquidShape shape;
   final LiquidGlassSettings settings;
   final GlassQuality quality;
+
+  /// Defaults to 0.0.
+  final double densityFactor;
 
   /// GlobalKey of a RepaintBoundary wrapping the background content.
   /// Used for Skia/Web background sampling.
@@ -96,6 +99,8 @@ class _InteractiveIndicatorGlassState extends State<InteractiveIndicatorGlass>
   late Ticker _ticker;
   bool _isCapturing = false;
   int _lastCaptureTime = 0;
+  Size? _lastCaptureSize;
+  Offset? _lastCapturePosition;
 
   @override
   void initState() {
@@ -161,27 +166,41 @@ class _InteractiveIndicatorGlassState extends State<InteractiveIndicatorGlass>
   void _handleTick(Duration elapsed) {
     if (_isCapturing) return;
 
-    // Only capture a few frames to get a stable background without flickering.
-    // We capture on first frame and then every 200ms to stay relatively 'live'
-    // without the 60fps thrashing.
-    final now = DateTime.now().millisecondsSinceEpoch;
-    const int captureIntervalMs = 200; // Capture every 200ms
-
-    if (_backgroundImage == null ||
-        (now - _lastCaptureTime) > captureIntervalMs) {
-      _captureBackground();
-      _lastCaptureTime = now;
-    }
-  }
-
-  Future<void> _captureBackground() async {
     final key = _effectiveKey;
-    if (key == null || !mounted) return;
+    if (key == null) return;
 
     final boundary =
         key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
     if (boundary == null) return;
 
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final currentSize = boundary.size;
+    final currentPos = (key.currentContext?.findRenderObject() as RenderBox?)
+        ?.localToGlobal(Offset.zero);
+
+    // ARCHITECT'S REFINEMENT: Interaction Heartbeat
+    // - Resting: Capture ONLY on geometry change (Pos/Size). No periodic heartbeat.
+    // - Dragging: Capture on interaction (100ms heartbeat) to keep it "live".
+
+    final bool isInteracting = widget.interactionIntensity > 0.05;
+    bool needsCapture = _backgroundImage == null;
+    needsCapture |= _lastCaptureSize != currentSize;
+    needsCapture |= _lastCapturePosition != currentPos;
+
+    // Periodic update only during interaction (10fps capture)
+    // This makes the dragging feel "alive" while avoiding 60fps jitter.
+    if (isInteracting) {
+      needsCapture |= (now - _lastCaptureTime) > 100;
+    }
+
+    if (needsCapture) {
+      _captureBackground(boundary, currentSize, currentPos);
+      _lastCaptureTime = now;
+    }
+  }
+
+  Future<void> _captureBackground(
+      RenderRepaintBoundary boundary, Size size, Offset? pos) async {
     _isCapturing = true;
     final dpr = View.of(context).devicePixelRatio;
 
@@ -191,6 +210,8 @@ class _InteractiveIndicatorGlassState extends State<InteractiveIndicatorGlass>
         setState(() {
           _backgroundImage?.dispose();
           _backgroundImage = image;
+          _lastCaptureSize = size;
+          _lastCapturePosition = pos;
         });
       }
     } catch (e) {
@@ -284,6 +305,7 @@ class _InteractiveIndicatorGlassState extends State<InteractiveIndicatorGlass>
           settings: widget.settings,
           shape: widget.shape,
           interactionIntensity: widget.interactionIntensity,
+          densityFactor: widget.densityFactor,
           backgroundImage: _backgroundImage,
           backgroundKey: effectiveKey,
           devicePixelRatio: View.of(context).devicePixelRatio,
@@ -292,13 +314,34 @@ class _InteractiveIndicatorGlassState extends State<InteractiveIndicatorGlass>
       );
     }
 
-    // Path C: Lightweight Fallback (Standard Quality or Nested Glass)
-    // We disable the blur for nested glass to avoid the "hall of mirrors" flickering
-    // caused by nested BackdropFilters on many platforms.
-    return LightweightLiquidGlass(
-      shape: widget.shape,
-      settings: widget.settings.copyWith(blur: 0),
-      child: widget.child,
+    // Path C: Unified Indicator Fallback
+    // Even if no background image is available, we use the custom indicator shader
+    // to preserve the signature lighting, rim highlights, and structural "vibe".
+    // The shader will automatically switch to "Synthetic Frost" mode.
+    if (shader != null) {
+      return ClipPath(
+        clipper: ShapeBorderClipper(shape: widget.shape),
+        child: _InteractiveIndicatorEffect(
+          shader: shader,
+          settings: widget.settings.copyWith(blur: 0),
+          shape: widget.shape,
+          interactionIntensity: widget.interactionIntensity,
+          densityFactor: widget.densityFactor,
+          backgroundImage: null, // Fallback mode
+          backgroundKey: null,
+          devicePixelRatio: View.of(context).devicePixelRatio,
+          child: widget.child,
+        ),
+      );
+    }
+
+    // Ultra-clean fallback if shader hasn't loaded yet
+    return ClipPath(
+      clipper: ShapeBorderClipper(shape: widget.shape),
+      child: Container(
+        color: widget.settings.effectiveGlassColor.withValues(alpha: 0.15),
+        child: widget.child,
+      ),
     );
   }
 }
@@ -309,6 +352,7 @@ class _InteractiveIndicatorEffect extends SingleChildRenderObjectWidget {
     required this.settings,
     required this.shape,
     required this.interactionIntensity,
+    required this.densityFactor,
     this.backgroundImage,
     this.backgroundKey,
     required this.devicePixelRatio,
@@ -319,6 +363,7 @@ class _InteractiveIndicatorEffect extends SingleChildRenderObjectWidget {
   final LiquidGlassSettings settings;
   final LiquidShape shape;
   final double interactionIntensity;
+  final double densityFactor;
   final ui.Image? backgroundImage;
   final GlobalKey? backgroundKey;
   final double devicePixelRatio;
@@ -330,6 +375,7 @@ class _InteractiveIndicatorEffect extends SingleChildRenderObjectWidget {
       settings: settings,
       shape: shape,
       interactionIntensity: interactionIntensity,
+      densityFactor: densityFactor,
       backgroundImage: backgroundImage,
       backgroundKey: backgroundKey,
       devicePixelRatio: devicePixelRatio,
@@ -346,6 +392,7 @@ class _InteractiveIndicatorEffect extends SingleChildRenderObjectWidget {
       ..settings = settings
       ..shape = shape
       ..interactionIntensity = interactionIntensity
+      ..densityFactor = densityFactor
       ..backgroundImage = backgroundImage
       ..backgroundKey = backgroundKey
       ..devicePixelRatio = devicePixelRatio;
@@ -358,6 +405,7 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
     required LiquidGlassSettings settings,
     required LiquidShape shape,
     required double interactionIntensity,
+    required double densityFactor,
     ui.Image? backgroundImage,
     GlobalKey? backgroundKey,
     required double devicePixelRatio,
@@ -365,6 +413,7 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
         _settings = settings,
         _shape = shape,
         _interactionIntensity = interactionIntensity,
+        _densityFactor = densityFactor,
         _backgroundImage = backgroundImage,
         _backgroundKey = backgroundKey,
         _devicePixelRatio = devicePixelRatio;
@@ -394,6 +443,13 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
   set interactionIntensity(double value) {
     if (_interactionIntensity == value) return;
     _interactionIntensity = value;
+    markNeedsPaint();
+  }
+
+  double _densityFactor;
+  set densityFactor(double value) {
+    if (_densityFactor == value) return;
+    _densityFactor = value;
     markNeedsPaint();
   }
 
@@ -515,7 +571,12 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
     _shader.setFloat(index++, (color.a * 255.0).round().clamp(0, 255) / 255.0);
 
     _shader.setFloat(index++, _settings.effectiveThickness);
-    _shader.setFloat(index++, _settings.lightAngle * 3.14159265359 / 180.0);
+
+    // Pass light direction as [cos(angle), -sin(angle)]
+    final radians = _settings.lightAngle * 3.14159265359 / 180.0;
+    _shader.setFloat(index++, math.cos(radians));
+    _shader.setFloat(index++, -math.sin(radians));
+
     _shader.setFloat(index++, _settings.effectiveLightIntensity);
     _shader.setFloat(index++, _settings.effectiveAmbientStrength);
     _shader.setFloat(index++, _settings.effectiveSaturation);
@@ -559,7 +620,10 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
     _shader.setFloat(index++, physicalScale.dx);
     _shader.setFloat(index++, physicalScale.dy);
     _shader.setFloat(index++, 0.0); // uGlowIntensity
-    _shader.setFloat(index++, 0.0); // uDensityFactor
+    _shader.setFloat(
+        index++,
+        _densityFactor.clamp(0.0,
+            1.0)); // 20: uDensityFactor (float) - Elevation physics (0.0-1.0)
     _shader.setFloat(index++, _interactionIntensity.clamp(0.0, 1.0));
 
     // Background Mapping Uniforms

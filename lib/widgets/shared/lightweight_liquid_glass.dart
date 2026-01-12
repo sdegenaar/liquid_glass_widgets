@@ -30,6 +30,7 @@ class LightweightLiquidGlass extends StatefulWidget {
     this.settings = const LiquidGlassSettings(),
     this.glowIntensity = 0.0,
     this.densityFactor = 0.0,
+    this.indicatorWeight = 0.0,
     super.key,
   });
 
@@ -40,6 +41,7 @@ class LightweightLiquidGlass extends StatefulWidget {
     required this.shape,
     this.glowIntensity = 0.0,
     this.densityFactor = 0.0,
+    this.indicatorWeight = 0.0,
     super.key,
   }) : settings = null;
 
@@ -74,6 +76,14 @@ class LightweightLiquidGlass extends StatefulWidget {
   ///
   /// Defaults to 0.0.
   final double densityFactor;
+
+  /// Thicker, brighter aesthetic for indicators (Skia/Web only).
+  ///
+  /// Range: 0.0 (default) to 1.0 (thick/bright)
+  ///
+  /// This allows active indicators (like the pill in GlassSegmentedControl) to
+  /// have more visual weight without affecting other glass widgets.
+  final double indicatorWeight;
 
   // Cache the FragmentProgram (compiled shader code) globally
   static ui.FragmentProgram? _cachedProgram;
@@ -192,6 +202,7 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass> {
         skipBlur: skipBlur,
         glowIntensity: widget.glowIntensity,
         densityFactor: widget.densityFactor,
+        indicatorWeight: widget.indicatorWeight,
         child: widget.child,
       ),
     );
@@ -206,6 +217,7 @@ class _LightweightGlassEffect extends SingleChildRenderObjectWidget {
     required this.skipBlur,
     required this.glowIntensity,
     required this.densityFactor,
+    required this.indicatorWeight,
     required super.child,
   });
 
@@ -215,6 +227,7 @@ class _LightweightGlassEffect extends SingleChildRenderObjectWidget {
   final bool skipBlur;
   final double glowIntensity;
   final double densityFactor;
+  final double indicatorWeight;
 
   @override
   RenderObject createRenderObject(BuildContext context) {
@@ -225,6 +238,7 @@ class _LightweightGlassEffect extends SingleChildRenderObjectWidget {
       skipBlur: skipBlur,
       glowIntensity: glowIntensity,
       densityFactor: densityFactor,
+      indicatorWeight: indicatorWeight,
     );
   }
 
@@ -239,7 +253,8 @@ class _LightweightGlassEffect extends SingleChildRenderObjectWidget {
       ..shape = shape
       ..skipBlur = skipBlur
       ..glowIntensity = glowIntensity
-      ..densityFactor = densityFactor;
+      ..densityFactor = densityFactor
+      ..indicatorWeight = indicatorWeight;
   }
 }
 
@@ -251,12 +266,14 @@ class _RenderLightweightGlass extends RenderProxyBox {
     required bool skipBlur,
     required double glowIntensity,
     required double densityFactor,
+    required double indicatorWeight,
   })  : _shader = shader,
         _settings = settings,
         _shape = shape,
         _skipBlur = skipBlur,
         _glowIntensity = glowIntensity,
-        _densityFactor = densityFactor;
+        _densityFactor = densityFactor,
+        _indicatorWeight = indicatorWeight;
 
   ui.FragmentShader _shader;
   ui.FragmentShader get shader => _shader;
@@ -303,6 +320,14 @@ class _RenderLightweightGlass extends RenderProxyBox {
   set densityFactor(double value) {
     if (_densityFactor == value) return;
     _densityFactor = value;
+    markNeedsPaint();
+  }
+
+  double _indicatorWeight;
+  double get indicatorWeight => _indicatorWeight;
+  set indicatorWeight(double value) {
+    if (_indicatorWeight == value) return;
+    _indicatorWeight = value;
     markNeedsPaint();
   }
 
@@ -380,29 +405,27 @@ class _RenderLightweightGlass extends RenderProxyBox {
     // 8: uThickness (float)
     _shader.setFloat(index++, _settings.effectiveThickness);
 
-    // 9: uLightAngle (float)
-    _shader.setFloat(index++, _settings.lightAngle * 3.14159265359 / 180.0);
+    // 9, 10: uLightDirection (vec2) - [cos(angle), -sin(angle)]
+    final radians = _settings.lightAngle * 3.14159265359 / 180.0;
+    _shader.setFloat(index++, math.cos(radians));
+    _shader.setFloat(index++, -math.sin(radians));
 
-    // 10: uLightIntensity (float)
+    // 11: uLightIntensity (float)
     _shader.setFloat(index++, _settings.effectiveLightIntensity);
 
-    // 11: uAmbientStrength (float)
+    // 12: uAmbientStrength (float)
     _shader.setFloat(index++, _settings.effectiveAmbientStrength);
 
-    // 12: uSaturation (float)
+    // 13: uSaturation (float)
     _shader.setFloat(index++, _settings.effectiveSaturation);
 
-    // 13: uRefractiveIndex (float)
+    // 14: uRefractiveIndex (float)
     _shader.setFloat(index++, _settings.refractiveIndex);
 
-    // 14: uChromaticAberration (float)
-    // Keep range conservative: 0..1
-    _shader.setFloat(
-      index++,
-      (_settings.chromaticAberration).clamp(0.0, 1.0),
-    );
+    // 15: uChromaticAberration (float)
+    _shader.setFloat(index++, (_settings.chromaticAberration).clamp(0.0, 1.0));
 
-    // 15: uCornerRadius (float) - Logical
+    // 16: uCornerRadius (float) - Logical
     double cornerRadius = 0.0;
     final dynamic dynShape = _shape;
     final shapeStr = _shape.runtimeType.toString().toLowerCase();
@@ -439,14 +462,17 @@ class _RenderLightweightGlass extends RenderProxyBox {
 
     _shader.setFloat(index++, cornerRadius);
 
-    // 16, 17: uScale (vec2) - Physical Scale (Includes DPR + Transforms)
+    // 17, 18: uScale (vec2) - Physical Scale (Includes DPR + Transforms)
     _shader.setFloat(index++, physicalScale.dx);
     _shader.setFloat(index++, physicalScale.dy);
 
-    // 18: uGlowIntensity (float) - Interactive glow strength (0.0-1.0)
+    // 19: uGlowIntensity (float) - Interactive glow strength (0.0-1.0)
     _shader.setFloat(index++, _glowIntensity.clamp(0.0, 1.0));
 
-    // 19: uDensityFactor (float) - Elevation physics (0.0-1.0)
+    // 20: uDensityFactor (float) - Elevation physics (0.0-1.0)
     _shader.setFloat(index++, _densityFactor.clamp(0.0, 1.0));
+
+    // 21: uIndicatorWeight (float) - Indicator style (0.0-1.0)
+    _shader.setFloat(index++, _indicatorWeight.clamp(0.0, 1.0));
   }
 }

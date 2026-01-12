@@ -30,7 +30,7 @@ uniform vec2 uSize;                 // Widget size in logical pixels
 uniform vec2 uOrigin;               // Origin offset (usually 0,0 due to layers)
 uniform vec4 uGlassColor;           // Tint color for the glass
 uniform float uThickness;           // Glass thickness (affects visual weight)
-uniform float uLightAngle;          // Light direction in radians
+uniform vec2 uLightDirection;      // Pre-calculated light vector [cos(angle), -sin(angle)]
 uniform float uLightIntensity;      // Brightness of rim highlights (0-2)
 uniform float uAmbientStrength;     // Base ambient brightness
 uniform float uSaturation;          // Color saturation
@@ -43,7 +43,7 @@ uniform float uDensityFactor;       // Visual density for nested glass
 uniform float uInteractionIntensity;// Press/drag intensity (0-1)
 uniform vec2 uBackgroundOrigin;     // Widget position in background (logical px)
 uniform vec2 uBackgroundSize;       // Background texture size (logical px)
-uniform float uHasTexture;          // 1.0 if texture is bound, 0.0 otherwise
+uniform float uHasBackground;       // 1.0 = use texture, 0.0 = use synthetic frost
 
 uniform sampler2D uTexture;         // Captured background image
 
@@ -68,13 +68,12 @@ void main() {
   // ==========================================================================
   // SDF PILL SHAPE
   // ==========================================================================
-  // Calculate signed distance to the pill shape boundary.
-  // Negative = inside, 0 = on edge, positive = outside
+  // Using a standard high-fidelity Rounded Rectangle SDF for lighting stability.
   
   vec2 halfSize = uSize * 0.5;
   vec2 q = abs(localLogical - halfSize) - halfSize + uCornerRadius;
   float dist = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - uCornerRadius;
-  
+
   // Anti-aliasing: smooth transition at edge
   float smoothing = 1.0 / uScale.x;
   float mask = 1.0 - smoothstep(-smoothing, smoothing, dist);
@@ -88,9 +87,6 @@ void main() {
   // ==========================================================================
   // SURFACE NORMAL
   // ==========================================================================
-  // Calculate the direction pointing outward from the nearest edge.
-  // This is used for refraction direction and lighting.
-  
   vec2 innerHalfSize = halfSize - uCornerRadius;
   vec2 p = localLogical - halfSize;
   vec2 closestOnSkeleton = clamp(p, -innerHalfSize, innerHalfSize);
@@ -144,7 +140,7 @@ void main() {
   vec2 edgeOffsetUV = edgeOffsetLogical / uBackgroundSize;
   
   // Apply refraction offset (subtract because we bend inward)
-  vec2 refractedUV = clamp(uvBase - edgeOffsetUV, 0.001, 0.999);
+  vec2 localRefracted = posInBg - edgeOffsetLogical;
   
   // --------------------------------------------------------------------------
   // CHROMATIC ABERRATION
@@ -152,29 +148,25 @@ void main() {
   // Separates RGB channels slightly at edges, creating a subtle prism effect.
   // Red shifts one way, blue shifts the opposite, green stays centered.
   
-  // TWEAK: aberr multiplier (0.003) controls max RGB separation
-  //   Increase for more visible color fringing
-  float aberr = uChromaticAberration * 0.003 * edgeInfluence;
+  // TWEAK: (0.12) - subtle chromatic shift for "Apple style" refraction
+  vec2 distort = surfaceNormal * edgeInfluence * uChromaticAberration;
+  vec2 chromaticShift = distort * 0.12; 
   
-  vec3 bg = vec3(
-    texture(uTexture, clamp(refractedUV + surfaceNormal * aberr, 0.001, 0.999)).r,
-    texture(uTexture, refractedUV).g,
-    texture(uTexture, clamp(refractedUV - surfaceNormal * aberr, 0.001, 0.999)).b
-  ) * uHasTexture;
-  
-  // Fallback gradient if no texture is available
-  if (uHasTexture < 0.5) {
-    bg = vec3(localLogical.x / uSize.x, localLogical.y / uSize.y, 0.5);
+  vec3 bg;
+  if (uHasBackground > 0.5) {
+    // REAL REFRACTION: Sample from captured background
+    vec3 colR = texture(uTexture, (localRefracted + chromaticShift) / uBackgroundSize).rgb;
+    vec3 colG = texture(uTexture, localRefracted / uBackgroundSize).rgb;
+    vec3 colB = texture(uTexture, (localRefracted - chromaticShift) / uBackgroundSize).rgb;
+    bg = vec3(colR.r, colG.g, colB.b);
+  } else {
+    // SYNTHETIC FROST: Premium semi-transparent white base
+    // This makes it look "cool" even without a background capture
+    bg = vec3(0.1);
   }
   
-  // ==========================================================================
-  // DIRECTIONAL LIGHTING
-  // ==========================================================================
-  // Creates rim highlights based on light direction, making one edge
-  // brighter than the opposite edge (like real glass catching light).
-  
-  vec2 lightDir = vec2(cos(uLightAngle), -sin(uLightAngle));
-  float edgeLightCatch = dot(surfaceNormal, lightDir);
+  // uLightDirection is passed from Dart as [cos(angle), -sin(angle)]
+  float edgeLightCatch = dot(surfaceNormal, uLightDirection);
   
   // Key light: bright highlight on edges facing the light
   // TWEAK: pow exponent (8.0) controls sharpness - higher = tighter highlight
@@ -201,6 +193,7 @@ void main() {
   // ==========================================================================
   // Thin bright line at the very edge of the pill
   
+  // Thin bright line at the very edge of the pill
   float borderMask = 1.0 - smoothstep(0.0, smoothing * 1.5, distFromEdge - 0.5);
   vec3 rimColor = vec3(1.0) * rimBrightness;
   
@@ -234,7 +227,7 @@ void main() {
   // ==========================================================================
   
   // TWEAK: baseAlpha - center transparency (lower = more see-through)
-  float baseAlpha = 0.7;
+  float baseAlpha = (uHasBackground > 0.5) ? 0.7 : 0.2;
   
   // TWEAK: edgeAlpha - edge opacity (higher = more solid edges)
   float edgeAlpha = 0.95;

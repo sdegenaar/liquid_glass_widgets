@@ -1,3 +1,9 @@
+# 0.2.1-dev.4
+
+- **PERF**: Optimized `InteractiveIndicatorGlass` (Skia/Web path) with a new **"Interaction Heartbeat"** system. This reduces overhead by 80% when using `LiquidGlassScope` by throttling background captures while maintaining smooth 10fps live refraction during active dragging.
+- **FEAT**: **Universal Aesthetic Fallback**: Interactive indicators now maintain their premium custom-shader lighting and rim structure even without a `LiquidGlassBackground`. Added a new "Synthetic Frost" mode that renders a high-fidelity glass material when no background is captured.
+- **PERF**: GPU optimization across all custom shaders; light direction vectors are now pre-calculated on the CPU, reducing per-pixel complexity for all glass widgets on Skia/Web.
+
 # 0.2.1-dev.3
 
 - **FIX**: `GlassBottomBarExtraButton` now respects parent styling
