@@ -32,6 +32,7 @@ export 'widgets/interactive/glass_button.dart';
 export 'widgets/interactive/glass_chip.dart';
 export 'widgets/interactive/glass_icon_button.dart';
 export 'widgets/interactive/glass_segmented_control.dart';
+export 'widgets/interactive/liquid_glass_scope.dart';
 export 'widgets/interactive/glass_slider.dart';
 export 'widgets/interactive/glass_switch.dart';
 export 'widgets/interactive/glass_pull_down_button.dart';

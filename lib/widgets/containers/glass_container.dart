@@ -229,7 +229,12 @@ class GlassContainer extends StatelessWidget {
       useOwnLayer: useOwnLayer,
       clipBehavior: clipBehavior,
       allowElevation: allowElevation, // Configurable elevation behavior
-      child: content,
+      child: InheritedLiquidGlass(
+        settings: settings ?? InheritedLiquidGlass.ofOrDefault(context),
+        avoidsRefraction:
+            true, // Containers block children from refracting background
+        child: content,
+      ),
     );
 
     // 5. Apply width/height constraints

@@ -13,6 +13,7 @@ class InheritedLiquidGlass extends InheritedWidget {
   const InheritedLiquidGlass({
     required this.settings,
     this.isBlurProvidedByAncestor = false,
+    this.avoidsRefraction = false,
     required super.child,
     super.key,
   });
@@ -23,6 +24,11 @@ class InheritedLiquidGlass extends InheritedWidget {
   /// Whether a parent layer is already providing the backdrop blur.
   /// Used for performance optimization to avoid redundant BackdropFilters.
   final bool isBlurProvidedByAncestor;
+
+  /// Whether children should avoid high-fidelity refraction.
+  /// Set to true by containers like GlassCard to prevent refraction artifacts
+  /// when glass is nested within glass.
+  final bool avoidsRefraction;
 
   /// Retrieves the nearest [LiquidGlassSettings] from the ancestor tree.
   ///
@@ -57,6 +63,7 @@ class InheritedLiquidGlass extends InheritedWidget {
   @override
   bool updateShouldNotify(InheritedLiquidGlass oldWidget) {
     return settings != oldWidget.settings ||
-        isBlurProvidedByAncestor != oldWidget.isBlurProvidedByAncestor;
+        isBlurProvidedByAncestor != oldWidget.isBlurProvidedByAncestor ||
+        avoidsRefraction != oldWidget.avoidsRefraction;
   }
 }

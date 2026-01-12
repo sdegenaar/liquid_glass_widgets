@@ -61,9 +61,9 @@ Navigation and app structure:
 
 Add to your `pubspec.yaml`:
 
-```yamlcan you
+```yaml
 dependencies:
-  liquid_glass_widgets: ^0.2.1-dev.1
+  liquid_glass_widgets: ^0.2.1-dev.2
 ```
 
 Then run:
@@ -334,18 +334,70 @@ Widgets use `LiquidShape` for customizable shapes, with `LiquidRoundedSuperellip
 4. **Reserve Premium Quality** for static elements like app bars where you want Impeller's advanced features
 5. **Limit glass widget depth** - avoid deeply nesting glass effects
 
+## Custom Refraction for Interactive Indicators
+
+Interactive widgets like `GlassSegmentedControl` can have **true liquid glass refraction** (background visible through the indicator with edge distortion) on all platforms including Web and Skia.
+
+### How It Works
+
+The refraction effect requires capturing the background content. Wrap your content with `LiquidGlassScope` and `LiquidGlassBackground`:
+
+```dart
+LiquidGlassScope(
+  child: Stack(
+    children: [
+      // 1. Mark the background for capture
+      LiquidGlassBackground(
+        child: Image.asset('assets/wallpaper.jpg', fit: BoxFit.cover),
+      ),
+      
+      // 2. Glass widgets will refract through the background
+      Center(
+        child: GlassSegmentedControl(
+          segments: ['Option A', 'Option B', 'Option C'],
+          selectedIndex: 0,
+          onSegmentSelected: (index) => print('Selected: $index'),
+          quality: GlassQuality.standard,  // Uses custom shader
+        ),
+      ),
+    ],
+  ),
+)
+```
+
+### Key Points
+
+- **`LiquidGlassScope`** - Creates the infrastructure for background capture
+- **`LiquidGlassBackground`** - Marks which content should be visible through the glass
+- **Nested Scopes** - Inner scopes override outer scopes (useful for isolated demos)
+- **Automatic on Impeller** - On iOS/macOS with Impeller, `GlassQuality.premium` uses native scene graph instead
+- **One Background Per Scope** - Each `LiquidGlassScope` should contain only one `LiquidGlassBackground`
+
+### When to Use
+
+| Scenario | Recommendation |
+|----------|----------------|
+| Web / Skia platforms | ✅ Use `LiquidGlassScope` for refraction |
+| iOS / macOS with Impeller | ⚡ Use `GlassQuality.premium` for native scene graph |
+| Multiple isolated demo sections | 🔄 Use separate scopes for each |
+| App-wide fallback | 🏠 Wrap root with scope + background |
+
+> 💡 **Tip:** Run the example app on an Impeller device (iOS/macOS) to see a side-by-side comparison of Impeller vs Custom Shader rendering in the "Shader Comparison" section of the Interactive page for `GlassSegmentedControl`.
+
 ## Dependencies
 
 This package builds on the excellent work of:
 
 ### liquid_glass_renderer
-The core rendering engine that powers all glass effects in this package. This sophisticated renderer provides custom shader-based glass rendering with advanced features like refraction, lighting, and chromatic aberration.
+Powers the **Impeller integration** for native scene graph rendering on iOS/Android/macOS with `GlassQuality.premium`. This sophisticated renderer provides texture capture and advanced chromatic aberration effects through Impeller's native pipeline.
+
+For **Skia and Web platforms**, this package uses custom fragment shaders (`lightweight_glass.frag`, `interactive_indicator.frag`) to deliver iOS 26-accurate glass effects universally.
 
 - **Package**: [`liquid_glass_renderer`](https://pub.dev/packages/liquid_glass_renderer)
 - **Repository**: [flutter_liquid_glass](https://github.com/whynotmake-it/flutter_liquid_glass/tree/main/packages/liquid_glass_renderer)
 - **Author**: [whynotmake-it](https://github.com/whynotmake-it)
 
-A huge thank you to the whynotmake-it team for creating this powerful rendering foundation that makes high-quality glass morphism possible in Flutter.
+A huge thank you to the whynotmake-it team for creating the Impeller integration that makes premium-quality glass rendering possible on native platforms.
 
 ### Other Dependencies
 - [`motor`](https://pub.dev/packages/motor) - Animation utilities

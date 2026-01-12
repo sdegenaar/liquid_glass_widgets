@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -19,12 +17,17 @@ class _InteractivePageState extends State<InteractivePage> {
 
   // Segmented control state
   int _selectedSegment1 = 0;
-  int _selectedSegment2 = 1;
+  int _selectedSegment2 = 0;
   int _selectedSegment3 = 0;
+
+  // Shader comparison state
+  int _shaderCompareImpeller = 0;
+  int _shaderCompareCustom = 0;
 
   // Premium showcase state
   bool _premiumSwitch = true;
-  int _premiumSegment = 1;
+  int _premiumSegment = 0;
+  int _standardSegment = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +41,9 @@ class _InteractivePageState extends State<InteractivePage> {
           onSwitchChanged: (value) => setState(() => _premiumSwitch = value),
           segmentValue: _premiumSegment,
           onSegmentChanged: (value) => setState(() => _premiumSegment = value),
+          segmentValue2: _standardSegment,
+          onSegmentChanged2: (value) =>
+              setState(() => _standardSegment = value),
         ),
 
         // =====================================================================
@@ -576,6 +582,47 @@ class _InteractivePageState extends State<InteractivePage> {
 
                           // GlassSegmentedControl Section
                           const _SectionTitle(title: 'GlassSegmentedControl'),
+                          const SizedBox(height: 8),
+                          // ==========================================================
+                          // SHADER COMPARISON SECTION
+                          // ==========================================================
+                          const _SectionTitle(title: 'Shader Comparison'),
+                          // const SizedBox(height: 8),
+                          Text(
+                            'Compare Impeller (native) vs New Custom shader rendering',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withValues(alpha: 1.0),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Impeller-based rendering (iOS native)
+                          _ShaderComparisonCard(
+                            title: 'Impeller (Native)',
+                            subtitle: 'Impeller scene graph',
+                            badgeColor: Colors.blue,
+                            selectedIndex: _shaderCompareImpeller,
+                            onSegmentSelected: (index) {
+                              setState(() => _shaderCompareImpeller = index);
+                            },
+                            useImpeller: true,
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Custom shader rendering (works everywhere)
+                          _ShaderComparisonCard(
+                            title: 'Custom Shader',
+                            subtitle: 'Uses LiquidGlassBackground',
+                            badgeColor: Colors.green,
+                            selectedIndex: _shaderCompareCustom,
+                            onSegmentSelected: (index) {
+                              setState(() => _shaderCompareCustom = index);
+                            },
+                            useImpeller: false,
+                          ),
+
                           const SizedBox(height: 16),
                           GlassCard(
                             child: Column(
@@ -587,6 +634,13 @@ class _InteractivePageState extends State<InteractivePage> {
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
+                                  ),
+                                ),
+                                Text(
+                                  'No LiquidGlassBackground',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white.withValues(alpha: 0.7),
                                   ),
                                 ),
                                 const SizedBox(height: 16),
@@ -846,151 +900,171 @@ class _InteractivePageState extends State<InteractivePage> {
 // =============================================================================
 
 class _PremiumShowcase extends StatelessWidget {
+  final bool switchValue;
+  final ValueChanged<bool> onSwitchChanged;
+  final int segmentValue;
+  final ValueChanged<int> onSegmentChanged;
+  final int segmentValue2;
+  final ValueChanged<int> onSegmentChanged2;
+
   const _PremiumShowcase({
     required this.switchValue,
     required this.onSwitchChanged,
     required this.segmentValue,
     required this.onSegmentChanged,
+    required this.segmentValue2,
+    required this.onSegmentChanged2,
   });
-
-  final bool switchValue;
-  final ValueChanged<bool> onSwitchChanged;
-  final int segmentValue;
-  final ValueChanged<int> onSegmentChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.purple.withValues(alpha: 0.3),
-            Colors.blue.withValues(alpha: 0.3),
-          ],
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: AdaptiveLiquidGlassLayer(
-          // PREMIUM: Use shader-based glass
-          settings: const LiquidGlassSettings(
-            blur: 5,
-            thickness: 40,
-            refractiveIndex: 1.7,
-            lightIntensity: 1.2,
-            chromaticAberration: 0.8,
-            ambientStrength: 0.6,
-            lightAngle: 0.25 * math.pi,
-            glassColor: Colors.white12,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.purple.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Colors.purple.withValues(alpha: 0.5),
-                          width: 1,
-                        ),
-                      ),
-                      child: const Text(
-                        'PREMIUM QUALITY',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      'Static Layout Only',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.white.withValues(alpha: 0.6),
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Best Visual Quality',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Shader-based rendering',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    GlassSwitch(
-                      value: switchValue,
-                      onChanged: onSwitchChanged,
-                      quality: GlassQuality.premium,
-                      useOwnLayer: true,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                GlassSegmentedControl(
-                  segments: const ['Option A', 'Option B', 'Option C'],
-                  height: 40,
-                  selectedIndex: segmentValue,
-                  onSegmentSelected: onSegmentChanged,
-                  quality: GlassQuality.premium,
-                  useOwnLayer: true,
-                  backgroundColor: Colors.black38,
-                  unselectedTextStyle:
-                      TextStyle(color: Colors.white.withValues(alpha: 0.9)),
-                  selectedTextStyle: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold),
-                  indicatorColor: Colors.white38,
-                  glassSettings: LiquidGlassSettings(
-                    refractiveIndex: 1.21,
-                    thickness: 30,
-                    blur: 4,
-                    saturation: 1.5,
-                    lightIntensity: .7,
-                    ambientStrength: .5,
-                    lightAngle: 0.25 * math.pi,
-                    glassColor: Colors.white24,
+    return LiquidGlassScope(
+      child: Stack(
+        children: [
+          // 1. ISOLATED BACKGROUND SOURCE
+          // Positioned.fill(
+          //   child: LiquidGlassBackground(
+          //     child: Container(
+          //       decoration: const BoxDecoration(
+          //         image: DecorationImage(
+          //           image: AssetImage('assets/wallpaper_dark.jpg'),
+          //           fit: BoxFit.cover,
+          //         ),
+          //       ),
+          //     ),
+          //   ),
+          // ),
+
+          // 2. LAYERED CONTENT (Text + Glass Controls)
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const _PremiumHeader(),
+                  const SizedBox(height: 16),
+                  _PremiumVisualTitle(
+                    switchValue: switchValue,
+                    onSwitchChanged: onSwitchChanged,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  // PREMIUM: Uses high-fidelity refraction shader (if Scope reachable)
+                  GlassSegmentedControl(
+                    segments: const ['Option A', 'Option B', 'Option C'],
+                    height: 40,
+                    selectedIndex: segmentValue,
+                    onSegmentSelected: onSegmentChanged,
+                    quality: GlassQuality.premium,
+                    useOwnLayer: true,
+                    backgroundColor: Colors.black38,
+                    indicatorColor: Colors.white38,
+                  ),
+                  // const SizedBox(height: 60),
+                  // // STANDARD: Uses lightweight BackdropFilter for comparison
+                  // GlassSegmentedControl(
+                  //   segments: const ['Option A', 'Option B', 'Option C'],
+                  //   height: 40,
+                  //   selectedIndex: segmentValue2,
+                  //   onSegmentSelected: onSegmentChanged2,
+                  //   quality: GlassQuality.standard,
+                  //   useOwnLayer: true,
+                  //   backgroundColor: Colors.black38,
+                  //   indicatorColor: Colors.white38,
+                  // ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PremiumHeader extends StatelessWidget {
+  const _PremiumHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.white10,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.white24, width: 1),
+          ),
+          child: const Text(
+            'PREMIUM QUALITY',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              letterSpacing: 0.5,
             ),
           ),
         ),
-      ),
+        const Spacer(),
+        Text(
+          'Static Layout Only',
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.white.withValues(alpha: 0.6),
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PremiumVisualTitle extends StatelessWidget {
+  final bool switchValue;
+  final ValueChanged<bool> onSwitchChanged;
+
+  const _PremiumVisualTitle({
+    required this.switchValue,
+    required this.onSwitchChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Best Visual Quality',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'High-Fidelity Shader Refraction',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.white.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        GlassSwitch(
+          value: switchValue,
+          onChanged: onSwitchChanged,
+          quality: GlassQuality.premium,
+          useOwnLayer: true,
+        ),
+      ],
     );
   }
 }
@@ -1539,6 +1613,120 @@ class _PullDownButtonDemosCard extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// =============================================================================
+// Shader Comparison Card Widget
+// =============================================================================
+
+class _ShaderComparisonCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final Color badgeColor;
+  final int selectedIndex;
+  final ValueChanged<int> onSegmentSelected;
+  final bool useImpeller;
+
+  const _ShaderComparisonCard({
+    required this.title,
+    required this.subtitle,
+    required this.badgeColor,
+    required this.selectedIndex,
+    required this.onSegmentSelected,
+    required this.useImpeller,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: SizedBox(
+        height: 140,
+        child: LiquidGlassScope(
+          child: Stack(
+            children: [
+              // Background image (contained within card)
+              Positioned.fill(
+                child: LiquidGlassBackground(
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage('assets/wallpaper_dark.jpg'),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Content overlay
+              Positioned.fill(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header with badge
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: badgeColor.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: badgeColor.withValues(alpha: 0.6),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              title,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const Spacer(),
+
+                      // Segmented Control
+                      GlassSegmentedControl(
+                        segments: const ['Option A', 'Option B', 'Option C'],
+                        height: 40,
+                        selectedIndex: selectedIndex,
+                        onSegmentSelected: onSegmentSelected,
+                        quality: useImpeller
+                            ? GlassQuality.premium
+                            : GlassQuality.standard,
+                        useOwnLayer: true,
+                        backgroundColor: Colors.black38,
+                        indicatorColor: Colors.white38,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

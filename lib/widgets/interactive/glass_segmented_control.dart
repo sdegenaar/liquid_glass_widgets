@@ -126,6 +126,7 @@ class GlassSegmentedControl extends StatefulWidget {
     this.glassSettings,
     this.useOwnLayer = false,
     this.quality = GlassQuality.standard,
+    this.backgroundKey,
   })  : assert(
           segments.length >= 2,
           'GlassSegmentedControl requires at least 2 segments',
@@ -238,6 +239,9 @@ class GlassSegmentedControl extends StatefulWidget {
   /// Defaults to [GlassQuality.standard] (backdrop filter).
   final GlassQuality quality;
 
+  /// Optional background key for Skia/Web refraction.
+  final GlobalKey? backgroundKey;
+
   @override
   State<GlassSegmentedControl> createState() => _GlassSegmentedControlState();
 }
@@ -278,6 +282,7 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
         indicatorSettings: widget.indicatorSettings,
         borderRadius: widget.borderRadius,
         quality: widget.quality,
+        backgroundKey: widget.backgroundKey,
       ),
     );
 
@@ -314,6 +319,7 @@ class _SegmentedControlContent extends StatefulWidget {
     required this.borderRadius,
     required this.quality,
     this.indicatorSettings,
+    this.backgroundKey,
   });
 
   final List<String> segments;
@@ -325,6 +331,7 @@ class _SegmentedControlContent extends StatefulWidget {
   final LiquidGlassSettings? indicatorSettings;
   final double borderRadius;
   final GlassQuality quality;
+  final GlobalKey? backgroundKey;
 
   @override
   State<_SegmentedControlContent> createState() =>
@@ -513,6 +520,7 @@ class _SegmentedControlContentState extends State<_SegmentedControlContent> {
                           false, // Internal logic now handles both
                       borderRadius: indicatorRadius,
                       glassSettings: widget.indicatorSettings,
+                      backgroundKey: widget.backgroundKey,
                     ),
 
                     // Segment labels (always on top, not affected by glass)

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'widgets/shared/lightweight_liquid_glass.dart';
+import 'widgets/shared/interactive_indicator_glass.dart';
 
 /// Entry point and configuration for the Liquid Glass Widgets library.
 ///
@@ -23,13 +24,17 @@ class LiquidGlassWidgets {
   ///
   /// Tasks performed:
   /// 1. Pre-warms/precaches the lightweight fragment shader.
-  /// 2. (Future) Pre-warms Impeller pipelines if required.
+  /// 2. Pre-warms the interactive indicator shader (for custom refraction).
+  /// 3. (Future) Pre-warms Impeller pipelines if required.
   static Future<void> initialize() async {
     debugPrint('[LiquidGlass] Initializing library...');
 
     // 1. Pre-warm shaders
     // This is the most critical step to prevent the "white flash" on Skia/Web
-    await LightweightLiquidGlass.preWarm();
+    await Future.wait([
+      LightweightLiquidGlass.preWarm(),
+      InteractiveIndicatorGlass.preWarm(),
+    ]);
 
     debugPrint('[LiquidGlass] Initialization complete.');
   }

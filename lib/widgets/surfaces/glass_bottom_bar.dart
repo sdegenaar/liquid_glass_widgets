@@ -150,7 +150,11 @@ class GlassBottomBar extends StatefulWidget {
     this.glowSpreadRadius = 8,
     this.glowOpacity = 0.6,
     this.quality = GlassQuality.premium,
+    this.backgroundKey,
   });
+
+  /// Optional background key for Skia/Web refraction.
+  final GlobalKey? backgroundKey;
 
   // ===========================================================================
   // Tab Configuration
@@ -382,6 +386,7 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
                 barHeight: widget.barHeight,
                 barBorderRadius: widget.barBorderRadius,
                 tabPadding: widget.tabPadding,
+                backgroundKey: widget.backgroundKey,
                 child: Row(
                   children: [
                     for (var i = 0; i < widget.tabs.length; i++)
@@ -689,6 +694,7 @@ class _TabIndicator extends StatefulWidget {
     required this.barBorderRadius,
     required this.tabPadding,
     this.indicatorSettings,
+    this.backgroundKey,
   });
 
   final int tabIndex;
@@ -702,6 +708,7 @@ class _TabIndicator extends StatefulWidget {
   final double barHeight;
   final double barBorderRadius;
   final EdgeInsetsGeometry tabPadding;
+  final GlobalKey? backgroundKey;
 
   @override
   State<_TabIndicator> createState() => _TabIndicatorState();
@@ -900,6 +907,7 @@ class _TabIndicatorState extends State<_TabIndicator> {
                     padding: const EdgeInsets.all(4),
                     expansion: 14,
                     glassSettings: widget.indicatorSettings,
+                    backgroundKey: widget.backgroundKey,
                   ),
 
                   // Tab bar content (rendered LAST to appear on top)

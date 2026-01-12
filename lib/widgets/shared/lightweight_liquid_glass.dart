@@ -403,21 +403,35 @@ class _RenderLightweightGlass extends RenderProxyBox {
     );
 
     // 15: uCornerRadius (float) - Logical
-    double cornerRadius = 16.0;
-    final shapeStr = _shape.runtimeType.toString();
-    if (shapeStr.contains('Rounded') || shapeStr.contains('Superellipse')) {
-      try {
-        final dynamic dynamicShape = _shape;
-        cornerRadius = (dynamicShape.borderRadius is double)
-            ? dynamicShape.borderRadius
-            : (dynamicShape.radius is double)
-                ? dynamicShape.radius
-                : 16.0;
-      } catch (_) {}
-    } else if (shapeStr.contains('Oval') || shapeStr.contains('Circle')) {
-      cornerRadius = math.min(size.width, size.height) / 2.0;
-    } else if (shapeStr.contains('Rectangle')) {
-      cornerRadius = 0.0;
+    double cornerRadius = 0.0;
+    final dynamic dynShape = _shape;
+    final shapeStr = _shape.runtimeType.toString().toLowerCase();
+
+    // 1. Try dynamic property extraction (Highest Accuracy)
+    try {
+      if (dynShape.borderRadius is double) {
+        cornerRadius = dynShape.borderRadius;
+      } else if (dynShape.borderRadius is BorderRadius) {
+        cornerRadius = dynShape.borderRadius.topLeft.x;
+      } else if (dynShape.borderRadius is BorderRadiusGeometry) {
+        final resolved = dynShape.borderRadius.resolve(TextDirection.ltr);
+        cornerRadius = resolved.topLeft.x;
+      } else if (dynShape.radius is double) {
+        cornerRadius = dynShape.radius;
+      } else if (dynShape.radius is Radius) {
+        cornerRadius = dynShape.radius.x;
+      }
+    } catch (_) {}
+
+    // 2. Class Name Heuristics (Robustness fallback)
+    if (cornerRadius == 0.0) {
+      if (shapeStr.contains('rounded') || shapeStr.contains('superellipse')) {
+        cornerRadius = 16.0; // Standard pill/card radius
+      } else if (shapeStr.contains('oval') ||
+          shapeStr.contains('circle') ||
+          shapeStr.contains('stadium')) {
+        cornerRadius = math.min(size.width, size.height) / 2.0;
+      }
     }
 
     final maxRadius = math.min(size.width, size.height) / 2.0;

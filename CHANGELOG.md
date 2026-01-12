@@ -1,3 +1,26 @@
+# 0.2.1-dev.2
+
+- **FEAT**: Custom Shader Refraction for Interactive Indicators
+    - New `LiquidGlassScope` + `LiquidGlassBackground` widgets for background capture
+    - Custom fragment shader (`interactive_indicator.frag`) provides iOS 26 liquid glass refraction on all platforms
+    - Works on Web, Skia, and macOS where Impeller's scene graph isn't available
+    - Dynamic edge distortion with quadratic falloff for realistic lens effect
+    - Chromatic aberration at edges for authentic prism refraction
+    - Directional rim lighting and fresnel glow matching Impeller aesthetics
+    - Fully documented shader with `TWEAK:` markers for easy customization
+
+- **PERF**: Parallel shader pre-warming in `LiquidGlassWidgets.initialize()`
+    - Both `LightweightLiquidGlass` and `InteractiveIndicatorGlass` shaders now pre-warm in parallel
+    - Eliminates cold start delay when first using segmented controls
+
+- **TEST**: Added comprehensive tests for new widgets
+    - 14 new tests covering `LiquidGlassScope` and `LiquidGlassBackground`
+    - Tests InheritedWidget behavior, nested scopes, key stability, and integration
+
+- **EXAMPLE**: Updated Shader Comparison demo
+    - Side-by-side comparison of Impeller vs Custom Shader rendering
+    - Simplified interactive page layout for mobile-friendly scrolling
+
 # 0.2.1-dev.1
 
 - **PERF**: Batch-Blur Optimization - **5-6x faster rendering** with multiple glass widgets

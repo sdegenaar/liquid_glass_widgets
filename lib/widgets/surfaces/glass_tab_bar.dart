@@ -117,6 +117,7 @@ class GlassTabBar extends StatefulWidget {
     this.borderRadius,
     this.indicatorBorderRadius,
     this.indicatorSettings,
+    this.backgroundKey,
   })  : assert(tabs.length >= 2, 'GlassTabBar requires at least 2 tabs'),
         assert(
           selectedIndex >= 0 && selectedIndex < tabs.length,
@@ -185,6 +186,9 @@ class GlassTabBar extends StatefulWidget {
 
   /// Glass settings for the sliding indicator.
   final LiquidGlassSettings? indicatorSettings;
+
+  /// Optional background key for Skia/Web refraction.
+  final GlobalKey? backgroundKey;
 
   @override
   State<GlassTabBar> createState() => _GlassTabBarState();
@@ -272,6 +276,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
         // Pass new props
         indicatorBorderRadius: widget.indicatorBorderRadius,
         indicatorSettings: widget.indicatorSettings,
+        backgroundKey: widget.backgroundKey,
       ),
     );
 
@@ -308,6 +313,7 @@ class _TabBarContent extends StatefulWidget {
     required this.quality,
     this.indicatorBorderRadius,
     this.indicatorSettings,
+    this.backgroundKey,
   });
 
   final List<GlassTab> tabs;
@@ -325,6 +331,7 @@ class _TabBarContent extends StatefulWidget {
   final GlassQuality quality;
   final BorderRadius? indicatorBorderRadius;
   final LiquidGlassSettings? indicatorSettings;
+  final GlobalKey? backgroundKey;
 
   @override
   State<_TabBarContent> createState() => _TabBarContentState();
@@ -500,6 +507,7 @@ class _TabBarContentState extends State<_TabBarContent> {
                         false, // Internal logic now handles both
                     borderRadius: widget.indicatorBorderRadius?.topLeft.x ?? 16,
                     glassSettings: widget.indicatorSettings,
+                    backgroundKey: widget.backgroundKey,
                   ),
 
                   child!,

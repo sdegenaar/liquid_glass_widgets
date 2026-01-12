@@ -1,11 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:motor/motor.dart';
 
 import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
-import 'adaptive_glass.dart';
+import 'interactive_indicator_glass.dart';
 
 /// A shared component that renders the interactive "Jelly" indicator
 /// used in [GlassTabBar], [GlassSegmentedControl], and [GlassBottomBar].
@@ -29,7 +28,11 @@ class GlassInteractiveIndicator extends StatelessWidget {
     this.padding = EdgeInsets.zero,
     this.expansion = 8.0,
     this.useSuperellipse = true,
+    this.backgroundKey,
   });
+
+  /// Optional background key for Skia/Web refraction
+  final GlobalKey? backgroundKey;
 
   /// Current velocity of the drag gesture.
   final double velocity;
@@ -118,15 +121,14 @@ class GlassInteractiveIndicator extends StatelessWidget {
 
     final indicatorSettings = glassSettings ?? _baseGlassSettings;
 
-    // Use AdaptiveGlass for proper Impeller/Skia fallback
-    // Premium quality on iOS with Impeller → best quality
-    // Premium quality on web/Skia → lightweight shader (not FakeGlass!)
-    final glassWidget = AdaptiveGlass(
+    // Use specialized interactive glass for better performance and "wow" factor
+    // on all platforms. On Skia/web, it uses magnification effects.
+    final glassWidget = InteractiveIndicatorGlass(
       shape: shape,
       settings: indicatorSettings,
       quality: quality,
-      allowElevation: false,
-      useOwnLayer: !kIsWeb, // Indicators always use their own layer
+      interactionIntensity: thickness,
+      backgroundKey: backgroundKey,
       child: const GlassGlow(child: SizedBox.expand()),
     );
 
