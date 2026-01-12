@@ -1,3 +1,11 @@
+# 0.2.1-dev.3
+
+- **FIX**: `GlassBottomBarExtraButton` now respects parent styling
+    - Extra button icon color now inherits from `GlassBottomBar.unselectedIconColor` when not explicitly set
+    - Extra button shape now matches parent's `barBorderRadius` (defaults to circular for standard 32px radius)
+    - Added `iconColor` parameter to `GlassBottomBarExtraButton` for explicit color control
+    - Thanks to @kermit83 for the contribution (#1)
+
 # 0.2.1-dev.2
 
 - **FEAT**: Custom Shader Refraction for Interactive Indicators

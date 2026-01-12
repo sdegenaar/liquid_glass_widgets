@@ -90,6 +90,8 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage> {
                 quality: GlassQuality.premium,
                 indicatorColor: Colors.black26,
                 glassSettings: RecommendedGlassSettings.bottomBar,
+                // unselectedIconColor: Colors.red,
+                // barBorderRadius: 20,
                 tabs: [
                   GlassBottomBarTab(
                     label: 'Home',
@@ -127,6 +129,14 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage> {
                     _selectedIndex = index;
                   });
                 },
+                // extraButton: GlassBottomBarExtraButton(
+                //   icon: CupertinoIcons.rectangle_3_offgrid_fill,
+                //   iconColor: Colors.amber,
+                //   onTap: () {
+                //
+                //   },
+                //   label: 'AI Chat',
+                // ),
               ),
             ),
           ),
