@@ -5,7 +5,7 @@ import 'package:motor/motor.dart';
 import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
-import '../shared/glass_interactive_indicator.dart';
+import '../shared/animated_glass_indicator.dart';
 
 /// A glass morphism tab bar following Apple's iOS design patterns.
 ///
@@ -495,8 +495,8 @@ class _TabBarContentState extends State<_TabBarContent> {
                 clipBehavior: Clip.none,
                 children: [
                   // Unified Glass Indicator with jelly physics
-                  // The internal cross-fade in GlassInteractiveIndicator prevents flickering
-                  GlassInteractiveIndicator(
+                  // The internal cross-fade in AnimatedGlassIndicator prevents flickering
+                  AnimatedGlassIndicator(
                     velocity: velocity,
                     itemCount: widget.tabs.length,
                     alignment: alignment,

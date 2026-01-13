@@ -6,8 +6,7 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
-import '../shared/adaptive_glass.dart';
-import '../shared/inherited_liquid_glass.dart';
+import '../shared/glass_effect.dart';
 
 /// A glass morphism slider following Apple's iOS 26 design patterns.
 ///
@@ -206,6 +205,7 @@ class GlassSlider extends StatefulWidget {
   ///
   /// Use [GlassQuality.premium] for full-pipeline shader with texture capture
   /// and chromatic aberration (Impeller only) in static layouts.
+  /// Defaults to [GlassQuality.standard].
   final GlassQuality quality;
 
   @override
@@ -273,26 +273,24 @@ class _GlassSliderState extends State<GlassSlider>
     super.dispose();
   }
 
-  // double get _normalizedValue {
-  //   return ((widget.value - widget.min) / (widget.max - widget.min))
-  //       .clamp(0.0, 1.0);
-  // }
-
   double _normalizedToValue(double normalized) {
     return widget.min + (normalized * (widget.max - widget.min));
   }
 
-  void _handleDragStart(DragStartDetails details) {
+  void _handleDragDown(DragDownDetails details) {
+    // Instant visual response on touch down (iOS 26)
+    if (_isDragging) return;
+
     setState(() {
       _isDragging = true;
       _velocity = Offset.zero;
     });
-    // Scale up thumb when starting drag (iOS 26 liquid effect)
     unawaited(_scaleController.forward());
-
-    // Show glass overlay (iOS 26 liquid glass effect)
     unawaited(_thicknessController.forward());
+  }
 
+  void _handleDragStart(DragStartDetails details) {
+    // Only call onChangeStart once per interaction
     widget.onChangeStart?.call(widget.value);
   }
 
@@ -334,6 +332,17 @@ class _GlassSliderState extends State<GlassSlider>
   }
 
   void _handleDragEnd(DragEndDetails details) {
+    _cleanupDrag();
+    widget.onChangeEnd?.call(widget.value);
+  }
+
+  void _handleDragCancel() {
+    _cleanupDrag();
+  }
+
+  void _cleanupDrag() {
+    if (!_isDragging) return;
+
     setState(() {
       _isDragging = false;
       _dragValue = null;
@@ -345,8 +354,6 @@ class _GlassSliderState extends State<GlassSlider>
 
     // Hide glass overlay
     unawaited(_thicknessController.reverse());
-
-    widget.onChangeEnd?.call(widget.value);
   }
 
   @override
@@ -368,20 +375,20 @@ class _GlassSliderState extends State<GlassSlider>
         final thumbPosition =
             widget.thumbRadius + (trackWidth * normalizedValue);
 
-        // Calculate step size for accessibility increase/decrease
         final step = (widget.max - widget.min) / (widget.divisions ?? 10);
         final increasedValue =
             (widget.value + step).clamp(widget.min, widget.max);
         final decreasedValue =
             (widget.value - step).clamp(widget.min, widget.max);
 
-        // Calculate normalized percentages for semantics
         final normalizedIncreased =
             ((increasedValue - widget.min) / (widget.max - widget.min))
                 .clamp(0.0, 1.0);
         final normalizedDecreased =
             ((decreasedValue - widget.min) / (widget.max - widget.min))
                 .clamp(0.0, 1.0);
+
+        final thumbHeight = widget.thumbRadius * 1.6;
 
         return Semantics(
           label: widget.label ?? 'Slider',
@@ -398,116 +405,111 @@ class _GlassSliderState extends State<GlassSlider>
                   widget.onChanged!(decreasedValue);
                 }
               : null,
-          child: GestureDetector(
-            onHorizontalDragStart: _handleDragStart,
-            onHorizontalDragUpdate: (details) =>
-                _handleDragUpdate(details, constraints),
-            onHorizontalDragEnd: _handleDragEnd,
-            child: SizedBox(
-              height: widget.thumbRadius * 2 + 16,
-              width: constraints.maxWidth,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  // Track (centered vertically)
-                  Positioned.fill(
-                    child: Center(
-                      child: SizedBox(
-                        height: widget.trackHeight,
-                        child: Stack(
-                          children: [
-                            // Full inactive track (background)
-                            Positioned.fill(
-                              child: _buildTrackGlass(
-                                borderRadius: BorderRadius.circular(
-                                  widget.trackHeight / 2,
-                                ),
-                                color: inactiveColor,
-                              ),
-                            ),
-
-                            // Active track (extends under thumb - visible
-                            // through glass)
-                            if (normalizedValue > 0)
-                              Positioned(
-                                left: 0,
-                                right: constraints.maxWidth *
-                                    (1 - normalizedValue),
-                                top: 0,
-                                bottom: 0,
+          child: RepaintBoundary(
+            child: GestureDetector(
+              onHorizontalDragDown: _handleDragDown,
+              onHorizontalDragStart: _handleDragStart,
+              onHorizontalDragUpdate: (details) =>
+                  _handleDragUpdate(details, constraints),
+              onHorizontalDragEnd: _handleDragEnd,
+              onHorizontalDragCancel: _handleDragCancel,
+              child: SizedBox(
+                height: widget.thumbRadius * 2 + 16,
+                width: constraints.maxWidth,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    // Track (centered vertically)
+                    Positioned.fill(
+                      child: Center(
+                        child: SizedBox(
+                          height: widget.trackHeight,
+                          child: Stack(
+                            children: [
+                              // Full inactive track (background)
+                              Positioned.fill(
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: activeColor,
-                                    borderRadius: BorderRadius.horizontal(
-                                      left: Radius.circular(
-                                        widget.trackHeight / 2,
-                                      ),
-                                      right: normalizedValue >= 1.0
-                                          ? Radius.circular(
-                                              widget.trackHeight / 2,
-                                            )
-                                          : Radius.zero,
+                                    color: inactiveColor,
+                                    borderRadius: BorderRadius.circular(
+                                      widget.trackHeight / 2,
                                     ),
                                   ),
                                 ),
                               ),
-                          ],
+
+                              // Active track
+                              if (normalizedValue > 0)
+                                Positioned(
+                                  left: 0,
+                                  right: constraints.maxWidth *
+                                      (1 - normalizedValue),
+                                  top: 0,
+                                  bottom: 0,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: activeColor,
+                                      borderRadius: BorderRadius.horizontal(
+                                        left: Radius.circular(
+                                          widget.trackHeight / 2,
+                                        ),
+                                        right: normalizedValue >= 1.0
+                                            ? Radius.circular(
+                                                widget.trackHeight / 2,
+                                              )
+                                            : Radius.zero,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
 
-                  // Thumb (iOS 26: positioned slightly DOWN from track center)
-                  // Performance: RepaintBoundary isolates thumb animations
-                  Positioned(
-                    left: thumbPosition - widget.thumbRadius,
-                    top: 10.5,
-                    child: RepaintBoundary(
-                      child: AnimatedBuilder(
-                        animation: Listenable.merge([
-                          _scaleController,
-                          _thicknessController,
-                        ]),
-                        builder: (context, child) {
-                          final scale = _scaleAnimation.value;
-                          final thickness = _thicknessAnimation.value;
+                    // Thumb (iOS 26: premium hardware aligned)
+                    AnimatedBuilder(
+                      animation: Listenable.merge([
+                        _scaleController,
+                        _thicknessController,
+                      ]),
+                      builder: (context, child) {
+                        final scale = _scaleAnimation.value;
 
-                          // iOS 26 liquid glass: more dramatic jelly when dragging
-                          final jellyTransform = _isDragging
-                              ? DraggableIndicatorPhysics.buildJellyTransform(
-                                  velocity: _velocity,
-                                  maxDistortion:
-                                      0.25, // More dramatic than before
-                                  velocityScale:
-                                      30, // More sensitive to velocity
-                                )
-                              : Matrix4.identity();
+                        // Calculate actual thumb size after scaling for centering
+                        final scaledThumbHeight = thumbHeight * scale;
+                        // Adjust top position to keep thumb centered as it grows
+                        final topPosition =
+                            (widget.thumbRadius * 2 + 16 - scaledThumbHeight) /
+                                2;
 
-                          return Transform(
+                        final jellyTransform = _isDragging
+                            ? DraggableIndicatorPhysics.buildJellyTransform(
+                                velocity: _velocity,
+                                maxDistortion: 0.25,
+                                velocityScale: 30,
+                              )
+                            : Matrix4.identity();
+
+                        return Positioned(
+                          left: thumbPosition - widget.thumbRadius,
+                          top: topPosition,
+                          child: Transform(
                             alignment: Alignment.center,
                             transform: jellyTransform,
-                            child: Transform.scale(
-                              scale: scale,
-                              child: Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  // Solid thumb
-                                  _buildThumbGlass(),
-
-                                  // Glass overlay (appears when dragging)
-                                  if (thickness > 0)
-                                    Positioned.fill(
-                                      child: _buildGlassOverlay(thickness),
-                                    ),
-                                ],
-                              ),
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                _buildThumbGlass(scale),
+                              ],
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      },
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -516,133 +518,104 @@ class _GlassSliderState extends State<GlassSlider>
     );
   }
 
-  Widget _buildTrackGlass({
-    required BorderRadius borderRadius,
-    required Color color,
-  }) {
-    final trackWidget = Container(
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: borderRadius,
-      ),
-    );
+  Widget _buildThumbGlass(double scale) {
+    final thumbWidth = widget.thumbRadius * 2.6;
+    final thumbHeight = widget.thumbRadius * 1.6;
+    final borderRadius = thumbHeight / 2;
 
-    final trackShape = LiquidRoundedRectangle(
-      borderRadius: widget.trackHeight / 2,
-    );
-    final trackSettings =
-        widget.settings ?? InheritedLiquidGlass.ofOrDefault(context);
+    // Calculate transition value (0 = at rest, 1 = fully dragging)
+    final transition = _thicknessAnimation.value;
 
-    return AdaptiveGlass(
-      shape: trackShape,
-      settings: trackSettings,
-      quality: widget.quality,
-      useOwnLayer: widget.useOwnLayer,
-      child: trackWidget,
-    );
-  }
+    // iOS 26: Dynamic size matching GlassSwitch pattern
+    // The glass shell grows with the scale animation
+    final totalWidth = thumbWidth * scale;
+    final totalHeight = thumbHeight * scale;
 
-  Widget _buildThumbGlass() {
-    // iOS 26: Elongated pill-shaped thumb (wider, more rectangular)
-    final thumbWidth = widget.thumbRadius * 2.6; // Very wide for elongated pill
-    final thumbHeight = widget.thumbRadius * 1.6; // Shorter height
-    final borderRadius = thumbHeight / 2 - 2;
+    // iOS 26: Unified thumb content with stable structure
+    final thumbContent = SizedBox(
+      width: totalWidth,
+      height: totalHeight,
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          // Glass shell footprint (crucial for proper shader rendering)
+          Positioned.fill(child: Container(color: Colors.transparent)),
 
-    // iOS 26 behavior: Solid white pill → Transparent glass when dragging
-    // At rest: subtle glass on bright white pill
-    // When dragging: strong glass effects with transparency
-    final glassColor = _isDragging
-        ? const Color.from(alpha: 0.1, red: 1, green: 1, blue: 1) // transparent
-        : const Color.from(
-            alpha: 0.15, red: 1, green: 1, blue: 1); // very subtle tint at rest
-
-    final lightWeightShader = widget.quality.usesLightweightShader;
-
-    // Strong refraction when liquid
-    // Skia fallback needs a higher multiplier to match the "pop" of real refraction
-    final refractiveIndex = _isDragging
-        ? (lightWeightShader ? 1.2 : 1.15)
-        : 0.7; // Thin delicate rim at rest
-
-    // Rainbow edges when liquid
-    final chromaticAberration =
-        _isDragging ? 0.5 : 0.0; // No aberration at rest
-
-    // Thicker glass depth when liquid
-    final thickness = _isDragging
-        ? (lightWeightShader ? 20.0 : 10.0)
-        : 5.0; // Minimal at rest
-
-    // Bright highlights when liquid
-    // Skia fallback needs punchier highlights to compensate for lack of backdrop sampling
-    final lightIntensity = _isDragging
-        ? (lightWeightShader ? 1.5 : 2.0)
-        : 0.5; // Subtle lighting at rest
-
-    // Less blur (sharper) when liquid
-    final blur = _isDragging ? 0.0 : 2.0;
-
-    final thumbContent = Container(
-      width: thumbWidth,
-      height: thumbHeight,
-      decoration: BoxDecoration(
-        // iOS 26: Start opaque white, become transparent when dragging
-        // Match the glassColor for consistent appearance
-        color: _isDragging
-            ? Colors.transparent // invisible when dragging
-            : Colors.white.withValues(alpha: 0.85), // Bright white at rest
-        borderRadius: BorderRadius.circular(borderRadius),
-        boxShadow: _isDragging
-            ? null
-            : const [
-                // Subtle shadow at rest
+          // Physical material content (centered, original size)
+          Container(
+            width: thumbWidth,
+            height: thumbHeight,
+            decoration: BoxDecoration(
+              // Fade out material as glass intensifies
+              color: Colors.white.withValues(
+                alpha: (1.0 - transition * 1.2).clamp(0.0, 1.0),
+              ),
+              borderRadius: BorderRadius.circular(borderRadius),
+              boxShadow: [
                 BoxShadow(
-                  color: _defaultThumbShadowColor,
+                  color: _defaultThumbShadowColor.withValues(
+                    alpha: 0.25 * (1.0 - transition),
+                  ),
                   blurRadius: 8,
-                  offset: Offset(0, 2),
+                  offset: const Offset(0, 2),
                 ),
               ],
+            ),
+          ),
+
+          // Glowing element (always present when transition > 0, controlled by opacity)
+          if (transition > 0.05)
+            Opacity(
+              opacity: transition,
+              child: GlassGlow(
+                child: SizedBox(
+                  width: thumbWidth,
+                  height: thumbHeight,
+                ),
+              ),
+            ),
+        ],
       ),
-      // Strong glow effect when liquid glass (dragging)
-      child: _isDragging
-          ? const GlassGlow(
-              child: SizedBox.expand(),
-            )
-          : null,
     );
 
-    // Use liquid glass with dramatic animated properties
+    // Use liquid glass with clean superellipse shape
+    // Border radius scales with the total height
     final thumbShape = LiquidRoundedSuperellipse(
-      borderRadius: borderRadius,
-    );
-    final thumbSettings = LiquidGlassSettings(
-      glassColor: glassColor,
-      refractiveIndex: refractiveIndex,
-      thickness: thickness,
-      lightIntensity: lightIntensity,
-      chromaticAberration: chromaticAberration,
-      blur: blur,
-      lightAngle: 135,
-      ambientStrength:
-          _isDragging ? 0.3 : 0.8, // Bright at rest, darker when dragging
+      borderRadius: totalHeight / 2,
     );
 
-    return AdaptiveGlass(
-      shape: thumbShape,
-      settings: thumbSettings,
-      quality: widget.quality,
-      useOwnLayer: true, // Thumb always uses its own layer
-      allowElevation: false, // Don't darken thumb when inside containers
-      child: thumbContent,
-    );
-  }
+    // SIMPLIFIED: Static const settings matching GlassSwitch pattern
+    // All animation is handled via interactionIntensity parameter
+    final thumbSettings = widget.quality.usesLightweightShader
+        ? const LiquidGlassSettings(
+            glassColor: Color.from(alpha: 0.1, red: 1, green: 1, blue: 1),
+            refractiveIndex: 1.15,
+            thickness: 20,
+            lightIntensity: 2.0,
+            blur: 0,
+            lightAngle: 135,
+          )
+        : const LiquidGlassSettings(
+            glassColor: Color.from(alpha: 0.1, red: 1, green: 1, blue: 1),
+            refractiveIndex: 1.15,
+            thickness: 10,
+            lightIntensity: 2,
+            blur: 0,
+            lightAngle: 120,
+          );
 
-  /// Builds the liquid glass overlay that appears during dragging.
-  ///
-  /// This creates the signature iOS 26 "liquid glass" effect - a clear,
-  /// refractive overlay that makes the thumb appear liquid and glassy.
-  Widget _buildGlassOverlay(double thickness) {
-    // Not used anymore - glass effect is now part of the thumb itself
-    return const SizedBox.shrink();
+    // CRITICAL: Outer SizedBox with dynamic size ensures proper premium rendering
+    return SizedBox(
+      width: totalWidth,
+      height: totalHeight,
+      child: GlassEffect(
+        shape: thumbShape,
+        settings: thumbSettings,
+        quality: widget.quality,
+        interactionIntensity: transition, // ✅ Drives all animation
+        child: thumbContent,
+      ),
+    );
   }
 }

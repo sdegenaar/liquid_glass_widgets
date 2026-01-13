@@ -1,4 +1,44 @@
+# 0.2.1-dev.5
+
+- **REFACTOR**: Major architectural refactoring of interactive widgets for consistency and quality
+    - **Unified Interactive Indicator Architecture**: Extracted shared `AnimatedGlassIndicator` component
+      - Eliminates 877 lines of duplicated code across `GlassBottomBar`, `GlassTabBar`, and `GlassSegmentedControl`
+      - Provides consistent jelly physics, glass effects, and animation behavior
+      - Single source of truth for indicator rendering logic
+      - Easier to maintain and extend with new features
+    
+    - **GlassSlider
+      - Fixed dynamic sizing to match `GlassSwitch` pattern (glass shell now grows with scale animation)
+      - Implemented proper vertical centering during balloon animation
+      - Aligned architecture with `GlassSwitch` using static `const` settings
+    
+    - **GlassSwitch Code Simplification**: Reduced complexity while maintaining quality
+      - Simplified thumb rendering logic by 40% (309 lines → cleaner structure)
+      - Removed redundant conditional logic
+      - Improved code readability and maintainability
+      - Improved visual for more ios26 aesthetics
+    
+    - **Architectural Consistency**: All interactive widgets now follow the same pattern
+      - Static `const LiquidGlassSettings` (no per-frame allocations)
+      - Dynamic sizing for proper premium rendering
+      - Stable content structure (no `Transform.scale` wrapping `GlassEffect`)
+      - `interactionIntensity` parameter drives all animations
+      - Opacity-based glow control (no conditional mounting)
+
+- **PERF**: Significant performance improvements across interactive widgets
+    - **877 lines of code removed** through shared component extraction
+    - Static `const` settings eliminate per-frame allocations in `GlassSlider`
+    - Optimized `GlassEffect` shader uniform updates
+    - Better RepaintBoundary placement for render isolation
+
+- **FEAT**: Enhanced `GlassEffect` widget for better interactive indicator support
+    - Improved background capture system with "Interaction Heartbeat"
+    - Better coordinate synchronization for animated widgets
+    - Optimized shader parameter passing
+    - Support for dynamic shape sizing
+
 # 0.2.1-dev.4
+
 
 - **PERF**: Optimized `InteractiveIndicatorGlass` (Skia/Web path) with a new **"Interaction Heartbeat"** system. This reduces overhead by 80% when using `LiquidGlassScope` by throttling background captures while maintaining smooth 10fps live refraction during active dragging.
 - **FEAT**: **Universal Aesthetic Fallback**: Interactive indicators now maintain their premium custom-shader lighting and rim structure even without a `LiquidGlassBackground`. Added a new "Synthetic Frost" mode that renders a high-fidelity glass material when no background is captured.

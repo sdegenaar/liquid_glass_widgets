@@ -18,7 +18,7 @@ import '../../utils/draggable_indicator_physics.dart';
 import '../interactive/glass_button.dart';
 import '../shared/adaptive_glass.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
-import '../shared/glass_interactive_indicator.dart';
+import '../shared/animated_glass_indicator.dart';
 
 /// A glass morphism bottom navigation bar following Apple's design patterns.
 ///
@@ -856,7 +856,7 @@ class _TabIndicatorState extends State<_TabIndicator> {
         _fallbackIndicatorColor;
     final targetAlignment = _computeXAlignmentForTab(widget.tabIndex);
 
-    // GlassInteractiveIndicator multiplies by 2 for the glass superellipse shape,
+    // AnimatedGlassIndicator multiplies by 2 for the glass superellipse shape,
     // but uses the value directly for the background DecoratedBox.
     final backgroundRadius = widget.barBorderRadius * 2; // 64
     final glassRadius =
@@ -913,8 +913,8 @@ class _TabIndicatorState extends State<_TabIndicator> {
                   ),
 
                   // Unified Glass Indicator with jelly physics
-                  // The internal cross-fade in GlassInteractiveIndicator prevents flickering
-                  GlassInteractiveIndicator(
+                  // The internal cross-fade in AnimatedGlassIndicator prevents flickering
+                  AnimatedGlassIndicator(
                     velocity: velocity,
                     itemCount: widget.tabCount,
                     alignment: alignment,

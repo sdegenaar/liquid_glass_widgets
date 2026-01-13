@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'widgets/shared/lightweight_liquid_glass.dart';
-import 'widgets/shared/interactive_indicator_glass.dart';
+import 'widgets/shared/glass_effect.dart';
 
 /// Entry point and configuration for the Liquid Glass Widgets library.
 ///
@@ -33,7 +33,7 @@ class LiquidGlassWidgets {
     // This is the most critical step to prevent the "white flash" on Skia/Web
     await Future.wait([
       LightweightLiquidGlass.preWarm(),
-      InteractiveIndicatorGlass.preWarm(),
+      GlassEffect.preWarm(),
     ]);
 
     debugPrint('[LiquidGlass] Initialization complete.');

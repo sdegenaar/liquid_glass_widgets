@@ -140,7 +140,7 @@ void main() {
         onChanged: (_) {},
       );
 
-      expect(glassSwitch.width, equals(56.0));
+      expect(glassSwitch.width, equals(58.0));
       expect(glassSwitch.height, equals(26.0));
       expect(glassSwitch.thumbColor, equals(Colors.white));
       expect(glassSwitch.useOwnLayer, isFalse);

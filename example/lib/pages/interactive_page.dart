@@ -28,6 +28,7 @@ class _InteractivePageState extends State<InteractivePage> {
   bool _premiumSwitch = true;
   int _premiumSegment = 0;
   int _standardSegment = 0;
+  double _premiumSlider = 0.7;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +45,8 @@ class _InteractivePageState extends State<InteractivePage> {
           segmentValue2: _standardSegment,
           onSegmentChanged2: (value) =>
               setState(() => _standardSegment = value),
+          sliderValue: _premiumSlider,
+          onSliderChanged: (value) => setState(() => _premiumSlider = value),
         ),
 
         // =====================================================================
@@ -906,6 +909,8 @@ class _PremiumShowcase extends StatelessWidget {
   final ValueChanged<int> onSegmentChanged;
   final int segmentValue2;
   final ValueChanged<int> onSegmentChanged2;
+  final double sliderValue;
+  final ValueChanged<double> onSliderChanged;
 
   const _PremiumShowcase({
     required this.switchValue,
@@ -914,6 +919,8 @@ class _PremiumShowcase extends StatelessWidget {
     required this.onSegmentChanged,
     required this.segmentValue2,
     required this.onSegmentChanged2,
+    required this.sliderValue,
+    required this.onSliderChanged,
   });
 
   @override
@@ -961,6 +968,15 @@ class _PremiumShowcase extends StatelessWidget {
                     backgroundColor: Colors.black38,
                     indicatorColor: Colors.white38,
                   ),
+                  const SizedBox(height: 16),
+                  // PREMIUM SLIDER: Demonstrates premium quality in static layout
+                  // GlassSlider(
+                  //   value: sliderValue,
+                  //   onChanged: onSliderChanged,
+                  //   quality: GlassQuality.premium,
+                  //   useOwnLayer: true,
+                  //   activeColor: Colors.white.withValues(alpha: 0.8),
+                  // ),
                   // const SizedBox(height: 60),
                   // // STANDARD: Uses lightweight BackdropFilter for comparison
                   // GlassSegmentedControl(
@@ -1160,7 +1176,7 @@ class _SliderDemosCardState extends State<_SliderDemosCard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Basic Slider',
+                'Basic Slider (Standard Quality)',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,

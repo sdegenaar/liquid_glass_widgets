@@ -20,10 +20,10 @@ import '../../types/glass_quality.dart';
 /// with magnification effects, enhanced rim lighting, and radial brightness.
 ///
 /// On Impeller with premium quality, it uses the native LiquidGlass renderer.
-/// On Skia/Web or standard quality, it uses the enhanced InteractiveIndicator
+/// On Skia/Web or standard quality, it uses the enhanced GlassEffect
 /// shader with magnification and structural rim effects.
-class InteractiveIndicatorGlass extends StatefulWidget {
-  const InteractiveIndicatorGlass({
+class GlassEffect extends StatefulWidget {
+  const GlassEffect({
     required this.shape,
     required this.settings,
     required this.interactionIntensity,
@@ -31,6 +31,11 @@ class InteractiveIndicatorGlass extends StatefulWidget {
     this.quality = GlassQuality.standard,
     this.densityFactor = 0.0,
     this.backgroundKey,
+    this.ambientRim = 0.1,
+    this.baseAlphaMultiplier = 0.2,
+    this.edgeAlphaMultiplier = 0.4,
+    this.rimThickness = 0.5,
+    this.rimSmoothing = 1.5,
     super.key,
   });
 
@@ -50,6 +55,21 @@ class InteractiveIndicatorGlass extends StatefulWidget {
   /// Drives magnification and enhancement effects
   final double interactionIntensity;
 
+  /// Minimum rim brightness regardless of light direction (default: 0.1)
+  final double ambientRim;
+
+  /// Center transparency multiplier (default: 0.2)
+  final double baseAlphaMultiplier;
+
+  /// Edge opacity multiplier (default: 0.4)
+  final double edgeAlphaMultiplier;
+
+  /// Rim offset/thickness in logical pixels (default: 0.5)
+  final double rimThickness;
+
+  /// Rim edge smoothing multiplier (default: 1.5)
+  final double rimSmoothing;
+
   static ui.FragmentProgram? _cachedProgram;
   static bool _isPreparing = false;
 
@@ -68,9 +88,9 @@ class InteractiveIndicatorGlass extends StatefulWidget {
       _cachedProgram = program;
 
       if (!kIsWeb) {
-        debugPrint('[InteractiveIndicatorGlass] ✓ Shader precached (native)');
+        debugPrint('[GlassEffect] ✓ Shader precached (native)');
       } else {
-        debugPrint('[InteractiveIndicatorGlass] ✓ Shader program loaded (web)');
+        debugPrint('[GlassEffect] ✓ Shader program loaded (web)');
       }
 
       // Create a 1x1 transparent dummy image to satisfy sampler index 0
@@ -80,18 +100,17 @@ class InteractiveIndicatorGlass extends StatefulWidget {
       final picture = recorder.endRecording();
       _dummyImage = await picture.toImage(1, 1);
     } catch (e) {
-      debugPrint('[InteractiveIndicatorGlass] Pre-warm failed: $e');
+      debugPrint('[GlassEffect] Pre-warm failed: $e');
     } finally {
       _isPreparing = false;
     }
   }
 
   @override
-  State<InteractiveIndicatorGlass> createState() =>
-      _InteractiveIndicatorGlassState();
+  State<GlassEffect> createState() => _GlassEffectState();
 }
 
-class _InteractiveIndicatorGlassState extends State<InteractiveIndicatorGlass>
+class _GlassEffectState extends State<GlassEffect>
     with SingleTickerProviderStateMixin {
   ui.FragmentShader? _localShader;
   bool _loggedCreation = false;
@@ -105,27 +124,19 @@ class _InteractiveIndicatorGlassState extends State<InteractiveIndicatorGlass>
   @override
   void initState() {
     super.initState();
-    final bool useNativeRenderer = !kIsWeb &&
-        InteractiveIndicatorGlass._canUseImpeller &&
-        widget.quality == GlassQuality.premium;
-
-    if (!useNativeRenderer) {
-      _initShader();
-    }
+    // Always initialize the custom shader to ensure high-fidelity fallbacks
+    // are available even when native paths are restricted (e.g. inside cards).
+    _initShader();
 
     _ticker = createTicker(_handleTick);
     _updateTicker();
   }
 
   @override
-  void didUpdateWidget(covariant InteractiveIndicatorGlass oldWidget) {
+  void didUpdateWidget(covariant GlassEffect oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.quality != widget.quality) {
-      final bool useNativeRenderer = !kIsWeb &&
-          InteractiveIndicatorGlass._canUseImpeller &&
-          widget.quality == GlassQuality.premium;
-
-      if (!useNativeRenderer && _activeShader == null) {
+      if (_activeShader == null) {
         _initShader();
       }
     }
@@ -149,16 +160,16 @@ class _InteractiveIndicatorGlassState extends State<InteractiveIndicatorGlass>
     if (shouldCapture) {
       if (!_ticker.isActive) {
         _ticker.start();
-        debugPrint(
-            '[InteractiveIndicatorGlass] 📸 Starting capture loop. Intensity: ${widget.interactionIntensity.toStringAsFixed(2)}');
+        // debugPrint(
+        //     '[GlassEffect] 📸 Starting capture loop. Intensity: ${widget.interactionIntensity.toStringAsFixed(2)}');
       }
     } else {
       if (_ticker.isActive) {
         _ticker.stop();
         _backgroundImage?.dispose();
         _backgroundImage = null;
-        debugPrint(
-            '[InteractiveIndicatorGlass] 📸 Interaction finished, cleared snapshot.');
+        // debugPrint(
+        //     '[GlassEffect] 📸 Interaction finished, cleared snapshot.');
       }
     }
   }
@@ -178,7 +189,7 @@ class _InteractiveIndicatorGlassState extends State<InteractiveIndicatorGlass>
     final currentPos = (key.currentContext?.findRenderObject() as RenderBox?)
         ?.localToGlobal(Offset.zero);
 
-    // ARCHITECT'S REFINEMENT: Interaction Heartbeat
+    // Interaction Heartbeat
     // - Resting: Capture ONLY on geometry change (Pos/Size). No periodic heartbeat.
     // - Dragging: Capture on interaction (100ms heartbeat) to keep it "live".
 
@@ -222,19 +233,18 @@ class _InteractiveIndicatorGlassState extends State<InteractiveIndicatorGlass>
   }
 
   Future<void> _initShader() async {
-    if (InteractiveIndicatorGlass._cachedProgram == null) {
-      await InteractiveIndicatorGlass.preWarm();
+    if (GlassEffect._cachedProgram == null) {
+      await GlassEffect.preWarm();
     }
 
-    if (InteractiveIndicatorGlass._cachedProgram != null) {
+    if (GlassEffect._cachedProgram != null) {
       if (mounted) {
         setState(() {
           // Always create a local shader instance for state isolation
-          _localShader =
-              InteractiveIndicatorGlass._cachedProgram!.fragmentShader();
+          _localShader = GlassEffect._cachedProgram!.fragmentShader();
           if (!_loggedCreation) {
             debugPrint(
-                '[InteractiveIndicatorGlass] ✓ Created unique shader instance for ${widget.shape.runtimeType}');
+                '[GlassEffect] ✓ Created unique shader instance for ${widget.shape.runtimeType}');
             _loggedCreation = true;
           }
         });
@@ -254,15 +264,15 @@ class _InteractiveIndicatorGlassState extends State<InteractiveIndicatorGlass>
   ui.FragmentShader? get _activeShader {
     // We only return the shader if the dummy image is ready,
     // to prevent "missing sampler" build errors.
-    if (InteractiveIndicatorGlass._dummyImage == null) return null;
+    if (GlassEffect._dummyImage == null) return null;
     return _localShader;
   }
 
   @override
   Widget build(BuildContext context) {
     // 1. Detect Environment & Constraints
-    final bool isImpeller =
-        !kIsWeb && InteractiveIndicatorGlass._canUseImpeller;
+    final bool isImpeller = !kIsWeb && GlassEffect._canUseImpeller;
+
     final bool avoidsRefraction = context
             .dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>()
             ?.avoidsRefraction ??
@@ -273,19 +283,8 @@ class _InteractiveIndicatorGlassState extends State<InteractiveIndicatorGlass>
     final shader = _activeShader;
 
     // 3. Selection Logic:
-    // We use the High-Fidelity Refraction Shader (InteractiveIndicatorEffect)
-    // if we have a background to refract and aren't explicitly avoiding
-    // refraction (e.g. nested inside a GlassCard).
-
-    final bool canUseRefraction = effectiveKey != null && !avoidsRefraction;
-
     // Path A: Native Impeller (Premium only)
-    // On platforms with Impeller, "Premium" uses the native engine for best performance.
-    // CRITICAL: We only use native if NOT nested (!avoidsRefraction) to prevent
-    // rendering conflicts between the native pipeline and our custom shaders.
-    if (isImpeller &&
-        widget.quality == GlassQuality.premium &&
-        !avoidsRefraction) {
+    if (isImpeller && widget.quality == GlassQuality.premium) {
       return LiquidGlass.withOwnLayer(
         shape: widget.shape,
         settings: widget.settings,
@@ -294,12 +293,15 @@ class _InteractiveIndicatorGlassState extends State<InteractiveIndicatorGlass>
       );
     }
 
+    // 4. Resolve if we can use the high-fidelity refraction shader
+    final bool canUseRefraction = effectiveKey != null && !avoidsRefraction;
+
     // Path B: High-Fidelity Refraction Shader (Custom GLSL)
     // This is the "New Shader" featuring magnification and liquid distortion.
-    // We use this as the primary path for Standard quality, or when Impeller is unavailable.
     if (canUseRefraction && shader != null) {
       return ClipPath(
         clipper: ShapeBorderClipper(shape: widget.shape),
+        clipBehavior: Clip.antiAliasWithSaveLayer,
         child: _InteractiveIndicatorEffect(
           shader: shader,
           settings: widget.settings,
@@ -309,6 +311,11 @@ class _InteractiveIndicatorGlassState extends State<InteractiveIndicatorGlass>
           backgroundImage: _backgroundImage,
           backgroundKey: effectiveKey,
           devicePixelRatio: View.of(context).devicePixelRatio,
+          ambientRim: widget.ambientRim,
+          baseAlphaMultiplier: widget.baseAlphaMultiplier,
+          edgeAlphaMultiplier: widget.edgeAlphaMultiplier,
+          rimThickness: widget.rimThickness,
+          rimSmoothing: widget.rimSmoothing,
           child: widget.child,
         ),
       );
@@ -321,6 +328,7 @@ class _InteractiveIndicatorGlassState extends State<InteractiveIndicatorGlass>
     if (shader != null) {
       return ClipPath(
         clipper: ShapeBorderClipper(shape: widget.shape),
+        clipBehavior: Clip.antiAliasWithSaveLayer,
         child: _InteractiveIndicatorEffect(
           shader: shader,
           settings: widget.settings.copyWith(blur: 0),
@@ -330,6 +338,11 @@ class _InteractiveIndicatorGlassState extends State<InteractiveIndicatorGlass>
           backgroundImage: null, // Fallback mode
           backgroundKey: null,
           devicePixelRatio: View.of(context).devicePixelRatio,
+          ambientRim: widget.ambientRim,
+          baseAlphaMultiplier: widget.baseAlphaMultiplier,
+          edgeAlphaMultiplier: widget.edgeAlphaMultiplier,
+          rimThickness: widget.rimThickness,
+          rimSmoothing: widget.rimSmoothing,
           child: widget.child,
         ),
       );
@@ -356,6 +369,11 @@ class _InteractiveIndicatorEffect extends SingleChildRenderObjectWidget {
     this.backgroundImage,
     this.backgroundKey,
     required this.devicePixelRatio,
+    required this.ambientRim,
+    required this.baseAlphaMultiplier,
+    required this.edgeAlphaMultiplier,
+    required this.rimThickness,
+    required this.rimSmoothing,
     required super.child,
   });
 
@@ -367,6 +385,11 @@ class _InteractiveIndicatorEffect extends SingleChildRenderObjectWidget {
   final ui.Image? backgroundImage;
   final GlobalKey? backgroundKey;
   final double devicePixelRatio;
+  final double ambientRim;
+  final double baseAlphaMultiplier;
+  final double edgeAlphaMultiplier;
+  final double rimThickness;
+  final double rimSmoothing;
 
   @override
   RenderObject createRenderObject(BuildContext context) {
@@ -379,6 +402,11 @@ class _InteractiveIndicatorEffect extends SingleChildRenderObjectWidget {
       backgroundImage: backgroundImage,
       backgroundKey: backgroundKey,
       devicePixelRatio: devicePixelRatio,
+      ambientRim: ambientRim,
+      baseAlphaMultiplier: baseAlphaMultiplier,
+      edgeAlphaMultiplier: edgeAlphaMultiplier,
+      rimThickness: rimThickness,
+      rimSmoothing: rimSmoothing,
     );
   }
 
@@ -395,7 +423,12 @@ class _InteractiveIndicatorEffect extends SingleChildRenderObjectWidget {
       ..densityFactor = densityFactor
       ..backgroundImage = backgroundImage
       ..backgroundKey = backgroundKey
-      ..devicePixelRatio = devicePixelRatio;
+      ..devicePixelRatio = devicePixelRatio
+      ..ambientRim = ambientRim
+      ..baseAlphaMultiplier = baseAlphaMultiplier
+      ..edgeAlphaMultiplier = edgeAlphaMultiplier
+      ..rimThickness = rimThickness
+      ..rimSmoothing = rimSmoothing;
   }
 }
 
@@ -409,6 +442,11 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
     ui.Image? backgroundImage,
     GlobalKey? backgroundKey,
     required double devicePixelRatio,
+    required double ambientRim,
+    required double baseAlphaMultiplier,
+    required double edgeAlphaMultiplier,
+    required double rimThickness,
+    required double rimSmoothing,
   })  : _shader = shader,
         _settings = settings,
         _shape = shape,
@@ -416,7 +454,12 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
         _densityFactor = densityFactor,
         _backgroundImage = backgroundImage,
         _backgroundKey = backgroundKey,
-        _devicePixelRatio = devicePixelRatio;
+        _devicePixelRatio = devicePixelRatio,
+        _ambientRim = ambientRim,
+        _baseAlphaMultiplier = baseAlphaMultiplier,
+        _edgeAlphaMultiplier = edgeAlphaMultiplier,
+        _rimThickness = rimThickness,
+        _rimSmoothing = rimSmoothing;
 
   ui.FragmentShader _shader;
   set shader(ui.FragmentShader value) {
@@ -471,6 +514,41 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
   set devicePixelRatio(double value) {
     if (_devicePixelRatio == value) return;
     _devicePixelRatio = value;
+    markNeedsPaint();
+  }
+
+  double _ambientRim;
+  set ambientRim(double value) {
+    if (_ambientRim == value) return;
+    _ambientRim = value;
+    markNeedsPaint();
+  }
+
+  double _baseAlphaMultiplier;
+  set baseAlphaMultiplier(double value) {
+    if (_baseAlphaMultiplier == value) return;
+    _baseAlphaMultiplier = value;
+    markNeedsPaint();
+  }
+
+  double _edgeAlphaMultiplier;
+  set edgeAlphaMultiplier(double value) {
+    if (_edgeAlphaMultiplier == value) return;
+    _edgeAlphaMultiplier = value;
+    markNeedsPaint();
+  }
+
+  double _rimThickness;
+  set rimThickness(double value) {
+    if (_rimThickness == value) return;
+    _rimThickness = value;
+    markNeedsPaint();
+  }
+
+  double _rimSmoothing;
+  set rimSmoothing(double value) {
+    if (_rimSmoothing == value) return;
+    _rimSmoothing = value;
     markNeedsPaint();
   }
 
@@ -545,8 +623,7 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
         size, physicalOrigin, uScale, bgRelativeOffset, bgSize);
 
     // 3. Set Sampler
-    final imageToBind =
-        _backgroundImage ?? InteractiveIndicatorGlass._dummyImage;
+    final imageToBind = _backgroundImage ?? GlassEffect._dummyImage;
     if (imageToBind != null) {
       _shader.setImageSampler(0, imageToBind);
     }
@@ -632,5 +709,12 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
     _shader.setFloat(index++, bgSize.width);
     _shader.setFloat(index++, bgSize.height);
     _shader.setFloat(index++, _backgroundImage != null ? 1.0 : 0.0);
+
+    // Configurable appearance parameters
+    _shader.setFloat(index++, _ambientRim);
+    _shader.setFloat(index++, _baseAlphaMultiplier);
+    _shader.setFloat(index++, _edgeAlphaMultiplier);
+    _shader.setFloat(index++, _rimThickness);
+    _shader.setFloat(index++, _rimSmoothing);
   }
 }

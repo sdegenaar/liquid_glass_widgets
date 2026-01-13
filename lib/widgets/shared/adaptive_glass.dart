@@ -80,7 +80,6 @@ class AdaptiveGlass extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ARCHITECTURAL RULE:
     // If we are on Skia/Web, we CANNOT use LiquidGlass.grouped or withOwnLayer
     // because those will fall back to FakeGlass (solid color) inside the renderer.
     // We MUST use our LightweightLiquidGlass to get actual glass effects.

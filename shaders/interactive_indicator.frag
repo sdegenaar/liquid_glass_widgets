@@ -45,6 +45,13 @@ uniform vec2 uBackgroundOrigin;     // Widget position in background (logical px
 uniform vec2 uBackgroundSize;       // Background texture size (logical px)
 uniform float uHasBackground;       // 1.0 = use texture, 0.0 = use synthetic frost
 
+// Configurable appearance parameters
+uniform float uAmbientRim;          // Minimum rim brightness (default: 0.1)
+uniform float uBaseAlphaMultiplier; // Center transparency multiplier (default: 0.2)
+uniform float uEdgeAlphaMultiplier; // Edge opacity multiplier (default: 0.4)
+uniform float uRimThickness;       // Rim offset/thickness (default: 0.5)
+uniform float uRimSmoothing;       // Rim edge smoothing multiplier (default: 1.5)
+
 uniform sampler2D uTexture;         // Captured background image
 
 out vec4 fragColor;
@@ -160,9 +167,9 @@ void main() {
     vec3 colB = texture(uTexture, (localRefracted - chromaticShift) / uBackgroundSize).rgb;
     bg = vec3(colR.r, colG.g, colB.b);
   } else {
-    // SYNTHETIC FROST: Premium semi-transparent white base
-    // This makes it look "cool" even without a background capture
-    bg = vec3(0.1);
+    // SYNTHETIC LIQUID: Bright clear base with subtle tint
+    // We use a high base color (0.9) to ensure it looks like pure glass
+    bg = vec3(0.9);
   }
   
   // uLightDirection is passed from Dart as [cos(angle), -sin(angle)]
@@ -177,8 +184,7 @@ void main() {
   float kickHighlight = pow(max(-edgeLightCatch, 0.0), 12.0) * uLightIntensity * 0.5;
   
   // TWEAK: ambientRim - minimum rim brightness regardless of light direction
-  float ambientRim = 0.1;
-  float rimBrightness = ambientRim + keyHighlight + kickHighlight;
+  float rimBrightness = uAmbientRim + keyHighlight + kickHighlight;
   
   // ==========================================================================
   // FRESNEL GLOW
@@ -193,9 +199,10 @@ void main() {
   // ==========================================================================
   // Thin bright line at the very edge of the pill
   
-  // Thin bright line at the very edge of the pill
-  float borderMask = 1.0 - smoothstep(0.0, smoothing * 1.5, distFromEdge - 0.5);
-  vec3 rimColor = vec3(1.0) * rimBrightness;
+  // Configurable hairline rim
+  float borderMask = 1.0 - smoothstep(0.0, smoothing * uRimSmoothing, distFromEdge - uRimThickness);
+  // Scale rim brightness with ambientRim parameter
+  vec3 rimColor = vec3(1.0) * rimBrightness * (uAmbientRim * 10.0);
   
   // ==========================================================================
   // COMPOSITE FINAL COLOR
@@ -205,7 +212,7 @@ void main() {
   // TWEAK: multiplier (0.6) - increase for brighter glass
   vec3 finalColor = bg * 0.6;
   
-  // Add rim highlight
+  // Add rim highlight (only if rimColor is non-zero)
   finalColor += rimColor * borderMask;
   
   // Add fresnel glow
@@ -227,10 +234,14 @@ void main() {
   // ==========================================================================
   
   // TWEAK: baseAlpha - center transparency (lower = more see-through)
-  float baseAlpha = (uHasBackground > 0.5) ? 0.7 : 0.2;
+  // Standard mode: Fade to fully transparent at rest (Intensity 0)
+  float standardBaseAlpha = uBaseAlphaMultiplier * uInteractionIntensity;
+  float baseAlpha = (uHasBackground > 0.5) ? 0.7 : standardBaseAlpha;
   
   // TWEAK: edgeAlpha - edge opacity (higher = more solid edges)
-  float edgeAlpha = 0.95;
+  // Standard mode: Keep a faint structural rim even at rest (Intensity 0)
+  float standardEdgeAlpha = uEdgeAlphaMultiplier * mix(0.3, 1.0, uInteractionIntensity);
+  float edgeAlpha = (uHasBackground > 0.5) ? 0.95 : standardEdgeAlpha;
   
   // Blend from center to edge
   float glassAlpha = mix(baseAlpha, edgeAlpha, edgeInfluence);

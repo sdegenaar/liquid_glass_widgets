@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
-import '../shared/adaptive_glass.dart';
-import '../shared/lightweight_liquid_glass.dart';
+import '../shared/glass_effect.dart';
 
 /// A glass toggle switch with Apple's signature jump animation.
 ///
@@ -70,7 +69,7 @@ class GlassSwitch extends StatefulWidget {
     this.activeColor,
     this.inactiveColor,
     this.thumbColor = Colors.white,
-    this.width = 56.0,
+    this.width = 58.0,
     this.height = 26.0,
     this.settings,
     this.useOwnLayer = false,
@@ -108,12 +107,12 @@ class GlassSwitch extends StatefulWidget {
 
   /// Width of the switch.
   ///
-  /// Defaults to 58.0 (iOS 26 pill shape - wider).
+  /// Defaults to 62.0 (iOS 26 wide pill runway).
   final double width;
 
   /// Height of the switch.
   ///
-  /// Defaults to 32.0 (iOS 26 pill shape).
+  /// Defaults to 28.0.
   final double height;
 
   // ===========================================================================
@@ -126,8 +125,6 @@ class GlassSwitch extends StatefulWidget {
   /// Whether to create its own layer or use grouped glass.
   final bool useOwnLayer;
 
-  /// Rendering quality for the glass effect.
-  ///
   /// Defaults to [GlassQuality.standard], which uses backdrop filter rendering.
   /// This works reliably in all contexts, including scrollable lists.
   ///
@@ -141,8 +138,8 @@ class GlassSwitch extends StatefulWidget {
 class _GlassSwitchState extends State<GlassSwitch>
     with TickerProviderStateMixin {
   // Cache default shadow color to avoid allocations
-  static const _defaultThumbShadowColor =
-      Color(0x33000000); // black.withValues(alpha: 0.2)
+  // Shadow color for the thumb material
+  static const _defaultThumbShadowColor = Color(0x33000000);
 
   late AnimationController _positionController;
   late AnimationController _thicknessController;
@@ -155,11 +152,11 @@ class _GlassSwitchState extends State<GlassSwitch>
   void initState() {
     super.initState();
 
-    // Position controller - moves thumb across track
+    // Unified tempo: Position jump and Liquid bloom now move together
     _positionController = AnimationController(
-      duration: const Duration(milliseconds: 350),
-      vsync: this,
-    );
+        duration: const Duration(milliseconds: 380), vsync: this);
+    _thicknessController = AnimationController(
+        duration: const Duration(milliseconds: 380), vsync: this);
 
     _positionAnimation = Tween<double>(
       begin: 0.0,
@@ -167,41 +164,39 @@ class _GlassSwitchState extends State<GlassSwitch>
     ).animate(
       CurvedAnimation(
         parent: _positionController,
-        curve: Curves.easeInOut,
+        curve: Curves.easeInOutCubic, // Match the growth momentum
+        reverseCurve: Curves.easeInOutCubic,
       ),
     );
 
     // Subtle scale animation for thumb
     _scaleAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 0.95)
-            .chain(CurveTween(curve: Curves.easeOut)),
-        weight: 30,
+        tween: Tween<double>(begin: 1.0, end: 0.92)
+            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 40,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 0.95, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeOut)),
-        weight: 70,
+        tween: Tween<double>(begin: 0.92, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 60,
       ),
     ]).animate(_positionController);
 
-    // Thickness controller - controls glass overlay visibility
-    // (like glass_bottom_bar)
-    _thicknessController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-
-    _thicknessAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(
-      CurvedAnimation(
-        parent: _thicknessController,
-        curve: Curves.easeOut,
-        reverseCurve: Curves.easeIn,
+    // Pulse animation (0 -> 1 -> 0)
+    // Synchronized to grow and settle as the toggle jumps
+    _thicknessAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.0, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeInOutCubic)),
+        weight: 45, // Grow up as it gains speed
       ),
-    );
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 0.0)
+            .chain(CurveTween(curve: Curves.easeInOutQuad)),
+        weight: 55, // Settle down as it lands
+      ),
+    ]).animate(_thicknessController);
 
     // Set initial state
     if (widget.value) {
@@ -223,13 +218,8 @@ class _GlassSwitchState extends State<GlassSwitch>
         unawaited(_positionController.reverse());
       }
 
-      // Show glass overlay (like glass_bottom_bar)
-      unawaited(
-        _thicknessController.forward().then((_) {
-          // Auto-hide after animation
-          unawaited(_thicknessController.reverse());
-        }),
-      );
+      // Trigger the liquid pulse bloom (Grow up and then down)
+      unawaited(_thicknessController.forward(from: 0.0));
     }
   }
 
@@ -247,7 +237,7 @@ class _GlassSwitchState extends State<GlassSwitch>
   @override
   Widget build(BuildContext context) {
     final thumbSize = widget.height - 4.0;
-    final thumbWidth = thumbSize * 1.5; // Actual thumb width
+    final thumbWidth = thumbSize * 1.6; // Match _buildThumb ratio
     final trackWidth = widget.width;
     // Fix: Use actual thumb width for travel distance calculation
     final thumbTravelDistance = trackWidth - thumbWidth - 4.0;
@@ -286,63 +276,31 @@ class _GlassSwitchState extends State<GlassSwitch>
               ),
             );
 
-            // Build the thumb (stays constant color)
+            // Growth/Expansion offsets (Calibrated for proportional wide pill)
+            // leadStretch: leads the movement as a high-velocity droplet
+            final vExpand = thickness * 10.0;
+            final leadStretch = thickness * 16.0;
+
             final thumbOffset = 2.0 + (thumbTravelDistance * position);
 
+            // Anchor logic:
+            // Positive -> Anchor Left, Grow Right.
+            // Back -> Anchor Right, Grow Left.
+            final thumbLeft =
+                _isMovingForward ? thumbOffset : thumbOffset - leadStretch;
+
             final thumb = Positioned(
-              left: thumbOffset,
-              top: 2.0,
+              left: thumbLeft,
+              top: 2.0 - vExpand,
               child: Transform.scale(
-                scale: scale,
-                child: _buildThumb(thumbSize),
+                // Combined scale: Squash for jump + slight Grow for the liquid bloom
+                scale: scale * (1.0 + thickness * 0.1),
+                child: _buildThumb(
+                    thumbSize, thickness, scale, vExpand, leadStretch),
               ),
             );
 
-            // Build glass overlay (glass_bottom_bar style)
-            final overlayWidth = thumbSize * 1.6;
-            final overlayHeight = widget.height - 4.0;
-
-            // Expand bounds during animation (like glass_bottom_bar)
-            final rect = RelativeRect.lerp(
-                  RelativeRect.fill,
-                  const RelativeRect.fromLTRB(-8, -8, -8, -8),
-                  thickness,
-                ) ??
-                RelativeRect.fill;
-
-            // Position overlay based on direction:
-            // - Moving forward (→): anchor on left edge (trails behind)
-            // - Moving backward (←): anchor on right edge (trails behind)
-            final overlayLeft = _isMovingForward
-                ? thumbOffset // Anchor on left for forward movement
-                : thumbOffset +
-                    thumbWidth -
-                    overlayWidth; // Anchor on right for backward
-
-            final glassOverlay = Positioned(
-              left: overlayLeft,
-              top: 2.0,
-              child: Opacity(
-                opacity: thickness > 0 ? 1.0 : 0.0, // Stable mounting
-                child: SizedBox(
-                  width: overlayWidth,
-                  height: overlayHeight,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Positioned.fromRelativeRect(
-                        rect: rect,
-                        child: _buildGlassOverlay(
-                          overlayWidth,
-                          overlayHeight,
-                          thickness,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
+            const glassOverlay = SizedBox.shrink();
 
             return Semantics(
               label: 'Switch',
@@ -368,96 +326,93 @@ class _GlassSwitchState extends State<GlassSwitch>
     );
   }
 
-  Widget _buildThumb(double size) {
-    // iOS 26: thumb is pill-shaped (wider than tall)
-    // Simple knob - no glass effect needed
-    final thumbWidth = size * 1.5;
+  Widget _buildThumb(double size, double transition, double scale,
+      double vExpand, double leadStretch) {
+    // iOS 26: Unified Material Melt with Directional Anchoring
+    final thumbWidth = size * 1.6;
     final thumbHeight = size;
+    final totalWidth = thumbWidth + leadStretch;
+    final totalHeight = thumbHeight + vExpand * 2;
 
-    return Container(
-      width: thumbWidth,
-      height: thumbHeight,
-      decoration: BoxDecoration(
-        color: widget.thumbColor,
-        borderRadius: BorderRadius.circular(thumbHeight / 2),
-        boxShadow: const [
-          BoxShadow(
-            color: _defaultThumbShadowColor,
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Builds the glass overlay that appears during switch transitions.
-  ///
-  /// This overlay creates the signature "liquid glass" effect similar
-  /// to Apple's iOS 26 toggle and glass_bottom_bar.
-  /// Very clear, white glass that goes above and below the thumb nicely.
-  Widget _buildGlassOverlay(double width, double height, double thickness) {
-    // Use glass_bottom_bar's exact approach: visibility controlled by thickness
-    final overlayShape = LiquidRoundedSuperellipse(
-      borderRadius: widget.height,
+    // iOS 26: Synchronized Biological Bloom
+    // Restored perfect pill radius (no squareness)
+    final thumbShape = LiquidRoundedSuperellipse(
+      borderRadius: totalHeight / 2,
     );
 
-    final overlayContent = GlassGlow(
-      child: SizedBox(
-        width: width,
-        height: height,
+    final materialContent = Opacity(
+      opacity: (1.0 - transition * 1.2).clamp(0.0, 1.0),
+      child: Container(
+        width: thumbWidth,
+        height: thumbHeight,
+        decoration: BoxDecoration(
+          color: widget.thumbColor.withValues(alpha: 1.0),
+          borderRadius: BorderRadius.circular(thumbHeight / 2),
+          boxShadow: [
+            BoxShadow(
+              color: _defaultThumbShadowColor.withValues(
+                  alpha: 0.2 * (1.0 - transition)),
+              blurRadius: 0,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
       ),
     );
 
-    if (widget.quality.usesLightweightShader) {
-      // Lightweight shader settings (Skia renderer)
-      // refractiveIndex controls rim prominence: 0.7 = thin/delicate, 2.0 = bold/heavy
-      final lightweightSettings = LiquidGlassSettings(
-        visibility: thickness,
-        glassColor: const Color.from(
-          alpha: .1,
-          red: 1,
-          green: 1,
-          blue: 1,
-        ),
-        refractiveIndex: 1.2, // Thin delicate rim (iOS 26 aesthetic)
-        thickness: 20,
-        lightAngle: 135, //
-        lightIntensity: 2, // Same as Impeller (calibrated shader)
-        blur: 0,
-      );
+    return SizedBox(
+      width: totalWidth,
+      height: totalHeight,
+      child: GlassEffect(
+        shape: thumbShape,
+        settings: widget.quality.usesLightweightShader
+            ? const LiquidGlassSettings(
+                glassColor: Color.from(alpha: 0.1, red: 1, green: 1, blue: 1),
+                refractiveIndex: 1.15,
+                thickness: 20,
+                lightIntensity: 2.0,
+                blur: 0,
+                lightAngle: 135,
+              )
+            : const LiquidGlassSettings(
+                glassColor: Color.from(alpha: 0.1, red: 1, green: 1, blue: 1),
+                refractiveIndex: 1.15, // Premium sharpness boost
+                thickness: 10,
+                lightIntensity: 2, // Bold specular highlight
+                blur: 0,
+                lightAngle: 120, // Synchronized with movement
+              ),
+        quality: widget.quality,
+        interactionIntensity: transition,
+        child: Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            // Glass shell footprint
+            Positioned.fill(child: Container(color: Colors.transparent)),
 
-      return LightweightLiquidGlass(
-        shape: overlayShape,
-        settings: lightweightSettings,
-        child: overlayContent,
-      );
-    } else {
-      // Premium shader settings (Impeller renderer)
-      // refractiveIndex is used for actual light refraction
-      final premiumSettings = LiquidGlassSettings(
-        visibility: thickness,
-        glassColor: const Color.from(
-          alpha: .1,
-          red: 1,
-          green: 1,
-          blue: 1,
-        ),
-        refractiveIndex: 1.15, // Actual refraction (subtle)
-        thickness: 10,
-        lightAngle: 120,
-        lightIntensity: 2,
-        chromaticAberration: .5,
-        blur: 0,
-      );
+            // Physical thumb position based on anchor
+            Positioned(
+              left: _isMovingForward ? 0 : leadStretch,
+              child: materialContent,
+            ),
 
-      return AdaptiveGlass(
-        shape: overlayShape,
-        settings: premiumSettings,
-        quality: GlassQuality.premium,
-        useOwnLayer: true,
-        child: overlayContent,
-      );
-    }
+            if (transition > 0.05)
+              Positioned(
+                left: _isMovingForward ? 0 : leadStretch,
+                child: Opacity(
+                  opacity: transition,
+                  child: GlassGlow(
+                    child: SizedBox(
+                      width: thumbWidth,
+                      height: thumbHeight,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }

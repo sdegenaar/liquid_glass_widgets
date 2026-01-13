@@ -4,7 +4,7 @@ import 'package:motor/motor.dart';
 
 import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
-import 'interactive_indicator_glass.dart';
+import 'glass_effect.dart';
 
 /// A shared component that renders the interactive "Jelly" indicator
 /// used in [GlassTabBar], [GlassSegmentedControl], and [GlassBottomBar].
@@ -13,8 +13,8 @@ import 'interactive_indicator_glass.dart';
 /// - Jelly physics (squash and stretch)
 /// - Thickness-based crossfade between background and glass
 /// - Positioning and expansion
-class GlassInteractiveIndicator extends StatelessWidget {
-  const GlassInteractiveIndicator({
+class AnimatedGlassIndicator extends StatelessWidget {
+  const AnimatedGlassIndicator({
     super.key,
     required this.velocity,
     required this.itemCount,
@@ -123,7 +123,7 @@ class GlassInteractiveIndicator extends StatelessWidget {
 
     // Use specialized interactive glass for better performance and "wow" factor
     // on all platforms. On Skia/web, it uses magnification effects.
-    final glassWidget = InteractiveIndicatorGlass(
+    final glassWidget = GlassEffect(
       shape: shape,
       settings: indicatorSettings,
       quality: quality,

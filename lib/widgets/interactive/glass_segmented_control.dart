@@ -5,7 +5,7 @@ import 'package:motor/motor.dart';
 import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
-import '../shared/glass_interactive_indicator.dart';
+import '../shared/animated_glass_indicator.dart';
 
 /// A glass morphism segmented control following Apple's design patterns.
 ///
@@ -508,8 +508,8 @@ class _SegmentedControlContentState extends State<_SegmentedControlContent> {
                     // Subtle background indicator (shown when not dragging)
                     // Parent isolation prevents flickering with GlassCard
                     // Unified Glass Indicator with jelly physics
-                    // The internal cross-fade in GlassInteractiveIndicator prevents flickering
-                    GlassInteractiveIndicator(
+                    // The internal cross-fade in AnimatedGlassIndicator prevents flickering
+                    AnimatedGlassIndicator(
                       velocity: velocity,
                       itemCount: widget.segments.length,
                       alignment: alignment,
