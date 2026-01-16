@@ -215,6 +215,18 @@ class _GlassEffectState extends State<GlassEffect>
     _isCapturing = true;
     final dpr = View.of(context).devicePixelRatio;
 
+    assert(() {
+      // Validate boundary size
+      if (boundary.size.isEmpty) {
+        debugPrint(
+          '⚠️ [GlassEffect] Warning: Background boundary has zero size.\n'
+          '   Refraction will not work correctly.\n'
+          '   Ensure LiquidGlassBackground has non-zero dimensions.',
+        );
+      }
+      return true;
+    }());
+
     try {
       final image = await boundary.toImage(pixelRatio: dpr);
       if (mounted) {
@@ -226,7 +238,15 @@ class _GlassEffectState extends State<GlassEffect>
         });
       }
     } catch (e) {
-      // Intentionally ignore capture errors to prevent log spam
+      assert(() {
+        debugPrint(
+          '⚠️ [GlassEffect] Warning: Failed to capture background.\n'
+          '   Error: $e\n'
+          '   Refraction may not work correctly.',
+        );
+        return true;
+      }());
+      // Intentionally ignore capture errors to prevent log spam in release
     } finally {
       _isCapturing = false;
     }

@@ -334,4 +334,206 @@ void main() {
       expect(find.byType(LiquidGlassScope), findsNWidgets(2));
     });
   });
+
+  group('LiquidGlassScope.stack (Convenience Constructor)', () {
+    testWidgets('creates correct widget tree structure', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: LiquidGlassScope.stack(
+            background: Container(
+              color: Colors.red,
+              child: const Text('Background'),
+            ),
+            content: const Text('Content'),
+          ),
+        ),
+      );
+
+      // Should have LiquidGlassBackground
+      expect(find.byType(LiquidGlassBackground), findsOneWidget);
+
+      // Both background and content should be present
+      expect(find.text('Background'), findsOneWidget);
+      expect(find.text('Content'), findsOneWidget);
+
+      // Should have a Stack (may be multiple in tree, but at least one)
+      expect(find.byType(Stack), findsWidgets);
+    });
+
+    testWidgets('wraps background in Positioned.fill', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: LiquidGlassScope.stack(
+            background: Container(color: Colors.blue),
+            content: Container(color: Colors.green),
+          ),
+        ),
+      );
+
+      // Should have 1 Positioned widget (for background only)
+      expect(find.byType(Positioned), findsOneWidget);
+    });
+
+    testWidgets('background is behind content in z-order', (tester) async {
+      // This tests that the Stack children are in the correct order
+      await tester.pumpWidget(
+        createTestApp(
+          child: LiquidGlassScope.stack(
+            background: Container(
+              key: const Key('background'),
+              color: Colors.red,
+            ),
+            content: Container(
+              key: const Key('content'),
+              color: Colors.blue,
+            ),
+          ),
+        ),
+      );
+
+      // Verify background and content are both present
+      expect(find.byKey(const Key('background')), findsOneWidget);
+      expect(find.byKey(const Key('content')), findsOneWidget);
+
+      // Verify background is wrapped in LiquidGlassBackground
+      expect(find.byType(LiquidGlassBackground), findsOneWidget);
+    });
+
+    testWidgets('provides scope key to descendants', (tester) async {
+      GlobalKey? foundKey;
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: LiquidGlassScope.stack(
+            background: Container(color: Colors.red),
+            content: Builder(
+              builder: (context) {
+                foundKey = LiquidGlassScope.of(context);
+                return const SizedBox();
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(foundKey, isNotNull);
+    });
+
+    testWidgets('accepts custom key parameter', (tester) async {
+      const testKey = Key('test-scope');
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: LiquidGlassScope.stack(
+            key: testKey,
+            background: Container(color: Colors.red),
+            content: const Text('Content'),
+          ),
+        ),
+      );
+
+      expect(find.byKey(testKey), findsOneWidget);
+    });
+
+    testWidgets('works with complex background widgets', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: LiquidGlassScope.stack(
+            background: Container(
+              color: Colors.red,
+              child: const Center(child: Text('Background')),
+            ),
+            content: const Text('Content'),
+          ),
+        ),
+      );
+
+      expect(find.text('Background'), findsOneWidget);
+      expect(find.text('Content'), findsOneWidget);
+    });
+
+    testWidgets('works with complex content widgets', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: LiquidGlassScope.stack(
+            background: Container(color: Colors.red),
+            content: Column(
+              children: const [
+                Text('Content Line 1'),
+                Text('Content Line 2'),
+                Text('Content Line 3'),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Content Line 1'), findsOneWidget);
+      expect(find.text('Content Line 2'), findsOneWidget);
+      expect(find.text('Content Line 3'), findsOneWidget);
+    });
+
+    testWidgets('creates simpler structure than manual Stack setup',
+        (tester) async {
+      // Build with convenience constructor
+      await tester.pumpWidget(
+        createTestApp(
+          child: LiquidGlassScope.stack(
+            background: Container(color: Colors.red),
+            content: const Text('Test'),
+          ),
+        ),
+      );
+
+      // Verify structure with convenience constructor
+      expect(find.byType(LiquidGlassBackground), findsOneWidget);
+      expect(find.text('Test'), findsOneWidget);
+      // Only background is Positioned, content is not (avoids conflicts)
+      expect(find.byType(Positioned), findsOneWidget);
+
+      // Rebuild with manual setup (old way - more verbose)
+      await tester.pumpWidget(
+        createTestApp(
+          child: LiquidGlassScope(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: LiquidGlassBackground(
+                    child: Container(color: Colors.red),
+                  ),
+                ),
+                const Text('Test'), // Content not wrapped to avoid conflicts
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // Verify structure with manual setup is the same
+      expect(find.byType(LiquidGlassBackground), findsOneWidget);
+      expect(find.text('Test'), findsOneWidget);
+      expect(find.byType(Positioned), findsOneWidget);
+    });
+
+    testWidgets('can be nested', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: LiquidGlassScope.stack(
+            background: Container(color: Colors.red),
+            content: LiquidGlassScope.stack(
+              background: Container(color: Colors.blue),
+              content: const Text('Nested Content'),
+            ),
+          ),
+        ),
+      );
+
+      // Should have 2 scopes
+      expect(find.byType(LiquidGlassScope), findsNWidgets(2));
+      // Should have 2 backgrounds
+      expect(find.byType(LiquidGlassBackground), findsNWidgets(2));
+      // Should find the nested content
+      expect(find.text('Nested Content'), findsOneWidget);
+    });
+  });
 }

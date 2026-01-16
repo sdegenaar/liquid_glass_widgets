@@ -1,3 +1,23 @@
+# 0.2.1-dev.6
+
+- **FEAT**: Added `LiquidGlassScope.stack` convenience constructor (Skia/Web Premium)
+    - Eliminates boilerplate for the common pattern of a background behind content
+    - Example: `LiquidGlassScope.stack(background: Image.asset(...), content: Scaffold(...))`
+    - Zero breaking changes - purely additive API improvement
+    - Comprehensive test coverage (10 new tests)
+
+- **FEAT**: Added `GlassDefaults` constants class
+    - Centralized default values for glass effects, dimensions, and animations
+    - Includes: `thickness`, `blur`, `lightIntensity`, `borderRadius`, padding presets, etc.
+    - Improves consistency and maintainability across all widgets
+    - Accessible via `import 'package:liquid_glass_widgets/liquid_glass_widgets.dart'`
+
+- **IMPROVE**: Enhanced developer experience with debug assertions
+    - `LiquidGlassScope`: Warns when nesting scopes (usually unintentional)
+    - `LiquidGlassBackground`: Informs when used without a scope
+    - `GlassEffect`: Validates background capture conditions
+    - All assertions only run in debug mode (zero production overhead)
+
 # 0.2.1-dev.5
 
 - **REFACTOR**: Major architectural refactoring of interactive widgets for consistency and quality

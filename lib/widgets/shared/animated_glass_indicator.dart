@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:motor/motor.dart';
 
+import '../../constants/glass_defaults.dart';
 import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
 import 'glass_effect.dart';
@@ -78,10 +79,10 @@ class AnimatedGlassIndicator extends StatelessWidget {
       green: 1,
       blue: 1,
     ),
-    refractiveIndex: 1.15,
-    lightIntensity: 2,
-    chromaticAberration: 0.5,
-    lightAngle: 120,
+    refractiveIndex: GlassDefaults.refractiveIndex,
+    lightIntensity: GlassDefaults.lightIntensity,
+    chromaticAberration: GlassDefaults.chromaticAberration,
+    lightAngle: GlassDefaults.lightAngle,
     blur: 0,
   );
 

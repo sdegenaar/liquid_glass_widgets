@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:motor/motor.dart';
 
+import '../../constants/glass_defaults.dart';
 import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
@@ -115,8 +116,8 @@ class GlassSegmentedControl extends StatefulWidget {
     required this.selectedIndex,
     required this.onSegmentSelected,
     super.key,
-    this.height = 32,
-    this.borderRadius = 16,
+    this.height = GlassDefaults.heightControl,
+    this.borderRadius = GlassDefaults.borderRadius,
     this.padding = const EdgeInsets.all(2),
     this.selectedTextStyle,
     this.unselectedTextStyle,
@@ -255,12 +256,12 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
     // Use custom glass settings or optimized defaults
     final glassSettings = widget.glassSettings ??
         const LiquidGlassSettings(
-            thickness: 30,
-            blur: 3,
-            chromaticAberration: 0.5,
-            lightIntensity: 2,
-            refractiveIndex: 1.15,
-            lightAngle: 120);
+            thickness: GlassDefaults.thickness,
+            blur: GlassDefaults.blur,
+            chromaticAberration: GlassDefaults.chromaticAberration,
+            lightIntensity: GlassDefaults.lightIntensity,
+            refractiveIndex: GlassDefaults.refractiveIndex,
+            lightAngle: GlassDefaults.lightAngle);
 
     final backgroundColor = widget.backgroundColor ?? _defaultBackgroundColor;
 

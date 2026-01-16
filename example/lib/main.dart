@@ -60,87 +60,73 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return LiquidGlassScope(
-      child: Stack(
-        children: [
-          // 1. ISOLATED BACKGROUND SOURCE
-          // Using LiquidGlassBackground marks this as the source for all descendants.
-          Positioned.fill(
-            child: LiquidGlassBackground(
-              child: Container(
-                decoration: const BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('assets/wallpaper_dark.jpg'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-            ),
+    return LiquidGlassScope.stack(
+      background: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/wallpaper_dark.jpg'),
+            fit: BoxFit.cover,
           ),
-
-          // 2. MAIN APPLICATION CONTENT
-          // Sitting on top of the background, these widgets can see the source
-          // but aren't captured by it (preventing feedback loops).
-          Positioned.fill(
-            child: Scaffold(
-              backgroundColor: Colors.transparent,
-              extendBody: true,
-              body: _pages[_selectedIndex],
-              bottomNavigationBar: GlassBottomBar(
-                quality: GlassQuality.premium,
-                indicatorColor: Colors.black26,
-                glassSettings: RecommendedGlassSettings.bottomBar,
-                // unselectedIconColor: Colors.red,
-                // barBorderRadius: 20,
-                tabs: [
-                  GlassBottomBarTab(
-                    label: 'Home',
-                    icon: CupertinoIcons.home,
-                    selectedIcon: CupertinoIcons.house_fill,
-                  ),
-                  GlassBottomBarTab(
-                    label: 'Containers',
-                    icon: CupertinoIcons.square_stack_3d_up,
-                    selectedIcon: CupertinoIcons.square_stack_3d_up_fill,
-                  ),
-                  GlassBottomBarTab(
-                    label: 'Interactive',
-                    icon: CupertinoIcons.hand_point_right,
-                    selectedIcon: CupertinoIcons.hand_point_right_fill,
-                  ),
-                  GlassBottomBarTab(
-                    label: 'Overlays',
-                    icon: CupertinoIcons.square_stack,
-                    selectedIcon: CupertinoIcons.square_stack_fill,
-                  ),
-                  GlassBottomBarTab(
-                    label: 'Surfaces',
-                    icon: CupertinoIcons.rectangle_3_offgrid,
-                    selectedIcon: CupertinoIcons.rectangle_3_offgrid_fill,
-                  ),
-                  GlassBottomBarTab(
-                    label: 'Input',
-                    icon: CupertinoIcons.keyboard,
-                  ),
-                ],
-                selectedIndex: _selectedIndex,
-                onTabSelected: (index) {
-                  setState(() {
-                    _selectedIndex = index;
-                  });
-                },
-                // extraButton: GlassBottomBarExtraButton(
-                //   icon: CupertinoIcons.rectangle_3_offgrid_fill,
-                //   iconColor: Colors.amber,
-                //   onTap: () {
-                //
-                //   },
-                //   label: 'AI Chat',
-                // ),
+        ),
+      ),
+      content: Positioned.fill(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          extendBody: true,
+          body: _pages[_selectedIndex],
+          bottomNavigationBar: GlassBottomBar(
+            quality: GlassQuality.premium,
+            indicatorColor: Colors.black26,
+            glassSettings: RecommendedGlassSettings.bottomBar,
+            // unselectedIconColor: Colors.red,
+            // barBorderRadius: 20,
+            tabs: [
+              GlassBottomBarTab(
+                label: 'Home',
+                icon: CupertinoIcons.home,
+                selectedIcon: CupertinoIcons.house_fill,
               ),
-            ),
+              GlassBottomBarTab(
+                label: 'Containers',
+                icon: CupertinoIcons.square_stack_3d_up,
+                selectedIcon: CupertinoIcons.square_stack_3d_up_fill,
+              ),
+              GlassBottomBarTab(
+                label: 'Interactive',
+                icon: CupertinoIcons.hand_point_right,
+                selectedIcon: CupertinoIcons.hand_point_right_fill,
+              ),
+              GlassBottomBarTab(
+                label: 'Overlays',
+                icon: CupertinoIcons.square_stack,
+                selectedIcon: CupertinoIcons.square_stack_fill,
+              ),
+              GlassBottomBarTab(
+                label: 'Surfaces',
+                icon: CupertinoIcons.rectangle_3_offgrid,
+                selectedIcon: CupertinoIcons.rectangle_3_offgrid_fill,
+              ),
+              GlassBottomBarTab(
+                label: 'Input',
+                icon: CupertinoIcons.keyboard,
+              ),
+            ],
+            selectedIndex: _selectedIndex,
+            onTabSelected: (index) {
+              setState(() {
+                _selectedIndex = index;
+              });
+            },
+            // extraButton: GlassBottomBarExtraButton(
+            //   icon: CupertinoIcons.rectangle_3_offgrid_fill,
+            //   iconColor: Colors.amber,
+            //   onTap: () {
+            //
+            //   },
+            //   label: 'AI Chat',
+            // ),
           ),
-        ],
+        ),
       ),
     );
   }

@@ -63,7 +63,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  liquid_glass_widgets: ^0.2.1-dev.5
+  liquid_glass_widgets: ^0.2.1-dev.6
 ```
 
 Then run:
@@ -338,17 +338,39 @@ Widgets use `LiquidShape` for customizable shapes, with `LiquidRoundedSuperellip
 
 Interactive widgets like `GlassSegmentedControl` can have **true liquid glass refraction** (background visible through the indicator with edge distortion) on all platforms including Web and Skia.
 
-### How It Works
+### Quick Setup (Recommended)
 
-The refraction effect requires capturing the background content. Wrap your content with `LiquidGlassScope` and `LiquidGlassBackground`:
+Use the `LiquidGlassScope.stack` convenience constructor to eliminate boilerplate:
+
+```dart
+LiquidGlassScope.stack(
+  background: Image.asset('assets/wallpaper.jpg', fit: BoxFit.cover),
+  content: Scaffold(
+    body: Center(
+      child: GlassSegmentedControl(
+        segments: ['Option A', 'Option B', 'Option C'],
+        selectedIndex: 0,
+        onSegmentSelected: (index) => print('Selected: $index'),
+        quality: GlassQuality.standard,  // Uses custom shader
+      ),
+    ),
+  ),
+)
+```
+
+### Manual Setup (More Control)
+
+For custom layouts, use the manual pattern:
 
 ```dart
 LiquidGlassScope(
   child: Stack(
     children: [
       // 1. Mark the background for capture
-      LiquidGlassBackground(
-        child: Image.asset('assets/wallpaper.jpg', fit: BoxFit.cover),
+      Positioned.fill(
+        child: LiquidGlassBackground(
+          child: Image.asset('assets/wallpaper.jpg', fit: BoxFit.cover),
+        ),
       ),
       
       // 2. Glass widgets will refract through the background
@@ -367,6 +389,7 @@ LiquidGlassScope(
 
 ### Key Points
 
+- **`LiquidGlassScope.stack`** - Convenience constructor that eliminates boilerplate (recommended)
 - **`LiquidGlassScope`** - Creates the infrastructure for background capture
 - **`LiquidGlassBackground`** - Marks which content should be visible through the glass
 - **Nested Scopes** - Inner scopes override outer scopes (useful for isolated demos)
@@ -377,10 +400,10 @@ LiquidGlassScope(
 
 | Scenario | Recommendation |
 |----------|----------------|
-| Web / Skia platforms | ✅ Use `LiquidGlassScope` for refraction |
+| Web / Skia platforms | ✅ Use `LiquidGlassScope.stack` for refraction |
 | iOS / macOS with Impeller | ⚡ Use `GlassQuality.premium` for native scene graph |
 | Multiple isolated demo sections | 🔄 Use separate scopes for each |
-| App-wide fallback | 🏠 Wrap root with scope + background |
+| App-wide fallback | 🏠 Wrap root with `LiquidGlassScope.stack` |
 
 > 💡 **Tip:** Run the example app on an Impeller device (iOS/macOS) to see a side-by-side comparison of Impeller vs Custom Shader rendering in the "Shader Comparison" section of the Interactive page for `GlassSegmentedControl`.
 

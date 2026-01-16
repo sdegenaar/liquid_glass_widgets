@@ -8,6 +8,9 @@ export 'package:liquid_glass_renderer/liquid_glass_renderer.dart'
 // Setup and Configuration
 export 'liquid_glass_setup.dart';
 
+// Constants
+export 'constants/glass_defaults.dart';
+
 // Types
 export 'types/glass_quality.dart';
 
