@@ -1,10 +1,4 @@
-# 0.2.1-dev.6
-
-- **FEAT**: Added `LiquidGlassScope.stack` convenience constructor (Skia/Web Premium)
-    - Eliminates boilerplate for the common pattern of a background behind content
-    - Example: `LiquidGlassScope.stack(background: Image.asset(...), content: Scaffold(...))`
-    - Zero breaking changes - purely additive API improvement
-    - Comprehensive test coverage (10 new tests)
+# 0.2.1-dev.7
 
 - **FEAT**: Added `GlassDefaults` constants class
     - Centralized default values for glass effects, dimensions, and animations
@@ -17,6 +11,21 @@
     - `LiquidGlassBackground`: Informs when used without a scope
     - `GlassEffect`: Validates background capture conditions
     - All assertions only run in debug mode (zero production overhead)
+
+- **TEST**: 
+    - 10 new tests for `LiquidGlassScope.stack` convenience constructor
+
+- **FIX**: Fixed `LiquidGlassScope.stack` double-Positioned widget error
+    - Removed unnecessary `Positioned.fill` wrapper from content
+    - Fixes "Competing ParentDataWidgets" error when using Scaffold as content
+    - Content now naturally fills available space (simpler, more flexible)
+
+# 0.2.1-dev.6
+
+- **FEAT**: Added `LiquidGlassScope.stack` convenience constructor (Skia/Web Premium)
+    - Eliminates boilerplate for the common pattern of a background behind content
+    - Example: `LiquidGlassScope.stack(background: Image.asset(...), content: Scaffold(...))`
+    - Zero breaking changes - purely additive API improvement
 
 # 0.2.1-dev.5
 
