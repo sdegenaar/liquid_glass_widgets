@@ -365,7 +365,7 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
       settings: glassSettings,
       quality: widget.quality,
       blendAmount:
-          widget.blendAmount, // Impeller-only (gracefully ignored on Skia)
+      widget.blendAmount, // Impeller-only (gracefully ignored on Skia)
       child: Padding(
         padding: EdgeInsets.symmetric(
           horizontal: widget.horizontalPadding,
@@ -388,14 +388,38 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
                 barBorderRadius: widget.barBorderRadius,
                 tabPadding: widget.tabPadding,
                 backgroundKey: widget.backgroundKey,
-                child: Row(
+                // Pass unselected tabs (background layer)
+                childUnselected: Row(
                   children: [
                     for (var i = 0; i < widget.tabs.length; i++)
                       Expanded(
                         child: RepaintBoundary(
                           child: _BottomBarTab(
                             tab: widget.tabs[i],
-                            selected: widget.selectedIndex == i,
+                            selected: false, // Always render as unselected
+                            selectedIconColor: widget.selectedIconColor,
+                            unselectedIconColor: widget.unselectedIconColor,
+                            iconSize: widget.iconSize,
+                            textStyle: widget.textStyle,
+                            glowDuration: widget.glowDuration,
+                            glowBlurRadius: widget.glowBlurRadius,
+                            glowSpreadRadius: widget.glowSpreadRadius,
+                            glowOpacity: widget.glowOpacity,
+                            onTap: () => widget.onTabSelected(i),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                // Pass selected tabs (foreground/masked layer)
+                childSelected: Row(
+                  children: [
+                    for (var i = 0; i < widget.tabs.length; i++)
+                      Expanded(
+                        child: RepaintBoundary(
+                          child: _BottomBarTab(
+                            tab: widget.tabs[i],
+                            selected: true, // Always render as selected
                             selectedIconColor: widget.selectedIconColor,
                             unselectedIconColor: widget.unselectedIconColor,
                             iconSize: widget.iconSize,
@@ -419,9 +443,9 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
                 config: widget.extraButton!,
                 quality: widget.quality,
                 iconColor:
-                    widget.extraButton!.iconColor ?? widget.unselectedIconColor,
+                widget.extraButton!.iconColor ?? widget.unselectedIconColor,
                 borderRadius: widget.barBorderRadius ==
-                        GlassBottomBar._defaultBarBorderRadius
+                    GlassBottomBar._defaultBarBorderRadius
                     ? null
                     : widget.barBorderRadius,
               ),
@@ -439,7 +463,7 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
 class GlassBottomBarTab {
   /// Creates a bottom bar tab configuration.
   const GlassBottomBarTab({
-    required this.label,
+    this.label,
     required this.icon,
     this.selectedIcon,
     this.glowColor,
@@ -447,7 +471,7 @@ class GlassBottomBarTab {
   });
 
   /// Label text displayed below the icon.
-  final String label;
+  final String? label;
 
   /// Icon displayed when the tab is not selected.
   ///
@@ -548,7 +572,7 @@ class _BottomBarTab extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Semantics(
         button: true,
-        label: tab.label,
+        label: tab.label ?? '',
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: Column(
@@ -575,8 +599,8 @@ class _BottomBarTab extends StatelessWidget {
                             transform: selected
                                 ? Matrix4.identity()
                                 : (Matrix4.identity()
-                                  ..scale(0.4)
-                                  ..rotateZ(-math.pi)),
+                              ..scale(0.4)
+                              ..rotateZ(-math.pi)),
                             child: AnimatedOpacity(
                               duration: glowDuration,
                               opacity: selected ? 1 : 0,
@@ -614,21 +638,24 @@ class _BottomBarTab extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 4),
+              if (tab.label != null) ...[
+                const SizedBox(height: 4),
 
-              // Label text
-              Text(
-                tab.label,
-                maxLines: 1,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                style: textStyle ??
-                    TextStyle(
-                      color: iconColor,
-                      fontSize: 11,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                    ),
-              ),
+                // Label text
+                Text(
+                  tab.label!,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: textStyle ??
+                      TextStyle(
+                        color: iconColor,
+                        fontSize: 11,
+                        fontWeight:
+                        selected ? FontWeight.w600 : FontWeight.w500,
+                      ),
+                ),
+              ],
             ],
           ),
         ),
@@ -704,7 +731,8 @@ class _ExtraButton extends StatelessWidget {
 /// Internal widget that manages the draggable indicator with physics.
 class _TabIndicator extends StatefulWidget {
   const _TabIndicator({
-    required this.child,
+    required this.childUnselected,
+    required this.childSelected,
     required this.tabIndex,
     required this.tabCount,
     required this.onTabChanged,
@@ -721,7 +749,8 @@ class _TabIndicator extends StatefulWidget {
   final int tabIndex;
   final int tabCount;
   final bool visible;
-  final Widget child;
+  final Widget childUnselected;
+  final Widget childSelected;
   final Color? indicatorColor;
   final LiquidGlassSettings? indicatorSettings;
   final ValueChanged<int> onTabChanged;
@@ -738,7 +767,7 @@ class _TabIndicator extends StatefulWidget {
 class _TabIndicatorState extends State<_TabIndicator> {
   // Cache fallback indicator color to avoid allocations
   static const _fallbackIndicatorColor =
-      Color(0x1AFFFFFF); // white.withValues(alpha: 0.1)
+  Color(0x1AFFFFFF); // white.withValues(alpha: 0.1)
 
   bool _isDown = false;
   bool _isDragging = false;
@@ -748,7 +777,7 @@ class _TabIndicatorState extends State<_TabIndicator> {
 
   // Cached shape to avoid recreation on every animation frame
   late LiquidRoundedSuperellipse _barShape =
-      LiquidRoundedSuperellipse(borderRadius: widget.barBorderRadius);
+  LiquidRoundedSuperellipse(borderRadius: widget.barBorderRadius);
 
   @override
   void didUpdateWidget(covariant _TabIndicator oldWidget) {
@@ -887,23 +916,22 @@ class _TabIndicatorState extends State<_TabIndicator> {
             ),
             // Show glass indicator when dragging or far from target
             value: widget.visible &&
-                    (_isDown || (alignment.x - targetAlignment).abs() > 0.30)
+                (_isDown || (alignment.x - targetAlignment).abs() > 0.30)
                 ? 1.0
                 : 0.0,
             builder: (context, thickness, child) {
+              // Calculate jelly transform for the clipper
+              final jellyTransform =
+              DraggableIndicatorPhysics.buildJellyTransform(
+                velocity: Offset(velocity, 0),
+                maxDistortion: 0.8,
+                velocityScale: 10,
+              );
+
               return Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  // Use AdaptiveGlass instead of LiquidGlass.grouped
-                  // Positionedye.fill(
-                  //   child: AdaptiveGlass(
-                  //     quality: widget.quality,
-                  //     shape: _barShape,
-                  //     settings: const LiquidGlassSettings(), // Inherits
-                  //     useOwnLayer: false,
-                  //     child: const SizedBox.expand(),
-                  //   ),
-                  // ),
+                  // 1. Glass Background Layer (Static)
                   Positioned.fill(
                     child: AdaptiveGlass.grouped(
                       quality: widget.quality,
@@ -912,8 +940,16 @@ class _TabIndicatorState extends State<_TabIndicator> {
                     ),
                   ),
 
-                  // Unified Glass Indicator with jelly physics
-                  // The internal cross-fade in AnimatedGlassIndicator prevents flickering
+                  // 2. Unselected Content Layer
+                  // Rendered on top of background, but below the moving indicator
+                  Container(
+                    padding: widget.tabPadding,
+                    height: widget.barHeight,
+                    child: widget.childUnselected,
+                  ),
+
+                  // 3. Moving Glass Indicator Layer
+                  // Will blur the unselected content below it
                   AnimatedGlassIndicator(
                     velocity: velocity,
                     itemCount: widget.tabCount,
@@ -922,30 +958,110 @@ class _TabIndicatorState extends State<_TabIndicator> {
                     quality: widget.quality,
                     indicatorColor: indicatorColor,
                     isBackgroundIndicator:
-                        false, // Internal logic now handles both
+                    false, // Internal logic now handles both
                     borderRadius:
-                        thickness < 1 ? backgroundRadius : glassRadius,
+                    thickness < 1 ? backgroundRadius : glassRadius,
                     padding: const EdgeInsets.all(4),
                     expansion: 14,
                     glassSettings: widget.indicatorSettings,
                     backgroundKey: widget.backgroundKey,
                   ),
 
-                  // Tab bar content (rendered LAST to appear on top)
-                  Container(
-                    padding: widget.tabPadding,
-                    height: widget.barHeight,
-                    child: child!,
-                  ),
+                  // 4. Masked Selected Content Layer
+                  // Rendered on top of the indicator to appear "inside" or "lit up"
+                  if (thickness > 0.05 || widget.visible)
+                    Positioned.fill(
+                      child: ClipPath(
+                        clipper: JellyClipper(
+                          itemCount: widget.tabCount,
+                          alignment: alignment,
+                          thickness: thickness,
+                          expansion: 14, // Matches AnimatedGlassIndicator
+                          transform: jellyTransform,
+                          borderRadius: thickness < 1
+                              ? backgroundRadius
+                              : glassRadius,
+                        ),
+                        child: Container(
+                          padding: widget.tabPadding,
+                          height: widget.barHeight,
+                          child: widget.childSelected,
+                        ),
+                      ),
+                    ),
                 ],
               );
             },
-            child: widget.child,
           );
         },
-        child: widget.child,
       ),
     );
+  }
+}
+
+/// Clipper that matches the shape and physics of the jelly indicator.
+class JellyClipper extends CustomClipper<Path> {
+  JellyClipper({
+    required this.itemCount,
+    required this.alignment,
+    required this.thickness,
+    required this.expansion,
+    required this.transform,
+    required this.borderRadius,
+  });
+
+  final int itemCount;
+  final Alignment alignment;
+  final double thickness;
+  final double expansion;
+  final Matrix4 transform;
+  final double borderRadius;
+
+  @override
+  Path getClip(Size size) {
+    // Calculate the base rect of the indicator (same logic as FractionallySizedBox)
+    final tabWidth = size.width / itemCount;
+    final availableWidth = size.width - tabWidth;
+
+    // Map alignment (-1 to 1) to horizontal offset
+    final left = (alignment.x + 1) / 2 * availableWidth;
+
+    // Create the base rect
+    // Note: We need to account for the padding applied to AnimatedGlassIndicator
+    // AnimatedGlassIndicator has padding: const EdgeInsets.all(4)
+    // So the rect should be inset by 4, then inflated by expansion * thickness
+
+    final baseRect = Rect.fromLTWH(left, 0, tabWidth, size.height);
+    final paddedRect = baseRect.deflate(4.0);
+
+    // Apply expansion based on thickness (drag state)
+    final inflatedRect = paddedRect.inflate(expansion * thickness);
+
+    // Create rounded rect path
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(
+        inflatedRect,
+        Radius.circular(borderRadius),
+      ));
+
+    // Apply jelly physics transform around the center
+    final center = inflatedRect.center;
+    final centeredTransform = Matrix4.identity()
+      ..translate(center.dx, center.dy)
+      ..multiply(transform)
+      ..translate(-center.dx, -center.dy);
+
+    return path.transform(centeredTransform.storage);
+  }
+
+  @override
+  bool shouldReclip(JellyClipper oldClipper) {
+    return itemCount != oldClipper.itemCount ||
+        alignment != oldClipper.alignment ||
+        thickness != oldClipper.thickness ||
+        expansion != oldClipper.expansion ||
+        transform != oldClipper.transform ||
+        borderRadius != oldClipper.borderRadius;
   }
 }
 
