@@ -43,6 +43,7 @@ void main() {
             tabs: testTabs,
             selectedIndex: 0,
             onTabSelected: (_) {},
+            maskingQuality: MaskingQuality.off, // Avoid dual-layer rendering in tests
           ),
         ),
       );
@@ -59,6 +60,7 @@ void main() {
             tabs: testTabs,
             selectedIndex: 0,
             onTabSelected: (_) {},
+            maskingQuality: MaskingQuality.off, // Avoid dual-layer rendering in tests
           ),
         ),
       );
@@ -77,6 +79,7 @@ void main() {
             tabs: testTabs,
             selectedIndex: selectedIndex,
             onTabSelected: (index) => selectedIndex = index,
+            maskingQuality: MaskingQuality.off, // Avoid dual-layer rendering in tests
           ),
         ),
       );
