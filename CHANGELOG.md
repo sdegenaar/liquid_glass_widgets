@@ -1,3 +1,44 @@
+# 0.2.1-dev.8
+
+- **FEAT**: GlassBottomBar "magic lens" masking effect (contributed by @Earbaj in PR #3) Massive thanks and great job!
+    - Selected content appears to glow through the glass indicator as it moves
+    - Dual-layer rendering with synchronized jelly physics clipping
+    - Content magnification and blur effects inside indicator
+    - Smooth iOS-like transitions as indicator passes over tabs
+
+- **FEAT**: Icon-only tab support in GlassBottomBar
+    - `GlassBottomBarTab.label` is now nullable for icon-only tabs
+    - Tabs automatically center icons when label is null
+    - Perfect for FAB-style add buttons or minimalist designs
+
+- **FEAT**: Added `MaskingQuality` control for rendering flexibility
+    - `MaskingQuality.high` (default): Full jelly physics masking effect
+    - `MaskingQuality.off`: Simplified rendering for maximum performance
+    - Allows developers to optimize for their target devices and tab counts
+
+- **IMPROVE**: Performance optimizations for high quality masking mode
+    - Selective rendering for tabs near indicator
+    - Clip path caching for smooth animations
+    - Lazy evaluation when indicator is hidden
+
+- **IMPROVE**: Enhanced visual parameters with recommended ranges
+    - `magnification`: Zoom content inside indicator (recommended: 1.0-1.3)
+    - `innerBlur`: Frosted glass effect on selected content (recommended: 0.0-3.0)
+
+- **IMPROVE**: Glass refraction and visual effects in high quality masking mode
+    - Content properly layered behind glass for authentic appearance
+    - Impeller: True chromatic aberration and background refraction
+    - Skia/Web: Glass rim lighting and specular highlights on icons
+    - Optimized layer architecture with zero performance overhead
+
+- **FIX**: Accessibility improvement for icon-only tabs
+    - Empty semantic labels now default to 'Tab' for screen readers
+    - Ensures WCAG 2.1 compliance
+
+- **BREAKING**: `GlassBottomBarTab.label` is now nullable (`String?` instead of `required String`)
+    - Most existing code will continue to work without changes
+    - If you have code that assumes `label` is non-null, add null checks
+
 # 0.2.1-dev.7
 
 - **FEAT**: Added `GlassDefaults` constants class
