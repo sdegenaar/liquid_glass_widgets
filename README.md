@@ -5,6 +5,10 @@ A comprehensive Flutter package implementing Apple's Liquid Glass design system 
 [![pub package](https://img.shields.io/pub/v/liquid_glass_widgets.svg)](https://pub.dev/packages/liquid_glass_widgets)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
+
+https://github.com/user-attachments/assets/2fe28f46-96ad-459d-b816-e6d6001d90de
+
+
 ## Features
 
 - **26 Widgets** organized into five categories
@@ -56,6 +60,8 @@ Navigation and app structure:
 - `GlassTabBar` - Tab navigation bar
 - `GlassSideBar` - Vertical navigation sidebar
 - `GlassToolbar` - Action toolbar for tools and controls
+  
+<img width="1280" height="589" alt="showcase" src="https://github.com/user-attachments/assets/b65551cf-7ee8-4494-9c0a-f3c870b5eb70" />
 
 ## Installation
 
