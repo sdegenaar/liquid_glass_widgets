@@ -4,6 +4,7 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import '../../types/glass_button_style.dart';
 import '../../types/glass_quality.dart';
 import '../containers/glass_container.dart';
+import '../shared/inherited_liquid_glass.dart';
 import 'glass_button.dart';
 
 /// A container that groups multiple buttons visually.
@@ -18,7 +19,7 @@ class GlassButtonGroup extends StatelessWidget {
     super.key,
     this.direction = Axis.horizontal,
     this.glassSettings,
-    this.quality = GlassQuality.standard,
+    this.quality,
     this.borderRadius = 16.0,
     this.borderColor = Colors.white12,
     this.useOwnLayer = false,
@@ -36,7 +37,7 @@ class GlassButtonGroup extends StatelessWidget {
   final LiquidGlassSettings? glassSettings;
 
   /// Quality of glass effect.
-  final GlassQuality quality;
+  final GlassQuality? quality;
 
   /// Border radius of the group container.
   final double borderRadius;
@@ -49,9 +50,15 @@ class GlassButtonGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Inherit quality from parent layer if not explicitly set
+    final inherited =
+        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    final effectiveQuality =
+        quality ?? inherited?.quality ?? GlassQuality.standard;
+
     return GlassContainer(
       useOwnLayer: useOwnLayer,
-      quality: quality,
+      quality: effectiveQuality,
       settings: glassSettings,
       shape: LiquidRoundedSuperellipse(borderRadius: borderRadius),
       padding: EdgeInsets.zero,

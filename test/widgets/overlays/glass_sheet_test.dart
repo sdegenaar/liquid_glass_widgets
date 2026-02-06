@@ -1,4 +1,3 @@
-import 'package:liquid_glass_widgets/types/glass_quality.dart';
 import 'package:liquid_glass_widgets/widgets/overlays/glass_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -106,7 +105,7 @@ void main() {
       );
 
       expect(sheet.showDragIndicator, isTrue);
-      expect(sheet.quality, equals(GlassQuality.standard));
+      expect(sheet.quality, isNull);
     });
   });
 }

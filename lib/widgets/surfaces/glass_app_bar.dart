@@ -3,6 +3,7 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
 import '../shared/adaptive_glass.dart';
+import '../shared/inherited_liquid_glass.dart';
 
 /// A glass morphism app bar following Apple's navigation bar design.
 ///
@@ -90,7 +91,7 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.padding = const EdgeInsets.symmetric(horizontal: 8),
     this.settings,
     this.useOwnLayer = false,
-    this.quality = GlassQuality.premium,
+    this.quality,
   });
 
   // ===========================================================================
@@ -172,18 +173,25 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   /// Rendering quality for the glass effect.
   ///
-  /// Defaults to [GlassQuality.premium] since app bars are typically static
-  /// surfaces at the top of the screen where premium quality looks best.
+  /// If null, inherits from parent [InheritedLiquidGlass] or defaults to
+  /// [GlassQuality.premium] since app bars are typically static surfaces at
+  /// the top of the screen where premium quality looks best.
   ///
   /// Use [GlassQuality.standard] if the app bar will be used in a scrollable
   /// context.
-  final GlassQuality quality;
+  final GlassQuality? quality;
 
   static const _appBarShape = LiquidRoundedRectangle(borderRadius: 0);
   static const _defaultSettings = LiquidGlassSettings(blur: 15);
 
   @override
   Widget build(BuildContext context) {
+    // Inherit quality from parent layer if not explicitly set
+    final inherited =
+        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    final effectiveQuality =
+        quality ?? inherited?.quality ?? GlassQuality.premium;
+
     // Build the app bar content
     final appBarContent = SafeArea(
       child: Padding(
@@ -225,7 +233,7 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
     final glassWidget = AdaptiveGlass(
       shape: _appBarShape,
       settings: settings ?? _defaultSettings,
-      quality: quality,
+      quality: effectiveQuality,
       useOwnLayer: useOwnLayer,
       allowElevation: false, // Surfaces don't pop
       child: appBarContent,

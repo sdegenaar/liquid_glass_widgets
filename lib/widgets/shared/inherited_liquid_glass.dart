@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import '../../liquid_glass_setup.dart';
+import '../../types/glass_quality.dart';
 
 /// A custom inherited widget that provides [LiquidGlassSettings] to descendants.
 ///
@@ -12,6 +13,7 @@ class InheritedLiquidGlass extends InheritedWidget {
   /// Creates an inherited widget that holds [LiquidGlassSettings].
   const InheritedLiquidGlass({
     required this.settings,
+    this.quality = GlassQuality.standard,
     this.isBlurProvidedByAncestor = false,
     this.avoidsRefraction = false,
     required super.child,
@@ -20,6 +22,9 @@ class InheritedLiquidGlass extends InheritedWidget {
 
   /// The glass settings to share with the subtree.
   final LiquidGlassSettings settings;
+
+  /// The rendering quality to share with the subtree.
+  final GlassQuality quality;
 
   /// Whether a parent layer is already providing the backdrop blur.
   /// Used for performance optimization to avoid redundant BackdropFilters.
@@ -63,6 +68,7 @@ class InheritedLiquidGlass extends InheritedWidget {
   @override
   bool updateShouldNotify(InheritedLiquidGlass oldWidget) {
     return settings != oldWidget.settings ||
+        quality != oldWidget.quality ||
         isBlurProvidedByAncestor != oldWidget.isBlurProvidedByAncestor ||
         avoidsRefraction != oldWidget.avoidsRefraction;
   }

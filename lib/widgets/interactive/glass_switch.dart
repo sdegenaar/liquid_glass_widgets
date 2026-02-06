@@ -5,6 +5,7 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
 import '../shared/glass_effect.dart';
+import '../shared/inherited_liquid_glass.dart';
 
 /// A glass toggle switch with Apple's signature jump animation.
 ///
@@ -73,7 +74,7 @@ class GlassSwitch extends StatefulWidget {
     this.height = 26.0,
     this.settings,
     this.useOwnLayer = false,
-    this.quality = GlassQuality.standard,
+    this.quality,
   });
 
   // ===========================================================================
@@ -129,7 +130,7 @@ class GlassSwitch extends StatefulWidget {
   /// This works reliably in all contexts, including scrollable lists.
   ///
   /// Use [GlassQuality.premium] for shader-based glass in static layouts only.
-  final GlassQuality quality;
+  final GlassQuality? quality;
 
   @override
   State<GlassSwitch> createState() => _GlassSwitchState();
@@ -147,6 +148,8 @@ class _GlassSwitchState extends State<GlassSwitch>
   late Animation<double> _scaleAnimation;
   late Animation<double> _thicknessAnimation;
   bool _isMovingForward = true; // Track direction of animation
+  // Cache effectiveQuality at state level to make it accessible in _buildThumb
+  GlassQuality? _effectiveQuality;
 
   @override
   void initState() {
@@ -236,6 +239,12 @@ class _GlassSwitchState extends State<GlassSwitch>
 
   @override
   Widget build(BuildContext context) {
+    // Inherit quality from parent layer if not explicitly set
+    final inherited =
+        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    _effectiveQuality =
+        widget.quality ?? inherited?.quality ?? GlassQuality.standard;
+
     final thumbSize = widget.height - 4.0;
     final thumbWidth = thumbSize * 1.6; // Match _buildThumb ratio
     final trackWidth = widget.width;
@@ -365,7 +374,8 @@ class _GlassSwitchState extends State<GlassSwitch>
       height: totalHeight,
       child: GlassEffect(
         shape: thumbShape,
-        settings: widget.quality.usesLightweightShader
+        settings: (_effectiveQuality ?? GlassQuality.standard)
+                .usesLightweightShader
             ? const LiquidGlassSettings(
                 glassColor: Color.from(alpha: 0.1, red: 1, green: 1, blue: 1),
                 refractiveIndex: 1.15,
@@ -382,7 +392,7 @@ class _GlassSwitchState extends State<GlassSwitch>
                 blur: 0,
                 lightAngle: 120, // Synchronized with movement
               ),
-        quality: widget.quality,
+        quality: _effectiveQuality ?? GlassQuality.standard,
         interactionIntensity: transition,
         child: Stack(
           alignment: Alignment.center,

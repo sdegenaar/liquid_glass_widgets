@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../types/glass_quality.dart';
 import '../overlays/glass_menu.dart';
 import '../overlays/glass_menu_item.dart';
+import '../shared/inherited_liquid_glass.dart';
 import 'glass_button.dart';
 
 /// A toolbar button that opens a liquid glass pull-down menu.
@@ -20,7 +21,7 @@ class GlassPullDownButton extends StatelessWidget {
     this.buttonWidth = 44,
     this.buttonHeight = 44,
     this.menuWidth = 200,
-    this.quality = GlassQuality.standard,
+    this.quality,
     this.onSelected,
   });
 
@@ -43,7 +44,7 @@ class GlassPullDownButton extends StatelessWidget {
   final double menuWidth;
 
   /// Quality of the glass effect.
-  final GlassQuality quality;
+  final GlassQuality? quality;
 
   /// Callback when a menu item is selected.
   ///
@@ -52,17 +53,23 @@ class GlassPullDownButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Inherit quality from parent layer if not explicitly set
+    final inherited =
+        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    final effectiveQuality =
+        quality ?? inherited?.quality ?? GlassQuality.standard;
+
     return GlassMenu(
       menuWidth: menuWidth,
-      quality: quality,
+      quality: effectiveQuality,
       triggerBuilder: (context, toggleMenu) {
         if (label != null && label!.isNotEmpty) {
           return GlassButton.custom(
             onTap: toggleMenu,
             width: buttonWidth,
             height: buttonHeight,
-            quality: quality,
-            useOwnLayer: quality == GlassQuality.premium,
+            quality: effectiveQuality,
+            useOwnLayer: effectiveQuality == GlassQuality.premium,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
@@ -88,8 +95,8 @@ class GlassPullDownButton extends StatelessWidget {
           label: label ?? '',
           width: buttonWidth,
           height: buttonHeight,
-          quality: quality,
-          useOwnLayer: quality == GlassQuality.premium,
+          quality: effectiveQuality,
+          useOwnLayer: effectiveQuality == GlassQuality.premium,
         );
       },
       items: items.map((item) {

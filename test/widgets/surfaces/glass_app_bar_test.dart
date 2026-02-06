@@ -1,4 +1,3 @@
-import 'package:liquid_glass_widgets/types/glass_quality.dart';
 import 'package:liquid_glass_widgets/widgets/interactive/glass_button.dart';
 import 'package:liquid_glass_widgets/widgets/surfaces/glass_app_bar.dart';
 import 'package:flutter/material.dart';
@@ -154,7 +153,7 @@ void main() {
       expect(appBar.backgroundColor, equals(Colors.transparent));
       expect(appBar.preferredSize, equals(const Size.fromHeight(44.0)));
       expect(appBar.useOwnLayer, isFalse);
-      expect(appBar.quality, equals(GlassQuality.premium));
+      expect(appBar.quality, isNull);
     });
   });
 }

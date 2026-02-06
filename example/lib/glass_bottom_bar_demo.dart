@@ -5,6 +5,8 @@
 ///
 /// For a full-featured example, see example/lib/main.dart
 ///
+library;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -73,8 +75,8 @@ class _GlassBottomBarDemoPageState extends State<GlassBottomBarDemoPage> {
         onTabSelected: (index) => setState(() => _selectedIndex = index),
         // Use distinct colors to verify masking
         selectedIconColor: Colors.white,
-        unselectedIconColor: Colors.white.withOpacity(0.4),
-        indicatorColor: Colors.blue.withOpacity(0.2),
+        unselectedIconColor: Colors.white.withValues(alpha: 0.4),
+        indicatorColor: Colors.blue.withValues(alpha: 0.2),
         maskingQuality: MaskingQuality.high,
         tabs: [
           GlassBottomBarTab(

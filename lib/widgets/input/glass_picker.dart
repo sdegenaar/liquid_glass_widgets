@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import '../../types/glass_quality.dart';
 import '../shared/adaptive_glass.dart';
+import '../shared/inherited_liquid_glass.dart';
 
 /// A glass picker widget following iOS design patterns.
 ///
@@ -23,7 +24,7 @@ class GlassPicker extends StatelessWidget {
     this.placeholderStyle,
     this.glassSettings,
     this.useOwnLayer = false,
-    this.quality = GlassQuality.standard,
+    this.quality,
     this.shape = const LiquidRoundedSuperellipse(borderRadius: 10),
   });
 
@@ -65,13 +66,19 @@ class GlassPicker extends StatelessWidget {
   final bool useOwnLayer;
 
   /// Quality.
-  final GlassQuality quality;
+  final GlassQuality? quality;
 
   /// Shape of the container.
   final LiquidShape shape;
 
   @override
   Widget build(BuildContext context) {
+    // Inherit quality from parent layer if not explicitly set
+    final inherited =
+        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    final effectiveQuality =
+        quality ?? inherited?.quality ?? GlassQuality.standard;
+
     final effectiveTextStyle =
         textStyle ?? const TextStyle(fontSize: 16, color: Colors.white);
 
@@ -107,7 +114,7 @@ class GlassPicker extends StatelessWidget {
     final glassWidget = AdaptiveGlass(
       shape: shape,
       settings: glassSettings ?? const LiquidGlassSettings(blur: 8),
-      quality: quality,
+      quality: effectiveQuality,
       useOwnLayer: useOwnLayer,
       child: child,
     );

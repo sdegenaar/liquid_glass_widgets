@@ -103,7 +103,7 @@ class GlassButton extends StatefulWidget {
     this.shape = const LiquidOval(),
     this.settings,
     this.useOwnLayer = false,
-    this.quality = GlassQuality.standard,
+    this.quality,
     // LiquidStretch properties
     this.interactionScale = 1.05,
     this.stretch = 0.5,
@@ -148,7 +148,7 @@ class GlassButton extends StatefulWidget {
     this.shape = const LiquidOval(),
     this.settings,
     this.useOwnLayer = false,
-    this.quality = GlassQuality.standard,
+    this.quality,
     // LiquidStretch properties
     this.interactionScale = 1.05,
     this.stretch = 0.5,
@@ -266,7 +266,7 @@ class GlassButton extends StatefulWidget {
   /// This works reliably in all contexts, including scrollable lists.
   ///
   /// Use [GlassQuality.premium] for shader-based glass in static layouts only.
-  final GlassQuality quality;
+  final GlassQuality? quality;
 
   /// The visual style of the button.
   ///
@@ -441,13 +441,19 @@ class _GlassButtonState extends State<GlassButton>
         final baseSettings =
             widget.settings ?? InheritedLiquidGlass.ofOrDefault(context);
 
+        // Inherit quality from parent layer if not explicitly set
+        final inherited =
+            context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+        final effectiveQuality =
+            widget.quality ?? (inherited?.quality ?? GlassQuality.standard);
+
         // Pass glow intensity directly to AdaptiveGlass for Skia shader feedback.
         // On Impeller, GlassGlow widget is used instead (separate from glass effect).
         // On Skia/Web, glowIntensity controls shader-based additive brightness.
         return AdaptiveGlass(
           shape: widget.shape,
           settings: baseSettings, // Preserve user's saturation setting!
-          quality: widget.quality,
+          quality: effectiveQuality,
           useOwnLayer: widget.useOwnLayer,
           glowIntensity: _saturationAnimation.value, // 0.0-1.0 animation
           child: child!,

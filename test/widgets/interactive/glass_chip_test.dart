@@ -1,4 +1,3 @@
-import 'package:liquid_glass_widgets/types/glass_quality.dart';
 import 'package:liquid_glass_widgets/widgets/interactive/glass_chip.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -139,7 +138,7 @@ void main() {
 
       expect(chip.selected, isFalse);
       expect(chip.useOwnLayer, isFalse);
-      expect(chip.quality, equals(GlassQuality.standard));
+      expect(chip.quality, isNull);
       expect(chip.interactionScale, equals(1.03));
       expect(chip.stretch, equals(0.3));
       expect(chip.glowRadius, equals(0.8));

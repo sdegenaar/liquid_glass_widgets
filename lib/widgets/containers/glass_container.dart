@@ -85,7 +85,7 @@ class GlassContainer extends StatelessWidget {
     this.shape = const LiquidRoundedSuperellipse(borderRadius: 16),
     this.settings,
     this.useOwnLayer = false,
-    this.quality = GlassQuality.standard,
+    this.quality,
     this.clipBehavior = Clip.none,
     this.alignment,
     this.allowElevation = false,
@@ -166,13 +166,14 @@ class GlassContainer extends StatelessWidget {
 
   /// Rendering quality for the glass effect.
   ///
-  /// Defaults to [GlassQuality.standard], which uses the lightweight fragment
-  /// shader. This is 5-10x faster than BackdropFilter and works reliably in
-  /// all contexts, including scrollable lists.
+  /// If null, inherits from parent [InheritedLiquidGlass] or defaults to
+  /// [GlassQuality.standard], which uses the lightweight fragment shader.
+  /// This is 5-10x faster than BackdropFilter and works reliably in all
+  /// contexts, including scrollable lists.
   ///
   /// Use [GlassQuality.premium] for full-pipeline shader with texture capture
   /// and chromatic aberration (Impeller only) in static layouts.
-  final GlassQuality quality;
+  final GlassQuality? quality;
 
   /// The clipping behavior for the container.
   ///
@@ -200,6 +201,12 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Inherit quality from parent layer if not explicitly set
+    final inherited =
+        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    final effectiveQuality =
+        quality ?? inherited?.quality ?? GlassQuality.standard;
+
     // 1. Start with the child content
     var content = child ?? const SizedBox.shrink();
 
@@ -225,12 +232,13 @@ class GlassContainer extends StatelessWidget {
     Widget glassWidget = AdaptiveGlass(
       shape: shape,
       settings: settings ?? InheritedLiquidGlass.ofOrDefault(context),
-      quality: quality,
+      quality: effectiveQuality,
       useOwnLayer: useOwnLayer,
       clipBehavior: clipBehavior,
       allowElevation: allowElevation, // Configurable elevation behavior
       child: InheritedLiquidGlass(
         settings: settings ?? InheritedLiquidGlass.ofOrDefault(context),
+        quality: effectiveQuality,
         avoidsRefraction:
             true, // Containers block children from refracting background
         child: content,

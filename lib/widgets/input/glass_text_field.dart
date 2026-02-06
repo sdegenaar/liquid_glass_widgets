@@ -91,7 +91,7 @@ class GlassTextField extends StatefulWidget {
     this.shape = const LiquidRoundedSuperellipse(borderRadius: 10),
     this.settings,
     this.useOwnLayer = false,
-    this.quality = GlassQuality.standard,
+    this.quality,
   });
 
   // ===========================================================================
@@ -199,7 +199,7 @@ class GlassTextField extends StatefulWidget {
   /// This works reliably in all contexts, including scrollable lists.
   ///
   /// Use [GlassQuality.premium] for shader-based glass in static layouts only.
-  final GlassQuality quality;
+  final GlassQuality? quality;
 
   @override
   State<GlassTextField> createState() => _GlassTextFieldState();
@@ -291,11 +291,17 @@ class _GlassTextFieldState extends State<GlassTextField> {
       ),
     );
 
+    // Inherit quality from parent layer if not explicitly set
+    final inherited =
+        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    final effectiveQuality =
+        widget.quality ?? inherited?.quality ?? GlassQuality.standard;
+
     // Apply glass effect
     final glassWidget = AdaptiveGlass(
       shape: widget.shape,
       settings: widget.settings ?? InheritedLiquidGlass.ofOrDefault(context),
-      quality: widget.quality,
+      quality: effectiveQuality,
       useOwnLayer: widget.useOwnLayer,
       child: textFieldContent,
     );

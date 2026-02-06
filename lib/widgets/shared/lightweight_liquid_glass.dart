@@ -358,10 +358,7 @@ class _RenderLightweightGlass extends RenderProxyBox {
   }
 
   void _paintGlassContent(PaintingContext context, Offset offset) {
-    // 2. Center Content Pass (Child content)
-    super.paint(context, offset);
-
-    // 3. Zero-Latency Matrix-Synced Shader Overlay
+    // 2. Glass Shader Background Layer (painted first, behind content)
     final canvas = context.canvas;
     final matrix = canvas.getTransform();
 
@@ -381,6 +378,9 @@ class _RenderLightweightGlass extends RenderProxyBox {
 
     final paint = Paint()..shader = _shader;
     canvas.drawRect(offset & size, paint);
+
+    // 3. Child Content Pass (painted on top of glass)
+    super.paint(context, offset);
   }
 
   void _updateShaderUniforms(

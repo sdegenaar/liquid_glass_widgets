@@ -1,4 +1,3 @@
-import 'package:liquid_glass_widgets/types/glass_quality.dart';
 import 'package:liquid_glass_widgets/widgets/overlays/glass_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -137,7 +136,7 @@ void main() {
       );
 
       expect(dialog.maxWidth, equals(280));
-      expect(dialog.quality, equals(GlassQuality.standard));
+      expect(dialog.quality, isNull);
     });
 
     test('asserts 1-3 actions', () {

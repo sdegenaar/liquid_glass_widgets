@@ -1,4 +1,3 @@
-import 'package:liquid_glass_widgets/types/glass_quality.dart';
 import 'package:liquid_glass_widgets/widgets/interactive/glass_switch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -144,7 +143,7 @@ void main() {
       expect(glassSwitch.height, equals(26.0));
       expect(glassSwitch.thumbColor, equals(Colors.white));
       expect(glassSwitch.useOwnLayer, isFalse);
-      expect(glassSwitch.quality, equals(GlassQuality.standard));
+      expect(glassSwitch.quality, isNull);
     });
   });
 }

@@ -1,4 +1,3 @@
-import 'package:liquid_glass_widgets/types/glass_quality.dart';
 import 'package:liquid_glass_widgets/widgets/interactive/glass_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -134,7 +133,7 @@ void main() {
       expect(control.height, equals(32));
       expect(control.borderRadius, equals(16));
       expect(control.useOwnLayer, isFalse);
-      expect(control.quality, equals(GlassQuality.standard));
+      expect(control.quality, isNull);
     });
 
     test('asserts minimum 2 segments', () {

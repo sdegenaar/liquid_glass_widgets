@@ -112,7 +112,7 @@ class GlassSearchBar extends StatefulWidget {
     this.cancelButtonText = 'Cancel',
     this.settings,
     this.useOwnLayer = false,
-    this.quality = GlassQuality.standard,
+    this.quality,
   });
 
   // ===========================================================================
@@ -213,7 +213,7 @@ class GlassSearchBar extends StatefulWidget {
   ///
   /// Use [GlassQuality.premium] for full-pipeline shader with texture capture
   /// and chromatic aberration (Impeller only) in static layouts.
-  final GlassQuality quality;
+  final GlassQuality? quality;
 
   @override
   State<GlassSearchBar> createState() => _GlassSearchBarState();

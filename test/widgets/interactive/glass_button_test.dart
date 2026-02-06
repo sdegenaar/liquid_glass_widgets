@@ -229,7 +229,7 @@ void main() {
       expect(button.iconSize, equals(24.0));
       expect(button.enabled, isTrue);
       expect(button.useOwnLayer, isFalse);
-      expect(button.quality, equals(GlassQuality.standard));
+      expect(button.quality, isNull);
       expect(button.interactionScale, equals(1.05));
       expect(button.stretch, equals(0.5));
     });

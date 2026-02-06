@@ -5,6 +5,7 @@ import '../../types/glass_quality.dart';
 import '../containers/glass_card.dart';
 import '../interactive/glass_button.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
+import '../shared/inherited_liquid_glass.dart';
 
 /// A glass morphism alert dialog following Apple's iOS design patterns.
 ///
@@ -141,7 +142,7 @@ class GlassDialog extends StatelessWidget {
     this.message,
     this.content,
     this.settings,
-    this.quality = GlassQuality.standard,
+    this.quality,
     this.maxWidth = 280,
   }) : assert(
           actions.length > 0 && actions.length <= 3,
@@ -215,7 +216,7 @@ class GlassDialog extends StatelessWidget {
   /// Rendering quality for the glass effect.
   ///
   /// Defaults to [GlassQuality.standard], which uses backdrop filter rendering.
-  final GlassQuality quality;
+  final GlassQuality? quality;
 
   // ===========================================================================
   // Static Show Method
@@ -286,6 +287,12 @@ class GlassDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Inherit quality from parent layer if not explicitly set
+    final inherited =
+        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    final effectiveQuality =
+        quality ?? inherited?.quality ?? GlassQuality.standard;
+
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -294,11 +301,11 @@ class GlassDialog extends StatelessWidget {
         child: GlassCard(
           useOwnLayer: true,
           settings: settings,
-          quality: quality,
+          quality: effectiveQuality,
           padding: const EdgeInsets.all(20),
           child: AdaptiveLiquidGlassLayer(
             settings: settings ?? const LiquidGlassSettings(),
-            quality: quality,
+            quality: effectiveQuality,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

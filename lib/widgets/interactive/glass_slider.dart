@@ -7,6 +7,7 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
 import '../shared/glass_effect.dart';
+import '../shared/inherited_liquid_glass.dart';
 
 /// A glass morphism slider following Apple's iOS 26 design patterns.
 ///
@@ -117,7 +118,7 @@ class GlassSlider extends StatefulWidget {
     this.thumbRadius = 15.0,
     this.settings,
     this.useOwnLayer = false,
-    this.quality = GlassQuality.standard,
+    this.quality,
   });
 
   // ===========================================================================
@@ -206,7 +207,7 @@ class GlassSlider extends StatefulWidget {
   /// Use [GlassQuality.premium] for full-pipeline shader with texture capture
   /// and chromatic aberration (Impeller only) in static layouts.
   /// Defaults to [GlassQuality.standard].
-  final GlassQuality quality;
+  final GlassQuality? quality;
 
   @override
   State<GlassSlider> createState() => _GlassSliderState();
@@ -356,8 +357,17 @@ class _GlassSliderState extends State<GlassSlider>
     unawaited(_thicknessController.reverse());
   }
 
+  // Cache effectiveQuality at state level to make it accessible in _buildThumbGlass
+  GlassQuality? _effectiveQuality;
+
   @override
   Widget build(BuildContext context) {
+    // Inherit quality from parent layer if not explicitly set
+    final inherited =
+        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    _effectiveQuality =
+        widget.quality ?? inherited?.quality ?? GlassQuality.standard;
+
     final effectiveValue = _dragValue ?? widget.value;
     final normalizedValue =
         ((effectiveValue - widget.min) / (widget.max - widget.min))
@@ -587,23 +597,24 @@ class _GlassSliderState extends State<GlassSlider>
 
     // SIMPLIFIED: Static const settings matching GlassSwitch pattern
     // All animation is handled via interactionIntensity parameter
-    final thumbSettings = widget.quality.usesLightweightShader
-        ? const LiquidGlassSettings(
-            glassColor: Color.from(alpha: 0.1, red: 1, green: 1, blue: 1),
-            refractiveIndex: 1.15,
-            thickness: 20,
-            lightIntensity: 2.0,
-            blur: 0,
-            lightAngle: 135,
-          )
-        : const LiquidGlassSettings(
-            glassColor: Color.from(alpha: 0.1, red: 1, green: 1, blue: 1),
-            refractiveIndex: 1.15,
-            thickness: 10,
-            lightIntensity: 2,
-            blur: 0,
-            lightAngle: 120,
-          );
+    final thumbSettings =
+        (_effectiveQuality ?? GlassQuality.standard).usesLightweightShader
+            ? const LiquidGlassSettings(
+                glassColor: Color.from(alpha: 0.1, red: 1, green: 1, blue: 1),
+                refractiveIndex: 1.15,
+                thickness: 20,
+                lightIntensity: 2.0,
+                blur: 0,
+                lightAngle: 135,
+              )
+            : const LiquidGlassSettings(
+                glassColor: Color.from(alpha: 0.1, red: 1, green: 1, blue: 1),
+                refractiveIndex: 1.15,
+                thickness: 10,
+                lightIntensity: 2,
+                blur: 0,
+                lightAngle: 120,
+              );
 
     // CRITICAL: Outer SizedBox with dynamic size ensures proper premium rendering
     return SizedBox(
@@ -612,7 +623,7 @@ class _GlassSliderState extends State<GlassSlider>
       child: GlassEffect(
         shape: thumbShape,
         settings: thumbSettings,
-        quality: widget.quality,
+        quality: _effectiveQuality ?? GlassQuality.standard,
         interactionIntensity: transition, // ✅ Drives all animation
         child: thumbContent,
       ),

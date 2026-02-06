@@ -31,7 +31,7 @@ class GlassTextArea extends StatelessWidget {
     // Glass properties
     this.settings,
     this.useOwnLayer = false,
-    this.quality = GlassQuality.standard,
+    this.quality,
     this.shape = const LiquidRoundedSuperellipse(borderRadius: 10),
   });
 
@@ -87,7 +87,7 @@ class GlassTextArea extends StatelessWidget {
   final bool useOwnLayer;
 
   /// Quality setting.
-  final GlassQuality quality;
+  final GlassQuality? quality;
 
   /// Shape setting.
   final LiquidShape shape;

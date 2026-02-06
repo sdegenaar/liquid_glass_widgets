@@ -1,4 +1,3 @@
-import 'package:liquid_glass_widgets/types/glass_quality.dart';
 import 'package:liquid_glass_widgets/widgets/containers/glass_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -90,7 +89,7 @@ void main() {
 
       expect(panel.padding, equals(const EdgeInsets.all(24)));
       expect(panel.useOwnLayer, isFalse);
-      expect(panel.quality, equals(GlassQuality.standard));
+      expect(panel.quality, isNull);
     });
   });
 }

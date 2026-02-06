@@ -1,0 +1,28 @@
+name: wanderlust_showcase
+description: A luxury travel showcase app demonstrating liquid_glass_widgets capabilities
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Reference the local liquid_glass_widgets package
+  liquid_glass_widgets:
+    path: ../../
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/

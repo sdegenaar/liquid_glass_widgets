@@ -21,6 +21,7 @@ import '../interactive/glass_button.dart';
 import '../shared/adaptive_glass.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
 import '../shared/animated_glass_indicator.dart';
+import '../shared/inherited_liquid_glass.dart';
 
 /// A glass morphism bottom navigation bar following Apple's design patterns.
 ///
@@ -185,7 +186,7 @@ class GlassBottomBar extends StatefulWidget {
     this.glowBlurRadius = 32,
     this.glowSpreadRadius = 8,
     this.glowOpacity = 0.6,
-    this.quality = GlassQuality.premium,
+    this.quality,
     this.magnification = 1.0,
     this.innerBlur = 0.0,
     this.maskingQuality = MaskingQuality.high,
@@ -330,12 +331,13 @@ class GlassBottomBar extends StatefulWidget {
 
   /// Rendering quality for the glass effect.
   ///
-  /// Defaults to [GlassQuality.premium] since bottom bars are typically static
-  /// surfaces at the bottom of the screen where premium quality looks best.
+  /// If null, inherits from parent [InheritedLiquidGlass] or defaults to
+  /// [GlassQuality.premium] since bottom bars are typically static surfaces at
+  /// the bottom of the screen where premium quality looks best.
   ///
   /// Use [GlassQuality.standard] if the bottom bar will be used in a scrollable
   /// context.
-  final GlassQuality quality;
+  final GlassQuality? quality;
 
   // ===========================================================================
   // Indicator Properties
@@ -439,12 +441,18 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
 
   @override
   Widget build(BuildContext context) {
+    // Inherit quality from parent layer if not explicitly set
+    final inherited =
+        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    final effectiveQuality =
+        widget.quality ?? inherited?.quality ?? GlassQuality.premium;
+
     // Use custom glass settings or cached defaults for bottom bars
     final glassSettings = widget.glassSettings ?? _defaultGlassSettings;
 
     return AdaptiveLiquidGlassLayer(
       settings: glassSettings,
-      quality: widget.quality,
+      quality: effectiveQuality,
       blendAmount:
           widget.blendAmount, // Impeller-only (gracefully ignored on Skia)
       child: Padding(
@@ -458,7 +466,7 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
             // Main tab bar with draggable indicator
             Expanded(
               child: _TabIndicator(
-                quality: widget.quality,
+                quality: effectiveQuality,
                 visible: widget.showIndicator,
                 tabIndex: widget.selectedIndex,
                 tabCount: widget.tabs.length,
@@ -505,7 +513,7 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
             if (widget.extraButton != null)
               _ExtraButton(
                 config: widget.extraButton!,
-                quality: widget.quality,
+                quality: effectiveQuality,
                 iconColor:
                     widget.extraButton!.iconColor ?? widget.unselectedIconColor,
                 borderRadius: widget.barBorderRadius ==
@@ -1183,7 +1191,7 @@ class _TabIndicatorState extends State<_TabIndicator> {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // 1. Glass Background Layer with ALL content underneath
+          // 1. Glass Background Layer with ALL content
           // This provides the glass visual/refraction for everything
           Positioned.fill(
             child: AdaptiveGlass.grouped(
@@ -1235,7 +1243,7 @@ class _TabIndicatorState extends State<_TabIndicator> {
             ),
           ),
 
-          // 4. Moving Glass Indicator Layer (on top)
+          // 4. Moving Glass Indicator Layer (provides color highlight)
           AnimatedGlassIndicator(
             velocity: velocity,
             itemCount: widget.tabCount,
@@ -1249,6 +1257,32 @@ class _TabIndicatorState extends State<_TabIndicator> {
             expansion: 14,
             glassSettings: widget.indicatorSettings,
             backgroundKey: widget.backgroundKey,
+          ),
+
+          // 5. Selected Content ON TOP (ensures icons/text visible above indicator)
+          // Always show to prevent jumping when animation completes
+          Positioned.fill(
+            child: RepaintBoundary(
+              child: IgnorePointer(
+                child: ClipPath(
+                  clipper: JellyClipper(
+                    itemCount: widget.tabCount,
+                    alignment: alignment,
+                    thickness: thickness,
+                    expansion: 14,
+                    transform: jellyTransform,
+                    borderRadius:
+                        thickness < 1 ? backgroundRadius : glassRadius,
+                  ),
+                  child: Container(
+                    padding: widget.tabPadding,
+                    height: widget.barHeight,
+                    child: widget.selectedTabBuilder(
+                        context, thickness, alignment),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),

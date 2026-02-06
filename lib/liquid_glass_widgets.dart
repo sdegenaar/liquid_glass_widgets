@@ -17,6 +17,7 @@ export 'types/glass_quality.dart';
 // Shared widgets
 export 'widgets/shared/adaptive_glass.dart';
 export 'widgets/shared/adaptive_liquid_glass_layer.dart';
+export 'widgets/shared/inherited_liquid_glass.dart';
 export 'widgets/shared/lightweight_liquid_glass.dart';
 
 // Widgets - Containers

@@ -4,6 +4,7 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import '../../types/glass_quality.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
 import '../shared/adaptive_glass.dart';
+import '../shared/inherited_liquid_glass.dart';
 
 /// A glass morphism bottom sheet following Apple's iOS 26 design patterns.
 ///
@@ -100,7 +101,7 @@ class GlassSheet extends StatelessWidget {
     this.showDragIndicator = true,
     this.dragIndicatorColor,
     this.settings,
-    this.quality = GlassQuality.standard,
+    this.quality,
     this.padding,
   });
 
@@ -155,7 +156,7 @@ class GlassSheet extends StatelessWidget {
   ///
   /// [GlassQuality.premium] (shader-based) is not recommended for animated
   /// sheets but can be used for static sheets.
-  final GlassQuality quality;
+  final GlassQuality? quality;
 
   // ===========================================================================
   // Static Show Method
@@ -248,12 +249,18 @@ class GlassSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Inherit quality from parent layer if not explicitly set
+    final inherited =
+        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    final effectiveQuality =
+        quality ?? inherited?.quality ?? GlassQuality.standard;
+
     const shape = LiquidRoundedSuperellipse(borderRadius: 20);
     final effectiveSettings = settings ?? const LiquidGlassSettings();
 
     final sheetContent = AdaptiveLiquidGlassLayer(
       settings: effectiveSettings,
-      quality: quality,
+      quality: effectiveQuality,
       child: SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -282,7 +289,7 @@ class GlassSheet extends StatelessWidget {
     return AdaptiveGlass(
       shape: shape,
       settings: effectiveSettings,
-      quality: quality,
+      quality: effectiveQuality,
       useOwnLayer: true,
       child: sheetContent,
     );

@@ -1,4 +1,3 @@
-import 'package:liquid_glass_widgets/types/glass_quality.dart';
 import 'package:liquid_glass_widgets/widgets/interactive/glass_icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -178,7 +177,7 @@ void main() {
       expect(button.size, equals(44));
       expect(button.shape, equals(GlassIconButtonShape.circle));
       expect(button.useOwnLayer, isFalse);
-      expect(button.quality, equals(GlassQuality.standard));
+      expect(button.quality, isNull);
       expect(button.interactionScale, equals(0.95));
     });
   });

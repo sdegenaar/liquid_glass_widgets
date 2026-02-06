@@ -67,7 +67,7 @@ class GlassMenu extends StatefulWidget {
   final LiquidGlassSettings? glassSettings;
 
   /// Rendering quality for the glass effect.
-  final GlassQuality quality;
+  final GlassQuality? quality;
 
   /// Creates a liquid glass menu.
   const GlassMenu({
@@ -78,7 +78,7 @@ class GlassMenu extends StatefulWidget {
     this.menuWidth = 200,
     this.menuBorderRadius = 16.0,
     this.glassSettings,
-    this.quality = GlassQuality.standard,
+    this.quality,
   }) : assert(trigger != null || triggerBuilder != null,
             'Either trigger or triggerBuilder must be provided');
 
@@ -295,6 +295,12 @@ class _GlassMenuState extends State<GlassMenu>
   }
 
   Widget _buildMorphingContainer(double value) {
+    // Inherit quality from parent layer if not explicitly set
+    final inherited =
+        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    final effectiveQuality =
+        widget.quality ?? inherited?.quality ?? GlassQuality.standard;
+
     // Calculate menu height by measuring its natural size
     // This is necessary for proper height interpolation during morph
     final menuHeight = _calculateMenuHeight();
@@ -362,7 +368,7 @@ class _GlassMenuState extends State<GlassMenu>
             child: GlassContainer(
               useOwnLayer: true,
               settings: effectiveSettings,
-              quality: widget.quality,
+              quality: effectiveQuality,
               allowElevation:
                   false, // Menu is overlay - don't darken when outside parent
               width: currentWidth,

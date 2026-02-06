@@ -4,6 +4,7 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import '../../types/glass_quality.dart';
 import '../shared/adaptive_glass.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
+import '../shared/inherited_liquid_glass.dart';
 
 /// A glass morphism toolbar following Apple's iOS 26 design patterns.
 ///
@@ -64,7 +65,7 @@ class GlassToolbar extends StatelessWidget {
     this.alignment = MainAxisAlignment.spaceBetween,
     this.glassSettings,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    this.quality = GlassQuality.premium,
+    this.quality,
     this.backgroundColor,
   });
 
@@ -98,8 +99,9 @@ class GlassToolbar extends StatelessWidget {
 
   /// Rendering quality for the glass effect.
   ///
-  /// Defaults to [GlassQuality.premium].
-  final GlassQuality quality;
+  /// If null, inherits from parent [InheritedLiquidGlass] or defaults to
+  /// [GlassQuality.premium].
+  final GlassQuality? quality;
 
   /// Optional background color override.
   ///
@@ -119,6 +121,12 @@ class GlassToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Inherit quality from parent layer if not explicitly set
+    final inherited =
+        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    final effectiveQuality =
+        quality ?? inherited?.quality ?? GlassQuality.premium;
+
     // Standard iOS toolbar glass settings with high blur
     final effectiveSettings = glassSettings ?? _defaultSettings;
 
@@ -129,7 +137,7 @@ class GlassToolbar extends StatelessWidget {
 
     return AdaptiveLiquidGlassLayer(
       settings: effectiveSettings,
-      quality: quality,
+      quality: effectiveQuality,
       child: Container(
         decoration: const BoxDecoration(
           border: Border(
@@ -146,7 +154,7 @@ class GlassToolbar extends StatelessWidget {
               child: AdaptiveGlass.grouped(
                 // Toolbar is typically a full-width rectangle
                 shape: const LiquidRoundedRectangle(borderRadius: 0),
-                quality: quality,
+                quality: effectiveQuality,
                 child: Container(color: effectiveBackgroundColor),
               ),
             ),

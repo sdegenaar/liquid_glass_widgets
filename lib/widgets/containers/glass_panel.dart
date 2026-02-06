@@ -95,7 +95,7 @@ class GlassPanel extends StatelessWidget {
     this.shape = const LiquidRoundedSuperellipse(borderRadius: 20),
     this.settings,
     this.useOwnLayer = false,
-    this.quality = GlassQuality.standard,
+    this.quality,
     this.clipBehavior = Clip.none,
     this.width,
     this.height,
@@ -176,12 +176,13 @@ class GlassPanel extends StatelessWidget {
 
   /// Rendering quality for the glass effect.
   ///
-  /// Defaults to [GlassQuality.standard], which uses the lightweight fragment
-  /// shader. This works reliably in all contexts, including scrollable lists.
+  /// If null, inherits from parent [InheritedLiquidGlass] or defaults to
+  /// [GlassQuality.standard], which uses the lightweight fragment shader.
+  /// This works reliably in all contexts, including scrollable lists.
   ///
   /// Use [GlassQuality.premium] for full-pipeline shader with texture capture
   /// and chromatic aberration (Impeller only) in static layouts.
-  final GlassQuality quality;
+  final GlassQuality? quality;
 
   /// The clipping behavior for the panel.
   ///

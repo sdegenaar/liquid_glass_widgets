@@ -1,4 +1,3 @@
-import 'package:liquid_glass_widgets/types/glass_quality.dart';
 import 'package:liquid_glass_widgets/widgets/input/glass_search_bar.dart';
 import 'package:liquid_glass_widgets/widgets/input/glass_text_field.dart';
 import 'package:flutter/cupertino.dart';
@@ -206,7 +205,7 @@ void main() {
       expect(searchBar.height, equals(44.0));
       expect(searchBar.cancelButtonText, equals('Cancel'));
       expect(searchBar.useOwnLayer, isFalse);
-      expect(searchBar.quality, equals(GlassQuality.standard));
+      expect(searchBar.quality, isNull);
     });
   });
 }

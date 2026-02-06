@@ -1,3 +1,89 @@
+# 0.3.0-dev.1
+
+### Breaking Changes
+
+- **`quality` parameter is now nullable** across all widgets that support it
+  - Previously: `quality: GlassQuality.standard` (required, with default)
+  - Now: `quality: GlassQuality?` (nullable, inherits from parent layer)
+  - **Migration:** Most code will work without changes. Only affects code that relied on the parameter being non-nullable.
+
+### New Features
+
+- **Quality Inheritance System**
+  - All widgets now inherit `quality` from parent `AdaptiveLiquidGlassLayer`
+  - Explicitly set `quality` on a widget to override inheritance
+  - Simplifies code by setting quality once at the layer level
+
+- **Showcase App**
+  - New showcase app demonstrating liquid glass widgets in action
+  - Centralized theme system with predefined glass settings
+  - Real-world examples of quality inheritance patterns
+
+### Bug Fixes
+
+- **Critical: Fixed glass shader rendering order**
+  - Glass shader now renders **behind** content, not on top
+  - Fixes text appearing washed out with semi-transparent glass
+  - Affects all widgets using `LightweightLiquidGlass`
+
+### Migration Guide
+
+**For most users, no code changes are required!**
+
+#### If you don't specify `quality`:
+```dart
+// Before (0.2.x)
+GlassButton(icon: Icons.star, onTap: () {})
+
+// After (0.3.x) - No changes needed!
+GlassButton(icon: Icons.star, onTap: () {})
+```
+
+#### If you explicitly set `quality`:
+```dart
+// Before (0.2.x)
+GlassButton(quality: GlassQuality.premium, icon: Icons.star, onTap: () {})
+
+// After (0.3.x) - No changes needed!
+GlassButton(quality: GlassQuality.premium, icon: Icons.star, onTap: () {})
+```
+
+#### New: Use inheritance for cleaner code:
+```dart
+// Before (0.2.x) - Repetitive
+AdaptiveLiquidGlassLayer(
+  settings: settings,
+  child: Column([
+    GlassButton(quality: GlassQuality.premium, ...),
+    GlassButton(quality: GlassQuality.premium, ...),
+    GlassTextField(quality: GlassQuality.premium, ...),
+  ]),
+)
+
+// After (0.3.x) - Set once, inherit everywhere
+AdaptiveLiquidGlassLayer(
+  quality: GlassQuality.premium,
+  settings: settings,
+  child: Column([
+    GlassButton(...),  // Inherits premium
+    GlassButton(...),  // Inherits premium
+    GlassTextField(...),  // Inherits premium
+  ]),
+)
+```
+
+#### Only if you relied on non-nullable quality:
+If your code explicitly checks for non-null quality (rare), add null checks:
+```dart
+// Before (0.2.x)
+final quality = widget.quality; // Always GlassQuality
+
+// After (0.3.x)
+final quality = widget.quality ?? GlassQuality.standard;
+```
+
+---
+
 # 0.2.1-dev.8
 
 - **FEAT**: GlassBottomBar "magic lens" masking effect (contributed by @Earbaj in PR #3) Massive thanks and great job!

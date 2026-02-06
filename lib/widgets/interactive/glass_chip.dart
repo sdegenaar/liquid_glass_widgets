@@ -104,7 +104,7 @@ class GlassChip extends StatelessWidget {
     this.spacing = 6.0,
     this.settings,
     this.useOwnLayer = false,
-    this.quality = GlassQuality.standard,
+    this.quality,
     // GlassButton properties
     this.interactionScale = 1.03,
     this.stretch = 0.3,
@@ -211,11 +211,12 @@ class GlassChip extends StatelessWidget {
 
   /// Rendering quality for the glass effect.
   ///
-  /// Defaults to [GlassQuality.standard], which uses backdrop filter rendering.
+  /// If null, inherits from parent [InheritedLiquidGlass] or defaults to
+  /// [GlassQuality.standard], which uses backdrop filter rendering.
   /// This works reliably in all contexts, including scrollable lists.
   ///
   /// Use [GlassQuality.premium] for shader-based glass in static layouts only.
-  final GlassQuality quality;
+  final GlassQuality? quality;
 
   // ===========================================================================
   // Interaction Properties (from GlassButton)
@@ -310,7 +311,7 @@ class GlassChip extends StatelessWidget {
           shape: _chipShape,
           settings: settings,
           useOwnLayer: useOwnLayer,
-          quality: quality,
+          quality: quality ?? GlassQuality.standard,
           interactionScale: interactionScale,
           stretch: stretch,
           glowRadius: glowRadius,

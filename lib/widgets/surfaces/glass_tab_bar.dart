@@ -6,6 +6,7 @@ import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
 import '../shared/animated_glass_indicator.dart';
+import '../shared/inherited_liquid_glass.dart';
 
 /// A glass morphism tab bar following Apple's iOS design patterns.
 ///
@@ -113,7 +114,7 @@ class GlassTabBar extends StatefulWidget {
     this.backgroundColor = Colors.transparent,
     this.settings,
     this.useOwnLayer = false,
-    this.quality = GlassQuality.standard,
+    this.quality,
     this.borderRadius,
     this.indicatorBorderRadius,
     this.indicatorSettings,
@@ -176,7 +177,10 @@ class GlassTabBar extends StatefulWidget {
   final bool useOwnLayer;
 
   /// Rendering quality for the glass effect.
-  final GlassQuality quality;
+  ///
+  /// If null, inherits from parent [InheritedLiquidGlass] or defaults to
+  /// [GlassQuality.standard].
+  final GlassQuality? quality;
 
   /// BorderRadius of the tab bar.
   final BorderRadius? borderRadius;
@@ -236,6 +240,12 @@ class _GlassTabBarState extends State<GlassTabBar> {
 
   @override
   Widget build(BuildContext context) {
+    // Inherit quality from parent layer if not explicitly set
+    final inherited =
+        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    final effectiveQuality =
+        widget.quality ?? inherited?.quality ?? GlassQuality.standard;
+
     final glassSettings = widget.settings ??
         const LiquidGlassSettings(
           thickness: 30,
@@ -272,7 +282,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
         unselectedIconColor: widget.unselectedIconColor,
         iconSize: widget.iconSize,
         labelPadding: widget.labelPadding,
-        quality: widget.quality,
+        quality: effectiveQuality,
         // Pass new props
         indicatorBorderRadius: widget.indicatorBorderRadius,
         indicatorSettings: widget.indicatorSettings,
@@ -283,7 +293,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
     if (widget.useOwnLayer) {
       return AdaptiveLiquidGlassLayer(
         settings: glassSettings,
-        quality: widget.quality,
+        quality: effectiveQuality,
         child: content,
       );
     }

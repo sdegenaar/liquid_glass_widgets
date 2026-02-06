@@ -7,6 +7,7 @@ import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
 import '../shared/animated_glass_indicator.dart';
+import '../shared/inherited_liquid_glass.dart';
 
 /// A glass morphism segmented control following Apple's design patterns.
 ///
@@ -126,7 +127,7 @@ class GlassSegmentedControl extends StatefulWidget {
     this.indicatorSettings,
     this.glassSettings,
     this.useOwnLayer = false,
-    this.quality = GlassQuality.standard,
+    this.quality,
     this.backgroundKey,
   })  : assert(
           segments.length >= 2,
@@ -238,7 +239,7 @@ class GlassSegmentedControl extends StatefulWidget {
   /// Rendering quality for the glass effect.
   ///
   /// Defaults to [GlassQuality.standard] (backdrop filter).
-  final GlassQuality quality;
+  final GlassQuality? quality;
 
   /// Optional background key for Skia/Web refraction.
   final GlobalKey? backgroundKey;
@@ -253,6 +254,12 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
 
   @override
   Widget build(BuildContext context) {
+    // Inherit quality from parent layer if not explicitly set
+    final inherited =
+        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    final effectiveQuality =
+        widget.quality ?? (inherited?.quality ?? GlassQuality.standard);
+
     // Use custom glass settings or optimized defaults
     final glassSettings = widget.glassSettings ??
         const LiquidGlassSettings(
@@ -282,7 +289,7 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
         indicatorColor: widget.indicatorColor,
         indicatorSettings: widget.indicatorSettings,
         borderRadius: widget.borderRadius,
-        quality: widget.quality,
+        quality: effectiveQuality,
         backgroundKey: widget.backgroundKey,
       ),
     );
@@ -295,7 +302,7 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
     if (widget.useOwnLayer) {
       return AdaptiveLiquidGlassLayer(
         settings: glassSettings,
-        quality: widget.quality,
+        quality: effectiveQuality,
         child: isolatedControl,
       );
     }

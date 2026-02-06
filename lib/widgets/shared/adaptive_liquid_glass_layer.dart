@@ -86,6 +86,7 @@ class AdaptiveLiquidGlassLayer extends StatelessWidget {
       fake: !useFullRenderer,
       child: InheritedLiquidGlass(
         settings: settings,
+        quality: quality,
         isBlurProvidedByAncestor:
             false, // Root never provides the blur; containers do.
         child: useFullRenderer

@@ -1,4 +1,3 @@
-import 'package:liquid_glass_widgets/types/glass_quality.dart';
 import 'package:liquid_glass_widgets/widgets/containers/glass_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -90,7 +89,7 @@ void main() {
 
       expect(card.padding, equals(const EdgeInsets.all(16)));
       expect(card.useOwnLayer, isFalse);
-      expect(card.quality, equals(GlassQuality.standard));
+      expect(card.quality, isNull);
     });
   });
 }

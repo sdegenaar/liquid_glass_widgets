@@ -43,7 +43,8 @@ void main() {
             tabs: testTabs,
             selectedIndex: 0,
             onTabSelected: (_) {},
-            maskingQuality: MaskingQuality.off, // Avoid dual-layer rendering in tests
+            maskingQuality:
+                MaskingQuality.off, // Avoid dual-layer rendering in tests
           ),
         ),
       );
@@ -60,7 +61,8 @@ void main() {
             tabs: testTabs,
             selectedIndex: 0,
             onTabSelected: (_) {},
-            maskingQuality: MaskingQuality.off, // Avoid dual-layer rendering in tests
+            maskingQuality:
+                MaskingQuality.off, // Avoid dual-layer rendering in tests
           ),
         ),
       );
@@ -79,7 +81,8 @@ void main() {
             tabs: testTabs,
             selectedIndex: selectedIndex,
             onTabSelected: (index) => selectedIndex = index,
-            maskingQuality: MaskingQuality.off, // Avoid dual-layer rendering in tests
+            maskingQuality:
+                MaskingQuality.off, // Avoid dual-layer rendering in tests
           ),
         ),
       );
@@ -169,7 +172,7 @@ void main() {
       expect(bar.barHeight, equals(64));
       expect(bar.barBorderRadius, equals(32));
       expect(bar.showIndicator, isTrue);
-      expect(bar.quality, equals(GlassQuality.premium));
+      expect(bar.quality, isNull);
     });
   });
 

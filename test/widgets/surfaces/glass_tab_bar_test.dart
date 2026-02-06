@@ -275,7 +275,7 @@ void main() {
       );
 
       final tabBar = tester.widget<GlassTabBar>(find.byType(GlassTabBar));
-      expect(tabBar.quality, GlassQuality.premium);
+      expect(tabBar.quality, equals(GlassQuality.premium));
     });
 
     test('GlassTab requires either icon or label', () {

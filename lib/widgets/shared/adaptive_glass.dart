@@ -133,6 +133,7 @@ class AdaptiveGlass extends StatelessWidget {
           glowIntensity: 0.0, // Containers don't glow
           child: InheritedLiquidGlass(
             settings: effectiveSettings,
+            quality: quality,
             isBlurProvidedByAncestor: true,
             child: child,
           ),

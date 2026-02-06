@@ -99,7 +99,7 @@ class GlassIconButton extends StatelessWidget {
     this.interactionScale = 0.95,
     this.useOwnLayer = false,
     this.settings,
-    this.quality = GlassQuality.standard,
+    this.quality,
   });
 
   // Cache default colors to avoid allocations
@@ -193,8 +193,9 @@ class GlassIconButton extends StatelessWidget {
 
   /// Rendering quality for the glass effect.
   ///
-  /// Defaults to [GlassQuality.standard] (backdrop filter).
-  final GlassQuality quality;
+  /// If null, inherits from parent [InheritedLiquidGlass] or defaults to
+  /// [GlassQuality.standard] (backdrop filter).
+  final GlassQuality? quality;
 
   @override
   Widget build(BuildContext context) {
@@ -218,7 +219,7 @@ class GlassIconButton extends StatelessWidget {
       shape: glassShape,
       settings: settings,
       useOwnLayer: useOwnLayer,
-      quality: quality,
+      quality: quality ?? GlassQuality.standard,
       interactionScale: interactionScale,
       glowColor: glowColor ?? _defaultGlowColor,
       glowRadius: glowRadius,
