@@ -173,6 +173,7 @@ class GlassBottomBar extends StatefulWidget {
     this.barHeight = 64,
     this.barBorderRadius = _defaultBarBorderRadius,
     this.tabPadding = const EdgeInsets.symmetric(horizontal: 4),
+    this.tabSpacing = 4,
     this.blendAmount = 10,
     this.glassSettings,
     this.showIndicator = true,
@@ -302,6 +303,12 @@ class GlassBottomBar extends StatefulWidget {
   /// Controls spacing between the bar edges and the tab icons.
   /// Defaults to 4px horizontal padding.
   final EdgeInsetsGeometry tabPadding;
+
+  /// Internal spacing of the tab bar.
+  ///
+  /// Controls spacing between the tab icon and the tab label.
+  /// Defaults to 4px.
+  final double tabSpacing;
 
   /// Blend amount for glass surfaces.
   ///
@@ -491,6 +498,7 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
                             unselectedIconColor: widget.unselectedIconColor,
                             iconSize: widget.iconSize,
                             textStyle: widget.textStyle,
+                            tabSpacing: widget.tabSpacing,
                             glowDuration: widget.glowDuration,
                             glowBlurRadius: widget.glowBlurRadius,
                             glowSpreadRadius: widget.glowSpreadRadius,
@@ -557,6 +565,7 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
                         unselectedIconColor: widget.unselectedIconColor,
                         iconSize: widget.iconSize,
                         textStyle: widget.textStyle,
+                        tabSpacing: widget.tabSpacing,
                         glowDuration: widget.glowDuration,
                         glowBlurRadius: widget.glowBlurRadius,
                         glowSpreadRadius: widget.glowSpreadRadius,
@@ -670,6 +679,7 @@ class _BottomBarTab extends StatelessWidget {
     required this.unselectedIconColor,
     required this.iconSize,
     required this.textStyle,
+    required this.tabSpacing,
     required this.glowDuration,
     required this.glowBlurRadius,
     required this.glowSpreadRadius,
@@ -683,6 +693,7 @@ class _BottomBarTab extends StatelessWidget {
   final Color unselectedIconColor;
   final double iconSize;
   final TextStyle? textStyle;
+  final double tabSpacing;
   final Duration glowDuration;
   final double glowBlurRadius;
   final double glowSpreadRadius;
@@ -704,6 +715,7 @@ class _BottomBarTab extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
+            spacing: tabSpacing,
             children: [
               // Icon with optional glow effect
               ExcludeSemantics(
@@ -760,9 +772,7 @@ class _BottomBarTab extends StatelessWidget {
                 ),
               ),
 
-              if (tab.label != null) ...[
-                const SizedBox(height: 4),
-
+              if (tab.label != null)
                 // Label text
                 Text(
                   tab.label!,
@@ -777,7 +787,6 @@ class _BottomBarTab extends StatelessWidget {
                             selected ? FontWeight.w600 : FontWeight.w500,
                       ),
                 ),
-              ],
             ],
           ),
         ),
