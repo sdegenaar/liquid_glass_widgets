@@ -1,3 +1,16 @@
+# 0.4.1-dev.2
+
+### Bug Fixes
+
+- **FIX**: `GlassBottomBar` (and other surfaces) now correctly respond to dynamic `glassSettings` changes on `GlassQuality.standard`
+  - `AdaptiveGlass` in grouped mode was using empty default settings instead of inheriting from the parent `AdaptiveLiquidGlassLayer`, causing `glassColor` (including alpha) to be ignored entirely on the lightweight shader path
+  - Fixed by reading settings from `InheritedLiquidGlass` in grouped mode, consistent with how the Impeller path behaves
+- **FIX**: Luminance-aware ambient floor for white glass on `GlassQuality.standard`
+  - `LiquidGlassSettings.figma()` hardcodes `ambientStrength: 0.1`, causing white glass to render as dark grey in the lightweight shader
+  - Applied a `brightnessIntent = alpha × luminance × 0.6` floor so high-opacity white glass renders with appropriate brightness without affecting calibrated presets
+
+---
+
 # 0.4.1-dev.1
 
 ### Breaking Changes

@@ -101,26 +101,33 @@ class AdaptiveGlass extends StatelessWidget {
       // Calculate density factor for shader (0.0 = normal, 1.0 = elevated)
       final double densityFactor = shouldElevate ? 1.0 : 0.0;
 
+      // In grouped mode, inherit settings from the ancestor layer so that
+      // dynamic properties (e.g. glassColor.alpha) flow correctly to the shader.
+      // The `settings` field in AdaptiveGlass.grouped() is a const placeholder;
+      // the real settings live in InheritedLiquidGlass.
+      final baseSettings =
+          (!useOwnLayer && inherited != null) ? inherited.settings : settings;
+
       // Apply subtle elevation boost to settings (preserves saturation!)
-      final color = settings.effectiveGlassColor;
+      final color = baseSettings.effectiveGlassColor;
       final effectiveSettings = shouldElevate
           ? LiquidGlassSettings(
               glassColor:
                   color.withValues(alpha: (color.a + 0.2).clamp(0.0, 1.0)),
-              refractiveIndex: settings.refractiveIndex,
-              thickness: settings.effectiveThickness,
-              lightAngle: settings.lightAngle,
+              refractiveIndex: baseSettings.refractiveIndex,
+              thickness: baseSettings.effectiveThickness,
+              lightAngle: baseSettings.lightAngle,
               lightIntensity:
-                  (settings.effectiveLightIntensity * 1.2).clamp(0.0, 10.0),
-              chromaticAberration: settings.chromaticAberration,
-              blur: settings.effectiveBlur,
-              visibility: settings.visibility,
+                  (baseSettings.effectiveLightIntensity * 1.2).clamp(0.0, 10.0),
+              chromaticAberration: baseSettings.chromaticAberration,
+              blur: baseSettings.effectiveBlur,
+              visibility: baseSettings.visibility,
               saturation:
-                  settings.effectiveSaturation, // Preserve user saturation!
+                  baseSettings.effectiveSaturation, // Preserve user saturation!
               ambientStrength:
-                  (settings.effectiveAmbientStrength * 0.4).clamp(0.0, 1.0),
+                  (baseSettings.effectiveAmbientStrength * 0.4).clamp(0.0, 1.0),
             )
-          : settings;
+          : baseSettings;
 
       // PIPELINE HAND-OFF (The Secret Sauce)
       // If this is a container (allowElevation=false), we are providing a blur

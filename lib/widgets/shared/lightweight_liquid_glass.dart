@@ -430,7 +430,35 @@ class _RenderLightweightGlass extends RenderProxyBox {
     _shader.setFloat(index++, _settings.effectiveLightIntensity);
 
     // 12: uAmbientStrength (float)
-    _shader.setFloat(index++, _settings.effectiveAmbientStrength);
+    //
+    // Problem: LiquidGlassSettings.figma() hardcodes ambientStrength to 0.1.
+    // In the lightweight shader, bodyColor = glassColor.rgb * (ambient + boost),
+    // so white * 0.21 ≈ dark grey — far darker than the user intends.
+    //
+    // Fix: Derive a floor from the glass color's "brightness intent":
+    //   brightnessIntent = alpha × luminance × 0.6
+    //
+    // The alpha encodes HOW OPAQUE the user wants the glass (opacity intent).
+    // The luminance encodes HOW BRIGHT the glass color is.
+    // Together they express: "how bright do you want the glass body to appear?"
+    //
+    // Examples:
+    //   white @ alpha 0.6  (figma case): 0.6×1.0×0.6=0.36 → max(0.1,0.36)=0.36 ✓ Fixed
+    //   white @ alpha 0.12 (standard):   0.12×1.0×0.6=0.07 → max(0.4,0.07)=0.4  ✓ Unchanged
+    //   white @ alpha 0.2  (interactive):0.2×1.0×0.6=0.12  → max(0.3,0.12)=0.3  ✓ Unchanged
+    //   white @ alpha 0.08 (bottomBar):  0.08×1.0×0.6=0.05 → max(0.5,0.05)=0.5  ✓ Unchanged
+    //   dark glass @ alpha 0.8:          0.8×0.12×0.6=0.06 → max(0.1,0.06)=0.1  ✓ Unchanged
+    //
+    // This only affects the Skia/Web lightweight shader path.
+    // Impeller uses a different physical model and is completely unaffected.
+    final gc = _settings.effectiveGlassColor;
+    final glassLuminance = 0.299 * gc.r + 0.587 * gc.g + 0.114 * gc.b;
+    final brightnessIntent = gc.a * glassLuminance * 0.6;
+    final effectiveAmbient = math.max(
+      _settings.effectiveAmbientStrength,
+      brightnessIntent,
+    );
+    _shader.setFloat(index++, effectiveAmbient);
 
     // 13: uSaturation (float)
     _shader.setFloat(index++, _settings.effectiveSaturation);
