@@ -103,18 +103,22 @@ renderShader.setFloatUniforms(initialIndex: 0, (value) {
 
 ---
 
-### ⬜ B5. `calculateDispersiveIndex` is defined but never called
+### ✅ B5. `calculateDispersiveIndex` is defined but never called
 
-`render.glsl` contains a full Cauchy wavelength-based dispersion formula
-(inverted, `n(λ) = A - B/λ² - C/λ⁴`) but `calculateRefraction` ignores it and
-uses a simple linear displacement scale instead. Either wire it up or delete it.
+Deleted from `render.glsl`. The function implemented a Cauchy wavelength-based
+dispersion formula but was never called by `calculateRefraction` — the shader
+used a simpler linear displacement scale instead.
+
+**Files changed:** `shaders/render.glsl`
 
 ---
 
-### ⬜ B6. `blurRadius` dead parameter in `calculateRefraction`
+### ✅ B6. `blurRadius` dead parameter in `calculateRefraction`
 
-The parameter exists in the function signature but is never read inside the body.
-Remove it or implement the blur-modulated refraction it implies.
+Removed from `calculateRefraction` signature and its single call site in
+`renderLiquidGlass`. The parameter was never read inside the function body.
+
+**Files changed:** `shaders/render.glsl`
 
 ---
 
@@ -168,13 +172,14 @@ desaturated), but the inconsistency means the two paths behave differently when
 
 ---
 
-### ⬜ V4. Duplicate highlight colour implementations
+### ✅ V4. Duplicate highlight colour implementations
 
-`liquid_glass_final_render.frag` has an inline highlight colour calculation
-(lines 113–124) that is a rougher version of `getHighlightColor` from
-`render.glsl` (which is `#include`d by the same file). The two diverge over time.
+Replaced the inline 8-line highlight colour block in `liquid_glass_final_render.frag`
+with a call to `getHighlightColor(refractColor.rgb, 1.0)` from `render.glsl`
+(which is already `#include`d). The inline version was a rougher approximation
+that diverged from the shared utility over time.
 
-**Fix:** Replace the inline version with a call to `getHighlightColor`.
+**Files changed:** `shaders/liquid_glass_final_render.frag`
 
 ---
 
@@ -248,11 +253,14 @@ The per-shape step is redundant for single-shape layers (the assembly is trivial
 
 ## Architecture
 
-### ⬜ A1. `GeometryRenderLink.markRebuilt` has inverted naming
+### ✅ A1. `GeometryRenderLink.markRebuilt` has inverted naming
 
-`markRebuilt` sets `_dirty = true`. It means "a geometry changed, the render
-layer hasn't integrated it yet" — not "I just rebuilt and I'm clean". Rename to
-`notifyGeometryChanged` or `markOutOfSync`.
+Renamed to `notifyGeometryChanged`. The original name implied "I am clean" but
+the method set `_dirty = true`. Both call sites in
+`render_liquid_glass_geometry.dart` updated.
+
+**Files changed:** `lib/src/renderer/rendering/liquid_glass_render_object.dart`,
+`lib/src/renderer/internal/render_liquid_glass_geometry.dart`
 
 ---
 
@@ -319,9 +327,9 @@ cache state machine, shape registration, blend property propagation, and dispose
 - [ ] All 281+ tests passing on CI
 
 ### Non-blocking but recommended before v1
-- [ ] Delete dead `calculateDispersiveIndex` and `blurRadius` param (B5, B6)
-- [ ] Rename `markRebuilt` (A1)
-- [ ] Unify highlight colour implementations (V4)
+- [x] Delete dead `calculateDispersiveIndex` and `blurRadius` param (B5, B6 ✅)
+- [x] Rename `markRebuilt` → `notifyGeometryChanged` (A1 ✅)
+- [x] Unify highlight colour implementations (V4 ✅)
 
 ### Post-v1
 - [ ] True superellipse SDF (V2 / I2)

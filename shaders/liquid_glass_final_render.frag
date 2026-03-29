@@ -110,17 +110,7 @@ void main() {
         
         float brightness = (directional + ambient) * edgeFactor * thicknessScale * 0.8;
         
-        vec3 bgColor = refractColor.rgb;
-        float bgLuminance = dot(bgColor, LUMA_WEIGHTS);
-        vec3 highlightColor;
-        
-        vec3 saturatedBg = bgColor / max(bgLuminance, 0.001);
-        saturatedBg = mix(bgColor, saturatedBg, 0.8);
-        float colorfulness = length(bgColor - vec3(bgLuminance));
-        float colorMix = clamp(colorfulness * 1.0 + 0.5, 0.5, 1.0);
-        highlightColor = mix(vec3(1.0), saturatedBg, colorMix);
-       
-        
+        vec3 highlightColor = getHighlightColor(refractColor.rgb, 1.0);
         finalColor.rgb = mix(finalColor.rgb, highlightColor, brightness);
     }
 

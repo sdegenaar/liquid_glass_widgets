@@ -384,7 +384,9 @@ class GeometryRenderLink {
     _shapeGeometries.add(renderObject);
   }
 
-  void markRebuilt(RenderLiquidGlassGeometry renderObject) {
+  /// Signals that a geometry object has completed a rebuild and the render
+  /// layer should integrate the updated result on the next paint.
+  void notifyGeometryChanged(RenderLiquidGlassGeometry renderObject) {
     _dirty = true;
   }
 
