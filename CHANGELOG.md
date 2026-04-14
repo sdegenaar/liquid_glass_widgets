@@ -1,3 +1,17 @@
+# 0.7.9
+
+### Bug Fixes
+
+- **FIX**: Windows build failure — `flutter build windows` / `flutter run -d Windows` crashed with `initializers are not permitted on arrays` and `unknown identifier 'param_2'` during shader compilation. Root cause: `sdf.glsl` passed `float uShapeData[MAX_SHAPES * 6]` as a by-value function parameter to `getShapeSDFFromArray` and `sceneSDF`; glslang (the GLSL → SPIR-V compiler used by Flutter's Vulkan/Impeller backend on Windows) rejects array-by-value parameters. Fix: functions now access `uShapeData` directly as a global uniform — semantically identical, compatible with all targets.
+
+- **TWEAK**: `GlassSearchableBottomBar` iOS 26 Apple News parity improvements:
+  - Search input now features an animated inline "×" clear button (replacing the microphone) when text is typed.
+  - Simplified hit-testing layout fully replaces `Overlay` layers, ensuring reliable dismiss interactions over the keyboard.
+  - Guaranteed GPU liquid-glass merging (metaballs) between search and dismiss pills by merging them into a single shader pass.
+
+---
+
+
 # 0.7.8
 
 ### Tweak

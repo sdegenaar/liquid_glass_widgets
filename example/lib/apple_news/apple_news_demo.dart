@@ -42,18 +42,6 @@ class _Article {
   final bool moreCoverage;
 }
 
-class _TopicCategory {
-  const _TopicCategory({
-    required this.name,
-    required this.color,
-    required this.imageAsset,
-  });
-
-  final String name;
-  final Color color;
-  final String imageAsset;
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // MOCK DATA
 // ─────────────────────────────────────────────────────────────────────────────
@@ -117,6 +105,18 @@ const _kMoreArticles = [
   ),
 ];
 
+class _TopicCategory {
+  const _TopicCategory({
+    required this.name,
+    required this.color,
+    required this.imageAsset,
+  });
+
+  final String name;
+  final Color color;
+  final String imageAsset;
+}
+
 const _kTopics = [
   _TopicCategory(
     name: 'Sport',
@@ -160,12 +160,12 @@ const _kTopics = [
   ),
   _TopicCategory(
     name: 'Climate',
-    color: Color(0xFF636366),
+    color: Color(0xFFBF5AF2),
     imageAsset: 'assets/news_images/topic_climate.jpg',
   ),
   _TopicCategory(
     name: 'Cars',
-    color: Color(0xFF3634A3),
+    color: Color(0xFF636366),
     imageAsset: 'assets/news_images/topic_cars.jpg',
   ),
   _TopicCategory(
@@ -233,6 +233,7 @@ class AppleNewsHomeScreen extends StatefulWidget {
 
 class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
   bool _isSearching = false;
+  bool _searchFieldFocused = false; // true = keyboard visible
   int _selectedTab = 0; // 0=Today, 1=News+, 2=Audio, 3=Following
 
   @override
@@ -240,105 +241,125 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
     return Scaffold(
       backgroundColor: _kBackground,
       extendBody: true, // Content flows behind the bottom bar
-      // Keep false so the bar can manage its own keyboard inset via the
-      // AnimatedPadding below — prevents the body from being double-inset.
+      // Keep false so the bar manages its own keyboard layout.
       resizeToAvoidBottomInset: false,
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        transitionBuilder: (child, animation) =>
-            FadeTransition(opacity: animation, child: child),
-        child: _isSearching
-            ? _buildSearchView(key: const ValueKey('search'))
-            : _buildTodayView(key: const ValueKey('today')),
-      ),
-      // ── GlassSearchableBottomBar: tabs + morphing search in one layer ─────────
-      // AnimatedPadding lifts the bar above the keyboard when it opens.
-      // viewInsets.bottom is 0 when keyboard is hidden and the keyboard
-      // height (e.g. ~336 pt) when it is visible, so the bar smoothly
-      // rides up with the IME rather than being obscured by it.
-      bottomNavigationBar: AnimatedPadding(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.viewInsetsOf(context).bottom,
-        ),
-        child: GlassSearchableBottomBar(
-          selectedIndex: _selectedTab,
-          isSearchActive: _isSearching,
-          onTabSelected: (index) => setState(() {
-            _selectedTab = index;
-            _isSearching = false;
-          }),
-          selectedIconColor: Color.fromRGBO(255, 90, 130, 1),
-          unselectedIconColor: Colors.white.withValues(alpha: 0.9),
-          labelFontSize: 10,
-          iconSize: 28,
-          iconLabelSpacing: 0,
-          // Neutral frosted-glass pill. AnimatedGlassIndicator now renders
-          // this value directly without any hidden multiplier.
-          indicatorColor: Colors.white.withValues(alpha: 0.16),
-          quality: GlassQuality.premium,
-          glassSettings: LiquidGlassSettings(
-            glassColor: const Color(0xAA1C1C1E),
-            thickness: 30,
-            blur: 2,
-            chromaticAberration: .01,
-            lightAngle: GlassDefaults.lightAngle,
-            lightIntensity: .5,
-            ambientStrength: 0,
-            refractiveIndex: 1.2,
-            saturation: 1.2,
-            specularSharpness: GlassSpecularSharpness.medium,
-          ),
-          // ── Search bar config ───────────────────────────────────────────────
-          searchConfig: GlassSearchBarConfig(
-            hintText: 'Apple News',
-            collapsedTabWidth: 64,
-            onSearchToggle: (active) => setState(() => _isSearching = active),
-            searchIconColor: Colors.white.withValues(alpha: 0.9),
-            textInputAction: TextInputAction.search,
-            // Dismiss the keyboard when the user taps outside the search pill.
-            onTapOutside: (_) => FocusScope.of(context).unfocus(),
-            collapsedLogoBuilder: (context) {
-              // Mirror the active tab icon so the collapsed pill feels
-              // contextual — house on Today, headphones on Audio, etc.
-              const tabIcons = [
-                CupertinoIcons.house_fill,
-                CupertinoIcons.news_solid,
-                CupertinoIcons.headphones,
-                CupertinoIcons.rectangle_fill_on_rectangle_angled_fill,
-              ];
-              return Center(
-                child: Icon(
-                  tabIcons[_selectedTab],
-                  color: Colors.white,
-                  size: 26,
-                ),
-              );
-            },
-          ),
-          tabs: [
-            GlassBottomBarTab(
-              label: 'Today',
-              icon: const Icon(CupertinoIcons.house),
-              activeIcon: const Icon(CupertinoIcons.house_fill),
-            ),
-            GlassBottomBarTab(
-              label: 'News+',
-              icon: const Icon(CupertinoIcons.news_solid),
-              activeIcon: const Icon(CupertinoIcons.news_solid),
-            ),
-            GlassBottomBarTab(
-              label: 'Audio',
-              icon: const Icon(CupertinoIcons.headphones),
-            ),
-            GlassBottomBarTab(
-              label: 'Following',
-              icon: const Icon(
-                  CupertinoIcons.rectangle_fill_on_rectangle_angled_fill),
+      body: GestureDetector(
+        onTap: () {
+          if (_searchFieldFocused) {
+            FocusScope.of(context).unfocus();
+          }
+        },
+        child: Stack(
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (child, animation) =>
+                  FadeTransition(opacity: animation, child: child),
+              // Three body states:
+              //   1. Not searching        → Today articles view
+              //   2. Searching + unfocused → topic browse (searchable content)
+              //   3. Searching + focused   → "No Recent Searches" empty state
+              child: !_isSearching
+                  ? _buildTodayView(key: const ValueKey('today'))
+                  : _searchFieldFocused
+                      ? _buildNoRecentSearches(key: const ValueKey('no-recent'))
+                      : _buildSearchBrowseView(
+                          key: const ValueKey('search-browse')),
             ),
           ],
         ),
+      ),
+      // ── GlassSearchableBottomBar: tabs + morphing search in one layer ─────────────
+      // The bar is ALWAYS fixed at the bottom of the screen.
+      // The pills inside handle keyboard avoidance themselves via
+      // Transform.translate(Offset(0, -viewInsets.bottom)): the search pill
+      // and dismiss × float above the keyboard while the left tab button
+      // stays pinned at its natural bottom position — matching iOS 26
+      // Apple News behaviour exactly.
+      bottomNavigationBar: GlassSearchableBottomBar(
+        selectedIndex: _selectedTab,
+        isSearchActive: _isSearching,
+        searchBarHeight: 50,
+        onTabSelected: (index) => setState(() {
+          _selectedTab = index;
+          _isSearching = false;
+        }),
+        selectedIconColor: Color.fromRGBO(255, 90, 130, 1),
+        unselectedIconColor: Colors.white.withValues(alpha: 0.9),
+        labelFontSize: 10,
+        iconSize: 28,
+        iconLabelSpacing: 0,
+        // Neutral frosted-glass pill. AnimatedGlassIndicator now renders
+        // this value directly without any hidden multiplier.
+        indicatorColor: Colors.white.withValues(alpha: 0.20),
+        quality: GlassQuality.premium,
+        glassSettings: LiquidGlassSettings(
+          glassColor: const Color(0xAA1C1C1E),
+          thickness: 30,
+          blur: 2,
+          chromaticAberration: .01,
+          lightAngle: GlassDefaults.lightAngle,
+          lightIntensity: .5,
+          ambientStrength: 0,
+          refractiveIndex: 1.2,
+          saturation: 1.2,
+          specularSharpness: GlassSpecularSharpness.medium,
+        ),
+        // ── Search bar config ───────────────────────────────────────────────
+        searchConfig: GlassSearchBarConfig(
+          hintText: 'Apple News',
+          collapsedTabWidth: 64,
+          onSearchToggle: (active) => setState(() {
+            _isSearching = active;
+            // Reset focus state when search closes so next open is fresh.
+            if (!active) _searchFieldFocused = false;
+          }),
+          onSearchFocusChanged: (focused) =>
+              setState(() => _searchFieldFocused = focused),
+          searchIconColor: Colors.white.withValues(alpha: 0.9),
+          textInputAction: TextInputAction.search,
+          autoFocusOnExpand: false,
+          showsCancelButton: true,
+          onMicTap: () {},
+          collapsedLogoBuilder: (context) {
+            // Mirror the active tab icon so the collapsed pill feels
+            // contextual — house on Today, headphones on Audio, etc.
+            const tabIcons = [
+              CupertinoIcons.house_fill,
+              CupertinoIcons.news_solid,
+              CupertinoIcons.headphones,
+              CupertinoIcons.rectangle_fill_on_rectangle_angled_fill,
+            ];
+            return Center(
+              child: Icon(
+                tabIcons[_selectedTab],
+                color: Colors.white,
+                size: 26,
+              ),
+            );
+          },
+        ),
+        tabs: [
+          GlassBottomBarTab(
+            label: 'Today',
+            icon: const Icon(CupertinoIcons.house),
+            activeIcon: const Icon(CupertinoIcons.house_fill),
+          ),
+          GlassBottomBarTab(
+            label: 'News+',
+            icon: const Icon(CupertinoIcons.news_solid),
+            activeIcon: const Icon(CupertinoIcons.news_solid),
+          ),
+          GlassBottomBarTab(
+            label: 'Audio',
+            icon: const Icon(CupertinoIcons.headphones),
+          ),
+          GlassBottomBarTab(
+            label: 'Following',
+            icon: const Icon(
+                CupertinoIcons.rectangle_fill_on_rectangle_angled_fill),
+          ),
+        ],
       ),
     );
   }
@@ -634,7 +655,8 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
   // SEARCH VIEW
   // ─────────────────────────────────────────────────────────────────────────
 
-  Widget _buildSearchView({Key? key}) {
+  // State 2 — searching but keyboard not open: show topic browse grid
+  Widget _buildSearchBrowseView({Key? key}) {
     return CustomScrollView(
       key: key,
       slivers: [
@@ -646,6 +668,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Apple News logo row — matches reference screenshot
                 const Row(
                   children: [
                     Icon(Icons.apple, color: Colors.white, size: 22),
@@ -663,7 +686,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
                 const Text(
                   'Search',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: Color(0xFF8E8E93), // iOS secondary-label grey
                     fontSize: 34,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.5,
@@ -690,6 +713,56 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  // State 3 — searching + keyboard visible: show "No Recent Searches"
+  Widget _buildNoRecentSearches({Key? key}) {
+    // viewInsetsOf gives the keyboard height each frame (no setState needed).
+    // Adding it as bottom padding to the outer container makes Center()
+    // center its content in the remaining space ABOVE the keyboard — exactly
+    // what Apple News does. The extra 50 leaves room for the floating bar.
+    final keyboardH = MediaQuery.viewInsetsOf(context).bottom;
+    return Container(
+      key: key,
+      color: Colors.black,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: EdgeInsets.only(bottom: keyboardH + 50),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  CupertinoIcons.search,
+                  size: 64,
+                  color: Colors.white.withValues(alpha: 0.35),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'No Recent Searches',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Your recent searches will appear here.',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.45),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -723,6 +796,7 @@ class _CategoryChip extends StatelessWidget {
   }
 }
 
+// Full image-backed topic cards — matches iOS 26 Apple News search grid.
 class _TopicCard extends StatelessWidget {
   const _TopicCard({required this.topic});
 
@@ -736,8 +810,7 @@ class _TopicCard extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           ColoredBox(color: topic.color),
-          // Image at partial opacity so the category color dominates —
-          // matches Apple News where the card IS the color, not the photo.
+          // Image at partial opacity so the category colour dominates.
           Opacity(
             opacity: 0.45,
             child: Image.asset(

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/cupertino.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
@@ -219,75 +217,54 @@ class GlassSearchBar extends StatefulWidget {
   State<GlassSearchBar> createState() => _GlassSearchBarState();
 }
 
-class _GlassSearchBarState extends State<GlassSearchBar>
-    with SingleTickerProviderStateMixin {
+class _GlassSearchBarState extends State<GlassSearchBar> {
   // Cache default colors to avoid allocations
-  static const _defaultSearchIconColor =
-      Color(0x99FFFFFF); // white.withValues(alpha: 0.6)
-  static const _defaultClearIconColor =
-      Color(0x99FFFFFF); // white.withValues(alpha: 0.6)
-  static const _defaultCancelButtonColor =
-      Color(0xE6FFFFFF); // white.withValues(alpha: 0.9)
+  static const _defaultSearchIconColor = Color(0x99FFFFFF); // white 60%
+  static const _defaultClearIconColor = Color(0x99FFFFFF); // white 60%
+  static const _defaultCancelButtonColor = Color(0xE6FFFFFF); // white 90%
 
   late TextEditingController _controller;
-  late AnimationController _clearButtonController;
   late FocusNode _focusNode;
+  bool _ownsController = false;
+  bool _hasText = false;
   bool _showCancelButton = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = widget.controller ?? TextEditingController();
+    if (widget.controller != null) {
+      _controller = widget.controller!;
+    } else {
+      _controller = TextEditingController();
+      _ownsController = true;
+    }
     _focusNode = FocusNode();
 
-    // Animation for clear button
-    _clearButtonController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-    );
-
-    // Listen to text changes
+    _hasText = _controller.text.isNotEmpty;
     _controller.addListener(_onTextChanged);
-
-    // Listen to focus changes for cancel button
     _focusNode.addListener(_onFocusChanged);
-
-    // Initialize clear button animation state based on initial text
-    if (_controller.text.isNotEmpty) {
-      _clearButtonController.value = 1.0;
-    }
   }
 
   @override
   void dispose() {
-    if (widget.controller == null) {
-      _controller.dispose();
-    }
-    _clearButtonController.dispose();
+    _controller.removeListener(_onTextChanged);
+    _focusNode.removeListener(_onFocusChanged);
     _focusNode.dispose();
+    if (_ownsController) _controller.dispose();
     super.dispose();
   }
 
   void _onTextChanged() {
-    // Animate clear button based on text presence
-    if (_controller.text.isNotEmpty) {
-      if (_clearButtonController.status != AnimationStatus.completed &&
-          _clearButtonController.status != AnimationStatus.forward) {
-        unawaited(_clearButtonController.forward());
-      }
-    } else {
-      if (_clearButtonController.status != AnimationStatus.dismissed &&
-          _clearButtonController.status != AnimationStatus.reverse) {
-        unawaited(_clearButtonController.reverse());
-      }
-    }
+    final hasText = _controller.text.isNotEmpty;
+    if (hasText != _hasText) setState(() => _hasText = hasText);
   }
 
   void _onFocusChanged() {
     if (widget.showsCancelButton) {
-      setState(() {
-        _showCancelButton = _focusNode.hasFocus;
-      });
+      final hasFocus = _focusNode.hasFocus;
+      if (hasFocus != _showCancelButton) {
+        setState(() => _showCancelButton = hasFocus);
+      }
     }
   }
 
@@ -325,30 +302,27 @@ class _GlassSearchBarState extends State<GlassSearchBar>
                 size: 20,
                 color: searchIconColor,
               ),
+              // AnimatedSwitcher cross-fades and scales the × in/out as the
+              // user types — identical mechanism to _SearchPill for consistency.
+              // No AnimationController needed; the bool setState drives it.
               suffixIcon: RepaintBoundary(
-                child: AnimatedBuilder(
-                  animation: _clearButtonController,
-                  builder: (context, child) {
-                    final animation = CurvedAnimation(
-                      parent: _clearButtonController,
-                      curve: Curves.easeInOut,
-                    );
-
-                    return Opacity(
-                      opacity: animation.value,
-                      child: Transform.scale(
-                        scale: animation.value,
-                        child: Icon(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  transitionBuilder: (child, animation) => FadeTransition(
+                    opacity: animation,
+                    child: ScaleTransition(scale: animation, child: child),
+                  ),
+                  child: _hasText
+                      ? Icon(
                           CupertinoIcons.clear_circled_solid,
+                          key: const ValueKey('clear'),
                           size: 18,
                           color: clearIconColor,
-                        ),
-                      ),
-                    );
-                  },
+                        )
+                      : const SizedBox.shrink(key: ValueKey('empty')),
                 ),
               ),
-              onSuffixTap: _handleClear,
+              onSuffixTap: _hasText ? _handleClear : null,
               onChanged: widget.onChanged,
               onSubmitted: widget.onSubmitted,
               keyboardType: TextInputType.text,
@@ -360,7 +334,7 @@ class _GlassSearchBarState extends State<GlassSearchBar>
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               iconSpacing: 8,
               shape: LiquidRoundedSuperellipse(
-                borderRadius: widget.height / 2, // Pill shape
+                borderRadius: widget.height / 2,
               ),
               settings: widget.settings,
               useOwnLayer: widget.useOwnLayer,
@@ -369,26 +343,33 @@ class _GlassSearchBarState extends State<GlassSearchBar>
           ),
         ),
 
-        // Cancel button
+        // Cancel button — text style (iOS Spotlight / Messages pattern).
+        // Note: GlassSearchableBottomBar uses a glass ×‑icon button instead;
+        // the two patterns are intentionally different — each matches the iOS
+        // convention for its context (standalone screen vs. bottom bar).
         AnimatedSize(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          child: _showCancelButton
-              ? Padding(
-                  padding: const EdgeInsets.only(left: 12),
-                  child: GestureDetector(
-                    onTap: _handleCancel,
-                    child: Text(
-                      widget.cancelButtonText,
-                      style: TextStyle(
-                        color: cancelButtonColor,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w400,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOutCubic,
+          child: AnimatedOpacity(
+            opacity: _showCancelButton ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 180),
+            child: _showCancelButton
+                ? Padding(
+                    padding: const EdgeInsets.only(left: 12),
+                    child: GestureDetector(
+                      onTap: _handleCancel,
+                      child: Text(
+                        widget.cancelButtonText,
+                        style: TextStyle(
+                          color: cancelButtonColor,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w400,
+                        ),
                       ),
                     ),
-                  ),
-                )
-              : const SizedBox.shrink(),
+                  )
+                : const SizedBox.shrink(),
+          ),
         ),
       ],
     );
