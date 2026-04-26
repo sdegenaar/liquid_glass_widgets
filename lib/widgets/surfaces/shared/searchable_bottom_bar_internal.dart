@@ -114,6 +114,7 @@ class SearchableTabIndicator extends StatefulWidget {
     this.interactionGlowRadius = 1.5,
     required this.enableBackgroundAnimation,
     required this.backgroundPressScale,
+    this.indicatorBehindIcons = false,
     super.key,
   });
 
@@ -140,6 +141,10 @@ class SearchableTabIndicator extends StatefulWidget {
   final double interactionGlowRadius;
   final bool enableBackgroundAnimation;
   final double backgroundPressScale;
+
+  /// See [TabIndicator.indicatorBehindIcons]. Defaults to `false` so existing
+  /// integrations are unaffected.
+  final bool indicatorBehindIcons;
 
   @override
   State<SearchableTabIndicator> createState() => SearchableTabIndicatorState();
@@ -334,6 +339,29 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
     required double glassRadius,
     required Color indicatorColor,
   }) {
+    final iconsLayer = Positioned.fill(
+      child: Container(
+        padding: widget.tabPadding,
+        child: widget.childUnselected,
+      ),
+    );
+    final indicatorLayer = (widget.visible && thickness > 0.05)
+        ? AnimatedGlassIndicator(
+            velocity: velocity,
+            itemCount: widget.tabCount,
+            alignment: alignment,
+            thickness: thickness,
+            quality: widget.quality,
+            indicatorColor: indicatorColor,
+            isBackgroundIndicator: false,
+            borderRadius: thickness < 1 ? backgroundRadius : glassRadius,
+            padding: const EdgeInsets.all(4),
+            expansion: 14,
+            glassSettings: widget.indicatorSettings,
+            backgroundKey: widget.backgroundKey,
+          )
+        : null;
+
     return SizedBox(
         height: widget.barHeight,
         child: _wrapWithGlow(
@@ -351,28 +379,16 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                 ),
               ),
 
-              // Unselected icons above background
-              Positioned.fill(
-                child: Container(
-                  padding: widget.tabPadding,
-                  child: widget.childUnselected,
-                ),
-              ),
-              if (widget.visible && thickness > 0.05)
-                AnimatedGlassIndicator(
-                  velocity: velocity,
-                  itemCount: widget.tabCount,
-                  alignment: alignment,
-                  thickness: thickness,
-                  quality: widget.quality,
-                  indicatorColor: indicatorColor,
-                  isBackgroundIndicator: false,
-                  borderRadius: thickness < 1 ? backgroundRadius : glassRadius,
-                  padding: const EdgeInsets.all(4),
-                  expansion: 14,
-                  glassSettings: widget.indicatorSettings,
-                  backgroundKey: widget.backgroundKey,
-                ),
+              // Icons + indicator. Order swapped when [indicatorBehindIcons]
+              // is true so icons paint over the indicator and retain full
+              // saturation in their selected colour.
+              if (widget.indicatorBehindIcons) ...[
+                if (indicatorLayer != null) indicatorLayer,
+                iconsLayer,
+              ] else ...[
+                iconsLayer,
+                if (indicatorLayer != null) indicatorLayer,
+              ],
             ],
           ),
         ));
@@ -388,6 +404,61 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
     required Color indicatorColor,
   }) {
     final effRadius = thickness < 1 ? backgroundRadius : glassRadius;
+    final iconsLayer = Positioned.fill(
+      child: RepaintBoundary(
+        child: Stack(
+          children: [
+            ClipPath(
+              clipper: JellyClipper(
+                itemCount: widget.tabCount,
+                alignment: alignment,
+                thickness: thickness,
+                expansion: 14,
+                transform: jellyTransform,
+                borderRadius: effRadius,
+                inverse: true,
+              ),
+              child: Container(
+                padding: widget.tabPadding,
+                height: widget.barHeight,
+                child: widget.childUnselected,
+              ),
+            ),
+            ClipPath(
+              clipper: JellyClipper(
+                itemCount: widget.tabCount,
+                alignment: alignment,
+                thickness: thickness,
+                expansion: 14,
+                transform: jellyTransform,
+                borderRadius: effRadius,
+              ),
+              child: Container(
+                padding: widget.tabPadding,
+                height: widget.barHeight,
+                child: widget.selectedTabBuilder(
+                    context, thickness, alignment),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    final indicatorLayer = AnimatedGlassIndicator(
+      velocity: velocity,
+      itemCount: widget.tabCount,
+      alignment: alignment,
+      thickness: thickness,
+      quality: widget.quality,
+      indicatorColor: indicatorColor,
+      isBackgroundIndicator: false,
+      borderRadius: effRadius,
+      padding: const EdgeInsets.all(4),
+      expansion: 14,
+      glassSettings: widget.indicatorSettings,
+      backgroundKey: widget.backgroundKey,
+    );
+
     return SizedBox(
         height: widget.barHeight,
         child: _wrapWithGlow(
@@ -405,61 +476,16 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                 ),
               ),
 
-              // 2. Icon Content Layer (Unselected + Selected combined for refraction)
-              Positioned.fill(
-                child: RepaintBoundary(
-                  child: Stack(
-                    children: [
-                      ClipPath(
-                        clipper: JellyClipper(
-                          itemCount: widget.tabCount,
-                          alignment: alignment,
-                          thickness: thickness,
-                          expansion: 14,
-                          transform: jellyTransform,
-                          borderRadius: effRadius,
-                          inverse: true,
-                        ),
-                        child: Container(
-                          padding: widget.tabPadding,
-                          height: widget.barHeight,
-                          child: widget.childUnselected,
-                        ),
-                      ),
-                      ClipPath(
-                        clipper: JellyClipper(
-                          itemCount: widget.tabCount,
-                          alignment: alignment,
-                          thickness: thickness,
-                          expansion: 14,
-                          transform: jellyTransform,
-                          borderRadius: effRadius,
-                        ),
-                        child: Container(
-                          padding: widget.tabPadding,
-                          height: widget.barHeight,
-                          child: widget.selectedTabBuilder(
-                              context, thickness, alignment),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              AnimatedGlassIndicator(
-                velocity: velocity,
-                itemCount: widget.tabCount,
-                alignment: alignment,
-                thickness: thickness,
-                quality: widget.quality,
-                indicatorColor: indicatorColor,
-                isBackgroundIndicator: false,
-                borderRadius: effRadius,
-                padding: const EdgeInsets.all(4),
-                expansion: 14,
-                glassSettings: widget.indicatorSettings,
-                backgroundKey: widget.backgroundKey,
-              ),
+              // Icons + indicator. Order swapped when [indicatorBehindIcons]
+              // is true so icons paint over the indicator and retain full
+              // saturation in their selected colour.
+              if (widget.indicatorBehindIcons) ...[
+                indicatorLayer,
+                iconsLayer,
+              ] else ...[
+                iconsLayer,
+                indicatorLayer,
+              ],
             ],
           ),
         ));

@@ -93,6 +93,7 @@ class GlassSearchableBottomBar extends StatefulWidget {
     // ── Interaction ──────────────────────────────────────────────────────────
     this.interactionBehavior = GlassInteractionBehavior.full,
     this.pressScale = 1.04,
+    this.indicatorBehindIcons = false,
   })  : assert(tabs.length > 0,
             'GlassSearchableBottomBar requires at least one tab'),
         assert(
@@ -281,6 +282,14 @@ class GlassSearchableBottomBar extends StatefulWidget {
   ///
   /// Defaults to 1.04 (4% growth — matches iOS 26 Apple News pill).
   final double pressScale;
+
+  /// Whether the moving glass indicator is drawn *behind* the tab icons
+  /// instead of *on top* of them. Mirrors [GlassBottomBar.indicatorBehindIcons].
+  ///
+  /// Defaults to `false`, preserving the "magic lens" effect. Set to `true`
+  /// to keep the active icon's colour at full saturation (the iOS-native
+  /// pattern), at the cost of the lens refraction.
+  final bool indicatorBehindIcons;
 
   // ── Advanced ─────────────────────────────────────────────────────────────────
   /// Magnification factor for the selected indicator lens effect. Defaults to 1.0.
@@ -655,6 +664,7 @@ class _GlassSearchableBottomBarState extends State<GlassSearchableBottomBar>
                           enableBackgroundAnimation:
                               widget.interactionBehavior.hasScale,
                           backgroundPressScale: widget.pressScale,
+                          indicatorBehindIcons: widget.indicatorBehindIcons,
                           collapsedLogoBuilder:
                               widget.searchConfig.collapsedLogoBuilder ??
                                   (context) {

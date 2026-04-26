@@ -195,6 +195,7 @@ class GlassBottomBar extends StatefulWidget {
     this.interactionGlowRadius = 1.5,
     this.interactionBehavior = GlassInteractionBehavior.full,
     this.pressScale = 1.04,
+    this.indicatorBehindIcons = false,
   })  : assert(tabs.length > 0, 'GlassBottomBar requires at least one tab'),
         assert(
           selectedIndex >= 0 && selectedIndex < tabs.length,
@@ -269,6 +270,16 @@ class GlassBottomBar extends StatefulWidget {
   ///
   /// Defaults to 1.04 (4% growth — matches iOS 26 Apple News pill).
   final double pressScale;
+
+  /// Whether the moving glass indicator is drawn *behind* the tab icons
+  /// instead of *on top* of them.
+  ///
+  /// Defaults to `false`, preserving the original "magic lens" behaviour
+  /// where the translucent indicator refracts the icon underneath. The lens
+  /// effect can wash out saturated icon colours, however — set this to
+  /// `true` for the iOS-native pattern (icons paint over a background pill)
+  /// when icon colour fidelity matters more than the refraction effect.
+  final bool indicatorBehindIcons;
 
   // ===========================================================================
   // Tab Configuration
@@ -533,6 +544,7 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
                 interactionScale: widget.interactionBehavior.hasScale
                     ? widget.pressScale
                     : 1.0,
+                indicatorBehindIcons: widget.indicatorBehindIcons,
                 childUnselected: Row(
                   children: [
                     for (var i = 0; i < widget.tabs.length; i++)

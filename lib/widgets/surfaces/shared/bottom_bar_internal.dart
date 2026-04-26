@@ -287,6 +287,7 @@ class TabIndicator extends StatefulWidget {
     this.interactionGlowColor,
     this.interactionGlowRadius = 1.5,
     this.interactionScale = 1.0,
+    this.indicatorBehindIcons = false,
     super.key,
   });
 
@@ -314,6 +315,17 @@ class TabIndicator extends StatefulWidget {
   /// Pass `1.0` to disable scaling. Resolved by the parent widget from
   /// [GlassInteractionBehavior] before being forwarded here.
   final double interactionScale;
+
+  /// Whether the moving glass indicator is drawn *behind* the tab icons
+  /// instead of *on top* of them.
+  ///
+  /// Defaults to `false`, preserving the original "magic lens" behaviour
+  /// where the indicator's translucent glass refracts the icon underneath.
+  ///
+  /// Set to `true` for the iOS-native pattern where the indicator is a
+  /// background pill and icons paint on top — keeps the active icon's
+  /// colour at full saturation, at the cost of the lens-refraction effect.
+  final bool indicatorBehindIcons;
 
   @override
   State<TabIndicator> createState() => TabIndicatorState();
@@ -508,6 +520,29 @@ class TabIndicatorState extends State<TabIndicator>
     required double glassRadius,
     required Color indicatorColor,
   }) {
+    final iconsLayer = Positioned.fill(
+      child: Container(
+        padding: widget.tabPadding,
+        child: widget.childUnselected,
+      ),
+    );
+    final indicatorLayer = (widget.visible && thickness > 0.05)
+        ? AnimatedGlassIndicator(
+            velocity: velocity,
+            itemCount: widget.tabCount,
+            alignment: alignment,
+            thickness: thickness,
+            quality: widget.quality,
+            indicatorColor: indicatorColor,
+            isBackgroundIndicator: false,
+            borderRadius: thickness < 1 ? backgroundRadius : glassRadius,
+            padding: const EdgeInsets.all(4),
+            expansion: 14,
+            glassSettings: widget.indicatorSettings,
+            backgroundKey: widget.backgroundKey,
+          )
+        : null;
+
     return SizedBox(
       height: widget.barHeight,
       child: _wrapWithGlow(
@@ -525,30 +560,16 @@ class TabIndicatorState extends State<TabIndicator>
               ),
             ),
 
-            // Unselected icons above background
-            Positioned.fill(
-              child: Container(
-                padding: widget.tabPadding,
-                child: widget.childUnselected,
-              ),
-            ),
-
-            // Glass indicator
-            if (widget.visible && thickness > 0.05)
-              AnimatedGlassIndicator(
-                velocity: velocity,
-                itemCount: widget.tabCount,
-                alignment: alignment,
-                thickness: thickness,
-                quality: widget.quality,
-                indicatorColor: indicatorColor,
-                isBackgroundIndicator: false,
-                borderRadius: thickness < 1 ? backgroundRadius : glassRadius,
-                padding: const EdgeInsets.all(4),
-                expansion: 14,
-                glassSettings: widget.indicatorSettings,
-                backgroundKey: widget.backgroundKey,
-              ),
+            // When indicatorBehindIcons is true, the indicator is drawn first
+            // (so icons paint over it). When false (default), icons paint
+            // first and the indicator's glass lens refracts them on top.
+            if (widget.indicatorBehindIcons) ...[
+              if (indicatorLayer != null) indicatorLayer,
+              iconsLayer,
+            ] else ...[
+              iconsLayer,
+              if (indicatorLayer != null) indicatorLayer,
+            ],
           ],
         ),
       ),
@@ -567,6 +588,65 @@ class TabIndicatorState extends State<TabIndicator>
     required double glassRadius,
     required Color indicatorColor,
   }) {
+    final iconsLayer = Positioned.fill(
+      child: RepaintBoundary(
+        child: Stack(
+          children: [
+            // Unselected (inverse clipped)
+            ClipPath(
+              clipper: JellyClipper(
+                itemCount: widget.tabCount,
+                alignment: alignment,
+                thickness: thickness,
+                expansion: 14,
+                transform: jellyTransform,
+                borderRadius:
+                    thickness < 1 ? backgroundRadius : glassRadius,
+                inverse: true,
+              ),
+              child: Container(
+                padding: widget.tabPadding,
+                height: widget.barHeight,
+                child: widget.childUnselected,
+              ),
+            ),
+            // Selected (forward clipped)
+            ClipPath(
+              clipper: JellyClipper(
+                itemCount: widget.tabCount,
+                alignment: alignment,
+                thickness: thickness,
+                expansion: 14,
+                transform: jellyTransform,
+                borderRadius:
+                    thickness < 1 ? backgroundRadius : glassRadius,
+              ),
+              child: Container(
+                padding: widget.tabPadding,
+                height: widget.barHeight,
+                child: widget.selectedTabBuilder(
+                    context, thickness, alignment),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    final indicatorLayer = AnimatedGlassIndicator(
+      velocity: velocity,
+      itemCount: widget.tabCount,
+      alignment: alignment,
+      thickness: thickness,
+      quality: widget.quality,
+      indicatorColor: indicatorColor,
+      isBackgroundIndicator: false,
+      borderRadius: thickness < 1 ? backgroundRadius : glassRadius,
+      padding: const EdgeInsets.all(4),
+      expansion: 14,
+      glassSettings: widget.indicatorSettings,
+      backgroundKey: widget.backgroundKey,
+    );
+
     return SizedBox(
       height: widget.barHeight,
       child: _wrapWithGlow(
@@ -584,69 +664,17 @@ class TabIndicatorState extends State<TabIndicator>
               ),
             ),
 
-            // 2. Icon Content Layer (Unselected + Selected combined for refraction)
-            // Put both layers into a single RepaintBoundary BEFORE the glass indicator
-            // so that the glass lens correctly refracts both layers.
-            Positioned.fill(
-              child: RepaintBoundary(
-                child: Stack(
-                  children: [
-                    // Unselected (inverse clipped)
-                    ClipPath(
-                      clipper: JellyClipper(
-                        itemCount: widget.tabCount,
-                        alignment: alignment,
-                        thickness: thickness,
-                        expansion: 14,
-                        transform: jellyTransform,
-                        borderRadius:
-                            thickness < 1 ? backgroundRadius : glassRadius,
-                        inverse: true,
-                      ),
-                      child: Container(
-                        padding: widget.tabPadding,
-                        height: widget.barHeight,
-                        child: widget.childUnselected,
-                      ),
-                    ),
-                    // Selected (forward clipped)
-                    ClipPath(
-                      clipper: JellyClipper(
-                        itemCount: widget.tabCount,
-                        alignment: alignment,
-                        thickness: thickness,
-                        expansion: 14,
-                        transform: jellyTransform,
-                        borderRadius:
-                            thickness < 1 ? backgroundRadius : glassRadius,
-                      ),
-                      child: Container(
-                        padding: widget.tabPadding,
-                        height: widget.barHeight,
-                        child: widget.selectedTabBuilder(
-                            context, thickness, alignment),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // 3. Moving Glass Indicator Layer
-            AnimatedGlassIndicator(
-              velocity: velocity,
-              itemCount: widget.tabCount,
-              alignment: alignment,
-              thickness: thickness,
-              quality: widget.quality,
-              indicatorColor: indicatorColor,
-              isBackgroundIndicator: false,
-              borderRadius: thickness < 1 ? backgroundRadius : glassRadius,
-              padding: const EdgeInsets.all(4),
-              expansion: 14,
-              glassSettings: widget.indicatorSettings,
-              backgroundKey: widget.backgroundKey,
-            ),
+            // Icons + indicator. Default ordering puts icons first and the
+            // indicator's glass lens refracts them on top. Setting
+            // [indicatorBehindIcons] to true swaps the order so the active
+            // icon retains full saturation.
+            if (widget.indicatorBehindIcons) ...[
+              indicatorLayer,
+              iconsLayer,
+            ] else ...[
+              iconsLayer,
+              indicatorLayer,
+            ],
           ],
         ),
       ),
