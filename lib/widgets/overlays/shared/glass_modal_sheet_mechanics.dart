@@ -238,7 +238,10 @@ class SheetGeometry {
       final overflow = minPos - rawPosition;
       return minPos - overflow * resistance;
     }
-    if (rawPosition > fullPos) return fullPos;
+    if (rawPosition > fullPos) {
+      final overflow = rawPosition - fullPos;
+      return fullPos + overflow * resistance;
+    }
     return rawPosition;
   }
 }
@@ -259,6 +262,13 @@ class GlassModalSheetController {
   }
 
   SheetState get currentState => _state?._currentState ?? SheetState.hidden;
+
+  /// Internal expansion value (0.0 to 1.0).
+  /// Primarily used for testing and synchronized animations.
+  double get value => _state?._currentPosition ?? 0.0;
+  set value(double newValue) {
+    _state?._jumpTo(newValue);
+  }
 }
 
 // ===========================================================================

@@ -161,6 +161,27 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     }
   }
 
+  void _jumpTo(double value) {
+    if (!mounted) return;
+    _animationController.value = value;
+    _currentPosition = value;
+
+    // Update current state based on position if needed
+    final snapshot = SheetSnapshot(
+      state: _currentState,
+      position: value,
+      screenSize: _screenSize,
+    );
+    final target = _geometry.resolveTarget(
+      snapshot,
+      snapThreshold: widget.snapThreshold,
+      velocityThreshold: widget.velocityThreshold,
+    );
+    if (target != _currentState) {
+      _currentState = target;
+    }
+  }
+
   // ════════════════════════════════════════════════════════════════════════
   // Gesture Handlers — Handle Drag & Scroll Notification
   // ════════════════════════════════════════════════════════════════════════
@@ -651,7 +672,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
         final halfPos = _geometry.positionForState(SheetState.half, mqHeight);
         final minPos = _geometry.positionForState(_geometry.minState, mqHeight);
 
-        double pos = _animationController.value.clamp(0.0, fullPos);
+        double pos = _animationController.value;
 
         // Snap to exact positions when not dragging
         if (_gestureArena.phase == GesturePhase.idle) {
