@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 
 import '../liquid_glass_setup.dart';
 import '../src/renderer/liquid_glass_renderer.dart';
@@ -246,6 +246,7 @@ class GlassThemeHelpers {
   static LiquidGlassSettings resolveSettings(
     BuildContext context, {
     LiquidGlassSettings? explicit,
+    LiquidGlassSettings fallback = const LiquidGlassSettings(),
   }) {
     // 1. Widget-level explicit setting wins unconditionally.
     if (explicit != null) return explicit;
@@ -264,7 +265,44 @@ class GlassThemeHelpers {
     //    start from the zero-alpha default, then overlay any non-null fields
     //    from the theme's brightness-appropriate variant.
     final themeOverride = GlassThemeData.of(context).settingsFor(context);
-    return themeOverride?.applyTo(const LiquidGlassSettings()) ??
-        const LiquidGlassSettings();
+    return themeOverride?.applyTo(fallback) ?? fallback;
+  }
+
+  /// Resolves an adaptive border radius based on the device's physical geometry.
+  ///
+  /// This algorithm uses [MediaQuery] safe area insets to infer the ideal
+  /// corner radius, handling Dynamic Island, Notch iPhones, and Android devices
+  /// without hardcoding specific model names.
+  static double resolveAdaptiveRadius(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final bottom = mq.viewPadding.bottom;
+    final top = mq.viewPadding.top;
+    final theme = GlassThemeData.of(context);
+    final themeRadius = theme.borderRadiusFor(context);
+
+    // 0. If user specified a global radius in the theme, respect it.
+    if (themeRadius != null) return themeRadius;
+
+    final platform = Theme.of(context).platform;
+    final height = mq.size.height;
+    final isIOS = platform == TargetPlatform.iOS;
+
+    // 1. Devices with physical home buttons or desktop (no bottom safe area)
+    if (bottom == 0) return 0.0;
+
+    if (isIOS) {
+      // 2. iPhone Pro Max / Plus with Dynamic Island (e.g. 17 Pro Max: height 956)
+      if (height >= 900 || top >= 59) return 64.0;
+
+      // 3. iPhone Pro / Base with Dynamic Island (e.g. 15 Pro: height 852)
+      if (height >= 800 || top >= 54) return 50.0;
+
+      // 4. iPhone with Notch (typically top padding between 44 and 50)
+      return 44.0;
+    } else {
+      // 4. Android devices with gesture navigation (bottom > 0)
+      // Android flags often have softer, smaller curves than Apple.
+      return 28.0;
+    }
   }
 }

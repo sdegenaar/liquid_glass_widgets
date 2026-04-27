@@ -441,6 +441,10 @@ enum RawShapeType {
         return RawShapeType.ellipse;
       case LiquidRoundedRectangle():
         return RawShapeType.roundedRectangle;
+      case LiquidVerticalRoundedRectangle():
+        return RawShapeType.roundedRectangle;
+      case LiquidVerticalRoundedSuperellipse():
+        return RawShapeType.squircle;
     }
   }
 }
@@ -466,8 +470,12 @@ class ShapeGeometry extends Equatable {
         return shape.borderRadius;
       case LiquidRoundedRectangle():
         return shape.borderRadius;
+      case LiquidVerticalRoundedRectangle():
+        return shape.topRadius;
       case LiquidOval():
         return 0;
+      case LiquidVerticalRoundedSuperellipse():
+        return shape.topRadius;
     }
   }
 

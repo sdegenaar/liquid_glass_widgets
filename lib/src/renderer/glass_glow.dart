@@ -15,41 +15,35 @@ class GlassGlow extends StatelessWidget {
     required this.child,
     this.glowColor = Colors.white24,
     this.glowRadius = 1,
+    this.pulse = 0,
     this.clipper,
     this.hitTestBehavior = HitTestBehavior.opaque,
     super.key,
   });
 
   /// The radius of the glow effect relative to the layer's shortest side.
-  ///
-  /// A value of 0.8 means the glow radius will be 80% of the shortest
-  /// dimension (width or height) of the [GlassGlowLayer].
-  ///
-  /// Defaults to 1.
   final double glowRadius;
 
   /// The color of the glow effect.
-  ///
-  /// The glow will have this colors opacity at the center, and will fade out
-  /// to fully transparent at the edge of the glow.
   final Color glowColor;
 
+  /// Global pulse intensity (0.0 to 1.0) for a full-window glow effect.
+  final double pulse;
+
   /// The hit test behavior of this gesture listener.
-  ///
-  /// Defaults to [HitTestBehavior.opaque].
   final HitTestBehavior hitTestBehavior;
 
   /// The child that will be painted above the glow effect.
   final Widget child;
 
   /// The shape to clip the glow to.
-  /// Only clips the additive glow effect, not the child widget.
   final CustomClipper<Path>? clipper;
 
   @override
   Widget build(BuildContext context) {
     return GlassGlowLayer(
       clipper: clipper,
+      pulse: pulse,
       child: Builder(
         builder: (innerContext) => Listener(
           behavior: hitTestBehavior,
@@ -67,10 +61,6 @@ class GlassGlow extends StatelessWidget {
     final layerState = GlassGlowLayer.maybeOf(context);
     if (layerState == null) return;
 
-    // GlassGlowLayer may be at a different level than GlassGlow — e.g. a
-    // toolbar GlassGlowLayer wrapping three buttons, each with their own
-    // GlassGlow. event.localPosition is relative to this GlassGlow widget,
-    // not relative to the GlassGlowLayer. We must convert via global space.
     final myBox = context.findRenderObject() as RenderBox?;
     final layerBox = layerState.context.findRenderObject() as RenderBox?;
 
@@ -79,10 +69,8 @@ class GlassGlow extends StatelessWidget {
         layerBox != null &&
         myBox.attached &&
         layerBox.attached) {
-      // local-in-GlassGlow → global screen → local-in-GlassGlowLayer
       pos = layerBox.globalToLocal(myBox.localToGlobal(event.localPosition));
     } else {
-      // Fallback for tests or during layout (same-level case is also correct).
       pos = event.localPosition;
     }
 
@@ -96,17 +84,13 @@ class GlassGlow extends StatelessWidget {
 
 /// {@template glass_glow}
 /// Represents a layer that can paint a glowing effect below its child.
-///
-/// Any child [GlassGlow] will send touch updates to this layer to
-/// update the glow effect.
-///
-/// This is similar to how an `InkWell` works with a `Material` widget.
 /// {@endtemplate}
 class GlassGlowLayer extends StatefulWidget {
   /// {@macro glass_glow}
   const GlassGlowLayer({
     required this.child,
     this.clipper,
+    this.pulse = 0,
     super.key,
   });
 
@@ -116,11 +100,13 @@ class GlassGlowLayer extends StatefulWidget {
   /// The shape to clip the glow to.
   final CustomClipper<Path>? clipper;
 
+  /// Global pulse intensity (0.0 to 1.0) for a full-window glow effect.
+  final double pulse;
+
   @override
   State<GlassGlowLayer> createState() => GlassGlowLayerState();
 
   @internal
-  // ignore: public_member_api_docs
   static GlassGlowLayerState? maybeOf(BuildContext context) {
     if (!context.mounted) return null;
     return context.findAncestorStateOfType<GlassGlowLayerState>();
@@ -150,15 +136,17 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
     initialValue: 1.2,
   );
 
+  final _baseRadius = ValueNotifier<double>(0);
+  final _baseColor = ValueNotifier<Color>(const Color.fromARGB(0, 0, 0, 0));
   bool _dragging = false;
-  double _baseRadius = 0;
-  Color _baseColor = const Color.fromARGB(0, 0, 0, 0);
 
   @override
   void dispose() {
     _offsetController.dispose();
     _alphaController.dispose();
     _radiusController.dispose();
+    _baseRadius.dispose();
+    _baseColor.dispose();
     super.dispose();
   }
 
@@ -167,16 +155,11 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
     required double radius,
     required Color color,
   }) {
-    setState(() {
-      _baseRadius = radius;
-      _baseColor = color;
-    });
+    _baseRadius.value = radius;
+    _baseColor.value = color;
 
     if (!_dragging) {
       _dragging = true;
-      // Snap to the exact touch point immediately so the glow appears right
-      // where the finger lands — not at Offset.zero drifting over. Alpha then
-      // fades in at the correct position instead of mid-spring.
       _offsetController.value = offset;
       _alphaController.spring = GlassSpring.interactive();
       _radiusController.spring = GlassSpring.interactive();
@@ -203,13 +186,16 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
         _offsetController,
         _alphaController,
         _radiusController,
+        _baseRadius,
+        _baseColor,
       ]),
       builder: (context, child) {
         return _RenderGlassGlowLayerWidget(
           clipper: widget.clipper,
-          glowRadius: _baseRadius * _radiusController.value,
-          glowColor: _baseColor.withValues(
-            alpha: _baseColor.a * _alphaController.value,
+          pulse: widget.pulse,
+          glowRadius: _baseRadius.value * _radiusController.value,
+          glowColor: _baseColor.value.withValues(
+            alpha: _baseColor.value.a * _alphaController.value,
           ),
           glowOffset: _offsetController.value,
           child: child,
@@ -223,6 +209,7 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
 class _RenderGlassGlowLayerWidget extends SingleChildRenderObjectWidget {
   const _RenderGlassGlowLayerWidget({
     required this.clipper,
+    required this.pulse,
     required this.glowRadius,
     required this.glowColor,
     required this.glowOffset,
@@ -230,6 +217,7 @@ class _RenderGlassGlowLayerWidget extends SingleChildRenderObjectWidget {
   });
 
   final CustomClipper<Path>? clipper;
+  final double pulse;
   final double glowRadius;
   final Color glowColor;
   final Offset glowOffset;
@@ -238,6 +226,7 @@ class _RenderGlassGlowLayerWidget extends SingleChildRenderObjectWidget {
   RenderObject createRenderObject(BuildContext context) {
     return _RenderGlassGlowLayer(
       clipper: clipper,
+      pulse: pulse,
       glowRadius: glowRadius,
       glowColor: glowColor,
       glowOffset: glowOffset,
@@ -251,6 +240,7 @@ class _RenderGlassGlowLayerWidget extends SingleChildRenderObjectWidget {
   ) {
     renderObject
       ..clipper = clipper
+      ..pulse = pulse
       ..glowRadius = glowRadius
       ..glowColor = glowColor
       ..glowOffset = glowOffset;
@@ -262,10 +252,12 @@ class _RenderGlassGlowLayer extends RenderProxyBox {
     required double glowRadius,
     required Color glowColor,
     required Offset glowOffset,
+    required double pulse,
     CustomClipper<Path>? clipper,
   })  : _glowRadius = glowRadius,
         _glowColor = glowColor,
         _glowOffset = glowOffset,
+        _pulse = pulse,
         _clipper = clipper;
 
   CustomClipper<Path>? _clipper;
@@ -273,6 +265,14 @@ class _RenderGlassGlowLayer extends RenderProxyBox {
   set clipper(CustomClipper<Path>? value) {
     if (_clipper == value) return;
     _clipper = value;
+    markNeedsPaint();
+  }
+
+  double _pulse;
+  double get pulse => _pulse;
+  set pulse(double value) {
+    if (_pulse == value) return;
+    _pulse = value;
     markNeedsPaint();
   }
 
@@ -302,37 +302,47 @@ class _RenderGlassGlowLayer extends RenderProxyBox {
 
   @override
   void paint(PaintingContext context, Offset offset) {
-    if (_glowColor.a == 0 || _glowRadius <= 0) {
-      super.paint(context, offset);
-      return;
-    }
-
-    final glowPosition = offset + _glowOffset;
-    // Use the shortest side so that wide pills don't generate massive glow
-    // spilling vertically off the surface.
-    final radius = _glowRadius * math.min(size.width, size.height);
-
-    // RadialGradient.createShader() bakes the center position into the shader
-    // via the Rect passed to it — caching across position changes is incorrect.
-    // Per-frame creation is cheap for a simple radial gradient (uniform-only).
-    final paint = Paint()
-      ..shader = RadialGradient(
-        colors: [_glowColor, _glowColor.withValues(alpha: 0)],
-        stops: const [0.0, 1.0],
-      ).createShader(Rect.fromCircle(center: glowPosition, radius: radius))
-      ..blendMode = BlendMode.plus;
-
-    // 1. Paint the children (which includes AdaptiveGlass taking its backdrop snapshot)
+    // 1. Paint the children (glass)
     super.paint(context, offset);
 
-    // 2. Additive light over geometry boundary only
-    if (_clipper != null) {
-      context.canvas.save();
-      context.canvas.clipPath(_clipper!.getClip(size).shift(offset));
-      context.canvas.drawCircle(glowPosition, radius, paint);
-      context.canvas.restore();
-    } else {
-      context.canvas.drawCircle(glowPosition, radius, paint);
+    final canvas = context.canvas;
+
+    // 2. Global Specular Pulse (Full window highlight)
+    if (_pulse > 0) {
+      final pulsePaint = Paint()
+        ..color = Colors.white.withValues(alpha: 0.08 * _pulse)
+        ..blendMode = BlendMode.plus;
+
+      if (_clipper != null) {
+        canvas.save();
+        canvas.clipPath(_clipper!.getClip(size).shift(offset));
+        canvas.drawRect(offset & size, pulsePaint);
+        canvas.restore();
+      } else {
+        canvas.drawRect(offset & size, pulsePaint);
+      }
+    }
+
+    // 3. Local Interactive Glow (Finger glare)
+    if (_glowColor.a > 0 && _glowRadius > 0) {
+      final glowPosition = offset + _glowOffset;
+      final radius = _glowRadius * math.min(size.width, size.height);
+
+      final paint = Paint()
+        ..shader = RadialGradient(
+          colors: [_glowColor, _glowColor.withValues(alpha: 0)],
+          stops: const [0.0, 1.0],
+        ).createShader(Rect.fromCircle(center: glowPosition, radius: radius))
+        ..blendMode = BlendMode.plus;
+
+      if (_clipper != null) {
+        canvas.save();
+        canvas.clipPath(_clipper!.getClip(size).shift(offset));
+        canvas.drawCircle(glowPosition, radius, paint);
+        canvas.restore();
+      } else {
+        canvas.drawCircle(glowPosition, radius, paint);
+      }
     }
   }
 }

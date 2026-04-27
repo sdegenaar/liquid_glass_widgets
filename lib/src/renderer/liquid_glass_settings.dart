@@ -167,6 +167,40 @@ class LiquidGlassSettings with EquatableMixin {
   double get effectiveRefractiveIndex =>
       1.0 + (refractiveIndex - 1.0) * visibility;
 
+  /// Linearly interpolates between two [LiquidGlassSettings].
+  static LiquidGlassSettings lerp(
+    LiquidGlassSettings? a,
+    LiquidGlassSettings? b,
+    double t,
+  ) {
+    if (a == null && b == null) return const LiquidGlassSettings();
+    if (a == null) return b!;
+    if (b == null) return a;
+
+    return LiquidGlassSettings(
+      visibility: lerpDouble(a.visibility, b.visibility, t)!,
+      glassColor: Color.lerp(a.glassColor, b.glassColor, t)!,
+      thickness: lerpDouble(a.thickness, b.thickness, t)!,
+      blur: lerpDouble(a.blur, b.blur, t)!,
+      chromaticAberration:
+          lerpDouble(a.chromaticAberration, b.chromaticAberration, t)!,
+      lightAngle: lerpDouble(a.lightAngle, b.lightAngle, t)!,
+      lightIntensity: lerpDouble(a.lightIntensity, b.lightIntensity, t)!,
+      ambientStrength: lerpDouble(a.ambientStrength, b.ambientStrength, t)!,
+      refractiveIndex: lerpDouble(a.refractiveIndex, b.refractiveIndex, t)!,
+      saturation: lerpDouble(a.saturation, b.saturation, t)!,
+      specularSharpness: t < 0.5 ? a.specularSharpness : b.specularSharpness,
+    );
+  }
+
+  /// Helper for linear interpolation of doubles.
+  static double? lerpDouble(num? a, num? b, double t) {
+    if (a == null && b == null) return null;
+    a ??= 0.0;
+    b ??= 0.0;
+    return a + (b - a) * t;
+  }
+
   /// Creates a new [LiquidGlassSettings] with the given settings.
   LiquidGlassSettings copyWith({
     double? visibility,

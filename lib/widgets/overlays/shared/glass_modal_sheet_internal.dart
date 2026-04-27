@@ -1,0 +1,719 @@
+part of '../glass_modal_sheet.dart';
+
+class _SheetLayout extends StatelessWidget {
+  final double interactionScale;
+  final bool enableInteractionGlow;
+  final Color? glowColor;
+  final double glowRadius;
+  final double stretch;
+  final double interactionStretch;
+  final double resistance;
+  final double hPad;
+  final double effectiveBottom;
+  final double effectiveHeight;
+  final double topRadius;
+  final double bottomRadius;
+  final double colorOpacity;
+  final double glassOpacity;
+  final Color effectiveExpandedColor;
+  final LiquidGlassSettings fadedSettings;
+  final GlassQuality effectiveQuality;
+  final Animation<double> saturationAnimation;
+  final double expandProgress;
+  final PointerDownEventListener onPointerDown;
+  final PointerMoveEventListener onPointerMove;
+  final PointerUpEventListener onPointerUp;
+  final PointerCancelEventListener onPointerCancel;
+  final ScrollController scrollController;
+  final ValueNotifier<SheetState> currentStateNotifier;
+  final double expandProgressValue;
+  final Widget child;
+  final bool showDragIndicator;
+  final Color? dragIndicatorColor;
+  final EdgeInsetsGeometry? padding;
+  final bool maintainContentGlass;
+  final LiquidGlassSettings? fullStateContentSettings;
+  final bool enableTopFade;
+  final double topFadeHeight;
+  final bool forceSpecularRim;
+  final bool enableSaturationGlow;
+  final VoidCallback onFocusGained;
+  final bool suppressInteractionOnChildren;
+
+  const _SheetLayout({
+    required this.interactionScale,
+    required this.enableInteractionGlow,
+    this.glowColor,
+    required this.glowRadius,
+    required this.stretch,
+    required this.interactionStretch,
+    required this.resistance,
+    required this.hPad,
+    required this.effectiveBottom,
+    required this.effectiveHeight,
+    required this.topRadius,
+    required this.bottomRadius,
+    required this.colorOpacity,
+    required this.glassOpacity,
+    required this.effectiveExpandedColor,
+    required this.fadedSettings,
+    required this.effectiveQuality,
+    required this.saturationAnimation,
+    required this.expandProgress,
+    required this.onPointerDown,
+    required this.onPointerMove,
+    required this.onPointerUp,
+    required this.onPointerCancel,
+    required this.scrollController,
+    required this.currentStateNotifier,
+    required this.expandProgressValue,
+    required this.child,
+    required this.showDragIndicator,
+    this.dragIndicatorColor,
+    this.padding,
+    required this.maintainContentGlass,
+    this.fullStateContentSettings,
+    required this.enableTopFade,
+    required this.topFadeHeight,
+    required this.forceSpecularRim,
+    required this.enableSaturationGlow,
+    required this.onFocusGained,
+    required this.suppressInteractionOnChildren,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const handleZone = _SheetHandleZone();
+
+    final contentZone = _SheetContent(
+      scrollController: scrollController,
+      isFullScreen: expandProgressValue > 0.95,
+      padding: padding,
+      child: RepaintBoundary(child: child),
+    );
+
+    return Positioned(
+      left: hPad,
+      right: hPad,
+      bottom: effectiveBottom,
+      height: effectiveHeight,
+      child: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: onPointerDown,
+        onPointerMove: onPointerMove,
+        onPointerUp: onPointerUp,
+        onPointerCancel: onPointerCancel,
+        child: AnimatedBuilder(
+          animation: saturationAnimation,
+          child: _applyTopFade(contentZone),
+          builder: (context, child) {
+            final pulseT = saturationAnimation.value;
+            final pulsedSettings = fadedSettings.copyWith(
+              lightIntensity: lerpDouble(
+                fadedSettings.lightIntensity,
+                0.8 * glassOpacity,
+                pulseT,
+              )!,
+              saturation: lerpDouble(
+                fadedSettings.saturation,
+                2.2 * glassOpacity + (1.0 - glassOpacity),
+                pulseT,
+              )!,
+            );
+
+            final currentTopRadius = topRadius;
+            final currentBottomRadius = bottomRadius;
+
+            // Content settings: if maintainContentGlass is true, we keep the
+            // glass settings vibrant even in full state.
+            final contentSettings =
+                (maintainContentGlass && expandProgressValue > 0.9)
+                    ? (fullStateContentSettings ??
+                        fadedSettings.copyWith(
+                          lightIntensity:
+                              fadedSettings.lightIntensity.clamp(0.4, 1.0),
+                          saturation: fadedSettings.saturation.clamp(1.5, 3.0),
+                          blur: fadedSettings.blur.clamp(15.0, 40.0),
+                        ))
+                    : pulsedSettings;
+
+            return GlassModalSheetStateProvider(
+              info: SheetStateInfo(
+                state: currentStateNotifier.value,
+                progress: expandProgressValue,
+                isExpanded: expandProgressValue > 0.9,
+              ),
+              child: LiquidStretch(
+                interactionScale: interactionScale,
+                stretch: interactionStretch,
+                resistance: resistance,
+                hitTestBehavior: HitTestBehavior.translucent,
+                suppressInteractionOnChildren: suppressInteractionOnChildren,
+                axis: Axis.vertical,
+                allowPositive: false,
+                allowNegative: true,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: ShapeDecoration(
+                          color: effectiveExpandedColor.withValues(
+                              alpha: colorOpacity),
+                          shape: RoundedSuperellipseBorder(
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(currentTopRadius),
+                              bottom: Radius.circular(currentBottomRadius),
+                            ),
+                          ),
+                          shadows: [
+                            BoxShadow(
+                              color: Colors.black
+                                  .withValues(alpha: 0.2 * glassOpacity),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: Opacity(
+                        opacity: (glassOpacity * 5.0).clamp(0.0, 1.0),
+                        child: AdaptiveGlass(
+                          shape: LiquidVerticalRoundedSuperellipse(
+                            topRadius: currentTopRadius,
+                            bottomRadius: currentBottomRadius,
+                          ),
+                          settings: pulsedSettings,
+                          quality: effectiveQuality,
+                          useOwnLayer: true,
+                          glowIntensity: 0.0,
+                          forceSpecularRim: forceSpecularRim,
+                          child: const SizedBox.expand(),
+                        ),
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: GlassGlow(
+                        glowColor: (enableInteractionGlow &&
+                                glassOpacity > 0.05 &&
+                                expandProgress < 0.98)
+                            ? (glowColor ??
+                                Colors.white.withValues(alpha: 0.15))
+                            : Colors.transparent,
+                        glowRadius: glowRadius,
+                        hitTestBehavior: HitTestBehavior.translucent,
+                        pulse: enableSaturationGlow
+                            ? saturationAnimation.value
+                            : 0,
+                        clipper: _RadiusClipper(
+                          topRadius: currentTopRadius,
+                          bottomRadius: currentBottomRadius,
+                        ),
+                        child: RepaintBoundary(
+                          child: AdaptiveLiquidGlassLayer(
+                            settings: contentSettings,
+                            quality: effectiveQuality,
+                            child: ClipPath(
+                              clipper: _RadiusClipper(
+                                topRadius: currentTopRadius,
+                                bottomRadius: currentBottomRadius,
+                              ),
+                              child: Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: child!,
+                                    ),
+                                  ),
+                                  if (showDragIndicator)
+                                    const Positioned(
+                                      top: 0,
+                                      left: 0,
+                                      right: 0,
+                                      height: 44,
+                                      child: handleZone,
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _applyTopFade(Widget content) {
+    if (!enableTopFade) return content;
+
+    // Use a smooth fade for the ShaderMask stops to avoid abrupt tree mutations
+    // and provide a seamless transition as the sheet reaches the top.
+    final fadeT = ((expandProgressValue - 0.8) / 0.2).clamp(0.0, 1.0);
+
+    return ShaderMask(
+      shaderCallback: (Rect bounds) {
+        // When fadeT is 0, the 'transparent' stop is pushed above the bounds (0.0),
+        // effectively making the whole mask opaque.
+        final stop = lerpDouble(0.0, topFadeHeight, fadeT)!;
+        return LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: const [
+            Colors.transparent,
+            Colors.black,
+          ],
+          stops: [0.0, (stop / bounds.height).clamp(0.0, 1.0)],
+        ).createShader(bounds);
+      },
+      blendMode: BlendMode.dstIn,
+      child: content,
+    );
+  }
+}
+
+// ===========================================================================
+// Internal UI Support
+// ===========================================================================
+
+class _RadiusClipper extends CustomClipper<Path> {
+  final double topRadius;
+  final double bottomRadius;
+
+  const _RadiusClipper({required this.topRadius, required this.bottomRadius});
+
+  @override
+  Path getClip(Size size) {
+    return RoundedSuperellipseBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(topRadius),
+        bottom: Radius.circular(bottomRadius),
+      ),
+    ).getOuterPath(Offset.zero & size);
+  }
+
+  @override
+  bool shouldReclip(_RadiusClipper old) =>
+      old.topRadius != topRadius || old.bottomRadius != bottomRadius;
+}
+
+class _SheetHandleZone extends StatelessWidget {
+  const _SheetHandleZone();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = GlassModalSheetStateProvider.of(context);
+    final isGlass = state != null ? state.progress < 0.9 : true;
+    final dragColor =
+        state != null ? null : null; // Injected via context or theme later?
+
+    return RepaintBoundary(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 8),
+          _GlassDragIndicator(isGlass: isGlass, color: dragColor),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class _GlassDragIndicator extends StatelessWidget {
+  const _GlassDragIndicator({
+    required this.isGlass,
+    this.color,
+  });
+
+  final bool isGlass;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // iOS 26: white at 35% in dark mode, black at 20% in light mode
+    final defaultColor =
+        isDark ? const Color(0x59FFFFFF) : const Color(0x33000000);
+
+    return Semantics(
+      label: 'Drag handle',
+      hint: 'Swipe down to dismiss',
+      child: Container(
+        width: 36,
+        height: 4,
+        decoration: BoxDecoration(
+          color: color ?? defaultColor,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    );
+  }
+}
+
+class _SheetContent extends StatelessWidget {
+  final Widget child;
+  final ScrollController scrollController;
+  final bool isFullScreen;
+  final EdgeInsetsGeometry? padding;
+
+  const _SheetContent({
+    required this.child,
+    required this.scrollController,
+    required this.isFullScreen,
+    this.padding,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ScrollControllerProvider(
+      controller: scrollController,
+      physics: isFullScreen
+          ? const _ClampingTopScrollPhysics()
+          : const NeverScrollableScrollPhysics(),
+      child: Padding(
+        padding: padding ?? EdgeInsets.zero,
+        child: child,
+      ),
+    );
+  }
+}
+
+// ===========================================================================
+// Custom Scroll Physics
+// ===========================================================================
+
+class _ClampingTopScrollPhysics extends BouncingScrollPhysics {
+  const _ClampingTopScrollPhysics({super.parent});
+
+  @override
+  _ClampingTopScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return _ClampingTopScrollPhysics(parent: buildParent(ancestor));
+  }
+
+  @override
+  double applyBoundaryConditions(ScrollMetrics position, double value) {
+    if (value < position.pixels &&
+        position.pixels <= position.minScrollExtent) {
+      return value - position.pixels; // Under-scroll (top)
+    }
+    if (value < position.minScrollExtent &&
+        position.minScrollExtent < position.pixels) {
+      return value - position.minScrollExtent; // Hit top
+    }
+    return super.applyBoundaryConditions(position, value);
+  }
+}
+
+// ===========================================================================
+// State Providers
+// ===========================================================================
+
+class ScrollControllerProvider extends InheritedWidget {
+  final ScrollController controller;
+  final ScrollPhysics physics;
+
+  const ScrollControllerProvider({
+    super.key,
+    required this.controller,
+    required this.physics,
+    required super.child,
+  });
+
+  static ScrollControllerProvider? of(BuildContext context) {
+    return context
+        .dependOnInheritedWidgetOfExactType<ScrollControllerProvider>();
+  }
+
+  @override
+  bool updateShouldNotify(ScrollControllerProvider old) =>
+      controller != old.controller || physics != old.physics;
+}
+
+/// Information about the current state of a [GlassModalSheet].
+class SheetStateInfo {
+  /// The current snap state.
+  final SheetState state;
+
+  /// Expansion progress from 0.0 (hidden/peek) to 1.0 (full).
+  final double progress;
+
+  /// Whether the sheet is currently in its expanded (full) state.
+  final bool isExpanded;
+
+  const SheetStateInfo({
+    required this.state,
+    required this.progress,
+    required this.isExpanded,
+  });
+}
+
+/// Inherited widget that provides [SheetStateInfo] to its descendants.
+class GlassModalSheetStateProvider extends InheritedWidget {
+  final SheetStateInfo info;
+
+  const GlassModalSheetStateProvider({
+    super.key,
+    required this.info,
+    required super.child,
+  });
+
+  static SheetStateInfo? of(BuildContext context) {
+    return context
+        .dependOnInheritedWidgetOfExactType<GlassModalSheetStateProvider>()
+        ?.info;
+  }
+
+  @override
+  bool updateShouldNotify(GlassModalSheetStateProvider oldWidget) {
+    return info.state != oldWidget.info.state ||
+        info.progress != oldWidget.info.progress ||
+        info.isExpanded != oldWidget.info.isExpanded;
+  }
+}
+
+// ===========================================================================
+// Scaffold implementation
+// ===========================================================================
+
+class GlassModalSheetScaffold extends StatelessWidget {
+  /// Background widget (e.g., a map or a list) that stays under the sheet.
+  final Widget background;
+
+  /// Main content widget displayed inside the glass sheet.
+  final Widget sheetChild;
+
+  /// Height in the 'half' state (0.0 - 1.0 fraction or absolute pixels). Default: 0.45.
+  final double halfSize;
+
+  /// Maximum sheet height in 'full' state. If null, defaults to screen height minus 90px.
+  final double? fullSize;
+
+  /// Initial state when the scaffold is first displayed.
+  final SheetState initialState;
+
+  /// Height in the 'peek' state. Default: 90.0.
+  final double peekSize;
+
+  /// Corner radius of the top edges in its floating state.
+  final double? topBorderRadius;
+
+  /// Corner radius of the bottom edges in its floating state.
+  final double? bottomBorderRadius;
+
+  /// Corner radius of the top edges when fully expanded.
+  final double? fullTopBorderRadius;
+
+  /// Corner radius of the bottom edges when fully expanded.
+  final double? fullBottomBorderRadius;
+
+  /// Horizontal padding between the sheet and the screen edges.
+  final double horizontalMargin;
+
+  /// Bottom padding from the screen edge.
+  final double bottomMargin;
+
+  /// Threshold (0.0 - 1.0) at which the sheet starts turning into a solid color.
+  final double fillThreshold;
+
+  /// Glass morphism effect settings (blur, thickness, lighting).
+  final LiquidGlassSettings? settings;
+
+  /// Background color used when the sheet is fully expanded and opaque.
+  final Color? expandedColor;
+
+  /// Rendering quality (BackdropFilter vs Shader). Defaults to standard.
+  final GlassQuality? quality;
+
+  /// Color/Saturation transition mode when expanding to full.
+  final FillTransition fillTransition;
+
+  /// Scale factor applied during interaction for tactile feedback. Default: 1.01.
+  final double interactionScale;
+
+  /// Whether to show glow/glare on touch for tactile feedback. Default: true.
+  final bool enableInteractionGlow;
+
+  /// Whether to pulse saturation/lighting of the whole sheet on touch. Default: true.
+  final bool enableSaturationGlow;
+
+  /// Optional state-specific settings that override the base [settings].
+  final LiquidGlassSettings? peekSettings;
+  final LiquidGlassSettings? halfSettings;
+  final LiquidGlassSettings? fullSettings;
+
+  /// Liquid stretch multiplier for over-scroll/drag effects. Default: 0.5.
+  final double stretch;
+
+  /// Resistance factor when dragging beyond bounds. Default: 0.08.
+  final double resistance;
+
+  /// Snap progress threshold (0.0 - 1.0). Default: 0.4.
+  final double snapThreshold;
+
+  /// Velocity threshold for flick gestures (pixels/sec). Default: 700.0.
+  final double velocityThreshold;
+
+  /// Custom color for the touch interaction glow.
+  final Color? glowColor;
+
+  /// Radius of the touch interaction glow. Default: 1.5.
+  final double glowRadius;
+
+  /// Whether to prevent sheet scaling when interacting with children. Default: false.
+  final bool suppressInteractionOnChildren;
+
+  /// Internal padding for the sheet content.
+  final EdgeInsetsGeometry? padding;
+
+  /// Controller for programmatic sheet control.
+  final GlassModalSheetController? controller;
+
+  /// Callback triggered when the sheet snaps to a new state.
+  final ValueChanged<SheetState>? onStateChanged;
+
+  /// Interaction mode (dismissible vs persistent). Default: [SheetMode.dismissible].
+  final SheetMode mode;
+
+  /// Whether to show the iOS-style drag handle at the top. Default: true.
+  final bool showDragIndicator;
+
+  /// Custom color for the drag handle.
+  final Color? dragIndicatorColor;
+
+  /// Whether to enable a gradient fade effect at the top.
+  final bool enableTopFade;
+
+  /// Height of the top fade effect.
+  final double topFadeHeight;
+
+  /// Whether to maintain high glass vibrancy for content even when the sheet is solid (full state).
+  final bool maintainContentGlass;
+
+  /// Custom glass settings for content specifically for the 'full' state.
+  final LiquidGlassSettings? fullStateContentSettings;
+
+  /// Whether to force the legacy specular rim (Canvas-drawn) on Skia/Web.
+  final bool forceSpecularRim;
+
+  /// Whether the 'peek' state is enabled.
+  final bool? enablePeek;
+
+  const GlassModalSheetScaffold({
+    super.key,
+    required this.background,
+    required this.sheetChild,
+    this.halfSize = 0.45,
+    this.fullSize,
+    this.initialState = SheetState.half,
+    this.topBorderRadius,
+    this.bottomBorderRadius,
+    this.fullTopBorderRadius,
+    this.fullBottomBorderRadius,
+    this.horizontalMargin = 8.0,
+    this.bottomMargin = 8.0,
+    this.fillThreshold = 0.85,
+    this.settings,
+    this.expandedColor,
+    this.controller,
+    this.onStateChanged,
+    this.mode = SheetMode.dismissible,
+    this.peekSize = 90.0,
+    this.quality = GlassQuality.standard,
+    this.interactionScale = 1.01,
+    this.enableInteractionGlow = true,
+    this.enableSaturationGlow = true,
+    this.peekSettings,
+    this.halfSettings,
+    this.fullSettings,
+    this.stretch = 0.5,
+    this.resistance = 0.08,
+    this.snapThreshold = 0.4,
+    this.velocityThreshold = 700.0,
+    this.fillTransition = FillTransition.gradual,
+    this.showDragIndicator = true,
+    this.dragIndicatorColor,
+    this.glowColor,
+    this.glowRadius = 1.5,
+    this.suppressInteractionOnChildren = false,
+    this.padding,
+    this.enableTopFade = false,
+    this.topFadeHeight = 40.0,
+    this.maintainContentGlass = true,
+    this.fullStateContentSettings,
+    this.forceSpecularRim = true,
+    this.enablePeek,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned.fill(
+          child: mode == SheetMode.dismissible
+              ? GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    controller?.snapToState(SheetState.hidden);
+                  },
+                  child: RepaintBoundary(child: background),
+                )
+              : RepaintBoundary(child: background),
+        ),
+        GlassModalSheet(
+          halfSize: halfSize,
+          fullSize: fullSize,
+          initialState: initialState,
+          topBorderRadius: topBorderRadius,
+          bottomBorderRadius: bottomBorderRadius,
+          fullTopBorderRadius: fullTopBorderRadius,
+          fullBottomBorderRadius: fullBottomBorderRadius,
+          horizontalMargin: horizontalMargin,
+          bottomMargin: bottomMargin,
+          fillThreshold: fillThreshold,
+          settings: settings,
+          expandedColor: expandedColor,
+          controller: controller,
+          onStateChanged: onStateChanged,
+          mode: mode,
+          peekSize: peekSize,
+          quality: quality,
+          interactionScale: interactionScale,
+          enableInteractionGlow: enableInteractionGlow,
+          enableSaturationGlow: enableSaturationGlow,
+          peekSettings: peekSettings,
+          halfSettings: halfSettings,
+          fullSettings: fullSettings,
+          stretch: stretch,
+          resistance: resistance,
+          snapThreshold: snapThreshold,
+          velocityThreshold: velocityThreshold,
+          fillTransition: fillTransition,
+          showDragIndicator: showDragIndicator,
+          dragIndicatorColor: dragIndicatorColor,
+          glowColor: glowColor,
+          glowRadius: glowRadius,
+          suppressInteractionOnChildren: suppressInteractionOnChildren,
+          padding: padding,
+          enableTopFade: enableTopFade,
+          topFadeHeight: topFadeHeight,
+          maintainContentGlass: maintainContentGlass,
+          fullStateContentSettings: fullStateContentSettings,
+          forceSpecularRim: forceSpecularRim,
+          enablePeek: enablePeek,
+          child: sheetChild,
+        ),
+      ],
+    );
+  }
+}

@@ -32,6 +32,7 @@ class AdaptiveGlass extends StatelessWidget {
     this.allowElevation = true,
     this.glowIntensity = 0.0,
     this.isInteractive = false,
+    this.forceSpecularRim = false,
     super.key,
   });
 
@@ -42,6 +43,11 @@ class AdaptiveGlass extends StatelessWidget {
   final bool useOwnLayer;
   final Clip clipBehavior;
   final bool isInteractive;
+
+  /// Forces the legacy canvas-drawn specular rim overlay (from the old implementation).
+  /// Only applies when falling back to Skia/Lightweight shaders (e.g. standard quality).
+  /// Premium Impeller path ignores this, as Impeller calculates the rim natively in GLSL.
+  final bool forceSpecularRim;
 
   /// Whether to allow "Specular Elevation" when in a grouped context.
   /// Should be true for interactive objects (buttons) and false for layers/containers.
@@ -72,6 +78,7 @@ class AdaptiveGlass extends StatelessWidget {
     Clip clipBehavior = Clip.antiAlias,
     double glowIntensity = 0.0,
     bool isInteractive = false,
+    bool forceSpecularRim = false,
   }) {
     return AdaptiveGlass(
       shape: shape,
@@ -81,6 +88,7 @@ class AdaptiveGlass extends StatelessWidget {
       clipBehavior: clipBehavior,
       glowIntensity: glowIntensity,
       isInteractive: isInteractive,
+      forceSpecularRim: forceSpecularRim,
       child: child,
     );
   }
@@ -101,7 +109,7 @@ class AdaptiveGlass extends StatelessWidget {
     // ClipPath correctly clips ALL shape types (oval, superellipse, rect).
     // Zero fragment shader cost on any device.
     // --------------------------------------------------------------------------
-    if (quality == GlassQuality.minimal) {
+    if (quality == GlassQuality.minimal || baseSettings.effectiveBlur == 0) {
       return _FrostedFallback(
         shape: shape,
         settings: baseSettings,
@@ -197,12 +205,35 @@ class AdaptiveGlass extends StatelessWidget {
         );
       }
 
-      return LightweightLiquidGlass(
+      Widget lightweightWidget = LightweightLiquidGlass(
         shape: shape,
         settings: effectiveSettings,
         densityFactor: densityFactor, // 0.0 or 1.0 based on elevation
         glowIntensity: glowIntensity, // Pass through from button animation
         child: child,
+      );
+
+      if (forceSpecularRim) {
+        lightweightWidget = Stack(
+          fit: StackFit.passthrough,
+          children: [
+            lightweightWidget,
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: _SpecularRimPainter(
+                    shape: shape,
+                    settings: baseSettings,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      }
+
+      return RepaintBoundary(
+        child: lightweightWidget,
       );
     }
 
@@ -305,7 +336,7 @@ class _FrostedFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final blur = settings.effectiveBlur.clamp(1.0, 40.0);
+    final blur = settings.effectiveBlur.clamp(0.0, 40.0);
     final tint = settings.effectiveGlassColor;
 
     final double frostedAlpha = isAccessibilityFallback
@@ -313,8 +344,8 @@ class _FrostedFallback extends StatelessWidget {
         // even when Reduce Transparency removes blur on older hardware.
         ? (tint.a * 0.5 + 0.40).clamp(0.40, 0.80)
         // Minimal (developer choice): honour the specified glass color alpha,
-        // clamped to a narrow range so the pill stays translucent but visible.
-        : tint.a.clamp(0.05, 0.55);
+        // allowing it to go up to 1.0 for solid color modes.
+        : tint.a.clamp(0.05, 1.0);
     final frostedColor = tint.withValues(alpha: frostedAlpha);
 
     final sat = settings.effectiveSaturation;
@@ -338,7 +369,8 @@ class _FrostedFallback extends StatelessWidget {
     //   desyncs with spring bounds changes, causing a "flashing" or flickering
     //   artifact beneath the element.
     // ────────────────────────────────────────────────────────────────────────
-    final bool useBlur = isAccessibilityFallback || !isInteractive;
+    final bool useBlur =
+        (isAccessibilityFallback || !isInteractive) && blur > 0;
 
     Widget body;
     if (useBlur) {
