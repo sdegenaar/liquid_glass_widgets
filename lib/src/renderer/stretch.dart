@@ -20,6 +20,10 @@ class LiquidStretch extends StatelessWidget {
     this.stretch = .5,
     this.resistance = .08,
     this.hitTestBehavior = HitTestBehavior.opaque,
+    this.axis,
+    this.allowPositive = true,
+    this.allowNegative = true,
+    this.suppressInteractionOnChildren = true,
     super.key,
   });
 
@@ -61,6 +65,20 @@ class LiquidStretch extends StatelessWidget {
   /// The child widget to apply the stretch effect to.
   final Widget child;
 
+  /// The axis to constrain the stretch to. If null, stretches in both axes.
+  final Axis? axis;
+
+  /// Whether to allow stretch in the positive direction of the axis.
+  /// If [axis] is vertical, positive is down. If horizontal, positive is right.
+  final bool allowPositive;
+
+  /// Whether to allow stretch in the negative direction of the axis.
+  /// If [axis] is vertical, negative is up. If horizontal, negative is left.
+  final bool allowNegative;
+
+  /// Whether to prevent scaling when interacting with children.
+  final bool suppressInteractionOnChildren;
+
   @override
   Widget build(BuildContext context) {
     if (stretch == 0 && interactionScale == 1.0) {
@@ -69,6 +87,7 @@ class LiquidStretch extends StatelessWidget {
 
     return GlassDragBuilder(
       behavior: hitTestBehavior,
+      suppressInteractionOnChildren: suppressInteractionOnChildren,
       builder: (context, value, child) {
         final scale = value == null ? 1.0 : interactionScale;
         return SpringBuilder(
@@ -81,12 +100,34 @@ class LiquidStretch extends StatelessWidget {
             child: child,
           ),
           child: OffsetSpringBuilder(
-            value: value?.withResistance(resistance) ?? Offset.zero,
+            value: () {
+              if (value == null) return Offset.zero;
+              Offset o = value.withResistance(resistance);
+              if (axis == Axis.horizontal) {
+                o = Offset(o.dx, 0);
+              } else if (axis == Axis.vertical) {
+                o = Offset(0, o.dy);
+              }
+              if (!allowPositive) {
+                o = Offset(
+                  o.dx > 0 ? 0 : o.dx,
+                  o.dy > 0 ? 0 : o.dy,
+                );
+              }
+              if (!allowNegative) {
+                o = Offset(
+                  o.dx < 0 ? 0 : o.dx,
+                  o.dy < 0 ? 0 : o.dy,
+                );
+              }
+              return o;
+            }(),
             spring: value == null
                 ? GlassSpring.bouncy()
                 : GlassSpring.interactive(),
             builder: (context, value, child) => RawLiquidStretch(
               stretchPixels: value * stretch,
+              axis: axis,
               child: child,
             ),
             child: child,
@@ -109,19 +150,25 @@ class LiquidStretch extends StatelessWidget {
 /// handling and resistance.
 /// {@endtemplate}
 class RawLiquidStretch extends SingleChildRenderObjectWidget {
-  /// {@macro raw_liquid_stretch}
   const RawLiquidStretch({
     required this.stretchPixels,
     required super.child,
+    this.axis,
     super.key,
   });
 
   /// The stretch offset in pixels.
   final Offset stretchPixels;
 
+  /// The axis to constrain the stretch to.
+  final Axis? axis;
+
   @override
   RenderObject createRenderObject(BuildContext context) {
-    return RenderRawLiquidStretch(stretchPixels: stretchPixels);
+    return RenderRawLiquidStretch(
+      stretchPixels: stretchPixels,
+      axis: axis,
+    );
   }
 
   @override
@@ -130,6 +177,7 @@ class RawLiquidStretch extends SingleChildRenderObjectWidget {
     RenderRawLiquidStretch renderObject,
   ) {
     renderObject.stretchPixels = stretchPixels;
+    renderObject.axis = axis;
   }
 }
 
@@ -137,9 +185,20 @@ class RawLiquidStretch extends SingleChildRenderObjectWidget {
 class RenderRawLiquidStretch extends RenderProxyBox {
   RenderRawLiquidStretch({
     required Offset stretchPixels,
-  }) : _stretchPixels = stretchPixels;
+    Axis? axis,
+  })  : _stretchPixels = stretchPixels,
+        _axis = axis;
 
   Offset _stretchPixels;
+  Axis? _axis;
+
+  /// The axis to constrain the stretch to.
+  Axis? get axis => _axis;
+  set axis(Axis? value) {
+    if (_axis == value) return;
+    _axis = value;
+    markNeedsPaint();
+  }
 
   /// The stretch offset in pixels.
   Offset get stretchPixels => _stretchPixels;
@@ -212,7 +271,7 @@ class RenderRawLiquidStretch extends RenderProxyBox {
     if (_stretchPixels == Offset.zero) {
       // Avoid exact identity to prevent TransformLayer detachment on rest
       // ignore: deprecated_member_use
-      return Matrix4.identity()..translate(0.0001, 0.0);
+      return Matrix4.identity()..translateByDouble(0.0001, 0.0, 0.0, 1.0);
     }
 
     final scale = getScale(
@@ -220,15 +279,30 @@ class RenderRawLiquidStretch extends RenderProxyBox {
       size: size,
     );
 
-    final matrix = Matrix4.identity()
-      // ignore: deprecated_member_use
-      ..translate(size.width / 2, size.height / 2)
-      // ignore: deprecated_member_use
-      ..scale(scale.dx, scale.dy, 1)
-      // ignore: deprecated_member_use
-      ..translate(-size.width / 2, -size.height / 2)
-      // ignore: deprecated_member_use
-      ..translate(_stretchPixels.dx, _stretchPixels.dy);
+    final matrix = Matrix4.identity();
+
+    // If axis is constrained, scale from the opposite edge
+    if (_axis == Axis.vertical) {
+      // Scale from bottom if stretching up, or top if stretching down
+      // Actually, for a bottom sheet, we usually want to scale from the bottom
+      final pivotY = _stretchPixels.dy <= 0 ? size.height : 0.0;
+      matrix
+        ..translateByDouble(size.width / 2, pivotY, 0.0, 1.0)
+        ..scaleByDouble(scale.dx, scale.dy, 1.0, 1.0)
+        ..translateByDouble(-size.width / 2, -pivotY, 0.0, 1.0);
+    } else if (_axis == Axis.horizontal) {
+      final pivotX = _stretchPixels.dx <= 0 ? size.width : 0.0;
+      matrix
+        ..translateByDouble(pivotX, size.height / 2, 0.0, 1.0)
+        ..scaleByDouble(scale.dx, scale.dy, 1.0, 1.0)
+        ..translateByDouble(-pivotX, -size.height / 2, 0.0, 1.0);
+    } else {
+      matrix
+        ..translateByDouble(size.width / 2, size.height / 2, 0.0, 1.0)
+        ..scaleByDouble(scale.dx, scale.dy, 1.0, 1.0)
+        ..translateByDouble(-size.width / 2, -size.height / 2, 0.0, 1.0)
+        ..translateByDouble(_stretchPixels.dx, _stretchPixels.dy, 0.0, 1.0);
+    }
 
     return matrix;
   }
@@ -264,8 +338,15 @@ class RenderRawLiquidStretch extends RenderProxyBox {
     final currentVolume = baseScaleX * baseScaleY;
     final volumeCorrection = math.sqrt(targetVolume / currentVolume);
 
-    final finalScaleX = baseScaleX * volumeCorrection;
-    final finalScaleY = baseScaleY * volumeCorrection;
+    var finalScaleX = baseScaleX * volumeCorrection;
+    var finalScaleY = baseScaleY * volumeCorrection;
+
+    // If axis is constrained, don't affect the other dimension
+    if (_axis == Axis.vertical) {
+      finalScaleX = 1.0;
+    } else if (_axis == Axis.horizontal) {
+      finalScaleY = 1.0;
+    }
 
     return Offset(finalScaleX, finalScaleY);
   }

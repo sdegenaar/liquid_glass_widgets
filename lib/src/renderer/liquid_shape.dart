@@ -147,3 +147,105 @@ class LiquidRoundedRectangle extends LiquidShape {
   @override
   List<Object?> get props => [...super.props, borderRadius];
 }
+
+/// Represents a rounded rectangle shape with different radii for top and bottom.
+class LiquidVerticalRoundedRectangle extends LiquidShape {
+  /// Creates a new [LiquidVerticalRoundedRectangle].
+  const LiquidVerticalRoundedRectangle({
+    required this.topRadius,
+    required this.bottomRadius,
+    super.side = BorderSide.none,
+  });
+
+  /// The radius of the top corners.
+  final double topRadius;
+
+  /// The radius of the bottom corners.
+  final double bottomRadius;
+
+  @override
+  OutlinedBorder get _equivalentOutlinedBorder => RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(topRadius),
+          bottom: Radius.circular(bottomRadius),
+        ),
+        side: side,
+      );
+
+  @override
+  LiquidVerticalRoundedRectangle copyWith({
+    BorderSide? side,
+    double? topRadius,
+    double? bottomRadius,
+  }) {
+    return LiquidVerticalRoundedRectangle(
+      side: side ?? this.side,
+      topRadius: topRadius ?? this.topRadius,
+      bottomRadius: bottomRadius ?? this.bottomRadius,
+    );
+  }
+
+  @override
+  ShapeBorder scale(double t) {
+    return LiquidVerticalRoundedRectangle(
+      topRadius: topRadius * t,
+      bottomRadius: bottomRadius * t,
+      side: side.scale(t),
+    );
+  }
+
+  @override
+  List<Object?> get props => [...super.props, topRadius, bottomRadius];
+}
+
+/// Represents a squircle shape with different radii for top and bottom.
+///
+/// Works like a [RoundedSuperellipseBorder] with vertical border radii.
+class LiquidVerticalRoundedSuperellipse extends LiquidShape {
+  /// Creates a new [LiquidVerticalRoundedSuperellipse].
+  const LiquidVerticalRoundedSuperellipse({
+    required this.topRadius,
+    required this.bottomRadius,
+    super.side = BorderSide.none,
+  });
+
+  /// The radius of the top corners.
+  final double topRadius;
+
+  /// The radius of the bottom corners.
+  final double bottomRadius;
+
+  @override
+  OutlinedBorder get _equivalentOutlinedBorder => RoundedSuperellipseBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(topRadius),
+          bottom: Radius.circular(bottomRadius),
+        ),
+        side: side,
+      );
+
+  @override
+  LiquidVerticalRoundedSuperellipse copyWith({
+    BorderSide? side,
+    double? topRadius,
+    double? bottomRadius,
+  }) {
+    return LiquidVerticalRoundedSuperellipse(
+      side: side ?? this.side,
+      topRadius: topRadius ?? this.topRadius,
+      bottomRadius: bottomRadius ?? this.bottomRadius,
+    );
+  }
+
+  @override
+  ShapeBorder scale(double t) {
+    return LiquidVerticalRoundedSuperellipse(
+      topRadius: topRadius * t,
+      bottomRadius: bottomRadius * t,
+      side: side.scale(t),
+    );
+  }
+
+  @override
+  List<Object?> get props => [...super.props, topRadius, bottomRadius];
+}

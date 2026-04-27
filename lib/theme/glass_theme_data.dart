@@ -107,6 +107,7 @@ class GlassThemeVariant {
     this.settings,
     this.quality,
     this.glowColors,
+    this.borderRadius,
   });
 
   /// Partial glass visual settings applied on top of each widget's own defaults.
@@ -128,16 +129,23 @@ class GlassThemeVariant {
   /// Semantic color palette for glow effects.
   final GlassGlowColors? glowColors;
 
+  /// Default corner radius for all glass widgets in this variant.
+  ///
+  /// If null, widgets will use their own defaults or [GlassThemeHelpers.resolveAdaptiveRadius].
+  final double? borderRadius;
+
   /// Creates a copy with overridden values.
   GlassThemeVariant copyWith({
     GlassThemeSettings? settings,
     GlassQuality? quality,
     GlassGlowColors? glowColors,
+    double? borderRadius,
   }) {
     return GlassThemeVariant(
       settings: settings ?? this.settings,
       quality: quality ?? this.quality,
       glowColors: glowColors ?? this.glowColors,
+      borderRadius: borderRadius ?? this.borderRadius,
     );
   }
 
@@ -301,6 +309,11 @@ class GlassThemeData {
   /// Gets rendering quality for current brightness.
   GlassQuality? qualityFor(BuildContext context) {
     return variantFor(context).quality;
+  }
+
+  /// Gets default corner radius for current brightness.
+  double? borderRadiusFor(BuildContext context) {
+    return variantFor(context).borderRadius;
   }
 
   /// Gets glow colors for current brightness.

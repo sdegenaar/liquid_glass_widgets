@@ -81,6 +81,7 @@ export 'widgets/overlays/glass_dialog.dart';
 export 'widgets/overlays/glass_menu.dart';
 export 'widgets/overlays/glass_menu_item.dart';
 export 'widgets/overlays/glass_sheet.dart';
+export 'widgets/overlays/glass_modal_sheet.dart';
 export 'widgets/overlays/glass_toast.dart';
 // Widgets - Surfaces
 export 'widgets/surfaces/glass_app_bar.dart';
