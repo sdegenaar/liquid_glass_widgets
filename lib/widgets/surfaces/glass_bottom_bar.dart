@@ -15,6 +15,7 @@ import '../../types/glass_quality.dart';
 import '../interactive/glass_button.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
 import '../shared/inherited_liquid_glass.dart';
+import '../../theme/glass_theme_data.dart';
 import '../../theme/glass_theme_helpers.dart';
 import '../../src/types/glass_interaction_behavior.dart';
 import 'shared/bottom_bar_internal.dart'
@@ -514,6 +515,20 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
       fallback: GlassQuality.premium,
     );
 
+    // Resolve interaction glow color: explicit param → GlassThemeData.primary → null
+    // (null lets the internal widget use its own hardcoded fallback).
+    final resolvedGlowColors =
+        GlassThemeData.of(context).glowColorsFor(context);
+    final effectiveInteractionGlowColor =
+        widget.interactionGlowColor ?? resolvedGlowColors.primary;
+
+    // Glow appearance fields come from the theme; they cannot be set per-widget
+    // because they are part of the theme palette. Widgets that need custom
+    // values should supply a custom GlassGlowColors via GlassTheme.
+    final effectiveGlowBlurRadius = resolvedGlowColors.glowBlurRadius;
+    final effectiveGlowSpreadRadius = resolvedGlowColors.glowSpreadRadius;
+    final effectiveGlowOpacity = resolvedGlowColors.glowOpacity;
+
     // Use custom glass settings or cached defaults for bottom bars
     final glassSettings = widget.glassSettings ?? _defaultGlassSettings;
 
@@ -561,9 +576,12 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
                     backgroundKey: widget.backgroundKey,
                     maskingQuality: widget.maskingQuality,
                     interactionGlowColor: widget.interactionBehavior.hasGlow
-                        ? widget.interactionGlowColor
+                        ? effectiveInteractionGlowColor
                         : Colors.transparent,
                     interactionGlowRadius: widget.interactionGlowRadius,
+                    interactionGlowBlurRadius: effectiveGlowBlurRadius,
+                    interactionGlowSpreadRadius: effectiveGlowSpreadRadius,
+                    interactionGlowOpacity: effectiveGlowOpacity,
                     interactionScale: widget.interactionBehavior.hasScale
                         ? widget.pressScale
                         : 1.0,

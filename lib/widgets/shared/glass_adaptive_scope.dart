@@ -267,7 +267,7 @@ class GlassAdaptiveScopeConfig {
     this.maxQuality = GlassQuality.premium,
     this.initialQuality,
     this.targetFrameMs = 16,
-    this.allowStepUp = false,
+    this.allowStepUp = true,
     this.onQualityChanged,
     this.onDiagnostic,
     this.debugLogDiagnostics = false,
@@ -288,8 +288,11 @@ class GlassAdaptiveScopeConfig {
   /// The raster frame duration target in milliseconds. Defaults to `16` (60 fps).
   final int targetFrameMs;
 
-  /// When `true`, the scope may step quality up after sustained good performance.
-  /// Defaults to `false`.
+  /// When `true`, the scope may step quality **up** after a sustained period
+  /// of good performance (e.g. after thermal recovery).
+  /// Defaults to `true` — allows Phase 3 to self-correct a conservative Phase 2
+  /// warmup decision. Step-up requires 10 consecutive under-budget windows
+  /// (≈ 20 seconds) plus an 8-second cooldown, so the transition is invisible.
   final bool allowStepUp;
 
   /// Called whenever the effective quality tier changes.
@@ -379,7 +382,7 @@ class GlassAdaptiveScope extends StatefulWidget {
     this.maxQuality = GlassQuality.premium,
     this.initialQuality,
     this.targetFrameMs = 16,
-    this.allowStepUp = false,
+    this.allowStepUp = true,
     this.onQualityChanged,
     this.onDiagnostic,
     this.debugLogDiagnostics = false,
@@ -445,11 +448,13 @@ class GlassAdaptiveScope extends StatefulWidget {
   final int targetFrameMs;
 
   /// When `true`, the scope may step quality **up** to [maxQuality] after a
-  /// sustained period of good performance (e.g. after thermal recovery).
+  /// sustained period of good performance (e.g. after thermal recovery or a
+  /// conservative Phase 2 warmup decision).
   ///
-  /// Defaults to `false`. Step-up uses a 10-window window (≈ 20 seconds) plus
-  /// an 8-second cooldown to prevent oscillation. Even with `allowStepUp: true`
-  /// the transition is very slow — users should not perceive any flicker.
+  /// Defaults to `true`. Step-up uses a 10-window window (≈ 20 seconds) plus
+  /// an 8-second cooldown to prevent oscillation — users should not perceive
+  /// any flicker. Setting this to `false` locks quality at whatever Phase 2
+  /// decided for the entire session.
   final bool allowStepUp;
 
   /// Called on the main thread whenever the effective quality changes.

@@ -70,6 +70,8 @@ void main() {
     GlassQualityAdapter.degradeWindowCount = 3;
     GlassQualityAdapter.upgradeWindowCount = 10;
     GlassQualityAdapter.cooldownDuration = Duration.zero; // disable by default
+    // Skip the startup-skip window so tests can supply warmupFrames directly.
+    GlassQualityAdapter.skipInitialFrames = 0;
     // Bypass the static probe so tests run on headless VMs where
     // ImageFilter.isShaderFilterSupported is false.
     GlassQualityAdapter.skipStaticProbeForTesting = true;
@@ -77,6 +79,7 @@ void main() {
 
   tearDown(() {
     GlassQualityAdapter.skipStaticProbeForTesting = false;
+    GlassQualityAdapter.skipInitialFrames = 60; // restore production default
     GlassQualityAdapter
         .clearSessionCache(); // prevent cache leakage between tests
   });
@@ -104,23 +107,36 @@ void main() {
   // ── Phase 2 — warm-up benchmark ───────────────────────────────────────────
 
   group('Phase 2 — warm-up benchmark', () {
-    test('P75 < 12 ms → stays at maxQuality (premium)', () {
+    test('P75 < 16 ms → stays at maxQuality (premium)', () {
       final changes = <(GlassQuality, GlassQuality)>[];
       final adapter = _makeAdapter(max: GlassQuality.premium, changes: changes);
-      _runWarmup(adapter, rasterUs: 8000); // 8 ms — very fast
+      _runWarmup(adapter, rasterUs: 8000); // 8 ms — well within 60 fps budget
 
       expect(adapter.currentQuality, GlassQuality.premium);
       expect(changes, isEmpty);
     });
 
-    test('P75 in [12, 20] ms → steps down to standard', () {
+    test('P75 in [16, 20] ms → steps down to standard', () {
       final changes = <(GlassQuality, GlassQuality)>[];
       final adapter = _makeAdapter(max: GlassQuality.premium, changes: changes);
-      _runWarmup(adapter, rasterUs: 15000); // 15 ms
+      _runWarmup(adapter, rasterUs: 18000); // 18 ms — between 16 ms and 20 ms
 
       expect(adapter.currentQuality, GlassQuality.standard);
       expect(changes.length, 1);
       expect(changes.first, (GlassQuality.premium, GlassQuality.standard));
+    });
+
+    test('P75 exactly 15 ms stays premium (just below 16 ms threshold)', () {
+      final changes = <(GlassQuality, GlassQuality)>[];
+      final adapter = _makeAdapter(max: GlassQuality.premium, changes: changes);
+      _runWarmup(adapter, rasterUs: 15000); // 15 ms — under new 16 ms threshold
+
+      // Old threshold (12 ms) would have demoted this to standard.
+      // New threshold (16 ms) keeps it at premium.
+      expect(adapter.currentQuality, GlassQuality.premium,
+          reason:
+              '15 ms P75 is within the 60 fps budget and should stay premium');
+      expect(changes, isEmpty);
     });
 
     test('P75 > 20 ms → steps down to minimal', () {
@@ -166,6 +182,50 @@ void main() {
 
       expect(adapter.phase, AdaptivePhase.warmup);
       expect(changes, isEmpty); // still collecting
+    });
+  });
+
+  // ── skipInitialFrames ───────────────────────────────────────────────────
+
+  group('skipInitialFrames — startup noise isolation', () {
+    test('frames within skip window are not counted in warmup', () {
+      GlassQualityAdapter.skipInitialFrames = 5;
+      GlassQualityAdapter.warmupFrames = 4;
+      final changes = <(GlassQuality, GlassQuality)>[];
+      final adapter = _makeAdapter(max: GlassQuality.premium, changes: changes);
+
+      // 5 very slow frames (startup noise) — should be discarded.
+      adapter.simulateFrameTimings(_frames(5, 50000));
+      expect(adapter.phase, AdaptivePhase.warmup);
+      expect(changes, isEmpty);
+
+      // Now 4 fast frames (normal glass rendering) — warmup completes.
+      adapter.simulateFrameTimings(_frames(4, 8000));
+      expect(adapter.phase, AdaptivePhase.runtime);
+
+      // Quality should be premium (8 ms P75 < 16 ms) because the 50 ms
+      // startup frames were discarded.
+      expect(adapter.currentQuality, GlassQuality.premium,
+          reason:
+              'Startup spike frames should not pollute the warmup benchmark');
+    });
+
+    test('skip counter resets on reset()', () {
+      GlassQualityAdapter.skipInitialFrames = 3;
+      GlassQualityAdapter.warmupFrames = 4;
+      final adapter = _makeAdapter(max: GlassQuality.premium);
+
+      // Partially consume the skip window.
+      adapter.simulateFrameTimings(_frames(2, 50000));
+      expect(adapter.phase, AdaptivePhase.warmup);
+
+      // reset() should restart the skip counter.
+      adapter.reset();
+      // Now deliver 3 (skip) + 4 (warmup) fast frames — should complete.
+      adapter.simulateFrameTimings(_frames(3, 50000)); // skip window
+      adapter.simulateFrameTimings(_frames(4, 8000)); // warmup window
+      expect(adapter.phase, AdaptivePhase.runtime);
+      expect(adapter.currentQuality, GlassQuality.premium);
     });
   });
 
@@ -390,7 +450,7 @@ void main() {
         _frameTiming(6000),
         _frameTiming(8000),
         _frameTiming(10000),
-        // P75: rank=ceil(0.75*4)=3 → index 2 → 8 ms < 12 ms → premium
+        // P75: rank=ceil(0.75*4)=3 → index 2 → 8 ms < 16 ms → premium
       ]);
 
       expect(adapter.currentQuality, GlassQuality.premium);
@@ -425,10 +485,10 @@ void main() {
     });
 
     test('second adapter goes directly to runtime phase via session cache', () {
-      // Settle cache to standard via Phase 2.
+      // Settle cache to standard via Phase 2 (18 ms > 16 ms threshold).
       final adapter1 = _makeAdapter(max: GlassQuality.premium);
       adapter1.simulateFrameTimings(
-        List.generate(10, (_) => _frameTiming(15000)), // 15 ms → standard
+        List.generate(10, (_) => _frameTiming(18000)), // 18 ms → standard
       );
       expect(adapter1.currentQuality, GlassQuality.standard);
 
@@ -497,10 +557,10 @@ void main() {
     });
 
     test('initialQuality takes priority over session cache', () {
-      // First: write standard to the session cache.
+      // First: write standard to the session cache (18 ms > 16 ms threshold).
       final adapter1 = _makeAdapter(max: GlassQuality.premium);
       adapter1.simulateFrameTimings(
-        List.generate(10, (_) => _frameTiming(15000)), // → standard
+        List.generate(10, (_) => _frameTiming(18000)), // 18 ms → standard
       );
       expect(adapter1.currentQuality, GlassQuality.standard);
 
