@@ -40,6 +40,7 @@ class GlassGlow extends StatelessWidget {
 
   /// Global pulse intensity (0.0 to 1.0) for a full-window glow effect.
   final double pulse;
+
   /// Additional blur sigma applied to the glow circle via a [MaskFilter].
   ///
   /// A value of 0 (the default) produces a sharp-edged radial gradient with no
@@ -198,9 +199,6 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
     initialValue: 1.2,
   );
 
-  double _baseRadius = 0;
-  Color _baseColor = const Color.fromARGB(0, 0, 0, 0);
-  bool _dragging = false;
   bool _dragging = false;
 
   /// Whether a touch is currently active.
@@ -449,7 +447,8 @@ class _RenderGlassGlowLayer extends RenderProxyBox {
       final glowPosition = offset + _glowOffset;
     // Use the shortest side so that wide pills don't generate massive glow
     // spilling vertically off the surface.
-      final radius = _glowRadius * math.min(size.width, size.height);
+      final shortSide = math.min(size.width, size.height);
+      final radius = _glowRadius * shortSide + _glowSpreadRadius * shortSide;
 
       // RadialGradient.createShader() bakes the center position into the shader
       // via the Rect passed to it — caching across position changes is incorrect.
@@ -461,6 +460,12 @@ class _RenderGlassGlowLayer extends RenderProxyBox {
         ).createShader(Rect.fromCircle(center: glowPosition, radius: radius))
         ..blendMode = BlendMode.plus;
 
+      // Optional Gaussian blur to soften the glow halo. Only create the
+      // MaskFilter when non-zero to avoid a no-op allocation every frame.
+      if (_glowBlurRadius > 0) {
+        paint.maskFilter = MaskFilter.blur(BlurStyle.normal, _glowBlurRadius);
+      }
+
       if (_clipper != null) {
         canvas.save();
         canvas.clipPath(_clipper!.getClip(size).shift(offset));
@@ -469,36 +474,6 @@ class _RenderGlassGlowLayer extends RenderProxyBox {
       } else {
         canvas.drawCircle(glowPosition, radius, paint);
       }
-    final shortSide = math.min(size.width, size.height);
-    final radius = _glowRadius * shortSide + _glowSpreadRadius * shortSide;
-
-    // RadialGradient.createShader() bakes the center position into the shader
-    // via the Rect passed to it — caching across position changes is incorrect.
-    // Per-frame creation is cheap for a simple radial gradient (uniform-only).
-    final paint = Paint()
-      ..shader = RadialGradient(
-        colors: [_glowColor, _glowColor.withValues(alpha: 0)],
-        stops: const [0.0, 1.0],
-      ).createShader(Rect.fromCircle(center: glowPosition, radius: radius))
-      ..blendMode = BlendMode.plus;
-
-    // Optional Gaussian blur to soften the glow halo. Only create the
-    // MaskFilter when non-zero to avoid a no-op allocation every frame.
-    if (_glowBlurRadius > 0) {
-      paint.maskFilter = MaskFilter.blur(BlurStyle.normal, _glowBlurRadius);
-    }
-
-    // 1. Paint the children (which includes AdaptiveGlass taking its backdrop snapshot)
-    super.paint(context, offset);
-
-    // 2. Additive light over geometry boundary only
-    if (_clipper != null) {
-      context.canvas.save();
-      context.canvas.clipPath(_clipper!.getClip(size).shift(offset));
-      context.canvas.drawCircle(glowPosition, radius, paint);
-      context.canvas.restore();
-    } else {
-      context.canvas.drawCircle(glowPosition, radius, paint);
     }
   }
 }
