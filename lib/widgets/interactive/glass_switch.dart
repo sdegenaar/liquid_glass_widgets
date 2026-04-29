@@ -146,9 +146,18 @@ class _GlassSwitchState extends State<GlassSwitch>
   late AnimationController _positionController;
   late AnimationController _thicknessController;
   late Animation<double> _positionAnimation;
-  late Animation<double> _scaleAnimation;
   late Animation<double> _thicknessAnimation;
   bool _isMovingForward = true; // Track direction of animation
+
+  // ---------------------------------------------------------------------------
+  // Gesture state
+  // ---------------------------------------------------------------------------
+  bool _isDragging = false;
+  double _dragStartX = 0.0;
+  double _dragStartPosition = 0.0;
+  bool _dragAbandonedExternally = false;
+  bool _justEndedDrag = false;
+
   // Cache effectiveQuality at state level to make it accessible in _buildThumb
   GlassQuality? _effectiveQuality;
 
@@ -172,20 +181,6 @@ class _GlassSwitchState extends State<GlassSwitch>
         reverseCurve: Curves.easeInOutCubic,
       ),
     );
-
-    // Subtle scale animation for thumb
-    _scaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 0.92)
-            .chain(CurveTween(curve: Curves.easeOutCubic)),
-        weight: 40,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 0.92, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeOutCubic)),
-        weight: 60,
-      ),
-    ]).animate(_positionController);
 
     // Pulse animation (0 -> 1 -> 0)
     // Synchronized to grow and settle as the toggle jumps
@@ -212,6 +207,13 @@ class _GlassSwitchState extends State<GlassSwitch>
   void didUpdateWidget(GlassSwitch oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.value != oldWidget.value) {
+      // If the user is mid-drag, an external value change wins — abandon the
+      // drag cleanly so the animation takes over without a visual jump.
+      if (_isDragging) {
+        _isDragging = false;
+        _dragAbandonedExternally = true;
+      }
+
       // Track direction: true = moving forward (left to right)
       _isMovingForward = widget.value;
 
@@ -223,7 +225,13 @@ class _GlassSwitchState extends State<GlassSwitch>
       }
 
       // Trigger the liquid pulse bloom (Grow up and then down)
-      unawaited(_thicknessController.forward(from: 0.0));
+      if (!_justEndedDrag) {
+        if (_thicknessController.value == 1.0) {
+          _thicknessController.value = 0.0;
+        }
+        unawaited(
+            _thicknessController.forward(from: _thicknessController.value));
+      }
     }
   }
 
@@ -236,6 +244,134 @@ class _GlassSwitchState extends State<GlassSwitch>
 
   void _handleTap() {
     widget.onChanged(!widget.value);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Drag-to-toggle handlers
+  // ---------------------------------------------------------------------------
+
+  /// Pixel travel distance from the left edge to right edge of the thumb runway.
+  double get _thumbTravelDistance {
+    final thumbSize = widget.height - 4.0;
+    final thumbWidth = thumbSize * 1.6;
+    return widget.width - thumbWidth - 4.0;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Gesture handlers
+  // ---------------------------------------------------------------------------
+
+  void _onTapDown(TapDownDetails details) {
+    // Finger is down: start the bloom immediately for instant feedback.
+    if (_thicknessController.value == 1.0) {
+      _thicknessController.value = 0.0;
+    }
+    _dragAbandonedExternally = false;
+    _thicknessController.animateTo(
+      0.45,
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+    );
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    // A tap is confirmed only when no horizontal drag was registered.
+    if (!_isDragging) {
+      // Deflate the bloom — the tap animation in didUpdateWidget will
+      // re-trigger it correctly with the full directional stretch.
+      _handleTap();
+    }
+  }
+
+  void _onTapCancel() {
+    // Finger moved away without a tap or drag completing.
+    if (!_isDragging) {
+      unawaited(_thicknessController.forward(from: _thicknessController.value));
+    }
+  }
+
+  void _onDragStart(DragStartDetails details) {
+    // Flutter has confirmed horizontal movement — commit to drag mode.
+    _positionController.stop();
+    _dragStartX = details.localPosition.dx;
+    _dragStartPosition = _positionController.value;
+    _dragAbandonedExternally = false;
+    setState(() => _isDragging = true);
+
+    // Stop any deflation that onTapCancel might have started
+    _thicknessController.stop();
+
+    // Ensure bloom is at peak.
+    if (_thicknessController.value == 1.0) {
+      _thicknessController.value = 0.0;
+    }
+
+    // If we're not at perfect plump (e.g., started deflating), animate back to 0.45
+    if ((_thicknessController.value - 0.45).abs() > 0.01) {
+      _thicknessController.animateTo(
+        0.45,
+        duration: const Duration(milliseconds: 80),
+      );
+    } else {
+      _thicknessController.value = 0.45;
+    }
+  }
+
+  void _onDragCancel() {
+    setState(() => _isDragging = false);
+    // Deflate bloom smoothly.
+    unawaited(_thicknessController.forward(from: _thicknessController.value));
+  }
+
+  void _onDragUpdate(DragUpdateDetails details) {
+    if (!_isDragging) return;
+    // Map finger position → track position (0.0 – 1.0) and push it directly
+    // into the controller so the AnimatedBuilder redraws this frame.
+    final travel = _thumbTravelDistance;
+    final dragDelta = details.localPosition.dx - _dragStartX;
+    _positionController.value =
+        (_dragStartPosition + dragDelta / travel).clamp(0.0, 1.0);
+  }
+
+  void _onDragEnd(DragEndDetails details) {
+    // No-op if an external value change has already taken ownership.
+    if (_dragAbandonedExternally) {
+      _dragAbandonedExternally = false;
+      return;
+    }
+    if (!_isDragging) return;
+    final position = _positionController.value;
+    final velocity = details.primaryVelocity ?? 0.0;
+
+    // A fast flick (> 200 px/s) wins over position; otherwise snap at 50 %.
+    final bool shouldBeOn =
+        velocity.abs() > 200.0 ? velocity > 0 : position >= 0.5;
+
+    _isMovingForward = shouldBeOn;
+    setState(() => _isDragging = false);
+    _justEndedDrag = true;
+
+    // Animate thumb to its resting position.
+    if (shouldBeOn) {
+      unawaited(_positionController.forward());
+    } else {
+      unawaited(_positionController.reverse());
+    }
+
+    // Continue the settle bloom down to 0 so the landing feels weighty.
+    unawaited(_thicknessController.forward(from: _thicknessController.value));
+
+    // Notify parent only when the value actually changed.
+    if (shouldBeOn != widget.value) {
+      widget.onChanged(shouldBeOn);
+    }
+
+    // Reset flag in next frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _justEndedDrag = false;
+      }
+    });
   }
 
   @override
@@ -258,7 +394,18 @@ class _GlassSwitchState extends State<GlassSwitch>
     final activeTrackColor = widget.activeColor ?? Colors.green;
 
     return GestureDetector(
-      onTap: _handleTap,
+      // NOTE: We do NOT use onTap here. Having both onTap and onHorizontalDrag*
+      // on the same GestureDetector creates a gesture arena conflict — Flutter
+      // must choose one winner per touch, leading to missed interactions.
+      // Instead, we detect taps manually: onTapDown starts the bloom, onTapUp
+      // fires the toggle if no horizontal drag was confirmed.
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
+      onHorizontalDragCancel: _onDragCancel,
+      onHorizontalDragStart: _onDragStart,
+      onHorizontalDragUpdate: _onDragUpdate,
+      onHorizontalDragEnd: _onDragEnd,
       // Performance: RepaintBoundary isolates switch animation from parent
       child: RepaintBoundary(
         child: AnimatedBuilder(
@@ -266,8 +413,9 @@ class _GlassSwitchState extends State<GlassSwitch>
               Listenable.merge([_positionController, _thicknessController]),
           builder: (context, child) {
             final position = _positionAnimation.value;
-            final scale = _scaleAnimation.value;
             final thickness = _thicknessAnimation.value;
+            // Tie squash directly to thickness so it doesn't fluctuate during drag
+            final scale = 1.0 - (thickness * 0.08);
 
             // Build the track — plain Container driven entirely by `position`
             // from the single AnimatedBuilder above. Using AnimatedContainer
@@ -316,18 +464,20 @@ class _GlassSwitchState extends State<GlassSwitch>
               ),
             );
 
-            // Growth/Expansion offsets (Calibrated for proportional wide pill)
-            // leadStretch: leads the movement as a high-velocity droplet
+            // Growth/Expansion offsets
             final vExpand = thickness * 10.0;
             final leadStretch = thickness * 16.0;
 
             final thumbOffset = 2.0 + (thumbTravelDistance * position);
 
             // Anchor logic:
-            // Positive -> Anchor Left, Grow Right.
-            // Back -> Anchor Right, Grow Left.
-            final thumbLeft =
-                _isMovingForward ? thumbOffset : thumbOffset - leadStretch;
+            // Dragging -> Symmetric stretch (anchor center)
+            // Jumping  -> Directional stretch (anchor left or right based on direction)
+            final double anchorOffset = _isDragging
+                ? (leadStretch / 2.0)
+                : (_isMovingForward ? 0.0 : leadStretch);
+
+            final thumbLeft = thumbOffset - anchorOffset;
 
             final thumb = Positioned(
               left: thumbLeft,
@@ -335,8 +485,8 @@ class _GlassSwitchState extends State<GlassSwitch>
               child: Transform.scale(
                 // Combined scale: Squash for jump + slight Grow for the liquid bloom
                 scale: scale * (1.0 + thickness * 0.1),
-                child: _buildThumb(
-                    thumbSize, thickness, scale, vExpand, leadStretch),
+                child: _buildThumb(thumbSize, thickness, scale, vExpand,
+                    leadStretch, anchorOffset),
               ),
             );
 
@@ -367,7 +517,7 @@ class _GlassSwitchState extends State<GlassSwitch>
   }
 
   Widget _buildThumb(double size, double transition, double scale,
-      double vExpand, double leadStretch) {
+      double vExpand, double leadStretch, double anchorOffset) {
     // iOS 26: Unified Material Melt with Directional Anchoring
     final thumbWidth = size * 1.6;
     final thumbHeight = size;
@@ -434,13 +584,13 @@ class _GlassSwitchState extends State<GlassSwitch>
 
             // Physical thumb position based on anchor
             Positioned(
-              left: _isMovingForward ? 0 : leadStretch,
+              left: anchorOffset,
               child: materialContent,
             ),
 
             if (transition > 0.05)
               Positioned(
-                left: _isMovingForward ? 0 : leadStretch,
+                left: anchorOffset,
                 child: Opacity(
                   opacity: transition,
                   child: GlassGlow(

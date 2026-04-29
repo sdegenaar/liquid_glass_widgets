@@ -19,6 +19,9 @@ class GlassGlowColors {
     this.warning,
     this.danger,
     this.info,
+    this.glowBlurRadius = 0,
+    this.glowSpreadRadius = 0,
+    this.glowOpacity = 1,
   });
 
   /// Primary brand color for default interactive elements
@@ -39,6 +42,35 @@ class GlassGlowColors {
   /// Informational color (typically blue)
   final Color? info;
 
+  /// Additional Gaussian blur sigma applied to the glow halo.
+  ///
+  /// A value of 0 (the default) produces a crisp radial-gradient edge.
+  /// Increase to soften the halo — values in the 4–16 range give a
+  /// diffuse, candle-like glow. Applied via [MaskFilter.blur] on the
+  /// additive paint layer inside [GlassGlowLayer].
+  ///
+  /// Passed directly to [GlassGlow.glowBlurRadius].
+  final double glowBlurRadius;
+
+  /// Extra spread added to the drawn glow circle as a fraction of the
+  /// layer's shortest side.
+  ///
+  /// 0 (the default) keeps the circle at the physics radius. A value of
+  /// 0.2 expands it by 20 % of the layer's height (or width, whichever
+  /// is smaller), making the glow bleed further without inflating the
+  /// spring animation radius.
+  ///
+  /// Passed directly to [GlassGlow.glowSpreadRadius].
+  final double glowSpreadRadius;
+
+  /// Master opacity multiplier applied on top of the glow color's own alpha.
+  ///
+  /// Range 0–1, defaults to 1 (no change). Use this to uniformly dim the
+  /// glow across all semantic colors without touching the raw color values.
+  ///
+  /// Passed directly to [GlassGlow.glowOpacity].
+  final double glowOpacity;
+
   /// Creates a copy with overridden values.
   GlassGlowColors copyWith({
     Color? primary,
@@ -47,6 +79,9 @@ class GlassGlowColors {
     Color? warning,
     Color? danger,
     Color? info,
+    double? glowBlurRadius,
+    double? glowSpreadRadius,
+    double? glowOpacity,
   }) {
     return GlassGlowColors(
       primary: primary ?? this.primary,
@@ -55,6 +90,9 @@ class GlassGlowColors {
       warning: warning ?? this.warning,
       danger: danger ?? this.danger,
       info: info ?? this.info,
+      glowBlurRadius: glowBlurRadius ?? this.glowBlurRadius,
+      glowSpreadRadius: glowSpreadRadius ?? this.glowSpreadRadius,
+      glowOpacity: glowOpacity ?? this.glowOpacity,
     );
   }
 
@@ -72,6 +110,10 @@ class GlassGlowColors {
     warning: Color(0xFFFF9500), // iOS orange
     danger: Color(0xFFFF3B30), // iOS red
     info: Color(0xFF5AC8FA), // iOS light blue
+    // Appearance defaults — 0/0/1 keeps existing visual behaviour unchanged.
+    glowBlurRadius: 0,
+    glowSpreadRadius: 0,
+    glowOpacity: 1,
   );
 
   @override
@@ -84,7 +126,10 @@ class GlassGlowColors {
           success == other.success &&
           warning == other.warning &&
           danger == other.danger &&
-          info == other.info;
+          info == other.info &&
+          glowBlurRadius == other.glowBlurRadius &&
+          glowSpreadRadius == other.glowSpreadRadius &&
+          glowOpacity == other.glowOpacity;
 
   @override
   int get hashCode => Object.hash(
@@ -94,6 +139,9 @@ class GlassGlowColors {
         warning,
         danger,
         info,
+        glowBlurRadius,
+        glowSpreadRadius,
+        glowOpacity,
       );
 }
 

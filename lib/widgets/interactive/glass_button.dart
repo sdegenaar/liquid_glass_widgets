@@ -143,6 +143,9 @@ class GlassButton extends StatefulWidget {
     // GlassGlow properties
     this.glowColor,
     this.glowRadius = 1.0,
+    this.glowBlurRadius,
+    this.glowSpreadRadius,
+    this.glowOpacity,
     this.glowHitTestBehavior = HitTestBehavior.opaque,
     this.enabled = true,
     this.style = GlassButtonStyle.filled,
@@ -188,6 +191,9 @@ class GlassButton extends StatefulWidget {
     // GlassGlow properties
     this.glowColor,
     this.glowRadius = 1.0,
+    this.glowBlurRadius,
+    this.glowSpreadRadius,
+    this.glowOpacity,
     this.glowHitTestBehavior = HitTestBehavior.opaque,
     this.enabled = true,
     this.style = GlassButtonStyle.filled,
@@ -408,6 +414,22 @@ class GlassButton extends StatefulWidget {
   /// Defaults to 1.0.
   final double glowRadius;
 
+  /// Additional Gaussian blur sigma applied to the glow halo.
+  ///
+  /// If null, the value from [GlassThemeData.glowColorsFor] is used.
+  /// Pass 0 to disable blur. Values of 4–16 create a diffuse halo.
+  final double? glowBlurRadius;
+
+  /// Extra glow circle spread as a fraction of the layer's shortest side.
+  ///
+  /// If null, the value from [GlassThemeData.glowColorsFor] is used.
+  final double? glowSpreadRadius;
+
+  /// Master opacity multiplier (0–1) applied on top of [glowColor]'s alpha.
+  ///
+  /// If null, the value from [GlassThemeData.glowColorsFor] is used.
+  final double? glowOpacity;
+
   /// The hit test behavior for the glow gesture listener.
   ///
   /// Controls how the glow effect responds to touches:
@@ -469,9 +491,16 @@ class _GlassButtonState extends State<GlassButton>
       widgetQuality: widget.quality,
     );
 
-    final effectiveGlowColor = widget.glowColor ??
-        GlassThemeData.of(context).glowColorsFor(context).primary ??
-        Colors.white24;
+    final resolvedGlowColors =
+        GlassThemeData.of(context).glowColorsFor(context);
+    final effectiveGlowColor =
+        widget.glowColor ?? resolvedGlowColors.primary ?? Colors.white24;
+    final effectiveGlowBlurRadius =
+        widget.glowBlurRadius ?? resolvedGlowColors.glowBlurRadius;
+    final effectiveGlowSpreadRadius =
+        widget.glowSpreadRadius ?? resolvedGlowColors.glowSpreadRadius;
+    final effectiveGlowOpacity =
+        widget.glowOpacity ?? resolvedGlowColors.glowOpacity;
 
     // Build the content widget (either icon or custom child)
     final contentWidget = SizedBox(
@@ -494,6 +523,9 @@ class _GlassButtonState extends State<GlassButton>
     final glowContent = GlassGlow(
       glowColor: effectiveGlowColor,
       glowRadius: widget.glowRadius,
+      glowBlurRadius: effectiveGlowBlurRadius,
+      glowSpreadRadius: effectiveGlowSpreadRadius,
+      glowOpacity: effectiveGlowOpacity,
       hitTestBehavior: widget.glowHitTestBehavior,
       child: contentWidget,
     );

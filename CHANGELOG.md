@@ -1,3 +1,170 @@
+# 0.9.1
+
+## 🐛 Fix — Adaptive quality system calibration
+
+Three coordinated improvements to `GlassAdaptiveScope` / `GlassQualityAdapter` that
+prevent modern flagship devices from being incorrectly demoted to `standard` quality
+during app startup.
+
+### 1. Startup-skip window (`skipInitialFrames = 60`)
+
+Phase 2 now discards the **first 60 frames** (≈ 1 second at 60 Hz) before collecting
+warmup data. Those frames capture shader compilation, the first route transition, and
+provider/localisation initialisation — all artificially inflated and unrepresentative of
+steady-state glass rendering. Discarding them means the warmup benchmark reflects actual
+glass workload, not cold-start overhead.
+
+The constant is tunable for testing: `GlassQualityAdapter.skipInitialFrames = 0`.
+
+### 2. Raised premium threshold: 12 ms → 16 ms
+
+The old threshold of 12 ms (75 % of a 60 fps frame budget) was too tight.
+The new threshold is **16 ms — one full 60 fps frame budget** — which has a cleaner
+semantic meaning: "can the device render a premium glass frame within the 60 fps
+budget at P75? Yes → premium."
+
+| P75 raster time | Before | After |
+|---|---|---|
+| < 12 ms | premium | — |
+| **< 16 ms** | standard | **premium** |
+| 16–20 ms | standard | standard |
+| > 20 ms | minimal | minimal |
+
+### 3. `allowStepUp` defaults to `true`
+
+Previously `allowStepUp` defaulted to `false`, meaning a Phase 2 decision could never
+be corrected at runtime. If Phase 2 still makes a conservative call (e.g. on a device
+under thermal load at startup), Phase 3 can now self-correct after 10 consecutive
+under-budget windows (≈ 20 seconds) + an 8-second cooldown.
+
+The step-up is deliberately slow and invisible to users. Set `allowStepUp: false`
+explicitly if you need to lock quality for the session.
+
+### Zero breaking changes (adaptive fix)
+
+All three changes are additive or alter defaults in a user-beneficial direction.
+Explicit constructor overrides (`allowStepUp: false`, `skipInitialFrames`, custom
+threshold via `targetFrameMs`) continue to take precedence.
+
+---
+
+## 🐛 Fix — `GlassSwitch` drag interaction
+
+`GlassSwitch` now supports tap and horizontal drag simultaneously without either
+interaction interfering with the other.
+
+**What was fixed:**
+
+- **Tap animation restored** — registering both `onTap` and `onHorizontalDrag*`
+  on the same `GestureDetector` caused Flutter's gesture arena to drop one
+  interaction after the first touch. Taps now use `onTapDown` / `onTapUp` so
+  they share the gesture stream cleanly with drags.
+- **Slow drag no longer cancels** — Flutter fires `onTapCancel` before
+  confirming a horizontal drag, which was deflating the "liquid bloom" pill
+  prematurely. `_onDragStart` now stops any in-progress deflation and restores
+  the plump state immediately.
+- **Animation resets between interactions** — the thickness animation controller
+  was left at `1.0` after its first cycle and silently skipped the bloom on
+  subsequent taps. It now resets to `0.0` before each new forward pass.
+
+**Gesture behaviour unchanged from the user's perspective:** tap = full liquid
+jump animation; drag = thumb tracks finger with symmetric pill stretch; flick =
+velocity-based snap.
+
+### Zero breaking changes
+
+No API changes. All existing `GlassSwitch` usages continue to work without
+modification.
+
+---
+
+## 🐛 Fix — `interactionGlowColor` now reads from `GlassThemeData`
+
+`GlassBottomBar` and `GlassSearchableBottomBar` (including its `collapsedLogoBuilder`
+state and `SearchPill`) previously used a hardcoded white glow (`0x33FFFFFF`) when
+no explicit `interactionGlowColor` was set, silently ignoring any `GlassThemeData`
+override on the ancestor tree.
+
+**Resolution order is now:**
+
+```
+interactionGlowColor param → GlassThemeData.glowColorsFor(context).primary → internal fallback
+```
+
+This means setting the primary glow color in `GlassThemeData` now takes effect
+on the press-interaction highlight across both bar variants, including the collapsed
+logo pill, without requiring any code changes at the call site.
+
+### Affected widgets
+
+| Widget | Location |
+|---|---|
+| `GlassBottomBar` | `TabIndicator` interaction glow |
+| `GlassSearchableBottomBar` | `SearchableTabIndicator` (normal + collapsed/logo state) |
+| `GlassSearchableBottomBar` | `SearchPill` expanded glow |
+
+### Zero breaking changes
+
+Explicit `interactionGlowColor` parameters continue to win with highest priority.
+This only changes what happens when the parameter is left `null`.
+
+---
+
+## ✨ Feature — `glowBlurRadius`, `glowSpreadRadius`, `glowOpacity` on `GlassGlowColors`
+
+Three new appearance fields on `GlassGlowColors` give fine-grained control over the
+shape of the directional press-glow across all glass widgets:
+
+| Field | Type | Default | Effect |
+|---|---|---|---|
+| `glowBlurRadius` | `double` | `0` | Gaussian blur sigma added via `MaskFilter.blur` — softens the halo edge |
+| `glowSpreadRadius` | `double` | `0` | Extra circle radius as a fraction of the layer's shortest side |
+| `glowOpacity` | `double` | `1` | Master opacity multiplier (0–1) applied on top of the glow color's own alpha |
+
+### Usage
+
+Set them globally via `GlassThemeData` to affect all glass widgets at once:
+
+```dart
+GlassTheme(
+  data: GlassThemeData(
+    light: GlassThemeVariant(
+      glowColors: GlassGlowColors(
+        primary: Color(0x55FFFFFF),
+        glowBlurRadius: 8,       // soft, diffuse halo
+        glowSpreadRadius: 0.15,  // bleeds 15 % beyond touch radius
+        glowOpacity: 0.75,       // 75 % of the color's own alpha
+      ),
+    ),
+  ),
+  child: ...,
+)
+```
+
+Or override per-widget via `GlassButton.glowBlurRadius` / `glowSpreadRadius` /
+`glowOpacity` — widget-level values take precedence over the theme.
+
+### Defaults preserve existing visual behaviour
+
+All three fields default to `0 / 0 / 1` in `GlassGlowColors.fallback`, which is
+identical to the pre-existing rendering. No visual changes occur unless you
+explicitly set them.
+
+### Affected widgets
+
+All widgets that render `GlassGlow` consume these fields, including:
+`GlassButton`, `GlassBottomBar`, `GlassSearchableBottomBar`
+(both the tab pill and the search pill), `GlassSlider`, `GlassSwitch`.
+
+### Zero breaking changes
+
+Existing code that does not set these fields continues to render identically.
+`copyWith`, `==`, and `hashCode` all include the three new fields.
+
+---
+
+
+
 # 0.9.0
 
 ## ✨ New — `tabWidth` on `GlassBottomBar`

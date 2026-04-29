@@ -9,13 +9,15 @@
 ///   - `kIsWeb` → cap at `standard`
 ///   - Otherwise → proceed to Phase 2
 ///
-///   **Phase 2 — Warm-up benchmark** (first 180 frames ≈ 3 s at 60 fps):
+///   **Phase 2 — Warm-up benchmark** (first 180 measured frames ≈ 3 s at 60 fps):
+///   - Skips the first [GlassQualityAdapter.skipInitialFrames] frames (default
+///     60 ≈ 1 s) to let shader compilation and first-route transitions settle.
 ///   - Collects `rasterDuration` via [SchedulerBinding.addTimingsCallback]
 ///   - Computes the P75 raster time across the collected frames
-///   - P75 < 12 ms  → remain at [GlassQuality.premium] (fast device)
-///   - P75 12–20 ms → step to [GlassQuality.standard]
+///   - P75 < 16 ms  → remain at [GlassQuality.premium] (within 60 fps budget)
+///   - P75 16–20 ms → step to [GlassQuality.standard]
 ///   - P75 > 20 ms  → step to [GlassQuality.minimal]
-///   - Transitions to Phase 3 once 180 frames have been collected
+///   - Transitions to Phase 3 once `skipInitialFrames + warmupFrames` have been seen
 ///
 ///   **Phase 3 — Runtime hysteresis** (ongoing, very low overhead):
 ///   - Maintains a rolling ring buffer of the last 120 raster durations
@@ -181,6 +183,13 @@ class GlassQualityAdapter {
 
   // ── Tunable constants (override in tests) ──────────────────────────────────
 
+  /// Frames to skip at the very start of Phase 2 before collecting warmup
+  /// data. This lets shader compilation, first-route transitions, and provider
+  /// initialisation settle so they don't pollute the warmup benchmark.
+  ///
+  /// Default: 60 ≈ 1 second at 60 Hz.
+  static int skipInitialFrames = 60;
+
   /// Frames to collect in Phase 2 (warm-up) before making the initial quality
   /// decision. Default: 180 ≈ 3 seconds at 60 Hz.
   static int warmupFrames = 180;
@@ -212,6 +221,7 @@ class GlassQualityAdapter {
   // ── Phase 2 — warm-up ──────────────────────────────────────────────────────
 
   final List<int> _warmupDurations = []; // raster durations in microseconds
+  int _skippedWarmupFrames = 0; // frames dropped during the startup-skip window
 
   // ── Phase 3 — runtime ring buffer ─────────────────────────────────────────
 
@@ -359,6 +369,7 @@ class GlassQualityAdapter {
     _underBudgetWindowCount = 0;
     _windowFrameCount = 0;
     _lastChangeAt = null;
+    _skippedWarmupFrames = 0; // restart the startup-skip window
     _usedCachedQuality = false; // accurate: we are re-running Phase 2
 
     if (_running) {
@@ -425,6 +436,14 @@ class GlassQualityAdapter {
   // ── Phase 2 — warm-up ──────────────────────────────────────────────────────
 
   void _processWarmupFrame(int rasterUs) {
+    // Drop the first `skipInitialFrames` frames so that shader compilation,
+    // first-route animation and provider/localisation initialisation noise does
+    // not pollute the warmup benchmark on otherwise capable devices.
+    if (_skippedWarmupFrames < skipInitialFrames) {
+      _skippedWarmupFrames++;
+      return;
+    }
+
     _warmupDurations.add(rasterUs);
 
     if (_warmupDurations.length < warmupFrames) return;
@@ -434,7 +453,9 @@ class GlassQualityAdapter {
     final p75Ms = p75 / 1000.0;
 
     final GlassQuality decided;
-    if (p75Ms < 12.0) {
+    // 16 ms = one full 60 fps frame budget.  If P75 is within budget the
+    // device can sustain premium quality under normal load.
+    if (p75Ms < 16.0) {
       decided = _capQuality(maxQuality, maxQuality); // stay at ceiling
     } else if (p75Ms <= 20.0) {
       decided = _capQuality(maxQuality, GlassQuality.standard);

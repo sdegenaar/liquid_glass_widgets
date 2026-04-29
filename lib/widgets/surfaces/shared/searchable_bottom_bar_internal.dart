@@ -112,6 +112,9 @@ class SearchableTabIndicator extends StatefulWidget {
     this.collapsedLogoBuilder,
     this.interactionGlowColor,
     this.interactionGlowRadius = 1.5,
+    this.interactionGlowBlurRadius = 0,
+    this.interactionGlowSpreadRadius = 0,
+    this.interactionGlowOpacity = 1,
     required this.enableBackgroundAnimation,
     required this.backgroundPressScale,
     super.key,
@@ -138,6 +141,9 @@ class SearchableTabIndicator extends StatefulWidget {
   final WidgetBuilder? collapsedLogoBuilder;
   final Color? interactionGlowColor;
   final double interactionGlowRadius;
+  final double interactionGlowBlurRadius;
+  final double interactionGlowSpreadRadius;
+  final double interactionGlowOpacity;
   final bool enableBackgroundAnimation;
   final double backgroundPressScale;
 
@@ -181,11 +187,14 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
         height: widget.barHeight,
         quality: widget.quality,
         shape: _barShape,
-        // When interactionBehavior suppresses glow, the parent passes
-        // Colors.transparent (non-null). The ?? only fires when the caller
-        // sets no explicit glow color and behavior allows glow.
-        glowColor: widget.interactionGlowColor ?? const Color(0x33FFFFFF),
+        // interactionGlowColor is pre-resolved by the outer GlassSearchableBottomBar
+        // (explicit param → GlassThemeData.primary → internal default). The parent
+        // passes Colors.transparent when interactionBehavior suppresses glow.
+        glowColor: widget.interactionGlowColor ?? Colors.white24,
         glowRadius: widget.interactionGlowRadius,
+        glowBlurRadius: widget.interactionGlowBlurRadius,
+        glowSpreadRadius: widget.interactionGlowSpreadRadius,
+        glowOpacity: widget.interactionGlowOpacity,
         // Logo or empty — shown inside the glass button body.
         icon: widget.collapsedLogoBuilder != null
             ? AnimatedSwitcher(
@@ -322,6 +331,9 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
       clipper: ShapeBorderClipper(shape: _barShape),
       glowColor: effectiveColor,
       glowRadius: widget.interactionGlowRadius,
+      glowBlurRadius: widget.interactionGlowBlurRadius,
+      glowSpreadRadius: widget.interactionGlowSpreadRadius,
+      glowOpacity: widget.interactionGlowOpacity,
       child: child,
     );
   }
@@ -484,6 +496,9 @@ class SearchPill extends StatefulWidget {
     this.onFocusChanged,
     this.interactionGlowColor,
     this.interactionGlowRadius = 1.5,
+    this.interactionGlowBlurRadius = 0,
+    this.interactionGlowSpreadRadius = 0,
+    this.interactionGlowOpacity = 1,
     super.key,
   });
 
@@ -503,6 +518,10 @@ class SearchPill extends StatefulWidget {
 
   /// The radius spread of the directional glow effect when interacting with the pill.
   final double interactionGlowRadius;
+
+  final double interactionGlowBlurRadius;
+  final double interactionGlowSpreadRadius;
+  final double interactionGlowOpacity;
 
   @override
   State<SearchPill> createState() => SearchPillState();
@@ -605,6 +624,9 @@ class SearchPillState extends State<SearchPill> {
     return GlassGlow(
       glowColor: effectiveColor,
       glowRadius: widget.interactionGlowRadius,
+      glowBlurRadius: widget.interactionGlowBlurRadius,
+      glowSpreadRadius: widget.interactionGlowSpreadRadius,
+      glowOpacity: widget.interactionGlowOpacity,
       child: child,
     );
   }
