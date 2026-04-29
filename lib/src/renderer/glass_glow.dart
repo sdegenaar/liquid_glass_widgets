@@ -16,6 +16,9 @@ class GlassGlow extends StatelessWidget {
     this.glowColor = Colors.white24,
     this.glowRadius = 1,
     this.pulse = 0,
+    this.glowBlurRadius = 0,
+    this.glowSpreadRadius = 0,
+    this.glowOpacity = 1,
     this.clipper,
     this.hitTestBehavior = HitTestBehavior.opaque,
     super.key,
@@ -37,6 +40,34 @@ class GlassGlow extends StatelessWidget {
 
   /// Global pulse intensity (0.0 to 1.0) for a full-window glow effect.
   final double pulse;
+  /// Additional blur sigma applied to the glow circle via a [MaskFilter].
+  ///
+  /// A value of 0 (the default) produces a sharp-edged radial gradient with no
+  /// additional blur. Higher values soften the glow, creating a wider diffuse
+  /// halo. The blur is applied *on top of* the radial gradient fade-out, so
+  /// even moderate values (4–12) are clearly visible.
+  ///
+  /// Corresponds to [GlassGlowColors.glowBlurRadius].
+  final double glowBlurRadius;
+
+  /// Extra radius added to the drawn circle beyond the physics radius.
+  ///
+  /// A value of 0 (the default) draws the circle at the physics radius. A
+  /// positive value (e.g. 0.2) expands it by that fraction of the layer's
+  /// shortest side — useful for making the glow bleed slightly further from
+  /// the touch point without inflating the radius spring.
+  ///
+  /// Corresponds to [GlassGlowColors.glowSpreadRadius].
+  final double glowSpreadRadius;
+
+  /// Master opacity multiplier applied on top of [glowColor]'s own alpha.
+  ///
+  /// Range 0–1. Defaults to 1 (no change). A value of 0.5 halves the effective
+  /// glow opacity without changing the color itself, making it easy to dial
+  /// the intensity down from the theme without adjusting the raw color.
+  ///
+  /// Corresponds to [GlassGlowColors.glowOpacity].
+  final double glowOpacity;
 
   /// The hit test behavior of this gesture listener.
   ///
@@ -91,7 +122,14 @@ class GlassGlow extends StatelessWidget {
       pos = event.localPosition;
     }
 
-    layerState.updateTouch(pos, radius: glowRadius, color: glowColor);
+    layerState.updateTouch(
+      pos,
+      radius: glowRadius,
+      color: glowColor,
+      blurRadius: glowBlurRadius,
+      spreadRadius: glowSpreadRadius,
+      opacity: glowOpacity,
+    );
   }
 
   void _removeTouch(BuildContext context) {
@@ -163,6 +201,20 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
   double _baseRadius = 0;
   Color _baseColor = const Color.fromARGB(0, 0, 0, 0);
   bool _dragging = false;
+  bool _dragging = false;
+
+  /// Whether a touch is currently active.
+  ///
+  /// Exposed for testing to verify the spring-switching behaviour introduced
+  /// in the glow-follow-speed fix.
+  @visibleForTesting
+  bool get dragging => _dragging;
+
+  double _baseRadius = 0;
+  Color _baseColor = const Color.fromARGB(0, 0, 0, 0);
+  double _baseBlurRadius = 0;
+  double _baseSpreadRadius = 0;
+  double _baseOpacity = 1;
 
   @override
   void dispose() {
@@ -176,10 +228,16 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
     Offset offset, {
     required double radius,
     required Color color,
+    double blurRadius = 0,
+    double spreadRadius = 0,
+    double opacity = 1,
   }) {
     setState(() {
       _baseRadius = radius;
       _baseColor = color;
+      _baseBlurRadius = blurRadius;
+      _baseSpreadRadius = spreadRadius;
+      _baseOpacity = opacity.clamp(0.0, 1.0);
     });
 
     if (!_dragging) {
@@ -190,6 +248,9 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
       _offsetController.value = offset;
       _alphaController.spring = GlassSpring.interactive();
       _radiusController.spring = GlassSpring.interactive();
+      // Switch position tracking to interactive spring so the glow follows
+      // the finger at the same responsive speed as alpha/radius.
+      _offsetController.spring = GlassSpring.interactive();
       _alphaController.animateTo(1, fromVelocity: 0);
       _radiusController.animateTo(1, fromVelocity: 0);
     }
@@ -201,6 +262,10 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
     if (!_dragging) return;
     _alphaController.spring = GlassSpring.smooth();
     _radiusController.spring = GlassSpring.smooth();
+    // Restore smooth spring for the position fade-out drift.
+    _offsetController.spring = GlassSpring.smooth(
+      duration: const Duration(seconds: 1),
+    );
     _dragging = false;
     _radiusController.animateTo(1.2);
     _alphaController.animateTo(0);
@@ -215,14 +280,17 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
         _radiusController,
       ]),
       builder: (context, child) {
+        final animatedAlpha = _baseColor.a * _alphaController.value;
         return _RenderGlassGlowLayerWidget(
           clipper: widget.clipper,
           pulse: widget.pulse,
           glowRadius: _baseRadius * _radiusController.value,
           glowColor: _baseColor.withValues(
-            alpha: _baseColor.a * _alphaController.value,
+            alpha: animatedAlpha * _baseOpacity,
           ),
           glowOffset: _offsetController.value,
+          glowBlurRadius: _baseBlurRadius,
+          glowSpreadRadius: _baseSpreadRadius,
           child: child,
         );
       },
@@ -238,6 +306,8 @@ class _RenderGlassGlowLayerWidget extends SingleChildRenderObjectWidget {
     required this.glowRadius,
     required this.glowColor,
     required this.glowOffset,
+    required this.glowBlurRadius,
+    required this.glowSpreadRadius,
     required super.child,
   });
 
@@ -246,6 +316,8 @@ class _RenderGlassGlowLayerWidget extends SingleChildRenderObjectWidget {
   final double glowRadius;
   final Color glowColor;
   final Offset glowOffset;
+  final double glowBlurRadius;
+  final double glowSpreadRadius;
 
   @override
   RenderObject createRenderObject(BuildContext context) {
@@ -255,6 +327,8 @@ class _RenderGlassGlowLayerWidget extends SingleChildRenderObjectWidget {
       glowRadius: glowRadius,
       glowColor: glowColor,
       glowOffset: glowOffset,
+      glowBlurRadius: glowBlurRadius,
+      glowSpreadRadius: glowSpreadRadius,
     );
   }
 
@@ -268,7 +342,9 @@ class _RenderGlassGlowLayerWidget extends SingleChildRenderObjectWidget {
       ..pulse = pulse
       ..glowRadius = glowRadius
       ..glowColor = glowColor
-      ..glowOffset = glowOffset;
+      ..glowOffset = glowOffset
+      ..glowBlurRadius = glowBlurRadius
+      ..glowSpreadRadius = glowSpreadRadius;
   }
 }
 
@@ -278,11 +354,15 @@ class _RenderGlassGlowLayer extends RenderProxyBox {
     required Color glowColor,
     required Offset glowOffset,
     required double pulse,
+    required double glowBlurRadius,
+    required double glowSpreadRadius,
     CustomClipper<Path>? clipper,
   })  : _glowRadius = glowRadius,
         _glowColor = glowColor,
         _glowOffset = glowOffset,
         _pulse = pulse,
+        _glowBlurRadius = glowBlurRadius,
+        _glowSpreadRadius = glowSpreadRadius,
         _clipper = clipper;
 
   CustomClipper<Path>? _clipper;
@@ -322,6 +402,22 @@ class _RenderGlassGlowLayer extends RenderProxyBox {
   set glowOffset(Offset value) {
     if (_glowOffset == value) return;
     _glowOffset = value;
+    markNeedsPaint();
+  }
+
+  double _glowBlurRadius;
+  double get glowBlurRadius => _glowBlurRadius;
+  set glowBlurRadius(double value) {
+    if (_glowBlurRadius == value) return;
+    _glowBlurRadius = value;
+    markNeedsPaint();
+  }
+
+  double _glowSpreadRadius;
+  double get glowSpreadRadius => _glowSpreadRadius;
+  set glowSpreadRadius(double value) {
+    if (_glowSpreadRadius == value) return;
+    _glowSpreadRadius = value;
     markNeedsPaint();
   }
 
@@ -373,6 +469,36 @@ class _RenderGlassGlowLayer extends RenderProxyBox {
       } else {
         canvas.drawCircle(glowPosition, radius, paint);
       }
+    final shortSide = math.min(size.width, size.height);
+    final radius = _glowRadius * shortSide + _glowSpreadRadius * shortSide;
+
+    // RadialGradient.createShader() bakes the center position into the shader
+    // via the Rect passed to it — caching across position changes is incorrect.
+    // Per-frame creation is cheap for a simple radial gradient (uniform-only).
+    final paint = Paint()
+      ..shader = RadialGradient(
+        colors: [_glowColor, _glowColor.withValues(alpha: 0)],
+        stops: const [0.0, 1.0],
+      ).createShader(Rect.fromCircle(center: glowPosition, radius: radius))
+      ..blendMode = BlendMode.plus;
+
+    // Optional Gaussian blur to soften the glow halo. Only create the
+    // MaskFilter when non-zero to avoid a no-op allocation every frame.
+    if (_glowBlurRadius > 0) {
+      paint.maskFilter = MaskFilter.blur(BlurStyle.normal, _glowBlurRadius);
+    }
+
+    // 1. Paint the children (which includes AdaptiveGlass taking its backdrop snapshot)
+    super.paint(context, offset);
+
+    // 2. Additive light over geometry boundary only
+    if (_clipper != null) {
+      context.canvas.save();
+      context.canvas.clipPath(_clipper!.getClip(size).shift(offset));
+      context.canvas.drawCircle(glowPosition, radius, paint);
+      context.canvas.restore();
+    } else {
+      context.canvas.drawCircle(glowPosition, radius, paint);
     }
   }
 }

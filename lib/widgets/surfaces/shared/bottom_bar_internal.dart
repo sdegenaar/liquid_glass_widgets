@@ -314,6 +314,9 @@ class TabIndicator extends StatefulWidget {
     this.backgroundKey,
     this.interactionGlowColor,
     this.interactionGlowRadius = 1.5,
+    this.interactionGlowBlurRadius = 0,
+    this.interactionGlowSpreadRadius = 0,
+    this.interactionGlowOpacity = 1,
     this.interactionScale = 1.0,
     super.key,
   });
@@ -336,6 +339,9 @@ class TabIndicator extends StatefulWidget {
   final GlobalKey? backgroundKey;
   final Color? interactionGlowColor;
   final double interactionGlowRadius;
+  final double interactionGlowBlurRadius;
+  final double interactionGlowSpreadRadius;
+  final double interactionGlowOpacity;
 
   /// The scale factor applied by [LiquidStretch] on press.
   ///
@@ -521,6 +527,9 @@ class TabIndicatorState extends State<TabIndicator>
       clipper: ShapeBorderClipper(shape: _barShape),
       glowColor: effectiveColor,
       glowRadius: widget.interactionGlowRadius,
+      glowBlurRadius: widget.interactionGlowBlurRadius,
+      glowSpreadRadius: widget.interactionGlowSpreadRadius,
+      glowOpacity: widget.interactionGlowOpacity,
       child: child,
     );
   }

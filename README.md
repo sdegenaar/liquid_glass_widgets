@@ -37,6 +37,16 @@ A premium app demonstrating `liquid_glass_widgets` in a real-world production co
 cd example/showcase && flutter pub get && flutter run
 ```
 
+
+### [Apple Music Demo](example/lib/apple_music/) — iOS 26 Replica
+
+A recreation of the Apple Music app demonstrating `GlassSearchableBottomBar`, a floating playback pill, and the full iOS 26 navigation model with smooth morphing transitions.
+
+```bash
+cd example && flutter pub get && flutter run -t lib/apple_music/apple_music_demo.dart
+```
+
+
 ### [Apple News Demo](example/lib/apple_news/) — iOS 26 Replica
 
 A recreation of the Apple News app demonstrating `GlassSearchableBottomBar` with its morphing search pill, category chips, hero cards, and rounded article tiles.
@@ -83,7 +93,7 @@ cd example && flutter pub get && flutter run
 
 ```yaml
 dependencies:
-  liquid_glass_widgets: ^0.9.0
+  liquid_glass_widgets: ^0.9.2
 ```
 
 ```bash
@@ -223,6 +233,23 @@ Access the current theme variant programmatically:
 ```dart
 final variant = GlassThemeData.of(context).variantFor(context);
 ```
+
+### Glow Colors
+
+`GlassGlowColors` controls the interaction glow emitted by surfaces like `GlassBottomBar` and `GlassSearchableBottomBar`. Set it once in your theme and every navigation surface picks it up automatically:
+
+```dart
+GlassThemeVariant(
+  glowColors: GlassGlowColors(
+    primary: Colors.blue,   // tab indicator & search pill glow
+    blurRadius: 12,         // glow softness (default: 0 = crisp edge)
+    spreadRadius: 0.2,      // glow spread beyond the widget edge (default: 0)
+    opacity: 0.8,           // overall glow intensity (default: 1.0)
+  ),
+)
+```
+
+Individual widgets can still override via their `interactionGlowColor` parameter — the explicit param always wins over the theme.
 
 ### Specular Sharpness
 

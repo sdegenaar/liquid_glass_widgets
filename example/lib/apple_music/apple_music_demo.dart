@@ -55,7 +55,16 @@ const _kPillGlass = LiquidGlassSettings(
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
-  runApp(LiquidGlassWidgets.wrap(const AppleMusicDemoApp()));
+  runApp(LiquidGlassWidgets.wrap(
+    const AppleMusicDemoApp(),
+    adaptiveQuality: true,
+    // ignore: experimental_member_use
+    adaptiveConfig: const GlassAdaptiveScopeConfig(
+      // Left on intentionally for 0.9.1 — helps gather diagnostics
+      // if the adaptive threshold fix doesn't hold on all hardware.
+      debugLogDiagnostics: true,
+    ),
+  ));
 }
 
 class AppleMusicDemoApp extends StatelessWidget {

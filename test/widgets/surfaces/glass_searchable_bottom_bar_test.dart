@@ -583,4 +583,162 @@ void main() {
       expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
     });
   });
+
+  // ── Interaction glow color — theme propagation (fix for collapsed logo pill)
+  //
+  // Regression: the collapsed logo GlassButton was hardcoding 0x33FFFFFF as a
+  // fallback even though the outer GlassSearchableBottomBar had already resolved
+  // the correct theme color. This group verifies the full propagation chain:
+  //
+  //   GlassThemeData.glowColors.primary
+  //       → effectiveInteractionGlowColor (GlassSearchableBottomBar.build)
+  //       → SearchableTabIndicator.interactionGlowColor
+  //       → GlassButton.glowColor  (collapsed logo pill, isSearchActive=true)
+
+  group('GlassSearchableBottomBar interaction glow — theme propagation', () {
+    /// Builds the bar inside a [GlassTheme] with a known primary glow color,
+    /// then returns the [GlassButton] widget rendered for the collapsed logo.
+    Widget buildWithTheme({
+      required Color primaryGlow,
+      bool isSearchActive = true,
+      GlassInteractionBehavior interactionBehavior =
+          GlassInteractionBehavior.glowOnly,
+    }) {
+      return MaterialApp(
+        home: GlassTheme(
+          data: GlassThemeData(
+            light: GlassThemeVariant(
+              glowColors: GlassGlowColors(primary: primaryGlow),
+            ),
+            dark: GlassThemeVariant(
+              glowColors: GlassGlowColors(primary: primaryGlow),
+            ),
+          ),
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: GlassSearchableBottomBar(
+              tabs: _testTabs,
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              isSearchActive: isSearchActive,
+              interactionBehavior: interactionBehavior,
+              maskingQuality: MaskingQuality.off,
+              searchConfig: GlassSearchBarConfig(
+                onSearchToggle: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets(
+        'collapsed logo GlassButton receives GlassThemeData.primary glow color',
+        (tester) async {
+      const expectedColor = Color(0xFF00FF00); // vivid green — unmistakable
+
+      await tester.pumpWidget(
+        buildWithTheme(primaryGlow: expectedColor),
+      );
+      await tester.pumpAndSettle();
+
+      // The collapsed logo pill is a GlassButton. Its glowColor should be
+      // exactly the theme primary we injected — not the old hardcoded 0x33FFFFFF.
+      final buttons = tester.widgetList<GlassButton>(find.byType(GlassButton));
+      expect(buttons, isNotEmpty,
+          reason: 'Expected at least one GlassButton in collapsed bar');
+
+      // At least one GlassButton must carry the theme color.
+      final match = buttons.any((b) => b.glowColor == expectedColor);
+      expect(match, isTrue,
+          reason:
+              'No GlassButton received the theme glow color $expectedColor. '
+              'Found: ${buttons.map((b) => b.glowColor).toList()}');
+    });
+
+    testWidgets(
+        'explicit interactionGlowColor overrides theme (widget param wins)',
+        (tester) async {
+      const themeColor = Color(0xFF00FF00);
+      const explicitColor = Color(0xFFFF0000); // red — different from theme
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GlassTheme(
+            data: GlassThemeData(
+              light: GlassThemeVariant(
+                glowColors: const GlassGlowColors(primary: themeColor),
+              ),
+              dark: GlassThemeVariant(
+                glowColors: const GlassGlowColors(primary: themeColor),
+              ),
+            ),
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: GlassSearchableBottomBar(
+                tabs: _testTabs,
+                selectedIndex: 0,
+                onTabSelected: (_) {},
+                isSearchActive: true,
+                // Explicit widget param must win over theme
+                interactionGlowColor: explicitColor,
+                maskingQuality: MaskingQuality.off,
+                searchConfig: GlassSearchBarConfig(
+                  onSearchToggle: (_) {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final buttons = tester.widgetList<GlassButton>(find.byType(GlassButton));
+      expect(buttons, isNotEmpty);
+
+      final hasExplicit = buttons.any((b) => b.glowColor == explicitColor);
+      expect(hasExplicit, isTrue,
+          reason: 'Explicit interactionGlowColor should override theme');
+
+      // The theme green must NOT appear — widget param has priority
+      final hasTheme = buttons.any((b) => b.glowColor == themeColor);
+      expect(hasTheme, isFalse,
+          reason: 'Theme color should be overridden by explicit param');
+    });
+
+    testWidgets(
+        'GlassInteractionBehavior.none passes Colors.transparent — glow suppressed',
+        (tester) async {
+      const primaryGlow = Color(0xFF00FF00);
+
+      await tester.pumpWidget(
+        buildWithTheme(
+          primaryGlow: primaryGlow,
+          interactionBehavior: GlassInteractionBehavior.none,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // With .none behavior the bar passes Colors.transparent so the glow
+      // wrapper is skipped. No GlassButton should have the theme green.
+      final buttons = tester.widgetList<GlassButton>(find.byType(GlassButton));
+      final hasGreen = buttons.any((b) => b.glowColor == primaryGlow);
+      expect(hasGreen, isFalse,
+          reason:
+              'GlassInteractionBehavior.none should suppress theme glow color');
+    });
+
+    testWidgets(
+        'bar mounts correctly in tab-bar mode (isSearchActive=false) with theme',
+        (tester) async {
+      const primaryGlow = Color(0xFF00FF00);
+
+      await tester.pumpWidget(
+        buildWithTheme(primaryGlow: primaryGlow, isSearchActive: false),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+    });
+  });
 }

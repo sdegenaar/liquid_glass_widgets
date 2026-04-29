@@ -10,6 +10,7 @@ import 'package:flutter/physics.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/types/glass_interaction_behavior.dart';
 import '../../types/glass_quality.dart';
+import '../../theme/glass_theme_data.dart';
 import '../../theme/glass_theme_helpers.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
 import 'glass_bottom_bar.dart'
@@ -455,6 +456,19 @@ class _GlassSearchableBottomBarState extends State<GlassSearchableBottomBar>
       widgetQuality: widget.quality,
       fallback: GlassQuality.premium,
     );
+
+    // Resolve interaction glow color: explicit param → GlassThemeData.primary → null
+    // (null lets the internal widget use its own hardcoded fallback).
+    final resolvedGlowColors =
+        GlassThemeData.of(context).glowColorsFor(context);
+    final effectiveInteractionGlowColor =
+        widget.interactionGlowColor ?? resolvedGlowColors.primary;
+
+    // Glow appearance fields come from the theme palette.
+    final effectiveGlowBlurRadius = resolvedGlowColors.glowBlurRadius;
+    final effectiveGlowSpreadRadius = resolvedGlowColors.glowSpreadRadius;
+    final effectiveGlowOpacity = resolvedGlowColors.glowOpacity;
+
     final glassSettings = widget.glassSettings ?? _defaultGlassSettings;
     final searching = widget.isSearchActive;
 
@@ -674,9 +688,13 @@ class _GlassSearchableBottomBarState extends State<GlassSearchableBottomBar>
                           isSearchActive: searching,
                           interactionGlowColor:
                               widget.interactionBehavior.hasGlow
-                                  ? widget.interactionGlowColor
+                                  ? effectiveInteractionGlowColor
                                   : Colors.transparent,
                           interactionGlowRadius: widget.interactionGlowRadius,
+                          interactionGlowBlurRadius: effectiveGlowBlurRadius,
+                          interactionGlowSpreadRadius:
+                              effectiveGlowSpreadRadius,
+                          interactionGlowOpacity: effectiveGlowOpacity,
                           enableBackgroundAnimation:
                               widget.interactionBehavior.hasScale,
                           backgroundPressScale: widget.pressScale,
@@ -778,9 +796,13 @@ class _GlassSearchableBottomBarState extends State<GlassSearchableBottomBar>
                           backgroundPressScale: widget.pressScale,
                           interactionGlowColor:
                               widget.interactionBehavior.hasGlow
-                                  ? widget.interactionGlowColor
+                                  ? effectiveInteractionGlowColor
                                   : Colors.transparent,
                           interactionGlowRadius: widget.interactionGlowRadius,
+                          interactionGlowBlurRadius: effectiveGlowBlurRadius,
+                          interactionGlowSpreadRadius:
+                              effectiveGlowSpreadRadius,
+                          interactionGlowOpacity: effectiveGlowOpacity,
                           onFocusChanged: (focused) {
                             if (focused) {
                               _controller.onFocusChanged(true);
