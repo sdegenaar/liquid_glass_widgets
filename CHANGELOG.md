@@ -117,7 +117,7 @@ shape of the directional press-glow across all glass widgets:
 
 | Field | Type | Default | Effect |
 |---|---|---|---|
-| `glowBlurRadius` | `double` | `0` | Gaussian blur sigma added via `MaskFilter.blur` — softens the halo edge |
+| `glowBlurRadius` | `double` | `4.0` | Gaussian blur sigma via `MaskFilter.blur` — softens the glow edge into a natural liquid-glass halo |
 | `glowSpreadRadius` | `double` | `0` | Extra circle radius as a fraction of the layer's shortest side |
 | `glowOpacity` | `double` | `1` | Master opacity multiplier (0–1) applied on top of the glow color's own alpha |
 
@@ -146,9 +146,11 @@ Or override per-widget via `GlassButton.glowBlurRadius` / `glowSpreadRadius` /
 
 ### Defaults preserve existing visual behaviour
 
-All three fields default to `0 / 0 / 1` in `GlassGlowColors.fallback`, which is
-identical to the pre-existing rendering. No visual changes occur unless you
-explicitly set them.
+`glowSpreadRadius` and `glowOpacity` default to `0` and `1` respectively,
+preserving previous rendering. `glowBlurRadius` defaults to **`4.0`** —
+a soft, natural halo that better fits the liquid-glass aesthetic.
+`MaskFilter.blur` is guarded at zero so there is no GPU cost when the value
+is left at `0`. Set `glowBlurRadius: 0` explicitly for a hard-edge disc.
 
 ### Affected widgets
 

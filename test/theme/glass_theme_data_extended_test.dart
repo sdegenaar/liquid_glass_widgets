@@ -567,8 +567,8 @@ void main() {
     // ── Construction defaults ──────────────────────────────────────────────
 
     group('construction defaults', () {
-      test('glowBlurRadius defaults to 0', () {
-        expect(const GlassGlowColors().glowBlurRadius, 0);
+      test('glowBlurRadius defaults to 4.0 (liquid-glass soft edge)', () {
+        expect(const GlassGlowColors().glowBlurRadius, 4.0);
       });
 
       test('glowSpreadRadius defaults to 0', () {
@@ -692,8 +692,8 @@ void main() {
     // ── Fallback constant ─────────────────────────────────────────────────
 
     group('fallback constant appearance field defaults', () {
-      test('fallback.glowBlurRadius is 0', () {
-        expect(GlassGlowColors.fallback.glowBlurRadius, 0);
+      test('fallback.glowBlurRadius is 4.0', () {
+        expect(GlassGlowColors.fallback.glowBlurRadius, 4.0);
       });
 
       test('fallback.glowSpreadRadius is 0', () {

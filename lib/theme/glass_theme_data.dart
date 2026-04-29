@@ -19,7 +19,7 @@ class GlassGlowColors {
     this.warning,
     this.danger,
     this.info,
-    this.glowBlurRadius = 0,
+    this.glowBlurRadius = 4.0,
     this.glowSpreadRadius = 0,
     this.glowOpacity = 1,
   });
@@ -42,12 +42,13 @@ class GlassGlowColors {
   /// Informational color (typically blue)
   final Color? info;
 
-  /// Additional Gaussian blur sigma applied to the glow halo.
+  /// Gaussian blur sigma applied to the glow halo.
   ///
-  /// A value of 0 (the default) produces a crisp radial-gradient edge.
-  /// Increase to soften the halo — values in the 4–16 range give a
-  /// diffuse, candle-like glow. Applied via [MaskFilter.blur] on the
-  /// additive paint layer inside [GlassGlowLayer].
+  /// Defaults to `4.0` — softens the glow edge into a natural, liquid-glass
+  /// specular halo. Set to `0` for a crisp hard edge.
+  /// Values in the 4–16 range give progressively more diffuse softening.
+  /// Applied via [MaskFilter.blur] on the additive paint layer inside
+  /// [GlassGlowLayer]; guarded so no GPU work occurs when the value is 0.
   ///
   /// Passed directly to [GlassGlow.glowBlurRadius].
   final double glowBlurRadius;
@@ -110,8 +111,9 @@ class GlassGlowColors {
     warning: Color(0xFFFF9500), // iOS orange
     danger: Color(0xFFFF3B30), // iOS red
     info: Color(0xFF5AC8FA), // iOS light blue
-    // Appearance defaults — 0/0/1 keeps existing visual behaviour unchanged.
-    glowBlurRadius: 0,
+    // Appearance defaults — sigma-4 blur softens the glow edge for a natural
+    // liquid-glass feel. Zero-cost when inactive (guarded by > 0 check).
+    glowBlurRadius: 4.0,
     glowSpreadRadius: 0,
     glowOpacity: 1,
   );
