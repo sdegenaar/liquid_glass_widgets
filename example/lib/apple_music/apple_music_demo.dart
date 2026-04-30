@@ -210,10 +210,10 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
     final double contentPad = aboveBarBottom + 50.0 + 8.0;
 
     // The collapsed home/search pills render at searchBarHeight (50), not _kBarH (64).
-    // Using _kBarH here causes an ~18px gap; 50+4 gives the tight ~4px Apple uses.
-    const double _kCollapsedPillW = 50.0;
-    final double miniPlayLeft = _kPaddingH + _kCollapsedPillW + 6.0;
-    final double miniPlayRight = _kPaddingH + _kCollapsedPillW + 6.0;
+    // Using _kBarH here causes an ~18px gap; 50+6 gives the tight ~6px Apple uses.
+    const double collapsedPillW = 50.0;
+    final double miniPlayLeft = _kPaddingH + collapsedPillW + 6.0;
+    final double miniPlayRight = _kPaddingH + collapsedPillW + 6.0;
 
     return Scaffold(
       backgroundColor: _kBackground,
