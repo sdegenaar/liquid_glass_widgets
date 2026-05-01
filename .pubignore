@@ -12,9 +12,6 @@ docs/
 # Test suite — consumers don't need these; tests are on GitHub
 test/
 
-# Example app planning/AI docs
-example/**/*.md
-
 # Example app platform folders
 example/ios/
 example/macos/
@@ -23,13 +20,27 @@ example/android/
 example/windows/
 example/linux/
 
-# Showcase app (secondary example, not needed for pub.dev)
+# Example app — exclude everything except lib/main.dart and pubspec.yaml.
+# main.dart is kept so pub.dev shows the Example tab and awards the points.
+# A proper standalone example.dart will ship in the next version.
 example/showcase/
-
-# Apple News demo — downloaded image assets (660 KB JPEGs, binary, not useful
-# to package consumers). The example Dart source in example/lib/ IS published.
-# Run example/assets/download_news_images.sh to regenerate locally.
-example/assets/news_images/
+example/assets/
+example/**/*.md
+example/lib/apple_music/
+example/lib/apple_news/
+example/lib/apple_podcasts/
+example/lib/pages/
+example/lib/constants/
+example/lib/bug_repro.dart
+example/lib/backdrop_scope_repro.dart
+example/lib/repro_darkness.dart
+example/lib/repro_issue.dart
+example/lib/searchable_bar_repro.dart
+example/lib/g3mf0r.dart
+example/lib/inspect_settings.dart
+example/lib/tab_width_demo.dart
+example/lib/glass_bottom_bar_demo.dart
+example/lib/glass_modal_sheet_demo.dart
 
 # Tools (internal sync scripts)
 tools/
