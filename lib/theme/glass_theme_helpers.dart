@@ -291,8 +291,9 @@ class GlassThemeHelpers {
     if (bottom == 0) return 0.0;
 
     if (isIOS) {
-      // 2. iPhone Pro Max / Plus with Dynamic Island (e.g. 17 Pro Max: height 956)
-      if (height >= 900 || top >= 59) return 54.0;
+      // 2. iPhone Pro Max / Plus with Dynamic Island (e.g. 15 Pro Max: height 932)
+      // Height is the most reliable indicator; top padding can fluctuate.
+      if (height >= 900) return 54.0;
 
       // 3. iPhone Pro / Base with Dynamic Island (e.g. 15 Pro: height 852)
       if (height >= 800 || top >= 54) return 46.0;
