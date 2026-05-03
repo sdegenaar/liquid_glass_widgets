@@ -22,7 +22,7 @@ precision highp float; // mediump caused ~1.5px displacement banding on mobile (
 layout(location = 0) uniform vec2 uSize;
 layout(location = 1) uniform vec4 uOpticalProps;
 layout(location = 2) uniform float uNumShapes;
-layout(location = 3) uniform float uShapeData[MAX_SHAPES * 6];
+layout(location = 3) uniform float uShapeData[MAX_SHAPES * 7];
 
 // sdf.glsl functions access uShapeData as a global (no array-by-value parameters,
 // which are rejected by glslang on Windows/Vulkan SPIR-V compilation).

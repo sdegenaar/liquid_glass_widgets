@@ -26,13 +26,14 @@
 // depth" error that the user-attempted loop-expansion triggered.
 //
 // ── Shape slots ──────────────────────────────────────────────────────────────
-// Each shape occupies 6 consecutive floats in uShapeData[]:
-//   [base+0] type         1=squircle/roundrect  2=ellipse  3=roundrect
+// Each shape occupies 7 consecutive floats in uShapeData[]:
+//   [base+0] type             1=squircle/superellipse  2=ellipse  3=roundrect
 //   [base+1] center.x
 //   [base+2] center.y
 //   [base+3] size.x
 //   [base+4] size.y
-//   [base+5] cornerRadius
+//   [base+5] cornerRadius     (top corners; or symmetric)
+//   [base+6] bottomCornerRadius (bottom corners; equals [base+5] for symmetric)
 
 #ifndef MAX_SHAPES
 #define MAX_SHAPES 16
@@ -45,6 +46,29 @@ float sdfRRect(in vec2 p, in vec2 b, in float r) {
     r = min(r, shortest);
     vec2 q = abs(p) - b + r;
     return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
+}
+
+// Asymmetric rounded-rect SDF: independent top/bottom corner radii.
+//
+// Computes two `sdfRRect` evaluations (one with rTop applied to all corners,
+// one with rBottom) and `mix`es them along p.y with a smooth `smoothstep`
+// across the horizontal centerline. This keeps the SDF — and therefore its
+// gradient — continuous across the centerline, which matters for the
+// geometry-blended pipeline that derives surface normals from dFdx/dFdy of
+// the SDF: a per-quadrant `r = p.y < 0 ? rTop : rBottom` lookup would emit
+// garbage normals along the centerline. 2-pixel half-width matches the
+// typical anti-aliasing band on Skia/Impeller.
+//
+// Outside the corner regions both inner SDFs agree (the radius doesn't enter
+// the distance formula along the straight edges), so the blend is a no-op
+// there and only the corner regions actually differ. When rTop == rBottom,
+// dT == dB and `mix` returns either value unchanged — symmetric shapes are
+// bit-exact identical to a plain `sdfRRect(p, b, r)` call.
+float sdfRRectAsym(in vec2 p, in vec2 b, in float rTop, in float rBottom) {
+    float dT = sdfRRect(p, b, rTop);
+    float dB = sdfRRect(p, b, rBottom);
+    float t = smoothstep(-2.0, 2.0, p.y);
+    return mix(dT, dB, t);
 }
 
 float sdfRect(vec2 p, vec2 b) {
@@ -75,10 +99,13 @@ float smoothUnion(float d1, float d2, float k) {
 
 // ── Per-type dispatch ─────────────────────────────────────────────────────────
 
-float getShapeSDF(float type, vec2 p, vec2 center, vec2 size, float r) {
-    if      (type == 1.0) return sdfRRect  (p - center, size / 2.0, r);
-    else if (type == 2.0) return sdfEllipse(p - center, size / 2.0);
-    else if (type == 3.0) return sdfRRect  (p - center, size / 2.0, r);
+// rTop / rBottom collapse to a single radius for symmetric shapes (caller
+// writes rBottom == rTop), so this dispatch is back-compat: routing through
+// `sdfRRectAsym` with equal radii is bit-identical to `sdfRRect`.
+float getShapeSDF(float type, vec2 p, vec2 center, vec2 size, float rTop, float rBottom) {
+    if      (type == 1.0) return sdfRRectAsym(p - center, size / 2.0, rTop, rBottom);
+    else if (type == 2.0) return sdfEllipse  (p - center, size / 2.0);
+    else if (type == 3.0) return sdfRRectAsym(p - center, size / 2.0, rTop, rBottom);
     return 0.0;
 }
 
@@ -86,29 +113,33 @@ float getShapeSDF(float type, vec2 p, vec2 center, vec2 size, float r) {
 // Macro reads uShapeData[] with *literal* offsets only — satisfies the GLSL ES
 // / SkSL / glslang requirement that array indices be constant expressions.
 // uShapeData[] is declared by the including shader before #include "sdf.glsl".
+//
+// Stride: 7 floats per shape (was 6). Slot +6 is the bottom corner radius;
+// see the layout comment near the top of this file.
 
 #define SDF_SHAPE_N(BASE) \
     getShapeSDF(uShapeData[BASE], p, \
                 vec2(uShapeData[BASE+1], uShapeData[BASE+2]), \
                 vec2(uShapeData[BASE+3], uShapeData[BASE+4]), \
-                uShapeData[BASE+5])
+                uShapeData[BASE+5], \
+                uShapeData[BASE+6])
 
-float sdf0(vec2 p)  { return SDF_SHAPE_N(0);  }
-float sdf1(vec2 p)  { return SDF_SHAPE_N(6);  }
-float sdf2(vec2 p)  { return SDF_SHAPE_N(12); }
-float sdf3(vec2 p)  { return SDF_SHAPE_N(18); }
-float sdf4(vec2 p)  { return SDF_SHAPE_N(24); }
-float sdf5(vec2 p)  { return SDF_SHAPE_N(30); }
-float sdf6(vec2 p)  { return SDF_SHAPE_N(36); }
-float sdf7(vec2 p)  { return SDF_SHAPE_N(42); }
-float sdf8(vec2 p)  { return SDF_SHAPE_N(48); }
-float sdf9(vec2 p)  { return SDF_SHAPE_N(54); }
-float sdf10(vec2 p) { return SDF_SHAPE_N(60); }
-float sdf11(vec2 p) { return SDF_SHAPE_N(66); }
-float sdf12(vec2 p) { return SDF_SHAPE_N(72); }
-float sdf13(vec2 p) { return SDF_SHAPE_N(78); }
-float sdf14(vec2 p) { return SDF_SHAPE_N(84); }
-float sdf15(vec2 p) { return SDF_SHAPE_N(90); }
+float sdf0(vec2 p)  { return SDF_SHAPE_N(0);   }
+float sdf1(vec2 p)  { return SDF_SHAPE_N(7);   }
+float sdf2(vec2 p)  { return SDF_SHAPE_N(14);  }
+float sdf3(vec2 p)  { return SDF_SHAPE_N(21);  }
+float sdf4(vec2 p)  { return SDF_SHAPE_N(28);  }
+float sdf5(vec2 p)  { return SDF_SHAPE_N(35);  }
+float sdf6(vec2 p)  { return SDF_SHAPE_N(42);  }
+float sdf7(vec2 p)  { return SDF_SHAPE_N(49);  }
+float sdf8(vec2 p)  { return SDF_SHAPE_N(56);  }
+float sdf9(vec2 p)  { return SDF_SHAPE_N(63);  }
+float sdf10(vec2 p) { return SDF_SHAPE_N(70);  }
+float sdf11(vec2 p) { return SDF_SHAPE_N(77);  }
+float sdf12(vec2 p) { return SDF_SHAPE_N(84);  }
+float sdf13(vec2 p) { return SDF_SHAPE_N(91);  }
+float sdf14(vec2 p) { return SDF_SHAPE_N(98);  }
+float sdf15(vec2 p) { return SDF_SHAPE_N(105); }
 
 // ── sceneSDF — fully unrolled, no loops, no dynamic indices ──────────────────
 //

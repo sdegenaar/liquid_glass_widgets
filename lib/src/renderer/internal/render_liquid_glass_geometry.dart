@@ -462,6 +462,7 @@ class ShapeGeometry extends Equatable {
     required this.shapeBounds,
     this.shapeToGeometry,
   })  : rawCornerRadius = _getRadiusFromGlassShape(shape),
+        rawBottomCornerRadius = _getBottomRadiusFromGlassShape(shape),
         rawShapeType = RawShapeType.fromLiquidGlassShape(shape);
 
   static double _getRadiusFromGlassShape(LiquidShape shape) {
@@ -479,6 +480,28 @@ class ShapeGeometry extends Equatable {
     }
   }
 
+  /// Bottom corner radius. For symmetric shapes this returns the same value
+  /// as [_getRadiusFromGlassShape]; for vertically-asymmetric shapes
+  /// ([LiquidVerticalRoundedSuperellipse], [LiquidVerticalRoundedRectangle])
+  /// it returns the distinct bottom radius. Consumed by the geometry shader
+  /// via the per-shape `[base+6]` slot so the SDF can paint different top vs.
+  /// bottom corners (e.g. iOS modal sheets whose bottom curves track the
+  /// device chassis radius).
+  static double _getBottomRadiusFromGlassShape(LiquidShape shape) {
+    switch (shape) {
+      case LiquidRoundedSuperellipse():
+        return shape.borderRadius;
+      case LiquidRoundedRectangle():
+        return shape.borderRadius;
+      case LiquidVerticalRoundedRectangle():
+        return shape.bottomRadius;
+      case LiquidOval():
+        return 0;
+      case LiquidVerticalRoundedSuperellipse():
+        return shape.bottomRadius;
+    }
+  }
+
   final RenderLiquidGlass renderObject;
 
   final LiquidShape shape;
@@ -486,6 +509,11 @@ class ShapeGeometry extends Equatable {
   final RawShapeType rawShapeType;
 
   final double rawCornerRadius;
+
+  /// Bottom corner radius — equal to [rawCornerRadius] for symmetric shapes,
+  /// distinct for vertically-asymmetric shapes. See
+  /// [_getBottomRadiusFromGlassShape].
+  final double rawBottomCornerRadius;
 
   final bool glassContainsChild;
 

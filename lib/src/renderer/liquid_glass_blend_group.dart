@@ -266,13 +266,19 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
       for (final shape in shapes) {
         final center = shape.shapeBounds.center;
         final size = shape.shapeBounds.size;
+        // 7-float per-shape stride: type, center.xy, size.xy, top corner
+        // radius, bottom corner radius. For symmetric shapes top == bottom
+        // so the shader's `sdfRRectAsym` collapses to plain `sdfRRect`
+        // (mathematical identity, no behavior change). See sdf.glsl's
+        // shape-slot layout comment.
         value
           ..setFloat(shape.rawShapeType.shaderIndex)
           ..setFloat(center.dx * devicePixelRatio)
           ..setFloat(center.dy * devicePixelRatio)
           ..setFloat(size.width * devicePixelRatio)
           ..setFloat(size.height * devicePixelRatio)
-          ..setFloat(shape.rawCornerRadius * devicePixelRatio);
+          ..setFloat(shape.rawCornerRadius * devicePixelRatio)
+          ..setFloat(shape.rawBottomCornerRadius * devicePixelRatio);
       }
     });
   }
