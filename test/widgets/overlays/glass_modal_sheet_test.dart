@@ -721,8 +721,8 @@ void main() {
       await tester.pumpWidget(
         createTestApp(
           child: GlassModalSheetScaffold(
-            background: const Text('Background'),
-            sheetChild: const Text('Sheet Child'),
+            body: const Text('Background'),
+            sheet: const Text('Sheet Child'),
           ),
         ),
       );
@@ -741,8 +741,8 @@ void main() {
           child: GlassModalSheetScaffold(
             controller: controller,
             initialState: SheetState.full,
-            background: const SizedBox.expand(),
-            sheetChild: const Text('Full Sheet'),
+            body: const SizedBox.expand(),
+            sheet: const Text('Full Sheet'),
           ),
         ),
       );
@@ -759,8 +759,8 @@ void main() {
           child: GlassModalSheetScaffold(
             controller: controller,
             initialState: SheetState.peek,
-            background: const SizedBox.expand(),
-            sheetChild: const SizedBox.expand(),
+            body: const SizedBox.expand(),
+            sheet: const SizedBox.expand(),
           ),
         ),
       );
@@ -786,8 +786,8 @@ void main() {
             controller: controller,
             initialState: SheetState.half,
             onStateChanged: states.add,
-            background: const SizedBox.expand(),
-            sheetChild: const SizedBox.expand(),
+            body: const SizedBox.expand(),
+            sheet: const SizedBox.expand(),
           ),
         ),
       );
@@ -809,8 +809,8 @@ void main() {
             controller: controller,
             initialState: SheetState.peek,
             mode: SheetMode.persistent,
-            background: const SizedBox.expand(),
-            sheetChild: const SizedBox.expand(),
+            body: const SizedBox.expand(),
+            sheet: const SizedBox.expand(),
           ),
         ),
       );
@@ -832,8 +832,8 @@ void main() {
             settings: const LiquidGlassSettings(blur: 20),
             halfSettings: const LiquidGlassSettings(blur: 30),
             fullSettings: const LiquidGlassSettings(blur: 0),
-            background: const SizedBox.expand(),
-            sheetChild: const Text('Custom Glass Scaffold'),
+            body: const SizedBox.expand(),
+            sheet: const Text('Custom Glass Scaffold'),
           ),
         ),
       );
@@ -848,8 +848,8 @@ void main() {
           child: GlassModalSheetScaffold(
             horizontalMargin: 24,
             bottomMargin: 16,
-            background: const SizedBox.expand(),
-            sheetChild: const SizedBox.expand(),
+            body: const SizedBox.expand(),
+            sheet: const SizedBox.expand(),
           ),
         ),
       );
@@ -869,8 +869,8 @@ void main() {
           child: GlassModalSheetScaffold(
             controller: controller,
             initialState: SheetState.peek,
-            background: const SizedBox.expand(),
-            sheetChild: const SizedBox.expand(),
+            body: const SizedBox.expand(),
+            sheet: const SizedBox.expand(),
           ),
         ),
       );

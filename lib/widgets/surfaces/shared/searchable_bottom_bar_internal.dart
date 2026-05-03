@@ -110,6 +110,7 @@ class SearchableTabIndicator extends StatefulWidget {
     this.indicatorSettings,
     this.backgroundKey,
     this.collapsedLogoBuilder,
+    this.indicatorExpansion = 14,
     this.interactionGlowColor,
     this.interactionGlowRadius = 1.5,
     this.interactionGlowBlurRadius = 0,
@@ -139,6 +140,14 @@ class SearchableTabIndicator extends StatefulWidget {
   final bool isSearchActive;
   final VoidCallback onDismissSearch;
   final WidgetBuilder? collapsedLogoBuilder;
+
+  /// How far the jelly indicator's leading and trailing edges expand
+  /// past the tab boundary as the indicator translates. Higher values
+  /// give a more dramatic "puff" stretch; lower values produce a
+  /// tighter, more iOS-native feel. Defaults to `14` to match the
+  /// pre-existing visual.
+  final double indicatorExpansion;
+
   final Color? interactionGlowColor;
   final double interactionGlowRadius;
   final double interactionGlowBlurRadius;
@@ -383,7 +392,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                   isBackgroundIndicator: false,
                   borderRadius: thickness < 1 ? backgroundRadius : glassRadius,
                   padding: const EdgeInsets.all(4),
-                  expansion: 14,
+                  expansion: widget.indicatorExpansion,
                   glassSettings: widget.indicatorSettings,
                   backgroundKey: widget.backgroundKey,
                 ),
@@ -450,7 +459,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                 paintGlass: false,
                 borderRadius: effRadius,
                 padding: const EdgeInsets.all(4),
-                expansion: 14,
+                expansion: widget.indicatorExpansion,
                 glassSettings: widget.indicatorSettings,
                 backgroundKey: widget.backgroundKey,
               ),
@@ -465,7 +474,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                           itemCount: widget.tabCount,
                           alignment: alignment,
                           thickness: thickness,
-                          expansion: 14,
+                          expansion: widget.indicatorExpansion,
                           transform: jellyTransform,
                           borderRadius: effRadius,
                           inverse: true,
@@ -481,7 +490,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                           itemCount: widget.tabCount,
                           alignment: alignment,
                           thickness: thickness,
-                          expansion: 14,
+                          expansion: widget.indicatorExpansion,
                           transform: jellyTransform,
                           borderRadius: effRadius,
                         ),
@@ -511,7 +520,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                 paintGlass: true,
                 borderRadius: effRadius,
                 padding: const EdgeInsets.all(4),
-                expansion: 14,
+                expansion: widget.indicatorExpansion,
                 glassSettings: widget.indicatorSettings,
                 backgroundKey: widget.backgroundKey,
               ),
@@ -697,7 +706,15 @@ class SearchPillState extends State<SearchPill> {
             children: [
               GlassButton(
                 key: const ValueKey('pill-collapsed'),
-                icon: Icon(CupertinoIcons.search, color: iconColor),
+                // Use caller-supplied search icon when provided;
+                // otherwise fall back to the upstream default
+                // CupertinoIcons.search glyph. Letting callers
+                // override here lets apps that need a higher-fidelity
+                // glyph (real SF Symbols, Material Symbols at a
+                // specific weight, etc.) supply their own without
+                // forking — see GlassSearchBarConfig.searchIcon.
+                icon: widget.config.searchIcon ??
+                    Icon(CupertinoIcons.search, color: iconColor),
                 // No-op while mid-animation to avoid double-toggling, EXCEPT
                 // if expandWhenActive is false, which means this is a persistent
                 // collapsed search button that needs to be tappable to activate search.

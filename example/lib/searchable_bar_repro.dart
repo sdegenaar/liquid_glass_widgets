@@ -15,7 +15,7 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
-  runApp(LiquidGlassWidgets.wrap(const _ReproApp()));
+  runApp(LiquidGlassWidgets.wrap(child: const _ReproApp()));
 }
 
 class _ReproApp extends StatelessWidget {

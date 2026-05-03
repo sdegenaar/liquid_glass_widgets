@@ -15,12 +15,12 @@ Widget _makeSheet({
     MaterialApp(
       home: Scaffold(
         body: LiquidGlassWidgets.wrap(
-          GlassModalSheetScaffold(
-            background: const ColoredBox(
+          child: GlassModalSheetScaffold(
+            body: const ColoredBox(
               color: Colors.blue,
               child: SizedBox.expand(),
             ),
-            sheetChild: sheetChild ??
+            sheet: sheetChild ??
                 ListView(children: [
                   for (int i = 0; i < 20; i++) ListTile(title: Text('Item $i')),
                 ]),
@@ -157,15 +157,15 @@ void main() {
         builder: (ctx, setState) => MaterialApp(
           home: Scaffold(
             body: LiquidGlassWidgets.wrap(
-              GlassModalSheetScaffold(
-                background: GestureDetector(
+              child: GlassModalSheetScaffold(
+                body: GestureDetector(
                   onTap: () => setState(() => halfSize = 0.4),
                   child: const ColoredBox(
                     color: Colors.green,
                     child: SizedBox.expand(),
                   ),
                 ),
-                sheetChild: const SizedBox.expand(),
+                sheet: const SizedBox.expand(),
                 halfSize: halfSize,
               ),
             ),

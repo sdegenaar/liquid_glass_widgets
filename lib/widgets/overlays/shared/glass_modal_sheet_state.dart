@@ -608,26 +608,27 @@ class _GlassModalSheetState extends State<GlassModalSheet>
               2.0;
       final frozenBottom = widget.bottomMargin - frozenBottomOffset;
 
-      const syncThreshold = 0.90;
-      final syncProgress =
-          ((t - syncThreshold) / (1.0 - syncThreshold)).clamp(0.0, 1.0);
+      // Phase 1: Wrap corners (t: 0.0 -> 0.92) - movement is diagonal towards the screen corners.
+      // Phase 2: Final sink (t: 0.92 -> 1.0) - the sheet submerges only when it's fully expanded.
+      const transitionEnd = 0.92;
+      final marginProgress = (t / transitionEnd).clamp(0.0, 1.0);
+      final sinkProgress =
+          ((t - transitionEnd) / (1.0 - transitionEnd)).clamp(0.0, 1.0);
 
-      // Hide bottom rounding beyond the screen bottom when expanding to full
       if (_frozenState != null) {
-        effectiveBottom = syncProgress > 0
-            ? lerpDouble(frozenBottom, -extraHeight, syncProgress)!
-            : frozenBottom;
+        final baseBottom = lerpDouble(frozenBottom, 0.0, marginProgress)!;
+        effectiveBottom = lerpDouble(baseBottom, -extraHeight, sinkProgress)!;
       } else {
-        effectiveBottom = syncProgress > 0
-            ? lerpDouble(widget.bottomMargin, -extraHeight, syncProgress)!
-            : widget.bottomMargin;
+        final baseBottom =
+            lerpDouble(widget.bottomMargin, 0.0, marginProgress)!;
+        effectiveBottom = lerpDouble(baseBottom, -extraHeight, sinkProgress)!;
       }
 
       // Physical height adjusts so the top edge always stays at targetVisualHeight
       effectiveHeight = targetVisualHeight - effectiveBottom;
 
       hPad =
-          lerpDouble(widget.horizontalMargin, 0.0, (t / 0.8).clamp(0.0, 1.0))!;
+          lerpDouble(widget.horizontalMargin, 0.0, (t / 0.92).clamp(0.0, 1.0))!;
       // Independent lerp for top and bottom radii
       final baseRadiusTop = lerpDouble(
           topRadiusBase,
@@ -639,8 +640,8 @@ class _GlassModalSheetState extends State<GlassModalSheet>
           _saturationAnimation.value)!;
 
       topRadius = lerpDouble(baseRadiusTop, topRadiusFull, t)!;
-      bottomRadius = syncProgress > 0
-          ? lerpDouble(baseRadiusBottom, bottomRadiusFull, syncProgress)!
+      bottomRadius = sinkProgress > 0
+          ? lerpDouble(baseRadiusBottom, bottomRadiusFull, sinkProgress)!
           : baseRadiusBottom;
     }
 
@@ -687,7 +688,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     final topRadiusFull = widget.fullTopBorderRadius ?? topRadiusBase;
     final bottomRadiusFull = widget.fullBottomBorderRadius ?? bottomRadiusBase;
 
-    final extraHeight = mqPadding.bottom + topRadiusBase;
+    final extraHeight = mqPadding.bottom + bottomRadiusBase;
 
     final baseSettings = GlassThemeHelpers.resolveSettings(
       context,

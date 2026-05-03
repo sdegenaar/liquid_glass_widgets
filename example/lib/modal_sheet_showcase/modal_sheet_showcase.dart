@@ -12,7 +12,8 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
-  runApp(LiquidGlassWidgets.wrap(const ShowcaseApp(), adaptiveQuality: true));
+  runApp(LiquidGlassWidgets.wrap(
+      child: const ShowcaseApp(), adaptiveQuality: true));
 }
 
 class ShowcaseApp extends StatefulWidget {
@@ -335,6 +336,46 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
             ),
           ],
 
+          // Peek Scenarios
+          if (_selectedTab == 1) ...[
+            _buildScenarioTile(
+              title: 'Glass Panel',
+              description: 'Standalone GlassPanel component demo',
+              icon: Icons.window_rounded,
+              onTap: () => _showGlassPanel(context),
+              color: Colors.green,
+            ),
+            const SizedBox(height: 16),
+            GlassMenu(
+              menuWidth: 240,
+              triggerBuilder: (context, toggleMenu) => _buildScenarioTile(
+                title: 'Pull-Down Menu',
+                description: 'Tile morphs directly into a glass menu',
+                icon: Icons.menu_open_rounded,
+                onTap: toggleMenu,
+                color: Colors.purple,
+              ),
+              items: [
+                GlassMenuItem(
+                  title: 'Edit Content',
+                  icon: const Icon(Icons.edit_rounded),
+                  onTap: () {},
+                ),
+                GlassMenuItem(
+                  title: 'Share Scenario',
+                  icon: const Icon(Icons.share_rounded),
+                  onTap: () {},
+                ),
+                GlassMenuItem(
+                  title: 'Delete Demo',
+                  icon: const Icon(Icons.delete_rounded),
+                  isDestructive: true,
+                  onTap: () {},
+                ),
+              ],
+            ),
+          ],
+
           // Apple Maps Style Tab
           if (_selectedTab == 2) ...[
             _buildScenarioTile(
@@ -456,10 +497,49 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
       quality: widget.currentQuality,
       initialState: SheetState.peek,
       enablePeek: true,
+      peekTopBorderRadius: 46,
       builder: (context) => const GlassBackdropScope(
         child: BaseScenario(
           title: 'Standard Peek',
           subtitle: 'A full-width persistent bar at the bottom.',
+        ),
+      ),
+    );
+  }
+
+  void _showGlassPanel(BuildContext context) {
+    GlassSheet.show(
+      context: context,
+      quality: widget.currentQuality,
+      builder: (context) => const GlassBackdropScope(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: EdgeInsets.all(24),
+              child: GlassPanel(
+                useOwnLayer: true,
+                child: SizedBox(
+                  height: 120,
+                  child: Center(
+                    child: Text(
+                      'Glass Panel',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Text(
+              'Standalone GlassPanel component demo.',
+              style: TextStyle(color: Colors.white54),
+            ),
+            SizedBox(height: 24),
+          ],
         ),
       ),
     );
@@ -662,7 +742,7 @@ class MapsExperienceScreen extends StatelessWidget {
           glassColor: Colors.blueGrey.withValues(alpha: 0.8),
         ),
         quality: currentQuality,
-        background: Stack(
+        body: Stack(
           children: [
             InteractiveViewer(
               maxScale: 5.0,
@@ -701,7 +781,7 @@ class MapsExperienceScreen extends StatelessWidget {
             ),
           ],
         ),
-        sheetChild: BaseScenario(
+        sheet: BaseScenario(
           title: 'San Francisco',
           subtitle: 'Explore locations and transit in the bay area.',
         ),

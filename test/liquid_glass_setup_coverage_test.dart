@@ -11,7 +11,7 @@ void main() {
   group('LiquidGlassWidgets.wrap', () {
     testWidgets('zero-config wraps child in GlassBackdropScope',
         (tester) async {
-      final wrapped = LiquidGlassWidgets.wrap(const SizedBox.shrink());
+      final wrapped = LiquidGlassWidgets.wrap(child: const SizedBox.shrink());
       await tester.pumpWidget(MaterialApp(home: wrapped));
       await tester.pump();
       expect(tester.takeException(), isNull);
@@ -20,7 +20,7 @@ void main() {
     testWidgets('adaptiveQuality=true with no config uses default config',
         (tester) async {
       final wrapped = LiquidGlassWidgets.wrap(
-        const SizedBox.shrink(),
+        child: const SizedBox.shrink(),
         adaptiveQuality: true,
         // adaptiveConfig: null → uses default GlassAdaptiveScopeConfig
       );
@@ -32,7 +32,7 @@ void main() {
     testWidgets('adaptiveQuality=true with explicit config uses it',
         (tester) async {
       final wrapped = LiquidGlassWidgets.wrap(
-        const SizedBox.shrink(),
+        child: const SizedBox.shrink(),
         adaptiveQuality: true,
         adaptiveConfig: const GlassAdaptiveScopeConfig(
           initialQuality: GlassQuality.minimal,
@@ -47,7 +47,7 @@ void main() {
     testWidgets('respectSystemAccessibility=false sets global flag',
         (tester) async {
       final wrapped = LiquidGlassWidgets.wrap(
-        const SizedBox.shrink(),
+        child: const SizedBox.shrink(),
         respectSystemAccessibility: false,
       );
       await tester.pumpWidget(MaterialApp(home: wrapped));
