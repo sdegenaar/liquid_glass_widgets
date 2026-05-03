@@ -696,8 +696,21 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       fallback: kDefaultSheetSettings,
     );
 
+    // Focus listener that snaps the sheet to full whenever a focusable
+    // descendant gains focus (e.g. tapping a TextField inside the
+    // sheet). The Focus widget intentionally does NOT carry a key:
+    // any key derived from `widget.child` (e.g. `GlobalObjectKey(
+    // widget.child)`) changes every time the parent rebuilds — because
+    // the parent passes a fresh `child` widget instance each frame —
+    // and Flutter responds to a changed key by tearing down the entire
+    // child Element subtree and rebuilding it. That destroys the
+    // child's State (calling `dispose` and re-running `initState`) on
+    // every sheet expand/collapse, which surfaces in consumers as
+    // "scroll position resets", "controllers are re-initialised",
+    // "fetch fires again", etc. Focus management works the same
+    // without a key — the FocusNode is owned internally by the Focus
+    // widget for the lifetime of its Element.
     final focusBridge = Focus(
-      key: GlobalObjectKey(widget.child),
       onFocusChange: (hasFocus) {
         if (hasFocus && _currentState != SheetState.full) {
           _snapToState(SheetState.full);
