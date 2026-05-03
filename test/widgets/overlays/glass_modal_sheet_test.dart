@@ -799,6 +799,61 @@ void main() {
       expect(states, contains(SheetState.full));
     });
 
+    testWidgets(
+      'onStateChanged fires after slow drag past snap threshold',
+      (tester) async {
+        // Regression: a slow drag whose path crosses a snap threshold
+        // mid-gesture used to silently mutate `_currentState` to the
+        // resolved target via `_applyDrag`. By the time the user
+        // released and `_onPointerUp` called `_snapToState(target)`,
+        // the equality check against `_currentState` was already
+        // false and the side-effects branch (haptics, onStateChanged,
+        // scroll-to-top) was skipped. Consumers saw no callback for
+        // the transition. This test drags slowly enough that the
+        // mid-gesture target resolution kicks in, then asserts the
+        // callback fired anyway.
+        final controller = GlassModalSheetController();
+        final states = <SheetState>[];
+
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassModalSheetScaffold(
+              controller: controller,
+              initialState: SheetState.full,
+              onStateChanged: states.add,
+              body: const SizedBox.expand(),
+              sheet: const SizedBox.expand(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Slow drag from inside the sheet's content area down through
+        // the half-state position. Multiple small `moveBy` calls with
+        // pumps between them simulate a finger that lingers — enough
+        // frames for `_applyDrag` to resolve and commit the
+        // intermediate snap target.
+        final start = tester.getCenter(find.byType(GlassModalSheetScaffold));
+        final gesture = await tester.startGesture(start);
+        for (var i = 0; i < 20; i++) {
+          await gesture.moveBy(const Offset(0, 15));
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+        await gesture.up();
+        await tester.pumpAndSettle();
+
+        // The exact intermediate state set isn't asserted (depends on
+        // geometry resolution), but the final transition to half MUST
+        // be reported.
+        expect(states, contains(SheetState.half),
+            reason:
+                'onStateChanged was not fired for the slow-drag-to-half '
+                'transition — `_snapToState` skipped its side-effects '
+                'branch because `_applyDrag` had already updated '
+                '`_currentState` to the resolved target mid-drag.');
+      },
+    );
+
     testWidgets('persistent mode prevents dismissal below peek',
         (tester) async {
       final controller = GlassModalSheetController();

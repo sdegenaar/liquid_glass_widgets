@@ -12,6 +12,27 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   SheetState get _currentState => _currentStateNotifier.value;
   set _currentState(SheetState v) => _currentStateNotifier.value = v;
 
+  /// The state most recently published to consumers via
+  /// [GlassModalSheet.onStateChanged] (and through which any
+  /// snap-to-state side effects — haptics, scroll-to-top — fired).
+  ///
+  /// Distinct from [_currentState]: that value is mutated during
+  /// drag by [_applyDrag] and [_jumpTo] to drive in-flight visual
+  /// interpolation (radii, expand-progress, glass settings) toward
+  /// the resolved snap target. Comparing the snap target to
+  /// [_currentState] in [_snapToState] therefore misses the
+  /// transition whenever the drag had already crossed a snap
+  /// threshold mid-gesture: by the time the user releases and
+  /// [_onPointerUp] calls `_snapToState(target)`, [_currentState]
+  /// already equals `target`, and the side-effects branch is
+  /// silently skipped — no haptic, no `onStateChanged`, no
+  /// scroll-to-top reset on collapse.
+  ///
+  /// [_settledState] is updated only inside the side-effects branch
+  /// itself, so the equality check correctly reflects "did the
+  /// state change since the last time we told consumers about it".
+  late SheetState _settledState;
+
   double _currentPosition = 0.0;
   double _currentEffectiveHeight = 0.0;
 
@@ -35,6 +56,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     WidgetsBinding.instance.addObserver(this);
 
     _currentStateNotifier = ValueNotifier(widget.initialState);
+    _settledState = widget.initialState;
     _geometry = _buildGeometry();
 
     _animationController = AnimationController.unbounded(vsync: this);
@@ -145,7 +167,15 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       _animationController.value = targetPosition;
     }
 
-    if (state != _currentState) {
+    // Compare against `_settledState`, not `_currentState` — see the
+    // doc comment on `_settledState` for why. Briefly: `_currentState`
+    // tracks the in-flight snap target during drag (mutated silently
+    // by `_applyDrag` and `_jumpTo` to drive visual interpolation),
+    // so checking against it here would skip the side-effects branch
+    // whenever the drag itself had already updated the target. We
+    // want side effects to fire on every transition consumers care
+    // about — i.e. on every change to the published state.
+    if (state != _settledState) {
       if (state == SheetState.peek || state == SheetState.hidden) {
         HapticFeedback.lightImpact();
       } else {
@@ -153,6 +183,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       }
 
       _currentState = state;
+      _settledState = state;
       widget.onStateChanged?.call(state);
 
       if (state != SheetState.full && _scrollController.hasClients) {
