@@ -1,3 +1,68 @@
+# 0.10.0
+
+## ⚠️ Breaking — Pre-v1 API Cleanup
+
+### `LiquidGlassWidgets.wrap()` — `child` is now a required named parameter
+
+Before:
+```dart
+LiquidGlassWidgets.wrap(const MyApp(), adaptiveQuality: true)
+```
+After:
+```dart
+LiquidGlassWidgets.wrap(child: const MyApp(), adaptiveQuality: true)
+```
+This aligns with Flutter widget conventions where `child` is always named.
+
+### `GlassModalSheetScaffold` — parameter renames
+
+| Old | New | Reason |
+|-----|-----|--------|
+| `background:` | `body:` | Matches Flutter `Scaffold.body` — it's the primary content, not a visual property |
+| `sheetChild:` | `sheet:` | Cleaner, matches Flutter naming patterns |
+
+Before:
+```dart
+GlassModalSheetScaffold(
+  background: MyMapWidget(),
+  sheetChild: MySheetContent(),
+)
+```
+After:
+```dart
+GlassModalSheetScaffold(
+  body: MyMapWidget(),
+  sheet: MySheetContent(),
+)
+```
+
+### `GlassQualityAdapter.skipStaticProbeForTesting` — `@visibleForTesting` annotated
+
+The static field is now annotated `@visibleForTesting`. Production code referencing it
+will receive an analyzer hint. Usage in test files is unchanged.
+
+## 🐛 Fix — Android glass fallback on capable devices
+
+`GlassQualityAdapter` was applying the static probe result (`GlassQuality.minimal`) without
+respecting `minQuality`. On some Android devices `ImageFilter.isShaderFilterSupported`
+returns a false negative, causing the glass shader to be skipped even though the hardware
+supports it — the only workaround being `adaptiveQuality: false`.
+
+`minQuality` is now honoured as a true floor even when the static probe fires:
+
+```dart
+// Prevents fallback on Android devices with a false-negative static probe
+LiquidGlassWidgets.wrap(
+  child: const MyApp(),
+  adaptiveQuality: true,
+  adaptiveConfig: const GlassAdaptiveScopeConfig(
+    minQuality: GlassQuality.standard,
+  ),
+)
+```
+
+---
+
 # 0.9.6
 
 ## 🐛 Fix — `GlassModalSheet` interaction glow in full state

@@ -27,7 +27,7 @@ void main() async {
   // wrap() puts a GlassBackdropScope at the root so all glass surfaces in the
   // app share a single GPU backdrop capture — roughly halving blit cost when
   // multiple glass widgets are on screen simultaneously. On Skia/web: no-op.
-  runApp(LiquidGlassWidgets.wrap(const LiquidGlassExampleApp()));
+  runApp(LiquidGlassWidgets.wrap(child: const LiquidGlassExampleApp()));
 }
 
 class LiquidGlassExampleApp extends StatelessWidget {

@@ -188,8 +188,8 @@ class LiquidGlassWidgets {
   /// ### Scope nesting order (outermost → innermost → child)
   ///
   /// `GlassAdaptiveScope` (when enabled) → `GlassBackdropScope` → `child`
-  static Widget wrap(
-    Widget child, {
+  static Widget wrap({
+    required Widget child,
     bool respectSystemAccessibility = true,
     bool adaptiveQuality = false,
     GlassAdaptiveScopeConfig? adaptiveConfig,

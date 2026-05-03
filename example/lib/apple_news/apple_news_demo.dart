@@ -198,7 +198,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
   runApp(LiquidGlassWidgets.wrap(
-    const AppleNewsDemoApp(),
+    child: const AppleNewsDemoApp(),
     adaptiveQuality: true,
     // ignore: experimental_member_use
     adaptiveConfig: const GlassAdaptiveScopeConfig(

@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
-      home: Scaffold(body: LiquidGlassWidgets.wrap(child)),
+      home: Scaffold(body: LiquidGlassWidgets.wrap(child: child)),
     );
 
 const _shape = LiquidRoundedSuperellipse(borderRadius: 20);
@@ -79,7 +79,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
           body: LiquidGlassWidgets.wrap(
-            GlassAccessibilityScope(
+            child: GlassAccessibilityScope(
               reduceTransparency: true,
               child: const SizedBox(
                 width: 200,
@@ -152,7 +152,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: Scaffold(
           body: LiquidGlassWidgets.wrap(
-            InheritedLiquidGlass(
+            child: InheritedLiquidGlass(
               settings: _settings,
               quality: GlassQuality.standard,
               isBlurProvidedByAncestor: true,

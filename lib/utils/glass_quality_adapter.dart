@@ -313,7 +313,10 @@ class GlassQualityAdapter {
         _lastP75Ms = null;
         _lastP95Ms = null;
         _lastFramesMeasured = 0;
-        _applyQuality(forced);
+        // Respect minQuality even when the static probe forces a low quality.
+        // e.g. minQuality: GlassQuality.standard prevents fallback to minimal
+        // on devices where isShaderFilterSupported is a false negative.
+        _applyQuality(_floorQuality(forced, minQuality));
         // No frame callback needed — static probe gives us a definitive answer.
         return;
       }
@@ -453,8 +456,9 @@ class GlassQualityAdapter {
     final p75Ms = p75 / 1000.0;
 
     final GlassQuality decided;
-    // 16 ms = one full 60 fps frame budget.  If P75 is within budget the
-    // device can sustain premium quality under normal load.
+    // 16 ms = one full 60 fps frame budget. Warmup uses a fixed reference
+    // to objectively assess device capability, independent of targetFrameMs
+    // (which governs runtime adaptation, not initial capability measurement).
     if (p75Ms < 16.0) {
       decided = _capQuality(maxQuality, maxQuality); // stay at ceiling
     } else if (p75Ms <= 20.0) {

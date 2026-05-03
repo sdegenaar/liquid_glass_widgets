@@ -490,11 +490,11 @@ class GlassModalSheetStateProvider extends InheritedWidget {
 // ===========================================================================
 
 class GlassModalSheetScaffold extends StatelessWidget {
-  /// Background widget (e.g., a map or a list) that stays under the sheet.
-  final Widget background;
+  /// Body widget (e.g., a map or a list) that stays under the sheet.
+  final Widget body;
 
-  /// Main content widget displayed inside the glass sheet.
-  final Widget sheetChild;
+  /// Sheet widget displayed inside the glass sheet.
+  final Widget sheet;
 
   /// Height in the 'half' state (0.0 - 1.0 fraction or absolute pixels). Default: 0.45.
   final double halfSize;
@@ -626,8 +626,8 @@ class GlassModalSheetScaffold extends StatelessWidget {
 
   const GlassModalSheetScaffold({
     super.key,
-    required this.background,
-    required this.sheetChild,
+    required this.body,
+    required this.sheet,
     this.halfSize = 0.45,
     this.fullSize,
     this.initialState = SheetState.half,
@@ -686,9 +686,9 @@ class GlassModalSheetScaffold extends StatelessWidget {
                   onTap: () {
                     controller?.snapToState(SheetState.hidden);
                   },
-                  child: RepaintBoundary(child: background),
+                  child: RepaintBoundary(child: body),
                 )
-              : RepaintBoundary(child: background),
+              : RepaintBoundary(child: body),
         ),
         GlassModalSheet(
           halfSize: halfSize,
@@ -735,7 +735,7 @@ class GlassModalSheetScaffold extends StatelessWidget {
           peekWidth: peekWidth,
           peekTopBorderRadius: peekTopBorderRadius,
           peekBottomRadius: peekBottomRadius,
-          child: sheetChild,
+          child: sheet,
         ),
       ],
     );

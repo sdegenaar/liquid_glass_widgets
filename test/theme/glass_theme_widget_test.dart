@@ -249,20 +249,20 @@ void main() {
     // ── wrap() ───────────────────────────────────────────────────────────────
 
     test('wrap returns a GlassBackdropScope by default', () {
-      final wrapped = LiquidGlassWidgets.wrap(const SizedBox.shrink());
+      final wrapped = LiquidGlassWidgets.wrap(child: const SizedBox.shrink());
       expect(wrapped.runtimeType.toString(), contains('GlassBackdropScope'));
     });
 
     test('wrap with adaptiveQuality:true returns a GlassAdaptiveScope', () {
       final wrapped = LiquidGlassWidgets.wrap(
-        const SizedBox.shrink(),
+        child: const SizedBox.shrink(),
         adaptiveQuality: true,
       );
       expect(wrapped.runtimeType.toString(), contains('GlassAdaptiveScope'));
     });
 
     test('wrap without adaptiveQuality does NOT insert GlassAdaptiveScope', () {
-      final wrapped = LiquidGlassWidgets.wrap(const SizedBox.shrink());
+      final wrapped = LiquidGlassWidgets.wrap(child: const SizedBox.shrink());
       expect(
         wrapped.runtimeType.toString(),
         isNot(contains('GlassAdaptiveScope')),
@@ -272,13 +272,13 @@ void main() {
 
     test('wrap(respectSystemAccessibility:false) sets the global flag', () {
       LiquidGlassWidgets.wrap(
-        const SizedBox.shrink(),
+        child: const SizedBox.shrink(),
         respectSystemAccessibility: false,
       );
       expect(LiquidGlassWidgets.respectSystemAccessibility, isFalse);
       // Restore
       LiquidGlassWidgets.wrap(
-        const SizedBox.shrink(),
+        child: const SizedBox.shrink(),
         respectSystemAccessibility: true,
       );
       expect(LiquidGlassWidgets.respectSystemAccessibility, isTrue);
@@ -311,7 +311,7 @@ void main() {
         'wrap(adaptiveQuality:true) inserts GlassAdaptiveScope as outermost widget',
         (tester) async {
       final wrapped = LiquidGlassWidgets.wrap(
-        const SizedBox.shrink(),
+        child: const SizedBox.shrink(),
         adaptiveQuality: true,
       );
       expect(wrapped.runtimeType.toString(), contains('GlassAdaptiveScope'));
@@ -319,7 +319,7 @@ void main() {
 
     test('wrap() without adaptiveQuality does NOT insert GlassAdaptiveScope',
         () {
-      final wrapped = LiquidGlassWidgets.wrap(const SizedBox.shrink());
+      final wrapped = LiquidGlassWidgets.wrap(child: const SizedBox.shrink());
       expect(
         wrapped.runtimeType.toString(),
         isNot(contains('GlassAdaptiveScope')),

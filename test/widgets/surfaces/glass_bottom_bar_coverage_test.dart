@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
-      home: Scaffold(body: LiquidGlassWidgets.wrap(child)),
+      home: Scaffold(body: LiquidGlassWidgets.wrap(child: child)),
     );
 
 GlassBottomBarTab _tab(String label) =>

@@ -20,7 +20,7 @@ void main() async {
   // app (GlassBottomBar, GlassAppBar, GlassCard, etc.) shares a single GPU
   // backdrop capture on Impeller — halving blit cost when multiple surfaces
   // are visible at once. On Skia/Web it is a no-op.
-  runApp(LiquidGlassWidgets.wrap(const AppleLiquidGlassShowcaseApp()));
+  runApp(LiquidGlassWidgets.wrap(child: const AppleLiquidGlassShowcaseApp()));
 }
 
 class AppleLiquidGlassShowcaseApp extends StatelessWidget {

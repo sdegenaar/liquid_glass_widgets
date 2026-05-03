@@ -369,8 +369,8 @@ class GlassModalSheet extends StatefulWidget {
               Navigator.of(context).pop();
             }
           },
-          background: const SizedBox.shrink(),
-          sheetChild: builder(context),
+          body: const SizedBox.shrink(),
+          sheet: builder(context),
         );
       },
     );
