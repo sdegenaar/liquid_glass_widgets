@@ -28,6 +28,7 @@ class GlassSearchBarConfig {
     this.collapsedTabWidth,
     this.collapsedLogoBuilder,
     this.searchIconColor,
+    this.searchIcon,
     this.micIconColor,
     this.hintStyle,
     this.controller,
@@ -76,6 +77,19 @@ class GlassSearchBarConfig {
 
   /// Color for the 🔍 and 🎙️ icons. Defaults to `Colors.white60`.
   final Color? searchIconColor;
+
+  /// Custom widget rendered in place of the default magnifying-glass
+  /// icon on the collapsed search pill. When non-null, [searchIconColor]
+  /// is ignored for this particular slot — the caller's widget is
+  /// expected to handle its own coloring.
+  ///
+  /// The default (`null`) preserves the upstream behavior:
+  /// `Icon(CupertinoIcons.search, color: searchIconColor ?? Colors.white60)`.
+  ///
+  /// Useful when the caller wants a higher-fidelity glyph (e.g. real
+  /// SF Symbols via `flutter_sficon`) or a different icon set with
+  /// weight control (e.g. Material Symbols).
+  final Widget? searchIcon;
 
   /// Color for the microphone icon specifically. Falls back to [searchIconColor].
   ///
