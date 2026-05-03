@@ -13,7 +13,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
   runApp(LiquidGlassWidgets.wrap(
-      child: const ShowcaseApp(), adaptiveQuality: true));
+      child: const ShowcaseApp(), adaptiveQuality: false));
 }
 
 class ShowcaseApp extends StatefulWidget {
