@@ -197,6 +197,7 @@ class GlassBottomBar extends StatefulWidget {
     this.maskingQuality = MaskingQuality.high,
     this.backgroundKey,
     this.tabWidth,
+    this.indicatorExpansion = 14,
     this.interactionGlowColor,
     this.interactionGlowRadius = 1.5,
     this.interactionBehavior = GlassInteractionBehavior.full,
@@ -305,6 +306,13 @@ class GlassBottomBar extends StatefulWidget {
   ///   * [GlassSearchableBottomBar.tabWidth], the equivalent parameter on the
   ///     searchable variant which uses the same default and clamping logic.
   final double? tabWidth;
+
+  /// How far the jelly indicator's leading and trailing edges expand
+  /// past the tab boundary as the indicator translates between tabs.
+  /// Higher values give a more dramatic "puff" stretch; lower values
+  /// produce a tighter, more iOS-native feel. Defaults to `14` —
+  /// matches the pre-existing visual.
+  final double indicatorExpansion;
 
   /// List of tabs to display in the bottom bar.
   ///
@@ -575,6 +583,7 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
                     tabPadding: widget.tabPadding,
                     backgroundKey: widget.backgroundKey,
                     maskingQuality: widget.maskingQuality,
+                    indicatorExpansion: widget.indicatorExpansion,
                     interactionGlowColor: widget.interactionBehavior.hasGlow
                         ? effectiveInteractionGlowColor
                         : Colors.transparent,

@@ -95,6 +95,7 @@ class GlassSearchableBottomBar extends StatefulWidget {
     this.interactionBehavior = GlassInteractionBehavior.full,
     this.pressScale = 1.04,
     this.tabWidth,
+    this.indicatorExpansion = 14,
     this.onBarTap,
   })  : assert(tabs.length > 0,
             'GlassSearchableBottomBar requires at least one tab'),
@@ -332,6 +333,13 @@ class GlassSearchableBottomBar extends StatefulWidget {
   /// tabWidth: null,
   /// ```
   final double? tabWidth;
+
+  /// How far the jelly indicator's leading and trailing edges expand
+  /// past the tab boundary as the indicator translates between tabs.
+  /// Higher values give a more dramatic "puff" stretch; lower values
+  /// produce a tighter, more iOS-native feel. Defaults to `14` —
+  /// matches the pre-existing visual.
+  final double indicatorExpansion;
 
   /// Called when the user taps anywhere on the bar.
   ///
@@ -699,6 +707,7 @@ class _GlassSearchableBottomBarState extends State<GlassSearchableBottomBar>
                           magnification: widget.magnification,
                           innerBlur: widget.innerBlur,
                           indicatorColor: widget.indicatorColor,
+                          indicatorExpansion: widget.indicatorExpansion,
                           indicatorSettings: widget.indicatorSettings,
                           backgroundKey: widget.backgroundKey,
                           isSearchActive: searching,

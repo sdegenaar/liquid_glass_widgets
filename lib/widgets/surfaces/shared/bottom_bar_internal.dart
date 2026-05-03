@@ -312,6 +312,7 @@ class TabIndicator extends StatefulWidget {
     required this.maskingQuality,
     this.indicatorSettings,
     this.backgroundKey,
+    this.indicatorExpansion = 14,
     this.interactionGlowColor,
     this.interactionGlowRadius = 1.5,
     this.interactionGlowBlurRadius = 0,
@@ -337,6 +338,14 @@ class TabIndicator extends StatefulWidget {
   final double innerBlur;
   final MaskingQuality maskingQuality;
   final GlobalKey? backgroundKey;
+
+  /// How far the jelly indicator's leading and trailing edges expand
+  /// past the tab boundary as the indicator translates. Higher values
+  /// give a more dramatic "puff" stretch; lower values produce a
+  /// tighter, more iOS-native feel. Defaults to `14` to match the
+  /// pre-existing visual.
+  final double indicatorExpansion;
+
   final Color? interactionGlowColor;
   final double interactionGlowRadius;
   final double interactionGlowBlurRadius;
@@ -585,7 +594,7 @@ class TabIndicatorState extends State<TabIndicator>
                 isBackgroundIndicator: false,
                 borderRadius: thickness < 1 ? backgroundRadius : glassRadius,
                 padding: const EdgeInsets.all(4),
-                expansion: 14,
+                expansion: widget.indicatorExpansion,
                 glassSettings: widget.indicatorSettings,
                 backgroundKey: widget.backgroundKey,
               ),
@@ -657,7 +666,7 @@ class TabIndicatorState extends State<TabIndicator>
               paintGlass: false,
               borderRadius: thickness < 1 ? backgroundRadius : glassRadius,
               padding: const EdgeInsets.all(4),
-              expansion: 14,
+              expansion: widget.indicatorExpansion,
               glassSettings: widget.indicatorSettings,
               backgroundKey: widget.backgroundKey,
             ),
@@ -676,7 +685,7 @@ class TabIndicatorState extends State<TabIndicator>
                         itemCount: widget.tabCount,
                         alignment: alignment,
                         thickness: thickness,
-                        expansion: 14,
+                        expansion: widget.indicatorExpansion,
                         transform: jellyTransform,
                         borderRadius:
                             thickness < 1 ? backgroundRadius : glassRadius,
@@ -694,7 +703,7 @@ class TabIndicatorState extends State<TabIndicator>
                         itemCount: widget.tabCount,
                         alignment: alignment,
                         thickness: thickness,
-                        expansion: 14,
+                        expansion: widget.indicatorExpansion,
                         transform: jellyTransform,
                         borderRadius:
                             thickness < 1 ? backgroundRadius : glassRadius,
@@ -725,7 +734,7 @@ class TabIndicatorState extends State<TabIndicator>
               paintGlass: true,
               borderRadius: thickness < 1 ? backgroundRadius : glassRadius,
               padding: const EdgeInsets.all(4),
-              expansion: 14,
+              expansion: widget.indicatorExpansion,
               glassSettings: widget.indicatorSettings,
               backgroundKey: widget.backgroundKey,
             ),
