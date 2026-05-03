@@ -105,13 +105,6 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
   /// Apply `matteTransform` at paint time to get the current screen-space bounds.
   Rect _geometryLocalBounds = Rect.zero;
 
-  /// Sequence number incremented on every geometry rebuild request.
-  /// Used to discard async results that were superseded by a newer rebuild.
-  int _geometryBuildSeq = 0;
-
-  /// Whether an async geometry build is currently in flight.
-  bool _geometryBuildPending = false;
-
   @override
   @mustCallSuper
   void attach(PipelineOwner owner) {
@@ -223,11 +216,9 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
       link._dirty = false;
       needsGeometryUpdate = false;
 
-      if (!_geometryBuildPending) {
-        // Kick off an async rasterization. Canvas recording is synchronous
-        // (cheap CPU work); only the toImage() GPU upload is deferred.
-        _startAsyncGeometryBuild(shapesWithGeometry, boundingBox);
-      }
+      // Synchronous rasterization (toImageSync) to eliminate 1-frame jitter
+      // during size animations (like modal expansion).
+      _updateGeometrySync(shapesWithGeometry, boundingBox);
 
       // If we have a previous image, keep showing it this frame (one-frame
       // latency). On the very first frame there is no previous image — fall
@@ -347,40 +338,26 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
   /// Kicks off an async geometry build. Canvas recording runs synchronously;
   /// only the GPU rasterization (toImage) is deferred to a microtask.
   /// Stale completions are discarded via [_geometryBuildSeq].
-  Future<void> _startAsyncGeometryBuild(
+  void _updateGeometrySync(
     List<(RenderLiquidGlassGeometry, GeometryCache, Matrix4)> geometries,
     Rect bounds,
-  ) async {
-    final seq = ++_geometryBuildSeq;
-    _geometryBuildPending = true;
-
-    // Record canvas commands synchronously — this is pure CPU and fast.
-    // Geometry is recorded in local space (no matteTransform applied).
+  ) {
+    // Record canvas commands synchronously.
     final (picture, localBounds, imageSize) =
         _recordGeometryPicture(geometries, bounds);
 
     try {
-      // GPU rasterization — runs off the render thread, does not stall paint.
-      // Clamp to ≥1 — the jelly squash transform can push geometry to near-zero
-      // size, and toImage(0, n) throws "Invalid image dimensions".
-      final image = await picture.toImage(
+      // GPU rasterization using toImageSync to avoid 1-frame lag.
+      final image = picture.toImageSync(
         max(1, imageSize.width.ceil()),
         max(1, imageSize.height.ceil()),
       );
 
-      if (!attached || seq != _geometryBuildSeq) {
-        // A newer rebuild was requested while we were waiting; discard.
-        image.dispose();
-        return;
-      }
-
       _clearGeometryImage();
       _geometryImage = image;
       _geometryLocalBounds = localBounds;
-      markNeedsPaint();
     } finally {
       picture.dispose();
-      if (seq == _geometryBuildSeq) _geometryBuildPending = false;
     }
   }
 

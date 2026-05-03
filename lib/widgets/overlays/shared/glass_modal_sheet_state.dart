@@ -510,9 +510,6 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     // ════════════════════════════════════════════════════════════════════════
     // Peek to Half Morphing
     // ════════════════════════════════════════════════════════════════════════
-    // ════════════════════════════════════════════════════════════════════════
-    // Peek to Half Morphing
-    // ════════════════════════════════════════════════════════════════════════
     if (pos < halfPos) {
       final range = halfPos - peekPos;
       final tProgressRaw =
@@ -645,7 +642,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
           : baseRadiusBottom;
     }
 
-    return _RenderMetrics(
+    final metrics = _RenderMetrics(
       stretchT: stretchT,
       effectiveHeight: effectiveHeight,
       effectiveBottom: effectiveBottom,
@@ -659,6 +656,8 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       interactionStretch: effectiveInteractionStretch,
       effectiveExpandedColor: currentExpandedColor,
     );
+
+    return metrics;
   }
 
   // ════════════════════════════════════════════════════════════════════════

@@ -111,6 +111,7 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
         padding: EdgeInsets.only(bottom: sysBottom > 0 ? sysBottom - 25 : 0),
         child: GlassSearchableBottomBar(
           selectedIndex: _selectedTab,
+          interactionBehavior: GlassInteractionBehavior.scaleOnly,
           isSearchActive: _isSearching,
           onTabSelected: (index) => setState(() {
             _selectedTab = index;

@@ -306,32 +306,25 @@ void main() {
       await tester.pumpAndSettle();
 
       // At half (0.45), it should be transparent/glass
-      // We look for the DecoratedBox that handles the background color
-      final decoratedBoxFinder = find.byType(DecoratedBox);
+      // In half state, the background fill should be absent or transparent
+      expect(find.byKey(const Key('glass_modal_sheet_fill')), findsNothing);
 
-      DecoratedBox getSheetBackground() {
-        return tester
-            .widgetList<DecoratedBox>(decoratedBoxFinder)
-            .firstWhere((db) => db.decoration is ShapeDecoration);
-      }
-
-      final decoration = getSheetBackground().decoration as ShapeDecoration;
-      expect(decoration.color?.a,
-          lessThan(0.1)); // Should be almost transparent in half state
-
-      // Move slightly above half but below threshold (0.5)
-      controller.value = 0.49;
+      // Move slightly above half but below transition threshold
+      controller.value = 0.60;
       await tester.pump();
 
-      final decorationMid = getSheetBackground().decoration as ShapeDecoration;
-      expect(decorationMid.color?.a, lessThan(0.1));
+      expect(find.byKey(const Key('glass_modal_sheet_fill')), findsNothing);
 
-      // Move above 0.5
-      controller.value = 0.51;
+      // Move above transition threshold (tProgress > 0.5)
+      // tProgress = (0.7 - 0.45) / 0.4 = 0.625
+      controller.value = 0.7;
       await tester.pump();
 
-      // In instant mode, it should flip to expandedColor immediately after 0.5
-      final decorationFull = getSheetBackground().decoration as ShapeDecoration;
+      // In instant mode, it should flip to expandedColor immediately after 0.5 threshold
+      final decorationFull = tester
+          .widget<DecoratedBox>(find.byKey(const Key('glass_modal_sheet_fill')))
+          .decoration as BoxDecoration;
+      expect(decorationFull.color?.a, greaterThan(0.0));
       expect(decorationFull.color?.withValues(alpha: 1.0),
           Colors.blue.withValues(alpha: 1.0));
     });
@@ -393,15 +386,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      DecoratedBox getSheetBackground() {
-        return tester
-            .widgetList<DecoratedBox>(find.byType(DecoratedBox))
-            .firstWhere((db) => db.decoration is ShapeDecoration);
-      }
-
       // In half state, it should have high blur and be glass-like
-      final decorationHalf = getSheetBackground().decoration as ShapeDecoration;
-      expect(decorationHalf.color?.a, lessThan(0.1));
+      // The background fill should be absent if blur > 0
+      expect(find.byKey(const Key('glass_modal_sheet_fill')), findsNothing);
 
       // Expand to full
       controller.snapToState(SheetState.full, animate: false);
@@ -409,11 +396,13 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // In full state, blur is 0, so it should be solid color
-      final decorationFull = getSheetBackground().decoration as ShapeDecoration;
-
-      expect(decorationFull.color?.withValues(alpha: 1.0),
+      final decorationFull = tester
+          .widget<DecoratedBox>(find.byKey(const Key('glass_modal_sheet_fill')))
+          .decoration;
+ 
+      expect((decorationFull as dynamic).color?.withValues(alpha: 1.0),
           Colors.red.withValues(alpha: 1.0));
-      expect(decorationFull.color?.a, greaterThan(0.9));
+      expect((decorationFull as dynamic).color?.a, greaterThan(0.9));
     });
 
     testWidgets('works correctly with all effects disabled (minimal mode)',

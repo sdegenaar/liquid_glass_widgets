@@ -10,7 +10,6 @@ import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../theme/glass_theme_helpers.dart';
 import '../../types/glass_quality.dart';
 import '../shared/adaptive_glass.dart';
-import '../shared/adaptive_liquid_glass_layer.dart';
 import '../../src/renderer/internal/interaction_notification.dart';
 import 'shared/glass_sheet_defaults.dart';
 
