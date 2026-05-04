@@ -108,7 +108,7 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
         ),
       ),
       bottomNavigationBar: Padding(
-        padding: EdgeInsets.only(bottom: sysBottom > 0 ? sysBottom - 25 : 0),
+        padding: EdgeInsets.only(bottom: sysBottom > 25 ? sysBottom - 25 : 0),
         child: GlassSearchableBottomBar(
           selectedIndex: _selectedTab,
           interactionBehavior: GlassInteractionBehavior.scaleOnly,
