@@ -362,7 +362,7 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
                 saturation: 1.2,
                 //specularSharpness: GlassSpecularSharpness.medium,
               ),
-              enableInteractionGlow: true, // Show touch-following glare
+              enableInteractionGlow: false, // Show touch-following glare
               glowRadius: 0.6,
               interactionScale: 1.00,
               triggerBuilder: (context, toggleMenu) => GlassButton(
@@ -371,21 +371,33 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
               ),
               items: [
                 GlassMenuItem(
-                  title: 'Edit Content',
-                  subtitle: 'Opens an edit view',
-                  icon: const Icon(Icons.edit_rounded),
-                  onTap: () {},
-                ),
-                const GlassMenuDivider(),
-                GlassMenuItem(
-                  title: 'Share Scenario',
-                  icon: const Icon(Icons.share_rounded),
+                  title: 'Upgrade plan',
+                  icon: const Icon(Icons.upgrade),
                   onTap: () {},
                 ),
                 GlassMenuItem(
-                  title: 'Delete Demo',
+                  title: 'Settings',
+                  icon: const Icon(Icons.settings),
+                  onTap: () {},
+                ),
+                GlassMenuItem(
+                  title: 'Offline Pages',
+                  icon: const Icon(Icons.move_down_rounded),
+                  onTap: () {},
+                ),
+                GlassMenuItem(
+                  title: 'Members',
+                  icon: const Icon(Icons.group_rounded),
+                  onTap: () {},
+                ),
+                GlassMenuItem(
+                  title: 'Trash',
                   icon: const Icon(Icons.delete_rounded),
-                  isDestructive: true,
+                  onTap: () {},
+                ),
+                GlassMenuItem(
+                  title: 'Help & support',
+                  icon: const Icon(Icons.question_mark_rounded),
                   onTap: () {},
                 ),
               ],
