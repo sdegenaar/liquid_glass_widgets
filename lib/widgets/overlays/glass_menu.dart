@@ -164,6 +164,7 @@ class _GlassMenuState extends State<GlassMenu>
   bool _hasStretched =
       false; // Prevents closing if we moved into stretch territory
   double _initialScrollOffset = 0.0;
+  Offset _initialLocalPosition = Offset.zero;
 
   // iOS 26 Liquid Glass smooth spring physics
   // Gentle, fluid motion with subtle overshoot - NOT harsh bounces
@@ -534,6 +535,7 @@ class _GlassMenuState extends State<GlassMenu>
                               setState(() {
                                 _isDragging = true;
                                 _hasStretched = false;
+                                _initialLocalPosition = event.localPosition;
                                 _initialScrollOffset =
                                     _scrollController.hasClients
                                         ? _scrollController.offset
@@ -549,11 +551,8 @@ class _GlassMenuState extends State<GlassMenu>
                             },
                             onPointerUp: (event) {
                               if (_isDragging) {
-                                if (_hasStretched) {
-                                  // Pull-to-dismiss triggered
-                                  _closeMenu();
-                                } else if (_hoveredIndex != null) {
-                                  // Only trigger tap if we didn't scroll much
+                                if (_hoveredIndex != null) {
+                                  // Only trigger tap if we didn't scroll or drag much (prevents selection during stretching)
                                   final currentOffset =
                                       _scrollController.hasClients
                                           ? _scrollController.offset
@@ -561,8 +560,13 @@ class _GlassMenuState extends State<GlassMenu>
                                   final scrollDisplacement =
                                       (currentOffset - _initialScrollOffset)
                                           .abs();
+                                  final dragDisplacement =
+                                      (event.localPosition -
+                                              _initialLocalPosition)
+                                          .distance;
 
-                                  if (scrollDisplacement < 10) {
+                                  if (scrollDisplacement < 10 &&
+                                      dragDisplacement < 10) {
                                     final item = widget.items[_hoveredIndex!];
                                     if (item is GlassMenuItem) {
                                       item.onTap();
@@ -570,12 +574,12 @@ class _GlassMenuState extends State<GlassMenu>
                                     _closeMenu();
                                   }
                                 }
+                                setState(() {
+                                  _isDragging = false;
+                                  _hoveredIndex = null;
+                                  _hasStretched = false;
+                                });
                               }
-                              setState(() {
-                                _isDragging = false;
-                                _hoveredIndex = null;
-                                _hasStretched = false;
-                              });
                             },
                             onPointerCancel: (_) {
                               setState(() {

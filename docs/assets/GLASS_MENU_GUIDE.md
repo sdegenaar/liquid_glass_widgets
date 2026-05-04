@@ -136,24 +136,18 @@ The menu automatically detects its position on the screen and limits elastic def
 - **Horizontal**: Stretches only **Away** from the nearest screen edge.
 This prevents the menu from visually "breaking" the screen boundaries.
 
-### 5.2 Tiered Interaction Zones
-The menu implements a three-tier gesture system to distinguish between precise selection, physical play, and intentional dismissal:
+### 5.2 Interaction & Safety Zones
+The menu implements a high-fidelity gesture engine that prioritizes physical play and prevents accidental closures:
 
-- **Zone 1: Active (0-20px)**
+- **Zone 1: Selection (0-20px)**
   - A small buffer around the glass container.
-  - The selection pill is active and tracks the finger.
-  - Releasing the finger triggers the `onTap` action of the hovered item.
+  - The selection pill tracks the finger.
+  - **Tap Guard**: Releasing the finger ONLY triggers a tap if the displacement (drag distance) is less than **10px**. This ensures that even small stretches within the active zone don't trigger items.
 
-- **Zone 2: Liquid (20-100px)**
-  - The "Physics Play" area.
-  - The selection pill is **deactivated** to prevent accidental triggers while stretching.
-  - Releasing the finger simply snaps the menu back to its original shape.
-
-- **Zone 3: Dismissal (>100px)**
-  - The "Pull-to-Dismiss" area.
-  - If the finger enters this zone, the menu enters a dismissal state.
-  - **Cancellation**: If the user moves their finger back into Zone 1 or 2 before releasing, the dismissal is aborted.
-  - **Release**: Releasing while in Zone 3 closes the menu.
+- **Zone 2: Liquid Play (>20px)**
+  - The extended interaction area.
+  - The selection pill is deactivated.
+  - **No Dismissal**: Pull-to-dismiss has been disabled. Users can stretch the menu indefinitely; releasing will always result in a smooth spring return to the original shape.
 
 ### 5.3 Scroll-Aware Selection
 To support `menuHeight` (fixed-size) menus with long lists, the selection engine distinguishes between scrolling and tapping:
