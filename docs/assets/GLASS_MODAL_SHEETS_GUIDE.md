@@ -119,6 +119,7 @@ Configure the realism of the glass and how it turns into a solid color.
 | :--- | :--- | :--- | :--- |
 | `interactionScale` | `double` | `1.01` | How much the sheet "squeezes" on touch. |
 | `enableInteractionGlow` | `bool` | `true` | Dynamic light glow following your touch point. |
+| `glowOnTapOnly` | `bool` | `false` | When true, the interaction glow acts as a momentary tap indicator that fades out if the user starts dragging (>10px), instead of tracking the finger. |
 | `enableSaturationGlow` | `bool` | `true` | Saturation pulse on the entire sheet background on touch. |
 | `glowColor` | `Color?` | `null` | Custom color for the tactile glare. |
 | `glowRadius` | `double` | `1.5` | Size of the touch glare effect. |

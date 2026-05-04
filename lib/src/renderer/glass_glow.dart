@@ -9,7 +9,7 @@ import '../../utils/glass_spring.dart';
 /// If placed as a descendant of a [GlassGlowLayer], this widget will
 /// send touch updates to that layer to create a glow effect.
 /// {@endtemplate}
-class GlassGlow extends StatelessWidget {
+class GlassGlow extends StatefulWidget {
   /// {@macro glass_glow}
   const GlassGlow({
     required this.child,
@@ -22,6 +22,7 @@ class GlassGlow extends StatelessWidget {
     this.clipper,
     this.hitTestBehavior = HitTestBehavior.opaque,
     this.enabled = true,
+    this.glowOnTapOnly = false,
     super.key,
   });
 
@@ -86,6 +87,13 @@ class GlassGlow extends StatelessWidget {
   /// [GlassGlowLayer].
   final bool enabled;
 
+  /// Whether the glow should act as a momentary tap indicator.
+  /// 
+  /// If true, the glow will appear on tap but will automatically fade out
+  /// if the user starts dragging (moving more than 10 pixels). It will not
+  /// reappear until a new tap starts.
+  final bool glowOnTapOnly;
+
   /// The child that will be painted above the glow effect.
   final Widget child;
 
@@ -94,20 +102,54 @@ class GlassGlow extends StatelessWidget {
   final CustomClipper<Path>? clipper;
 
   @override
+  State<GlassGlow> createState() => _GlassGlowState();
+}
+
+class _GlassGlowState extends State<GlassGlow> {
+  Offset? _initialPointerDown;
+  bool _glowSuppressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    if (!enabled) return child;
+    if (!widget.enabled) return widget.child;
 
     return GlassGlowLayer(
-      clipper: clipper,
-      pulse: pulse,
+      clipper: widget.clipper,
+      pulse: widget.pulse,
       child: Builder(
         builder: (innerContext) => Listener(
-          behavior: hitTestBehavior,
-          onPointerDown: (event) => _handlePointer(innerContext, event),
-          onPointerMove: (event) => _handlePointer(innerContext, event),
-          onPointerUp: (event) => _removeTouch(innerContext),
-          onPointerCancel: (event) => _removeTouch(innerContext),
-          child: child,
+          behavior: widget.hitTestBehavior,
+          onPointerDown: (event) {
+            _initialPointerDown = event.localPosition;
+            _glowSuppressed = false;
+            _handlePointer(innerContext, event);
+          },
+          onPointerMove: (event) {
+            if (_glowSuppressed) return;
+
+            if (widget.glowOnTapOnly && _initialPointerDown != null) {
+              final distance =
+                  (event.localPosition - _initialPointerDown!).distance;
+              if (distance > 10.0) {
+                _glowSuppressed = true;
+                _removeTouch(innerContext);
+                return;
+              }
+            }
+
+            _handlePointer(innerContext, event);
+          },
+          onPointerUp: (event) {
+            _glowSuppressed = false;
+            _initialPointerDown = null;
+            _removeTouch(innerContext);
+          },
+          onPointerCancel: (event) {
+            _glowSuppressed = false;
+            _initialPointerDown = null;
+            _removeTouch(innerContext);
+          },
+          child: widget.child,
         ),
       ),
     );
@@ -138,11 +180,11 @@ class GlassGlow extends StatelessWidget {
 
     layerState.updateTouch(
       pos,
-      radius: glowRadius,
-      color: glowColor,
-      blurRadius: glowBlurRadius,
-      spreadRadius: glowSpreadRadius,
-      opacity: glowOpacity,
+      radius: widget.glowRadius,
+      color: widget.glowColor,
+      blurRadius: widget.glowBlurRadius,
+      spreadRadius: widget.glowSpreadRadius,
+      opacity: widget.glowOpacity,
     );
   }
 

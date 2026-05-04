@@ -366,7 +366,8 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
                     refractiveIndex: 1.2,
                     saturation: 1.2,
                   ),
-                  enableInteractionGlow: false,
+                  enableInteractionGlow: true,
+                  glowOnTapOnly: true,
                   glowRadius: 0.6,
                   interactionScale: 1.00,
                   triggerBuilder: (context, toggleMenu) => GlassButton(
@@ -632,6 +633,7 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
     GlassModalSheet.show(
       context: context,
       quality: widget.currentQuality,
+      glowOnTapOnly: true,
       builder: (context) => const GlassBackdropScope(
         child: BaseScenario(
           title: 'Standard Experience',

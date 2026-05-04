@@ -25,6 +25,7 @@ These parameters control how the menu responds to being touched and pressed.
 | :--- | :--- | :--- | :--- |
 | `interactionScale`| `double` | `1.02` | Squeeze effect applied to the container during touch interactions. `1.0` = no scale. |
 | `enableInteractionGlow`| `bool` | `true` | Enables/Disables the radial glare (glow) that follows the finger during touch. |
+| `glowOnTapOnly` | `bool` | `false` | When true, the interaction glow acts as a momentary tap indicator that fades out if the user starts dragging or stretching (>10px), instead of continuously tracking the finger. |
 | `glowColor` | `Color?` | `null` | Custom color for the interaction glare. Defaults to a subtle white (15% opacity). |
 | `glowRadius` | `double` | `0.6` | Size of the interaction glare relative to the container. |
 | `selectionColor`| `Color` | `0x3DFFFFFF`| Custom color for the sliding selection pill background. |

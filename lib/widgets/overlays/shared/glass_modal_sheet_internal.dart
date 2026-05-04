@@ -39,6 +39,7 @@ class _SheetLayout extends StatelessWidget {
   final bool enableSaturationGlow;
   final VoidCallback onFocusGained;
   final bool suppressInteractionOnChildren;
+  final bool glowOnTapOnly;
 
   const _SheetLayout({
     required this.interactionScale,
@@ -79,6 +80,7 @@ class _SheetLayout extends StatelessWidget {
     required this.enableSaturationGlow,
     required this.onFocusGained,
     required this.suppressInteractionOnChildren,
+    required this.glowOnTapOnly,
   });
 
   @override
@@ -248,6 +250,7 @@ class _SheetLayout extends StatelessWidget {
                                     ? (glowColor ??
                                         Colors.white.withValues(alpha: 0.15))
                                     : Colors.transparent,
+                                glowOnTapOnly: glowOnTapOnly,
                                 glowRadius: glowRadius,
                                 hitTestBehavior: HitTestBehavior.translucent,
                                 pulse: (enableSaturationGlow &&
@@ -583,6 +586,9 @@ class GlassModalSheetScaffold extends StatelessWidget {
   /// Whether to prevent sheet scaling when interacting with children. Default: false.
   final bool suppressInteractionOnChildren;
 
+  /// Whether the glow should act as a momentary tap indicator. Default: false.
+  final bool glowOnTapOnly;
+
   /// Internal padding for the sheet content.
   final EdgeInsetsGeometry? padding;
 
@@ -675,6 +681,7 @@ class GlassModalSheetScaffold extends StatelessWidget {
     this.glowColor,
     this.glowRadius = 1.5,
     this.suppressInteractionOnChildren = false,
+    this.glowOnTapOnly = false,
     this.padding,
     this.enableTopFade = false,
     this.topFadeHeight = 40.0,
@@ -739,6 +746,7 @@ class GlassModalSheetScaffold extends StatelessWidget {
           glowColor: glowColor,
           glowRadius: glowRadius,
           suppressInteractionOnChildren: suppressInteractionOnChildren,
+          glowOnTapOnly: glowOnTapOnly,
           padding: padding,
           enableTopFade: enableTopFade,
           topFadeHeight: topFadeHeight,

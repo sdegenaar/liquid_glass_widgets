@@ -105,6 +105,13 @@ class GlassMenu extends StatefulWidget {
   /// Whether to show glow/glare on touch for tactile feedback. Default: true.
   final bool enableInteractionGlow;
 
+  /// Whether the glow should act as a momentary tap indicator.
+  /// 
+  /// If true, the glow will appear on tap but will automatically fade out
+  /// if the user starts dragging. It will not reappear until a new tap starts.
+  /// Default: false.
+  final bool glowOnTapOnly;
+
   /// Custom color for the touch interaction glow.
   final Color? glowColor;
 
@@ -141,6 +148,7 @@ class GlassMenu extends StatefulWidget {
     this.menuHeight,
     this.selectionColor = const Color(0x3DFFFFFF),
     this.enableInteractionGlow = true,
+    this.glowOnTapOnly = false,
     this.glowColor,
     this.glowRadius = 0.6,
   }) : assert(trigger != null || triggerBuilder != null,
@@ -473,6 +481,7 @@ class _GlassMenuState extends State<GlassMenu>
               widget.allowNegativeYStretch ?? (_morphAlignment.y > 0),
           child: GlassGlow(
             enabled: widget.enableInteractionGlow,
+            glowOnTapOnly: widget.glowOnTapOnly,
             glowColor: widget.glowColor ?? Colors.white.withValues(alpha: 0.15),
             glowRadius: widget.glowRadius,
             glowBlurRadius: 40,

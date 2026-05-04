@@ -139,6 +139,13 @@ class GlassModalSheet extends StatefulWidget {
   /// Velocity threshold for flick gestures (pixels/sec). Default: 700.0.
   final double velocityThreshold;
 
+  /// Whether the glow should act as a momentary tap indicator.
+  /// 
+  /// If true, the glow will appear on tap but will automatically fade out
+  /// if the user starts dragging. It will not reappear until a new tap starts.
+  /// Default: false.
+  final bool glowOnTapOnly;
+
   /// Custom color for the touch interaction glow.
   final Color? glowColor;
 
@@ -228,6 +235,7 @@ class GlassModalSheet extends StatefulWidget {
     this.glowColor,
     this.glowRadius = 1.5,
     this.suppressInteractionOnChildren = false,
+    this.glowOnTapOnly = false,
     this.padding,
     this.enableTopFade = false,
     this.topFadeHeight = 40.0,
@@ -282,6 +290,7 @@ class GlassModalSheet extends StatefulWidget {
     Color? glowColor,
     double glowRadius = 1.5,
     bool suppressInteractionOnChildren = false,
+    bool glowOnTapOnly = false,
     EdgeInsetsGeometry? padding,
     bool enableTopFade = false,
     double topFadeHeight = 40.0,
@@ -359,6 +368,7 @@ class GlassModalSheet extends StatefulWidget {
           glowColor: glowColor,
           glowRadius: glowRadius,
           suppressInteractionOnChildren: suppressInteractionOnChildren,
+          glowOnTapOnly: glowOnTapOnly,
           padding: padding,
           enableTopFade: enableTopFade,
           topFadeHeight: topFadeHeight,
