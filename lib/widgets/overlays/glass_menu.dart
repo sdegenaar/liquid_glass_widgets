@@ -696,19 +696,27 @@ class _GlassMenuState extends State<GlassMenu>
         dy < visibleHeight + 20;
 
     if (isWithinActiveZone) {
-      for (int i = 0; i < widget.items.length; i++) {
-      final item = widget.items[i];
-      final itemHeight = _getItemHeight(item);
+      // In scrollable menus, we disable pill tracking during significant movement
+      // to prevent visual noise and overlapping highlights during scrolling.
+      final isScrollable = widget.menuHeight != null;
+      final hasMoved =
+          _isDragging && (localPosition - _initialLocalPosition).distance > 10;
 
-      if (y >= currentOffset && y <= currentOffset + itemHeight) {
-        // Only select interactive items
-        if (item is GlassMenuItem) {
-          detectedIndex = i;
+      if (!isScrollable || !hasMoved) {
+        for (int i = 0; i < widget.items.length; i++) {
+          final item = widget.items[i];
+          final itemHeight = _getItemHeight(item);
+
+          if (y >= currentOffset && y <= currentOffset + itemHeight) {
+            // Only select interactive items
+            if (item is GlassMenuItem) {
+              detectedIndex = i;
+            }
+            break;
+          }
+          currentOffset += itemHeight + 2.0; // height + 2px gap
         }
-        break;
       }
-      currentOffset += itemHeight + 2.0; // height + 2px gap
-    }
     }
 
     _hoveredIndex = detectedIndex;

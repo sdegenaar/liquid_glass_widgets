@@ -152,7 +152,8 @@ The menu implements a high-fidelity gesture engine that prioritizes physical pla
 ### 5.3 Scroll-Aware Selection
 To support `menuHeight` (fixed-size) menus with long lists, the selection engine distinguishes between scrolling and tapping:
 - **Displacement Check**: If the scroll offset changes by more than **10px** during a gesture, the selection pill is deactivated, and no `onTap` action is triggered upon release.
-- **Pill Sync**: The selection pill position is calculated as `ItemOffset - ScrollOffset`, ensuring it stays pinned to the correct item in the viewport during navigation.
+- **Pill Suppression**: In scrollable menus, the selection pill is automatically hidden during active finger movement (>10px) to prevent visual noise while navigating.
+- **Pill Sync**: The selection pill position is calculated as `ItemOffset - ScrollOffset`, ensuring it stays pinned to the correct item in the viewport during stationary touches.
 - **Edge-to-Edge Scrolling**: Vertical outer padding is eliminated in favor of internal spacers, allowing items to scroll seamlessly "under" the glass frame.
 
 ---
