@@ -21,6 +21,7 @@ class GlassGlow extends StatelessWidget {
     this.pulse = 0,
     this.clipper,
     this.hitTestBehavior = HitTestBehavior.opaque,
+    this.enabled = true,
     super.key,
   });
 
@@ -79,6 +80,12 @@ class GlassGlow extends StatelessWidget {
   /// Defaults to [HitTestBehavior.opaque].
   final HitTestBehavior hitTestBehavior;
 
+  /// Whether the glow effect is enabled.
+  ///
+  /// If false, this widget will not register touch updates with the
+  /// [GlassGlowLayer].
+  final bool enabled;
+
   /// The child that will be painted above the glow effect.
   final Widget child;
 
@@ -88,6 +95,8 @@ class GlassGlow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!enabled) return child;
+
     return GlassGlowLayer(
       clipper: clipper,
       pulse: pulse,

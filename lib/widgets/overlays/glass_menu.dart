@@ -55,14 +55,16 @@ class GlassMenu extends StatefulWidget {
       triggerBuilder;
 
   /// The list of items to display in the menu.
-  final List<GlassMenuItem> items;
+  ///
+  /// Typically contains [GlassMenuItem] and [GlassMenuDivider].
+  final List<Widget> items;
 
   /// Width of the expanded menu.
   final double menuWidth;
 
   /// Border radius of the expanded menu.
   ///
-  /// Defaults to 16.0 to match iOS 26 liquid glass menus.
+  /// Defaults to 28.0 for a modern rounded look.
   final double menuBorderRadius;
 
   /// Custom glass settings for the menu container.
@@ -71,6 +73,44 @@ class GlassMenu extends StatefulWidget {
   /// Rendering quality for the glass effect.
   final GlassQuality? quality;
 
+  /// Liquid stretch factor. Default: 0.5.
+  final double stretch;
+
+  /// Scale factor applied on touch. Default: 1.02.
+  final double interactionScale;
+
+  /// The resistance factor to apply to the drag offset.
+  /// Higher values make the drag feel "stickier". Default: 0.08.
+  final double stretchResistance;
+
+  /// The axis to constrain the stretch to. If null, stretches in both axes.
+  final Axis? stretchAxis;
+
+  /// Whether to allow stretch in the positive X direction (Right).
+  /// If null, automatically determined by menu position.
+  final bool? allowPositiveXStretch;
+
+  /// Whether to allow stretch in the negative X direction (Left).
+  /// If null, automatically determined by menu position.
+  final bool? allowNegativeXStretch;
+
+  /// Whether to allow stretch in the positive Y direction (Down).
+  /// If null, automatically determined by menu position.
+  final bool? allowPositiveYStretch;
+
+  /// Whether to allow stretch in the negative Y direction (Up).
+  /// If null, automatically determined by menu position.
+  final bool? allowNegativeYStretch;
+
+  /// Whether to show glow/glare on touch for tactile feedback. Default: true.
+  final bool enableInteractionGlow;
+
+  /// Custom color for the touch interaction glow.
+  final Color? glowColor;
+
+  /// Radius of the touch interaction glow. Default: 0.6.
+  final double glowRadius;
+
   /// Creates a liquid glass menu.
   const GlassMenu({
     super.key,
@@ -78,9 +118,20 @@ class GlassMenu extends StatefulWidget {
     this.triggerBuilder,
     required this.items,
     this.menuWidth = 200,
-    this.menuBorderRadius = 16.0,
+    this.menuBorderRadius = 32.0,
     this.glassSettings,
     this.quality,
+    this.stretch = 0.5,
+    this.interactionScale = 1.02,
+    this.stretchResistance = 0.08,
+    this.stretchAxis,
+    this.allowPositiveXStretch,
+    this.allowNegativeXStretch,
+    this.allowPositiveYStretch,
+    this.allowNegativeYStretch,
+    this.enableInteractionGlow = true,
+    this.glowColor,
+    this.glowRadius = 0.6,
   }) : assert(trigger != null || triggerBuilder != null,
             'Either trigger or triggerBuilder must be provided');
 
@@ -89,13 +140,16 @@ class GlassMenu extends StatefulWidget {
 }
 
 class _GlassMenuState extends State<GlassMenu>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final LayerLink _layerLink = LayerLink();
   final OverlayPortalController _overlayController = OverlayPortalController();
 
   late final AnimationController _animationController;
+  late final ScrollController _scrollController;
   Size? _triggerSize;
   double? _triggerBorderRadius;
+  int? _hoveredIndex;
+  bool _isDragging = false;
 
   // iOS 26 Liquid Glass smooth spring physics
   // Gentle, fluid motion with subtle overshoot - NOT harsh bounces
@@ -130,11 +184,13 @@ class _GlassMenuState extends State<GlassMenu>
         _overlayController.hide();
       }
     });
+    _scrollController = ScrollController();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -236,6 +292,10 @@ class _GlassMenuState extends State<GlassMenu>
   }
 
   void _closeMenu() {
+    setState(() {
+      _hoveredIndex = null;
+      _isDragging = false;
+    });
     _runSpring(0.0);
   }
 
@@ -306,11 +366,13 @@ class _GlassMenuState extends State<GlassMenu>
     // Sum all menu item heights (each defaults to 44.0)
     final itemHeights = widget.items.fold<double>(
       0.0,
-      (sum, item) => sum + item.height,
+      (sum, item) => sum + _getItemHeight(item),
     );
 
     // Add vertical padding (8px top + 8px bottom = 16px total)
-    return itemHeights + 16.0;
+    // plus vertical gaps between items (2px each)
+    final gaps = (widget.items.length - 1) * 2.0;
+    return itemHeights + 16.0 + gaps;
   }
 
   Widget _buildMorphingContainer(double value) {
@@ -377,12 +439,30 @@ class _GlassMenuState extends State<GlassMenu>
     return RepaintBoundary(
       child: Opacity(
         opacity: containerOpacity, // Fade entire container during closing
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(currentBorderRadius),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(
-              sigmaX: effectiveSettings.blur,
-              sigmaY: effectiveSettings.blur,
+        child: LiquidStretch(
+          stretch: widget.stretch,
+          interactionScale: widget.interactionScale,
+          resistance: widget.stretchResistance,
+          axis: widget.stretchAxis,
+          suppressInteractionOnChildren: false,
+          // Constrain stretch to 'Down' and 'Away from screen edge' by default,
+          // but allow explicit user overrides.
+          allowPositiveX:
+              widget.allowPositiveXStretch ?? (_morphAlignment.x < 0),
+          allowNegativeX:
+              widget.allowNegativeXStretch ?? (_morphAlignment.x > 0),
+          allowPositiveY:
+              widget.allowPositiveYStretch ?? (_morphAlignment.y < 0),
+          allowNegativeY:
+              widget.allowNegativeYStretch ?? (_morphAlignment.y > 0),
+          child: GlassGlow(
+            enabled: widget.enableInteractionGlow,
+            glowColor: widget.glowColor ?? Colors.white.withValues(alpha: 0.15),
+            glowRadius: widget.glowRadius,
+            glowBlurRadius: 40,
+            clipper: ShapeBorderClipper(
+              shape:
+                  LiquidRoundedSuperellipse(borderRadius: currentBorderRadius),
             ),
             child: GlassContainer(
               useOwnLayer: true,
@@ -395,49 +475,103 @@ class _GlassMenuState extends State<GlassMenu>
                   currentHeight, // Constrained during morph, natural when open
               shape:
                   LiquidRoundedSuperellipse(borderRadius: currentBorderRadius),
-              clipBehavior: Clip.antiAlias, // Smooth anti-aliased edges
+              clipBehavior:
+                  Clip.none, // High-fidelity clipping handled by AdaptiveGlass
               child: Stack(
                 alignment: _morphAlignment, // Align internal stack content
                 clipBehavior:
-                    Clip.antiAlias, // Smooth clipping for overflow protection
+                    Clip.none, // Prevent double-clip artifacts during stretch
                 children: [
                   // Menu content - waits for container to be nearly full width
-                  // Width-constrained BEFORE layout to prevent overflow
-                  //
-                  // NOTE: We do NOT render the button inside this container during closing
-                  // because it would create double-glass (container glass + button glass).
-                  // The real trigger button (outside overlay) becomes visible at value < 0.05
                   if (value > 0.65)
                     Opacity(
                       opacity: menuOpacity,
-                      child: SizedBox(
-                        width: currentWidth, // Force exact container width
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 8, horizontal: 8),
-                          child: SingleChildScrollView(
-                            physics:
-                                const ClampingScrollPhysics(), // iOS-style scrolling
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: widget.items.map((item) {
-                                return GlassMenuItem(
-                                  key: item.key,
-                                  title: item.title,
-                                  icon: item.icon,
-                                  isDestructive: item.isDestructive,
-                                  trailing: item.trailing,
-                                  height: item.height,
-                                  onTap: () {
-                                    item.onTap();
-                                    _closeMenu();
-                                  },
-                                );
-                              }).toList(),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          // Sliding selection pill (background)
+                          if (_hoveredIndex != null)
+                            AnimatedPositioned(
+                              duration: const Duration(milliseconds: 150),
+                              curve: Curves.easeOutCubic,
+                              left: 8,
+                              right: 8,
+                              top: _getItemOffset(_hoveredIndex!),
+                              height:
+                                  _getItemHeight(widget.items[_hoveredIndex!]),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0x3DFFFFFF), // ~24% white
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(
+                                    color: const Color(
+                                        0x0DFFFFFF), // 5% white border
+                                    width: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          Listener(
+                            onPointerDown: (event) {
+                              setState(() {
+                                _isDragging = true;
+                                _updateHoveredIndex(event.localPosition);
+                              });
+                            },
+                            onPointerMove: (event) {
+                              if (_isDragging) {
+                                setState(() =>
+                                    _updateHoveredIndex(event.localPosition));
+                              }
+                            },
+                            onPointerUp: (event) {
+                              if (_isDragging && _hoveredIndex != null) {
+                                final item = widget.items[_hoveredIndex!];
+                                if (item is GlassMenuItem) {
+                                  item.onTap();
+                                }
+                                _closeMenu();
+                              }
+                              setState(() {
+                                _isDragging = false;
+                                _hoveredIndex = null;
+                              });
+                            },
+                            onPointerCancel: (_) {
+                              setState(() {
+                                _isDragging = false;
+                                _hoveredIndex = null;
+                              });
+                            },
+                            child: SizedBox(
+                              width:
+                                  currentWidth, // Force exact container width
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 8, horizontal: 8),
+                                child: SingleChildScrollView(
+                                  controller: _scrollController,
+                                  physics:
+                                      const ClampingScrollPhysics(), // iOS-style scrolling
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      for (var i = 0;
+                                          i < widget.items.length;
+                                          i++) ...[
+                                        _buildItem(i),
+                                        if (i < widget.items.length - 1)
+                                          const SizedBox(height: 2),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
                 ],
@@ -447,5 +581,62 @@ class _GlassMenuState extends State<GlassMenu>
         ),
       ),
     );
+  }
+
+  double _getItemHeight(Widget item) {
+    if (item is GlassMenuItem) return item.height;
+    if (item is GlassMenuDivider) return item.height;
+    return 44.0;
+  }
+
+  double _getItemOffset(int index) {
+    double offset = 8.0; // Top padding
+    for (int i = 0; i < index; i++) {
+      offset += _getItemHeight(widget.items[i]) + 2.0; // height + 2px gap
+    }
+    return offset;
+  }
+
+  Widget _buildItem(int i) {
+    final item = widget.items[i];
+    if (item is GlassMenuItem) {
+      return GlassMenuItem(
+        key: item.key,
+        title: item.title,
+        subtitle: item.subtitle,
+        icon: item.icon,
+        isDestructive: item.isDestructive,
+        trailing: item.trailing,
+        height: item.height,
+        isSelected: _hoveredIndex == i,
+        isPressed: _isDragging && _hoveredIndex == i,
+        enabled: false, // Parent handles interaction
+        onTap: item.onTap,
+      );
+    }
+    return item;
+  }
+
+  void _updateHoveredIndex(Offset localPosition) {
+    final y = localPosition.dy + _scrollController.offset;
+
+    double currentOffset = 8.0;
+    int? detectedIndex;
+
+    for (int i = 0; i < widget.items.length; i++) {
+      final item = widget.items[i];
+      final itemHeight = _getItemHeight(item);
+
+      if (y >= currentOffset && y <= currentOffset + itemHeight) {
+        // Only select interactive items
+        if (item is GlassMenuItem) {
+          detectedIndex = i;
+        }
+        break;
+      }
+      currentOffset += itemHeight + 2.0; // height + 2px gap
+    }
+
+    _hoveredIndex = detectedIndex;
   }
 }

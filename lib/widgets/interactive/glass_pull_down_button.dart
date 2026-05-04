@@ -107,8 +107,10 @@ class GlassPullDownButton extends StatelessWidget {
         if (onSelected != null) {
           return GlassMenuItem(
             title: item.title,
+            subtitle: item.subtitle,
             icon: item.icon,
             isDestructive: item.isDestructive,
+            enabled: item.enabled,
             onTap: () {
               item.onTap.call();
               onSelected!(item.title);

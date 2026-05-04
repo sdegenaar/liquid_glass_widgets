@@ -23,6 +23,10 @@ class LiquidStretch extends StatelessWidget {
     this.axis,
     this.allowPositive = true,
     this.allowNegative = true,
+    this.allowPositiveX,
+    this.allowNegativeX,
+    this.allowPositiveY,
+    this.allowNegativeY,
     this.suppressInteractionOnChildren = true,
     super.key,
   });
@@ -68,13 +72,23 @@ class LiquidStretch extends StatelessWidget {
   /// The axis to constrain the stretch to. If null, stretches in both axes.
   final Axis? axis;
 
-  /// Whether to allow stretch in the positive direction of the axis.
-  /// If [axis] is vertical, positive is down. If horizontal, positive is right.
+  /// Whether to allow stretch in the positive direction (Right/Down).
   final bool allowPositive;
 
-  /// Whether to allow stretch in the negative direction of the axis.
-  /// If [axis] is vertical, negative is up. If horizontal, negative is left.
+  /// Whether to allow stretch in the negative direction (Left/Up).
   final bool allowNegative;
+
+  /// Optional override for positive X direction (Right).
+  final bool? allowPositiveX;
+
+  /// Optional override for negative X direction (Left).
+  final bool? allowNegativeX;
+
+  /// Optional override for positive Y direction (Down).
+  final bool? allowPositiveY;
+
+  /// Optional override for negative Y direction (Up).
+  final bool? allowNegativeY;
 
   /// Whether to prevent scaling when interacting with children.
   final bool suppressInteractionOnChildren;
@@ -91,7 +105,6 @@ class LiquidStretch extends StatelessWidget {
     // mount a fresh one — which is exactly the regression we fixed in
     // lightweight_liquid_glass.dart.  Always returning `GlassDragBuilder`
     // keeps the tree structure stable throughout the animation.
-
     return GlassDragBuilder(
       behavior: hitTestBehavior,
       suppressInteractionOnChildren: suppressInteractionOnChildren,
@@ -115,18 +128,16 @@ class LiquidStretch extends StatelessWidget {
               } else if (axis == Axis.vertical) {
                 o = Offset(0, o.dy);
               }
-              if (!allowPositive) {
-                o = Offset(
-                  o.dx > 0 ? 0 : o.dx,
-                  o.dy > 0 ? 0 : o.dy,
-                );
-              }
-              if (!allowNegative) {
-                o = Offset(
-                  o.dx < 0 ? 0 : o.dx,
-                  o.dy < 0 ? 0 : o.dy,
-                );
-              }
+              final pX = allowPositiveX ?? allowPositive;
+              final nX = allowNegativeX ?? allowNegative;
+              final pY = allowPositiveY ?? allowPositive;
+              final nY = allowNegativeY ?? allowNegative;
+
+              if (!pX && o.dx > 0) o = Offset(0, o.dy);
+              if (!nX && o.dx < 0) o = Offset(0, o.dy);
+              if (!pY && o.dy > 0) o = Offset(o.dx, 0);
+              if (!nY && o.dy < 0) o = Offset(o.dx, 0);
+
               return o;
             }(),
             spring: value == null

@@ -13,7 +13,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
   runApp(LiquidGlassWidgets.wrap(
-      child: const ShowcaseApp(), adaptiveQuality: true));
+      child: const ShowcaseApp(), adaptiveQuality: false));
 }
 
 class ShowcaseApp extends StatefulWidget {
@@ -349,19 +349,34 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
             const SizedBox(height: 16),
             GlassMenu(
               menuWidth: 240,
-              triggerBuilder: (context, toggleMenu) => _buildScenarioTile(
-                title: 'Pull-Down Menu',
-                description: 'Tile morphs directly into a glass menu',
-                icon: Icons.menu_open_rounded,
+              quality: widget.currentQuality,
+              glassSettings: LiquidGlassSettings(
+                glassColor: Colors.transparent,
+                thickness: 30,
+                blur: 2,
+                chromaticAberration: .01,
+                lightAngle: GlassDefaults.lightAngle,
+                lightIntensity: .5,
+                ambientStrength: 0,
+                refractiveIndex: 1.2,
+                saturation: 1.2,
+                //specularSharpness: GlassSpecularSharpness.medium,
+              ),
+              enableInteractionGlow: true, // Show touch-following glare
+              glowRadius: 0.6,
+              interactionScale: 1.00,
+              triggerBuilder: (context, toggleMenu) => GlassButton(
+                icon: const Icon(Icons.menu_open_rounded),
                 onTap: toggleMenu,
-                color: Colors.purple,
               ),
               items: [
                 GlassMenuItem(
                   title: 'Edit Content',
+                  subtitle: 'Opens an edit view',
                   icon: const Icon(Icons.edit_rounded),
                   onTap: () {},
                 ),
+                const GlassMenuDivider(),
                 GlassMenuItem(
                   title: 'Share Scenario',
                   icon: const Icon(Icons.share_rounded),

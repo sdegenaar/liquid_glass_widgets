@@ -15,6 +15,10 @@ class GlassMenuItem extends StatefulWidget {
     this.isDestructive = false,
     this.trailing,
     this.height = 44.0,
+    this.subtitle,
+    this.isPressed,
+    this.isSelected = false,
+    this.enabled = true,
   });
 
   /// The primary text of the item.
@@ -22,6 +26,9 @@ class GlassMenuItem extends StatefulWidget {
 
   /// The icon widget displayed before the title.
   final Widget? icon;
+
+  /// Optional subtitle text displayed below the title.
+  final String? subtitle;
 
   /// Callback when the item is tapped.
   final VoidCallback onTap;
@@ -39,8 +46,51 @@ class GlassMenuItem extends StatefulWidget {
   /// Defaults to 44.0 (standard iOS touch target).
   final double height;
 
+  /// External override for the pressed state.
+  final bool? isPressed;
+
+  /// Whether the item is currently selected (e.g. by a sliding pill).
+  final bool isSelected;
+
+  /// Whether the item should handle its own interactions.
+  final bool enabled;
+
   @override
   State<GlassMenuItem> createState() => _GlassMenuItemState();
+}
+
+/// A separator line for use within a [GlassMenu].
+class GlassMenuDivider extends StatelessWidget {
+  /// The height of the divider area (line + spacing).
+  final double height;
+
+  /// Custom color for the divider line.
+  final Color? color;
+
+  /// Horizontal padding for the divider line.
+  final double indent;
+
+  /// Creates a glass menu divider.
+  const GlassMenuDivider({
+    super.key,
+    this.height = 12.0,
+    this.color,
+    this.indent = 8.0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: height,
+      child: Center(
+        child: Container(
+          height: 0.5,
+          margin: EdgeInsets.symmetric(horizontal: indent),
+          color: color ?? const Color(0x26FFFFFF), // 15% white line default
+        ),
+      ),
+    );
+  }
 }
 
 class _GlassMenuItemState extends State<GlassMenuItem> {
@@ -60,22 +110,30 @@ class _GlassMenuItemState extends State<GlassMenuItem> {
 
     // Dynamic background for hover/press states
     // We use a subtle white overlay to "brighten" the glass
-    final Color backgroundColor = _isPressed
-        ? const Color(0x26FFFFFF) // alpha: 0.15
-        : _isHovered
-            ? const Color(0x1AFFFFFF) // alpha: 0.1
-            : Colors.transparent;
+    final bool effectivePressed = widget.isPressed ?? _isPressed;
+    final bool effectiveSelected = widget.isSelected;
+
+    final Color backgroundColor = effectiveSelected
+        ? Colors.transparent // Parent renders the sliding pill
+        : effectivePressed
+            ? const Color(0x26FFFFFF) // Standalone press
+            : _isHovered
+                ? const Color(0x1AFFFFFF)
+                : Colors.transparent;
 
     // Scale effect on press (subtle squash like iOS buttons)
-    final double scale = _isPressed ? 0.98 : 1.0;
+    final double scale = effectivePressed ? 0.98 : 1.0;
 
     // Performance: RepaintBoundary isolates this item from siblings
     return RepaintBoundary(
       child: GestureDetector(
-        onTapDown: (_) => setState(() => _isPressed = true),
-        onTapUp: (_) => setState(() => _isPressed = false),
-        onTapCancel: () => setState(() => _isPressed = false),
-        onTap: widget.onTap,
+        onTapDown:
+            widget.enabled ? (_) => setState(() => _isPressed = true) : null,
+        onTapUp:
+            widget.enabled ? (_) => setState(() => _isPressed = false) : null,
+        onTapCancel:
+            widget.enabled ? () => setState(() => _isPressed = false) : null,
+        onTap: widget.enabled ? widget.onTap : null,
         child: MouseRegion(
           onEnter: (_) => setState(() => _isHovered = true),
           onExit: (_) => setState(() => _isHovered = false),
@@ -90,7 +148,7 @@ class _GlassMenuItemState extends State<GlassMenuItem> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: backgroundColor,
-                borderRadius: BorderRadius.circular(10), // Inner radius
+                borderRadius: BorderRadius.circular(24), // Match sliding pill
               ),
               child: Row(
                 children: [
@@ -103,15 +161,34 @@ class _GlassMenuItemState extends State<GlassMenuItem> {
                     const SizedBox(width: 12),
                   ],
 
-                  // Title
+                  // Text Content (Title & Subtitle)
                   Expanded(
-                    child: Text(
-                      widget.title,
-                      style: TextStyle(
-                        color: textColor,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w400,
-                      ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        if (widget.subtitle != null)
+                          Text(
+                            widget.subtitle!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: textColor.withValues(alpha: 0.6),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
 

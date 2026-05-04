@@ -221,7 +221,7 @@ class AdaptiveGlass extends StatelessWidget {
           shape: shape,
           settings: effectiveSettings,
           densityFactor: 0.0, // Containers are never elevated
-          glowIntensity: 0.0, // Containers don't glow
+          glowIntensity: glowIntensity, // Allow interactive containers to glow
           child: InheritedLiquidGlass(
             settings: effectiveSettings,
             quality: quality,
