@@ -447,6 +447,82 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(width: 16),
+
+                // 3. Photo configuration (Custom Widgets instead of Icons)
+                GlassMenu(
+                  menuWidth: 220,
+                  quality: widget.currentQuality,
+                  stretch: 0.0, // Disable liquid stretch physics
+                  glassSettings: LiquidGlassSettings(
+                    glassColor: Colors.transparent,
+                    thickness: 30,
+                    blur: 2,
+                    chromaticAberration: .01,
+                    lightAngle: GlassDefaults.lightAngle,
+                    lightIntensity: .5,
+                    ambientStrength: 0,
+                    refractiveIndex: 1.2,
+                    saturation: 1.2,
+                  ),
+                  enableInteractionGlow: false,
+                  glowRadius: 0.6,
+                  interactionScale: 1.00,
+                  triggerBuilder: (context, toggleMenu) => GlassButton(
+                    icon: const Icon(Icons.camera_alt_rounded),
+                    onTap: toggleMenu,
+                  ),
+                  items: [
+                    GlassMenuItem(
+                        title: 'Alice',
+                        icon: const CircleAvatar(
+                          radius: 12,
+                          backgroundImage:
+                              NetworkImage('https://i.pravatar.cc/100?img=1'),
+                        ),
+                        onTap: () {}),
+                    GlassMenuItem(
+                        title: 'Bob',
+                        icon: const CircleAvatar(
+                          radius: 12,
+                          backgroundImage:
+                              NetworkImage('https://i.pravatar.cc/100?img=2'),
+                        ),
+                        onTap: () {}),
+                    GlassMenuItem(
+                        title: 'Charlie',
+                        icon: const CircleAvatar(
+                          radius: 12,
+                          backgroundImage:
+                              NetworkImage('https://i.pravatar.cc/100?img=3'),
+                        ),
+                        onTap: () {}),
+                    GlassMenuItem(
+                        title: 'Diana',
+                        icon: const CircleAvatar(
+                          radius: 12,
+                          backgroundImage:
+                              NetworkImage('https://i.pravatar.cc/100?img=4'),
+                        ),
+                        onTap: () {}),
+                    GlassMenuItem(
+                        title: 'Ethan',
+                        icon: const CircleAvatar(
+                          radius: 12,
+                          backgroundImage:
+                              NetworkImage('https://i.pravatar.cc/100?img=5'),
+                        ),
+                        onTap: () {}),
+                    GlassMenuItem(
+                        title: 'Fiona',
+                        icon: const CircleAvatar(
+                          radius: 12,
+                          backgroundImage:
+                              NetworkImage('https://i.pravatar.cc/100?img=9'),
+                        ),
+                        onTap: () {}),
+                  ],
+                ),
               ],
             ),
           ],
