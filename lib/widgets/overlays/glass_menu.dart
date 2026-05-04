@@ -494,8 +494,8 @@ class _GlassMenuState extends State<GlassMenu>
                             AnimatedPositioned(
                               duration: const Duration(milliseconds: 150),
                               curve: Curves.easeOutCubic,
-                              left: 8,
-                              right: 8,
+                              left: 12,
+                              right: 12,
                               top: _getItemOffset(_hoveredIndex!),
                               height:
                                   _getItemHeight(widget.items[_hoveredIndex!]),
@@ -548,7 +548,7 @@ class _GlassMenuState extends State<GlassMenu>
                                   currentWidth, // Force exact container width
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
-                                    vertical: 8, horizontal: 8),
+                                    vertical: 12, horizontal: 12),
                                 child: SingleChildScrollView(
                                   controller: _scrollController,
                                   physics:
@@ -590,7 +590,7 @@ class _GlassMenuState extends State<GlassMenu>
   }
 
   double _getItemOffset(int index) {
-    double offset = 8.0; // Top padding
+    double offset = 12.0; // Top padding
     for (int i = 0; i < index; i++) {
       offset += _getItemHeight(widget.items[i]) + 2.0; // height + 2px gap
     }
