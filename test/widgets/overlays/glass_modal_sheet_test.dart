@@ -352,8 +352,7 @@ void main() {
 
       // At half (0.45), colorOpacity is ~0 — fill present but transparent.
       BoxDecoration getFillDecoration() => tester
-          .widget<DecoratedBox>(
-              find.byKey(const Key('glass_modal_sheet_fill')))
+          .widget<DecoratedBox>(find.byKey(const Key('glass_modal_sheet_fill')))
           .decoration as BoxDecoration;
       expect(getFillDecoration().color?.a ?? 0, lessThan(0.05));
 
@@ -434,8 +433,7 @@ void main() {
 
       // In half state, colorOpacity is ~0 — fill present but transparent.
       BoxDecoration getFillDecoration() => tester
-          .widget<DecoratedBox>(
-              find.byKey(const Key('glass_modal_sheet_fill')))
+          .widget<DecoratedBox>(find.byKey(const Key('glass_modal_sheet_fill')))
           .decoration as BoxDecoration;
       expect(getFillDecoration().color?.a ?? 0, lessThan(0.05));
 
@@ -864,8 +862,7 @@ void main() {
         // position. Multiple small moveBy calls with pumps between them
         // simulate a finger that lingers — enough frames for _applyDrag
         // to resolve and commit the intermediate snap target.
-        final start =
-            tester.getCenter(find.byType(GlassModalSheetScaffold));
+        final start = tester.getCenter(find.byType(GlassModalSheetScaffold));
         final gesture = await tester.startGesture(start);
         for (var i = 0; i < 20; i++) {
           await gesture.moveBy(const Offset(0, 15));
@@ -877,8 +874,7 @@ void main() {
         // The final transition to half MUST be reported regardless of
         // how many times _applyDrag updated _currentState mid-gesture.
         expect(states, contains(SheetState.half),
-            reason:
-                'onStateChanged was not fired for the slow-drag-to-half '
+            reason: 'onStateChanged was not fired for the slow-drag-to-half '
                 'transition — _snapToState skipped its side-effects branch '
                 'because _applyDrag had already updated _currentState to '
                 'the resolved target mid-drag.');

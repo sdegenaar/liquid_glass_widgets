@@ -105,7 +105,6 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
   /// Apply `matteTransform` at paint time to get the current screen-space bounds.
   Rect _geometryLocalBounds = Rect.zero;
 
-
   @override
   @mustCallSuper
   void attach(PipelineOwner owner) {

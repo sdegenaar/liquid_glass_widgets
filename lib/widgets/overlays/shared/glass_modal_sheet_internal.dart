@@ -318,7 +318,6 @@ class _SheetLayout extends StatelessWidget {
 // Internal UI Support
 // ===========================================================================
 
-
 class _SheetHandleZone extends StatelessWidget {
   const _SheetHandleZone();
 
