@@ -111,6 +111,15 @@ class GlassMenu extends StatefulWidget {
   /// Radius of the touch interaction glow. Default: 0.6.
   final double glowRadius;
 
+  /// Custom color for the menu selection background.
+  final Color selectionColor;
+
+  /// Optional fixed height for the menu.
+  ///
+  /// If null, the menu will size itself to fit its items.
+  /// If provided, the menu will have a fixed height and internal scrolling.
+  final double? menuHeight;
+
   /// Creates a liquid glass menu.
   const GlassMenu({
     super.key,
@@ -129,6 +138,8 @@ class GlassMenu extends StatefulWidget {
     this.allowNegativeXStretch,
     this.allowPositiveYStretch,
     this.allowNegativeYStretch,
+    this.menuHeight,
+    this.selectionColor = const Color(0x3DFFFFFF),
     this.enableInteractionGlow = true,
     this.glowColor,
     this.glowRadius = 0.6,
@@ -150,6 +161,9 @@ class _GlassMenuState extends State<GlassMenu>
   double? _triggerBorderRadius;
   int? _hoveredIndex;
   bool _isDragging = false;
+  bool _hasStretched =
+      false; // Prevents closing if we moved into stretch territory
+  double _initialScrollOffset = 0.0;
 
   // iOS 26 Liquid Glass smooth spring physics
   // Gentle, fluid motion with subtle overshoot - NOT harsh bounces
@@ -369,10 +383,10 @@ class _GlassMenuState extends State<GlassMenu>
       (sum, item) => sum + _getItemHeight(item),
     );
 
-    // Add vertical padding (8px top + 8px bottom = 16px total)
+    // Add vertical padding (12px top + 12px bottom = 24px total)
     // plus vertical gaps between items (2px each)
     final gaps = (widget.items.length - 1) * 2.0;
-    return itemHeights + 16.0 + gaps;
+    return itemHeights + 24.0 + gaps;
   }
 
   Widget _buildMorphingContainer(double value) {
@@ -391,9 +405,10 @@ class _GlassMenuState extends State<GlassMenu>
     final currentWidth =
         lerpDouble(_triggerSize!.width, widget.menuWidth, value)!;
 
+    final targetHeight = widget.menuHeight ?? menuHeight;
     final currentHeight = value < 0.85
-        ? lerpDouble(_triggerSize!.height, menuHeight, value)!
-        : null; // Natural height when nearly expanded (prevents overflow)
+        ? lerpDouble(_triggerSize!.height, targetHeight, value)!
+        : widget.menuHeight; // Natural height (null) or fixed height
 
     // Interpolate border radius: circular button -> rounded menu
     final currentBorderRadius = lerpDouble(
@@ -476,7 +491,7 @@ class _GlassMenuState extends State<GlassMenu>
               shape:
                   LiquidRoundedSuperellipse(borderRadius: currentBorderRadius),
               clipBehavior:
-                  Clip.none, // High-fidelity clipping handled by AdaptiveGlass
+                  Clip.antiAlias, // Clip items at the edges for edge-to-edge feel
               child: Stack(
                 alignment: _morphAlignment, // Align internal stack content
                 clipBehavior:
@@ -496,12 +511,15 @@ class _GlassMenuState extends State<GlassMenu>
                               curve: Curves.easeOutCubic,
                               left: 12,
                               right: 12,
-                              top: _getItemOffset(_hoveredIndex!),
+                              top: _getItemOffset(_hoveredIndex!) -
+                                  (_scrollController.hasClients
+                                      ? _scrollController.offset
+                                      : 0.0),
                               height:
                                   _getItemHeight(widget.items[_hoveredIndex!]),
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: const Color(0x3DFFFFFF), // ~24% white
+                                  color: widget.selectionColor,
                                   borderRadius: BorderRadius.circular(24),
                                   border: Border.all(
                                     color: const Color(
@@ -515,6 +533,11 @@ class _GlassMenuState extends State<GlassMenu>
                             onPointerDown: (event) {
                               setState(() {
                                 _isDragging = true;
+                                _hasStretched = false;
+                                _initialScrollOffset =
+                                    _scrollController.hasClients
+                                        ? _scrollController.offset
+                                        : 0.0;
                                 _updateHoveredIndex(event.localPosition);
                               });
                             },
@@ -525,16 +548,33 @@ class _GlassMenuState extends State<GlassMenu>
                               }
                             },
                             onPointerUp: (event) {
-                              if (_isDragging && _hoveredIndex != null) {
-                                final item = widget.items[_hoveredIndex!];
-                                if (item is GlassMenuItem) {
-                                  item.onTap();
+                              if (_isDragging) {
+                                if (_hasStretched) {
+                                  // Pull-to-dismiss triggered
+                                  _closeMenu();
+                                } else if (_hoveredIndex != null) {
+                                  // Only trigger tap if we didn't scroll much
+                                  final currentOffset =
+                                      _scrollController.hasClients
+                                          ? _scrollController.offset
+                                          : 0.0;
+                                  final scrollDisplacement =
+                                      (currentOffset - _initialScrollOffset)
+                                          .abs();
+
+                                  if (scrollDisplacement < 10) {
+                                    final item = widget.items[_hoveredIndex!];
+                                    if (item is GlassMenuItem) {
+                                      item.onTap();
+                                    }
+                                    _closeMenu();
+                                  }
                                 }
-                                _closeMenu();
                               }
                               setState(() {
                                 _isDragging = false;
                                 _hoveredIndex = null;
+                                _hasStretched = false;
                               });
                             },
                             onPointerCancel: (_) {
@@ -544,11 +584,11 @@ class _GlassMenuState extends State<GlassMenu>
                               });
                             },
                             child: SizedBox(
-                              width:
-                                  currentWidth, // Force exact container width
+                              width: currentWidth,
+                              height: widget.menuHeight, // Apply fixed height
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 12, horizontal: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 12),
                                 child: SingleChildScrollView(
                                   controller: _scrollController,
                                   physics:
@@ -558,6 +598,8 @@ class _GlassMenuState extends State<GlassMenu>
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
                                     children: [
+                                      const SizedBox(
+                                          height: 12), // Inner top padding
                                       for (var i = 0;
                                           i < widget.items.length;
                                           i++) ...[
@@ -565,6 +607,8 @@ class _GlassMenuState extends State<GlassMenu>
                                         if (i < widget.items.length - 1)
                                           const SizedBox(height: 2),
                                       ],
+                                      const SizedBox(
+                                          height: 12), // Inner bottom padding
                                     ],
                                   ),
                                 ),
@@ -586,6 +630,7 @@ class _GlassMenuState extends State<GlassMenu>
   double _getItemHeight(Widget item) {
     if (item is GlassMenuItem) return item.height;
     if (item is GlassMenuDivider) return item.height;
+    if (item is GlassMenuLabel) return item.height;
     return 44.0;
   }
 
@@ -618,12 +663,36 @@ class _GlassMenuState extends State<GlassMenu>
   }
 
   void _updateHoveredIndex(Offset localPosition) {
-    final y = localPosition.dy + _scrollController.offset;
+    // Detect if we've moved into "stretch territory" (outside visible menu bounds)
+    // We use the visible container height if fixed, otherwise the natural height.
+    final visibleHeight = widget.menuHeight ?? _calculateMenuHeight();
+    final x = localPosition.dx;
+    final dy = localPosition.dy;
 
-    double currentOffset = 8.0;
+    // We add a 100px buffer to allow for intense liquid stretching without accidental closure.
+    // We also allow cancelling the stretch if the user moves their finger back.
+    final outsideBounds = dy < -100 ||
+        dy > visibleHeight + 100 ||
+        x < -100 ||
+        x > widget.menuWidth + 100;
+
+    if (_hasStretched != outsideBounds) {
+      setState(() => _hasStretched = outsideBounds);
+    }
+    final y = dy + (_scrollController.hasClients ? _scrollController.offset : 0.0);
+
+    double currentOffset = 12.0;
     int? detectedIndex;
 
-    for (int i = 0; i < widget.items.length; i++) {
+    // Only allow selecting items if we are within a small "active" buffer (20px)
+    // This prevents triggering items while intentionally stretching the menu.
+    final isWithinActiveZone = x > -20 &&
+        x < widget.menuWidth + 20 &&
+        dy > -20 &&
+        dy < visibleHeight + 20;
+
+    if (isWithinActiveZone) {
+      for (int i = 0; i < widget.items.length; i++) {
       final item = widget.items[i];
       final itemHeight = _getItemHeight(item);
 
@@ -635,6 +704,7 @@ class _GlassMenuState extends State<GlassMenu>
         break;
       }
       currentOffset += itemHeight + 2.0; // height + 2px gap
+    }
     }
 
     _hoveredIndex = detectedIndex;

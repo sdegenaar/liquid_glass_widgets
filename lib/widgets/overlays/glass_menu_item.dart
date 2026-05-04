@@ -19,6 +19,10 @@ class GlassMenuItem extends StatefulWidget {
     this.isPressed,
     this.isSelected = false,
     this.enabled = true,
+    this.titleStyle,
+    this.subtitleStyle,
+    this.iconColor,
+    this.iconSize = 20.0,
   });
 
   /// The primary text of the item.
@@ -54,6 +58,18 @@ class GlassMenuItem extends StatefulWidget {
 
   /// Whether the item should handle its own interactions.
   final bool enabled;
+
+  /// Custom text style for the title.
+  final TextStyle? titleStyle;
+
+  /// Custom text style for the subtitle.
+  final TextStyle? subtitleStyle;
+
+  /// Custom color for the icon.
+  final Color? iconColor;
+
+  /// Custom size for the icon.
+  final double iconSize;
 
   @override
   State<GlassMenuItem> createState() => _GlassMenuItemState();
@@ -93,6 +109,55 @@ class GlassMenuDivider extends StatelessWidget {
   }
 }
 
+/// A non-interactive label or content item for use within a [GlassMenu].
+///
+/// Use this for headers, section labels, or purely decorative content.
+/// It does not respond to hover/press and is ignored by the selection pill.
+class GlassMenuLabel extends StatelessWidget {
+  /// The content to display.
+  final Widget child;
+
+  /// The height of the item.
+  ///
+  /// Defaults to 32.0 (slightly shorter than a standard menu item).
+  final double height;
+
+  /// Horizontal padding for the content.
+  final double horizontalPadding;
+
+  /// Creates a glass menu label.
+  const GlassMenuLabel({
+    required this.child,
+    super.key,
+    this.height = 32.0,
+    this.horizontalPadding = 16.0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+      alignment: Alignment.centerLeft,
+      child: DefaultTextStyle(
+        style: const TextStyle(
+          color: Color(0x99FFFFFF), // 60% white default
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          letterSpacing: -0.1,
+        ),
+        child: IconTheme(
+          data: const IconThemeData(
+            color: Color(0x99FFFFFF),
+            size: 16,
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
 class _GlassMenuItemState extends State<GlassMenuItem> {
   bool _isHovered = false;
   bool _isPressed = false;
@@ -100,14 +165,26 @@ class _GlassMenuItemState extends State<GlassMenuItem> {
   @override
   Widget build(BuildContext context) {
     // Performance: Cache static colors to avoid recalculation on every build
-    final Color textColor = widget.isDestructive
-        ? const Color(0xFFEF5350) // Colors.red.shade400 cached
-        : const Color(0xE6FFFFFF); // Colors.white.withValues(alpha: 0.9) cached
+    // Determine the base color of the item (inheritance logic)
+    // Priority: iconColor > titleStyle.color > destructiveRed > white
+    final Color baseColor = widget.iconColor ??
+        widget.titleStyle?.color ??
+        (widget.isDestructive
+            ? const Color(0xFFEF5350) // Colors.red.shade400
+            : Colors.white);
 
-    final Color iconColor = widget.isDestructive
-        ? const Color(0xFFEF5350)
-        : const Color(0xB3FFFFFF); // Colors.white.withValues(alpha: 0.7) cached
+    // Apply specific opacities based on original design specs:
+    // Icon: 100% (enabled), 50% (disabled)
+    // Text: 90% (static for enabled/disabled)
+    final Color iconColor = widget.iconColor ??
+        (widget.isDestructive
+            ? Colors.redAccent
+            : baseColor.withValues(alpha: widget.enabled ? 1.0 : 0.5));
 
+    final Color textColor = widget.titleStyle?.color ??
+        (widget.isDestructive
+            ? const Color(0xFFEF5350) // Colors.red.shade400
+            : baseColor.withValues(alpha: 0.9));
     // Dynamic background for hover/press states
     // We use a subtle white overlay to "brighten" the glass
     final bool effectivePressed = widget.isPressed ?? _isPressed;
@@ -155,7 +232,10 @@ class _GlassMenuItemState extends State<GlassMenuItem> {
                   // Icon
                   if (widget.icon != null) ...[
                     IconTheme(
-                      data: IconThemeData(color: iconColor, size: 20),
+                      data: IconThemeData(
+                        color: iconColor,
+                        size: widget.iconSize,
+                      ),
                       child: widget.icon!,
                     ),
                     const SizedBox(width: 12),
@@ -171,22 +251,24 @@ class _GlassMenuItemState extends State<GlassMenuItem> {
                           widget.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: textColor,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w400,
-                          ),
+                          style: widget.titleStyle ??
+                              TextStyle(
+                                color: textColor,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w400,
+                              ),
                         ),
                         if (widget.subtitle != null)
                           Text(
                             widget.subtitle!,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: textColor.withValues(alpha: 0.6),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w400,
-                            ),
+                            style: widget.subtitleStyle ??
+                                TextStyle(
+                                  color: textColor.withValues(alpha: 0.6),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w400,
+                                ),
                           ),
                       ],
                     ),

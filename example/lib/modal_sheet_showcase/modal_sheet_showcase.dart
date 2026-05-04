@@ -346,59 +346,106 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
               onTap: () => _showGlassPanel(context),
               color: Colors.green,
             ),
-            const SizedBox(height: 16),
-            GlassMenu(
-              menuWidth: 240,
-              quality: widget.currentQuality,
-              glassSettings: LiquidGlassSettings(
-                glassColor: Colors.transparent,
-                thickness: 30,
-                blur: 2,
-                chromaticAberration: .01,
-                lightAngle: GlassDefaults.lightAngle,
-                lightIntensity: .5,
-                ambientStrength: 0,
-                refractiveIndex: 1.2,
-                saturation: 1.2,
-                //specularSharpness: GlassSpecularSharpness.medium,
-              ),
-              enableInteractionGlow: false, // Show touch-following glare
-              glowRadius: 0.6,
-              interactionScale: 1.00,
-              triggerBuilder: (context, toggleMenu) => GlassButton(
-                icon: const Icon(Icons.menu_open_rounded),
-                onTap: toggleMenu,
-              ),
-              items: [
-                GlassMenuItem(
-                  title: 'Upgrade plan',
-                  icon: const Icon(Icons.upgrade),
-                  onTap: () {},
+            const SizedBox(height: 24),
+            const GlassMenuLabel(child: Text('MENU CONFIGURATIONS')),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                // 1. Basic configuration (User's original)
+                GlassMenu(
+                  menuWidth: 240,
+                  quality: widget.currentQuality,
+                  glassSettings: LiquidGlassSettings(
+                    glassColor: Colors.transparent,
+                    thickness: 30,
+                    blur: 2,
+                    chromaticAberration: .01,
+                    lightAngle: GlassDefaults.lightAngle,
+                    lightIntensity: .5,
+                    ambientStrength: 0,
+                    refractiveIndex: 1.2,
+                    saturation: 1.2,
+                  ),
+                  enableInteractionGlow: false,
+                  glowRadius: 0.6,
+                  interactionScale: 1.00,
+                  triggerBuilder: (context, toggleMenu) => GlassButton(
+                    icon: const Icon(Icons.menu_open_rounded),
+                    onTap: toggleMenu,
+                  ),
+                  items: [
+                    GlassMenuItem(
+                        title: 'Upgrade plan',
+                        icon: const Icon(Icons.upgrade),
+                        onTap: () {}),
+                    GlassMenuItem(
+                        title: 'Settings',
+                        icon: const Icon(Icons.settings),
+                        onTap: () {}),
+                    GlassMenuItem(
+                        title: 'Offline Pages',
+                        icon: const Icon(Icons.move_down_rounded),
+                        onTap: () {}),
+                    GlassMenuItem(
+                        title: 'Members',
+                        icon: const Icon(Icons.group_rounded),
+                        onTap: () {}),
+                    GlassMenuItem(
+                        title: 'Trash',
+                        icon: const Icon(Icons.delete_rounded),
+                        onTap: () {}),
+                    GlassMenuItem(
+                        title: 'Help & support',
+                        icon: const Icon(Icons.question_mark_rounded),
+                        onTap: () {}),
+                  ],
                 ),
-                GlassMenuItem(
-                  title: 'Settings',
-                  icon: const Icon(Icons.settings),
-                  onTap: () {},
-                ),
-                GlassMenuItem(
-                  title: 'Offline Pages',
-                  icon: const Icon(Icons.move_down_rounded),
-                  onTap: () {},
-                ),
-                GlassMenuItem(
-                  title: 'Members',
-                  icon: const Icon(Icons.group_rounded),
-                  onTap: () {},
-                ),
-                GlassMenuItem(
-                  title: 'Trash',
-                  icon: const Icon(Icons.delete_rounded),
-                  onTap: () {},
-                ),
-                GlassMenuItem(
-                  title: 'Help & support',
-                  icon: const Icon(Icons.question_mark_rounded),
-                  onTap: () {},
+                const SizedBox(width: 16),
+
+                // 2. Pro configuration (Advanced features)
+                GlassMenu(
+                  menuWidth: 260,
+                  menuHeight: 250, // Test scrolling
+                  quality: widget.currentQuality,
+                  selectionColor: Colors.blue.withValues(alpha: 0.3),
+                  triggerBuilder: (context, toggle) => GlassButton.custom(
+                    onTap: toggle,
+                    width: 56,
+                    height: 56,
+                    shape: const LiquidOval(),
+                    child: const Icon(CupertinoIcons.layers_alt,
+                        color: Colors.white),
+                  ),
+                  items: [
+                    const GlassMenuLabel(child: Text('PRIMARY ACTIONS')),
+                    GlassMenuItem(
+                      title: 'New Project',
+                      subtitle: 'Create from template',
+                      icon: const Icon(CupertinoIcons.add),
+                      onTap: () {},
+                    ),
+                    GlassMenuItem(
+                      title: 'Share Workspace',
+                      icon: const Icon(CupertinoIcons.share),
+                      iconColor: Colors.blueAccent, // Smart inheritance
+                      onTap: () {},
+                    ),
+                    const GlassMenuDivider(),
+                    const GlassMenuLabel(child: Text('MANAGEMENT')),
+                    GlassMenuItem(
+                      title: 'Settings',
+                      icon: const Icon(CupertinoIcons.settings),
+                      onTap: () {},
+                    ),
+                    const GlassMenuDivider(),
+                    const GlassMenuLabel(child: Text('DANGER ZONE')),
+                    GlassMenuItem(
+                      title: 'Delete Forever',
+                      isDestructive: true,
+                      icon: const Icon(CupertinoIcons.trash),
+                      onTap: () {},
+                    ),
+                  ],
                 ),
               ],
             ),

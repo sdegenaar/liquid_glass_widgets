@@ -9,11 +9,12 @@ The `GlassMenu` follows a "Trigger-to-Overlay" pattern where an initial widget m
 
 | Parameter | Type | Default | What it does (Technical Detail) |
 | :--- | :--- | :--- | :--- |
-| `items` | `List<Widget>` | **Required** | The payload of the menu. Supports `GlassMenuItem`, `GlassMenuDivider`, or any custom widget. |
+| `items` | `List<Widget>` | **Required** | The payload of the menu. Supports `GlassMenuItem`, `GlassMenuDivider`, `GlassMenuLabel`, or any custom widget. |
 | `trigger` | `Widget?` | `null` | A static widget that opens the menu on tap. Automatically wrapped in a gesture detector. |
 | `triggerBuilder` | `TriggerBuilder?`| `null` | Functional builder `(context, toggle)` for complex triggers needing direct control over the animation state. |
-| `menuWidth` | `double` | `200.0` | Target width of the expanded menu. If the trigger is wider, it will shrink during morph. |
-| `menuBorderRadius`| `double` | `32.0` | Target corner radius. Uses `Radius = Margin + InnerRadius` harmony (32 = 8 + 24). |
+| `menuWidth` | `double` | `200.0` | Target width of the expanded menu. |
+| `menuHeight` | `double?` | `null` | Optional fixed height. Enables internal scrolling if content exceeds this value. |
+| `menuBorderRadius`| `double` | `32.0` | Target corner radius. Uses `Radius = Margin + InnerRadius` harmony. |
 | `quality` | `GlassQuality?` | `null` | Rendering tier. If null, inherits from `GlassQualityScope`. |
 | `glassSettings` | `LiquidGlassSettings?` | `null` | Custom shader settings (blur, thickness, refractive index) for this specific menu. |
 
@@ -26,6 +27,7 @@ These parameters control how the menu responds to being touched and pressed.
 | `enableInteractionGlow`| `bool` | `true` | Enables/Disables the radial glare (glow) that follows the finger during touch. |
 | `glowColor` | `Color?` | `null` | Custom color for the interaction glare. Defaults to a subtle white (15% opacity). |
 | `glowRadius` | `double` | `0.6` | Size of the interaction glare relative to the container. |
+| `selectionColor`| `Color` | `0x3DFFFFFF`| Custom color for the sliding selection pill background. |
 
 ### 1.3 Stretching & Elasticity
 Control the "Liquid" physics of the menu when pulled beyond its boundaries or scrolled to the edge.
@@ -55,9 +57,19 @@ Control the "Liquid" physics of the menu when pulled beyond its boundaries or sc
 | `onTap` | `VoidCallback` | **Required** | Action to perform when the item is tapped. |
 | `isDestructive` | `bool` | `false` | Renders text/icon in `SystemRed` and applies distinct press logic. |
 | `enabled` | `bool` | `true` | When false, the item is grayed out and non-interactive. |
+| `titleStyle` | `TextStyle?` | `null` | Custom style for primary text. Overrides defaults. |
+| `subtitleStyle` | `TextStyle?` | `null` | Custom style for secondary text. Overrides defaults. |
+| `iconColor` | `Color?` | `null` | Custom color for the leading icon. |
+| `iconSize` | `double` | `20.0` | Custom size for the leading icon. |
 | `height` | `double` | `44.0` | Base height. Used by the parent's `_updateHoveredIndex` for tracking. |
 
-### 2.2 Visual Decoupling (Pixel Perfection)
+### 2.2 Smart Color Inheritance
+To reduce boilerplate, `GlassMenuItem` implements a color propagation system:
+*   **Priority**: `iconColor` > `titleStyle.color` > `isDestructive` (Red) > Default (White).
+*   **Inheritance**: If you set `iconColor`, the title and subtitle will automatically use that color unless they have their own `TextStyle.color`.
+*   **Subtitles**: Always inherit the base color but with **60% opacity** for visual hierarchy.
+
+### 2.3 Visual Decoupling (Pixel Perfection)
 To prevent "double-blur" artifacts, `GlassMenuItem` implements **Deferred Rendering**:
 - When `isSelected == true`, the item renders its background as `Colors.transparent`.
 - The parent `GlassMenu` renders a single `AnimatedPositioned` sliding pill at the item's coordinates.
@@ -100,25 +112,58 @@ GlassMenu(
 
 ---
 
-## 4. The Liquid Interaction Engine
-The `GlassMenu` uses a specialized version of the `LiquidStretch` renderer with directional constraints.
+## 4. Organizing with GlassMenuLabel
+`GlassMenuLabel` is a specialized, non-interactive widget designed for headers, section labels, or decorative content within the menu.
 
-### 4.1 Constrained Stretch
+### 4.1 Parameters
+| Parameter | Type | Default | What it does |
+| :--- | :--- | :--- | :--- |
+| `child` | `Widget` | **Required** | The label content (usually `Text` or `Icon`). |
+| `style` | `TextStyle?` | `null` | Default: 13px, w500, 60% white. Tailored for iOS headers. |
+
+### 4.2 Behavior
+*   **Interaction-Free**: Labels are completely ignored by the selection pill. Dragging across a label will not highlight it or trigger any action.
+*   **Logical Padding**: Automatically applies internal horizontal padding to align with `GlassMenuItem` text.
+
+---
+
+## 5. The Liquid Interaction Engine
+The `GlassMenu` uses a specialized version of the `LiquidStretch` renderer with directional constraints and scroll-aware selection logic.
+
+### 5.1 Constrained Stretch
 The menu automatically detects its position on the screen and limits elastic deformation:
 - **Vertical**: Stretches only **Down** (or **Up** if near the bottom of the screen).
 - **Horizontal**: Stretches only **Away** from the nearest screen edge.
 This prevents the menu from visually "breaking" the screen boundaries.
 
-### 4.2 The Sliding Pill Algorithm
-The `GlassMenu` manages a single selection highlight that tracks the user's finger.
+### 5.2 Tiered Interaction Zones
+The menu implements a three-tier gesture system to distinguish between precise selection, physical play, and intentional dismissal:
 
-1. **Geometry Mapping**: `_getItemOffset(index)` calculates the cumulative vertical position by summing the `height` of all previous widgets plus the `2px` item gap.
-2. **Hit Detection**: `_updateHoveredIndex(localPosition)` performs a linear scan through the `items` list, comparing the pointer's `y` coordinate (adjusted for `scrollOffset`) against pre-calculated item bounds.
-3. **Filtering**: Non-interactive widgets (like `GlassMenuDivider`) are skipped during the hit test to ensure the selection only snaps to actionable items.
+- **Zone 1: Active (0-20px)**
+  - A small buffer around the glass container.
+  - The selection pill is active and tracks the finger.
+  - Releasing the finger triggers the `onTap` action of the hovered item.
+
+- **Zone 2: Liquid (20-100px)**
+  - The "Physics Play" area.
+  - The selection pill is **deactivated** to prevent accidental triggers while stretching.
+  - Releasing the finger simply snaps the menu back to its original shape.
+
+- **Zone 3: Dismissal (>100px)**
+  - The "Pull-to-Dismiss" area.
+  - If the finger enters this zone, the menu enters a dismissal state.
+  - **Cancellation**: If the user moves their finger back into Zone 1 or 2 before releasing, the dismissal is aborted.
+  - **Release**: Releasing while in Zone 3 closes the menu.
+
+### 5.3 Scroll-Aware Selection
+To support `menuHeight` (fixed-size) menus with long lists, the selection engine distinguishes between scrolling and tapping:
+- **Displacement Check**: If the scroll offset changes by more than **10px** during a gesture, the selection pill is deactivated, and no `onTap` action is triggered upon release.
+- **Pill Sync**: The selection pill position is calculated as `ItemOffset - ScrollOffset`, ensuring it stays pinned to the correct item in the viewport during navigation.
+- **Edge-to-Edge Scrolling**: Vertical outer padding is eliminated in favor of internal spacers, allowing items to scroll seamlessly "under" the glass frame.
 
 ---
 
-## 5. Visual Fidelity & Rendering Tiers
+## 6. Visual Fidelity & Rendering Tiers
 The menu utilizes the library's multi-tier rendering architecture.
 
 | Quality | Feature Set | Implementation |
@@ -192,6 +237,7 @@ GlassMenu(
 
 ## 8. Geometry Logic Summary
 - **Item Gap**: `2.0px`.
-- **Vertical Padding**: `8.0px` (Top & Bottom).
+- **Vertical Padding**: `12.0px` (Top & Bottom, refined for spaciousness).
+- **Horizontal Padding**: `12.0px`.
 - **Radius Harmony**: `OuterRadius - Margin = InnerRadius`.
 - **Pill Animation**: `150ms` duration using `Curves.easeOutCubic` for a snappy, tactile feel.

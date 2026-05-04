@@ -261,9 +261,19 @@ class RenderRawLiquidStretch extends RenderProxyBox {
       return;
     }
 
-    // Check if the matrix is singular
+    // Check if the matrix is singular or has non-finite values
     final det = transform.determinant();
     if (det == 0 || !det.isFinite) {
+      layer = null;
+      return;
+    }
+
+    // Safety check for extremely small scales that break Impeller glyph bounds
+    final storage = transform.storage;
+    final scaleX = storage[0].abs();
+    final scaleY = storage[5].abs();
+    if (scaleX < 0.0001 || scaleY < 0.0001) {
+      // Don't paint if it's too small to be meaningful (prevents glyph errors)
       layer = null;
       return;
     }
@@ -358,6 +368,11 @@ class RenderRawLiquidStretch extends RenderProxyBox {
 
     var finalScaleX = baseScaleX * volumeCorrection;
     var finalScaleY = baseScaleY * volumeCorrection;
+
+    // Safety clamp: Ensure scale is finite and doesn't collapse to zero
+    // which causes Impeller font glyph bounds errors.
+    if (!finalScaleX.isFinite || finalScaleX < 0.01) finalScaleX = 0.01;
+    if (!finalScaleY.isFinite || finalScaleY < 0.01) finalScaleY = 0.01;
 
     // If axis is constrained, don't affect the other dimension
     if (_axis == Axis.vertical) {
