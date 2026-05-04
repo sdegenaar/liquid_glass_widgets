@@ -30,6 +30,7 @@ class _SheetLayout extends StatelessWidget {
   final Widget child;
   final bool showDragIndicator;
   final Color? dragIndicatorColor;
+  final double dragIndicatorWidth;
   final EdgeInsetsGeometry? padding;
   final bool maintainContentGlass;
   final LiquidGlassSettings? fullStateContentSettings;
@@ -69,6 +70,7 @@ class _SheetLayout extends StatelessWidget {
     required this.child,
     required this.showDragIndicator,
     this.dragIndicatorColor,
+    required this.dragIndicatorWidth,
     this.padding,
     required this.maintainContentGlass,
     this.fullStateContentSettings,
@@ -81,7 +83,7 @@ class _SheetLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const handleZone = _SheetHandleZone();
+    final handleZone = _SheetHandleZone(indicatorWidth: dragIndicatorWidth);
 
     final contentZone = _SheetContent(
       scrollController: scrollController,
@@ -261,7 +263,7 @@ class _SheetLayout extends StatelessWidget {
                                       ),
                                     ),
                                     if (showDragIndicator)
-                                      const Positioned(
+                                      Positioned(
                                         top: 0,
                                         left: 0,
                                         right: 0,
@@ -319,7 +321,9 @@ class _SheetLayout extends StatelessWidget {
 // ===========================================================================
 
 class _SheetHandleZone extends StatelessWidget {
-  const _SheetHandleZone();
+  const _SheetHandleZone({required this.indicatorWidth});
+
+  final double indicatorWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -331,7 +335,7 @@ class _SheetHandleZone extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 8),
-          _GlassDragIndicator(isGlass: isGlass),
+          _GlassDragIndicator(isGlass: isGlass, width: indicatorWidth),
           const SizedBox(height: 8),
         ],
       ),
@@ -340,9 +344,10 @@ class _SheetHandleZone extends StatelessWidget {
 }
 
 class _GlassDragIndicator extends StatelessWidget {
-  const _GlassDragIndicator({required this.isGlass});
+  const _GlassDragIndicator({required this.isGlass, required this.width});
 
   final bool isGlass;
+  final double width;
 
   @override
   Widget build(BuildContext context) {
@@ -355,7 +360,7 @@ class _GlassDragIndicator extends StatelessWidget {
       label: 'Drag handle',
       hint: 'Swipe down to dismiss',
       child: Container(
-        width: 36,
+        width: width,
         height: 4,
         decoration: BoxDecoration(
           color: defaultColor,
@@ -596,6 +601,12 @@ class GlassModalSheetScaffold extends StatelessWidget {
   /// Custom color for the drag handle.
   final Color? dragIndicatorColor;
 
+  /// Width of the drag handle pill in logical pixels. Defaults to 36
+  /// (iOS native). Bump higher (e.g. 64) for sheets where the handle
+  /// reads as the primary affordance and the thinner default feels
+  /// too subtle relative to the rest of the sheet's content.
+  final double dragIndicatorWidth;
+
   /// Whether to enable a gradient fade effect at the top.
   final bool enableTopFade;
 
@@ -660,6 +671,7 @@ class GlassModalSheetScaffold extends StatelessWidget {
     this.fillTransition = FillTransition.gradual,
     this.showDragIndicator = true,
     this.dragIndicatorColor,
+    this.dragIndicatorWidth = 36,
     this.glowColor,
     this.glowRadius = 1.5,
     this.suppressInteractionOnChildren = false,
@@ -723,6 +735,7 @@ class GlassModalSheetScaffold extends StatelessWidget {
           fillTransition: fillTransition,
           showDragIndicator: showDragIndicator,
           dragIndicatorColor: dragIndicatorColor,
+          dragIndicatorWidth: dragIndicatorWidth,
           glowColor: glowColor,
           glowRadius: glowRadius,
           suppressInteractionOnChildren: suppressInteractionOnChildren,

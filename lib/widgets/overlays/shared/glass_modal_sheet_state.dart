@@ -807,6 +807,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
           bottomRadius: metrics.bottomRadius,
           showDragIndicator: widget.showDragIndicator,
           dragIndicatorColor: widget.dragIndicatorColor,
+          dragIndicatorWidth: widget.dragIndicatorWidth,
           colorOpacity: metrics.colorOpacity,
           glassOpacity: metrics.glassOpacity,
           effectiveExpandedColor: metrics.effectiveExpandedColor,

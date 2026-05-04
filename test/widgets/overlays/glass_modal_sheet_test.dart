@@ -151,6 +151,47 @@ void main() {
       expect(widget.topBorderRadius, customRadius);
     });
 
+    testWidgets('dragIndicatorWidth defaults to 36 (iOS native)',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: Stack(
+            children: [
+              GlassModalSheet(
+                child: const SizedBox(height: 100),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final widget =
+          tester.widget<GlassModalSheet>(find.byType(GlassModalSheet));
+      expect(widget.dragIndicatorWidth, 36);
+    });
+
+    testWidgets('respects custom dragIndicatorWidth', (tester) async {
+      const customWidth = 64.0;
+      await tester.pumpWidget(
+        createTestApp(
+          child: Stack(
+            children: [
+              GlassModalSheet(
+                dragIndicatorWidth: customWidth,
+                child: const SizedBox(height: 100),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final widget =
+          tester.widget<GlassModalSheet>(find.byType(GlassModalSheet));
+      expect(widget.dragIndicatorWidth, customWidth);
+    });
+
     testWidgets('GlassInteractionSilence can be used in content',
         (tester) async {
       await tester.pumpWidget(
