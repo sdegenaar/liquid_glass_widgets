@@ -1,7 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/physics.dart';
+import 'package:flutter/physics.dart'; // Required for SpringSimulation
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../constants/glass_defaults.dart';
@@ -21,41 +21,52 @@ part 'shared/glass_menu_internal.dart';
 ///
 /// ## Features
 /// - **True morphing**: Button transforms into menu (not overlay)
-/// - **Smooth spring physics**: Gentle settle (stiffness: 300, damping: 24)
-/// - **Liquid swoop**: Subtle 5px parabolic arc during morph
-/// - **Elastic stretch**: [LiquidStretch] wrapping for physics-driven drag
-/// - **Scroll-aware selection pill**: Slides to highlight the hovered item;
-///   automatically hidden during scrolling to prevent visual noise
-/// - **Heterogeneous items**: Mix [GlassMenuItem], [GlassMenuDivider], and
-///   [GlassMenuLabel] in a single menu
-/// - **glowOnTapOnly**: Momentary glare that disappears on drag/scroll
+/// - **Smooth spring physics**: Gentle settle with no harsh bounces (stiffness: 300, damping: 24)
+/// - **Liquid swoop**: Subtle 5px parabolic arc for seamless down-and-up motion
+/// - **Seamless crossfade**: Button only appears at final 5% to preserve morph illusion
+/// - **Dimension interpolation**: Width, height, and border radius morph smoothly
+/// - **Position aware**: Menu expands from button position
+/// - **Settings inheritance**: Inherits parent layer settings like GlassCard (thin rim by default)
+/// - **No button animation**: Trigger button remains static, only shape morphs
 class GlassMenu extends StatefulWidget {
   /// The widget that triggers the menu.
   ///
-  /// If provided, this widget will be wrapped in a [GestureDetector].
-  /// For interactive triggers (e.g. [GlassButton]), use [triggerBuilder].
+  /// If provided, this widget will be wrapped in a [GestureDetector] to handle
+  /// taps. Use this for simple, non-interactive triggers like Icons or Text.
+  ///
+  /// If your trigger is interactive (like a [GlassButton]), use [triggerBuilder]
+  /// instead to manually handle the tap event.
   final Widget? trigger;
 
-  /// A builder for the trigger widget that exposes the menu toggle callback.
+  /// A builder for the trigger widget that provides access to the menu toggle callback.
+  ///
+  /// Use this when your trigger widget handles its own interactions (e.g., a [GlassButton]
+  /// or [IconButton]).
+  ///
+  /// Example:
+  /// ```dart
+  /// GlassMenu(
+  ///   triggerBuilder: (context, toggle) => GlassButton(
+  ///     onTap: toggle,
+  ///     child: Text('Open'),
+  ///   ),
+  ///   ...
+  /// )
+  /// ```
   final Widget Function(BuildContext context, VoidCallback toggleMenu)?
       triggerBuilder;
 
   /// The list of items to display in the menu.
   ///
-  /// Accepts any widget — typically [GlassMenuItem], [GlassMenuDivider],
-  /// or [GlassMenuLabel].
+  /// Typically contains [GlassMenuItem] and [GlassMenuDivider].
   final List<Widget> items;
 
-  /// Width of the expanded menu. Defaults to 200.
+  /// Width of the expanded menu.
   final double menuWidth;
 
-  /// Fixed height for the menu content area.
+  /// Border radius of the expanded menu.
   ///
-  /// When set, the menu becomes scrollable and this height is used as the
-  /// maximum content height. When null, the menu sizes to fit its children.
-  final double? menuHeight;
-
-  /// Border radius of the expanded menu. Defaults to 16.0.
+  /// Defaults to 28.0 for a modern rounded look.
   final double menuBorderRadius;
 
   /// Custom glass settings for the menu container.
@@ -64,62 +75,59 @@ class GlassMenu extends StatefulWidget {
   /// Rendering quality for the glass effect.
   final GlassQuality? quality;
 
-  // ---------------------------------------------------------------------------
-  // Elastic Stretch (LiquidStretch)
-  // ---------------------------------------------------------------------------
-
-  /// Scale factor applied during interaction for tactile feedback.
-  /// Defaults to 1.05.
-  final double interactionScale;
-
-  /// Stretch multiplier applied to drag offset. Defaults to 0.5.
+  /// Liquid stretch factor. Default: 0.5.
   final double stretch;
 
-  /// Resistance factor for the elastic drag. Defaults to 0.08.
+  /// Scale factor applied on touch. Default: 1.02.
+  final double interactionScale;
+
+  /// The resistance factor to apply to the drag offset.
+  /// Higher values make the drag feel "stickier". Default: 0.08.
   final double stretchResistance;
 
-  /// Axis to constrain the stretch to. When null, stretches in both axes.
+  /// The axis to constrain the stretch to. If null, stretches in both axes.
   final Axis? stretchAxis;
 
-  /// Allow stretch in the positive X direction (right). Defaults to true.
-  final bool? allowPositiveX;
+  /// Whether to allow stretch in the positive X direction (Right).
+  /// If null, automatically determined by menu position.
+  final bool? allowPositiveXStretch;
 
-  /// Allow stretch in the negative X direction (left). Defaults to true.
-  final bool? allowNegativeX;
+  /// Whether to allow stretch in the negative X direction (Left).
+  /// If null, automatically determined by menu position.
+  final bool? allowNegativeXStretch;
 
-  /// Allow stretch in the positive Y direction (down). Defaults to true.
-  final bool? allowPositiveY;
+  /// Whether to allow stretch in the positive Y direction (Down).
+  /// If null, automatically determined by menu position.
+  final bool? allowPositiveYStretch;
 
-  /// Allow stretch in the negative Y direction (up). Defaults to true.
-  final bool? allowNegativeY;
+  /// Whether to allow stretch in the negative Y direction (Up).
+  /// If null, automatically determined by menu position.
+  final bool? allowNegativeYStretch;
 
-  // ---------------------------------------------------------------------------
-  // Selection Pill
-  // ---------------------------------------------------------------------------
-
-  /// Background color of the sliding selection pill.
-  ///
-  /// Defaults to white at 12% opacity.
-  final Color? selectionColor;
-
-  // ---------------------------------------------------------------------------
-  // GlassGlow
-  // ---------------------------------------------------------------------------
-
-  /// Whether to show a finger-following glare on the menu surface.
-  /// Defaults to true.
+  /// Whether to show glow/glare on touch for tactile feedback. Default: true.
   final bool enableInteractionGlow;
 
-  /// When true, the glow appears on touch-down but is suppressed after a
-  /// >10px drag, preventing a "stuck glow" during scrolling.
+  /// Whether the glow should act as a momentary tap indicator.
+  ///
+  /// If true, the glow will appear on tap but will automatically fade out
+  /// if the user starts dragging. It will not reappear until a new tap starts.
+  /// Default: false.
   final bool glowOnTapOnly;
 
-  /// Color of the interaction glow. Defaults to white at 15% opacity.
+  /// Custom color for the touch interaction glow.
   final Color? glowColor;
 
-  /// Radius of the interaction glow relative to the surface's shortest side.
-  /// Defaults to 1.0.
+  /// Radius of the touch interaction glow. Default: 0.6.
   final double glowRadius;
+
+  /// Custom color for the menu selection background.
+  final Color selectionColor;
+
+  /// Optional fixed height for the menu.
+  ///
+  /// If null, the menu will size itself to fit its items.
+  /// If provided, the menu will have a fixed height and internal scrolling.
+  final double? menuHeight;
 
   /// Creates a liquid glass menu.
   const GlassMenu({
@@ -128,27 +136,25 @@ class GlassMenu extends StatefulWidget {
     this.triggerBuilder,
     required this.items,
     this.menuWidth = 200,
-    this.menuHeight,
-    this.menuBorderRadius = 16.0,
+    this.menuBorderRadius = 32.0,
     this.glassSettings,
     this.quality,
-    this.interactionScale = 1.05,
     this.stretch = 0.5,
+    this.interactionScale = 1.02,
     this.stretchResistance = 0.08,
     this.stretchAxis,
-    this.allowPositiveX,
-    this.allowNegativeX,
-    this.allowPositiveY,
-    this.allowNegativeY,
-    this.selectionColor,
+    this.allowPositiveXStretch,
+    this.allowNegativeXStretch,
+    this.allowPositiveYStretch,
+    this.allowNegativeYStretch,
+    this.menuHeight,
+    this.selectionColor = const Color(0x3DFFFFFF),
     this.enableInteractionGlow = true,
-    this.glowOnTapOnly = true,
+    this.glowOnTapOnly = false,
     this.glowColor,
-    this.glowRadius = 1.0,
-  }) : assert(
-          trigger != null || triggerBuilder != null,
-          'Either trigger or triggerBuilder must be provided',
-        );
+    this.glowRadius = 0.6,
+  }) : assert(trigger != null || triggerBuilder != null,
+            'Either trigger or triggerBuilder must be provided');
 
   @override
   State<GlassMenu> createState() => _GlassMenuState();

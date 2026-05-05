@@ -13,7 +13,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
   runApp(LiquidGlassWidgets.wrap(
-      child: const ShowcaseApp(), adaptiveQuality: true));
+      child: const ShowcaseApp(), adaptiveQuality: false));
 }
 
 class ShowcaseApp extends StatefulWidget {
@@ -346,32 +346,183 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
               onTap: () => _showGlassPanel(context),
               color: Colors.green,
             ),
-            const SizedBox(height: 16),
-            GlassMenu(
-              menuWidth: 240,
-              triggerBuilder: (context, toggleMenu) => _buildScenarioTile(
-                title: 'Pull-Down Menu',
-                description: 'Tile morphs directly into a glass menu',
-                icon: Icons.menu_open_rounded,
-                onTap: toggleMenu,
-                color: Colors.purple,
-              ),
-              items: [
-                GlassMenuItem(
-                  title: 'Edit Content',
-                  icon: const Icon(Icons.edit_rounded),
-                  onTap: () {},
+            const SizedBox(height: 24),
+            const GlassMenuLabel(child: Text('MENU CONFIGURATIONS')),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                // 1. Basic configuration (User's original)
+                GlassMenu(
+                  menuWidth: 240,
+                  quality: widget.currentQuality,
+                  glassSettings: LiquidGlassSettings(
+                    glassColor: Colors.transparent,
+                    thickness: 30,
+                    blur: 2,
+                    chromaticAberration: .01,
+                    lightAngle: GlassDefaults.lightAngle,
+                    lightIntensity: .5,
+                    ambientStrength: 0,
+                    refractiveIndex: 1.2,
+                    saturation: 1.2,
+                  ),
+                  enableInteractionGlow: true,
+                  glowOnTapOnly: true,
+                  glowRadius: 0.6,
+                  interactionScale: 1.00,
+                  triggerBuilder: (context, toggleMenu) => GlassButton(
+                    icon: const Icon(Icons.menu_open_rounded),
+                    onTap: toggleMenu,
+                  ),
+                  items: [
+                    GlassMenuItem(
+                        title: 'Upgrade plan',
+                        icon: const Icon(Icons.upgrade),
+                        onTap: () {}),
+                    GlassMenuItem(
+                        title: 'Settings',
+                        icon: const Icon(Icons.settings),
+                        onTap: () {}),
+                    GlassMenuItem(
+                        title: 'Offline Pages',
+                        icon: const Icon(Icons.move_down_rounded),
+                        onTap: () {}),
+                    GlassMenuItem(
+                        title: 'Members',
+                        icon: const Icon(Icons.group_rounded),
+                        onTap: () {}),
+                    GlassMenuItem(
+                        title: 'Trash',
+                        icon: const Icon(Icons.delete_rounded),
+                        onTap: () {}),
+                    GlassMenuItem(
+                        title: 'Help & support',
+                        icon: const Icon(Icons.question_mark_rounded),
+                        onTap: () {}),
+                  ],
                 ),
-                GlassMenuItem(
-                  title: 'Share Scenario',
-                  icon: const Icon(Icons.share_rounded),
-                  onTap: () {},
+                const SizedBox(width: 16),
+
+                // 2. Pro configuration (Advanced features)
+                GlassMenu(
+                  menuWidth: 260,
+                  menuHeight: 250, // Test scrolling
+                  quality: widget.currentQuality,
+                  selectionColor: Colors.blue.withValues(alpha: 0.3),
+                  triggerBuilder: (context, toggle) => GlassButton.custom(
+                    onTap: toggle,
+                    width: 56,
+                    height: 56,
+                    shape: const LiquidOval(),
+                    child: const Icon(CupertinoIcons.layers_alt,
+                        color: Colors.white),
+                  ),
+                  items: [
+                    const GlassMenuLabel(child: Text('PRIMARY ACTIONS')),
+                    GlassMenuItem(
+                      title: 'New Project',
+                      subtitle: 'Create from template',
+                      icon: const Icon(CupertinoIcons.add),
+                      onTap: () {},
+                    ),
+                    GlassMenuItem(
+                      title: 'Share Workspace',
+                      icon: const Icon(CupertinoIcons.share),
+                      iconColor: Colors.blueAccent, // Smart inheritance
+                      onTap: () {},
+                    ),
+                    const GlassMenuDivider(),
+                    const GlassMenuLabel(child: Text('MANAGEMENT')),
+                    GlassMenuItem(
+                      title: 'Settings',
+                      icon: const Icon(CupertinoIcons.settings),
+                      onTap: () {},
+                    ),
+                    const GlassMenuDivider(),
+                    const GlassMenuLabel(child: Text('DANGER ZONE')),
+                    GlassMenuItem(
+                      title: 'Delete Forever',
+                      isDestructive: true,
+                      icon: const Icon(CupertinoIcons.trash),
+                      onTap: () {},
+                    ),
+                  ],
                 ),
-                GlassMenuItem(
-                  title: 'Delete Demo',
-                  icon: const Icon(Icons.delete_rounded),
-                  isDestructive: true,
-                  onTap: () {},
+                const SizedBox(width: 16),
+
+                // 3. Photo configuration (Custom Widgets instead of Icons)
+                GlassMenu(
+                  menuWidth: 220,
+                  quality: widget.currentQuality,
+                  stretch: 0.0, // Disable liquid stretch physics
+                  glassSettings: LiquidGlassSettings(
+                    glassColor: Colors.transparent,
+                    thickness: 30,
+                    blur: 2,
+                    chromaticAberration: .01,
+                    lightAngle: GlassDefaults.lightAngle,
+                    lightIntensity: .5,
+                    ambientStrength: 0,
+                    refractiveIndex: 1.2,
+                    saturation: 1.2,
+                  ),
+                  enableInteractionGlow: false,
+                  glowRadius: 0.6,
+                  interactionScale: 1.00,
+                  triggerBuilder: (context, toggleMenu) => GlassButton(
+                    icon: const Icon(Icons.camera_alt_rounded),
+                    onTap: toggleMenu,
+                  ),
+                  items: [
+                    GlassMenuItem(
+                        title: 'Alice',
+                        icon: const CircleAvatar(
+                          radius: 12,
+                          backgroundImage:
+                              NetworkImage('https://i.pravatar.cc/100?img=1'),
+                        ),
+                        onTap: () {}),
+                    GlassMenuItem(
+                        title: 'Bob',
+                        icon: const CircleAvatar(
+                          radius: 12,
+                          backgroundImage:
+                              NetworkImage('https://i.pravatar.cc/100?img=2'),
+                        ),
+                        onTap: () {}),
+                    GlassMenuItem(
+                        title: 'Charlie',
+                        icon: const CircleAvatar(
+                          radius: 12,
+                          backgroundImage:
+                              NetworkImage('https://i.pravatar.cc/100?img=3'),
+                        ),
+                        onTap: () {}),
+                    GlassMenuItem(
+                        title: 'Diana',
+                        icon: const CircleAvatar(
+                          radius: 12,
+                          backgroundImage:
+                              NetworkImage('https://i.pravatar.cc/100?img=4'),
+                        ),
+                        onTap: () {}),
+                    GlassMenuItem(
+                        title: 'Ethan',
+                        icon: const CircleAvatar(
+                          radius: 12,
+                          backgroundImage:
+                              NetworkImage('https://i.pravatar.cc/100?img=5'),
+                        ),
+                        onTap: () {}),
+                    GlassMenuItem(
+                        title: 'Fiona',
+                        icon: const CircleAvatar(
+                          radius: 12,
+                          backgroundImage:
+                              NetworkImage('https://i.pravatar.cc/100?img=9'),
+                        ),
+                        onTap: () {}),
+                  ],
                 ),
               ],
             ),

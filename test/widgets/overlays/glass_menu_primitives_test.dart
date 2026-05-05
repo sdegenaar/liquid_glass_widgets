@@ -35,14 +35,16 @@ void main() {
   // ==========================================================================
   group('GlassMenuLabel', () {
     testWidgets('uppercases title', (tester) async {
-      await tester.pumpWidget(_app(const GlassMenuLabel(title: 'section')));
+      await tester.pumpWidget(_app(const GlassMenuLabel(child: Text('SECTION'))));
       expect(find.text('SECTION'), findsOneWidget);
     });
 
     testWidgets('applies custom style', (tester) async {
       await tester.pumpWidget(_app(const GlassMenuLabel(
-        title: 'actions',
-        style: TextStyle(color: Colors.amber, fontSize: 14),
+        child: Text(
+          'ACTIONS',
+          style: TextStyle(color: Colors.amber, fontSize: 14),
+        ),
       )));
       expect(find.text('ACTIONS'), findsOneWidget);
       final text = tester.widget<Text>(find.text('ACTIONS'));
@@ -50,10 +52,10 @@ void main() {
     });
 
     // QUALITY 3: height param is accepted and has correct default.
-    testWidgets('exposes height param with default 30.0', (tester) async {
-      const label = GlassMenuLabel(title: 'test');
-      expect(label.height, 30.0);
-      const custom = GlassMenuLabel(title: 'big', height: 48.0);
+    testWidgets('exposes height param with default 32.0', (tester) async {
+      const label = GlassMenuLabel(child: Text('test'));
+      expect(label.height, 32.0);
+      const custom = GlassMenuLabel(height: 48.0, child: Text('big'));
       expect(custom.height, 48.0);
     });
   });
@@ -178,7 +180,7 @@ void main() {
     testWidgets('renders GlassMenuLabel and GlassMenuDivider', (tester) async {
       await tester.pumpWidget(_app(GlassMenu(
         trigger: const SizedBox(width: 60, height: 40, child: Text('Open')),
-        items: const [GlassMenuLabel(title: 'Files'), GlassMenuDivider()],
+        items: const [GlassMenuLabel(child: Text('FILES')), GlassMenuDivider()],
       )));
       await _openMenu(tester, 'Open');
       expect(find.text('FILES'), findsOneWidget);
@@ -189,7 +191,7 @@ void main() {
       await tester.pumpWidget(_app(GlassMenu(
         trigger: const SizedBox(width: 60, height: 40, child: Text('Open')),
         items: [
-          const GlassMenuLabel(title: 'Actions'),
+          const GlassMenuLabel(child: Text('ACTIONS')),
           GlassMenuItem(title: 'Save', onTap: () {}),
           const GlassMenuDivider(),
           GlassMenuItem(title: 'Delete', isDestructive: true, onTap: () {}),
@@ -390,10 +392,10 @@ void main() {
         stretch: 0.3,
         stretchResistance: 0.1,
         stretchAxis: Axis.vertical,
-        allowPositiveX: false,
-        allowNegativeX: false,
-        allowPositiveY: true,
-        allowNegativeY: false,
+        allowPositiveXStretch: false,
+        allowNegativeXStretch: false,
+        allowPositiveYStretch: true,
+        allowNegativeYStretch: false,
         items: [GlassMenuItem(title: 'Item', onTap: () {})],
       )));
       await _openMenu(tester, 'Open');
