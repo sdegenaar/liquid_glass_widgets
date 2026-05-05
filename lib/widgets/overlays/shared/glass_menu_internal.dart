@@ -27,6 +27,13 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     super.didUpdateWidget(oldWidget);
     if (!identical(widget.items, oldWidget.items)) {
       _cachedWrappedItems = null;
+      // BUG 12 FIX: Clear hover state if items shrink while menu is open
+      // to prevent RangeError when the selection pill tries to measure
+      // a now-deleted index.
+      if (widget.items.length < oldWidget.items.length) {
+        _hoveredIndex = null;
+        _hoveredIndexNotifier.value = null;
+      }
     }
   }
 
@@ -367,8 +374,9 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                       ValueListenableBuilder<int?>(
                         valueListenable: _hoveredIndexNotifier,
                         builder: (context, hoveredIndex, _) {
-                          if (hoveredIndex == null)
+                          if (hoveredIndex == null) {
                             return const SizedBox.shrink();
+                          }
                           return AnimatedPositioned(
                             duration: const Duration(milliseconds: 150),
                             curve: Curves.easeOutCubic,
