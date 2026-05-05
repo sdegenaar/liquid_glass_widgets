@@ -326,13 +326,15 @@ void main() {
           outerSetState = setState;
           return MaterialApp(
             home: Scaffold(
-              body: GlassMenu(
-                trigger:
-                    const SizedBox(width: 60, height: 40, child: Text('Open')),
-                items: [
-                  GlassMenuItem(title: 'A', onTap: () {}),
-                  if (showExtra) GlassMenuItem(title: 'B', onTap: () {}),
-                ],
+              body: Center(
+                child: GlassMenu(
+                  trigger:
+                      const SizedBox(width: 60, height: 40, child: Text('Open')),
+                  items: [
+                    GlassMenuItem(title: 'A', onTap: () {}),
+                    if (showExtra) GlassMenuItem(title: 'B', onTap: () {}),
+                  ],
+                ),
               ),
             ),
           );
@@ -476,17 +478,21 @@ void main() {
       await tester.pumpWidget(StatefulBuilder(
         builder: (context, setState) => MaterialApp(
           home: Scaffold(
-            body: Column(
-              children: [
-                GlassGlow(
-                  glowOnTapOnly: tapOnly,
-                  child: const SizedBox(width: 200, height: 200),
-                ),
-                ElevatedButton(
-                  onPressed: () => setState(() => tapOnly = false),
-                  child: const Text('Toggle'),
-                ),
-              ],
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GlassGlow(
+                    glowOnTapOnly: tapOnly,
+                    child: const SizedBox(width: 200, height: 200),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () => setState(() => tapOnly = false),
+                    child: const Text('Toggle'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

@@ -424,9 +424,15 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                                   dragDisplacement < 10) {
                                 final item = widget.items[_hoveredIndex!];
                                 if (item is GlassMenuItem) {
-                                  item.onTap();
+                                  if (item.enabled) {
+                                    item.onTap();
+                                    _closeMenu();
+                                  }
+                                } else {
+                                  // For non-GlassMenuItem (labels, dividers),
+                                  // we might want to close if it's a generic item,
+                                  // but usually only menu items close on tap.
                                 }
-                                _closeMenu();
                               }
                             }
                             _isDragging = false;
@@ -513,10 +519,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
               iconSize: item.iconSize,
               isSelected: isSelected,
               isPressed: isPressed,
-              onTap: () {
-                item.onTap();
-                _closeMenu();
-              },
+              onTap: () {}, // Provide empty callback to enable GestureDetector feedback
             );
           },
         );
@@ -584,7 +587,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
 
           if (y >= currentOffset && y <= currentOffset + itemHeight) {
             // Only select interactive items
-            if (item is GlassMenuItem) {
+            if (item is GlassMenuItem && item.enabled) {
               detectedIndex = i;
             }
             break;

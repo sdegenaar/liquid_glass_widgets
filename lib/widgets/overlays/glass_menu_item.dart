@@ -235,56 +235,59 @@ class _GlassMenuItemState extends State<GlassMenuItem> {
                 color: backgroundColor,
                 borderRadius: BorderRadius.circular(24),
               ),
-                child: Row(
-                  children: [
-                    // Icon
-                    if (widget.icon != null) ...[
-                      IconTheme(
-                        data: IconThemeData(
-                          color: iconColor,
-                          size: widget.iconSize,
-                        ),
-                        child: widget.icon!,
-                      ),
-                      const SizedBox(width: 12),
-                    ],
-
-                    // Text Content (Title & Subtitle)
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: widget.titleStyle ??
-                                TextStyle(
-                                  color: textColor,
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w400,
-                                ),
+                child: Opacity(
+                  opacity: widget.enabled ? 1.0 : 0.4,
+                  child: Row(
+                    children: [
+                      // Icon
+                      if (widget.icon != null) ...[
+                        IconTheme(
+                          data: IconThemeData(
+                            color: iconColor,
+                            size: widget.iconSize,
                           ),
-                          if (widget.subtitle != null)
+                          child: widget.icon!,
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+  
+                      // Text Content (Title & Subtitle)
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              widget.subtitle!,
+                              widget.title,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: widget.subtitleStyle ??
+                              style: widget.titleStyle ??
                                   TextStyle(
-                                    color: textColor.withValues(alpha: 0.6),
-                                    fontSize: 13,
+                                    color: textColor,
+                                    fontSize: 17,
                                     fontWeight: FontWeight.w400,
                                   ),
                             ),
-                        ],
+                            if (widget.subtitle != null)
+                              Text(
+                                widget.subtitle!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: widget.subtitleStyle ??
+                                    TextStyle(
+                                      color: textColor.withValues(alpha: 0.6),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-
-                    // Trailing
-                    if (widget.trailing != null) widget.trailing!,
-                  ],
+  
+                      // Trailing
+                      if (widget.trailing != null) widget.trailing!,
+                    ],
+                  ),
                 ),
               ),
             ),
