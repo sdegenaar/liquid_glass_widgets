@@ -1,3 +1,11 @@
+# 0.10.6
+
+## 🐛 Fixes
+
+- **`GlassBottomBar` — `extraButton` causes bar to float in the middle of the screen** · Wrapped the inner `Row` in a `SizedBox(height: barHeight)` so the `Scaffold.bottomNavigationBar` slot always receives an explicit tight height constraint. Without this, the `Expanded` child introduced by `extraButton` propagated an unbounded height through `LiquidGlassLayer`, causing Flutter to render the bar centred on screen instead of pinned to the bottom edge.
+
+---
+
 # 0.10.5
 
 ## ✨ New

@@ -586,103 +586,106 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
               maxAvailable: maxTabW,
             );
 
-            return Row(
-              children: [
-                // Main tab bar with draggable indicator
-                SizedBox(
-                  width: tabPillW,
-                  child: TabIndicator(
-                    quality: effectiveQuality,
-                    visible: widget.showIndicator,
-                    tabIndex: widget.selectedIndex,
-                    tabCount: widget.tabs.length,
-                    indicatorColor: widget.indicatorColor,
-                    indicatorSettings: widget.indicatorSettings,
-                    onTabChanged: widget.onTabSelected,
-                    barHeight: widget.barHeight,
-                    barBorderRadius: widget.barBorderRadius,
-                    tabPadding: widget.tabPadding,
-                    backgroundKey: widget.backgroundKey,
-                    maskingQuality: widget.maskingQuality,
-                    indicatorExpansion: widget.indicatorExpansion,
-                    interactionGlowColor: widget.interactionBehavior.hasGlow
-                        ? effectiveInteractionGlowColor
-                        : Colors.transparent,
-                    interactionGlowRadius: widget.interactionGlowRadius,
-                    interactionGlowBlurRadius: effectiveGlowBlurRadius,
-                    interactionGlowSpreadRadius: effectiveGlowSpreadRadius,
-                    interactionGlowOpacity: effectiveGlowOpacity,
-                    interactionScale: widget.interactionBehavior.hasScale
-                        ? widget.pressScale
-                        : 1.0,
-                    childUnselected: Row(
-                      children: [
-                        for (var i = 0; i < widget.tabs.length; i++)
-                          Expanded(
-                            child: BottomBarTabItem(
-                              tab: widget.tabs[i],
-                              selected: false,
-                              selectedIconColor: widget.selectedIconColor,
-                              unselectedIconColor: widget.unselectedIconColor,
-                              iconSize: widget.iconSize,
-                              labelFontSize: widget.labelFontSize,
-                              textStyle: widget.textStyle,
-                              iconLabelSpacing: widget.iconLabelSpacing,
-                              glowDuration: widget.glowDuration,
-                              glowBlurRadius: widget.glowBlurRadius,
-                              glowSpreadRadius: widget.glowSpreadRadius,
-                              glowOpacity: widget.glowOpacity,
-                              // onTap is null: all tap selection goes through
-                              // TabIndicator.onBarTapDown (prevents double-fire).
-                              onTap: null,
+            return SizedBox(
+              height: widget.barHeight,
+              child: Row(
+                children: [
+                  // Main tab bar with draggable indicator
+                  SizedBox(
+                    width: tabPillW,
+                    child: TabIndicator(
+                      quality: effectiveQuality,
+                      visible: widget.showIndicator,
+                      tabIndex: widget.selectedIndex,
+                      tabCount: widget.tabs.length,
+                      indicatorColor: widget.indicatorColor,
+                      indicatorSettings: widget.indicatorSettings,
+                      onTabChanged: widget.onTabSelected,
+                      barHeight: widget.barHeight,
+                      barBorderRadius: widget.barBorderRadius,
+                      tabPadding: widget.tabPadding,
+                      backgroundKey: widget.backgroundKey,
+                      maskingQuality: widget.maskingQuality,
+                      indicatorExpansion: widget.indicatorExpansion,
+                      interactionGlowColor: widget.interactionBehavior.hasGlow
+                          ? effectiveInteractionGlowColor
+                          : Colors.transparent,
+                      interactionGlowRadius: widget.interactionGlowRadius,
+                      interactionGlowBlurRadius: effectiveGlowBlurRadius,
+                      interactionGlowSpreadRadius: effectiveGlowSpreadRadius,
+                      interactionGlowOpacity: effectiveGlowOpacity,
+                      interactionScale: widget.interactionBehavior.hasScale
+                          ? widget.pressScale
+                          : 1.0,
+                      childUnselected: Row(
+                        children: [
+                          for (var i = 0; i < widget.tabs.length; i++)
+                            Expanded(
+                              child: BottomBarTabItem(
+                                tab: widget.tabs[i],
+                                selected: false,
+                                selectedIconColor: widget.selectedIconColor,
+                                unselectedIconColor: widget.unselectedIconColor,
+                                iconSize: widget.iconSize,
+                                labelFontSize: widget.labelFontSize,
+                                textStyle: widget.textStyle,
+                                iconLabelSpacing: widget.iconLabelSpacing,
+                                glowDuration: widget.glowDuration,
+                                glowBlurRadius: widget.glowBlurRadius,
+                                glowSpreadRadius: widget.glowSpreadRadius,
+                                glowOpacity: widget.glowOpacity,
+                                // onTap is null: all tap selection goes through
+                                // TabIndicator.onBarTapDown (prevents double-fire).
+                                onTap: null,
+                              ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
+                      // Pass selected tabs (foreground/masked layer)
+                      selectedTabBuilder: (context, intensity, alignment) =>
+                          _buildSelectedTabs(intensity, alignment),
+                      magnification: widget.magnification,
+                      innerBlur: widget.innerBlur,
                     ),
-                    // Pass selected tabs (foreground/masked layer)
-                    selectedTabBuilder: (context, intensity, alignment) =>
-                        _buildSelectedTabs(intensity, alignment),
-                    magnification: widget.magnification,
-                    innerBlur: widget.innerBlur,
                   ),
-                ),
 
-                // Optional extra button — always pinned to the trailing edge.
-                // Expanded absorbs the gap between the compact pill and the right
-                // edge; Align(right) keeps the button flush with the bar boundary.
-                // This matches the searchable bar's visual pattern where the search
-                // button sits at the far right regardless of pill width.
-                //
-                // Layout contract:
-                // The Row cross-axis height is bounded to barHeight by the first
-                // child (TabIndicator), which always roots its build tree with a
-                // SizedBox(height: barHeight). Row measures non-Expanded children
-                // first, so Expanded's maxHeight is clamped to barHeight before
-                // Align is laid out — no unbounded height propagation.
-                //
-                // NOTE: GlassBottomBar is designed for Scaffold.bottomNavigationBar.
-                // Placing it inside Center(), Column(), or body: directly (without
-                // a layout parent that anchors it to the screen bottom) will cause
-                // it to appear centered/floating rather than pinned to the bottom.
-                if (widget.extraButton != null) ...[
-                  SizedBox(width: widget.spacing), // fixed gap after pill
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: BottomBarExtraBtn(
-                        config: widget.extraButton!,
-                        quality: effectiveQuality,
-                        iconColor: widget.extraButton!.iconColor ??
-                            widget.unselectedIconColor,
-                        borderRadius: widget.barBorderRadius ==
-                                GlassBottomBar._defaultBarBorderRadius
-                            ? null
-                            : widget.barBorderRadius,
+                  // Optional extra button — always pinned to the trailing edge.
+                  // Expanded absorbs the gap between the compact pill and the
+                  // right edge; Align(right) keeps the button flush with the
+                  // bar boundary. This matches the searchable bar's visual
+                  // pattern where the search button sits at the far right
+                  // regardless of pill width.
+                  //
+                  // Layout contract:
+                  // The Row cross-axis height is bounded to barHeight by the
+                  // SizedBox wrapper above. Row measures non-Expanded children
+                  // first, so Expanded's maxHeight is clamped to barHeight
+                  // before Align is laid out — no unbounded height propagation.
+                  //
+                  // NOTE: GlassBottomBar is designed for Scaffold.bottomNavigationBar.
+                  // Placing it inside Center(), Column(), or body: directly (without
+                  // a layout parent that anchors it to the screen bottom) will cause
+                  // it to appear centered/floating rather than pinned to the bottom.
+                  if (widget.extraButton != null) ...[
+                    SizedBox(width: widget.spacing), // fixed gap after pill
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: BottomBarExtraBtn(
+                          config: widget.extraButton!,
+                          quality: effectiveQuality,
+                          iconColor: widget.extraButton!.iconColor ??
+                              widget.unselectedIconColor,
+                          borderRadius: widget.barBorderRadius ==
+                                  GlassBottomBar._defaultBarBorderRadius
+                              ? null
+                              : widget.barBorderRadius,
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             );
           },
         ),
