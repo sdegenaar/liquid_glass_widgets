@@ -628,25 +628,6 @@ class TabBarContentState extends State<TabBarContent>
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                // Tab labels (scrollable).
-                NotificationListener<ScrollStartNotification>(
-                  onNotification: (_) {
-                    if (_isDown) setState(() => _isDown = false);
-                    return false;
-                  },
-                  child: SingleChildScrollView(
-                    controller: widget.scrollController,
-                    scrollDirection: Axis.horizontal,
-                    physics: physics,
-                    child: _buildTabLabels(
-                      selectedLabelStyle,
-                      unselectedLabelStyle,
-                      selectedIconColor,
-                      unselectedIconColor,
-                    ),
-                  ),
-                ),
-
                 // Background solid pill — clips with the bar.
                 if (measuredReady && _indWidthSpring.value > 0)
                   SpringBuilder(
@@ -678,6 +659,25 @@ class TabBarContentState extends State<TabBarContent>
                       );
                     },
                   ),
+
+                // Tab labels (scrollable).
+                NotificationListener<ScrollStartNotification>(
+                  onNotification: (_) {
+                    if (_isDown) setState(() => _isDown = false);
+                    return false;
+                  },
+                  child: SingleChildScrollView(
+                    controller: widget.scrollController,
+                    scrollDirection: Axis.horizontal,
+                    physics: physics,
+                    child: _buildTabLabels(
+                      selectedLabelStyle,
+                      unselectedLabelStyle,
+                      selectedIconColor,
+                      unselectedIconColor,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
