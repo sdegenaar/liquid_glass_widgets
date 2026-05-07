@@ -120,6 +120,8 @@ class GlassTabBar extends StatefulWidget {
     this.indicatorSettings,
     this.backgroundKey,
     this.maskingQuality = MaskingQuality.high,
+    this.dividerSettings,
+    this.indicatorShadow,
   })  : assert(tabs.length >= 2, 'GlassTabBar requires at least 2 tabs'),
         assert(
           selectedIndex >= 0 && selectedIndex < tabs.length,
@@ -206,6 +208,13 @@ class GlassTabBar extends StatefulWidget {
   /// Optional background key for Skia/Web refraction.
   final GlobalKey? backgroundKey;
 
+  /// Settings for the vertical dividers between segments.
+  final DividerSettings? dividerSettings;
+
+  /// Optional shadow for the indicator pill.
+  /// This shadow will vanish automatically when the indicator is active.
+  final List<BoxShadow>? indicatorShadow;
+
   @override
   State<GlassTabBar> createState() => _GlassTabBarState();
 }
@@ -282,6 +291,8 @@ class _GlassTabBarState extends State<GlassTabBar> {
         backgroundKey: widget.backgroundKey,
         maskingQuality: widget.maskingQuality,
         tabBarBorderRadius: borderRadius,
+        dividerSettings: widget.dividerSettings,
+        indicatorShadow: widget.indicatorShadow,
       ),
     );
 
@@ -321,4 +332,51 @@ class GlassTab {
 
   /// Semantic label for accessibility.
   final String? semanticLabel;
+}
+
+// =============================================================================
+// Divider Settings
+// =============================================================================
+
+class DividerSettings {
+  final double indent;
+  final double endIndent;
+  final double thickness;
+  final BoxDecoration? decoration;
+  final Duration? duration;
+  final Curve? curve;
+  final bool isHideAutomatically;
+
+  const DividerSettings({
+    this.indent = 0,
+    this.endIndent = 0,
+    this.thickness = 1,
+    this.decoration,
+    this.duration,
+    this.curve,
+    this.isHideAutomatically = true,
+  });
+
+  @override
+  bool operator ==(Object other) {
+    return other is DividerSettings &&
+        identical(indent, other.indent) &&
+        identical(endIndent, other.endIndent) &&
+        identical(thickness, other.thickness) &&
+        identical(decoration, other.decoration) &&
+        identical(duration, other.duration) &&
+        identical(curve, other.curve) &&
+        identical(isHideAutomatically, other.isHideAutomatically);
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+        indent,
+        endIndent,
+        thickness,
+        decoration,
+        duration,
+        curve,
+        isHideAutomatically,
+      ]);
 }

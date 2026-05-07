@@ -3,6 +3,7 @@
 // NOT part of the public API — do not export from liquid_glass_widgets.dart.
 library;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../../../src/renderer/liquid_glass_renderer.dart';
 import '../../../types/glass_quality.dart';
@@ -10,7 +11,7 @@ import '../../../utils/draggable_indicator_physics.dart';
 import '../../../utils/glass_spring.dart';
 import '../../shared/animated_glass_indicator.dart';
 import '../glass_bottom_bar.dart' show MaskingQuality;
-import '../glass_tab_bar.dart' show GlassTab;
+import '../glass_tab_bar.dart' show GlassTab, DividerSettings;
 
 // =============================================================================
 // TabBarContent — draggable indicator + tab layout
@@ -41,6 +42,8 @@ class TabBarContent extends StatefulWidget {
     this.indicatorSettings,
     this.backgroundKey,
     this.maskingQuality = MaskingQuality.high,
+    this.dividerSettings,
+    this.indicatorShadow,
     this.tabBarBorderRadius,
     super.key,
   });
@@ -62,6 +65,8 @@ class TabBarContent extends StatefulWidget {
   final LiquidGlassSettings? indicatorSettings;
   final GlobalKey? backgroundKey;
   final MaskingQuality maskingQuality;
+  final DividerSettings? dividerSettings;
+  final List<BoxShadow>? indicatorShadow;
 
   /// Border radius of the outer tab bar container — used to clip Layer 1
   /// (tab labels + background pill) to the same rounded shape.
@@ -87,6 +92,9 @@ class TabBarContentState extends State<TabBarContent>
   bool _isDragging = false;
   late double _xAlign = _computeXAlignmentForTab(widget.selectedIndex);
 
+  /// Specifically tracks if we are dragging the indicator in scrollable mode.
+  bool _isDraggingIndicator = false;
+
   // Scrollable-overlay indicator position, animated in content space.
   // Decoupled from the _xAlign spring so scroll never causes drift.
   late SingleSpringController _indOffsetSpring;
@@ -95,6 +103,10 @@ class TabBarContentState extends State<TabBarContent>
   late List<GlobalKey> _tabKeys;
   List<double> _tabWidths = [];
   List<double> _tabOffsets = [];
+
+  // Gesture Recognizers for precision control in scrollable mode.
+  late HorizontalDragGestureRecognizer _drag;
+  late TapGestureRecognizer _tap;
 
   @override
   void initState() {
@@ -111,6 +123,20 @@ class TabBarContentState extends State<TabBarContent>
     )..addListener(() {
         if (mounted) setState(() {});
       });
+
+    // Setup Gesture Arena Team to allow indicator drag to "steal" focus from ScrollView.
+    final team = GestureArenaTeam();
+    _drag = HorizontalDragGestureRecognizer()
+      ..team = team
+      ..onDown = _handleDragDown
+      ..onUpdate = _handleDragUpdate
+      ..onEnd = _handleDragEnd
+      ..onCancel = _handleDragCancel;
+
+    team.captain = _drag;
+
+    _tap = TapGestureRecognizer()..onTapUp = _handleTapUp;
+
     _initKeys();
     if (widget.isScrollable) {
       widget.scrollController.addListener(_onScroll);
@@ -133,8 +159,9 @@ class TabBarContentState extends State<TabBarContent>
     List<double> widths = [];
     List<double> offsets = [];
     bool allMeasured = true;
-    for (final key in _tabKeys) {
-      final box = key.currentContext?.findRenderObject() as RenderBox?;
+    final dividerWidth = widget.dividerSettings?.thickness ?? 0.0;
+    for (int i = 0; i < _tabKeys.length; i++) {
+      final box = _tabKeys[i].currentContext?.findRenderObject() as RenderBox?;
       if (box == null || !box.hasSize) {
         allMeasured = false;
         break;
@@ -143,6 +170,9 @@ class TabBarContentState extends State<TabBarContent>
       offsets.add(offset);
       widths.add(width);
       offset += width;
+      if (widget.dividerSettings != null && i != _tabKeys.length - 1) {
+        offset += dividerWidth;
+      }
     }
     if (allMeasured) {
       final selIdx = widget.selectedIndex.clamp(0, widths.length - 1);
@@ -162,6 +192,8 @@ class TabBarContentState extends State<TabBarContent>
   void dispose() {
     _indOffsetSpring.dispose();
     _indWidthSpring.dispose();
+    _drag.dispose();
+    _tap.dispose();
     if (widget.isScrollable) {
       widget.scrollController.removeListener(_onScroll);
     }
@@ -239,45 +271,182 @@ class TabBarContentState extends State<TabBarContent>
     );
   }
 
-  void _onDragDown(DragDownDetails details) {
-    setState(() {
-      _isDown = true;
-    });
+  // ===========================================================================
+  // GESTURE HANDLERS
+  // ===========================================================================
+
+  void _handleTapUp(TapUpDetails details) {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    final localX = details.localPosition.dx;
+
+    int targetIndex = -1;
+    if (widget.isScrollable) {
+      final scrollOffset = widget.scrollController.hasClients
+          ? widget.scrollController.offset
+          : 0.0;
+      final absoluteX = localX + scrollOffset;
+      for (int i = 0; i < _tabOffsets.length; i++) {
+        if (absoluteX >= _tabOffsets[i] &&
+            absoluteX <= _tabOffsets[i] + _tabWidths[i]) {
+          targetIndex = i;
+          break;
+        }
+      }
+    } else {
+      targetIndex = (localX / box.size.width * widget.tabs.length).floor();
+    }
+
+    if (targetIndex != -1 && targetIndex < widget.tabs.length) {
+      _onTabTap(targetIndex);
+    }
   }
 
-  void _onDragUpdate(DragUpdateDetails details) {
+  void _handleDragDown(DragDownDetails details) {
+    if (!widget.isScrollable) {
+      setState(() => _isDown = true);
+      return;
+    }
+
+    final scrollOffset = widget.scrollController.hasClients
+        ? widget.scrollController.offset
+        : 0.0;
+    final absoluteX = details.localPosition.dx + scrollOffset;
+
+    final selIdx = widget.selectedIndex;
+    if (selIdx < _tabOffsets.length) {
+      final left = _tabOffsets[selIdx];
+      final right = left + _tabWidths[selIdx];
+
+      // If the press is within the active indicator's bounds, we start an indicator drag.
+      if (absoluteX >= left && absoluteX <= right) {
+        setState(() {
+          _isDraggingIndicator = true;
+          _isDown = true;
+        });
+      }
+    }
+  }
+
+  void _handleDragUpdate(DragUpdateDetails details) {
     final box = context.findRenderObject() as RenderBox?;
     if (box == null || box.size.width <= 0) return;
-    final dx = details.delta.dx / box.size.width * 2;
+
+    if (!widget.isScrollable) {
+      setState(() {
+        _isDragging = true;
+
+        // Use absolute pointer position instead of delta accumulation.
+        //
+        // Delta-based dragging (`_xAlign += details.delta.dx`) introduces
+        // visible lag/drift on desktop/web because pointer events may arrive
+        // at a different rate than rendering frames.
+        double raw = DraggableIndicatorPhysics.getAlignmentFromGlobalPosition(
+          details.globalPosition,
+          context,
+          widget.tabs.length,
+        );
+        if (raw < -1.0) {
+          raw = -1.0 + (raw + 1.0) * 0.5;
+        } else if (raw > 1.0) {
+          raw = 1.0 + (raw - 1.0) * 0.5;
+        }
+        final overstep = 0.85 * (2.0 / widget.tabs.length);
+        _xAlign = raw.clamp(-1.0 - overstep, 1.0 + overstep);
+      });
+      return;
+    }
+
+    if (!_isDraggingIndicator || _tabOffsets.isEmpty) return;
+
     setState(() {
       _isDragging = true;
-      _xAlign = (_xAlign + dx).clamp(-1.0, 1.0);
+      double delta = details.delta.dx;
+      final cur = _indOffsetSpring.value;
+      final double screenWidth = box.size.width;
+      final double scrollOffset = widget.scrollController.offset;
+      final double viewMin = scrollOffset;
+      final double viewMax = scrollOffset + screenWidth;
+      if ((cur < viewMin && delta < 0) || (cur > viewMax && delta > 0)) {
+        delta *= 0.5;
+      }
+      final newOffset = (cur + delta)
+          .clamp(viewMin - screenWidth * 0.35, viewMax + screenWidth * 0.35);
+      _indOffsetSpring.setValue(newOffset);
+
+      // Update width based on current position between tabs.
+      if (_tabWidths.length == widget.tabs.length) {
+        int index = 0;
+        for (int i = 0; i < _tabOffsets.length - 1; i++) {
+          if (newOffset >= _tabOffsets[i]) index = i;
+        }
+        final nextIndex = (index + 1).clamp(0, widget.tabs.length - 1);
+        final diff = _tabOffsets[nextIndex] - _tabOffsets[index];
+        final t = (diff != 0 ? (newOffset - _tabOffsets[index]) / diff : 0.0)
+            .clamp(0.0, 1.0);
+        final interpolatedWidth =
+            _tabWidths[index] + (_tabWidths[nextIndex] - _tabWidths[index]) * t;
+        _indWidthSpring.setValue(interpolatedWidth);
+      }
     });
   }
 
-  void _onDragEnd(DragEndDetails details) {
-    if (!_isDragging) return;
+  void _handleDragEnd(DragEndDetails details) {
+    if (!_isDragging) {
+      _handleDragCancel();
+      return;
+    }
 
-    final currentRelativeX = (_xAlign + 1) / 2;
-    final box = context.findRenderObject() as RenderBox?;
-    final width = box?.size.width ?? 1.0;
-    final velocityX = details.velocity.pixelsPerSecond.dx / width;
+    int targetTabIndex;
 
-    final targetTabIndex = _computeTargetTab(
-      currentRelativeX: currentRelativeX,
-      velocityX: velocityX,
-      tabWidth: 1.0 / widget.tabs.length,
-    );
+    if (widget.isScrollable) {
+      targetTabIndex = widget.selectedIndex;
+      double minDistance = double.infinity;
+      for (int i = 0; i < _tabOffsets.length; i++) {
+        final distance = (_indOffsetSpring.value - _tabOffsets[i]).abs();
+        if (distance < minDistance) {
+          minDistance = distance;
+          targetTabIndex = i;
+        }
+      }
+    } else {
+      final currentRelativeX = (_xAlign + 1) / 2;
+      final box = context.findRenderObject() as RenderBox?;
+      final width = box?.size.width ?? 1.0;
+      final velocityX = details.velocity.pixelsPerSecond.dx / width;
+      targetTabIndex = _computeTargetTab(
+        currentRelativeX: currentRelativeX,
+        velocityX: velocityX,
+        tabWidth: 1.0 / widget.tabs.length,
+      );
+    }
 
     setState(() {
       _isDragging = false;
+      _isDraggingIndicator = false;
       _isDown = false;
-      _xAlign = _computeXAlignmentForTab(targetTabIndex);
+      if (!widget.isScrollable) {
+        _xAlign = _computeXAlignmentForTab(targetTabIndex);
+      }
     });
 
     if (targetTabIndex != widget.selectedIndex) {
       widget.onTabSelected(targetTabIndex);
+    } else if (widget.isScrollable) {
+      _indOffsetSpring.animateTo(_tabOffsets[targetTabIndex]);
+      _indWidthSpring.animateTo(_tabWidths[targetTabIndex]);
     }
+  }
+
+  void _handleDragCancel() {
+    setState(() {
+      _isDragging = false;
+      _isDraggingIndicator = false;
+      _isDown = false;
+      if (!widget.isScrollable) {
+        _xAlign = _computeXAlignmentForTab(widget.selectedIndex);
+      }
+    });
   }
 
   int _computeTargetTab({
@@ -367,6 +536,8 @@ class TabBarContentState extends State<TabBarContent>
     final unselectedIconColor =
         widget.unselectedIconColor ?? _defaultUnselectedIconColor;
 
+    final effectiveShadow = _isDragging ? null : widget.indicatorShadow;
+
     Widget buildContent() {
       return VelocitySpringBuilder(
         value: _xAlign,
@@ -374,48 +545,13 @@ class TabBarContentState extends State<TabBarContent>
         springWhenReleased: GlassSpring.snappy(
           duration: const Duration(milliseconds: 350),
         ),
-        active: _isDragging,
+        active: _isDragging && !widget.isScrollable,
         builder: (context, value, velocity, child) {
           final alignment = Alignment(value, 0);
-
-          double? exactWidth;
-          double? exactOffset;
-
-          final bool measuredReady = _tabWidths.length == widget.tabs.length;
-
-          if (widget.isScrollable && measuredReady) {
-            // Exact inverse of DraggableIndicatorPhysics.computeAlignment:
-            //   forward:  value = (index / (n-1)) * 2 - 1
-            //   inverse:  index = (value + 1) / 2 * (n-1)
-            // Clamped so spring overshoot doesn't extrapolate past last tab.
-            final double fractionalIndex =
-                ((value + 1.0) / 2.0 * (widget.tabs.length - 1))
-                    .clamp(0.0, widget.tabs.length - 1.0);
-            final int indexFloor =
-                fractionalIndex.floor().clamp(0, widget.tabs.length - 1);
-            final int indexCeil =
-                fractionalIndex.ceil().clamp(0, widget.tabs.length - 1);
-            final double t = (fractionalIndex - indexFloor).clamp(0.0, 1.0);
-
-            exactWidth = _tabWidths[indexFloor] +
-                (_tabWidths[indexCeil] - _tabWidths[indexFloor]) * t;
-            exactOffset = _tabOffsets[indexFloor] +
-                (_tabOffsets[indexCeil] - _tabOffsets[indexFloor]) * t;
-          }
-
-          // In scrollable mode the overlay indicator (outside the
-          // SingleChildScrollView) is the ONLY indicator. Skipping the inline
-          // one entirely prevents it from being hard-clipped by the scroll
-          // view's own viewport when the selected tab is near an edge.
-          final bool skipIndicator = widget.isScrollable;
-
           return SpringBuilder(
             spring: GlassSpring.snappy(
               duration: const Duration(milliseconds: 300),
             ),
-            // Bloom while dragging, held down, or still in transit.
-            // Mirrors GlassSegmentedControl: the bloom deactivates naturally
-            // as the spring settles, with no artificial timer.
             value: _isDown || (alignment.x - targetAlignment).abs() > 0.05
                 ? 1.0
                 : 0.0,
@@ -423,12 +559,9 @@ class TabBarContentState extends State<TabBarContent>
               return Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  if (!skipIndicator)
+                  if (!widget.isScrollable)
                     AnimatedGlassIndicator(
-                      // No jelly squash/stretch in scrollable mode — tap
-                      // velocity is irrelevant. Full expansion preserved for
-                      // the iOS 26 glass bloom effect on press.
-                      velocity: widget.isScrollable ? 0.0 : velocity,
+                      velocity: velocity,
                       itemCount: widget.tabs.length,
                       alignment: alignment,
                       thickness: thickness,
@@ -439,11 +572,10 @@ class TabBarContentState extends State<TabBarContent>
                           widget.indicatorBorderRadius?.topLeft.x ?? 16,
                       glassSettings: widget.indicatorSettings,
                       backgroundKey: widget.backgroundKey,
-                      exactWidth: exactWidth,
-                      exactOffset: exactOffset,
                       expansion: widget.maskingQuality == MaskingQuality.off
                           ? 0.0
                           : 8.0,
+                      shadows: effectiveShadow,
                     ),
                   child!,
                 ],
@@ -460,6 +592,7 @@ class TabBarContentState extends State<TabBarContent>
       );
     }
 
+    Widget result;
     if (widget.isScrollable) {
       // Three-layer architecture:
       //  1. ClipRect layer: tab labels + solid background pill — both clip
@@ -480,7 +613,11 @@ class TabBarContentState extends State<TabBarContent>
               : 0.0;
       final bool isMoving = (_indOffsetSpring.value - targetOffset).abs() > 2.0;
 
-      return Stack(
+      final physics = _isDraggingIndicator
+          ? const NeverScrollableScrollPhysics()
+          : const ClampingScrollPhysics();
+
+      result = Stack(
         clipBehavior: Clip.none,
         children: [
           // ── Layer 1: clipped content ────────────────────────────────────
@@ -500,6 +637,7 @@ class TabBarContentState extends State<TabBarContent>
                   child: SingleChildScrollView(
                     controller: widget.scrollController,
                     scrollDirection: Axis.horizontal,
+                    physics: physics,
                     child: _buildTabLabels(
                       selectedLabelStyle,
                       unselectedLabelStyle,
@@ -536,6 +674,7 @@ class TabBarContentState extends State<TabBarContent>
                             : 8.0,
                         paintBackground: true,
                         paintGlass: false, // glass rendered in layer 2
+                        shadows: effectiveShadow,
                       );
                     },
                   ),
@@ -573,49 +712,24 @@ class TabBarContentState extends State<TabBarContent>
             ),
         ],
       );
+    } else {
+      result = buildContent();
     }
 
-    return Listener(
-      onPointerDown: (_) {
-        setState(() => _isDown = true);
+    return RawGestureDetector(
+      gestures: {
+        HorizontalDragGestureRecognizer: GestureRecognizerFactoryWithHandlers<
+            HorizontalDragGestureRecognizer>(
+          () => _drag,
+          (instance) {},
+        ),
+        TapGestureRecognizer:
+            GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+          () => _tap,
+          (instance) {},
+        ),
       },
-      onPointerUp: (_) {
-        if (!_isDragging) {
-          setState(() => _isDown = false);
-        }
-      },
-      onPointerCancel: (_) {
-        if (!_isDragging) {
-          setState(() => _isDown = false);
-        }
-      },
-      child: GestureDetector(
-        onHorizontalDragDown: _onDragDown,
-        onHorizontalDragUpdate: _onDragUpdate,
-        onHorizontalDragEnd: _onDragEnd,
-        onHorizontalDragCancel: () {
-          if (_isDragging) {
-            final currentRelativeX = (_xAlign + 1) / 2;
-            final targetTabIndex = _computeTargetTab(
-              currentRelativeX: currentRelativeX,
-              velocityX: 0,
-              tabWidth: 1.0 / widget.tabs.length,
-            );
-            setState(() {
-              _isDragging = false;
-              _isDown = false;
-              _xAlign = _computeXAlignmentForTab(targetTabIndex);
-            });
-            if (targetTabIndex != widget.selectedIndex) {
-              widget.onTabSelected(targetTabIndex);
-            }
-          } else {
-            setState(
-                () => _xAlign = _computeXAlignmentForTab(widget.selectedIndex));
-          }
-        },
-        child: buildContent(),
-      ),
+      child: result,
     );
   }
 
@@ -625,7 +739,7 @@ class TabBarContentState extends State<TabBarContent>
     Color selectedIconColor,
     Color unselectedIconColor,
   ) {
-    final tabWidgets = List.generate(
+    final List<Widget> tabWidgets = List.generate(
       widget.tabs.length,
       (index) {
         final tab = widget.tabs[index];
@@ -636,11 +750,7 @@ class TabBarContentState extends State<TabBarContent>
             child: TabBarItem(
               tab: tab,
               isSelected: isSelected,
-              onTap: () => _onTabTap(index),
-              // onTapDown must NOT call onTabSelected — it fires at the start
-              // of every touch including scrolls. Flutter cancels onTap when
-              // a scroll gesture wins, but onTapDown has already fired.
-              // Visual press state (_isDown) is handled by the parent Listener.
+              onTap: () {},
               onTapDown: () {},
               labelStyle: isSelected ? selectedStyle : unselectedStyle,
               iconColor: isSelected ? selectedIconColor : unselectedIconColor,
@@ -652,12 +762,37 @@ class TabBarContentState extends State<TabBarContent>
       },
     );
 
+    if (widget.dividerSettings != null) {
+      final d = widget.dividerSettings!;
+      for (int i = widget.tabs.length - 1; i > 0; i--) {
+        final isVisible = !d.isHideAutomatically ||
+            (i - 1 != widget.selectedIndex && i != widget.selectedIndex);
+
+        tabWidgets.insert(
+          i,
+          AnimatedOpacity(
+            opacity: isVisible ? 1.0 : 0.0,
+            duration: d.duration ?? const Duration(milliseconds: 200),
+            curve: d.curve ?? Curves.easeInOut,
+            child: Container(
+              width: d.thickness,
+              margin: EdgeInsets.only(top: d.indent, bottom: d.endIndent),
+              decoration: d.decoration ??
+                  BoxDecoration(color: Colors.white.withValues(alpha: 0.2)),
+            ),
+          ),
+        );
+      }
+    }
+
     if (widget.isScrollable) {
       return Row(children: tabWidgets);
     }
 
     return Row(
-      children: tabWidgets.map((tab) => Expanded(child: tab)).toList(),
+      children: tabWidgets
+          .map((tab) => tab is KeyedSubtree ? Expanded(child: tab) : tab)
+          .toList(),
     );
   }
 }
@@ -731,8 +866,6 @@ class TabBarItem extends StatelessWidget {
     }
 
     return GestureDetector(
-      onTap: onTap,
-      onTapDown: (_) => onTapDown(),
       behavior: HitTestBehavior.opaque,
       child: Semantics(
         button: true,

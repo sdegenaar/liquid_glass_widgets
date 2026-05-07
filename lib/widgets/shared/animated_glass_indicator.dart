@@ -68,6 +68,9 @@ class AnimatedGlassIndicator extends StatelessWidget {
   /// Used in scrollable mode where tabs have different widths.
   final double? exactOffset;
 
+  /// Optional list of shadows to be cast by the indicator background.
+  final List<BoxShadow>? shadows;
+
   const AnimatedGlassIndicator({
     super.key,
     required this.velocity,
@@ -87,6 +90,7 @@ class AnimatedGlassIndicator extends StatelessWidget {
     this.paintGlass = true,
     this.exactWidth,
     this.exactOffset,
+    this.shadows,
   });
 
   static const _baseGlassSettings = LiquidGlassSettings(
@@ -143,6 +147,7 @@ class AnimatedGlassIndicator extends StatelessWidget {
           decoration: BoxDecoration(
             color: indicatorColor,
             borderRadius: BorderRadius.circular(borderRadius),
+            boxShadow: shadows,
           ),
           child: const SizedBox.expand(),
         ),
