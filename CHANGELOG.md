@@ -1,3 +1,13 @@
+# 0.10.7
+
+Thanks to [@yukinoaruu](https://github.com/yukinoaruu) for [PR #51](https://github.com/sdegenaar/liquid_glass_widgets/pull/51). 🙏
+
+## 🐛 Fixes
+
+- **`GlassMenu` — trigger button dead zone after closing** · After closing the menu, the trigger button would ignore taps for the duration of the closing spring animation (~95% of travel), forcing the user to wait several seconds before being able to reopen it. Fixed by separating the visual-hide threshold (`0.05`) from the input-block threshold (`0.80`) into two independent booleans: `isButtonVisible` and `isMenuBlocking`. The button now becomes tappable again as soon as the animation drops below 80%, and the morphing glass overlay wraps in `IgnorePointer(ignoring: value < 0.8)` to prevent the contracting container from consuming the tap instead.
+
+---
+
 # 0.10.6
 
 ## 🐛 Fixes
@@ -5,6 +15,7 @@
 - **`GlassBottomBar` — `extraButton` causes bar to float in the middle of the screen** · Wrapped the inner `Row` in a `SizedBox(height: barHeight)` so the `Scaffold.bottomNavigationBar` slot always receives an explicit tight height constraint. Without this, the `Expanded` child introduced by `extraButton` propagated an unbounded height through `LiquidGlassLayer`, causing Flutter to render the bar centred on screen instead of pinned to the bottom edge.
 
 ---
+
 
 # 0.10.5
 
