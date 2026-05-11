@@ -1,4 +1,73 @@
+# 0.10.10
+
+Thanks to [@g3mf0r](https://github.com/g3mf0r) for [PR #55](https://github.com/sdegenaar/liquid_glass_widgets/pull/55). 🙏
+
+## ✨ New
+
+- **`GlassMenu` — `menuAlignment` enum** · A new `GlassMenuAlignment` enum (10 values: `none`, `topLeft`, `topCenter`, `topRight`, `centerLeft`, `center`, `centerRight`, `bottomLeft`, `bottomCenter`, `bottomRight`) lets you pin the menu to a specific edge or corner of its trigger instead of relying solely on auto-detection. The enum is now part of the public API surface exported from `glass_menu.dart`.
+
+- **`GlassMenu` — `autoAdjustToScreen` with `menuPadding`** · When `autoAdjustToScreen: true`, the new `menuPadding: EdgeInsets?` parameter applies additional inset constraints so the menu body never clips against device edges.
+
+- **`GlassMenu` — `itemBorderRadius`** · Controls the corner radius of individual menu item cells, independent of the outer `menuBorderRadius`.
+
+## 🐛 Fixes
+
+- **`GlassTabBar` — multi-tab drag jump** · Dragging the indicator across multiple tab widths in a single gesture now snaps to the correct distant tab. The previous implementation only incremented/decremented by ±1 regardless of drag distance, causing the indicator to teleport unexpectedly when the finger crossed more than one tab boundary.
+
+- **`GlassTabBar` — glass refraction during indicator drag** · Refraction and shadow effects are correctly suppressed during the drag animation and restored on settlement, eliminating a visual glitch where the glass distortion would persist after releasing the indicator.
+
+## 🧪 Tests
+
+- Added 4 new `GlassMenu` tests covering `GlassMenuAlignment` enum values, `menuAlignment` parameter, `autoAdjustToScreen` + `menuPadding`, and `itemBorderRadius`.
+- Added 2 new `GlassTabBar` tests covering multi-tab drag jump (left and right) to prevent regression of the PR #55 fix.
+
+---
+
+# 0.10.9
+
+Thanks to [@g3mf0r](https://github.com/g3mf0r) for [PR #54](https://github.com/sdegenaar/liquid_glass_widgets/pull/54). 🙏
+
+## ✨ New
+
+- **`GlassTabBar` (scrollable) — jelly physics on indicator drag** · The scrollable indicator pill now feeds real-time drag velocity into the liquid glass shader, producing the same organic stretch-and-settle effect that fixed-mode tabs already had.
+
+## 🐛 Fixes
+
+- **`LiquidGlassWidgets.wrap` — `adaptiveQuality: true` without `adaptiveConfig` permanently locks to `standard`** · The default fallback config was created with `initialQuality: GlassQuality.standard`, which the adapter treats as a skip-Phase-2 signal — immediately jumping to Phase 3 at `standard` without ever running the warmup benchmark. On capable devices (including the iPhone simulator on Apple Silicon) this prevented the adapter from ever discovering that the device can sustain `premium`. Fixed by removing the erroneous `initialQuality` from the fallback; Phase 2 now always runs when no explicit quality is provided.
+
+- **`GlassTabBar` (scrollable) — indicator overflows bar on low tab counts** · The right drag boundary was computed as `viewMax` instead of `viewMax - indicatorWidth`, allowing the pill to slide outside the bar when there were only 2–3 wide tabs. Corrected to `viewMax - targetWidth`.
+
+- **`GlassTabBar` (fixed) — tiny accidental drags switch tabs** · Tab switching on drag-end now requires either a displacement greater than 20 % of the tab width **or** a flick velocity above 400 px/s, preventing unintended switches from small incidental movements.
+
+- **`GlassTabBar` (scrollable) — flick gesture ignored in scrollable mode** · A horizontal flick with sufficient velocity now overrides the nearest-tab distance calculation and advances the indicator in the flick direction, matching the fixed-mode behaviour.
+
+---
+
+# 0.10.8
+
+
+Thanks to [@g3mf0r](https://github.com/g3mf0r) for [PR #52](https://github.com/sdegenaar/liquid_glass_widgets/pull/52). 🙏
+
+## 🐛 Fixes
+
+- **`GlassTabBar` — indicator drag drift on desktop/web** · The indicator position was accumulated via `delta.dx` additions each frame, causing the pill to visually lag behind the pointer on desktop platforms where pointer events arrive at a higher frequency than the frame budget. Fixed by computing position from the absolute global pointer coordinate on every update event, eliminating accumulated drift.
+
+- **`GlassTabBar` (scrollable) — tab labels hidden behind indicator pill** · The `SingleChildScrollView` (tab labels) and the background pill were inserted in the wrong stack order — labels were painted first, then the pill on top, obscuring them. Fixed by inserting the pill before the labels so labels always paint above the pill (correct z-order).
+
+- **`GlassTabBar` (scrollable) — indicator fly-off past bar edges** · The indicator pill had no boundary clamping in scrollable mode, allowing it to animate outside the visible bar area. Drag offset is now clamped to `[scrollOffset - 35 %, scrollOffset + screen + 35 %]`.
+
+## ✨ New
+
+- **`DividerSettings`** — new optional `dividerSettings` parameter on `GlassTabBar`. Renders animated vertical dividers between tabs with configurable `thickness`, `indent`, `endIndent`, custom `decoration`, animation `duration`/`curve`, and an `isHideAutomatically` flag that fades out dividers adjacent to the active tab. Includes a `copyWith` helper for convenient inline customisation.
+
+- **Grab-to-drag in scrollable mode** — the indicator pill in scrollable mode can now be directly grabbed and dragged to a new tab. Uses a `GestureArenaTeam` (`HorizontalDragGestureRecognizer` as captain + `TapGestureRecognizer`) to correctly win the arena against the `SingleChildScrollView` when the initial touch is within the active indicator's bounds. The scroll view retains natural scrolling behaviour when touching outside the pill.
+
+- **`indicatorShadow`** — new optional `indicatorShadow: List<BoxShadow>?` parameter on `GlassTabBar`. Applies a drop shadow to the resting (solid-colour) indicator pill, improving contrast in light-mode themes where the pill and track share similar colours. The shadow is automatically suppressed during the liquid glass drag animation so it does not interact with the backdrop blur, and restored when the pill returns to its idle state.
+
+---
+
 # 0.10.7
+
 
 Thanks to [@yukinoaruu](https://github.com/yukinoaruu) for [PR #51](https://github.com/sdegenaar/liquid_glass_widgets/pull/51). 🙏
 

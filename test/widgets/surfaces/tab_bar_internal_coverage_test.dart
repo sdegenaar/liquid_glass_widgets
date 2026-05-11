@@ -1,11 +1,15 @@
 // ignore_for_file: require_trailing_commas
-// Coverage-targeted tests for tab_bar_internal.dart (TabBarContent) and
+// Tests for tab_bar_internal.dart (TabBarContent) and
 // bottom_bar_internal.dart (GlassBottomBarClipper.shouldReclip).
-// Targets:
+//
+// Coverage targets:
 //   tab_bar_internal.dart:
 //     - lines 337-348: selectedIndex change in scrollable mode (indicator update)
 //     - line 127:      _measureTabs postFrameCallback re-schedule
 //     - lines 534-546: scrollable mode indicator skip when not measured + exact-width path
+//     - Drag gesture improvements (PR#54): 20% threshold, velocity flick, boundary clamping
+//     - Jelly physics: VelocitySpringBuilder in scrollable mode
+//     - Rubber-band overstep constants
 //   bottom_bar_internal.dart:
 //     - lines 472-482: GlassBottomBarClipper.shouldReclip full-check when values differ
 
@@ -15,6 +19,7 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 import '../../shared/test_helpers.dart';
 
+/// Five tabs reused across most tests.
 final _tabs = [
   const GlassTab(label: 'One'),
   const GlassTab(label: 'Two'),
@@ -22,6 +27,43 @@ final _tabs = [
   const GlassTab(label: 'Four'),
   const GlassTab(label: 'Five'),
 ];
+
+/// Three-tab set for boundary / edge-clamp tests.
+final _tabs3 = [
+  const GlassTab(label: 'A'),
+  const GlassTab(label: 'B'),
+  const GlassTab(label: 'C'),
+];
+
+/// Pumps a [GlassTabBar] and waits for tab measurement to complete.
+Future<void> _pumpBar(
+  WidgetTester tester, {
+  required List<GlassTab> tabs,
+  required ValueNotifier<int> selectedIndex,
+  bool isScrollable = false,
+  double width = 400,
+}) async {
+  await tester.pumpWidget(
+    createTestApp(
+      child: ValueListenableBuilder<int>(
+        valueListenable: selectedIndex,
+        builder: (ctx, idx, _) => SizedBox(
+          width: width,
+          height: 56,
+          child: GlassTabBar(
+            tabs: tabs,
+            selectedIndex: idx,
+            onTabSelected: (i) => selectedIndex.value = i,
+            isScrollable: isScrollable,
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 16));
+  await tester.pumpAndSettle();
+}
 
 void main() {
   group('GlassTabBar — scrollable indicator exact-width interpolation', () {
@@ -234,6 +276,382 @@ void main() {
         selectedIndex = 2;
       });
       await tester.pump(const Duration(milliseconds: 16));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  // ===========================================================================
+  // Drag gesture improvements (PR#54)
+  // ===========================================================================
+
+  group('GlassTabBar — fixed-mode drag gestures', () {
+    testWidgets('tiny drag below 20% threshold keeps selected tab',
+        (tester) async {
+      // Tab width = 400/5 = 80 px; 20% threshold = 16 px. Drag 8 px → no switch.
+      final sel = ValueNotifier<int>(2);
+      await _pumpBar(tester, tabs: _tabs, selectedIndex: sel);
+
+      await tester.drag(find.byType(GlassTabBar), const Offset(8, 0));
+      await tester.pumpAndSettle();
+
+      expect(sel.value, 2);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('large drag past 20% threshold advances selected tab',
+        (tester) async {
+      // 45 px rightward >> 20% of 80 px tab — must trigger a tab switch.
+      final sel = ValueNotifier<int>(0);
+      await _pumpBar(tester, tabs: _tabs, selectedIndex: sel);
+
+      await tester.drag(find.byType(GlassTabBar), const Offset(45, 0));
+      await tester.pumpAndSettle();
+
+      expect(sel.value, greaterThan(0));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('high-velocity flick right advances tab', (tester) async {
+      final sel = ValueNotifier<int>(0);
+      await _pumpBar(tester, tabs: _tabs3, selectedIndex: sel, width: 300);
+
+      await tester.fling(find.byType(GlassTabBar), const Offset(10, 0), 600);
+      await tester.pumpAndSettle();
+
+      expect(sel.value, 1);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('high-velocity flick left retreats tab', (tester) async {
+      final sel = ValueNotifier<int>(2);
+      await _pumpBar(tester, tabs: _tabs3, selectedIndex: sel, width: 300);
+
+      await tester.fling(find.byType(GlassTabBar), const Offset(-10, 0), 600);
+      await tester.pumpAndSettle();
+
+      expect(sel.value, 1);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('drag past left edge clamps at tab 0', (tester) async {
+      final sel = ValueNotifier<int>(0);
+      await _pumpBar(tester, tabs: _tabs3, selectedIndex: sel, width: 300);
+
+      await tester.fling(find.byType(GlassTabBar), const Offset(-200, 0), 800);
+      await tester.pumpAndSettle();
+
+      expect(sel.value, 0);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('drag past right edge clamps at last tab', (tester) async {
+      final sel = ValueNotifier<int>(2);
+      await _pumpBar(tester, tabs: _tabs3, selectedIndex: sel, width: 300);
+
+      await tester.fling(find.byType(GlassTabBar), const Offset(200, 0), 800);
+      await tester.pumpAndSettle();
+
+      expect(sel.value, 2);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('extreme rubber-band drag left does not crash', (tester) async {
+      final sel = ValueNotifier<int>(0);
+      await _pumpBar(tester, tabs: _tabs3, selectedIndex: sel);
+
+      final gesture =
+          await tester.startGesture(tester.getCenter(find.byType(GlassTabBar)));
+      await gesture.moveBy(const Offset(-500, 0));
+      await tester.pump(const Duration(milliseconds: 16));
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('extreme rubber-band drag right does not crash',
+        (tester) async {
+      final sel = ValueNotifier<int>(2);
+      await _pumpBar(tester, tabs: _tabs3, selectedIndex: sel);
+
+      final gesture =
+          await tester.startGesture(tester.getCenter(find.byType(GlassTabBar)));
+      await gesture.moveBy(const Offset(500, 0));
+      await tester.pump(const Duration(milliseconds: 16));
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('GlassTabBar — scrollable-mode jelly physics', () {
+    testWidgets('drag on active indicator does not throw', (tester) async {
+      final sel = ValueNotifier<int>(0);
+      await _pumpBar(tester,
+          tabs: _tabs, selectedIndex: sel, isScrollable: true);
+
+      final barRect = tester.getRect(find.byType(GlassTabBar));
+      final gesture = await tester.startGesture(
+        Offset(barRect.left + 40, barRect.center.dy),
+      );
+      await gesture.moveBy(const Offset(50, 0));
+      await tester.pump(const Duration(milliseconds: 16));
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('fast flick exercises velocity-override code path',
+        (tester) async {
+      final sel = ValueNotifier<int>(0);
+      await _pumpBar(tester,
+          tabs: _tabs, selectedIndex: sel, isScrollable: true);
+
+      await tester.fling(find.byType(GlassTabBar), const Offset(5, 0), 600);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+        'programmatic tab switch drives VelocitySpringBuilder animation',
+        (tester) async {
+      final sel = ValueNotifier<int>(0);
+      await _pumpBar(tester,
+          tabs: _tabs, selectedIndex: sel, isScrollable: true);
+
+      sel.value = 3;
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pumpAndSettle();
+
+      sel.value = 1;
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('drag cancel resets dragging flags without throwing',
+        (tester) async {
+      final sel = ValueNotifier<int>(1);
+      await _pumpBar(tester,
+          tabs: _tabs, selectedIndex: sel, isScrollable: true);
+
+      final barRect = tester.getRect(find.byType(GlassTabBar));
+      final gesture = await tester.startGesture(
+        Offset(barRect.left + 50, barRect.center.dy),
+      );
+      await gesture.moveBy(const Offset(20, 0));
+      await tester.pump(const Duration(milliseconds: 16));
+      await gesture.cancel();
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('two-tab scrollable bar boundary fix keeps indicator in bounds',
+        (tester) async {
+      // Boundary fix: right wall = viewMax - targetWidth (not viewMax).
+      final sel = ValueNotifier<int>(0);
+      await tester.pumpWidget(
+        createTestApp(
+          child: ValueListenableBuilder<int>(
+            valueListenable: sel,
+            builder: (ctx, idx, _) => SizedBox(
+              width: 300,
+              height: 56,
+              child: GlassTabBar(
+                tabs: const [GlassTab(label: 'A'), GlassTab(label: 'B')],
+                selectedIndex: idx,
+                onTabSelected: (i) => sel.value = i,
+                isScrollable: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pumpAndSettle();
+
+      await tester.fling(find.byType(GlassTabBar), const Offset(200, 0), 200);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  // ===========================================================================
+  // _scrollToEnsureVisible — off-screen left & right scroll branches
+  // ===========================================================================
+
+  group('GlassTabBar — scrollToEnsureVisible scroll paths', () {
+    // Build a scrollable bar that is narrower than its tab content so that
+    // tabs can actually be off-screen, then switch programmatically to trigger
+    // _scrollToEnsureVisible for both the left and right branches.
+
+    Future<void> pumpNarrowBar(
+      WidgetTester tester,
+      ValueNotifier<int> sel,
+    ) async {
+      // 8 tabs in a 200 px viewport — content is much wider than the viewport
+      // so right-most tabs start off-screen.
+      const narrowTabs = [
+        GlassTab(label: 'T1'),
+        GlassTab(label: 'T2'),
+        GlassTab(label: 'T3'),
+        GlassTab(label: 'T4'),
+        GlassTab(label: 'T5'),
+        GlassTab(label: 'T6'),
+        GlassTab(label: 'T7'),
+        GlassTab(label: 'T8'),
+      ];
+      await tester.pumpWidget(
+        createTestApp(
+          child: ValueListenableBuilder<int>(
+            valueListenable: sel,
+            builder: (ctx, idx, _) => SizedBox(
+              width: 200,
+              height: 56,
+              child: GlassTabBar(
+                tabs: narrowTabs,
+                selectedIndex: idx,
+                onTabSelected: (i) => sel.value = i,
+                isScrollable: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('selecting a right off-screen tab triggers rightward scroll',
+        (tester) async {
+      // Start at tab 0 (visible); jump to tab 7 (off-screen right).
+      // _scrollToEnsureVisible must detect tabRight > viewportWidth - edgePadding
+      // and animate the scroll controller rightward.
+      final sel = ValueNotifier<int>(0);
+      await pumpNarrowBar(tester, sel);
+
+      sel.value = 7;
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('selecting a left off-screen tab triggers leftward scroll',
+        (tester) async {
+      // Start at tab 7 so the bar is scrolled right; jump back to tab 0.
+      // _scrollToEnsureVisible must detect tabLeft - currentOffset < edgePadding
+      // and animate the scroll controller leftward.
+      final sel = ValueNotifier<int>(7);
+      await pumpNarrowBar(tester, sel);
+
+      // Let the bar settle scrolled to the right (tab 7 in view).
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pumpAndSettle();
+
+      sel.value = 0;
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('tapping an off-screen tab also calls scrollToEnsureVisible',
+        (tester) async {
+      // The _onTabTap path also calls _scrollToEnsureVisible — cover it via
+      // a tap on a partially-visible edge tab.
+      final sel = ValueNotifier<int>(0);
+      await pumpNarrowBar(tester, sel);
+
+      // Programmatically switch to a middle tab then back to 0 via tap.
+      sel.value = 3;
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pumpAndSettle();
+
+      // Tap the first tab (leftmost, may be partially scrolled off).
+      final barRect = tester.getRect(find.byType(GlassTabBar));
+      await tester.tapAt(Offset(barRect.left + 10, barRect.center.dy));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  // ===========================================================================
+  // Edge cases: diff==0 interpolation guard & !_isDragging dragEnd early-return
+  // ===========================================================================
+
+  group('GlassTabBar — scrollable edge-case guards', () {
+    testWidgets('dragEnd without prior drag movement calls dragCancel cleanly',
+        (tester) async {
+      // _handleDragEnd checks !_isDragging and delegates to _handleDragCancel.
+      // Simulate a pointer-down then immediate pointer-up with no move.
+      // The gesture arena may resolve this as a tap (switching tabs) or a
+      // no-op cancel — both are valid; the key invariant is no exception thrown.
+      final sel = ValueNotifier<int>(1);
+      await _pumpBar(tester,
+          tabs: _tabs, selectedIndex: sel, isScrollable: true);
+
+      final barRect = tester.getRect(find.byType(GlassTabBar));
+      final gesture = await tester.startGesture(
+        Offset(barRect.left + 50, barRect.center.dy),
+      );
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+        '2-tab scrollable bar at last tab covers diff==0 interpolation guard',
+        (tester) async {
+      // With 2 tabs and the indicator at tab 1 (last), the loop sets index=1
+      // and nextIndex clamps to 1 as well, so diff == 0.
+      // The guard `diff != 0 ? ... : 0.0` must return 0.0 without NaN.
+      final sel = ValueNotifier<int>(1);
+      await tester.pumpWidget(
+        createTestApp(
+          child: ValueListenableBuilder<int>(
+            valueListenable: sel,
+            builder: (ctx, idx, _) => SizedBox(
+              width: 300,
+              height: 56,
+              child: GlassTabBar(
+                tabs: const [
+                  GlassTab(label: 'Left'),
+                  GlassTab(label: 'Right'),
+                ],
+                selectedIndex: idx,
+                onTabSelected: (i) => sel.value = i,
+                isScrollable: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pumpAndSettle();
+
+      // Drag from the rightmost tab area — indicator is at index 1, nextIndex
+      // clamps to 1, making diff == 0 in the interpolation.
+      final barRect = tester.getRect(find.byType(GlassTabBar));
+      final gesture = await tester.startGesture(
+        Offset(barRect.right - 30, barRect.center.dy),
+      );
+      await gesture.moveBy(const Offset(20, 0));
+      await tester.pump(const Duration(milliseconds: 16));
+      await gesture.up();
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);

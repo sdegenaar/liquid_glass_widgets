@@ -240,4 +240,104 @@ void main() {
     expect(find.text('FlipItem'), findsOneWidget);
     addTearDown(tester.view.resetPhysicalSize);
   });
+
+  // ── GlassMenuAlignment enum (PR #55) ─────────────────────────────────────────
+  test('GlassMenuAlignment enum has all expected values', () {
+    const values = GlassMenuAlignment.values;
+    expect(values, contains(GlassMenuAlignment.none));
+    expect(values, contains(GlassMenuAlignment.topLeft));
+    expect(values, contains(GlassMenuAlignment.topCenter));
+    expect(values, contains(GlassMenuAlignment.topRight));
+    expect(values, contains(GlassMenuAlignment.centerLeft));
+    expect(values, contains(GlassMenuAlignment.center));
+    expect(values, contains(GlassMenuAlignment.centerRight));
+    expect(values, contains(GlassMenuAlignment.bottomLeft));
+    expect(values, contains(GlassMenuAlignment.bottomCenter));
+    expect(values, contains(GlassMenuAlignment.bottomRight));
+    expect(values.length, 10);
+  });
+
+  testWidgets('GlassMenu opens with explicit menuAlignment.topRight',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassMenu(
+              menuAlignment: GlassMenuAlignment.topRight,
+              trigger: const SizedBox(
+                  width: 60, height: 40, child: Text('AlignMenu')),
+              items: [
+                GlassMenuItem(title: 'AlignedItem', onTap: () {}),
+              ],
+              menuWidth: 180,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('AlignMenu'));
+    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(find.text('AlignedItem'), findsOneWidget);
+  });
+
+  testWidgets('GlassMenu autoAdjustToScreen with menuPadding does not crash',
+      (tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1.0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Align(
+            alignment: Alignment.bottomRight,
+            child: GlassMenu(
+              autoAdjustToScreen: true,
+              menuPadding: const EdgeInsets.all(12),
+              trigger: const SizedBox(
+                  width: 60, height: 40, child: Text('PaddedMenu')),
+              items: [
+                GlassMenuItem(title: 'PaddedItem', onTap: () {}),
+              ],
+              menuWidth: 200,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('PaddedMenu'));
+    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(find.text('PaddedItem'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    addTearDown(tester.view.resetPhysicalSize);
+  });
+
+  testWidgets('GlassMenu respects itemBorderRadius parameter', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassMenu(
+              itemBorderRadius: 8.0,
+              trigger:
+                  const SizedBox(width: 60, height: 40, child: Text('Open')),
+              items: [
+                GlassMenuItem(title: 'RoundedItem', onTap: () {}),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(find.text('RoundedItem'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

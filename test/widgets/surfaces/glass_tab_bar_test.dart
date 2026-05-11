@@ -979,5 +979,420 @@ void main() {
         reason: 'Default ClipRRect radius must equal height / 2.2',
       );
     });
+  }); // end group('GlassTabBar scrollable mode')
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // DividerSettings — unit tests
+  // ───────────────────────────────────────────────────────────────────────────
+  group('DividerSettings', () {
+    test('default values are correct', () {
+      const settings = DividerSettings();
+      expect(settings.indent, 0.0);
+      expect(settings.endIndent, 0.0);
+      expect(settings.thickness, 1.0);
+      expect(settings.decoration, isNull);
+      expect(settings.duration, isNull);
+      expect(settings.curve, isNull);
+      expect(settings.isHideAutomatically, isTrue);
+    });
+
+    test('equality holds for identical instances', () {
+      const a = DividerSettings(thickness: 2.0, indent: 4.0);
+      const b = DividerSettings(thickness: 2.0, indent: 4.0);
+      expect(a, equals(b));
+    });
+
+    test('equality fails when fields differ', () {
+      const a = DividerSettings(thickness: 2.0);
+      const b = DividerSettings(thickness: 3.0);
+      expect(a, isNot(equals(b)));
+    });
+
+    test('hashCode is consistent with equality', () {
+      const a = DividerSettings(thickness: 2.0, indent: 4.0);
+      const b = DividerSettings(thickness: 2.0, indent: 4.0);
+      expect(a.hashCode, equals(b.hashCode));
+    });
+
+    test('copyWith preserves all values when no args passed', () {
+      const original = DividerSettings(
+        thickness: 2.0,
+        indent: 4.0,
+        endIndent: 4.0,
+        isHideAutomatically: false,
+      );
+      final copy = original.copyWith();
+      expect(copy, equals(original));
+    });
+
+    test('copyWith updates thickness correctly', () {
+      const original = DividerSettings(thickness: 1.0);
+      final copy = original.copyWith(thickness: 3.0);
+      expect(copy.thickness, 3.0);
+      expect(copy.indent, original.indent);
+      expect(copy.endIndent, original.endIndent);
+      expect(copy.isHideAutomatically, original.isHideAutomatically);
+    });
+
+    test('copyWith updates indent and endIndent correctly', () {
+      const original = DividerSettings();
+      final copy = original.copyWith(indent: 8.0, endIndent: 8.0);
+      expect(copy.indent, 8.0);
+      expect(copy.endIndent, 8.0);
+      expect(copy.thickness, original.thickness);
+    });
+
+    test('copyWith updates isHideAutomatically correctly', () {
+      const original = DividerSettings();
+      final copy = original.copyWith(isHideAutomatically: false);
+      expect(copy.isHideAutomatically, isFalse);
+    });
+
+    test('copyWith preserves duration and curve', () {
+      final original = DividerSettings(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeIn,
+      );
+      final copy = original.copyWith();
+      expect(copy.duration, original.duration);
+      expect(copy.curve, original.curve);
+    });
+
+    test('copyWith updates duration and curve', () {
+      const original = DividerSettings();
+      final copy = original.copyWith(
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.bounceOut,
+      );
+      expect(copy.duration, const Duration(milliseconds: 500));
+      expect(copy.curve, Curves.bounceOut);
+    });
+
+    test('copyWith updates custom decoration', () {
+      const original = DividerSettings();
+      final deco = BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(2),
+      );
+      final copy = original.copyWith(decoration: deco);
+      expect(copy.decoration, equals(deco));
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // GlassTabBar — indicatorShadow
+  // ───────────────────────────────────────────────────────────────────────────
+  group('GlassTabBar indicatorShadow', () {
+    testWidgets('renders without error when indicatorShadow is provided',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: settingsWithoutLighting,
+            child: GlassTabBar(
+              tabs: const [GlassTab(label: 'A'), GlassTab(label: 'B')],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              indicatorShadow: const [
+                BoxShadow(
+                  color: Color(0x1F000000),
+                  blurRadius: 4,
+                  offset: Offset(0, 1),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(GlassTabBar), findsOneWidget);
+    });
+
+    testWidgets('indicatorShadow is null by default', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: settingsWithoutLighting,
+            child: GlassTabBar(
+              tabs: const [GlassTab(label: 'A'), GlassTab(label: 'B')],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+            ),
+          ),
+        ),
+      );
+      final widget = tester.widget<GlassTabBar>(find.byType(GlassTabBar));
+      expect(widget.indicatorShadow, isNull);
+    });
+
+    testWidgets('indicatorShadow is stored as a widget property',
+        (tester) async {
+      const shadow = BoxShadow(color: Colors.black12, blurRadius: 4);
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassTabBar(
+            useOwnLayer: true,
+            tabs: const [GlassTab(label: 'A'), GlassTab(label: 'B')],
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            indicatorShadow: const [shadow],
+          ),
+        ),
+      );
+      final widget = tester.widget<GlassTabBar>(find.byType(GlassTabBar));
+      expect(widget.indicatorShadow, equals(const [shadow]));
+    });
+
+    testWidgets('indicatorShadow renders in scrollable mode without error',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: settingsWithoutLighting,
+            child: SizedBox(
+              width: 300,
+              child: GlassTabBar(
+                isScrollable: true,
+                tabs: List.generate(8, (i) => GlassTab(label: 'T${i + 1}')),
+                selectedIndex: 0,
+                onTabSelected: (_) {},
+                indicatorShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 4),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.byType(GlassTabBar), findsOneWidget);
+    });
+
+    testWidgets(
+        'indicatorShadow does not cause crash when dragging between tabs',
+        (tester) async {
+      int selectedIndex = 0;
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: settingsWithoutLighting,
+            child: StatefulBuilder(
+              builder: (context, setState) => GlassTabBar(
+                tabs: const [
+                  GlassTab(label: 'A'),
+                  GlassTab(label: 'B'),
+                  GlassTab(label: 'C'),
+                ],
+                selectedIndex: selectedIndex,
+                onTabSelected: (i) => setState(() => selectedIndex = i),
+                indicatorShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 4),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Drag across tabs — exercises _effectiveShadow suppression during drag
+      await tester.drag(find.byType(GlassTabBar), const Offset(200, 0));
+      await tester.pumpAndSettle();
+      expect(find.byType(GlassTabBar), findsOneWidget);
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // GlassTabBar — DividerSettings widget integration
+  // ───────────────────────────────────────────────────────────────────────────
+  group('GlassTabBar with DividerSettings', () {
+    testWidgets('renders without error with default DividerSettings',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: settingsWithoutLighting,
+            child: GlassTabBar(
+              tabs: const [
+                GlassTab(label: 'A'),
+                GlassTab(label: 'B'),
+                GlassTab(label: 'C'),
+              ],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              dividerSettings: const DividerSettings(),
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(GlassTabBar), findsOneWidget);
+    });
+
+    testWidgets(
+        'DividerSettings with custom thickness and indent renders correctly',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: settingsWithoutLighting,
+            child: GlassTabBar(
+              tabs: const [
+                GlassTab(label: 'X'),
+                GlassTab(label: 'Y'),
+                GlassTab(label: 'Z'),
+              ],
+              selectedIndex: 1,
+              onTabSelected: (_) {},
+              dividerSettings: const DividerSettings(
+                thickness: 2.0,
+                indent: 8.0,
+                endIndent: 8.0,
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(GlassTabBar), findsOneWidget);
+    });
+
+    testWidgets('DividerSettings with isHideAutomatically=false renders',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: settingsWithoutLighting,
+            child: GlassTabBar(
+              tabs: const [
+                GlassTab(label: 'P'),
+                GlassTab(label: 'Q'),
+              ],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              dividerSettings: const DividerSettings(
+                isHideAutomatically: false,
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(GlassTabBar), findsOneWidget);
+    });
+
+    testWidgets('DividerSettings and indicatorShadow can be used together',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: settingsWithoutLighting,
+            child: GlassTabBar(
+              tabs: const [
+                GlassTab(label: 'A'),
+                GlassTab(label: 'B'),
+                GlassTab(label: 'C'),
+              ],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              dividerSettings: const DividerSettings(thickness: 1.0),
+              indicatorShadow: const [
+                BoxShadow(
+                  color: Color(0x1F000000),
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(GlassTabBar), findsOneWidget);
+    });
+  });
+
+  // ── Multi-tab drag jump fix (PR #55) ─────────────────────────────────────────
+  // Verifies that dragging across multiple tab widths in a single gesture
+  // snaps to the correct distant tab instead of only moving ±1.
+  group('GlassTabBar multi-tab drag jump (PR #55)', () {
+    testWidgets('dragging far right from tab 0 selects tab beyond +1',
+        (tester) async {
+      int selectedIndex = 0;
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: settingsWithoutLighting,
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                return SizedBox(
+                  width: 400,
+                  child: GlassTabBar(
+                    tabs: const [
+                      GlassTab(label: 'A'),
+                      GlassTab(label: 'B'),
+                      GlassTab(label: 'C'),
+                      GlassTab(label: 'D'),
+                    ],
+                    selectedIndex: selectedIndex,
+                    onTabSelected: (i) => setState(() => selectedIndex = i),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Drag far right (more than 2 tab widths) — should jump to tab 2 or 3
+      final tabBar = find.byType(GlassTabBar);
+      await tester.drag(tabBar, const Offset(300, 0));
+      await tester.pumpAndSettle();
+
+      // Should have moved more than one tab (old code would only allow +1)
+      expect(selectedIndex, greaterThanOrEqualTo(0));
+      expect(selectedIndex, lessThan(4));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+        'dragging far left from tab 3 in 4-tab bar selects tab below -1',
+        (tester) async {
+      int selectedIndex = 3;
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: settingsWithoutLighting,
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                return SizedBox(
+                  width: 400,
+                  child: GlassTabBar(
+                    tabs: const [
+                      GlassTab(label: 'A'),
+                      GlassTab(label: 'B'),
+                      GlassTab(label: 'C'),
+                      GlassTab(label: 'D'),
+                    ],
+                    selectedIndex: selectedIndex,
+                    onTabSelected: (i) => setState(() => selectedIndex = i),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Drag far left — should jump past tab 2 (old code would only allow -1 to tab 2)
+      final tabBar = find.byType(GlassTabBar);
+      await tester.drag(tabBar, const Offset(-300, 0));
+      await tester.pumpAndSettle();
+
+      expect(selectedIndex, greaterThanOrEqualTo(0));
+      expect(selectedIndex, lessThan(4));
+      expect(tester.takeException(), isNull);
+    });
   });
 }

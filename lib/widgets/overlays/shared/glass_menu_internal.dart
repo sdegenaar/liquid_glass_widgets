@@ -14,6 +14,8 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
       false; // Prevents closing if we moved into stretch territory
   double _initialScrollOffset = 0.0;
   Offset _initialLocalPosition = Offset.zero;
+  double _horizontalOffset = 0.0;
+  double _verticalOffset = 0.0;
 
   // --- Granular Update System (Performance + No flicker) ---
   // We cache the outer list but use notifiers to update selection state
@@ -62,6 +64,35 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   );
 
   Alignment _morphAlignment = Alignment.topLeft;
+
+  Alignment? _getAlignment(GlassMenuAlignment align) {
+    switch (align) {
+      case GlassMenuAlignment.none:
+        return null;
+
+      // When the user selects "Left", we return "Right" alignment.
+      // This anchors the menu's RIGHT edge to the button's RIGHT edge,
+      // causing the menu body to expand to the LEFT (away from the button).
+      case GlassMenuAlignment.topLeft:
+        return Alignment.topRight;
+      case GlassMenuAlignment.topCenter:
+        return Alignment.topCenter;
+      case GlassMenuAlignment.topRight:
+        return Alignment.topLeft;
+      case GlassMenuAlignment.centerLeft:
+        return Alignment.centerRight;
+      case GlassMenuAlignment.center:
+        return Alignment.center;
+      case GlassMenuAlignment.centerRight:
+        return Alignment.centerLeft;
+      case GlassMenuAlignment.bottomLeft:
+        return Alignment.bottomRight;
+      case GlassMenuAlignment.bottomCenter:
+        return Alignment.bottomCenter;
+      case GlassMenuAlignment.bottomRight:
+        return Alignment.bottomLeft;
+    }
+  }
 
   @override
   void initState() {
@@ -179,26 +210,71 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     // Calculate menu height for vertical boundary check
     final menuHeight = _calculateMenuHeight();
 
-    // Horizontal alignment: left vs right half
-    final isRightHalf = screenWidth.isFinite && position.dx > screenWidth / 2;
+    // 1. Determine base alignment (Auto vs Manual)
+    if (widget.menuAlignment == null ||
+        widget.menuAlignment == GlassMenuAlignment.none) {
+      // Horizontal alignment: left vs right half
+      final isRightHalf = screenWidth.isFinite && position.dx > screenWidth / 2;
 
-    // Vertical alignment: check if menu would overflow bottom
-    final spaceBelow = screenHeight.isFinite
-        ? screenHeight - (position.dy + _triggerSize!.height)
-        : double.infinity;
-    final spaceAbove = screenHeight.isFinite ? position.dy : double.infinity;
+      // Vertical alignment: check if menu would overflow bottom
+      final spaceBelow = screenHeight.isFinite
+          ? screenHeight - (position.dy + _triggerSize!.height)
+          : double.infinity;
+      final spaceAbove = screenHeight.isFinite ? position.dy : double.infinity;
 
-    // Prefer downward opening unless insufficient space
-    final shouldFlipVertical =
-        spaceBelow < menuHeight && spaceAbove > menuHeight;
+      // Prefer downward opening unless insufficient space
+      final shouldFlipVertical =
+          spaceBelow < menuHeight && spaceAbove > menuHeight;
 
-    // Determine final alignment based on both axes
-    if (shouldFlipVertical) {
-      _morphAlignment =
-          isRightHalf ? Alignment.bottomRight : Alignment.bottomLeft;
+      if (shouldFlipVertical) {
+        _morphAlignment =
+            isRightHalf ? Alignment.bottomRight : Alignment.bottomLeft;
+      } else {
+        _morphAlignment = isRightHalf ? Alignment.topRight : Alignment.topLeft;
+      }
     } else {
-      _morphAlignment = isRightHalf ? Alignment.topRight : Alignment.topLeft;
+      // MANUAL: Use provided alignment with inverted mapping
+      _morphAlignment =
+          _getAlignment(widget.menuAlignment!) ?? Alignment.center;
     }
+
+    // 2. Clamping: calculate offsets to keep menu within screen bounds
+    double hOffset = 0.0;
+    double vOffset = 0.0;
+
+    if (widget.autoAdjustToScreen) {
+      final padding = widget.menuPadding;
+
+      // Calculate global menu position
+      final double targetX =
+          position.dx + (1 + _morphAlignment.x) * _triggerSize!.width / 2;
+      final double targetY =
+          position.dy + (1 + _morphAlignment.y) * _triggerSize!.height / 2;
+      final double menuLeft =
+          targetX - (1 + _morphAlignment.x) * widget.menuWidth / 2;
+      final double menuTop = targetY - (1 + _morphAlignment.y) * menuHeight / 2;
+
+      // Horizontal adjustment
+      if (menuLeft < padding.left) {
+        hOffset = padding.left - menuLeft;
+      } else if (screenWidth.isFinite &&
+          menuLeft + widget.menuWidth > screenWidth - padding.right) {
+        hOffset = (screenWidth - padding.right) - (menuLeft + widget.menuWidth);
+      }
+
+      // Vertical adjustment
+      if (menuTop < padding.top) {
+        vOffset = padding.top - menuTop;
+      } else if (screenHeight.isFinite &&
+          menuTop + menuHeight > screenHeight - padding.bottom) {
+        vOffset = (screenHeight - padding.bottom) - (menuTop + menuHeight);
+      }
+    }
+
+    setState(() {
+      _horizontalOffset = hOffset;
+      _verticalOffset = vOffset;
+    });
 
     _overlayController.show();
     // No velocity hint: overdamped spring starts from rest for a clean,
@@ -362,8 +438,8 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                     // By scaling the x/y offsets with the width/height curves,
                     // its edges stay perfectly pinned while it grows!
                     Positioned(
-                      left: _triggerGlobalPosition.dx + tw / 2.0 + currentDx - currentWidth / 2.0,
-                      top: _triggerGlobalPosition.dy + th / 2.0 + currentDy - currentHeight / 2.0,
+                      left: _triggerGlobalPosition.dx + tw / 2.0 + currentDx - currentWidth / 2.0 + (_horizontalOffset * value),
+                      top: _triggerGlobalPosition.dy + th / 2.0 + currentDy - currentHeight / 2.0 + (_verticalOffset * value),
                       child: IgnorePointer(
                         ignoring: value < 0.8,
                         child: _buildMorphingContainer(value, sizeT, currentWidth, currentHeight),
@@ -532,7 +608,8 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                             child: Container(
                               decoration: BoxDecoration(
                                 color: widget.selectionColor,
-                                borderRadius: BorderRadius.circular(24),
+                                borderRadius: BorderRadius.circular(
+                                    widget.itemBorderRadius),
                                 border: Border.all(
                                   color: const Color(0x0DFFFFFF), // 5% white border
                                   width: 0.5,

@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../src/renderer/liquid_glass_renderer.dart';
-import '../../src/types/glass_interaction_behavior.dart';
-import '../../utils/glass_spring.dart';
 
 import '../../constants/glass_defaults.dart';
-import '../../types/glass_quality.dart';
-import '../../utils/draggable_indicator_physics.dart';
-import '../shared/adaptive_liquid_glass_layer.dart';
-import '../shared/animated_glass_indicator.dart';
+import '../../src/renderer/liquid_glass_renderer.dart';
+import '../../src/types/glass_interaction_behavior.dart';
 import '../../theme/glass_theme_helpers.dart';
+import '../../types/glass_quality.dart';
+import '../shared/adaptive_liquid_glass_layer.dart';
+import 'shared/segmented_control_internal.dart';
 
 /// A glass morphism segmented control following Apple's design patterns.
 ///
@@ -130,7 +128,7 @@ class GlassSegmentedControl extends StatefulWidget {
     this.useOwnLayer = false,
     this.quality,
     this.backgroundKey,
-    // ── iOS 26 interaction ────────────────────────────────────────────────────
+    // ── iOS 26 interaction ──────────────────────────────────────────────────
     this.interactionBehavior = GlassInteractionBehavior.full,
     this.glowColor,
     this.glowRadius = 1.5,
@@ -275,7 +273,7 @@ class GlassSegmentedControl extends StatefulWidget {
   /// soft white (~12% opacity) — same as [GlassTextField].
   final Color? glowColor;
 
-  /// Spread radius of the glow relative to the indicator’s shorter dimension.
+  /// Spread radius of the glow relative to the indicator's shorter dimension.
   ///
   /// Defaults to `1.5` (150%), matching [GlassTextField].
   final double glowRadius;
@@ -299,12 +297,13 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
     // Use custom glass settings or optimized defaults
     final glassSettings = widget.glassSettings ??
         const LiquidGlassSettings(
-            thickness: GlassDefaults.thickness,
-            blur: GlassDefaults.blur,
-            chromaticAberration: GlassDefaults.chromaticAberration,
-            lightIntensity: GlassDefaults.lightIntensity,
-            refractiveIndex: GlassDefaults.refractiveIndex,
-            lightAngle: GlassDefaults.lightAngle);
+          thickness: GlassDefaults.thickness,
+          blur: GlassDefaults.blur,
+          chromaticAberration: GlassDefaults.chromaticAberration,
+          lightIntensity: GlassDefaults.lightIntensity,
+          refractiveIndex: GlassDefaults.refractiveIndex,
+          lightAngle: GlassDefaults.lightAngle,
+        );
 
     final backgroundColor = widget.backgroundColor ?? _defaultBackgroundColor;
 
@@ -316,7 +315,7 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
         borderRadius: BorderRadius.circular(widget.borderRadius),
       ),
       padding: widget.padding,
-      child: _SegmentedControlContent(
+      child: SegmentedControlContent(
         segments: widget.segments,
         selectedIndex: widget.selectedIndex,
         onSegmentSelected: widget.onSegmentSelected,
@@ -349,332 +348,3 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
     return isolatedControl;
   }
 }
-
-// =============================================================================
-// Internal Content Widget
-// =============================================================================
-
-/// Internal widget that manages segments and indicator.
-class _SegmentedControlContent extends StatefulWidget {
-  const _SegmentedControlContent({
-    required this.segments,
-    required this.selectedIndex,
-    required this.onSegmentSelected,
-    required this.selectedTextStyle,
-    required this.unselectedTextStyle,
-    required this.indicatorColor,
-    required this.borderRadius,
-    required this.quality,
-    this.indicatorSettings,
-    this.backgroundKey,
-    this.interactionBehavior = GlassInteractionBehavior.full,
-    this.glowColor,
-    this.glowRadius = 1.5,
-  });
-
-  final List<String> segments;
-  final int selectedIndex;
-  final ValueChanged<int> onSegmentSelected;
-  final TextStyle? selectedTextStyle;
-  final TextStyle? unselectedTextStyle;
-  final Color? indicatorColor;
-  final LiquidGlassSettings? indicatorSettings;
-  final double borderRadius;
-  final GlassQuality quality;
-  final GlobalKey? backgroundKey;
-  final GlassInteractionBehavior interactionBehavior;
-  final Color? glowColor;
-  final double glowRadius;
-
-  @override
-  State<_SegmentedControlContent> createState() =>
-      _SegmentedControlContentState();
-}
-
-class _SegmentedControlContentState extends State<_SegmentedControlContent> {
-  // Cache default colors to avoid allocations
-  static const _defaultIndicatorColor =
-      Color(0x33FFFFFF); // white.withValues(alpha: 0.2)
-  static const _defaultUnselectedTextColor =
-      Color(0x99FFFFFF); // white.withValues(alpha: 0.6)
-
-  bool _isDown = false;
-  bool _isDragging = false;
-
-  // Current horizontal alignment of the indicator (-1 to 1)
-  late double _xAlign = _computeXAlignmentForSegment(widget.selectedIndex);
-
-  @override
-  void didUpdateWidget(covariant _SegmentedControlContent oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    // Update alignment when segment index or count changes
-    if (oldWidget.selectedIndex != widget.selectedIndex ||
-        oldWidget.segments.length != widget.segments.length) {
-      setState(() {
-        _xAlign = _computeXAlignmentForSegment(widget.selectedIndex);
-      });
-    }
-  }
-
-  /// Converts a segment index to horizontal alignment (-1 to 1).
-  double _computeXAlignmentForSegment(int segmentIndex) {
-    return DraggableIndicatorPhysics.computeAlignment(
-      segmentIndex,
-      widget.segments.length,
-    );
-  }
-
-  /// Converts a global drag position to horizontal alignment (-1 to 1).
-  double _getAlignmentFromGlobalPosition(Offset globalPosition) {
-    return DraggableIndicatorPhysics.getAlignmentFromGlobalPosition(
-      globalPosition,
-      context,
-      widget.segments.length,
-    );
-  }
-
-  void _onDragDown(DragDownDetails details) {
-    setState(() {
-      _isDown = true;
-    });
-  }
-
-  void _onDragUpdate(DragUpdateDetails details) {
-    setState(() {
-      _isDragging = true;
-      _xAlign = _getAlignmentFromGlobalPosition(details.globalPosition);
-    });
-  }
-
-  void _onDragEnd(DragEndDetails details) {
-    setState(() {
-      _isDragging = false;
-      _isDown = false;
-    });
-
-    final box = context.findRenderObject()! as RenderBox;
-
-    // Convert alignment to 0-1 range
-    final currentRelativeX = (_xAlign + 1) / 2;
-    final segmentWidth = 1.0 / widget.segments.length;
-
-    // Calculate velocity in relative units
-    final indicatorWidth = 1.0 / widget.segments.length;
-    final draggableRange = 1.0 - indicatorWidth;
-    final velocityX =
-        (details.velocity.pixelsPerSecond.dx / box.size.width) / draggableRange;
-
-    // Determine target segment based on position and velocity
-    final targetSegmentIndex = _computeTargetSegment(
-      currentRelativeX: currentRelativeX,
-      velocityX: velocityX,
-      segmentWidth: segmentWidth,
-    );
-
-    // Update alignment to target segment
-    _xAlign = _computeXAlignmentForSegment(targetSegmentIndex);
-
-    // Notify parent if segment changed
-    if (targetSegmentIndex != widget.selectedIndex) {
-      widget.onSegmentSelected(targetSegmentIndex);
-    }
-  }
-
-  /// Computes the target segment index based on drag position and velocity.
-  int _computeTargetSegment({
-    required double currentRelativeX,
-    required double velocityX,
-    required double segmentWidth,
-  }) {
-    return DraggableIndicatorPhysics.computeTargetIndex(
-      currentRelativeX: currentRelativeX,
-      velocityX: velocityX,
-      itemWidth: segmentWidth,
-      itemCount: widget.segments.length,
-    );
-  }
-
-  void _onSegmentTap(int index) {
-    if (index != widget.selectedIndex) {
-      widget.onSegmentSelected(index);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final indicatorColor = widget.indicatorColor ?? _defaultIndicatorColor;
-    final targetAlignment = _computeXAlignmentForSegment(widget.selectedIndex);
-
-    // Indicator should be slightly less rounded than container for proper
-    // padding
-    final indicatorRadius = widget.borderRadius - 3;
-
-    final selectedTextStyle = widget.selectedTextStyle ??
-        const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        );
-
-    final unselectedTextStyle = widget.unselectedTextStyle ??
-        const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          color: _defaultUnselectedTextColor,
-        );
-
-    return Listener(
-      // Raw pointer events fire BEFORE gesture recognizers and never compete
-      // in the gesture arena, so _isDown is always set on the very first event.
-      onPointerDown: (_) {
-        setState(() => _isDown = true);
-      },
-      // On finger/button lift, clear _isDown if not mid-drag.
-      // Listener fires regardless of which gesture recognizer won the arena.
-      onPointerUp: (_) {
-        if (!_isDragging) {
-          setState(() => _isDown = false);
-        }
-      },
-      onPointerCancel: (_) {
-        if (!_isDragging) {
-          setState(() => _isDown = false);
-        }
-      },
-      child: GestureDetector(
-        onHorizontalDragDown: _onDragDown,
-        onHorizontalDragUpdate: _onDragUpdate,
-        onHorizontalDragEnd: _onDragEnd,
-        onHorizontalDragCancel: () {
-          if (_isDragging) {
-            final currentRelativeX = (_xAlign + 1) / 2;
-            final targetSegmentIndex = _computeTargetSegment(
-              currentRelativeX: currentRelativeX,
-              velocityX: 0,
-              segmentWidth: 1.0 / widget.segments.length,
-            );
-            setState(() {
-              _isDragging = false;
-              _isDown = false;
-              _xAlign = _computeXAlignmentForSegment(targetSegmentIndex);
-            });
-            if (targetSegmentIndex != widget.selectedIndex) {
-              widget.onSegmentSelected(targetSegmentIndex);
-            }
-          } else {
-            setState(() =>
-                _xAlign = _computeXAlignmentForSegment(widget.selectedIndex));
-          }
-        },
-        child: VelocitySpringBuilder(
-          value: _xAlign,
-          springWhenActive: GlassSpring.interactive(),
-          springWhenReleased: GlassSpring.snappy(
-            duration: const Duration(milliseconds: 350),
-          ),
-          active: _isDragging,
-          builder: (context, value, velocity, child) {
-            final alignment = Alignment(value, 0);
-
-            return SpringBuilder(
-              spring: GlassSpring.snappy(
-                duration: const Duration(milliseconds: 300),
-              ),
-              // Show glass indicator when: down, dragging, OR close to target.
-              // DX1: threshold lowered 0.15 → 0.05 so the indicator stays visible
-              // through more of the settling spring, making the animation legible
-              // even on desktop where drag velocity is zero.
-              value: _isDown || (alignment.x - targetAlignment).abs() > 0.05
-                  ? 1.0
-                  : 0.0,
-              builder: (context, thickness, child) {
-                // Wrap entire indicator stack in RepaintBoundary to prevent
-                // background and glass indicators from causing separate flickers
-                return RepaintBoundary(
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      // Subtle background indicator (shown when not dragging)
-                      // Parent isolation prevents flickering with GlassCard
-                      // Unified Glass Indicator with jelly physics
-                      // The internal cross-fade in AnimatedGlassIndicator prevents flickering
-                      AnimatedGlassIndicator(
-                        velocity: velocity,
-                        itemCount: widget.segments.length,
-                        alignment: alignment,
-                        thickness: thickness,
-                        quality: widget.quality,
-                        indicatorColor: indicatorColor,
-                        isBackgroundIndicator: false,
-                        borderRadius: indicatorRadius,
-                        glassSettings: widget.indicatorSettings,
-                        backgroundKey: widget.backgroundKey,
-                      ),
-
-                      // Segment labels (always on top, not affected by glass)
-                      child!,
-                    ],
-                  ),
-                );
-              },
-              child: Row(
-                children: [
-                  for (var i = 0; i < widget.segments.length; i++)
-                    Expanded(
-                      child: RepaintBoundary(
-                        child: GestureDetector(
-                          onTap: () => _onSegmentTap(i),
-                          onTapDown: (_) {
-                            // DX1: trigger selection immediately on touch down
-                            if (i != widget.selectedIndex) {
-                              widget.onSegmentSelected(i);
-                            }
-                          },
-                          behavior: HitTestBehavior.opaque,
-                          child: Semantics(
-                            button: true,
-                            selected: widget.selectedIndex == i,
-                            label: widget.segments[i],
-                            child: Center(
-                              child: AnimatedDefaultTextStyle(
-                                duration: const Duration(milliseconds: 200),
-                                style: widget.selectedIndex == i
-                                    ? selectedTextStyle
-                                    : unselectedTextStyle,
-                                child: Text(
-                                  widget.segments[i],
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
-          child: Row(
-            children: [
-              for (var i = 0; i < widget.segments.length; i++)
-                Expanded(
-                  child: Center(
-                    child: Text(widget.segments[i]),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// =============================================================================
-// Jelly Physics Transform
-// =============================================================================
-
-/// Applies jelly transform with organic squash and stretch based on velocity.

@@ -210,17 +210,15 @@ class LiquidGlassWidgets {
     Widget result = GlassBackdropScope(child: child);
 
     if (adaptiveQuality) {
-      // When no adaptiveConfig is given: start at `standard` while Phase 2
-      // benchmarks the device (~3 s). Phase 2 still runs and promotes to
-      // `premium` if the device is fast enough.
+      // When no adaptiveConfig is given: GlassAdaptiveScope.initState() seeds
+      // the first frame at GlassQuality.standard while Phase 2 benchmarks the
+      // device (~3 s). Phase 2 then promotes to `premium` if the device passes
+      // the warmup threshold — no caller config needed.
       //
       // When the caller provides adaptiveConfig: use their settings as-is.
-      // A null initialQuality means "run Phase 2 fresh" — do NOT override it
-      // with our standard default, or Phase 2 is skipped and the device falls
-      // back to a stale in-session cache (restoredFromCache on every launch).
-      final config = adaptiveConfig ?? const GlassAdaptiveScopeConfig(
-        initialQuality: GlassQuality.standard,
-      );
+      // If initialQuality is null, Phase 2 still runs fresh and promotes/demotes
+      // from the conservative standard starting point.
+      final config = adaptiveConfig ?? const GlassAdaptiveScopeConfig();
 
       result = GlassAdaptiveScope(
         minQuality: config.minQuality,

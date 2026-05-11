@@ -120,6 +120,8 @@ class GlassTabBar extends StatefulWidget {
     this.indicatorSettings,
     this.backgroundKey,
     this.maskingQuality = MaskingQuality.high,
+    this.dividerSettings,
+    this.indicatorShadow,
   })  : assert(tabs.length >= 2, 'GlassTabBar requires at least 2 tabs'),
         assert(
           selectedIndex >= 0 && selectedIndex < tabs.length,
@@ -206,6 +208,28 @@ class GlassTabBar extends StatefulWidget {
   /// Optional background key for Skia/Web refraction.
   final GlobalKey? backgroundKey;
 
+  /// Settings for the vertical dividers between segments.
+  final DividerSettings? dividerSettings;
+
+  /// Optional shadows for the active indicator pill.
+  ///
+  /// Applied only when the pill is idle (solid color) — automatically
+  /// suppressed during the liquid glass drag animation so it does not
+  /// interact with the BackdropFilter blur. Useful for improving contrast
+  /// in light-mode themes where the pill and track share similar colours.
+  ///
+  /// Example:
+  /// ```dart
+  /// indicatorShadow: [
+  ///   BoxShadow(
+  ///     color: Colors.black.withOpacity(0.12),
+  ///     blurRadius: 4,
+  ///     offset: Offset(0, 1),
+  ///   ),
+  /// ]
+  /// ```
+  final List<BoxShadow>? indicatorShadow;
+
   @override
   State<GlassTabBar> createState() => _GlassTabBarState();
 }
@@ -281,6 +305,8 @@ class _GlassTabBarState extends State<GlassTabBar> {
         indicatorSettings: widget.indicatorSettings,
         backgroundKey: widget.backgroundKey,
         maskingQuality: widget.maskingQuality,
+        dividerSettings: widget.dividerSettings,
+        indicatorShadow: widget.indicatorShadow,
         tabBarBorderRadius: borderRadius,
       ),
     );
@@ -321,4 +347,89 @@ class GlassTab {
 
   /// Semantic label for accessibility.
   final String? semanticLabel;
+}
+
+// =============================================================================
+// DividerSettings — configuration for inter-tab dividers
+// =============================================================================
+
+/// Configuration for optional vertical dividers between tabs in [GlassTabBar].
+///
+/// Dividers are rendered as thin vertical lines between tab items and can
+/// automatically hide themselves adjacent to the active tab.
+class DividerSettings {
+  /// Top indent of the divider line.
+  final double indent;
+
+  /// Bottom indent of the divider line.
+  final double endIndent;
+
+  /// Width (thickness) of the divider line.
+  final double thickness;
+
+  /// Optional custom decoration. Defaults to a white 20% opacity line.
+  final BoxDecoration? decoration;
+
+  /// Duration of the show/hide animation. Defaults to 200ms.
+  final Duration? duration;
+
+  /// Curve of the show/hide animation. Defaults to [Curves.easeInOut].
+  final Curve? curve;
+
+  /// When true, dividers adjacent to the selected tab are hidden automatically.
+  final bool isHideAutomatically;
+
+  const DividerSettings({
+    this.indent = 0,
+    this.endIndent = 0,
+    this.thickness = 1,
+    this.decoration,
+    this.duration,
+    this.curve,
+    this.isHideAutomatically = true,
+  });
+
+  @override
+  bool operator ==(Object other) {
+    return other is DividerSettings &&
+        indent == other.indent &&
+        endIndent == other.endIndent &&
+        thickness == other.thickness &&
+        decoration == other.decoration &&
+        duration == other.duration &&
+        curve == other.curve &&
+        isHideAutomatically == other.isHideAutomatically;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+        indent,
+        endIndent,
+        thickness,
+        decoration,
+        duration,
+        curve,
+        isHideAutomatically,
+      ]);
+
+  /// Returns a copy of this [DividerSettings] with the given fields replaced.
+  DividerSettings copyWith({
+    double? indent,
+    double? endIndent,
+    double? thickness,
+    BoxDecoration? decoration,
+    Duration? duration,
+    Curve? curve,
+    bool? isHideAutomatically,
+  }) {
+    return DividerSettings(
+      indent: indent ?? this.indent,
+      endIndent: endIndent ?? this.endIndent,
+      thickness: thickness ?? this.thickness,
+      decoration: decoration ?? this.decoration,
+      duration: duration ?? this.duration,
+      curve: curve ?? this.curve,
+      isHideAutomatically: isHideAutomatically ?? this.isHideAutomatically,
+    );
+  }
 }

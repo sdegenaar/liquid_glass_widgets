@@ -57,6 +57,7 @@ void main() {
     testWidgets('defaults to maxQuality when initialQuality is null',
         (tester) async {
       GlassAdaptiveScopeData? captured;
+      GlassQualityAdapter.clearSessionCache();
       await tester.pumpWidget(_app(
         GlassAdaptiveScope(
           maxQuality: GlassQuality.premium,

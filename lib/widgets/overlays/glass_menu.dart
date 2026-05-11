@@ -13,6 +13,29 @@ import '../../theme/glass_theme_helpers.dart';
 
 part 'shared/glass_menu_internal.dart';
 
+/// Controls which edge/corner of the trigger button the menu expands from.
+///
+/// When [GlassMenu.menuAlignment] is set to one of these values, the menu
+/// anchors its opposite edge to that point on the trigger. For example,
+/// [topLeft] anchors the menu's right edge to the trigger's right edge, so
+/// the body expands to the left.
+///
+/// Use [none] (the default) to let the menu auto-detect the best alignment
+/// based on the trigger's screen position.
+enum GlassMenuAlignment {
+  /// Auto-detect alignment based on screen position (default behaviour).
+  none,
+  topLeft,
+  topCenter,
+  topRight,
+  centerLeft,
+  center,
+  centerRight,
+  bottomLeft,
+  bottomCenter,
+  bottomRight,
+}
+
 /// A liquid glass context menu that morphs from its trigger button.
 ///
 /// [GlassMenu] implements the iOS 26 "liquid glass" morphing pattern where
@@ -61,13 +84,24 @@ class GlassMenu extends StatefulWidget {
   /// Typically contains [GlassMenuItem] and [GlassMenuDivider].
   final List<Widget> items;
 
+  /// The alignment of the menu relative to the trigger.
+  final GlassMenuAlignment? menuAlignment;
+
+  /// Whether to automatically adjust the menu position to keep it on screen.
+  final bool autoAdjustToScreen;
+
   /// Width of the expanded menu.
   final double menuWidth;
 
   /// Border radius of the expanded menu.
   ///
-  /// Defaults to 28.0 for a modern rounded look.
+  /// Defaults to 32.0 for a modern rounded look.
   final double menuBorderRadius;
+
+  /// Border radius of the selection highlight and menu items.
+  ///
+  /// Defaults to 24.0.
+  final double itemBorderRadius;
 
   /// Custom glass settings for the menu container.
   final LiquidGlassSettings? glassSettings;
@@ -134,14 +168,23 @@ class GlassMenu extends StatefulWidget {
   /// If provided, the menu will have a fixed height and internal scrolling.
   final double? menuHeight;
 
+  /// The minimum distance between the menu and the screen edges.
+  ///
+  /// Only applies when [autoAdjustToScreen] is true.
+  /// Defaults to 0.0 (touches the edge). Set to a value like 12.0 for a safe margin.
+  final EdgeInsets menuPadding;
+
   /// Creates a liquid glass menu.
   const GlassMenu({
     super.key,
     this.trigger,
     this.triggerBuilder,
     required this.items,
+    this.menuAlignment,
+    this.autoAdjustToScreen = false,
     this.menuWidth = 200,
     this.menuBorderRadius = 32.0,
+    this.itemBorderRadius = 24.0,
     this.glassSettings,
     this.quality,
     this.stretch = 0.5,
@@ -153,6 +196,7 @@ class GlassMenu extends StatefulWidget {
     this.allowPositiveY,
     this.allowNegativeY,
     this.menuHeight,
+    this.menuPadding = EdgeInsets.zero,
     this.selectionColor = const Color(0x3DFFFFFF),
     this.enableInteractionGlow = true,
     this.glowOnTapOnly = true,
