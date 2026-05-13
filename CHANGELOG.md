@@ -1,4 +1,45 @@
+# 0.11.0
+
+## ✨ New — Liquid Morphing Engine for `GlassMenu`
+
+This release ships a brand-new internal **Liquid Morphing Engine** that drives the open/close animation of `GlassMenu`. The menu no longer simply fades or scales — it morphs organically using physics-based spring curves and a hand-tuned teardrop SDF that stretches and recoils as the user interacts with it.
+
+### Dual-Curve Liquid Morphing (`GlassMenu`)
+
+- **Teardrop open animation** · The menu container grows from the trigger point along a dual-curve SDF path: the leading edge opens with a spring that pulls the glass out, while the trailing edge follows with independent damping, producing the iOS 26 "bubble emerging from button" look.
+- **Rubber-band close physics** · On dismiss the teardrop recoils using a critically-damped spring with a rubber-band overshoot tail, matching the tactile snap of native iOS context menus.
+- **Velocity-bump alignment** · The spring's initial velocity is seeded from the user's touch velocity at the moment of release, so fast flicks produce snappier closes and slow releases produce slower, more deliberate ones.
+- **Handoff latching** · If the user re-opens the menu during the close animation, the morphing engine inherits the in-flight velocity and smoothly reverses — no pop or cut.
+- **Blob scaling** · The glass blob scales relative to the trigger button's size and the menu's computed content height, so short menus and tall menus both receive proportionally correct teardrop curvature.
+
+### Spring Physics Refinements
+
+- Critical damping (`ζ = 1.0`) on all spring controllers prevents oscillation artifacts during rapid successive opens.
+- `interactionScale`, `stretch`, and `stretchResistance` are fully integrated into the morphing path — the container stretches on drag and recoils on release using the same spring solver as `LiquidStretch`.
+
+## 🐛 Fixes
+
+- **`GlassMenu` — safe area / notch clipping on iOS and Android** · The menu's position and maximum height were previously computed from `MediaQuery.padding`, which is consumed by ancestor `SafeArea` widgets and reports `0` inside a fully-safe tree. Switched to `View.of(context).padding` (raw hardware insets) so the menu is always clamped correctly regardless of how many `SafeArea` widgets are in the ancestor chain. Fixes the menu appearing under the Dynamic Island on iPhone 14 Pro and similar devices.
+
+## 🗂 Example restructure — `demos/` suite
+
+The `example/` package has been reorganised for a cleaner public-facing demo experience:
+
+- New `example/lib/demos/` folder containing seven self-contained, copy-pasteable demos:
+  - **`glass_menu_demo.dart`** — all 9 `GlassMenuAlignment` positions, scrollable item list
+  - **`glass_tab_bar_demo.dart`** — scrollable `GlassTabBar` with dynamic tab add
+  - **`glass_modal_sheet_demo.dart`** — all sheet states (peek / half / full), Apple Maps peek style
+  - **`glass_bottom_bar_demo.dart`** — magic-lens masking with `GlassBottomBar`
+  - **`bottom_bar_tab_width_demo.dart`** — `tabWidth` on both bar variants side-by-side
+  - **`searchable_bar_demo.dart`** — `GlassSearchableBottomBar` edge cases
+  - **`shape_debug_demo.dart`** — `GlassButton` shape visualiser
+
+- `example/lib/modal_sheet_showcase/` removed (file moved to `demos/glass_modal_sheet_demo.dart`).
+
+---
+
 # 0.10.10
+
 
 Thanks to [@g3mf0r](https://github.com/g3mf0r) for [PR #55](https://github.com/sdegenaar/liquid_glass_widgets/pull/55). 🙏
 
