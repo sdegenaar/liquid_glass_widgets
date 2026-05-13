@@ -27,7 +27,7 @@ The `example/` package has been reorganised for a cleaner public-facing demo exp
 
 - New `example/lib/demos/` folder containing seven self-contained, copy-pasteable demos:
   - **`glass_menu_demo.dart`** — all 9 `GlassMenuAlignment` positions, scrollable item list
-  - **`glass_tab_bar_demo.dart`** — scrollable `GlassTabBar` with dynamic tab add
+  - **`glass_tab_bar_scrollable_demo.dart`** — scrollable `GlassTabBar` with dynamic tab add
   - **`glass_modal_sheet_demo.dart`** — all sheet states (peek / half / full), Apple Maps peek style
   - **`glass_bottom_bar_demo.dart`** — magic-lens masking with `GlassBottomBar`
   - **`bottom_bar_tab_width_demo.dart`** — `tabWidth` on both bar variants side-by-side
