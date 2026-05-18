@@ -106,6 +106,54 @@ void main() {
     });
   });
 
+  // _ShapeClip — the private helper used by _FrostedFallback to route
+  // RoundedRectangleBorder-resolving shapes through ClipRRect (so the
+  // Flutter PR #177551 PlatformView clip-forward fix takes effect) and
+  // everything else through ClipPath. Exercise both branches that
+  // aren't covered by the LiquidRoundedSuperellipse cases above.
+  group('AdaptiveGlass — _ShapeClip shape branches via _FrostedFallback', () {
+    testWidgets(
+        'LiquidVerticalRoundedSuperellipse routes through ClipRRect.vertical',
+        (tester) async {
+      await tester.pumpWidget(_wrap(const SizedBox(
+        width: 200,
+        height: 100,
+        child: AdaptiveGlass(
+          shape: LiquidVerticalRoundedSuperellipse(
+            topRadius: 18,
+            bottomRadius: 4,
+          ),
+          settings: _settings,
+          quality: GlassQuality.minimal,
+          child: SizedBox.expand(),
+        ),
+      )));
+      await tester.pump();
+      // Asymmetric vertical rounded rect should still resolve to
+      // ClipRRect (with BorderRadius.vertical) via _ShapeClip.
+      expect(find.byType(ClipRRect), findsWidgets);
+    });
+
+    testWidgets('LiquidOval falls back to ClipPath via _ShapeClip',
+        (tester) async {
+      await tester.pumpWidget(_wrap(const SizedBox(
+        width: 80,
+        height: 80,
+        child: AdaptiveGlass(
+          shape: LiquidOval(),
+          settings: _settings,
+          quality: GlassQuality.minimal,
+          child: SizedBox.expand(),
+        ),
+      )));
+      await tester.pump();
+      // LiquidOval is intentionally NOT routed through ClipRRect (see
+      // _ShapeClip doc comment) — verify the ClipPath fallback path is
+      // taken.
+      expect(find.byType(ClipPath), findsWidgets);
+    });
+  });
+
   group('AdaptiveGlass — grouped factory', () {
     testWidgets('grouped() returns AdaptiveGlass', (tester) async {
       await tester.pumpWidget(_wrap(SizedBox(
