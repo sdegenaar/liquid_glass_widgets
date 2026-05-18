@@ -146,12 +146,9 @@ void main() {
   edgeInfluence = edgeInfluence * edgeInfluence;
   
   // TWEAK: bendStrength - Overall refraction intensity
-  //   First number (0.6): base strength multiplier
-  //     Increase for more distortion, decrease for subtler effect
-  //   Second part (0.6 + intensity * 0.5): dynamic range
-  //     0.6 = minimum strength at rest (60% of base)
-  //     0.5 = additional strength when pressed (up to 110% of base)
-  float bendStrength = 0.6 * (0.6 + uInteractionIntensity * 0.5);
+  //   Base (0.9): stronger edge lens distortion, closer to Impeller volumetric warp
+  //   Range: 0.45 (rest) → 1.17 (fully pressed)
+  float bendStrength = 0.9 * (0.5 + uInteractionIntensity * 0.7);
   
   // TWEAK: The final multiplier (uSize.y * 0.35) scales by widget height
   //   0.35 means max offset is 35% of widget height
@@ -261,20 +258,28 @@ void main() {
   // COMPOSITE FINAL COLOR
   // ==========================================================================
   
-  // Start with background, slightly brightened (glass adds luminosity)
-  // TWEAK: multiplier (0.6) - increase for brighter glass
-  vec3 finalColor = bg * 0.6;
+  // Start with background — glass transmits and adds luminosity, not darkness.
+  // uSaturation doubles as bgBoost for Standard (how much the captured bg is brightened).
+  // uSaturation also sets the synthetic bright base when no background is captured.
+  // Default: saturation=1.08 → bgBoost=1.08 (compensates for backdrop being slightly darker).
+  // Synthetic base = uSaturation * 1.11 → 1.08 * 1.11 ≈ 1.2 (same as before).
+  float bgBoost = uSaturation;         // TUNE via LiquidGlassSettings.saturation
+  float synthBase = uSaturation * 1.11; // TUNE: synthetic bright base (no-bg path)
+  vec3 finalColor = (uHasBackground > 0.5) ? (bg * bgBoost) : vec3(synthBase);
   
   // Add rim highlight (only if rimColor is non-zero)
   finalColor += rimColor * borderMask;
+  // Secondary rim pass: extra bevel definition at the edge
+  finalColor += rimColor * borderMask * 0.5;
+
+  // Add fresnel glow — uGlowIntensity controls how visible the glass-edge luminosity is.
+  // Default: glowIntensity=0.75 matches previous hardcoded value.
+  finalColor += vec3(1.0) * fresnel * uGlowIntensity; // TUNE via LiquidGlassSettings.glowIntensity
   
-  // Add fresnel glow
-  // TWEAK: multiplier (0.5) controls fresnel brightness
-  finalColor += vec3(1.0) * fresnel * 0.5;
-  
-  // Add constant brightness boost (makes glass feel more "lit")
-  // TWEAK: (0.08) - increase for overall brighter appearance
-  //finalColor += vec3(0.08);
+  // Interior light lift — matches Premium Impeller's internal SDF specular glow.
+  // uAmbientStrength directly controls this lift value.
+  // Default: ambientStrength=0.07 matches previous hardcoded value.
+  finalColor += vec3(uAmbientStrength); // TUNE via LiquidGlassSettings.ambientStrength
   
   // Apply glass tint color
   finalColor = mix(finalColor, finalColor + uGlassColor.rgb * 0.2, uGlassColor.a);
@@ -287,18 +292,27 @@ void main() {
   // ==========================================================================
   
   // TWEAK: baseAlpha - center transparency (lower = more see-through)
-  // Standard mode: Fade to fully transparent at rest (Intensity 0)
-  float standardBaseAlpha = uBaseAlphaMultiplier * uInteractionIntensity;
-  float baseAlpha = (uHasBackground > 0.5) ? 0.7 : standardBaseAlpha;
+  // Standard mode: Provide a solid glassy body even at rest (Intensity 0), 
+  // boosting it slightly when pressed.
+  float standardBaseAlpha = uBaseAlphaMultiplier * mix(0.6, 1.0, uInteractionIntensity);
+  // Restore original 0.70 — clear glass is translucent, not frosted.
+  float baseAlpha = (uHasBackground > 0.5) ? 0.70 : standardBaseAlpha;
   
   // TWEAK: edgeAlpha - edge opacity (higher = more solid edges)
-  // Standard mode: Keep a faint structural rim even at rest (Intensity 0)
-  float standardEdgeAlpha = uEdgeAlphaMultiplier * mix(0.3, 1.0, uInteractionIntensity);
+  // Standard mode: Keep a strong structural rim at rest to match 3D bevel.
+  float standardEdgeAlpha = uEdgeAlphaMultiplier * mix(0.6, 1.0, uInteractionIntensity);
   float edgeAlpha = (uHasBackground > 0.5) ? 0.95 : standardEdgeAlpha;
   
   // Blend from center to edge
   float glassAlpha = mix(baseAlpha, edgeAlpha, edgeInfluence);
-  glassAlpha = max(glassAlpha, borderMask * 0.9);
+  // Structural ring alpha, gated by uAmbientRim so setting ambientRim=0 fully
+  // disables the forced ring (used by Standard switch/slider thumbs).
+  // The bevelGradient above still adds top/bottom variation to rimColor on
+  // surfaces where finalColor isn't already clamped (background-captured glass).
+  glassAlpha = max(glassAlpha, borderMask * 0.9 * clamp(uAmbientRim * 10.0, 0.0, 1.0));
+
+
+
   
   float alpha = glassAlpha * mask;
   

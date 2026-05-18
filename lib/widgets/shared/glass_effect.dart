@@ -181,8 +181,16 @@ class _GlassEffectState extends State<GlassEffect>
   GlobalKey? get _effectiveKey => widget.backgroundKey ?? _cachedScopeKey;
 
   void _updateTicker() {
-    final bool shouldCapture =
-        widget.interactionIntensity > 0.01 && _effectiveKey != null;
+    // Background capture requirements:
+    //  1. Widget is actively interacting (cost only paid during gesture)
+    //  2. A valid capture key is available
+    //  3. blur > 0 — when blur is 0 the component intentionally uses synthetic
+    //     glass (e.g. GlassSwitch thumb). Capturing the background would let the
+    //     green track bleed through as a dark/tinted frosted overlay, which
+    //     contradicts the intended white glass bloom effect.
+    final bool shouldCapture = widget.interactionIntensity > 0.01 &&
+        _effectiveKey != null &&
+        widget.settings.blur > 0.0;
     if (shouldCapture) {
       if (!_ticker.isActive) {
         _ticker.start();
@@ -207,6 +215,10 @@ class _GlassEffectState extends State<GlassEffect>
     final boundary =
         key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
     if (boundary == null) return;
+
+    // Guard: boundary may not be laid out yet (e.g. when the glass widget
+    // is mounted early for Standard quality before the first frame completes).
+    if (!boundary.hasSize) return;
 
     final currentSize = boundary.size;
     final currentPos = (key.currentContext?.findRenderObject() as RenderBox?)
@@ -363,6 +375,10 @@ class _GlassEffectState extends State<GlassEffect>
     final effectiveKey = widget.backgroundKey ?? LiquidGlassScope.of(context);
     final shader = _activeShader;
 
+    // VQ4: Content-adaptive glass strength proxy.
+    final isDark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+    final backdropLuma = isDark ? 0.15 : 0.85;
+
     // 3. Selection Logic:
 
     // Path A: Minimal (shader-free — BackdropFilter + ClipPath via _FrostedFallback)
@@ -425,10 +441,10 @@ class _GlassEffectState extends State<GlassEffect>
     // Ratios are identical to AdaptiveGlass (thickness × 0.4, lightIntensity × 0.6)
     // so the visual language stays consistent between static and interactive surfaces.
     //
-    // NOTE: glassColor.alpha is intentionally NOT boosted here (unlike AdaptiveGlass).
+    // NOTE: glassColor.alpha is intentionally NOT normalised here (unlike AdaptiveGlass).
     // Interactive thumb body opacity is already governed by
     //   standardBaseAlpha = baseAlphaMultiplier × interactionIntensity
-    // inside the shader — boosting alpha here would double-count it.
+    // inside the shader — normalising alpha here would double-count it.
     final LiquidGlassSettings effectiveSettings;
     if (widget.quality == GlassQuality.standard) {
       final base = widget.settings;
@@ -452,6 +468,7 @@ class _GlassEffectState extends State<GlassEffect>
           shape: widget.shape,
           interactionIntensity: widget.interactionIntensity,
           densityFactor: widget.densityFactor,
+          backdropLuma: backdropLuma,
           backgroundImage: _backgroundImage,
           backgroundKey: effectiveKey,
           devicePixelRatio: View.of(context).devicePixelRatio,
@@ -479,6 +496,7 @@ class _GlassEffectState extends State<GlassEffect>
           shape: widget.shape,
           interactionIntensity: widget.interactionIntensity,
           densityFactor: widget.densityFactor,
+          backdropLuma: backdropLuma,
           backgroundImage: null, // Fallback mode
           backgroundKey: null,
           devicePixelRatio: View.of(context).devicePixelRatio,
@@ -510,6 +528,7 @@ class _InteractiveIndicatorEffect extends SingleChildRenderObjectWidget {
     required this.shape,
     required this.interactionIntensity,
     required this.densityFactor,
+    required this.backdropLuma,
     this.backgroundImage,
     this.backgroundKey,
     required this.devicePixelRatio,
@@ -526,6 +545,7 @@ class _InteractiveIndicatorEffect extends SingleChildRenderObjectWidget {
   final LiquidShape shape;
   final double interactionIntensity;
   final double densityFactor;
+  final double backdropLuma;
   final ui.Image? backgroundImage;
   final GlobalKey? backgroundKey;
   final double devicePixelRatio;
@@ -543,6 +563,7 @@ class _InteractiveIndicatorEffect extends SingleChildRenderObjectWidget {
       shape: shape,
       interactionIntensity: interactionIntensity,
       densityFactor: densityFactor,
+      backdropLuma: backdropLuma,
       backgroundImage: backgroundImage,
       backgroundKey: backgroundKey,
       devicePixelRatio: devicePixelRatio,
@@ -565,6 +586,7 @@ class _InteractiveIndicatorEffect extends SingleChildRenderObjectWidget {
       ..shape = shape
       ..interactionIntensity = interactionIntensity
       ..densityFactor = densityFactor
+      ..backdropLuma = backdropLuma
       ..backgroundImage = backgroundImage
       ..backgroundKey = backgroundKey
       ..devicePixelRatio = devicePixelRatio
@@ -583,6 +605,7 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
     required LiquidShape shape,
     required double interactionIntensity,
     required double densityFactor,
+    required double backdropLuma,
     ui.Image? backgroundImage,
     GlobalKey? backgroundKey,
     required double devicePixelRatio,
@@ -596,6 +619,7 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
         _shape = shape,
         _interactionIntensity = interactionIntensity,
         _densityFactor = densityFactor,
+        _backdropLuma = backdropLuma,
         _backgroundImage = backgroundImage,
         _backgroundKey = backgroundKey,
         _devicePixelRatio = devicePixelRatio,
@@ -637,6 +661,13 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
   set densityFactor(double value) {
     if (_densityFactor == value) return;
     _densityFactor = value;
+    markNeedsPaint();
+  }
+
+  double _backdropLuma;
+  set backdropLuma(double value) {
+    if (_backdropLuma == value) return;
+    _backdropLuma = value;
     markNeedsPaint();
   }
 
@@ -704,10 +735,24 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
     if (child != null) {
       final blurSigma = _settings.effectiveBlur;
       if (blurSigma > 0) {
+        ui.ImageFilter filter = ui.ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma);
+
+        const double mult = 1.15;
+        const double add = 0.05;
+        final ui.ColorFilter brightnessFilter = ui.ColorFilter.matrix(<double>[
+          mult, 0.0, 0.0, 0.0, add * 255.0,
+          0.0, mult, 0.0, 0.0, add * 255.0,
+          0.0, 0.0, mult, 0.0, add * 255.0,
+          0.0, 0.0, 0.0, 1.0, 0.0,
+        ]);
+
+        filter = ui.ImageFilter.compose(
+          outer: brightnessFilter,
+          inner: filter,
+        );
+
         context.pushLayer(
-          BackdropFilterLayer(
-            filter: ui.ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-          ),
+          BackdropFilterLayer(filter: filter),
           (context, offset) {
             _paintGlassContent(context, offset);
           },
@@ -847,7 +892,7 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
 
     _shader.setFloat(index++, physicalScale.dx);
     _shader.setFloat(index++, physicalScale.dy);
-    _shader.setFloat(index++, 0.0); // uGlowIntensity
+    _shader.setFloat(index++, _settings.glowIntensity); // uGlowIntensity (fresnel boost)
     _shader.setFloat(
         index++,
         _densityFactor.clamp(0.0,

@@ -21,6 +21,7 @@ class LiquidGlassSettings with EquatableMixin {
     this.ambientStrength = 0,
     this.refractiveIndex = 1.2,
     this.saturation = 1.5,
+    this.glowIntensity = 0.75,
     this.specularSharpness = GlassSpecularSharpness.medium,
   });
 
@@ -146,6 +147,15 @@ class LiquidGlassSettings with EquatableMixin {
   /// Defaults to 1.0
   final double saturation;
 
+  /// The intensity of the fresnel edge glow on the glass rim.
+  ///
+  /// Controls how visible the glass-edge luminosity is on the Standard
+  /// (2D shader) rendering path. Higher values create a more pronounced
+  /// glowing edge. Premium (Impeller) path ignores this value.
+  ///
+  /// Defaults to 0.75.
+  final double glowIntensity;
+
   /// The sharpness of the specular highlight on the glass rim.
   ///
   /// Controls how tightly focused the specular lobe is. Each variant maps to
@@ -189,6 +199,7 @@ class LiquidGlassSettings with EquatableMixin {
       ambientStrength: lerpDouble(a.ambientStrength, b.ambientStrength, t)!,
       refractiveIndex: lerpDouble(a.refractiveIndex, b.refractiveIndex, t)!,
       saturation: lerpDouble(a.saturation, b.saturation, t)!,
+      glowIntensity: lerpDouble(a.glowIntensity, b.glowIntensity, t)!,
       specularSharpness: t < 0.5 ? a.specularSharpness : b.specularSharpness,
     );
   }
@@ -214,6 +225,7 @@ class LiquidGlassSettings with EquatableMixin {
     double? ambientStrength,
     double? refractiveIndex,
     double? saturation,
+    double? glowIntensity,
     GlassSpecularSharpness? specularSharpness,
   }) =>
       LiquidGlassSettings(
@@ -227,6 +239,7 @@ class LiquidGlassSettings with EquatableMixin {
         ambientStrength: ambientStrength ?? this.ambientStrength,
         refractiveIndex: refractiveIndex ?? this.refractiveIndex,
         saturation: saturation ?? this.saturation,
+        glowIntensity: glowIntensity ?? this.glowIntensity,
         specularSharpness: specularSharpness ?? this.specularSharpness,
       );
 
@@ -242,6 +255,7 @@ class LiquidGlassSettings with EquatableMixin {
         ambientStrength,
         refractiveIndex,
         saturation,
+        glowIntensity,
         specularSharpness,
       ];
 }

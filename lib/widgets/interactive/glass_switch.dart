@@ -597,6 +597,9 @@ class _GlassSwitchState extends State<GlassSwitch>
     final thumbShape = LiquidRoundedSuperellipse(
       borderRadius: totalHeight / 2,
     );
+    // Standard path only — Premium values are unchanged.
+    final isStdPath =
+        (effectiveQuality ?? GlassQuality.standard) == GlassQuality.standard;
 
     final materialContent = Opacity(
       opacity: (1.0 - transition * 1.2).clamp(0.0, 1.0),
@@ -623,17 +626,28 @@ class _GlassSwitchState extends State<GlassSwitch>
       height: totalHeight,
       child: GlassEffect(
         shape: thumbShape,
-        // Single settings object — GlassEffect.build() normalises automatically
-        // for Standard quality (thickness × 0.4, lightIntensity × 0.6).
-        // No per-component quality branch needed here.
-        settings: const LiquidGlassSettings(
-          glassColor: Color.from(alpha: 0.1, red: 1, green: 1, blue: 1),
+        // Standard: same rim/light math as AnimatedGlassIndicator pill.
+        //   rimThickness×0.35, lightIntensity×0.6 dampeners applied in GlassEffect.build().
+        // Premium: original values preserved exactly — no change to Premium rendering.
+        settings: LiquidGlassSettings(
+          glassColor: const Color.from(alpha: 0.1, red: 1, green: 1, blue: 1),
           refractiveIndex: 1.15,
           thickness: 10,
-          lightIntensity: 2.0,
+          lightIntensity: isStdPath
+              ? 0.0
+              : 2.0, // no specular on synthetic path (clamped by synthBase); premium unchanged
           blur: 0,
           lightAngle: GlassDefaults.lightAngle,
         ),
+        rimThickness:
+            isStdPath ? 0.0 : 0.5, // zero rim width; premium unchanged
+        ambientRim: isStdPath
+            ? 0.07
+            : 0.1, // ~70% of Premium ring strength; premium unchanged
+        baseAlphaMultiplier:
+            isStdPath ? 0.06 : 0.2, // clear glass body; premium unchanged
+        edgeAlphaMultiplier:
+            isStdPath ? 0.0 : 0.4, // zero edge glow; premium unchanged
         quality: effectiveQuality ?? GlassQuality.standard,
         interactionIntensity: transition,
         child: Stack(

@@ -51,7 +51,9 @@ const float kRimBaseOpacity       = 0.4;   // Base rim brightness before light m
 const float kRimSpecularMix       = 0.6;   // How much specular highlights boost rim
 const float kRimAlphaBase         = 0.65;  // Base rim opacity (calibrated to Impeller parity)
 const float kRimAlphaSpecular     = 0.5;   // Additional opacity from specular highlights
-const float kBodyAmbientBoost     = 0.1;   // Ambient light contribution to body layer
+const float kBodyAmbientBoost     = 0.12;  // Additive frost/whitening contribution to body layer
+                                            //   Intentionally additive (not multiplicative) so dark
+                                            //   backgrounds don't collapse the body to near-black.
 const float kCompositeRimAlpha    = 0.8;   // Rim-to-body blend strength at edges
 
 // Light Intensity Response (how uLightIntensity modulates appearance)
@@ -308,7 +310,11 @@ void main() {
     bgRgb = texture(uBackground, uv).rgb;
   }
 
-  vec3 bodyColor = bgRgb * (effectiveAmbient + bodyIntensityBoost);
+  // Additive frost model: background shows through via ambient term;
+  // bodyIntensityBoost is a fixed additive white lift (the glass 'frost')
+  // that prevents the body from collapsing to near-black on dark backgrounds.
+  // This ensures BG Sample ON and OFF produce consistent visual weight.
+  vec3 bodyColor = bgRgb * effectiveAmbient + vec3(bodyIntensityBoost);
 
   // Density Effect #3: Higher opacity (+15% alpha at full density)
   // Elevated buttons appear more "solid" and less translucent

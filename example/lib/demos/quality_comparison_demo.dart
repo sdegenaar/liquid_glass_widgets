@@ -16,13 +16,37 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
-// ── Default glass settings for the tuning panel ──────────────────────────────
-const _kDefaultThickness = 28.0;
-const _kDefaultLightIntensity = 0.9;
-const _kDefaultBlur = 3.0;
-const _kDefaultAmbient = 0.22;
-const _kDefaultSaturation = 1.2;
+// ── Premium fixed defaults (never changed) ───────────────────────────────────
+const _kDefaultThickness       = 28.0;
+const _kDefaultLightIntensity  = 0.9;
+const _kDefaultBlur            = 3.0;
+const _kDefaultAmbient         = 0.22;
+const _kDefaultSaturation      = 1.2;
 const _kDefaultRefractiveIndex = 1.25;
+
+// ── Per-widget Standard preset defaults ───────────────────────────────────────
+// lightweight_glass.frag shader uniform mapping:
+//   opacity   → glassColor.alpha  (body density / translucency — MOST VISIBLE)
+//   ambient   → ambientStrength   (multiplier on bgRgb in body layer, subtle)
+//   glow      → glowIntensity     (additive brightness — very visible)
+//   light     → lightIntensity    (rim specular brightness)
+//   thickness → rim width
+//   blur      → BackdropFilter frosting
+// NOTE: uSaturation in this shader = HUE saturation (mix(luma,color,sat)).
+//   For white/achromatic glass it has no effect, so we map opacity → glassColor.alpha instead.
+// Tune these until Standard matches Premium, then report values.
+
+const _kPillDefault = _Preset(     // Animated pill / indicator — tuned 2026-05-16
+  // thickness→rimThickness (÷0.35 dampener → 0.35×1/0.35=0.35 rendered rim)
+  // light→lightIntensity   (÷0.6  dampener → 0.60×1/0.6 =0.60 rendered spec)
+  thickness: 1.0, opacity: 0.01, ambient: 0.07, glow: 0.50, light: 1.0, blur: 3.0,
+);
+const _kBtnDefault = _Preset(      // GlassButton — tuned 2026-05-16
+  thickness: 17, opacity: 0.01, ambient: 0.07, glow: 0.75, light: 0.72, blur: 3.0,
+);
+const _kCardDefault = _Preset(     // GlassCard + tab bar surface — tuned 2026-05-16
+  thickness: 19, opacity: 0.01, ambient: 0.07, glow: 0.75, light: 0.72, blur: 3.0,
+);
 
 // ── Entry point ───────────────────────────────────────────────────────────────
 
@@ -66,25 +90,35 @@ class _ComparisonPageState extends State<_ComparisonPage> {
   double _sliderValue = 0.4;
   bool _backgroundSampling = true;
 
-  // ── Live tuning state ────────────────────────────────────────────────────
+  // ── Live tuning panel ──────────────────────────────────────────────────
   bool _showTuning = false;
-  double _thickness = _kDefaultThickness;
-  double _lightIntensity = _kDefaultLightIntensity;
-  double _blur = _kDefaultBlur;
-  double _ambient = _kDefaultAmbient;
-  double _saturation = _kDefaultSaturation;
-  double _refractiveIndex = _kDefaultRefractiveIndex;
 
-  LiquidGlassSettings get _kGlass => LiquidGlassSettings(
+  // ── Per-widget Standard presets ──────────────────────────────────────
+  // Premium is locked to fixed defaults and is NEVER modified by sliders.
+  _Preset _pill = _kPillDefault;
+  _Preset _btn  = _kBtnDefault;
+  _Preset _card = _kCardDefault;
+
+  /// Premium — fixed reference, NEVER modified by sliders.
+  LiquidGlassSettings get _kGlass => const LiquidGlassSettings(
     glassColor: Colors.white12,
-    blur: _blur,
-    thickness: _thickness,
-    lightIntensity: _lightIntensity,
-    ambientStrength: _ambient,
+    blur: _kDefaultBlur,
+    thickness: _kDefaultThickness,
+    lightIntensity: _kDefaultLightIntensity,
+    ambientStrength: _kDefaultAmbient,
     chromaticAberration: 0.02,
-    refractiveIndex: _refractiveIndex,
-    saturation: _saturation,
+    refractiveIndex: _kDefaultRefractiveIndex,
+    saturation: _kDefaultSaturation,
   );
+
+  /// Standard pill / animated indicator settings.
+  LiquidGlassSettings get _kGlassPill => _pill.toSettings();
+
+  /// Standard button settings.
+  LiquidGlassSettings get _kGlassBtn => _btn.toSettings();
+
+  /// Standard card / surface settings (also used for tab bar background).
+  LiquidGlassSettings get _kGlassCard => _card.toSettings();
 
   @override
   Widget build(BuildContext context) {
@@ -127,20 +161,12 @@ class _ComparisonPageState extends State<_ComparisonPage> {
                 // Live tuning panel — collapse when not needed
                 _TuningPanel(
                   visible: _showTuning,
-                  thickness: _thickness,
-                  lightIntensity: _lightIntensity,
-                  blur: _blur,
-                  ambient: _ambient,
-                  saturation: _saturation,
-                  refractiveIndex: _refractiveIndex,
-                  onChanged: (t, li, b, a, s, ri) => setState(() {
-                    _thickness = t;
-                    _lightIntensity = li;
-                    _blur = b;
-                    _ambient = a;
-                    _saturation = s;
-                    _refractiveIndex = ri;
-                  }),
+                  pill: _pill,
+                  btn: _btn,
+                  card: _card,
+                  onPillChanged: (p) => setState(() => _pill = p),
+                  onBtnChanged:  (p) => setState(() => _btn  = p),
+                  onCardChanged: (p) => setState(() => _card = p),
                 ),
                 Expanded(child: _buildComparisonList()),
               ],
@@ -206,12 +232,29 @@ class _ComparisonPageState extends State<_ComparisonPage> {
           ),
           const SizedBox(height: 2),
           Text(
-            'thickness: ${_thickness.toStringAsFixed(0)}  '
-            'light: ${_lightIntensity.toStringAsFixed(2)}  '
-            'blur: ${_blur.toStringAsFixed(1)}',
+            'pill  th=${_pill.thickness.toStringAsFixed(1)} op=${_pill.opacity.toStringAsFixed(2)} amb=${_pill.ambient.toStringAsFixed(3)}\n'
+            '      glow=${_pill.glow.toStringAsFixed(2)} li=${_pill.light.toStringAsFixed(2)} blur=${_pill.blur.toStringAsFixed(1)}',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.55),
-              fontSize: 12,
+              color: const Color(0xFF5AC8FA).withValues(alpha: 0.9),
+              fontSize: 9,
+              fontFamily: 'monospace',
+            ),
+          ),
+          Text(
+            'btn   th=${_btn.thickness.toStringAsFixed(0)} op=${_btn.opacity.toStringAsFixed(2)} amb=${_btn.ambient.toStringAsFixed(3)}\n'
+            '      glow=${_btn.glow.toStringAsFixed(2)} li=${_btn.light.toStringAsFixed(2)} blur=${_btn.blur.toStringAsFixed(1)}',
+            style: TextStyle(
+              color: const Color(0xFF4ADE80).withValues(alpha: 0.9),
+              fontSize: 9,
+              fontFamily: 'monospace',
+            ),
+          ),
+          Text(
+            'card  th=${_card.thickness.toStringAsFixed(0)} op=${_card.opacity.toStringAsFixed(2)} amb=${_card.ambient.toStringAsFixed(3)}\n'
+            '      glow=${_card.glow.toStringAsFixed(2)} li=${_card.light.toStringAsFixed(2)} blur=${_card.blur.toStringAsFixed(1)}',
+            style: TextStyle(
+              color: const Color(0xFFBB86FC).withValues(alpha: 0.9),
+              fontSize: 9,
               fontFamily: 'monospace',
             ),
           ),
@@ -267,7 +310,7 @@ class _ComparisonPageState extends State<_ComparisonPage> {
             ),
             standard: GlassButton(
               useOwnLayer: true,
-              settings: _kGlass,
+              settings: _kGlassBtn,
               quality: GlassQuality.standard,
               onTap: () {},
               icon: const Icon(CupertinoIcons.play_arrow_solid),
@@ -291,8 +334,8 @@ class _ComparisonPageState extends State<_ComparisonPage> {
             ),
             standard: GlassSegmentedControl(
               useOwnLayer: true,
-              glassSettings: _kGlass,
-              indicatorSettings: _kGlass,
+              glassSettings: _kGlassCard,    // surface / background
+              indicatorSettings: _kGlassPill, // animated pill indicator
               quality: GlassQuality.standard,
               segments: const ['Day', 'Week', 'Month'],
               selectedIndex: _segIndex,
@@ -337,7 +380,7 @@ class _ComparisonPageState extends State<_ComparisonPage> {
             ),
             standard: GlassCard(
               useOwnLayer: true,
-              settings: _kGlass,
+              settings: _kGlassCard,
               quality: GlassQuality.standard,
               child: const Padding(
                 padding: EdgeInsets.all(14),
@@ -386,7 +429,8 @@ class _ComparisonPageState extends State<_ComparisonPage> {
             ),
             standardWidget: GlassTabBar(
               useOwnLayer: true,
-              settings: _kGlass,
+              settings: _kGlassCard,         // tab bar background glass
+              indicatorSettings: _kGlassPill, // the pill indicator glass ← tuned here
               quality: GlassQuality.standard,
               tabs: [
                 GlassTab(icon: const Icon(CupertinoIcons.home)),
@@ -616,87 +660,157 @@ class _QualityPill extends StatelessWidget {
   }
 }
 
-// ── Tuning panel ──────────────────────────────────────────────────────────────
-
-/// Collapsible live tuning panel for iterating on glass settings.
-///
-/// Shows sliders for the 6 key params that affect the premium/standard visual
-/// delta. Also displays what the Standard path's normalization produces for
-/// thickness and lightIntensity, so you can see both values simultaneously.
+/// Collapsible live tuning panel — 3 independent sections for pill, button, card.
+/// Premium is LOCKED. Adjust Standard until it matches Premium, then report values.
 class _TuningPanel extends StatelessWidget {
   const _TuningPanel({
     required this.visible,
-    required this.thickness,
-    required this.lightIntensity,
-    required this.blur,
-    required this.ambient,
-    required this.saturation,
-    required this.refractiveIndex,
-    required this.onChanged,
+    required this.pill,
+    required this.btn,
+    required this.card,
+    required this.onPillChanged,
+    required this.onBtnChanged,
+    required this.onCardChanged,
   });
 
   final bool visible;
-  final double thickness;
-  final double lightIntensity;
-  final double blur;
-  final double ambient;
-  final double saturation;
-  final double refractiveIndex;
+  final _Preset pill;
+  final _Preset btn;
+  final _Preset card;
+  final ValueChanged<_Preset> onPillChanged;
+  final ValueChanged<_Preset> onBtnChanged;
+  final ValueChanged<_Preset> onCardChanged;
 
-  /// (thickness, lightIntensity, blur, ambient, saturation, refractiveIndex)
-  final void Function(double, double, double, double, double, double) onChanged;
-
-  // Standard normalisation multipliers (from GlassThemeHelpers).
-  static const _thicknessMul = 0.40;
-  static const _lightMul = 0.60;
+  static const _blue   = Color(0xFF5AC8FA);
+  static const _green  = Color(0xFF4ADE80);
+  static const _purple = Color(0xFFBB86FC);
 
   @override
   Widget build(BuildContext context) {
     if (!visible) return const SizedBox.shrink();
-
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.35),
+        color: Colors.black.withValues(alpha: 0.40),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header row
-          Row(
-            children: [
-              const Text(
-                'TUNING',
-                style: TextStyle(
-                  color: Colors.white54,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              const Spacer(),
-              // Standard normalised preview
-              Text(
-                'std thickness≈${(thickness * _thicknessMul).toStringAsFixed(1)}  '
-                'std light≈${(lightIntensity * _lightMul).toStringAsFixed(2)}',
-                style: const TextStyle(
-                  color: Color(0xFF5AC8FA),
-                  fontSize: 10,
-                  fontFamily: 'monospace',
-                ),
-              ),
-            ],
+          const Text(
+            'STANDARD ONLY  ·  Premium is locked',
+            style: TextStyle(color: Colors.white38, fontSize: 9,
+                fontWeight: FontWeight.w700, letterSpacing: 1.2),
           ),
+          const SizedBox(height: 2),
+          const Text(
+            'saturation → bgBoost  ·  ambient → lift  ·  glow → fresnel edge',
+            style: TextStyle(color: Colors.white24, fontSize: 8, fontFamily: 'monospace'),
+          ),
+          const SizedBox(height: 10),
+          _PresetSection(label: '● PILL / INDICATOR', color: _blue,
+              preset: pill, onChanged: onPillChanged,
+              thicknessMin: 0.1, thicknessMax: 8.0,  // rim px (rimThickness)
+              thicknessLabel: 'rim px'),
           const SizedBox(height: 8),
-          _Slider('thickness', thickness, 4, 60, (v) => onChanged(v, lightIntensity, blur, ambient, saturation, refractiveIndex)),
-          _Slider('lightIntensity', lightIntensity, 0, 1.5, (v) => onChanged(thickness, v, blur, ambient, saturation, refractiveIndex)),
-          _Slider('blur', blur, 0, 12, (v) => onChanged(thickness, lightIntensity, v, ambient, saturation, refractiveIndex)),
-          _Slider('ambient', ambient, 0, 1, (v) => onChanged(thickness, lightIntensity, blur, v, saturation, refractiveIndex)),
-          _Slider('saturation', saturation, 0.5, 2, (v) => onChanged(thickness, lightIntensity, blur, ambient, v, refractiveIndex)),
-          _Slider('refractiveIndex', refractiveIndex, 1.0, 2.0, (v) => onChanged(thickness, lightIntensity, blur, ambient, saturation, v)),
+          _PresetSection(label: '● BUTTON', color: _green,
+              preset: btn, onChanged: onBtnChanged,
+              thicknessMin: 0.0, thicknessMax: 30.0), // uThickness
+          const SizedBox(height: 8),
+          _PresetSection(label: '● CARD / SURFACE', color: _purple,
+              preset: card, onChanged: onCardChanged,
+              thicknessMin: 0.0, thicknessMax: 30.0), // uThickness
+        ],
+      ),
+    );
+  }
+}
+
+/// One collapsible preset section inside _TuningPanel.
+class _PresetSection extends StatefulWidget {
+  const _PresetSection({
+    required this.label,
+    required this.color,
+    required this.preset,
+    required this.onChanged,
+    this.thicknessMin = 0.0,
+    this.thicknessMax = 30.0,
+    this.thicknessLabel = 'thickness',
+  });
+
+  final String label;
+  final Color color;
+  final _Preset preset;
+  final ValueChanged<_Preset> onChanged;
+  final double thicknessMin;
+  final double thicknessMax;
+  final String thicknessLabel;
+
+  @override
+  State<_PresetSection> createState() => _PresetSectionState();
+}
+
+class _PresetSectionState extends State<_PresetSection> {
+  bool _expanded = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.preset;
+    final c = widget.color;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(8, 6, 8, 4),
+      decoration: BoxDecoration(
+        color: c.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: c.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Row(
+              children: [
+                Text(widget.label,
+                    style: TextStyle(color: c, fontSize: 9,
+                        fontWeight: FontWeight.w700, letterSpacing: 1.1)),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    'th=${p.thickness.toStringAsFixed(0)} '
+                    'op=${p.opacity.toStringAsFixed(2)} '
+                    'amb=${p.ambient.toStringAsFixed(3)} '
+                    'glow=${p.glow.toStringAsFixed(2)} '
+                    'li=${p.light.toStringAsFixed(2)} '
+                    'blur=${p.blur.toStringAsFixed(1)}',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: c.withValues(alpha: 0.6),
+                        fontSize: 8, fontFamily: 'monospace'),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(_expanded ? '▲' : '▼',
+                    style: TextStyle(color: c.withValues(alpha: 0.5), fontSize: 8)),
+              ],
+            ),
+          ),
+          if (_expanded) ...[
+            const SizedBox(height: 4),
+            _Slider(widget.thicknessLabel, p.thickness, widget.thicknessMin, widget.thicknessMax,
+                (v) => widget.onChanged(p.copyWith(thickness: v)),  color: c),
+            _Slider('opacity',    p.opacity,    0.01, 0.70,
+                (v) => widget.onChanged(p.copyWith(opacity: v)),   color: c),
+            _Slider('ambient',    p.ambient,    0.0, 0.35,
+                (v) => widget.onChanged(p.copyWith(ambient: v)),    color: c),
+            _Slider('glow',       p.glow,       0.0, 2.0,
+                (v) => widget.onChanged(p.copyWith(glow: v)),       color: c),
+            _Slider('light',      p.light,      0.0, 1.5,
+                (v) => widget.onChanged(p.copyWith(light: v)),      color: c),
+            _Slider('blur',       p.blur,       0.0, 12.0,
+                (v) => widget.onChanged(p.copyWith(blur: v)),       color: c),
+          ],
         ],
       ),
     );
@@ -704,25 +818,27 @@ class _TuningPanel extends StatelessWidget {
 }
 
 class _Slider extends StatelessWidget {
-  const _Slider(this.label, this.value, this.min, this.max, this.onChanged);
+  const _Slider(this.label, this.value, this.min, this.max, this.onChanged,
+      {this.color = Colors.white70});
 
   final String label;
   final double value;
   final double min;
   final double max;
   final ValueChanged<double> onChanged;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         SizedBox(
-          width: 110,
+          width: 72,
           child: Text(
             '$label: ${value.toStringAsFixed(2)}',
-            style: const TextStyle(
-              color: Colors.white60,
-              fontSize: 10,
+            style: TextStyle(
+              color: color.withValues(alpha: 0.8),
+              fontSize: 9,
               fontFamily: 'monospace',
             ),
           ),
@@ -733,9 +849,9 @@ class _Slider extends StatelessWidget {
               trackHeight: 1.5,
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
               overlayShape: SliderComponentShape.noOverlay,
-              activeTrackColor: Colors.white38,
-              inactiveTrackColor: Colors.white12,
-              thumbColor: Colors.white70,
+              activeTrackColor: color.withValues(alpha: 0.5),
+              inactiveTrackColor: color.withValues(alpha: 0.15),
+              thumbColor: color,
             ),
             child: Slider(
               value: value.clamp(min, max),
@@ -749,3 +865,66 @@ class _Slider extends StatelessWidget {
     );
   }
 }
+
+// ── _Preset data class ─────────────────────────────────────────────────────────
+
+/// Immutable tuning preset for one Standard widget type.
+///
+/// Field mapping to [LiquidGlassSettings] / shader uniforms
+/// (lightweight_glass.frag — Standard path only, Premium untouched):
+///
+/// | Preset field | Settings mapping            | Visible effect                |
+/// |-------------|----------------------------|-------------------------------|
+/// | opacity     | glassColor.alpha            | Body density (most impactful) |
+/// | ambient     | ambientStrength             | Background bleed (subtle)     |
+/// | glow        | glowIntensity               | Additive brightness           |
+/// | light       | lightIntensity              | Rim specular brightness       |
+/// | thickness   | thickness                   | Rim width                     |
+/// | blur        | blur                        | BackdropFilter frosting       |
+class _Preset {
+  const _Preset({
+    required this.thickness,
+    required this.opacity,
+    required this.ambient,
+    required this.glow,
+    required this.light,
+    required this.blur,
+  });
+
+  final double thickness;
+  final double opacity;   // → glassColor.alpha  (body density — MOST VISIBLE)
+  final double ambient;   // → ambientStrength    (bgRgb multiplier, subtle)
+  final double glow;      // → glowIntensity      (additive glow)
+  final double light;     // → lightIntensity     (rim brightness)
+  final double blur;      // → blur               (frosting)
+
+  LiquidGlassSettings toSettings() => LiquidGlassSettings(
+    glassColor: Colors.white.withValues(alpha: opacity.clamp(0.01, 1.0)),
+    thickness: thickness,
+    saturation: 1.08,   // Neutral — uSaturation is hue-sat in lightweight_glass.frag;
+                        // has no effect on white glass, so fixed at 1.08.
+    ambientStrength: ambient,
+    glowIntensity: glow,
+    lightIntensity: light,
+    blur: blur,
+    chromaticAberration: 0.02,
+    refractiveIndex: _kDefaultRefractiveIndex,
+  );
+
+  _Preset copyWith({
+    double? thickness,
+    double? opacity,
+    double? ambient,
+    double? glow,
+    double? light,
+    double? blur,
+  }) => _Preset(
+    thickness: thickness ?? this.thickness,
+    opacity:   opacity   ?? this.opacity,
+    ambient:   ambient   ?? this.ambient,
+    glow:      glow      ?? this.glow,
+    light:     light     ?? this.light,
+    blur:      blur      ?? this.blur,
+  );
+}
+

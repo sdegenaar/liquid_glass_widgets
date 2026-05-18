@@ -195,45 +195,51 @@ class AdaptiveGlass extends StatelessWidget {
 
       // Normalise settings for the 2D lightweight shader to prevent it from looking
       // overpowering when the user has tuned their settings for the 3D premium shader.
-      // Thickness is scaled down because 2D inner shadows look much thicker than 3D bevels.
-      // Light intensity is scaled down because 2D gradients look brighter than 3D speculars.
       //
-      // VOLUMETRIC FROSTING SIMULATION:
-      // The 3D Impeller raymarcher computes body brightness from light physically
-      // scattering through a thick volume — glassColor.alpha has no role there.
-      // The 2D shader computes: bodyColor = glassColor.rgb * (ambient + boost),
-      // so with a typical white12 (alpha=0.12) color the body is nearly invisible.
-      //
-      // Fix: derive a frosted-body opacity target from thickness + lightIntensity
-      // and use it to boost BOTH glassColor.alpha AND ambientStrength, matching
-      // the physical volume accumulation of the Impeller path.
-      final double thicknessNorm = (baseSettings.effectiveThickness / 30.0).clamp(0.0, 1.0);
-      final double lightNorm     = (baseSettings.effectiveLightIntensity / 1.0).clamp(0.0, 1.0);
-      // frostingTarget: 0.0 (no thickness) → ~0.38 (thick+bright, t=28 l=0.9).
-      // Intentionally conservative: the adapter boosts frosting to add visual weight,
-      // but we must NOT over-paint with white or we lose the blurred-backdrop
-      // color pickup that gives glass its tinted hue. The shader needs a sampler2D
-      // rework to properly absorb background color; until then, keep alpha modest.
-      final double frostingTarget = thicknessNorm * lightNorm * 0.45;
+      // BYPASS: When quality is explicitly GlassQuality.standard, the settings
+      // are already calibrated for the Standard renderer — skip normalization.
+      // Normalization only makes sense when adapting Premium-tuned settings to
+      // Standard; if the caller already knows they're on Standard, their values
+      // must be passed through unchanged so tuning sliders take full effect.
+      final bool skipNormalization = quality == GlassQuality.standard;
 
-      final Color baseColor = baseSettings.effectiveGlassColor;
-      // Only boost alpha up to the frosting target — never reduce it.
-      final double newAlpha = math.max(baseColor.a, frostingTarget).clamp(0.0, 1.0);
-      // Ambient at 1.0× target — enough to add body without white-washing
-      // the blurred-backdrop color bleed (which provides scene color absorption).
-      final double newAmbient = math.max(
-        baseSettings.effectiveAmbientStrength,
-        frostingTarget * 1.0,
-      ).clamp(0.0, 1.0);
+      final LiquidGlassSettings normalizedSettings;
+      if (skipNormalization) {
+        normalizedSettings = baseSettings;
+      } else {
+        // Frosting normalization: adapts Premium settings for the 2D shader.
+        // Thickness scaled down (2D inner shadows look much thicker than 3D bevels).
+        // Light intensity scaled down (2D gradients look brighter than 3D speculars).
+        //
+        // VOLUMETRIC FROSTING SIMULATION:
+        // The 3D Impeller raymarcher computes body brightness from light physically
+        // scattering through a thick volume — glassColor.alpha has no role there.
+        // The 2D shader computes: bodyColor = glassColor.rgb * (ambient + boost),
+        // so with a typical white12 (alpha=0.12) color the body is nearly invisible.
+        // Fix: derive a frosted-body opacity target from thickness + lightIntensity.
+        final double thicknessNorm =
+            (baseSettings.effectiveThickness / 30.0).clamp(0.0, 1.0);
+        final double lightNorm =
+            (baseSettings.effectiveLightIntensity / 1.0).clamp(0.0, 1.0);
+        final double frostingTarget = thicknessNorm * lightNorm * 0.45;
 
-      final normalizedSettings = baseSettings.copyWith(
-        thickness:
-            (baseSettings.effectiveThickness * 0.4).clamp(0.0, double.infinity),
-        lightIntensity:
-            (baseSettings.effectiveLightIntensity * 0.6).clamp(0.0, 10.0),
-        glassColor: baseColor.withValues(alpha: newAlpha),
-        ambientStrength: newAmbient,
-      );
+        final Color baseColor = baseSettings.effectiveGlassColor;
+        final double newAlpha =
+            math.max(baseColor.a, frostingTarget).clamp(0.0, 1.0);
+        final double newAmbient = math.max(
+          baseSettings.effectiveAmbientStrength,
+          frostingTarget * 1.0,
+        ).clamp(0.0, 1.0);
+
+        normalizedSettings = baseSettings.copyWith(
+          thickness: (baseSettings.effectiveThickness * 0.4)
+              .clamp(0.0, double.infinity),
+          lightIntensity:
+              (baseSettings.effectiveLightIntensity * 0.6).clamp(0.0, 10.0),
+          glassColor: baseColor.withValues(alpha: newAlpha),
+          ambientStrength: newAmbient,
+        );
+      }
 
       // Apply subtle elevation boost to settings (preserves saturation!)
       final color = normalizedSettings.effectiveGlassColor;
@@ -249,11 +255,11 @@ class AdaptiveGlass extends StatelessWidget {
               chromaticAberration: normalizedSettings.chromaticAberration,
               blur: normalizedSettings.effectiveBlur,
               visibility: normalizedSettings.visibility,
-              saturation: normalizedSettings
-                  .effectiveSaturation, // Preserve user saturation!
+              saturation: normalizedSettings.effectiveSaturation,
               ambientStrength:
                   (normalizedSettings.effectiveAmbientStrength * 0.4)
                       .clamp(0.0, 1.0),
+              glowIntensity: normalizedSettings.glowIntensity,
             )
           : normalizedSettings;
 

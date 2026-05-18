@@ -597,10 +597,28 @@ class _RenderLightweightGlass extends RenderProxyBox {
 
     final blurSigma = _settings.effectiveBlur;
     if (blurSigma > 0 && !_skipBlur) {
+      ui.ImageFilter filter = ui.ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma);
+
+      // Apply a universal brightness lift to mimic Impeller's volumetric scattering.
+      // This is necessary because 2D blur intrinsically darkens, and we want
+      // the glass to retain a luminous, physical feel regardless of OS theme.
+      // 1.15x multiplier + 0.05 additive lift
+      const double mult = 1.15;
+      const double add = 0.05; // 0.05 * 255 ≈ 13
+      final ui.ColorFilter brightnessFilter = ui.ColorFilter.matrix(<double>[
+        mult, 0.0, 0.0, 0.0, add * 255.0,
+        0.0, mult, 0.0, 0.0, add * 255.0,
+        0.0, 0.0, mult, 0.0, add * 255.0,
+        0.0, 0.0, 0.0, 1.0, 0.0,
+      ]);
+
+      filter = ui.ImageFilter.compose(
+        outer: brightnessFilter,
+        inner: filter,
+      );
+
       context.pushLayer(
-        BackdropFilterLayer(
-          filter: ui.ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-        ),
+        BackdropFilterLayer(filter: filter),
         (context, offset) {
           _paintGlassContent(context, offset);
         },

@@ -175,6 +175,11 @@ class AnimatedGlassIndicator extends StatelessWidget {
       interactionIntensity: thickness,
       backgroundKey: backgroundKey,
       clipExpansion: _jellyClipExpansion,
+      // Map glassSettings.thickness → rimThickness (logical px rim width).
+      // uThickness is declared but unused in interactive_indicator.frag;
+      // uRimThickness is what actually controls the visible hairline rim width.
+      // Clamp to 0–8 px: beyond 8 the rim bleeds into the pill body.
+      rimThickness: (glassSettings?.effectiveThickness ?? 0.5).clamp(0.0, 8.0),
       child: const GlassGlow(
         glowColor: Colors
             .transparent, // caused grey rectangle flicker if clicking multiple times
