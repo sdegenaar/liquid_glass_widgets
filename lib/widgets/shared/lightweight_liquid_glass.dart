@@ -245,20 +245,47 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass> {
       clipShape = widget.shape;
     }
 
+    // When the resolved clipShape is a RoundedRectangleBorder with a
+    // BorderRadius, wrap in ClipRRect instead of ClipPath. Flutter PR
+    // #177551 (in 3.41+) forwards ClipRRect clip data to the iOS
+    // PlatformView mutator stack, which lets the engine clip a
+    // descendant BackdropFilter over a PlatformView — eliminating the
+    // rectangular blur halo that appears around rounded glass surfaces
+    // stacked over a PlatformView (e.g. mapbox_maps_flutter,
+    // video_player on iOS). The same engine fix does NOT apply to
+    // ClipPath, even when the path inside is mathematically a rounded
+    // rect.
+    //
+    // LiquidOval is NOT covered: empirically the engine fix does not
+    // forward ClipRRect with circular(double.infinity), nor does it
+    // forward a LayoutBuilder-computed finite radius on a LiquidOval
+    // path. App code that needs a halo-free circular glass surface
+    // over a PlatformView should use
+    // LiquidRoundedSuperellipse(borderRadius: size/2) instead, which
+    // renders identically and triggers the engine fix.
+    final BorderRadius? roundedRectRadius =
+        (clipShape is RoundedRectangleBorder &&
+                clipShape.borderRadius is BorderRadius)
+            ? clipShape.borderRadius as BorderRadius
+            : null;
+    final Widget effect = _LightweightGlassEffect(
+      // Nullable: render object paints tinted passthrough when null.
+      shader: shader,
+      settings: settings,
+      shape: widget.shape,
+      skipBlur: skipBlur,
+      glowIntensity: widget.glowIntensity,
+      densityFactor: widget.densityFactor,
+      indicatorWeight: widget.indicatorWeight,
+      backdropLuma: backdropLuma,
+      child: widget.child,
+    );
+    if (roundedRectRadius != null) {
+      return ClipRRect(borderRadius: roundedRectRadius, child: effect);
+    }
     return ClipPath(
       clipper: ShapeBorderClipper(shape: clipShape),
-      child: _LightweightGlassEffect(
-        // Nullable: render object paints tinted passthrough when null.
-        shader: shader,
-        settings: settings,
-        shape: widget.shape,
-        skipBlur: skipBlur,
-        glowIntensity: widget.glowIntensity,
-        densityFactor: widget.densityFactor,
-        indicatorWeight: widget.indicatorWeight,
-        backdropLuma: backdropLuma,
-        child: widget.child,
-      ),
+      child: effect,
     );
   }
 }

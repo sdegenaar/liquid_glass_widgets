@@ -420,12 +420,17 @@ class _FrostedFallback extends StatelessWidget {
           .hardEdge, // Locks dirty region to widget bounds — prevents page-wide flicker
       children: [
         if (useBlur)
-          // Stationary surfaces: blur + tint clipped to shape
+          // Stationary surfaces: blur + tint clipped to shape.
+          //
+          // Use ClipRRect when the shape resolves to a rounded rect —
+          // Flutter PR #177551 (in 3.41+) forwards ClipRRect clip data
+          // to iOS PlatformView mutators, so ClipRRect (not ClipPath)
+          // is what lets the engine clip a descendant BackdropFilter
+          // over a PlatformView. Eliminates the rectangular blur halo
+          // around rounded glass surfaces stacked over PlatformViews
+          // (e.g. mapbox_maps_flutter, video_player on iOS).
           Positioned.fill(
-            child: ClipPath(
-              clipper: ShapeBorderClipper(shape: shape),
-              child: body,
-            ),
+            child: _ShapeClip(shape: shape, child: body),
           ),
 
         if (!useBlur)
@@ -449,11 +454,10 @@ class _FrostedFallback extends StatelessWidget {
             ),
           ),
 
-        // Text and contents MUST be strictly clipped to corner radii
-        ClipPath(
-          clipper: ShapeBorderClipper(shape: shape),
-          child: child,
-        ),
+        // Text and contents MUST be strictly clipped to corner radii.
+        // Same ClipRRect-over-ClipPath rationale as the blur body
+        // above — see the [_ShapeClip] doc comment.
+        _ShapeClip(shape: shape, child: child),
 
         // Specular Rim: drawn as a pure native overlay vector perfectly on top
         Positioned.fill(
@@ -564,4 +568,59 @@ class _SpecularRimPainter extends CustomPainter {
   @override
   bool shouldRepaint(_SpecularRimPainter old) =>
       old.settings != settings || old.shape != shape;
+}
+
+/// Wraps [child] in [ClipRRect] when the shape resolves to a
+/// `RoundedRectangleBorder` (i.e. [LiquidRoundedSuperellipse] or
+/// [LiquidVerticalRoundedSuperellipse]), otherwise falls back to
+/// [ClipPath] with `ShapeBorderClipper`.
+///
+/// **Why this matters:** Flutter framework PR #177551 (merged Dec 2025,
+/// shipped in 3.41.0-0.0.pre and forward) forwards `ClipRRect` clip data
+/// to the iOS PlatformView mutator stack — which lets the engine
+/// correctly clip a descendant [BackdropFilter] over a PlatformView.
+/// The same fix does NOT apply to `ClipPath`, even when the path inside
+/// is mathematically a rounded rect.
+///
+/// Eliminates the rectangular blur halo that appeared around rounded
+/// `_FrostedFallback` surfaces when stacked over a PlatformView (e.g.
+/// `mapbox_maps_flutter`'s `MapWidget`, `video_player` on iOS).
+///
+/// **Caveat — [LiquidOval] is not handled.** Empirically the engine fix
+/// does not forward `ClipRRect` with `circular(double.infinity)`, nor
+/// does it forward a `LayoutBuilder`-computed finite radius on a
+/// `LiquidOval` shape. Callers that need a halo-free circular surface
+/// over a PlatformView should pass
+/// `LiquidRoundedSuperellipse(borderRadius: size / 2)` instead, which
+/// renders identically to a circle on a square widget and triggers the
+/// engine fix.
+class _ShapeClip extends StatelessWidget {
+  const _ShapeClip({required this.shape, required this.child});
+
+  final LiquidShape shape;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final shape = this.shape;
+    if (shape is LiquidRoundedSuperellipse) {
+      return ClipRRect(
+        borderRadius: BorderRadius.all(Radius.circular(shape.borderRadius)),
+        child: child,
+      );
+    }
+    if (shape is LiquidVerticalRoundedSuperellipse) {
+      return ClipRRect(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(shape.topRadius),
+          bottom: Radius.circular(shape.bottomRadius),
+        ),
+        child: child,
+      );
+    }
+    return ClipPath(
+      clipper: ShapeBorderClipper(shape: shape),
+      child: child,
+    );
+  }
 }

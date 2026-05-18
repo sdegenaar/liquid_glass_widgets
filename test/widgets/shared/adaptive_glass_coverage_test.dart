@@ -23,7 +23,11 @@ void main() {
         ),
       )));
       await tester.pump();
-      expect(find.byType(ClipPath), findsWidgets);
+      // Frosted-fallback path used to wrap in ClipPath(ShapeBorderClipper);
+      // for RoundedRectangleBorder-resolving shapes it now wraps in
+      // ClipRRect via _ShapeClip (so Flutter PR #177551's PlatformView
+      // clip-forwarding takes effect over a PlatformView backdrop).
+      expect(find.byType(ClipRRect), findsWidgets);
     });
 
     testWidgets('blur=0 triggers minimal fast path', (tester) async {
@@ -38,7 +42,7 @@ void main() {
         ),
       )));
       await tester.pump();
-      expect(find.byType(ClipPath), findsWidgets);
+      expect(find.byType(ClipRRect), findsWidgets);
     });
 
     testWidgets('standard quality renders lightweight glass', (tester) async {
@@ -96,7 +100,9 @@ void main() {
         ),
       ));
       await tester.pump();
-      expect(find.byType(ClipPath), findsWidgets);
+      // See note above on the ClipPath → ClipRRect swap in _ShapeClip
+      // for RoundedRectangleBorder-resolving shapes.
+      expect(find.byType(ClipRRect), findsWidgets);
     });
   });
 
