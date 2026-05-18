@@ -96,6 +96,8 @@ class GlassSearchableBottomBar extends StatefulWidget {
     this.pressScale = 1.04,
     this.tabWidth,
     this.indicatorExpansion = 14,
+    this.indicatorBaseAlphaMultiplier,
+    this.indicatorEdgeAlphaMultiplier,
     this.onBarTap,
   })  : assert(tabs.length > 0,
             'GlassSearchableBottomBar requires at least one tab'),
@@ -340,6 +342,24 @@ class GlassSearchableBottomBar extends StatefulWidget {
   /// produce a tighter, more iOS-native feel. Defaults to `14` —
   /// matches the pre-existing visual.
   final double indicatorExpansion;
+
+  /// Forwards to [AnimatedGlassIndicator.baseAlphaMultiplier]. Controls
+  /// the indicator pill's center transparency in the interactive
+  /// shader. Defaults (when null) to the package baseline (0.2). Pass
+  /// 0.0 together with [indicatorEdgeAlphaMultiplier]=0.0 to render
+  /// the indicator pill effectively invisible — useful for screens
+  /// where the morph-time rim/edge reads as an unwanted "border
+  /// flash" (e.g. under [GlassQuality.standard] over a PlatformView,
+  /// where the lightweight pipeline can't sample the same backdrop
+  /// the indicator shader expects).
+  final double? indicatorBaseAlphaMultiplier;
+
+  /// Forwards to [AnimatedGlassIndicator.edgeAlphaMultiplier]. Defaults
+  /// (when null) to the package baseline (0.4). Also scales the
+  /// previously-hardcoded `borderMask * 0.9` floor in
+  /// `interactive_indicator.frag`, so 0.0 fully kills the rim instead
+  /// of running into the floor.
+  final double? indicatorEdgeAlphaMultiplier;
 
   /// Called when the user taps anywhere on the bar.
   ///
@@ -709,6 +729,10 @@ class _GlassSearchableBottomBarState extends State<GlassSearchableBottomBar>
                           indicatorColor: widget.indicatorColor,
                           indicatorExpansion: widget.indicatorExpansion,
                           indicatorSettings: widget.indicatorSettings,
+                          indicatorBaseAlphaMultiplier:
+                              widget.indicatorBaseAlphaMultiplier,
+                          indicatorEdgeAlphaMultiplier:
+                              widget.indicatorEdgeAlphaMultiplier,
                           backgroundKey: widget.backgroundKey,
                           isSearchActive: searching,
                           interactionGlowColor:

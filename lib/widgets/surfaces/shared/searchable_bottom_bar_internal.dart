@@ -118,6 +118,8 @@ class SearchableTabIndicator extends StatefulWidget {
     this.interactionGlowOpacity = 1,
     required this.enableBackgroundAnimation,
     required this.backgroundPressScale,
+    this.indicatorBaseAlphaMultiplier,
+    this.indicatorEdgeAlphaMultiplier,
     super.key,
   });
 
@@ -147,6 +149,21 @@ class SearchableTabIndicator extends StatefulWidget {
   /// tighter, more iOS-native feel. Defaults to `14` to match the
   /// pre-existing visual.
   final double indicatorExpansion;
+
+  /// Forwards to [AnimatedGlassIndicator.baseAlphaMultiplier]. Defaults
+  /// (when null) to `GlassEffect`'s baseline 0.2. Pass 0.0 together with
+  /// [indicatorEdgeAlphaMultiplier]=0.0 to make the morphing indicator
+  /// pill invisible (useful for screens where the morph-time rim flash
+  /// reads as an unwanted "border flash" — e.g. under
+  /// [GlassQuality.standard] over a PlatformView).
+  final double? indicatorBaseAlphaMultiplier;
+
+  /// Forwards to [AnimatedGlassIndicator.edgeAlphaMultiplier]. Defaults
+  /// (when null) to `GlassEffect`'s baseline 0.4. ALSO scales the
+  /// previously-hardcoded `borderMask * 0.9` floor in
+  /// `interactive_indicator.frag`, so 0.0 actually kills the rim
+  /// instead of running into the floor.
+  final double? indicatorEdgeAlphaMultiplier;
 
   final Color? interactionGlowColor;
   final double interactionGlowRadius;
@@ -395,6 +412,8 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                   expansion: widget.indicatorExpansion,
                   glassSettings: widget.indicatorSettings,
                   backgroundKey: widget.backgroundKey,
+                  baseAlphaMultiplier: widget.indicatorBaseAlphaMultiplier,
+                  edgeAlphaMultiplier: widget.indicatorEdgeAlphaMultiplier,
                 ),
 
               // Persistent selected-icon overlay — always at TARGET position

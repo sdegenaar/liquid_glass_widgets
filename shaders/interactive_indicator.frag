@@ -271,7 +271,18 @@ void main() {
   
   // Blend from center to edge
   float glassAlpha = mix(baseAlpha, edgeAlpha, edgeInfluence);
-  glassAlpha = max(glassAlpha, borderMask * 0.9);
+  // The hardcoded `borderMask * 0.9` floor used to enforce a structural
+  // rim even when the caller dropped baseAlpha/edgeAlpha to zero —
+  // "prevents invisible shapes." That's fine for surfaces where you
+  // want a permanent rim, but for an interactive indicator over a
+  // PlatformView it manifests as a visible "rim flash" at the end of
+  // the morph animation that can't be tuned away.
+  //
+  // Scaling the floor by `uEdgeAlphaMultiplier` makes it caller-
+  // controlled: pass edgeAlphaMultiplier=0 to fully kill the floor
+  // (and with it the morph-time rim), or leave it at the default 0.4
+  // to preserve the original iOS-26 baseline.
+  glassAlpha = max(glassAlpha, borderMask * 0.9 * uEdgeAlphaMultiplier);
   
   float alpha = glassAlpha * mask;
   

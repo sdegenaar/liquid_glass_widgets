@@ -74,6 +74,22 @@ class AnimatedGlassIndicator extends StatelessWidget {
   /// muddy the liquid glass animation. Pass `null` (default) for no shadow.
   final List<BoxShadow>? shadows;
 
+  /// Forwards to [GlassEffect.baseAlphaMultiplier]. Controls the indicator
+  /// pill's center transparency in the interactive shader. Defaults to
+  /// [GlassEffect]'s default (0.2). Pass 0.0 together with
+  /// [edgeAlphaMultiplier]=0.0 to make the indicator's morphing pill
+  /// invisible (e.g. for screens where the morph-time rim flash isn't
+  /// wanted).
+  final double? baseAlphaMultiplier;
+
+  /// Forwards to [GlassEffect.edgeAlphaMultiplier]. Controls the indicator
+  /// pill's rim opacity in the interactive shader AND scales the
+  /// previously-hardcoded `borderMask * 0.9` floor in
+  /// `interactive_indicator.frag` — so passing 0.0 actually kills the
+  /// rim, instead of running into the floor. Defaults to [GlassEffect]'s
+  /// default (0.4).
+  final double? edgeAlphaMultiplier;
+
   const AnimatedGlassIndicator({
     super.key,
     required this.velocity,
@@ -94,6 +110,8 @@ class AnimatedGlassIndicator extends StatelessWidget {
     this.exactWidth,
     this.exactOffset,
     this.shadows,
+    this.baseAlphaMultiplier,
+    this.edgeAlphaMultiplier,
   });
 
   static const _baseGlassSettings = LiquidGlassSettings(
@@ -168,6 +186,11 @@ class AnimatedGlassIndicator extends StatelessWidget {
         ? LiquidRoundedSuperellipse(borderRadius: borderRadius * 2)
         : LiquidRoundedRectangle(borderRadius: borderRadius);
 
+    // Default alpha-multipliers for the indicator: GlassEffect's own
+    // defaults are 0.2 / 0.4 (matching iOS 26 baseline). Callers can
+    // override via the new optional params on this widget — most
+    // notably to pass 0.0 / 0.0 and fully kill the morph-time rim on
+    // screens where it reads as an unwanted "border flash."
     final glassWidget = GlassEffect(
       shape: shape,
       settings: effectiveSettings,
@@ -175,6 +198,8 @@ class AnimatedGlassIndicator extends StatelessWidget {
       interactionIntensity: thickness,
       backgroundKey: backgroundKey,
       clipExpansion: _jellyClipExpansion,
+      baseAlphaMultiplier: baseAlphaMultiplier ?? 0.2,
+      edgeAlphaMultiplier: edgeAlphaMultiplier ?? 0.4,
       child: const GlassGlow(
         glowColor: Colors
             .transparent, // caused grey rectangle flicker if clicking multiple times
