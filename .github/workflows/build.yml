@@ -43,7 +43,6 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            example/showcase/build/linux
             example/showcase/build/web
             ~/.cmake
             /home/runner/.cmake
@@ -58,19 +57,18 @@ jobs:
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
 
       # ---------------- FLUTTER SETUP ----------------
-      - name: Prepare showcase app (fix platforms)
+      - name: Prepare showcase app (web only)
         run: |
           cd example/showcase
 
           flutter config --enable-web
-          flutter config --enable-linux-desktop
 
           # ✅ FIX: ensure platform folders exist
-          flutter create . --platforms=web,linux
+          flutter create . --platforms=web
 
           flutter pub get
 
-      # ---------------- BUILD ----------------
+      # ---------------- BUILD SHOWCASE ----------------
       - name: Build showcase app
         run: |
           set -e
@@ -80,8 +78,7 @@ jobs:
           APP_NAME="showcase"
 
           mkdir -p ../../artifacts/web/$APP_NAME \
-                   ../../artifacts/wasm/$APP_NAME \
-                   ../../artifacts/linux/$APP_NAME
+                   ../../artifacts/wasm/$APP_NAME
 
           # ---------------- WEB ----------------
           echo "Building Web ($APP_NAME)..."
@@ -100,35 +97,82 @@ jobs:
             --base-href "/liquid_glass_widgets/$APP_NAME/"
           cp -r build/web/* ../../artifacts/wasm/$APP_NAME/
 
-          # ---------------- LINUX ----------------
-          echo "Building Linux ($APP_NAME)..."
-          rm -rf build/linux build/native_assets
-          flutter build linux \
-            -t "$ENTRY" \
-            --release \
+      # ---------------- BUILD OTHER WIDGETS (with Linux support) ----------------
+      - name: Build other widgets with Linux support
+        run: |
+          set -e
           
-          # Check if bundle exists, if not try alternative path
-          if [ -d "build/linux/x64/release/bundle" ]; then
-            cp -r build/linux/x64/release/bundle/* ../../artifacts/linux/$APP_NAME/
-          elif [ -d "build/linux/release/x64/release/bundle" ]; then
-            cp -r build/linux/release/x64/release/bundle/* ../../artifacts/linux/$APP_NAME/
-          else
-            echo "ERROR: Could not find Linux build output"
-            find build/linux -type d -name "bundle" 2>/dev/null || true
-            exit 1
-          fi
+          # List of widget apps to build (excluding showcase)
+          WIDGETS=("apple_messages" "apple_music")
+          
+          for WIDGET in "${WIDGETS[@]}"; do
+            if [ -d "example/$WIDGET" ]; then
+              echo ""
+              echo "======================================"
+              echo "Building $WIDGET"
+              echo "======================================"
+              
+              cd "example/$WIDGET"
+              
+              flutter config --enable-web
+              flutter config --enable-linux-desktop
+              flutter create . --platforms=web,linux
+              flutter pub get
+              
+              ENTRY="lib/main.dart"
+              
+              mkdir -p ../../artifacts/web/$WIDGET \
+                       ../../artifacts/wasm/$WIDGET \
+                       ../../artifacts/linux/$WIDGET
+              
+              # WEB
+              echo "Building Web ($WIDGET)..."
+              flutter build web \
+                -t "$ENTRY" \
+                --release \
+                --base-href "/liquid_glass_widgets/$WIDGET/"
+              cp -r build/web/* ../../artifacts/web/$WIDGET/
+              
+              # WASM
+              echo "Building WASM ($WIDGET)..."
+              flutter build web \
+                -t "$ENTRY" \
+                --release \
+                --wasm \
+                --base-href "/liquid_glass_widgets/$WIDGET/"
+              cp -r build/web/* ../../artifacts/wasm/$WIDGET/
+              
+              # LINUX
+              echo "Building Linux ($WIDGET)..."
+              rm -rf build/linux
+              flutter build linux \
+                -t "$ENTRY" \
+                --release
+              
+              if [ -d "build/linux/x64/release/bundle" ]; then
+                cp -r build/linux/x64/release/bundle/* ../../artifacts/linux/$WIDGET/
+              else
+                echo "ERROR: Could not find Linux build output for $WIDGET"
+                find build/linux -type d -name "bundle" 2>/dev/null || echo "No bundle directory found"
+              fi
+              
+              cd ../..
+            else
+              echo "WARNING: example/$WIDGET not found, skipping..."
+            fi
+          done
 
       # ---------------- DISPLAY STRUCTURE ----------------
       - name: Display artifact structure
         run: |
           echo "=== Web artifacts structure ==="
-          find artifacts/web -type f | head -20
+          find artifacts/web -type f | head -30
           echo ""
           echo "=== WASM artifacts structure ==="
-          find artifacts/wasm -type f | head -20
+          find artifacts/wasm -type f | head -30
           echo ""
           echo "=== Linux artifacts structure ==="
-          find artifacts/linux -type f | head -20
+          find artifacts/linux -type f | head -30
 
       # ---------------- ARCHIVES ----------------
       - name: Create release archives
@@ -142,13 +186,13 @@ jobs:
           echo ""
           echo "=== Verifying tar contents ==="
           echo "Web builds tar:"
-          tar -tzf web-builds.tar.gz | head -10
+          tar -tzf web-builds.tar.gz | head -15
           echo ""
           echo "WASM builds tar:"
-          tar -tzf wasm-builds.tar.gz | head -10
+          tar -tzf wasm-builds.tar.gz | head -15
           echo ""
           echo "Linux builds tar:"
-          tar -tzf linux-builds.tar.gz | head -10
+          tar -tzf linux-builds.tar.gz | head -15
 
       # ---------------- ARTIFACTS ----------------
       - uses: actions/upload-artifact@v4
