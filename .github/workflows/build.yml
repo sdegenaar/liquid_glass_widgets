@@ -1,4 +1,4 @@
-name: Build Flutter Repo
+name: Build Flutter Apps (Production)
 
 on:
   push:
@@ -15,22 +15,6 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: apple_music
-            entry: lib/apple_music/apple_music_demo.dart
-
-          - name: apple_podcasts
-            entry: lib/apple_podcasts/apple_podcasts_demo.dart
-
-          - name: apple_messages
-            entry: lib/apple_messages/apple_messages_demo.dart
-
-          - name: apple_news
-            entry: lib/apple_news/apple_news_demo.dart
 
     steps:
       # ---------------- CHECKOUT ----------------
@@ -49,108 +33,121 @@ jobs:
           flutter config --enable-web
           flutter config --enable-linux-desktop
 
-      # ---------------- LINUX DEPENDENCIES ----------------
-      - name: Install Linux dependencies
+      # ---------------- DEPENDENCIES ----------------
+      - name: Install Linux deps
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            clang \
-            cmake \
-            ninja-build \
-            pkg-config \
-            libgtk-3-dev \
-            liblzma-dev
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev
 
-      # ---------------- PUB GET ----------------
-      - name: Get dependencies
+      # ---------------- GET DEPENDENCIES ----------------
+      - name: Pub get
         run: flutter pub get
 
-            # ---------------- BUILD ----------------
-      - name: Build Flutter All Apps
+      # ---------------- DISCOVER VALID APPS ----------------
+      - name: Discover Flutter entrypoints
+        id: discover
         run: |
           set -e
-      
-          # ---------------- GO TO FLUTTER ROOT ----------------
-          cd example
-      
-          echo "Using Flutter project root: $(pwd)"
-      
-          # ---------------- ENABLE PLATFORMS ONCE ----------------
-          flutter config --enable-web
-          flutter config --enable-linux-desktop
-      
-          # IMPORTANT: only needed once per project
-          flutter create . --platforms web,linux || true
-      
-          BASE="/liquid_glass_widgets"
-      
-          mkdir -p ../artifacts/web ../artifacts/wasm ../artifacts/linux
-      
-          # ---------------- DISCOVER ENTRIES ----------------
-          ENTRIES=$(find lib -name "*_demo.dart")
-      
-          echo "Found entrypoints:"
+
+          echo "Scanning for valid Flutter apps..."
+
+          # ONLY files that actually define main()
+          ENTRIES=$(grep -rl "void main" lib || true)
+
+          # filter only demo apps
+          ENTRIES=$(echo "$ENTRIES" | grep "_demo.dart" || true)
+
+          echo "Valid entrypoints:"
           echo "$ENTRIES"
-      
+
+          echo "entries<<EOF" >> $GITHUB_OUTPUT
+          echo "$ENTRIES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      # ---------------- BUILD ----------------
+      - name: Build all apps safely
+        run: |
+          set -e
+
+          BASE="/liquid_glass_widgets"
+
+          mkdir -p artifacts/web artifacts/wasm artifacts/linux
+
+          ENTRIES="${{ steps.discover.outputs.entries }}"
+
+          if [ -z "$ENTRIES" ]; then
+            echo "No valid entrypoints found"
+            exit 1
+          fi
+
           for ENTRY_FILE in $ENTRIES; do
-      
+
             APP_NAME=$(basename "$ENTRY_FILE" | sed 's/_demo.dart//')
-      
+
             echo "=============================="
             echo "Building: $APP_NAME"
+            echo "Entry: $ENTRY_FILE"
             echo "=============================="
-      
-            WEB_OUT="../artifacts/web/$APP_NAME"
-            WASM_OUT="../artifacts/wasm/${APP_NAME}_wasm"
-            LINUX_OUT="../artifacts/linux/$APP_NAME"
-      
+
+            WEB_OUT="artifacts/web/$APP_NAME"
+            WASM_OUT="artifacts/wasm/${APP_NAME}_wasm"
+            LINUX_OUT="artifacts/linux/$APP_NAME"
+
+            mkdir -p "$WEB_OUT" "$WASM_OUT" "$LINUX_OUT"
+
             # ---------------- WEB ----------------
-            flutter build web \
+            if flutter build web \
               -t "$ENTRY_FILE" \
               --release \
-              --base-href "$BASE/$APP_NAME/"
-      
-            rm -rf "$WEB_OUT"
-            mkdir -p "$WEB_OUT"
-            cp -r build/web/* "$WEB_OUT/"
-      
+              --base-href "$BASE/$APP_NAME/"; then
+
+              cp -r build/web/* "$WEB_OUT/"
+            else
+              echo "❌ WEB failed: $APP_NAME"
+              continue
+            fi
+
             # ---------------- WASM ----------------
-            flutter build web \
+            if flutter build web \
               -t "$ENTRY_FILE" \
               --release \
               --wasm \
-              --base-href "$BASE/${APP_NAME}_wasm/"
-      
-            rm -rf "$WASM_OUT"
-            mkdir -p "$WASM_OUT"
-            cp -r build/web/* "$WASM_OUT/"
-      
+              --base-href "$BASE/${APP_NAME}_wasm/"; then
+
+              cp -r build/web/* "$WASM_OUT/"
+            else
+              echo "❌ WASM failed: $APP_NAME"
+            fi
+
             # ---------------- LINUX ----------------
-            flutter build linux \
+            if flutter build linux \
               -t "$ENTRY_FILE" \
-              --release
-      
-            rm -rf "$LINUX_OUT"
-            mkdir -p "$LINUX_OUT"
-            cp -r build/linux/x64/release/bundle/* "$LINUX_OUT/"
-      
+              --release; then
+
+              cp -r build/linux/x64/release/bundle/* "$LINUX_OUT/"
+            else
+              echo "❌ LINUX failed: $APP_NAME"
+            fi
+
           done
-    
-    # ---------------- ARTIFACTS ----------------
+
+      # ---------------- ARTIFACTS ----------------
       - name: Upload Web artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: web-${{ matrix.name }}
+          name: web-builds
           path: artifacts/web/
 
       - name: Upload WASM artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: wasm-${{ matrix.name }}
+          name: wasm-builds
           path: artifacts/wasm/
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: linux-${{ matrix.name }}
+          name: linux-builds
           path: artifacts/linux/
