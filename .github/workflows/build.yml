@@ -9,55 +9,59 @@ concurrency:
   group: flutter-build
   cancel-in-progress: true
 
-permissions:
-  contents: read
-
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
       # ---------------- CHECKOUT ----------------
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       # ---------------- FLUTTER ----------------
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.41.9"
           cache: true
 
-      # ---------------- LINUX DEPENDENCIES ----------------
-      - name: Install Linux deps
-        run: |
+      # ---------------- LINUX DEPS ----------------
+      - run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            clang cmake ninja-build pkg-config \
-            libgtk-3-dev liblzma-dev
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+
+      # ---------------- FIX PLATFORM SETUP ----------------
+      - name: Ensure Flutter platforms are configured
+        run: |
+          cd example
+
+          flutter config --enable-web
+          flutter config --enable-linux-desktop
+
+          # Only initialize platforms if missing
+          if [ ! -d "web" ] || [ ! -d "linux" ]; then
+            echo "Initializing Flutter platforms..."
+            flutter create . --platforms=web,linux
+          else
+            echo "Platforms already exist"
+          fi
 
       # ---------------- BUILD ----------------
-      - name: Build all apps (web + wasm + linux)
+      - name: Build apps
         run: |
           set -e
 
           cd example
-
           flutter pub get
-
-          flutter config --enable-web
-          flutter config --enable-linux-desktop
 
           BASE="/liquid_glass_widgets"
 
           mkdir -p ../artifacts/web ../artifacts/wasm ../artifacts/linux
 
           APPS=(
-            "apple_music"
-            "apple_podcasts"
-            "apple_messages"
-            "apple_news"
-            "chem_alert"
+            apple_music
+            apple_podcasts
+            apple_messages
+            apple_news
+            chem_alert
           )
 
           for APP in "${APPS[@]}"; do
@@ -65,8 +69,8 @@ jobs:
             ENTRY="lib/$APP/${APP}_demo.dart"
 
             echo "=============================="
-            echo "Building: $APP"
-            echo "Entry: $ENTRY"
+            echo "Building $APP"
+            echo "Entry $ENTRY"
             echo "=============================="
 
             WEB_OUT="../artifacts/web/$APP"
@@ -102,20 +106,17 @@ jobs:
           done
 
       # ---------------- ARTIFACTS ----------------
-      - name: Upload Web artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: web-builds
           path: artifacts/web/
 
-      - name: Upload WASM artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: wasm-builds
           path: artifacts/wasm/
 
-      - name: Upload Linux artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: linux-builds
           path: artifacts/linux/
