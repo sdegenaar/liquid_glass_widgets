@@ -106,7 +106,6 @@ jobs:
           flutter build linux \
             -t "$ENTRY" \
             --release \
-            --no-strip
           
           # Check if bundle exists, if not try alternative path
           if [ -d "build/linux/x64/release/bundle" ]; then
