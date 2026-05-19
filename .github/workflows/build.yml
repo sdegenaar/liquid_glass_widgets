@@ -47,6 +47,7 @@ jobs:
           cd example
           flutter config --enable-web
           flutter config --enable-linux-desktop
+          flutter config --enable-native-assets
 
           if [ ! -d "web" ] || [ ! -d "linux" ]; then
             flutter create . --platforms=web,linux
