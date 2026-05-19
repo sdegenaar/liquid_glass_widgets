@@ -5,6 +5,8 @@ on:
     branches: [main]
     tags:
       - "v*"
+  schedule:
+    - cron: "0 2 * * *"  # daily at 02:00 UTC
   workflow_dispatch:
 
 concurrency:
@@ -78,7 +80,7 @@ jobs:
           set -e
           cd example
           flutter pub get
-          BASE="/liquid_glass_widgets"
+          BASE="/site/liquid_glass_widgets"          
           mkdir -p ../artifacts/web ../artifacts/wasm ../artifacts/linux
           APPS=(
             apple_music
