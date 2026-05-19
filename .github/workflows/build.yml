@@ -5,8 +5,6 @@ on:
     branches: [main]
     tags:
       - "v*"
-  schedule:
-    - cron: "0 2 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -33,80 +31,98 @@ jobs:
         with:
           path: |
             ~/.pub-cache
-            example/showcase/.dart_tool
-          key: ${{ runner.os }}-pub-${{ hashFiles('example/showcase/pubspec.lock') }}
+            example/.dart_tool
+          key: ${{ runner.os }}-pub-${{ hashFiles('example/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-pub-
-      # ---------------- BUILD CACHE ----------------
-      - name: Cache build artifacts
+      # ---------------- CMAKE & BUILD CACHE ----------------
+      - name: Cache CMake and build artifacts
         uses: actions/cache@v4
         with:
           path: |
-            example/showcase/build/linux
-            example/showcase/build/web
+            example/build/linux
+            example/build/web
             ~/.cmake
             /home/runner/.cmake
-          key: ${{ runner.os }}-flutter-build-${{ hashFiles('example/showcase/pubspec.lock') }}
+          key: ${{ runner.os }}-flutter-build-${{ hashFiles('example/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-flutter-build-
       # ---------------- LINUX DEPS ----------------
-      - name: Install Linux dependencies
-        run: |
+      - run: |
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
       # ---------------- FLUTTER SETUP ----------------
-      - name: Prepare showcase app (fix platforms)
+      - name: Ensure Flutter platforms are configured
         run: |
-          cd example/showcase
+          cd example
           flutter config --enable-web
           flutter config --enable-linux-desktop
-          # ✅ FIX: ensure platform folders exist
-          flutter create . --platforms=web,linux
           flutter pub get
-      # ---------------- PRIME BUILD ----------------
+          if [ ! -d "web" ] || [ ! -d "linux" ]; then
+            flutter create . --platforms=web,linux
+          fi
+      # ---------------- PRIME LINUX BUILD ----------------
       - name: Prime Linux build environment
         run: |
-          cd example/showcase
-          flutter build linux --release || true
+          cd example
+          flutter build linux --release 2>&1 | tail -50 || true
+          cd ..
       # ---------------- BUILD ----------------
-      - name: Build showcase app
+      - name: Build apps
         run: |
           set -e
-          cd example/showcase
-          BASE="/site/liquid_glass_widgets/showcase"
-          ENTRY="lib/main.dart"
-          mkdir -p ../../artifacts/web ../../artifacts/wasm ../../artifacts/linux
-          # ---------------- WEB ----------------
-          echo "Building Web..."
-          flutter build web \
-            -t "$ENTRY" \
-            --release \
-            --base-href "$BASE/"
-          cp -r build/web/* ../../artifacts/web/
-          # ---------------- WASM ----------------
-          echo "Building WASM..."
-          flutter build web \
-            -t "$ENTRY" \
-            --release \
-            --wasm \
-            --base-href "$BASE/wasm/"
-          cp -r build/web/* ../../artifacts/wasm/
-          # ---------------- LINUX ----------------
-          echo "Building Linux..."
-          rm -rf build/linux
-          flutter build linux \
-            -t "$ENTRY" \
-            --release
-          cp -r build/linux/x64/release/bundle/* ../../artifacts/linux/
-      # ---------------- ARCHIVES ----------------
+          cd example
+          flutter pub get
+          BASE="/liquid_glass_widgets"
+          mkdir -p ../artifacts/web ../artifacts/wasm ../artifacts/linux
+          APPS=(
+            apple_music
+            apple_podcasts
+            apple_messages
+            apple_news
+          )
+          for APP in "${APPS[@]}"; do
+            ENTRY="lib/$APP/${APP}_demo.dart"
+            WEB_OUT="../artifacts/web/$APP"
+            WASM_OUT="../artifacts/wasm/${APP}_wasm"
+            LINUX_OUT="../artifacts/linux/$APP"
+            mkdir -p "$WEB_OUT" "$WASM_OUT" "$LINUX_OUT"
+            
+            # WEB
+            echo "Building Web for $APP..."
+            flutter build web \
+              -t "$ENTRY" \
+              --release \
+              --base-href "$BASE/$APP/"
+            cp -r build/web/* "$WEB_OUT/"
+            
+            # WASM
+            echo "Building WASM for $APP..."
+            flutter build web \
+              -t "$ENTRY" \
+              --release \
+              --wasm \
+              --base-href "$BASE/${APP}_wasm/"
+            cp -r build/web/* "$WASM_OUT/"
+            
+            # LINUX
+            echo "Building Linux for $APP..."
+            rm -rf build/linux
+            flutter build linux \
+              -t "$ENTRY" \
+              --release
+            cp -r build/linux/x64/release/bundle/* "$LINUX_OUT/"
+          done
+      # ---------------- CREATE RELEASE ARCHIVES ----------------
       - name: Create release archives
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           cd artifacts
           tar -czf web-builds.tar.gz web/
           tar -czf wasm-builds.tar.gz wasm/
           tar -czf linux-builds.tar.gz linux/
           ls -lh *.tar.gz
-      # ---------------- ARTIFACTS ----------------
+      # ---------------- UPLOAD ARTIFACTS FOR CI ----------------
       - uses: actions/upload-artifact@v4
         with:
           name: web-builds
@@ -122,19 +138,14 @@ jobs:
           name: linux-builds
           path: artifacts/linux/
 
-      # ---------------- RELEASE ----------------
+      # ---------------- CREATE GITHUB RELEASE ----------------
       - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
             artifacts/web-builds.tar.gz
             artifacts/wasm-builds.tar.gz
             artifacts/linux-builds.tar.gz
-          tag_name: build-${{ github.run_number }}
-          body: |
-            Showcase Build #${{ github.run_number }}
-            Commit: ${{ github.sha }}
-            Branch: ${{ github.ref_name }}
-          prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
