@@ -61,7 +61,6 @@ jobs:
             apple_podcasts
             apple_messages
             apple_news
-            chem_alert
           )
 
           for APP in "${APPS[@]}"; do
