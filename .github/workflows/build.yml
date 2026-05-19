@@ -36,6 +36,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
 
+      # ---------------- CMAKE & BUILD CACHE ----------------
+      - name: Cache CMake and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            example/build/linux
+            example/build/web
+            ~/.cmake
+            /home/runner/.cmake
+          key: ${{ runner.os }}-flutter-build-${{ hashFiles('example/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-build-
+
       # ---------------- LINUX DEPS ----------------
       - run: |
           sudo apt-get update
@@ -51,6 +64,13 @@ jobs:
           if [ ! -d "web" ] || [ ! -d "linux" ]; then
             flutter create . --platforms=web,linux
           fi
+
+      # ---------------- PRIME LINUX BUILD ----------------
+      - name: Prime Linux build environment
+        run: |
+          cd example
+          flutter build linux --release 2>&1 | tail -50 || true
+          cd ..
 
       # ---------------- BUILD ----------------
       - name: Build apps
@@ -92,6 +112,7 @@ jobs:
             
             # LINUX
             echo "Building Linux for $APP..."
+            rm -rf build/linux
             flutter build linux \
               -t "$ENTRY" \
               --release
