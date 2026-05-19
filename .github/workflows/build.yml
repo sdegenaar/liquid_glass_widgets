@@ -121,7 +121,6 @@ jobs:
 
       # ---------------- CREATE RELEASE ARCHIVES ----------------
       - name: Create release archives
-        if: startsWith(github.ref, 'refs/tags/')
         run: |
           cd artifacts
           tar -czf web-builds.tar.gz web/
@@ -147,12 +146,17 @@ jobs:
 
       # ---------------- CREATE GITHUB RELEASE ----------------
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
             artifacts/web-builds.tar.gz
             artifacts/wasm-builds.tar.gz
             artifacts/linux-builds.tar.gz
+          tag_name: build-${{ github.run_number }}
+          body: |
+            Build #${{ github.run_number }}
+            Commit: ${{ github.sha }}
+            Branch: ${{ github.ref_name }}
+          prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
