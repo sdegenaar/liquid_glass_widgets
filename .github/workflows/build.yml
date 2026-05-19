@@ -66,39 +66,43 @@ jobs:
         run: flutter pub get
 
             # ---------------- BUILD ----------------
-      - name: Build Flutter (auto-discover entrypoints)
+      - name: Build Flutter All Apps
         run: |
           set -e
       
-          # ---------------- FIND FLUTTER ROOT ----------------
-          FLUTTER_DIR=$(find . -name pubspec.yaml -exec dirname {} \; | head -n 1)
-          cd "$FLUTTER_DIR"
+          # ---------------- GO TO FLUTTER ROOT ----------------
+          cd example
       
-          echo "Flutter root: $FLUTTER_DIR"
+          echo "Using Flutter project root: $(pwd)"
+      
+          # ---------------- ENABLE PLATFORMS ONCE ----------------
+          flutter config --enable-web
+          flutter config --enable-linux-desktop
+      
+          # IMPORTANT: only needed once per project
+          flutter create . --platforms web,linux || true
       
           BASE="/liquid_glass_widgets"
       
-          mkdir -p ../../artifacts/web ../../artifacts/wasm ../../artifacts/linux
+          mkdir -p ../artifacts/web ../artifacts/wasm ../artifacts/linux
       
-          # ---------------- DISCOVER ENTRYPOINTS ----------------
+          # ---------------- DISCOVER ENTRIES ----------------
           ENTRIES=$(find lib -name "*_demo.dart")
       
           echo "Found entrypoints:"
           echo "$ENTRIES"
       
-          # ---------------- BUILD LOOP ----------------
           for ENTRY_FILE in $ENTRIES; do
       
             APP_NAME=$(basename "$ENTRY_FILE" | sed 's/_demo.dart//')
       
             echo "=============================="
             echo "Building: $APP_NAME"
-            echo "Entry: $ENTRY_FILE"
             echo "=============================="
       
-            WEB_OUT="../../artifacts/web/$APP_NAME"
-            WASM_OUT="../../artifacts/wasm/${APP_NAME}_wasm"
-            LINUX_OUT="../../artifacts/linux/$APP_NAME"
+            WEB_OUT="../artifacts/web/$APP_NAME"
+            WASM_OUT="../artifacts/wasm/${APP_NAME}_wasm"
+            LINUX_OUT="../artifacts/linux/$APP_NAME"
       
             # ---------------- WEB ----------------
             flutter build web \
@@ -129,7 +133,9 @@ jobs:
             rm -rf "$LINUX_OUT"
             mkdir -p "$LINUX_OUT"
             cp -r build/linux/x64/release/bundle/* "$LINUX_OUT/"
-          done      
+      
+          done
+    
     # ---------------- ARTIFACTS ----------------
       - name: Upload Web artifacts
         uses: actions/upload-artifact@v4
