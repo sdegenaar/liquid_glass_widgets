@@ -1,4 +1,4 @@
-name: Build Flutter Apps (Production)
+name: Build Liquid Glass Widgets
 
 on:
   push:
@@ -28,12 +28,7 @@ jobs:
           flutter-version: "3.41.9"
           cache: true
 
-      - name: Enable platforms
-        run: |
-          flutter config --enable-web
-          flutter config --enable-linux-desktop
-
-      # ---------------- DEPENDENCIES ----------------
+      # ---------------- LINUX DEPENDENCIES ----------------
       - name: Install Linux deps
         run: |
           sudo apt-get update
@@ -41,103 +36,71 @@ jobs:
             clang cmake ninja-build pkg-config \
             libgtk-3-dev liblzma-dev
 
-      # ---------------- GET DEPENDENCIES ----------------
-      - name: Pub get
-        run: flutter pub get
-
-      # ---------------- DISCOVER VALID APPS ----------------
-      - name: Discover Flutter entrypoints
-        id: discover
-        run: |
-          set -e
-
-          echo "Scanning for valid Flutter apps..."
-
-          # ONLY files that actually define main()
-          ENTRIES=$(grep -rl "void main" lib || true)
-
-          # filter only demo apps
-          ENTRIES=$(echo "$ENTRIES" | grep "_demo.dart" || true)
-
-          echo "Valid entrypoints:"
-          echo "$ENTRIES"
-
-          echo "entries<<EOF" >> $GITHUB_OUTPUT
-          echo "$ENTRIES" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
       # ---------------- BUILD ----------------
-      - name: Build all apps safely
+      - name: Build all apps (web + wasm + linux)
         run: |
           set -e
-          
+
+          cd example
+
+          flutter pub get
+
+          flutter config --enable-web
+          flutter config --enable-linux-desktop
+
           BASE="/liquid_glass_widgets"
-          
-          mkdir -p artifacts/web artifacts/wasm artifacts/linux
-          
-          # ---------------- DISCOVER APPS ----------------
-          ENTRIES=$(grep -rl "void main" lib || true)
-          ENTRIES=$(echo "$ENTRIES" | grep "_demo.dart" || true)
-          
-          echo "Found entrypoints:"
-          echo "$ENTRIES"
-          
-          if [ -z "$ENTRIES" ]; then
-            echo "No valid entrypoints found"
-            exit 1
-          fi
-          
-          # ---------------- BUILD LOOP ----------------
-          for ENTRY_FILE in $ENTRIES; do
-          
-            APP_NAME=$(basename "$ENTRY_FILE" | sed 's/_demo.dart//')
-          
+
+          mkdir -p ../artifacts/web ../artifacts/wasm ../artifacts/linux
+
+          APPS=(
+            "apple_music"
+            "apple_podcasts"
+            "apple_messages"
+            "apple_news"
+            "chem_alert"
+          )
+
+          for APP in "${APPS[@]}"; do
+
+            ENTRY="lib/$APP/${APP}_demo.dart"
+
             echo "=============================="
-            echo "Building: $APP_NAME"
-            echo "Entry: $ENTRY_FILE"
+            echo "Building: $APP"
+            echo "Entry: $ENTRY"
             echo "=============================="
-          
-            WEB_OUT="artifacts/web/$APP_NAME"
-            WASM_OUT="artifacts/wasm/${APP_NAME}_wasm"
-            LINUX_OUT="artifacts/linux/$APP_NAME"
-          
+
+            WEB_OUT="../artifacts/web/$APP"
+            WASM_OUT="../artifacts/wasm/${APP}_wasm"
+            LINUX_OUT="../artifacts/linux/$APP"
+
             mkdir -p "$WEB_OUT" "$WASM_OUT" "$LINUX_OUT"
-          
+
             # ---------------- WEB ----------------
-            if flutter build web \
-              -t "$ENTRY_FILE" \
+            flutter build web \
+              -t "$ENTRY" \
               --release \
-              --base-href "$BASE/$APP_NAME/"; then
-          
-              cp -r build/web/* "$WEB_OUT/"
-            else
-              echo "❌ WEB failed: $APP_NAME"
-              continue
-            fi
-          
+              --base-href "$BASE/$APP/"
+
+            cp -r build/web/* "$WEB_OUT/"
+
             # ---------------- WASM ----------------
-            if flutter build web \
-              -t "$ENTRY_FILE" \
+            flutter build web \
+              -t "$ENTRY" \
               --release \
               --wasm \
-              --base-href "$BASE/${APP_NAME}_wasm/"; then
-          
-              cp -r build/web/* "$WASM_OUT/"
-            else
-              echo "❌ WASM failed: $APP_NAME"
-            fi
-          
+              --base-href "$BASE/${APP}_wasm/"
+
+            cp -r build/web/* "$WASM_OUT/"
+
             # ---------------- LINUX ----------------
-            if flutter build linux \
-              -t "$ENTRY_FILE" \
-              --release; then
-          
-              cp -r build/linux/x64/release/bundle/* "$LINUX_OUT/"
-            else
-              echo "❌ LINUX failed: $APP_NAME"
-            fi
-          
+            flutter build linux \
+              -t "$ENTRY" \
+              --release
+
+            cp -r build/linux/x64/release/bundle/* "$LINUX_OUT/"
+
           done
+
       # ---------------- ARTIFACTS ----------------
       - name: Upload Web artifacts
         uses: actions/upload-artifact@v4
