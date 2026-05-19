@@ -52,16 +52,22 @@ jobs:
             ${{ runner.os }}-flutter-build-
 
       # ---------------- LINUX DEPS ----------------
-      - run: |
+      - name: Install Linux dependencies
+        run: |
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
 
       # ---------------- FLUTTER SETUP ----------------
-      - name: Prepare showcase app
+      - name: Prepare showcase app (fix platforms)
         run: |
           cd example/showcase
+
           flutter config --enable-web
           flutter config --enable-linux-desktop
+
+          # ✅ FIX: ensure platform folders exist
+          flutter create . --platforms=web,linux
+
           flutter pub get
 
       # ---------------- PRIME BUILD ----------------
@@ -77,10 +83,9 @@ jobs:
           cd example/showcase
 
           BASE="/site/liquid_glass_widgets/showcase"
+          ENTRY="lib/main.dart"
 
           mkdir -p ../../artifacts/web ../../artifacts/wasm ../../artifacts/linux
-
-          ENTRY="lib/main.dart"
 
           # ---------------- WEB ----------------
           echo "Building Web..."
@@ -102,10 +107,12 @@ jobs:
           # ---------------- LINUX ----------------
           echo "Building Linux..."
           rm -rf build/linux
-          flutter build linux -t "$ENTRY" --release
+          flutter build linux \
+            -t "$ENTRY" \
+            --release
           cp -r build/linux/x64/release/bundle/* ../../artifacts/linux/
 
-      # ---------------- CREATE ARCHIVES ----------------
+      # ---------------- ARCHIVES ----------------
       - name: Create release archives
         run: |
           cd artifacts
@@ -114,7 +121,7 @@ jobs:
           tar -czf linux-builds.tar.gz linux/
           ls -lh *.tar.gz
 
-      # ---------------- UPLOAD ARTIFACTS ----------------
+      # ---------------- ARTIFACTS ----------------
       - uses: actions/upload-artifact@v4
         with:
           name: web-builds
@@ -130,7 +137,7 @@ jobs:
           name: linux-builds
           path: artifacts/linux/
 
-      # ---------------- GITHUB RELEASE ----------------
+      # ---------------- RELEASE ----------------
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
