@@ -82,35 +82,49 @@ jobs:
           set -e
           cd example/showcase
 
-          BASE="/site/liquid_glass_widgets/showcase"
           ENTRY="lib/main.dart"
+          APP_NAME="showcase"
 
-          mkdir -p ../../artifacts/web ../../artifacts/wasm ../../artifacts/linux
+          mkdir -p ../../artifacts/web/$APP_NAME \
+                   ../../artifacts/wasm/$APP_NAME \
+                   ../../artifacts/linux/$APP_NAME
 
           # ---------------- WEB ----------------
-          echo "Building Web..."
+          echo "Building Web ($APP_NAME)..."
           flutter build web \
             -t "$ENTRY" \
             --release \
-            --base-href "$BASE/"
-          cp -r build/web/* ../../artifacts/web/
+            --base-href "/liquid_glass_widgets/$APP_NAME/"
+          cp -r build/web/* ../../artifacts/web/$APP_NAME/
 
           # ---------------- WASM ----------------
-          echo "Building WASM..."
+          echo "Building WASM ($APP_NAME)..."
           flutter build web \
             -t "$ENTRY" \
             --release \
             --wasm \
-            --base-href "$BASE/wasm/"
-          cp -r build/web/* ../../artifacts/wasm/
+            --base-href "/liquid_glass_widgets/$APP_NAME/"
+          cp -r build/web/* ../../artifacts/wasm/$APP_NAME/
 
           # ---------------- LINUX ----------------
-          echo "Building Linux..."
+          echo "Building Linux ($APP_NAME)..."
           rm -rf build/linux
           flutter build linux \
             -t "$ENTRY" \
             --release
-          cp -r build/linux/x64/release/bundle/* ../../artifacts/linux/
+          cp -r build/linux/x64/release/bundle/* ../../artifacts/linux/$APP_NAME/
+
+      # ---------------- DISPLAY STRUCTURE ----------------
+      - name: Display artifact structure
+        run: |
+          echo "=== Web artifacts structure ==="
+          find artifacts/web -type f | head -20
+          echo ""
+          echo "=== WASM artifacts structure ==="
+          find artifacts/wasm -type f | head -20
+          echo ""
+          echo "=== Linux artifacts structure ==="
+          find artifacts/linux -type f | head -20
 
       # ---------------- ARCHIVES ----------------
       - name: Create release archives
@@ -120,6 +134,14 @@ jobs:
           tar -czf wasm-builds.tar.gz wasm/
           tar -czf linux-builds.tar.gz linux/
           ls -lh *.tar.gz
+          
+          echo ""
+          echo "=== Verifying tar contents ==="
+          echo "Web builds tar:"
+          tar -tzf web-builds.tar.gz | head -10
+          echo ""
+          echo "WASM builds tar:"
+          tar -tzf wasm-builds.tar.gz | head -10
 
       # ---------------- ARTIFACTS ----------------
       - uses: actions/upload-artifact@v4
