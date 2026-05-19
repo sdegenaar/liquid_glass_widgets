@@ -1,0 +1,157 @@
+name: Build Flutter Repo
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: flutter-build
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        include:
+          # ---------------- APPLE MUSIC ----------------
+          - name: apple_music
+            entry: lib/apple_music/apple_music_demo.dart
+
+          # ---------------- APPLE PODCASTS ----------------
+          - name: apple_podcasts
+            entry: lib/apple_podcasts/apple_podcasts_demo.dart
+
+          # ---------------- APPLE MESSAGES ----------------
+          - name: apple_messages
+            entry: lib/apple_messages/apple_messages_demo.dart
+
+          # ---------------- APPLE NEWS ----------------
+          - name: apple_news
+            entry: lib/apple_news/apple_news_demo.dart
+
+    steps:
+      # ---------------- CHECKOUT ----------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ---------------- FLUTTER ----------------
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.9"
+          cache: true
+
+      # ---------------- ENABLE PLATFORMS ----------------
+      - name: Enable Flutter platforms
+        run: |
+          flutter config --enable-web
+          flutter config --enable-linux-desktop
+
+      # ---------------- LINUX DEPENDENCIES ----------------
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang \
+            cmake \
+            ninja-build \
+            pkg-config \
+            libgtk-3-dev \
+            liblzma-dev
+
+      # ---------------- ENSURE PLATFORMS ----------------
+      - name: Ensure web + linux platforms exist
+        run: |
+          cd flutter_src/example
+          flutter create . --platforms web,linux
+
+      # ---------------- DEPENDENCIES ----------------
+      - name: Get dependencies
+        run: |
+          cd flutter_src/example
+          flutter pub get
+
+      # ---------------- BUILD ----------------
+      - name: Build Flutter targets
+        run: |
+          set -e
+
+          cd flutter_src/example
+
+          APP_NAME="${{ matrix.name }}"
+          ENTRY_FILE="${{ matrix.entry }}"
+          BASE="/liquid_glass_widgets"
+
+          WEB_OUT="../../../artifacts/web/$APP_NAME"
+          WASM_OUT="../../../artifacts/wasm/${APP_NAME}_wasm"
+          LINUX_OUT="../../../artifacts/linux/$APP_NAME"
+
+          echo "--------------------------------------"
+          echo "Building: $APP_NAME"
+          echo "Entry   : $ENTRY_FILE"
+          echo "--------------------------------------"
+
+          # ---------------- WEB BUILD ----------------
+          echo "Building WEB..."
+
+          flutter build web \
+            -t "$ENTRY_FILE" \
+            --release \
+            --base-href "$BASE/$APP_NAME/"
+
+          rm -rf "$WEB_OUT"
+          mkdir -p "$WEB_OUT"
+          cp -r build/web/* "$WEB_OUT/"
+
+          # ---------------- WASM BUILD ----------------
+          echo "Building WASM..."
+
+          flutter build web \
+            -t "$ENTRY_FILE" \
+            --release \
+            --wasm \
+            --base-href "$BASE/${APP_NAME}_wasm/"
+
+          rm -rf "$WASM_OUT"
+          mkdir -p "$WASM_OUT"
+          cp -r build/web/* "$WASM_OUT/"
+
+          # ---------------- LINUX BUILD ----------------
+          echo "Building LINUX..."
+
+          flutter build linux \
+            -t "$ENTRY_FILE" \
+            --release
+
+          rm -rf "$LINUX_OUT"
+          mkdir -p "$LINUX_OUT"
+          cp -r build/linux/x64/release/bundle/* "$LINUX_OUT/"
+
+      # ---------------- UPLOAD WEB ----------------
+      - name: Upload Web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-${{ matrix.name }}
+          path: artifacts/web/${{ matrix.name }}
+
+      # ---------------- UPLOAD WASM ----------------
+      - name: Upload WASM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-${{ matrix.name }}
+          path: artifacts/wasm/${{ matrix.name }}_wasm
+
+      # ---------------- UPLOAD LINUX ----------------
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.name }}
+          path: artifacts/linux/${{ matrix.name }}
