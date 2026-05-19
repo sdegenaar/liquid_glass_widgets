@@ -70,12 +70,6 @@ jobs:
 
           flutter pub get
 
-      # ---------------- PRIME BUILD ----------------
-      - name: Prime Linux build environment
-        run: |
-          cd example/showcase
-          flutter build linux --release || true
-
       # ---------------- BUILD ----------------
       - name: Build showcase app
         run: |
@@ -108,11 +102,22 @@ jobs:
 
           # ---------------- LINUX ----------------
           echo "Building Linux ($APP_NAME)..."
-          rm -rf build/linux
+          rm -rf build/linux build/native_assets
           flutter build linux \
             -t "$ENTRY" \
-            --release
-          cp -r build/linux/x64/release/bundle/* ../../artifacts/linux/$APP_NAME/
+            --release \
+            --no-strip
+          
+          # Check if bundle exists, if not try alternative path
+          if [ -d "build/linux/x64/release/bundle" ]; then
+            cp -r build/linux/x64/release/bundle/* ../../artifacts/linux/$APP_NAME/
+          elif [ -d "build/linux/release/x64/release/bundle" ]; then
+            cp -r build/linux/release/x64/release/bundle/* ../../artifacts/linux/$APP_NAME/
+          else
+            echo "ERROR: Could not find Linux build output"
+            find build/linux -type d -name "bundle" 2>/dev/null || true
+            exit 1
+          fi
 
       # ---------------- DISPLAY STRUCTURE ----------------
       - name: Display artifact structure
@@ -142,6 +147,9 @@ jobs:
           echo ""
           echo "WASM builds tar:"
           tar -tzf wasm-builds.tar.gz | head -10
+          echo ""
+          echo "Linux builds tar:"
+          tar -tzf linux-builds.tar.gz | head -10
 
       # ---------------- ARTIFACTS ----------------
       - uses: actions/upload-artifact@v4
