@@ -48,6 +48,8 @@ jobs:
           flutter config --enable-web
           flutter config --enable-linux-desktop
           flutter config --enable-native-assets
+          flutter precache --linux
+          flutter pub get
 
           if [ ! -d "web" ] || [ ! -d "linux" ]; then
             flutter create . --platforms=web,linux
