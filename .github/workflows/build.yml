@@ -6,7 +6,7 @@ on:
     tags:
       - "v*"
   schedule:
-    - cron: "0 2 * * *"  # daily at 02:00 UTC
+    - cron: "0 2 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -33,21 +33,21 @@ jobs:
         with:
           path: |
             ~/.pub-cache
-            example/.dart_tool
-          key: ${{ runner.os }}-pub-${{ hashFiles('example/pubspec.lock') }}
+            example/showcase/.dart_tool
+          key: ${{ runner.os }}-pub-${{ hashFiles('example/showcase/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      # ---------------- CMAKE & BUILD CACHE ----------------
-      - name: Cache CMake and build artifacts
+      # ---------------- BUILD CACHE ----------------
+      - name: Cache build artifacts
         uses: actions/cache@v4
         with:
           path: |
-            example/build/linux
-            example/build/web
+            example/showcase/build/linux
+            example/showcase/build/web
             ~/.cmake
             /home/runner/.cmake
-          key: ${{ runner.os }}-flutter-build-${{ hashFiles('example/pubspec.lock') }}
+          key: ${{ runner.os }}-flutter-build-${{ hashFiles('example/showcase/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-flutter-build-
 
@@ -57,71 +57,55 @@ jobs:
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
 
       # ---------------- FLUTTER SETUP ----------------
-      - name: Ensure Flutter platforms are configured
+      - name: Prepare showcase app
         run: |
-          cd example
+          cd example/showcase
           flutter config --enable-web
           flutter config --enable-linux-desktop
           flutter pub get
-          if [ ! -d "web" ] || [ ! -d "linux" ]; then
-            flutter create . --platforms=web,linux
-          fi
 
-      # ---------------- PRIME LINUX BUILD ----------------
+      # ---------------- PRIME BUILD ----------------
       - name: Prime Linux build environment
         run: |
-          cd example
-          flutter build linux --release 2>&1 | tail -50 || true
-          cd ..
+          cd example/showcase
+          flutter build linux --release || true
 
       # ---------------- BUILD ----------------
-      - name: Build apps
+      - name: Build showcase app
         run: |
           set -e
-          cd example
-          flutter pub get
-          BASE="/site/liquid_glass_widgets"          
-          mkdir -p ../artifacts/web ../artifacts/wasm ../artifacts/linux
-          APPS=(
-            apple_music
-            apple_podcasts
-            apple_messages
-            apple_news
-          )
-          for APP in "${APPS[@]}"; do
-            ENTRY="lib/$APP/${APP}_demo.dart"
-            WEB_OUT="../artifacts/web/$APP"
-            WASM_OUT="../artifacts/wasm/${APP}_wasm"
-            LINUX_OUT="../artifacts/linux/$APP"
-            mkdir -p "$WEB_OUT" "$WASM_OUT" "$LINUX_OUT"
-            
-            # WEB
-            echo "Building Web for $APP..."
-            flutter build web \
-              -t "$ENTRY" \
-              --release \
-              --base-href "$BASE/$APP/"
-            cp -r build/web/* "$WEB_OUT/"
-            
-            # WASM
-            echo "Building WASM for $APP..."
-            flutter build web \
-              -t "$ENTRY" \
-              --release \
-              --wasm \
-              --base-href "$BASE/${APP}_wasm/"
-            cp -r build/web/* "$WASM_OUT/"
-            
-            # LINUX
-            echo "Building Linux for $APP..."
-            rm -rf build/linux
-            flutter build linux \
-              -t "$ENTRY" \
-              --release
-            cp -r build/linux/x64/release/bundle/* "$LINUX_OUT/"
-          done
+          cd example/showcase
 
-      # ---------------- CREATE RELEASE ARCHIVES ----------------
+          BASE="/site/liquid_glass_widgets/showcase"
+
+          mkdir -p ../../artifacts/web ../../artifacts/wasm ../../artifacts/linux
+
+          ENTRY="lib/main.dart"
+
+          # ---------------- WEB ----------------
+          echo "Building Web..."
+          flutter build web \
+            -t "$ENTRY" \
+            --release \
+            --base-href "$BASE/"
+          cp -r build/web/* ../../artifacts/web/
+
+          # ---------------- WASM ----------------
+          echo "Building WASM..."
+          flutter build web \
+            -t "$ENTRY" \
+            --release \
+            --wasm \
+            --base-href "$BASE/wasm/"
+          cp -r build/web/* ../../artifacts/wasm/
+
+          # ---------------- LINUX ----------------
+          echo "Building Linux..."
+          rm -rf build/linux
+          flutter build linux -t "$ENTRY" --release
+          cp -r build/linux/x64/release/bundle/* ../../artifacts/linux/
+
+      # ---------------- CREATE ARCHIVES ----------------
       - name: Create release archives
         run: |
           cd artifacts
@@ -130,7 +114,7 @@ jobs:
           tar -czf linux-builds.tar.gz linux/
           ls -lh *.tar.gz
 
-      # ---------------- UPLOAD ARTIFACTS FOR CI ----------------
+      # ---------------- UPLOAD ARTIFACTS ----------------
       - uses: actions/upload-artifact@v4
         with:
           name: web-builds
@@ -146,7 +130,7 @@ jobs:
           name: linux-builds
           path: artifacts/linux/
 
-      # ---------------- CREATE GITHUB RELEASE ----------------
+      # ---------------- GITHUB RELEASE ----------------
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -156,7 +140,7 @@ jobs:
             artifacts/linux-builds.tar.gz
           tag_name: build-${{ github.run_number }}
           body: |
-            Build #${{ github.run_number }}
+            Showcase Build #${{ github.run_number }}
             Commit: ${{ github.sha }}
             Branch: ${{ github.ref_name }}
           prerelease: true
