@@ -72,35 +72,43 @@ jobs:
             WASM_OUT="../artifacts/wasm/${APP}_wasm"
             LINUX_OUT="../artifacts/linux/$APP"
             mkdir -p "$WEB_OUT" "$WASM_OUT" "$LINUX_OUT"
+            
             # WEB
+            echo "Building Web for $APP..."
             flutter build web \
               -t "$ENTRY" \
               --release \
               --base-href "$BASE/$APP/"
             cp -r build/web/* "$WEB_OUT/"
+            
             # WASM
+            echo "Building WASM for $APP..."
             flutter build web \
               -t "$ENTRY" \
               --release \
               --wasm \
               --base-href "$BASE/${APP}_wasm/"
             cp -r build/web/* "$WASM_OUT/"
+            
             # LINUX
             echo "Building Linux for $APP..."
-            flutter build linux -t "$ENTRY" --release
+            flutter build linux \
+              -t "$ENTRY" \
+              --release
             cp -r build/linux/x64/release/bundle/* "$LINUX_OUT/"
-            echo "✓ Linux build successful for $APP"
           done
-      # ---------------- PREPARE RELEASE ASSETS ----------------
-      - name: Prepare release assets
+
+      # ---------------- CREATE RELEASE ARCHIVES ----------------
+      - name: Create release archives
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           cd artifacts
           tar -czf web-builds.tar.gz web/
           tar -czf wasm-builds.tar.gz wasm/
           tar -czf linux-builds.tar.gz linux/
+          ls -lh *.tar.gz
 
-      # ---------------- ARTIFACTS (CI) ----------------
+      # ---------------- UPLOAD ARTIFACTS FOR CI ----------------
       - uses: actions/upload-artifact@v4
         with:
           name: web-builds
@@ -116,7 +124,7 @@ jobs:
           name: linux-builds
           path: artifacts/linux/
 
-      # ---------------- RELEASE (ONLY ON TAGS) ----------------
+      # ---------------- CREATE GITHUB RELEASE ----------------
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
@@ -126,4 +134,4 @@ jobs:
             artifacts/wasm-builds.tar.gz
             artifacts/linux-builds.tar.gz
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
