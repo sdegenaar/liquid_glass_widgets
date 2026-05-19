@@ -85,14 +85,12 @@ jobs:
               --wasm \
               --base-href "$BASE/${APP}_wasm/"
             cp -r build/web/* "$WASM_OUT/"
-            # LINUX (optional)
-            if flutter build linux -t "$ENTRY" --release 2>/dev/null; then
-              cp -r build/linux/x64/release/bundle/* "$LINUX_OUT/"
-            else
-              echo "Warning: Linux build failed for $APP, skipping..."
-            fi
+            # LINUX
+            echo "Building Linux for $APP..."
+            flutter build linux -t "$ENTRY" --release
+            cp -r build/linux/x64/release/bundle/* "$LINUX_OUT/"
+            echo "✓ Linux build successful for $APP"
           done
-
       # ---------------- PREPARE RELEASE ASSETS ----------------
       - name: Prepare release assets
         if: startsWith(github.ref, 'refs/tags/')
