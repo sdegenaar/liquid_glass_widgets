@@ -69,49 +69,51 @@ jobs:
       - name: Build Web + WASM + Linux
         run: |
           set -e
-
+      
+          cd flutter_src/example   # 🔥 CRITICAL FIX
+      
           APP_NAME="${{ matrix.name }}"
           ENTRY_FILE="${{ matrix.entry }}"
           BASE="/liquid_glass_widgets"
-
-          WEB_OUT="artifacts/web/$APP_NAME"
-          WASM_OUT="artifacts/wasm/${APP_NAME}_wasm"
-          LINUX_OUT="artifacts/linux/$APP_NAME"
-
-          mkdir -p artifacts/web artifacts/wasm artifacts/linux
-
+      
+          WEB_OUT="../../artifacts/web/$APP_NAME"
+          WASM_OUT="../../artifacts/wasm/${APP_NAME}_wasm"
+          LINUX_OUT="../../artifacts/linux/$APP_NAME"
+      
+          mkdir -p ../../artifacts/web ../../artifacts/wasm ../../artifacts/linux
+      
           echo "Building: $APP_NAME"
-
+      
           # ---------------- WEB ----------------
           flutter build web \
             -t "$ENTRY_FILE" \
             --release \
             --base-href "$BASE/$APP_NAME/"
-
+      
           rm -rf "$WEB_OUT"
           mkdir -p "$WEB_OUT"
           cp -r build/web/* "$WEB_OUT/"
-
+      
           # ---------------- WASM ----------------
           flutter build web \
             -t "$ENTRY_FILE" \
             --release \
             --wasm \
             --base-href "$BASE/${APP_NAME}_wasm/"
-
+      
           rm -rf "$WASM_OUT"
           mkdir -p "$WASM_OUT"
           cp -r build/web/* "$WASM_OUT/"
-
+      
           # ---------------- LINUX ----------------
           flutter build linux \
             -t "$ENTRY_FILE" \
             --release
-
+      
           rm -rf "$LINUX_OUT"
           mkdir -p "$LINUX_OUT"
           cp -r build/linux/x64/release/bundle/* "$LINUX_OUT/"
-
+    
       # ---------------- ARTIFACTS ----------------
       - name: Upload Web artifacts
         uses: actions/upload-artifact@v4
