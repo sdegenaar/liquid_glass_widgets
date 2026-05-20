@@ -1,151 +1,155 @@
-name: Build & Release Liquid Glass Widgets
+name: Deploy Liquid Glass Website to Pages
 
 on:
   push:
-    branches: [main]
-    tags:
-      - "v*"
+    branches: ["main"]
+
+  schedule:
+    - cron: "0 0 * * *"
+
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 concurrency:
-  group: flutter-build
-  cancel-in-progress: true
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # ---------------- CHECKOUT ----------------
-      - uses: actions/checkout@v4
+      - name: Checkout website repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      # ---------------- FLUTTER ----------------
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.41.9"
-          cache: true
-
-      # ---------------- PUB CACHE ----------------
-      - name: Cache Pub dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pub-cache
-            example/.dart_tool
-          key: ${{ runner.os }}-pub-${{ hashFiles('example/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
-      # ---------------- CMAKE & BUILD CACHE ----------------
-      - name: Cache CMake and build artifacts
-        uses: actions/cache@v4
-        with:
-          path: |
-            example/build
-            ~/.cmake
-            /home/runner/.cmake
-          key: ${{ runner.os }}-flutter-build-${{ hashFiles('example/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-flutter-build-
-      # ---------------- FLUTTER SETUP ----------------
-      - name: Ensure Flutter platforms are configured
+      - name: Clean old builds
         run: |
-          cd example
-          flutter config --enable-web
-          flutter pub get
-          flutter create . --platforms web
-      # ---------------- BUILD ----------------
-      - name: Build apps
+          rm -rf liquid_glass_widgets
+          mkdir -p liquid_glass_widgets
+
+      - name: Get latest release tag and download assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=$(gh release list \
+            -R Internetperson-dev/liquid_glass_widgets \
+            --limit 1 \
+            --json tagName \
+            -q '.[0].tagName')
+
+          echo "Latest tag: $TAG"
+
+          gh release download "$TAG" \
+            -R Internetperson-dev/liquid_glass_widgets \
+            --pattern "web-canvas-builds.tar.gz" \
+            --pattern "wasm-builds.tar.gz" \
+            --pattern "web-html-builds.tar.gz"
+
+      - name: Extract and organize builds
         run: |
           set -e
-          cd example
-          flutter pub get
-          BASE="/site/liquid_glass_widgets"
-          mkdir -p ../artifacts/web-html ../artifacts/web-canvas ../artifacts/wasm
-          APPS=(
-            apple_music
-            apple_podcasts
-            apple_messages
-            apple_news
-          )
-          for APP in "${APPS[@]}"; do
-            ENTRY="lib/$APP/${APP}_demo.dart"
-            
-            # WEB HTML RENDERER (default, no WASM)
-            echo "Building Web HTML for $APP..."
-            WEB_HTML_OUT="../artifacts/web-html/$APP"
-            mkdir -p "$WEB_HTML_OUT"
-            flutter build web \
-              -t "$ENTRY" \
-              --release \
-              --base-href "$BASE/${APP}_html/"
-            cp -r build/web/* "$WEB_HTML_OUT/"
-            
-            # WEB CANVAS RENDERER (default, clean build)
-            echo "Building Web Canvas for $APP..."
-            WEB_CANVAS_OUT="../artifacts/web-canvas/$APP"
-            mkdir -p "$WEB_CANVAS_OUT"
-            rm -rf build/web
-            flutter build web \
-              -t "$ENTRY" \
-              --release \
-              --base-href "$BASE/${APP}_canvas/"
-            cp -r build/web/* "$WEB_CANVAS_OUT/"
-            
-            # WASM
-            echo "Building WASM for $APP..."
-            WASM_OUT="../artifacts/wasm/${APP}"
-            mkdir -p "$WASM_OUT"
-            rm -rf build/web
-            flutter build web \
-              -t "$ENTRY" \
-              --release \
-              --wasm \
-              --base-href "$BASE/${APP}_wasm/"
-            cp -r build/web/* "$WASM_OUT/"
-          done
-            
-      # ---------------- CREATE RELEASE ARCHIVES ----------------
-      - name: Create release archives
+          mkdir -p liquid_glass_widgets
+
+          ########################################
+          # CANVAS (no suffix)
+          ########################################
+          if [ -f web-canvas-builds.tar.gz ]; then
+            echo "=== Canvas builds ==="
+            mkdir -p canvas_extract
+            tar -xzf web-canvas-builds.tar.gz -C canvas_extract
+
+            for index_file in $(find canvas_extract -name "index.html" -type f); do
+              app_dir=$(dirname "$index_file")
+              app_name=$(basename "$app_dir")
+
+              echo "Canvas: $app_name"
+              mkdir -p "liquid_glass_widgets/$app_name"
+              cp -r "$app_dir"/* "liquid_glass_widgets/$app_name/"
+            done
+          fi
+
+          ########################################
+          # WASM (_wasm suffix)
+          ########################################
+          if [ -f wasm-builds.tar.gz ]; then
+            echo "=== WASM builds ==="
+            mkdir -p wasm_extract
+            tar -xzf wasm-builds.tar.gz -C wasm_extract
+
+            for index_file in $(find wasm_extract -name "index.html" -type f); do
+              app_dir=$(dirname "$index_file")
+              app_name=$(basename "$app_dir")
+
+              target="${app_name}_wasm"
+
+              echo "WASM: $app_name → $target"
+              mkdir -p "liquid_glass_widgets/$target"
+              cp -r "$app_dir"/* "liquid_glass_widgets/$target/"
+            done
+          fi
+
+          ########################################
+          # HTML (_html suffix)
+          ########################################
+          if [ -f web-html-builds.tar.gz ]; then
+            echo "=== HTML builds ==="
+            mkdir -p html_extract
+            tar -xzf web-html-builds.tar.gz -C html_extract
+
+            for index_file in $(find html_extract -name "index.html" -type f); do
+              app_dir=$(dirname "$index_file")
+              app_name=$(basename "$app_dir")
+
+              target="${app_name}_html"
+
+              echo "HTML: $app_name → $target"
+              mkdir -p "liquid_glass_widgets/$target"
+              cp -r "$app_dir"/* "liquid_glass_widgets/$target/"
+            done
+          fi
+
+          ########################################
+          # Cleanup + debug
+          ########################################
+          rm -rf canvas_extract wasm_extract html_extract
+
+          echo "=== Final structure ==="
+          find liquid_glass_widgets -maxdepth 2 -type d | sort
+
+      - name: Commit updated builds
         run: |
-          cd artifacts
-          tar -czf web-html-builds.tar.gz web-html/
-          tar -czf web-canvas-builds.tar.gz web-canvas/
-          tar -czf wasm-builds.tar.gz wasm/
-          ls -lh *.tar.gz
-      # ---------------- UPLOAD ARTIFACTS FOR CI ----------------
-      - uses: actions/upload-artifact@v4
-        with:
-          name: web-html-builds
-          path: artifacts/web-html/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: web-canvas-builds
-          path: artifacts/web-canvas/
+          git add liquid_glass_widgets
+          git commit -m "Update builds from latest release" || echo "No changes to commit"
+          git push
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: wasm-builds
-          path: artifacts/wasm/
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
 
-      # ---------------- CREATE GITHUB RELEASE ----------------
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          files: |
-            artifacts/web-html-builds.tar.gz
-            artifacts/web-canvas-builds.tar.gz
-            artifacts/wasm-builds.tar.gz
-          tag_name: build-${{ github.run_number }}
-          body: |
-            Build #${{ github.run_number }}
-            Commit: ${{ github.sha }}
-            Branch: ${{ github.ref_name }}
-            
-            Includes:
-            - Web HTML Renderer builds
-            - Web Canvas Renderer builds
-            - WebAssembly (WASM) builds
-          prerelease: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
