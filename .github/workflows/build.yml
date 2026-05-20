@@ -114,9 +114,10 @@ jobs:
       - name: Create archives
         run: |
           cd artifacts
-          tar -czf web-html-builds.tar.gz .
-          tar -czf web-canvas-builds.tar.gz .
-          tar -czf wasm-builds.tar.gz .
+          sleep 10
+          tar -czf web-html-builds.tar.gz . --warning=no-file-changed
+          tar -czf web-canvas-builds.tar.gz . --warning=no-file-changed
+          tar -czf wasm-builds.tar.gz . --warning=no-file-changed
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
