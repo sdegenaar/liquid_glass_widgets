@@ -35,7 +35,6 @@ jobs:
           key: ${{ runner.os }}-pub-${{ hashFiles('example/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-pub-
-
       # ---------------- CMAKE & BUILD CACHE ----------------
       - name: Cache CMake and build artifacts
         uses: actions/cache@v4
@@ -47,12 +46,10 @@ jobs:
           key: ${{ runner.os }}-flutter-build-${{ hashFiles('example/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-flutter-build-
-
       # ---------------- LINUX DEPS ----------------
       - run: |
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
-
       # ---------------- FLUTTER SETUP ----------------
       - name: Ensure Flutter platforms are configured
         run: |
@@ -63,7 +60,6 @@ jobs:
           if [ ! -d "web" ] || [ ! -d "linux" ]; then
             flutter create . --platforms=web
           fi
-
       # ---------------- BUILD ----------------
       - name: Build apps
         run: |
@@ -102,6 +98,14 @@ jobs:
               --base-href "$BASE/${APP}_wasm/"
             cp -r build/web/* "$WASM_OUT/"
             
+            # LINUX
+            echo "Building Linux for $APP..."
+            flutter build linux \
+              -t "$ENTRY" \
+              --release
+            cp -r build/linux/x64/release/bundle/* "$LINUX_OUT/"
+          done
+            
       # ---------------- CREATE RELEASE ARCHIVES ----------------
       - name: Create release archives
         run: |
@@ -110,7 +114,6 @@ jobs:
           tar -czf wasm-builds.tar.gz wasm/
           tar -czf linux-builds.tar.gz linux/
           ls -lh *.tar.gz
-
       # ---------------- UPLOAD ARTIFACTS FOR CI ----------------
       - uses: actions/upload-artifact@v4
         with:
