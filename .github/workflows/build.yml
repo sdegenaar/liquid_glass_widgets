@@ -52,6 +52,7 @@ jobs:
           cd example
           flutter config --enable-web
           flutter pub get
+          flutter create . --platforms web
       # ---------------- BUILD ----------------
       - name: Build apps
         run: |
@@ -77,7 +78,8 @@ jobs:
             flutter build web \
               -t "$ENTRY" \
               --release \
-              --base-href "$BASE/$APP/"
+              --base-href "$BASE/$APP/" \
+              --web-renderer=auto
             cp -r build/web/* "$WEB_OUT/"
             
             # WASM
@@ -86,7 +88,8 @@ jobs:
               -t "$ENTRY" \
               --release \
               --wasm \
-              --base-href "$BASE/${APP}_wasm/"
+              --base-href "$BASE/${APP}_wasm/" \
+              --web-renderer=skwasm
             cp -r build/web/* "$WASM_OUT/"
           done
             
