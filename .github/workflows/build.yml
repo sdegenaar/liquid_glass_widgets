@@ -41,7 +41,6 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            example/build/linux
             example/build/web
             ~/.cmake
             /home/runner/.cmake
@@ -62,15 +61,8 @@ jobs:
           flutter config --enable-linux-desktop
           flutter pub get
           if [ ! -d "web" ] || [ ! -d "linux" ]; then
-            flutter create . --platforms=web,linux
+            flutter create . --platforms=web
           fi
-
-      # ---------------- PRIME LINUX BUILD ----------------
-      - name: Prime Linux build environment
-        run: |
-          cd example
-          flutter build linux --release 2>&1 | tail -50 || true
-          cd ..
 
       # ---------------- BUILD ----------------
       - name: Build apps
@@ -110,15 +102,6 @@ jobs:
               --base-href "$BASE/${APP}_wasm/"
             cp -r build/web/* "$WASM_OUT/"
             
-            # LINUX
-            echo "Building Linux for $APP..."
-            rm -rf build/linux
-            flutter build linux \
-              -t "$ENTRY" \
-              --release
-            cp -r build/linux/x64/release/bundle/* "$LINUX_OUT/"
-          done
-
       # ---------------- CREATE RELEASE ARCHIVES ----------------
       - name: Create release archives
         run: |
