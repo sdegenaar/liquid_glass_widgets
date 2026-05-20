@@ -3,7 +3,8 @@ name: Build & Release Liquid Glass Widgets
 on:
   push:
     branches: [main]
-    tags: ["v*"]
+    tags:
+      - "v*"
   workflow_dispatch:
 
 concurrency:
@@ -13,15 +14,6 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        app:
-          - apple_music
-          - apple_podcasts
-          - apple_messages
-          - apple_news
 
     steps:
       # ---------------- CHECKOUT ----------------
@@ -33,109 +25,121 @@ jobs:
           flutter-version: "3.41.9"
           cache: true
 
-      # ---------------- PUB GET ----------------
-      - name: Install dependencies
+      # ---------------- PUB CACHE ----------------
+      - name: Cache Pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            example/.dart_tool
+          key: ${{ runner.os }}-pub-${{ hashFiles('example/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+      # ---------------- CMAKE & BUILD CACHE ----------------
+      - name: Cache CMake and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            example/build
+            ~/.cmake
+            /home/runner/.cmake
+          key: ${{ runner.os }}-flutter-build-${{ hashFiles('example/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-build-
+      # ---------------- FLUTTER SETUP ----------------
+      - name: Ensure Flutter platforms are configured
         run: |
           cd example
-          flutter pub get
           flutter config --enable-web
+          flutter pub get
           flutter create . --platforms web
-
-      # ---------------- BUILD VARIABLES ----------------
-      - name: Set build paths
+      # ---------------- BUILD ----------------
+      - name: Build apps
         run: |
-          echo "APP=${{ matrix.app }}" >> $GITHUB_ENV
-          echo "ENTRY=lib/${{ matrix.app }}/${{ matrix.app }}_demo.dart" >> $GITHUB_ENV
-          echo "BASE=/site/liquid_glass_widgets" >> $GITHUB_ENV
-
-      # ---------------- WEB HTML BUILD ----------------
-      - name: Build Web (HTML)
-        run: |
+          set -e
           cd example
-          flutter build web \
-            -t "$ENTRY" \
-            --release \
-            --base-href "$BASE/${APP}_html/"
-
-      - name: Collect HTML output
-        run: |
-          mkdir -p artifacts/web-html/${APP}
-          cp -r example/build/web/* artifacts/web-html/${APP}/
-
-      # ---------------- WEB CANVAS BUILD ----------------
-      - name: Build Web (Canvas)
-        run: |
-          cd example
-          rm -rf build/web
-
-          flutter build web \
-            -t "$ENTRY" \
-            --release \
-            --base-href "$BASE/${APP}/"
-
-      - name: Collect Canvas output
-        run: |
-          mkdir -p artifacts/web-canvas/${APP}
-          cp -r example/build/web/* artifacts/web-canvas/${APP}/
-
-      # ---------------- WASM BUILD ----------------
-      - name: Build Web (WASM)
-        run: |
-          cd example
-          rm -rf build/web
-
-          flutter build web \
-            -t "$ENTRY" \
-            --release \
-            --wasm \
-            --base-href "$BASE/${APP}_wasm/"
-
-      - name: Collect WASM output
-        run: |
-          mkdir -p artifacts/wasm/${APP}
-          cp -r example/build/web/* artifacts/wasm/${APP}/
-
-      # ---------------- UPLOAD PER APP ----------------
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.app }}-web-builds
-          path: artifacts/
-
-  # ---------------- RELEASE JOB (SEPARATE) ----------------
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Create archives
+          BASE="/site/liquid_glass_widgets"
+          mkdir -p ../artifacts/web-html ../artifacts/web-canvas ../artifacts/wasm
+          APPS=(
+            apple_music
+            apple_podcasts
+            apple_messages
+            apple_news
+          )
+          for APP in "${APPS[@]}"; do
+            ENTRY="lib/$APP/${APP}_demo.dart"
+            # ---------------- WEB HTML ----------------
+            echo "Building Web HTML for $APP..."
+            WEB_HTML_OUT="../artifacts/web-html/$APP"
+            mkdir -p "$WEB_HTML_OUT"
+            flutter build web \
+              -t "$ENTRY" \
+              --release \
+              --base-href "$BASE/${APP}_html/"
+            cp -r build/web/* "$WEB_HTML_OUT/"
+            # ---------------- WEB CANVAS ----------------
+            echo "Building Web Canvas for $APP..."
+            WEB_CANVAS_OUT="../artifacts/web-canvas/$APP"
+            mkdir -p "$WEB_CANVAS_OUT"
+            rm -rf build/web
+            flutter build web \
+              -t "$ENTRY" \
+              --release \
+              --base-href "$BASE/${APP}/"
+            cp -r build/web/* "$WEB_CANVAS_OUT/"
+            # ---------------- WASM ----------------
+            echo "Building WASM for $APP..."
+            WASM_OUT="../artifacts/wasm/${APP}"
+            mkdir -p "$WASM_OUT"
+            rm -rf build/web
+            flutter build web \
+              -t "$ENTRY" \
+              --release \
+              --wasm \
+              --base-href "$BASE/${APP}_wasm/"
+            cp -r build/web/* "$WASM_OUT/"
+          done
+      # ---------------- CREATE RELEASE ARCHIVES ----------------
+      - name: Create release archives
         run: |
           cd artifacts
-          sleep 10
-          tar -czf web-html-builds.tar.gz . --warning=no-file-changed
-          tar -czf web-canvas-builds.tar.gz . --warning=no-file-changed
-          tar -czf wasm-builds.tar.gz . --warning=no-file-changed
+          tar -czf web-html-builds.tar.gz web-html/
+          tar -czf web-canvas-builds.tar.gz web-canvas/
+          tar -czf wasm-builds.tar.gz wasm/
+          ls -lh *.tar.gz
+      # ---------------- UPLOAD ARTIFACTS ----------------
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-html-builds
+          path: artifacts/web-html/
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-canvas-builds
+          path: artifacts/web-canvas/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wasm-builds
+          path: artifacts/wasm/
+
+      # ---------------- GITHUB RELEASE ----------------
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: build-${{ github.run_number }}
           files: |
             artifacts/web-html-builds.tar.gz
             artifacts/web-canvas-builds.tar.gz
             artifacts/wasm-builds.tar.gz
+          tag_name: build-${{ github.run_number }}
           body: |
             Build #${{ github.run_number }}
             Commit: ${{ github.sha }}
             Branch: ${{ github.ref_name }}
-
             Includes:
-            - Web HTML builds
-            - Web Canvas builds
-            - WebAssembly builds
+            - Web HTML Renderer builds
+            - Web Canvas Renderer builds
+            - WebAssembly (WASM) builds
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
