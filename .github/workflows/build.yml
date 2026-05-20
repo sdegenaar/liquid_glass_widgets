@@ -39,6 +39,7 @@ jobs:
           cd example
           flutter pub get
           flutter config --enable-web
+          flutter create . --platforms web
 
       # ---------------- BUILD VARIABLES ----------------
       - name: Set build paths
