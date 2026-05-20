@@ -70,40 +70,38 @@ jobs:
           for APP in "${APPS[@]}"; do
             ENTRY="lib/$APP/${APP}_demo.dart"
             
-            # WEB HTML RENDERER
+            # WEB HTML RENDERER (default, no WASM)
             echo "Building Web HTML for $APP..."
             WEB_HTML_OUT="../artifacts/web-html/$APP"
             mkdir -p "$WEB_HTML_OUT"
             flutter build web \
               -t "$ENTRY" \
               --release \
-              --base-href "$BASE/${APP}_html/" \
-              --output build/web_html_$APP
-            cp -r build/web_html_$APP/* "$WEB_HTML_OUT/"
+              --base-href "$BASE/${APP}_html/"
+            cp -r build/web/* "$WEB_HTML_OUT/"
             
-            # WEB CANVAS RENDERER
+            # WEB CANVAS RENDERER (default, clean build)
             echo "Building Web Canvas for $APP..."
             WEB_CANVAS_OUT="../artifacts/web-canvas/$APP"
             mkdir -p "$WEB_CANVAS_OUT"
+            rm -rf build/web
             flutter build web \
               -t "$ENTRY" \
               --release \
-              --base-href "$BASE/${APP}_canvas/" \
-              --no-wasm \
-              --output build/web_canvas_$APP
-            cp -r build/web_canvas_$APP/* "$WEB_CANVAS_OUT/"
+              --base-href "$BASE/${APP}_canvas/"
+            cp -r build/web/* "$WEB_CANVAS_OUT/"
             
             # WASM
             echo "Building WASM for $APP..."
-            WASM_OUT="../artifacts/wasm/${APP}_wasm"
+            WASM_OUT="../artifacts/wasm/${APP}"
             mkdir -p "$WASM_OUT"
+            rm -rf build/web
             flutter build web \
               -t "$ENTRY" \
               --release \
               --wasm \
-              --base-href "$BASE/${APP}_wasm/" \
-              --output build/web_wasm_$APP
-            cp -r build/web_wasm_$APP/* "$WASM_OUT/"
+              --base-href "$BASE/${APP}_wasm/"
+            cp -r build/web/* "$WASM_OUT/"
           done
             
       # ---------------- CREATE RELEASE ARCHIVES ----------------
