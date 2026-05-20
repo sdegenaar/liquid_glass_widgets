@@ -78,8 +78,7 @@ jobs:
             flutter build web \
               -t "$ENTRY" \
               --release \
-              --base-href "$BASE/$APP/" \
-              --web-renderer=auto
+              --base-href "$BASE/$APP/"
             cp -r build/web/* "$WEB_OUT/"
             
             # WASM
@@ -88,8 +87,7 @@ jobs:
               -t "$ENTRY" \
               --release \
               --wasm \
-              --base-href "$BASE/${APP}_wasm/" \
-              --web-renderer=skwasm
+              --base-href "$BASE/${APP}_wasm/"
             cp -r build/web/* "$WASM_OUT/"
           done
             
