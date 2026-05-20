@@ -1,19 +1,14 @@
-name: Deploy Liquid Glass Website
+name: Build & Release Liquid Glass Widgets
 
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: "0 0 * * *" # daily at 00:00 UTC
   push:
     branches: [main]
-
-permissions:
-  contents: write
-  pages: write
-  id-token: write
+    tags:
+      - "v*"
+  workflow_dispatch:
 
 concurrency:
-  group: pages
+  group: flutter-build
   cancel-in-progress: true
 
 jobs:
@@ -21,125 +16,111 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout website repo
-        uses: actions/checkout@v4
+      # ---------------- CHECKOUT ----------------
+      - uses: actions/checkout@v4
+
+      # ---------------- FLUTTER ----------------
+      - uses: subosito/flutter-action@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          flutter-version: "3.41.9"
+          cache: true
 
-      - name: Clean old builds
+      # ---------------- PUB CACHE ----------------
+      - name: Cache Pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            example/.dart_tool
+          key: ${{ runner.os }}-pub-${{ hashFiles('example/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+      # ---------------- CMAKE & BUILD CACHE ----------------
+      - name: Cache CMake and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            example/build/web
+            ~/.cmake
+            /home/runner/.cmake
+          key: ${{ runner.os }}-flutter-build-${{ hashFiles('example/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-flutter-build-
+      # ---------------- FLUTTER SETUP ----------------
+      - name: Ensure Flutter platforms are configured
         run: |
-          rm -rf liquid_glass_widgets
-          mkdir -p liquid_glass_widgets
-      
-      - name: Get latest release tag and download assets
+          cd example
+          flutter config --enable-web
+          flutter pub get
+          flutter create . --platforms web
+      # ---------------- BUILD ----------------
+      - name: Build apps
+        run: |
+          set -e
+          cd example
+          flutter pub get
+          BASE="/site/liquid_glass_widgets"
+          mkdir -p ../artifacts/web ../artifacts/wasm
+          APPS=(
+            apple_music
+            apple_podcasts
+            apple_messages
+            apple_news
+          )
+          for APP in "${APPS[@]}"; do
+            ENTRY="lib/$APP/${APP}_demo.dart"
+            WEB_OUT="../artifacts/web/$APP"
+            WASM_OUT="../artifacts/wasm/${APP}_wasm"
+            mkdir -p "$WEB_OUT" "$WASM_OUT"
+            
+            # WEB
+            echo "Building Web for $APP..."
+            flutter build web \
+              -t "$ENTRY" \
+              --release \
+              --base-href "$BASE/$APP/"
+            cp -r build/web/* "$WEB_OUT/"
+            
+            # WASM
+            echo "Building WASM for $APP..."
+            flutter build web \
+              -t "$ENTRY" \
+              --release \
+              --wasm \
+              --base-href "$BASE/${APP}_wasm/"
+            cp -r build/web/* "$WASM_OUT/"
+          done
+            
+      # ---------------- CREATE RELEASE ARCHIVES ----------------
+      - name: Create release archives
+        run: |
+          cd artifacts
+          tar -czf web-builds.tar.gz web/
+          tar -czf wasm-builds.tar.gz wasm/
+          ls -lh *.tar.gz
+      # ---------------- UPLOAD ARTIFACTS FOR CI ----------------
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-builds
+          path: artifacts/web/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wasm-builds
+          path: artifacts/wasm/
+
+      # ---------------- CREATE GITHUB RELEASE ----------------
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/web-builds.tar.gz
+            artifacts/wasm-builds.tar.gz
+          tag_name: build-${{ github.run_number }}
+          body: |
+            Build #${{ github.run_number }}
+            Commit: ${{ github.sha }}
+            Branch: ${{ github.ref_name }}
+          prerelease: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG=$(gh release list \
-            -R Internetperson-dev/liquid_glass_widgets \
-            --limit 1 \
-            --json tagName \
-            -q '.[0].tagName')
-          echo "Latest tag: $TAG"
-          gh release download "$TAG" \
-            -R Internetperson-dev/liquid_glass_widgets \
-            --pattern "web-builds.tar.gz" \
-            --pattern "wasm-builds.tar.gz"
-
-      - name: Debug - Check tar contents
-        run: |
-          echo "=== web-builds.tar.gz structure (first 30 files) ==="
-          tar -tzf web-builds.tar.gz | head -30
-          echo ""
-          echo "=== wasm-builds.tar.gz structure (first 30 files) ==="
-          tar -tzf wasm-builds.tar.gz | head -30
-      
-      - name: Extract web builds
-        run: |
-          mkdir -p web_extract
-          tar -xzf web-builds.tar.gz -C web_extract
-          echo "=== web_extract directory structure ==="
-          find web_extract -type f | head -20
-      
-      - name: Extract wasm builds
-        run: |
-          mkdir -p wasm_extract
-          tar -xzf wasm-builds.tar.gz -C wasm_extract
-          echo "=== wasm_extract directory structure ==="
-          find wasm_extract -type f | head -20
-      
-      - name: Organize web builds into app directories
-        run: |
-          # Find all index.html files in web_extract and create proper app structure
-          for index_file in $(find web_extract -name "index.html" -type f); do
-            # Get the app directory (parent of the HTML file)
-            app_dir=$(dirname "$index_file")
-            app_name=$(basename "$app_dir")
-            
-            # Skip if it's the root
-            if [ "$app_name" != "web_extract" ] && [ -n "$app_name" ]; then
-              echo "Processing web app: $app_name"
-              mkdir -p "liquid_glass_widgets/$app_name"
-              cp -r "$app_dir"/* "liquid_glass_widgets/$app_name/"
-            fi
-          done
-          
-          # If no index.html files found, try to move all directories
-          if [ $(find web_extract -name "index.html" | wc -l) -eq 0 ]; then
-            echo "No index.html found, moving all directories..."
-            for dir in web_extract/*/; do
-              if [ -d "$dir" ]; then
-                app_name=$(basename "$dir")
-                echo "Moving web app: $app_name"
-                mv "$dir" "liquid_glass_widgets/$app_name"
-              fi
-            done
-          fi
-      
-      - name: Organize wasm builds into app directories
-        run: |
-          # Find all index.html files in wasm_extract and create proper app structure
-          for index_file in $(find wasm_extract -name "index.html" -type f); do
-            # Get the app directory (parent of the HTML file)
-            app_dir=$(dirname "$index_file")
-            app_name=$(basename "$app_dir")
-            
-            # Skip if it's the root
-            if [ "$app_name" != "wasm_extract" ] && [ -n "$app_name" ]; then
-              echo "Processing wasm app: $app_name"
-              mkdir -p "liquid_glass_widgets/$app_name"
-              cp -r "$app_dir"/* "liquid_glass_widgets/$app_name/"
-            fi
-          done
-          
-          # If no index.html files found, try to move all directories
-          if [ $(find wasm_extract -name "index.html" | wc -l) -eq 0 ]; then
-            echo "No index.html found, moving all directories..."
-            for dir in wasm_extract/*/; do
-              if [ -d "$dir" ]; then
-                app_name=$(basename "$dir")
-                echo "Moving wasm app: $app_name"
-                mv "$dir" "liquid_glass_widgets/$app_name"
-              fi
-            done
-          fi
-      
-      - name: Cleanup extraction directories
-        run: |
-          rm -rf web_extract wasm_extract
-      
-      - name: Display final structure
-        run: |
-          echo "=== Final liquid_glass_widgets structure ==="
-          find liquid_glass_widgets -maxdepth 2 -type d | sort
-          echo ""
-          echo "=== Directory count ==="
-          find liquid_glass_widgets -maxdepth 1 -type d | wc -l
-      
-      - name: Commit updated builds
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add liquid_glass_widgets
-          git commit -m "Update builds from latest release" || echo "No changes to commit"
-          git push
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
