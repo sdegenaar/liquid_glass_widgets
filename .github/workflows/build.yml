@@ -78,7 +78,7 @@ jobs:
           set -e
           cd example
           flutter pub get
-          BASE="site/liquid_glass_widgets"
+          BASE="/site/liquid_glass_widgets"
           mkdir -p ../artifacts/web ../artifacts/wasm ../artifacts/linux
           APPS=(
             apple_music
