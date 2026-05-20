@@ -35,6 +35,7 @@ jobs:
           key: ${{ runner.os }}-pub-${{ hashFiles('example/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-pub-
+
       # ---------------- CMAKE & BUILD CACHE ----------------
       - name: Cache CMake and build artifacts
         uses: actions/cache@v4
@@ -46,6 +47,7 @@ jobs:
           key: ${{ runner.os }}-flutter-build-${{ hashFiles('example/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-flutter-build-
+
       # ---------------- FLUTTER SETUP ----------------
       - name: Ensure Flutter platforms are configured
         run: |
@@ -53,57 +55,69 @@ jobs:
           flutter config --enable-web
           flutter pub get
           flutter create . --platforms web
+
       # ---------------- BUILD ----------------
       - name: Build apps
         run: |
           set -e
           cd example
-          flutter pub get
+
           BASE="/site/liquid_glass_widgets"
+
           mkdir -p ../artifacts/web-html ../artifacts/web-canvas ../artifacts/wasm
+
           APPS=(
             apple_music
             apple_podcasts
             apple_messages
             apple_news
           )
+
           for APP in "${APPS[@]}"; do
             ENTRY="lib/$APP/${APP}_demo.dart"
-            
-            # WEB HTML RENDERER (default, no WASM)
+
+            # ---------------- WEB HTML ----------------
             echo "Building Web HTML for $APP..."
             WEB_HTML_OUT="../artifacts/web-html/$APP"
             mkdir -p "$WEB_HTML_OUT"
+
             flutter build web \
               -t "$ENTRY" \
               --release \
               --base-href "$BASE/${APP}_html/"
+
             cp -r build/web/* "$WEB_HTML_OUT/"
-            
-            # WEB CANVAS RENDERER (default, clean build)
+
+            # ---------------- WEB CANVAS ----------------
             echo "Building Web Canvas for $APP..."
             WEB_CANVAS_OUT="../artifacts/web-canvas/$APP"
             mkdir -p "$WEB_CANVAS_OUT"
+
             rm -rf build/web
+
             flutter build web \
               -t "$ENTRY" \
               --release \
-              --base-href "$BASE/${APP}_canvas/"
+              --base-href "$BASE/${APP}/"
+
             cp -r build/web/* "$WEB_CANVAS_OUT/"
-            
-            # WASM
+
+            # ---------------- WASM ----------------
             echo "Building WASM for $APP..."
             WASM_OUT="../artifacts/wasm/${APP}"
             mkdir -p "$WASM_OUT"
+
             rm -rf build/web
+
             flutter build web \
               -t "$ENTRY" \
               --release \
               --wasm \
               --base-href "$BASE/${APP}_wasm/"
+
             cp -r build/web/* "$WASM_OUT/"
           done
-            
+
       # ---------------- CREATE RELEASE ARCHIVES ----------------
       - name: Create release archives
         run: |
@@ -112,7 +126,8 @@ jobs:
           tar -czf web-canvas-builds.tar.gz web-canvas/
           tar -czf wasm-builds.tar.gz wasm/
           ls -lh *.tar.gz
-      # ---------------- UPLOAD ARTIFACTS FOR CI ----------------
+
+      # ---------------- UPLOAD ARTIFACTS ----------------
       - uses: actions/upload-artifact@v4
         with:
           name: web-html-builds
@@ -128,7 +143,7 @@ jobs:
           name: wasm-builds
           path: artifacts/wasm/
 
-      # ---------------- CREATE GITHUB RELEASE ----------------
+      # ---------------- GITHUB RELEASE ----------------
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -141,7 +156,7 @@ jobs:
             Build #${{ github.run_number }}
             Commit: ${{ github.sha }}
             Branch: ${{ github.ref_name }}
-            
+
             Includes:
             - Web HTML Renderer builds
             - Web Canvas Renderer builds
