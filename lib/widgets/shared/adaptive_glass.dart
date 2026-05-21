@@ -194,21 +194,46 @@ class AdaptiveGlass extends StatelessWidget {
 
       // Normalise settings for the 2D lightweight shader to prevent it from looking
       // overpowering when the user has tuned their settings for the 3D premium shader.
-      // Thickness is scaled down because 2D inner shadows look much thicker than 3D bevels.
-      // Light intensity is scaled down because 2D gradients look brighter than 3D speculars.
-      final normalizedSettings = baseSettings.copyWith(
-        thickness:
-            (baseSettings.effectiveThickness * 0.4).clamp(0.0, double.infinity),
-        lightIntensity:
-            (baseSettings.effectiveLightIntensity * 0.6).clamp(0.0, 10.0),
-      );
+      //
+      // BYPASS: When quality is explicitly GlassQuality.standard, the settings
+      // are already calibrated for the Standard renderer — skip normalization.
+      // Normalization only makes sense when adapting Premium-tuned settings to
+      // Standard; if the caller already knows they're on Standard, their values
+      // must be passed through unchanged so tuning sliders take full effect.
+      final bool skipNormalization = quality == GlassQuality.standard;
+
+      final LiquidGlassSettings normalizedSettings;
+      if (skipNormalization) {
+        normalizedSettings = baseSettings.copyWith(
+          glassColor: baseSettings.glassColor.withValues(
+            alpha: (baseSettings.glassColor.a *
+                    baseSettings.standardOpacityMultiplier)
+                .clamp(0.0, 1.0),
+          ),
+        );
+      } else {
+        // Frosting normalization: adapts Premium settings for the 2D shader.
+        // Thickness scaled down (2D inner shadows look much thicker than 3D bevels).
+        // Light intensity scaled down (2D gradients look brighter than 3D speculars).
+        normalizedSettings = baseSettings.copyWith(
+          thickness: (baseSettings.effectiveThickness * 0.4)
+              .clamp(0.0, double.infinity),
+          lightIntensity:
+              (baseSettings.effectiveLightIntensity * 0.6).clamp(0.0, 10.0),
+          glassColor: baseSettings.glassColor.withValues(
+            alpha: (baseSettings.glassColor.a *
+                    baseSettings.standardOpacityMultiplier)
+                .clamp(0.0, 1.0),
+          ),
+        );
+      }
 
       // Apply subtle elevation boost to settings (preserves saturation!)
       final color = normalizedSettings.effectiveGlassColor;
       final effectiveSettings = shouldElevate
           ? LiquidGlassSettings(
               glassColor:
-                  color.withValues(alpha: (color.a + 0.2).clamp(0.0, 1.0)),
+                  color, // Removed flat +0.2 alpha boost for predictability
               refractiveIndex: normalizedSettings.refractiveIndex,
               thickness: normalizedSettings.effectiveThickness,
               lightAngle: normalizedSettings.lightAngle,
@@ -217,15 +242,14 @@ class AdaptiveGlass extends StatelessWidget {
               chromaticAberration: normalizedSettings.chromaticAberration,
               blur: normalizedSettings.effectiveBlur,
               visibility: normalizedSettings.visibility,
-              saturation: normalizedSettings
-                  .effectiveSaturation, // Preserve user saturation!
+              saturation: normalizedSettings.effectiveSaturation,
               ambientStrength:
                   (normalizedSettings.effectiveAmbientStrength * 0.4)
                       .clamp(0.0, 1.0),
+              glowIntensity: normalizedSettings.glowIntensity,
             )
           : normalizedSettings;
 
-      // PIPELINE HAND-OFF (The Secret Sauce)
       // If this is a container (allowElevation=false), we are providing a blur
       // for all our children to use. We update the InheritedLiquidGlass tree.
       if (!allowElevation) {
@@ -243,11 +267,14 @@ class AdaptiveGlass extends StatelessWidget {
         );
       }
 
+      // Elevated widgets use PATH B (no backgroundKey). They composite via
+      // SrcOver against the container's output.
       final Widget lightweightWidget = LightweightLiquidGlass(
         shape: shape,
         settings: effectiveSettings,
         densityFactor: densityFactor, // 0.0 or 1.0 based on elevation
-        glowIntensity: glowIntensity, // Pass through from button animation
+        glowIntensity:
+            glowIntensity * 0.35, // Normalise additive glow to match Impeller
         child: child,
       );
 

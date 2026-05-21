@@ -42,7 +42,7 @@ class LiquidGlassScope extends StatefulWidget {
   ///   child: Stack(
   ///     children: [
   ///       Positioned.fill(
-  ///         child: GlassRefractionSource(child: background),
+  ///         child: GlassBackgroundSource(child: background),
   ///       ),
   ///       Positioned.fill(child: content),
   ///     ],
@@ -60,6 +60,10 @@ class LiquidGlassScope extends StatefulWidget {
   ///   ),
   /// )
   /// ```
+  @Deprecated(
+    'Use GlassPage instead. GlassPage automatically handles Scaffold transparency '
+    'and adaptive quality degradation. This factory will be removed in 1.0.0.',
+  )
   factory LiquidGlassScope.stack({
     Key? key,
     required Widget background,
@@ -70,7 +74,7 @@ class LiquidGlassScope extends StatefulWidget {
       child: Stack(
         children: [
           Positioned.fill(
-            child: GlassRefractionSource(child: background),
+            child: GlassBackgroundSource(child: background),
           ),
           content, // Don't wrap in Positioned - let it naturally fill
         ],
@@ -120,51 +124,63 @@ class _LiquidGlassScopeState extends State<LiquidGlassScope> {
   }
 }
 
-/// Marks a widget as the refraction capture source for the nearest [LiquidGlassScope].
+/// Marks a widget as the texture capture source for the nearest [LiquidGlassScope].
 ///
 /// Wraps [child] in a [RepaintBoundary] tagged with the scope's [GlobalKey].
-/// Descendant [GlassEffect] widgets (the liquid pill inside [GlassSegmentedControl],
-/// [GlassTabBar], and [GlassBottomBar]) will sample this boundary every frame
-/// to produce real background refraction on Skia and Web.
+/// Descendant [GlassEffect] widgets (e.g. [GlassCard], [GlassSegmentedControl])
+/// will sample this boundary every frame to produce real background colour absorption
+/// on Skia and Web paths, simulating true physical glass.
 ///
 /// On Impeller with `GlassQuality.premium`, this is not needed — the native
-/// scene graph handles refraction without a captured boundary.
+/// scene graph handles color absorption and refraction without a captured boundary.
 ///
-/// Typically used inside a [LiquidGlassScope] via the `.stack()` factory:
+/// If [enabled] is false, the widget will not inject a [RepaintBoundary] and
+/// will simply return its child, allowing [GlassAdaptiveScope] to disable
+/// sampling gracefully during high GPU load.
+///
+/// Typically you do not use this directly. Use [GlassPage] at the root of your route.
 ///
 /// ```dart
-/// LiquidGlassScope.stack(
+/// GlassPage(
 ///   background: Image.asset('wallpaper.jpg', fit: BoxFit.cover),
-///   content: Scaffold(...),
+///   child: Scaffold(...),
 /// )
 /// ```
 ///
 /// Or manually, for granular control:
 ///
 /// ```dart
-/// GlassRefractionSource(
+/// GlassBackgroundSource(
+///   enabled: true,
 ///   child: Image.asset('wallpaper.jpg'),
 /// )
 /// ```
-class GlassRefractionSource extends StatelessWidget {
-  const GlassRefractionSource({
+class GlassBackgroundSource extends StatelessWidget {
+  const GlassBackgroundSource({
     required this.child,
+    this.enabled = true,
     super.key,
   });
 
   final Widget child;
 
+  /// Whether the background should be captured into a texture.
+  /// If false, glass surfaces will fall back to a synthetic frosted tint.
+  final bool enabled;
+
   @override
   Widget build(BuildContext context) {
+    if (!enabled) return child;
+
     final key = LiquidGlassScope.of(context);
 
     assert(() {
       if (key == null) {
         debugPrint(
-          'ℹ️ [GlassRefractionSource] No LiquidGlassScope found in the widget tree.\n'
-          '   The background will render normally but glass refraction will use\n'
-          '   synthetic frost instead of real background sampling.\n'
-          '   Wrap your widget tree with LiquidGlassScope to enable refraction.',
+          'ℹ️ [GlassBackgroundSource] No LiquidGlassScope found in the widget tree.\n'
+          '   The background will render normally but glass will use\n'
+          '   synthetic frost instead of real background colour sampling.\n'
+          '   Use GlassPage or wrap your widget tree with LiquidGlassScope to enable sampling.',
         );
       }
       return true;
@@ -180,17 +196,23 @@ class GlassRefractionSource extends StatelessWidget {
   }
 }
 
-/// Deprecated: use [GlassRefractionSource] instead.
+/// Deprecated: use [GlassBackgroundSource] instead.
 ///
-/// [LiquidGlassBackground] was renamed to [GlassRefractionSource] in 0.7.0
-/// to better reflect its purpose: marking the capture surface for glass
-/// refraction rather than acting as a generic background widget.
+/// [GlassRefractionSource] was renamed to [GlassBackgroundSource] in 0.11.0
+/// to better reflect its purpose for absorbing background colors, not just refraction.
 @Deprecated(
-  'Use GlassRefractionSource instead. '
-  'LiquidGlassBackground was renamed in 0.7.0 for clarity. '
+  'Use GlassBackgroundSource instead. '
+  'GlassRefractionSource was renamed in 0.11.0 for clarity. '
   'This alias will be removed in 1.0.0.',
 )
-typedef LiquidGlassBackground = GlassRefractionSource;
+typedef GlassRefractionSource = GlassBackgroundSource;
+
+/// Deprecated: use [GlassBackgroundSource] instead.
+@Deprecated(
+  'Use GlassBackgroundSource instead. '
+  'This alias will be removed in 1.0.0.',
+)
+typedef LiquidGlassBackground = GlassBackgroundSource;
 
 class _InheritedLiquidGlassScope extends InheritedWidget {
   const _InheritedLiquidGlassScope({

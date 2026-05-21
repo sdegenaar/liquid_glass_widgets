@@ -597,6 +597,9 @@ class _GlassSwitchState extends State<GlassSwitch>
     final thumbShape = LiquidRoundedSuperellipse(
       borderRadius: totalHeight / 2,
     );
+    // Standard path only — Premium values are unchanged.
+    final isStdPath =
+        (effectiveQuality ?? GlassQuality.standard) == GlassQuality.standard;
 
     final materialContent = Opacity(
       opacity: (1.0 - transition * 1.2).clamp(0.0, 1.0),
@@ -623,24 +626,28 @@ class _GlassSwitchState extends State<GlassSwitch>
       height: totalHeight,
       child: GlassEffect(
         shape: thumbShape,
-        settings: (effectiveQuality ?? GlassQuality.standard)
-                .usesLightweightShader
-            ? const LiquidGlassSettings(
-                glassColor: Color.from(alpha: 0.1, red: 1, green: 1, blue: 1),
-                refractiveIndex: 1.15,
-                thickness: 20,
-                lightIntensity: 2.0,
-                blur: 0,
-                lightAngle: GlassDefaults.lightAngle, // Apple iOS 26 standard
-              )
-            : const LiquidGlassSettings(
-                glassColor: Color.from(alpha: 0.1, red: 1, green: 1, blue: 1),
-                refractiveIndex: 1.15, // Premium sharpness boost
-                thickness: 10,
-                lightIntensity: 2, // Bold specular highlight
-                blur: 0,
-                lightAngle: GlassDefaults.lightAngle, // Apple iOS 26 standard
-              ),
+        // Standard: same rim/light math as AnimatedGlassIndicator pill.
+        //   rimThickness×0.35, lightIntensity×0.6 dampeners applied in GlassEffect.build().
+        // Premium: original values preserved exactly — no change to Premium rendering.
+        settings: LiquidGlassSettings(
+          glassColor: const Color.from(alpha: 0.1, red: 1, green: 1, blue: 1),
+          refractiveIndex: 1.15,
+          thickness: 10,
+          lightIntensity: isStdPath
+              ? 0.0
+              : 2.0, // no specular on synthetic path (clamped by synthBase); premium unchanged
+          blur: 0,
+          lightAngle: GlassDefaults.lightAngle,
+        ),
+        rimThickness:
+            isStdPath ? 0.5 : 0.5, // beautiful thin rim; premium unchanged
+        ambientRim: isStdPath
+            ? 0.08
+            : 0.1, // ~80% of Premium ring strength; premium unchanged
+        baseAlphaMultiplier:
+            isStdPath ? 0.0 : 0.2, // clear glass body; premium unchanged
+        edgeAlphaMultiplier:
+            isStdPath ? 0.15 : 0.4, // soft edge glow; premium unchanged
         quality: effectiveQuality ?? GlassQuality.standard,
         interactionIntensity: transition,
         child: Stack(

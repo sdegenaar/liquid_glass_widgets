@@ -719,13 +719,22 @@ class TabBarContentState extends State<TabBarContent>
                 );
               } else {
                 // Non-scrollable mode: stacking background, labels, glass without clipping.
+                //
+                // Premium: glass renders ABOVE labels — Impeller's physical refraction
+                // wraps the icon correctly (it refracts around it, not covers it).
+                //
+                // Standard/Minimal: glass renders BELOW labels — the 2D shader is an
+                // opaque paint pass that would obscure the icon if placed on top.
+                final bool isPremiumQuality =
+                    widget.quality == GlassQuality.premium;
                 return Stack(
                   clipBehavior: Clip.none,
                   children: [
                     if (canShowIndicator)
-                      buildIndicator(paintBackground: true, paintGlass: false),
+                      buildIndicator(
+                          paintBackground: true, paintGlass: !isPremiumQuality),
                     tabLabels,
-                    if (canShowIndicator)
+                    if (canShowIndicator && isPremiumQuality)
                       buildIndicator(paintBackground: false, paintGlass: true),
                   ],
                 );

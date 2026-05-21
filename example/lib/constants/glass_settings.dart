@@ -140,9 +140,10 @@ class RecommendedGlassSettings {
   /// [GlassModalSheet.show] to avoid the hard "line" artifact on large
   /// surfaces that use the lightweight shader.
   ///
-  /// The lightweight shader's rim opacity = kRimAlphaBase(0.8) × refractiveIndex.
-  /// - At 0.7 (overlay preset): rim = 0.56 opacity → visible hard border on sheets
-  /// - At 0.15 (this preset):   rim = 0.12 opacity → barely-perceptible glassy edge
+  /// The lightweight shader's rim opacity is derived from kRimAlphaBase(0.65)
+  /// × directional/ambient factors × refractiveIndex.
+  /// - At 0.7 (overlay preset): visible rim border on sheets
+  /// - At 0.15 (this preset):   barely-perceptible glassy edge
   static const sheet = LiquidGlassSettings(
     blur: 10,
     thickness: 10,

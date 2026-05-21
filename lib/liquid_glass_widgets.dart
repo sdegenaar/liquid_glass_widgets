@@ -38,6 +38,7 @@ export 'widgets/shared/adaptive_liquid_glass_layer.dart';
 export 'widgets/shared/glass_accessibility_scope.dart'; // GlassAccessibilityScope + GlassAccessibilityData
 export 'widgets/shared/glass_adaptive_scope.dart'; // GlassAdaptiveScope + GlassAdaptiveScopeData + GlassAdaptiveDiagnostic
 export 'widgets/shared/glass_backdrop_scope.dart'; // GlassBackdropScope — per-screen backdrop isolation
+export 'widgets/shared/glass_page.dart' show GlassPage, GlassStatusBarStyle;
 export 'widgets/shared/glass_motion_scope.dart';
 export 'widgets/shared/inherited_liquid_glass.dart';
 export 'widgets/shared/lightweight_liquid_glass.dart';
@@ -75,7 +76,8 @@ export 'widgets/interactive/glass_button.dart';
 export 'widgets/interactive/glass_chip.dart';
 export 'widgets/interactive/glass_icon_button.dart';
 export 'widgets/interactive/glass_segmented_control.dart';
-export 'widgets/interactive/liquid_glass_scope.dart';
+export 'widgets/interactive/liquid_glass_scope.dart'
+    show LiquidGlassScope, GlassBackgroundSource, GlassRefractionSource;
 export 'widgets/interactive/glass_slider.dart';
 export 'widgets/interactive/glass_switch.dart';
 export 'widgets/interactive/glass_pull_down_button.dart';
