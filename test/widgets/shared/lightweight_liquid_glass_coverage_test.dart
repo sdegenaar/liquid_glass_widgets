@@ -39,10 +39,10 @@ void main() {
     LightweightLiquidGlass.resetForTesting();
   });
 
-  // ── Shader null → ClipPath fallback ───────────────────────────────────────
+  // ── Shader null → clip wrap fallback ──────────────────────────────────────
 
   group('LightweightLiquidGlass — fallback (shader == null)', () {
-    testWidgets('renders ClipPath fallback when no shader cached',
+    testWidgets('renders ClipRRect fallback for RoundedRectangleBorder shapes',
         (tester) async {
       // resetForTesting ensures _cachedProgram == null → fallback path.
       await tester.pumpWidget(
@@ -55,11 +55,16 @@ void main() {
         ),
       );
       await tester.pump();
-      // Fallback uses ClipPath.
-      expect(find.byType(ClipPath), findsAtLeastNWidgets(1));
+      // Shapes that resolve to RoundedRectangleBorder are wrapped in
+      // ClipRRect (not ClipPath) so Flutter PR #177551's PlatformView
+      // clip-forwarding kicks in over a PlatformView backdrop.
+      expect(find.byType(ClipRRect), findsAtLeastNWidgets(1));
     });
 
     testWidgets('LiquidOval fallback uses ClipPath', (tester) async {
+      // LiquidOval is intentionally NOT routed through ClipRRect — the
+      // engine fix doesn't trigger for it (see _ShapeClip doc comment).
+      // The fallback remains ClipPath.
       await tester.pumpWidget(
         createTestApp(
           child: LightweightLiquidGlass(

@@ -1,3 +1,19 @@
+# 0.12.1
+
+## 🐛 Fix — eliminate rectangular blur halo over PlatformViews (iOS Impeller)
+
+`LightweightLiquidGlass` and `_FrostedFallback` previously wrapped their glass surface in `ClipPath(ShapeBorderClipper(...))`. When the parent was an iOS PlatformView (e.g. `mapbox_maps_flutter` `MapWidget`, `video_player` on iOS), the descendant `BackdropFilter`'s rectangular blur output leaked past the rounded clip — visible as a faint square halo around the rounded glass shape, most obvious when light backdrop content scrolled underneath.
+
+Flutter framework [PR #177551](https://github.com/flutter/flutter/pull/177551) (merged Dec 2025, shipped in 3.41.0-0.0.pre+) fixed this at the engine level by forwarding `ClipRRect` clip data to the iOS PlatformView mutator stack — but **only `ClipRRect`, not `ClipPath`**, even when the path inside is mathematically a rounded rect.
+
+This release routes shapes that resolve to a `RoundedRectangleBorder` (i.e. `LiquidRoundedSuperellipse`, `LiquidVerticalRoundedSuperellipse`) through `ClipRRect` instead of `ClipPath`. The engine fix now triggers and the halo disappears for those shapes.
+
+`LiquidOval` is intentionally NOT routed through `ClipRRect` — empirically the engine fix doesn't forward `ClipRRect` with `circular(double.infinity)` nor a `LayoutBuilder`-computed finite radius on the `LiquidOval` path. Callers that need a halo-free circular glass surface over a PlatformView should use `LiquidRoundedSuperellipse(borderRadius: size / 2)` instead, which renders identically on a square widget and triggers the engine fix.
+
+Closes upstream Flutter [#175048](https://github.com/flutter/flutter/issues/175048) and [#115926](https://github.com/flutter/flutter/issues/115926) for `liquid_glass_widgets` users.
+
+*Based on [PR #61](https://github.com/sdegenaar/liquid_glass_widgets/pull/61) by [@jfhair](https://github.com/jfhair).*
+
 # 0.12.0
 
 ## ✨ New
