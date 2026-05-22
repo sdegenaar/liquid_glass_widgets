@@ -48,6 +48,26 @@ Accepts `CrossAxisAlignment.start` (top), `.center` (default), or `.end` (bottom
 
 All three features are forwarded through `GlassTextArea`.
 
+### `GlassTextField.search` named constructor
+
+A new convenience constructor that pre-configures `GlassTextField` with compact search-bar defaults: `height: 44`, `iconSpacing: 8`, `padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)`, `borderRadius: 22`, and `textInputAction: TextInputAction.search`. Eliminates the boilerplate previously required to match `GlassSearchBar` visuals:
+
+```dart
+GlassTextField.search(
+  placeholder: 'Search messages…',
+  prefixIcon: Icon(CupertinoIcons.search, size: 20),
+  useOwnLayer: true,
+)
+```
+
+`GlassSearchBar` now uses this constructor internally, reducing duplicated decoration code.
+
+## 🐛 Fix
+
+- **`onLineCountChanged` now fires on programmatic controller changes** — Previously the callback only responded to physical keyboard input (`TextField.onChanged`). Setting `controller.text = '...'` or calling `controller.clear()` (e.g. in a chat "Send" handler) did not re-measure the line count. The widget now actively listens to the `TextEditingController` and re-measures on any text mutation.
+
+- **Suffix icon spacing now respects `iconSpacing`** — The gap before the suffix icon was hard-coded to 12px while the prefix icon correctly used `widget.iconSpacing`. Both sides now use the same parameter.
+
 # 0.12.1
 
 ## 🐛 Fix — eliminate rectangular blur halo over PlatformViews (iOS Impeller)

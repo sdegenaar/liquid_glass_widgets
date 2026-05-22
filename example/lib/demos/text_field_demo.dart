@@ -6,12 +6,32 @@
 ///   - `onLineCountChanged` — drives animated border-radius reduction
 ///   - `iconAlignment: CrossAxisAlignment.end` — icons pinned to bottom
 ///
+/// To run: flutter run -t lib/demos/text_field_demo.dart
+///
 /// Run on a physical iOS device (Impeller) for best visual results.
 library;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await LiquidGlassWidgets.initialize();
+  runApp(LiquidGlassWidgets.wrap(child: const TextFieldDemoApp()));
+}
+
+class TextFieldDemoApp extends StatelessWidget {
+  const TextFieldDemoApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: TextFieldDemo(),
+    );
+  }
+}
 
 class TextFieldDemo extends StatefulWidget {
   const TextFieldDemo({super.key});
@@ -83,21 +103,16 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
             // ── Fixed-height search field (Feature 1) ────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: GlassTextField(
+              child: GlassTextField.search(
                 controller: _searchController,
                 placeholder: 'Search messages…',
-                height: 44, // ← matches GlassSearchBar
                 prefixIcon: const Icon(
                   CupertinoIcons.search,
                   size: 20,
                   color: Colors.white60,
                 ),
-                shape: const LiquidRoundedSuperellipse(borderRadius: 22),
                 useOwnLayer: true,
                 quality: GlassQuality.premium,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                iconSpacing: 8,
               ),
             ),
 

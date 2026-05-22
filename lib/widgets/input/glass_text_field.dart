@@ -110,6 +110,47 @@ class GlassTextField extends StatefulWidget {
           'a constrained range.',
         );
 
+  /// Creates a glass text field styled specifically for search, matching
+  /// the compact layout and visuals of [GlassSearchBar].
+  const GlassTextField.search({
+    super.key,
+    this.controller,
+    this.focusNode,
+    this.placeholder,
+    this.prefixIcon,
+    this.suffixIcon,
+    this.onSuffixTap,
+    this.enabled = true,
+    this.readOnly = false,
+    this.autofocus = false,
+    this.onChanged,
+    this.onSubmitted,
+    this.inputFormatters,
+    this.textStyle,
+    this.placeholderStyle,
+    this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    this.iconSpacing = 8.0,
+    this.height = 44.0,
+    this.shape = const LiquidRoundedSuperellipse(borderRadius: 22),
+    this.settings,
+    this.useOwnLayer = false,
+    this.quality,
+    this.interactionBehavior = GlassInteractionBehavior.full,
+    this.pressScale = 1.03,
+    this.glowColor,
+    this.glowRadius = 1.5,
+    this.onTapOutside,
+  })  : obscureText = false,
+        keyboardType = TextInputType.text,
+        textInputAction = TextInputAction.search,
+        maxLines = 1,
+        minLines = 1,
+        maxLength = null,
+        onLineCountChanged = null,
+        iconAlignment = CrossAxisAlignment.center,
+        minHeight = null,
+        maxHeight = null;
+
   // ===========================================================================
   // Text Field Properties
   // ===========================================================================
@@ -350,6 +391,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
   bool _isFocused = false;
   bool _isPressed = false;
   int _currentLineCount = 0;
+  TextEditingController? _effectiveController;
 
   /// Current rendered line count.
   ///
@@ -385,7 +427,20 @@ class _GlassTextFieldState extends State<GlassTextField> {
     _isFocused = _focusNode.hasFocus;
     _focusNode.addListener(_onFocusChange);
 
+    _initController();
+
     // Schedule initial line count measurement after first layout.
+    if (widget.onLineCountChanged != null) {
+      _scheduleLineCountCheck();
+    }
+  }
+
+  void _initController() {
+    _effectiveController = widget.controller;
+    _effectiveController?.addListener(_onControllerChange);
+  }
+
+  void _onControllerChange() {
     if (widget.onLineCountChanged != null) {
       _scheduleLineCountCheck();
     }
@@ -420,6 +475,11 @@ class _GlassTextFieldState extends State<GlassTextField> {
       _focusNode.addListener(_onFocusChange);
       _isFocused = _focusNode.hasFocus;
     }
+    // If the external controller reference changed, rewire the listener.
+    if (oldWidget.controller != widget.controller) {
+      _effectiveController?.removeListener(_onControllerChange);
+      _initController();
+    }
     // If disabled, cancel any in-flight press so the spring always returns.
     if (!widget.enabled && _isPressed) {
       setState(() => _isPressed = false);
@@ -430,16 +490,24 @@ class _GlassTextFieldState extends State<GlassTextField> {
   void dispose() {
     _focusNode.removeListener(_onFocusChange);
     if (_ownsNode) _focusNode.dispose();
+    _effectiveController?.removeListener(_onControllerChange);
     super.dispose();
   }
 
   // ── Line count tracking ──────────────────────────────────────────────────
 
   Size _lastTextFieldSize = Size.zero;
+  bool _lineCheckScheduled = false;
 
   /// Schedules a line count measurement for the next frame.
+  ///
+  /// Debounced: both `onChanged` and the controller listener call this on
+  /// every keystroke — the flag ensures only one callback is queued per frame.
   void _scheduleLineCountCheck() {
+    if (_lineCheckScheduled) return;
+    _lineCheckScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _lineCheckScheduled = false;
       if (!mounted) return;
       _measureLineCount();
     });
@@ -475,6 +543,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
   static const _defaultTextStyle = TextStyle(
     color: Color.fromRGBO(255, 255, 255, 0.9), // Colors.white with 0.9 alpha
     fontSize: 16,
+    height: 1.2,
   );
 
   static const _defaultPlaceholderStyle = TextStyle(
@@ -537,7 +606,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
 
           // Suffix icon
           if (widget.suffixIcon != null) ...[
-            const SizedBox(width: 12),
+            SizedBox(width: widget.iconSpacing),
             GestureDetector(
               onTap: widget.onSuffixTap,
               child: widget.suffixIcon,
