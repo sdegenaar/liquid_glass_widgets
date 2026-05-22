@@ -116,11 +116,6 @@ void main() {
       );
       await tester.pump();
 
-      // The outermost Opacity → SizedBox chain.
-      final sizedBoxFinder = find.ancestor(
-        of: find.byType(GlassTextField),
-        matching: find.byType(SizedBox),
-      );
       // There should be at least one SizedBox with height 44.
       final sizedBoxes = tester.widgetList<SizedBox>(
         find.descendant(
