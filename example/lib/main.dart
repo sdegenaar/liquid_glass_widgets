@@ -66,7 +66,7 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return LiquidGlassScope.stack(
+    return GlassPage(
       background: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
@@ -75,68 +75,55 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage> {
           ),
         ),
       ),
-      content: Positioned.fill(
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          extendBody: true,
-          body: _pages[_selectedIndex],
-          bottomNavigationBar: GlassBottomBar(
-            quality: GlassQuality.premium,
-            indicatorColor: Colors.black26,
-            glassSettings: RecommendedGlassSettings.bottomBar,
-            // unselectedIconColor: Colors.red,
-            // barBorderRadius: 20,
-            tabs: [
-              GlassBottomBarTab(
-                label: 'Home',
-                icon: const Icon(CupertinoIcons.home),
-                activeIcon: const Icon(CupertinoIcons.house_fill),
-              ),
-              GlassBottomBarTab(
-                label: 'Containers',
-                icon: const Icon(CupertinoIcons.square_stack_3d_up),
-                activeIcon: const Icon(CupertinoIcons.square_stack_3d_up_fill),
-              ),
-              GlassBottomBarTab(
-                label: 'Interactive',
-                icon: const Icon(CupertinoIcons.hand_point_right),
-                activeIcon: const Icon(CupertinoIcons.hand_point_right_fill),
-              ),
-              GlassBottomBarTab(
-                label: 'Feedback',
-                icon: const Icon(CupertinoIcons.hourglass),
-                activeIcon: const Icon(CupertinoIcons.hourglass),
-              ),
-              GlassBottomBarTab(
-                label: 'Overlays',
-                icon: const Icon(CupertinoIcons.square_stack),
-                activeIcon: const Icon(CupertinoIcons.square_stack_fill),
-              ),
-              GlassBottomBarTab(
-                label: 'Surfaces',
-                icon: const Icon(CupertinoIcons.rectangle_3_offgrid),
-                activeIcon: const Icon(CupertinoIcons.rectangle_3_offgrid_fill),
-              ),
-              GlassBottomBarTab(
-                label: 'Input',
-                icon: const Icon(CupertinoIcons.keyboard),
-              ),
-            ],
-            selectedIndex: _selectedIndex,
-            onTabSelected: (index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
-            // extraButton: GlassBottomBarExtraButton(
-            //   icon: Icon(CupertinoIcons.rectangle_3_offgrid_fill),
-            //   iconColor: Colors.amber,
-            //   onTap: () {
-            //
-            //   },
-            //   label: 'AI Chat',
-            // ),
-          ),
+      child: Scaffold(
+        extendBody: true,
+        body: _pages[_selectedIndex],
+        bottomNavigationBar: GlassBottomBar(
+          quality: GlassQuality.premium,
+          indicatorColor: Colors.black26,
+          glassSettings: RecommendedGlassSettings.bottomBar,
+          tabs: [
+            GlassBottomBarTab(
+              label: 'Home',
+              icon: const Icon(CupertinoIcons.home),
+              activeIcon: const Icon(CupertinoIcons.house_fill),
+            ),
+            GlassBottomBarTab(
+              label: 'Containers',
+              icon: const Icon(CupertinoIcons.square_stack_3d_up),
+              activeIcon: const Icon(CupertinoIcons.square_stack_3d_up_fill),
+            ),
+            GlassBottomBarTab(
+              label: 'Interactive',
+              icon: const Icon(CupertinoIcons.hand_point_right),
+              activeIcon: const Icon(CupertinoIcons.hand_point_right_fill),
+            ),
+            GlassBottomBarTab(
+              label: 'Feedback',
+              icon: const Icon(CupertinoIcons.hourglass),
+              activeIcon: const Icon(CupertinoIcons.hourglass),
+            ),
+            GlassBottomBarTab(
+              label: 'Overlays',
+              icon: const Icon(CupertinoIcons.square_stack),
+              activeIcon: const Icon(CupertinoIcons.square_stack_fill),
+            ),
+            GlassBottomBarTab(
+              label: 'Surfaces',
+              icon: const Icon(CupertinoIcons.rectangle_3_offgrid),
+              activeIcon: const Icon(CupertinoIcons.rectangle_3_offgrid_fill),
+            ),
+            GlassBottomBarTab(
+              label: 'Input',
+              icon: const Icon(CupertinoIcons.keyboard),
+            ),
+          ],
+          selectedIndex: _selectedIndex,
+          onTabSelected: (index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+          },
         ),
       ),
     );

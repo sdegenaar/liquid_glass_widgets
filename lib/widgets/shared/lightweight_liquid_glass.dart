@@ -6,9 +6,35 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import 'inherited_liquid_glass.dart';
+
+/// Returns the [RenderRepaintBoundary] for [key] only when it is fully safe
+/// to use — the element must be *active* and the render object *attached*.
+///
+/// [BuildContext.mounted] is insufficient: it returns `true` for *inactive*
+/// elements (lifecycle state = `inactive`). The assert inside
+/// [Element.findRenderObject] fires on `inactive`, not just `defunct`.
+/// A try-catch is the only public-API-safe guard against this.
+///
+/// Used by both [_LightweightGlassEffectState] (Ticker) and
+/// [_RenderLightweightGlass] (paint) to avoid crashing when
+/// [GlassBackgroundSource.enabled] is toggled mid-frame.
+RenderRepaintBoundary? _safeGetBoundary(GlobalKey? key) {
+  if (key == null) return null;
+  final ctx = key.currentContext;
+  if (ctx == null) return null;
+  try {
+    final obj = ctx.findRenderObject();
+    if (obj is RenderRepaintBoundary && obj.attached) return obj;
+  } catch (_) {
+    // Element is transitioning through an inactive lifecycle state.
+    // Skip this frame — the Ticker will retry on the next frame.
+  }
+  return null;
+}
 
 /// A lightweight, high-performance glass effect widget optimized for
 /// scrollable lists and universal platform compatibility.
@@ -31,6 +57,7 @@ class LightweightLiquidGlass extends StatefulWidget {
     this.glowIntensity = 0.0,
     this.densityFactor = 0.0,
     this.indicatorWeight = 0.0,
+    this.backgroundKey,
     super.key,
   });
 
@@ -42,6 +69,7 @@ class LightweightLiquidGlass extends StatefulWidget {
     this.glowIntensity = 0.0,
     this.densityFactor = 0.0,
     this.indicatorWeight = 0.0,
+    this.backgroundKey,
     super.key,
   }) : settings = null;
 
@@ -85,6 +113,9 @@ class LightweightLiquidGlass extends StatefulWidget {
   /// have more visual weight without affecting other glass widgets.
   final double indicatorWeight;
 
+  /// Optional background capture key.
+  final GlobalKey? backgroundKey;
+
   // Cache the FragmentProgram (compiled shader code) globally
   static ui.FragmentProgram? _cachedProgram;
   static bool _isPreparing = false;
@@ -93,6 +124,9 @@ class LightweightLiquidGlass extends StatefulWidget {
   // On web: Each widget needs its own instance (CanvasKit requirement)
   static ui.FragmentShader? _sharedShader; // Native only
 
+  // Dummy 1x1 transparent image for when no background is captured
+  static ui.Image? _dummyImage;
+
   /// Resets static shader state for testing. Call between tests to ensure
   /// each test gets the fallback rendering (no cached shader).
   @visibleForTesting
@@ -100,6 +134,8 @@ class LightweightLiquidGlass extends StatefulWidget {
     _cachedProgram = null;
     _sharedShader = null;
     _isPreparing = false;
+    _dummyImage?.dispose();
+    _dummyImage = null;
   }
 
   /// Global pre-warm method - loads and compiles the shader program.
@@ -117,6 +153,11 @@ class LightweightLiquidGlass extends StatefulWidget {
         // Fallback for unit tests where package prefix may not be resolved
         program = await ui.FragmentProgram.fromAsset(testPath);
       }
+      // Allocate the dummy image only after program load succeeds — avoids
+      // leaking a GPU allocation when the shader fails to compile.
+      final recorder = ui.PictureRecorder();
+      ui.Canvas(recorder);
+      _dummyImage = recorder.endRecording().toImageSync(1, 1);
       _cachedProgram = program;
 
       // On native platforms, create the shared shader instance
@@ -139,14 +180,145 @@ class LightweightLiquidGlass extends StatefulWidget {
   State<LightweightLiquidGlass> createState() => _LightweightLiquidGlassState();
 }
 
-class _LightweightLiquidGlassState extends State<LightweightLiquidGlass> {
+class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
+    with SingleTickerProviderStateMixin {
   ui.FragmentShader? _webShader; // Web only: per-widget instance
   bool _loggedCreation = false;
+  ui.Image? _backgroundImage;
+
+  // Ticker-driven background refresh (same proven pattern as GlassEffect).
+  // Fires every frame while a backgroundKey is active; stops automatically
+  // when no key is present — zero overhead for glass widgets without a background.
+  late final Ticker _ticker;
+  Size? _lastCaptureSize;
+  Offset? _lastCapturePosition;
 
   @override
   void initState() {
     super.initState();
     _initShader();
+    _ticker = createTicker(_handleTick);
+    // Defer ticker start until after first frame so the RepaintBoundary is laid out.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _updateTicker();
+    });
+  }
+
+  /// Start the ticker if a live RepaintBoundary is available for sampling.
+  ///
+  /// Checks the key's context directly so that a non-null key with no
+  /// attached [RepaintBoundary] does NOT start the ticker.
+  void _updateTicker() {
+    // A key that exists but has no attached RepaintBoundary (enabled:false)
+    // must not start the ticker — treat it the same as a null key.
+    final bool hasBoundary = _safeGetBoundary(widget.backgroundKey) != null;
+
+    if (hasBoundary && !_ticker.isActive) {
+      _ticker.start();
+    } else if (!hasBoundary && _ticker.isActive) {
+      _ticker.stop();
+      _backgroundImage?.dispose();
+      _backgroundImage = null;
+      // Propagate null to the render object immediately so it doesn't paint
+      // with a disposed image if a repaint is triggered before the next tick.
+      if (mounted) setState(() {});
+    }
+  }
+
+  /// Called every frame by the ticker. Captures the background only when
+  /// something has actually changed — size, position, or first capture.
+  ///
+  /// Self-corrects if the boundary disappears at runtime (e.g. adaptive
+  /// quality drops to minimal mid-session): stops the ticker immediately
+  /// rather than spinning empty for the rest of the widget's lifetime.
+  void _handleTick(Duration _) {
+    final key = widget.backgroundKey;
+    if (key == null) return;
+
+    final renderObject = _safeGetBoundary(key);
+    if (renderObject == null) {
+      // The boundary was removed (e.g. background sampling was disabled at
+      // runtime). Stop the ticker immediately — zero cost from this point on.
+      if (_ticker.isActive) {
+        _ticker.stop();
+        _backgroundImage?.dispose();
+        _backgroundImage = null;
+        // Propagate null to the render object immediately — prevents the
+        // "Image has been disposed" crash if a repaint fires before the next
+        // frame (e.g. button press animation triggering a paint pass).
+        if (mounted) setState(() {});
+      }
+      return;
+    }
+    final boundary = renderObject;
+    if (boundary.debugNeedsPaint) return;
+
+    final currentSize = boundary.size;
+    final currentPos = (boundary as RenderBox).localToGlobal(Offset.zero);
+
+    // Only re-capture when geometry changes or on first capture.
+    // toImageSync is synchronous and stays in GPU memory — cheap but not free.
+    final bool needsCapture = _backgroundImage == null ||
+        _lastCaptureSize != currentSize ||
+        _lastCapturePosition != currentPos;
+
+    if (needsCapture) {
+      _captureBackground(boundary, currentSize, currentPos);
+    }
+  }
+
+  // Guard: prevents concurrent async captures from stacking up.
+  // Only one toImage() call can be in-flight at a time.
+  bool _capturePending = false;
+
+  /// Initiates an async background capture via [RenderRepaintBoundary.toImage].
+  ///
+  /// Using [toImage] (Future-based) instead of [toImageSync] is critical:
+  /// [toImage] resolves AFTER the GPU compositor has flushed the current frame,
+  /// guaranteeing valid pixel content. [toImageSync] races the GPU and returns
+  /// an all-black image on the first frame, causing the "black on first load" bug.
+  ///
+  /// The [_capturePending] flag prevents concurrent captures from stacking up
+  /// when the ticker fires multiple times before the first capture completes.
+  void _captureBackground(
+      RenderRepaintBoundary boundary, Size size, Offset pos) {
+    if (_capturePending) return; // Already capturing — wait for it to finish.
+    _capturePending = true;
+    boundary.toImage(pixelRatio: 1.0).then((image) {
+      if (!mounted) {
+        image.dispose();
+        _capturePending = false;
+        return;
+      }
+      _backgroundImage?.dispose();
+      _backgroundImage = image;
+      _lastCaptureSize = size;
+      _lastCapturePosition = pos;
+      _capturePending = false;
+      setState(() {});
+    }).catchError((_) {
+      // toImage can fail transiently (e.g. widget detached mid-capture).
+      // Clear the flag so the ticker will retry on the next frame.
+      _capturePending = false;
+    });
+  }
+
+  @override
+  void didUpdateWidget(LightweightLiquidGlass oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.backgroundKey != oldWidget.backgroundKey) {
+      // Key object changed — update immediately.
+      _updateTicker();
+    } else if (widget.backgroundKey != null && !_ticker.isActive) {
+      // Same key object but ticker is stopped. The RepaintBoundary may have
+      // been re-added to the tree (e.g. GlassBackgroundSource re-enabled via
+      // the BG Sample toggle). Schedule a post-frame check so the boundary
+      // is guaranteed to be mounted and the GlobalKey registered before we
+      // attempt to restart the Ticker.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _updateTicker();
+      });
+    }
   }
 
   Future<void> _initShader() async {
@@ -172,6 +344,8 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass> {
 
   @override
   void dispose() {
+    _ticker.dispose();
+    _backgroundImage?.dispose();
     // On web, dispose this widget's shader instance
     if (kIsWeb && _webShader != null) {
       _webShader!.dispose();
@@ -245,29 +419,54 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass> {
       clipShape = widget.shape;
     }
 
+    // When the resolved clipShape is a RoundedRectangleBorder with a
+    // BorderRadius, wrap in ClipRRect instead of ClipPath. Flutter PR
+    // #177551 (in 3.41+) forwards ClipRRect clip data to the iOS
+    // PlatformView mutator stack, which lets the engine clip a
+    // descendant BackdropFilter over a PlatformView — eliminating the
+    // rectangular blur halo that appears around rounded glass surfaces
+    // stacked over a PlatformView (e.g. mapbox_maps_flutter,
+    // video_player on iOS). The same engine fix does NOT apply to
+    // ClipPath, even when the path inside is mathematically a rounded
+    // rect.
+    //
+    // LiquidOval is NOT covered: empirically the engine fix does not
+    // forward ClipRRect with circular(double.infinity), nor does it
+    // forward a LayoutBuilder-computed finite radius on a LiquidOval
+    // path. App code that needs a halo-free circular glass surface
+    // over a PlatformView should use
+    // LiquidRoundedSuperellipse(borderRadius: size/2) instead, which
+    // renders identically and triggers the engine fix.
+    final BorderRadius? roundedRectRadius =
+        (clipShape is RoundedRectangleBorder &&
+                clipShape.borderRadius is BorderRadius)
+            ? clipShape.borderRadius as BorderRadius
+            : null;
+    final Widget effect = _LightweightGlassEffect(
+      shader: shader,
+      settings: settings,
+      shape: widget.shape,
+      skipBlur: skipBlur,
+      glowIntensity: widget.glowIntensity,
+      densityFactor: widget.densityFactor,
+      indicatorWeight: widget.indicatorWeight,
+      backdropLuma: backdropLuma,
+      backgroundImage: _backgroundImage,
+      backgroundKey: widget.backgroundKey,
+      child: widget.child,
+    );
+    if (roundedRectRadius != null) {
+      return ClipRRect(borderRadius: roundedRectRadius, child: effect);
+    }
     return ClipPath(
       clipper: ShapeBorderClipper(shape: clipShape),
-      child: _LightweightGlassEffect(
-        // Nullable: render object paints tinted passthrough when null.
-        shader: shader,
-        settings: settings,
-        shape: widget.shape,
-        skipBlur: skipBlur,
-        glowIntensity: widget.glowIntensity,
-        densityFactor: widget.densityFactor,
-        indicatorWeight: widget.indicatorWeight,
-        backdropLuma: backdropLuma,
-        child: widget.child,
-      ),
+      child: effect,
     );
   }
 }
 
 class _LightweightGlassEffect extends SingleChildRenderObjectWidget {
   const _LightweightGlassEffect({
-    // Nullable: when null the render object paints a tinted passthrough instead
-    // of the full glass effect. Keeping the widget type constant prevents Flutter
-    // from tearing down the child subtree when the shader loads asynchronously.
     required this.shader,
     required this.settings,
     required this.shape,
@@ -276,19 +475,21 @@ class _LightweightGlassEffect extends SingleChildRenderObjectWidget {
     required this.densityFactor,
     required this.indicatorWeight,
     required this.backdropLuma,
+    this.backgroundImage,
+    this.backgroundKey,
     required super.child,
   });
 
-  final ui.FragmentShader? shader; // nullable — see comment above
+  final ui.FragmentShader? shader;
   final LiquidGlassSettings settings;
   final LiquidShape shape;
   final bool skipBlur;
   final double glowIntensity;
   final double densityFactor;
   final double indicatorWeight;
-
-  /// VQ4: [0.15] for dark platform, [0.85] for light platform.
   final double backdropLuma;
+  final ui.Image? backgroundImage;
+  final GlobalKey? backgroundKey;
 
   @override
   RenderObject createRenderObject(BuildContext context) {
@@ -301,6 +502,8 @@ class _LightweightGlassEffect extends SingleChildRenderObjectWidget {
       densityFactor: densityFactor,
       indicatorWeight: indicatorWeight,
       backdropLuma: backdropLuma,
+      backgroundImage: backgroundImage,
+      backgroundKey: backgroundKey,
     );
   }
 
@@ -317,7 +520,9 @@ class _LightweightGlassEffect extends SingleChildRenderObjectWidget {
       ..glowIntensity = glowIntensity
       ..densityFactor = densityFactor
       ..indicatorWeight = indicatorWeight
-      ..backdropLuma = backdropLuma;
+      ..backdropLuma = backdropLuma
+      ..backgroundImage = backgroundImage
+      ..backgroundKey = backgroundKey;
   }
 }
 
@@ -331,6 +536,8 @@ class _RenderLightweightGlass extends RenderProxyBox {
     required double densityFactor,
     required double indicatorWeight,
     required double backdropLuma,
+    ui.Image? backgroundImage,
+    GlobalKey? backgroundKey,
   })  : _shader = shader,
         _settings = settings,
         _shape = shape,
@@ -338,7 +545,9 @@ class _RenderLightweightGlass extends RenderProxyBox {
         _glowIntensity = glowIntensity,
         _densityFactor = densityFactor,
         _indicatorWeight = indicatorWeight,
-        _backdropLuma = backdropLuma;
+        _backdropLuma = backdropLuma,
+        _backgroundImage = backgroundImage,
+        _backgroundKey = backgroundKey;
 
   ui.FragmentShader? _shader;
   ui.FragmentShader? get shader => _shader;
@@ -404,6 +613,20 @@ class _RenderLightweightGlass extends RenderProxyBox {
     markNeedsPaint();
   }
 
+  ui.Image? _backgroundImage;
+  set backgroundImage(ui.Image? value) {
+    if (_backgroundImage == value) return;
+    _backgroundImage = value;
+    markNeedsPaint();
+  }
+
+  GlobalKey? _backgroundKey;
+  set backgroundKey(GlobalKey? value) {
+    if (_backgroundKey == value) return;
+    _backgroundKey = value;
+    markNeedsPaint();
+  }
+
   @override
   bool get alwaysNeedsCompositing => true;
 
@@ -411,9 +634,6 @@ class _RenderLightweightGlass extends RenderProxyBox {
   void paint(PaintingContext context, Offset offset) {
     if (child == null) return;
 
-    // When the shader hasn't loaded yet, show a tinted passthrough:
-    // same visual as the old `Container(color: glassColor.withValues(alpha:0.15))`
-    // fallback, but without changing the widget tree shape.
     if (_shader == null) {
       final paint = Paint()
         ..color = _settings.effectiveGlassColor.withValues(alpha: 0.15);
@@ -422,27 +642,59 @@ class _RenderLightweightGlass extends RenderProxyBox {
       return;
     }
 
-    // 1. Establish the Backdrop Pass
     final blurSigma = _settings.effectiveBlur;
     if (blurSigma > 0 && !_skipBlur) {
+      // Compose blur + saturation to match Premium's background treatment.
+      // Premium applies Gaussian blur then boosts saturation on the blurred result,
+      // giving it richer, deeper colours (the "blue sky through glass" effect).
+      // We replicate this by composing: outer=saturationFilter, inner=blurFilter.
+      // Result: the blurred background seen through Standard glass is saturated
+      // identically to Premium — no background texture capture required.
+      final double sat = _settings.effectiveSaturation; // default 1.2
+
+      // Standard saturation ColorFilter matrix (ITU-R BT.601 luminance weights).
+      const double rw = 0.2126, gw = 0.7152, bw = 0.0722;
+      final ui.ColorFilter satFilter = ui.ColorFilter.matrix(<double>[
+        rw + (1 - rw) * sat,
+        gw - gw * sat,
+        bw - bw * sat,
+        0,
+        0,
+        rw - rw * sat,
+        gw + (1 - gw) * sat,
+        bw - bw * sat,
+        0,
+        0,
+        rw - rw * sat,
+        gw - gw * sat,
+        bw + (1 - bw) * sat,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+      ]);
+
+      final ui.ImageFilter filter = ui.ImageFilter.compose(
+        outer: satFilter,
+        inner: ui.ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+      );
+
       context.pushLayer(
-        BackdropFilterLayer(
-          filter: ui.ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-        ),
+        BackdropFilterLayer(filter: filter),
         (context, offset) {
-          // Paint Child & Shader inside the blur context
           _paintGlassContent(context, offset);
         },
         offset,
       );
     } else {
-      // No blur needed or skip requested - just paint content
       _paintGlassContent(context, offset);
     }
   }
 
   void _paintGlassContent(PaintingContext context, Offset offset) {
-    // 2. Glass Shader Background Layer (painted first, behind content)
     final canvas = context.canvas;
     final matrix = canvas.getTransform();
 
@@ -458,17 +710,38 @@ class _RenderLightweightGlass extends RenderProxyBox {
 
     final uScale = Offset(scaleX, scaleY);
 
-    _updateShaderUniforms(size, uOrigin, uScale);
+    Offset bgRelativeOffset = Offset.zero;
+    Size bgSize = const Size(1, 1);
+
+    if (_backgroundKey != null && _backgroundImage != null) {
+      final boundary = _safeGetBoundary(_backgroundKey);
+      if (boundary != null) {
+        final bgGlobalPos = boundary.localToGlobal(Offset.zero);
+        final indGlobalPos = localToGlobal(Offset.zero);
+        bgRelativeOffset = indGlobalPos - bgGlobalPos;
+        bgSize = Size(
+          _backgroundImage!.width.toDouble(),
+          _backgroundImage!.height.toDouble(),
+        );
+      }
+    }
+
+    _updateShaderUniforms(size, uOrigin, uScale, bgRelativeOffset, bgSize);
+
+    if (_backgroundImage != null) {
+      _shader!.setImageSampler(0, _backgroundImage!);
+    } else if (LightweightLiquidGlass._dummyImage != null) {
+      _shader!.setImageSampler(0, LightweightLiquidGlass._dummyImage!);
+    }
 
     final paint = Paint()..shader = _shader!;
     canvas.drawRect(offset & size, paint);
 
-    // 3. Child Content Pass (painted on top of glass)
     super.paint(context, offset);
   }
 
-  void _updateShaderUniforms(
-      Size size, Offset physicalOrigin, Offset physicalScale) {
+  void _updateShaderUniforms(Size size, Offset physicalOrigin,
+      Offset physicalScale, Offset bgOrigin, Size bgSize) {
     // _updateShaderUniforms is only ever called from _paintGlassContent,
     // which is only reached when _shader != null (guarded in paint()).
     // The assertion makes the non-nullability explicit for the analyser.
@@ -484,11 +757,16 @@ class _RenderLightweightGlass extends RenderProxyBox {
     shader.setFloat(index++, physicalOrigin.dy);
 
     // 4, 5, 6, 7: uGlassColor (vec4)
+    //
+    // Pass glassColor.alpha unchanged — the shader applies a Fresnel-based
+    // modulation in Stage 2.5 (lightweight_glass.frag) so the alpha creates
+    // a depth gradient (full at rim, 12% at center) instead of a flat fill.
+    // This correctly approximates the 3D SDF Fresnel of the Premium path.
     final color = _settings.effectiveGlassColor;
     shader.setFloat(index++, (color.r * 255.0).round().clamp(0, 255) / 255.0);
     shader.setFloat(index++, (color.g * 255.0).round().clamp(0, 255) / 255.0);
     shader.setFloat(index++, (color.b * 255.0).round().clamp(0, 255) / 255.0);
-    shader.setFloat(index++, (color.a * 255.0).round().clamp(0, 255) / 255.0);
+    shader.setFloat(index++, color.a.clamp(0.0, 1.0));
 
     // 8: uThickness (float)
     shader.setFloat(index++, _settings.effectiveThickness);
@@ -631,11 +909,15 @@ class _RenderLightweightGlass extends RenderProxyBox {
     shader.setFloat(index++, _backdropLuma.clamp(0.0, 1.0));
 
     // 24..27 (uData6): per-corner radii for asymmetric shapes (GlassModalSheet).
-    // Only populated when isAsymmetric is true (LiquidVerticalRoundedSuperellipse).
-    // Symmetric shapes pass zeros; the shader ignores uData6 when uCornerRadius >= 0.
     shader.setFloat(index++, topLeftR);
     shader.setFloat(index++, topRightR);
     shader.setFloat(index++, bottomRightR);
     shader.setFloat(index++, bottomLeftR);
+
+    // 28..31 (uData7): Background texture tracking
+    shader.setFloat(index++, bgOrigin.dx);
+    shader.setFloat(index++, bgOrigin.dy);
+    shader.setFloat(index++, bgSize.width);
+    shader.setFloat(index++, bgSize.height);
   }
 }

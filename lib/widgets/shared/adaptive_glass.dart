@@ -194,21 +194,46 @@ class AdaptiveGlass extends StatelessWidget {
 
       // Normalise settings for the 2D lightweight shader to prevent it from looking
       // overpowering when the user has tuned their settings for the 3D premium shader.
-      // Thickness is scaled down because 2D inner shadows look much thicker than 3D bevels.
-      // Light intensity is scaled down because 2D gradients look brighter than 3D speculars.
-      final normalizedSettings = baseSettings.copyWith(
-        thickness:
-            (baseSettings.effectiveThickness * 0.4).clamp(0.0, double.infinity),
-        lightIntensity:
-            (baseSettings.effectiveLightIntensity * 0.6).clamp(0.0, 10.0),
-      );
+      //
+      // BYPASS: When quality is explicitly GlassQuality.standard, the settings
+      // are already calibrated for the Standard renderer — skip normalization.
+      // Normalization only makes sense when adapting Premium-tuned settings to
+      // Standard; if the caller already knows they're on Standard, their values
+      // must be passed through unchanged so tuning sliders take full effect.
+      final bool skipNormalization = quality == GlassQuality.standard;
+
+      final LiquidGlassSettings normalizedSettings;
+      if (skipNormalization) {
+        normalizedSettings = baseSettings.copyWith(
+          glassColor: baseSettings.glassColor.withValues(
+            alpha: (baseSettings.glassColor.a *
+                    baseSettings.standardOpacityMultiplier)
+                .clamp(0.0, 1.0),
+          ),
+        );
+      } else {
+        // Frosting normalization: adapts Premium settings for the 2D shader.
+        // Thickness scaled down (2D inner shadows look much thicker than 3D bevels).
+        // Light intensity scaled down (2D gradients look brighter than 3D speculars).
+        normalizedSettings = baseSettings.copyWith(
+          thickness: (baseSettings.effectiveThickness * 0.4)
+              .clamp(0.0, double.infinity),
+          lightIntensity:
+              (baseSettings.effectiveLightIntensity * 0.6).clamp(0.0, 10.0),
+          glassColor: baseSettings.glassColor.withValues(
+            alpha: (baseSettings.glassColor.a *
+                    baseSettings.standardOpacityMultiplier)
+                .clamp(0.0, 1.0),
+          ),
+        );
+      }
 
       // Apply subtle elevation boost to settings (preserves saturation!)
       final color = normalizedSettings.effectiveGlassColor;
       final effectiveSettings = shouldElevate
           ? LiquidGlassSettings(
               glassColor:
-                  color.withValues(alpha: (color.a + 0.2).clamp(0.0, 1.0)),
+                  color, // Removed flat +0.2 alpha boost for predictability
               refractiveIndex: normalizedSettings.refractiveIndex,
               thickness: normalizedSettings.effectiveThickness,
               lightAngle: normalizedSettings.lightAngle,
@@ -217,15 +242,14 @@ class AdaptiveGlass extends StatelessWidget {
               chromaticAberration: normalizedSettings.chromaticAberration,
               blur: normalizedSettings.effectiveBlur,
               visibility: normalizedSettings.visibility,
-              saturation: normalizedSettings
-                  .effectiveSaturation, // Preserve user saturation!
+              saturation: normalizedSettings.effectiveSaturation,
               ambientStrength:
                   (normalizedSettings.effectiveAmbientStrength * 0.4)
                       .clamp(0.0, 1.0),
+              glowIntensity: normalizedSettings.glowIntensity,
             )
           : normalizedSettings;
 
-      // PIPELINE HAND-OFF (The Secret Sauce)
       // If this is a container (allowElevation=false), we are providing a blur
       // for all our children to use. We update the InheritedLiquidGlass tree.
       if (!allowElevation) {
@@ -243,11 +267,14 @@ class AdaptiveGlass extends StatelessWidget {
         );
       }
 
+      // Elevated widgets use PATH B (no backgroundKey). They composite via
+      // SrcOver against the container's output.
       final Widget lightweightWidget = LightweightLiquidGlass(
         shape: shape,
         settings: effectiveSettings,
         densityFactor: densityFactor, // 0.0 or 1.0 based on elevation
-        glowIntensity: glowIntensity, // Pass through from button animation
+        glowIntensity:
+            glowIntensity * 0.35, // Normalise additive glow to match Impeller
         child: child,
       );
 
@@ -420,12 +447,17 @@ class _FrostedFallback extends StatelessWidget {
           .hardEdge, // Locks dirty region to widget bounds — prevents page-wide flicker
       children: [
         if (useBlur)
-          // Stationary surfaces: blur + tint clipped to shape
+          // Stationary surfaces: blur + tint clipped to shape.
+          //
+          // Use ClipRRect when the shape resolves to a rounded rect —
+          // Flutter PR #177551 (in 3.41+) forwards ClipRRect clip data
+          // to iOS PlatformView mutators, so ClipRRect (not ClipPath)
+          // is what lets the engine clip a descendant BackdropFilter
+          // over a PlatformView. Eliminates the rectangular blur halo
+          // around rounded glass surfaces stacked over PlatformViews
+          // (e.g. mapbox_maps_flutter, video_player on iOS).
           Positioned.fill(
-            child: ClipPath(
-              clipper: ShapeBorderClipper(shape: shape),
-              child: body,
-            ),
+            child: _ShapeClip(shape: shape, child: body),
           ),
 
         if (!useBlur)
@@ -449,11 +481,10 @@ class _FrostedFallback extends StatelessWidget {
             ),
           ),
 
-        // Text and contents MUST be strictly clipped to corner radii
-        ClipPath(
-          clipper: ShapeBorderClipper(shape: shape),
-          child: child,
-        ),
+        // Text and contents MUST be strictly clipped to corner radii.
+        // Same ClipRRect-over-ClipPath rationale as the blur body
+        // above — see the [_ShapeClip] doc comment.
+        _ShapeClip(shape: shape, child: child),
 
         // Specular Rim: drawn as a pure native overlay vector perfectly on top
         Positioned.fill(
@@ -564,4 +595,59 @@ class _SpecularRimPainter extends CustomPainter {
   @override
   bool shouldRepaint(_SpecularRimPainter old) =>
       old.settings != settings || old.shape != shape;
+}
+
+/// Wraps [child] in [ClipRRect] when the shape resolves to a
+/// `RoundedRectangleBorder` (i.e. [LiquidRoundedSuperellipse] or
+/// [LiquidVerticalRoundedSuperellipse]), otherwise falls back to
+/// [ClipPath] with `ShapeBorderClipper`.
+///
+/// **Why this matters:** Flutter framework PR #177551 (merged Dec 2025,
+/// shipped in 3.41.0-0.0.pre and forward) forwards `ClipRRect` clip data
+/// to the iOS PlatformView mutator stack — which lets the engine
+/// correctly clip a descendant [BackdropFilter] over a PlatformView.
+/// The same fix does NOT apply to `ClipPath`, even when the path inside
+/// is mathematically a rounded rect.
+///
+/// Eliminates the rectangular blur halo that appeared around rounded
+/// `_FrostedFallback` surfaces when stacked over a PlatformView (e.g.
+/// `mapbox_maps_flutter`'s `MapWidget`, `video_player` on iOS).
+///
+/// **Caveat — [LiquidOval] is not handled.** Empirically the engine fix
+/// does not forward `ClipRRect` with `circular(double.infinity)`, nor
+/// does it forward a `LayoutBuilder`-computed finite radius on a
+/// `LiquidOval` shape. Callers that need a halo-free circular surface
+/// over a PlatformView should pass
+/// `LiquidRoundedSuperellipse(borderRadius: size / 2)` instead, which
+/// renders identically to a circle on a square widget and triggers the
+/// engine fix.
+class _ShapeClip extends StatelessWidget {
+  const _ShapeClip({required this.shape, required this.child});
+
+  final LiquidShape shape;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final shape = this.shape;
+    if (shape is LiquidRoundedSuperellipse) {
+      return ClipRRect(
+        borderRadius: BorderRadius.all(Radius.circular(shape.borderRadius)),
+        child: child,
+      );
+    }
+    if (shape is LiquidVerticalRoundedSuperellipse) {
+      return ClipRRect(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(shape.topRadius),
+          bottom: Radius.circular(shape.bottomRadius),
+        ),
+        child: child,
+      );
+    }
+    return ClipPath(
+      clipper: ShapeBorderClipper(shape: shape),
+      child: child,
+    );
+  }
 }

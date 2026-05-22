@@ -1,3 +1,163 @@
+# 0.12.2
+
+## ✨ New — `GlassTextField` enhancements
+
+Three community-requested features for `GlassTextField` (and `GlassTextArea`):
+
+### Explicit size properties
+
+`height`, `minHeight`, and `maxHeight` give direct control over the field's dimensions — no wrapping `SizedBox` needed:
+
+```dart
+// Fixed height — matches GlassSearchBar's 44pt:
+GlassTextField(height: 44, placeholder: 'Search')
+
+// Constrained range — grows with content:
+GlassTextField(minHeight: 44, maxHeight: 200, maxLines: 10)
+```
+
+`height` is mutually exclusive with `minHeight`/`maxHeight` (assertion enforced).
+
+### `onLineCountChanged` callback
+
+Fires whenever the number of **rendered** lines changes (accounting for text wrapping, not `\n` characters). Also fires on initial build. Uses the `TextField`'s own `RenderBox` height — no external `TextPainter` math, so it works correctly with text scaling and system accessibility settings.
+
+```dart
+GlassTextField(
+  maxLines: 6,
+  onLineCountChanged: (lines) {
+    setState(() => _borderRadius = lines > 1 ? 8.0 : 20.0);
+  },
+)
+```
+
+### `iconAlignment` parameter
+
+Controls where prefix/suffix icons sit when the field spans multiple lines:
+
+```dart
+// Pin send button to bottom — chat composer pattern:
+GlassTextField(
+  maxLines: 6,
+  iconAlignment: CrossAxisAlignment.end,
+  suffixIcon: Icon(Icons.send),
+)
+```
+
+Accepts `CrossAxisAlignment.start` (top), `.center` (default), or `.end` (bottom). No visible effect on single-line fields.
+
+All three features are forwarded through `GlassTextArea`.
+
+### `GlassTextField.search` named constructor
+
+A new convenience constructor that pre-configures `GlassTextField` with compact search-bar defaults: `height: 44`, `iconSpacing: 8`, `padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)`, `borderRadius: 22`, and `textInputAction: TextInputAction.search`. Eliminates the boilerplate previously required to match `GlassSearchBar` visuals:
+
+```dart
+GlassTextField.search(
+  placeholder: 'Search messages…',
+  prefixIcon: Icon(CupertinoIcons.search, size: 20),
+  useOwnLayer: true,
+)
+```
+
+`GlassSearchBar` now uses this constructor internally, reducing duplicated decoration code.
+
+## 🐛 Fix
+
+- **`onLineCountChanged` now fires on programmatic controller changes** — Previously the callback only responded to physical keyboard input (`TextField.onChanged`). Setting `controller.text = '...'` or calling `controller.clear()` (e.g. in a chat "Send" handler) did not re-measure the line count. The widget now actively listens to the `TextEditingController` and re-measures on any text mutation.
+
+- **Suffix icon spacing now respects `iconSpacing`** — The gap before the suffix icon was hard-coded to 12px while the prefix icon correctly used `widget.iconSpacing`. Both sides now use the same parameter.
+
+# 0.12.1
+
+## 🐛 Fix — eliminate rectangular blur halo over PlatformViews (iOS Impeller)
+
+`LightweightLiquidGlass` and `_FrostedFallback` previously wrapped their glass surface in `ClipPath(ShapeBorderClipper(...))`. When the parent was an iOS PlatformView (e.g. `mapbox_maps_flutter` `MapWidget`, `video_player` on iOS), the descendant `BackdropFilter`'s rectangular blur output leaked past the rounded clip — visible as a faint square halo around the rounded glass shape, most obvious when light backdrop content scrolled underneath.
+
+Flutter framework [PR #177551](https://github.com/flutter/flutter/pull/177551) (merged Dec 2025, shipped in 3.41.0-0.0.pre+) fixed this at the engine level by forwarding `ClipRRect` clip data to the iOS PlatformView mutator stack — but **only `ClipRRect`, not `ClipPath`**, even when the path inside is mathematically a rounded rect.
+
+This release routes shapes that resolve to a `RoundedRectangleBorder` (i.e. `LiquidRoundedSuperellipse`, `LiquidVerticalRoundedSuperellipse`) through `ClipRRect` instead of `ClipPath`. The engine fix now triggers and the halo disappears for those shapes.
+
+`LiquidOval` is intentionally NOT routed through `ClipRRect` — empirically the engine fix doesn't forward `ClipRRect` with `circular(double.infinity)` nor a `LayoutBuilder`-computed finite radius on the `LiquidOval` path. Callers that need a halo-free circular glass surface over a PlatformView should use `LiquidRoundedSuperellipse(borderRadius: size / 2)` instead, which renders identically on a square widget and triggers the engine fix.
+
+Closes upstream Flutter [#175048](https://github.com/flutter/flutter/issues/175048) and [#115926](https://github.com/flutter/flutter/issues/115926) for `liquid_glass_widgets` users.
+
+*Based on [PR #61](https://github.com/sdegenaar/liquid_glass_widgets/pull/61) by [@jfhair](https://github.com/jfhair).*
+
+# 0.12.0
+
+## ✨ New
+
+### `LiquidGlassWidgets.wrap()` — `theme` parameter
+
+`wrap()` now accepts an optional `GlassThemeData? theme` parameter. When provided, it wraps the child in a `GlassTheme` — eliminating the need for a separate `GlassTheme` widget in your tree.
+
+### `LiquidGlassSettings.standardOpacityMultiplier`
+
+A new multiplier applied to the glass colour alpha when rendering in Standard mode. This allows tuning Standard 2D compositing opacity to achieve more parity with Premium 3D volumetric refraction without needing separate colour values for each mode.
+
+```dart
+LiquidGlassSettings(
+  glassColor: Colors.white.withValues(alpha: 0.3),
+  standardOpacityMultiplier: 0.4, // Standard renders at 0.3 × 0.4 = 0.12 alpha
+)
+```
+
+Defaults to `1.0` (no change). Fully interpolated via `LiquidGlassSettings.lerp()` and wired through `copyWith()`.
+
+### `GlassPage` — full-screen glass scaffold
+
+A new full-screen scaffold widget for glass-based layouts. Handles background imagery, status bar styling, and background sampling in a single widget.
+
+`enableBackgroundSampling` defaults to `true` when a `background` widget is provided, and `false` otherwise — so the common case just works without extra configuration.
+
+```dart
+GlassPage(
+  background: Image.asset('assets/wallpaper.jpg'),
+  child: Scaffold(...),
+)
+```
+
+### Export hygiene
+
+- `glass_page.dart` now uses a `show` clause: only `GlassPage` and `GlassStatusBarStyle` are exported (internal state classes are no longer public).
+- `liquid_glass_scope.dart` now uses a `show` clause: only `LiquidGlassScope`, `GlassBackgroundSource`, and `GlassRefractionSource` are exported.
+
+## 🎨 Visual — Standard/Premium parity improvements
+
+### Shader composite improvements (`lightweight_glass.frag`)
+
+The Standard-tier lightweight shader composite logic has been improved for closer visual parity with the Premium Impeller path. Shader rim constants are **unchanged** from 0.11.0 — AdaptiveGlass normalization now handles Premium → Standard scaling in Dart space instead:
+
+- **PATH A** (background texture): now uses `applyGlassColorLW()` — a luminosity-preserving glass tint that matches Premium's colour handling for both chromatic (mint, bronze) and achromatic (white, grey) glass colours.
+- **PATH A** ambient darkening: `ambientStrength × 0.25 + 0.08` creates the glass shadow effect that visually separates glass from non-glass, matching what Premium achieves through blur compositing.
+- **PATH A** adaptive rim colour: `mix(bgRgb, white, 0.7)` brightens the background at the edge, matching Premium's `getHighlightColor`.
+- **PATH A** edge-zone refraction: indicator-style background warping at rounded corners using `smoothstep` edge zone with quadratic falloff — the same proven approach as `interactive_indicator.frag` but scaled for containers. Zero transcendentals (polynomial `smoothstep` + multiplies only). Flat interior pixels naturally produce zero offset. Currently active on surface widgets (`GlassBottomBar`, `GlassTabBar`, `GlassSideBar`, `GlassToolbar`) when a `backgroundKey` is provided; `GlassCard` and `GlassButton` use PATH B and will benefit once `AdaptiveGlass` gains scope-aware background key passthrough.
+- **PATH A** unified interactive glow: `uGlowIntensity` press-feedback now applies in PATH A, closing an architectural gap where switch/slider thumbs inside background-sampled containers had no glow.
+- **Volumetric depth gradient**: subtle top-to-bottom ambient shading (`+vertCoord × 0.04`) in both PATH A and PATH B creates a natural 3D anchored depth feel, simulating light entering from above. Cost: one multiply + one add per fragment.
+- **PATH B** frost floor: 8% minimum material alpha ensures glass surfaces are always visible when `glassColor.a = 0` (Premium default), preventing invisible glass in SrcOver compositing.
+- **PATH B** contrast-adaptive rim: shifts rim colour toward mid-grey on bright backgrounds so white-on-white borders remain distinguishable.
+- **Directional rim bonus**: a small `0.15 × directionalInfluence × lightIntensity` term adds subtle lit-side variation on top of the constant rim base — matching how Premium's 3D bevel naturally brightens toward the light source.
+
+### Interactive widget transparency tuning
+
+- `GlassSwitch` standard thumb: `baseAlphaMultiplier: 0.0`, `edgeAlphaMultiplier: 0.15` — fully transparent body with subtle edge presence for a cleaner glass look.
+- `GlassSlider` standard thumb: `baseAlphaMultiplier: 0.08`, `edgeAlphaMultiplier: 0.1` — minimal body opacity with soft edge glow.
+
+### Elevated widget predictability
+
+Removed the arbitrary `+0.2` alpha boost on elevated widgets inside `AdaptiveGlass`. Elevation is now expressed purely through the shader's `densityFactor` physics, making the opacity response predictable and proportional to user settings.
+
+### Interactive widget normalisation (`GlassEffect`)
+
+Standard-tier interactive indicators (slider thumbs, switch thumbs, segmented control pills) now apply the same normalisation as `AdaptiveGlass` — `thickness × 0.4`, `lightIntensity × 0.6` — preventing the 2D shader from rendering these elements heavier than their Premium counterparts.
+
+## 📦 Example app
+
+- Quality comparison demo background image bundled as a local asset (`example/assets/mountain_landscape.jpg`) — eliminates network dependency and first-frame loading flash.
+
+---
+
 # 0.11.0
 
 ## ✨ New — Liquid Morph Engine (new architectural system)

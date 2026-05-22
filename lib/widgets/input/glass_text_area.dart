@@ -20,6 +20,7 @@ class GlassTextArea extends StatelessWidget {
     this.maxLines = 5,
     this.onChanged,
     this.onSubmitted,
+    this.onLineCountChanged,
     this.enabled = true,
     this.readOnly = false,
     this.autofocus = false,
@@ -28,12 +29,16 @@ class GlassTextArea extends StatelessWidget {
     this.textStyle,
     this.placeholderStyle,
     this.padding = const EdgeInsets.all(16),
+    this.iconAlignment = CrossAxisAlignment.center,
+    this.height,
+    this.minHeight,
+    this.maxHeight,
     // Glass properties
     this.settings,
     this.useOwnLayer = false,
     this.quality,
     this.shape = const LiquidRoundedSuperellipse(borderRadius: 10),
-    // ── iOS 26 interaction ────────────────────────────────────────────────
+    // ── iOS 26 interaction ────────────────────────────────────────────────────────────
     this.interactionBehavior = GlassInteractionBehavior.full,
     this.pressScale = 1.03,
     this.glowColor,
@@ -118,6 +123,21 @@ class GlassTextArea extends StatelessWidget {
   /// Called when user taps outside. Mirrors [GlassTextField.onTapOutside].
   final TapRegionCallback? onTapOutside;
 
+  /// Called when rendered line count changes. Mirrors [GlassTextField.onLineCountChanged].
+  final ValueChanged<int>? onLineCountChanged;
+
+  /// Vertical alignment of prefix/suffix icons. Mirrors [GlassTextField.iconAlignment].
+  final CrossAxisAlignment iconAlignment;
+
+  /// Fixed height. Mirrors [GlassTextField.height].
+  final double? height;
+
+  /// Minimum height constraint. Mirrors [GlassTextField.minHeight].
+  final double? minHeight;
+
+  /// Maximum height constraint. Mirrors [GlassTextField.maxHeight].
+  final double? maxHeight;
+
   @override
   Widget build(BuildContext context) {
     return GlassTextField(
@@ -141,6 +161,11 @@ class GlassTextArea extends StatelessWidget {
       useOwnLayer: useOwnLayer,
       quality: quality,
       shape: shape,
+      iconAlignment: iconAlignment,
+      height: height,
+      minHeight: minHeight,
+      maxHeight: maxHeight,
+      onLineCountChanged: onLineCountChanged,
       interactionBehavior: interactionBehavior,
       pressScale: pressScale,
       glowColor: glowColor,

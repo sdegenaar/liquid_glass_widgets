@@ -3,7 +3,7 @@
 /// Demonstrates the key APIs and correct initialisation pattern:
 ///   • LiquidGlassWidgets.initialize() — shader pre-warming (no first-frame flash)
 ///   • LiquidGlassWidgets.wrap()       — root GlassBackdropScope (GPU optimisation)
-///   • LiquidGlassScope.stack()        — glass theming + background composition
+///   • GlassPage                       — per-screen background, Scaffold transparency, backdrop
 ///   • GlassSearchableBottomBar        — glass nav bar with search
 ///   • GlassCard                       — glass surface container
 ///   • GlassButton                     — interactive glass button
@@ -74,10 +74,10 @@ class _HomePageState extends State<_HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // LiquidGlassScope.stack() composes a full-screen background with glass
-    // content layered on top. This is the recommended pattern for screens that
-    // use glass surfaces — it ensures correct backdrop sampling for refraction.
-    return LiquidGlassScope.stack(
+    // GlassPage is the recommended pattern for screens that use glass surfaces.
+    // It handles Scaffold transparency, backdrop isolation, and background
+    // texture sampling for real refraction — all in one widget.
+    return GlassPage(
       background: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -87,120 +87,116 @@ class _HomePageState extends State<_HomePage> {
           ),
         ),
       ),
-      content: Positioned.fill(
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          extendBody: true,
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 72, 20, 120),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 24),
+      child: Scaffold(
+        extendBody: true,
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 72, 20, 120),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 24),
 
-                // ── Hero card ──────────────────────────────────────────────
-                GlassCard(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Liquid Glass',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'iOS 26-inspired glassmorphism for Flutter. '
-                        'Shader-based refraction, jelly physics, '
-                        'and dynamic lighting on every platform.',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.75),
-                          height: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      // Glass icon button
-                      GlassButton(
-                        icon: const Icon(Icons.play_arrow_rounded),
-                        onTap: () {},
-                        label: 'Play',
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // ── Example list items ─────────────────────────────────────
-                for (final item in [
-                  (
-                    Icons.grid_view_rounded,
-                    'Containers',
-                    'GlassCard, GlassPanel, GlassContainer'
-                  ),
-                  (
-                    Icons.touch_app_rounded,
-                    'Interactive',
-                    'GlassButton, GlassSwitch, GlassChip'
-                  ),
-                  (
-                    Icons.layers_rounded,
-                    'Surfaces',
-                    'GlassBottomBar, GlassAppBar, GlassModalSheet'
-                  ),
-                ])
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: GlassCard(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Icon(item.$1, color: Colors.white70, size: 28),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.$2,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  item.$3,
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.6),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(Icons.chevron_right,
-                              color: Colors.white38),
-                        ],
+              // ── Hero card ──────────────────────────────────────────────
+              GlassCard(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Liquid Glass',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'iOS 26-inspired glassmorphism for Flutter. '
+                      'Shader-based refraction, jelly physics, '
+                      'and dynamic lighting on every platform.',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Glass icon button
+                    GlassButton(
+                      icon: const Icon(Icons.play_arrow_rounded),
+                      onTap: () {},
+                      label: 'Play',
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // ── Example list items ─────────────────────────────────────
+              for (final item in [
+                (
+                  Icons.grid_view_rounded,
+                  'Containers',
+                  'GlassCard, GlassPanel, GlassContainer'
+                ),
+                (
+                  Icons.touch_app_rounded,
+                  'Interactive',
+                  'GlassButton, GlassSwitch, GlassChip'
+                ),
+                (
+                  Icons.layers_rounded,
+                  'Surfaces',
+                  'GlassBottomBar, GlassAppBar, GlassModalSheet'
+                ),
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: GlassCard(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Icon(item.$1, color: Colors.white70, size: 28),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.$2,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                item.$3,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.6),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right, color: Colors.white38),
+                      ],
+                    ),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
-          // ── Glass searchable nav bar ─────────────────────────────────────
-          bottomNavigationBar: GlassSearchableBottomBar(
-            tabs: _tabs,
-            selectedIndex: _selectedTab,
-            onTabSelected: (i) => setState(() => _selectedTab = i),
-            searchConfig: GlassSearchBarConfig(
-              hintText: 'Search',
-              onSearchToggle: (_) {},
-              onSearchFocusChanged: (_) {},
-            ),
+        ),
+        // ── Glass searchable nav bar ─────────────────────────────────────
+        bottomNavigationBar: GlassSearchableBottomBar(
+          tabs: _tabs,
+          selectedIndex: _selectedTab,
+          onTabSelected: (i) => setState(() => _selectedTab = i),
+          searchConfig: GlassSearchBarConfig(
+            hintText: 'Search',
+            onSearchToggle: (_) {},
+            onSearchFocusChanged: (_) {},
           ),
         ),
       ),

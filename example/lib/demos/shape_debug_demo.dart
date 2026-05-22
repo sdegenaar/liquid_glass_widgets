@@ -14,7 +14,7 @@ import 'package:liquid_glass_widgets_example/constants/glass_settings.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
-  runApp(const ShapeDebugApp());
+  runApp(LiquidGlassWidgets.wrap(child: const ShapeDebugApp()));
 }
 
 class ShapeDebugApp extends StatelessWidget {
@@ -35,7 +35,7 @@ class ShapeDebugPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LiquidGlassScope.stack(
+    return GlassPage(
       background: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -45,121 +45,118 @@ class ShapeDebugPage extends StatelessWidget {
           ),
         ),
       ),
-      content: Positioned.fill(
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          body: AdaptiveLiquidGlassLayer(
-            settings: RecommendedGlassSettings.standard,
-            quality: GlassQuality.standard,
-            child: SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'GlassButton Shape Debug',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+      child: Scaffold(
+        body: AdaptiveLiquidGlassLayer(
+          settings: RecommendedGlassSettings.standard,
+          quality: GlassQuality.standard,
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'GlassButton Shape Debug',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Verifying shape and radius behavior',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withValues(alpha: 0.7),
-                      ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Verifying shape and radius behavior',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withValues(alpha: 0.7),
                     ),
-                    const SizedBox(height: 32),
+                  ),
+                  const SizedBox(height: 32),
 
-                    // Default shape (LiquidOval)
-                    const _SectionLabel('Default (LiquidOval)'),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  // Default shape (LiquidOval)
+                  const _SectionLabel('Default (LiquidOval)'),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _IconButton(
+                        icon: Icon(Icons.arrow_back_ios_new),
+                        label: 'Back',
+                      ),
+                      _IconButton(
+                          icon: Icon(Icons.favorite), label: 'Favorite'),
+                      _IconButton(icon: Icon(Icons.share), label: 'Share'),
+                      _IconButton(icon: Icon(Icons.close), label: 'Close'),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Explicit shapes
+                  const _SectionLabel('Explicit Shapes'),
+                  const SizedBox(height: 10),
+                  _ShapeRow(
+                    shape: const LiquidRoundedRectangle(borderRadius: 20),
+                    label: 'RoundedRect(20)',
+                  ),
+                  const SizedBox(height: 12),
+                  _ShapeRow(
+                    shape: const LiquidRoundedRectangle(borderRadius: 0),
+                    label: 'RoundedRect(0)',
+                  ),
+                  const SizedBox(height: 12),
+                  _ShapeRow(
+                    shape: const LiquidRoundedSuperellipse(borderRadius: 12),
+                    label: 'Superellipse(12)',
+                  ),
+                  const SizedBox(height: 32),
+
+                  // In a Stack (positioned layout)
+                  const _SectionLabel('Stack + Positioned'),
+                  const SizedBox(height: 10),
+                  Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.black26,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Stack(
                       children: [
-                        _IconButton(
-                          icon: Icon(Icons.arrow_back_ios_new),
-                          label: 'Back',
+                        const Center(
+                          child: Text(
+                            'Content behind buttons',
+                            style: TextStyle(color: Colors.white54),
+                          ),
                         ),
-                        _IconButton(
-                            icon: Icon(Icons.favorite), label: 'Favorite'),
-                        _IconButton(icon: Icon(Icons.share), label: 'Share'),
-                        _IconButton(icon: Icon(Icons.close), label: 'Close'),
+                        Positioned(
+                          left: 8,
+                          top: 16,
+                          child: _IconButton(
+                            icon: Icon(Icons.arrow_back_ios_new),
+                          ),
+                        ),
+                        Positioned(
+                          right: 8,
+                          top: 16,
+                          child: _IconButton(icon: Icon(Icons.close)),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 32),
+                  ),
+                  const SizedBox(height: 32),
 
-                    // Explicit shapes
-                    const _SectionLabel('Explicit Shapes'),
-                    const SizedBox(height: 10),
-                    _ShapeRow(
-                      shape: const LiquidRoundedRectangle(borderRadius: 20),
-                      label: 'RoundedRect(20)',
-                    ),
-                    const SizedBox(height: 12),
-                    _ShapeRow(
-                      shape: const LiquidRoundedRectangle(borderRadius: 0),
-                      label: 'RoundedRect(0)',
-                    ),
-                    const SizedBox(height: 12),
-                    _ShapeRow(
-                      shape: const LiquidRoundedSuperellipse(borderRadius: 12),
-                      label: 'Superellipse(12)',
-                    ),
-                    const SizedBox(height: 32),
-
-                    // In a Stack (positioned layout)
-                    const _SectionLabel('Stack + Positioned'),
-                    const SizedBox(height: 10),
-                    Container(
-                      height: 200,
-                      decoration: BoxDecoration(
-                        color: Colors.black26,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Stack(
-                        children: [
-                          const Center(
-                            child: Text(
-                              'Content behind buttons',
-                              style: TextStyle(color: Colors.white54),
-                            ),
-                          ),
-                          Positioned(
-                            left: 8,
-                            top: 16,
-                            child: _IconButton(
-                              icon: Icon(Icons.arrow_back_ios_new),
-                            ),
-                          ),
-                          Positioned(
-                            right: 8,
-                            top: 16,
-                            child: _IconButton(icon: Icon(Icons.close)),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Different sizes
-                    const _SectionLabel('Different Sizes'),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _SizedButton(size: 32, iconSize: 14),
-                        _SizedButton(size: 40, iconSize: 18),
-                        _SizedButton(size: 56, iconSize: 24),
-                      ],
-                    ),
-                    const SizedBox(height: 100),
-                  ],
-                ),
+                  // Different sizes
+                  const _SectionLabel('Different Sizes'),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _SizedButton(size: 32, iconSize: 14),
+                      _SizedButton(size: 40, iconSize: 18),
+                      _SizedButton(size: 56, iconSize: 24),
+                    ],
+                  ),
+                  const SizedBox(height: 100),
+                ],
               ),
             ),
           ),

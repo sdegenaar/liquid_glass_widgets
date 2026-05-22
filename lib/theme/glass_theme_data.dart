@@ -319,10 +319,90 @@ class GlassThemeVariant {
 @immutable
 class GlassThemeData {
   /// Creates glass theme data with separate light and dark configurations.
+  ///
+  /// Both [light] and [dark] default to sensible values — if you only want
+  /// to tweak a single property, use [GlassThemeData.simple] instead.
   const GlassThemeData({
     this.light = GlassThemeVariant.light,
     this.dark = GlassThemeVariant.dark,
   });
+
+  /// Creates glass theme data from a flat set of common properties.
+  ///
+  /// This is the **recommended constructor for most apps**. It applies the
+  /// same [settings] and [quality] to both light and dark modes using the
+  /// library's built-in light/dark defaults as a base — you only need to
+  /// specify what you want to change.
+  ///
+  /// ```dart
+  /// // Minimal — just set blur and thickness, everything else uses defaults:
+  /// GlassThemeData.simple(
+  ///   blur: 10,
+  ///   thickness: 30,
+  /// )
+  ///
+  /// // With quality:
+  /// GlassThemeData.simple(
+  ///   blur: 10,
+  ///   thickness: 30,
+  ///   quality: GlassQuality.standard,
+  /// )
+  /// ```
+  ///
+  /// For fine-grained per-mode control (different blur in dark mode, custom
+  /// glow colors, etc.) use the default [GlassThemeData] constructor instead.
+  factory GlassThemeData.simple({
+    double? blur,
+    double? thickness,
+    GlassQuality? quality,
+    double? chromaticAberration,
+    double? lightIntensity,
+    double? ambientStrength,
+    double? refractiveIndex,
+    double? saturation,
+    double? borderRadius,
+  }) {
+    final settings = GlassThemeSettings(
+      blur: blur,
+      thickness: thickness,
+      chromaticAberration: chromaticAberration,
+      lightIntensity: lightIntensity,
+      ambientStrength: ambientStrength,
+      refractiveIndex: refractiveIndex,
+      saturation: saturation,
+    );
+
+    return GlassThemeData(
+      light: GlassThemeVariant.light.copyWith(
+        settings: GlassThemeVariant.light.settings?.copyWith(
+              blur: blur,
+              thickness: thickness,
+              chromaticAberration: chromaticAberration,
+              lightIntensity: lightIntensity,
+              ambientStrength: ambientStrength,
+              refractiveIndex: refractiveIndex,
+              saturation: saturation,
+            ) ??
+            settings,
+        quality: quality,
+        borderRadius: borderRadius,
+      ),
+      dark: GlassThemeVariant.dark.copyWith(
+        settings: GlassThemeVariant.dark.settings?.copyWith(
+              blur: blur,
+              thickness: thickness,
+              chromaticAberration: chromaticAberration,
+              lightIntensity: lightIntensity,
+              ambientStrength: ambientStrength,
+              refractiveIndex: refractiveIndex,
+              saturation: saturation,
+            ) ??
+            settings,
+        quality: quality,
+        borderRadius: borderRadius,
+      ),
+    );
+  }
 
   /// Theme variant for light mode.
   final GlassThemeVariant light;

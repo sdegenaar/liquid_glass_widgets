@@ -54,7 +54,7 @@ class _InteractivePageState extends State<InteractivePage> {
         // =====================================================================
         Expanded(
           child: AdaptiveLiquidGlassLayer(
-            settings: RecommendedGlassSettings.interactive,
+            settings: RecommendedGlassSettings.standard,
             quality: GlassQuality.standard,
             child: CustomScrollView(
               slivers: [
@@ -1872,7 +1872,7 @@ class _ShaderComparisonCard extends StatelessWidget {
             children: [
               // Background image (contained within card)
               Positioned.fill(
-                child: GlassRefractionSource(
+                child: GlassBackgroundSource(
                   child: Container(
                     decoration: const BoxDecoration(
                       image: DecorationImage(

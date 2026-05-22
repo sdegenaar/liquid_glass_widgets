@@ -83,22 +83,73 @@ class GlassTextField extends StatefulWidget {
     this.autofocus = false,
     this.onChanged,
     this.onSubmitted,
+    this.onLineCountChanged,
     this.inputFormatters,
     this.textStyle,
     this.placeholderStyle,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     this.iconSpacing = 12.0,
+    this.iconAlignment = CrossAxisAlignment.center,
+    this.height,
+    this.minHeight,
+    this.maxHeight,
     this.shape = const LiquidRoundedSuperellipse(borderRadius: 10),
     this.settings,
     this.useOwnLayer = false,
     this.quality,
-    // ── iOS 26 interaction ────────────────────────────────────────────────
+    // ── iOS 26 interaction ────────────────────────────────────────────────────────────
     this.interactionBehavior = GlassInteractionBehavior.full,
     this.pressScale = 1.03,
     this.glowColor,
     this.glowRadius = 1.5,
     this.onTapOutside,
-  });
+  }) : assert(
+          height == null || (minHeight == null && maxHeight == null),
+          'height is mutually exclusive with minHeight / maxHeight. '
+          'Use either height for a fixed size, or minHeight/maxHeight for '
+          'a constrained range.',
+        );
+
+  /// Creates a glass text field styled specifically for search, matching
+  /// the compact layout and visuals of [GlassSearchBar].
+  const GlassTextField.search({
+    super.key,
+    this.controller,
+    this.focusNode,
+    this.placeholder,
+    this.prefixIcon,
+    this.suffixIcon,
+    this.onSuffixTap,
+    this.enabled = true,
+    this.readOnly = false,
+    this.autofocus = false,
+    this.onChanged,
+    this.onSubmitted,
+    this.inputFormatters,
+    this.textStyle,
+    this.placeholderStyle,
+    this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    this.iconSpacing = 8.0,
+    this.height = 44.0,
+    this.shape = const LiquidRoundedSuperellipse(borderRadius: 22),
+    this.settings,
+    this.useOwnLayer = false,
+    this.quality,
+    this.interactionBehavior = GlassInteractionBehavior.full,
+    this.pressScale = 1.03,
+    this.glowColor,
+    this.glowRadius = 1.5,
+    this.onTapOutside,
+  })  : obscureText = false,
+        keyboardType = TextInputType.text,
+        textInputAction = TextInputAction.search,
+        maxLines = 1,
+        minLines = 1,
+        maxLength = null,
+        onLineCountChanged = null,
+        iconAlignment = CrossAxisAlignment.center,
+        minHeight = null,
+        maxHeight = null;
 
   // ===========================================================================
   // Text Field Properties
@@ -169,6 +220,28 @@ class GlassTextField extends StatefulWidget {
   /// Defaults to unfocusing the field, which dismisses the keyboard.
   final TapRegionCallback? onTapOutside;
 
+  /// Called when the number of rendered text lines changes.
+  ///
+  /// The callback receives the current line count after layout. This is
+  /// the **rendered** line count (accounting for text wrapping), not the
+  /// number of `\n` characters in the text.
+  ///
+  /// Fires on initial build and on every subsequent change. Does NOT fire
+  /// when the line count stays the same.
+  ///
+  /// Useful for animating the surrounding container’s height or shape
+  /// (e.g. reducing `borderRadius` as lines increase):
+  ///
+  /// ```dart
+  /// GlassTextField(
+  ///   maxLines: 6,
+  ///   onLineCountChanged: (lines) {
+  ///     setState(() => _lines = lines);
+  ///   },
+  /// )
+  /// ```
+  final ValueChanged<int>? onLineCountChanged;
+
   // ===========================================================================
   // Style Properties
   // ===========================================================================
@@ -193,6 +266,52 @@ class GlassTextField extends StatefulWidget {
   ///
   /// Defaults to [LiquidRoundedSuperellipse] with 10px border radius.
   final LiquidShape shape;
+
+  /// Vertical alignment of prefix and suffix icons.
+  ///
+  /// Controls where icons are positioned when the field spans multiple lines:
+  ///
+  /// - [CrossAxisAlignment.center] — icons centered vertically (default)
+  /// - [CrossAxisAlignment.start] — icons pinned to top
+  /// - [CrossAxisAlignment.end] — icons pinned to bottom
+  ///
+  /// For single-line fields this has no visible effect.
+  /// Defaults to [CrossAxisAlignment.center] (preserves existing behaviour).
+  ///
+  /// ```dart
+  /// // Pin icons to bottom — common in chat message composers:
+  /// GlassTextField(
+  ///   maxLines: 6,
+  ///   iconAlignment: CrossAxisAlignment.end,
+  ///   suffixIcon: Icon(Icons.send),
+  /// )
+  /// ```
+  final CrossAxisAlignment iconAlignment;
+
+  // ===========================================================================
+  // Size Properties
+  // ===========================================================================
+
+  /// Fixed height of the text field.
+  ///
+  /// If non-null, the field is wrapped in a `SizedBox` with this height.
+  /// Mutually exclusive with [minHeight] / [maxHeight].
+  ///
+  /// Set to `44` to match [GlassSearchBar.height] for visual parity in
+  /// single-line mode.
+  final double? height;
+
+  /// Minimum height constraint.
+  ///
+  /// When set alongside [maxHeight], wraps the field in a `ConstrainedBox`.
+  /// The field grows from [minHeight] up to [maxHeight] as lines are added.
+  final double? minHeight;
+
+  /// Maximum height constraint.
+  ///
+  /// When set, the field will not grow beyond this height and will scroll
+  /// internally once the content exceeds the available space.
+  final double? maxHeight;
 
   // ===========================================================================
   // Glass Effect Properties
@@ -271,6 +390,15 @@ class _GlassTextFieldState extends State<GlassTextField> {
   bool _ownsNode = false;
   bool _isFocused = false;
   bool _isPressed = false;
+  int _currentLineCount = 0;
+  TextEditingController? _effectiveController;
+
+  /// Current rendered line count.
+  ///
+  /// Access via a `GlobalKey<_GlassTextFieldState>`.
+  int get lineCount => _currentLineCount;
+
+  final GlobalKey _textFieldKey = GlobalKey();
 
   // Soft default glow colour — visibly more ambient than GlassButton's white24.
   static const _defaultGlowColor = Color(0x1FFFFFFF); // white ~12%
@@ -298,6 +426,24 @@ class _GlassTextFieldState extends State<GlassTextField> {
     }
     _isFocused = _focusNode.hasFocus;
     _focusNode.addListener(_onFocusChange);
+
+    _initController();
+
+    // Schedule initial line count measurement after first layout.
+    if (widget.onLineCountChanged != null) {
+      _scheduleLineCountCheck();
+    }
+  }
+
+  void _initController() {
+    _effectiveController = widget.controller;
+    _effectiveController?.addListener(_onControllerChange);
+  }
+
+  void _onControllerChange() {
+    if (widget.onLineCountChanged != null) {
+      _scheduleLineCountCheck();
+    }
   }
 
   void _onFocusChange() {
@@ -329,6 +475,11 @@ class _GlassTextFieldState extends State<GlassTextField> {
       _focusNode.addListener(_onFocusChange);
       _isFocused = _focusNode.hasFocus;
     }
+    // If the external controller reference changed, rewire the listener.
+    if (oldWidget.controller != widget.controller) {
+      _effectiveController?.removeListener(_onControllerChange);
+      _initController();
+    }
     // If disabled, cancel any in-flight press so the spring always returns.
     if (!widget.enabled && _isPressed) {
       setState(() => _isPressed = false);
@@ -339,12 +490,60 @@ class _GlassTextFieldState extends State<GlassTextField> {
   void dispose() {
     _focusNode.removeListener(_onFocusChange);
     if (_ownsNode) _focusNode.dispose();
+    _effectiveController?.removeListener(_onControllerChange);
     super.dispose();
+  }
+
+  // ── Line count tracking ──────────────────────────────────────────────────
+
+  Size _lastTextFieldSize = Size.zero;
+  bool _lineCheckScheduled = false;
+
+  /// Schedules a line count measurement for the next frame.
+  ///
+  /// Debounced: both `onChanged` and the controller listener call this on
+  /// every keystroke — the flag ensures only one callback is queued per frame.
+  void _scheduleLineCountCheck() {
+    if (_lineCheckScheduled) return;
+    _lineCheckScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _lineCheckScheduled = false;
+      if (!mounted) return;
+      _measureLineCount();
+    });
+  }
+
+  /// Measures the TextField's rendered height and infers line count.
+  /// Fires [onLineCountChanged] only when the count actually changes.
+  void _measureLineCount() {
+    final renderBox =
+        _textFieldKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null || !renderBox.hasSize) return;
+
+    final size = renderBox.size;
+    if (size == _lastTextFieldSize) return;
+    _lastTextFieldSize = size;
+
+    // Use MediaQuery textScaler for accurate line height calculation.
+    final textScaler = MediaQuery.textScalerOf(context);
+    final effectiveStyle = widget.textStyle ?? _defaultTextStyle;
+    final fontSize = effectiveStyle.fontSize ?? 16.0;
+    final effectiveLineHeight =
+        textScaler.scale(fontSize) * (effectiveStyle.height ?? 1.2);
+
+    final lineCount =
+        (size.height / effectiveLineHeight).round().clamp(1, 9999);
+
+    if (lineCount != _currentLineCount) {
+      _currentLineCount = lineCount;
+      widget.onLineCountChanged?.call(lineCount);
+    }
   }
 
   static const _defaultTextStyle = TextStyle(
     color: Color.fromRGBO(255, 255, 255, 0.9), // Colors.white with 0.9 alpha
     fontSize: 16,
+    height: 1.2,
   );
 
   static const _defaultPlaceholderStyle = TextStyle(
@@ -362,6 +561,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
     final textFieldContent = Padding(
       padding: widget.padding,
       child: Row(
+        crossAxisAlignment: widget.iconAlignment,
         children: [
           // Prefix icon
           if (widget.prefixIcon != null) ...[
@@ -372,6 +572,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
           // Text field
           Expanded(
             child: TextField(
+              key: _textFieldKey,
               controller: widget.controller,
               focusNode: _focusNode,
               obscureText: widget.obscureText,
@@ -383,7 +584,10 @@ class _GlassTextFieldState extends State<GlassTextField> {
               enabled: widget.enabled,
               readOnly: widget.readOnly,
               autofocus: widget.autofocus,
-              onChanged: widget.onChanged,
+              onChanged: (value) {
+                widget.onChanged?.call(value);
+                _scheduleLineCountCheck();
+              },
               onSubmitted: widget.onSubmitted,
               onTapOutside: widget.onTapOutside ??
                   (event) => FocusManager.instance.primaryFocus?.unfocus(),
@@ -402,7 +606,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
 
           // Suffix icon
           if (widget.suffixIcon != null) ...[
-            const SizedBox(width: 12),
+            SizedBox(width: widget.iconSpacing),
             GestureDetector(
               onTap: widget.onSuffixTap,
               child: widget.suffixIcon,
@@ -480,8 +684,26 @@ class _GlassTextFieldState extends State<GlassTextField> {
 
     return Opacity(
       opacity: widget.enabled ? 1.0 : 0.5,
-      child: glassWidget,
+      child: _wrapWithConstraints(glassWidget),
     );
+  }
+
+  /// Wraps [child] in height constraints when [height], [minHeight], or
+  /// [maxHeight] is specified. Returns [child] unchanged otherwise.
+  Widget _wrapWithConstraints(Widget child) {
+    if (widget.height != null) {
+      return SizedBox(height: widget.height, child: child);
+    }
+    if (widget.minHeight != null || widget.maxHeight != null) {
+      return ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: widget.minHeight ?? 0,
+          maxHeight: widget.maxHeight ?? double.infinity,
+        ),
+        child: child,
+      );
+    }
+    return child;
   }
 }
 

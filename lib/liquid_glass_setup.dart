@@ -2,6 +2,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'theme/glass_theme.dart';
+import 'theme/glass_theme_data.dart';
 import 'types/glass_quality.dart';
 import 'utils/accessibility_config.dart' as glass_config;
 import 'utils/glass_performance_monitor.dart';
@@ -14,22 +16,21 @@ import 'widgets/shared/lightweight_liquid_glass.dart';
 
 /// Entry point and configuration for the Liquid Glass Widgets library.
 ///
-/// The setup is intentionally split into two calls with distinct
-/// responsibilities:
-///
-/// - **[initialize]** — async platform / engine setup (shader prewarming,
-///   Impeller pipeline compilation, optional debug tooling). No widget-tree
-///   concerns.
-/// - **[wrap]** — widget-tree composition and behavioral configuration. All
-///   parameters that control how glass widgets behave at runtime live here.
-///
-/// Typical `main.dart`:
+/// ## Setup
 ///
 /// ```dart
 /// void main() async {
 ///   WidgetsFlutterBinding.ensureInitialized();
-///   await LiquidGlassWidgets.initialize();
-///   runApp(LiquidGlassWidgets.wrap(const MyApp()));
+///   await LiquidGlassWidgets.initialize(); // pre-warms shaders
+///
+///   runApp(LiquidGlassWidgets.wrap(
+///     child: const MyApp(),
+///     adaptiveQuality: true,
+///     theme: GlassThemeData(
+///       light: GlassThemeVariant(settings: GlassThemeSettings(blur: 10)),
+///       dark:  GlassThemeVariant(settings: GlassThemeSettings(blur: 14)),
+///     ),
+///   ));
 /// }
 /// ```
 class LiquidGlassWidgets {
@@ -137,13 +138,14 @@ class LiquidGlassWidgets {
   ///
   /// // Recommended for Android / broad device support:
   /// runApp(LiquidGlassWidgets.wrap(
-  ///   const MyApp(),
+  ///   child: const MyApp(),
   ///   adaptiveQuality: true,
+  ///   theme: GlassThemeData(...),
   /// ));
   ///
   /// // Game / experience — bypass accessibility, conservative quality start:
   /// runApp(LiquidGlassWidgets.wrap(
-  ///   const MyApp(),
+  ///   child: const MyApp(),
   ///   respectSystemAccessibility: false,
   ///   adaptiveQuality: true,
   ///   adaptiveConfig: GlassAdaptiveScopeConfig(
@@ -200,6 +202,7 @@ class LiquidGlassWidgets {
   /// `GlassAdaptiveScope` (when enabled) → `GlassBackdropScope` → `child`
   static Widget wrap({
     required Widget child,
+    GlassThemeData? theme,
     bool respectSystemAccessibility = true,
     bool adaptiveQuality = false,
     GlassAdaptiveScopeConfig? adaptiveConfig,
@@ -208,6 +211,10 @@ class LiquidGlassWidgets {
     glass_config.respectSystemAccessibility = respectSystemAccessibility;
 
     Widget result = GlassBackdropScope(child: child);
+
+    if (theme != null) {
+      result = GlassTheme(data: theme, child: result);
+    }
 
     if (adaptiveQuality) {
       // When no adaptiveConfig is given: GlassAdaptiveScope.initState() seeds

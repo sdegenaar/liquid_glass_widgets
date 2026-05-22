@@ -12,9 +12,9 @@ import '../../../src/renderer/liquid_glass_renderer.dart';
 /// - `thickness: 10` — moderate surface feel for large overlay surfaces.
 /// - `blur: 10` — standard background frosting (matches iOS 26 overlay blur).
 /// - `refractiveIndex: 0.15` — minimal rim. The lightweight shader computes
-///   rim alpha as kRimAlphaBase(0.8) × refractiveIndex, so 1.2 produced an
-///   opaque 0.96 rim — a visible hard "line" on large sheets. 0.15 gives
-///   ~0.12 opacity — a barely-perceptible glassy edge matching iOS 26.
+///   rim alpha from kRimAlphaBase(0.65) × directional/ambient factors ×
+///   refractiveIndex. At 0.15 this produces a barely-perceptible glassy
+///   edge matching iOS 26's large-surface modal aesthetic.
 const kDefaultSheetSettings = LiquidGlassSettings(
   glassColor: Color(0x1FFFFFFF), // ~12% white — matches iOS 26 modal tint
   thickness: 10.0,

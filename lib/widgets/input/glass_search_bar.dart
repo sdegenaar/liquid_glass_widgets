@@ -320,56 +320,50 @@ class _GlassSearchBarState extends State<GlassSearchBar> {
       children: [
         // Search field
         Expanded(
-          child: SizedBox(
-            height: widget.height,
-            child: GlassTextField(
-              controller: _controller,
-              focusNode: _focusNode,
-              placeholder: widget.placeholder,
-              prefixIcon: Icon(
-                CupertinoIcons.search,
-                size: 20,
-                color: searchIconColor,
-              ),
-              // AnimatedSwitcher cross-fades and scales the × in/out as the
-              // user types — identical mechanism to _SearchPill for consistency.
-              // No AnimationController needed; the bool setState drives it.
-              suffixIcon: RepaintBoundary(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 180),
-                  transitionBuilder: (child, animation) => FadeTransition(
-                    opacity: animation,
-                    child: ScaleTransition(scale: animation, child: child),
-                  ),
-                  child: _hasText
-                      ? Icon(
-                          CupertinoIcons.clear_circled_solid,
-                          key: const ValueKey('clear'),
-                          size: 18,
-                          color: clearIconColor,
-                        )
-                      : const SizedBox.shrink(key: ValueKey('empty')),
-                ),
-              ),
-              onSuffixTap: _hasText ? _handleClear : null,
-              onChanged: widget.onChanged,
-              onSubmitted: widget.onSubmitted,
-              keyboardType: TextInputType.text,
-              textInputAction: TextInputAction.search,
-              autofocus: widget.autofocus,
-              enabled: widget.enabled,
-              onTapOutside: _handleTapOutside,
-              textStyle: widget.textStyle,
-              placeholderStyle: widget.placeholderStyle,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              iconSpacing: 8,
-              shape: LiquidRoundedSuperellipse(
-                borderRadius: widget.height / 2,
-              ),
-              settings: widget.settings,
-              useOwnLayer: widget.useOwnLayer,
-              quality: widget.quality,
+          child: GlassTextField.search(
+            controller: _controller,
+            focusNode: _focusNode,
+            placeholder: widget.placeholder,
+            prefixIcon: Icon(
+              CupertinoIcons.search,
+              size: 20,
+              color: searchIconColor,
             ),
+            // AnimatedSwitcher cross-fades and scales the × in/out as the
+            // user types — identical mechanism to _SearchPill for consistency.
+            // No AnimationController needed; the bool setState drives it.
+            suffixIcon: RepaintBoundary(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(scale: animation, child: child),
+                ),
+                child: _hasText
+                    ? Icon(
+                        CupertinoIcons.clear_circled_solid,
+                        key: const ValueKey('clear'),
+                        size: 18,
+                        color: clearIconColor,
+                      )
+                    : const SizedBox.shrink(key: ValueKey('empty')),
+              ),
+            ),
+            onSuffixTap: _hasText ? _handleClear : null,
+            onChanged: widget.onChanged,
+            onSubmitted: widget.onSubmitted,
+            autofocus: widget.autofocus,
+            enabled: widget.enabled,
+            onTapOutside: _handleTapOutside,
+            textStyle: widget.textStyle,
+            placeholderStyle: widget.placeholderStyle,
+            height: widget.height,
+            shape: LiquidRoundedSuperellipse(
+              borderRadius: widget.height / 2,
+            ),
+            settings: widget.settings,
+            useOwnLayer: widget.useOwnLayer,
+            quality: widget.quality,
           ),
         ),
 
