@@ -84,7 +84,6 @@ jobs:
           )
 
           for APP in "${APPS[@]}"; do
-
             echo "=============================="
             echo "Building $APP"
             echo "=============================="
@@ -100,10 +99,12 @@ jobs:
 
             # ---------------- PUB GET SAFETY ----------------
             cd "$ROOT"
+
             flutter pub get
 
             # ---------------- WEB HTML ----------------
             echo "Building Web HTML for $APP..."
+
             WEB_HTML_OUT="../../artifacts/web-html/$APP"
             mkdir -p "$WEB_HTML_OUT"
 
@@ -118,6 +119,7 @@ jobs:
 
             # ---------------- WEB CANVAS ----------------
             echo "Building Web Canvas for $APP..."
+
             WEB_CANVAS_OUT="../../artifacts/web-canvas/$APP"
             mkdir -p "$WEB_CANVAS_OUT"
 
@@ -132,6 +134,7 @@ jobs:
 
             # ---------------- WASM ----------------
             echo "Building WASM for $APP..."
+
             WASM_OUT="../../artifacts/wasm/$APP"
             mkdir -p "$WASM_OUT"
 
@@ -145,9 +148,8 @@ jobs:
 
             cp -r build/web/* "$WASM_OUT/"
 
-            cd ../..
+            cd ..
           done
-
       # ---------------- CREATE RELEASE ARCHIVES ----------------
       - name: Create release archives
         run: |
