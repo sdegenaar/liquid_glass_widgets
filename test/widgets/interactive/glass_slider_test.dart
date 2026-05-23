@@ -1,6 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:liquid_glass_widgets/widgets/interactive/glass_slider.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
+import 'package:liquid_glass_widgets/types/glass_quality.dart';
 
 import '../../shared/test_helpers.dart';
 
@@ -211,6 +213,72 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(GlassSlider), findsOneWidget);
+    });
+
+    testWidgets('Premium path renders thumb as solid white at rest',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassSlider(
+            value: 0.5,
+            onChanged: (_) {},
+            quality: GlassQuality.premium,
+          ),
+        ),
+      );
+
+      // The material Container is wrapped in an Opacity widget.
+      // At rest (transition=0), Opacity.opacity = 1.0, Container color = white at full alpha.
+      final opacityFinder = find.byWidgetPredicate((widget) {
+        if (widget is Opacity && widget.opacity == 1.0) {
+          return true;
+        }
+        return false;
+      });
+      expect(opacityFinder, findsWidgets); // At least one Opacity at full
+
+      final containerFinder = find.byWidgetPredicate((widget) {
+        if (widget is Container && widget.decoration is BoxDecoration) {
+          final dec = widget.decoration as BoxDecoration;
+          return dec.boxShadow != null && dec.boxShadow!.isNotEmpty;
+        }
+        return false;
+      });
+
+      expect(containerFinder, findsOneWidget);
+      final container = tester.widget<Container>(containerFinder);
+      final dec = container.decoration as BoxDecoration;
+      expect(dec.color, isNotNull);
+      expect(dec.color!.a,
+          equals(1.0)); // Solid white (Opacity controls visibility)
+    });
+
+    testWidgets('Standard path renders thumb as solid white at rest',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassSlider(
+            value: 0.5,
+            onChanged: (_) {},
+            quality: GlassQuality.standard,
+          ),
+        ),
+      );
+
+      final containerFinder = find.byWidgetPredicate((widget) {
+        if (widget is Container && widget.decoration is BoxDecoration) {
+          final dec = widget.decoration as BoxDecoration;
+          return dec.boxShadow != null && dec.boxShadow!.isNotEmpty;
+        }
+        return false;
+      });
+
+      expect(containerFinder, findsOneWidget);
+      final container = tester.widget<Container>(containerFinder);
+      final dec = container.decoration as BoxDecoration;
+      expect(dec.color, isNotNull);
+      expect(dec.color!.a,
+          equals(1.0)); // Solid white (Opacity controls visibility)
     });
   });
 }

@@ -8,6 +8,7 @@ import '../../constants/glass_defaults.dart';
 import '../../src/types/glass_interaction_behavior.dart';
 import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
+import '../../utils/glass_spring.dart';
 import '../shared/glass_effect.dart';
 import '../../theme/glass_theme_helpers.dart';
 
@@ -252,11 +253,15 @@ class _GlassSliderState extends State<GlassSlider>
 
   double? _dragValue;
   bool _isDragging = false;
-  Offset _velocity = Offset.zero;
   late AnimationController _scaleController;
   late AnimationController _thicknessController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _thicknessAnimation;
+
+  // Spring-based jelly velocity controller.
+  // Produces smooth, high-magnitude velocity values with natural deceleration
+  // and elastic bounce-back — matching the tab bar / bottom bar pill feel.
+  late final SingleSpringController _jellyController;
 
   @override
   void initState() {
@@ -297,12 +302,24 @@ class _GlassSliderState extends State<GlassSlider>
         reverseCurve: Curves.easeIn,
       ),
     );
+
+    // Jelly spring: snappy with slight bounce for organic squash/stretch.
+    // The controller drives a normalised position; its VELOCITY is what
+    // feeds buildJellyTransform for the squash/stretch matrix.
+    _jellyController = SingleSpringController(
+      vsync: this,
+      spring: GlassSpring.snappy(
+        duration: const Duration(milliseconds: 350),
+      ),
+      initialValue: 0.0,
+    );
   }
 
   @override
   void dispose() {
     _scaleController.dispose();
     _thicknessController.dispose();
+    _jellyController.dispose();
     super.dispose();
   }
 
@@ -316,7 +333,6 @@ class _GlassSliderState extends State<GlassSlider>
 
     setState(() {
       _isDragging = true;
-      _velocity = Offset.zero;
     });
     unawaited(_scaleController.forward());
     // Fade the white pill out; stays clear for the whole drag
@@ -338,10 +354,10 @@ class _GlassSliderState extends State<GlassSlider>
     final normalizedX =
         ((localPosition.dx - widget.thumbRadius) / trackWidth).clamp(0.0, 1.0);
 
-    // Update velocity for jelly effect
-    setState(() {
-      _velocity = Offset(details.primaryDelta ?? 0, 0);
-    });
+    // Feed the spring controller with the new normalised position.
+    // Its velocity property produces smooth, spring-based values that
+    // buildJellyTransform can use for organic squash/stretch.
+    _jellyController.animateTo(normalizedX);
 
     // Convert to value
     var newValue = _normalizedToValue(normalizedX);
@@ -380,7 +396,6 @@ class _GlassSliderState extends State<GlassSlider>
     setState(() {
       _isDragging = false;
       _dragValue = null;
-      _velocity = Offset.zero;
     });
 
     // Scale down thumb when ending drag
@@ -388,6 +403,10 @@ class _GlassSliderState extends State<GlassSlider>
 
     // Fade the white pill back in on release
     unawaited(_thicknessController.reverse());
+
+    // Let the spring settle — this produces the elastic bounce-back jelly
+    // animation as the velocity decays through the spring curve.
+    // (No need to reset; the spring naturally settles to its current target.)
   }
 
   // Cache effectiveQuality at state level to make it accessible in _buildThumbGlass
@@ -469,7 +488,9 @@ class _GlassSliderState extends State<GlassSlider>
                           height: widget.trackHeight,
                           child: Stack(
                             children: [
-                              // Full inactive track (background)
+                              // Full inactive track (iOS 26 style)
+                              // Plain semi-transparent bar — no rim, no shader.
+                              // Matches the real iOS 26 slider exactly.
                               Positioned.fill(
                                 child: Container(
                                   decoration: BoxDecoration(
@@ -511,11 +532,12 @@ class _GlassSliderState extends State<GlassSlider>
                       ),
                     ),
 
-                    // Thumb (iOS 26: premium hardware aligned)
+                    // Thumb (iOS 26: premium hardware aligned + jelly physics)
                     AnimatedBuilder(
                       animation: Listenable.merge([
                         _scaleController,
                         _thicknessController,
+                        _jellyController,
                       ]),
                       builder: (context, child) {
                         final scale = _scaleAnimation.value;
@@ -527,13 +549,20 @@ class _GlassSliderState extends State<GlassSlider>
                             (widget.thumbRadius * 2 + 16 - scaledThumbHeight) /
                                 2;
 
-                        final jellyTransform = _isDragging
-                            ? DraggableIndicatorPhysics.buildJellyTransform(
-                                velocity: _velocity,
-                                maxDistortion: 0.25,
-                                velocityScale: 30,
-                              )
-                            : Matrix4.identity();
+                        // Spring-based jelly: velocity from the spring controller
+                        // produces smooth squash/stretch with natural deceleration
+                        // and elastic bounce-back — matching tab bar/bottom bar.
+                        final jellyVelocity = _jellyController.velocity;
+                        final jellyTransform =
+                            DraggableIndicatorPhysics.buildJellyTransform(
+                          velocity: Offset(jellyVelocity, 0),
+                          maxDistortion: 0.6,
+                          // Slider spring tracks 0→1 normalised position,
+                          // producing velocities of ~1-3 units/sec (vs tab bar's
+                          // 10-20+). Scale down so these smaller velocities
+                          // produce visible squash/stretch.
+                          velocityScale: 2,
+                        );
 
                         return Positioned(
                           left: thumbPosition - widget.thumbRadius,
@@ -569,59 +598,39 @@ class _GlassSliderState extends State<GlassSlider>
     // Calculate transition value (0 = at rest, 1 = fully dragging)
     final transition = _thicknessAnimation.value;
 
+    // Standard: same rim/light math as AnimatedGlassIndicator pill.
+    //   Dampeners in GlassEffect.build(): rimThickness×0.35, lightIntensity×0.6.
+    // Premium: original values preserved exactly — no change to Premium rendering.
+    final isStdPath =
+        (_effectiveQuality ?? GlassQuality.standard) == GlassQuality.standard;
+
     // iOS 26: Dynamic size matching GlassSwitch pattern
     // The glass shell grows with the scale animation
     final totalWidth = thumbWidth * scale;
     final totalHeight = thumbHeight * scale;
 
-    // iOS 26: Unified thumb content with stable structure
-    final thumbContent = SizedBox(
-      width: totalWidth,
-      height: totalHeight,
-      child: Stack(
-        alignment: Alignment.center,
-        clipBehavior: Clip.none,
-        children: [
-          // Glass shell footprint (crucial for proper shader rendering)
-          Positioned.fill(child: Container(color: Colors.transparent)),
-
-          // Physical material content (centered, original size)
-          Container(
-            width: thumbWidth,
-            height: thumbHeight,
-            decoration: BoxDecoration(
-              // Fade out material as glass intensifies
-              color: Colors.white.withValues(
-                alpha: (1.0 - transition * 1.2).clamp(0.0, 1.0),
+    // iOS 26: Material content wrapped in Opacity (matches GlassSwitch pattern).
+    // Using Opacity widget (not color alpha) is critical for Impeller: it
+    // properly removes the child from the compositing tree, allowing the
+    // native LiquidGlass refraction to show through when the material fades.
+    final materialContent = Opacity(
+      opacity: (1.0 - transition * 1.2).clamp(0.0, 1.0),
+      child: Container(
+        width: thumbWidth,
+        height: thumbHeight,
+        decoration: BoxDecoration(
+          color: widget.thumbColor.withValues(alpha: 1.0),
+          borderRadius: BorderRadius.circular(borderRadius),
+          boxShadow: [
+            BoxShadow(
+              color: _defaultThumbShadowColor.withValues(
+                alpha: 0.25 * (1.0 - transition),
               ),
-              borderRadius: BorderRadius.circular(borderRadius),
-              boxShadow: [
-                BoxShadow(
-                  color: _defaultThumbShadowColor.withValues(
-                    alpha: 0.25 * (1.0 - transition),
-                  ),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-          ),
-
-          // Glowing element — only when interactionBehavior includes glow.
-          if (transition > 0.05 && widget.interactionBehavior.hasGlow)
-            Opacity(
-              opacity: transition,
-              child: GlassGlow(
-                glowColor:
-                    widget.glowColor ?? const Color(0x1FFFFFFF), // white ~12%
-                glowRadius: widget.glowRadius,
-                child: SizedBox(
-                  width: thumbWidth,
-                  height: thumbHeight,
-                ),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
 
@@ -631,12 +640,6 @@ class _GlassSliderState extends State<GlassSlider>
       borderRadius: totalHeight / 2,
     );
 
-    // Standard: same rim/light math as AnimatedGlassIndicator pill.
-    //   Dampeners in GlassEffect.build(): rimThickness×0.35, lightIntensity×0.6.
-    // Premium: original values preserved exactly — no change to Premium rendering.
-    final isStdPath =
-        (_effectiveQuality ?? GlassQuality.standard) == GlassQuality.standard;
-
     // CRITICAL: Outer SizedBox with dynamic size ensures proper premium rendering
     return SizedBox(
       width: totalWidth,
@@ -644,12 +647,12 @@ class _GlassSliderState extends State<GlassSlider>
       child: GlassEffect(
         shape: thumbShape,
         settings: LiquidGlassSettings(
-          glassColor: const Color.from(alpha: 0.1, red: 1, green: 1, blue: 1),
-          refractiveIndex: 1.15,
-          thickness: 10,
+          glassColor: const Color.from(alpha: 0.08, red: 1, green: 1, blue: 1),
+          refractiveIndex: 1.3,
+          thickness: 13,
           lightIntensity: isStdPath
               ? 0.0
-              : 2.0, // no specular on synthetic path; premium unchanged
+              : 1.8, // no specular on synthetic path; premium unchanged
           blur: 0,
           lightAngle: GlassDefaults.lightAngle,
         ),
@@ -659,12 +662,41 @@ class _GlassSliderState extends State<GlassSlider>
             ? 0.08
             : 0.1, // ~80% of Premium ring strength; premium unchanged
         baseAlphaMultiplier:
-            isStdPath ? 0.08 : 0.2, // clear glass body; premium unchanged
+            isStdPath ? 0.08 : 0.08, // very clear glass body; premium unchanged
         edgeAlphaMultiplier:
-            isStdPath ? 0.1 : 0.4, // soft edge glow; premium unchanged
+            isStdPath ? 0.15 : 0, // soft edge glow; premium unchanged
         quality: _effectiveQuality ?? GlassQuality.standard,
         interactionIntensity: transition,
-        child: thumbContent,
+        child: SizedBox(
+          width: totalWidth,
+          height: totalHeight,
+          child: Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              // Glass shell footprint (crucial for proper shader rendering)
+              Positioned.fill(child: Container(color: Colors.transparent)),
+
+              // Physical material content (centered, original size)
+              materialContent,
+
+              // Glowing element — only when interactionBehavior includes glow.
+              if (transition > 0.05 && widget.interactionBehavior.hasGlow)
+                Opacity(
+                  opacity: transition,
+                  child: GlassGlow(
+                    glowColor:
+                        widget.glowColor ?? Color(0x1FFFFFFF), // white ~12%
+                    glowRadius: widget.glowRadius,
+                    child: SizedBox(
+                      width: thumbWidth,
+                      height: thumbHeight,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

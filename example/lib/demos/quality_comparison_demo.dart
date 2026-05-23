@@ -871,11 +871,19 @@ class _ComparisonPageState extends State<_ComparisonPage> {
             premiumWidget: GlassSlider(
               value: _sliderValue,
               quality: GlassQuality.premium,
+              activeColor: const Color(0xFF007AFF), // iOS system blue
+              inactiveColor:
+                  const Color(0x20FFFFFF), // glass tint for frosted track
+              trackHeight: 5, // matches real iOS slider track thickness
               onChanged: (v) => setState(() => _sliderValue = v),
             ),
             standardWidget: GlassSlider(
               value: _sliderValue,
               quality: GlassQuality.standard,
+              activeColor: const Color(0xFF007AFF), // iOS system blue
+              inactiveColor:
+                  const Color(0x20FFFFFF), // glass tint for frosted track
+              trackHeight: 5, // matches real iOS slider track thickness
               onChanged: (v) => setState(() => _sliderValue = v),
             ),
           ),

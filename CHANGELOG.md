@@ -1,3 +1,17 @@
+# 0.12.3
+
+## 🎨 Visual — Slider & Switch thumb refraction tuning
+
+- **`GlassSlider` thumb** — increased `refractiveIndex` (1.15 → 1.3) and `thickness` (10 → 13) for a more pronounced glass lens feel. Reduced `glassColor` alpha (0.1 → 0.08), `lightIntensity` (2.0 → 1.8 premium), `baseAlphaMultiplier` (0.2 → 0.08 premium), and `edgeAlphaMultiplier` (0.4 → 0 premium) for a cleaner, more transparent thumb.
+- **`GlassSwitch` thumb** — reduced `refractiveIndex` (1.15 → 1.12) and `glassColor` alpha (0.1 → 0.08) for subtler refraction.
+- **Material fade via `Opacity` widget** — slider thumb now uses widget-level `Opacity` (matching `GlassSwitch` pattern) instead of color alpha for the press-down fade. Critical for Impeller: properly removes the child from the compositing tree so native refraction shows through.
+
+## ⚡ Jelly physics — spring-based velocity
+
+- **`GlassSlider` jelly** — replaced raw `_velocity` tracking with a `SingleSpringController` feeding `buildJellyTransform`. Produces smooth squash/stretch with natural deceleration and elastic bounce-back, matching the tab bar / bottom bar pill feel. `maxDistortion` raised (0.25 → 0.6), `velocityScale` lowered (30 → 2) to account for the spring's normalised 0→1 position range.
+
+---
+
 # 0.12.2
 
 ## ✨ New — `GlassTextField` enhancements
