@@ -630,8 +630,8 @@ class _GlassSwitchState extends State<GlassSwitch>
         //   rimThickness×0.35, lightIntensity×0.6 dampeners applied in GlassEffect.build().
         // Premium: original values preserved exactly — no change to Premium rendering.
         settings: LiquidGlassSettings(
-          glassColor: const Color.from(alpha: 0.1, red: 1, green: 1, blue: 1),
-          refractiveIndex: 1.15,
+          glassColor: const Color.from(alpha: 0.08, red: 1, green: 1, blue: 1),
+          refractiveIndex: 1.12,
           thickness: 10,
           lightIntensity: isStdPath
               ? 0.0
