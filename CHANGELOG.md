@@ -1,3 +1,62 @@
+# 0.12.4
+
+## 🐛 Fix — `GlassTextField` layout and reactivity
+
+### `onLineCountChanged` fires correctly under fixed-height constraints
+
+The `onLineCountChanged` callback silently stopped firing after the first
+measurement when the field was inside a fixed-height container (e.g.
+`SizedBox(height: 46)` or `height: 46` on the field itself). The internal
+guard used `size == _lastTextFieldSize` — but a fixed outer height keeps the
+`RenderBox` size constant, so the guard always exited early after the first
+call. The fix replaces the size-equality guard with a `(text, constrainedWidth)`
+guard: the callback fires whenever the text content or available wrapping width
+changes, regardless of what the outer height is doing.
+
+This also resolves the stale-state reactivity bug where `_lines` stored in
+`State` stopped updating `borderRadius` after re-opening the keyboard.
+
+### Placeholder and text stay vertically centred under system Large Text
+
+When `height` is specified (fixed-height mode), the outer `padding`'s vertical
+component was applied inside the `SizedBox`, pushing placeholder text and icons
+downward when the user enabled a large system font. The field now strips
+vertical padding in fixed-height mode and centres the text row via `Align`,
+matching the behaviour of `GlassSearchBar`. The `padding` parameter's
+horizontal values are unchanged.
+
+## ✨ New — `bottom` panel for `GlassTextField` and `GlassTextArea`
+
+Both widgets now accept an optional `bottom` widget that renders below the text
+area inside the same glass card. Use it to build the "rich composer" pattern — a
+text input on top with an action bar, attachment strip, or formatting toolbar
+below, all sharing one glass surface:
+
+```dart
+GlassTextField(
+  maxLines: 5,
+  minHeight: 44,
+  maxHeight: 160,
+  bottom: Padding(
+    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    child: Row(
+      children: [
+        IconButton(icon: Icon(Icons.attach_file), onPressed: _attach),
+        const Spacer(),
+        IconButton(icon: Icon(Icons.send), onPressed: _send),
+      ],
+    ),
+  ),
+)
+```
+
+The panel inherits the frosted-well tinting of the surrounding glass card.
+Callers can add a `Divider` between the text area and the panel if a visual
+separator is desired. Not available on `GlassTextField.search` (that
+constructor is single-line only; `bottom` is always `null` there).
+
+---
+
 # 0.12.3
 
 ## 🎨 Visual — Slider & Switch thumb refraction tuning

@@ -93,6 +93,7 @@ class GlassTextField extends StatefulWidget {
     this.height,
     this.minHeight,
     this.maxHeight,
+    this.bottom,
     this.shape = const LiquidRoundedSuperellipse(borderRadius: 10),
     this.settings,
     this.useOwnLayer = false,
@@ -149,7 +150,8 @@ class GlassTextField extends StatefulWidget {
         onLineCountChanged = null,
         iconAlignment = CrossAxisAlignment.center,
         minHeight = null,
-        maxHeight = null;
+        maxHeight = null,
+        bottom = null;
 
   // ===========================================================================
   // Text Field Properties
@@ -312,6 +314,36 @@ class GlassTextField extends StatefulWidget {
   /// When set, the field will not grow beyond this height and will scroll
   /// internally once the content exceeds the available space.
   final double? maxHeight;
+
+  /// Optional widget displayed below the text area, inside the same glass card.
+  ///
+  /// Use this to build a "rich composer" layout — a text input on top with an
+  /// action bar, attachment strip, or formatting toolbar below, all sharing one
+  /// glass surface.
+  ///
+  /// The panel inherits the frosted-well darkening of the surrounding glass
+  /// card. Callers can add a [Divider] between the text area and the panel if
+  /// a visual separator is desired.
+  ///
+  /// ```dart
+  /// GlassTextField(
+  ///   maxLines: 5,
+  ///   bottom: Padding(
+  ///     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+  ///     child: Row(
+  ///       children: [
+  ///         IconButton(icon: Icon(Icons.attach_file), onPressed: _attach),
+  ///         const Spacer(),
+  ///         IconButton(icon: Icon(Icons.send), onPressed: _send),
+  ///       ],
+  ///     ),
+  ///   ),
+  /// )
+  /// ```
+  ///
+  /// Not available on [GlassTextField.search] (single-line; `bottom` is
+  /// always `null` there).
+  final Widget? bottom;
 
   // ===========================================================================
   // Glass Effect Properties
@@ -496,7 +528,16 @@ class _GlassTextFieldState extends State<GlassTextField> {
 
   // ── Line count tracking ──────────────────────────────────────────────────
 
-  Size _lastTextFieldSize = Size.zero;
+  // Guard state: track (text, width) rather than size.
+  // Tracking only `size` was the bug: when the outer container has a fixed
+  // `height` (e.g. `SizedBox(height: 46)`), the inner TextField RenderBox
+  // size stays constant even as lines change — the size guard exited early
+  // and `onLineCountChanged` silently stopped firing after the first call.
+  // Tracking text + width is the minimal correct guard: size.width changing
+  // means available wrapping space changed; text changing means content
+  // changed. Either is enough to warrant a re-measurement.
+  String _lastMeasuredText = '';
+  double _lastMeasuredWidth = 0.0;
   bool _lineCheckScheduled = false;
 
   /// Schedules a line count measurement for the next frame.
@@ -521,8 +562,19 @@ class _GlassTextFieldState extends State<GlassTextField> {
     if (renderBox == null || !renderBox.hasSize) return;
 
     final size = renderBox.size;
-    if (size == _lastTextFieldSize) return;
-    _lastTextFieldSize = size;
+    if (size.width <= 0) return;
+
+    final currentText = _effectiveController?.text ?? '';
+
+    // Guard: skip only when both text AND available width are unchanged.
+    // We intentionally do NOT guard on size.height — a fixed outer height
+    // (e.g. height: 46) keeps the RenderBox height constant while the number
+    // of rendered lines may still change as the user types.
+    if (currentText == _lastMeasuredText && size.width == _lastMeasuredWidth) {
+      return;
+    }
+    _lastMeasuredText = currentText;
+    _lastMeasuredWidth = size.width;
 
     // Use MediaQuery textScaler for accurate line height calculation.
     final textScaler = MediaQuery.textScalerOf(context);
@@ -557,64 +609,93 @@ class _GlassTextFieldState extends State<GlassTextField> {
     final defaultTextStyle = _defaultTextStyle;
     final defaultPlaceholderStyle = _defaultPlaceholderStyle;
 
-    // Build text field content
-    final textFieldContent = Padding(
-      padding: widget.padding,
-      child: Row(
-        crossAxisAlignment: widget.iconAlignment,
-        children: [
-          // Prefix icon
-          if (widget.prefixIcon != null) ...[
-            widget.prefixIcon!,
-            SizedBox(width: widget.iconSpacing),
-          ],
+    // Build the icon + text row.
+    final rowContent = Row(
+      crossAxisAlignment: widget.iconAlignment,
+      children: [
+        // Prefix icon
+        if (widget.prefixIcon != null) ...[
+          widget.prefixIcon!,
+          SizedBox(width: widget.iconSpacing),
+        ],
 
-          // Text field
-          Expanded(
-            child: TextField(
-              key: _textFieldKey,
-              controller: widget.controller,
-              focusNode: _focusNode,
-              obscureText: widget.obscureText,
-              keyboardType: widget.keyboardType,
-              textInputAction: widget.textInputAction,
-              maxLines: widget.maxLines,
-              minLines: widget.minLines,
-              maxLength: widget.maxLength,
-              enabled: widget.enabled,
-              readOnly: widget.readOnly,
-              autofocus: widget.autofocus,
-              onChanged: (value) {
-                widget.onChanged?.call(value);
-                _scheduleLineCountCheck();
-              },
-              onSubmitted: widget.onSubmitted,
-              onTapOutside: widget.onTapOutside ??
-                  (event) => FocusManager.instance.primaryFocus?.unfocus(),
-              inputFormatters: widget.inputFormatters,
-              style: widget.textStyle ?? defaultTextStyle,
-              decoration: InputDecoration(
-                hintText: widget.placeholder,
-                hintStyle: widget.placeholderStyle ?? defaultPlaceholderStyle,
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-                counterText: '', // Hide character counter
-              ),
+        // Text field
+        Expanded(
+          child: TextField(
+            key: _textFieldKey,
+            controller: widget.controller,
+            focusNode: _focusNode,
+            obscureText: widget.obscureText,
+            keyboardType: widget.keyboardType,
+            textInputAction: widget.textInputAction,
+            maxLines: widget.maxLines,
+            minLines: widget.minLines,
+            maxLength: widget.maxLength,
+            enabled: widget.enabled,
+            readOnly: widget.readOnly,
+            autofocus: widget.autofocus,
+            onChanged: (value) {
+              widget.onChanged?.call(value);
+              _scheduleLineCountCheck();
+            },
+            onSubmitted: widget.onSubmitted,
+            onTapOutside: widget.onTapOutside ??
+                (event) => FocusManager.instance.primaryFocus?.unfocus(),
+            inputFormatters: widget.inputFormatters,
+            style: widget.textStyle ?? defaultTextStyle,
+            decoration: InputDecoration(
+              hintText: widget.placeholder,
+              hintStyle: widget.placeholderStyle ?? defaultPlaceholderStyle,
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+              counterText: '', // Hide character counter
             ),
           ),
+        ),
 
-          // Suffix icon
-          if (widget.suffixIcon != null) ...[
-            SizedBox(width: widget.iconSpacing),
-            GestureDetector(
-              onTap: widget.onSuffixTap,
-              child: widget.suffixIcon,
-            ),
-          ],
+        // Suffix icon
+        if (widget.suffixIcon != null) ...[
+          SizedBox(width: widget.iconSpacing),
+          GestureDetector(
+            onTap: widget.onSuffixTap,
+            child: widget.suffixIcon,
+          ),
         ],
-      ),
+      ],
     );
+
+    // Fixed-height mode: strip vertical padding and center the row so that
+    // placeholder text stays vertically centred regardless of system font
+    // scale. Dynamic/constrained-height modes use the full padding as before.
+    final resolvedPadding = widget.padding.resolve(Directionality.of(context));
+    Widget textFieldContent = widget.height != null
+        ? Padding(
+            padding: EdgeInsets.only(
+              left: resolvedPadding.left,
+              right: resolvedPadding.right,
+            ),
+            child: Align(alignment: Alignment.center, child: rowContent),
+          )
+        : Padding(padding: widget.padding, child: rowContent);
+
+    // Bottom panel: wrap in a Column when caller provides an action bar,
+    // attachment strip, etc. — all sharing the same glass surface.
+    //
+    // The text area is Flexible so the bottom panel always gets its natural
+    // height first. The text area takes whatever space remains within the
+    // height / maxHeight constraint. Without Flexible the Column has no flex
+    // children and overflows when (text area + bottom) > maxHeight.
+    if (widget.bottom != null) {
+      textFieldContent = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Flexible(child: textFieldContent),
+          widget.bottom!,
+        ],
+      );
+    }
 
     // Inherit quality from parent layer if not explicitly set
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
