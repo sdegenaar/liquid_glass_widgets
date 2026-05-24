@@ -5,6 +5,7 @@ on:
     branches: [main]
     tags:
       - "v*"
+
   workflow_dispatch:
 
 concurrency:
@@ -37,7 +38,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      # ---------------- CMAKE & BUILD CACHE ----------------
+      # ---------------- BUILD CACHE ----------------
       - name: Cache CMake and build artifacts
         uses: actions/cache@v4
         with:
@@ -59,7 +60,7 @@ jobs:
           flutter pub get
           flutter create . --platforms web
 
-          # Showcase app (separate Flutter project)
+          # Showcase app
           cd showcase
           flutter config --enable-web
           flutter pub get
@@ -73,7 +74,9 @@ jobs:
 
           BASE="/site/liquid_glass_widgets"
 
-          mkdir -p artifacts/web-html artifacts/web-canvas artifacts/wasm
+          mkdir -p artifacts/web-html
+          mkdir -p artifacts/web-canvas
+          mkdir -p artifacts/wasm
 
           APPS=(
             apple_music
@@ -97,7 +100,6 @@ jobs:
               ENTRY="lib/$APP/${APP}_demo.dart"
             fi
 
-            # ---------------- PUB GET SAFETY ----------------
             cd "$ROOT"
 
             flutter pub get
@@ -106,6 +108,7 @@ jobs:
             echo "Building Web HTML for $APP..."
 
             WEB_HTML_OUT="../../artifacts/web-html/$APP"
+
             mkdir -p "$WEB_HTML_OUT"
 
             rm -rf build/web
@@ -121,6 +124,7 @@ jobs:
             echo "Building Web Canvas for $APP..."
 
             WEB_CANVAS_OUT="../../artifacts/web-canvas/$APP"
+
             mkdir -p "$WEB_CANVAS_OUT"
 
             rm -rf build/web
@@ -136,6 +140,7 @@ jobs:
             echo "Building WASM for $APP..."
 
             WASM_OUT="../../artifacts/wasm/$APP"
+
             mkdir -p "$WASM_OUT"
 
             rm -rf build/web
@@ -148,15 +153,23 @@ jobs:
 
             cp -r build/web/* "$WASM_OUT/"
 
-            cd ..
+            cd -
           done
+
       # ---------------- CREATE RELEASE ARCHIVES ----------------
       - name: Create release archives
         run: |
-          cd artifacts
-          tar -czf web-html-builds.tar.gz web-html/
-          tar -czf web-canvas-builds.tar.gz web-canvas/
-          tar -czf wasm-builds.tar.gz wasm/
+          cd artifacts/web-html
+          tar -czf ../web-html-builds.tar.gz .
+
+          cd ../web-canvas
+          tar -czf ../web-canvas-builds.tar.gz .
+
+          cd ../wasm
+          tar -czf ../wasm-builds.tar.gz .
+
+          cd ..
+
           ls -lh *.tar.gz
 
       # ---------------- UPLOAD ARTIFACTS ----------------
@@ -183,7 +196,9 @@ jobs:
             artifacts/web-html-builds.tar.gz
             artifacts/web-canvas-builds.tar.gz
             artifacts/wasm-builds.tar.gz
+
           tag_name: build-${{ github.run_number }}
+
           body: |
             Build #${{ github.run_number }}
             Commit: ${{ github.sha }}
@@ -194,6 +209,8 @@ jobs:
             - Web Canvas Renderer builds
             - WebAssembly (WASM) builds
             - Wanderlust Showcase app (production demo)
+
           prerelease: true
+
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
