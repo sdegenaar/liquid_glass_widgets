@@ -1,14 +1,24 @@
-/// Demo: GlassTextField v0.12.4 — visual verification of all 4 fixes.
+/// Demo: GlassTextField v0.12.5 — visual verification of all user-reported issues.
 ///
 /// WHAT TO CHECK IN THIS DEMO:
-///   [1] Conditional height: single field starts at 44px pill, expands to
-///       free-height once you type enough to wrap. Border-radius reduces live.
-///   [2] Stale state: tap away from [1] (keyboard dismiss), tap back in, keep
-///       typing → border-radius MUST keep animating (was broken before).
-///   [3] Large Text: field [A] (fixed 44pt) must keep text centred when
-///       device has "Larger Text" accessibility ON.
-///   [4] Bottom panel: composer at the bottom shows text area + action bar
-///       inside one glass card.
+///
+///   [A] Fixed 44pt — text centred at any system font size.
+///       Turn on Accessibility → Larger Text and verify placeholder stays centred.
+///
+///   [B] The exact user pattern:
+///       height: _lines > 1 ? null : (hasFocus ? 46 : 50)
+///       • Unfocused: 50px pill
+///       • Focused:   46px pill
+///       • Multi-line: free height (null)
+///       Tap away, tap back, type more → MUST keep animating (stale state fix).
+///
+///   [C] iconAlignment: .end in fixed-height mode with large system text.
+///       Icons must pin to the bottom of the container even when
+///       the system text scaling is large. Previously they would drift
+///       downward because the whole Row was Align(center)-wrapped.
+///
+///   [D] Bottom panel — action bar + text area share one glass card.
+///       Composer with attachments + send button.
 ///
 /// To run: flutter run -t lib/demos/text_field_demo.dart
 library;
@@ -43,11 +53,20 @@ class TextFieldDemo extends StatefulWidget {
 }
 
 class _TextFieldDemoState extends State<TextFieldDemo> {
-  // ── [Fix 1+2] Conditional height demo ───────────────────────────────────
-  final _conditionalController = TextEditingController();
-  int _conditionalLines = 1;
+  // ── [A] Fixed-height search field ─────────────────────────────────────
+  final _searchController = TextEditingController();
 
-  // ── [Fix 4] Bottom-panel composer ────────────────────────────────────────
+  // ── [B] Exact user pattern: height: _lines > 1 ? null : (hasFocus ? 46 : 50)
+  final _patternController = TextEditingController();
+  final _patternFocusNode = FocusNode();
+  int _patternLines = 1;
+  bool _patternHasFocus = false;
+
+  // ── [C] iconAlignment: .end + fixed height + large text ───────────────
+  final _iconAlignController = TextEditingController();
+  int _iconAlignLines = 1;
+
+  // ── [D] Bottom-panel composer ─────────────────────────────────────────
   final _composerController = TextEditingController();
   int _composerLineCount = 1;
   final List<String> _messages = [
@@ -55,17 +74,24 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
     'Yes! The liquid glass looks amazing on iOS 26 🤩',
     'Try the new GlassTextField — it has height constraints now',
     'And onLineCountChanged! Watch the border radius animate...',
-    'v0.12.4: check out the conditional height field above 👆',
+    'v0.12.5: check out the conditional height field above 👆',
   ];
 
-  // ── [Fix 3] Fixed-height search field ───────────────────────────────────
-  final _searchController = TextEditingController();
+  @override
+  void initState() {
+    super.initState();
+    _patternFocusNode.addListener(() {
+      setState(() => _patternHasFocus = _patternFocusNode.hasFocus);
+    });
+  }
 
   @override
   void dispose() {
-    _conditionalController.dispose();
-    _composerController.dispose();
     _searchController.dispose();
+    _patternController.dispose();
+    _patternFocusNode.dispose();
+    _iconAlignController.dispose();
+    _composerController.dispose();
     super.dispose();
   }
 
@@ -81,11 +107,17 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
 
   @override
   Widget build(BuildContext context) {
-    // Conditional border-radius: pill when 1 line, rounded rect when multi-line.
-    final conditionalRadius = _conditionalLines <= 1 ? 22.0 : 12.0;
-    final conditionalHeight = _conditionalLines > 1 ? null : 44.0;
+    // ── [B] Exact user pattern ──
+    final patternHeight = _patternLines > 1
+        ? null
+        : (_patternHasFocus ? 46.0 : 50.0);
+    final patternRadius = _patternLines <= 1 ? 22.0 : 12.0;
 
-    // Composer border-radius.
+    // ── [C] Icon alignment demo — dynamic radius ──
+    final iconAlignRadius = _iconAlignLines <= 1 ? 22.0 : 12.0;
+    final iconAlignHeight = _iconAlignLines > 1 ? null : 50.0;
+
+    // ── [D] Composer border-radius ──
     final composerRadius = _composerLineCount <= 1 ? 22.0 : 12.0;
 
     return GlassPage(
@@ -106,7 +138,7 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: GlassAppBar(
-          title: const Text('TextField v0.12.4 Verification'),
+          title: const Text('TextField v0.12.5 Verification'),
           quality: GlassQuality.premium,
           useOwnLayer: true,
         ),
@@ -117,11 +149,13 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ── Section header ──────────────────────────────────────────
-              _sectionLabel('[A] Fix 3 — height: 44 (fixed). '
-                  'Text must stay centred at any system font size.'),
-
-              // Fixed 44pt search-style field — Issue 3 verification.
+              // ════════════════════════════════════════════════════════════
+              // [A] Fixed-height — text centred under Large Text
+              // ════════════════════════════════════════════════════════════
+              _sectionLabel(
+                '[A] Fixed height: 44 — text centred at any font size.\n'
+                'Enable Accessibility → Larger Text and verify.',
+              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
                 child: GlassTextField.search(
@@ -137,68 +171,123 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
                 ),
               ),
 
-              // ── Section header ──────────────────────────────────────────
-              _sectionLabel(
-                  '[B] Fix 1+2 — conditional height + stale-state fix.\n'
-                  'Type until text wraps → pill expands to free height.\n'
-                  'Tap away, tap back, type more → MUST keep animating.'),
+              const SizedBox(height: 8),
+              const Divider(color: Colors.white12, indent: 16, endIndent: 16),
 
-              // Conditional height field — Issue 1+2 verification.
+              // ════════════════════════════════════════════════════════════
+              // [B] Exact user pattern
+              // ════════════════════════════════════════════════════════════
+              _sectionLabel(
+                '[B] Exact user pattern:\n'
+                'height: _lines > 1 ? null : (hasFocus ? 46 : 50)\n'
+                '• Unfocused: 50px pill\n'
+                '• Focused:   46px pill\n'
+                '• Multi-line: free height (null)',
+              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
                   curve: Curves.easeOutCubic,
                   child: GlassTextField(
-                    controller: _conditionalController,
+                    controller: _patternController,
+                    focusNode: _patternFocusNode,
                     placeholder: 'Type here until text wraps…',
-                    maxLines: 3,
-                    // THE KEY PATTERN: fixed pill when 1 line, free when multi.
-                    height: conditionalHeight,
+                    maxLines: 5,
+                    height: patternHeight,
                     onLineCountChanged: (lines) {
-                      setState(() => _conditionalLines = lines);
+                      setState(() => _patternLines = lines);
                     },
                     shape: LiquidRoundedSuperellipse(
-                      borderRadius: conditionalRadius,
+                      borderRadius: patternRadius,
                     ),
                     useOwnLayer: true,
                     quality: GlassQuality.premium,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                     interactionBehavior: GlassInteractionBehavior.full,
                     onChanged: (_) => setState(() {}),
                   ),
                 ),
               ),
-
               // Live debug readout for [B].
+              _debugReadout(
+                'focus=${_patternHasFocus ? 'Y' : 'N'}  '
+                'lines=$_patternLines  '
+                'height=${patternHeight?.toInt() ?? 'null (free)'}  '
+                'radius=${patternRadius.toInt()}',
+                highlight: _patternLines > 1,
+              ),
+
+              const SizedBox(height: 8),
+              const Divider(color: Colors.white12, indent: 16, endIndent: 16),
+
+              // ════════════════════════════════════════════════════════════
+              // [C] iconAlignment: .end under large text
+              // ════════════════════════════════════════════════════════════
+              _sectionLabel(
+                '[C] iconAlignment: .end + fixed height.\n'
+                'Icons must pin to BOTTOM of container, not drift\n'
+                'downward when system text is large. Type to expand.',
+              ),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
-                child: AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 200),
-                  style: TextStyle(
-                    color: _conditionalLines > 1
-                        ? Colors.greenAccent.withValues(alpha: 0.9)
-                        : Colors.white38,
-                    fontSize: 11,
-                    fontFamily: 'monospace',
-                  ),
-                  child: Text(
-                    'lines=$_conditionalLines  '
-                    'height=${conditionalHeight?.toInt() ?? 'null (free)'}  '
-                    'radius=${conditionalRadius.toInt()}',
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
+                  child: GlassTextField(
+                    controller: _iconAlignController,
+                    placeholder: 'Icons stay at bottom…',
+                    maxLines: 5,
+                    height: iconAlignHeight,
+                    iconAlignment: CrossAxisAlignment.end,
+                    prefixIcon: const Icon(
+                      CupertinoIcons.smiley,
+                      size: 22,
+                      color: Colors.white60,
+                    ),
+                    suffixIcon: const Icon(
+                      CupertinoIcons.arrow_up_circle_fill,
+                      size: 26,
+                      color: Colors.white70,
+                    ),
+                    onLineCountChanged: (lines) {
+                      setState(() => _iconAlignLines = lines);
+                    },
+                    shape: LiquidRoundedSuperellipse(
+                      borderRadius: iconAlignRadius,
+                    ),
+                    useOwnLayer: true,
+                    quality: GlassQuality.premium,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    interactionBehavior: GlassInteractionBehavior.full,
+                    onChanged: (_) => setState(() {}),
                   ),
                 ),
               ),
+              // Live debug readout for [C].
+              _debugReadout(
+                'lines=$_iconAlignLines  '
+                'height=${iconAlignHeight?.toInt() ?? 'null (free)'}  '
+                'iconAlign=end',
+                highlight: _iconAlignLines > 1,
+              ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               const Divider(color: Colors.white12, indent: 16, endIndent: 16),
-              const SizedBox(height: 4),
 
-              // ── Section header ──────────────────────────────────────────
-              _sectionLabel('[C] Fix 4 — bottom panel. Action bar and text\n'
-                  'area share one glass card. Attachments + send in panel.'),
+              // ════════════════════════════════════════════════════════════
+              // [D] Bottom panel composer
+              // ════════════════════════════════════════════════════════════
+              _sectionLabel(
+                '[D] Bottom panel — action bar + text area share\n'
+                'one glass card. Chat composer pattern.',
+              ),
 
               // Message list.
               SizedBox(
@@ -221,8 +310,8 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
                         child: GlassCard(
                           useOwnLayer: true,
                           quality: GlassQuality.premium,
-                          shape:
-                              const LiquidRoundedSuperellipse(borderRadius: 16),
+                          shape: const LiquidRoundedSuperellipse(
+                              borderRadius: 16),
                           settings: LiquidGlassSettings(
                             glassColor: isMe
                                 ? Colors.blue.withValues(alpha: 0.3)
@@ -244,21 +333,12 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
                 ),
               ),
 
-              // Live debug readout for [C].
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
-                child: Text(
-                  'lines=$_composerLineCount  radius=${composerRadius.toInt()}',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.35),
-                    fontSize: 11,
-                    fontFamily: 'monospace',
-                  ),
-                ),
+              // Live debug readout for [D].
+              _debugReadout(
+                'lines=$_composerLineCount  radius=${composerRadius.toInt()}',
               ),
 
-              // Bottom-panel composer — Issue 4 verification.
+              // Bottom-panel composer.
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                 child: GlassTextField(
@@ -276,14 +356,13 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
                   ),
                   useOwnLayer: true,
                   quality: GlassQuality.premium,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 10),
                   interactionBehavior: GlassInteractionBehavior.full,
                   onChanged: (_) => setState(() {}),
-                  // ← Fix 4: bottom panel inside same glass card.
                   bottom: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
                     child: Row(
                       children: [
                         IconButton(
@@ -304,13 +383,14 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
                           transitionBuilder: (child, animation) =>
                               FadeTransition(
                             opacity: animation,
-                            child:
-                                ScaleTransition(scale: animation, child: child),
+                            child: ScaleTransition(
+                                scale: animation, child: child),
                           ),
                           child: IconButton(
-                            key: ValueKey(_composerController.text.isNotEmpty
-                                ? 'send'
-                                : 'idle'),
+                            key: ValueKey(
+                                _composerController.text.isNotEmpty
+                                    ? 'send'
+                                    : 'idle'),
                             icon: Icon(
                               CupertinoIcons.arrow_up_circle_fill,
                               size: 28,
@@ -333,6 +413,8 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
     );
   }
 
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
   Widget _sectionLabel(String text) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
@@ -344,6 +426,23 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
           height: 1.5,
           fontFamily: 'monospace',
         ),
+      ),
+    );
+  }
+
+  Widget _debugReadout(String text, {bool highlight = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+      child: AnimatedDefaultTextStyle(
+        duration: const Duration(milliseconds: 200),
+        style: TextStyle(
+          color: highlight
+              ? Colors.greenAccent.withValues(alpha: 0.9)
+              : Colors.white38,
+          fontSize: 11,
+          fontFamily: 'monospace',
+        ),
+        child: Text(text),
       ),
     );
   }

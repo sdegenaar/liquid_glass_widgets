@@ -664,7 +664,8 @@ void main() {
   // ===========================================================================
 
   group('GlassTextField fixed-height vertical centring', () {
-    testWidgets('fixed height: uses horizontal-only padding (Align wraps row)',
+    testWidgets(
+        'fixed height: centres TextField content (not the icon Row)',
         (tester) async {
       await tester.pumpWidget(
         createTestApp(
@@ -679,8 +680,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // An Align widget must be present for the centring path.
-      expect(find.byType(Align), findsWidgets);
+      // A Center widget must wrap the TextField for vertical centring,
+      // but the Row itself must NOT be wrapped in Align/Center so that
+      // iconAlignment (CrossAxisAlignment) works correctly.
+      expect(find.byType(Center), findsWidgets);
     });
 
     testWidgets(
