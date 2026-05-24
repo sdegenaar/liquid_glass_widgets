@@ -65,6 +65,7 @@ jobs:
           flutter config --enable-web
           flutter pub get
           flutter create . --platforms web
+
           cd ..
 
       # ---------------- BUILD ----------------
@@ -160,25 +161,52 @@ jobs:
       - name: Create release archives
         run: |
           set -e
-      
-          # HTML
-          cd artifacts/web-html
-          tar -czf ../web-html-builds.tar.gz .
-          cd ../..
-      
-          # Canvas
-          cd artifacts/web-canvas
-          tar -czf ../web-canvas-builds.tar.gz .
-          cd ../..
-      
-          # WASM
-          cd artifacts/wasm
-          tar -czf ../wasm-builds.tar.gz .
-          cd ../..
-      
+
+          FINAL_ROOT="release/site/liquid_glass_widgets"
+
+          rm -rf release
+          mkdir -p "$FINAL_ROOT"
+
+          # ---------------- HTML ----------------
+          for dir in artifacts/web-html/*; do
+            APP=$(basename "$dir")
+            cp -r "$dir" "$FINAL_ROOT/${APP}_html"
+          done
+
+          # ---------------- CANVAS ----------------
+          for dir in artifacts/web-canvas/*; do
+            APP=$(basename "$dir")
+            cp -r "$dir" "$FINAL_ROOT/${APP}"
+          done
+
+          # ---------------- WASM ----------------
+          for dir in artifacts/wasm/*; do
+            APP=$(basename "$dir")
+            cp -r "$dir" "$FINAL_ROOT/${APP}_wasm"
+          done
+
+          echo "=== Final Structure ==="
+          find release -maxdepth 3 -type d | sort
+
+          # HTML ARCHIVE
+          cd release
+          tar -czf ../artifacts/web-html-builds.tar.gz site
+          cd ..
+
+          # CANVAS ARCHIVE
+          cd release
+          tar -czf ../artifacts/web-canvas-builds.tar.gz site
+          cd ..
+
+          # WASM ARCHIVE
+          cd release
+          tar -czf ../artifacts/wasm-builds.tar.gz site
+          cd ..
+
           echo "=== Archives ==="
           ls -lh artifacts/*.tar.gz
-    # ---------------- UPLOAD ARTIFACTS ----------------
+
+      # ---------------- UPLOAD ARTIFACTS ----------------
       - uses: actions/upload-artifact@v4
         with:
           name: web-html-builds
