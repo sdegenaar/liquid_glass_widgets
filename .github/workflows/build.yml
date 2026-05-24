@@ -159,19 +159,10 @@ jobs:
       # ---------------- CREATE RELEASE ARCHIVES ----------------
       - name: Create release archives
         run: |
-          cd artifacts/web-html
-          tar -czf ../web-html-builds.tar.gz .
-
-          cd ../web-canvas
-          tar -czf ../web-canvas-builds.tar.gz .
-
-          cd ../wasm
-          tar -czf ../wasm-builds.tar.gz .
-
-          cd ..
-
-          ls -lh *.tar.gz
-
+              tar -czf web-html-builds.tar.gz web-html/
+              tar -czf web-canvas-builds.tar.gz web-canvas/
+              tar -czf wasm-builds.tar.gz wasm/
+              ls -lh *.tar.gz
       # ---------------- UPLOAD ARTIFACTS ----------------
       - uses: actions/upload-artifact@v4
         with:
