@@ -33,6 +33,7 @@ class GlassTextArea extends StatelessWidget {
     this.height,
     this.minHeight,
     this.maxHeight,
+    this.bottom,
     // Glass properties
     this.settings,
     this.useOwnLayer = false,
@@ -138,6 +139,9 @@ class GlassTextArea extends StatelessWidget {
   /// Maximum height constraint. Mirrors [GlassTextField.maxHeight].
   final double? maxHeight;
 
+  /// Optional bottom panel. Mirrors [GlassTextField.bottom].
+  final Widget? bottom;
+
   @override
   Widget build(BuildContext context) {
     return GlassTextField(
@@ -166,6 +170,7 @@ class GlassTextArea extends StatelessWidget {
       minHeight: minHeight,
       maxHeight: maxHeight,
       onLineCountChanged: onLineCountChanged,
+      bottom: bottom,
       interactionBehavior: interactionBehavior,
       pressScale: pressScale,
       glowColor: glowColor,

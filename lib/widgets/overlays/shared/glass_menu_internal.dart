@@ -299,6 +299,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     // GlassMorphController.close() injects the -2.5 velocity hint internally,
     // maximising the rubber-band bounce amplitude at close.
     _morphController.close();
+    widget.onClose?.call();
   }
 
   Widget _buildMorphingOverlay(BuildContext context) {

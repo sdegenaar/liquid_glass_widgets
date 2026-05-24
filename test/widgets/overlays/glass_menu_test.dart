@@ -340,4 +340,121 @@ void main() {
     expect(find.text('RoundedItem'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  // ── onClose callback (PR #67) ────────────────────────────────────────────────
+  test('GlassMenu.onClose defaults to null', () {
+    const menu = GlassMenu(
+      trigger: SizedBox(width: 40, height: 40),
+      items: [],
+    );
+    expect(menu.onClose, isNull);
+  });
+
+  testWidgets('GlassMenu onClose fires when tapping outside the barrier',
+      (tester) async {
+    // Regression: onClose must fire on the barrier tap-to-close path
+    // (GestureDetector Positioned.fill, glass_menu_internal.dart line 369).
+    int closeCalls = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassMenu(
+              onClose: () => closeCalls++,
+              trigger:
+                  const SizedBox(width: 60, height: 40, child: Text('Open')),
+              items: [
+                GlassMenuItem(title: 'Item', onTap: () {}),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Open the menu.
+    await tester.tap(find.text('Open'));
+    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(find.text('Item'), findsOneWidget);
+    expect(closeCalls, 0); // Opening must NOT call onClose.
+
+    // Tap outside (top-left corner — well outside the menu body).
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(closeCalls, 1);
+  });
+
+  testWidgets('GlassMenu onClose fires when closed via trigger re-tap',
+      (tester) async {
+    // Regression: onClose must fire on the _toggleMenu → _closeMenu path
+    // (glass_menu_internal.dart line 188).
+    int closeCalls = 0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassMenu(
+              onClose: () => closeCalls++,
+              trigger:
+                  const SizedBox(width: 60, height: 40, child: Text('Toggle2')),
+              items: [
+                GlassMenuItem(title: 'Item2', onTap: () {}),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Open.
+    await tester.tap(find.text('Toggle2'));
+    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(closeCalls, 0);
+
+    // Re-tap trigger to close. The trigger widget is behind the overlay at this
+    // point (opacity=0, IgnorePointer when menu open), so warnIfMissed is
+    // suppressed — _toggleMenu is still invoked via the GestureDetector.
+    await tester.tap(find.text('Toggle2'), warnIfMissed: false);
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(closeCalls, 1);
+  });
+
+  testWidgets('GlassMenu onClose not called when not provided', (tester) async {
+    // Safety: widget with no onClose must not throw when menu closes.
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassMenu(
+              // onClose intentionally omitted.
+              trigger: const SizedBox(
+                  width: 60, height: 40, child: Text('NoCallback')),
+              items: [
+                GlassMenuItem(title: 'SafeItem', onTap: () {}),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('NoCallback'));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // Close via outside tap — must not throw.
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
 }

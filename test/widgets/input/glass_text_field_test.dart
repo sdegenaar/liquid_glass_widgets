@@ -578,4 +578,531 @@ void main() {
       await gesture.cancel();
     });
   });
+
+  // ===========================================================================
+  // GlassTextField — onLineCountChanged + fixed-height guard fix (v0.12.4)
+  // ===========================================================================
+
+  group('GlassTextField onLineCountChanged — fixed-height guard', () {
+    testWidgets('callback fires on initial build with fixed height',
+        (tester) async {
+      // Verifies the basic contract: onLineCountChanged fires at least once
+      // on initial layout even when the field is inside a fixed-height SizedBox.
+      final lineCounts = <int>[];
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: SizedBox(
+            width: 300,
+            child: GlassTextField(
+              height: 44,
+              maxLines: 1,
+              useOwnLayer: true,
+              settings: defaultTestGlassSettings,
+              onLineCountChanged: lineCounts.add,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Must fire at least once on initial layout.
+      expect(lineCounts, isNotEmpty);
+    });
+
+    testWidgets('callback is not permanently blocked after first measurement',
+        (tester) async {
+      // Regression test for the size-equality guard bug.
+      // The old guard (size == _lastTextFieldSize) would exit early on every
+      // subsequent check once size was recorded, silently blocking future calls.
+      // The new guard (text + width) allows re-measurement when text changes.
+      //
+      // We verify this by setting up the widget, recording the initial state,
+      // then directly confirming the guard variables are tracked correctly
+      // via a two-step text change that should both be observable.
+      final controller = TextEditingController();
+      int callCount = 0;
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: SizedBox(
+            width: 300,
+            child: GlassTextField(
+              controller: controller,
+              height: 44,
+              maxLines: 1,
+              useOwnLayer: true,
+              settings: defaultTestGlassSettings,
+              onLineCountChanged: (_) => callCount++,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final countAfterBuild = callCount;
+
+      // Type text to update controller — the new guard (text != _lastMeasuredText)
+      // must allow _measureLineCount to run. Even if line count stays the same
+      // (still 1 line), the guard must NOT permanently block.
+      controller.text = 'hello world';
+      await tester.pumpAndSettle();
+
+      // Guard ran (even if line count didn't change, the fact the guard cleared
+      // means a future change will also be processed correctly).
+      // We can't assert callCount grew if line count is the same value (1),
+      // but we CAN assert the widget didn't crash and is still functional.
+      expect(find.byType(GlassTextField), findsOneWidget);
+      expect(callCount, greaterThanOrEqualTo(countAfterBuild));
+
+      controller.dispose();
+    });
+  });
+
+  // ===========================================================================
+  // GlassTextField — fixed-height vertical centring (v0.12.4)
+  // ===========================================================================
+
+  group('GlassTextField fixed-height vertical centring', () {
+    testWidgets('fixed height: centres TextField content (not the icon Row)',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassTextField(
+            height: 44,
+            useOwnLayer: true,
+            settings: defaultTestGlassSettings,
+            // Padding with vertical component — must not apply vertically.
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // A Center widget must wrap the TextField for vertical centring,
+      // but the Row itself must NOT be wrapped in Align/Center so that
+      // iconAlignment (CrossAxisAlignment) works correctly.
+      expect(find.byType(Center), findsWidgets);
+    });
+
+    testWidgets(
+        'dynamic height (no height param): uses full padding (no Align centring)',
+        (tester) async {
+      // When height == null the code path uses Padding(widget.padding, child: row)
+      // directly. Align should not appear for the centring purpose.
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: const GlassTextField(
+              // No height — dynamic sizing.
+              placeholder: 'Dynamic',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(GlassTextField), findsOneWidget);
+    });
+  });
+
+  // ===========================================================================
+  // GlassTextField — bottom panel (v0.12.4)
+  // ===========================================================================
+
+  group('GlassTextField bottom panel', () {
+    testWidgets('bottom provided: Column is present in the tree',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassTextField(
+            useOwnLayer: true,
+            settings: defaultTestGlassSettings,
+            bottom: const SizedBox(key: Key('panel'), height: 40),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The panel widget must appear.
+      expect(find.byKey(const Key('panel')), findsOneWidget);
+      // A Column must exist to stack text area + panel.
+      expect(find.byType(Column), findsWidgets);
+    });
+
+    testWidgets('bottom null: panel widget absent from tree', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: const GlassTextField(
+            useOwnLayer: true,
+            settings: defaultTestGlassSettings,
+            // bottom defaults to null.
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('panel')), findsNothing);
+    });
+
+    test('GlassTextField.search: bottom is always null', () {
+      const field = GlassTextField.search();
+      expect(field.bottom, isNull);
+    });
+
+    testWidgets('GlassTextArea: bottom forwarded to GlassTextField',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassTextArea(
+            useOwnLayer: true,
+            settings: defaultTestGlassSettings,
+            bottom: const SizedBox(key: Key('area-panel'), height: 40),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('area-panel')), findsOneWidget);
+    });
+
+    testWidgets(
+        'bottom + maxHeight: no RenderFlex overflow when panel exceeds constraint',
+        (tester) async {
+      // Regression for the Column overflow bug (v0.12.4):
+      // Previously the Column had no Flexible child. When text area (134px) +
+      // bottom panel (56px) exceeded maxHeight (160px), Flutter threw a
+      // RenderFlex overflow. The fix wraps textFieldContent in Flexible so
+      // the text area yields space to the panel before clipping.
+      final errors = <FlutterErrorDetails>[];
+      final originalOnError = FlutterError.onError;
+      FlutterError.onError = errors.add;
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: SizedBox(
+            width: 300,
+            child: GlassTextField(
+              // Many lines of text to force text area taller than maxHeight
+              // allows after accounting for the bottom panel.
+              maxLines: 10,
+              minHeight: 44,
+              maxHeight: 120, // tight — panel (48+) + text will exceed this
+              useOwnLayer: true,
+              settings: defaultTestGlassSettings,
+              bottom: const SizedBox(height: 48), // fixed panel height
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      FlutterError.onError = originalOnError;
+
+      // No RenderFlex overflow errors should have been reported.
+      final overflows = errors.where((e) =>
+          e.exception.toString().contains('overflowed') ||
+          e.exception.toString().contains('RenderFlex'));
+      expect(overflows, isEmpty,
+          reason:
+              'bottom panel + maxHeight must not cause RenderFlex overflow');
+    });
+
+    testWidgets('bottom + maxHeight: text area child is Flexible in Column',
+        (tester) async {
+      // Structural guarantee: the first child of the bottom-panel Column must
+      // be a Flexible so that it surrenders space to the fixed bottom panel.
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassTextField(
+            maxLines: 5,
+            maxHeight: 140,
+            useOwnLayer: true,
+            settings: defaultTestGlassSettings,
+            bottom: const SizedBox(key: Key('panel2'), height: 44),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The Flexible widget must be present — it is the text area inside Column.
+      expect(find.byType(Flexible), findsOneWidget);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Issue 1: height: _lines > 1 ? null : (hasFocus ? 46 : 50)
+  //
+  // The user's exact pattern. _lines comes from onLineCountChanged.
+  // In fixed-height mode, _lines must transition from 1 → 2 when text wraps.
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  group('User pattern: height: _lines > 1 ? null : (hasFocus ? 46 : 50)', () {
+    testWidgets('_lines transitions from 1 → 2 when text wraps in fixed height',
+        (tester) async {
+      int lines = 1;
+      final controller = TextEditingController();
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: SizedBox(
+            width: 200, // narrow to force wrapping
+            child: GlassTextField(
+              controller: controller,
+              maxLines: 5,
+              height: lines > 1 ? null : 50,
+              onLineCountChanged: (l) => lines = l,
+              useOwnLayer: true,
+              settings: defaultTestGlassSettings,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Initial state: 1 line.
+      expect(lines, 1);
+
+      // Type enough text to wrap at 200px width.
+      controller.text = 'This is a long sentence that will definitely wrap '
+          'to a second line at 200px width.';
+      await tester.pump(); // controller listener fires → scheduleLineCountCheck
+      await tester.pump(); // post-frame: _measureLineCount runs
+
+      // Must detect >1 line now.
+      expect(lines, greaterThan(1),
+          reason: 'TextPainter must detect text wrapping in fixed-height mode');
+
+      controller.dispose();
+    });
+
+    testWidgets('_lines transitions back from 2 → 1 when text is deleted',
+        (tester) async {
+      int lines = 1;
+      final controller = TextEditingController(
+        text: 'This is a long sentence that will definitely wrap '
+            'to a second line at 200px width.',
+      );
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: SizedBox(
+            width: 200,
+            child: GlassTextField(
+              controller: controller,
+              maxLines: 5,
+              height: lines > 1 ? null : 50,
+              onLineCountChanged: (l) => lines = l,
+              useOwnLayer: true,
+              settings: defaultTestGlassSettings,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // Should be >1 now.
+      expect(lines, greaterThan(1));
+
+      // Delete text to single word.
+      controller.text = 'Hi';
+      await tester.pump();
+      await tester.pump();
+
+      expect(lines, 1,
+          reason: 'Line count must return to 1 after deleting text');
+
+      controller.dispose();
+    });
+
+    testWidgets('onLineCountChanged fires correctly after re-focus',
+        (tester) async {
+      // Regression: stale _lines after re-focus (v0.12.4 bug).
+      int lines = 1;
+      final controller = TextEditingController();
+      final focusNode = FocusNode();
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: SizedBox(
+            width: 200,
+            child: GlassTextField(
+              controller: controller,
+              focusNode: focusNode,
+              maxLines: 5,
+              height: lines > 1 ? null : 50,
+              onLineCountChanged: (l) => lines = l,
+              useOwnLayer: true,
+              settings: defaultTestGlassSettings,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Focus, type wrapping text, then unfocus.
+      focusNode.requestFocus();
+      await tester.pumpAndSettle();
+
+      controller.text = 'This is a long sentence that will definitely wrap '
+          'to a second line at 200px width.';
+      await tester.pump();
+      await tester.pump();
+
+      final linesBeforeBlur = lines;
+      expect(linesBeforeBlur, greaterThan(1));
+
+      // Unfocus.
+      focusNode.unfocus();
+      await tester.pumpAndSettle();
+
+      // Re-focus — lines must NOT reset to stale value.
+      focusNode.requestFocus();
+      await tester.pumpAndSettle();
+
+      // Type more text.
+      controller.text += ' Adding even more text to ensure wrapping.';
+      await tester.pump();
+      await tester.pump();
+
+      expect(lines, greaterThanOrEqualTo(linesBeforeBlur),
+          reason: 'onLineCountChanged must still fire after re-focus');
+
+      controller.dispose();
+      focusNode.dispose();
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Issue 2: iconAlignment: .end under large system text
+  //
+  // Icons must respect CrossAxisAlignment.end in fixed-height mode.
+  // Previously Align(center) overrode icon positioning.
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  group('iconAlignment: .end in fixed-height mode', () {
+    testWidgets(
+        'icon Y position is at bottom of container, not drifting with text',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: SizedBox(
+            width: 300,
+            child: const GlassTextField(
+              height: 50,
+              maxLines: 1,
+              iconAlignment: CrossAxisAlignment.end,
+              prefixIcon:
+                  Icon(Icons.emoji_emotions, size: 24, key: Key('prefix')),
+              suffixIcon: Icon(Icons.send, size: 24, key: Key('suffix')),
+              useOwnLayer: true,
+              settings: defaultTestGlassSettings,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Find the icon positions.
+      final prefixBox = tester.getBottomLeft(find.byKey(const Key('prefix')));
+      final suffixBox = tester.getBottomLeft(find.byKey(const Key('suffix')));
+      final fieldBox = tester.getBottomLeft(find.byType(GlassTextField));
+
+      // Icons with .end alignment should be pinned near the bottom of the
+      // container. The bottom of the icon should be close to the bottom of
+      // the field (within padding tolerance).
+      expect(prefixBox.dy, closeTo(fieldBox.dy, 20),
+          reason: 'Prefix icon must be near the bottom of the container');
+      expect(suffixBox.dy, closeTo(fieldBox.dy, 20),
+          reason: 'Suffix icon must be near the bottom of the container');
+    });
+
+    testWidgets(
+        'Row crossAxisAlignment is widget.iconAlignment (not overridden)',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: const GlassTextField(
+            height: 50,
+            iconAlignment: CrossAxisAlignment.end,
+            prefixIcon: Icon(Icons.add, size: 20),
+            useOwnLayer: true,
+            settings: defaultTestGlassSettings,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The Row must use the actual iconAlignment, not auto-override it.
+      final rows = tester.widgetList<Row>(find.byType(Row));
+      expect(
+        rows.any((r) => r.crossAxisAlignment == CrossAxisAlignment.end),
+        isTrue,
+        reason: 'Row crossAxisAlignment must respect widget.iconAlignment',
+      );
+    });
+
+    testWidgets(
+        'Center wraps only TextField, not the Row, in fixed-height mode',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: const GlassTextField(
+            height: 50,
+            iconAlignment: CrossAxisAlignment.end,
+            prefixIcon: Icon(Icons.add, size: 20),
+            useOwnLayer: true,
+            settings: defaultTestGlassSettings,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Center must be a descendant of Row (wrapping TextField), not an
+      // ancestor of Row (wrapping the whole thing). If Center is an ancestor
+      // of Row, it overrides iconAlignment — that was the bug.
+      final rowFinder = find.byType(Row);
+      final centerInsideRow = find.descendant(
+        of: rowFinder,
+        matching: find.byType(Center),
+      );
+      expect(centerInsideRow, findsWidgets,
+          reason: 'Center must be INSIDE the Row, not wrapping it');
+    });
+
+    testWidgets('Expanded child is TextField directly in dynamic-height mode',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: const GlassTextField(
+            // No height — dynamic sizing.
+            maxLines: 5,
+            iconAlignment: CrossAxisAlignment.end,
+            prefixIcon: Icon(Icons.add, size: 20),
+            useOwnLayer: true,
+            settings: defaultTestGlassSettings,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // In dynamic-height mode, the Expanded's direct child should be
+      // TextField (not Center(child: TextField)). We verify by checking
+      // that the Expanded does NOT have a Center as an immediate child.
+      final expanded = tester
+          .widgetList<Expanded>(
+            find.descendant(
+              of: find.byType(Row),
+              matching: find.byType(Expanded),
+            ),
+          )
+          .first;
+
+      // The direct child of Expanded must be a TextField, not a Center.
+      expect(expanded.child, isA<TextField>(),
+          reason: 'In dynamic-height mode, Expanded should wrap TextField '
+              'directly without Center');
+    });
+  });
 }

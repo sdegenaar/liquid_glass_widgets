@@ -174,6 +174,18 @@ class GlassMenu extends StatefulWidget {
   /// Defaults to 0.0 (touches the edge). Set to a value like 12.0 for a safe margin.
   final EdgeInsets menuPadding;
 
+  /// Called when the menu begins closing.
+  ///
+  /// Fires immediately when a close is triggered — tap outside the barrier,
+  /// re-tapping the trigger button, or selecting a menu item — **before** the
+  /// close animation completes. Use this to synchronise external state (e.g.
+  /// stopping a morph controller) that should react as soon as the close
+  /// gesture is confirmed.
+  ///
+  /// If you need to act only after the animation has fully settled, listen to
+  /// [GlassMorphController] status changes directly.
+  final VoidCallback? onClose;
+
   /// Creates a liquid glass menu.
   const GlassMenu({
     super.key,
@@ -203,6 +215,7 @@ class GlassMenu extends StatefulWidget {
     this.glowColor,
     this.glowRadius = 0.6,
     this.glowIntensity = 0.0,
+    this.onClose,
   }) : assert(trigger != null || triggerBuilder != null,
             'Either trigger or triggerBuilder must be provided');
 
