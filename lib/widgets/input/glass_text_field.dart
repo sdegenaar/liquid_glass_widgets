@@ -461,9 +461,10 @@ class _GlassTextFieldState extends State<GlassTextField> {
 
     _initController();
 
-    // Schedule initial line count measurement after first layout
-    // to ensure icon alignment handles multiline vs single line correctly.
-    _scheduleLineCountCheck();
+    // Schedule initial line count measurement after first layout.
+    if (widget.onLineCountChanged != null) {
+      _scheduleLineCountCheck();
+    }
   }
 
   void _initController() {
@@ -472,7 +473,9 @@ class _GlassTextFieldState extends State<GlassTextField> {
   }
 
   void _onControllerChange() {
-    _scheduleLineCountCheck();
+    if (widget.onLineCountChanged != null) {
+      _scheduleLineCountCheck();
+    }
   }
 
   void _onFocusChange() {
@@ -551,8 +554,8 @@ class _GlassTextFieldState extends State<GlassTextField> {
     });
   }
 
-  /// Measures the TextField's rendered line count and fires
-  /// [onLineCountChanged] only when the count actually changes.
+  /// Measures the TextField's rendered height and infers line count.
+  /// Fires [onLineCountChanged] only when the count actually changes.
   void _measureLineCount() {
     final renderBox =
         _textFieldKey.currentContext?.findRenderObject() as RenderBox?;
@@ -576,27 +579,15 @@ class _GlassTextFieldState extends State<GlassTextField> {
     // Use MediaQuery textScaler for accurate line height calculation.
     final textScaler = MediaQuery.textScalerOf(context);
     final effectiveStyle = widget.textStyle ?? _defaultTextStyle;
+    final fontSize = effectiveStyle.fontSize ?? 16.0;
+    final effectiveLineHeight =
+        textScaler.scale(fontSize) * (effectiveStyle.height ?? 1.2);
 
-    int lineCount = 1;
-    if (widget.maxLines != 1) {
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: currentText.isEmpty ? ' ' : currentText,
-          style: effectiveStyle,
-        ),
-        textDirection: Directionality.of(context),
-        textScaler: textScaler,
-      );
-      textPainter.layout(maxWidth: size.width);
-      lineCount = textPainter.computeLineMetrics().length.clamp(1, 9999);
-    }
+    final lineCount =
+        (size.height / effectiveLineHeight).round().clamp(1, 9999);
 
     if (lineCount != _currentLineCount) {
-      if (mounted) {
-        setState(() {
-          _currentLineCount = lineCount;
-        });
-      }
+      _currentLineCount = lineCount;
       widget.onLineCountChanged?.call(lineCount);
     }
   }
@@ -618,59 +609,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
     final defaultTextStyle = _defaultTextStyle;
     final defaultPlaceholderStyle = _defaultPlaceholderStyle;
 
-    // ── Fixed-height vs dynamic layout ──────────────────────────────────────
-    //
-    // Fixed-height mode (widget.height != null):
-    //   Strip vertical padding and let the Row stretch to the full SizedBox
-    //   height. Icons position themselves via `iconAlignment` against the
-    //   full container, while the text stays vertically centred via its own
-    //   internal layout (isDense + contentPadding.zero).
-    //
-    //   Previously the entire Row was wrapped in `Align(center)`, which
-    //   overrode iconAlignment — icons with `.end` or `.start` were forced
-    //   to center, and under large system text scaling they drifted because
-    //   the Align expanded the Row's intrinsic height beyond the SizedBox.
-    //
-    // Dynamic / constrained-height mode:
-    //   Full user padding is applied; the Row sizes to its intrinsic content.
-    final resolvedPadding = widget.padding.resolve(Directionality.of(context));
-    final bool isFixedHeight = widget.height != null;
-
-    // In fixed-height mode, build the text field wrapped in Center so
-    // placeholder/text stays vertically centred, but icons are free to
-    // position via iconAlignment against the full container height.
-    final textField = TextField(
-      key: _textFieldKey,
-      controller: widget.controller,
-      focusNode: _focusNode,
-      obscureText: widget.obscureText,
-      keyboardType: widget.keyboardType,
-      textInputAction: widget.textInputAction,
-      maxLines: widget.maxLines,
-      minLines: widget.minLines,
-      maxLength: widget.maxLength,
-      enabled: widget.enabled,
-      readOnly: widget.readOnly,
-      autofocus: widget.autofocus,
-      onChanged: (value) {
-        widget.onChanged?.call(value);
-        _scheduleLineCountCheck();
-      },
-      onSubmitted: widget.onSubmitted,
-      onTapOutside: widget.onTapOutside ??
-          (event) => FocusManager.instance.primaryFocus?.unfocus(),
-      inputFormatters: widget.inputFormatters,
-      style: widget.textStyle ?? defaultTextStyle,
-      decoration: InputDecoration(
-        hintText: widget.placeholder,
-        hintStyle: widget.placeholderStyle ?? defaultPlaceholderStyle,
-        border: InputBorder.none,
-        isDense: true,
-        contentPadding: EdgeInsets.zero,
-        counterText: '', // Hide character counter
-      ),
-    );
-
+    // Build the icon + text row.
     final rowContent = Row(
       crossAxisAlignment: widget.iconAlignment,
       children: [
@@ -680,10 +619,39 @@ class _GlassTextFieldState extends State<GlassTextField> {
           SizedBox(width: widget.iconSpacing),
         ],
 
-        // Text field — in fixed-height mode, wrap in Center so the text
-        // stays vertically centred while icons honour iconAlignment.
+        // Text field
         Expanded(
-          child: isFixedHeight ? Center(child: textField) : textField,
+          child: TextField(
+            key: _textFieldKey,
+            controller: widget.controller,
+            focusNode: _focusNode,
+            obscureText: widget.obscureText,
+            keyboardType: widget.keyboardType,
+            textInputAction: widget.textInputAction,
+            maxLines: widget.maxLines,
+            minLines: widget.minLines,
+            maxLength: widget.maxLength,
+            enabled: widget.enabled,
+            readOnly: widget.readOnly,
+            autofocus: widget.autofocus,
+            onChanged: (value) {
+              widget.onChanged?.call(value);
+              _scheduleLineCountCheck();
+            },
+            onSubmitted: widget.onSubmitted,
+            onTapOutside: widget.onTapOutside ??
+                (event) => FocusManager.instance.primaryFocus?.unfocus(),
+            inputFormatters: widget.inputFormatters,
+            style: widget.textStyle ?? defaultTextStyle,
+            decoration: InputDecoration(
+              hintText: widget.placeholder,
+              hintStyle: widget.placeholderStyle ?? defaultPlaceholderStyle,
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+              counterText: '', // Hide character counter
+            ),
+          ),
         ),
 
         // Suffix icon
@@ -697,7 +665,15 @@ class _GlassTextFieldState extends State<GlassTextField> {
       ],
     );
 
-    Widget textFieldContent = isFixedHeight
+    // Fixed-height mode: strip vertical padding so the Row fills the full
+    // SizedBox height. The Row's crossAxisAlignment handles icon positioning,
+    // and the TextField centres its own text via isDense + contentPadding.zero.
+    // We intentionally do NOT wrap in Align(center) — that gives the Row loose
+    // constraints, causing the Row to shrink to its intrinsic height and
+    // re-centre when system text scaling changes (icon drift).
+    // Dynamic/constrained-height modes use the full padding as before.
+    final resolvedPadding = widget.padding.resolve(Directionality.of(context));
+    Widget textFieldContent = widget.height != null
         ? Padding(
             padding: EdgeInsets.only(
               left: resolvedPadding.left,

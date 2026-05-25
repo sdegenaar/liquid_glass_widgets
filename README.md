@@ -119,7 +119,11 @@ Eight focused, self-contained demos — one widget, one file, runnable standalon
 
 ```yaml
 dependencies:
+<<<<<<< HEAD
   liquid_glass_widgets: ^0.12.7
+=======
+  liquid_glass_widgets: ^0.12.8
+>>>>>>> 1ca4188 (fix: v0.12.8 — revert GlassTextField to v0.12.4, fix icon drift under text scaling)
 ```
 
 ```bash

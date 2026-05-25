@@ -1,3 +1,14 @@
+# 0.12.8
+
+## 🐛 Fix — `GlassTextField` icon drift under system text scaling
+
+- **Reverted to v0.12.4** — restored exact line-count and layout logic. The v0.12.6–0.12.7 changes introduced regressions (line breaks at wrong character boundary, icons pinned to container bottom instead of centred with text).
+- **Fixed icon drift under Large Text** — removed `Align(center)` wrapper in fixed-height mode. The Row now fills the container via tight constraints from `SizedBox`, so `crossAxisAlignment` positions icons at a fixed offset regardless of system text scaling. Previously, `Align` gave the Row loose constraints, causing it to re-centre when the TextField's intrinsic height changed with text scaling.
+
+Thanks [@g3mf0r](https://github.com/g3mf0r) for the detailed testing and feedback.
+
+---
+
 # 0.12.7
 
 ## 🐛 Fix — `GlassTextField` icon alignment (retained) + line-count regression fix
