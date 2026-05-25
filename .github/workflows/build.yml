@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: flutter-build
+ group: flutter-build
   cancel-in-progress: true
 
 jobs:
@@ -56,6 +56,9 @@ jobs:
         run: |
           set -e
 
+          echo "Workspace: $GITHUB_WORKSPACE"
+          pwd
+
           # Example app
           cd example
           flutter config --enable-web
@@ -68,17 +71,20 @@ jobs:
           flutter pub get
           flutter create . --platforms web
 
-          cd ../..
+          cd "$GITHUB_WORKSPACE"
 
       # ---------------- BUILD ----------------
       - name: Build apps
         run: |
           set -e
 
+          echo "Workspace: $GITHUB_WORKSPACE"
+          pwd
+
           BASE="/site/liquid_glass_widgets"
           STAGE="artifacts/site/liquid_glass_widgets"
 
-          rm -rf artifacts release
+          rm -rf artifacts release temp
           mkdir -p "$STAGE"
 
           APPS=(
@@ -102,6 +108,7 @@ jobs:
               ENTRY="lib/$APP/${APP}_demo.dart"
             fi
 
+            cd "$GITHUB_WORKSPACE"
             cd "$ROOT"
 
             flutter pub get
@@ -146,13 +153,15 @@ jobs:
 
             rm -rf build/web
 
-            cd ../..
+            cd "$GITHUB_WORKSPACE"
           done
 
       # ---------------- CREATE RELEASE ARCHIVES ----------------
       - name: Create release archives
         run: |
           set -e
+
+          cd "$GITHUB_WORKSPACE"
 
           FINAL_ROOT="release/site/liquid_glass_widgets"
 
@@ -164,12 +173,14 @@ jobs:
           echo "=== Final Structure ==="
           find release/site/liquid_glass_widgets -maxdepth 1 -type d | sort
 
-          # ---------------- CREATE ARCHIVES ----------------
-
-          # Full site archive
+          # =====================================================
+          # FULL SITE ARCHIVE
+          # =====================================================
           tar -czf artifacts/liquid-glass-site.tar.gz -C release site
 
-          # HTML-only archive
+          # =====================================================
+          # HTML-ONLY ARCHIVE
+          # =====================================================
           mkdir -p temp/html/site/liquid_glass_widgets
 
           find release/site/liquid_glass_widgets \
@@ -178,9 +189,12 @@ jobs:
             -name "*_html" \
             -exec cp -r {} temp/html/site/liquid_glass_widgets/ \;
 
-          tar -czf artifacts/web-html-builds.tar.gz -C temp/html site
+          tar -czf artifacts/web-html-builds.tar.gz \
+            -C temp/html site
 
-          # Canvas-only archive
+          # =====================================================
+          # CANVAS-ONLY ARCHIVE
+          # =====================================================
           mkdir -p temp/canvas/site/liquid_glass_widgets
 
           find release/site/liquid_glass_widgets \
@@ -191,9 +205,12 @@ jobs:
             ! -path "*/liquid_glass_widgets" \
             -exec cp -r {} temp/canvas/site/liquid_glass_widgets/ \;
 
-          tar -czf artifacts/web-canvas-builds.tar.gz -C temp/canvas site
+          tar -czf artifacts/web-canvas-builds.tar.gz \
+            -C temp/canvas site
 
-          # WASM-only archive
+          # =====================================================
+          # WASM-ONLY ARCHIVE
+          # =====================================================
           mkdir -p temp/wasm/site/liquid_glass_widgets
 
           find release/site/liquid_glass_widgets \
@@ -202,7 +219,8 @@ jobs:
             -name "*_wasm" \
             -exec cp -r {} temp/wasm/site/liquid_glass_widgets/ \;
 
-          tar -czf artifacts/wasm-builds.tar.gz -C temp/wasm site
+          tar -czf artifacts/wasm-builds.tar.gz \
+            -C temp/wasm site
 
           echo "=== Archives ==="
           ls -lh artifacts/*.tar.gz
