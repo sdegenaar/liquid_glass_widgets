@@ -62,11 +62,13 @@ jobs:
           cd example
           flutter config --enable-web
           flutter pub get
+          flutter pub outdated
           flutter create . --platforms web
 
           cd showcase
           flutter config --enable-web
           flutter pub get
+          flutter pub outdated
           flutter create . --platforms web
 
           cd "$GITHUB_WORKSPACE"
@@ -109,6 +111,7 @@ jobs:
             cd "$GITHUB_WORKSPACE/$ROOT"
 
             flutter pub get
+            flutter pub outdated
 
             # ---------------- HTML ----------------
             flutter build web \
