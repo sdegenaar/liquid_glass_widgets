@@ -1,0 +1,145 @@
+name: Build Portable Desktop Apps (Linux + Windows)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: flutter-desktop-build
+  cancel-in-progress: true
+
+jobs:
+  # ============================================
+  # LINUX
+  # ============================================
+  linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.9"
+          cache: true
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev
+
+      - name: Enable Linux desktop
+        run: |
+          cd example
+          flutter config --enable-linux-desktop
+          flutter create .
+
+      - name: Get dependencies
+        run: |
+          cd example
+          flutter pub get
+
+      - name: Build Linux apps
+        run: |
+          set -e
+          mkdir -p artifacts/linux
+
+          cd example
+
+          APPS=(
+            apple_music
+            apple_podcasts
+            apple_messages
+            apple_news
+            showcase
+          )
+
+          for APP in "${APPS[@]}"; do
+            echo "Building Linux: $APP"
+
+            flutter build linux \
+              --release \
+              -t "lib/${APP}/${APP}_demo.dart"
+
+            mkdir -p "../artifacts/linux/$APP"
+            cp -r build/linux/x64/release/bundle/* "../artifacts/linux/$APP/"
+          done
+
+      - name: Archive Linux builds
+        run: |
+          mkdir -p release
+          tar -czf release/linux-portable.tar.gz -C artifacts linux
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-portable-builds
+          path: release/linux-portable.tar.gz
+
+
+  # ============================================
+  # WINDOWS
+  # ============================================
+  windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.9"
+          cache: true
+
+      - name: Enable Windows desktop
+        shell: bash
+        run: |
+          cd example
+          flutter config --enable-windows-desktop
+          flutter create .
+
+      - name: Get dependencies
+        shell: bash
+        run: |
+          cd example
+          flutter pub get
+
+      - name: Build Windows apps
+        shell: bash
+        run: |
+          set -e
+          mkdir -p artifacts/windows
+
+          cd example
+
+          APPS=(
+            apple_music
+            apple_podcasts
+            apple_messages
+            apple_news
+            showcase
+          )
+
+          for APP in "${APPS[@]}"; do
+            echo "Building Windows: $APP"
+
+            flutter build windows \
+              --release \
+              -t "lib/${APP}/${APP}_demo.dart"
+
+            mkdir -p "../artifacts/windows/$APP"
+            cp -r build/windows/x64/runner/Release/* "../artifacts/windows/$APP/"
+          done
+
+      - name: Archive Windows builds
+        shell: bash
+        run: |
+          mkdir -p release
+          tar -czf release/windows-portable.tar.gz -C artifacts windows
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-portable-builds
+          path: release/windows-portable.tar.gz
