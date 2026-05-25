@@ -60,12 +60,25 @@ jobs:
           for APP in "${APPS[@]}"; do
             echo "Building Linux: $APP"
 
+            if [ "$APP" = "showcase" ]; then
+              ROOT="showcase"
+              ENTRY="lib/main.dart"
+            else
+              ROOT="."
+              ENTRY="lib/${APP}/${APP}_demo.dart"
+            fi
+
+            cd "$GITHUB_WORKSPACE/example/$ROOT"
+
             flutter build linux \
               --release \
-              -t "lib/${APP}/${APP}_demo.dart"
+              -t "$ENTRY"
 
-            mkdir -p "../artifacts/linux/$APP"
-            cp -r build/linux/x64/release/bundle/* "../artifacts/linux/$APP/"
+            mkdir -p "$GITHUB_WORKSPACE/artifacts/linux/$APP"
+            cp -r build/linux/x64/release/bundle/* \
+              "$GITHUB_WORKSPACE/artifacts/linux/$APP/"
+
+            cd "$GITHUB_WORKSPACE"
           done
 
       - name: Archive Linux builds
@@ -125,12 +138,25 @@ jobs:
           for APP in "${APPS[@]}"; do
             echo "Building Windows: $APP"
 
+            if [ "$APP" = "showcase" ]; then
+              ROOT="showcase"
+              ENTRY="lib/main.dart"
+            else
+              ROOT="."
+              ENTRY="lib/${APP}/${APP}_demo.dart"
+            fi
+
+            cd "$GITHUB_WORKSPACE/example/$ROOT"
+
             flutter build windows \
               --release \
-              -t "lib/${APP}/${APP}_demo.dart"
+              -t "$ENTRY"
 
-            mkdir -p "../artifacts/windows/$APP"
-            cp -r build/windows/x64/runner/Release/* "../artifacts/windows/$APP/"
+            mkdir -p "$GITHUB_WORKSPACE/artifacts/windows/$APP"
+            cp -r build/windows/x64/runner/Release/* \
+              "$GITHUB_WORKSPACE/artifacts/windows/$APP/"
+
+            cd "$GITHUB_WORKSPACE"
           done
 
       - name: Archive Windows builds
