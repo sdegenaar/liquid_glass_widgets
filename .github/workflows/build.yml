@@ -54,6 +54,8 @@ jobs:
       # ---------------- FLUTTER SETUP ----------------
       - name: Ensure Flutter platforms are configured
         run: |
+          set -e
+
           # Example app
           cd example
           flutter config --enable-web
@@ -66,159 +68,190 @@ jobs:
           flutter pub get
           flutter create . --platforms web
 
-          cd ..
+          cd ../..
 
       # ---------------- BUILD ----------------
       - name: Build apps
         run: |
-            set -e
-        
-            BASE="/site/liquid_glass_widgets"
-            STAGE="artifacts/site/liquid_glass_widgets"
-        
-            rm -rf artifacts/site
-            mkdir -p "$STAGE"
-        
-            APPS=(
-              apple_music
-              apple_podcasts
-              apple_messages
-              apple_news
-              showcase
-            )
-        
-            for APP in "${APPS[@]}"; do
-              echo "=============================="
-              echo "Building $APP"
-              echo "=============================="
-        
-              if [ "$APP" = "showcase" ]; then
-                ROOT="example/showcase"
-                ENTRY="lib/main.dart"
-              else
-                ROOT="example"
-                ENTRY="lib/$APP/${APP}_demo.dart"
-              fi
-        
-              cd "$ROOT"
-              flutter pub get
-        
-              # =====================================================
-              # HTML BUILD
-              # =====================================================
-              flutter build web \
-                -t "$ENTRY" \
-                --release \
-                --base-href "$BASE/${APP}_html/"
-        
-              mkdir -p "../../$STAGE/${APP}_html"
-        
-              find build/web -type f -exec cp --parents {} "../../$STAGE/${APP}_html" \;
-        
-              rm -rf build/web
-        
-              # =====================================================
-              # CANVAS BUILD
-              # =====================================================
-              flutter build web \
-                -t "$ENTRY" \
-                --release \
-                --base-href "$BASE/${APP}/"
-        
-              mkdir -p "../../$STAGE/${APP}"
-        
-              find build/web -type f -exec cp --parents {} "../../$STAGE/${APP}" \;
-        
-              rm -rf build/web
-        
-              # =====================================================
-              # WASM BUILD
-              # =====================================================
-              flutter build web \
-                -t "$ENTRY" \
-                --release \
-                --wasm \
-                --base-href "$BASE/${APP}_wasm/"
-        
-              mkdir -p "../../$STAGE/${APP}_wasm"
-        
-              find build/web -type f -exec cp --parents {} "../../$STAGE/${APP}_wasm" \;
-        
-              rm -rf build/web
-        
-              cd -
-            done
-    
-            # ---------------- CREATE RELEASE ARCHIVES ----------------
-            - name: Create release archives
-              run: |
-              set -e
-          
-              FINAL_ROOT="release/site/liquid_glass_widgets"
-          
-              rm -rf release
-              mkdir -p "$FINAL_ROOT"
-          
-              # ---------------- COPY STAGED OUTPUT ----------------
-              cp -r artifacts/site/liquid_glass_widgets/* "$FINAL_ROOT/"
-          
-              echo "=== Final Structure ==="
-              find release -maxdepth 3 -type d | sort
-          
-              # HTML ARCHIVE
-              cd release
-              tar -czf ../artifacts/web-html-builds.tar.gz site
-              cd ..
-          
-              # CANVAS ARCHIVE
-              cd release
-              tar -czf ../artifacts/web-canvas-builds.tar.gz site
-              cd ..
-          
-              # WASM ARCHIVE
-              cd release
-              tar -czf ../artifacts/wasm-builds.tar.gz site
-              cd ..
-          
-              echo "=== Archives ==="
-              ls -lh artifacts/*.tar.gz      
-    # ---------------- UPLOAD ARTIFACTS ----------------
+          set -e
+
+          BASE="/site/liquid_glass_widgets"
+          STAGE="artifacts/site/liquid_glass_widgets"
+
+          rm -rf artifacts release
+          mkdir -p "$STAGE"
+
+          APPS=(
+            apple_music
+            apple_podcasts
+            apple_messages
+            apple_news
+            showcase
+          )
+
+          for APP in "${APPS[@]}"; do
+            echo "=============================="
+            echo "Building $APP"
+            echo "=============================="
+
+            if [ "$APP" = "showcase" ]; then
+              ROOT="example/showcase"
+              ENTRY="lib/main.dart"
+            else
+              ROOT="example"
+              ENTRY="lib/$APP/${APP}_demo.dart"
+            fi
+
+            cd "$ROOT"
+
+            flutter pub get
+
+            # =====================================================
+            # HTML BUILD
+            # =====================================================
+            flutter build web \
+              -t "$ENTRY" \
+              --release \
+              --base-href "$BASE/${APP}_html/"
+
+            mkdir -p "../../$STAGE/${APP}_html"
+            cp -r build/web/* "../../$STAGE/${APP}_html/"
+
+            rm -rf build/web
+
+            # =====================================================
+            # CANVAS BUILD
+            # =====================================================
+            flutter build web \
+              -t "$ENTRY" \
+              --release \
+              --base-href "$BASE/${APP}/"
+
+            mkdir -p "../../$STAGE/${APP}"
+            cp -r build/web/* "../../$STAGE/${APP}/"
+
+            rm -rf build/web
+
+            # =====================================================
+            # WASM BUILD
+            # =====================================================
+            flutter build web \
+              -t "$ENTRY" \
+              --release \
+              --wasm \
+              --base-href "$BASE/${APP}_wasm/"
+
+            mkdir -p "../../$STAGE/${APP}_wasm"
+            cp -r build/web/* "../../$STAGE/${APP}_wasm/"
+
+            rm -rf build/web
+
+            cd ../..
+          done
+
+      # ---------------- CREATE RELEASE ARCHIVES ----------------
+      - name: Create release archives
+        run: |
+          set -e
+
+          FINAL_ROOT="release/site/liquid_glass_widgets"
+
+          mkdir -p "$FINAL_ROOT"
+
+          # ---------------- COPY STAGED OUTPUT ----------------
+          cp -r artifacts/site/liquid_glass_widgets/* "$FINAL_ROOT/"
+
+          echo "=== Final Structure ==="
+          find release/site/liquid_glass_widgets -maxdepth 1 -type d | sort
+
+          # ---------------- CREATE ARCHIVES ----------------
+
+          # Full site archive
+          tar -czf artifacts/liquid-glass-site.tar.gz -C release site
+
+          # HTML-only archive
+          mkdir -p temp/html/site/liquid_glass_widgets
+
+          find release/site/liquid_glass_widgets \
+            -maxdepth 1 \
+            -type d \
+            -name "*_html" \
+            -exec cp -r {} temp/html/site/liquid_glass_widgets/ \;
+
+          tar -czf artifacts/web-html-builds.tar.gz -C temp/html site
+
+          # Canvas-only archive
+          mkdir -p temp/canvas/site/liquid_glass_widgets
+
+          find release/site/liquid_glass_widgets \
+            -maxdepth 1 \
+            -type d \
+            ! -name "*_html" \
+            ! -name "*_wasm" \
+            ! -path "*/liquid_glass_widgets" \
+            -exec cp -r {} temp/canvas/site/liquid_glass_widgets/ \;
+
+          tar -czf artifacts/web-canvas-builds.tar.gz -C temp/canvas site
+
+          # WASM-only archive
+          mkdir -p temp/wasm/site/liquid_glass_widgets
+
+          find release/site/liquid_glass_widgets \
+            -maxdepth 1 \
+            -type d \
+            -name "*_wasm" \
+            -exec cp -r {} temp/wasm/site/liquid_glass_widgets/ \;
+
+          tar -czf artifacts/wasm-builds.tar.gz -C temp/wasm site
+
+          echo "=== Archives ==="
+          ls -lh artifacts/*.tar.gz
+
+      # ---------------- UPLOAD ARTIFACTS ----------------
+      - uses: actions/upload-artifact@v4
+        with:
+          name: liquid-glass-site
+          path: release/site
+
       - uses: actions/upload-artifact@v4
         with:
           name: web-html-builds
-          path: artifacts/web-html/
+          path: artifacts/web-html-builds.tar.gz
 
       - uses: actions/upload-artifact@v4
         with:
           name: web-canvas-builds
-          path: artifacts/web-canvas/
+          path: artifacts/web-canvas-builds.tar.gz
 
       - uses: actions/upload-artifact@v4
         with:
           name: wasm-builds
-          path: artifacts/wasm/
+          path: artifacts/wasm-builds.tar.gz
 
       # ---------------- GITHUB RELEASE ----------------
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: build-${{ github.run_number }}
+
           files: |
+            artifacts/liquid-glass-site.tar.gz
             artifacts/web-html-builds.tar.gz
             artifacts/web-canvas-builds.tar.gz
             artifacts/wasm-builds.tar.gz
 
-          tag_name: build-${{ github.run_number }}
-
           body: |
             Build #${{ github.run_number }}
+
             Commit: ${{ github.sha }}
             Branch: ${{ github.ref_name }}
 
             Includes:
-            - Web HTML Renderer builds
-            - Web Canvas Renderer builds
+            - Full Liquid Glass Widgets site
+            - HTML renderer builds
+            - Canvas renderer builds
             - WebAssembly (WASM) builds
-            - Wanderlust Showcase app (production demo)
+            - Showcase app
 
           prerelease: true
 
