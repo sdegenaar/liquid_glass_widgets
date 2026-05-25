@@ -1,4 +1,4 @@
-name: Build & Release Liquid Glass Widgets
+name: Build & Release Liquid Glass Widgets WEB
 
 on:
   push:
