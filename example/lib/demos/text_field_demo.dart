@@ -1,24 +1,7 @@
-/// Demo: GlassTextField v0.12.5 — visual verification of all user-reported issues.
+/// GlassTextField — feature showcase.
 ///
-/// WHAT TO CHECK IN THIS DEMO:
-///
-///   [A] Fixed 44pt — text centred at any system font size.
-///       Turn on Accessibility → Larger Text and verify placeholder stays centred.
-///
-///   [B] The exact user pattern:
-///       height: _lines > 1 ? null : (hasFocus ? 46 : 50)
-///       • Unfocused: 50px pill
-///       • Focused:   46px pill
-///       • Multi-line: free height (null)
-///       Tap away, tap back, type more → MUST keep animating (stale state fix).
-///
-///   [C] iconAlignment: .end in fixed-height mode with large system text.
-///       Icons must pin to the bottom of the container even when
-///       the system text scaling is large. Previously they would drift
-///       downward because the whole Row was Align(center)-wrapped.
-///
-///   [D] Bottom panel — action bar + text area share one glass card.
-///       Composer with attachments + send button.
+/// Demonstrates height constraints, dynamic line counting, icon alignment,
+/// and the bottom-panel composer pattern.
 ///
 /// To run: flutter run -t lib/demos/text_field_demo.dart
 library;
@@ -53,44 +36,38 @@ class TextFieldDemo extends StatefulWidget {
 }
 
 class _TextFieldDemoState extends State<TextFieldDemo> {
-  // ── [A] Fixed-height search field ─────────────────────────────────────
+  // ── Search bar ──────────────────────────────────────────────────────────
   final _searchController = TextEditingController();
 
-  // ── [B] Exact user pattern: height: _lines > 1 ? null : (hasFocus ? 46 : 50)
-  final _patternController = TextEditingController();
-  final _patternFocusNode = FocusNode();
-  int _patternLines = 1;
-  bool _patternHasFocus = false;
+  // ── Expandable input ───────────────────────────────────────────────────
+  final _expandController = TextEditingController();
+  final _expandFocusNode = FocusNode();
+  int _expandLines = 1;
+  bool _expandHasFocus = false;
 
-  // ── [C] iconAlignment: .end + fixed height + large text ───────────────
-  final _iconAlignController = TextEditingController();
-  int _iconAlignLines = 1;
-
-  // ── [D] Bottom-panel composer ─────────────────────────────────────────
+  // ── Chat composer ─────────────────────────────────────────────────────
   final _composerController = TextEditingController();
-  int _composerLineCount = 1;
+  int _composerLines = 1;
   final List<String> _messages = [
     'Hey! Have you tried the new glass widgets?',
     'Yes! The liquid glass looks amazing on iOS 26 🤩',
-    'Try the new GlassTextField — it has height constraints now',
-    'And onLineCountChanged! Watch the border radius animate...',
-    'v0.12.5: check out the conditional height field above 👆',
+    'Try the GlassTextField — it supports height constraints now',
+    'And onLineCountChanged! Watch the border radius animate…',
   ];
 
   @override
   void initState() {
     super.initState();
-    _patternFocusNode.addListener(() {
-      setState(() => _patternHasFocus = _patternFocusNode.hasFocus);
+    _expandFocusNode.addListener(() {
+      setState(() => _expandHasFocus = _expandFocusNode.hasFocus);
     });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
-    _patternController.dispose();
-    _patternFocusNode.dispose();
-    _iconAlignController.dispose();
+    _expandController.dispose();
+    _expandFocusNode.dispose();
     _composerController.dispose();
     super.dispose();
   }
@@ -101,23 +78,16 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
     setState(() {
       _messages.add(text);
       _composerController.clear();
-      _composerLineCount = 1;
+      _composerLines = 1;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // ── [B] Exact user pattern ──
-    final patternHeight =
-        _patternLines > 1 ? null : (_patternHasFocus ? 46.0 : 50.0);
-    final patternRadius = _patternLines <= 1 ? 22.0 : 12.0;
-
-    // ── [C] Icon alignment demo — dynamic radius ──
-    final iconAlignRadius = _iconAlignLines <= 1 ? 22.0 : 12.0;
-    final iconAlignHeight = _iconAlignLines > 1 ? null : 50.0;
-
-    // ── [D] Composer border-radius ──
-    final composerRadius = _composerLineCount <= 1 ? 22.0 : 12.0;
+    final expandHeight =
+        _expandLines > 1 ? null : (_expandHasFocus ? 46.0 : 50.0);
+    final expandRadius = _expandLines <= 1 ? 22.0 : 12.0;
+    final composerRadius = _composerLines <= 1 ? 22.0 : 12.0;
 
     return GlassPage(
       background: Container(
@@ -137,7 +107,7 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: GlassAppBar(
-          title: const Text('TextField v0.12.5 Verification'),
+          title: const Text('GlassTextField'),
           quality: GlassQuality.premium,
           useOwnLayer: true,
         ),
@@ -148,18 +118,13 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ════════════════════════════════════════════════════════════
-              // [A] Fixed-height — text centred under Large Text
-              // ════════════════════════════════════════════════════════════
-              _sectionLabel(
-                '[A] Fixed height: 44 — text centred at any font size.\n'
-                'Enable Accessibility → Larger Text and verify.',
-              ),
+              // ── Search bar ──────────────────────────────────────────────
+              _section('Search bar', 'Fixed height · text stays centred'),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
                 child: GlassTextField.search(
                   controller: _searchController,
-                  placeholder: 'Fixed 44pt — text centred at any font size',
+                  placeholder: 'Search…',
                   prefixIcon: const Icon(
                     CupertinoIcons.search,
                     size: 20,
@@ -173,15 +138,10 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
               const SizedBox(height: 8),
               const Divider(color: Colors.white12, indent: 16, endIndent: 16),
 
-              // ════════════════════════════════════════════════════════════
-              // [B] Exact user pattern
-              // ════════════════════════════════════════════════════════════
-              _sectionLabel(
-                '[B] Exact user pattern:\n'
-                'height: _lines > 1 ? null : (hasFocus ? 46 : 50)\n'
-                '• Unfocused: 50px pill\n'
-                '• Focused:   46px pill\n'
-                '• Multi-line: free height (null)',
+              // ── Expandable input ────────────────────────────────────────
+              _section(
+                'Expandable input',
+                'Pill when single-line · grows to fit · animated radius',
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
@@ -189,108 +149,47 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
                   duration: const Duration(milliseconds: 250),
                   curve: Curves.easeOutCubic,
                   child: GlassTextField(
-                    controller: _patternController,
-                    focusNode: _patternFocusNode,
+                    controller: _expandController,
+                    focusNode: _expandFocusNode,
                     placeholder: 'Type here until text wraps…',
                     maxLines: 5,
-                    height: patternHeight,
-                    onLineCountChanged: (lines) {
-                      setState(() => _patternLines = lines);
-                    },
-                    shape: LiquidRoundedSuperellipse(
-                      borderRadius: patternRadius,
-                    ),
-                    useOwnLayer: true,
-                    quality: GlassQuality.premium,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    interactionBehavior: GlassInteractionBehavior.full,
-                    onChanged: (_) => setState(() {}),
-                  ),
-                ),
-              ),
-              // Live debug readout for [B].
-              _debugReadout(
-                'focus=${_patternHasFocus ? 'Y' : 'N'}  '
-                'lines=$_patternLines  '
-                'height=${patternHeight?.toInt() ?? 'null (free)'}  '
-                'radius=${patternRadius.toInt()}',
-                highlight: _patternLines > 1,
-              ),
-
-              const SizedBox(height: 8),
-              const Divider(color: Colors.white12, indent: 16, endIndent: 16),
-
-              // ════════════════════════════════════════════════════════════
-              // [C] iconAlignment: .end under large text
-              // ════════════════════════════════════════════════════════════
-              _sectionLabel(
-                '[C] iconAlignment: .end + fixed height.\n'
-                'Icons must pin to BOTTOM of container, not drift\n'
-                'downward when system text is large. Type to expand.',
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeOutCubic,
-                  child: GlassTextField(
-                    controller: _iconAlignController,
-                    placeholder: 'Icons stay at bottom…',
-                    maxLines: 5,
-                    height: iconAlignHeight,
+                    height: expandHeight,
                     iconAlignment: CrossAxisAlignment.end,
-                    prefixIcon: const Icon(
-                      CupertinoIcons.smiley,
-                      size: 22,
+                    prefixIcon: Icon(
+                      _expandHasFocus ? Icons.playlist_remove : Icons.edit_note,
                       color: Colors.white60,
                     ),
-                    suffixIcon: const Icon(
-                      CupertinoIcons.arrow_up_circle_fill,
-                      size: 26,
-                      color: Colors.white70,
-                    ),
+                    suffixIcon: _expandHasFocus
+                        ? const Icon(Icons.send, color: Colors.white70)
+                        : null,
                     onLineCountChanged: (lines) {
-                      setState(() => _iconAlignLines = lines);
+                      setState(() => _expandLines = lines);
                     },
                     shape: LiquidRoundedSuperellipse(
-                      borderRadius: iconAlignRadius,
+                      borderRadius: expandRadius,
                     ),
                     useOwnLayer: true,
                     quality: GlassQuality.premium,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
                     interactionBehavior: GlassInteractionBehavior.full,
                     onChanged: (_) => setState(() {}),
                   ),
                 ),
               ),
-              // Live debug readout for [C].
-              _debugReadout(
-                'lines=$_iconAlignLines  '
-                'height=${iconAlignHeight?.toInt() ?? 'null (free)'}  '
-                'iconAlign=end',
-                highlight: _iconAlignLines > 1,
-              ),
 
               const SizedBox(height: 8),
               const Divider(color: Colors.white12, indent: 16, endIndent: 16),
 
-              // ════════════════════════════════════════════════════════════
-              // [D] Bottom panel composer
-              // ════════════════════════════════════════════════════════════
-              _sectionLabel(
-                '[D] Bottom panel — action bar + text area share\n'
-                'one glass card. Chat composer pattern.',
+              // ── Chat composer with bottom panel ─────────────────────────
+              _section(
+                'Chat composer',
+                'Bottom panel · attachment bar · animated send button',
               ),
 
-              // Message list.
+              // Message list
               SizedBox(
-                height: 160,
+                height: 200,
                 child: ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   reverse: true,
@@ -309,8 +208,9 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
                         child: GlassCard(
                           useOwnLayer: true,
                           quality: GlassQuality.premium,
-                          shape:
-                              const LiquidRoundedSuperellipse(borderRadius: 16),
+                          shape: const LiquidRoundedSuperellipse(
+                            borderRadius: 16,
+                          ),
                           settings: LiquidGlassSettings(
                             glassColor: isMe
                                 ? Colors.blue.withValues(alpha: 0.3)
@@ -318,11 +218,15 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
                           ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
                             child: Text(
                               _messages[msgIndex],
                               style: const TextStyle(
-                                  color: Colors.white, fontSize: 14),
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         ),
@@ -332,12 +236,7 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
                 ),
               ),
 
-              // Live debug readout for [D].
-              _debugReadout(
-                'lines=$_composerLineCount  radius=${composerRadius.toInt()}',
-              ),
-
-              // Bottom-panel composer.
+              // Composer
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                 child: GlassTextField(
@@ -348,32 +247,40 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
                   maxHeight: 160,
                   iconAlignment: CrossAxisAlignment.end,
                   onLineCountChanged: (lines) {
-                    setState(() => _composerLineCount = lines);
+                    setState(() => _composerLines = lines);
                   },
                   shape: LiquidRoundedSuperellipse(
                     borderRadius: composerRadius,
                   ),
                   useOwnLayer: true,
                   quality: GlassQuality.premium,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   interactionBehavior: GlassInteractionBehavior.full,
                   onChanged: (_) => setState(() {}),
                   bottom: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     child: Row(
                       children: [
                         IconButton(
-                          icon: Icon(CupertinoIcons.paperclip,
-                              size: 20,
-                              color: Colors.white.withValues(alpha: 0.6)),
+                          icon: Icon(
+                            CupertinoIcons.paperclip,
+                            size: 20,
+                            color: Colors.white.withValues(alpha: 0.6),
+                          ),
                           onPressed: () {},
                         ),
                         IconButton(
-                          icon: Icon(CupertinoIcons.camera,
-                              size: 20,
-                              color: Colors.white.withValues(alpha: 0.6)),
+                          icon: Icon(
+                            CupertinoIcons.camera,
+                            size: 20,
+                            color: Colors.white.withValues(alpha: 0.6),
+                          ),
                           onPressed: () {},
                         ),
                         const Spacer(),
@@ -382,13 +289,17 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
                           transitionBuilder: (child, animation) =>
                               FadeTransition(
                             opacity: animation,
-                            child:
-                                ScaleTransition(scale: animation, child: child),
+                            child: ScaleTransition(
+                              scale: animation,
+                              child: child,
+                            ),
                           ),
                           child: IconButton(
-                            key: ValueKey(_composerController.text.isNotEmpty
-                                ? 'send'
-                                : 'idle'),
+                            key: ValueKey(
+                              _composerController.text.isNotEmpty
+                                  ? 'send'
+                                  : 'idle',
+                            ),
                             icon: Icon(
                               CupertinoIcons.arrow_up_circle_fill,
                               size: 28,
@@ -413,34 +324,30 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  Widget _sectionLabel(String text) {
+  Widget _section(String title, String subtitle) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.55),
-          fontSize: 11,
-          height: 1.5,
-          fontFamily: 'monospace',
-        ),
-      ),
-    );
-  }
-
-  Widget _debugReadout(String text, {bool highlight = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
-      child: AnimatedDefaultTextStyle(
-        duration: const Duration(milliseconds: 200),
-        style: TextStyle(
-          color: highlight
-              ? Colors.greenAccent.withValues(alpha: 0.9)
-              : Colors.white38,
-          fontSize: 11,
-          fontFamily: 'monospace',
-        ),
-        child: Text(text),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.4),
+              fontSize: 11,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show RenderEditable;
 import 'package:flutter/services.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/types/glass_interaction_behavior.dart';
@@ -552,46 +551,34 @@ class _GlassTextFieldState extends State<GlassTextField> {
     });
   }
 
-  /// Measures the actual rendered line count and fires [onLineCountChanged]
-  /// only when the count changes.
-  ///
-  /// Walks the render tree to find the [RenderEditable] that Flutter's
-  /// [TextField] creates internally, then uses its `size.width` for the
-  /// [TextPainter] measurement. This width already accounts for the internal
-  /// `_caretMargin` (≈ 3 px), so our TextPainter wraps at exactly the same
-  /// character boundary as the real renderer — pixel-perfect accuracy.
-  ///
-  /// **Fallback**: if the render-tree walk fails (e.g. exotic widget tree
-  /// restructuring in a future Flutter version), uses the TextField
-  /// widget's RenderBox width (off by ~3 px).
+  /// Measures the TextField's rendered line count and fires
+  /// [onLineCountChanged] only when the count actually changes.
   void _measureLineCount() {
     final renderBox =
         _textFieldKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null || !renderBox.hasSize) return;
 
+    final size = renderBox.size;
+    if (size.width <= 0) return;
+
     final currentText = _effectiveController?.text ?? '';
 
-    // Use the RenderEditable's width if available — it already deducts
-    // _caretMargin, so the TextPainter will wrap at the exact same boundary.
-    final editable = _findRenderEditable(renderBox);
-    final double measureWidth = (editable != null && editable.hasSize)
-        ? editable.size.width
-        : renderBox.size.width;
-
-    if (measureWidth <= 0) return;
-
     // Guard: skip only when both text AND available width are unchanged.
-    if (currentText == _lastMeasuredText &&
-        measureWidth == _lastMeasuredWidth) {
+    // We intentionally do NOT guard on size.height — a fixed outer height
+    // (e.g. height: 46) keeps the RenderBox height constant while the number
+    // of rendered lines may still change as the user types.
+    if (currentText == _lastMeasuredText && size.width == _lastMeasuredWidth) {
       return;
     }
     _lastMeasuredText = currentText;
-    _lastMeasuredWidth = measureWidth;
+    _lastMeasuredWidth = size.width;
+
+    // Use MediaQuery textScaler for accurate line height calculation.
+    final textScaler = MediaQuery.textScalerOf(context);
+    final effectiveStyle = widget.textStyle ?? _defaultTextStyle;
 
     int lineCount = 1;
     if (widget.maxLines != 1) {
-      final textScaler = MediaQuery.textScalerOf(context);
-      final effectiveStyle = widget.textStyle ?? _defaultTextStyle;
       final textPainter = TextPainter(
         text: TextSpan(
           text: currentText.isEmpty ? ' ' : currentText,
@@ -600,7 +587,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
         textDirection: Directionality.of(context),
         textScaler: textScaler,
       );
-      textPainter.layout(maxWidth: measureWidth);
+      textPainter.layout(maxWidth: size.width);
       lineCount = textPainter.computeLineMetrics().length.clamp(1, 9999);
     }
 
@@ -612,26 +599,6 @@ class _GlassTextFieldState extends State<GlassTextField> {
       }
       widget.onLineCountChanged?.call(lineCount);
     }
-  }
-
-  /// Walks the render tree below [root] to find Flutter's internal
-  /// [RenderEditable] — the render object that actually lays out text.
-  ///
-  /// Returns `null` if the walk fails (e.g. TextField widget tree changes
-  /// in a future Flutter version). Callers must handle the null case.
-  static RenderEditable? _findRenderEditable(RenderObject root) {
-    RenderEditable? result;
-    void visitor(RenderObject child) {
-      if (result != null) return;
-      if (child is RenderEditable) {
-        result = child;
-        return;
-      }
-      child.visitChildren(visitor);
-    }
-
-    root.visitChildren(visitor);
-    return result;
   }
 
   static const _defaultTextStyle = TextStyle(

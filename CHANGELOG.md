@@ -1,3 +1,12 @@
+# 0.12.7
+
+## 🐛 Fix — `GlassTextField` icon alignment (retained) + line-count regression fix
+
+- **`iconAlignment: .end` no longer drifts under system Large Text.** The `Center` widget wraps only the `TextField`, not the entire icon `Row`, so `CrossAxisAlignment.end/.start` works correctly against the full container height. *(retained from 0.12.6)*
+- **Reverted line-count measurement** back to `renderBox.size.width` (the v0.12.4 approach). The v0.12.6 `RenderEditable` width change caused line breaks to fire a couple of characters early. Thanks [@g3mf0r](https://github.com/g3mf0r) for catching this.
+
+---
+
 # 0.12.6
 
 ## 🐛 Fix — `GlassTextField` icon alignment and line-count accuracy
