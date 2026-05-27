@@ -296,8 +296,8 @@ jobs:
             flutter clean
 
             flutter build macos \
+            --enable-impeller \
               --release \
-              --enable-impeller \
               -t "$ENTRY"
 
             mkdir -p "../artifacts/macos/$APP"
