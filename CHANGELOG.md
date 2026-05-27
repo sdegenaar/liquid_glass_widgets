@@ -1,3 +1,14 @@
+# 0.12.8
+
+## 🐛 Fix — `GlassTextField` reverted to v0.12.4 + icon drift fix
+
+- **Reverted to v0.12.4** — restored exact line-count and layout logic. The v0.12.6–0.12.7 changes introduced regressions (line breaks at wrong character boundary, icons pinned to container bottom).
+- **Fixed icon drift under system text scaling** — in fixed-height mode, icons are now always centred relative to the container rather than relative to the text row. This prevents icons from shifting position when users change system text scaling. In dynamic-height mode (no `height` parameter), `iconAlignment` is respected as before.
+
+Thanks [@g3mf0r](https://github.com/g3mf0r) for the detailed testing.
+
+---
+
 # 0.12.7
 
 ## 🐛 Fix — `GlassTextField` icon alignment (retained) + line-count regression fix

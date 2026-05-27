@@ -152,7 +152,8 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
                     controller: _expandController,
                     focusNode: _expandFocusNode,
                     placeholder: 'Type here until text wraps…',
-                    maxLines: 5,
+                    minLines: 1,
+                    maxLines: _expandHasFocus ? 5 : 1,
                     height: expandHeight,
                     iconAlignment: CrossAxisAlignment.end,
                     prefixIcon: Icon(
