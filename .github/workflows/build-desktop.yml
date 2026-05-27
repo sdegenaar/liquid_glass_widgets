@@ -296,7 +296,6 @@ jobs:
             flutter clean
 
             flutter build macos \
-            --enable-impeller \
               --release \
               -t "$ENTRY"
 
