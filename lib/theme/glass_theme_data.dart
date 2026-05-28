@@ -207,15 +207,15 @@ class GlassThemeVariant {
   /// [GlassThemeVariant] to override all widgets globally.
   static const GlassThemeVariant light = GlassThemeVariant(
     settings: GlassThemeSettings(
-      thickness: 20.0,
-      blur: 6.0, // Enough frosted diffusion without heaviness
-      glassColor: Color(
-          0x4AD2DCF0), // ~29% cool blue-white — iOS 26 icy tint, visible on white
-      chromaticAberration: 0.3, // Premium feel without artefact risk
+      thickness: 12.0, // Slightly thicker than dark — needs more body on white
+      blur: 5.0, // Matched with dark for consistency
+      glassColor: Color.fromRGBO(210, 220, 240, 0.12), // ~12% cool blue-white
+      lightAngle: 2.356, // 0.75 * pi ≈ 135° — upper-left, matches iOS 26
+      lightIntensity: 0.85, // Softer — bright backgrounds need less highlight
+      ambientStrength: 0.15, // Touch of ambient keeps glass visible on white
       refractiveIndex: 1.2,
-      lightIntensity: 1.2,
-      ambientStrength: 0.2,
-      saturation: 1.1,
+      saturation: 1.2,
+      chromaticAberration: 0.02, // Subtle prismatic edge, not distracting
     ),
     quality: null,
     glowColors: GlassGlowColors.fallback,
@@ -229,11 +229,15 @@ class GlassThemeVariant {
   /// [GlassThemeVariant] to override all widgets globally.
   static const GlassThemeVariant dark = GlassThemeVariant(
     settings: GlassThemeSettings(
-      thickness: 40.0,
-      blur: 5.0,
-      lightIntensity: 1.5,
+      thickness: 10.0,
+      blur: 4.0,
+      glassColor: Color.fromRGBO(255, 255, 255, 0.08),
+      lightAngle: 2.356, // 0.75 * pi ≈ 135° — upper-left, matches iOS 26
+      lightIntensity: 0.7,
+      ambientStrength: 0.0,
       refractiveIndex: 1.2,
-      saturation: 1.1,
+      saturation: 1.2,
+      chromaticAberration: 0.01,
     ),
     quality: null,
     glowColors: GlassGlowColors.fallback,
@@ -260,9 +264,9 @@ class GlassThemeVariant {
   /// ```
   static const GlassThemeVariant minimal = GlassThemeVariant(
     settings: GlassThemeSettings(
-      thickness: 30.0,
-      blur: 12.0,
-      lightIntensity: 1.0,
+      thickness: 10.0, // Consistent with light/dark
+      blur: 8.0, // BackdropFilter sigma — enough frosting to see shapes through
+      glassColor: Color.fromRGBO(200, 210, 230, 0.15), // Visible tint for the container overlay
     ),
     quality: GlassQuality.minimal,
     glowColors: GlassGlowColors.fallback,

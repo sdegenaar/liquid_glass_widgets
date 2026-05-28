@@ -10,7 +10,11 @@ export 'liquid_glass_settings.dart' show LiquidGlassSettings;
 export 'liquid_shape.dart';
 export 'rendering/liquid_glass_layer.dart' show LiquidGlassLayer;
 export 'stretch.dart'
-    show LiquidStretch, OffsetResistanceExtension, RawLiquidStretch;
+    show
+        AnchorStretchSettings,
+        LiquidStretch,
+        OffsetResistanceExtension,
+        RawLiquidStretch;
 
 /// Whether to paint the liquid glass geometry texture for debugging purposes.
 ///

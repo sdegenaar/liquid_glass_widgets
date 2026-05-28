@@ -9,655 +9,763 @@ class SurfacesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveLiquidGlassLayer(
-        settings: RecommendedGlassSettings.surface,
-        quality: GlassQuality.standard,
-        child: Scaffold(
-            backgroundColor: Colors.transparent,
-            appBar: GlassAppBar(
-              title: const Text(
-                'Surfaces',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              leading: GlassButton(
-                icon: Icon(CupertinoIcons.sidebar_left),
-                onTap: () {},
-                width: 40,
-                height: 40,
-                iconSize: 20,
-              ),
-              actions: [
-                GlassButton(
-                  icon: Icon(CupertinoIcons.search),
-                  onTap: () {},
-                  width: 40,
-                  height: 40,
-                  iconSize: 20,
-                ),
-                GlassButton(
-                  icon: Icon(CupertinoIcons.ellipsis),
-                  onTap: () {},
-                  width: 40,
-                  height: 40,
-                  iconSize: 20,
-                ),
-              ],
+    return GlassPage(
+      background: buildShowcaseBackground(),
+      settings: RecommendedGlassSettings.standard,
+      statusBarStyle: GlassStatusBarStyle.light,
+      child: Scaffold(
+        appBar: GlassAppBar(
+          title: const Text(
+            'Surfaces',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
-            body: CustomScrollView(slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+          ),
+          leading: GlassButton(
+            icon: const Icon(CupertinoIcons.back),
+            onTap: () => Navigator.of(context).pop(),
+            width: 40,
+            height: 40,
+            iconSize: 20,
+          ),
+        ),
+        body: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── GlassAppBar ──────────────────────────────────
+                    const _SectionTitle(title: 'GlassAppBar'),
+                    const SizedBox(height: 8),
+                    Text(
+                      'The navigation bar at the top of this page is a live GlassAppBar with leading and title support.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withValues(alpha: 0.7),
+                      ),
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    // ── GlassBottomBar ───────────────────────────────
+                    const _SectionTitle(title: 'GlassBottomBar'),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Draggable jelly-physics tab bar with velocity snapping and per-tab glow colors.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _DemoLauncher(
+                      title: 'Launch Bottom Bar Demo',
+                      subtitle: 'Full-screen interactive experience',
+                      icon: CupertinoIcons.rectangle_dock,
+                      glowColor: Colors.blue,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const _BottomBarDemoPage(),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    // ── GlassSearchableBottomBar ─────────────────────
+                    const _SectionTitle(title: 'GlassSearchableBottomBar'),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Bottom bar with integrated search — tabs spring-collapse into pills when search activates.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _DemoLauncher(
+                      title: 'Launch Searchable Bar Demo',
+                      subtitle: 'Full-screen with search interaction',
+                      icon: CupertinoIcons.search,
+                      glowColor: Colors.purple,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const _SearchableBarDemoPage(),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    // ── GlassTabBar ──────────────────────────────────
+                    const _SectionTitle(title: 'GlassTabBar'),
+                    const SizedBox(height: 16),
+                    const _TabBarDemo(),
+
+                    const SizedBox(height: 24),
+
+                    Text(
+                      'Labels Only',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const _TabBarLabelExample(),
+                    const SizedBox(height: 24),
+
+                    Text(
+                      'Icons Only',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const _TabBarIconExample(),
+                    const SizedBox(height: 24),
+
+                    Text(
+                      'Scrollable (Many Tabs)',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const _TabBarScrollableExample(),
+
+                    const SizedBox(height: 40),
+
+                    // ── GlassToolbar ─────────────────────────────────
+                    const _SectionTitle(title: 'GlassToolbar'),
+                    const SizedBox(height: 16),
+                    GlassToolbar(
+                      height: 60,
                       children: [
-                        Text(
-                          'Glass surface widgets for navigation',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.white.withValues(alpha: 0.7),
-                          ),
+                        GlassButton(
+                          icon: Icon(CupertinoIcons.share),
+                          onTap: () {},
+                          label: 'Share',
+                          width: 44,
+                          height: 44,
                         ),
-                        const SizedBox(height: 40),
+                        const Spacer(),
+                        GlassButton(
+                          icon: Icon(CupertinoIcons.add),
+                          onTap: () {},
+                          label: 'Add',
+                          width: 44,
+                          height: 44,
+                        ),
+                        const Spacer(),
+                        GlassButton(
+                          icon: Icon(CupertinoIcons.delete),
+                          onTap: () {},
+                          label: 'Delete',
+                          width: 44,
+                          height: 44,
+                        ),
+                      ],
+                    ),
 
-                        // GlassAppBar Section
-                        const _SectionTitle(title: 'GlassAppBar'),
-                        const SizedBox(height: 16),
-                        GlassCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Navigation Bar',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'The GlassAppBar you see at the top of this page is a live example! It features:',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                  height: 1.5,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              _FeatureItem(
-                                icon:
-                                    Icon(CupertinoIcons.checkmark_circle_fill),
-                                text: 'Blurred glass background',
-                              ),
-                              const SizedBox(height: 8),
-                              _FeatureItem(
-                                icon:
-                                    Icon(CupertinoIcons.checkmark_circle_fill),
-                                text: 'Leading widget support (sidebar button)',
-                              ),
-                              const SizedBox(height: 8),
-                              _FeatureItem(
-                                icon:
-                                    Icon(CupertinoIcons.checkmark_circle_fill),
-                                text: 'Multiple action buttons',
-                              ),
-                              const SizedBox(height: 8),
-                              _FeatureItem(
-                                icon:
-                                    Icon(CupertinoIcons.checkmark_circle_fill),
-                                text: 'Centered title',
-                              ),
-                              const SizedBox(height: 8),
-                              _FeatureItem(
-                                icon:
-                                    Icon(CupertinoIcons.checkmark_circle_fill),
-                                text: 'Safe area handling',
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        GlassCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Usage Modes',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              _UsageMode(
-                                title: 'Grouped Mode',
-                                description:
-                                    'Wrap Scaffold in LiquidGlassLayer for best performance when using multiple glass widgets',
-                                isRecommended: true,
-                              ),
-                              const SizedBox(height: 12),
-                              _UsageMode(
-                                title: 'Standalone Mode',
-                                description:
-                                    'Set useOwnLayer: true to use the app bar without a parent layer',
-                                isRecommended: false,
-                              ),
-                            ],
-                          ),
-                        ),
+                    const SizedBox(height: 40),
 
-                        const SizedBox(height: 40),
-
-                        // GlassBottomBar Section
-                        const _SectionTitle(title: 'GlassBottomBar'),
-                        const SizedBox(height: 16),
-                        GlassCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Bottom Navigation',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'The GlassBottomBar at the bottom of this app is a live example! It features:',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                  height: 1.5,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              _FeatureItem(
-                                icon:
-                                    Icon(CupertinoIcons.checkmark_circle_fill),
-                                text: 'Draggable indicator with jelly physics',
-                              ),
-                              const SizedBox(height: 8),
-                              _FeatureItem(
-                                icon:
-                                    Icon(CupertinoIcons.checkmark_circle_fill),
-                                text: 'Velocity-based snapping',
-                              ),
-                              const SizedBox(height: 8),
-                              _FeatureItem(
-                                icon:
-                                    Icon(CupertinoIcons.checkmark_circle_fill),
-                                text: 'Rubber band resistance at edges',
-                              ),
-                              const SizedBox(height: 8),
-                              _FeatureItem(
-                                icon:
-                                    Icon(CupertinoIcons.checkmark_circle_fill),
-                                text: 'Per-tab glow colors',
-                              ),
-                              const SizedBox(height: 8),
-                              _FeatureItem(
-                                icon:
-                                    Icon(CupertinoIcons.checkmark_circle_fill),
-                                text: 'Optional extra button',
-                              ),
-                              const SizedBox(height: 8),
-                              _FeatureItem(
-                                icon:
-                                    Icon(CupertinoIcons.checkmark_circle_fill),
-                                text: 'Seamless glass blending',
-                              ),
-                            ],
-                          ),
+                    // ── GlassSideBar ─────────────────────────────────
+                    const _SectionTitle(title: 'GlassSideBar'),
+                    const SizedBox(height: 16),
+                    Container(
+                      height: 400,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Colors.blueAccent, Colors.purpleAccent],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                        const SizedBox(height: 16),
-                        GlassPanel(
-                          child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      CupertinoIcons.lightbulb_fill,
-                                      color: Colors.amber,
-                                      size: 24,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    const Expanded(
-                                      child: Text(
-                                        'Try It Out!',
-                                        style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Try these interactions with the bottom bar:',
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Row(
+                          children: [
+                            GlassSideBar(
+                              width: 200,
+                              padding: const EdgeInsets.all(12),
+                              header: const Padding(
+                                padding:
+                                    EdgeInsets.only(bottom: 20, top: 10),
+                                child: Text(
+                                  'My App',
                                   style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
                                   ),
                                 ),
-                                const SizedBox(height: 12),
-                                _TipItem(text: 'Tap a tab to switch pages'),
-                                const SizedBox(height: 8),
-                                _TipItem(
-                                  text:
-                                      'Drag the indicator left/right to switch tabs',
+                              ),
+                              footer: GlassButton(
+                                icon: Icon(CupertinoIcons.profile_circled),
+                                label: 'User',
+                                width: double.infinity,
+                                onTap: () {},
+                              ),
+                              children: [
+                                GlassSideBarItem(
+                                  icon: Icon(CupertinoIcons.home),
+                                  label: 'Home',
+                                  isSelected: true,
+                                  onTap: () {},
                                 ),
-                                const SizedBox(height: 8),
-                                _TipItem(
-                                  text:
-                                      'Flick quickly to jump multiple tabs with velocity',
+                                GlassSideBarItem(
+                                  icon: Icon(CupertinoIcons.folder),
+                                  label: 'Projects',
+                                  onTap: () {},
                                 ),
-                                const SizedBox(height: 8),
-                                _TipItem(
-                                  text:
-                                      'Try dragging beyond the edges to feel the rubber band resistance',
+                                GlassSideBarItem(
+                                  icon: Icon(CupertinoIcons.settings),
+                                  label: 'Settings',
+                                  onTap: () {},
                                 ),
-                                const SizedBox(height: 8),
-                                _TipItem(
-                                  text:
-                                      'Watch the glow effects as you select different tabs',
-                                ),
-
-                                const SizedBox(height: 40),
-
-                                // GlassTabBar Section
-                                const _SectionTitle(title: 'GlassTabBar'),
-                                const SizedBox(height: 16),
-                                GlassCard(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Tab Navigation',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        'Horizontal tab bar for navigating between related views with draggable indicator and jelly physics.',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.white
-                                              .withValues(alpha: 0.8),
-                                          height: 1.5,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      _FeatureItem(
-                                        icon: Icon(CupertinoIcons
-                                            .checkmark_circle_fill),
-                                        text:
-                                            'Draggable indicator with jelly physics',
-                                      ),
-                                      const SizedBox(height: 8),
-                                      _FeatureItem(
-                                        icon: Icon(CupertinoIcons
-                                            .checkmark_circle_fill),
-                                        text:
-                                            'Swipe between tabs with velocity snapping',
-                                      ),
-                                      const SizedBox(height: 8),
-                                      _FeatureItem(
-                                        icon: Icon(CupertinoIcons
-                                            .checkmark_circle_fill),
-                                        text:
-                                            'Sharp text rendering above glass',
-                                      ),
-                                      const SizedBox(height: 8),
-                                      _FeatureItem(
-                                        icon: Icon(CupertinoIcons
-                                            .checkmark_circle_fill),
-                                        text: 'Icons, labels, or both',
-                                      ),
-                                      const SizedBox(height: 8),
-                                      _FeatureItem(
-                                        icon: Icon(CupertinoIcons
-                                            .checkmark_circle_fill),
-                                        text: 'Scrollable for many tabs',
-                                      ),
-                                    ],
+                              ],
+                            ),
+                            Expanded(
+                              child: Center(
+                                child: Text(
+                                  'Content Area',
+                                  style: TextStyle(
+                                    color:
+                                        Colors.white.withValues(alpha: 0.8),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                const SizedBox(height: 16),
-
-                                // Interactive demo with drag tip
-                                GlassPanel(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            CupertinoIcons.hand_draw,
-                                            color: Colors.amber,
-                                            size: 24,
-                                          ),
-                                          const SizedBox(width: 12),
-                                          const Expanded(
-                                            child: Text(
-                                              'Try It - Draggable!',
-                                              style: TextStyle(
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        'Swipe left/right on the indicator to switch tabs with smooth physics:',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color: Colors.white
-                                              .withValues(alpha: 0.9),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      _TipItem(
-                                          text:
-                                              'Drag the glass pill left or right'),
-                                      const SizedBox(height: 8),
-                                      _TipItem(
-                                          text:
-                                              'Flick with velocity to jump tabs'),
-                                      const SizedBox(height: 8),
-                                      _TipItem(
-                                          text: 'Tap tabs to select directly'),
-                                      const SizedBox(height: 16),
-                                      const _TabBarDemo(),
-                                    ],
-                                  ),
-                                ),
-
-                                const SizedBox(height: 16),
-
-                                // Example variations
-                                GlassCard(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Variations',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-
-                                      // Labels only
-                                      Text(
-                                        'Labels Only',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white
-                                              .withValues(alpha: 0.9),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      const _TabBarLabelExample(),
-                                      const SizedBox(height: 24),
-
-                                      // Icons only
-                                      Text(
-                                        'Icons Only',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white
-                                              .withValues(alpha: 0.9),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      const _TabBarIconExample(),
-                                      const SizedBox(height: 24),
-
-                                      // Icons and labels
-                                      Text(
-                                        'Icons + Labels',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white
-                                              .withValues(alpha: 0.9),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      const _TabBarIconLabelExample(),
-                                      const SizedBox(height: 24),
-
-                                      // Scrollable
-                                      Text(
-                                        'Scrollable (Many Tabs)',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white
-                                              .withValues(alpha: 0.9),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      const _TabBarScrollableExample(),
-                                    ],
-                                  ),
-                                ),
-
-                                const SizedBox(height: 100),
-                                const SizedBox(height: 40),
-
-                                // GlassToolbar Section
-                                const _SectionTitle(title: 'GlassToolbar'),
-                                const SizedBox(height: 16),
-                                GlassCard(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Action Toolbar',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        'Standard iOS-style toolbar for actions, using liquid glass material.',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.white
-                                              .withValues(alpha: 0.8),
-                                          height: 1.5,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      GlassToolbar(
-                                        height: 60,
-                                        children: [
-                                          GlassButton(
-                                            icon: Icon(CupertinoIcons.share),
-                                            onTap: () {},
-                                            label: 'Share',
-                                            width: 44,
-                                            height: 44,
-                                          ),
-                                          const Spacer(),
-                                          GlassButton(
-                                            icon: Icon(CupertinoIcons.add),
-                                            onTap: () {},
-                                            label: 'Add',
-                                            width: 44,
-                                            height: 44,
-                                          ),
-                                          const Spacer(),
-                                          GlassButton(
-                                            icon: Icon(CupertinoIcons.delete),
-                                            onTap: () {},
-                                            label: 'Delete',
-                                            width: 44,
-                                            height: 44,
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 40),
-
-                                // GlassSideBar Section
-                                const _SectionTitle(title: 'GlassSideBar'),
-                                const SizedBox(height: 16),
-                                GlassCard(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Navigation Sidebar',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        'Vertical navigation drawer with liquid glass material.',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.white
-                                              .withValues(alpha: 0.8),
-                                          height: 1.5,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Container(
-                                        height: 400,
-                                        decoration: BoxDecoration(
-                                          // Simulate a content background to show sidebar transparency
-                                          gradient: const LinearGradient(
-                                            colors: [
-                                              Colors.blueAccent,
-                                              Colors.purpleAccent
-                                            ],
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                          ),
-                                          borderRadius:
-                                              BorderRadius.circular(20),
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(20),
-                                          child: Row(
-                                            children: [
-                                              GlassSideBar(
-                                                width: 200,
-                                                padding:
-                                                    const EdgeInsets.all(12),
-                                                header: const Padding(
-                                                  padding: EdgeInsets.only(
-                                                      bottom: 20, top: 10),
-                                                  child: Text(
-                                                    'My App',
-                                                    style: TextStyle(
-                                                      fontSize: 20,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ),
-                                                footer: GlassButton(
-                                                  icon: Icon(CupertinoIcons
-                                                      .profile_circled),
-                                                  label: 'User',
-                                                  width: double.infinity,
-                                                  onTap: () {},
-                                                ),
-                                                children: [
-                                                  GlassSideBarItem(
-                                                    icon: Icon(
-                                                        CupertinoIcons.home),
-                                                    label: 'Home',
-                                                    isSelected: true,
-                                                    onTap: () {},
-                                                  ),
-                                                  GlassSideBarItem(
-                                                    icon: Icon(
-                                                        CupertinoIcons.folder),
-                                                    label: 'Projects',
-                                                    onTap: () {},
-                                                  ),
-                                                  GlassSideBarItem(
-                                                    icon: Icon(CupertinoIcons
-                                                        .settings),
-                                                    label: 'Settings',
-                                                    onTap: () {},
-                                                  ),
-                                                ],
-                                              ),
-                                              Expanded(
-                                                child: Center(
-                                                  child: Text(
-                                                    'Content Area',
-                                                    style: TextStyle(
-                                                      color: Colors.white
-                                                          .withValues(
-                                                              alpha: 0.8),
-                                                      fontSize: 18,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 40),
-                              ]),
+                              ),
+                            ),
+                          ],
                         ),
-                      ]),
+                      ),
+                    ),
+
+                    const SizedBox(height: 100),
+                  ],
                 ),
-                //],
-              )
-            ])));
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
 // =============================================================================
-// GlassTabBar Demo Widgets
+// Full-Screen Demo Pages
 // =============================================================================
+
+/// Polished full-screen GlassBottomBar demo.
+class _BottomBarDemoPage extends StatefulWidget {
+  const _BottomBarDemoPage();
+
+  @override
+  State<_BottomBarDemoPage> createState() => _BottomBarDemoPageState();
+}
+
+class _BottomBarDemoPageState extends State<_BottomBarDemoPage> {
+  int _selectedIndex = 0;
+
+  static const _tabs = [
+    GlassBottomBarTab(
+      label: 'Home',
+      icon: Icon(CupertinoIcons.house),
+      activeIcon: Icon(CupertinoIcons.house_fill),
+    ),
+    GlassBottomBarTab(
+      label: 'Browse',
+      icon: Icon(CupertinoIcons.compass),
+      activeIcon: Icon(CupertinoIcons.compass_fill),
+    ),
+    GlassBottomBarTab(
+      label: 'Favorites',
+      icon: Icon(CupertinoIcons.heart),
+      activeIcon: Icon(CupertinoIcons.heart_fill),
+    ),
+    GlassBottomBarTab(
+      label: 'Profile',
+      icon: Icon(CupertinoIcons.person),
+      activeIcon: Icon(CupertinoIcons.person_fill),
+    ),
+  ];
+
+  static const _tabTitles = ['Home', 'Browse', 'Favorites', 'Profile'];
+  static const _tabColors = [
+    Color(0xFF007AFF),
+    Color(0xFF30D158),
+    Color(0xFFFF2D55),
+    Color(0xFFAF52DE),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassPage(
+      background: _buildDemoBackground(),
+      statusBarStyle: GlassStatusBarStyle.light,
+      child: Scaffold(
+        extendBody: true,
+        body: SafeArea(
+          bottom: false,
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          GlassButton(
+                            icon: const Icon(CupertinoIcons.back),
+                            onTap: () => Navigator.of(context).pop(),
+                            width: 40,
+                            height: 40,
+                            iconSize: 20,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              _tabTitles[_selectedIndex],
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 34,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => _ContentRow(
+                      index: index,
+                      color: _tabColors[_selectedIndex],
+                    ),
+                    childCount: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        bottomNavigationBar: GlassBottomBar(
+          selectedIndex: _selectedIndex,
+          onTabSelected: (i) => setState(() => _selectedIndex = i),
+          quality: GlassQuality.premium,
+          selectedIconColor: _tabColors[_selectedIndex],
+          tabs: _tabs,
+        ),
+      ),
+    );
+  }
+}
+
+/// Polished full-screen GlassSearchableBottomBar demo.
+class _SearchableBarDemoPage extends StatefulWidget {
+  const _SearchableBarDemoPage();
+
+  @override
+  State<_SearchableBarDemoPage> createState() =>
+      _SearchableBarDemoPageState();
+}
+
+class _SearchableBarDemoPageState extends State<_SearchableBarDemoPage> {
+  int _selectedIndex = 0;
+  bool _isSearching = false;
+  final ScrollController _scrollController = ScrollController();
+  bool _isMiniMode = false;
+
+  static const _tabs = [
+    GlassBottomBarTab(
+      label: 'Home',
+      icon: Icon(CupertinoIcons.house),
+      activeIcon: Icon(CupertinoIcons.house_fill),
+    ),
+    GlassBottomBarTab(
+      label: 'Browse',
+      icon: Icon(CupertinoIcons.compass),
+      activeIcon: Icon(CupertinoIcons.compass_fill),
+    ),
+    GlassBottomBarTab(
+      label: 'Profile',
+      icon: Icon(CupertinoIcons.person),
+      activeIcon: Icon(CupertinoIcons.person_fill),
+    ),
+  ];
+
+  static const _tabTitles = ['Home', 'Browse', 'Profile'];
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final mini = _scrollController.hasClients && _scrollController.offset > 50;
+    if (mini != _isMiniMode) setState(() => _isMiniMode = mini);
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassPage(
+      background: _buildDemoBackground(),
+      statusBarStyle: GlassStatusBarStyle.light,
+      child: Scaffold(
+        extendBody: true,
+        resizeToAvoidBottomInset: false,
+        body: Stack(
+          children: [
+            SafeArea(
+              bottom: false,
+              child: _isSearching
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(CupertinoIcons.search,
+                              color: Colors.white.withValues(alpha: 0.3),
+                              size: 64),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Search',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Type to search for anything.',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.45),
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : CustomScrollView(
+                      controller: _scrollController,
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                            child: Row(
+                              children: [
+                                GlassButton(
+                                  icon: const Icon(CupertinoIcons.back),
+                                  onTap: () =>
+                                      Navigator.of(context).pop(),
+                                  width: 40,
+                                  height: 40,
+                                  iconSize: 20,
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Text(
+                                    _tabTitles[_selectedIndex],
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 34,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -0.5,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(
+                              24, 24, 24, 140),
+                          sliver: SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) => _ContentRow(
+                                index: index,
+                                color: const Color(0xFFAF52DE),
+                              ),
+                              childCount: 15,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: GlassSearchableBottomBar(
+                selectedIndex: _selectedIndex,
+                isSearchActive: _isMiniMode || _isSearching,
+                onTabSelected: (i) {
+                  if (i == _selectedIndex && _isMiniMode) {
+                    if (_scrollController.hasClients) {
+                      _scrollController.animateTo(
+                        0,
+                        duration: const Duration(milliseconds: 400),
+                        curve: Curves.easeOutQuart,
+                      );
+                    }
+                    setState(() {
+                      _isMiniMode = false;
+                      _isSearching = false;
+                    });
+                  } else {
+                    setState(() {
+                      _selectedIndex = i;
+                      _isSearching = false;
+                    });
+                  }
+                },
+                quality: GlassQuality.premium,
+                searchConfig: GlassSearchBarConfig(
+                  hintText: 'Search...',
+                  showsCancelButton: true,
+                  expandWhenActive: !_isMiniMode || _isSearching,
+                  onSearchToggle: (active) {
+                    if (active) {
+                      setState(() => _isSearching = true);
+                    } else {
+                      setState(() => _isSearching = false);
+                      if (_isMiniMode) {
+                        if (_scrollController.hasClients) {
+                          _scrollController.animateTo(
+                            0,
+                            duration: const Duration(milliseconds: 400),
+                            curve: Curves.easeOutQuart,
+                          );
+                        }
+                        setState(() => _isMiniMode = false);
+                      }
+                    }
+                  },
+                ),
+                tabs: _tabs,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// Shared demo content
+// =============================================================================
+
+Widget _buildDemoBackground() {
+  return Container(
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0xFF1A1A2E),
+          Color(0xFF16213E),
+          Color(0xFF0F3460),
+          Color(0xFF533483),
+        ],
+      ),
+    ),
+  );
+}
+
+/// Simulated content row for demo pages.
+class _ContentRow extends StatelessWidget {
+  const _ContentRow({required this.index, required this.color});
+  final int index;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      height: 64,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.3),
+              borderRadius: const BorderRadius.horizontal(
+                  left: Radius.circular(14)),
+            ),
+            child: Center(
+              child: Text(
+                '${index + 1}',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Item ${index + 1}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+                Text(
+                  'Scroll to see the bar behavior',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// Demo Launcher Tile
+// =============================================================================
+
+class _DemoLauncher extends StatelessWidget {
+  const _DemoLauncher({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.glowColor,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color glowColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: GlassCard(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: glowColor.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: glowColor, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              CupertinoIcons.chevron_right,
+              color: Colors.white.withValues(alpha: 0.4),
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// Tab Bar Demo Widgets
+// =============================================================================
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.title});
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+      ),
+    );
+  }
+}
 
 class _TabBarDemo extends StatefulWidget {
   const _TabBarDemo();
@@ -671,83 +779,55 @@ class _TabBarDemoState extends State<_TabBarDemo> {
 
   @override
   Widget build(BuildContext context) {
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Interactive Demo',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GlassTabBar(
+          tabs: const [
+            GlassTab(label: 'Photos'),
+            GlassTab(label: 'Albums'),
+            GlassTab(label: 'Shared'),
+          ],
+          selectedIndex: _selectedIndex,
+          onTabSelected: (index) => setState(() => _selectedIndex = index),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          height: 100,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(12),
           ),
-          const SizedBox(height: 12),
-          Text(
-            'Tap tabs to see smooth animations',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.7),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Tab bar
-          GlassTabBar(
-            tabs: const [
-              GlassTab(label: 'Photos'),
-              GlassTab(label: 'Albums'),
-              GlassTab(label: 'Shared'),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                _selectedIndex == 0
+                    ? CupertinoIcons.photo
+                    : _selectedIndex == 1
+                        ? CupertinoIcons.folder
+                        : CupertinoIcons.person_2,
+                size: 32,
+                color: Colors.white.withValues(alpha: 0.8),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _selectedIndex == 0
+                    ? 'Photos View'
+                    : _selectedIndex == 1
+                        ? 'Albums View'
+                        : 'Shared View',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
             ],
-            selectedIndex: _selectedIndex,
-            onTabSelected: (index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
           ),
-
-          const SizedBox(height: 16),
-
-          // Content area
-          Container(
-            height: 100,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  _selectedIndex == 0
-                      ? CupertinoIcons.photo
-                      : _selectedIndex == 1
-                          ? CupertinoIcons.folder
-                          : CupertinoIcons.person_2,
-                  size: 32,
-                  color: Colors.white.withValues(alpha: 0.8),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _selectedIndex == 0
-                      ? 'Photos View'
-                      : _selectedIndex == 1
-                          ? 'Albums View'
-                          : 'Shared View',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -771,11 +851,7 @@ class _TabBarLabelExampleState extends State<_TabBarLabelExample> {
         GlassTab(label: 'Messages'),
       ],
       selectedIndex: _selectedIndex,
-      onTabSelected: (index) {
-        setState(() {
-          _selectedIndex = index;
-        });
-      },
+      onTabSelected: (index) => setState(() => _selectedIndex = index),
     );
   }
 }
@@ -800,41 +876,7 @@ class _TabBarIconExampleState extends State<_TabBarIconExample> {
         GlassTab(icon: Icon(Icons.settings)),
       ],
       selectedIndex: _selectedIndex,
-      onTabSelected: (index) {
-        setState(() {
-          _selectedIndex = index;
-        });
-      },
-    );
-  }
-}
-
-class _TabBarIconLabelExample extends StatefulWidget {
-  const _TabBarIconLabelExample();
-
-  @override
-  State<_TabBarIconLabelExample> createState() =>
-      _TabBarIconLabelExampleState();
-}
-
-class _TabBarIconLabelExampleState extends State<_TabBarIconLabelExample> {
-  int _selectedIndex = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassTabBar(
-      height: 56,
-      tabs: const [
-        GlassTab(icon: Icon(Icons.home), label: 'Home'),
-        GlassTab(icon: Icon(Icons.search), label: 'Search'),
-        GlassTab(icon: Icon(Icons.person), label: 'Profile'),
-      ],
-      selectedIndex: _selectedIndex,
-      onTabSelected: (index) {
-        setState(() {
-          _selectedIndex = index;
-        });
-      },
+      onTabSelected: (index) => setState(() => _selectedIndex = index),
     );
   }
 }
@@ -859,170 +901,7 @@ class _TabBarScrollableExampleState extends State<_TabBarScrollableExample> {
         (i) => GlassTab(label: 'Category ${i + 1}'),
       ),
       selectedIndex: _selectedIndex,
-      onTabSelected: (index) {
-        setState(() {
-          _selectedIndex = index;
-        });
-      },
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
-      ),
-    );
-  }
-}
-
-class _FeatureItem extends StatelessWidget {
-  const _FeatureItem({
-    required this.icon,
-    required this.text,
-  });
-
-  final Widget icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        icon,
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.9),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _UsageMode extends StatelessWidget {
-  const _UsageMode({
-    required this.title,
-    required this.description,
-    required this.isRecommended,
-  });
-
-  final String title;
-  final String description;
-  final bool isRecommended;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isRecommended
-            ? Colors.green.withValues(alpha: 0.1)
-            : Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isRecommended
-              ? Colors.green.withValues(alpha: 0.3)
-              : Colors.white.withValues(alpha: 0.1),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-              if (isRecommended) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'RECOMMENDED',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            description,
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.white.withValues(alpha: 0.7),
-              height: 1.4,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TipItem extends StatelessWidget {
-  const _TipItem({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          margin: const EdgeInsets.only(top: 6),
-          width: 6,
-          height: 6,
-          decoration: BoxDecoration(
-            color: Colors.amber,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.9),
-              height: 1.4,
-            ),
-          ),
-        ),
-      ],
+      onTabSelected: (index) => setState(() => _selectedIndex = index),
     );
   }
 }

@@ -6,6 +6,67 @@ import 'internal/glass_drag_builder.dart';
 import 'package:meta/meta.dart';
 import '../../utils/glass_spring.dart';
 
+/// Configuration for the anchor stretch effect on interactive glass widgets.
+///
+/// This bundles the fine-tuning parameters for how a widget stretches when
+/// the user presses and drags — just like [LiquidGlassSettings] bundles
+/// glass rendering parameters.
+///
+/// Most developers won't need to change these — the defaults match iOS 26
+/// button behaviour. Use this when you want to fine-tune the feel:
+///
+/// ```dart
+/// GlassButton(
+///   anchorStretchSettings: AnchorStretchSettings(
+///     intensity: 0.8,  // more stretchy
+///     bounciness: 0.2, // more elastic snap-back
+///   ),
+/// )
+/// ```
+class AnchorStretchSettings {
+  /// Creates anchor stretch settings.
+  ///
+  /// All values have sensible defaults matching iOS 26 behaviour.
+  const AnchorStretchSettings({
+    this.intensity = 0.5,
+    this.squashFactor = 0.3,
+    this.translationDamping = 0.15,
+    this.bounciness = 0.0,
+  });
+
+  /// How much the widget elongates in the drag direction.
+  ///
+  /// `0.0` = no elongation, `1.0` = matches drag distance 1:1 relative
+  /// to widget size. Higher values = stretchier.
+  ///
+  /// Defaults to `0.5`.
+  final double intensity;
+
+  /// How much the perpendicular dimension compresses during stretch.
+  ///
+  /// `0.0` = no squash (shape stays round), `1.0` = full volume-preserving
+  /// squash. Lower values keep content (text, icons) from distorting.
+  ///
+  /// Defaults to `0.3`.
+  final double squashFactor;
+
+  /// How far the widget's center shifts toward the finger.
+  ///
+  /// `0.0` = perfectly anchored, `1.0` = follows finger fully.
+  /// Small values (0.1–0.2) give a satisfying bounce-back.
+  ///
+  /// Defaults to `0.15`.
+  final double translationDamping;
+
+  /// Extra bounciness added to the release spring.
+  ///
+  /// `0.0` = standard elastic snap-back. `0.1`–`0.3` = more pronounced
+  /// overshoot that makes the widget visibly bounce past rest.
+  ///
+  /// Defaults to `0.0`.
+  final double bounciness;
+}
+
 /// A widget that provides a squash and stretch effect to its child based on
 /// user interaction.
 ///
@@ -18,7 +79,7 @@ class LiquidStretch extends StatelessWidget {
     required this.child,
     this.interactionScale = 1.05,
     this.stretch = .5,
-    this.resistance = .08,
+    this.resistance = .01,
     this.hitTestBehavior = HitTestBehavior.opaque,
     this.axis,
     this.allowPositive = true,
@@ -28,6 +89,8 @@ class LiquidStretch extends StatelessWidget {
     this.allowPositiveY,
     this.allowNegativeY,
     this.suppressInteractionOnChildren = true,
+    this.anchorStretch = true,
+    this.anchorStretchSettings = const AnchorStretchSettings(),
     super.key,
   });
 
@@ -58,7 +121,7 @@ class LiquidStretch extends StatelessWidget {
   /// See [OffsetResistanceExtension.withResistance] for details on how this
   /// works.
   ///
-  /// Defaults to 0.08.
+  /// Defaults to 0.01.
   final double resistance;
 
   /// The hit test behavior for the internal gesture Listener.
@@ -98,6 +161,31 @@ class LiquidStretch extends StatelessWidget {
 
   /// Whether to prevent scaling when interacting with children.
   final bool suppressInteractionOnChildren;
+
+  /// Whether the stretch anchors the widget in place.
+  ///
+  /// When `true`, the widget's center stays fixed and the shape elongates
+  /// toward the drag direction — like pulling taffy with one end pinned.
+  /// This matches iOS 26 button behaviour (e.g. phone app X button).
+  ///
+  /// When `false`, the widget both stretches and translates
+  /// toward the finger, matching the original jelly-follow behaviour
+  /// used by bottom bars and modals.
+  ///
+  /// Only affects the unconstrained-axis path (when [axis] is null).
+  /// Axis-constrained modes already anchor to the opposite edge.
+  ///
+  /// Defaults to `true`.
+  final bool anchorStretch;
+
+  /// Fine-tuning for the anchor stretch effect.
+  ///
+  /// Controls intensity, squash, translation damping, and bounciness.
+  /// Most developers won't need to change these — the defaults match
+  /// iOS 26 button behaviour.
+  ///
+  /// See [AnchorStretchSettings] for details on each parameter.
+  final AnchorStretchSettings anchorStretchSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -155,11 +243,18 @@ class LiquidStretch extends StatelessWidget {
               return o;
             }(),
             spring: value == null
-                ? GlassSpring.bouncy()
+                ? GlassSpring.bouncy(
+                    extraBounce: anchorStretchSettings.bounciness,
+                  )
                 : GlassSpring.interactive(),
             builder: (context, value, child) => RawLiquidStretch(
               stretchPixels: value * stretch,
               axis: axis,
+              anchorStretch: anchorStretch,
+              anchorStretchIntensity: anchorStretchSettings.intensity,
+              anchorSquashFactor: anchorStretchSettings.squashFactor,
+              anchorTranslationDamping:
+                  anchorStretchSettings.translationDamping,
               child: child,
             ),
             child: child,
@@ -186,6 +281,10 @@ class RawLiquidStretch extends SingleChildRenderObjectWidget {
     required this.stretchPixels,
     required super.child,
     this.axis,
+    this.anchorStretch = false,
+    this.anchorStretchIntensity = 0.5,
+    this.anchorSquashFactor = 0.3,
+    this.anchorTranslationDamping = 0.15,
     super.key,
   });
 
@@ -195,11 +294,27 @@ class RawLiquidStretch extends SingleChildRenderObjectWidget {
   /// The axis to constrain the stretch to.
   final Axis? axis;
 
+  /// Whether to anchor the stretch at center (no translation).
+  final bool anchorStretch;
+
+  /// How much the shape elongates along the drag direction.
+  final double anchorStretchIntensity;
+
+  /// How much the perpendicular dimension compresses.
+  final double anchorSquashFactor;
+
+  /// How far the center shifts toward the finger (0 = fixed, 1 = follows).
+  final double anchorTranslationDamping;
+
   @override
   RenderObject createRenderObject(BuildContext context) {
     return RenderRawLiquidStretch(
       stretchPixels: stretchPixels,
       axis: axis,
+      anchorStretch: anchorStretch,
+      anchorStretchIntensity: anchorStretchIntensity,
+      anchorSquashFactor: anchorSquashFactor,
+      anchorTranslationDamping: anchorTranslationDamping,
     );
   }
 
@@ -210,6 +325,10 @@ class RawLiquidStretch extends SingleChildRenderObjectWidget {
   ) {
     renderObject.stretchPixels = stretchPixels;
     renderObject.axis = axis;
+    renderObject.anchorStretch = anchorStretch;
+    renderObject.anchorStretchIntensity = anchorStretchIntensity;
+    renderObject.anchorSquashFactor = anchorSquashFactor;
+    renderObject.anchorTranslationDamping = anchorTranslationDamping;
   }
 }
 
@@ -218,17 +337,61 @@ class RenderRawLiquidStretch extends RenderProxyBox {
   RenderRawLiquidStretch({
     required Offset stretchPixels,
     Axis? axis,
+    bool anchorStretch = false,
+    double anchorStretchIntensity = 0.5,
+    double anchorSquashFactor = 0.3,
+    double anchorTranslationDamping = 0.15,
   })  : _stretchPixels = stretchPixels,
-        _axis = axis;
+        _axis = axis,
+        _anchorStretch = anchorStretch,
+        _anchorStretchIntensity = anchorStretchIntensity,
+        _anchorSquashFactor = anchorSquashFactor,
+        _anchorTranslationDamping = anchorTranslationDamping;
 
   Offset _stretchPixels;
   Axis? _axis;
+  bool _anchorStretch;
+  double _anchorStretchIntensity;
+  double _anchorSquashFactor;
+  double _anchorTranslationDamping;
 
   /// The axis to constrain the stretch to.
   Axis? get axis => _axis;
   set axis(Axis? value) {
     if (_axis == value) return;
     _axis = value;
+    markNeedsPaint();
+  }
+
+  /// Whether to anchor the stretch at center (no translation).
+  bool get anchorStretch => _anchorStretch;
+  set anchorStretch(bool value) {
+    if (_anchorStretch == value) return;
+    _anchorStretch = value;
+    markNeedsPaint();
+  }
+
+  /// How much the shape elongates along the drag direction.
+  double get anchorStretchIntensity => _anchorStretchIntensity;
+  set anchorStretchIntensity(double value) {
+    if (_anchorStretchIntensity == value) return;
+    _anchorStretchIntensity = value;
+    markNeedsPaint();
+  }
+
+  /// How much the perpendicular dimension compresses.
+  double get anchorSquashFactor => _anchorSquashFactor;
+  set anchorSquashFactor(double value) {
+    if (_anchorSquashFactor == value) return;
+    _anchorSquashFactor = value;
+    markNeedsPaint();
+  }
+
+  /// How far the center shifts toward the finger.
+  double get anchorTranslationDamping => _anchorTranslationDamping;
+  set anchorTranslationDamping(double value) {
+    if (_anchorTranslationDamping == value) return;
+    _anchorTranslationDamping = value;
     markNeedsPaint();
   }
 
@@ -338,11 +501,70 @@ class RenderRawLiquidStretch extends RenderProxyBox {
         ..scaleByDouble(scale.dx, scale.dy, 1.0, 1.0)
         ..translateByDouble(-pivotX, -size.height / 2, 0.0, 1.0);
     } else {
-      matrix
-        ..translateByDouble(size.width / 2, size.height / 2, 0.0, 1.0)
-        ..scaleByDouble(scale.dx, scale.dy, 1.0, 1.0)
-        ..translateByDouble(-size.width / 2, -size.height / 2, 0.0, 1.0)
-        ..translateByDouble(_stretchPixels.dx, _stretchPixels.dy, 0.0, 1.0);
+      if (_anchorStretch) {
+        // iOS 26 anchored stretch: the button stays mostly in place but
+        // elongates toward the finger from its opposite edge.
+        //
+        // Algorithm: scale X and Y independently based on their respective
+        // drag components, pivoting from the opposite boundary edge.
+        // Drag down → only Y stretches from top edge.
+        // Drag right → only X stretches from left edge.
+        // Drag diagonal → both stretch from the opposite corner.
+        final absDx = _stretchPixels.dx.abs();
+        final absDy = _stretchPixels.dy.abs();
+
+        if (absDx > 0.001 || absDy > 0.001) {
+          // Scale each axis based on its own drag component.
+          final relativeX =
+              size.width > 0 ? absDx / size.width : 0.0;
+          final relativeY =
+              size.height > 0 ? absDy / size.height : 0.0;
+
+          // Elongate along the drag direction.
+          final stretchX = 1.0 + relativeX * _anchorStretchIntensity;
+          final stretchY = 1.0 + relativeY * _anchorStretchIntensity;
+
+          // Perpendicular compression (balloon-squeeze): dragging right
+          // elongates X and compresses Y, and vice versa.
+          final squashX = 1.0 - relativeY * _anchorSquashFactor;
+          final squashY = 1.0 - relativeX * _anchorSquashFactor;
+
+          final scaleX = (stretchX * squashX).clamp(0.01, double.infinity);
+          final scaleY = (stretchY * squashY).clamp(0.01, double.infinity);
+
+          // Pivot at the opposite edge for each axis independently.
+          // Drag right → pivot at left (0), drag left → pivot at right.
+          // Drag down → pivot at top (0), drag up → pivot at bottom.
+          final pivotX =
+              _stretchPixels.dx >= 0 ? 0.0 : size.width;
+          final pivotY =
+              _stretchPixels.dy >= 0 ? 0.0 : size.height;
+
+          matrix
+            ..translateByDouble(pivotX, pivotY, 0.0, 1.0)
+            ..scaleByDouble(scaleX, scaleY, 1.0, 1.0)
+            ..translateByDouble(-pivotX, -pivotY, 0.0, 1.0);
+
+          // Small dampened translation so the button shifts slightly
+          // toward the finger — gives bounce-back something to snap.
+          if (_anchorTranslationDamping > 0) {
+            matrix.translateByDouble(
+              _stretchPixels.dx * _anchorTranslationDamping,
+              _stretchPixels.dy * _anchorTranslationDamping,
+              0.0,
+              1.0,
+            );
+          }
+        }
+      } else {
+        // Original behaviour: scale from center + translate toward the finger.
+        matrix
+          ..translateByDouble(size.width / 2, size.height / 2, 0.0, 1.0)
+          ..scaleByDouble(scale.dx, scale.dy, 1.0, 1.0)
+          ..translateByDouble(-size.width / 2, -size.height / 2, 0.0, 1.0)
+          ..translateByDouble(
+              _stretchPixels.dx, _stretchPixels.dy, 0.0, 1.0);
+      }
     }
 
     return matrix;

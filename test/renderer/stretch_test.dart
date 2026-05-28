@@ -127,7 +127,7 @@ void main() {
       const widget = LiquidStretch(child: SizedBox.shrink());
       expect(widget.interactionScale, 1.05);
       expect(widget.stretch, 0.5);
-      expect(widget.resistance, 0.08);
+      expect(widget.resistance, 0.01);
       expect(widget.hitTestBehavior, HitTestBehavior.opaque);
     });
 

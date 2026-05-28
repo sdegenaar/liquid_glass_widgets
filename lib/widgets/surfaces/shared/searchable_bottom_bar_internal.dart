@@ -234,6 +234,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
             : 1.0,
         stretch: 0.0,
         resistance: 0.08,
+        anchorStretch: false, // Tab bars use jelly-follow, not anchored
         child: Listener(
           onPointerDown: (_) {
             setState(() => tabIsDown = true);
@@ -758,6 +759,7 @@ class SearchPillState extends State<SearchPill> {
               : 1.0,
           stretch: 0.0,
           resistance: 0.08,
+          anchorStretch: false, // Search pill uses jelly-follow, not anchored
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: _focusNode.requestFocus,

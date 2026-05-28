@@ -278,27 +278,33 @@ class AdaptiveGlass extends StatelessWidget {
         child: child,
       );
 
-      return RepaintBoundary(
-        child: lightweightWidget,
-      );
+      Widget result = lightweightWidget;
+      if (!isInteractive) {
+        result = RepaintBoundary(child: result);
+      }
+      return result;
     }
 
     // Impeller + Premium Path: Use the renderer's native path.
     // Wrap in PremiumGlassTracker so GlassPerformanceMonitor can correlate
     // slow raster frames with active premium surfaces.
     if (useOwnLayer) {
+      Widget premium = LiquidGlass.withOwnLayer(
+        shape: shape,
+        settings: settings,
+        clipBehavior: clipBehavior,
+        child: child,
+      );
+
       // Wrap in RepaintBoundary to give Impeller hints for tile-based rendering.
       // This allows Impeller to skip rasterizing unchanged tiles, improving
       // performance for static surfaces (app bars, bottom bars, etc.)
+      if (!isInteractive) {
+        premium = RepaintBoundary(child: premium);
+      }
+
       return PremiumGlassTracker(
-        child: RepaintBoundary(
-          child: LiquidGlass.withOwnLayer(
-            shape: shape,
-            settings: settings,
-            clipBehavior: clipBehavior,
-            child: child,
-          ),
-        ),
+        child: premium,
       );
     } else {
       return PremiumGlassTracker(
@@ -568,15 +574,17 @@ class _SpecularRimPainter extends CustomPainter {
     final path = shape.getOuterPath(bounds);
 
     // Pass 1: soft base stroke (solid alpha compositing, NO hardware readback)
+    //
+    // Deliberately subtle — matches the thin refraction edge that Impeller's
+    // native LiquidGlassLayer produces on premium quality. Thicker strokes
+    // make standard quality look "drawn" rather than optically simulated.
     canvas.drawPath(
       path,
       Paint()
         ..shader = gradient
-        ..color = white.withValues(
-            alpha: white.a *
-                0.2) // Reduced from 0.4/0.6 to balance removal of BlendMode
+        ..color = white.withValues(alpha: white.a * 0.12)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = ui.lerpDouble(1, 2, lightIntensity)!,
+        ..strokeWidth = ui.lerpDouble(0.5, 1.0, lightIntensity)!,
     );
 
     // Pass 2: sharp inner rim (solid alpha compositing, NO hardware readback)
@@ -584,11 +592,9 @@ class _SpecularRimPainter extends CustomPainter {
       path,
       Paint()
         ..shader = gradient
-        ..color = white.withValues(
-            alpha: white.a *
-                0.3) // Reduced from 0.6/0.8 to balance removal of BlendMode
+        ..color = white.withValues(alpha: white.a * 0.18)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = (settings.effectiveThickness / 20),
+        ..strokeWidth = (settings.effectiveThickness / 40).clamp(0.25, 1.0),
     );
   }
 

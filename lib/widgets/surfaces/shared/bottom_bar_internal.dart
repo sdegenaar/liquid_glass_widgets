@@ -412,6 +412,7 @@ class TabIndicatorState extends State<TabIndicator>
         interactionScale: widget.interactionScale,
         stretch: 0.0,
         resistance: 0.08,
+        anchorStretch: false, // Tab bars use jelly-follow, not anchored
         child: Listener(
           // Raw pointer events fire BEFORE gesture recognizers and never compete
           // in the gesture arena, so tabIsDown is always set on the very first event.

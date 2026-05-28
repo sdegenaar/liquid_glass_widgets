@@ -2,6 +2,80 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
+/// Deep navy background with subtle radial glows matching the main showcase.
+///
+/// Uses the ChemAlert palette — deep navy (#020715) with soft purple, pink,
+/// and blue glows that let the glass refractions be the visual star.
+Widget buildShowcaseBackground() {
+  return Container(
+    color: const Color(0xFF020715), // ChemAlert deep navy
+    child: Stack(
+      children: [
+        // Purple glow — upper right
+        Positioned(
+          top: -50,
+          right: -100,
+          child: Container(
+            width: 500,
+            height: 500,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFFA246F7).withValues(alpha: 0.32),
+                  const Color(0xFF9B59FF).withValues(alpha: 0.1),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 0.5, 1.0],
+              ),
+            ),
+          ),
+        ),
+        // Hot pink glow — center left
+        Positioned(
+          top: 280,
+          left: -100,
+          child: Container(
+            width: 460,
+            height: 460,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFFEB66FF).withValues(alpha: 0.16),
+                  const Color(0xFFE040FB).withValues(alpha: 0.05),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 0.5, 1.0],
+              ),
+            ),
+          ),
+        ),
+        // Blue glow — bottom right
+        Positioned(
+          bottom: -60,
+          right: -40,
+          child: Container(
+            width: 420,
+            height: 420,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFF4FC3F7).withValues(alpha: 0.12),
+                  const Color(0xFF2077FF).withValues(alpha: 0.04),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 0.5, 1.0],
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 /// Recommended glass settings optimized for the calibrated lightweight shader.
 ///
 /// These settings provide the best iOS 26 liquid glass appearance across
@@ -45,15 +119,16 @@ class RecommendedGlassSettings {
   ///
   /// - refractiveIndex: 0.7 = thin delicate rim (standard) / subtle refraction (premium)
   static const standard = LiquidGlassSettings(
-    blur: 10,
-    thickness: 0,
-    glassColor: Color.fromRGBO(255, 255, 255, 0.12),
+    blur: 4,
+    thickness: 10,
+    glassColor: Color.fromRGBO(255, 255, 255, 0.08),
     lightAngle: 0.75 * math.pi, // 135° — upper-left, matches iOS 26
     lightIntensity: 0.7,
-    ambientStrength: 0.4,
+    ambientStrength: 0,
     saturation: 1.2,
-    refractiveIndex: 0.7, // Thin rim (standard) / subtle refraction (premium)
-    chromaticAberration: 0.0,
+    refractiveIndex: 1.2,
+    chromaticAberration: 0.01,
+    specularSharpness: GlassSpecularSharpness.medium,
   );
 
   /// Settings for buttons and interactive elements.

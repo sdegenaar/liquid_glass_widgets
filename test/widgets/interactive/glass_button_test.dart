@@ -232,6 +232,7 @@ void main() {
       expect(button.quality, isNull);
       expect(button.interactionScale, equals(1.05));
       expect(button.stretch, equals(0.5));
+      expect(button.resistance, equals(0.01));
     });
   });
 
@@ -272,6 +273,114 @@ void main() {
               icon: const Icon(Icons.star),
               onTap: () {},
               enabled: false, // exercises `if (!widget.enabled) return;`
+            ),
+          ),
+        ),
+      );
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(GlassButton)),
+      );
+      await tester.pump();
+      await gesture.cancel();
+      await tester.pump();
+
+      expect(find.byType(GlassButton), findsOneWidget);
+    });
+  });
+
+  // ── persistPressOnDrag (lines 596-620) ──────────────────────────────────────
+  group('GlassButton persistPressOnDrag', () {
+    test('default value is true', () {
+      final button = GlassButton(
+        icon: const Icon(Icons.star),
+        onTap: () {},
+      );
+      expect(button.persistPressOnDrag, isTrue);
+    });
+
+    test('GlassButton.custom default value is true', () {
+      final button = GlassButton.custom(
+        onTap: () {},
+        child: const Text('test'),
+      );
+      expect(button.persistPressOnDrag, isTrue);
+    });
+
+    testWidgets(
+        'persistPressOnDrag: true — uses Listener (pointer events)',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: GlassButton(
+              icon: const Icon(Icons.star),
+              onTap: () {},
+              persistPressOnDrag: true,
+            ),
+          ),
+        ),
+      );
+
+      // The tree should contain a Listener wrapping a GestureDetector
+      final listenerFinder = find.descendant(
+        of: find.byType(GlassButton),
+        matching: find.byType(Listener),
+      );
+      expect(listenerFinder, findsWidgets); // At least our Listener
+
+      // Test that tap still fires onTap
+      var tapped = false;
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: GlassButton(
+              icon: const Icon(Icons.star),
+              onTap: () => tapped = true,
+              persistPressOnDrag: true,
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.byType(GlassButton));
+      await tester.pump();
+      expect(tapped, isTrue);
+    });
+
+    testWidgets(
+        'persistPressOnDrag: false — uses GestureDetector tap callbacks',
+        (tester) async {
+      var tapped = false;
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: GlassButton(
+              icon: const Icon(Icons.star),
+              onTap: () => tapped = true,
+              persistPressOnDrag: false,
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(GlassButton));
+      await tester.pump();
+      expect(tapped, isTrue);
+    });
+
+    testWidgets('persistPressOnDrag: false — cancel reverses animation',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: GlassButton(
+              icon: const Icon(Icons.star),
+              onTap: () {},
+              persistPressOnDrag: false,
             ),
           ),
         ),

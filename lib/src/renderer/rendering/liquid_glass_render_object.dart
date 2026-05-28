@@ -151,6 +151,11 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
   @override
   @nonVirtual
   void paint(PaintingContext context, Offset offset) {
+    // Guard: if this render object has been detached mid-frame (e.g. rapid
+    // widget removal during isolate shutdown), skip all GPU operations to
+    // prevent use-after-free on Mali GPU Vulkan resources.
+    if (!attached) return;
+
     if (LgrLogs.isLogActive(logger)) {
       logger.finest(
         '$hashCode Painting liquid glass with '
@@ -369,6 +374,12 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
   @mustCallSuper
   void dispose() {
     _clearGeometryImage();
+    // Break reference chains to prevent stale GPU resource retention during
+    // isolate shutdown. The render shader holds a DlRuntimeEffectColorSource
+    // that retains Vulkan textures — nulling _settings ensures no closure
+    // retains a path back to the shader's GPU resources past the Vulkan
+    // context lifetime (Crash 2 in Mali GPU crash analysis).
+    _settings = null;
     super.dispose();
   }
 

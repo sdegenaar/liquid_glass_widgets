@@ -102,21 +102,6 @@ class _LiquidGlassScopeState extends State<LiquidGlassScope> {
 
   @override
   Widget build(BuildContext context) {
-    assert(() {
-      // Warn if nesting scopes (usually unintentional)
-      final parentScope = context
-          .dependOnInheritedWidgetOfExactType<_InheritedLiquidGlassScope>();
-      if (parentScope != null) {
-        debugPrint(
-          '⚠️ [LiquidGlassScope] Warning: Nested LiquidGlassScope detected.\n'
-          '   Inner scope will override outer scope for descendant widgets.\n'
-          '   This is usually intentional for isolated demos, but may be unexpected.\n'
-          '   If you want a single shared background, use only one scope at the root.',
-        );
-      }
-      return true;
-    }());
-
     return _InheritedLiquidGlassScope(
       backgroundKey: _backgroundKey,
       child: widget.child,

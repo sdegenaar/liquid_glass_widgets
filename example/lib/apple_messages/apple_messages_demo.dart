@@ -219,7 +219,7 @@ class AppleMessagesDemoApp extends StatelessWidget {
           surface: _kBg,
         ),
       ),
-      home: const _MessagesScreen(),
+      home: const MessagesScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
@@ -229,14 +229,14 @@ class AppleMessagesDemoApp extends StatelessWidget {
 // MAIN SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _MessagesScreen extends StatefulWidget {
-  const _MessagesScreen();
+class MessagesScreen extends StatefulWidget {
+  const MessagesScreen({super.key});
 
   @override
-  State<_MessagesScreen> createState() => _MessagesScreenState();
+  State<MessagesScreen> createState() => _MessagesScreenState();
 }
 
-class _MessagesScreenState extends State<_MessagesScreen> {
+class _MessagesScreenState extends State<MessagesScreen> {
   final _scrollController = ScrollController();
   bool _headerCollapsed = false;
 
@@ -467,7 +467,6 @@ class _EditMenu extends StatelessWidget {
         settings: _kTriggerGlass,
         quality: GlassQuality.premium,
         useOwnLayer: true, // standalone — outside any LiquidGlassLayer
-        stretch: 0.15, // subtle stretch — pill shape doesn't suit big stretches
         child: const Center(
           child: Text(
             'Edit',
@@ -529,7 +528,6 @@ class _FilterMenu extends StatelessWidget {
         settings: _kTriggerGlass,
         quality: GlassQuality.premium,
         useOwnLayer: true, // standalone — outside any LiquidGlassLayer
-        stretch: 0.2,
         icon: const Icon(
           SFSymbols.line_horizontal_3_decrease,
           color: Colors.white,

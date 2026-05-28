@@ -14,14 +14,14 @@
 ///     60 ≈ 1 s) to let shader compilation and first-route transitions settle.
 ///   - Collects `rasterDuration` via [SchedulerBinding.addTimingsCallback]
 ///   - Computes the P75 raster time across the collected frames
-///   - P75 < 20 ms  → remain at [GlassQuality.premium] (handles Android GPU warm-up inflation)
+///   - P75 < 20 ms  → remain at [GlassQuality.premium]
 ///   - P75 20–28 ms → step to [GlassQuality.standard]
 ///   - P75 > 28 ms  → step to [GlassQuality.minimal]
 ///   - Transitions to Phase 3 once `skipInitialFrames + warmupFrames` have been seen
 ///
 ///   **Phase 3 — Runtime hysteresis** (ongoing, very low overhead):
 ///   - Maintains a rolling ring buffer of the last 120 raster durations
-///   - Degrades one tier when P95 > targetFrameMs × 1.5 for 3 consecutive
+///   - Degrades one tier when P95 > targetFrameMs × 1.5 for 2 consecutive
 ///     sliding windows
 ///   - Upgrades one tier when P95 < targetFrameMs × 0.6 for 10 consecutive
 ///     sliding windows (only if [allowStepUp] is `true`)
@@ -152,14 +152,15 @@ class GlassQualityAdapter {
   /// The P75 warmup threshold (ms) **below which** the device is classified as
   /// capable of [GlassQuality.premium].
   ///
-  /// Defaults to `20.0`, raised from the original `16.0` (the 60-fps frame
-  /// budget) based on a community report (P75 ≈ 17.6 ms) showing Android GPU
-  /// clock-scaling inflates warmup timings even on capable hardware.
+  /// Defaults to `20.0`. This threshold is set slightly higher than the 16.0 ms
+  /// frame budget because Android GPU clock-scaling and JIT shader compilation
+  /// frequently inflate timings during the initial warm-up phase (Phase 2), even
+  /// on highly capable devices. Setting it to 20.0 ms avoids prematurely
+  /// penalizing capable mid-range devices.
   ///
-  /// **⚠ Calibration status: limited data (1 device report).** If this causes
-  /// wrong classification on your hardware, please post your P75 and device
-  /// model to the discussions. Phase 3 hysteresis acts as a safety net: if a
-  /// device cannot sustain premium after warmup, it steps down within ~6 s.
+  /// If a device actually struggles to maintain premium performance, Phase 3
+  /// runtime monitoring acts as a safety net and will step it down within ~4 s
+  /// (2 windows of jank).
   ///
   /// Values ≥ this threshold (and ≤ [warmupStandardThresholdMs]) result in
   /// [GlassQuality.standard]; values above [warmupStandardThresholdMs] result
@@ -171,13 +172,13 @@ class GlassQualityAdapter {
   /// [warmupPremiumThresholdMs]).
   ///
   /// Defaults to `28.0`. Devices with P75 above this value are classified as
-  /// [GlassQuality.minimal].
+  /// [GlassQuality.minimal] (BackdropFilter-only, zero shader cost).
   ///
-  /// **⚠ Calibration status: provisional — no real-device data yet.** The
-  /// `28.0` default was set to provide a band above the updated `20.0` premium
-  /// threshold, but no community P75 reports exist for the 20–28 ms range on
-  /// actual hardware. If your device produces a P75 in this band and quality
-  /// feels wrong, please share your device model and P75 reading.
+  /// Standard quality uses BackdropFilter blur without custom fragment shaders,
+  /// which is safe for mid-range devices. Minimal should be reserved for
+  /// genuinely incapable hardware (P75 > 28 ms). The production crashes
+  /// (Mali GPU / Impeller) are shader-related (premium path) — standard
+  /// quality does not trigger those code paths.
   final double warmupStandardThresholdMs;
 
   // ── Session cache ──────────────────────────────────────────────────────────
@@ -236,8 +237,8 @@ class GlassQualityAdapter {
   static int windowSize = 120;
 
   /// Number of consecutive over-budget windows that trigger a quality
-  /// step-down. Default: 3.
-  static int degradeWindowCount = 3;
+  /// step-down. Default: 2.
+  static int degradeWindowCount = 2;
 
   /// Number of consecutive under-budget windows that trigger a quality
   /// step-up (only when [allowStepUp] is `true`). Default: 10.
@@ -507,8 +508,8 @@ class GlassQualityAdapter {
     // community members can experiment and report optimal values for their
     // hardware.
     //
-    // Phase 3 runtime hysteresis will still step down quickly (3 windows,
-    // ~6 s) if the device cannot actually sustain premium after warmup.
+    // Phase 3 runtime hysteresis will still step down quickly (2 windows,
+    // ~4 s) if the device cannot actually sustain premium after warmup.
     if (p75Ms < warmupPremiumThresholdMs) {
       decided = _capQuality(maxQuality, maxQuality); // stay at ceiling
     } else if (p75Ms <= warmupStandardThresholdMs) {

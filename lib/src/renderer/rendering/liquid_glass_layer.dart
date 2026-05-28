@@ -328,6 +328,13 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
 
   @override
   void dispose() {
+    // Eagerly clear filter references on the backdrop layers before nulling
+    // the handles. During isolate shutdown on Mali GPUs, GC finalization of
+    // BackdropFilterLayer retains DlRuntimeEffectColorSource → TextureVK →
+    // Vulkan mutex chains that outlive the GPU context (Crash 2). Clearing
+    // the filter property breaks this retention chain immediately.
+    _shaderHandle.layer?.filter = ImageFilter.blur(sigmaX: 0, sigmaY: 0);
+    _blurLayerHandle.layer?.filter = ImageFilter.blur(sigmaX: 0, sigmaY: 0);
     _shaderHandle.layer = null;
     _blurLayerHandle.layer = null;
     _clipRectLayerHandle.layer = null;

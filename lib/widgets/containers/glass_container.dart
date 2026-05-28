@@ -143,13 +143,20 @@ class GlassContainer extends StatelessWidget {
   /// Apple's standard corner radius for cards and containers.
   final LiquidShape shape;
 
-  /// Glass effect settings (only used when [useOwnLayer] is true).
+  /// Glass effect settings for this container.
   ///
   /// Controls the visual appearance of the glass effect including thickness,
   /// blur radius, color tint, lighting, and more.
   ///
-  /// If null when [useOwnLayer] is true, uses [LiquidGlassSettings] defaults.
-  /// Ignored when [useOwnLayer] is false (inherits from parent layer).
+  /// **Important:** In grouped mode (default), per-widget settings are
+  /// ignored — the parent layer's settings are used instead. To apply
+  /// per-widget settings, set `useOwnLayer: true`.
+  ///
+  /// For the best of both worlds, set `settings` on [GlassPage] or
+  /// [AdaptiveLiquidGlassLayer] — all grouped children inherit them
+  /// without the performance cost of separate layers.
+  ///
+  /// If null, inherits settings from the nearest parent layer or theme.
   final LiquidGlassSettings? settings;
 
   /// Whether to create its own layer or use grouped glass within an existing
@@ -157,10 +164,12 @@ class GlassContainer extends StatelessWidget {
   ///
   /// - `false` (default): Uses [LiquidGlass.grouped], must be inside a
   /// [LiquidGlassLayer]. This is more performant when you have multiple glass
-  /// elements that can share the same rendering context.
+  /// elements that can share the same rendering context. Per-widget [settings]
+  /// are ignored in this mode.
   ///
   /// - `true`: Uses [LiquidGlass.withOwnLayer], can be used anywhere.
-  ///   Creates an independent glass rendering context for this container.
+  ///   Creates an independent glass rendering context. Per-widget [settings]
+  ///   are applied in this mode.
   ///
   /// Defaults to false.
   final bool useOwnLayer;
@@ -236,6 +245,29 @@ class GlassContainer extends StatelessWidget {
     // 4. Apply glass effect with adaptive fallback
     // Premium quality uses Impeller on iOS/macOS, falls back to lightweight shader on web
     // Standard quality always uses lightweight shader
+
+    // Debug-only: warn when per-widget settings differ from the parent layer's
+    // settings in grouped mode. This catches the common mistake of passing
+    // custom settings to a grouped container and expecting them to apply.
+    // Internal widgets that pass through resolved settings won't trigger this.
+    assert(() {
+      if (settings != null && !useOwnLayer) {
+        final inherited = InheritedLiquidGlass.of(context);
+        if (inherited != null && inherited != settings) {
+          debugPrint(
+            'GlassContainer: `settings` provided without `useOwnLayer: true`. '
+            'In grouped mode, per-widget settings are ignored — the parent '
+            'layer\'s settings are used instead.\n'
+            '  → To apply these settings, add `useOwnLayer: true` (creates a '
+            'separate rendering layer).\n'
+            '  → For better performance, set `settings` on GlassPage or '
+            'AdaptiveLiquidGlassLayer so all grouped children inherit them.',
+          );
+        }
+      }
+      return true;
+    }());
+
     final effectiveSettings = GlassThemeHelpers.resolveSettings(
       context,
       explicit: settings,
