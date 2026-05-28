@@ -37,6 +37,7 @@ class GlassSearchBarConfig {
     this.onSubmitted,
     this.onMicTap,
     this.textColor,
+    this.cursorColor,
     this.trailingBuilder,
     this.textInputAction,
     this.keyboardType,
@@ -140,6 +141,32 @@ class GlassSearchBarConfig {
 
   /// Color of the typed text. Defaults to white.
   final Color? textColor;
+
+  /// Color of the text cursor (blinking caret) in the expanded
+  /// search field.
+  ///
+  /// When `null` (the default), the cursor inherits via Flutter's
+  /// standard resolution chain:
+  ///   1. `Theme.of(context).textSelectionTheme.cursorColor`
+  ///   2. On iOS, `CupertinoTheme.of(context).primaryColor`
+  ///   3. `Theme.of(context).colorScheme.primary`
+  ///
+  /// This matches how every other Material `TextField` cursor in a
+  /// Flutter app resolves color, so theme-driven apps Just Work
+  /// without needing to set this here.
+  ///
+  /// **Breaking change in 0.13.0**: in 0.12.x and earlier the cursor
+  /// was hard-coupled to [textColor]. To restore the previous
+  /// behaviour, pass `cursorColor: textColor` explicitly:
+  ///
+  /// ```dart
+  /// GlassSearchBarConfig(
+  ///   textColor: Colors.white,
+  ///   cursorColor: Colors.white,  // ← previously implicit
+  ///   ...
+  /// )
+  /// ```
+  final Color? cursorColor;
 
   // ── SearchBar parity ────────────────────────────────────────────────────────
 
