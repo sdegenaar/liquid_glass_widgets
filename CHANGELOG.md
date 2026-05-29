@@ -1,3 +1,27 @@
+# 0.13.0
+
+## ✨ Feature — `GlassSearchBarConfig.cursorColor` + cursor follows Flutter theme by default
+
+`GlassSearchableBottomBar`'s expanded search field now exposes a `cursorColor` knob via `GlassSearchBarConfig`, and the default behaviour aligns with Flutter convention — the cursor follows the standard theme-resolution chain (`Theme.of(context).textSelectionTheme.cursorColor` → `CupertinoTheme.primaryColor` on iOS → `Theme.of(context).colorScheme.primary`) rather than being hard-coupled to `textColor`.
+
+This means theme-driven apps automatically get the right cursor color (matching every other Material `TextField` in the app) without any per-instance configuration. Apps that want the previous behaviour — cursor matching `textColor` — can opt in explicitly:
+
+```dart
+GlassSearchBarConfig(
+  textColor: Colors.white,
+  cursorColor: Colors.white,  // ← previously implicit
+  ...
+)
+```
+
+### ⚠️ Breaking change
+
+Apps that set a `textColor` and rely on the cursor implicitly matching it will see their cursor colour change to whatever their `Theme.of(context).colorScheme.primary` is (typically `Colors.blue` if untouched). Two-line migration above.
+
+The change was driven by an app where `textColor: Colors.white` produced an invisible-on-glass white cursor, and the standard Flutter levers (`textSelectionTheme.cursorColor`, `cupertinoOverrideTheme.primaryColor`) couldn't override it because the package was passing a non-null `cursorColor` to the underlying `TextField` — short-circuiting Flutter's entire resolution chain. Decoupling the two restores the standard mechanism.
+
+---
+
 # 0.12.8
 
 ## 🐛 Fix — `GlassTextField` reverted to v0.12.4 + icon drift fix

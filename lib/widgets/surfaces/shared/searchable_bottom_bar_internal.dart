@@ -849,7 +849,12 @@ class SearchPillState extends State<SearchPill> {
                     fontSize: 17,
                     fontWeight: FontWeight.w400,
                   ),
-              cursorColor: textColor,
+              // When null, Flutter's standard cursor-color resolution
+              // kicks in (textSelectionTheme → Cupertino primaryColor
+              // on iOS → colorScheme.primary). Callers wanting the
+              // pre-0.13.0 "cursor matches textColor" behaviour pass
+              // `cursorColor: textColor` explicitly via [config].
+              cursorColor: config.cursorColor,
               decoration: InputDecoration(
                 hintText: config.hintText,
                 hintStyle: (config.hintStyle ??
