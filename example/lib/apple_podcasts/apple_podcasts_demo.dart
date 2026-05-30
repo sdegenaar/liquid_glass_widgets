@@ -351,17 +351,19 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
               opacity: _isSearching ? 0.0 : 1.0,
               child: IgnorePointer(
                 ignoring: _isSearching,
-                child: GlassButton(
+                child: GlassButton.custom(
                   onTap: () => _showNowPlayingSheet(context),
                   quality: GlassQuality.premium,
                   useOwnLayer: true,
+                  width: double.infinity,
+                  height: 50,
                   shape: const LiquidRoundedSuperellipse(borderRadius: 25),
                   settings: const LiquidGlassSettings(
                     glassColor: Color(0xCC1C1C1E),
                     thickness: 30,
                     blur: 3,
                   ),
-                  icon: const _MiniPlayerContent(),
+                  child: const _MiniPlayerContent(),
                 ),
               ),
             ),
@@ -481,7 +483,7 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
   Widget _buildHomeView({Key? key, required double contentPad}) {
     return CustomScrollView(
       key: key,
-      controller: _selectedTab == 0 ? _scrollController : null,
+      controller: _scrollController,
       slivers: [
         // Status bar top pad
         SliverToBoxAdapter(

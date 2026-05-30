@@ -68,7 +68,7 @@ void main() {
     GlassQualityAdapter.skipInitialFrames = 90;
     GlassQualityAdapter.warmupFrames = 180;
     GlassQualityAdapter.windowSize = 120;
-    GlassQualityAdapter.degradeWindowCount = 3;
+    GlassQualityAdapter.degradeWindowCount = 2;
     GlassQualityAdapter.upgradeWindowCount = 10;
     GlassQualityAdapter.cooldownDuration = const Duration(seconds: 8);
     GlassQualityAdapter.skipStaticProbeForTesting = false;
@@ -99,7 +99,7 @@ void main() {
       GlassQuality? cbQuality;
       final adapter = _make(onWarmup: (q, _, __) => cbQuality = q);
       adapter.simulateFrameTimings(
-          _frames(10, 22000)); // 22 ms → standard (20–28 ms band)
+          _frames(10, 21000)); // 21 ms → standard (20–28 ms band)
       expect(cbQuality, GlassQuality.standard);
     });
 
@@ -286,7 +286,7 @@ void main() {
 
     test('warmupComplete after Phase 2 (with quality change)', () {
       final adapter = _make();
-      adapter.simulateFrameTimings(_frames(10, 22000)); // 22 ms → standard
+      adapter.simulateFrameTimings(_frames(10, 18000)); // 18 ms → standard
       expect(adapter.lastChangeReason, GlassQualityChangeReason.warmupComplete);
     });
 
@@ -311,7 +311,7 @@ void main() {
     test('restoredFromCache on second adapter start', () {
       final first = _make();
       first.simulateFrameTimings(
-          _frames(10, 22000)); // 22 ms → standard → write cache
+          _frames(10, 21000)); // 21 ms → standard → write cache
       final second = _make();
       second.start();
       expect(

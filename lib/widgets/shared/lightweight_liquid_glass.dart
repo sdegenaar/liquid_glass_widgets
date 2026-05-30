@@ -345,7 +345,10 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
   @override
   void dispose() {
     _ticker.dispose();
+    // Null backgroundImage BEFORE disposing the shader to break the GPU
+    // texture retention chain during isolate shutdown on Mali GPUs.
     _backgroundImage?.dispose();
+    _backgroundImage = null;
     // On web, dispose this widget's shader instance
     if (kIsWeb && _webShader != null) {
       _webShader!.dispose();

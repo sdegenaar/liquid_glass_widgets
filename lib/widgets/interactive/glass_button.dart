@@ -138,7 +138,7 @@ class GlassButton extends StatefulWidget {
     // LiquidStretch properties
     this.interactionScale = 1.05,
     this.stretch = 0.5,
-    this.resistance = 0.08,
+    this.resistance = 0.01,
     this.stretchHitTestBehavior = HitTestBehavior.opaque,
     // GlassGlow properties
     this.glowColor,
@@ -149,6 +149,11 @@ class GlassButton extends StatefulWidget {
     this.glowHitTestBehavior = HitTestBehavior.opaque,
     this.enabled = true,
     this.style = GlassButtonStyle.filled,
+    this.persistPressOnDrag = true,
+    this.anchorStretch = true,
+    this.anchorStretchSettings = const AnchorStretchSettings(),
+    this.alignment = Alignment.center,
+    this.ambientBaseLight = 0.08,
   }) : child = null;
 
   /// Creates a glass button with custom content.
@@ -186,7 +191,7 @@ class GlassButton extends StatefulWidget {
     // LiquidStretch properties
     this.interactionScale = 1.05,
     this.stretch = 0.5,
-    this.resistance = 0.08,
+    this.resistance = 0.01,
     this.stretchHitTestBehavior = HitTestBehavior.opaque,
     // GlassGlow properties
     this.glowColor,
@@ -197,6 +202,11 @@ class GlassButton extends StatefulWidget {
     this.glowHitTestBehavior = HitTestBehavior.opaque,
     this.enabled = true,
     this.style = GlassButtonStyle.filled,
+    this.persistPressOnDrag = true,
+    this.anchorStretch = true,
+    this.anchorStretchSettings = const AnchorStretchSettings(),
+    this.alignment = Alignment.center,
+    this.ambientBaseLight = 0.08,
   })  : icon = null,
         iconSize = 24.0,
         iconColor = Colors.white;
@@ -371,7 +381,7 @@ class GlassButton extends StatefulWidget {
   /// Uses non-linear damping that increases with distance from the rest
   /// position.
   ///
-  /// Defaults to 0.08.
+  /// Defaults to 0.01.
   final double resistance;
 
   /// The hit test behavior for the stretch gesture listener.
@@ -440,6 +450,61 @@ class GlassButton extends StatefulWidget {
   /// Defaults to [HitTestBehavior.opaque].
   final HitTestBehavior glowHitTestBehavior;
 
+  /// Whether the pressed glass distortion persists while the finger is held
+  /// down, even if dragged far away from the button.
+  ///
+  /// - `true` (default): The distortion and glow stay active for the entire
+  ///   duration the finger is on screen, matching iOS 26 toolbar/navigation
+  ///   buttons (Weather app, Maps, etc.). The button stretches with a jelly
+  ///   feel and maintains its pressed visual state until the finger lifts.
+  ///
+  /// - `false`: The distortion cancels when the finger moves beyond the tap
+  ///   tolerance (~18 logical pixels), matching iOS 26 lock screen buttons
+  ///   (camera, torch) that snap back if you drag away.
+  ///
+  /// Defaults to true.
+  final bool persistPressOnDrag;
+
+  /// Whether the stretch anchors the button in place.
+  ///
+  /// When `true` (default), the button stays fixed and elongates toward
+  /// the finger — matching iOS 26 button behaviour.
+  /// When `false`, the button follows the finger (jelly-follow mode).
+  ///
+  /// Defaults to `true`.
+  ///
+  /// See [LiquidStretch.anchorStretch].
+  final bool anchorStretch;
+
+  /// Fine-tuning for the anchor stretch effect.
+  ///
+  /// Controls intensity, squash, translation damping, and bounciness.
+  /// Most developers won’t need to change these — the defaults match
+  /// iOS 26 button behaviour.
+  ///
+  /// See [AnchorStretchSettings] for details.
+  final AnchorStretchSettings anchorStretchSettings;
+
+  /// How to align the child content within the button bounds.
+  ///
+  /// Defaults to [Alignment.center], which is correct for icon buttons.
+  /// Use [Alignment.topLeft] or similar for custom card-style layouts.
+  final AlignmentGeometry alignment;
+
+  /// Opacity of the ambient base light when the button is pressed.
+  ///
+  /// iOS 26 buttons maintain a subtle overall surface brightness when active,
+  /// in addition to the directional glow that follows the finger. This
+  /// prevents the button from going dark when the finger drags the directional
+  /// highlight off-edge.
+  ///
+  /// - 0.0: No ambient base light (button goes dark off-edge)
+  /// - 0.08 (default): Subtle surface luminosity matching iOS 26
+  /// - 0.15: Noticeably brighter surface
+  ///
+  /// Set to 0.0 to disable.
+  final double ambientBaseLight;
+
   @override
   State<GlassButton> createState() => _GlassButtonState();
 }
@@ -468,6 +533,11 @@ class _GlassButtonState extends State<GlassButton>
     super.dispose();
   }
 
+  // ---------------------------------------------------------------------------
+  // Tap-based pressed state (persistPressOnDrag: false)
+  // Used by lock screen camera/torch buttons — cancels on drag.
+  // ---------------------------------------------------------------------------
+
   void _handleTapDown(TapDownDetails details) {
     if (!widget.enabled) return;
     _saturationController.forward();
@@ -479,6 +549,28 @@ class _GlassButtonState extends State<GlassButton>
   }
 
   void _handleTapCancel() {
+    if (!widget.enabled) return;
+    _saturationController.reverse();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Pointer-based pressed state (persistPressOnDrag: true)
+  // Used by toolbar/nav buttons — distortion persists while finger is down.
+  // Raw Listener tracks the pointer until pointerUp/Cancel regardless of
+  // distance, matching iOS 26 Weather/Maps button behaviour.
+  // ---------------------------------------------------------------------------
+
+  void _handlePointerDown(PointerDownEvent event) {
+    if (!widget.enabled) return;
+    _saturationController.forward();
+  }
+
+  void _handlePointerUp(PointerUpEvent event) {
+    if (!widget.enabled) return;
+    _saturationController.reverse();
+  }
+
+  void _handlePointerCancel(PointerCancelEvent event) {
     if (!widget.enabled) return;
     _saturationController.reverse();
   }
@@ -506,7 +598,8 @@ class _GlassButtonState extends State<GlassButton>
     final contentWidget = SizedBox(
       height: widget.height,
       width: widget.width,
-      child: Center(
+      child: Align(
+        alignment: widget.alignment,
         child: widget.child ??
             IconTheme(
               data: IconThemeData(
@@ -518,7 +611,38 @@ class _GlassButtonState extends State<GlassButton>
       ),
     );
 
-    // 2. Build the inner content (Glow + Icon/Child)
+    // 2. Build the inner content (Ambient base + Glow + Icon/Child)
+    //
+    // The ambient base light provides a subtle surface brightness when pressed,
+    // matching iOS 26 where active buttons never go completely dark even when
+    // the directional glow follows the finger off-edge.
+    final ambientOverlay = widget.ambientBaseLight > 0
+        ? AnimatedBuilder(
+            animation: _saturationAnimation,
+            builder: (context, _) {
+              final opacity =
+                  _saturationAnimation.value * widget.ambientBaseLight;
+              if (opacity <= 0) return const SizedBox.shrink();
+              return Positioned.fill(
+                child: IgnorePointer(
+                  child: ColoredBox(
+                    color: Colors.white.withValues(alpha: opacity),
+                  ),
+                ),
+              );
+            },
+          )
+        : null;
+
+    final contentWithAmbient = ambientOverlay != null
+        ? Stack(
+            children: [
+              contentWidget,
+              ambientOverlay,
+            ],
+          )
+        : contentWidget;
+
     // This part is static relative to the glass saturation pulse
     final glowContent = GlassGlow(
       glowColor: effectiveGlowColor,
@@ -527,7 +651,7 @@ class _GlassButtonState extends State<GlassButton>
       glowSpreadRadius: effectiveGlowSpreadRadius,
       glowOpacity: effectiveGlowOpacity,
       hitTestBehavior: widget.glowHitTestBehavior,
-      child: contentWidget,
+      child: contentWithAmbient,
     );
 
     // 3. Animate ONLY the glass settings that change during interaction
@@ -544,34 +668,78 @@ class _GlassButtonState extends State<GlassButton>
           explicit: widget.settings,
         );
 
+        // Fix jagged edges on premium glass during stretch animations.
+        //
+        // Problem: Impeller's LiquidGlassLayer is a compositor layer that
+        // rasterizes at a fixed resolution. LiquidStretch's TransformLayer
+        // scales this cached texture → bilinear interpolation at edges → jagged.
+        //
+        // Solution: Wrap the glass in a vector ClipPath at the same shape
+        // boundary. The clip is a paint-level operation that renders at the
+        // Note: Premium quality on Impeller may show slightly jagged edges
+        // during stretch animations. This is a known Impeller compositing
+        // limitation — LiquidGlassLayer rasterizes at a fixed resolution and
+        // TransformLayer scales the cached output. Standard quality doesn't
+        // have this issue because the 2D shader re-executes every frame.
+        // Switching to standard during stretch was tried but the visual pop
+        // from the different specular rendering was more noticeable than
+        // the jaggedness itself.
+
+        final bool needsEdgeClip =
+            widget.stretch > 0 && effectiveQuality == GlassQuality.premium;
+
         // Pass glow intensity directly to AdaptiveGlass for Skia shader feedback.
         // On Impeller, GlassGlow widget is used instead (separate from glass effect).
         // On Skia/Web, glowIntensity controls shader-based additive brightness.
-        return AdaptiveGlass(
+        Widget glass = AdaptiveGlass(
           shape: widget.shape,
           settings: baseSettings, // Preserve user's saturation setting!
           quality: effectiveQuality,
           useOwnLayer: widget.useOwnLayer,
           glowIntensity: _saturationAnimation.value, // 0.0-1.0 animation
+          isInteractive: true, // Buttons manage their own RepaintBoundary
           child: child!,
         );
+
+        if (needsEdgeClip) {
+          glass = ClipPath(
+            clipper: ShapeBorderClipper(shape: widget.shape),
+            clipBehavior: Clip.antiAlias,
+            child: glass,
+          );
+        }
+
+        return glass;
       },
     );
 
     // 4. Wrap with stretch animation and interaction containers
     // These remain outside the AnimatedBuilder to prevent redundant rebuilds.
     //
-    // We explicitly skip wrapping RepaintBoundary in minimal quality to
-    // prevent sub-pixel edge jitter ("flicker-on-rest"). When a shape is tightly
-    // cached inside a RepaintBoundary and subjected to fractional scaling by the
-    // LiquidStretch spring, the texture's bilinear interpolation edge snaps abruptly
-    // to physical pixels exactly when velocity hits 0. Omitting the boundary
-    // forces pure vector shape computation every frame, bypassing texture pixel-snapping.
+    // We skip RepaintBoundary when the button can be stretched. The stretch
+    // animation applies a Transform.scale that scales the cached texture:
+    //
+    // - Minimal: always skipped (vector ClipPath — no bitmap to distort).
+    // - Premium + stretch: skipped. Impeller's LiquidGlassLayer compositing
+    //   bakes shape edges into the cached texture; scaling that texture causes
+    //   bilinear interpolation artefacts ("jagged edges"). Standard's 2D shader
+    //   re-executes within the boundary so it stays sharp.
+    // - Premium + no stretch (stretch == 0): kept. No scaling means no
+    //   artefacts, and the boundary gives a pure performance win for the
+    //   expensive Impeller pipeline.
+    // - Standard: always kept. The lightweight shader re-executes at the
+    //   correct resolution even inside a RepaintBoundary.
+    final bool hasStretch = widget.stretch > 0;
+    final bool skipBoundary = effectiveQuality == GlassQuality.minimal ||
+        (effectiveQuality == GlassQuality.premium && hasStretch);
+
     final stretchContent = LiquidStretch(
       interactionScale: widget.interactionScale,
       stretch: widget.stretch,
       resistance: widget.resistance,
       hitTestBehavior: widget.stretchHitTestBehavior,
+      anchorStretch: widget.anchorStretch,
+      anchorStretchSettings: widget.anchorStretchSettings,
       child: Semantics(
         button: true,
         label: widget.label.isNotEmpty ? widget.label : null,
@@ -580,9 +748,8 @@ class _GlassButtonState extends State<GlassButton>
       ),
     );
 
-    final stretchWidget = effectiveQuality == GlassQuality.minimal
-        ? stretchContent // No RepaintBoundary — forces smooth vector anti-aliasing
-        : RepaintBoundary(child: stretchContent);
+    final stretchWidget =
+        skipBoundary ? stretchContent : RepaintBoundary(child: stretchContent);
 
     // Apply opacity when disabled
     final finalWidget = widget.enabled
@@ -592,7 +759,34 @@ class _GlassButtonState extends State<GlassButton>
             child: stretchWidget,
           );
 
-    // Wrap with gesture detector
+    // ---------------------------------------------------------------------------
+    // Interaction wrapper: choose between tap-based and pointer-based press
+    // tracking depending on persistPressOnDrag.
+    //
+    // persistPressOnDrag: true  → raw Listener wraps GestureDetector.
+    //   The Listener tracks the pointer globally (pointerDown/Up/Cancel)
+    //   so the pressed visual persists while the finger is down. The inner
+    //   GestureDetector still handles onTap for the callback.
+    //
+    // persistPressOnDrag: false → GestureDetector handles everything.
+    //   onTapDown/Up/Cancel drive the saturation controller, so dragging
+    //   away cancels the pressed state (iOS lock screen behavior).
+    // ---------------------------------------------------------------------------
+    if (widget.persistPressOnDrag) {
+      return Listener(
+        onPointerDown: _handlePointerDown,
+        onPointerUp: _handlePointerUp,
+        onPointerCancel: _handlePointerCancel,
+        behavior: HitTestBehavior.opaque,
+        child: GestureDetector(
+          onTap: widget.enabled ? widget.onTap : null,
+          behavior: HitTestBehavior.opaque,
+          child: finalWidget,
+        ),
+      );
+    }
+
+    // Tap-based path (lock screen buttons)
     return GestureDetector(
       onTap: widget.enabled ? widget.onTap : null,
       onTapDown: _handleTapDown,

@@ -11,10 +11,9 @@ class OverlaysPage extends StatefulWidget {
 }
 
 class _OverlaysPageState extends State<OverlaysPage> {
-  String _lastSheetResult = 'None';
   String _lastMenuSelection = 'None';
-  String _lastDialogResult = 'None';
-  String _lastActionSheetResult = 'None';
+
+  // ── Sheet methods ──────────────────────────────────────────────────────
 
   void _showBasicSheet() {
     GlassSheet.show(
@@ -25,263 +24,27 @@ class _OverlaysPageState extends State<OverlaysPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              CupertinoIcons.checkmark_circle_fill,
-              color: Colors.green,
-              size: 64,
-            ),
+            const Icon(CupertinoIcons.checkmark_circle_fill,
+                color: Colors.green, size: 64),
             const SizedBox(height: 16),
-            const Text(
-              'Success!',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
+            const Text('Success!',
+                style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white)),
             const SizedBox(height: 8),
             Text(
               'This is a basic glass bottom sheet',
               style: TextStyle(
-                fontSize: 16,
-                color: Colors.white.withValues(alpha: 0.7),
-              ),
+                  fontSize: 16, color: Colors.white.withValues(alpha: 0.7)),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            GlassButton.custom(
-              onTap: () => Navigator.pop(context, 'Dismissed'),
-              width: double.infinity,
-              height: 48,
-              settings: RecommendedGlassSettings.overlay,
-              shape: const LiquidRoundedSuperellipse(borderRadius: 12),
-              child: const Text(
-                'Dismiss',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ).then((result) {
-      if (result != null) {
-        setState(() {
-          _lastSheetResult = result;
-        });
-      }
-    });
-  }
-
-  void _showCustomHeightSheet() {
-    GlassSheet.show(
-      context: context,
-      settings: RecommendedGlassSettings.sheet,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Custom Height',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'This sheet demonstrates a larger content area with draggable dismiss.',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white.withValues(alpha: 0.7),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            _buildFeatureList(),
-            const SizedBox(height: 24),
-            GlassButton.custom(
-              onTap: () => Navigator.pop(context),
-              width: double.infinity,
-              height: 48,
-              settings: RecommendedGlassSettings.overlay,
-              shape: const LiquidRoundedSuperellipse(borderRadius: 12),
-              child: const Text(
-                'Close',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ),
+            _SheetButton(label: 'Dismiss', onTap: () => Navigator.pop(context)),
           ],
         ),
       ),
     );
-  }
-
-  void _showCustomSettingsSheet() {
-    GlassSheet.show(
-      context: context,
-      isScrollControlled: true,
-      settings: RecommendedGlassSettings.sheet,
-      builder: (context) => SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                CupertinoIcons.sparkles,
-                color: Colors.blue,
-                size: 48,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Custom Glass Effect',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'This sheet uses custom glass settings with blue tint and enhanced blur.',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white.withValues(alpha: 0.7),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              GlassCard(
-                settings: RecommendedGlassSettings.overlay,
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    _buildSettingRow('Thickness', '40'),
-                    _buildSettingRow('Blur', '15'),
-                    _buildSettingRow('Tint', 'Blue'),
-                    _buildSettingRow('Light', '1.2'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              GlassButton.custom(
-                onTap: () => Navigator.pop(context),
-                width: double.infinity,
-                height: 48,
-                settings: RecommendedGlassSettings.overlay,
-                shape: const LiquidRoundedSuperellipse(borderRadius: 12),
-                glowColor: Colors.blue.withValues(alpha: 0.3),
-                child: const Text(
-                  'Close',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showNonDismissibleSheet() {
-    GlassSheet.show(
-      context: context,
-      settings: RecommendedGlassSettings.sheet,
-      isDismissible: false,
-      enableDrag: false,
-      showDragIndicator: false,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              CupertinoIcons.exclamationmark_triangle_fill,
-              color: Colors.orange,
-              size: 64,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Important Notice',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'This sheet cannot be dismissed by dragging or tapping outside. You must tap the button below.',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white.withValues(alpha: 0.7),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: GlassButton.custom(
-                    onTap: () => Navigator.pop(context, 'Cancelled'),
-                    height: 48,
-                    settings: RecommendedGlassSettings.overlay,
-                    shape: const LiquidRoundedSuperellipse(borderRadius: 12),
-                    glowColor: Colors.grey.withValues(alpha: 0.3),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: GlassButton.custom(
-                    onTap: () => Navigator.pop(context, 'Confirmed'),
-                    height: 48,
-                    settings: RecommendedGlassSettings.overlay,
-                    shape: const LiquidRoundedSuperellipse(borderRadius: 12),
-                    glowColor: Colors.orange.withValues(alpha: 0.3),
-                    child: const Text(
-                      'Confirm',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    ).then((result) {
-      if (result != null) {
-        setState(() {
-          _lastSheetResult = result;
-        });
-      }
-    });
   }
 
   void _showScrollableSheet() {
@@ -295,33 +58,19 @@ class _OverlaysPageState extends State<OverlaysPage> {
           children: [
             Padding(
               padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  const Text(
-                    'Scrollable Content',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'This sheet contains scrollable content',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
+              child: Text(
+                'Scrollable Content',
+                style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
               ),
             ),
             Expanded(
               child: ListView.separated(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                itemCount: 20,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12),
+                itemCount: 15,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, index) => GlassCard(
                   settings: RecommendedGlassSettings.overlay,
                   padding: const EdgeInsets.all(16),
@@ -337,40 +86,19 @@ class _OverlaysPageState extends State<OverlaysPage> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Center(
-                          child: Text(
-                            '${index + 1}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
+                          child: Text('${index + 1}',
+                              style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white)),
                         ),
                       ),
                       const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Item ${index + 1}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Scrollable item description',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.white.withValues(alpha: 0.6),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      Text('Item ${index + 1}',
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white)),
                     ],
                   ),
                 ),
@@ -378,21 +106,8 @@ class _OverlaysPageState extends State<OverlaysPage> {
             ),
             Padding(
               padding: const EdgeInsets.all(24),
-              child: GlassButton.custom(
-                onTap: () => Navigator.pop(context),
-                width: double.infinity,
-                height: 48,
-                settings: RecommendedGlassSettings.overlay,
-                shape: const LiquidRoundedSuperellipse(borderRadius: 12),
-                child: const Text(
-                  'Close',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
+              child: _SheetButton(
+                  label: 'Close', onTap: () => Navigator.pop(context)),
             ),
           ],
         ),
@@ -400,7 +115,8 @@ class _OverlaysPageState extends State<OverlaysPage> {
     );
   }
 
-  // Dialog methods
+  // ── Dialog methods ─────────────────────────────────────────────────────
+
   void _showBasicDialog() {
     GlassDialog.show(
       context: context,
@@ -409,45 +125,32 @@ class _OverlaysPageState extends State<OverlaysPage> {
       actions: [
         GlassDialogAction(
           label: 'OK',
-          onPressed: () => Navigator.pop(context, 'OK'),
+          onPressed: () => Navigator.pop(context),
         ),
       ],
-    ).then((result) {
-      if (result != null) {
-        setState(() {
-          _lastDialogResult = result;
-        });
-      }
-    });
+    );
   }
 
-  void _showTwoActionDialog() {
+  void _showDestructiveDialog() {
     GlassDialog.show(
       context: context,
       title: 'Delete Item?',
-      message:
-          'This action cannot be undone. Are you sure you want to delete this item?',
+      message: 'This action cannot be undone.',
       actions: [
         GlassDialogAction(
           label: 'Cancel',
-          onPressed: () => Navigator.pop(context, 'Cancel'),
+          onPressed: () => Navigator.pop(context),
         ),
         GlassDialogAction(
           label: 'Delete',
           isDestructive: true,
-          onPressed: () => Navigator.pop(context, 'Delete'),
+          onPressed: () => Navigator.pop(context),
         ),
       ],
-    ).then((result) {
-      if (result != null) {
-        setState(() {
-          _lastDialogResult = result;
-        });
-      }
-    });
+    );
   }
 
-  void _showThreeActionDialog() {
+  void _showSaveDialog() {
     GlassDialog.show(
       context: context,
       title: 'Save Changes?',
@@ -455,91 +158,24 @@ class _OverlaysPageState extends State<OverlaysPage> {
       actions: [
         GlassDialogAction(
           label: 'Don\'t Save',
-          onPressed: () => Navigator.pop(context, 'Don\'t Save'),
+          onPressed: () => Navigator.pop(context),
         ),
         GlassDialogAction(
           label: 'Cancel',
-          onPressed: () => Navigator.pop(context, 'Cancel'),
+          onPressed: () => Navigator.pop(context),
         ),
         GlassDialogAction(
           label: 'Save',
           isPrimary: true,
-          onPressed: () => Navigator.pop(context, 'Save'),
-        ),
-      ],
-    ).then((result) {
-      if (result != null) {
-        setState(() {
-          _lastDialogResult = result;
-        });
-      }
-    });
-  }
-
-  void _showCustomDialog() {
-    GlassDialog.show(
-      context: context,
-      title: 'Custom Glass',
-      message: 'This dialog uses custom glass settings with purple tint.',
-      settings: RecommendedGlassSettings.overlay,
-      actions: [
-        GlassDialogAction(
-          label: 'Close',
-          isPrimary: true,
-          onPressed: () => Navigator.pop(context, 'Close'),
-        ),
-      ],
-    ).then((result) {
-      if (result != null) {
-        setState(() {
-          _lastDialogResult = result;
-        });
-      }
-    });
-  }
-
-  void _showBasicActionSheet() {
-    showGlassActionSheet(
-      context: context,
-      title: 'Choose Action',
-      actions: [
-        GlassActionSheetAction(
-          label: 'Save',
-          icon: Icon(CupertinoIcons.floppy_disk),
-          onPressed: () {
-            setState(() => _lastActionSheetResult = 'Save');
-          },
-        ),
-        GlassActionSheetAction(
-          label: 'Share',
-          icon: Icon(CupertinoIcons.share),
-          onPressed: () {
-            setState(() => _lastActionSheetResult = 'Share');
-          },
+          onPressed: () => Navigator.pop(context),
         ),
       ],
     );
   }
 
-  void _showDestructiveActionSheet() {
-    showGlassActionSheet(
-      context: context,
-      title: 'Delete Photo?',
-      message: 'This action cannot be undone',
-      actions: [
-        GlassActionSheetAction(
-          label: 'Delete',
-          icon: Icon(CupertinoIcons.delete),
-          style: GlassActionSheetStyle.destructive,
-          onPressed: () {
-            setState(() => _lastActionSheetResult = 'Delete');
-          },
-        ),
-      ],
-    );
-  }
+  // ── Action Sheet methods ───────────────────────────────────────────────
 
-  void _showMultiActionSheet() {
+  void _showPhotoActionSheet() {
     showGlassActionSheet(
       context: context,
       title: 'Photo Options',
@@ -547,615 +183,120 @@ class _OverlaysPageState extends State<OverlaysPage> {
         GlassActionSheetAction(
           label: 'Save to Photos',
           icon: Icon(CupertinoIcons.photo),
-          onPressed: () {
-            setState(() => _lastActionSheetResult = 'Save to Photos');
-          },
+          onPressed: () {},
         ),
         GlassActionSheetAction(
           label: 'Share',
           icon: Icon(CupertinoIcons.share),
-          onPressed: () {
-            setState(() => _lastActionSheetResult = 'Share');
-          },
+          onPressed: () {},
         ),
         GlassActionSheetAction(
           label: 'Copy',
           icon: Icon(CupertinoIcons.doc_on_doc),
-          onPressed: () {
-            setState(() => _lastActionSheetResult = 'Copy');
-          },
+          onPressed: () {},
         ),
         GlassActionSheetAction(
           label: 'Delete',
           icon: Icon(CupertinoIcons.trash),
           style: GlassActionSheetStyle.destructive,
-          onPressed: () {
-            setState(() => _lastActionSheetResult = 'Delete');
-          },
+          onPressed: () {},
         ),
       ],
-    );
-  }
-
-  Widget _buildFeatureList() {
-    return Column(
-      children: [
-        _buildFeatureItem(CupertinoIcons.hand_raised_fill, 'Draggable'),
-        const SizedBox(height: 12),
-        _buildFeatureItem(CupertinoIcons.arrow_up_arrow_down, 'Resizable'),
-        const SizedBox(height: 12),
-        _buildFeatureItem(CupertinoIcons.sparkles, 'Glass Effect'),
-      ],
-    );
-  }
-
-  Widget _buildFeatureItem(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, color: Colors.white.withValues(alpha: 0.7), size: 20),
-        const SizedBox(width: 12),
-        Text(
-          text,
-          style: const TextStyle(
-            fontSize: 16,
-            color: Colors.white,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSettingRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.white,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.6),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveLiquidGlassLayer(
-      settings: RecommendedGlassSettings.overlay,
-      quality: GlassQuality.standard,
-      child: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: SafeArea(
-              bottom: false,
+    return GlassPage(
+      background: buildShowcaseBackground(),
+      settings: RecommendedGlassSettings.standard,
+      statusBarStyle: GlassStatusBarStyle.light,
+      child: Scaffold(
+        appBar: GlassAppBar(
+          title: const Text(
+            'Overlays',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          leading: GlassButton(
+            quality: GlassQuality.premium,
+            icon: const Icon(CupertinoIcons.back),
+            onTap: () => Navigator.of(context).pop(),
+            width: 40,
+            height: 40,
+            iconSize: 20,
+          ),
+        ),
+        body: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Overlays',
-                      style: TextStyle(
-                        fontSize: 40,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Modal dialogs and bottom sheets',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.white.withValues(alpha: 0.7),
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-
-                    // GlassSheet Section
+                    // ── GlassSheet ───────────────────────────────────
                     const _SectionTitle(title: 'GlassSheet'),
                     const SizedBox(height: 16),
-                    GlassCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Basic Bottom Sheet',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'A simple bottom sheet with drag indicator and glass effect.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          GlassButton.custom(
-                            onTap: _showBasicSheet,
-                            width: double.infinity,
-                            height: 48,
-                            shape: const LiquidRoundedSuperellipse(
-                              borderRadius: 12,
-                            ),
-                            glowColor: Colors.blue.withValues(alpha: 0.3),
-                            child: const Text(
-                              'Show Basic Sheet',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    _ActionButton(
+                      label: 'Basic Bottom Sheet',
+                      glowColor: Colors.blue,
+                      onTap: _showBasicSheet,
                     ),
-                    const SizedBox(height: 16),
-                    GlassCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Custom Height',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Sheet with customizable height and drag boundaries.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          GlassButton.custom(
-                            onTap: _showCustomHeightSheet,
-                            width: double.infinity,
-                            height: 48,
-                            shape: const LiquidRoundedSuperellipse(
-                              borderRadius: 12,
-                            ),
-                            glowColor: Colors.purple.withValues(alpha: 0.3),
-                            child: const Text(
-                              'Show Custom Height',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    GlassCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Custom Glass Settings',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Sheet with custom glass effect settings and blue tint.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          GlassButton.custom(
-                            onTap: _showCustomSettingsSheet,
-                            width: double.infinity,
-                            height: 48,
-                            shape: const LiquidRoundedSuperellipse(
-                              borderRadius: 12,
-                            ),
-                            glowColor: Colors.cyan.withValues(alpha: 0.3),
-                            child: const Text(
-                              'Show Custom Settings',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    GlassCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Non-Dismissible Sheet',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Sheet that cannot be dismissed by dragging or tapping outside.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          GlassButton.custom(
-                            onTap: _showNonDismissibleSheet,
-                            width: double.infinity,
-                            height: 48,
-                            shape: const LiquidRoundedSuperellipse(
-                              borderRadius: 12,
-                            ),
-                            glowColor: Colors.orange.withValues(alpha: 0.3),
-                            child: const Text(
-                              'Show Non-Dismissible',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    GlassCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Scrollable Content',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Sheet with scrollable list of items.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          GlassButton.custom(
-                            onTap: _showScrollableSheet,
-                            width: double.infinity,
-                            height: 48,
-                            shape: const LiquidRoundedSuperellipse(
-                              borderRadius: 12,
-                            ),
-                            glowColor: Colors.green.withValues(alpha: 0.3),
-                            child: const Text(
-                              'Show Scrollable',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    GlassCard(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            CupertinoIcons.info_circle_fill,
-                            color: Colors.blue,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Sheet Result',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _lastSheetResult,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.white.withValues(alpha: 0.7),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                    const SizedBox(height: 12),
+                    _ActionButton(
+                      label: 'Scrollable Content',
+                      glowColor: Colors.green,
+                      onTap: _showScrollableSheet,
                     ),
 
                     const SizedBox(height: 40),
 
-                    // GlassDialog Section
+                    // ── GlassDialog ──────────────────────────────────
                     const _SectionTitle(title: 'GlassDialog'),
                     const SizedBox(height: 16),
-                    GlassCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Basic Dialog',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Simple alert with single action button.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          GlassButton.custom(
-                            onTap: _showBasicDialog,
-                            width: double.infinity,
-                            height: 48,
-                            shape: const LiquidRoundedSuperellipse(
-                              borderRadius: 12,
-                            ),
-                            glowColor: Colors.green.withValues(alpha: 0.3),
-                            child: const Text(
-                              'Show Basic Dialog',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    _ActionButton(
+                      label: 'Basic Alert',
+                      glowColor: Colors.green,
+                      onTap: _showBasicDialog,
                     ),
-                    const SizedBox(height: 16),
-                    GlassCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Two Actions',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Confirmation dialog with Cancel and Delete actions.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          GlassButton.custom(
-                            onTap: _showTwoActionDialog,
-                            width: double.infinity,
-                            height: 48,
-                            shape: const LiquidRoundedSuperellipse(
-                              borderRadius: 12,
-                            ),
-                            glowColor: Colors.red.withValues(alpha: 0.3),
-                            child: const Text(
-                              'Show Two Actions',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    const SizedBox(height: 12),
+                    _ActionButton(
+                      label: 'Destructive Confirm',
+                      glowColor: Colors.red,
+                      onTap: _showDestructiveDialog,
                     ),
-                    const SizedBox(height: 16),
-                    GlassCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Three Actions',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'iOS-style save dialog with vertical button layout.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          GlassButton.custom(
-                            onTap: _showThreeActionDialog,
-                            width: double.infinity,
-                            height: 48,
-                            shape: const LiquidRoundedSuperellipse(
-                              borderRadius: 12,
-                            ),
-                            glowColor: Colors.amber.withValues(alpha: 0.3),
-                            child: const Text(
-                              'Show Three Actions',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    GlassCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Custom Glass',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Dialog with custom glass settings and purple tint.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          GlassButton.custom(
-                            onTap: _showCustomDialog,
-                            width: double.infinity,
-                            height: 48,
-                            shape: const LiquidRoundedSuperellipse(
-                              borderRadius: 12,
-                            ),
-                            glowColor: Colors.purple.withValues(alpha: 0.3),
-                            child: const Text(
-                              'Show Custom Glass',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    GlassCard(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            CupertinoIcons.info_circle_fill,
-                            color: Colors.purple,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Dialog Result',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _lastDialogResult,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.white.withValues(alpha: 0.7),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                    const SizedBox(height: 12),
+                    _ActionButton(
+                      label: 'Save Changes (3 Actions)',
+                      glowColor: Colors.amber,
+                      onTap: _showSaveDialog,
                     ),
 
                     const SizedBox(height: 40),
 
-                    // GlassMenu Section
+                    // ── GlassMenu ────────────────────────────────────
                     const _SectionTitle(title: 'GlassMenu'),
+                    const SizedBox(height: 4),
+                    _QualityLabel(label: 'Premium vs Standard'),
                     const SizedBox(height: 16),
-                    GlassCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Basic Menu',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Liquid menu that morphs from the trigger button.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Align(
-                            alignment: AlignmentGeometry.centerRight,
-                            child: GlassMenu(
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Column(
+                          children: [
+                            _QualityBadge(
+                                label: 'Premium', color: Colors.amber),
+                            const SizedBox(height: 8),
+                            GlassMenu(
+                              quality: GlassQuality.premium,
                               triggerBuilder: (context, toggle) => GlassButton(
                                 icon: Icon(CupertinoIcons.ellipsis),
                                 onTap: toggle,
-                                label: 'Options',
+                                label: 'Premium',
                               ),
                               items: [
                                 GlassMenuItem(
@@ -1179,296 +320,61 @@ class _OverlaysPageState extends State<OverlaysPage> {
                                 ),
                               ],
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    GlassCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Custom Width & Style',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Menu with wider layout and custom glass settings.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Center(
-                            child: GlassMenu(
-                              menuWidth: 250,
-                              glassSettings: const LiquidGlassSettings(
-                                blur: 20,
-                                glassColor: Colors.blue,
-                                thickness: 30,
-                              ),
-                              triggerBuilder: (context, toggle) =>
-                                  GlassButton.custom(
+                          ],
+                        ),
+                        Column(
+                          children: [
+                            _QualityBadge(
+                                label: 'Standard', color: Colors.white38),
+                            const SizedBox(height: 8),
+                            GlassMenu(
+                              quality: GlassQuality.standard,
+                              triggerBuilder: (context, toggle) => GlassButton(
+                                icon: Icon(CupertinoIcons.ellipsis),
                                 onTap: toggle,
-                                width: 140,
-                                height: 44,
-                                glowColor: Colors.blue.withValues(alpha: 0.3),
-                                child: const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text('Account',
-                                        style: TextStyle(color: Colors.white)),
-                                    SizedBox(width: 8),
-                                    Icon(CupertinoIcons.chevron_down,
-                                        size: 14, color: Colors.white),
-                                  ],
-                                ),
+                                label: 'Standard',
                               ),
                               items: [
                                 GlassMenuItem(
-                                  icon: Icon(CupertinoIcons.person_circle),
-                                  title: 'Profile Settings',
+                                  icon: Icon(CupertinoIcons.share),
+                                  title: 'Share',
                                   onTap: () => setState(
-                                      () => _lastMenuSelection = 'Profile'),
+                                      () => _lastMenuSelection = 'Share'),
                                 ),
                                 GlassMenuItem(
-                                  icon: Icon(CupertinoIcons.bell),
-                                  title: 'Notifications',
-                                  trailing: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.red,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: const Text('2',
-                                        style: TextStyle(
-                                            fontSize: 12, color: Colors.white)),
-                                  ),
-                                  onTap: () => setState(() =>
-                                      _lastMenuSelection = 'Notifications'),
+                                  icon: Icon(CupertinoIcons.pen),
+                                  title: 'Edit',
+                                  onTap: () => setState(
+                                      () => _lastMenuSelection = 'Edit'),
                                 ),
                                 GlassMenuItem(
-                                  icon: Icon(CupertinoIcons.gear),
-                                  title: 'Preferences',
+                                  icon: Icon(CupertinoIcons.trash),
+                                  title: 'Delete',
+                                  isDestructive: true,
                                   onTap: () => setState(
-                                      () => _lastMenuSelection = 'Preferences'),
+                                      () => _lastMenuSelection = 'Delete'),
                                 ),
                               ],
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 24),
-                    GlassCard(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            CupertinoIcons.info_circle_fill,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Menu Selection',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _lastMenuSelection,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.white.withValues(alpha: 0.7),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                    const SizedBox(height: 16),
+                    _ResultRow(
+                      icon: CupertinoIcons.info_circle_fill,
+                      label: 'Selection: $_lastMenuSelection',
                     ),
+
                     const SizedBox(height: 40),
 
-                    // GlassActionSheet Section
+                    // ── GlassActionSheet ─────────────────────────────
                     const _SectionTitle(title: 'GlassActionSheet'),
                     const SizedBox(height: 16),
-                    GlassCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Basic Action Sheet',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'iOS-style bottom action sheet with icons.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          GlassButton.custom(
-                            onTap: _showBasicActionSheet,
-                            width: double.infinity,
-                            height: 48,
-                            shape: const LiquidRoundedSuperellipse(
-                              borderRadius: 12,
-                            ),
-                            glowColor: Colors.blue.withValues(alpha: 0.3),
-                            child: const Text(
-                              'Show Action Sheet',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    GlassCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Destructive Action',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Action sheet with destructive (red) action.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          GlassButton.custom(
-                            onTap: _showDestructiveActionSheet,
-                            width: double.infinity,
-                            height: 48,
-                            shape: const LiquidRoundedSuperellipse(
-                              borderRadius: 12,
-                            ),
-                            glowColor: Colors.red.withValues(alpha: 0.3),
-                            child: const Text(
-                              'Show Destructive Action',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    GlassCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Multiple Actions',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Action sheet with multiple options and destructive action.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          GlassButton.custom(
-                            onTap: _showMultiActionSheet,
-                            width: double.infinity,
-                            height: 48,
-                            shape: const LiquidRoundedSuperellipse(
-                              borderRadius: 12,
-                            ),
-                            glowColor: Colors.purple.withValues(alpha: 0.3),
-                            child: const Text(
-                              'Show Photo Options',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    GlassCard(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            CupertinoIcons.square_list_fill,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Last Action Sheet Result',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _lastActionSheetResult,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.white.withValues(alpha: 0.7),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                    _ActionButton(
+                      label: 'Photo Options',
+                      glowColor: Colors.purple,
+                      onTap: _showPhotoActionSheet,
                     ),
 
                     const SizedBox(height: 100),
@@ -1476,16 +382,19 @@ class _OverlaysPageState extends State<OverlaysPage> {
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
+// =============================================================================
+// Helper Widgets
+// =============================================================================
+
 class _SectionTitle extends StatelessWidget {
   const _SectionTitle({required this.title});
-
   final String title;
 
   @override
@@ -1496,6 +405,127 @@ class _SectionTitle extends StatelessWidget {
         fontSize: 24,
         fontWeight: FontWeight.bold,
         color: Colors.white,
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.label,
+    required this.glowColor,
+    required this.onTap,
+  });
+  final String label;
+  final Color glowColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassButton.custom(
+      onTap: onTap,
+      width: double.infinity,
+      height: 48,
+      shape: const LiquidRoundedSuperellipse(borderRadius: 12),
+      glowColor: glowColor.withValues(alpha: 0.3),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+}
+
+class _SheetButton extends StatelessWidget {
+  const _SheetButton({required this.label, required this.onTap});
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassButton.custom(
+      onTap: onTap,
+      width: double.infinity,
+      height: 48,
+      settings: RecommendedGlassSettings.overlay,
+      shape: const LiquidRoundedSuperellipse(borderRadius: 12),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+}
+
+class _ResultRow extends StatelessWidget {
+  const _ResultRow({required this.icon, required this.label});
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.blue, size: 20),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.white.withValues(alpha: 0.7),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _QualityLabel extends StatelessWidget {
+  const _QualityLabel({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: TextStyle(
+        fontSize: 13,
+        color: Colors.white.withValues(alpha: 0.5),
+      ),
+    );
+  }
+}
+
+class _QualityBadge extends StatelessWidget {
+  const _QualityBadge({required this.label, required this.color});
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        label.toUpperCase(),
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: color,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }

@@ -109,6 +109,8 @@ class GlassChip extends StatelessWidget {
     this.interactionScale = 1.03,
     this.stretch = 0.3,
     this.glowRadius = 0.8,
+    this.anchorStretch = true,
+    this.anchorStretchSettings = const AnchorStretchSettings(),
   }) : deleteIcon = deleteIcon ?? const Icon(CupertinoIcons.xmark_circle_fill);
 
   // Cache default colors to avoid allocations
@@ -238,6 +240,16 @@ class GlassChip extends StatelessWidget {
   /// Defaults to 0.8 (subtle glow for chips).
   final double glowRadius;
 
+  /// Whether to anchor the chip in place while stretching toward the finger.
+  ///
+  /// Defaults to `true`. See [GlassButton.anchorStretch].
+  final bool anchorStretch;
+
+  /// Fine-tuning for the anchor stretch effect.
+  ///
+  /// See [AnchorStretchSettings] for details.
+  final AnchorStretchSettings anchorStretchSettings;
+
   static const _chipShape = LiquidRoundedSuperellipse(borderRadius: 100);
 
   @override
@@ -323,6 +335,8 @@ class GlassChip extends StatelessWidget {
               ? (selectedColor ?? _defaultGlowColorSelected)
               : _defaultGlowColorUnselected,
           enabled: isInteractive,
+          anchorStretch: anchorStretch,
+          anchorStretchSettings: anchorStretchSettings,
           width: double.infinity, // Expand to intrinsic width
           height: double.infinity, // Expand to intrinsic height
           child: contentWithSelection,

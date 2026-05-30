@@ -276,11 +276,18 @@ class _GlassEffectState extends State<GlassEffect>
       // pixelRatio: 1.0 — logical resolution is sufficient for refraction.
       // Stays in GPU-accessible memory; handed directly to setImageSampler.
       final image = boundary.toImageSync(pixelRatio: 1.0);
+      // Guard: if the widget was disposed between the toImageSync call and
+      // this point (possible during rapid navigation), dispose the image
+      // immediately rather than leaking it into a dead State.
+      if (!mounted) {
+        image.dispose();
+        return;
+      }
       _backgroundImage?.dispose();
       _backgroundImage = image;
       _lastCaptureSize = size;
       _lastCapturePosition = pos;
-      if (mounted) setState(() {});
+      setState(() {});
     } catch (e) {
       assert(() {
         debugPrint('[GlassEffect] toImageSync failed: $e');
@@ -348,7 +355,13 @@ class _GlassEffectState extends State<GlassEffect>
   @override
   void dispose() {
     _ticker.dispose();
+    // Null backgroundImage BEFORE disposing the shader to break the reference
+    // chain: _backgroundImage → render object → engine layer tree → GPU texture.
+    // On Mali GPUs, if the shader’s DlRuntimeEffectColorSource retains a
+    // texture reference during isolate shutdown, the Vulkan mutex is accessed
+    // after destruction (Crash 2).
     _backgroundImage?.dispose();
+    _backgroundImage = null;
     _localShader?.dispose();
     _localShader = null;
     super.dispose();

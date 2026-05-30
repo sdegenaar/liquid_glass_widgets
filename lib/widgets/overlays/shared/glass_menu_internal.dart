@@ -555,6 +555,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
       resistance: widget.stretchResistance,
       axis: widget.stretchAxis,
       suppressInteractionOnChildren: false,
+      anchorStretch: false, // Menus use jelly-follow, not anchored
       // Constrain stretch to 'Down' and 'Away from screen edge' by default,
       // but allow explicit user overrides.
       allowPositiveX: widget.allowPositiveX ?? (_morphAlignment.x < 0),

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../src/renderer/liquid_glass_renderer.dart';
+import 'adaptive_liquid_glass_layer.dart';
+
 import '../interactive/liquid_glass_scope.dart';
 import 'glass_adaptive_scope.dart';
 import 'glass_backdrop_scope.dart';
@@ -146,6 +149,7 @@ class GlassPage extends StatefulWidget {
     super.key,
     this.background,
     required this.child,
+    this.settings,
     this.enableBackgroundSampling,
     this.statusBarStyle = GlassStatusBarStyle.none,
     this.edgeToEdge = false,
@@ -249,6 +253,26 @@ class GlassPage extends StatefulWidget {
   ///
   /// When `null` (the default), the nearest [GlassTheme] ancestor is used.
   final GlassThemeData? themeOverride;
+
+  /// Glass effect settings applied to the page's internal rendering layer.
+  ///
+  /// All grouped glass widgets ([GlassCard], [GlassContainer], etc.) within
+  /// this page will inherit these settings automatically — no need to set
+  /// `useOwnLayer: true` or pass `settings:` to each widget individually.
+  ///
+  /// If null, the layer inherits settings from [GlassTheme] or uses defaults.
+  ///
+  /// ```dart
+  /// GlassPage(
+  ///   settings: LiquidGlassSettings(
+  ///     glassColor: Color.fromRGBO(28, 28, 30, 0.8),
+  ///     thickness: 30,
+  ///     blur: 4,
+  ///   ),
+  ///   child: Scaffold(...),
+  /// )
+  /// ```
+  final LiquidGlassSettings? settings;
 
   @override
   State<GlassPage> createState() => _GlassPageState();
@@ -366,15 +390,26 @@ class _GlassPageState extends State<GlassPage> {
             // wallpaper shows through.
             // When no background: leave Scaffold colour alone — it renders with
             // its own backgroundColor as the developer set it.
+            //
+            // The AdaptiveLiquidGlassLayer provides the LiquidGlassRenderScope
+            // that all glass widgets (GlassAppBar, GlassButton, GlassCard, etc.)
+            // need to render. Without it, using any glass widget inside a
+            // Scaffold's appBar slot would crash with "No liquid glass renderer
+            // found in context". Settings and quality resolve from GlassTheme
+            // automatically; individual widgets override via their own `settings`
+            // parameter.
             Positioned.fill(
-              child: widget.background != null
-                  ? Theme(
-                      data: Theme.of(context).copyWith(
-                        scaffoldBackgroundColor: Colors.transparent,
-                      ),
-                      child: widget.child,
-                    )
-                  : widget.child,
+              child: AdaptiveLiquidGlassLayer(
+                settings: widget.settings,
+                child: widget.background != null
+                    ? Theme(
+                        data: Theme.of(context).copyWith(
+                          scaffoldBackgroundColor: Colors.transparent,
+                        ),
+                        child: widget.child,
+                      )
+                    : widget.child,
+              ),
             ),
           ],
         ),

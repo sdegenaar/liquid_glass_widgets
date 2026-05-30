@@ -190,32 +190,42 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
   Widget build(BuildContext context) {
     // ── Collapsed / search-active state ─────────────────────────────────────
     if (widget.isSearchActive) {
-      return GlassButton(
-        onTap: widget.onDismissSearch,
-        width: double.infinity,
-        height: widget.barHeight,
-        quality: widget.quality,
-        shape: _barShape,
-        // interactionGlowColor is pre-resolved by the outer GlassSearchableBottomBar
-        // (explicit param → GlassThemeData.primary → internal default). The parent
-        // passes Colors.transparent when interactionBehavior suppresses glow.
-        glowColor: widget.interactionGlowColor ?? Colors.white24,
-        glowRadius: widget.interactionGlowRadius,
-        glowBlurRadius: widget.interactionGlowBlurRadius,
-        glowSpreadRadius: widget.interactionGlowSpreadRadius,
-        glowOpacity: widget.interactionGlowOpacity,
-        // Logo or empty — shown inside the glass button body.
-        icon: widget.collapsedLogoBuilder != null
-            ? AnimatedSwitcher(
-                duration: const Duration(milliseconds: 220),
-                transitionBuilder: (c, a) =>
-                    FadeTransition(opacity: a, child: c),
-                child: SizedBox.expand(
-                  key: const ValueKey('logo'),
-                  child: widget.collapsedLogoBuilder!(context),
-                ),
-              )
-            : const SizedBox.shrink(key: ValueKey('empty')),
+      // LayoutBuilder detects whether the pill has finished collapsing
+      // to a square. When square, LiquidOval gives a perfect circle;
+      // while still animating (wider than tall) the superellipse handles
+      // non-square rectangles gracefully as a pill.
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final isSquare =
+              (constraints.maxWidth - constraints.maxHeight).abs() < 2;
+          return GlassButton(
+            onTap: widget.onDismissSearch,
+            width: double.infinity,
+            height: widget.barHeight,
+            quality: widget.quality,
+            shape: isSquare ? const LiquidOval() : _barShape,
+            // interactionGlowColor is pre-resolved by the outer GlassSearchableBottomBar
+            // (explicit param → GlassThemeData.primary → internal default). The parent
+            // passes Colors.transparent when interactionBehavior suppresses glow.
+            glowColor: widget.interactionGlowColor ?? Colors.white24,
+            glowRadius: widget.interactionGlowRadius,
+            glowBlurRadius: widget.interactionGlowBlurRadius,
+            glowSpreadRadius: widget.interactionGlowSpreadRadius,
+            glowOpacity: widget.interactionGlowOpacity,
+            // Logo or empty — shown inside the glass button body.
+            icon: widget.collapsedLogoBuilder != null
+                ? AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    transitionBuilder: (c, a) =>
+                        FadeTransition(opacity: a, child: c),
+                    child: SizedBox.expand(
+                      key: const ValueKey('logo'),
+                      child: widget.collapsedLogoBuilder!(context),
+                    ),
+                  )
+                : const SizedBox.shrink(key: ValueKey('empty')),
+          );
+        },
       );
     }
 
@@ -234,6 +244,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
             : 1.0,
         stretch: 0.0,
         resistance: 0.08,
+        anchorStretch: false, // Tab bars use jelly-follow, not anchored
         child: Listener(
           onPointerDown: (_) {
             setState(() => tabIsDown = true);
@@ -725,7 +736,13 @@ class SearchPillState extends State<SearchPill> {
                 height: double.infinity,
                 quality: widget.quality,
                 iconColor: iconColor,
-                shape: shape,
+                // When fully collapsed (square), LiquidOval gives a perfect
+                // circle that stretches uniformly. During the collapse
+                // animation the width is still wider than height — use the
+                // superellipse there so it doesn't render as a squashed oval.
+                shape: (w - constraints.maxHeight).abs() < 2
+                    ? const LiquidOval()
+                    : shape,
               ),
               // IgnorePointer+Opacity(0): forces Dart to JIT-compile the
               // expanded widget tree on first frame. Unlike Offstage, this
@@ -758,6 +775,7 @@ class SearchPillState extends State<SearchPill> {
               : 1.0,
           stretch: 0.0,
           resistance: 0.08,
+          anchorStretch: false, // Search pill uses jelly-follow, not anchored
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: _focusNode.requestFocus,

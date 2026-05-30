@@ -75,7 +75,7 @@ A complete catalogue of every glass widget organised by category. Use it to expl
 cd example && flutter pub get && flutter run
 ```
 
-<img width="1280" height="589" alt="Widget Showcase" src="https://github.com/user-attachments/assets/b65551cf-7ee8-4494-9c0a-f3c870b5eb70" />
+<img width="390" height="847" alt="Widget Showcase" src="https://raw.githubusercontent.com/sdegenaar/liquid_glass_widgets/main/docs/assets/showcase.jpg" />
 
 
 ### [Component Demos](example/lib/demos/) — Copy-Pasteable Examples
@@ -119,7 +119,7 @@ Eight focused, self-contained demos — one widget, one file, runnable standalon
 
 ```yaml
 dependencies:
-  liquid_glass_widgets: ^0.12.8
+  liquid_glass_widgets: ^0.13.0
 ```
 
 ```bash

@@ -34,8 +34,6 @@ dependencies:
   flutter_shaders: ^0.1.3
   logging: ^1.3.0
   meta: ^1.17.0
-
-
 dev_dependencies:
   alchemist: ^0.14.0
   flutter_test:

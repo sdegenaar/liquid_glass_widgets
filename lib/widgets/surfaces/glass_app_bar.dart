@@ -4,81 +4,47 @@ import '../../theme/glass_theme_helpers.dart';
 import '../../types/glass_quality.dart';
 import '../shared/adaptive_glass.dart';
 
-/// A glass morphism app bar following Apple's navigation bar design.
+/// A navigation bar layout widget following Apple's iOS 26 design patterns.
 ///
-/// [GlassAppBar] provides a blurred glass navigation bar with support for
-/// title, leading widget, and trailing actions, matching iOS design patterns.
+/// By default, [GlassAppBar] renders a **transparent** bar with leading widget,
+/// centered title, and trailing actions — matching iOS 26's navigation bar where
+/// the glass effect is on the individual buttons, not the bar itself.
+///
+/// To add a glass surface behind the bar, pass explicit [settings]. This is
+/// opt-in because most iOS 26 apps use transparent navigation bars.
 ///
 /// This widget implements [PreferredSizeWidget] for use in [Scaffold.appBar].
 ///
-/// ## Usage Modes
-///
-/// ### Grouped Mode (requires wrapping Scaffold in LiquidGlassLayer)
-/// ```dart
-/// AdaptiveLiquidGlassLayer(
-///   settings: LiquidGlassSettings(...),
-///   child: Scaffold(
-///     appBar: GlassAppBar(
-///       title: Text('My App'),
-///       actions: [
-///         GlassButton(icon: Icons.search, onTap: () {}),
-///         GlassButton(icon: Icons.more_horiz, onTap: () {}),
-///       ],
-///     ),
-///     body: Content(),
-///   ),
-/// )
-/// ```
-///
-/// ### Standalone Mode (creates own layer)
+/// ## Default (Transparent — iOS 26 style)
 /// ```dart
 /// Scaffold(
 ///   appBar: GlassAppBar(
-///     useOwnLayer: true,
-///     settings: LiquidGlassSettings(...),
-///     title: Text('My App'),
+///     title: Text('Messages'),
+///     leading: GlassButton(
+///       icon: Icon(CupertinoIcons.back),
+///       onTap: () => Navigator.pop(context),
+///     ),
+///     actions: [
+///       GlassButton(icon: Icon(Icons.edit), onTap: () {}),
+///     ],
 ///   ),
 ///   body: Content(),
 /// )
 /// ```
 ///
-/// ## Customization Examples
-///
-/// ### With leading back button:
+/// ## With Glass Background (opt-in)
 /// ```dart
 /// GlassAppBar(
-///   leading: GlassButton(
-///     icon: Icons.arrow_back,
-///     onTap: () => Navigator.pop(context),
-///   ),
-///   title: Text('Details'),
-/// )
-/// ```
-///
-/// ### Large title style:
-/// ```dart
-/// GlassAppBar(
-///   title: Text(
-///     'Large Title',
-///     style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold),
-///   ),
-///   preferredSize: Size.fromHeight(96),
-/// )
-/// ```
-///
-/// ### With custom background blur:
-/// ```dart
-/// GlassAppBar(
+///   settings: LiquidGlassSettings(blur: 15, thickness: 10),
 ///   useOwnLayer: true,
-///   settings: LiquidGlassSettings(
-///     blur: 20,
-///     thickness: 30,
-///   ),
 ///   title: Text('Blurred Nav'),
 /// )
 /// ```
 class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Creates a glass app bar.
+  ///
+  /// By default renders a transparent navigation bar (no glass surface).
+  /// Pass [settings] to opt in to a glass background.
   const GlassAppBar({
     super.key,
     this.title,
@@ -94,110 +60,75 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
   });
 
   // ===========================================================================
-  // Content Properties
+  // Properties
   // ===========================================================================
 
-  /// The primary widget displayed in the app bar.
-  ///
-  /// Typically a [Text] widget containing the page title.
+  /// The primary content of the app bar, typically a [Text] widget.
   final Widget? title;
 
-  /// A widget to display before the [title].
-  ///
-  /// Typically a [GlassButton] with a back arrow or menu icon.
+  /// A widget to display before the title, typically a back button.
   final Widget? leading;
 
-  /// Widgets to display in a row after the [title].
-  ///
-  /// Typically [GlassButton] widgets for actions like search, share, etc.
+  /// A list of widgets to display after the title.
   final List<Widget>? actions;
 
   /// Whether the [title] should be centered.
-  ///
-  /// Defaults to true (matching iOS behavior).
-  /// Set to false for Android-style left-aligned titles.
   final bool centerTitle;
-
-  // ===========================================================================
-  // Style Properties
-  // ===========================================================================
 
   /// The background color of the app bar.
   ///
-  /// This color is rendered behind the glass effect. Use a semi-transparent
-  /// color to allow background content to show through the glass.
-  ///
-  /// Defaults to [Colors.transparent].
+  /// Defaults to [Colors.transparent] to match iOS 26's transparent
+  /// navigation bar pattern.
   final Color backgroundColor;
 
-  /// The height of the app bar.
-  ///
-  /// Defaults to 44.0 (iOS compact navigation bar height).
-  /// For large titles, use 96.0 or higher.
+  /// The preferred height of the app bar.
   @override
   final Size preferredSize;
 
   /// Padding around the app bar content.
-  ///
-  /// Defaults to 8px horizontal padding.
   final EdgeInsetsGeometry padding;
 
-  // ===========================================================================
-  // Glass Effect Properties
-  // ===========================================================================
-
-  /// Glass effect settings (only used when [useOwnLayer] is true).
+  /// Glass effect settings for an optional glass background.
   ///
-  /// Controls the visual appearance of the glass effect including thickness,
-  /// blur radius, color tint, lighting, and more.
+  /// When `null` (default), the app bar renders with a transparent background
+  /// matching iOS 26's navigation bar pattern where glass effects are on
+  /// individual buttons, not the bar itself.
   ///
-  /// If null when [useOwnLayer] is true, uses [LiquidGlassSettings] defaults
-  /// optimized for navigation bars (high blur, subtle thickness).
-  ///
-  /// Ignored when [useOwnLayer] is false (inherits from parent layer).
+  /// When provided, wraps the bar content in an [AdaptiveGlass] surface to
+  /// create a frosted glass background.
   final LiquidGlassSettings? settings;
 
   /// Whether to create its own layer or use grouped glass within an existing
-  /// layer.
+  /// layer. Only used when [settings] is provided.
   ///
-  /// - `false` (default): Uses [LiquidGlass.grouped], must wrap [Scaffold] in
-  /// [LiquidGlassLayer].
-  ///   This is more performant when you have multiple glass elements.
+  /// - `false` (default): Uses [LiquidGlass.grouped], rendering within the
+  ///   parent [GlassPage] or [AdaptiveLiquidGlassLayer].
   ///
-  /// - `true`: Uses [LiquidGlass.withOwnLayer], can be used anywhere.
-  ///   Creates an independent glass rendering context for this app bar.
+  /// - `true`: Uses [LiquidGlass.withOwnLayer], creating an independent glass
+  ///   rendering context.
   ///
-  /// Defaults to false.
+  /// Defaults to false. Ignored when [settings] is null.
   final bool useOwnLayer;
 
-  /// Rendering quality for the glass effect.
+  /// Rendering quality for the glass effect. Only used when [settings] is
+  /// provided.
   ///
-  /// If null, inherits from parent [InheritedLiquidGlass] or defaults to
-  /// [GlassQuality.premium] since app bars are typically static surfaces at
-  /// the top of the screen where premium quality looks best.
-  ///
-  /// Use [GlassQuality.standard] if the app bar will be used in a scrollable
-  /// context.
+  /// If null, inherits from the ambient glass quality scope.
   final GlassQuality? quality;
 
   static const _appBarShape = LiquidRoundedRectangle(borderRadius: 0);
-  static const _defaultSettings = LiquidGlassSettings(blur: 15);
 
   @override
   Widget build(BuildContext context) {
-    final effectiveQuality = GlassThemeHelpers.resolveQuality(
-      context,
-      widgetQuality: quality,
-      fallback: GlassQuality.premium,
-    );
-
     // Build the app bar content
     final appBarContent = SafeArea(
+      bottom: false,
       child: Padding(
         padding: padding,
         child: SizedBox(
           height: preferredSize.height,
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Leading widget
               if (leading != null) leading!,
@@ -228,13 +159,29 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
     );
 
-    // Apply glass effect
+    // When no glass settings are provided, render a simple transparent bar
+    // matching iOS 26's navigation pattern.
+    if (settings == null) {
+      return ColoredBox(
+        color: backgroundColor,
+        child: appBarContent,
+      );
+    }
+
+    // When settings are provided, wrap in AdaptiveGlass for a frosted
+    // glass background.
+    final effectiveQuality = GlassThemeHelpers.resolveQuality(
+      context,
+      widgetQuality: quality,
+      fallback: GlassQuality.premium,
+    );
+
     final glassWidget = AdaptiveGlass(
       shape: _appBarShape,
-      settings: settings ?? _defaultSettings,
+      settings: settings!,
       quality: effectiveQuality,
       useOwnLayer: useOwnLayer,
-      allowElevation: false, // Surfaces don't pop
+      allowElevation: false,
       child: appBarContent,
     );
 

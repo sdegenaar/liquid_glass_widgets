@@ -153,25 +153,32 @@ class GlassCard extends StatelessWidget {
 
   static const _defaultShape = LiquidRoundedSuperellipse(borderRadius: 12);
 
-  /// Glass effect settings (only used when [useOwnLayer] is true).
+  /// Glass effect settings for this card.
   ///
   /// Controls the visual appearance of the glass effect including thickness,
   /// blur radius, color tint, lighting, and more.
   ///
-  /// If null when [useOwnLayer] is true, uses [LiquidGlassSettings] defaults.
-  /// Ignored when [useOwnLayer] is false (inherits from parent layer).
+  /// **Important:** In grouped mode (default), per-widget settings are
+  /// ignored — the parent layer's settings are used instead. To apply
+  /// per-widget settings, set `useOwnLayer: true`.
+  ///
+  /// For the best of both worlds, set `settings` on [GlassPage] or
+  /// [AdaptiveLiquidGlassLayer] — all grouped children inherit them
+  /// without the performance cost of separate layers.
+  ///
+  /// If null, inherits settings from the nearest parent layer or theme.
   final LiquidGlassSettings? settings;
 
   /// Whether to create its own layer or use grouped glass within an existing
   /// layer.
   ///
   /// - `false` (default): Uses [LiquidGlass.grouped], must be inside a
-  /// [LiquidGlassLayer].
-  ///   This is more performant when you have multiple glass elements that can
-  ///   share the same rendering context.
+  ///   [LiquidGlassLayer]. More performant when multiple glass elements share
+  ///   a rendering context. Per-widget [settings] are ignored in this mode.
   ///
   /// - `true`: Uses [LiquidGlass.withOwnLayer], can be used anywhere.
-  ///   Creates an independent glass rendering context for this card.
+  ///   Creates an independent glass rendering context. Per-widget [settings]
+  ///   are applied in this mode.
   ///
   /// Defaults to false.
   final bool useOwnLayer;

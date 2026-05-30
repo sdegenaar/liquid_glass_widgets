@@ -183,6 +183,8 @@ class _SheetLayout extends StatelessWidget {
                 axis: Axis.vertical,
                 allowPositive: false,
                 allowNegative: true,
+                anchorStretch:
+                    false, // Modal sheets use jelly-follow, not anchored
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [

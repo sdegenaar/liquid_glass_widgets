@@ -278,27 +278,33 @@ class AdaptiveGlass extends StatelessWidget {
         child: child,
       );
 
-      return RepaintBoundary(
-        child: lightweightWidget,
-      );
+      Widget result = lightweightWidget;
+      if (!isInteractive) {
+        result = RepaintBoundary(child: result);
+      }
+      return result;
     }
 
     // Impeller + Premium Path: Use the renderer's native path.
     // Wrap in PremiumGlassTracker so GlassPerformanceMonitor can correlate
     // slow raster frames with active premium surfaces.
     if (useOwnLayer) {
+      Widget premium = LiquidGlass.withOwnLayer(
+        shape: shape,
+        settings: settings,
+        clipBehavior: clipBehavior,
+        child: child,
+      );
+
       // Wrap in RepaintBoundary to give Impeller hints for tile-based rendering.
       // This allows Impeller to skip rasterizing unchanged tiles, improving
       // performance for static surfaces (app bars, bottom bars, etc.)
+      if (!isInteractive) {
+        premium = RepaintBoundary(child: premium);
+      }
+
       return PremiumGlassTracker(
-        child: RepaintBoundary(
-          child: LiquidGlass.withOwnLayer(
-            shape: shape,
-            settings: settings,
-            clipBehavior: clipBehavior,
-            child: child,
-          ),
-        ),
+        child: premium,
       );
     } else {
       return PremiumGlassTracker(
@@ -486,19 +492,52 @@ class _FrostedFallback extends StatelessWidget {
         // above — see the [_ShapeClip] doc comment.
         _ShapeClip(shape: shape, child: child),
 
-        // Specular Rim: drawn as a pure native overlay vector perfectly on top
-        Positioned.fill(
-          child: IgnorePointer(
-            child: CustomPaint(
-              painter: _SpecularRimPainter(
+        // Specular Rim: drawn as a pure native overlay vector perfectly on top.
+        // Wrapped in _ShapeClip because canvas.drawPath draws a center-aligned
+        // stroke. Clipping it removes the outer half, creating a true 'inner
+        // border' which is optically correct for glass internal reflections.
+        //
+        // Suppressed for flat-edge shapes (borderRadius: 0) like app bars,
+        // where the rim looks like a Material divider rather than a glass edge.
+        if (!_isFlatEdge(shape))
+          Positioned.fill(
+            child: IgnorePointer(
+              child: _ShapeClip(
                 shape: shape,
-                settings: settings,
+                child: CustomPaint(
+                  painter: _SpecularRimPainter(
+                    shape: shape,
+                    settings: settings,
+                  ),
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
+  }
+
+  /// Returns true when [shape] has no rounded corners (borderRadius == 0).
+  ///
+  /// Full-width surfaces (app bars, bottom bars) use `borderRadius: 0` and
+  /// the specular rim on their straight edges looks like a Material divider
+  /// rather than an internal glass reflection.
+  static bool _isFlatEdge(LiquidShape shape) {
+    if (shape is LiquidRoundedRectangle && shape.borderRadius == 0) return true;
+    if (shape is LiquidRoundedSuperellipse && shape.borderRadius == 0) {
+      return true;
+    }
+    if (shape is LiquidVerticalRoundedRectangle &&
+        shape.topRadius == 0 &&
+        shape.bottomRadius == 0) {
+      return true;
+    }
+    if (shape is LiquidVerticalRoundedSuperellipse &&
+        shape.topRadius == 0 &&
+        shape.bottomRadius == 0) {
+      return true;
+    }
+    return false;
   }
 }
 
@@ -567,28 +606,30 @@ class _SpecularRimPainter extends CustomPainter {
 
     final path = shape.getOuterPath(bounds);
 
-    // Pass 1: soft base stroke (solid alpha compositing, NO hardware readback)
+    // Pass 1: soft base stroke.
+    // Doubled width since it is now clipped to the inner half.
+    // BlendMode.overlay ensures the highlight reacts organically to the
+    // background color underneath, rather than looking like a flat white line.
     canvas.drawPath(
       path,
       Paint()
         ..shader = gradient
-        ..color = white.withValues(
-            alpha: white.a *
-                0.2) // Reduced from 0.4/0.6 to balance removal of BlendMode
+        ..color = white.withValues(alpha: white.a * 0.4)
+        ..blendMode = BlendMode.overlay
         ..style = PaintingStyle.stroke
-        ..strokeWidth = ui.lerpDouble(1, 2, lightIntensity)!,
+        ..strokeWidth = ui.lerpDouble(1.0, 2.0, lightIntensity)!,
     );
 
-    // Pass 2: sharp inner rim (solid alpha compositing, NO hardware readback)
+    // Pass 2: sharp inner rim.
+    // Doubled width since it is clipped to the inner half.
     canvas.drawPath(
       path,
       Paint()
         ..shader = gradient
-        ..color = white.withValues(
-            alpha: white.a *
-                0.3) // Reduced from 0.6/0.8 to balance removal of BlendMode
+        ..color = white.withValues(alpha: white.a * 0.6)
+        ..blendMode = BlendMode.overlay
         ..style = PaintingStyle.stroke
-        ..strokeWidth = (settings.effectiveThickness / 20),
+        ..strokeWidth = (settings.effectiveThickness / 20).clamp(0.5, 2.0),
     );
   }
 

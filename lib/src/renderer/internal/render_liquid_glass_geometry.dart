@@ -344,10 +344,26 @@ class UnrenderedGeometryCache extends GeometryCache {
 
   @override
   Future<RenderedGeometryCache> renderAsync() async {
-    final image = await matte.toImage(
-      matteBounds.width.ceil(),
-      matteBounds.height.ceil(),
-    );
+    final width = matteBounds.width.ceil();
+    final height = matteBounds.height.ceil();
+    // Guard: zero/negative dimensions can corrupt Mali GPU driver state during
+    // rapid layout changes (jelly animations, modal expansion). Return a
+    // minimal 1×1 cache rather than handing the GPU an invalid texture request.
+    if (width < 1 || height < 1) {
+      final recorder = PictureRecorder();
+      Canvas(recorder);
+      final fallback = recorder.endRecording();
+      final image = fallback.toImageSync(1, 1);
+      fallback.dispose();
+      return RenderedGeometryCache(
+        matte: image,
+        matteBounds: const Rect.fromLTWH(0, 0, 1, 1),
+        bounds: bounds,
+        shapes: shapes,
+        path: path,
+      );
+    }
+    final image = await matte.toImage(width, height);
     return RenderedGeometryCache(
       matte: image,
       matteBounds: matteBounds,
@@ -359,18 +375,53 @@ class UnrenderedGeometryCache extends GeometryCache {
 
   @override
   RenderedGeometryCache render() {
-    final image = matte.toImageSync(
-      matteBounds.width.ceil(),
-      matteBounds.height.ceil(),
-    );
-    dispose();
-    return RenderedGeometryCache(
-      matte: image,
-      matteBounds: matteBounds,
-      bounds: bounds,
-      shapes: shapes,
-      path: path,
-    );
+    final width = matteBounds.width.ceil();
+    final height = matteBounds.height.ceil();
+    // Guard: zero/negative dimensions during jelly squash or rapid layout
+    // transitions can produce invalid GPU texture requests on Mali GPUs.
+    if (width < 1 || height < 1) {
+      dispose();
+      final recorder = PictureRecorder();
+      Canvas(recorder);
+      final fallback = recorder.endRecording();
+      final image = fallback.toImageSync(1, 1);
+      fallback.dispose();
+      return RenderedGeometryCache(
+        matte: image,
+        matteBounds: const Rect.fromLTWH(0, 0, 1, 1),
+        bounds: bounds,
+        shapes: shapes,
+        path: path,
+      );
+    }
+    try {
+      final image = matte.toImageSync(width, height);
+      dispose();
+      return RenderedGeometryCache(
+        matte: image,
+        matteBounds: matteBounds,
+        bounds: bounds,
+        shapes: shapes,
+        path: path,
+      );
+    } catch (_) {
+      // Mali GPU driver failure during toImageSync — return a safe 1×1 fallback
+      // rather than crashing the entire app. The next paint frame will rebuild
+      // the geometry with valid dimensions.
+      dispose();
+      final recorder = PictureRecorder();
+      Canvas(recorder);
+      final fallback = recorder.endRecording();
+      final image = fallback.toImageSync(1, 1);
+      fallback.dispose();
+      return RenderedGeometryCache(
+        matte: image,
+        matteBounds: const Rect.fromLTWH(0, 0, 1, 1),
+        bounds: bounds,
+        shapes: shapes,
+        path: path,
+      );
+    }
   }
 
   /// Disposes of the resources used by the geometry.

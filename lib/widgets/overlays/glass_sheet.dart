@@ -506,6 +506,7 @@ class _GlassSheetState extends State<GlassSheet> with TickerProviderStateMixin {
             allowPositive: widget.allowPositiveStretch,
             allowNegative: widget.allowNegativeStretch,
             suppressInteractionOnChildren: widget.suppressInteractionOnChildren,
+            anchorStretch: false, // Sheets use jelly-follow, not anchored
             child: result,
           ),
         );

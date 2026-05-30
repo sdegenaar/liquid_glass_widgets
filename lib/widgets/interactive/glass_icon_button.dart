@@ -100,6 +100,9 @@ class GlassIconButton extends StatelessWidget {
     this.useOwnLayer = false,
     this.settings,
     this.quality,
+    this.persistPressOnDrag = true,
+    this.anchorStretch = true,
+    this.anchorStretchSettings = const AnchorStretchSettings(),
   });
 
   // Cache default colors to avoid allocations
@@ -196,6 +199,25 @@ class GlassIconButton extends StatelessWidget {
   /// [GlassQuality.standard] (backdrop filter).
   final GlassQuality? quality;
 
+  /// Whether the pressed glass distortion persists while the finger is held
+  /// down, even if dragged far away from the button.
+  ///
+  /// Forwarded to the underlying [GlassButton.persistPressOnDrag].
+  /// See [GlassButton.persistPressOnDrag] for full documentation.
+  ///
+  /// Defaults to true.
+  final bool persistPressOnDrag;
+
+  /// Whether to anchor the button in place while stretching toward the finger.
+  ///
+  /// Defaults to `true`. See [GlassButton.anchorStretch].
+  final bool anchorStretch;
+
+  /// Fine-tuning for the anchor stretch effect.
+  ///
+  /// See [AnchorStretchSettings] for details.
+  final AnchorStretchSettings anchorStretchSettings;
+
   @override
   Widget build(BuildContext context) {
     final effectiveIconSize = iconSize ?? (size * 0.5);
@@ -227,6 +249,9 @@ class GlassIconButton extends StatelessWidget {
       interactionScale: interactionScale,
       glowColor: glowColor, // Let GlassButton use theme if null
       glowRadius: glowRadius,
+      persistPressOnDrag: persistPressOnDrag,
+      anchorStretch: anchorStretch,
+      anchorStretchSettings: anchorStretchSettings,
       child: iconWidget,
     );
   }

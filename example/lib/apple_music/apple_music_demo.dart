@@ -442,7 +442,7 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
             child: const Icon(
               CupertinoIcons.person_3_fill,
               color: _kMusicRed,
-              size: 240,
+              size: 220,
             ),
           ),
         ),
@@ -776,13 +776,15 @@ class _PlayBarPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassButton(
+    return GlassButton.custom(
       onTap: onTap ?? () {},
       quality: GlassQuality.premium,
       useOwnLayer: true,
+      width: double.infinity,
+      height: _kBarH,
       shape: const LiquidRoundedSuperellipse(borderRadius: _kBarH / 2),
       settings: _kPillGlass,
-      icon: Padding(
+      child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Row(
           children: [
@@ -908,9 +910,9 @@ class _HeroCard extends StatelessWidget {
               height: 1.2,
             ),
           ),
-          const Spacer(),
-          child,
-          const Spacer(),
+          const SizedBox(height: 8),
+          Expanded(child: child),
+          const SizedBox(height: 8),
           Text(
             subtitle,
             style: const TextStyle(

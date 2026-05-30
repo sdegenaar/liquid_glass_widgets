@@ -149,10 +149,12 @@ void main() {
       expect(GlassThemeVariant.dark.settings?.thickness, isNotNull);
     });
 
-    test('dark thickness is >= light thickness (dark glass is thicker)', () {
+    test(
+        'light thickness is >= dark thickness (light glass needs more contrast)',
+        () {
       final lightThickness = GlassThemeVariant.light.settings?.thickness ?? 0;
       final darkThickness = GlassThemeVariant.dark.settings?.thickness ?? 0;
-      expect(darkThickness, greaterThanOrEqualTo(lightThickness));
+      expect(lightThickness, greaterThanOrEqualTo(darkThickness));
     });
 
     test('all presets have non-null glowColors', () {

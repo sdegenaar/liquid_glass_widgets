@@ -358,6 +358,31 @@ void main() {
 
       expect(config.controller, same(ctrl));
     });
+
+    // ── cursorColor (PR #71) ────────────────────────────────────────────────
+
+    test('cursorColor defaults to null (follows Flutter theme chain)', () {
+      final config = GlassSearchBarConfig(onSearchToggle: (_) {});
+      expect(config.cursorColor, isNull);
+    });
+
+    test('cursorColor stores explicit value', () {
+      final config = GlassSearchBarConfig(
+        onSearchToggle: (_) {},
+        cursorColor: const Color(0xFFFF0000),
+      );
+      expect(config.cursorColor, equals(const Color(0xFFFF0000)));
+    });
+
+    test('cursorColor is independent from textColor', () {
+      final config = GlassSearchBarConfig(
+        onSearchToggle: (_) {},
+        textColor: const Color(0xFFFFFFFF),
+        cursorColor: const Color(0xFF0000FF),
+      );
+      expect(config.textColor, equals(const Color(0xFFFFFFFF)));
+      expect(config.cursorColor, equals(const Color(0xFF0000FF)));
+    });
   });
 
   // ── Additional coverage for uncovered branches ───────────────────────────

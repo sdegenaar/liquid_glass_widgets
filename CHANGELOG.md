@@ -1,24 +1,163 @@
 # 0.13.0
 
-## ✨ Feature — `GlassSearchBarConfig.cursorColor` + cursor follows Flutter theme by default
+## ✨ New — Anchor Stretch, Ambient Light, and Interaction Physics
+
+### `AnchorStretchSettings` — fine-tuned stretch feel
+
+A new configuration class for `LiquidStretch` that controls how widgets deform when pressed and dragged. Widgets now stretch *from their anchor point* toward the drag direction — matching iOS 26 button physics where the surface rubber-bands from its resting position rather than free-following the finger.
+
+```dart
+GlassButton(
+  anchorStretchSettings: AnchorStretchSettings(
+    intensity: 0.8,       // more stretchy
+    squashFactor: 0.3,    // perpendicular compression
+    translationDamping: 0.15, // center-shift toward finger
+    bounciness: 0.2,      // elastic snap-back overshoot
+  ),
+)
+```
+
+All parameters have sensible defaults matching iOS 26 behaviour. Most developers won't need to change them.
+
+### `GlassButton.ambientBaseLight` — surface luminosity
+
+A subtle white overlay (default `0.08`) applied during press/drag interactions. Simulates iOS 26 surface luminosity — when the directional glow tracks off-edge, the button still maintains a faint lit appearance rather than going completely dark.
+
+### `GlassButton.persistPressOnDrag`
+
+Controls whether the pressed visual state persists when the user's finger drags outside the button bounds. Defaults to `true`, matching iOS 26 behaviour where buttons stay visually pressed during drag-off and only release on pointer-up. Set to `false` for the traditional behaviour where leaving the hit-test area cancels the press.
+
+### `GlassPage.settings` — page-level glass configuration
+
+`GlassPage` now accepts an optional `settings: LiquidGlassSettings` parameter and internally wraps its child in an `AdaptiveLiquidGlassLayer`. This means all glass widgets inside the page (`GlassAppBar`, `GlassCard`, `GlassButton`, etc.) automatically inherit the page's glass settings — no need to set `useOwnLayer: true` or pass `settings:` to each widget individually.
+
+```dart
+GlassPage(
+  settings: LiquidGlassSettings(
+    glassColor: Color.fromRGBO(28, 28, 30, 0.8),
+    thickness: 30,
+    blur: 4,
+  ),
+  child: Scaffold(...),
+)
+```
+
+When `settings` is null, the layer inherits from `GlassTheme` or uses defaults.
+
+### `GlassSearchBarConfig.cursorColor` — cursor follows Flutter theme by default
+
+Thanks to [@jfhair](https://github.com/jfhair) for [PR #71](https://github.com/sdegenaar/liquid_glass_widgets/pull/71). 🙏
 
 `GlassSearchableBottomBar`'s expanded search field now exposes a `cursorColor` knob via `GlassSearchBarConfig`, and the default behaviour aligns with Flutter convention — the cursor follows the standard theme-resolution chain (`Theme.of(context).textSelectionTheme.cursorColor` → `CupertinoTheme.primaryColor` on iOS → `Theme.of(context).colorScheme.primary`) rather than being hard-coupled to `textColor`.
 
-This means theme-driven apps automatically get the right cursor color (matching every other Material `TextField` in the app) without any per-instance configuration. Apps that want the previous behaviour — cursor matching `textColor` — can opt in explicitly:
+Apps that want the previous behaviour — cursor matching `textColor` — can opt in explicitly:
 
 ```dart
 GlassSearchBarConfig(
   textColor: Colors.white,
   cursorColor: Colors.white,  // ← previously implicit
-  ...
 )
 ```
 
-### ⚠️ Breaking change
+> **⚠ Breaking change.** Apps that set a `textColor` and rely on the cursor implicitly matching it will see their cursor colour change to whatever their `Theme.of(context).colorScheme.primary` is (typically `Colors.blue` if untouched). Two-line migration above.
 
-Apps that set a `textColor` and rely on the cursor implicitly matching it will see their cursor colour change to whatever their `Theme.of(context).colorScheme.primary` is (typically `Colors.blue` if untouched). Two-line migration above.
+## 🐛 Fix — Premium stretch edge clipping
 
-The change was driven by an app where `textColor: Colors.white` produced an invisible-on-glass white cursor, and the standard Flutter levers (`textSelectionTheme.cursorColor`, `cupertinoOverrideTheme.primaryColor`) couldn't override it because the package was passing a non-null `cursorColor` to the underlying `TextField` — short-circuiting Flutter's entire resolution chain. Decoupling the two restores the standard mechanism.
+Premium-quality `GlassButton` could exhibit jagged rasterization edges during stretch deformation. The Impeller `LiquidGlassLayer` rasterizes at its native resolution, which doesn't perfectly align with the deformed shape boundary during stretch.
+
+Fixed by wrapping the premium glass surface in a vector `ClipPath` at the shape boundary. This renders at screen resolution every frame while preserving full refraction, chromatic aberration, and 3D specular — no quality downgrade needed.
+
+## 🐛 Fix — Mali GPU crash guard
+
+`render_liquid_glass_geometry.dart` now guards against zero and negative dimensions in both `render()` and `renderAsync()`. During jelly animations or rapid layout transitions (modal expansion, tab switching), `matteBounds` can momentarily collapse to zero dimensions — producing an invalid GPU texture request that crashes Mali drivers.
+
+The fix returns a minimal 1×1 fallback cache for zero-dimension frames. Additionally, `matte.toImageSync()` is wrapped in a `try/catch` to handle Mali driver failures gracefully — returning a safe fallback instead of crashing the app. The next paint frame rebuilds the geometry with valid dimensions automatically.
+
+## 🐛 Fix — Searchable bottom bar collapsed shape
+
+The collapsed search button and tab indicator in `GlassSearchableBottomBar` used `LiquidRoundedSuperellipse` even when collapsed to a square. A superellipse with `borderRadius: 32` on a 50×50 square has subtle flat segments between the arcs — invisible at rest but clearly distorted during stretch deformation.
+
+Fixed by switching to `LiquidOval` when constraints are square (within 2px tolerance), which renders a mathematically perfect circle that stretches uniformly. During the collapse animation (when the width is still wider than the height), the superellipse is used to avoid a squashed oval appearance.
+
+## 🎨 Visual — iOS 26 thin glass defaults
+
+The three default theme variants have been standardised to match the thin, refractive glass aesthetic of iOS 26:
+
+| Property | Dark | Light | Minimal |
+|----------|------|-------|---------|
+| thickness | 40 → **10** | 20 → **12** | 30 → **10** |
+| blur | 5 → **4** | 6 → **5** | 12 → **8** |
+| lightIntensity | 1.5 → **0.7** | 1.2 → **0.85** | unchanged |
+| lightAngle | unset → **135°** | unset → **135°** | unchanged |
+| chromaticAberration | unset → **0.01** | 0.3 → **0.02** | unchanged |
+
+> **⚠ Visual change.** Apps using `GlassThemeVariant.dark`, `.light`, or `.minimal` without explicit `LiquidGlassSettings` overrides will see thinner, subtler glass. This is intentional — the previous defaults were heavier than the native iOS 26 aesthetic. If you prefer the heavier look, set explicit `thickness` and `blur` values in your `GlassThemeData`.
+
+## ⚠️ Semi-Breaking — `GlassAppBar` transparent by default
+
+`GlassAppBar` now renders a **transparent** navigation bar by default — no glass surface, no specular rim. This matches iOS 26's actual navigation bar pattern where the glass effect is on individual buttons, not the bar itself.
+
+Previously, `GlassAppBar` always wrapped its content in an `AdaptiveGlass` surface with `LiquidGlassSettings(blur: 15)`. This created a visible glass rectangle behind the title and actions — a Material-style app bar with glass paint, not an iOS 26 navigation bar. A better version of this to come next
+
+To opt in to a glass background (e.g. for scroll-edge transitions), pass explicit `settings`:
+
+```dart
+// Before (0.12.x) — glass was always on:
+GlassAppBar(title: Text('Title'))
+
+// After (0.13.0) — transparent by default:
+GlassAppBar(title: Text('Title'))  // transparent, iOS 26 style
+
+// Opt-in glass background:
+GlassAppBar(
+  title: Text('Title'),
+  settings: LiquidGlassSettings(blur: 15, thickness: 10),
+)
+```
+
+Additionally, `quality` now defaults to `null` (inherits from ambient scope) instead of `GlassQuality.premium`.
+
+## 🎨 Visual — Specular rim refinement
+
+Standard/minimal quality glass surfaces now render a more refined specular inner-border rim:
+
+- **True inner border** — the specular stroke is now clipped to its inner half via `_ShapeClip`, creating an optically correct glass-edge reflection instead of a center-straddling stroke that bleeds outside the shape boundary.
+- **Organic overlay blending** — `BlendMode.overlay` replaces `BlendMode.srcOver`, so the rim reacts to the background colour underneath rather than appearing as a flat white line. Darker backgrounds produce subtler rims; lighter backgrounds produce brighter ones.
+- **Flat-edge suppression** — shapes with `borderRadius: 0` (used by `GlassAppBar`, `GlassSideBar`, `GlassToolbar`) no longer render the specular rim. On full-width flat surfaces, the rim looked like a Material divider line rather than an internal glass reflection.
+
+Only affects standard and minimal quality. Premium quality uses Impeller's native `LiquidGlassLayer` which has its own refraction-based edge rendering.
+
+## ⚡ Performance — Quality adapter tuning
+
+- **Faster degradation** — Phase 3 runtime monitoring now triggers a quality step-down after 2 consecutive over-budget windows (previously 3), reducing reaction time from ~6 seconds to ~4 seconds. This means devices that genuinely can't sustain their assigned quality level are protected sooner.
+- **Documentation updated** — removed provisional calibration warnings from warmup threshold docs. The 20ms premium / 28ms standard thresholds are now considered validated.
+
+## ⚠️ Semi-Breaking — `LiquidStretch.resistance` default
+
+The default `resistance` value for `LiquidStretch` has changed from `0.08` to `0.01`. This makes all stretch interactions feel more responsive and fluid — closer to the iOS 26 native feel. The previous value was overly dampened.
+
+All widgets using `LiquidStretch` without explicitly setting `resistance` (including `GlassButton`, `GlassCard`, `GlassContainer`, `GlassMenu`) will feel stretchier. To restore the previous behaviour:
+
+```dart
+LiquidStretch(
+  resistance: 0.08, // previous default
+  child: ...,
+)
+```
+
+## 🧪 Tests — 1898 passing (+124 new)
+
+- New `GlassButton` tests: `persistPressOnDrag` true/false behaviour, default values, cancel paths.
+- New `GlassSearchBarConfig.cursorColor` tests: default null, explicit value, independence from `textColor`.
+- Updated `glass_quality_adapter` tests for `degradeWindowCount: 2`.
+- Updated stretch tests for new `resistance` default.
+- Updated `GlassAppBar` defaults test for transparent-by-default change.
+- Updated golden tests for specular rim flat-edge suppression.
+
+## 📦 Example app
+
+- **Keypad lock screen demo** — new full-screen demo showcasing `GlassButton` in a PIN-entry layout.
+- **Restructured showcase pages** — all category pages (containers, feedback, input, interactive, overlays, surfaces) reorganised for cleaner presentation. More work to come...
 
 ---
 
