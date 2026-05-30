@@ -273,74 +273,56 @@ class _MessagesScreenState extends State<MessagesScreen> {
     final topPad = MediaQuery.paddingOf(context).top;
     final botPad = MediaQuery.paddingOf(context).bottom;
 
-    return Scaffold(
-      backgroundColor: _kBg,
-      extendBody: true,
-      body: Stack(
-        children: [
-          // ── Conversation list with edge fades ─────────────────────────
-          GlassScrollEdgeEffect(
-            topFadeHeight: topPad + 52 + 50,
-            bottomFadeHeight: 60.0 + botPad,
-            child: CustomScrollView(
-              controller: _scrollController,
-              slivers: [
-                // Status bar space + nav bar height
-                SliverToBoxAdapter(child: SizedBox(height: topPad + 52)),
+    return GlassScaffold(
+      background: const ColoredBox(color: _kBg),
+      statusBarStyle: GlassStatusBarStyle.light,
+      appBarHeight: 52,
+      bottomBarHeight: 60,
+      appBar: _NavBar(
+        topPad: topPad,
+        headerCollapsed: _headerCollapsed,
+        activeFilter: _activeFilter,
+        onFilterChanged: (filter) => setState(() => _activeFilter = filter),
+      ),
+      bottomBar: _SearchBar(bottomPad: botPad),
+      body: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          // Status bar space + nav bar height
+          SliverToBoxAdapter(child: SizedBox(height: topPad + 52)),
 
-                // Large "Messages" title (collapses on scroll)
-                SliverToBoxAdapter(
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 200),
-                    opacity: _headerCollapsed ? 0 : 1,
-                    child: const Padding(
-                      padding: EdgeInsets.fromLTRB(16, 4, 16, 8),
-                      child: Text(
-                        'Messages',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 34,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                    ),
+          // Large "Messages" title (collapses on scroll)
+          SliverToBoxAdapter(
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 200),
+              opacity: _headerCollapsed ? 0 : 1,
+              child: const Padding(
+                padding: EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: Text(
+                  'Messages',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 34,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
                   ),
                 ),
-
-                // Conversation rows
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, i) => _ConversationRow(
-                      conversation: _kConversations[i],
-                    ),
-                    childCount: _kConversations.length,
-                  ),
-                ),
-
-                // Bottom padding — ensure last row scrolls above search bar.
-                SliverToBoxAdapter(child: SizedBox(height: 92 + botPad)),
-              ],
+              ),
             ),
           ),
 
-          // ── Top navigation bar ───────────────────────────────────────────
-          _NavBar(
-            topPad: topPad,
-            headerCollapsed: _headerCollapsed,
-            activeFilter: _activeFilter,
-            onFilterChanged: (filter) => setState(() => _activeFilter = filter),
+          // Conversation rows
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, i) => _ConversationRow(
+                conversation: _kConversations[i],
+              ),
+              childCount: _kConversations.length,
+            ),
           ),
 
-          // ── Bottom search + compose bar ──────────────────────────────────
-          // bottom: 0 — inner padding (widget.bottomPad) handles safe area
-          // on both iOS (home indicator) and Android (gesture nav bar).
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _SearchBar(bottomPad: botPad),
-          ),
+          // Bottom padding — ensure last row scrolls above search bar.
+          SliverToBoxAdapter(child: SizedBox(height: 92 + botPad)),
         ],
       ),
     );
@@ -366,51 +348,46 @@ class _NavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(height: topPad),
-          SizedBox(
-            height: 52,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // ── Edit menu (top-left) ─────────────────────────────────
-                  const _EditMenu(),
-                  const Spacer(),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(height: topPad),
+        SizedBox(
+          height: 52,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // ── Edit menu (top-left) ─────────────────────────────────
+                const _EditMenu(),
+                const Spacer(),
 
-                  // Inline "Messages" title when scrolled
-                  AnimatedOpacity(
-                    duration: const Duration(milliseconds: 200),
-                    opacity: headerCollapsed ? 1 : 0,
-                    child: const Text(
-                      'Messages',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                      ),
+                // Inline "Messages" title when scrolled
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: headerCollapsed ? 1 : 0,
+                  child: const Text(
+                    'Messages',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const Spacer(),
+                ),
+                const Spacer(),
 
-                  // ── Filter menu (top-right) ──────────────────────────────
-                  _FilterMenu(
-                    activeFilter: activeFilter,
-                    onFilterChanged: onFilterChanged,
-                  ),
-                ],
-              ),
+                // ── Filter menu (top-right) ──────────────────────────────
+                _FilterMenu(
+                  activeFilter: activeFilter,
+                  onFilterChanged: onFilterChanged,
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

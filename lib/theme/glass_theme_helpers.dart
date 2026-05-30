@@ -4,6 +4,7 @@ import '../liquid_glass_setup.dart';
 import '../src/renderer/liquid_glass_renderer.dart';
 import '../types/glass_quality.dart';
 import '../widgets/shared/glass_adaptive_scope.dart';
+import '../widgets/shared/glass_isolation_scope.dart';
 import '../widgets/shared/inherited_liquid_glass.dart';
 import 'glass_theme.dart';
 import 'glass_theme_data.dart';
@@ -181,10 +182,18 @@ class GlassThemeHelpers {
     }
 
     // Step 2: inherited ancestor quality (e.g. from AdaptiveLiquidGlassLayer).
+    //
+    // SKIP when inside a GlassIsolationScope — isolated surfaces (app bar,
+    // bottom bar) create their own glass layers and should not inherit quality
+    // from the page-level layer. Without this guard, a GlassPage with
+    // standard-quality settings would override GlassBottomBar's premium
+    // fallback, making the bottom bar render at lower quality than intended.
     GlassQuality? resolved;
-    final inherited =
-        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
-    if (inherited != null) resolved = inherited.quality;
+    if (!GlassIsolationScope.isIsolated(context)) {
+      final inherited =
+          context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+      if (inherited != null) resolved = inherited.quality;
+    }
 
     // Step 3: cap inherited quality by adaptive ceiling.
     if (adaptiveData != null && resolved != null) {

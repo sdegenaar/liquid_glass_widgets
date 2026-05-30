@@ -668,25 +668,30 @@ class _GlassButtonState extends State<GlassButton>
           explicit: widget.settings,
         );
 
-        // Fix jagged edges on premium glass during stretch animations.
+        // Fix jagged edges on premium glass during stretch animations while
+        // preserving crisp rim rendering at rest.
         //
-        // Problem: Impeller's LiquidGlassLayer is a compositor layer that
-        // rasterizes at a fixed resolution. LiquidStretch's TransformLayer
-        // scales this cached texture → bilinear interpolation at edges → jagged.
+        // Problem: Impeller's LiquidGlassLayer rasterizes at a fixed resolution.
+        // LiquidStretch's TransformLayer scales this cached texture → bilinear
+        // interpolation at shape edges → jagged.
         //
-        // Solution: Wrap the glass in a vector ClipPath at the same shape
-        // boundary. The clip is a paint-level operation that renders at the
-        // Note: Premium quality on Impeller may show slightly jagged edges
-        // during stretch animations. This is a known Impeller compositing
-        // limitation — LiquidGlassLayer rasterizes at a fixed resolution and
-        // TransformLayer scales the cached output. Standard quality doesn't
-        // have this issue because the 2D shader re-executes every frame.
-        // Switching to standard during stretch was tried but the visual pop
-        // from the different specular rendering was more noticeable than
-        // the jaggedness itself.
-
+        // Solution: Always-present vector ClipPath with animated expansion:
+        //  • At rest (not interacting): clip expanded by 2px on all sides so
+        //    the shader's rim/refraction extends beyond the shape boundary
+        //    without being clipped → crisp premium rim.
+        //  • During interaction (pressing/stretching): clip tightens to the
+        //    exact shape boundary, hiding jagged rasterization artifacts that
+        //    appear at the shape edge during transform scaling.
+        //
+        // Using a constant ClipPath (instead of toggling it on/off) avoids
+        // widget tree instability and the associated rebuild cost.
         final bool needsEdgeClip =
             widget.stretch > 0 && effectiveQuality == GlassQuality.premium;
+
+        // Expansion goes from 2px (rest) → 0px (interacting).
+        // The saturation animation is 0.0 at rest, 1.0 when pressed.
+        final double clipExpansion =
+            needsEdgeClip ? 2.0 * (1.0 - _saturationAnimation.value) : 0.0;
 
         // Pass glow intensity directly to AdaptiveGlass for Skia shader feedback.
         // On Impeller, GlassGlow widget is used instead (separate from glass effect).
@@ -703,7 +708,10 @@ class _GlassButtonState extends State<GlassButton>
 
         if (needsEdgeClip) {
           glass = ClipPath(
-            clipper: ShapeBorderClipper(shape: widget.shape),
+            clipper: _ExpandedShapeClipper(
+              shape: widget.shape,
+              expansion: clipExpansion,
+            ),
             clipBehavior: Clip.antiAlias,
             child: glass,
           );
@@ -815,4 +823,42 @@ class _GlassButtonState extends State<GlassButton>
       child: finalWidget,
     );
   }
+}
+
+/// Clips to a [ShapeBorder]'s outer path, optionally expanded by [expansion]
+/// pixels on all sides.
+///
+/// At rest ([expansion] > 0), the clip is slightly larger than the shape,
+/// allowing the glass shader's rim/refraction to extend beyond the strict
+/// shape boundary. During stretch interaction ([expansion] → 0), the clip
+/// tightens to the exact shape boundary, hiding rasterization artifacts.
+class _ExpandedShapeClipper extends CustomClipper<Path> {
+  _ExpandedShapeClipper({
+    required this.shape,
+    this.expansion = 0.0,
+  });
+
+  final ShapeBorder shape;
+  final double expansion;
+
+  @override
+  Path getClip(Size size) {
+    if (expansion <= 0) {
+      // Tight clip — exact shape boundary.
+      return shape.getOuterPath(Offset.zero & size);
+    }
+    // Expanded clip — inflate the rect so the shape path extends beyond
+    // the widget's layout bounds, giving the shader's rim room to render.
+    final expandedRect = Rect.fromLTWH(
+      -expansion,
+      -expansion,
+      size.width + expansion * 2,
+      size.height + expansion * 2,
+    );
+    return shape.getOuterPath(expandedRect);
+  }
+
+  @override
+  bool shouldReclip(_ExpandedShapeClipper oldClipper) =>
+      shape != oldClipper.shape || expansion != oldClipper.expansion;
 }

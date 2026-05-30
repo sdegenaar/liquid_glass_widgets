@@ -9,6 +9,7 @@
 ///   5. Static glass (always visible)
 ///   6. Transparent fade-only (no title in bar)
 ///   7. Large title + glass combined
+///   8. Tab bar with bottom fade
 ///
 /// Run standalone:
 ///   flutter run -t lib/demos/nav_bar_patterns_demo.dart
@@ -44,7 +45,6 @@ class NavBarPatternsDemo extends StatelessWidget {
       background: buildShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
       statusBarStyle: GlassStatusBarStyle.light,
-      bottomEdgeFade: false,
       appBar: GlassAppBar(
         leading: GlassButton(
           quality: GlassQuality.premium,
@@ -88,8 +88,7 @@ class NavBarPatternsDemo extends StatelessWidget {
                 const SizedBox(height: 32),
                 _PatternTile(
                   title: 'Inline Title',
-                  subtitle:
-                      'Title right of back button — standard compact bar',
+                  subtitle: 'Title right of back button — standard compact bar',
                   icon: CupertinoIcons.textformat,
                   onTap: () => _push(context, const _InlineTitleDemo()),
                 ),
@@ -99,34 +98,28 @@ class NavBarPatternsDemo extends StatelessWidget {
                   subtitle:
                       'Large title below bar, collapses to center on scroll',
                   icon: CupertinoIcons.text_alignleft,
-                  onTap: () =>
-                      _push(context, const _LargeTitleCollapseDemo()),
+                  onTap: () => _push(context, const _LargeTitleCollapseDemo()),
                 ),
                 const SizedBox(height: 16),
                 _PatternTile(
                   title: 'Scroll-Driven Glass',
-                  subtitle:
-                      'Transparent at rest, glass materialises on scroll',
+                  subtitle: 'Transparent at rest, glass materialises on scroll',
                   icon: CupertinoIcons.sparkles,
                   onTap: () => _push(context, const _ScrollGlassDemo()),
                 ),
                 const SizedBox(height: 16),
                 _PatternTile(
                   title: 'Solid Background',
-                  subtitle:
-                      'Opaque colour bar — WhatsApp conversation style',
+                  subtitle: 'Opaque colour bar — WhatsApp conversation style',
                   icon: CupertinoIcons.paintbrush,
-                  onTap: () =>
-                      _push(context, const _SolidBackgroundDemo()),
+                  onTap: () => _push(context, const _SolidBackgroundDemo()),
                 ),
                 const SizedBox(height: 16),
                 _PatternTile(
                   title: 'Static Glass',
-                  subtitle:
-                      'Always-on glass surface — toolbar / player bar',
+                  subtitle: 'Always-on glass surface — toolbar / player bar',
                   icon: CupertinoIcons.rectangle_fill,
-                  onTap: () =>
-                      _push(context, const _StaticGlassDemo()),
+                  onTap: () => _push(context, const _StaticGlassDemo()),
                 ),
                 const SizedBox(height: 16),
                 _PatternTile(
@@ -138,12 +131,19 @@ class NavBarPatternsDemo extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 _PatternTile(
-                  title: 'Large Title + Glass on Scroll',
+                  title: 'Large Title Glass on Scroll',
                   subtitle:
                       'Large title collapses AND glass materialises together',
                   icon: CupertinoIcons.layers,
-                  onTap: () =>
-                      _push(context, const _LargeTitleWithGlassDemo()),
+                  onTap: () => _push(context, const _LargeTitleWithGlassDemo()),
+                ),
+                const SizedBox(height: 16),
+                _PatternTile(
+                  title: 'Tab Bar + Bottom Fade',
+                  subtitle:
+                      'Bottom bar with dual edge fade — iOS Settings style',
+                  icon: CupertinoIcons.square_grid_2x2,
+                  onTap: () => _push(context, const _TabBarBottomFadeDemo()),
                 ),
                 const SizedBox(height: 100),
               ],
@@ -249,8 +249,7 @@ Widget _buildDummyContent({int count = 25, double topPadding = 0}) {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: Colors
-                    .primaries[index % Colors.primaries.length]
+                color: Colors.primaries[index % Colors.primaries.length]
                     .withValues(alpha: 0.25),
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -311,7 +310,6 @@ class _InlineTitleDemo extends StatelessWidget {
       background: buildShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
       statusBarStyle: GlassStatusBarStyle.light,
-      bottomEdgeFade: false,
       appBar: GlassAppBar(
         title: const Text(
           'Inline Title',
@@ -398,7 +396,6 @@ class _LargeTitleCollapseDemoState extends State<_LargeTitleCollapseDemo> {
       background: buildShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
       statusBarStyle: GlassStatusBarStyle.light,
-      bottomEdgeFade: false,
       appBar: GlassAppBar(
         title: Opacity(
           opacity: _collapseProgress,
@@ -495,7 +492,6 @@ class _ScrollGlassDemoState extends State<_ScrollGlassDemo> {
       background: buildShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
       statusBarStyle: GlassStatusBarStyle.light,
-      bottomEdgeFade: false,
       appBar: GlassAppBar(
         title: const Text(
           'Messages',
@@ -612,7 +608,6 @@ class _StaticGlassDemo extends StatelessWidget {
       background: buildShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
       statusBarStyle: GlassStatusBarStyle.light,
-      bottomEdgeFade: false,
       appBar: GlassAppBar(
         settings: RecommendedGlassSettings.surface,
         title: const Text(
@@ -669,7 +664,6 @@ class _FadeOnlyDemo extends StatelessWidget {
       background: buildShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
       statusBarStyle: GlassStatusBarStyle.light,
-      bottomEdgeFade: false,
       appBar: GlassAppBar(
         leading: GlassButton(
           quality: GlassQuality.premium,
@@ -754,7 +748,6 @@ class _LargeTitleWithGlassDemoState extends State<_LargeTitleWithGlassDemo> {
       background: buildShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
       statusBarStyle: GlassStatusBarStyle.light,
-      bottomEdgeFade: false,
       appBar: GlassAppBar(
         title: Opacity(
           opacity: _collapseProgress,
@@ -809,3 +802,80 @@ class _LargeTitleWithGlassDemoState extends State<_LargeTitleWithGlassDemo> {
   }
 }
 
+// =============================================================================
+// 8. Tab Bar + Bottom Fade
+// =============================================================================
+
+class _TabBarBottomFadeDemo extends StatefulWidget {
+  const _TabBarBottomFadeDemo();
+
+  @override
+  State<_TabBarBottomFadeDemo> createState() => _TabBarBottomFadeDemoState();
+}
+
+class _TabBarBottomFadeDemoState extends State<_TabBarBottomFadeDemo> {
+  int _selectedTab = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final topPad = MediaQuery.paddingOf(context).top;
+
+    return GlassScaffold(
+      background: buildShowcaseBackground(),
+      settings: RecommendedGlassSettings.standard,
+      statusBarStyle: GlassStatusBarStyle.dark,
+      bottomBar: GlassBottomBar(
+        selectedIndex: _selectedTab,
+        onTabSelected: (index) => setState(() => _selectedTab = index),
+        glassSettings: RecommendedGlassSettings.standard.copyWith(
+        thickness: 20, blur: 3
+        ),
+        tabs: const [
+          GlassBottomBarTab(
+            icon: Icon(CupertinoIcons.house_fill),
+            label: 'Home',
+          ),
+          GlassBottomBarTab(
+            icon: Icon(CupertinoIcons.search),
+            label: 'Search',
+          ),
+          GlassBottomBarTab(
+            icon: Icon(CupertinoIcons.bell_fill),
+            label: 'Alerts',
+          ),
+          GlassBottomBarTab(
+            icon: Icon(CupertinoIcons.person_fill),
+            label: 'Profile',
+          ),
+        ],
+      ),
+      appBar: GlassAppBar(
+        title: const Text(
+          'Settings',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        leading: GlassButton(
+          quality: GlassQuality.premium,
+          icon: const Icon(CupertinoIcons.back),
+          onTap: () => Navigator.of(context).pop(),
+          width: 40,
+          height: 40,
+          iconSize: 20,
+        ),
+      ),
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: SizedBox(height: topPad + 44 + 16),
+          ),
+          _buildDummyContent(),
+          const SliverToBoxAdapter(child: SizedBox(height: 120)),
+        ],
+      ),
+    );
+  }
+}

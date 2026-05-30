@@ -6,6 +6,7 @@ import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../theme/glass_theme_data.dart';
 import '../../types/glass_quality.dart';
 import '../../utils/glass_performance_monitor.dart';
+import 'glass_isolation_scope.dart';
 import 'inherited_liquid_glass.dart';
 
 /// An adaptive liquid glass layer that provides a glass background with proper
@@ -112,11 +113,14 @@ class AdaptiveLiquidGlassLayer extends StatelessWidget {
     // settings and quality.
     // -------------------------------------------------------------------------
     if (effectiveQuality == GlassQuality.minimal) {
-      return InheritedLiquidGlass(
-        settings: effectiveSettings,
-        quality: effectiveQuality,
-        isBlurProvidedByAncestor: false,
-        child: child,
+      return GlassIsolationScope(
+        isolated: false,
+        child: InheritedLiquidGlass(
+          settings: effectiveSettings,
+          quality: effectiveQuality,
+          isBlurProvidedByAncestor: false,
+          child: child,
+        ),
       );
     }
 
@@ -131,17 +135,20 @@ class AdaptiveLiquidGlassLayer extends StatelessWidget {
     return PremiumGlassTracker(
       child: LiquidGlassLayer(
         settings: effectiveSettings,
-        child: InheritedLiquidGlass(
-          settings: effectiveSettings,
-          quality: effectiveQuality,
-          isBlurProvidedByAncestor:
-              false, // Root never provides the blur; containers do.
-          child: useFullRenderer
-              ? LiquidGlassBlendGroup(
-                  blend: blendAmount,
-                  child: content,
-                )
-              : content,
+        child: GlassIsolationScope(
+          isolated: false,
+          child: InheritedLiquidGlass(
+            settings: effectiveSettings,
+            quality: effectiveQuality,
+            isBlurProvidedByAncestor:
+                false, // Root never provides the blur; containers do.
+            child: useFullRenderer
+                ? LiquidGlassBlendGroup(
+                    blend: blendAmount,
+                    child: content,
+                  )
+                : content,
+          ),
         ),
       ),
     );

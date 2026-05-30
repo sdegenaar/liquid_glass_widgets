@@ -1,41 +1,59 @@
 import 'package:flutter/widgets.dart';
 
-/// An [InheritedWidget] that tells descendant glass widgets to use their own
-/// independent glass rendering layer instead of sharing the page-level layer.
+/// An [InheritedWidget] that tells descendant glass widgets whether to use
+/// their own independent glass rendering layer or share the nearest ancestor's.
 ///
 /// This is a zero-cost scope marker — it doesn't create any glass rendering
 /// context, shader, or compositing layer. It simply provides a signal that
 /// descendant [AdaptiveGlass] widgets check to decide whether to use
 /// `useOwnLayer: true`.
 ///
-/// Used by [GlassScaffold] to isolate app bar and bottom bar glass from body
-/// glass, preventing z-ordering issues in the shared glass compositing layer.
+/// ## How nesting works
 ///
-/// ## Why is this needed?
+/// [GlassScaffold] wraps app bar and bottom bar in
+/// `GlassIsolationScope(isolated: true)` — this prevents body glass cards
+/// from compositing over the bar buttons in the shared page-level layer.
 ///
-/// When glass widgets share a single [AdaptiveLiquidGlassLayer] (the default
-/// setup via [GlassPage]), all glass surfaces — body cards, app bar buttons,
-/// bottom bar controls — are composited in a single shader pass. The rendering
-/// order within this shared pass follows widget tree traversal, which may not
-/// match the visual z-ordering defined by [Stack] position.
+/// Each [AdaptiveLiquidGlassLayer] wraps its children in
+/// `GlassIsolationScope(isolated: false)` — this tells glass widgets inside
+/// the bar to participate in the bar's own grouped layer, not render
+/// independently.
 ///
-/// Wrapping the app bar or bottom bar in [GlassIsolationScope] causes their
-/// glass widgets to render independently (each with its own tiny glass surface)
-/// rather than grouping with the page-level layer. This ensures they always
-/// paint above body glass, with zero extra shader or compositing overhead.
+/// The nearest ancestor wins (standard [InheritedWidget] lookup), so:
+/// ```
+/// GlassPage → AdaptiveLiquidGlassLayer (isolated: false by default)
+///   → GlassIsolationScope(isolated: true)   ← scaffold bar wrapper
+///     → GlassBottomBar
+///       → AdaptiveLiquidGlassLayer          ← bar de-isolates (false)
+///         → tab items see isolated=false    ← use bar's grouped layer ✅
+/// ```
 class GlassIsolationScope extends InheritedWidget {
   /// Creates a glass isolation scope.
-  const GlassIsolationScope({super.key, required super.child});
+  ///
+  /// When [isolated] is `true` (default), descendant glass widgets render
+  /// with their own independent layer. When `false`, they participate in the
+  /// nearest ancestor [AdaptiveLiquidGlassLayer]'s grouped rendering.
+  const GlassIsolationScope({
+    super.key,
+    this.isolated = true,
+    required super.child,
+  });
 
-  /// Returns `true` if the given [context] is inside a [GlassIsolationScope].
+  /// Whether descendants should be isolated from ancestor glass layers.
+  final bool isolated;
+
+  /// Returns `true` if the given [context] is inside an active
+  /// [GlassIsolationScope] with `isolated: true`.
   ///
   /// Used by [AdaptiveGlass] to decide whether to force `useOwnLayer: true`.
   static bool isIsolated(BuildContext context) {
-    return context
-            .dependOnInheritedWidgetOfExactType<GlassIsolationScope>() !=
-        null;
+    final scope =
+        context.dependOnInheritedWidgetOfExactType<GlassIsolationScope>();
+    return scope?.isolated ?? false;
   }
 
   @override
-  bool updateShouldNotify(GlassIsolationScope oldWidget) => false;
+  bool updateShouldNotify(GlassIsolationScope oldWidget) =>
+      isolated != oldWidget.isolated;
 }
+

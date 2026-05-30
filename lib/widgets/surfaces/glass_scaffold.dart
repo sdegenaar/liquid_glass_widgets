@@ -147,9 +147,12 @@ class GlassScaffold extends StatelessWidget {
 
   /// An optional app bar placed at the top, always above the body.
   ///
-  /// Typically a [GlassAppBar]. Z-ordering is guaranteed — glass cards in
-  /// the body will never overlap the app bar buttons.
-  final PreferredSizeWidget? appBar;
+  /// Typically a [GlassAppBar], but any widget works. Z-ordering is
+  /// guaranteed — glass cards in the body will never overlap the app bar.
+  ///
+  /// If the widget implements [PreferredSizeWidget], its preferred height
+  /// is used for edge fade calculations. Otherwise, [appBarHeight] is used.
+  final Widget? appBar;
 
   /// An optional bottom bar placed at the bottom, always above the body.
   ///
@@ -256,8 +259,11 @@ class GlassScaffold extends StatelessWidget {
     final botPad = mediaQuery.padding.bottom;
 
     // Resolve effective bar heights.
-    final effectiveAppBarHeight =
-        appBar != null ? appBar!.preferredSize.height : appBarHeight;
+    // If appBar implements PreferredSizeWidget, use its preferred height;
+    // otherwise fall back to the explicit appBarHeight parameter.
+    final effectiveAppBarHeight = appBar is PreferredSizeWidget
+        ? (appBar! as PreferredSizeWidget).preferredSize.height
+        : appBarHeight;
     final effectiveBottomBarHeight =
         bottomBar != null ? (bottomBarHeight ?? 60.0) : 0.0;
 

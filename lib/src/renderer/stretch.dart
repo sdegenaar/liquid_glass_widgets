@@ -31,7 +31,7 @@ class AnchorStretchSettings {
     this.intensity = 0.5,
     this.squashFactor = 0.3,
     this.translationDamping = 0.15,
-    this.bounciness = 0.0,
+    this.bounciness = 0.15,
   });
 
   /// How much the widget elongates in the drag direction.
@@ -63,7 +63,7 @@ class AnchorStretchSettings {
   /// `0.0` = standard elastic snap-back. `0.1`–`0.3` = more pronounced
   /// overshoot that makes the widget visibly bounce past rest.
   ///
-  /// Defaults to `0.0`.
+  /// Defaults to `0.15` — a subtle overshoot matching native iOS 26 buttons.
   final double bounciness;
 }
 
