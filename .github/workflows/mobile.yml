@@ -12,7 +12,6 @@ concurrency:
   group: mobile-build
   cancel-in-progress: true
 
-
 jobs:
   mobile:
     runs-on: macos-latest
@@ -27,18 +26,11 @@ jobs:
           flutter-version: "3.41.9"
           cache: true
 
-      # =========================
-      # 🌐 GLOBAL DEPENDENCY RESOLUTION
-      # =========================
-      - name: Resolve root dependencies (internet fetch)
+      - name: Global pub get
         run: |
           set -e
-          cd "$GITHUB_WORKSPACE"
           flutter pub get
 
-      # =========================
-      # BUILD ALL APPS
-      # =========================
       - name: Build Android + iOS apps
         run: |
           set -e
@@ -70,47 +62,51 @@ jobs:
             cd "$GITHUB_WORKSPACE/$ROOT"
 
             # =========================
-            # 📦 PER-APP DEPENDENCY RESOLUTION
+            # FIX: ensure valid Flutter app structure
+            # =========================
+            if [ ! -f "pubspec.yaml" ]; then
+              echo "❌ Missing pubspec.yaml in $ROOT"
+              exit 1
+            fi
+
+            if [ ! -d "android" ] || [ ! -d "ios" ]; then
+              echo "⚠️ Missing platform folders — regenerating Flutter app scaffolding..."
+              flutter create . --platforms=android,ios
+            fi
+
+            # =========================
+            # Dependencies (safe single pass)
             # =========================
             flutter pub get
 
             # =========================
-            # 🧹 CLEAN BUILD STATE
+            # Clean build cache (optional but safe here)
             # =========================
             flutter clean
-
-            # ensure dependencies are still consistent
             flutter pub get
 
             # =========================
-            # 🤖 ANDROID BUILD
+            # Android build
             # =========================
-            flutter build apk \
-              --release \
-              -t "$ENTRY"
+            flutter build apk --release -t "$ENTRY"
 
             cp build/app/outputs/flutter-apk/app-release.apk \
               "$GITHUB_WORKSPACE/artifacts/android/${APP}.apk"
 
-            flutter build appbundle \
-              --release \
-              -t "$ENTRY"
+            flutter build appbundle --release -t "$ENTRY"
 
             cp build/app/outputs/bundle/release/app-release.aab \
               "$GITHUB_WORKSPACE/artifacts/android/${APP}.aab"
 
             # =========================
-            # 🍏 iOS BUILD (unsigned IPA)
+            # iOS build
             # =========================
-            flutter build ios \
-              --release \
-              --no-codesign \
-              -t "$ENTRY"
+            flutter build ios --release --no-codesign -t "$ENTRY"
 
             APP_PATH="build/ios/iphoneos/Runner.app"
 
             if [ ! -d "$APP_PATH" ]; then
-              echo "❌ Missing iOS build at $APP_PATH"
+              echo "❌ iOS build failed: Runner.app not found"
               ls -R build/ios
               exit 1
             fi
@@ -120,14 +116,12 @@ jobs:
             cp -R "$APP_PATH" Payload/
 
             zip -r "${APP}.ipa" Payload
+
             mv "${APP}.ipa" "$GITHUB_WORKSPACE/artifacts/ios/"
 
             cd "$GITHUB_WORKSPACE"
           done
 
-      # =========================
-      # 📤 UPLOAD ARTIFACTS
-      # =========================
       - name: Upload Android builds
         uses: actions/upload-artifact@v4
         with:
