@@ -14,30 +14,27 @@ concurrency:
 
 
 jobs:
-
-# =========================
-# 🤖 ANDROID + 🍏 iOS
-# =========================
   mobile:
     runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.41.9"
           cache: true
 
-
       # =========================
-      # DEPENDENCIES
+      # 🌐 GLOBAL DEPENDENCY RESOLUTION
       # =========================
-      - name: Install base dependencies
+      - name: Resolve root dependencies (internet fetch)
         run: |
-          cd example
+          set -e
+          cd "$GITHUB_WORKSPACE"
           flutter pub get
-
 
       # =========================
       # BUILD ALL APPS
@@ -72,23 +69,22 @@ jobs:
 
             cd "$GITHUB_WORKSPACE/$ROOT"
 
-            # ======================================================
-            # 🔧 FIX BROKEN ANDROID PROJECT STRUCTURE (IMPORTANT)
-            # ======================================================
-
-            flutter clean
-
-            flutter create . \
-              --platforms=android,ios \
-              --overwrite
-
+            # =========================
+            # 📦 PER-APP DEPENDENCY RESOLUTION
+            # =========================
             flutter pub get
 
+            # =========================
+            # 🧹 CLEAN BUILD STATE
+            # =========================
+            flutter clean
 
-            # ======================================================
+            # ensure dependencies are still consistent
+            flutter pub get
+
+            # =========================
             # 🤖 ANDROID BUILD
-            # ======================================================
-
+            # =========================
             flutter build apk \
               --release \
               -t "$ENTRY"
@@ -103,11 +99,9 @@ jobs:
             cp build/app/outputs/bundle/release/app-release.aab \
               "$GITHUB_WORKSPACE/artifacts/android/${APP}.aab"
 
-
-            # ======================================================
-            # 🍏 iOS BUILD (UNSIGNED IPA for AltStore/Sideloadly)
-            # ======================================================
-
+            # =========================
+            # 🍏 iOS BUILD (unsigned IPA)
+            # =========================
             flutter build ios \
               --release \
               --no-codesign \
@@ -116,7 +110,7 @@ jobs:
             APP_PATH="build/ios/iphoneos/Runner.app"
 
             if [ ! -d "$APP_PATH" ]; then
-              echo "Missing iOS build at $APP_PATH"
+              echo "❌ Missing iOS build at $APP_PATH"
               ls -R build/ios
               exit 1
             fi
@@ -126,35 +120,29 @@ jobs:
             cp -R "$APP_PATH" Payload/
 
             zip -r "${APP}.ipa" Payload
-
             mv "${APP}.ipa" "$GITHUB_WORKSPACE/artifacts/ios/"
 
             cd "$GITHUB_WORKSPACE"
           done
 
-
       # =========================
-      # UPLOAD ARTIFACTS
+      # 📤 UPLOAD ARTIFACTS
       # =========================
-
       - name: Upload Android builds
         uses: actions/upload-artifact@v4
         with:
           name: android-builds
           path: artifacts/android
 
-
-      - name: Upload iOS builds
+      - name: Upload iOS IPAs
         uses: actions/upload-artifact@v4
         with:
           name: ios-ipas
           path: artifacts/ios
 
-
       # =========================
-      # RELEASE
+      # 🚀 GITHUB RELEASE
       # =========================
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
