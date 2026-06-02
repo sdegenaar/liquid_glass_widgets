@@ -1,0 +1,140 @@
+name: Build & Release Liquid Glass Widgets MOBILE
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - "v*"
+
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-build
+  cancel-in-progress: true
+
+
+jobs:
+
+# =========================
+# 🤖 ANDROID + 🍏 iOS BUILD
+# =========================
+  mobile:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.9"
+          cache: true
+
+
+      # =========================
+      # DEPENDENCIES
+      # =========================
+      - name: Install dependencies
+        run: |
+          cd example
+          flutter pub get
+
+
+      # =========================
+      # BUILD ALL APPS
+      # =========================
+      - name: Build Android + iOS
+        run: |
+          set -e
+
+          mkdir -p artifacts/android
+          mkdir -p artifacts/ios
+
+          APPS=(
+            apple_music
+            apple_podcasts
+            apple_messages
+            apple_news
+            showcase
+          )
+
+          for APP in "${APPS[@]}"; do
+            echo "=============================="
+            echo "Building $APP"
+            echo "=============================="
+
+            if [ "$APP" = "showcase" ]; then
+              ROOT="example/showcase"
+              ENTRY="lib/main.dart"
+            else
+              ROOT="example"
+              ENTRY="lib/$APP/${APP}_demo.dart"
+            fi
+
+            cd "$GITHUB_WORKSPACE/$ROOT"
+
+            flutter pub get
+
+            # ======================================================
+            # 🤖 ANDROID BUILD (APK + AAB)
+            # ======================================================
+
+            flutter build apk \
+              --release \
+              -t "$ENTRY"
+
+            cp build/app/outputs/flutter-apk/app-release.apk \
+              "$GITHUB_WORKSPACE/artifacts/android/${APP}.apk"
+
+            flutter build appbundle \
+              --release \
+              -t "$ENTRY"
+
+            cp build/app/outputs/bundle/release/app-release.aab \
+              "$GITHUB_WORKSPACE/artifacts/android/${APP}.aab"
+
+
+            # ======================================================
+            # 🍏 iOS BUILD (UNSIGNED IPA for AltStore/Sideloadly)
+            # ======================================================
+
+            flutter build ios \
+              --release \
+              --no-codesign \
+              -t "$ENTRY"
+
+            APP_PATH="build/ios/iphoneos/Runner.app"
+
+            if [ ! -d "$APP_PATH" ]; then
+              echo "Missing iOS build at $APP_PATH"
+              ls -R build/ios
+              exit 1
+            fi
+
+            rm -rf Payload
+            mkdir Payload
+            cp -R "$APP_PATH" Payload/
+
+            zip -r "${APP}.ipa" Payload
+
+            mv "${APP}.ipa" "$GITHUB_WORKSPACE/artifacts/ios/"
+
+            cd "$GITHUB_WORKSPACE"
+          done
+
+
+      # =========================
+      # UPLOAD ARTIFACTS
+      # =========================
+
+      - name: Upload Android builds
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-builds
+          path: artifacts/android
+
+
+      - name: Upload iOS builds
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipas
+          path: artifacts/ios
