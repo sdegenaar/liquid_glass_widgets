@@ -139,27 +139,3 @@ jobs:
         with:
           name: ios-ipas
           path: artifacts/ios
-
-      # =========================
-      # 🚀 GITHUB RELEASE
-      # =========================
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: mobile-build-${{ github.run_number }}
-          files: |
-            artifacts/android/*.apk
-            artifacts/android/*.aab
-            artifacts/ios/*.ipa
-          body: |
-            Mobile Build #${{ github.run_number }}
-            Commit: ${{ github.sha }}
-            Branch: ${{ github.ref_name }}
-
-            Includes:
-            - Android APKs (direct install)
-            - Android AABs (Play Store ready)
-            - iOS IPAs (AltStore / Sideloadly compatible, unsigned)
-          prerelease: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
