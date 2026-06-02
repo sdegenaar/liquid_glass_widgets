@@ -16,7 +16,7 @@ concurrency:
 jobs:
 
 # =========================
-# 🤖 ANDROID + 🍏 iOS BUILD
+# 🤖 ANDROID + 🍏 iOS
 # =========================
   mobile:
     runs-on: macos-latest
@@ -33,7 +33,7 @@ jobs:
       # =========================
       # DEPENDENCIES
       # =========================
-      - name: Install dependencies
+      - name: Install base dependencies
         run: |
           cd example
           flutter pub get
@@ -42,7 +42,7 @@ jobs:
       # =========================
       # BUILD ALL APPS
       # =========================
-      - name: Build Android + iOS
+      - name: Build Android + iOS apps
         run: |
           set -e
 
@@ -72,10 +72,21 @@ jobs:
 
             cd "$GITHUB_WORKSPACE/$ROOT"
 
+            # ======================================================
+            # 🔧 FIX BROKEN ANDROID PROJECT STRUCTURE (IMPORTANT)
+            # ======================================================
+
+            flutter clean
+
+            flutter create . \
+              --platforms=android,ios \
+              --overwrite
+
             flutter pub get
 
+
             # ======================================================
-            # 🤖 ANDROID BUILD (APK + AAB)
+            # 🤖 ANDROID BUILD
             # ======================================================
 
             flutter build apk \
@@ -138,3 +149,29 @@ jobs:
         with:
           name: ios-ipas
           path: artifacts/ios
+
+
+      # =========================
+      # RELEASE
+      # =========================
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: mobile-build-${{ github.run_number }}
+          files: |
+            artifacts/android/*.apk
+            artifacts/android/*.aab
+            artifacts/ios/*.ipa
+          body: |
+            Mobile Build #${{ github.run_number }}
+            Commit: ${{ github.sha }}
+            Branch: ${{ github.ref_name }}
+
+            Includes:
+            - Android APKs (direct install)
+            - Android AABs (Play Store ready)
+            - iOS IPAs (AltStore / Sideloadly compatible, unsigned)
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
