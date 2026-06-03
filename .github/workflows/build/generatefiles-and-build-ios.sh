@@ -142,11 +142,7 @@ done
 
 cd "$WORKSPACE"
 
-tar -czf android-builds.tar.gz artifacts/android 2>/dev/null || echo "Android artifacts not available"
 tar -czf ios-builds.tar.gz artifacts/ios 2>/dev/null || echo "iOS artifacts not available"
-tar -czf web-builds.tar.gz artifacts/web 2>/dev/null || echo "Web artifacts not available"
-tar -czf linux-builds.tar.gz artifacts/linux 2>/dev/null || echo "Linux artifacts not available"
-tar -czf windows-builds.tar.gz artifacts/windows 2>/dev/null || echo "Windows artifacts not available"
 tar -czf macos-builds.tar.gz artifacts/macos 2>/dev/null || echo "macOS artifacts not available"
 
 echo ""
@@ -156,8 +152,4 @@ echo "Artifacts:"
 find artifacts
 
 echo ""
-echo "Next step: Complete iOS signing in Xcode GUI"
-
-
-
-
+echo "Next - Continue Development in the GUI of Xcode for building, deployment, and profiling,"
