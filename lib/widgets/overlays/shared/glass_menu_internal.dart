@@ -336,8 +336,15 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     );
 
     final targetHeight = widget.menuHeight ?? menuHeight;
-    final currentHeight = lerpDouble(th, targetHeight, state.sizeT)!;
-    final currentWidth = lerpDouble(tw, widget.menuWidth, state.sizeT)!;
+    // Clamp to >= 0: the rubber-band close drives sizeT slightly negative during
+    // the undershoot, which lerps the size below zero for a tiny trigger and
+    // trips a debug BoxConstraints assert. A size can't be negative; 0 (fully
+    // collapsed) is the correct floor and is visually identical to the intended
+    // shrink-to-nothing at the close tail.
+    final currentHeight =
+        lerpDouble(th, targetHeight, state.sizeT)!.clamp(0.0, double.infinity);
+    final currentWidth =
+        lerpDouble(tw, widget.menuWidth, state.sizeT)!.clamp(0.0, double.infinity);
 
     final inheritedSettings = InheritedLiquidGlass.of(context);
     final effectiveSettings = widget.settings ??
