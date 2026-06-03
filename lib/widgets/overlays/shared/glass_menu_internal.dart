@@ -28,6 +28,10 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   @override
   void didUpdateWidget(GlassMenu oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!identical(widget.controller, oldWidget.controller)) {
+      oldWidget.controller?._detach(this);
+      widget.controller?._attach(this);
+    }
     if (!identical(widget.items, oldWidget.items)) {
       _cachedWrappedItems = null;
       // BUG 12 FIX: Clear hover state if items shrink while menu is open
@@ -92,10 +96,12 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     _scrollController = ScrollController();
     _hoveredIndexNotifier = ValueNotifier(null);
     _isDraggingNotifier = ValueNotifier(false);
+    widget.controller?._attach(this);
   }
 
   @override
   void dispose() {
+    widget.controller?._detach(this);
     _morphController.dispose();
     _scrollController.dispose();
     _hoveredIndexNotifier.dispose();

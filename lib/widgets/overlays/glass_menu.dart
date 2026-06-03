@@ -186,6 +186,18 @@ class GlassMenu extends StatefulWidget {
   /// [GlassMorphController] status changes directly.
   final VoidCallback? onClose;
 
+  /// Optional controller to drive the menu imperatively
+  /// ([GlassMenuController.open] / [GlassMenuController.close]) instead of — or
+  /// in addition to — tapping the trigger.
+  ///
+  /// Tapping the trigger goes through [_GlassMenuState._toggleMenu], which is
+  /// gated on the morph progress (a close that lands while the menu is still
+  /// expanding is ignored). The controller commands [_GlassMenuState._openMenu]
+  /// / [_GlassMenuState._closeMenu] directly, so it is deterministic for any
+  /// timing — useful when an external gesture owner (e.g. a central gesture
+  /// arena) decides when to show and dismiss the menu.
+  final GlassMenuController? controller;
+
   /// Creates a liquid glass menu.
   const GlassMenu({
     super.key,
@@ -216,9 +228,40 @@ class GlassMenu extends StatefulWidget {
     this.glowRadius = 0.6,
     this.glowIntensity = 0.0,
     this.onClose,
+    this.controller,
   }) : assert(trigger != null || triggerBuilder != null,
             'Either trigger or triggerBuilder must be provided');
 
   @override
   State<GlassMenu> createState() => _GlassMenuState();
+}
+
+/// Drives a [GlassMenu] imperatively, bypassing the trigger tap.
+///
+/// Pass it to [GlassMenu.controller]. Unlike tapping the trigger (which toggles
+/// and is gated on the morph progress), [open] and [close] command the menu's
+/// morph directly, so a [close] that lands mid-open reliably dismisses the menu
+/// instead of re-opening it. Intended for cases where something other than the
+/// menu's own trigger decides when it appears — e.g. a central gesture arena.
+///
+/// One controller drives one mounted [GlassMenu] at a time.
+class GlassMenuController {
+  _GlassMenuState? _state;
+
+  void _attach(_GlassMenuState state) => _state = state;
+
+  void _detach(_GlassMenuState state) {
+    if (identical(_state, state)) _state = null;
+  }
+
+  /// Whether the menu's overlay is currently shown (open, or animating closed).
+  bool get isOpen => _state?._overlayController.isShowing ?? false;
+
+  /// Opens the menu, morphing from the trigger's current position. Safe to call
+  /// while a close is still animating — the spring reverses toward open.
+  void open() => _state?._openMenu();
+
+  /// Closes the menu with the rubber-band morph. Deterministic for any timing:
+  /// unlike a trigger tap, it never re-opens a still-expanding menu.
+  void close() => _state?._closeMenu();
 }
