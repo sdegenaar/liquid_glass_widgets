@@ -1,3 +1,4 @@
+```yaml
 name: Build & Release Liquid Glass Widgets MOBILE
 
 on:
@@ -20,6 +21,42 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ==========================================
+      # Patch all Dart files before building
+      # Replace:
+      #   GlassQuality.premium
+      # With:
+      #   GlassQuality.standard
+      # ==========================================
+      - name: Patch GlassQuality values
+        shell: bash
+        run: |
+          set -e
+
+          cat > glass_quality.patch <<'PATCH'
+          *** Auto-generated CI patch ***
+          PATCH
+
+          echo "Scanning Dart files..."
+
+          find . -type f -name "*.dart" | while read -r file; do
+            if grep -q "GlassQuality\.premium" "$file"; then
+              echo "Patching $file"
+              sed -i.bak \
+                's/GlassQuality\.premium/GlassQuality.standard/g' \
+                "$file"
+              rm -f "${file}.bak"
+            fi
+          done
+
+          echo ""
+          echo "Remaining premium references:"
+          grep -R "GlassQuality\.premium" . --include="*.dart" || true
+
+          echo ""
+          echo "Patched references:"
+          grep -R "GlassQuality\.standard" . --include="*.dart" || true
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -32,6 +69,7 @@ jobs:
           flutter pub get
 
       - name: Build Android + iOS apps
+        shell: bash
         run: |
           set -e
 
@@ -61,47 +99,47 @@ jobs:
 
             cd "$GITHUB_WORKSPACE/$ROOT"
 
-            # =========================
-            # FIX: ensure valid Flutter app structure
-            # =========================
+            # Ensure Flutter project structure exists
             if [ ! -f "pubspec.yaml" ]; then
               echo "❌ Missing pubspec.yaml in $ROOT"
               exit 1
             fi
 
             if [ ! -d "android" ] || [ ! -d "ios" ]; then
-              echo "⚠️ Missing platform folders — regenerating Flutter app scaffolding..."
+              echo "⚠️ Missing platform folders — regenerating Flutter scaffolding..."
               flutter create . --platforms=android,ios
             fi
 
-            # =========================
-            # Dependencies (safe single pass)
-            # =========================
+            # Dependencies
             flutter pub get
 
-            # =========================
-            # Clean build cache (optional but safe here)
-            # =========================
+            # Clean build cache
             flutter clean
             flutter pub get
 
             # =========================
-            # Android build
+            # Android APK
             # =========================
             flutter build apk --release -t "$ENTRY"
 
             cp build/app/outputs/flutter-apk/app-release.apk \
               "$GITHUB_WORKSPACE/artifacts/android/${APP}.apk"
 
+            # =========================
+            # Android AAB
+            # =========================
             flutter build appbundle --release -t "$ENTRY"
 
             cp build/app/outputs/bundle/release/app-release.aab \
               "$GITHUB_WORKSPACE/artifacts/android/${APP}.aab"
 
             # =========================
-            # iOS build
+            # iOS IPA
             # =========================
-            flutter build ios --release --no-codesign -t "$ENTRY"
+            flutter build ios \
+              --release \
+              --no-codesign \
+              -t "$ENTRY"
 
             APP_PATH="build/ios/iphoneos/Runner.app"
 
@@ -115,9 +153,10 @@ jobs:
             mkdir Payload
             cp -R "$APP_PATH" Payload/
 
-            zip -r "${APP}.ipa" Payload
+            zip -qry "${APP}.ipa" Payload
 
-            mv "${APP}.ipa" "$GITHUB_WORKSPACE/artifacts/ios/"
+            mv "${APP}.ipa" \
+              "$GITHUB_WORKSPACE/artifacts/ios/"
 
             cd "$GITHUB_WORKSPACE"
           done
@@ -133,3 +172,4 @@ jobs:
         with:
           name: ios-ipas
           path: artifacts/ios
+```
