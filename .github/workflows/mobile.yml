@@ -171,4 +171,3 @@ jobs:
         with:
           name: ios-ipas
           path: artifacts/ios
-```
