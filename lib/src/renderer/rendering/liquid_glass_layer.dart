@@ -128,26 +128,24 @@ class _LiquidGlassLayerState extends State<LiquidGlassLayer>
       );
     }
 
-    return RepaintBoundary(
-      child: LiquidGlassRenderScope(
-        settings: widget.settings,
-        child: InheritedGeometryRenderLink(
-          link: _link,
-          child: ShaderBuilder(
-            assetKey: ShaderKeys.liquidGlassRender,
-            (context, shader, child) => _RawShapes(
-              renderShader: shader,
-              // Always look for an ancestor BackdropGroup — if the user has
-              // wrapped their app with LiquidGlassWidgets.wrap() (or placed a
-              // GlassBackdropScope anywhere above), all glass surfaces share one
-              // backdrop capture automatically with zero extra configuration.
-              backdropKey: BackdropGroup.of(context)?.backdropKey,
-              settings: widget.settings,
-              link: _link,
-              clipExpansion: widget.clipExpansion,
-              child: child!,
+    return BackdropGroup(
+      child: RepaintBoundary(
+        child: LiquidGlassRenderScope(
+          settings: widget.settings,
+          child: InheritedGeometryRenderLink(
+            link: _link,
+            child: ShaderBuilder(
+              assetKey: ShaderKeys.liquidGlassRender,
+              (context, shader, child) => _RawShapes(
+                renderShader: shader,
+                backdropKey: BackdropGroup.of(context)?.backdropKey,
+                settings: widget.settings,
+                link: _link,
+                clipExpansion: widget.clipExpansion,
+                child: child!,
+              ),
+              child: widget.child,
             ),
-            child: widget.child,
           ),
         ),
       ),
@@ -256,7 +254,7 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
     if (settings.effectiveBlur > 0) {
       final blurLayer = (_blurLayerHandle.layer ??= BackdropFilterLayer())
         ..backdropKey =
-            backdropKey // participates in GlassBackdropScope sharing
+            backdropKey // Scoped to this LiquidGlassLayer's BackdropGroup
         ..filter = ImageFilter.blur(
           tileMode: TileMode.mirror,
           sigmaX: settings.effectiveBlur,

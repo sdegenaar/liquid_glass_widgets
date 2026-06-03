@@ -68,6 +68,7 @@ class GlassSearchableBottomBar extends StatefulWidget {
     this.barBorderRadius = _kDefaultBorderRadius,
     this.tabPadding = const EdgeInsets.symmetric(horizontal: 4),
     this.iconLabelSpacing = 4,
+    this.enableBlend = true,
     this.blendAmount = 10,
     this.glassSettings,
     this.showIndicator = true,
@@ -205,9 +206,21 @@ class GlassSearchableBottomBar extends StatefulWidget {
   /// Vertical spacing between icon and label. Defaults to 4.
   final double iconLabelSpacing;
 
+  /// Whether to enable organic liquid blending between the tab pill,
+  /// search pill, and extra button.
+  ///
+  /// When `true` (default), adjacent glass surfaces merge organically —
+  /// a premium "beyond native" effect. When `false`, each element renders
+  /// as a fully independent glass surface, matching Apple's native iOS 26
+  /// tab bar behavior.
+  ///
+  /// When disabled, [blendAmount] is ignored.
+  final bool enableBlend;
+
   /// Liquid-glass blend amount for the shared [AdaptiveLiquidGlassLayer].
   ///
   /// Higher values increase the organic blending between adjacent pills.
+  /// Only effective when [enableBlend] is `true`.
   /// Defaults to 10.
   final double blendAmount;
 
@@ -508,7 +521,7 @@ class _GlassSearchableBottomBarState extends State<GlassSearchableBottomBar>
         return AdaptiveLiquidGlassLayer(
           settings: glassSettings,
           quality: effectiveQuality,
-          blendAmount: widget.blendAmount,
+          blendAmount: widget.enableBlend ? widget.blendAmount : 0,
           child: Padding(
             padding: EdgeInsets.symmetric(
               horizontal: widget.horizontalPadding,
@@ -688,7 +701,105 @@ class _GlassSearchableBottomBarState extends State<GlassSearchableBottomBar>
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      // ── 1. Tab pill (spring-driven width, optional centre anchor) ─
+                      // ── 1. Search pill (spring-driven left + width) ─────────────
+                      // Painted first (bottom of stack) so the tab pill's glass
+                      // indicator can render on top when it overlaps. Both pills
+                      // share the parent AdaptiveLiquidGlassLayer so glass
+                      // settings, colour, and liquid-stretch effects are
+                      // perfectly matched — they render as one unified glass
+                      // surface. Each pill's internal refraction is
+                      // self-contained (its own AdaptiveGlass.grouped), so
+                      // paint order between them doesn't affect icon rendering.
+                      Positioned(
+                        left: curSearchLeft,
+                        bottom: floatY,
+                        width: math.max(0.01, curSearchW),
+                        height: animH,
+                        child: SearchPill(
+                          config: widget.searchConfig,
+                          isActive: searching,
+                          barBorderRadius: widget.barBorderRadius,
+                          quality: effectiveQuality,
+                          enableBackgroundAnimation:
+                              widget.interactionBehavior.hasScale,
+                          backgroundPressScale: widget.pressScale,
+                          interactionGlowColor:
+                              widget.interactionBehavior.hasGlow
+                                  ? effectiveInteractionGlowColor
+                                  : Colors.transparent,
+                          interactionGlowRadius: widget.interactionGlowRadius,
+                          interactionGlowBlurRadius: effectiveGlowBlurRadius,
+                          interactionGlowSpreadRadius:
+                              effectiveGlowSpreadRadius,
+                          interactionGlowOpacity: effectiveGlowOpacity,
+                          onFocusChanged: (focused) {
+                            if (focused) {
+                              _controller.onFocusChanged(true);
+                            } else {
+                              _onFocusLost();
+                            }
+                            widget.searchConfig.onSearchFocusChanged
+                                ?.call(focused);
+                          },
+                        ),
+                      ),
+
+                      // ── 2. Optional extra button ─────────────────────────────
+                      if (widget.extraButton != null)
+                        Positioned(
+                          left: extraPos == ExtraButtonPosition.beforeSearch
+                              ? curSearchLeft - extraWLeft
+                              : null,
+                          right: extraPos == ExtraButtonPosition.afterSearch
+                              ? (dismissVisible ? targetDismissReserve : 0.0)
+                              : null,
+                          // When the button doesn't collapse it floats above the
+                          // keyboard with the search pill (bottom: floatY).
+                          // When it collapses it stays anchored at bottom: 0.
+                          bottom: extraCollapsesOnSearch ? 0 : floatY,
+                          // extraTargetW is min(size, targetH) when searching+collapsing,
+                          // else full size. Rendered width must match layout reserve exactly.
+                          width: doCollapseLayout
+                              ? math.min(extraTargetW, animH)
+                              : extraTargetW,
+                          height: animH,
+                          // Fade the extra button out when search is active.
+                          // The layout space stays reserved so no pills jump.
+                          // This matches collapsedTab which also hides its
+                          // icons during the morph — consistent behaviour.
+                          child: AnimatedOpacity(
+                            opacity: (searching && extraCollapsesOnSearch)
+                                ? 0.0
+                                : 1.0,
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeOut,
+                            child: IgnorePointer(
+                              ignoring: searching && extraCollapsesOnSearch,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.center,
+                                child: BottomBarExtraBtn(
+                                  config: widget.extraButton!,
+                                  quality: effectiveQuality,
+                                  iconColor: widget.extraButton!.iconColor ??
+                                      widget.unselectedIconColor,
+                                  borderRadius: widget.barBorderRadius ==
+                                          GlassSearchableBottomBar
+                                              ._kDefaultBorderRadius
+                                      ? null
+                                      : widget.barBorderRadius,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                      // ── 3. Tab pill (spring-driven width, optional centre anchor) ─
+                      // Painted after the search pill so the glass indicator
+                      // renders on top when it overlaps (e.g. rightmost tab).
+                      // Internal refraction layers (unselected icons → indicator
+                      // → selected icons) are self-contained within the
+                      // SearchableTabIndicator — unaffected by Stack order.
                       Positioned(
                         left: curTabLeft,
                         bottom: 0,
@@ -748,95 +859,6 @@ class _GlassSearchableBottomBarState extends State<GlassSearchableBottomBar>
                             intensity: intensity,
                             alignment: alignment,
                           ),
-                        ),
-                      ),
-
-                      // ── 2. Optional extra button ─────────────────────────────
-                      if (widget.extraButton != null)
-                        Positioned(
-                          left: extraPos == ExtraButtonPosition.beforeSearch
-                              ? curSearchLeft - extraWLeft
-                              : null,
-                          right: extraPos == ExtraButtonPosition.afterSearch
-                              ? (dismissVisible ? targetDismissReserve : 0.0)
-                              : null,
-                          // When the button doesn't collapse it floats above the
-                          // keyboard with the search pill (bottom: floatY).
-                          // When it collapses it stays anchored at bottom: 0.
-                          bottom: extraCollapsesOnSearch ? 0 : floatY,
-                          // extraTargetW is min(size, targetH) when searching+collapsing,
-                          // else full size. Rendered width must match layout reserve exactly.
-                          width: doCollapseLayout
-                              ? math.min(extraTargetW, animH)
-                              : extraTargetW,
-                          height: animH,
-                          // Fade the extra button out when search is active.
-                          // The layout space stays reserved so no pills jump.
-                          // This matches collapsedTab which also hides its
-                          // icons during the morph — consistent behaviour.
-                          child: AnimatedOpacity(
-                            opacity: (searching && extraCollapsesOnSearch)
-                                ? 0.0
-                                : 1.0,
-                            duration: const Duration(milliseconds: 180),
-                            curve: Curves.easeOut,
-                            child: IgnorePointer(
-                              ignoring: searching && extraCollapsesOnSearch,
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.center,
-                                child: BottomBarExtraBtn(
-                                  config: widget.extraButton!,
-                                  quality: effectiveQuality,
-                                  iconColor: widget.extraButton!.iconColor ??
-                                      widget.unselectedIconColor,
-                                  borderRadius: widget.barBorderRadius ==
-                                          GlassSearchableBottomBar
-                                              ._kDefaultBorderRadius
-                                      ? null
-                                      : widget.barBorderRadius,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                      // ── 3. Search pill (spring-driven left + width) ─────────────
-                      // Positioned at bottom: floatY so the pill floats above the
-                      // keyboard. Both pills share the parent AdaptiveLiquidGlassLayer
-                      // so glass settings, colour, and liquid-stretch effects are
-                      // perfectly matched — they render as one unified glass surface.
-                      Positioned(
-                        left: curSearchLeft,
-                        bottom: floatY,
-                        width: math.max(0.01, curSearchW),
-                        height: animH,
-                        child: SearchPill(
-                          config: widget.searchConfig,
-                          isActive: searching,
-                          barBorderRadius: widget.barBorderRadius,
-                          quality: effectiveQuality,
-                          enableBackgroundAnimation:
-                              widget.interactionBehavior.hasScale,
-                          backgroundPressScale: widget.pressScale,
-                          interactionGlowColor:
-                              widget.interactionBehavior.hasGlow
-                                  ? effectiveInteractionGlowColor
-                                  : Colors.transparent,
-                          interactionGlowRadius: widget.interactionGlowRadius,
-                          interactionGlowBlurRadius: effectiveGlowBlurRadius,
-                          interactionGlowSpreadRadius:
-                              effectiveGlowSpreadRadius,
-                          interactionGlowOpacity: effectiveGlowOpacity,
-                          onFocusChanged: (focused) {
-                            if (focused) {
-                              _controller.onFocusChanged(true);
-                            } else {
-                              _onFocusLost();
-                            }
-                            widget.searchConfig.onSearchFocusChanged
-                                ?.call(focused);
-                          },
                         ),
                       ),
 

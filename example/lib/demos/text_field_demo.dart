@@ -108,8 +108,6 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
         backgroundColor: Colors.transparent,
         appBar: GlassAppBar(
           title: const Text('GlassTextField'),
-          quality: GlassQuality.premium,
-          useOwnLayer: true,
         ),
         body: SingleChildScrollView(
           padding: EdgeInsets.only(

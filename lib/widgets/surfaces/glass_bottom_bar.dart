@@ -198,6 +198,7 @@ class GlassBottomBar extends StatefulWidget {
     this.barBorderRadius = _defaultBarBorderRadius,
     this.tabPadding = const EdgeInsets.symmetric(horizontal: 4),
     this.iconLabelSpacing = 4,
+    this.enableBlend = true,
     this.blendAmount = 10,
     this.glassSettings,
     this.showIndicator = true,
@@ -402,11 +403,22 @@ class GlassBottomBar extends StatefulWidget {
   /// Defaults to 4px.
   final double iconLabelSpacing;
 
+  /// Whether to enable organic liquid blending between the tab pill and
+  /// the extra button.
+  ///
+  /// When `true` (default), adjacent glass surfaces merge organically —
+  /// a premium "beyond native" effect. When `false`, the extra button
+  /// renders as a fully independent glass element, matching Apple's
+  /// native iOS 26 tab bar behavior.
+  ///
+  /// When disabled, [blendAmount] is ignored.
+  final bool enableBlend;
+
   /// Blend amount for glass surfaces.
   ///
   /// Higher values create smoother blending between the tab bar and extra
-  /// button.
-  /// Passed to [LiquidGlassBlendGroup].
+  /// button. Only effective when [enableBlend] is `true`.
+  /// Passed to [AdaptiveLiquidGlassLayer].
   /// Defaults to 10.
   final double blendAmount;
 
@@ -564,8 +576,9 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
     return AdaptiveLiquidGlassLayer(
       settings: glassSettings,
       quality: effectiveQuality,
-      blendAmount:
-          widget.blendAmount, // Impeller-only (gracefully ignored on Skia)
+      blendAmount: widget.enableBlend
+          ? widget.blendAmount
+          : 0, // Impeller-only (gracefully ignored on Skia)
       child: Padding(
         padding: EdgeInsets.symmetric(
           horizontal: widget.horizontalPadding,
@@ -588,11 +601,43 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
 
             return SizedBox(
               height: widget.barHeight,
-              child: Row(
+              child: Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  // Main tab bar with draggable indicator
-                  SizedBox(
+                  // 1. Optional extra button — painted first (bottom of z-order).
+                  // Pinned to the trailing edge. Painted before the tab pill
+                  // so the jelly indicator's glass effect correctly overlaps and
+                  // refracts the extra button during horizontal stretch physics.
+                  // This matches the z-order pattern in GlassSearchableBottomBar.
+                  if (widget.extraButton != null)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      child: SizedBox(
+                        width: widget.extraButton!.size,
+                        height: widget.barHeight,
+                        child: BottomBarExtraBtn(
+                          config: widget.extraButton!,
+                          quality: effectiveQuality,
+                          iconColor: widget.extraButton!.iconColor ??
+                              widget.unselectedIconColor,
+                          borderRadius: widget.barBorderRadius ==
+                                  GlassBottomBar._defaultBarBorderRadius
+                              ? null
+                              : widget.barBorderRadius,
+                        ),
+                      ),
+                    ),
+
+                  // 2. Tab pill — painted last (top of z-order).
+                  // The jelly indicator uses Stack(clipBehavior: Clip.none)
+                  // internally, so it can overflow past the pill bounds.
+                  Positioned(
+                    left: 0,
+                    top: 0,
                     width: tabPillW,
+                    height: widget.barHeight,
                     child: TabIndicator(
                       quality: effectiveQuality,
                       visible: widget.showIndicator,
@@ -648,42 +693,6 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
                       innerBlur: widget.innerBlur,
                     ),
                   ),
-
-                  // Optional extra button — always pinned to the trailing edge.
-                  // Expanded absorbs the gap between the compact pill and the
-                  // right edge; Align(right) keeps the button flush with the
-                  // bar boundary. This matches the searchable bar's visual
-                  // pattern where the search button sits at the far right
-                  // regardless of pill width.
-                  //
-                  // Layout contract:
-                  // The Row cross-axis height is bounded to barHeight by the
-                  // SizedBox wrapper above. Row measures non-Expanded children
-                  // first, so Expanded's maxHeight is clamped to barHeight
-                  // before Align is laid out — no unbounded height propagation.
-                  //
-                  // NOTE: GlassBottomBar is designed for Scaffold.bottomNavigationBar.
-                  // Placing it inside Center(), Column(), or body: directly (without
-                  // a layout parent that anchors it to the screen bottom) will cause
-                  // it to appear centered/floating rather than pinned to the bottom.
-                  if (widget.extraButton != null) ...[
-                    SizedBox(width: widget.spacing), // fixed gap after pill
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: BottomBarExtraBtn(
-                          config: widget.extraButton!,
-                          quality: effectiveQuality,
-                          iconColor: widget.extraButton!.iconColor ??
-                              widget.unselectedIconColor,
-                          borderRadius: widget.barBorderRadius ==
-                                  GlassBottomBar._defaultBarBorderRadius
-                              ? null
-                              : widget.barBorderRadius,
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
               ),
             );

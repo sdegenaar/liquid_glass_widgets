@@ -1,3 +1,189 @@
+# 0.14.0
+
+## ⚠️ Breaking — `GlassAppBar` redesigned as pure layout widget
+
+`GlassAppBar` has been fundamentally redesigned from a `StatefulWidget` with its own glass rendering to a lightweight `StatelessWidget` that serves purely as a layout container. This matches iOS 26's actual navigation bar pattern where the bar itself is transparent and glass effects belong on individual interactive elements.
+
+**Removed parameters:**
+- `settings` — glass surface settings (the bar no longer renders glass)
+- `quality` — glass quality selector
+- `useOwnLayer` — layer isolation control
+- `scrollController` — scroll-driven glass transition
+- `scrollEdgeThreshold` — scroll fade threshold
+
+**New parameter:**
+- `buttonSettings: LiquidGlassSettings?` — provides default glass settings to all descendant `GlassButton` widgets via `DefaultButtonSettings` (a new `InheritedWidget`). Individual buttons can still override with their own `settings`.
+
+**Migration:**
+
+```dart
+// Before (0.13.x) — scroll-driven glass bar:
+GlassAppBar(
+  title: Text('Title'),
+  scrollController: _ctrl,
+  scrollEdgeThreshold: 50.0,
+  settings: LiquidGlassSettings(blur: 15),
+  quality: GlassQuality.premium,
+)
+
+// After (0.14.0) — transparent layout bar:
+GlassAppBar(
+  title: Text('Title'),
+  buttonSettings: LiquidGlassSettings(
+    glassColor: Color(0x33FFFFFF),
+    thickness: 20,
+  ),
+)
+// Use GlassScaffold.header + headerScrollController for fading headers.
+```
+
+Apps that relied on `GlassAppBar.scrollController` for scroll-driven glass should migrate to `GlassScaffold` with its `header` / `headerScrollController` parameters (see below).
+
+## ✨ New — `GlassScaffold` — one-widget page layout
+
+A brand new scaffold that replaces the manual assembly of `GlassPage` + `Scaffold` + `GlassScrollEdgeEffect` + `Stack` with a single widget. Handles z-ordering (bars always above body), edge fading, safe-area padding, and glass layer setup automatically.
+
+### `header` + `headerScrollController` + `headerFadeDistance`
+
+A fixed header widget positioned below the status bar that fades out as the user scrolls — matching the iOS 26 large-title pattern used by Apple Music ("Listen Now"), Apple Podcasts, and similar apps.
+
+```dart
+GlassScaffold(
+  header: Text('Listen Now', style: largeTitle),
+  headerScrollController: _scrollController,
+  headerFadeDistance: 60.0,
+  body: CustomScrollView(
+    controller: _scrollController,
+    slivers: [...],
+  ),
+)
+```
+
+The header is wrapped in `IgnorePointer` only when fully faded (opacity == 0), so tappable elements remain interactive at full visibility.
+
+### `bodyOverlays`
+
+Optional list of widgets rendered between the body and the navigation bars in z-order. Designed for floating elements like Apple Music's play-bar pill that need to render above scrollable content but below the bottom bar.
+
+```dart
+GlassScaffold(
+  bodyOverlays: [
+    AnimatedPositioned(
+      bottom: isMiniMode ? miniBottom : aboveBarBottom,
+      left: 20, right: 20,
+      child: PlayBarPill(),
+    ),
+  ],
+  body: scrollContent,
+)
+```
+
+### `AnnotatedRegion` status bar fix
+
+`GlassScaffold` now wraps the internal `Scaffold` in an `AnnotatedRegion<SystemUiOverlayStyle>` so that the `statusBarStyle` setting correctly overrides `CupertinoPageRoute`'s own region. Previously, pages without a `GlassAppBar` could lose their status bar icon styling when pushed via `CupertinoPageRoute`.
+
+### Improved isolation strategy
+
+`GlassScaffold` now wraps app bar and bottom bar in `GlassIsolationScope(isolated: false, defaultQuality: GlassQuality.premium)` instead of the previous `GlassIsolationScope(isolated: true)`. This means bar buttons join the page-level glass blend group (shared backdrop capture) rather than creating their own layers — saving GPU cost. Stack paint order already guarantees bars render on top of body content.
+
+### Stable `ValueKey`s on stack children
+
+All conditional children (header, app bar, bottom bar) now have explicit `ValueKey`s so Flutter tracks them by identity rather than position. This prevents unmount/remount cycles (and loss of animation state) when toggling the header on and off.
+
+> See `example/lib/demos/nav_bar_patterns_demo.dart` for complete `GlassScaffold` usage patterns.
+
+## ✨ New — `GlassIsolationScope.defaultQuality`
+
+`GlassIsolationScope` gains a `defaultQuality: GlassQuality?` parameter that provides a quality hint for descendants without requiring explicit `quality:` on each widget. This is separate from `isolated` — a scope can be de-isolated (for grouping) while still providing a premium quality default.
+
+`GlassThemeHelpers.resolveQuality` now checks `scopeDefault` and skips inherited page-level quality when a scope provides a `defaultQuality`. This fixes a regression where bar buttons inside `GlassScaffold` would inherit the page's `standard` quality instead of getting the bar's intended `premium`.
+
+## ✨ New — `DefaultButtonSettings` InheritedWidget
+
+A new `InheritedWidget` in `glass_app_bar.dart` that provides default `LiquidGlassSettings` to descendant `GlassButton` widgets. `GlassButton` now checks `DefaultButtonSettings.of(context)` as a fallback between explicit `settings` and inherited layer settings.
+
+## ✨ New — `AdaptiveGlass` interactive auto-promotion
+
+`AdaptiveGlass` now automatically promotes interactive elements (`isInteractive: true`) to their own compositing layer in premium mode. This gives buttons the prominent independent refraction that matches iOS 26's button design, rather than softly blending them into the page blend group. The own-layer wrapper de-isolates children via `GlassIsolationScope(isolated: false)` so nested glass (e.g. tab items inside a bottom bar) groups correctly with the button's layer.
+
+## 🐛 Fix — `GlassBottomBar` extra button z-order
+
+Fixed a compositing z-order issue where the jelly tab indicator would incorrectly render behind the extra trailing button. The internal layout has been restructured from a `Row` to a `Stack` with explicit paint ordering — the extra button is painted first (bottom of z-order), and the tab indicator is painted last (top). This matches the existing pattern in `GlassSearchableBottomBar`.
+
+## 🐛 Fix — `GlassSearchableBottomBar` pill z-order
+
+Fixed the paint order of the search pill and tab pill in `GlassSearchableBottomBar`. The search pill is now painted first (bottom of stack) and the tab pill last (top), so the glass indicator correctly renders on top when it overlaps the search pill during tab transitions.
+
+## 🐛 Fix — `mounted` guards in gesture handlers
+
+Added `if (mounted)` guards before every `setState()` call in `TabDragGestureMixin`, `TabIndicator`, and `SearchableTabIndicator`. Pointer events (`onPointerDown`, `onPointerUp`, `onPointerCancel`) and drag gesture callbacks can fire after the widget has been unmounted during rapid tab switching or page transitions, causing `setState() called on disposed widget` exceptions in debug mode. These guards are zero-cost safety nets.
+
+## 🔄 Changed — Nav bar patterns demo
+
+Removed three `GlassAppBar` demo patterns that used the now-deleted scroll-driven glass API:
+- ~~Scroll-Driven Glass~~ (transparent → glass on scroll)
+- ~~Static Glass~~ (always-on glass surface)
+- ~~Large Title Glass on Scroll~~ (combined collapsing + glass materialisation)
+
+Added a new "Fade Header (No App Bar)" pattern demonstrating the `GlassScaffold.header` fade approach (Apple Music / Podcasts style).
+
+## 🔄 Changed — Example app restructured
+
+### Showcase app uses `GlassScaffold`
+The main showcase app (`main.dart`) now uses `GlassScaffold` instead of manually composing `GlassPage` + `Scaffold` + `bottomNavigationBar`. Added a fourth tab ("Examples") and redesigned the Widgets tab with a 2-column card grid.
+
+### Apple demos migrated to `GlassScaffold`
+All four Apple demo apps have been migrated from manual `Scaffold` + `Stack` + `GlassScrollEdgeEffect` composition to `GlassScaffold`:
+
+- **Apple Messages** — `GlassScaffold` handles positioning, z-ordering, and edge fading automatically. 8 lines changed.
+- **Apple Music** — uses `GlassScaffold.header` for the "Listen Now" fade header, `bodyOverlays` for the floating play pill. Major simplification (294 lines changed).
+- **Apple News** — migrated to `GlassScaffold`. Removed unnecessary nested `Stack`. 57 lines changed.
+- **Apple Podcasts** — uses `GlassScaffold.bodyOverlays` for the mini-player pill. 372 lines changed.
+
+### Category pages re-indented
+All 6 showcase category pages (containers, feedback, input, interactive, overlays, surfaces) have been re-indented for consistency. No functional changes.
+
+
+## 🐛 Fix — Impeller backdrop visual corruption
+
+Fixed a critical rendering issue where `GlassAppBar` buttons would lose their glass background (rendering as invisible) when multiple `LiquidGlassLayer`s shared a single root `BackdropGroup` (via `GlassBackdropScope`). On Impeller, sharing a `BackdropKey` across multiple `RepaintBoundary` layers caused the engine to bind stale or incorrect backdrop textures.
+
+**Root cause:** The shared `BackdropGroup` architecture assumed that all glass surfaces could safely share a single GPU backdrop capture. On Impeller's tile-based renderer, this created a race between layers trying to use the same `BackdropKey`, causing visual corruption (backgrounds vanishing, ghost artifacts during route transitions).
+
+**Fix:** Each `LiquidGlassLayer` now creates its own isolated `BackdropGroup` → `RepaintBoundary` subtree. This ensures every glass surface captures only its own clipped bounding box — a ~30× reduction in GPU bandwidth compared to the previous full-screen capture, and eliminates cross-layer texture conflicts entirely.
+
+## ⚠️ Deprecated — `GlassBackdropScope`
+
+`GlassBackdropScope` is now a no-op and can be safely removed from your widget tree. Each glass layer manages its own backdrop isolation automatically. `GlassPage` continues to work exactly as before — no migration needed for apps using `GlassPage`.
+
+Apps using `GlassBackdropScope` directly will see a deprecation warning but will compile and run without issues. Remove the widget at your convenience; it will be deleted in 1.0.0.
+
+## 🔄 Changed — `GlassInteractionSettings` is now the canonical interaction API
+
+`GlassInteractionSettings` (introduced in 0.13.0) is now the recommended way to configure all interaction physics app-wide. Pass it via `GlassThemeData.interaction` inside `LiquidGlassWidgets.wrap()`:
+
+```dart
+runApp(LiquidGlassWidgets.wrap(
+  child: const MyApp(),
+  theme: GlassThemeData(
+    interaction: GlassInteractionSettings(
+      stretch: 0.2,              // subtler drag-following globally
+      interactionScale: 1.03,    // less scale-up on press
+      resistance: 0.01,          // drag damping factor
+      anchorStretch: true,       // iOS 26 rubber-band from anchor
+      anchorStretchSettings: AnchorStretchSettings(
+        intensity: 0.8,
+        squashFactor: 0.15,
+      ),
+    ),
+  ),
+));
+```
+
+Set `stretch: 0.0` to disable drag-following app-wide while keeping press-scale. Individual widgets can still override any value via their own `stretch:` / `interactionScale:` parameters.
+
+---
+
 # 0.13.0
 
 ## ✨ New — Anchor Stretch, Ambient Light, and Interaction Physics
@@ -43,6 +229,36 @@ GlassPage(
 ```
 
 When `settings` is null, the layer inherits from `GlassTheme` or uses defaults.
+
+### `GlassScaffold` — comprehensive structural layer
+
+A new structural widget that coordinates interactions between `GlassAppBar`, `GlassBottomBar`, and the page body. It automatically handles edge-to-edge layout, scroll bleeding, and isolates glass rendering layers for maximum performance. This replaces the need to manually compose `AdaptiveLiquidGlassLayer` and `GlassIsolationScope` at the page root.
+
+### `GlassInteractionSettings` Theme
+
+Added a dedicated theme extension to globally configure interaction physics across all glass widgets — stretch, press scale, drag resistance, anchor stretch, and anchor stretch fine-tuning. No more passing interaction parameters to every widget manually.
+
+```dart
+GlassThemeData(
+  interaction: GlassInteractionSettings(
+    stretch: 0.2,              // subtler drag-following globally
+    interactionScale: 1.03,    // less scale-up on press
+    resistance: 0.01,          // drag damping factor
+    anchorStretch: true,       // iOS 26 rubber-band from anchor
+    anchorStretchSettings: AnchorStretchSettings(
+      intensity: 0.8,
+      squashFactor: 0.15,
+    ),
+  ),
+)
+```
+
+Set `stretch: 0.0` to disable drag-following app-wide while keeping press-scale. Individual widgets can still override any value.
+
+## 🐛 Fixes & Improvements
+
+### Wide Button Stretch Distortion
+Fixed a rendering artifact where very wide `GlassButton`s would exhibit severe shape distortion at the extreme edges during horizontal stretch physics.ts.
 
 ### `GlassSearchBarConfig.cursorColor` — cursor follows Flutter theme by default
 

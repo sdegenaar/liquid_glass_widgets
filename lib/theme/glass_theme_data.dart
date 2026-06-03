@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../src/renderer/liquid_glass_renderer.dart';
+import 'glass_interaction_settings.dart';
 import 'glass_theme_settings.dart';
 
 import '../types/glass_quality.dart';
@@ -330,6 +331,7 @@ class GlassThemeData {
   const GlassThemeData({
     this.light = GlassThemeVariant.light,
     this.dark = GlassThemeVariant.dark,
+    this.interaction = const GlassInteractionSettings(),
   });
 
   /// Creates glass theme data from a flat set of common properties.
@@ -366,6 +368,7 @@ class GlassThemeData {
     double? refractiveIndex,
     double? saturation,
     double? borderRadius,
+    GlassInteractionSettings? interaction,
   }) {
     final settings = GlassThemeSettings(
       blur: blur,
@@ -406,6 +409,7 @@ class GlassThemeData {
         quality: quality,
         borderRadius: borderRadius,
       ),
+      interaction: interaction ?? const GlassInteractionSettings(),
     );
   }
 
@@ -414,6 +418,16 @@ class GlassThemeData {
 
   /// Theme variant for dark mode.
   final GlassThemeVariant dark;
+
+  /// Interaction physics settings (brightness-agnostic).
+  ///
+  /// Controls stretch, press scale, drag resistance, and anchor stretch
+  /// for all interactive glass widgets. Individual widgets can override
+  /// any parameter via their constructor.
+  ///
+  /// Lives at the top level (not per-variant) because interaction physics
+  /// don't change between light and dark mode.
+  final GlassInteractionSettings interaction;
 
   /// Retrieves the theme data from the widget tree.
   ///
@@ -484,10 +498,12 @@ class GlassThemeData {
   GlassThemeData copyWith({
     GlassThemeVariant? light,
     GlassThemeVariant? dark,
+    GlassInteractionSettings? interaction,
   }) {
     return GlassThemeData(
       light: light ?? this.light,
       dark: dark ?? this.dark,
+      interaction: interaction ?? this.interaction,
     );
   }
 
@@ -505,8 +521,9 @@ class GlassThemeData {
       other is GlassThemeData &&
           runtimeType == other.runtimeType &&
           light == other.light &&
-          dark == other.dark;
+          dark == other.dark &&
+          interaction == other.interaction;
 
   @override
-  int get hashCode => Object.hash(light, dark);
+  int get hashCode => Object.hash(light, dark, interaction);
 }

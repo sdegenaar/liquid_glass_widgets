@@ -2,7 +2,7 @@
 ///
 /// Demonstrates the key APIs and correct initialisation pattern:
 ///   • LiquidGlassWidgets.initialize() — shader pre-warming (no first-frame flash)
-///   • LiquidGlassWidgets.wrap()       — root GlassBackdropScope (GPU optimisation)
+///   • LiquidGlassWidgets.wrap()       — adaptive quality + theming scope
 ///   • GlassPage                       — per-screen background, Scaffold transparency, backdrop
 ///   • GlassSearchableBottomBar        — glass nav bar with search
 ///   • GlassCard                       — glass surface container
@@ -24,9 +24,9 @@ void main() async {
   // and compiles the Impeller pipeline on iOS/macOS/Android.
   await LiquidGlassWidgets.initialize();
 
-  // wrap() puts a GlassBackdropScope at the root so all glass surfaces in the
-  // app share a single GPU backdrop capture — roughly halving blit cost when
-  // multiple glass widgets are on screen simultaneously. On Skia/web: no-op.
+  // wrap() installs the adaptive quality scope and optional GlassTheme at the
+  // root of the widget tree. Each glass layer manages its own GPU backdrop
+  // capture automatically — no manual scoping needed.
   runApp(LiquidGlassWidgets.wrap(child: const LiquidGlassExampleApp()));
 }
 

@@ -123,6 +123,36 @@ void main() {
       await tester.pump();
       expect(find.text('Home'), findsWidgets);
     });
+
+    testWidgets('enableBlend defaults to true', (tester) async {
+      final bar = GlassBottomBar(
+        tabs: [_tab('Home'), _tab('Profile')],
+        selectedIndex: 0,
+        onTabSelected: (_) {},
+      );
+      expect(bar.enableBlend, isTrue);
+    });
+
+    testWidgets('enableBlend: false renders without crash', (tester) async {
+      await tester.pumpWidget(_wrap(
+        SizedBox(
+          height: 100,
+          child: GlassBottomBar(
+            tabs: [_tab('Home'), _tab('Profile')],
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            enableBlend: false,
+            extraButton: GlassBottomBarExtraButton(
+              icon: const Icon(Icons.add),
+              onTap: () {},
+              label: 'Add',
+            ),
+          ),
+        ),
+      ));
+      await tester.pump();
+      expect(find.text('Home'), findsWidgets);
+    });
   });
 
   group('GlassBottomBar — interaction behavior', () {

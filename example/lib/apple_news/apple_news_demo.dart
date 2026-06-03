@@ -254,43 +254,35 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
         platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
     final sysBottom = isIOS ? 0.0 : MediaQuery.viewPaddingOf(context).bottom;
 
-    return Scaffold(
-      backgroundColor: _kBackground,
-      extendBody: true, // Content flows behind the bottom bar
-      // Keep false so the bar manages its own keyboard layout.
+    return GlassScaffold(
+      background: const ColoredBox(color: _kBackground),
+      statusBarStyle: GlassStatusBarStyle.light,
+      topEdgeFade: true,
+      bottomEdgeFade: true,
       resizeToAvoidBottomInset: false,
+
+      // ── Body ────────────────────────────────────────────────────────────────
       body: GestureDetector(
         onTap: () {
           if (_searchFieldFocused) {
-            // Match the DismissPill fix: use primaryFocus?.unfocus() so the
-            // FocusNode is fully released, not just moved to the scope parent.
             FocusManager.instance.primaryFocus?.unfocus();
           }
         },
-        child: Stack(
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              transitionBuilder: (child, animation) =>
-                  FadeTransition(opacity: animation, child: child),
-              // Three body states:
-              //   1. Not searching        → Today articles view
-              //   2. Searching + unfocused → topic browse (searchable content)
-              //   3. Searching + focused   → "No Recent Searches" empty state
-              child: !_isSearching
-                  ? _buildTodayView(key: const ValueKey('today'))
-                  : _searchFieldFocused
-                      ? _buildNoRecentSearches(key: const ValueKey('no-recent'))
-                      : _buildSearchBrowseView(
-                          key: const ValueKey('search-browse')),
-            ),
-          ],
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          transitionBuilder: (child, animation) =>
+              FadeTransition(opacity: animation, child: child),
+          child: !_isSearching
+              ? _buildTodayView(key: const ValueKey('today'))
+              : _searchFieldFocused
+                  ? _buildNoRecentSearches(key: const ValueKey('no-recent'))
+                  : _buildSearchBrowseView(
+                      key: const ValueKey('search-browse')),
         ),
       ),
-      // ── GlassSearchableBottomBar ─────────────────────────────────────────
-      // Wrapped in Padding to clear Android 3-button nav (sysBottom > 0).
-      // On iOS and gesture-nav Android, sysBottom is 0 so no offset is applied.
-      bottomNavigationBar: Padding(
+
+      // ── Bottom navigation bar ──────────────────────────────────────────────
+      bottomBar: Padding(
         padding: EdgeInsets.only(bottom: sysBottom),
         child: GlassSearchableBottomBar(
           selectedIndex: _selectedTab,
@@ -304,12 +296,9 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
           labelFontSize: 10,
           iconSize: 28,
           iconLabelSpacing: 0,
-          // Neutral frosted-glass pill. AnimatedGlassIndicator now renders
-          // this value directly without any hidden multiplier.
           indicatorColor: Colors.white.withValues(alpha: 0.20),
           quality: GlassQuality.premium,
-          interactionBehavior: GlassInteractionBehavior
-              .full, // or .none / .glowOnly / .scaleOnly
+          interactionBehavior: GlassInteractionBehavior.full,
           glassSettings: LiquidGlassSettings(
             glassColor: const Color(0xAA1C1C1E),
             thickness: 30,
@@ -322,12 +311,10 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
             saturation: 1.2,
             specularSharpness: GlassSpecularSharpness.medium,
           ),
-          // ── Search bar config ───────────────────────────────────────────────
           searchConfig: GlassSearchBarConfig(
             hintText: 'Apple News',
             onSearchToggle: (active) => setState(() {
               _isSearching = active;
-              // Reset focus state when search closes so next open is fresh.
               if (!active) _searchFieldFocused = false;
             }),
             onSearchFocusChanged: (focused) =>
@@ -360,7 +347,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
             ),
           ],
         ),
-      ), // Padding
+      ),
     );
   }
 

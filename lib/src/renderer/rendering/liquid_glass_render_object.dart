@@ -81,9 +81,9 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
     markNeedsPaint();
   }
 
-  /// The [BackdropKey] for blur-sharing via a [BackdropGroup] ancestor.
-  /// Set to [BackdropGroup.of(context)?.backdropKey] when a [GlassBackdropScope]
-  /// (or [BackdropGroup]) exists in the tree; null otherwise (no-op).
+  /// The [BackdropKey] for blur-sharing via the layer's own [BackdropGroup].
+  /// Set to [BackdropGroup.of(context)?.backdropKey] from the layer's local
+  /// [BackdropGroup]; null when no group exists (no-op).
   BackdropKey? _backdropKey;
   BackdropKey? get backdropKey => _backdropKey;
   set backdropKey(BackdropKey? value) {
@@ -266,6 +266,7 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
           matteTransform,
           _geometryLocalBounds,
         ).snapToPixels(devicePixelRatio);
+
         renderShader
           // Slot 0-1: uSize — physical-pixel size of the backdrop layer.
           // Must be set before painting so the shader can derive correct screen UVs.

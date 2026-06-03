@@ -63,7 +63,7 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
   /// Call from [didUpdateWidget] when tabIndex or tabCount may have changed.
   void updateTabAlignIfNeeded(int oldTabIndex, int oldTabCount) {
     if (oldTabIndex != tabIndex || oldTabCount != tabCount) {
-      setState(() => tabXAlign = computeTabAlignment(tabIndex));
+      if (mounted) setState(() => tabXAlign = computeTabAlignment(tabIndex));
     }
   }
 
@@ -86,11 +86,13 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
 
   /// `onHorizontalDragDown` — marks pointer as pressed for jelly activation.
   void onBarDragDown(DragDownDetails d) {
+    if (!mounted) return;
     setState(() => tabIsDown = true);
   }
 
   /// `onHorizontalDragStart` — drag confirmed; lock position to pointer.
   void onBarDragStart(DragStartDetails d) {
+    if (!mounted) return;
     setState(() {
       tabIsDragging = true;
       tabXAlign = alignmentFromGlobal(d.globalPosition);
@@ -99,6 +101,7 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
 
   /// `onHorizontalDragUpdate` — track pointer during drag.
   void onBarDragUpdate(DragUpdateDetails d) {
+    if (!mounted) return;
     setState(() {
       tabIsDragging = true;
       tabXAlign = alignmentFromGlobal(d.globalPosition);
@@ -130,6 +133,7 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
       target = positionIndex - 1;
     }
 
+    if (!mounted) return;
     setState(() {
       tabIsDragging = false;
       tabIsDown = false;
@@ -143,6 +147,7 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
     if (tabIsDragging) {
       final relX = (tabXAlign + 1) / 2;
       final target = (relX * (tabCount - 1)).round().clamp(0, tabCount - 1);
+      if (!mounted) return;
       setState(() {
         tabIsDragging = false;
         tabIsDown = false;
@@ -151,6 +156,7 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
       notifyTabChanged(target);
     } else {
       // Not dragging (e.g. same-tab tap): reset indicator to exact tab center.
+      if (!mounted) return;
       setState(() => tabXAlign = computeTabAlignment(tabIndex));
     }
   }

@@ -417,17 +417,17 @@ class TabIndicatorState extends State<TabIndicator>
           // Raw pointer events fire BEFORE gesture recognizers and never compete
           // in the gesture arena, so tabIsDown is always set on the very first event.
           onPointerDown: (_) {
-            setState(() => tabIsDown = true);
+            if (mounted) setState(() => tabIsDown = true);
           },
           // On finger/button lift, clear tabIsDown if not mid-drag.
           // Listener fires regardless of which gesture recognizer won the arena.
           onPointerUp: (_) {
-            if (!tabIsDragging) {
+            if (!tabIsDragging && mounted) {
               setState(() => tabIsDown = false);
             }
           },
           onPointerCancel: (_) {
-            if (!tabIsDragging) {
+            if (!tabIsDragging && mounted) {
               setState(() => tabIsDown = false);
             }
           },

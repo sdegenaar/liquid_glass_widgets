@@ -248,9 +248,11 @@ void main() {
 
     // ── wrap() ───────────────────────────────────────────────────────────────
 
-    test('wrap returns a GlassBackdropScope by default', () {
-      final wrapped = LiquidGlassWidgets.wrap(child: const SizedBox.shrink());
-      expect(wrapped.runtimeType.toString(), contains('GlassBackdropScope'));
+    test('wrap returns child directly when no options given', () {
+      const child = SizedBox.shrink();
+      final wrapped = LiquidGlassWidgets.wrap(child: child);
+      // With no theme or adaptive quality, wrap returns the child itself.
+      expect(identical(wrapped, child), isTrue);
     });
 
     test('wrap with adaptiveQuality:true returns a GlassAdaptiveScope', () {
@@ -262,12 +264,14 @@ void main() {
     });
 
     test('wrap without adaptiveQuality does NOT insert GlassAdaptiveScope', () {
-      final wrapped = LiquidGlassWidgets.wrap(child: const SizedBox.shrink());
+      const child = SizedBox.shrink();
+      final wrapped = LiquidGlassWidgets.wrap(child: child);
+      // With no adaptive quality, wrap returns the child directly.
       expect(
         wrapped.runtimeType.toString(),
         isNot(contains('GlassAdaptiveScope')),
       );
-      expect(wrapped.runtimeType.toString(), contains('GlassBackdropScope'));
+      expect(wrapped.runtimeType.toString(), contains('SizedBox'));
     });
 
     test('wrap(respectSystemAccessibility:false) sets the global flag', () {
@@ -320,11 +324,11 @@ void main() {
     test('wrap() without adaptiveQuality does NOT insert GlassAdaptiveScope',
         () {
       final wrapped = LiquidGlassWidgets.wrap(child: const SizedBox.shrink());
+      // With no adaptive quality, wrap returns the child directly.
       expect(
         wrapped.runtimeType.toString(),
         isNot(contains('GlassAdaptiveScope')),
       );
-      expect(wrapped.runtimeType.toString(), contains('GlassBackdropScope'));
     });
   });
 

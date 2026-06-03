@@ -6,7 +6,6 @@ import 'adaptive_liquid_glass_layer.dart';
 
 import '../interactive/liquid_glass_scope.dart';
 import 'glass_adaptive_scope.dart';
-import 'glass_backdrop_scope.dart';
 import '../../types/glass_quality.dart';
 import '../../theme/glass_theme.dart';
 import '../../theme/glass_theme_data.dart';
@@ -43,9 +42,8 @@ enum GlassStatusBarStyle {
 ///    colour to transparent via a [Theme] override, so your [background] shows
 ///    through without any extra configuration.
 ///
-/// 2. **Ghosting Prevention** — wraps the route in a [GlassBackdropScope] to
-///    isolate this route's GPU backdrop from adjacent routes during navigation
-///    transitions, preventing visual artefacts.
+/// 2. **Backdrop Isolation** — each glass layer manages its own GPU backdrop
+///    capture, preventing ghost artefacts when navigating between routes.
 ///
 /// 3. **Background Scope** — wraps the route in a [LiquidGlassScope] so that
 ///    [GlassBackgroundSource] can locate the capture key when
@@ -373,46 +371,44 @@ class _GlassPageState extends State<GlassPage> {
     final bool doSample = _effectiveSampling && quality != GlassQuality.minimal;
 
     Widget content = LiquidGlassScope(
-      child: GlassBackdropScope(
-        child: Stack(
-          children: [
-            // 1. Background layer — only rendered when a background is provided.
-            if (widget.background != null)
-              Positioned.fill(
-                child: GlassBackgroundSource(
-                  enabled: doSample,
-                  child: widget.background!,
-                ),
-              ),
-
-            // 2. Content layer.
-            // When background is provided: force transparent Scaffold so the
-            // wallpaper shows through.
-            // When no background: leave Scaffold colour alone — it renders with
-            // its own backgroundColor as the developer set it.
-            //
-            // The AdaptiveLiquidGlassLayer provides the LiquidGlassRenderScope
-            // that all glass widgets (GlassAppBar, GlassButton, GlassCard, etc.)
-            // need to render. Without it, using any glass widget inside a
-            // Scaffold's appBar slot would crash with "No liquid glass renderer
-            // found in context". Settings and quality resolve from GlassTheme
-            // automatically; individual widgets override via their own `settings`
-            // parameter.
+      child: Stack(
+        children: [
+          // 1. Background layer — only rendered when a background is provided.
+          if (widget.background != null)
             Positioned.fill(
-              child: AdaptiveLiquidGlassLayer(
-                settings: widget.settings,
-                child: widget.background != null
-                    ? Theme(
-                        data: Theme.of(context).copyWith(
-                          scaffoldBackgroundColor: Colors.transparent,
-                        ),
-                        child: widget.child,
-                      )
-                    : widget.child,
+              child: GlassBackgroundSource(
+                enabled: doSample,
+                child: widget.background!,
               ),
             ),
-          ],
-        ),
+
+          // 2. Content layer.
+          // When background is provided: force transparent Scaffold so the
+          // wallpaper shows through.
+          // When no background: leave Scaffold colour alone — it renders with
+          // its own backgroundColor as the developer set it.
+          //
+          // The AdaptiveLiquidGlassLayer provides the LiquidGlassRenderScope
+          // that all glass widgets (GlassAppBar, GlassButton, GlassCard, etc.)
+          // need to render. Without it, using any glass widget inside a
+          // Scaffold's appBar slot would crash with "No liquid glass renderer
+          // found in context". Settings and quality resolve from GlassTheme
+          // automatically; individual widgets override via their own `settings`
+          // parameter.
+          Positioned.fill(
+            child: AdaptiveLiquidGlassLayer(
+              settings: widget.settings,
+              child: widget.background != null
+                  ? Theme(
+                      data: Theme.of(context).copyWith(
+                        scaffoldBackgroundColor: Colors.transparent,
+                      ),
+                      child: widget.child,
+                    )
+                  : widget.child,
+            ),
+          ),
+        ],
       ),
     );
 
@@ -422,6 +418,26 @@ class _GlassPageState extends State<GlassPage> {
     if (widget.themeOverride != null) {
       content = GlassTheme(
         data: widget.themeOverride!,
+        child: content,
+      );
+    }
+
+    // Wrap in AnnotatedRegion so the status bar style sticks even on
+    // routes where a parent Scaffold's own AnnotatedRegion would otherwise
+    // override our imperative SystemChrome.setSystemUIOverlayStyle() call.
+    if (widget.statusBarStyle != GlassStatusBarStyle.none) {
+      final Brightness brightness = MediaQuery.platformBrightnessOf(context);
+      final bool isDark = brightness == Brightness.dark;
+      final bool useLightIcons = switch (widget.statusBarStyle) {
+        GlassStatusBarStyle.light => true,
+        GlassStatusBarStyle.dark => false,
+        GlassStatusBarStyle.auto => isDark,
+        GlassStatusBarStyle.none => false,
+      };
+      content = AnnotatedRegion<SystemUiOverlayStyle>(
+        value: useLightIcons
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark,
         child: content,
       );
     }

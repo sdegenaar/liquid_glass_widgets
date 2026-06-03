@@ -678,9 +678,12 @@ void main() {
           ),
         ),
       );
-      await tester.tap(find.text('Search').first);
+      // Tap 'Profile' (index 2) instead of 'Search' (index 1) because
+      // the 'Search' label text conflicts with the collapsed search pill
+      // GlassButton that sits on top of the tab area.
+      await tester.tap(find.text('Profile').first);
       await tester.pumpAndSettle();
-      expect(selected, 1);
+      expect(selected, 2);
     });
   });
 

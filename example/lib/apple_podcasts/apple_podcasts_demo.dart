@@ -315,167 +315,170 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
     final double miniPlayLeft = _kPaddingH + collapsedPillW + 6.0;
     final double miniPlayRight = _kPaddingH + collapsedPillW + 6.0;
 
-    return Scaffold(
-      backgroundColor: _kBackground,
-      extendBody: true,
+    return GlassScaffold(
+      background: const ColoredBox(color: _kBackground),
+      statusBarStyle: GlassStatusBarStyle.light,
+      topEdgeFade: true,
+      bottomEdgeFade: true,
+      topEdgeFadeExtent: 0, // no app bar — just status bar fade
+      bottomBarHeight: _isMiniMode ? 20 : 40,
+      bottomEdgeFadeExtent: 0, // glass bar is transparent
       resizeToAvoidBottomInset: false,
-      body: Stack(
-        children: [
-          GestureDetector(
-            onTap: () {
-              if (_searchFieldFocused) FocusScope.of(context).unfocus();
-            },
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: !_isSearching
-                  ? _buildHomeView(
-                      key: const ValueKey('home'), contentPad: contentPad)
-                  : _searchFieldFocused
-                      ? _buildEmptySearch(key: const ValueKey('empty'))
-                      : _buildBrowseView(
-                          key: const ValueKey('browse'),
-                          contentPad: contentPad),
-            ),
-          ),
 
-          // Mini-player Pill
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 420),
-            curve: Curves.easeInOutCubic,
-            bottom: _isMiniMode ? miniBarBottom : aboveBarBottom,
-            left: _isMiniMode ? miniPlayLeft : _kPaddingH,
-            right: _isMiniMode ? miniPlayRight : _kPaddingH,
-            height: 50.0,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 220),
-              opacity: _isSearching ? 0.0 : 1.0,
-              child: IgnorePointer(
-                ignoring: _isSearching,
-                child: GlassButton.custom(
-                  onTap: () => _showNowPlayingSheet(context),
-                  quality: GlassQuality.premium,
-                  useOwnLayer: true,
-                  width: double.infinity,
-                  height: 50,
-                  shape: const LiquidRoundedSuperellipse(borderRadius: 25),
-                  settings: const LiquidGlassSettings(
-                    glassColor: Color(0xCC1C1C1E),
-                    thickness: 30,
-                    blur: 3,
-                  ),
-                  child: const _MiniPlayerContent(),
+      // ── Fixed header — fades on scroll ──────────────────────────────────────
+      header: (_selectedTab == 0 && !_isSearching) ? _buildHomeHeader() : null,
+      headerScrollController: _scrollController,
+      headerFadeDistance: 30,
+
+      // ── Body ────────────────────────────────────────────────────────────────
+      body: GestureDetector(
+        onTap: () {
+          if (_searchFieldFocused) FocusScope.of(context).unfocus();
+        },
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: !_isSearching
+              ? _buildHomeView(
+                  key: const ValueKey('home'), contentPad: contentPad)
+              : _searchFieldFocused
+                  ? _buildEmptySearch(key: const ValueKey('empty'))
+                  : _buildBrowseView(
+                      key: const ValueKey('browse'), contentPad: contentPad),
+        ),
+      ),
+
+      // ── Mini-player pill overlay ────────────────────────────────────────────
+      bodyOverlays: [
+        AnimatedPositioned(
+          duration: const Duration(milliseconds: 420),
+          curve: Curves.easeInOutCubic,
+          bottom: _isMiniMode ? miniBarBottom : aboveBarBottom,
+          left: _isMiniMode ? miniPlayLeft : _kPaddingH,
+          right: _isMiniMode ? miniPlayRight : _kPaddingH,
+          height: 50.0,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 220),
+            opacity: _isSearching ? 0.0 : 1.0,
+            child: IgnorePointer(
+              ignoring: _isSearching,
+              child: GlassButton.custom(
+                onTap: () => _showNowPlayingSheet(context),
+                quality: GlassQuality.premium,
+                useOwnLayer: true,
+                width: double.infinity,
+                height: 50,
+                shape: const LiquidRoundedSuperellipse(borderRadius: 25),
+                settings: const LiquidGlassSettings(
+                  glassColor: Color(0xCC1C1C1E),
+                  thickness: 30,
+                  blur: 3,
                 ),
+                child: const _MiniPlayerContent(),
               ),
             ),
           ),
+        ),
+      ],
 
-          // Bottom Bar
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutQuart,
-            bottom: bottomOffset,
-            left: 0,
-            right: 0,
-            child: GlassSearchableBottomBar(
-              isSearchActive: _isMiniMode || _isSearching,
-              selectedIndex: _selectedTab,
-              onTabSelected: (index) {
-                if (index == _selectedTab && _isMiniMode) {
-                  _dismissMiniMode();
-                } else {
-                  setState(() {
-                    _selectedTab = index;
-                    _isSearching = false;
-                  });
-                }
-              },
-              barHeight: _kBarH,
-              searchBarHeight: 50.0,
-              horizontalPadding: _kPaddingH,
-              verticalPadding: _kPaddingV,
-              spacing: _kSpacing,
-              selectedIconColor: _kPodcastsPurple,
-              unselectedIconColor: Colors.white.withValues(alpha: 1),
-              indicatorColor: Colors.white.withValues(alpha: 0.1),
-              labelFontSize: 10,
-              iconSize: 28,
-              iconLabelSpacing: 0,
-              quality: GlassQuality.premium,
-              interactionBehavior: GlassInteractionBehavior.full,
-              glassSettings: const LiquidGlassSettings(
-                glassColor: Color.fromRGBO(28, 28, 30, 0.8),
-                thickness: 30,
-                blur: 4,
-                chromaticAberration: .01,
-                lightAngle: GlassDefaults.lightAngle,
-                lightIntensity: .5,
-                ambientStrength: 0,
-                refractiveIndex: 1.2,
-                saturation: 1.2,
-                specularSharpness: GlassSpecularSharpness.medium,
-              ),
-              searchConfig: GlassSearchBarConfig(
-                focusNode: _searchFocusNode,
-                autoFocusOnExpand: false,
-                showsCancelButton: true,
-                expandWhenActive: !_isMiniMode || _isSearching,
-                hintText: 'Search Podcasts',
-                collapsedLogoBuilder: (context) {
-                  final isHome = _selectedTab == 0;
-                  IconData iconData = CupertinoIcons.play_circle_fill;
-                  if (_selectedTab == 1) {
-                    iconData = CupertinoIcons.square_grid_2x2_fill;
-                  } else if (_selectedTab == 2) {
-                    iconData = CupertinoIcons.square_stack_3d_up_fill;
-                  }
-                  return Center(
-                    child: IconTheme(
-                      data: IconThemeData(
-                        color: isHome
-                            ? _kPodcastsPurple
-                            : Colors.white.withValues(alpha: 1),
-                        size: 28,
-                      ),
-                      child: Icon(iconData),
-                    ),
-                  );
-                },
-                onSearchToggle: (active) {
-                  if (active) {
-                    setState(() => _isSearching = true);
-                  } else {
-                    final wasSearching = _isSearching;
-                    setState(() {
-                      _isSearching = false;
-                      _searchFieldFocused = false;
-                    });
-                    if (!wasSearching && _isMiniMode) _dismissMiniMode();
-                  }
-                },
-                onSearchFocusChanged: (f) =>
-                    setState(() => _searchFieldFocused = f),
-                searchIconColor: Colors.white.withValues(alpha: 1),
-                textInputAction: TextInputAction.search,
-              ),
-              tabs: [
-                GlassBottomBarTab(
-                    label: 'Home',
-                    icon: const Icon(CupertinoIcons.play_circle),
-                    activeIcon: const Icon(CupertinoIcons.play_circle_fill)),
-                GlassBottomBarTab(
-                    label: 'New',
-                    icon: const Icon(CupertinoIcons.square_grid_2x2),
-                    activeIcon:
-                        const Icon(CupertinoIcons.square_grid_2x2_fill)),
-                GlassBottomBarTab(
-                    label: 'Library',
-                    icon: const Icon(CupertinoIcons.square_stack_3d_up),
-                    activeIcon:
-                        const Icon(CupertinoIcons.square_stack_3d_up_fill)),
-              ],
-            ),
+      // ── Bottom navigation bar ──────────────────────────────────────────────
+      bottomBar: Padding(
+        padding: EdgeInsets.only(bottom: bottomOffset),
+        child: GlassSearchableBottomBar(
+          isSearchActive: _isMiniMode || _isSearching,
+          selectedIndex: _selectedTab,
+          onTabSelected: (index) {
+            if (index == _selectedTab && _isMiniMode) {
+              _dismissMiniMode();
+            } else {
+              setState(() {
+                _selectedTab = index;
+                _isSearching = false;
+              });
+            }
+          },
+          barHeight: _kBarH,
+          searchBarHeight: 50.0,
+          horizontalPadding: _kPaddingH,
+          verticalPadding: _kPaddingV,
+          spacing: _kSpacing,
+          selectedIconColor: _kPodcastsPurple,
+          unselectedIconColor: Colors.white.withValues(alpha: 1),
+          indicatorColor: Colors.white.withValues(alpha: 0.1),
+          labelFontSize: 10,
+          iconSize: 28,
+          iconLabelSpacing: 0,
+          quality: GlassQuality.premium,
+          interactionBehavior: GlassInteractionBehavior.full,
+          glassSettings: const LiquidGlassSettings(
+            glassColor: Color.fromRGBO(28, 28, 30, 0.8),
+            thickness: 30,
+            blur: 4,
+            chromaticAberration: .01,
+            lightAngle: GlassDefaults.lightAngle,
+            lightIntensity: .5,
+            ambientStrength: 0,
+            refractiveIndex: 1.2,
+            saturation: 1.2,
+            specularSharpness: GlassSpecularSharpness.medium,
           ),
-        ],
+          searchConfig: GlassSearchBarConfig(
+            focusNode: _searchFocusNode,
+            autoFocusOnExpand: false,
+            showsCancelButton: true,
+            expandWhenActive: !_isMiniMode || _isSearching,
+            hintText: 'Search Podcasts',
+            collapsedLogoBuilder: (context) {
+              final isHome = _selectedTab == 0;
+              IconData iconData = CupertinoIcons.play_circle_fill;
+              if (_selectedTab == 1) {
+                iconData = CupertinoIcons.square_grid_2x2_fill;
+              } else if (_selectedTab == 2) {
+                iconData = CupertinoIcons.square_stack_3d_up_fill;
+              }
+              return Center(
+                child: IconTheme(
+                  data: IconThemeData(
+                    color: isHome
+                        ? _kPodcastsPurple
+                        : Colors.white.withValues(alpha: 1),
+                    size: 28,
+                  ),
+                  child: Icon(iconData),
+                ),
+              );
+            },
+            onSearchToggle: (active) {
+              if (active) {
+                setState(() => _isSearching = true);
+              } else {
+                final wasSearching = _isSearching;
+                setState(() {
+                  _isSearching = false;
+                  _searchFieldFocused = false;
+                });
+                if (!wasSearching && _isMiniMode) _dismissMiniMode();
+              }
+            },
+            onSearchFocusChanged: (f) =>
+                setState(() => _searchFieldFocused = f),
+            searchIconColor: Colors.white.withValues(alpha: 1),
+            textInputAction: TextInputAction.search,
+          ),
+          tabs: [
+            GlassBottomBarTab(
+                label: 'Home',
+                icon: const Icon(CupertinoIcons.play_circle),
+                activeIcon: const Icon(CupertinoIcons.play_circle_fill)),
+            GlassBottomBarTab(
+                label: 'New',
+                icon: const Icon(CupertinoIcons.square_grid_2x2),
+                activeIcon: const Icon(CupertinoIcons.square_grid_2x2_fill)),
+            GlassBottomBarTab(
+                label: 'Library',
+                icon: const Icon(CupertinoIcons.square_stack_3d_up),
+                activeIcon: const Icon(CupertinoIcons.square_stack_3d_up_fill)),
+          ],
+        ),
       ),
     );
   }
@@ -485,39 +488,10 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
       key: key,
       controller: _scrollController,
       slivers: [
-        // Status bar top pad
+        // Extra top pad to account for fixed header overlay
         SliverToBoxAdapter(
-            child: SizedBox(height: MediaQuery.paddingOf(context).top + 12)),
-
-        // Page header row
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: _kPaddingH),
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Text('Home',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 34,
-                          fontWeight: FontWeight.bold)),
-                ),
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: _kPodcastsPurple, width: 2),
-                    color: _kPodcastsPurple.withValues(alpha: 0.15),
-                  ),
-                  child: const Icon(CupertinoIcons.person_fill,
-                      color: _kPodcastsPurple, size: 20),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 20)),
+            child:
+                SizedBox(height: MediaQuery.paddingOf(context).top + 12 + 50)),
 
         // ── Up Next ──────────────────────────────────────────────────────────
         _buildSectionHeader('Up Next'),
@@ -649,6 +623,34 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
 
         SliverToBoxAdapter(child: SizedBox(height: contentPad)),
       ],
+    );
+  }
+
+  Widget _buildHomeHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text('Home',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 34,
+                    fontWeight: FontWeight.bold)),
+          ),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: _kPodcastsPurple, width: 2),
+              color: _kPodcastsPurple.withValues(alpha: 0.15),
+            ),
+            child: const Icon(CupertinoIcons.person_fill,
+                color: _kPodcastsPurple, size: 20),
+          ),
+        ],
+      ),
     );
   }
 

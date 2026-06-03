@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../types/glass_quality.dart';
 import '../../utils/glass_performance_monitor.dart';
 import 'glass_accessibility_scope.dart';
+import 'glass_isolation_scope.dart';
 import 'lightweight_liquid_glass.dart';
 import 'inherited_liquid_glass.dart';
 
@@ -98,7 +99,7 @@ class AdaptiveGlass extends StatelessWidget {
   static bool get _canUseImpeller => ui.ImageFilter.isShaderFilterSupported;
 
   /// Static helper to render glass in a grouped context without creating a new layer.
-  /// This is the adaptive replacement for [LiquidGlass.grouped].
+  /// This is the adaptive replacement for [LiquidGlass.withOwnLayer].
   static Widget grouped({
     required LiquidShape shape,
     required Widget child,
@@ -173,7 +174,7 @@ class AdaptiveGlass extends StatelessWidget {
       );
     }
 
-    // If we are on Skia/Web, we CANNOT use LiquidGlass.grouped or withOwnLayer
+    // If we are on Skia/Web, we CANNOT use LiquidGlass.withOwnLayer or withOwnLayer
     // because those will fall back to FakeGlass (solid color) inside the renderer.
     // We MUST use our LightweightLiquidGlass to get actual glass effects.
 
@@ -278,35 +279,52 @@ class AdaptiveGlass extends StatelessWidget {
         child: child,
       );
 
-      Widget result = lightweightWidget;
-      if (!isInteractive) {
-        result = RepaintBoundary(child: result);
-      }
-      return result;
+      return lightweightWidget;
     }
 
     // Impeller + Premium Path: Use the renderer's native path.
     // Wrap in PremiumGlassTracker so GlassPerformanceMonitor can correlate
     // slow raster frames with active premium surfaces.
-    if (useOwnLayer) {
+    //
+    // Force useOwnLayer when inside a GlassIsolationScope (e.g. GlassScaffold
+    // bottom bar). This gives bars their own compositing layer so body glass
+    // cards don't composite over bar buttons.
+    //
+    // NOTE: isInteractive is NOT included here. It only controls
+    // RepaintBoundary wrapping (lines below). Including it would force
+    // every GlassButton into its own compositing layer, breaking grouped
+    // rendering inside bars (e.g. BottomBarExtraBtn must blend with the
+    // tab pill, not render as a separate glass surface). Buttons that need
+    // independent refraction should set useOwnLayer: true explicitly.
+    //
+    // De-isolate children of the own-layer so nested glass (e.g. tab
+    // items inside a bottom bar) groups with this layer rather than
+    // creating additional own-layers (which would cause double-glass).
+    final effectiveUseOwnLayer =
+        useOwnLayer || GlassIsolationScope.isIsolated(context);
+
+    if (effectiveUseOwnLayer) {
       Widget premium = LiquidGlass.withOwnLayer(
         shape: shape,
         settings: settings,
         clipBehavior: clipBehavior,
-        child: child,
+        // De-isolate children so nested glass groups with this own-layer
+        // rather than creating its own (which causes double-glass).
+        // Carry the parent's defaultQuality through so quality hints
+        // (e.g. premium for bars) are preserved even when de-isolated.
+        child: GlassIsolationScope(
+          isolated: false,
+          defaultQuality: GlassIsolationScope.defaultQualityOf(context),
+          child: child,
+        ),
       );
-
-      // Wrap in RepaintBoundary to give Impeller hints for tile-based rendering.
-      // This allows Impeller to skip rasterizing unchanged tiles, improving
-      // performance for static surfaces (app bars, bottom bars, etc.)
-      if (!isInteractive) {
-        premium = RepaintBoundary(child: premium);
-      }
 
       return PremiumGlassTracker(
         child: premium,
       );
     } else {
+      // Grouped elements (e.g. inside GlassBottomBar) rely on the ancestor's
+      // LiquidGlassLayer to provide the RepaintBoundary and BackdropGroup.
       return PremiumGlassTracker(
         child: LiquidGlass.grouped(
           shape: shape,

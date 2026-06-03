@@ -4,6 +4,7 @@ import '../liquid_glass_setup.dart';
 import '../src/renderer/liquid_glass_renderer.dart';
 import '../types/glass_quality.dart';
 import '../widgets/shared/glass_adaptive_scope.dart';
+import '../widgets/shared/glass_isolation_scope.dart';
 import '../widgets/shared/inherited_liquid_glass.dart';
 import 'glass_theme.dart';
 import 'glass_theme_data.dart';
@@ -73,7 +74,7 @@ class GlassThemeHelpers {
   /// // A premium widget gets standard. A minimal widget stays minimal.
   /// GlassAdaptiveScope(
   ///   child: Column(children: [
-  ///     GlassAppBar(quality: GlassQuality.premium),  // → standard (capped)
+  ///     GlassBottomBar(quality: GlassQuality.premium),// → standard (capped)
   ///     GlassButton(quality: GlassQuality.minimal),  // → minimal  (not raised)
   ///     GlassButton(),                               // → standard (from fallback, capped)
   ///   ]),
@@ -88,7 +89,7 @@ class GlassThemeHelpers {
   /// GlassAdaptiveScope(
   ///   minQuality: GlassQuality.premium, // floor = premium
   ///   maxQuality: GlassQuality.premium, // ceiling = premium → locked
-  ///   child: GlassAppBar(quality: GlassQuality.premium),
+  ///   child: GlassBottomBar(quality: GlassQuality.premium),
   /// )
   /// ```
   ///
@@ -123,7 +124,6 @@ class GlassThemeHelpers {
   ///
   /// | Widget class | Default quality | Rationale |
   /// |---|---|---|
-  /// | [GlassAppBar] | `premium` | Static header — full quality expected |
   /// | [GlassBottomBar] | `premium` | Static footer — full quality expected |
   /// | [GlassToolbar] | `premium` | Static surface |
   /// | [GlassSideBar] | `premium` | Static surface |
@@ -148,7 +148,7 @@ class GlassThemeHelpers {
   ///   2. inherited ancestor:       AdaptiveLiquidGlassLayer(quality: ...)
   ///   ── GlassAdaptiveScope ceiling applied to levels 1 & 2 above ──
   ///   3. theme quality:            GlassThemeVariant(quality: GlassQuality.standard)
-  ///   4. widget-class default:     GlassAppBar → premium, GlassButton → standard
+  ///   4. widget-class default:     GlassBottomBar → premium, GlassButton → standard
   ///   ── GlassAdaptiveScope ceiling applied to levels 3 & 4 above ──
   /// Lowest priority
   /// ```
@@ -181,10 +181,22 @@ class GlassThemeHelpers {
     }
 
     // Step 2: inherited ancestor quality (e.g. from AdaptiveLiquidGlassLayer).
+    //
+    // SKIP when:
+    // - Inside a GlassIsolationScope with `isolated: true` — isolated surfaces
+    //   create their own glass layers and should not inherit from the page layer.
+    // - A GlassIsolationScope provides a `defaultQuality` — the scope is
+    //   explicitly overriding the ambient quality (e.g. GlassScaffold wraps bars
+    //   with `defaultQuality: premium`). Without this guard, the page-level
+    //   `standard` quality would short-circuit before the scope's premium hint
+    //   at Step 4 can take effect.
+    final scopeDefault = GlassIsolationScope.defaultQualityOf(context);
     GlassQuality? resolved;
-    final inherited =
-        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
-    if (inherited != null) resolved = inherited.quality;
+    if (!GlassIsolationScope.isIsolated(context) && scopeDefault == null) {
+      final inherited =
+          context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+      if (inherited != null) resolved = inherited.quality;
+    }
 
     // Step 3: cap inherited quality by adaptive ceiling.
     if (adaptiveData != null && resolved != null) {
@@ -194,8 +206,14 @@ class GlassThemeHelpers {
     if (resolved != null) return resolved;
 
     // Step 4: theme-level quality, capped by adaptive ceiling.
+    //
+    // scopeDefault was already resolved above (Step 2). GlassScaffold sets
+    // `defaultQuality: premium` on bar wrappers. This ensures buttons in bars
+    // default to premium without requiring explicit quality.
+    // GlassAdaptiveScope ceiling still caps this on low-end devices.
     final themeData = GlassThemeData.of(context);
-    GlassQuality result = themeData.qualityFor(context) ?? fallback;
+    GlassQuality result =
+        themeData.qualityFor(context) ?? scopeDefault ?? fallback;
     if (adaptiveData != null) {
       result = _applyCeiling(result, adaptiveData.effectiveQuality);
     }

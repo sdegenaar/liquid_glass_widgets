@@ -6,7 +6,13 @@ import 'package:liquid_glass_widgets_example/apple_messages/apple_messages_demo.
 import 'package:liquid_glass_widgets_example/apple_music/apple_music_demo.dart';
 import 'package:liquid_glass_widgets_example/apple_news/apple_news_demo.dart';
 import 'package:liquid_glass_widgets_example/apple_podcasts/apple_podcasts_demo.dart';
-import 'package:liquid_glass_widgets_example/demos/keypad_lock_screen_demo.dart';
+import 'package:liquid_glass_widgets_example/apple_lockscreen/keypad_lock_screen_demo.dart';
+import 'package:liquid_glass_widgets_example/demos/nav_bar_patterns_demo.dart';
+import 'package:liquid_glass_widgets_example/demos/glass_menu_demo.dart';
+import 'package:liquid_glass_widgets_example/demos/glass_modal_sheet_demo.dart';
+import 'package:liquid_glass_widgets_example/demos/video_player_demo.dart';
+import 'package:liquid_glass_widgets_example/demos/text_field_demo.dart';
+import 'package:liquid_glass_widgets_example/demos/bottom_bar_tab_width_demo.dart';
 import 'package:liquid_glass_widgets_example/pages/containers_page.dart';
 import 'package:liquid_glass_widgets_example/pages/feedback_page.dart';
 import 'package:liquid_glass_widgets_example/pages/input_page.dart';
@@ -68,52 +74,55 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage> {
     ),
     GlassBottomBarTab(
       label: 'Demos',
-      icon: Icon(CupertinoIcons.play_rectangle),
-      activeIcon: Icon(CupertinoIcons.play_rectangle_fill),
+      icon: Icon(Icons.apple, size: 30),
+      activeIcon: Icon(Icons.apple, size: 30),
+    ),
+    GlassBottomBarTab(
+      label: 'Examples',
+      icon: Icon(CupertinoIcons.cube),
+      activeIcon: Icon(CupertinoIcons.cube_fill),
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return GlassPage(
+    return GlassScaffold(
       background: _buildBackground(),
-      statusBarStyle: GlassStatusBarStyle.dark,
+      statusBarStyle: GlassStatusBarStyle.light,
       settings: RecommendedGlassSettings.standard,
-      child: Scaffold(
-        extendBody: true,
-        body: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 250),
-          child: switch (_selectedTab) {
-            0 => const _ExploreTab(key: ValueKey('explore')),
-            1 => const _WidgetsTab(key: ValueKey('widgets')),
-            _ => const _DemosTab(key: ValueKey('demos')),
-          },
+      topEdgeFade: true,
+      bottomBar: GlassBottomBar(
+        selectedIndex: _selectedTab,
+        onTabSelected: (i) => setState(() => _selectedTab = i),
+        interactionBehavior: GlassInteractionBehavior.full,
+        selectedIconColor: const Color(0xFFA855F7),
+        unselectedIconColor: Colors.white,
+        indicatorColor: Colors.white.withValues(alpha: 0.1),
+        iconSize: 28,
+        labelFontSize: 10,
+        iconLabelSpacing: 0,
+        glassSettings: const LiquidGlassSettings(
+          glassColor: Color.fromRGBO(255, 255, 255, 0.08),
+          thickness: 30,
+          blur: 3,
+          chromaticAberration: .01,
+          lightAngle: GlassDefaults.lightAngle,
+          lightIntensity: .5,
+          ambientStrength: 0,
+          refractiveIndex: 1.2,
+          saturation: 1.2,
+          specularSharpness: GlassSpecularSharpness.medium,
         ),
-        bottomNavigationBar: GlassBottomBar(
-          selectedIndex: _selectedTab,
-          onTabSelected: (i) => setState(() => _selectedTab = i),
-          quality: GlassQuality.premium,
-          interactionBehavior: GlassInteractionBehavior.full,
-          selectedIconColor: const Color(0xFFA855F7),
-          unselectedIconColor: Colors.white,
-          indicatorColor: Colors.white.withValues(alpha: 0.1),
-          iconSize: 28,
-          labelFontSize: 10,
-          iconLabelSpacing: 0,
-          glassSettings: const LiquidGlassSettings(
-            glassColor: Color.fromRGBO(28, 28, 30, 0.8),
-            thickness: 30,
-            blur: 4,
-            chromaticAberration: .01,
-            lightAngle: GlassDefaults.lightAngle,
-            lightIntensity: .5,
-            ambientStrength: 0,
-            refractiveIndex: 1.2,
-            saturation: 1.2,
-            specularSharpness: GlassSpecularSharpness.medium,
-          ),
-          tabs: _tabs,
-        ),
+        tabs: _tabs,
+      ),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        child: switch (_selectedTab) {
+          0 => const _ExploreTab(key: ValueKey('explore')),
+          1 => const _WidgetsTab(key: ValueKey('widgets')),
+          2 => const _DemosTab(key: ValueKey('demos')),
+          _ => const _ExamplesTab(key: ValueKey('examples')),
+        },
       ),
     );
   }
@@ -293,7 +302,7 @@ class _ExploreTab extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.apple, color: Colors.white, size: 28),
+                              Icon(Icons.apple, color: Colors.white, size: 30),
                               const SizedBox(width: 6),
                               const Text(
                                 'Music',
@@ -492,51 +501,87 @@ class _WidgetsTab extends StatelessWidget {
                       letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 60),
-                  GlassCard(
-                    padding: EdgeInsets.zero,
-                    child: Column(
-                      children: [
-                        _WidgetTile(
-                          icon: CupertinoIcons.square_stack_3d_up_fill,
-                          title: 'Containers',
-                          subtitle: 'GlassCard, GlassPanel, GlassContainer',
-                          destination: const ContainersPage(),
-                        ),
-                        _WidgetTile(
-                          icon: CupertinoIcons.hand_point_right_fill,
-                          title: 'Interactive',
-                          subtitle: 'GlassButton, GlassSwitch, GlassSlider',
-                          destination: const InteractivePage(),
-                        ),
-                        _WidgetTile(
-                          icon: CupertinoIcons.hourglass,
-                          title: 'Feedback',
-                          subtitle: 'GlassProgressIndicator, GlassToast',
-                          destination: const FeedbackPage(),
-                        ),
-                        _WidgetTile(
-                          icon: CupertinoIcons.square_stack_fill,
-                          title: 'Overlays',
-                          subtitle: 'GlassSheet, GlassDialog, GlassMenu',
-                          destination: const OverlaysPage(),
-                        ),
-                        _WidgetTile(
-                          icon: CupertinoIcons.rectangle_3_offgrid_fill,
-                          title: 'Surfaces',
-                          subtitle: 'GlassAppBar, GlassBottomBar, GlassTabBar',
-                          destination: const SurfacesPage(),
-                        ),
-                        _WidgetTile(
-                          icon: CupertinoIcons.keyboard,
-                          title: 'Input',
-                          subtitle: 'GlassTextField, GlassSearchBar',
-                          destination: const InputPage(),
-                          isLast: true,
-                        ),
-                      ],
+                  const SizedBox(height: 8),
+                  Text(
+                    'Browse the full widget catalog.',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.white.withValues(alpha: 0.4),
                     ),
                   ),
+                  const SizedBox(height: 24),
+
+                  // Row 1: Containers + Interactive
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SmallDemoCard(
+                          title: 'Containers',
+                          icon: CupertinoIcons.square_stack_3d_up_fill,
+                          color: const Color(0xFF007AFF),
+                          destination: const ContainersPage(),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: _SmallDemoCard(
+                          title: 'Interactive',
+                          icon: CupertinoIcons.hand_point_right_fill,
+                          color: const Color(0xFFFF9500),
+                          destination: const InteractivePage(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Row 2: Feedback + Overlays
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SmallDemoCard(
+                          title: 'Feedback',
+                          icon: CupertinoIcons.hourglass,
+                          color: const Color(0xFF34C759),
+                          destination: const FeedbackPage(),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: _SmallDemoCard(
+                          title: 'Overlays',
+                          icon: CupertinoIcons.square_stack_fill,
+                          color: const Color(0xFFAF52DE),
+                          destination: const OverlaysPage(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Row 3: Surfaces + Input
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SmallDemoCard(
+                          title: 'Surfaces',
+                          icon: CupertinoIcons.rectangle_3_offgrid_fill,
+                          color: const Color(0xFF5AC8FA),
+                          destination: const SurfacesPage(),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: _SmallDemoCard(
+                          title: 'Input',
+                          icon: CupertinoIcons.keyboard,
+                          color: const Color(0xFFFF2D55),
+                          destination: const InputPage(),
+                        ),
+                      ),
+                    ],
+                  ),
+
                   const SizedBox(height: 120),
                 ],
               ),
@@ -578,7 +623,7 @@ class _DemosTab extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Full-screen app experiences built with Liquid Glass.',
+                    'Polished Apple app reproductions.',
                     style: TextStyle(
                       fontSize: 15,
                       color: Colors.white.withValues(alpha: 0.4),
@@ -644,6 +689,133 @@ class _DemosTab extends StatelessWidget {
                           destination: const KeypadLockScreenDemo(),
                         ),
                       ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 120),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// =============================================================================
+// Examples Tab — Widget patterns & component reference
+// =============================================================================
+
+class _ExamplesTab extends StatelessWidget {
+  const _ExamplesTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Examples',
+                    style: TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Widget modes & configuration reference.',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.white.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Row 1: Nav Patterns + Context Menus
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SmallDemoCard(
+                          title: 'Nav Patterns',
+                          icon: CupertinoIcons.rectangle_split_3x1,
+                          color: const Color(0xFF007AFF),
+                          destination: const NavBarPatternsDemo(),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: _SmallDemoCard(
+                          title: 'Menus',
+                          icon: CupertinoIcons.ellipsis_circle_fill,
+                          color: const Color(0xFFFF9500),
+                          destination: const MenuDemoPage(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Large card: Modal Sheets
+                  _LargeDemoCard(
+                    title: 'Modal Sheets',
+                    subtitle:
+                        'Standard, peek, Apple Maps & smart silence modes',
+                    icon: CupertinoIcons.rectangle_on_rectangle,
+                    gradient: const [
+                      Color(0xFF0E4D92),
+                      Color(0xFF5AC8FA),
+                    ],
+                    destination: const ShowcaseApp(),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Row 2: Text Fields + Video Player
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SmallDemoCard(
+                          title: 'Text Fields',
+                          icon: CupertinoIcons.textbox,
+                          color: const Color(0xFF34C759),
+                          destination: const TextFieldDemo(),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: _SmallDemoCard(
+                          title: 'Video Player',
+                          icon: CupertinoIcons.play_circle_fill,
+                          color: const Color(0xFFFF2D55),
+                          destination: const VideoGlassDemoPage(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Row 3: Tab Widths
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SmallDemoCard(
+                          title: 'Tab Widths',
+                          icon: CupertinoIcons.slider_horizontal_3,
+                          color: const Color(0xFFAF52DE),
+                          destination: const TabWidthDemoPage(),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      const Expanded(child: SizedBox()),
                     ],
                   ),
 
@@ -849,35 +1021,6 @@ class _LargeDemoCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Widget list tile for the Widgets tab.
-class _WidgetTile extends StatelessWidget {
-  const _WidgetTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.destination,
-    this.isLast = false,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Widget destination;
-  final bool isLast;
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassListTile(
-      leading: Icon(icon, color: Colors.white54),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: GlassListTile.chevron,
-      isLast: isLast,
-      onTap: () => _openDemo(context, destination),
     );
   }
 }

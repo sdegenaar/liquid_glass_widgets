@@ -273,104 +273,57 @@ class _MessagesScreenState extends State<MessagesScreen> {
     final topPad = MediaQuery.paddingOf(context).top;
     final botPad = MediaQuery.paddingOf(context).bottom;
 
-    return Scaffold(
-      backgroundColor: _kBg,
-      extendBody: true,
-      body: Stack(
-        children: [
-          // ── Conversation list with edge fades ─────────────────────────
-          // ShaderMask fades scroll content at both edges using alpha mask —
-          // no clipping artefacts, content fades smoothly into/out of view.
-          ShaderMask(
-            blendMode: BlendMode.dstIn,
-            shaderCallback: (Rect bounds) {
-              // Top fade zone: from y=0 to (topPad+52+50) — covers nav bar
-              // + 50px fade into the first rows.
-              // Bottom fade zone: covers the search bar height + safe area.
-              final topZone = topPad + 52 + 50;
-              final bottomZone =
-                  60.0 + botPad; // Fade only below the search bar
-              return LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: const [
-                  Colors.transparent,
-                  Colors.black,
-                  Colors.black,
-                  Colors
-                      .transparent, // Fades out smoothly at the bottom like the top
-                ],
-                stops: [
-                  0.0,
-                  topZone / bounds.height,
-                  (bounds.height - bottomZone) / bounds.height,
-                  1.0,
-                ],
-              ).createShader(bounds);
-            },
-            child: CustomScrollView(
-              controller: _scrollController,
-              slivers: [
-                // Status bar space + nav bar height
-                SliverToBoxAdapter(child: SizedBox(height: topPad + 52)),
+    return GlassScaffold(
+      background: const ColoredBox(color: _kBg),
+      settings: _kTriggerGlass,
+      statusBarStyle: GlassStatusBarStyle.light,
+      appBarHeight: 52,
+      bottomBarHeight: 60,
+      appBar: _NavBar(
+        topPad: topPad,
+        headerCollapsed: _headerCollapsed,
+        activeFilter: _activeFilter,
+        onFilterChanged: (filter) => setState(() => _activeFilter = filter),
+      ),
+      bottomBar: _SearchBar(bottomPad: botPad),
+      body: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          // Status bar space + nav bar height
+          SliverToBoxAdapter(child: SizedBox(height: topPad + 52)),
 
-                // Large "Messages" title (collapses on scroll)
-                SliverToBoxAdapter(
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 200),
-                    opacity: _headerCollapsed ? 0 : 1,
-                    child: const Padding(
-                      padding: EdgeInsets.fromLTRB(16, 4, 16, 8),
-                      child: Text(
-                        'Messages',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 34,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                    ),
+          // Large "Messages" title (collapses on scroll)
+          SliverToBoxAdapter(
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 200),
+              opacity: _headerCollapsed ? 0 : 1,
+              child: const Padding(
+                padding: EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: Text(
+                  'Messages',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 34,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
                   ),
                 ),
-
-                // Conversation rows
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, i) => _ConversationRow(
-                      conversation: _kConversations[i],
-                    ),
-                    childCount: _kConversations.length,
-                  ),
-                ),
-
-                // Bottom padding — minimal; content reaches the fade zone.
-                // The _SearchBar ColoredBox covers the safe area visually.
-                // Ensure last row scrolls fully above the search bar overlay.
-                // 92 = top padding (8) + bar height (44) + min bottom padding (32)
-                // + buffer (8); botPad covers the device safe area.
-                SliverToBoxAdapter(child: SizedBox(height: 92 + botPad)),
-              ],
+              ),
             ),
           ),
 
-          // ── Top navigation bar ───────────────────────────────────────────
-          _NavBar(
-            topPad: topPad,
-            headerCollapsed: _headerCollapsed,
-            activeFilter: _activeFilter,
-            onFilterChanged: (filter) => setState(() => _activeFilter = filter),
+          // Conversation rows
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, i) => _ConversationRow(
+                conversation: _kConversations[i],
+              ),
+              childCount: _kConversations.length,
+            ),
           ),
 
-          // ── Bottom search + compose bar ──────────────────────────────────
-          // bottom: 0 — inner padding (widget.bottomPad) handles safe area
-          // on both iOS (home indicator) and Android (gesture nav bar).
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _SearchBar(bottomPad: botPad),
-          ),
+          // Bottom padding — ensure last row scrolls above search bar.
+          SliverToBoxAdapter(child: SizedBox(height: 92 + botPad)),
         ],
       ),
     );
@@ -396,51 +349,46 @@ class _NavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(height: topPad),
-          SizedBox(
-            height: 52,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // ── Edit menu (top-left) ─────────────────────────────────
-                  const _EditMenu(),
-                  const Spacer(),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(height: topPad),
+        SizedBox(
+          height: 52,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // ── Edit menu (top-left) ─────────────────────────────────
+                const _EditMenu(),
+                const Spacer(),
 
-                  // Inline "Messages" title when scrolled
-                  AnimatedOpacity(
-                    duration: const Duration(milliseconds: 200),
-                    opacity: headerCollapsed ? 1 : 0,
-                    child: const Text(
-                      'Messages',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                      ),
+                // Inline "Messages" title when scrolled
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: headerCollapsed ? 1 : 0,
+                  child: const Text(
+                    'Messages',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const Spacer(),
+                ),
+                const Spacer(),
 
-                  // ── Filter menu (top-right) ──────────────────────────────
-                  _FilterMenu(
-                    activeFilter: activeFilter,
-                    onFilterChanged: onFilterChanged,
-                  ),
-                ],
-              ),
+                // ── Filter menu (top-right) ──────────────────────────────
+                _FilterMenu(
+                  activeFilter: activeFilter,
+                  onFilterChanged: onFilterChanged,
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -455,7 +403,7 @@ class _EditMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassMenu(
-      menuWidth: 230,
+      menuWidth: 260,
       glassSettings: _kMenuGlass,
       menuBorderRadius: 16,
       quality: GlassQuality.premium,
@@ -465,9 +413,7 @@ class _EditMenu extends StatelessWidget {
         height: 44,
         // True capsule pill — borderRadius = height/2
         shape: const LiquidRoundedSuperellipse(borderRadius: 22),
-        settings: _kTriggerGlass,
         quality: GlassQuality.premium,
-        useOwnLayer: true, // standalone — outside any LiquidGlassLayer
         child: const Center(
           child: Text(
             'Edit',
@@ -494,6 +440,7 @@ class _EditMenu extends StatelessWidget {
         GlassMenuItem(
           title: 'Set Up Name & Photo',
           icon: const Icon(SFSymbols.person_crop_circle),
+          maxLines: 2,
           onTap: () {},
         ),
       ],
@@ -526,9 +473,7 @@ class _FilterMenu extends StatelessWidget {
         width: 44,
         height: 44,
         shape: const LiquidOval(), // 44×44 = perfect circle
-        settings: _kTriggerGlass,
         quality: GlassQuality.premium,
-        useOwnLayer: true, // standalone — outside any LiquidGlassLayer
         icon: const Icon(
           SFSymbols.line_horizontal_3_decrease,
           color: Colors.white,

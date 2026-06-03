@@ -301,13 +301,19 @@ class RenderLiquidGlass extends RenderProxyBox
 
   @override
   void onTransformChanged() {
-    _blendGroupLink?.notifyShapeLayoutChanged(this);
+    _blendGroupLink?.notifyShapeTransformChanged(this);
   }
 
   @override
   // ignore: must_call_super
   void paint(PaintingContext context, Offset offset) {
     setUpLayer(offset);
+    // Push the tracking layer during the normal paint traversal.
+    // We pass an empty painter because the child is NOT drawn here;
+    // it is drawn by the blend group via paintFromLayer.
+    // Pushing the layer ensures it is added to the scene, which
+    // allows onTransformChanged to fire when the user scrolls.
+    context.pushLayer(layer!, (context, offset) {}, offset);
   }
 
   void paintFromLayer(

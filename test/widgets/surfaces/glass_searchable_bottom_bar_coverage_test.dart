@@ -30,6 +30,7 @@ Widget _buildBar({
   GlassBottomBarExtraButton? extraButton,
   int selectedIndex = 0,
   ValueChanged<int>? onTabSelected,
+  bool enableBlend = true,
 }) {
   return createTestApp(
     child: SizedBox(
@@ -43,6 +44,7 @@ Widget _buildBar({
         controller: controller,
         isSearchActive: isSearchActive,
         extraButton: extraButton,
+        enableBlend: enableBlend,
       ),
     ),
   );
@@ -252,6 +254,33 @@ void main() {
         await tester.pumpAndSettle();
       }
 
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('GlassSearchableBottomBar — enableBlend', () {
+    testWidgets('enableBlend defaults to true', (tester) async {
+      final bar = GlassSearchableBottomBar(
+        tabs: _testTabs,
+        selectedIndex: 0,
+        onTabSelected: (_) {},
+        searchConfig: _basicSearchConfig(),
+      );
+      expect(bar.enableBlend, isTrue);
+    });
+
+    testWidgets('enableBlend: false renders without crash', (tester) async {
+      await tester.pumpWidget(
+        _buildBar(
+          enableBlend: false,
+          extraButton: GlassBottomBarExtraButton(
+            icon: const Icon(Icons.add),
+            onTap: () {},
+            label: 'Add',
+          ),
+        ),
+      );
+      await tester.pump();
       expect(tester.takeException(), isNull);
     });
   });

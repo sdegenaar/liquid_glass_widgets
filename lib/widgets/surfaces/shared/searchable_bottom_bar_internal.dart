@@ -247,15 +247,15 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
         anchorStretch: false, // Tab bars use jelly-follow, not anchored
         child: Listener(
           onPointerDown: (_) {
-            setState(() => tabIsDown = true);
+            if (mounted) setState(() => tabIsDown = true);
           },
           onPointerUp: (_) {
-            if (!tabIsDragging) {
+            if (!tabIsDragging && mounted) {
               setState(() => tabIsDown = false);
             }
           },
           onPointerCancel: (_) {
-            if (!tabIsDragging) {
+            if (!tabIsDragging && mounted) {
               setState(() => tabIsDown = false);
             }
           },

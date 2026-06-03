@@ -372,6 +372,70 @@ void main() {
       expect(resultB, GlassQuality.standard); // theme premium → capped
       expect(resultC, GlassQuality.minimal); // minimal explicit → unchanged
     });
+
+    // ── GlassIsolationScope.defaultQuality interaction (bar quality fix) ───
+
+    testWidgets(
+        'scopeDefault overrides inherited page-level quality '
+        '(GlassScaffold bar pattern)', (tester) async {
+      // Regression test: GlassScaffold wraps bars in
+      // GlassIsolationScope(isolated: false, defaultQuality: premium).
+      // The page-level AdaptiveLiquidGlassLayer provides standard quality
+      // via InheritedLiquidGlass. Without the fix, the inherited standard
+      // would short-circuit Step 2, making bars render at standard.
+      late GlassQuality result;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AdaptiveLiquidGlassLayer(
+            quality: GlassQuality.standard, // page-level = standard
+            child: GlassIsolationScope(
+              isolated: false, // NOT isolated (shared layer)
+              defaultQuality: GlassQuality.premium, // scope hint = premium
+              child: Builder(builder: (context) {
+                // Simulates GlassBottomBar which passes fallback: premium.
+                result = GlassThemeHelpers.resolveQuality(
+                  context,
+                  fallback: GlassQuality.premium,
+                );
+                return const SizedBox.shrink();
+              }),
+            ),
+          ),
+        ),
+      );
+
+      // scopeDefault premium must win over inherited standard.
+      expect(result, GlassQuality.premium);
+    });
+
+    testWidgets(
+        'without scopeDefault, inherited page-level quality applies normally',
+        (tester) async {
+      // Verify we didn't break the normal case: when no scope provides
+      // a defaultQuality, the inherited quality from the page layer should
+      // still apply at Step 2.
+      late GlassQuality result;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AdaptiveLiquidGlassLayer(
+            quality: GlassQuality.premium, // page-level = premium
+            child: Builder(builder: (context) {
+              // No GlassIsolationScope with defaultQuality → inherited wins.
+              result = GlassThemeHelpers.resolveQuality(
+                context,
+                fallback: GlassQuality.standard, // fallback is lower
+              );
+              return const SizedBox.shrink();
+            }),
+          ),
+        ),
+      );
+
+      // Inherited premium from page layer should apply.
+      expect(result, GlassQuality.premium);
+    });
   });
 
   // ─────────────────────────────────────────────────────────────────────────

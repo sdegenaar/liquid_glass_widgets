@@ -25,6 +25,7 @@ export 'constants/glass_defaults.dart';
 
 // Theme
 export 'theme/glass_theme.dart';
+export 'theme/glass_interaction_settings.dart';
 export 'theme/glass_theme_data.dart';
 export 'theme/glass_theme_settings.dart';
 
@@ -41,6 +42,7 @@ export 'widgets/shared/glass_adaptive_scope.dart'; // GlassAdaptiveScope + Glass
 export 'widgets/shared/glass_backdrop_scope.dart'; // GlassBackdropScope — per-screen backdrop isolation
 export 'widgets/shared/glass_page.dart' show GlassPage, GlassStatusBarStyle;
 export 'widgets/shared/glass_motion_scope.dart';
+export 'widgets/shared/glass_scroll_edge_effect.dart';
 export 'widgets/shared/inherited_liquid_glass.dart';
 export 'widgets/shared/lightweight_liquid_glass.dart';
 
@@ -96,6 +98,8 @@ export 'widgets/overlays/glass_modal_sheet.dart';
 export 'widgets/overlays/glass_toast.dart';
 // Widgets - Surfaces
 export 'widgets/surfaces/glass_app_bar.dart';
+export 'widgets/shared/glass_isolation_scope.dart';
+export 'widgets/surfaces/glass_scaffold.dart';
 export 'widgets/surfaces/glass_bottom_bar.dart';
 export 'widgets/surfaces/glass_searchable_bottom_bar.dart';
 export 'widgets/surfaces/shared/glass_search_bar_config.dart';

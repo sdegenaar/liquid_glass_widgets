@@ -52,15 +52,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
       settings: RecommendedGlassSettings.standard,
       statusBarStyle: GlassStatusBarStyle.light,
       child: Scaffold(
+        extendBodyBehindAppBar: true,
         appBar: GlassAppBar(
-          title: const Text(
-            'Feedback',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
           leading: GlassButton(
             quality: GlassQuality.premium,
             icon: const Icon(CupertinoIcons.back),
@@ -70,285 +63,311 @@ class _FeedbackPageState extends State<FeedbackPage> {
             iconSize: 20,
           ),
         ),
-        body: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── Circular Spinner ──────────────────────────────────
-                    const _SectionTitle(title: 'Circular Spinner'),
-                    const SizedBox(height: 16),
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _LabeledWidget(
-                          label: 'Small',
-                          child: GlassProgressIndicator.circular(
-                            size: 14.0,
-                            strokeWidth: 2.0,
-                          ),
-                        ),
-                        _LabeledWidget(
-                          label: 'Medium',
-                          child: GlassProgressIndicator.circular(),
-                        ),
-                        _LabeledWidget(
-                          label: 'Large',
-                          child: GlassProgressIndicator.circular(
-                            size: 28.0,
-                            strokeWidth: 3.0,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // ── Circular Progress ────────────────────────────────
-                    const _SectionTitle(title: 'Circular Progress'),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        GlassProgressIndicator.circular(
-                          value: _circularProgress,
-                        ),
-                        GlassProgressIndicator.circular(
-                          value: _circularProgress,
-                          size: 40.0,
-                          strokeWidth: 4.0,
-                          color: Colors.green,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Slider(
-                      value: _circularProgress,
-                      onChanged: (v) => setState(() => _circularProgress = v),
-                      activeColor: const Color(0xFF007AFF),
-                      inactiveColor: Colors.white24,
-                    ),
-                    const SizedBox(height: 12),
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _ProgressStage(value: 0.0, label: '0%'),
-                        _ProgressStage(value: 0.25, label: '25%'),
-                        _ProgressStage(value: 0.5, label: '50%'),
-                        _ProgressStage(value: 0.75, label: '75%'),
-                        _ProgressStage(value: 1.0, label: '100%'),
-                      ],
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // ── Color Variants ────────────────────────────────────
-                    const _SectionTitle(title: 'Color Variants'),
-                    const SizedBox(height: 16),
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _LabeledWidget(
-                          label: 'Info',
-                          child: GlassProgressIndicator.circular(
-                            value: 0.7,
-                            color: Color(0xFF007AFF),
-                            size: 32.0,
-                            strokeWidth: 3.0,
-                          ),
-                        ),
-                        _LabeledWidget(
-                          label: 'Success',
-                          child: GlassProgressIndicator.circular(
-                            value: 0.7,
-                            color: Colors.green,
-                            size: 32.0,
-                            strokeWidth: 3.0,
-                          ),
-                        ),
-                        _LabeledWidget(
-                          label: 'Warning',
-                          child: GlassProgressIndicator.circular(
-                            value: 0.7,
-                            color: Colors.orange,
-                            size: 32.0,
-                            strokeWidth: 3.0,
-                          ),
-                        ),
-                        _LabeledWidget(
-                          label: 'Error',
-                          child: GlassProgressIndicator.circular(
-                            value: 0.7,
-                            color: Colors.red,
-                            size: 32.0,
-                            strokeWidth: 3.0,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // ── Linear Progress ──────────────────────────────────
-                    const _SectionTitle(title: 'Linear Progress'),
-                    const SizedBox(height: 16),
-                    const GlassProgressIndicator.linear(),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: GlassProgressIndicator.linear(
-                            value: _linearProgress,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Text(
-                          '${(_linearProgress * 100).toInt()}%',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Slider(
-                      value: _linearProgress,
-                      onChanged: (v) => setState(() => _linearProgress = v),
-                      activeColor: const Color(0xFF007AFF),
-                      inactiveColor: Colors.white24,
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // ── Toast Notifications ──────────────────────────────
-                    const _SectionTitle(title: 'Toast Notifications'),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        _ToastButton(
-                          label: 'Success',
-                          icon: CupertinoIcons.check_mark_circled_solid,
-                          onTap: () => GlassToast.show(
-                            context,
-                            message: 'Settings saved successfully!',
-                            type: GlassToastType.success,
-                            icon: Icon(CupertinoIcons.check_mark_circled_solid),
-                            position: GlassToastPosition.top,
-                          ),
-                        ),
-                        _ToastButton(
-                          label: 'Error',
-                          icon: CupertinoIcons.xmark_circle_fill,
-                          onTap: () => GlassToast.show(
-                            context,
-                            message: 'Failed to connect to server',
-                            type: GlassToastType.error,
-                            position: GlassToastPosition.top,
-                          ),
-                        ),
-                        _ToastButton(
-                          label: 'Info',
-                          icon: CupertinoIcons.info_circle_fill,
-                          onTap: () => GlassToast.show(
-                            context,
-                            message: 'New message received from Alice',
-                            type: GlassToastType.info,
-                            position: GlassToastPosition.top,
-                          ),
-                        ),
-                        _ToastButton(
-                          label: 'Warning',
-                          icon: CupertinoIcons.exclamationmark_triangle_fill,
-                          onTap: () => GlassToast.show(
-                            context,
-                            message: 'Storage space running low',
-                            type: GlassToastType.warning,
-                            position: GlassToastPosition.top,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // ── File Upload Example ──────────────────────────────
-                    const _SectionTitle(title: 'File Upload'),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        const Icon(CupertinoIcons.doc,
-                            color: Colors.white70, size: 32),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'document.pdf',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _isUploading
-                                    ? 'Uploading... ${(_uploadProgress * 100).toInt()}%'
-                                    : _uploadProgress == 1.0
-                                        ? 'Upload complete!'
-                                        : '2.4 MB',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: _uploadProgress == 1.0
-                                      ? Colors.green
-                                      : Colors.white60,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (_uploadProgress == 1.0)
-                          const Icon(CupertinoIcons.checkmark_circle_fill,
-                              color: Colors.green, size: 24),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    GlassProgressIndicator.linear(
-                      value: _uploadProgress,
-                      color: _uploadProgress == 1.0
-                          ? Colors.green
-                          : const Color(0xFF007AFF),
-                    ),
-                    const SizedBox(height: 16),
-                    GlassButton.custom(
-                      onTap: _isUploading ? () {} : _startSimulatedUpload,
-                      enabled: !_isUploading,
-                      width: double.infinity,
-                      height: 44,
-                      shape: const LiquidRoundedRectangle(borderRadius: 12),
-                      child: Text(
-                        _isUploading
-                            ? 'Uploading...'
-                            : _uploadProgress == 1.0
-                                ? 'Upload Again'
-                                : 'Start Upload',
-                      ),
-                    ),
-
-                    const SizedBox(height: 100),
-                  ],
+        body: GlassScrollEdgeEffect(
+          topFadeHeight: MediaQuery.paddingOf(context).top + 44 + 40,
+          fadeBottom: false,
+          child: CustomScrollView(
+            slivers: [
+              // Space for the app bar + safe area
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: MediaQuery.paddingOf(context).top + 44,
                 ),
               ),
-            ),
-          ],
+              // ── Large page title (iOS 26 inline style) ──────────────
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(24, 0, 24, 16),
+                  child: Text(
+                    'Feedback',
+                    style: TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.5,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ── Circular Spinner ──────────────────────────────────
+                      const _SectionTitle(title: 'Circular Spinner'),
+                      const SizedBox(height: 16),
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _LabeledWidget(
+                            label: 'Small',
+                            child: GlassProgressIndicator.circular(
+                              size: 14.0,
+                              strokeWidth: 2.0,
+                            ),
+                          ),
+                          _LabeledWidget(
+                            label: 'Medium',
+                            child: GlassProgressIndicator.circular(),
+                          ),
+                          _LabeledWidget(
+                            label: 'Large',
+                            child: GlassProgressIndicator.circular(
+                              size: 28.0,
+                              strokeWidth: 3.0,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 40),
+
+                      // ── Circular Progress ────────────────────────────────
+                      const _SectionTitle(title: 'Circular Progress'),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          GlassProgressIndicator.circular(
+                            value: _circularProgress,
+                          ),
+                          GlassProgressIndicator.circular(
+                            value: _circularProgress,
+                            size: 40.0,
+                            strokeWidth: 4.0,
+                            color: Colors.green,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Slider(
+                        value: _circularProgress,
+                        onChanged: (v) => setState(() => _circularProgress = v),
+                        activeColor: const Color(0xFF007AFF),
+                        inactiveColor: Colors.white24,
+                      ),
+                      const SizedBox(height: 12),
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _ProgressStage(value: 0.0, label: '0%'),
+                          _ProgressStage(value: 0.25, label: '25%'),
+                          _ProgressStage(value: 0.5, label: '50%'),
+                          _ProgressStage(value: 0.75, label: '75%'),
+                          _ProgressStage(value: 1.0, label: '100%'),
+                        ],
+                      ),
+
+                      const SizedBox(height: 40),
+
+                      // ── Color Variants ────────────────────────────────────
+                      const _SectionTitle(title: 'Color Variants'),
+                      const SizedBox(height: 16),
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _LabeledWidget(
+                            label: 'Info',
+                            child: GlassProgressIndicator.circular(
+                              value: 0.7,
+                              color: Color(0xFF007AFF),
+                              size: 32.0,
+                              strokeWidth: 3.0,
+                            ),
+                          ),
+                          _LabeledWidget(
+                            label: 'Success',
+                            child: GlassProgressIndicator.circular(
+                              value: 0.7,
+                              color: Colors.green,
+                              size: 32.0,
+                              strokeWidth: 3.0,
+                            ),
+                          ),
+                          _LabeledWidget(
+                            label: 'Warning',
+                            child: GlassProgressIndicator.circular(
+                              value: 0.7,
+                              color: Colors.orange,
+                              size: 32.0,
+                              strokeWidth: 3.0,
+                            ),
+                          ),
+                          _LabeledWidget(
+                            label: 'Error',
+                            child: GlassProgressIndicator.circular(
+                              value: 0.7,
+                              color: Colors.red,
+                              size: 32.0,
+                              strokeWidth: 3.0,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 40),
+
+                      // ── Linear Progress ──────────────────────────────────
+                      const _SectionTitle(title: 'Linear Progress'),
+                      const SizedBox(height: 16),
+                      const GlassProgressIndicator.linear(),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GlassProgressIndicator.linear(
+                              value: _linearProgress,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Text(
+                            '${(_linearProgress * 100).toInt()}%',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Slider(
+                        value: _linearProgress,
+                        onChanged: (v) => setState(() => _linearProgress = v),
+                        activeColor: const Color(0xFF007AFF),
+                        inactiveColor: Colors.white24,
+                      ),
+
+                      const SizedBox(height: 40),
+
+                      // ── Toast Notifications ──────────────────────────────
+                      const _SectionTitle(title: 'Toast Notifications'),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          _ToastButton(
+                            label: 'Success',
+                            icon: CupertinoIcons.check_mark_circled_solid,
+                            onTap: () => GlassToast.show(
+                              context,
+                              message: 'Settings saved successfully!',
+                              type: GlassToastType.success,
+                              icon:
+                                  Icon(CupertinoIcons.check_mark_circled_solid),
+                              position: GlassToastPosition.top,
+                            ),
+                          ),
+                          _ToastButton(
+                            label: 'Error',
+                            icon: CupertinoIcons.xmark_circle_fill,
+                            onTap: () => GlassToast.show(
+                              context,
+                              message: 'Failed to connect to server',
+                              type: GlassToastType.error,
+                              position: GlassToastPosition.top,
+                            ),
+                          ),
+                          _ToastButton(
+                            label: 'Info',
+                            icon: CupertinoIcons.info_circle_fill,
+                            onTap: () => GlassToast.show(
+                              context,
+                              message: 'New message received from Alice',
+                              type: GlassToastType.info,
+                              position: GlassToastPosition.top,
+                            ),
+                          ),
+                          _ToastButton(
+                            label: 'Warning',
+                            icon: CupertinoIcons.exclamationmark_triangle_fill,
+                            onTap: () => GlassToast.show(
+                              context,
+                              message: 'Storage space running low',
+                              type: GlassToastType.warning,
+                              position: GlassToastPosition.top,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 40),
+
+                      // ── File Upload Example ──────────────────────────────
+                      const _SectionTitle(title: 'File Upload'),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          const Icon(CupertinoIcons.doc,
+                              color: Colors.white70, size: 32),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'document.pdf',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _isUploading
+                                      ? 'Uploading... ${(_uploadProgress * 100).toInt()}%'
+                                      : _uploadProgress == 1.0
+                                          ? 'Upload complete!'
+                                          : '2.4 MB',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: _uploadProgress == 1.0
+                                        ? Colors.green
+                                        : Colors.white60,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (_uploadProgress == 1.0)
+                            const Icon(CupertinoIcons.checkmark_circle_fill,
+                                color: Colors.green, size: 24),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      GlassProgressIndicator.linear(
+                        value: _uploadProgress,
+                        color: _uploadProgress == 1.0
+                            ? Colors.green
+                            : const Color(0xFF007AFF),
+                      ),
+                      const SizedBox(height: 16),
+                      GlassButton.custom(
+                        onTap: _isUploading ? () {} : _startSimulatedUpload,
+                        enabled: !_isUploading,
+                        width: double.infinity,
+                        height: 44,
+                        shape: const LiquidRoundedRectangle(borderRadius: 12),
+                        child: Text(
+                          _isUploading
+                              ? 'Uploading...'
+                              : _uploadProgress == 1.0
+                                  ? 'Upload Again'
+                                  : 'Start Upload',
+                        ),
+                      ),
+
+                      const SizedBox(height: 100),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

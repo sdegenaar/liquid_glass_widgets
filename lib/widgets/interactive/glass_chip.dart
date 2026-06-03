@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
+import '../../theme/glass_theme_data.dart';
 import '../../types/glass_quality.dart';
 import 'glass_button.dart';
 
@@ -318,8 +319,22 @@ class GlassChip extends StatelessWidget {
           )
         : chipContent;
 
-    // Use GlassButton.custom for consistent interaction behavior
-    // Wrap in IntrinsicWidth/Height to auto-size to content
+    // Resolve interaction settings: explicit widget param > theme > chip default
+    final themeInteraction = GlassThemeData.of(context).interaction;
+
+    final effectiveInteractionScale = interactionScale != 1.03
+        ? interactionScale
+        : themeInteraction.interactionScale ?? interactionScale;
+    final effectiveStretch =
+        stretch != 0.3 ? stretch : themeInteraction.stretch ?? stretch;
+    final effectiveAnchorStretch = anchorStretch != true
+        ? anchorStretch
+        : themeInteraction.anchorStretch ?? anchorStretch;
+    final effectiveAnchorStretchSettings =
+        !identical(anchorStretchSettings, const AnchorStretchSettings())
+            ? anchorStretchSettings
+            : themeInteraction.anchorStretchSettings ?? anchorStretchSettings;
+
     return IntrinsicWidth(
       child: IntrinsicHeight(
         child: GlassButton.custom(
@@ -328,15 +343,15 @@ class GlassChip extends StatelessWidget {
           settings: settings,
           useOwnLayer: useOwnLayer,
           quality: quality ?? GlassQuality.standard,
-          interactionScale: interactionScale,
-          stretch: stretch,
+          interactionScale: effectiveInteractionScale,
+          stretch: effectiveStretch,
           glowRadius: glowRadius,
           glowColor: selected
               ? (selectedColor ?? _defaultGlowColorSelected)
               : _defaultGlowColorUnselected,
           enabled: isInteractive,
-          anchorStretch: anchorStretch,
-          anchorStretchSettings: anchorStretchSettings,
+          anchorStretch: effectiveAnchorStretch,
+          anchorStretchSettings: effectiveAnchorStretchSettings,
           width: double.infinity, // Expand to intrinsic width
           height: double.infinity, // Expand to intrinsic height
           child: contentWithSelection,

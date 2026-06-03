@@ -14,15 +14,8 @@ class ContainersPage extends StatelessWidget {
       settings: RecommendedGlassSettings.standard,
       statusBarStyle: GlassStatusBarStyle.light,
       child: Scaffold(
+        extendBodyBehindAppBar: true,
         appBar: GlassAppBar(
-          title: const Text(
-            'Containers',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
           leading: GlassButton(
             quality: GlassQuality.premium,
             icon: const Icon(CupertinoIcons.back),
@@ -34,289 +27,316 @@ class ContainersPage extends StatelessWidget {
         ),
         body: Material(
           type: MaterialType.transparency,
-          child: CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // ── GlassContainer ─────────────────────────────────
-                      const _SectionTitle(title: 'GlassContainer'),
-                      const SizedBox(height: 16),
-                      GlassContainer(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+          child: GlassScrollEdgeEffect(
+            topFadeHeight: MediaQuery.paddingOf(context).top + 44 + 40,
+            fadeBottom: false,
+            child: CustomScrollView(
+              slivers: [
+                // Space for the app bar + safe area
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: MediaQuery.paddingOf(context).top + 44,
+                  ),
+                ),
+                // ── Large page title (iOS 26 inline style) ────────────
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(24, 0, 24, 16),
+                    child: Text(
+                      'Containers',
+                      style: TextStyle(
+                        fontSize: 34,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.5,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // ── GlassContainer ─────────────────────────────────
+                        const _SectionTitle(title: 'GlassContainer'),
+                        const SizedBox(height: 16),
+                        GlassContainer(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Basic Glass Container',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'The foundational container with glass effect.',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
                           children: [
-                            const Text(
-                              'Basic Glass Container',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                            Expanded(
+                              child: GlassContainer(
+                                padding: const EdgeInsets.all(16),
+                                shape: const LiquidRoundedSuperellipse(
+                                  borderRadius: 20,
+                                ),
+                                child: Column(
+                                  children: [
+                                    Icon(CupertinoIcons.cube_box,
+                                        color: Colors.blue, size: 32),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Superellipse',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color:
+                                            Colors.white.withValues(alpha: 0.9),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'The foundational container with glass effect.',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white.withValues(alpha: 0.8),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: GlassContainer(
+                                width: double.infinity,
+                                height: 100,
+                                alignment: Alignment.center,
+                                child: const Text(
+                                  'Fixed Size',
+                                  style: TextStyle(
+                                      fontSize: 14, color: Colors.white),
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: GlassContainer(
-                              padding: const EdgeInsets.all(16),
-                              shape: const LiquidRoundedSuperellipse(
-                                borderRadius: 20,
-                              ),
-                              child: Column(
+
+                        const SizedBox(height: 40),
+
+                        // ── GlassCard ──────────────────────────────────────
+                        const _SectionTitle(title: 'GlassCard'),
+                        const SizedBox(height: 16),
+                        GlassCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
                                 children: [
-                                  Icon(CupertinoIcons.cube_box,
-                                      color: Colors.blue, size: 32),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Superellipse',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 14,
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
                                       color:
-                                          Colors.white.withValues(alpha: 0.9),
+                                          Colors.purple.withValues(alpha: 0.3),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Icon(
+                                        CupertinoIcons.rectangle_stack,
+                                        color: Colors.purple),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Glass Card Title',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Opinionated defaults for card content',
+                                          style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.white70),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: GlassContainer(
-                              width: double.infinity,
-                              height: 100,
-                              alignment: Alignment.center,
-                              child: const Text(
-                                'Fixed Size',
-                                style: TextStyle(
-                                    fontSize: 14, color: Colors.white),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 40),
-
-                      // ── GlassCard ──────────────────────────────────────
-                      const _SectionTitle(title: 'GlassCard'),
-                      const SizedBox(height: 16),
-                      GlassCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.purple.withValues(alpha: 0.3),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(
-                                      CupertinoIcons.rectangle_stack,
-                                      color: Colors.purple),
-                                ),
-                                const SizedBox(width: 12),
-                                const Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Glass Card Title',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Opinionated defaults for card content',
-                                        style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.white70),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          _MiniCard(
-                              icon: CupertinoIcons.heart_fill,
-                              color: Colors.red,
-                              label: 'Favorites'),
-                          const SizedBox(width: 12),
-                          _MiniCard(
-                              icon: CupertinoIcons.star_fill,
-                              color: Colors.amber,
-                              label: 'Starred'),
-                          const SizedBox(width: 12),
-                          _MiniCard(
-                              icon: CupertinoIcons.bookmark_fill,
-                              color: Colors.green,
-                              label: 'Saved'),
-                        ],
-                      ),
-
-                      const SizedBox(height: 40),
-
-                      // ── GlassPanel ─────────────────────────────────────
-                      const _SectionTitle(title: 'GlassPanel'),
-                      const SizedBox(height: 16),
-                      GlassPanel(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Settings Panel',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            _SettingsRow(
-                              icon: Icon(CupertinoIcons.bell_fill),
-                              title: 'Notifications',
-                              subtitle: 'Manage notification settings',
-                            ),
-                            const SizedBox(height: 16),
-                            _SettingsRow(
-                              icon: Icon(CupertinoIcons.lock_fill),
-                              title: 'Privacy',
-                              subtitle: 'Control your privacy settings',
-                            ),
-                            const SizedBox(height: 16),
-                            _SettingsRow(
-                              icon: Icon(CupertinoIcons.paintbrush_fill),
-                              title: 'Appearance',
-                              subtitle: 'Customize the look and feel',
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 40),
-
-                      // ── GlassDivider ───────────────────────────────────
-                      const _SectionTitle(title: 'GlassDivider'),
-                      const SizedBox(height: 16),
-                      GlassCard(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        child: SizedBox(
-                          height: 60,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Text('Left',
-                                  style: TextStyle(
-                                      color:
-                                          Colors.white.withValues(alpha: 0.8))),
-                              const GlassDivider.vertical(),
-                              Text('Center',
-                                  style: TextStyle(
-                                      color:
-                                          Colors.white.withValues(alpha: 0.8))),
-                              const GlassDivider.vertical(),
-                              Text('Right',
-                                  style: TextStyle(
-                                      color:
-                                          Colors.white.withValues(alpha: 0.8))),
                             ],
                           ),
                         ),
-                      ),
-
-                      const SizedBox(height: 40),
-
-                      // ── GlassListTile ──────────────────────────────────
-                      const _SectionTitle(title: 'GlassListTile'),
-                      const SizedBox(height: 16),
-                      GlassCard(
-                        padding: EdgeInsets.zero,
-                        child: Column(
+                        const SizedBox(height: 12),
+                        Row(
                           children: [
-                            GlassListTile(
-                              leading: const Icon(CupertinoIcons.person_fill,
-                                  color: Colors.blue),
-                              title: const Text('Account'),
-                              trailing: GlassListTile.chevron,
-                              onTap: () {},
-                            ),
-                            GlassListTile(
-                              leading: const Icon(CupertinoIcons.bell_fill,
-                                  color: Colors.orange),
-                              title: const Text('Notifications'),
-                              subtitle: const Text('Banners, sounds, badges'),
-                              trailing: GlassListTile.chevron,
-                              onTap: () {},
-                            ),
-                            GlassListTile(
-                              leading: const Icon(CupertinoIcons.lock_fill,
-                                  color: Colors.green),
-                              title: const Text('Privacy & Security'),
-                              trailing: GlassListTile.chevron,
-                              onTap: () {},
-                            ),
-                            GlassListTile(
-                              leading: const Icon(
-                                  CupertinoIcons.paintbrush_fill,
-                                  color: Colors.purple),
-                              title: const Text('Appearance'),
-                              subtitle: const Text('Dark mode, accent colour'),
-                              trailing: GlassListTile.chevron,
-                              isLast: true,
-                              onTap: () {},
-                            ),
+                            _MiniCard(
+                                icon: CupertinoIcons.heart_fill,
+                                color: Colors.red,
+                                label: 'Favorites'),
+                            const SizedBox(width: 12),
+                            _MiniCard(
+                                icon: CupertinoIcons.star_fill,
+                                color: Colors.amber,
+                                label: 'Starred'),
+                            const SizedBox(width: 12),
+                            _MiniCard(
+                                icon: CupertinoIcons.bookmark_fill,
+                                color: Colors.green,
+                                label: 'Saved'),
                           ],
                         ),
-                      ),
 
-                      const SizedBox(height: 40),
+                        const SizedBox(height: 40),
 
-                      // ── GlassStepper ───────────────────────────────────
-                      const _SectionTitle(title: 'GlassStepper'),
-                      const SizedBox(height: 16),
-                      const _StepperDemo(),
+                        // ── GlassPanel ─────────────────────────────────────
+                        const _SectionTitle(title: 'GlassPanel'),
+                        const SizedBox(height: 16),
+                        GlassPanel(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Settings Panel',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              _SettingsRow(
+                                icon: Icon(CupertinoIcons.bell_fill),
+                                title: 'Notifications',
+                                subtitle: 'Manage notification settings',
+                              ),
+                              const SizedBox(height: 16),
+                              _SettingsRow(
+                                icon: Icon(CupertinoIcons.lock_fill),
+                                title: 'Privacy',
+                                subtitle: 'Control your privacy settings',
+                              ),
+                              const SizedBox(height: 16),
+                              _SettingsRow(
+                                icon: Icon(CupertinoIcons.paintbrush_fill),
+                                title: 'Appearance',
+                                subtitle: 'Customize the look and feel',
+                              ),
+                            ],
+                          ),
+                        ),
 
-                      const SizedBox(height: 40),
+                        const SizedBox(height: 40),
 
-                      // ── GlassWizard ────────────────────────────────────
-                      const _SectionTitle(title: 'GlassWizard'),
-                      const SizedBox(height: 16),
-                      const _WizardDemo(),
+                        // ── GlassDivider ───────────────────────────────────
+                        const _SectionTitle(title: 'GlassDivider'),
+                        const SizedBox(height: 16),
+                        GlassCard(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          child: SizedBox(
+                            height: 60,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Text('Left',
+                                    style: TextStyle(
+                                        color: Colors.white
+                                            .withValues(alpha: 0.8))),
+                                const GlassDivider.vertical(),
+                                Text('Center',
+                                    style: TextStyle(
+                                        color: Colors.white
+                                            .withValues(alpha: 0.8))),
+                                const GlassDivider.vertical(),
+                                Text('Right',
+                                    style: TextStyle(
+                                        color: Colors.white
+                                            .withValues(alpha: 0.8))),
+                              ],
+                            ),
+                          ),
+                        ),
 
-                      const SizedBox(height: 100),
-                    ],
+                        const SizedBox(height: 40),
+
+                        // ── GlassListTile ──────────────────────────────────
+                        const _SectionTitle(title: 'GlassListTile'),
+                        const SizedBox(height: 16),
+                        GlassCard(
+                          padding: EdgeInsets.zero,
+                          child: Column(
+                            children: [
+                              GlassListTile(
+                                leading: const Icon(CupertinoIcons.person_fill,
+                                    color: Colors.blue),
+                                title: const Text('Account'),
+                                trailing: GlassListTile.chevron,
+                                onTap: () {},
+                              ),
+                              GlassListTile(
+                                leading: const Icon(CupertinoIcons.bell_fill,
+                                    color: Colors.orange),
+                                title: const Text('Notifications'),
+                                subtitle: const Text('Banners, sounds, badges'),
+                                trailing: GlassListTile.chevron,
+                                onTap: () {},
+                              ),
+                              GlassListTile(
+                                leading: const Icon(CupertinoIcons.lock_fill,
+                                    color: Colors.green),
+                                title: const Text('Privacy & Security'),
+                                trailing: GlassListTile.chevron,
+                                onTap: () {},
+                              ),
+                              GlassListTile(
+                                leading: const Icon(
+                                    CupertinoIcons.paintbrush_fill,
+                                    color: Colors.purple),
+                                title: const Text('Appearance'),
+                                subtitle:
+                                    const Text('Dark mode, accent colour'),
+                                trailing: GlassListTile.chevron,
+                                isLast: true,
+                                onTap: () {},
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 40),
+
+                        // ── GlassStepper ───────────────────────────────────
+                        const _SectionTitle(title: 'GlassStepper'),
+                        const SizedBox(height: 16),
+                        const _StepperDemo(),
+
+                        const SizedBox(height: 40),
+
+                        // ── GlassWizard ────────────────────────────────────
+                        const _SectionTitle(title: 'GlassWizard'),
+                        const SizedBox(height: 16),
+                        const _WizardDemo(),
+
+                        const SizedBox(height: 100),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

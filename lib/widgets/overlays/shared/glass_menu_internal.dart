@@ -761,6 +761,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
               subtitleStyle: item.subtitleStyle,
               iconColor: item.iconColor,
               iconSize: item.iconSize,
+              maxLines: item.maxLines,
               isSelected: isSelected,
               isPressed: isPressed,
               onTap: () {
@@ -791,7 +792,11 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   }
 
   double _getItemHeight(Widget item) {
-    if (item is GlassMenuItem) return item.height;
+    if (item is GlassMenuItem) {
+      // Account for multi-line titles: add ~20px per extra line
+      final extraLines = (item.maxLines > 1) ? (item.maxLines - 1) * 20.0 : 0.0;
+      return item.height + extraLines;
+    }
     if (item is GlassMenuDivider) return item.height;
     if (item is GlassMenuLabel) return item.height;
     return 44.0;

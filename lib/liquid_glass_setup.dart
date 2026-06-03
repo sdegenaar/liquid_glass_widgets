@@ -8,7 +8,6 @@ import 'types/glass_quality.dart';
 import 'utils/accessibility_config.dart' as glass_config;
 import 'utils/glass_performance_monitor.dart';
 import 'src/renderer/liquid_glass_renderer.dart';
-import 'widgets/shared/glass_backdrop_scope.dart';
 import 'widgets/shared/glass_adaptive_scope.dart';
 import 'widgets/shared/glass_effect.dart';
 import 'widgets/shared/glass_accessibility_scope.dart';
@@ -128,9 +127,10 @@ class LiquidGlassWidgets {
   /// configuration that affects how glass widgets behave lives here — explicit,
   /// visible, and co-located with the widget tree entry point.
   ///
-  /// **Always call this** — at minimum it installs [GlassBackdropScope], which
-  /// allows glass surfaces to share a single GPU backdrop capture and roughly
-  /// halves blit cost when multiple glass widgets are visible simultaneously.
+  /// **Optional** — provides app-wide theming and adaptive quality.
+  /// `GlassBackdropScope` is no longer needed (each glass layer manages its own
+  /// backdrop); `wrap()` is only required if you use `theme:` or
+  /// `adaptiveQuality:`.
   ///
   /// ```dart
   /// // Zero-config (most apps):
@@ -199,7 +199,7 @@ class LiquidGlassWidgets {
   ///
   /// ### Scope nesting order (outermost → innermost → child)
   ///
-  /// `GlassAdaptiveScope` (when enabled) → `GlassBackdropScope` → `child`
+  /// `GlassAdaptiveScope` (when enabled) → `GlassTheme` (when provided) → `child`
   static Widget wrap({
     required Widget child,
     GlassThemeData? theme,
@@ -210,7 +210,7 @@ class LiquidGlassWidgets {
     // Apply global accessibility preference.
     glass_config.respectSystemAccessibility = respectSystemAccessibility;
 
-    Widget result = GlassBackdropScope(child: child);
+    Widget result = child;
 
     if (theme != null) {
       result = GlassTheme(data: theme, child: result);

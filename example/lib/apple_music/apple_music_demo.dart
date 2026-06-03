@@ -246,168 +246,153 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
     final double miniPlayLeft = _kPaddingH + collapsedPillW + 6.0;
     final double miniPlayRight = _kPaddingH + collapsedPillW + 6.0;
 
-    return Scaffold(
-      backgroundColor: _kBackground,
-      extendBody: true,
+    return GlassScaffold(
+      background: const ColoredBox(color: _kBackground),
+      settings: _kPillGlass,
+      statusBarStyle: GlassStatusBarStyle.light,
+      topEdgeFade: true,
+      bottomEdgeFade: true,
+      topEdgeFadeExtent: 0, // no app bar — just status bar fade
+      bottomBarHeight: _isMiniMode ? 20 : 40,
+      bottomEdgeFadeExtent: 0, // glass bar is transparent — no extra fade
       resizeToAvoidBottomInset: false,
 
+      // ── Fixed header — fades on scroll (iOS large title pattern) ──────────
+      header:
+          (_selectedTab == 0 && !_isSearching) ? _buildListenNowHeader() : null,
+      headerScrollController: _scrollController,
+      headerFadeDistance: 30, // fast fade — matches real Apple Music
+
       // ── Body ────────────────────────────────────────────────────────────────
-      body: Stack(
-        children: [
-          // ── Scrollable content ─────────────────────────────────────────────
-          GestureDetector(
-            onTap: () {
-              if (_searchFieldFocused) {
-                FocusManager.instance.primaryFocus?.unfocus();
-              }
-            },
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              transitionBuilder: (child, animation) =>
-                  FadeTransition(opacity: animation, child: child),
-              child: !_isSearching
-                  ? switch (_selectedTab) {
-                      1 => _buildRadioView(
-                          key: const ValueKey('radio'), contentPad: contentPad),
-                      2 => _buildLibraryView(
-                          key: const ValueKey('library'),
-                          contentPad: contentPad),
-                      _ => _buildHomeView(
-                          key: const ValueKey('home'), contentPad: contentPad),
-                    }
-                  : _searchFieldFocused
-                      ? _buildNoRecentSearches(key: const ValueKey('no-recent'))
-                      : _buildSearchBrowseView(
-                          key: const ValueKey('search-browse'),
-                          contentPad: contentPad),
-            ),
-          ),
-
-          // ── Body play pill ─────────────────────────────────────────────────
-          // Drawn FIRST (below in z-order) so the nav bar's animated indicator
-          // always paints on top of the play pill during tab transitions.
-          // In mini mode it slides down into the gap between Home and Search pills.
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 420),
-            curve: Curves.easeInOutCubic,
-            // When search activates from mini mode, animate the play bar back
-            // to its full-width position above the expanded search field —
-            // matching real Apple Music (screenshot 2). Only use mini
-            // positioning when mini AND not searching.
-            bottom:
-                (_isMiniMode && !_isSearching) ? miniBarBottom : aboveBarBottom,
-            left: (_isMiniMode && !_isSearching) ? miniPlayLeft : _kPaddingH,
-            right: (_isMiniMode && !_isSearching) ? miniPlayRight : _kPaddingH,
-            height: 50.0,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeInOut,
-              // Real Apple Music: play pill stays visible in search-ready state
-              // (keyboard dismissed). Only hide when keyboard is actively up.
-              opacity: _searchFieldFocused ? 0.0 : 1.0,
-              child: IgnorePointer(
-                ignoring: _searchFieldFocused,
-                child: _PlayBarPill(
-                  onTap: () {
-                    if (_isMiniMode) {
-                      _dismissMiniMode();
-                    }
-                  },
-                ),
-              ),
-            ),
-          ),
-
-          // ── Bottom navigation bar ──────────────────────────────────────────────
-          // Drawn LAST (highest z-order) so its animated tab indicator always
-          // renders on top of the floating play pill during tab transitions.
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutQuart,
-            bottom: bottomOffset,
-            left: 0,
-            right: 0,
-            child: GlassSearchableBottomBar(
-              // KEY: triggers the beautiful spring tab-collapse on scroll TOO.
-              isSearchActive: _isMiniMode || _isSearching,
-              selectedIndex: _selectedTab,
-              onTabSelected: (index) {
-                if (index == _selectedTab && _isMiniMode) {
-                  _dismissMiniMode();
-                } else {
-                  final ctrl = switch (index) {
-                    1 => _radioScrollController,
-                    2 => _libraryScrollController,
-                    _ => _scrollController,
-                  };
-                  // Mini mode is driven by the new tab's scroll position.
-                  final newMini = ctrl.hasClients && ctrl.offset > 50;
-                  setState(() {
-                    _selectedTab = index;
-                    _isSearching = false;
-                    _isMiniMode = newMini;
-                  });
+      body: GestureDetector(
+        onTap: () {
+          if (_searchFieldFocused) {
+            FocusManager.instance.primaryFocus?.unfocus();
+          }
+        },
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          transitionBuilder: (child, animation) =>
+              FadeTransition(opacity: animation, child: child),
+          child: !_isSearching
+              ? switch (_selectedTab) {
+                  1 => _buildRadioView(
+                      key: const ValueKey('radio'), contentPad: contentPad),
+                  2 => _buildLibraryView(
+                      key: const ValueKey('library'), contentPad: contentPad),
+                  _ => _buildHomeView(
+                      key: const ValueKey('home'), contentPad: contentPad),
                 }
-              },
-              barHeight: _kBarH,
-              searchBarHeight: 50.0,
-              horizontalPadding: _kPaddingH,
-              verticalPadding: _kPaddingV,
-              spacing: _kSpacing,
-              selectedIconColor: _kMusicRed,
-              unselectedIconColor: Colors.white.withValues(alpha: 0.9),
-              indicatorColor: Colors.white.withValues(alpha: 0.20),
-              labelFontSize: 10,
-              iconSize: 28,
-              iconLabelSpacing: 0,
-              quality: GlassQuality.premium,
-              interactionBehavior: GlassInteractionBehavior.full,
-              glassSettings: _barGlassSettings,
-              searchConfig: GlassSearchBarConfig(
-                focusNode: _searchFocusNode,
-                autoFocusOnExpand: false,
-                showsCancelButton: true,
-                // When in mini mode but NOT searching, prevent the search pill from expanding.
-                expandWhenActive: !_isMiniMode || _isSearching,
-                hintText: 'Apple Music',
-                onSearchToggle: (active) {
-                  if (active) {
-                    setState(() => _isSearching = true);
-                  } else {
-                    setState(() {
-                      _isSearching = false;
-                      _searchFieldFocused = false;
-                    });
-                    // Home pill tapped in mini mode → always restore full bar,
-                    // whether coming from search or scroll-collapse state.
-                    if (_isMiniMode) _dismissMiniMode();
+              : _searchFieldFocused
+                  ? _buildNoRecentSearches(key: const ValueKey('no-recent'))
+                  : _buildSearchBrowseView(
+                      key: const ValueKey('search-browse'),
+                      contentPad: contentPad),
+        ),
+      ),
+
+      // ── Play pill overlay (between body and bars in z-order) ───────────────
+      bodyOverlays: [
+        // ── Play pill (between body and bars in z-order) ──────────────────
+        AnimatedPositioned(
+          duration: const Duration(milliseconds: 420),
+          curve: Curves.easeInOutCubic,
+          bottom:
+              (_isMiniMode && !_isSearching) ? miniBarBottom : aboveBarBottom,
+          left: (_isMiniMode && !_isSearching) ? miniPlayLeft : _kPaddingH,
+          right: (_isMiniMode && !_isSearching) ? miniPlayRight : _kPaddingH,
+          height: 50.0,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeInOut,
+            opacity: _searchFieldFocused ? 0.0 : 1.0,
+            child: IgnorePointer(
+              ignoring: _searchFieldFocused,
+              child: _PlayBarPill(
+                onTap: () {
+                  if (_isMiniMode) {
+                    _dismissMiniMode();
                   }
                 },
-                onSearchFocusChanged: (focused) =>
-                    setState(() => _searchFieldFocused = focused),
-                searchIconColor: Colors.white.withValues(alpha: 0.9),
-                textInputAction: TextInputAction.search,
-                // Apple Music specific: show selected (red) icon in scroll-collapse
-                // mini mode, but white when search is actively expanded.
-                // The library default uses unselectedIconColor which is correct
-                // for the search state — we only override for mini mode.
-                collapsedLogoBuilder: (context) {
-                  final tab = _kTabs[_selectedTab];
-                  final iconColor = _isMiniMode && !_isSearching
-                      ? _kMusicRed
-                      : Colors.white.withValues(alpha: 0.9);
-                  return Center(
-                    child: IconTheme(
-                      data: IconThemeData(color: iconColor, size: 28),
-                      child: tab.activeIcon ?? tab.icon,
-                    ),
-                  );
-                },
               ),
-              tabs: _kTabs,
             ),
           ),
-        ],
+        ),
+      ],
+
+      // ── Bottom navigation bar ──────────────────────────────────────────────
+      bottomBar: Padding(
+        padding: EdgeInsets.only(bottom: bottomOffset),
+        child: GlassSearchableBottomBar(
+          isSearchActive: _isMiniMode || _isSearching,
+          selectedIndex: _selectedTab,
+          onTabSelected: (index) {
+            if (index == _selectedTab && _isMiniMode) {
+              _dismissMiniMode();
+            } else {
+              final ctrl = switch (index) {
+                1 => _radioScrollController,
+                2 => _libraryScrollController,
+                _ => _scrollController,
+              };
+              final newMini = ctrl.hasClients && ctrl.offset > 50;
+              setState(() {
+                _selectedTab = index;
+                _isSearching = false;
+                _isMiniMode = newMini;
+              });
+            }
+          },
+          barHeight: _kBarH,
+          searchBarHeight: 50.0,
+          horizontalPadding: _kPaddingH,
+          verticalPadding: _kPaddingV,
+          spacing: _kSpacing,
+          selectedIconColor: _kMusicRed,
+          unselectedIconColor: Colors.white.withValues(alpha: 0.9),
+          indicatorColor: Colors.white.withValues(alpha: 0.20),
+          labelFontSize: 10,
+          iconSize: 28,
+          iconLabelSpacing: 0,
+          quality: GlassQuality.premium,
+          interactionBehavior: GlassInteractionBehavior.full,
+          glassSettings: _barGlassSettings,
+          searchConfig: GlassSearchBarConfig(
+            focusNode: _searchFocusNode,
+            autoFocusOnExpand: false,
+            showsCancelButton: true,
+            expandWhenActive: !_isMiniMode || _isSearching,
+            hintText: 'Apple Music',
+            onSearchToggle: (active) {
+              if (active) {
+                setState(() => _isSearching = true);
+              } else {
+                setState(() {
+                  _isSearching = false;
+                  _searchFieldFocused = false;
+                });
+                if (_isMiniMode) _dismissMiniMode();
+              }
+            },
+            onSearchFocusChanged: (focused) =>
+                setState(() => _searchFieldFocused = focused),
+            searchIconColor: Colors.white.withValues(alpha: 0.9),
+            textInputAction: TextInputAction.search,
+            collapsedLogoBuilder: (context) {
+              final tab = _kTabs[_selectedTab];
+              final iconColor = _isMiniMode && !_isSearching
+                  ? _kMusicRed
+                  : Colors.white.withValues(alpha: 0.9);
+              return Center(
+                child: IconTheme(
+                  data: IconThemeData(color: iconColor, size: 28),
+                  child: tab.activeIcon ?? tab.icon,
+                ),
+              );
+            },
+          ),
+          tabs: _kTabs,
+        ),
       ),
     );
   }
@@ -420,9 +405,8 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
       controller: _scrollController,
       slivers: [
         SliverToBoxAdapter(
-          child: SizedBox(height: MediaQuery.paddingOf(context).top + 8),
+          child: SizedBox(height: MediaQuery.paddingOf(context).top + 8 + 50),
         ),
-        SliverToBoxAdapter(child: _buildListenNowHeader()),
         SliverToBoxAdapter(
           child: _HeroCard(
             title: 'Music just for you.\n2 months free.',

@@ -52,21 +52,21 @@ class _App extends StatelessWidget {
     return const MaterialApp(
       title: 'GlassMenu Demo',
       debugShowCheckedModeBanner: false,
-      home: _MenuDemoPage(),
+      home: MenuDemoPage(),
     );
   }
 }
 
 // ── Demo screen ─────────────────────────────────────────────────────────────
 
-class _MenuDemoPage extends StatefulWidget {
-  const _MenuDemoPage();
+class MenuDemoPage extends StatefulWidget {
+  const MenuDemoPage({super.key});
 
   @override
-  State<_MenuDemoPage> createState() => _MenuDemoPageState();
+  State<MenuDemoPage> createState() => _MenuDemoPageState();
 }
 
-class _MenuDemoPageState extends State<_MenuDemoPage> {
+class _MenuDemoPageState extends State<MenuDemoPage> {
   int _itemCount = 5;
 
   List<Widget> get _items => List.generate(

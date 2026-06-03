@@ -28,7 +28,7 @@ class _DemoApp extends StatelessWidget {
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF0A0A0F),
       ),
-      home: const _DemoHome(),
+      home: const TabWidthDemoPage(),
     );
   }
 }
@@ -37,17 +37,17 @@ class _DemoApp extends StatelessWidget {
 // Home — interactive controls
 // =============================================================================
 
-class _DemoHome extends StatefulWidget {
-  const _DemoHome();
+class TabWidthDemoPage extends StatefulWidget {
+  const TabWidthDemoPage({super.key});
 
   @override
-  State<_DemoHome> createState() => _DemoHomeState();
+  State<TabWidthDemoPage> createState() => _TabWidthDemoPageState();
 }
 
 // Which bar variant is being demonstrated
 enum _BarVariant { searchable, standalone }
 
-class _DemoHomeState extends State<_DemoHome> {
+class _TabWidthDemoPageState extends State<TabWidthDemoPage> {
   // ── Controls ────────────────────────────────────────────────────────────────
   _BarVariant _variant = _BarVariant.searchable;
   int _tabCount = 2;

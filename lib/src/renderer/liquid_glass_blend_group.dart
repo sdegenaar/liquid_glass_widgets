@@ -199,6 +199,7 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
   })  : _link = link,
         _blend = blend {
     link.addListener(_onLinkUpdate);
+    link.onShapeTransformChanged = _onShapeTransformChanged;
   }
 
   GlassGroupLink _link;
@@ -209,8 +210,10 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
   set link(GlassGroupLink value) {
     if (_link == value) return;
     _link.removeListener(_onLinkUpdate);
+    _link.onShapeTransformChanged = null;
     _link = value;
     value.addListener(_onLinkUpdate);
+    value.onShapeTransformChanged = _onShapeTransformChanged;
     markNeedsPaint();
   }
 
@@ -229,10 +232,15 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
     markNeedsPaint();
   }
 
+  void _onShapeTransformChanged(RenderObject renderObject) {
+    markGeometryNeedsUpdate();
+    markNeedsPaint();
+  }
+
   @override
   void onTransformChanged() {
-    renderLink?.notifyGeometryChanged(this);
     markNeedsPaint();
+    renderLink?.notifyGeometryChanged(this);
   }
 
   @override
@@ -447,6 +455,16 @@ class GlassGroupLink with ChangeNotifier {
   void notifyShapeLayoutChanged(RenderObject renderObject) {
     if (_shapes.containsKey(renderObject)) {
       notifyListeners();
+    }
+  }
+
+  /// Called when a shape's transform changes, requesting a repaint without a geometry rebuild.
+  void Function(RenderObject)? onShapeTransformChanged;
+
+  /// Notify that a shape's transform has changed.
+  void notifyShapeTransformChanged(RenderObject renderObject) {
+    if (_shapes.containsKey(renderObject)) {
+      onShapeTransformChanged?.call(renderObject);
     }
   }
 

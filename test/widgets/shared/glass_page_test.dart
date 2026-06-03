@@ -2,7 +2,7 @@
 // Tests for GlassPage — the zero-boilerplate screen wrapper introduced in 0.11.0.
 //
 // Covers:
-//   1. Default render (LiquidGlassScope + GlassBackdropScope injected)
+//   1. Default render (LiquidGlassScope injected)
 //   2. enableBackgroundSampling: false — no RepaintBoundary inserted
 //   3. enableBackgroundSampling: true (default) — RepaintBoundary present
 //   4. Adaptive quality minimal → sampling auto-disabled
@@ -72,13 +72,15 @@ void main() {
       expect(find.byType(LiquidGlassScope), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('injects GlassBackdropScope into the widget tree',
+    testWidgets('does not inject deprecated GlassBackdropScope',
         (tester) async {
       await tester.pumpWidget(
         _host(GlassPage(background: _background, child: _scaffold())),
       );
       await tester.pump();
-      expect(find.byType(GlassBackdropScope), findsAtLeastNWidgets(1));
+      // GlassBackdropScope was removed from GlassPage in 0.14.0 — each
+      // LiquidGlassLayer manages its own BackdropGroup.
+      expect(find.byType(GlassBackdropScope), findsNothing);
     });
 
     testWidgets('child widget is present in the tree', (tester) async {
@@ -146,9 +148,7 @@ void main() {
       expect(find.byType(GlassBackgroundSource), findsOneWidget);
     });
 
-    testWidgets(
-        'LiquidGlassScope and GlassBackdropScope still present when disabled',
-        (tester) async {
+    testWidgets('LiquidGlassScope still present when disabled', (tester) async {
       await tester.pumpWidget(
         _host(GlassPage(
           enableBackgroundSampling: false,
@@ -158,7 +158,6 @@ void main() {
       );
       await tester.pump();
       expect(find.byType(LiquidGlassScope), findsAtLeastNWidgets(1));
-      expect(find.byType(GlassBackdropScope), findsAtLeastNWidgets(1));
     });
   });
 
@@ -295,7 +294,7 @@ void main() {
       );
       await tester.pump();
       // Remove GlassPage from tree — verifies Ticker and keys are disposed
-      // cleanly via LiquidGlassScope and GlassBackdropScope teardown.
+      // cleanly via LiquidGlassScope teardown.
       await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
       await tester.pump();
       expect(find.byType(GlassPage), findsNothing);

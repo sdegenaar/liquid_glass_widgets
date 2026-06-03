@@ -23,7 +23,7 @@ https://github.com/user-attachments/assets/2fe28f46-96ad-459d-b816-e6d6001d90de
 - **Just works everywhere** — iOS, Android, macOS, Web, Windows, Linux; rendering path chosen automatically
 - **Adaptive quality** *(experimental)* — `GlassAdaptiveScope` benchmarks the device at startup and adjusts quality in real time: `minimal` on slow hardware, `standard` on mid-range, `premium` on fast devices. Degrades on thermal throttle, recovers when cool
 - **Zero dependencies** — no third-party runtime libraries, just the Flutter SDK
-- **One-line setup** — `LiquidGlassWidgets.wrap(child: myApp)` handles shader prewarming, accessibility bridging, root backdrop sharing, and global theming; add `GlassBackdropScope` per screen to prevent ghost artifacts on navigation (see [Backdrop Isolation](#backdrop-isolation--preventing-ghost-artifacts))
+- **One-line setup** — `LiquidGlassWidgets.wrap(child: myApp)` handles accessibility bridging, adaptive quality, and global theming; use `GlassScaffold` per screen for automatic backdrop isolation, z-ordering, edge fading, and status bar styling
 - **Gyroscope lighting** — `GlassMotionScope` drives specular highlights from any `Stream<double>`
 - **WCAG-compliant by default** — Reduce Motion and Reduce Transparency are respected automatically; no setup required
 
@@ -92,6 +92,7 @@ Eight focused, self-contained demos — one widget, one file, runnable standalon
 | `searchable_bar_demo.dart` — searchable bar edge cases | `cd example && flutter run -t lib/demos/searchable_bar_demo.dart` |
 | `shape_debug_demo.dart` — GlassButton shapes | `cd example && flutter run -t lib/demos/shape_debug_demo.dart` |
 | `quality_comparison_demo.dart` — premium & standard quality comparison playground | `cd example && flutter run -t lib/demos/quality_comparison_demo.dart` |
+| `nav_bar_patterns_demo.dart` — GlassScaffold layout patterns | `cd example && flutter run -t lib/demos/nav_bar_patterns_demo.dart` |
 
 
 ## Widget Categories
@@ -112,14 +113,14 @@ Eight focused, self-contained demos — one widget, one file, runnable standalon
 `GlassDialog` · `GlassSheet` · `GlassModalSheet` · `showGlassActionSheet` · `GlassMenu` · `GlassMenuItem`
 
 ### Surfaces
-`GlassAppBar` · `GlassBottomBar` · `GlassSearchableBottomBar` · `GlassTabBar` · `GlassSideBar` · `GlassToolbar`
+`GlassScaffold` · `GlassAppBar` · `GlassBottomBar` · `GlassSearchableBottomBar` · `GlassTabBar` · `GlassSideBar` · `GlassToolbar`
 
 
 ## Installation
 
 ```yaml
 dependencies:
-  liquid_glass_widgets: ^0.13.0
+  liquid_glass_widgets: ^0.14.0
 ```
 
 ```bash
@@ -147,14 +148,18 @@ void main() async {
 }
 ```
 
-That's it. Then add any glass widget to your tree — no per-widget configuration needed:
+That's it. Then use `GlassScaffold` on each screen — it handles background, status bar, z-ordering, and edge fading automatically:
 
 ```dart
-Scaffold(
+GlassScaffold(
+  background: Image.asset('assets/wallpaper.jpg', fit: BoxFit.cover),
+  statusBarStyle: GlassStatusBarStyle.auto,
   appBar: GlassAppBar(title: const Text('My App')),
-  body: const Center(child: GlassCard(child: Text('Hello, Glass!'))),
+  body: Center(child: GlassCard(child: Text('Hello, Glass!'))),
 )
 ```
+
+> **Why `GlassScaffold`?** Glass effects refract and blur against whatever is behind them. Without a controlled background, glass surfaces can appear flat, incorrectly tinted, or invisible. `GlassScaffold` wires up the background source, glass rendering layer, and bar isolation automatically — one widget instead of five.
 
 > **Accessibility is on by default.** The library automatically reads the
 > device's Reduce Motion and Reduce Transparency settings — no extra setup
@@ -286,13 +291,13 @@ GlassContainer(
 Enables the full Impeller shader pipeline with texture capture and chromatic aberration. On Skia/Web, automatically falls back to Standard.
 
 ```dart
-GlassAppBar(
+GlassCard(
   quality: GlassQuality.premium,
-  title: const Text('Static header'),
+  child: const Text('Static hero section'),
 )
 ```
 
-> **Use Premium only for static, non-scrolling surfaces** (app bars, bottom bars, hero sections). It may not render correctly inside `ListView` or `CustomScrollView` on Impeller.
+> **Use Premium only for static, non-scrolling surfaces** (hero sections, feature cards). It may not render correctly inside `ListView` or `CustomScrollView` on Impeller. `GlassScaffold` automatically promotes app bars and bottom bars to premium quality via `GlassIsolationScope`.
 
 ### Minimal — Shader-Free
 
@@ -312,9 +317,55 @@ Two ideal use cases:
 > **Theme shorthand**: `GlassThemeVariant.minimal` applies `minimal` quality globally via `GlassThemeData`.
 
 
+## GlassScaffold
+
+`GlassScaffold` is the recommended way to build any screen that uses glass surfaces. It replaces the manual assembly of `GlassPage` + `Scaffold` + `GlassScrollEdgeEffect` + `Stack` with a single widget:
+
+```dart
+GlassScaffold(
+  background: Image.asset('assets/wallpaper.jpg', fit: BoxFit.cover),
+  statusBarStyle: GlassStatusBarStyle.light,
+  appBar: GlassAppBar(
+    title: const Text('Messages'),
+    trailing: GlassButton(
+      icon: const Icon(CupertinoIcons.compose),
+      onTap: () {},
+    ),
+  ),
+  bottomBar: GlassBottomBar(
+    selectedIndex: 0,
+    onTabSelected: (_) {},
+    tabs: const [
+      GlassBottomBarTab(icon: Icon(Icons.home), label: 'Home'),
+      GlassBottomBarTab(icon: Icon(Icons.search), label: 'Search'),
+    ],
+  ),
+  body: CustomScrollView(
+    slivers: [...],
+  ),
+)
+```
+
+| What it handles | Without `GlassScaffold` |
+|---|---|
+| Background + glass layer | Must wrap in `GlassPage` + set `scaffoldBackgroundColor: transparent` |
+| Z-ordering (bars above body) | Must build a manual `Stack` with correct paint order |
+| Edge fading | Must add `GlassScrollEdgeEffect` and calculate fade heights |
+| Safe-area padding | Must calculate top/bottom padding for app bar and bottom bar |
+| Bar isolation | Must wrap bars in `GlassIsolationScope` manually |
+| Status bar icons | Must call `SystemChrome.setSystemUIOverlayStyle` and restore it |
+
+> See `example/lib/demos/nav_bar_patterns_demo.dart` for complete `GlassScaffold` usage patterns.
+
+---
+
 ## GlassPage
 
-`GlassPage` is the recommended root widget for any screen that uses glass surfaces. It eliminates several common setup mistakes in one widget:
+`GlassPage` is the lower-level building block that `GlassScaffold` uses internally. Use it directly when you need full manual control over your layout — custom `Stack` ordering, non-standard bar placements, or screens without a traditional scaffold structure.
+
+> **For most apps, `GlassScaffold` is simpler** — it handles background, bars, edge fading, and isolation automatically. Use `GlassPage` only when you need to build a custom layout that `GlassScaffold` doesn't support.
+
+`GlassPage` eliminates several common setup mistakes in one widget:
 
 ```dart
 // Minimum — just wrap your Scaffold, GlassPage handles everything else:
@@ -340,7 +391,7 @@ GlassPage(
 | What it handles | Without `GlassPage` |
 |---|---|
 | Transparent `Scaffold` | Must set `scaffoldBackgroundColor: transparent` manually |
-| Navigation ghosting | Must remember to add `GlassBackdropScope` to every route |
+| Navigation ghosting | Handled automatically — each glass layer isolates its own backdrop |
 | Background scope setup | Must wrap in `LiquidGlassScope` manually |
 | Status bar icons | Must call `SystemChrome.setSystemUIOverlayStyle` and restore it |
 | Edge-to-edge mode | Must call `SystemChrome.setEnabledSystemUIMode` and restore it |
@@ -384,7 +435,7 @@ Each value maps to a fixed power-of-2 exponent. The GPU uses a zero-transcendent
 ## Performance Tips
 
 1. **`LiquidGlassWidgets.initialize()`** at startup — pre-caches shaders, eliminates the white flash on first render
-2. **`LiquidGlassWidgets.wrap()`** in `main.dart` — installs root backdrop sharing, accessibility, and global theming; pass `adaptiveQuality: true` for automatic per-device quality tuning. For multi-screen apps, also add `GlassBackdropScope` to each route — see [Backdrop Isolation](#backdrop-isolation--preventing-ghost-artifacts)
+2. **`LiquidGlassWidgets.wrap()`** in `main.dart` — installs accessibility bridging and global theming; pass `adaptiveQuality: true` for automatic per-device quality tuning
 3. **Standard quality for scrollable content** — lists, forms, interactive widgets
 4. **Premium quality for fixed surfaces** — app bars, bottom bars, and hero sections
 5. **Minimal quality for shader-dense screens** — use `GlassQuality.minimal` for background panels and list cards to fire zero custom shader invocations during scroll, then keep `standard` or `premium` only on the focal element
@@ -506,67 +557,6 @@ GlassPerformanceMonitor.rasterBudget = const Duration(microseconds: 8333); // 12
 GlassPerformanceMonitor.sustainedFrameThreshold = 120;
 ```
 
-
-
-
-## Backdrop Isolation — Preventing Ghost Artifacts
-
-`LiquidGlassWidgets.wrap()` installs one root `BackdropGroup` that all glass
-surfaces share for GPU backdrop captures. When navigating between screens, the
-previous screen's backdrop texture stays bound for 1–2 frames — causing the old
-page's content to briefly bleed through glass on the new screen.
-
-**Recommended fix: use `GlassPage` — it handles backdrop isolation automatically.**
-
-```dart
-class MyNewPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    // GlassPage creates a fresh GlassBackdropScope on mount automatically.
-    // No extra widgets needed.
-    return GlassPage(
-      child: Scaffold(
-        appBar: GlassAppBar(title: const Text('New Page')),
-        body: ...,
-        bottomNavigationBar: GlassBottomBar(...),
-      ),
-    );
-  }
-}
-```
-
-**Manual alternative — `GlassBackdropScope`:**
-
-If you are not using `GlassPage` (e.g., you have a custom routing setup), add a
-`GlassBackdropScope` at the root of each route yourself:
-
-```dart
-class MyLegacyPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return GlassBackdropScope(        // ← forces a fresh capture on mount
-      child: Scaffold(
-        appBar: GlassAppBar(title: const Text('New Page')),
-        body: ...,
-      ),
-    );
-  }
-}
-```
-
-`GlassBackdropScope` creates a child `BackdropGroup` scoped to that screen. The
-moment it mounts, it captures a fresh GPU backdrop — no memory of the previous
-page's content.
-
-> **Rule of thumb:** `GlassPage` is the easiest path — it wraps `GlassBackdropScope`
-> for you. Use raw `GlassBackdropScope` only when `GlassPage` is not suitable.
-
-**Why `adaptiveQuality` tabs don't ghost:**  
-When switching tabs *within the same screen*, all glass surfaces share the same
-`GlassBackdropScope` which is refreshed correctly during animation.
-The ghost appears only when crossing a `Navigator` route boundary or an
-`AnimatedSwitcher` that replaces the whole screen widget.
-
 ## Custom Refraction for Interactive Indicators
 
 On Skia and Web, interactive widgets like `GlassSegmentedControl` can display
@@ -576,7 +566,7 @@ true liquid glass refraction from a background image.
 automatically and is the cleanest integration path:
 
 ```dart
-// GlassPage handles LiquidGlassScope + GlassRefractionSource for you:
+// GlassPage handles LiquidGlassScope + GlassBackgroundSource for you:
 GlassPage(
   background: Image.asset('assets/wallpaper.jpg', fit: BoxFit.cover),
   child: Scaffold(
@@ -611,7 +601,7 @@ LiquidGlassScope(
   child: Stack(
     children: [
       Positioned.fill(
-        child: GlassRefractionSource(
+        child: GlassBackgroundSource(
           child: Image.asset('assets/wallpaper.jpg'),
         ),
       ),
@@ -714,7 +704,7 @@ This disables only the automatic system-flag bridge. An explicit `GlassAccessibi
 
 On Impeller, every `GlassQuality.premium` surface uses a two-pass pipeline:
 
-1. **Blur pass** — `BackdropFilterLayer(ImageFilter.blur)`, clipped to the exact widget shape. Shared across all surfaces inside a `GlassBackdropScope` (injected automatically by `LiquidGlassWidgets.wrap()`).
+1. **Blur pass** — `BackdropFilterLayer(ImageFilter.blur)`, clipped to the exact widget shape. Each `LiquidGlassLayer` manages its own isolated `BackdropGroup` for GPU capture.
 2. **Shader pass** — `BackdropFilterLayer(ImageFilter.shader)` — refraction, edge lighting, glass tint, and chromatic aberration.
 
 On Skia/Web, `lightweight_glass.frag` runs as a single pass with no backdrop capture.

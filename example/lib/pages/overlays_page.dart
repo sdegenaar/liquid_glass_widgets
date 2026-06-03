@@ -212,15 +212,8 @@ class _OverlaysPageState extends State<OverlaysPage> {
       settings: RecommendedGlassSettings.standard,
       statusBarStyle: GlassStatusBarStyle.light,
       child: Scaffold(
+        extendBodyBehindAppBar: true,
         appBar: GlassAppBar(
-          title: const Text(
-            'Overlays',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
           leading: GlassButton(
             quality: GlassQuality.premium,
             icon: const Icon(CupertinoIcons.back),
@@ -230,159 +223,186 @@ class _OverlaysPageState extends State<OverlaysPage> {
             iconSize: 20,
           ),
         ),
-        body: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── GlassSheet ───────────────────────────────────
-                    const _SectionTitle(title: 'GlassSheet'),
-                    const SizedBox(height: 16),
-                    _ActionButton(
-                      label: 'Basic Bottom Sheet',
-                      glowColor: Colors.blue,
-                      onTap: _showBasicSheet,
-                    ),
-                    const SizedBox(height: 12),
-                    _ActionButton(
-                      label: 'Scrollable Content',
-                      glowColor: Colors.green,
-                      onTap: _showScrollableSheet,
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // ── GlassDialog ──────────────────────────────────
-                    const _SectionTitle(title: 'GlassDialog'),
-                    const SizedBox(height: 16),
-                    _ActionButton(
-                      label: 'Basic Alert',
-                      glowColor: Colors.green,
-                      onTap: _showBasicDialog,
-                    ),
-                    const SizedBox(height: 12),
-                    _ActionButton(
-                      label: 'Destructive Confirm',
-                      glowColor: Colors.red,
-                      onTap: _showDestructiveDialog,
-                    ),
-                    const SizedBox(height: 12),
-                    _ActionButton(
-                      label: 'Save Changes (3 Actions)',
-                      glowColor: Colors.amber,
-                      onTap: _showSaveDialog,
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // ── GlassMenu ────────────────────────────────────
-                    const _SectionTitle(title: 'GlassMenu'),
-                    const SizedBox(height: 4),
-                    _QualityLabel(label: 'Premium vs Standard'),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Column(
-                          children: [
-                            _QualityBadge(
-                                label: 'Premium', color: Colors.amber),
-                            const SizedBox(height: 8),
-                            GlassMenu(
-                              quality: GlassQuality.premium,
-                              triggerBuilder: (context, toggle) => GlassButton(
-                                icon: Icon(CupertinoIcons.ellipsis),
-                                onTap: toggle,
-                                label: 'Premium',
-                              ),
-                              items: [
-                                GlassMenuItem(
-                                  icon: Icon(CupertinoIcons.share),
-                                  title: 'Share',
-                                  onTap: () => setState(
-                                      () => _lastMenuSelection = 'Share'),
-                                ),
-                                GlassMenuItem(
-                                  icon: Icon(CupertinoIcons.pen),
-                                  title: 'Edit',
-                                  onTap: () => setState(
-                                      () => _lastMenuSelection = 'Edit'),
-                                ),
-                                GlassMenuItem(
-                                  icon: Icon(CupertinoIcons.trash),
-                                  title: 'Delete',
-                                  isDestructive: true,
-                                  onTap: () => setState(
-                                      () => _lastMenuSelection = 'Delete'),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        Column(
-                          children: [
-                            _QualityBadge(
-                                label: 'Standard', color: Colors.white38),
-                            const SizedBox(height: 8),
-                            GlassMenu(
-                              quality: GlassQuality.standard,
-                              triggerBuilder: (context, toggle) => GlassButton(
-                                icon: Icon(CupertinoIcons.ellipsis),
-                                onTap: toggle,
-                                label: 'Standard',
-                              ),
-                              items: [
-                                GlassMenuItem(
-                                  icon: Icon(CupertinoIcons.share),
-                                  title: 'Share',
-                                  onTap: () => setState(
-                                      () => _lastMenuSelection = 'Share'),
-                                ),
-                                GlassMenuItem(
-                                  icon: Icon(CupertinoIcons.pen),
-                                  title: 'Edit',
-                                  onTap: () => setState(
-                                      () => _lastMenuSelection = 'Edit'),
-                                ),
-                                GlassMenuItem(
-                                  icon: Icon(CupertinoIcons.trash),
-                                  title: 'Delete',
-                                  isDestructive: true,
-                                  onTap: () => setState(
-                                      () => _lastMenuSelection = 'Delete'),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    _ResultRow(
-                      icon: CupertinoIcons.info_circle_fill,
-                      label: 'Selection: $_lastMenuSelection',
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // ── GlassActionSheet ─────────────────────────────
-                    const _SectionTitle(title: 'GlassActionSheet'),
-                    const SizedBox(height: 16),
-                    _ActionButton(
-                      label: 'Photo Options',
-                      glowColor: Colors.purple,
-                      onTap: _showPhotoActionSheet,
-                    ),
-
-                    const SizedBox(height: 100),
-                  ],
+        body: GlassScrollEdgeEffect(
+          topFadeHeight: MediaQuery.paddingOf(context).top + 44 + 40,
+          fadeBottom: false,
+          child: CustomScrollView(
+            slivers: [
+              // Space for the app bar + safe area
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: MediaQuery.paddingOf(context).top + 44,
                 ),
               ),
-            ),
-          ],
+              // ── Large page title (iOS 26 inline style) ──────────────
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(24, 0, 24, 16),
+                  child: Text(
+                    'Overlays',
+                    style: TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.5,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ── GlassSheet ───────────────────────────────────
+                      const _SectionTitle(title: 'GlassSheet'),
+                      const SizedBox(height: 16),
+                      _ActionButton(
+                        label: 'Basic Bottom Sheet',
+                        glowColor: Colors.blue,
+                        onTap: _showBasicSheet,
+                      ),
+                      const SizedBox(height: 12),
+                      _ActionButton(
+                        label: 'Scrollable Content',
+                        glowColor: Colors.green,
+                        onTap: _showScrollableSheet,
+                      ),
+
+                      const SizedBox(height: 40),
+
+                      // ── GlassDialog ──────────────────────────────────
+                      const _SectionTitle(title: 'GlassDialog'),
+                      const SizedBox(height: 16),
+                      _ActionButton(
+                        label: 'Basic Alert',
+                        glowColor: Colors.green,
+                        onTap: _showBasicDialog,
+                      ),
+                      const SizedBox(height: 12),
+                      _ActionButton(
+                        label: 'Destructive Confirm',
+                        glowColor: Colors.red,
+                        onTap: _showDestructiveDialog,
+                      ),
+                      const SizedBox(height: 12),
+                      _ActionButton(
+                        label: 'Save Changes (3 Actions)',
+                        glowColor: Colors.amber,
+                        onTap: _showSaveDialog,
+                      ),
+
+                      const SizedBox(height: 40),
+
+                      // ── GlassMenu ────────────────────────────────────
+                      const _SectionTitle(title: 'GlassMenu'),
+                      const SizedBox(height: 4),
+                      _QualityLabel(label: 'Premium vs Standard'),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Column(
+                            children: [
+                              _QualityBadge(
+                                  label: 'Premium', color: Colors.amber),
+                              const SizedBox(height: 8),
+                              GlassMenu(
+                                quality: GlassQuality.premium,
+                                triggerBuilder: (context, toggle) =>
+                                    GlassButton(
+                                  icon: Icon(CupertinoIcons.ellipsis),
+                                  onTap: toggle,
+                                  label: 'Premium',
+                                ),
+                                items: [
+                                  GlassMenuItem(
+                                    icon: Icon(CupertinoIcons.share),
+                                    title: 'Share',
+                                    onTap: () => setState(
+                                        () => _lastMenuSelection = 'Share'),
+                                  ),
+                                  GlassMenuItem(
+                                    icon: Icon(CupertinoIcons.pen),
+                                    title: 'Edit',
+                                    onTap: () => setState(
+                                        () => _lastMenuSelection = 'Edit'),
+                                  ),
+                                  GlassMenuItem(
+                                    icon: Icon(CupertinoIcons.trash),
+                                    title: 'Delete',
+                                    isDestructive: true,
+                                    onTap: () => setState(
+                                        () => _lastMenuSelection = 'Delete'),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              _QualityBadge(
+                                  label: 'Standard', color: Colors.white38),
+                              const SizedBox(height: 8),
+                              GlassMenu(
+                                quality: GlassQuality.standard,
+                                triggerBuilder: (context, toggle) =>
+                                    GlassButton(
+                                  icon: Icon(CupertinoIcons.ellipsis),
+                                  onTap: toggle,
+                                  label: 'Standard',
+                                ),
+                                items: [
+                                  GlassMenuItem(
+                                    icon: Icon(CupertinoIcons.share),
+                                    title: 'Share',
+                                    onTap: () => setState(
+                                        () => _lastMenuSelection = 'Share'),
+                                  ),
+                                  GlassMenuItem(
+                                    icon: Icon(CupertinoIcons.pen),
+                                    title: 'Edit',
+                                    onTap: () => setState(
+                                        () => _lastMenuSelection = 'Edit'),
+                                  ),
+                                  GlassMenuItem(
+                                    icon: Icon(CupertinoIcons.trash),
+                                    title: 'Delete',
+                                    isDestructive: true,
+                                    onTap: () => setState(
+                                        () => _lastMenuSelection = 'Delete'),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _ResultRow(
+                        icon: CupertinoIcons.info_circle_fill,
+                        label: 'Selection: $_lastMenuSelection',
+                      ),
+
+                      const SizedBox(height: 40),
+
+                      // ── GlassActionSheet ─────────────────────────────
+                      const _SectionTitle(title: 'GlassActionSheet'),
+                      const SizedBox(height: 16),
+                      _ActionButton(
+                        label: 'Photo Options',
+                        glowColor: Colors.purple,
+                        onTap: _showPhotoActionSheet,
+                      ),
+
+                      const SizedBox(height: 100),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

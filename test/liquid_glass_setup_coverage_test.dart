@@ -9,7 +9,7 @@ void main() {
   // ── LiquidGlassWidgets.wrap ───────────────────────────────────────────────
 
   group('LiquidGlassWidgets.wrap', () {
-    testWidgets('zero-config wraps child in GlassBackdropScope',
+    testWidgets('zero-config wraps child and renders without error',
         (tester) async {
       final wrapped = LiquidGlassWidgets.wrap(child: const SizedBox.shrink());
       await tester.pumpWidget(MaterialApp(home: wrapped));

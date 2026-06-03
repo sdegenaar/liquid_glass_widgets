@@ -31,7 +31,7 @@ class AnchorStretchSettings {
     this.intensity = 0.5,
     this.squashFactor = 0.3,
     this.translationDamping = 0.15,
-    this.bounciness = 0.0,
+    this.bounciness = 0.15,
   });
 
   /// How much the widget elongates in the drag direction.
@@ -63,7 +63,7 @@ class AnchorStretchSettings {
   /// `0.0` = standard elastic snap-back. `0.1`–`0.3` = more pronounced
   /// overshoot that makes the widget visibly bounce past rest.
   ///
-  /// Defaults to `0.0`.
+  /// Defaults to `0.15` — a subtle overshoot matching native iOS 26 buttons.
   final double bounciness;
 }
 
@@ -405,6 +405,16 @@ class RenderRawLiquidStretch extends RenderProxyBox {
     markNeedsPaint();
   }
 
+  /// Signed smoothstep: maps [-edge..+edge] → [-1..+1] with smooth
+  /// cubic easing. Values beyond ±edge clamp to ±1.
+  /// Used for pivot interpolation to prevent position jumps.
+  static double _signedSmoothStep(double x, double edge) {
+    final t = (x / edge).clamp(-1.0, 1.0);
+    final a = t.abs();
+    final smooth = a * a * (3.0 - 2.0 * a);
+    return t >= 0 ? smooth : -smooth;
+  }
+
   @override
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
     return hitTestChildren(result, position: position);
@@ -514,27 +524,58 @@ class RenderRawLiquidStretch extends RenderProxyBox {
         final absDy = _stretchPixels.dy.abs();
 
         if (absDx > 0.001 || absDy > 0.001) {
-          // Scale each axis based on its own drag component.
-          final relativeX = size.width > 0 ? absDx / size.width : 0.0;
-          final relativeY = size.height > 0 ? absDy / size.height : 0.0;
+          // Normalise both axes against the SAME reference dimension
+          // (the larger of width/height). This prevents extreme aspect-ratio
+          // buttons from producing exaggerated stretch on the short axis.
+          //
+          // For round buttons (w ≈ h) this is identical to per-axis division.
+          // For wide buttons (w >> h) a 20 px vertical drag now produces the
+          // same relative value as a 20 px drag on a square button of side
+          // max(w, h), preventing the "merge & twitch" reported on full-width
+          // buttons between two small buttons.
+          final refDim = math.max(size.width, size.height);
+          final relativeX = refDim > 0 ? absDx / refDim : 0.0;
+          final relativeY = refDim > 0 ? absDy / refDim : 0.0;
+
+          // Aspect-ratio correction: dampen stretch along the already-long
+          // axis. A 300×56 wide button has aspectRatio ≈ 5.36, so horizontal
+          // stretch is reduced to ~19% while vertical stays at 100%.
+          // For square buttons (AR=1), both corrections are 1.0 (no change).
+          final aspectRatio = size.width > 0 && size.height > 0
+              ? size.width / size.height
+              : 1.0;
+          final xDamping = aspectRatio > 1.0 ? 1.0 / aspectRatio : 1.0;
+          final yDamping = aspectRatio < 1.0 ? aspectRatio : 1.0;
 
           // Elongate along the drag direction.
-          final stretchX = 1.0 + relativeX * _anchorStretchIntensity;
-          final stretchY = 1.0 + relativeY * _anchorStretchIntensity;
+          // Cap at 30% to prevent extreme transforms on long drags.
+          final stretchX = 1.0 +
+              (relativeX * _anchorStretchIntensity * xDamping).clamp(0.0, 0.3);
+          final stretchY = 1.0 +
+              (relativeY * _anchorStretchIntensity * yDamping).clamp(0.0, 0.3);
 
           // Perpendicular compression (balloon-squeeze): dragging right
           // elongates X and compresses Y, and vice versa.
-          final squashX = 1.0 - relativeY * _anchorSquashFactor;
-          final squashY = 1.0 - relativeX * _anchorSquashFactor;
+          // Cap squash at 15% to avoid extreme narrowing on wide buttons.
+          final squashX = 1.0 -
+              (relativeY * _anchorSquashFactor * xDamping).clamp(0.0, 0.15);
+          final squashY = 1.0 -
+              (relativeX * _anchorSquashFactor * yDamping).clamp(0.0, 0.15);
 
           final scaleX = (stretchX * squashX).clamp(0.01, double.infinity);
           final scaleY = (stretchY * squashY).clamp(0.01, double.infinity);
 
-          // Pivot at the opposite edge for each axis independently.
-          // Drag right → pivot at left (0), drag left → pivot at right.
-          // Drag down → pivot at top (0), drag up → pivot at bottom.
-          final pivotX = _stretchPixels.dx >= 0 ? 0.0 : size.width;
-          final pivotY = _stretchPixels.dy >= 0 ? 0.0 : size.height;
+          // Smooth pivot: instead of snapping between edges (which causes
+          // a visible position jump when drag direction reverses near zero),
+          // glide the pivot through center using a signed smoothstep.
+          //
+          // At ±20px the pivot is fully at the target edge. Near zero it
+          // passes through center, and the stretch itself is negligible
+          // so the pivot position doesn't produce visible artifacts.
+          final pivotX = size.width *
+              (0.5 - _signedSmoothStep(_stretchPixels.dx, 20.0) * 0.5);
+          final pivotY = size.height *
+              (0.5 - _signedSmoothStep(_stretchPixels.dy, 20.0) * 0.5);
 
           matrix
             ..translateByDouble(pivotX, pivotY, 0.0, 1.0)
@@ -543,10 +584,12 @@ class RenderRawLiquidStretch extends RenderProxyBox {
 
           // Small dampened translation so the button shifts slightly
           // toward the finger — gives bounce-back something to snap.
+          // Apply aspect-ratio correction to prevent wide buttons from
+          // sliding too far horizontally.
           if (_anchorTranslationDamping > 0) {
             matrix.translateByDouble(
-              _stretchPixels.dx * _anchorTranslationDamping,
-              _stretchPixels.dy * _anchorTranslationDamping,
+              _stretchPixels.dx * _anchorTranslationDamping * xDamping,
+              _stretchPixels.dy * _anchorTranslationDamping * yDamping,
               0.0,
               1.0,
             );

@@ -251,7 +251,15 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
       return;
     }
     final boundary = renderObject;
-    if (boundary.debugNeedsPaint) return;
+
+    // debugNeedsPaint is a debug-only late getter — crashes in profile/release.
+    // Guard it behind assert() and use the captured local outside.
+    bool needsPaint = false;
+    assert(() {
+      needsPaint = boundary.debugNeedsPaint;
+      return true;
+    }());
+    if (needsPaint) return;
 
     final currentSize = boundary.size;
     final currentPos = (boundary as RenderBox).localToGlobal(Offset.zero);

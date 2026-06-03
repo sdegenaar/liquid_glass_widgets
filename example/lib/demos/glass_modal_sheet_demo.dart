@@ -632,12 +632,10 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
     GlassModalSheet.show(
       context: context,
       quality: widget.currentQuality,
-      builder: (context) => const GlassBackdropScope(
-        child: BaseScenario(
-          title: 'Standard Experience',
-          subtitle:
-              'Explore how interactive glass elements behave inside a glass sheet.',
-        ),
+      builder: (context) => const BaseScenario(
+        title: 'Standard Experience',
+        subtitle:
+            'Explore how interactive glass elements behave inside a glass sheet.',
       ),
     );
   }
@@ -649,11 +647,9 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
       initialState: SheetState.peek,
       enablePeek: true,
       peekTopBorderRadius: 46,
-      builder: (context) => const GlassBackdropScope(
-        child: BaseScenario(
-          title: 'Standard Peek',
-          subtitle: 'A full-width persistent bar at the bottom.',
-        ),
+      builder: (context) => const BaseScenario(
+        title: 'Standard Peek',
+        subtitle: 'A full-width persistent bar at the bottom.',
       ),
     );
   }
@@ -662,36 +658,34 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
     GlassSheet.show(
       context: context,
       quality: widget.currentQuality,
-      builder: (context) => const GlassBackdropScope(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: EdgeInsets.all(24),
-              child: GlassPanel(
-                useOwnLayer: true,
-                child: SizedBox(
-                  height: 120,
-                  child: Center(
-                    child: Text(
-                      'Glass Panel',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+      builder: (context) => const Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: EdgeInsets.all(24),
+            child: GlassPanel(
+              useOwnLayer: true,
+              child: SizedBox(
+                height: 120,
+                child: Center(
+                  child: Text(
+                    'Glass Panel',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ),
             ),
-            Text(
-              'Standalone GlassPanel component demo.',
-              style: TextStyle(color: Colors.white54),
-            ),
-            SizedBox(height: 24),
-          ],
-        ),
+          ),
+          Text(
+            'Standalone GlassPanel component demo.',
+            style: TextStyle(color: Colors.white54),
+          ),
+          SizedBox(height: 24),
+        ],
       ),
     );
   }
@@ -703,12 +697,10 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
       interactionScale: 1.0,
       enableInteractionGlow: false,
       enableSaturationGlow: false,
-      builder: (context) => const GlassBackdropScope(
-        child: BaseScenario(
-          title: 'Static Experience',
-          subtitle:
-              'This scenario has all tactile feedback disabled (no scaling, no glow).',
-        ),
+      builder: (context) => const BaseScenario(
+        title: 'Static Experience',
+        subtitle:
+            'This scenario has all tactile feedback disabled (no scaling, no glow).',
       ),
     );
   }
@@ -718,13 +710,11 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
       context: context,
       quality: widget.currentQuality,
       suppressInteractionOnChildren: true,
-      builder: (context) => const GlassBackdropScope(
-        child: BaseScenario(
-          title: 'Smart Silence',
-          subtitle:
-              'In this mode, children dispatch an InteractionNotification. The sheet stays stable.',
-          silenceInteractions: true,
-        ),
+      builder: (context) => const BaseScenario(
+        title: 'Smart Silence',
+        subtitle:
+            'In this mode, children dispatch an InteractionNotification. The sheet stays stable.',
+        silenceInteractions: true,
       ),
     );
   }
@@ -735,12 +725,10 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
       quality: widget.currentQuality,
       fillTransition: FillTransition.gradual,
       fillThreshold: 0.8,
-      builder: (context) => const GlassBackdropScope(
-        child: BaseScenario(
-          title: 'Gradual Experience',
-          subtitle:
-              'Watch as the glass smoothly transitions into a solid color during expansion.',
-        ),
+      builder: (context) => const BaseScenario(
+        title: 'Gradual Experience',
+        subtitle:
+            'Watch as the glass smoothly transitions into a solid color during expansion.',
       ),
     );
   }
@@ -750,12 +738,10 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
       context: context,
       quality: widget.currentQuality,
       enableTopFade: true,
-      builder: (context) => const GlassBackdropScope(
-        child: BaseScenario(
-          title: 'Top Fade Experience',
-          subtitle:
-              'A subtle gradient fade at the top of the sheet helps content blend smoothly.',
-        ),
+      builder: (context) => const BaseScenario(
+        title: 'Top Fade Experience',
+        subtitle:
+            'A subtle gradient fade at the top of the sheet helps content blend smoothly.',
       ),
     );
   }
@@ -765,12 +751,10 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
       context: context,
       quality: widget.currentQuality,
       barrierColor: Colors.transparent,
-      builder: (context) => const GlassBackdropScope(
-        child: BaseScenario(
-          title: 'Transparent Barrier',
-          subtitle:
-              'The background remains fully visible and interactive without any dimming layer.',
-        ),
+      builder: (context) => const BaseScenario(
+        title: 'Transparent Barrier',
+        subtitle:
+            'The background remains fully visible and interactive without any dimming layer.',
       ),
     );
   }
@@ -785,12 +769,10 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
         refractiveIndex: 1.0,
         thickness: 0,
       ),
-      builder: (context) => const GlassBackdropScope(
-        child: BaseScenario(
-          title: 'Solid Brown Half',
-          subtitle:
-              'Demonstrates overriding glass settings for a specific state (Half = Solid Brown).',
-        ),
+      builder: (context) => const BaseScenario(
+        title: 'Solid Brown Half',
+        subtitle:
+            'Demonstrates overriding glass settings for a specific state (Half = Solid Brown).',
       ),
     );
   }
@@ -801,12 +783,10 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
       quality: widget.currentQuality,
       halfSettings: const LiquidGlassSettings(thickness: 10, blur: 2),
       fullSettings: const LiquidGlassSettings(thickness: 40, blur: 15),
-      builder: (context) => const GlassBackdropScope(
-        child: BaseScenario(
-          title: 'Dynamic Glass Morphing',
-          subtitle:
-              'The material itself changes during expansion: Half (Thin) → Full (Thick Frosted).',
-        ),
+      builder: (context) => const BaseScenario(
+        title: 'Dynamic Glass Morphing',
+        subtitle:
+            'The material itself changes during expansion: Half (Thin) → Full (Thick Frosted).',
       ),
     );
   }
@@ -818,12 +798,10 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
       peekSize: 150,
       halfSize: 0.35,
       fullSize: 0.8,
-      builder: (context) => const GlassBackdropScope(
-        child: BaseScenario(
-          title: 'Custom Layout',
-          subtitle:
-              'Peek is taller (150px), Half is lower (35%), and Full only reaches 80% height.',
-        ),
+      builder: (context) => const BaseScenario(
+        title: 'Custom Layout',
+        subtitle:
+            'Peek is taller (150px), Half is lower (35%), and Full only reaches 80% height.',
       ),
     );
   }

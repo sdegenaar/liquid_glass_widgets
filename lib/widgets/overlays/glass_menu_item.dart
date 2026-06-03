@@ -23,6 +23,7 @@ class GlassMenuItem extends StatefulWidget {
     this.subtitleStyle,
     this.iconColor,
     this.iconSize = 20.0,
+    this.maxLines = 1,
   });
 
   /// The primary text of the item.
@@ -70,6 +71,11 @@ class GlassMenuItem extends StatefulWidget {
 
   /// Custom size for the icon.
   final double iconSize;
+
+  /// Maximum number of lines for the title text.
+  ///
+  /// Defaults to 1. Set to 2 for longer labels like "Set Up Name & Photo".
+  final int maxLines;
 
   @override
   State<GlassMenuItem> createState() => _GlassMenuItemState();
@@ -223,8 +229,8 @@ class _GlassMenuItemState extends State<GlassMenuItem> {
       child: MouseRegion(
         onEnter: (_) => setState(() => _isHovered = true),
         onExit: (_) => setState(() => _isHovered = false),
-        child: SizedBox(
-          height: widget.height,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: widget.height),
           child: AnimatedScale(
             scale: scale,
             duration: const Duration(milliseconds: 150),
@@ -235,8 +241,8 @@ class _GlassMenuItemState extends State<GlassMenuItem> {
                   : const Duration(
                       milliseconds: 150), // Smooth fade out on release
               curve: Curves.easeOutCubic,
-              height: widget.height,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              constraints: BoxConstraints(minHeight: widget.height),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: backgroundColor,
                 borderRadius: BorderRadius.circular(24),
@@ -265,7 +271,7 @@ class _GlassMenuItemState extends State<GlassMenuItem> {
                         children: [
                           Text(
                             widget.title,
-                            maxLines: 1,
+                            maxLines: widget.maxLines,
                             overflow: TextOverflow.ellipsis,
                             style: widget.titleStyle ??
                                 TextStyle(

@@ -14,15 +14,8 @@ class SurfacesPage extends StatelessWidget {
       settings: RecommendedGlassSettings.standard,
       statusBarStyle: GlassStatusBarStyle.light,
       child: Scaffold(
+        extendBodyBehindAppBar: true,
         appBar: GlassAppBar(
-          title: const Text(
-            'Surfaces',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
           leading: GlassButton(
             quality: GlassQuality.premium,
             icon: const Icon(CupertinoIcons.back),
@@ -32,234 +25,260 @@ class SurfacesPage extends StatelessWidget {
             iconSize: 20,
           ),
         ),
-        body: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── GlassAppBar ──────────────────────────────────
-                    const _SectionTitle(title: 'GlassAppBar'),
-                    const SizedBox(height: 8),
-                    Text(
-                      'The navigation bar at the top of this page is a live GlassAppBar with leading and title support.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withValues(alpha: 0.7),
-                      ),
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // ── GlassBottomBar ───────────────────────────────
-                    const _SectionTitle(title: 'GlassBottomBar'),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Draggable jelly-physics tab bar with velocity snapping and per-tab glow colors.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withValues(alpha: 0.7),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _DemoLauncher(
-                      title: 'Launch Bottom Bar Demo',
-                      subtitle: 'Full-screen interactive experience',
-                      icon: CupertinoIcons.rectangle_dock,
-                      glowColor: Colors.blue,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const _BottomBarDemoPage(),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // ── GlassSearchableBottomBar ─────────────────────
-                    const _SectionTitle(title: 'GlassSearchableBottomBar'),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Bottom bar with integrated search — tabs spring-collapse into pills when search activates.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withValues(alpha: 0.7),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _DemoLauncher(
-                      title: 'Launch Searchable Bar Demo',
-                      subtitle: 'Full-screen with search interaction',
-                      icon: CupertinoIcons.search,
-                      glowColor: Colors.purple,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const _SearchableBarDemoPage(),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // ── GlassTabBar ──────────────────────────────────
-                    const _SectionTitle(title: 'GlassTabBar'),
-                    const SizedBox(height: 16),
-                    const _TabBarDemo(),
-
-                    const SizedBox(height: 24),
-
-                    Text(
-                      'Labels Only',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const _TabBarLabelExample(),
-                    const SizedBox(height: 24),
-
-                    Text(
-                      'Icons Only',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const _TabBarIconExample(),
-                    const SizedBox(height: 24),
-
-                    Text(
-                      'Scrollable (Many Tabs)',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const _TabBarScrollableExample(),
-
-                    const SizedBox(height: 40),
-
-                    // ── GlassToolbar ─────────────────────────────────
-                    const _SectionTitle(title: 'GlassToolbar'),
-                    const SizedBox(height: 16),
-                    GlassToolbar(
-                      height: 60,
-                      children: [
-                        GlassButton(
-                          icon: Icon(CupertinoIcons.share),
-                          onTap: () {},
-                          label: 'Share',
-                          width: 44,
-                          height: 44,
-                        ),
-                        const Spacer(),
-                        GlassButton(
-                          icon: Icon(CupertinoIcons.add),
-                          onTap: () {},
-                          label: 'Add',
-                          width: 44,
-                          height: 44,
-                        ),
-                        const Spacer(),
-                        GlassButton(
-                          icon: Icon(CupertinoIcons.delete),
-                          onTap: () {},
-                          label: 'Delete',
-                          width: 44,
-                          height: 44,
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // ── GlassSideBar ─────────────────────────────────
-                    const _SectionTitle(title: 'GlassSideBar'),
-                    const SizedBox(height: 16),
-                    Container(
-                      height: 400,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Colors.blueAccent, Colors.purpleAccent],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Row(
-                          children: [
-                            GlassSideBar(
-                              width: 200,
-                              padding: const EdgeInsets.all(12),
-                              header: const Padding(
-                                padding: EdgeInsets.only(bottom: 20, top: 10),
-                                child: Text(
-                                  'My App',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              footer: GlassButton(
-                                icon: Icon(CupertinoIcons.profile_circled),
-                                label: 'User',
-                                width: double.infinity,
-                                onTap: () {},
-                              ),
-                              children: [
-                                GlassSideBarItem(
-                                  icon: Icon(CupertinoIcons.home),
-                                  label: 'Home',
-                                  isSelected: true,
-                                  onTap: () {},
-                                ),
-                                GlassSideBarItem(
-                                  icon: Icon(CupertinoIcons.folder),
-                                  label: 'Projects',
-                                  onTap: () {},
-                                ),
-                                GlassSideBarItem(
-                                  icon: Icon(CupertinoIcons.settings),
-                                  label: 'Settings',
-                                  onTap: () {},
-                                ),
-                              ],
-                            ),
-                            Expanded(
-                              child: Center(
-                                child: Text(
-                                  'Content Area',
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 100),
-                  ],
+        body: GlassScrollEdgeEffect(
+          topFadeHeight: MediaQuery.paddingOf(context).top + 44 + 40,
+          fadeBottom: false,
+          child: CustomScrollView(
+            slivers: [
+              // Space for the app bar + safe area
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: MediaQuery.paddingOf(context).top + 44,
                 ),
               ),
-            ),
-          ],
+              // ── Large page title (iOS 26 inline style) ──────────────
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(24, 0, 24, 16),
+                  child: Text(
+                    'Surfaces',
+                    style: TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.5,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ── GlassAppBar ──────────────────────────────────
+                      const _SectionTitle(title: 'GlassAppBar'),
+                      const SizedBox(height: 8),
+                      Text(
+                        'The navigation bar at the top of this page is a live GlassAppBar with leading and title support.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.7),
+                        ),
+                      ),
+
+                      const SizedBox(height: 40),
+
+                      // ── GlassBottomBar ───────────────────────────────
+                      const _SectionTitle(title: 'GlassBottomBar'),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Draggable jelly-physics tab bar with velocity snapping and per-tab glow colors.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.7),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _DemoLauncher(
+                        title: 'Launch Bottom Bar Demo',
+                        subtitle: 'Full-screen interactive experience',
+                        icon: CupertinoIcons.rectangle_dock,
+                        glowColor: Colors.blue,
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const _BottomBarDemoPage(),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 40),
+
+                      // ── GlassSearchableBottomBar ─────────────────────
+                      const _SectionTitle(title: 'GlassSearchableBottomBar'),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Bottom bar with integrated search — tabs spring-collapse into pills when search activates.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.7),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _DemoLauncher(
+                        title: 'Launch Searchable Bar Demo',
+                        subtitle: 'Full-screen with search interaction',
+                        icon: CupertinoIcons.search,
+                        glowColor: Colors.purple,
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const _SearchableBarDemoPage(),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 40),
+
+                      // ── GlassTabBar ──────────────────────────────────
+                      const _SectionTitle(title: 'GlassTabBar'),
+                      const SizedBox(height: 16),
+                      const _TabBarDemo(),
+
+                      const SizedBox(height: 24),
+
+                      Text(
+                        'Labels Only',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const _TabBarLabelExample(),
+                      const SizedBox(height: 24),
+
+                      Text(
+                        'Icons Only',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const _TabBarIconExample(),
+                      const SizedBox(height: 24),
+
+                      Text(
+                        'Scrollable (Many Tabs)',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const _TabBarScrollableExample(),
+
+                      const SizedBox(height: 40),
+
+                      // ── GlassToolbar ─────────────────────────────────
+                      const _SectionTitle(title: 'GlassToolbar'),
+                      const SizedBox(height: 16),
+                      GlassToolbar(
+                        height: 60,
+                        children: [
+                          GlassButton(
+                            icon: Icon(CupertinoIcons.share),
+                            onTap: () {},
+                            label: 'Share',
+                            width: 44,
+                            height: 44,
+                          ),
+                          const Spacer(),
+                          GlassButton(
+                            icon: Icon(CupertinoIcons.add),
+                            onTap: () {},
+                            label: 'Add',
+                            width: 44,
+                            height: 44,
+                          ),
+                          const Spacer(),
+                          GlassButton(
+                            icon: Icon(CupertinoIcons.delete),
+                            onTap: () {},
+                            label: 'Delete',
+                            width: 44,
+                            height: 44,
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 40),
+
+                      // ── GlassSideBar ─────────────────────────────────
+                      const _SectionTitle(title: 'GlassSideBar'),
+                      const SizedBox(height: 16),
+                      Container(
+                        height: 400,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Colors.blueAccent, Colors.purpleAccent],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: Row(
+                            children: [
+                              GlassSideBar(
+                                width: 200,
+                                padding: const EdgeInsets.all(12),
+                                header: const Padding(
+                                  padding: EdgeInsets.only(bottom: 20, top: 10),
+                                  child: Text(
+                                    'My App',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                                footer: GlassButton(
+                                  icon: Icon(CupertinoIcons.profile_circled),
+                                  label: 'User',
+                                  width: double.infinity,
+                                  onTap: () {},
+                                ),
+                                children: [
+                                  GlassSideBarItem(
+                                    icon: Icon(CupertinoIcons.home),
+                                    label: 'Home',
+                                    isSelected: true,
+                                    onTap: () {},
+                                  ),
+                                  GlassSideBarItem(
+                                    icon: Icon(CupertinoIcons.folder),
+                                    label: 'Projects',
+                                    onTap: () {},
+                                  ),
+                                  GlassSideBarItem(
+                                    icon: Icon(CupertinoIcons.settings),
+                                    label: 'Settings',
+                                    onTap: () {},
+                                  ),
+                                ],
+                              ),
+                              Expanded(
+                                child: Center(
+                                  child: Text(
+                                    'Content Area',
+                                    style: TextStyle(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.8),
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 100),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
