@@ -48,6 +48,8 @@ class GlassSearchBarConfig {
     this.expandWhenActive = true,
     this.showsCancelButton = true,
     this.cancelButtonColor,
+    this.cancelIcon,
+    this.cancelIconSize = 24,
     this.onSearchFocusChanged,
     this.onSearchFieldTap,
     this.onCancelTap,
@@ -256,6 +258,28 @@ class GlassSearchBarConfig {
   ///
   /// Defaults to white with 90% opacity, matching iOS system style.
   final Color? cancelButtonColor;
+
+  /// Custom icon widget for the cancel (dismiss) button.
+  ///
+  /// When non-null, replaces the default [CupertinoIcons.xmark] glyph.
+  /// The provided widget is rendered as-is inside the glass pill, so it
+  /// should already carry its own color and size:
+  ///
+  /// ```dart
+  /// cancelIcon: Icon(CupertinoIcons.xmark_circle_fill,
+  ///     color: Colors.white, size: 22),
+  /// ```
+  ///
+  /// When null, the default × icon is used with [cancelButtonColor] and
+  /// [cancelIconSize].
+  final Widget? cancelIcon;
+
+  /// Size of the cancel (×) icon in logical pixels.
+  ///
+  /// Defaults to `24`. The reporter noted that `16` (the old default) was
+  /// noticeably smaller than the iOS 26 dismiss button; `24` matches the
+  /// visual weight of the adjacent search and mic icons.
+  final double cancelIconSize;
 
   /// Called whenever the search field gains or loses keyboard focus.
   ///

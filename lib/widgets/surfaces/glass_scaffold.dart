@@ -114,6 +114,7 @@ class GlassScaffold extends StatelessWidget {
     this.appBar,
     this.bottomBar,
     this.background,
+    this.backgroundColor,
     this.settings,
     this.statusBarStyle = GlassStatusBarStyle.none,
     this.edgeToEdge = false,
@@ -174,6 +175,20 @@ class GlassScaffold extends StatelessWidget {
 
   /// Background widget rendered behind everything. See [GlassPage.background].
   final Widget? background;
+
+  /// A solid background colour rendered behind everything when no [background]
+  /// widget is provided.
+  ///
+  /// This is a convenience shorthand for:
+  /// ```dart
+  /// background: Container(color: myColor)
+  /// ```
+  /// When both [background] and [backgroundColor] are provided, [background]
+  /// takes precedence.
+  ///
+  /// When neither is set the Scaffold inherits [Theme.scaffoldBackgroundColor]
+  /// as normal — the inner Scaffold is **not** forced transparent.
+  final Color? backgroundColor;
 
   /// Glass settings for the page's rendering layer. See [GlassPage.settings].
   final LiquidGlassSettings? settings;
@@ -464,7 +479,11 @@ class GlassScaffold extends StatelessWidget {
     };
 
     Widget scaffold = Scaffold(
-      backgroundColor: Colors.transparent,
+      // Only force transparent when a background widget is provided — mirrors
+      // GlassPage's own logic. Without a background the Scaffold should
+      // inherit Theme.scaffoldBackgroundColor so callers can control the
+      // page colour through the standard Material theme.
+      backgroundColor: background != null ? Colors.transparent : null,
       resizeToAvoidBottomInset: resizeToAvoidBottomInset,
       floatingActionButton: floatingActionButton,
       body: Stack(children: stackChildren),
@@ -481,11 +500,20 @@ class GlassScaffold extends StatelessWidget {
       );
     }
 
+    // Resolve effective background: explicit widget > backgroundColor colour >
+    // null (Scaffold inherits Theme.scaffoldBackgroundColor).
+    final Widget? effectiveBackground = background ??
+        (backgroundColor != null
+            ? SizedBox.expand(
+                child: ColoredBox(color: backgroundColor!),
+              )
+            : null);
+
     return GlassPage(
-      background: background,
+      background: effectiveBackground,
       settings: settings,
-      // GlassScaffold handles AnnotatedRegion itself (line 476), so tell
-      // GlassPage to skip its own wrap + imperative SystemChrome call.
+      // GlassScaffold handles AnnotatedRegion itself, so tell GlassPage to
+      // skip its own wrap + imperative SystemChrome call.
       statusBarStyle: GlassStatusBarStyle.none,
       edgeToEdge: edgeToEdge,
       themeOverride: themeOverride,

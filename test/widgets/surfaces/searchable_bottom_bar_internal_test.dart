@@ -175,6 +175,52 @@ void main() {
       // Icon color should be red — just verify no exceptions and it renders.
       expect(find.byType(Icon), findsWidgets);
     });
+
+    testWidgets('default cancelIconSize is 20 (not the old hardcoded 16)',
+        (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          DismissPill(
+            onTap: () {},
+            pillSize: 56,
+            barBorderRadius: 16,
+            quality: GlassQuality.minimal,
+          ),
+          width: 56,
+          height: 56,
+        ),
+      );
+      await tester.pump();
+
+      final icon = tester.widget<Icon>(
+        find.byWidgetPredicate(
+          (w) => w is Icon && w.icon == CupertinoIcons.xmark,
+        ),
+      );
+      expect(icon.size, equals(24.0),
+          reason: 'Default icon size should be 24, not the old hardcoded 16');
+    });
+
+    testWidgets('uses cancelIcon widget when provided', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          DismissPill(
+            onTap: () {},
+            pillSize: 56,
+            barBorderRadius: 16,
+            quality: GlassQuality.minimal,
+            cancelIcon: const Icon(CupertinoIcons.xmark_circle_fill, size: 22),
+          ),
+          width: 56,
+          height: 56,
+        ),
+      );
+      await tester.pump();
+
+      // Custom icon should appear, default xmark should NOT
+      expect(find.byIcon(CupertinoIcons.xmark_circle_fill), findsOneWidget);
+      expect(find.byIcon(CupertinoIcons.xmark), findsNothing);
+    });
   });
 
   // ---------------------------------------------------------------------------

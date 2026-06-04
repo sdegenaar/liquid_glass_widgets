@@ -106,6 +106,8 @@ class GlassSearchBar extends StatefulWidget {
     this.searchIconColor,
     this.clearIconColor,
     this.cancelButtonColor,
+    this.cancelIcon,
+    this.cancelIconSize = 24,
     this.textStyle,
     this.placeholderStyle,
     this.height = 44.0,
@@ -191,6 +193,19 @@ class GlassSearchBar extends StatefulWidget {
   ///
   /// Defaults to white with 90% opacity.
   final Color? cancelButtonColor;
+
+  /// Custom icon widget for the cancel button.
+  ///
+  /// When non-null, replaces the default [CupertinoIcons.xmark] glyph inside
+  /// the glass dismiss pill. The widget is rendered as-is, so it should carry
+  /// its own color and size. When null, [cancelButtonColor] and
+  /// [cancelIconSize] apply to the default × icon.
+  final Widget? cancelIcon;
+
+  /// Size of the cancel (×) icon in logical pixels.
+  ///
+  /// Defaults to `24`, matching the visual weight of the search and clear icons.
+  final double cancelIconSize;
 
   /// The style of the search text.
   final TextStyle? textStyle;
@@ -388,11 +403,12 @@ class _GlassSearchBarState extends State<GlassSearchBar> {
                       settings: widget.settings,
                       useOwnLayer: widget.useOwnLayer,
                       quality: widget.quality,
-                      icon: Icon(
-                        CupertinoIcons.xmark,
-                        color: cancelButtonColor,
-                        size: 20,
-                      ),
+                      icon: widget.cancelIcon ??
+                          Icon(
+                            CupertinoIcons.xmark,
+                            color: cancelButtonColor,
+                            size: widget.cancelIconSize,
+                          ),
                     ),
                   )
                 : const SizedBox.shrink(),

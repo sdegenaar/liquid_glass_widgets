@@ -96,6 +96,7 @@ export 'widgets/overlays/glass_menu_item.dart';
 export 'widgets/overlays/glass_sheet.dart';
 export 'widgets/overlays/glass_modal_sheet.dart';
 export 'widgets/overlays/glass_toast.dart';
+export 'widgets/overlays/glass_popover.dart';
 // Widgets - Surfaces
 export 'widgets/surfaces/glass_app_bar.dart';
 export 'widgets/shared/glass_isolation_scope.dart';

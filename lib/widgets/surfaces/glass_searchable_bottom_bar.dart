@@ -893,6 +893,8 @@ class _GlassSearchableBottomBarState extends State<GlassSearchableBottomBar>
                             glassSettings: widget.glassSettings,
                             cancelButtonColor:
                                 widget.searchConfig.cancelButtonColor,
+                            cancelIcon: widget.searchConfig.cancelIcon,
+                            cancelIconSize: widget.searchConfig.cancelIconSize,
                           ),
                         ),
                     ],

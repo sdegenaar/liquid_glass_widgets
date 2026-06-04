@@ -1,3 +1,61 @@
+# 0.14.1
+
+## 🐛 Fixed — `GlassScaffold` black background
+
+`GlassScaffold` with no `background:` widget was forcing the inner `Scaffold` to
+`Colors.transparent`, rendering black instead of `Theme.scaffoldBackgroundColor`.
+Added a `backgroundColor: Color?` parameter; the scaffold now defaults to the
+theme colour when no explicit background is provided.
+
+## ✨ Improved — Cancel icon size & customisation
+
+The dismiss `×` button in `GlassSearchableBottomBar` was hardcoded to `size: 16`,
+which felt undersized compared to iOS 26. Default bumped to `24`. Both
+`GlassSearchBar` and `GlassSearchBarConfig` now expose `cancelIconSize` and
+`cancelIcon` so the icon size and glyph are fully overridable.
+
+## ✨ New — `GlassPopover`
+
+A new overlay widget that presents **custom content** in a glass container with
+the same liquid morph animation as `GlassMenu`. Use it for tooltips, mini forms,
+preview cards, colour pickers, or any content that should appear in a glass
+popover — without being limited to a list of menu items.
+
+`GlassPopover` shares `GlassMenu`'s liquid teardrop expansion, spring physics,
+auto-positioning, and screen-edge clamping. The `contentBuilder` receives a
+`close` callback so popover content can dismiss itself.
+
+```dart
+GlassPopover(
+  trigger: GlassIconButton(
+    icon: Icon(CupertinoIcons.info_circle),
+    onPressed: null, // handled by GlassPopover
+  ),
+  contentBuilder: (context, close) => Padding(
+    padding: EdgeInsets.all(16),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('Profile Details',
+          style: TextStyle(color: Colors.white, fontSize: 16)),
+        SizedBox(height: 12),
+        GlassButton(onTap: close, child: Text('Done')),
+      ],
+    ),
+  ),
+)
+```
+
+**Key parameters:**
+- `contentBuilder` — builder for custom popover content, receives a `close` callback
+- `trigger` / `triggerBuilder` — the widget that opens the popover on tap
+- `popoverWidth` / `popoverHeight` — size control (height defaults to intrinsic)
+- `alignment` — manual `GlassMenuAlignment`, or `null` for auto-detect
+- `autoAdjustToScreen` — screen-edge clamping (on by default, with 12px padding)
+- `barrierDismissible` — whether tapping outside closes the popover (default: true)
+- `onOpen` / `onClose` — lifecycle callbacks
+- Full `LiquidStretch` and `GlassGlow` support
+
 # 0.14.0
 
 ## ⚠️ Breaking — `GlassAppBar` redesigned as pure layout widget

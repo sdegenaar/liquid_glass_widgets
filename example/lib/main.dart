@@ -13,6 +13,9 @@ import 'package:liquid_glass_widgets_example/demos/glass_modal_sheet_demo.dart';
 import 'package:liquid_glass_widgets_example/demos/video_player_demo.dart';
 import 'package:liquid_glass_widgets_example/demos/text_field_demo.dart';
 import 'package:liquid_glass_widgets_example/demos/bottom_bar_tab_width_demo.dart';
+
+import 'package:liquid_glass_widgets_example/demos/google_maps_demo.dart'
+    show PlatformViewDemo;
 import 'package:liquid_glass_widgets_example/pages/containers_page.dart';
 import 'package:liquid_glass_widgets_example/pages/feedback_page.dart';
 import 'package:liquid_glass_widgets_example/pages/input_page.dart';
@@ -438,7 +441,7 @@ class _ExploreTab extends StatelessWidget {
                         child: _StaggeredCatalogCard(
                           icon: CupertinoIcons.square_stack_fill,
                           title: 'Overlays',
-                          subtitle: 'Sheet · Dialog · Menu',
+                          subtitle: 'Sheet · Dialog · Menu · Popover',
                           height: 120,
                           destination: const OverlaysPage(),
                         ),
@@ -815,9 +818,17 @@ class _ExamplesTab extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 14),
-                      const Expanded(child: SizedBox()),
+                      Expanded(
+                        child: _SmallDemoCard(
+                          title: 'Platform View',
+                          icon: CupertinoIcons.map_fill,
+                          color: const Color(0xFF5AC8FA),
+                          destination: const PlatformViewDemo(),
+                        ),
+                      ),
                     ],
                   ),
+                  const SizedBox(height: 14),
 
                   const SizedBox(height: 120),
                 ],

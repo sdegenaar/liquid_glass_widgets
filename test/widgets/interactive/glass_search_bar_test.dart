@@ -205,6 +205,65 @@ void main() {
       expect(searchBar.height, equals(44.0));
       expect(searchBar.useOwnLayer, isFalse);
       expect(searchBar.quality, isNull);
+      expect(searchBar.cancelIconSize, equals(24.0));
+      expect(searchBar.cancelIcon, isNull);
+    });
+
+    testWidgets('respects cancelIconSize for the cancel button icon',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: Center(
+            child: SizedBox(
+              width: 400,
+              child: AdaptiveLiquidGlassLayer(
+                settings: defaultTestGlassSettings,
+                child: const GlassSearchBar(
+                  showsCancelButton: true,
+                  autofocus: true,
+                  cancelIconSize: 28,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+
+      // The × icon should be present with size 28
+      final icon = tester.widget<Icon>(
+        find.byWidgetPredicate(
+          (w) => w is Icon && w.icon == CupertinoIcons.xmark,
+        ),
+      );
+      expect(icon.size, equals(28.0));
+    });
+
+    testWidgets('uses cancelIcon widget when provided', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: Center(
+            child: SizedBox(
+              width: 400,
+              child: AdaptiveLiquidGlassLayer(
+                settings: defaultTestGlassSettings,
+                child: const GlassSearchBar(
+                  showsCancelButton: true,
+                  autofocus: true,
+                  cancelIcon: Icon(CupertinoIcons.xmark_circle_fill, size: 22),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+
+      // Custom icon is used — xmark_circle_fill should appear, not plain xmark
+      expect(find.byIcon(CupertinoIcons.xmark_circle_fill), findsOneWidget);
+      expect(find.byIcon(CupertinoIcons.xmark), findsNothing);
     });
   });
 }

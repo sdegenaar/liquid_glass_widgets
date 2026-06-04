@@ -40,6 +40,8 @@ class DismissPill extends StatelessWidget {
     required this.barBorderRadius,
     required this.quality,
     this.cancelButtonColor,
+    this.cancelIcon,
+    this.cancelIconSize = 24,
     this.indicatorColor,
     this.glassSettings,
     super.key,
@@ -50,6 +52,8 @@ class DismissPill extends StatelessWidget {
   final double barBorderRadius;
   final GlassQuality quality;
   final Color? cancelButtonColor;
+  final Widget? cancelIcon;
+  final double cancelIconSize;
   final Color? indicatorColor;
   final LiquidGlassSettings? glassSettings;
 
@@ -70,11 +74,12 @@ class DismissPill extends StatelessWidget {
               ? LiquidGlassSettings(glassColor: safeColor)
               : null),
       shape: LiquidRoundedSuperellipse(borderRadius: barBorderRadius),
-      icon: Icon(
-        CupertinoIcons.xmark,
-        color: cancelButtonColor ?? const Color(0xE6FFFFFF),
-        size: 16,
-      ),
+      icon: cancelIcon ??
+          Icon(
+            CupertinoIcons.xmark,
+            color: cancelButtonColor ?? const Color(0xE6FFFFFF),
+            size: cancelIconSize,
+          ),
       iconColor: cancelButtonColor ?? const Color(0xE6FFFFFF),
     );
   }
