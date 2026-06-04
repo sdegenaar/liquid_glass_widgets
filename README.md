@@ -120,7 +120,7 @@ Eight focused, self-contained demos — one widget, one file, runnable standalon
 
 ```yaml
 dependencies:
-  liquid_glass_widgets: ^0.14.0
+  liquid_glass_widgets: ^0.14.1
 ```
 
 ```bash
