@@ -46,6 +46,11 @@ All hardcoded `Colors.white` / `Colors.black` in widget content layers replaced 
 
 `GlassPage` is now fully safe to use inside a pure `CupertinoApp` — the `Theme.of` guard no longer throws when no Material ancestor is present.
 
+## 🐛 Bug Fixes
+
+### `GlassSheet` sharp corners (All Platforms)
+
+Fixed a bug where `GlassSheet` would render with completely sharp, square corners on all devices (including iOS and Android). The internal `SafeArea` wrapper was consuming the bottom safe area before the adaptive radius calculation could read it, causing it to incorrectly fallback to `0.0` everywhere. `GlassSheet` now decouples its top and bottom border radii, defaulting to `topBorderRadius: 32.0`, and smartly assigning `bottomBorderRadius` to `32.0` when floating (with margin) or `0.0` when docked.
 
 ## ✨ New — `GlassButtonStyle.prominent`
 

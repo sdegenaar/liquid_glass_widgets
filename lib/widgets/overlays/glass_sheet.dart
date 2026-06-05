@@ -104,8 +104,9 @@ class GlassSheet extends StatefulWidget {
     this.quality,
     this.showDragIndicator = true,
     this.dragIndicatorColor,
+    this.topBorderRadius = 32.0,
+    this.bottomBorderRadius,
     this.padding,
-    this.borderRadius,
     this.margin = const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
     this.isScrollable = true,
     this.interactionScale = 1.01,
@@ -151,11 +152,18 @@ class GlassSheet extends StatefulWidget {
   /// sheets but can be used for static sheets.
   final GlassQuality? quality;
 
-  /// Border radius of the sheet corners.
+  /// Border radius of the top corners of the sheet.
   ///
-  /// If null, it will be automatically resolved based on the device's
-  /// physical geometry (adaptive radius).
-  final double? borderRadius;
+  /// Defaults to 32.0 for a standard iOS sheet look.
+  final double topBorderRadius;
+
+  /// Border radius of the bottom corners of the sheet.
+  ///
+  /// If null, this is automatically determined based on whether the sheet
+  /// has a bottom margin. If it floats (bottom margin > 0), this defaults
+  /// to 32.0. If it docks to the screen edge (bottom margin == 0), this
+  /// defaults to 0.0.
+  final double? bottomBorderRadius;
 
   /// External margin around the sheet.
   ///
@@ -281,7 +289,8 @@ class GlassSheet extends StatefulWidget {
     bool showDragIndicator = true,
     Color? dragIndicatorColor,
     EdgeInsetsGeometry? padding,
-    double? borderRadius,
+    double topBorderRadius = 32.0,
+    double? bottomBorderRadius,
     EdgeInsets margin = const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
     bool isScrollable = true,
     double interactionScale = 1.01,
@@ -337,7 +346,8 @@ class GlassSheet extends StatefulWidget {
                 showDragIndicator: showDragIndicator,
                 dragIndicatorColor: dragIndicatorColor,
                 padding: padding,
-                borderRadius: borderRadius,
+                topBorderRadius: topBorderRadius,
+                bottomBorderRadius: bottomBorderRadius,
                 margin: margin,
                 isScrollable: isScrollable,
                 interactionScale: interactionScale,
@@ -497,16 +507,25 @@ class _GlassSheetState extends State<GlassSheet> with TickerProviderStateMixin {
       fallback: kDefaultSheetSettings,
     );
 
-    final effectiveRadius =
-        widget.borderRadius ?? GlassThemeHelpers.resolveAdaptiveRadius(context);
+    final effectiveTopRadius = widget.topBorderRadius;
+    
+    // Automatically determine bottom radius if none is provided.
+    // If the sheet floats (bottom margin > 0), round the bottom corners.
+    // If it is docked (bottom margin == 0), keep the bottom flat.
+    final effectiveBottomRadius = widget.bottomBorderRadius ?? 
+        (widget.margin.resolve(Directionality.of(context)).bottom > 0 ? 32.0 : 0.0);
 
     return AnimatedBuilder(
       animation: _saturationAnimation,
       builder: (context, child) {
         final t = _saturationAnimation.value;
-        final scaledRadius = effectiveRadius * 0.98;
-        final currentRadius = lerpDouble(effectiveRadius, scaledRadius, t)!;
-        final shape = LiquidRoundedSuperellipse(borderRadius: currentRadius);
+        final currentTopRadius = lerpDouble(effectiveTopRadius, effectiveTopRadius * 0.98, t)!;
+        final currentBottomRadius = lerpDouble(effectiveBottomRadius, effectiveBottomRadius * 0.98, t)!;
+        
+        final shape = LiquidVerticalRoundedSuperellipse(
+          topRadius: currentTopRadius,
+          bottomRadius: currentBottomRadius,
+        );
 
         final pulsedSettings = effectiveSettings.copyWith(
           lightIntensity: lerpDouble(effectiveSettings.lightIntensity, 0.8, t)!,
