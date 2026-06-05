@@ -692,7 +692,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
     final effectiveExpandedColor = widget.expandedColor ??
         (isDark ? const Color(0xFF1C1C1E) : Colors.white);
     final effectiveQuality = GlassThemeHelpers.resolveQuality(

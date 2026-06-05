@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../liquid_glass_setup.dart';
@@ -300,7 +301,7 @@ class GlassThemeHelpers {
     // 0. If user specified a global radius in the theme, respect it.
     if (themeRadius != null) return themeRadius;
 
-    final platform = Theme.of(context).platform;
+    final platform = defaultTargetPlatform;
     final height = mq.size.height;
     final isIOS = platform == TargetPlatform.iOS;
 

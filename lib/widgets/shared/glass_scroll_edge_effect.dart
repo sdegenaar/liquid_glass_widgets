@@ -1,6 +1,6 @@
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -283,7 +283,7 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
 
   /// Fallback: solid-colour gradient overlay for use outside [GlassPage].
   Widget _buildColorOverlay({required bool isTop}) {
-    final color = widget.fadeColor ?? Theme.of(context).scaffoldBackgroundColor;
+    final color = widget.fadeColor ?? CupertinoTheme.of(context).scaffoldBackgroundColor;
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(

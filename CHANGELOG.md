@@ -107,6 +107,10 @@ colours, making them invisible on light backgrounds. They now inherit from
 Custom `iconColor`, `titleStyle`, and `color` parameters still take priority
 over the theme default — zero breaking changes.
 
+## 🧹 Core — `CupertinoApp` compatibility
+
+Removed all `Theme.of(context)` dependencies from the core library, replacing them with `CupertinoTheme` and `defaultTargetPlatform`. This ensures glass widgets adapt correctly to dark mode and background colours in pure `CupertinoApp` structures without falling back to Material defaults.
+
 ## 🧹 Example app — `CupertinoApp` migration
 
 All 16 standalone demos and the main showcase app have been migrated from

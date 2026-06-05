@@ -353,7 +353,7 @@ class _GlassDragIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
     // iOS 26: white at 35% in dark mode, black at 20% in light mode
     final defaultColor =
         isDark ? const Color(0x59FFFFFF) : const Color(0x33000000);

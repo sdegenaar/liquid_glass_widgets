@@ -667,7 +667,13 @@ class _GlassButtonState extends State<GlassButton>
       child: glowContent,
       builder: (context, child) {
         if (widget.style == GlassButtonStyle.transparent) {
-          return child!;
+          // Clip interaction glow to the button's shape so it doesn't
+          // bleed into a rectangle.
+          return ClipPath(
+            clipper: _ExpandedShapeClipper(shape: widget.shape, expansion: 0),
+            clipBehavior: Clip.antiAlias,
+            child: child!,
+          );
         }
 
         // Resolve settings: widget explicit → app bar default → inherited.
@@ -678,13 +684,15 @@ class _GlassButtonState extends State<GlassButton>
           explicit: effectiveExplicit,
         );
 
-        // Prominent style: thicker, more opaque glass for primary CTAs.
-        // Matches iOS 26's `.prominentGlass` / `.glassProminent` button config.
+        // Prominent style: thicker, more opaque, brighter glass for primary CTAs.
+        // iOS 26's `.glassProminent` is visibly more frosted than `.glass`.
         if (widget.style == GlassButtonStyle.prominent) {
           baseSettings = baseSettings.copyWith(
-            thickness: (baseSettings.effectiveThickness * 1.8).clamp(20, 80),
+            thickness: (baseSettings.effectiveThickness * 2.5).clamp(30, 100),
             glassColor: baseSettings.glassColor.withValues(
-                alpha: (baseSettings.glassColor.a * 1.6).clamp(0.0, 0.85)),
+                alpha: (baseSettings.glassColor.a * 2.5).clamp(0.4, 0.9)),
+            lightIntensity: (baseSettings.effectiveLightIntensity * 1.5)
+                .clamp(0.3, 1.0),
           );
         }
 
