@@ -198,6 +198,15 @@ class GlassMenu extends StatefulWidget {
   /// arena) decides when to show and dismiss the menu.
   final GlassMenuController? controller;
 
+  /// Whether to render the full-screen tap-to-dismiss barrier behind the open
+  /// menu. Defaults to `true` (modal: a tap outside the menu closes it).
+  ///
+  /// Set to `false` when an external gesture owner (e.g. a canvas gesture arena)
+  /// must keep receiving pointer events while the menu is open and will handle
+  /// dismissal itself — the barrier otherwise sits in the root overlay above
+  /// everything and swallows all input. Pairs with [controller]-driven open/close.
+  final bool showDismissBarrier;
+
   /// Creates a liquid glass menu.
   const GlassMenu({
     super.key,
@@ -229,6 +238,7 @@ class GlassMenu extends StatefulWidget {
     this.glowIntensity = 0.0,
     this.onClose,
     this.controller,
+    this.showDismissBarrier = true,
   }) : assert(trigger != null || triggerBuilder != null,
             'Either trigger or triggerBuilder must be provided');
 
