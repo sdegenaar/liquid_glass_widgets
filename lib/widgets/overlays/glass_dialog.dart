@@ -153,8 +153,6 @@ class GlassDialog extends StatelessWidget {
   static const _actionButtonShape = LiquidRoundedSuperellipse(borderRadius: 12);
 
   // Cache default colors to avoid allocations
-  static const _defaultMessageColor =
-      Color(0xB3FFFFFF); // white.withValues(alpha: 0.7)
   static const _defaultGlowColor =
       Color(0x4DFFFFFF); // white.withValues(alpha: 0.3)
   static const _destructiveGlowColor =
@@ -314,7 +312,7 @@ class GlassDialog extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: CupertinoColors.label,
+                      color: CupertinoColors.label.resolveFrom(context),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -325,9 +323,9 @@ class GlassDialog extends StatelessWidget {
                 if (message != null) ...[
                   Text(
                     message!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: _defaultMessageColor,
+                      color: CupertinoColors.secondaryLabel.resolveFrom(context),
                       height: 1.4,
                     ),
                     textAlign: TextAlign.center,
@@ -344,7 +342,7 @@ class GlassDialog extends StatelessWidget {
                 const SizedBox(height: 12),
 
                 // Actions
-                _buildActions(),
+                _buildActions(context),
               ],
             ),
           ),
@@ -353,7 +351,7 @@ class GlassDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildActions() {
+  Widget _buildActions(BuildContext context) {
     // 1-2 actions: Horizontal layout
     if (actions.length <= 2) {
       return Row(
@@ -365,7 +363,7 @@ class GlassDialog extends StatelessWidget {
               padding: EdgeInsets.only(
                 left: index > 0 ? 8 : 0,
               ),
-              child: _buildActionButton(action),
+              child: _buildActionButton(action, context),
             ),
           );
         }).toList(),
@@ -382,13 +380,13 @@ class GlassDialog extends StatelessWidget {
           padding: EdgeInsets.only(
             top: index > 0 ? 8 : 0,
           ),
-          child: _buildActionButton(action),
+          child: _buildActionButton(action, context),
         );
       }).toList(),
     );
   }
 
-  Widget _buildActionButton(GlassDialogAction action) {
+  Widget _buildActionButton(GlassDialogAction action, BuildContext context) {
     // Determine button styling based on action type
     var glowColor = _defaultGlowColor;
     if (action.isDestructive) {
@@ -409,7 +407,7 @@ class GlassDialog extends StatelessWidget {
           fontWeight: action.isPrimary ? FontWeight.bold : FontWeight.w600,
           color: action.isDestructive
               ? CupertinoColors.destructiveRed
-              : CupertinoColors.label,
+              : CupertinoColors.label.resolveFrom(context),
         ),
       ),
     );
