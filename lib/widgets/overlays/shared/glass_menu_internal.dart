@@ -368,7 +368,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     return Stack(
       children: [
         // Invisible full-screen tap-to-close barrier
-        if (clampedValue > 0.3)
+        if (clampedValue > 0.3 && widget.showDismissBarrier)
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
