@@ -27,6 +27,17 @@ settings type — `glassSettings` was redundant.
 
 **Migration:** Find-and-replace `glassSettings:` → `settings:` in your code.
 
+### `GlassSheet.show()` API Cleanup
+
+Removed dead Material parameters from `GlassSheet.show()` that have no effect in the liquid glass rendering pipeline:
+- `backgroundColor`
+- `elevation`
+- `shape`
+- `clipBehavior`
+- `constraints`
+
+**Migration:** Remove these parameters from your `GlassSheet.show()` calls. Use `settings` to configure the glass visual appearance, and `margin` / `padding` / `borderRadius` to control the layout and shape.
+
 ## ✨ New — `GlassButtonStyle.prominent`
 
 A new button style matching iOS 26's `.prominentGlass` / `.glassProminent`
