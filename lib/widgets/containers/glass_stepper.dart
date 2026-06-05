@@ -282,9 +282,10 @@ class _GlassStepperState extends State<GlassStepper> {
                   width: widget.dividerWidth,
                   height: widget.height,
                   child: ColoredBox(
-                    color: CupertinoTheme.brightnessOf(context) == Brightness.light
-                        ? CupertinoColors.black.withValues(alpha: 0.25)
-                        : CupertinoColors.white.withValues(alpha: 0.25),
+                    color:
+                        CupertinoTheme.brightnessOf(context) == Brightness.light
+                            ? CupertinoColors.black.withValues(alpha: 0.25)
+                            : CupertinoColors.white.withValues(alpha: 0.25),
                   ),
                 ),
 

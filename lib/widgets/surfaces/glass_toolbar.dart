@@ -134,9 +134,10 @@ class GlassToolbar extends StatelessWidget {
     final effectiveBackgroundColor =
         backgroundColor ?? CupertinoColors.systemGrey.withValues(alpha: 0.08);
 
-    final dividerColor = CupertinoTheme.brightnessOf(context) == Brightness.light
-        ? CupertinoColors.black.withValues(alpha: 0.12)
-        : CupertinoColors.white.withValues(alpha: 0.12);
+    final dividerColor =
+        CupertinoTheme.brightnessOf(context) == Brightness.light
+            ? CupertinoColors.black.withValues(alpha: 0.12)
+            : CupertinoColors.white.withValues(alpha: 0.12);
 
     return AdaptiveLiquidGlassLayer(
       settings: effectiveSettings,

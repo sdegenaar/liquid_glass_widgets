@@ -861,16 +861,20 @@ class _GlassSearchableBottomBarState extends State<GlassSearchableBottomBar>
                               widget.searchConfig.onSearchToggle(false),
                           childUnselected: _buildTabRow(
                             selected: false,
-                            resolvedSelectedIconColor: resolvedSelectedIconColor,
-                            resolvedUnselectedIconColor: resolvedUnselectedIconColor,
+                            resolvedSelectedIconColor:
+                                resolvedSelectedIconColor,
+                            resolvedUnselectedIconColor:
+                                resolvedUnselectedIconColor,
                           ),
                           selectedTabBuilder: (ctx, intensity, alignment) =>
                               _buildTabRow(
                             selected: true,
                             intensity: intensity,
                             alignment: alignment,
-                            resolvedSelectedIconColor: resolvedSelectedIconColor,
-                            resolvedUnselectedIconColor: resolvedUnselectedIconColor,
+                            resolvedSelectedIconColor:
+                                resolvedSelectedIconColor,
+                            resolvedUnselectedIconColor:
+                                resolvedUnselectedIconColor,
                           ),
                         ),
                       ),

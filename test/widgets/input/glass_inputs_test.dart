@@ -21,7 +21,8 @@ void main() {
 
       // Initially obscured
       expect(find.byIcon(CupertinoIcons.eye_slash_fill), findsOneWidget);
-      final textField = tester.widget<CupertinoTextField>(find.byType(CupertinoTextField));
+      final textField =
+          tester.widget<CupertinoTextField>(find.byType(CupertinoTextField));
       expect(textField.obscureText, isTrue);
 
       // Tap toggle
@@ -30,7 +31,8 @@ void main() {
 
       // Now visible
       expect(find.byIcon(CupertinoIcons.eye_fill), findsOneWidget);
-      final textFieldVisible = tester.widget<CupertinoTextField>(find.byType(CupertinoTextField));
+      final textFieldVisible =
+          tester.widget<CupertinoTextField>(find.byType(CupertinoTextField));
       expect(textFieldVisible.obscureText, isFalse);
     });
 
@@ -46,7 +48,8 @@ void main() {
         ),
       );
 
-      final textField = tester.widget<CupertinoTextField>(find.byType(CupertinoTextField));
+      final textField =
+          tester.widget<CupertinoTextField>(find.byType(CupertinoTextField));
       expect(textField.minLines, 3);
       expect(textField.maxLines, 5);
       expect(textField.keyboardType, TextInputType.multiline);

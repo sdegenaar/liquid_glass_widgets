@@ -275,7 +275,8 @@ class _GlassListTileState extends State<GlassListTile> {
         if (widget.trailing != null) ...[
           const SizedBox(width: 8),
           IconTheme(
-            data: IconThemeData(color: dynamicLabelColor.withValues(alpha: 0.54), size: 20),
+            data: IconThemeData(
+                color: dynamicLabelColor.withValues(alpha: 0.54), size: 20),
             child: widget.trailing!,
           ),
         ],

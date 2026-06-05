@@ -325,7 +325,8 @@ class GlassDialog extends StatelessWidget {
                     message!,
                     style: TextStyle(
                       fontSize: 14,
-                      color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                      color:
+                          CupertinoColors.secondaryLabel.resolveFrom(context),
                       height: 1.4,
                     ),
                     textAlign: TextAlign.center,

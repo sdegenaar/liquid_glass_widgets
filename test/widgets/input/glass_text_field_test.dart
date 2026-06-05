@@ -139,7 +139,8 @@ void main() {
         ),
       );
 
-      final textField = tester.widget<CupertinoTextField>(find.byType(CupertinoTextField).first);
+      final textField = tester
+          .widget<CupertinoTextField>(find.byType(CupertinoTextField).first);
       expect(textField.obscureText, isTrue);
     });
 
@@ -155,7 +156,8 @@ void main() {
         ),
       );
 
-      final textField = tester.widget<CupertinoTextField>(find.byType(CupertinoTextField).first);
+      final textField = tester
+          .widget<CupertinoTextField>(find.byType(CupertinoTextField).first);
       expect(textField.enabled, isFalse);
     });
 

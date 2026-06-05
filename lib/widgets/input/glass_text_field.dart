@@ -655,7 +655,8 @@ class _GlassTextFieldState extends State<GlassTextField> {
             inputFormatters: widget.inputFormatters,
             style: widget.textStyle ?? defaultTextStyle,
             placeholder: widget.placeholder,
-            placeholderStyle: widget.placeholderStyle ?? defaultPlaceholderStyle,
+            placeholderStyle:
+                widget.placeholderStyle ?? defaultPlaceholderStyle,
             padding: EdgeInsets.zero,
             decoration: null,
           ),

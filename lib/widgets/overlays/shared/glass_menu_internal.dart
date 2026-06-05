@@ -618,7 +618,8 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                                 (_scrollController.hasClients
                                     ? _scrollController.offset
                                     : 0.0),
-                            height: _getScaledItemHeight(widget.items[hoveredIndex], context),
+                            height: _getScaledItemHeight(
+                                widget.items[hoveredIndex], context),
                             child: Container(
                               decoration: BoxDecoration(
                                 color: widget.selectionColor,
@@ -795,7 +796,6 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     return widget.menuHeight != null || visibleHeight < naturalHeight - 1.0;
   }
 
-
   /// Accounts for system text scaling.
   ///
   /// When the user increases the system text size, GlassMenuItem renders
@@ -836,7 +836,8 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   double _getItemOffset(int index, BuildContext context) {
     double offset = 12.0; // Top padding
     for (int i = 0; i < index; i++) {
-      offset += _getScaledItemHeight(widget.items[i], context) + 2.0; // height + 2px gap
+      offset += _getScaledItemHeight(widget.items[i], context) +
+          2.0; // height + 2px gap
     }
     return offset;
   }

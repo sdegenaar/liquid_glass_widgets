@@ -403,7 +403,8 @@ class _DismissibleSheetWrapperState extends State<_DismissibleSheetWrapper> {
     if (!_isDragging) return;
     setState(() {
       // Only allow downward dragging (positive offset).
-      _dragOffset = (_dragOffset + details.delta.dy).clamp(0.0, double.infinity);
+      _dragOffset =
+          (_dragOffset + details.delta.dy).clamp(0.0, double.infinity);
     });
   }
 
@@ -429,9 +430,8 @@ class _DismissibleSheetWrapperState extends State<_DismissibleSheetWrapper> {
         onVerticalDragUpdate: _onDragUpdate,
         onVerticalDragEnd: _onDragEnd,
         child: AnimatedContainer(
-          duration: _isDragging
-              ? Duration.zero
-              : const Duration(milliseconds: 250),
+          duration:
+              _isDragging ? Duration.zero : const Duration(milliseconds: 250),
           curve: Curves.easeOutCubic,
           transform: Matrix4.translationValues(0, _dragOffset, 0),
           child: widget.child,
@@ -508,20 +508,24 @@ class _GlassSheetState extends State<GlassSheet> with TickerProviderStateMixin {
     );
 
     final effectiveTopRadius = widget.topBorderRadius;
-    
+
     // Automatically determine bottom radius if none is provided.
     // If the sheet floats (bottom margin > 0), round the bottom corners.
     // If it is docked (bottom margin == 0), keep the bottom flat.
-    final effectiveBottomRadius = widget.bottomBorderRadius ?? 
-        (widget.margin.resolve(Directionality.of(context)).bottom > 0 ? 32.0 : 0.0);
+    final effectiveBottomRadius = widget.bottomBorderRadius ??
+        (widget.margin.resolve(Directionality.of(context)).bottom > 0
+            ? 32.0
+            : 0.0);
 
     return AnimatedBuilder(
       animation: _saturationAnimation,
       builder: (context, child) {
         final t = _saturationAnimation.value;
-        final currentTopRadius = lerpDouble(effectiveTopRadius, effectiveTopRadius * 0.98, t)!;
-        final currentBottomRadius = lerpDouble(effectiveBottomRadius, effectiveBottomRadius * 0.98, t)!;
-        
+        final currentTopRadius =
+            lerpDouble(effectiveTopRadius, effectiveTopRadius * 0.98, t)!;
+        final currentBottomRadius =
+            lerpDouble(effectiveBottomRadius, effectiveBottomRadius * 0.98, t)!;
+
         final shape = LiquidVerticalRoundedSuperellipse(
           topRadius: currentTopRadius,
           bottomRadius: currentBottomRadius,
@@ -536,39 +540,39 @@ class _GlassSheetState extends State<GlassSheet> with TickerProviderStateMixin {
         Widget innerContent = SafeArea(
           bottom: true,
           child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _SheetHeader(
-                  showIndicator: widget.showDragIndicator,
-                  color: widget.dragIndicatorColor,
-                ),
-                if (widget.isScrollable)
-                  Flexible(
-                    child: NotificationListener<ScrollNotification>(
-                      onNotification: (notification) {
-                        if (notification is ScrollStartNotification &&
-                            notification.dragDetails != null) {
-                          GlassGlowLayer.maybeOf(context)?.removeTouch();
-                        }
-                        return false;
-                      },
-                      child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        padding: widget.padding,
-                        child: RepaintBoundary(child: widget.child),
-                      ),
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _SheetHeader(
+                showIndicator: widget.showDragIndicator,
+                color: widget.dragIndicatorColor,
+              ),
+              if (widget.isScrollable)
+                Flexible(
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: (notification) {
+                      if (notification is ScrollStartNotification &&
+                          notification.dragDetails != null) {
+                        GlassGlowLayer.maybeOf(context)?.removeTouch();
+                      }
+                      return false;
+                    },
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: widget.padding,
+                      child: RepaintBoundary(child: widget.child),
                     ),
-                  )
-                else
-                  Padding(
-                    padding: widget.padding ?? EdgeInsets.zero,
-                    child: RepaintBoundary(child: widget.child),
                   ),
-                const SizedBox(height: 24),
-              ],
-            ),
-          );
+                )
+              else
+                Padding(
+                  padding: widget.padding ?? EdgeInsets.zero,
+                  child: RepaintBoundary(child: widget.child),
+                ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        );
 
         Widget result = AdaptiveGlass(
           shape: shape,

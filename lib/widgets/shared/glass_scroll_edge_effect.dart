@@ -283,7 +283,8 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
 
   /// Fallback: solid-colour gradient overlay for use outside [GlassPage].
   Widget _buildColorOverlay({required bool isTop}) {
-    final color = widget.fadeColor ?? CupertinoTheme.of(context).scaffoldBackgroundColor;
+    final color =
+        widget.fadeColor ?? CupertinoTheme.of(context).scaffoldBackgroundColor;
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(

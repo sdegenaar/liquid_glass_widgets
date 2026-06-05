@@ -594,7 +594,11 @@ class _GlassButtonState extends State<GlassButton>
         GlassThemeData.of(context).glowColorsFor(context);
     final effectiveGlowColor = widget.glowColor ??
         resolvedGlowColors.primary ??
-        CupertinoTheme.of(context).textTheme.textStyle.color?.withValues(alpha: 0.24) ??
+        CupertinoTheme.of(context)
+            .textTheme
+            .textStyle
+            .color
+            ?.withValues(alpha: 0.24) ??
         CupertinoColors.white.withValues(alpha: 0.24);
     final effectiveGlowBlurRadius =
         widget.glowBlurRadius ?? resolvedGlowColors.glowBlurRadius;
@@ -615,7 +619,10 @@ class _GlassButtonState extends State<GlassButton>
                 color: widget.iconColor ??
                     (widget.style == GlassButtonStyle.prominent
                         ? CupertinoColors.white
-                        : (CupertinoTheme.of(context).textTheme.textStyle.color ??
+                        : (CupertinoTheme.of(context)
+                                .textTheme
+                                .textStyle
+                                .color ??
                             CupertinoColors.label)),
                 size: widget.iconSize,
               ),
@@ -697,8 +704,8 @@ class _GlassButtonState extends State<GlassButton>
             thickness: (baseSettings.effectiveThickness * 2.5).clamp(30, 100),
             glassColor: baseSettings.glassColor.withValues(
                 alpha: (baseSettings.glassColor.a * 2.5).clamp(0.4, 0.9)),
-            lightIntensity: (baseSettings.effectiveLightIntensity * 1.5)
-                .clamp(0.3, 1.0),
+            lightIntensity:
+                (baseSettings.effectiveLightIntensity * 1.5).clamp(0.3, 1.0),
           );
         }
 

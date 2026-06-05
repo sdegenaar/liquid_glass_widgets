@@ -626,7 +626,7 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
                           config: widget.extraButton!,
                           quality: effectiveQuality,
                           iconColor: widget.extraButton!.iconColor ??
-                                      resolvedUnselectedIconColor,
+                              resolvedUnselectedIconColor,
                           borderRadius: widget.barBorderRadius ==
                                   GlassBottomBar._defaultBarBorderRadius
                               ? null
@@ -694,7 +694,11 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
                       ),
                       // Pass selected tabs (foreground/masked layer)
                       selectedTabBuilder: (context, intensity, alignment) =>
-                          _buildSelectedTabs(intensity, alignment, resolvedSelectedIconColor, resolvedUnselectedIconColor),
+                          _buildSelectedTabs(
+                              intensity,
+                              alignment,
+                              resolvedSelectedIconColor,
+                              resolvedUnselectedIconColor),
                       magnification: widget.magnification,
                       innerBlur: widget.innerBlur,
                     ),
@@ -708,7 +712,8 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
     );
   }
 
-  Widget _buildSelectedTabs(double intensity, Alignment alignment, Color resolvedSelectedIconColor, Color resolvedUnselectedIconColor) {
+  Widget _buildSelectedTabs(double intensity, Alignment alignment,
+      Color resolvedSelectedIconColor, Color resolvedUnselectedIconColor) {
     // Lerp magnification: 1.0 -> widget.magnification
     final scale = ui.lerpDouble(1.0, widget.magnification, intensity) ?? 1.0;
 
