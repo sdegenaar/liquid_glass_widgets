@@ -77,7 +77,8 @@ class GlassSearchBarConfig {
   /// iOS Apple News behavior.
   final WidgetBuilder? collapsedLogoBuilder;
 
-  /// Color for the 🔍 and 🎙️ icons. Defaults to `Colors.white60`.
+  /// Color for the 🔍 and 🎤️ icons. Defaults to `CupertinoColors.secondaryLabel`
+  /// (adapts to light/dark mode).
   final Color? searchIconColor;
 
   /// Custom widget rendered in place of the default magnifying-glass
@@ -86,7 +87,7 @@ class GlassSearchBarConfig {
   /// expected to handle its own coloring.
   ///
   /// The default (`null`) preserves the upstream behavior:
-  /// `Icon(CupertinoIcons.search, color: searchIconColor ?? Colors.white60)`.
+  /// `Icon(CupertinoIcons.search, color: searchIconColor ?? CupertinoColors.secondaryLabel)`.
   ///
   /// Useful when the caller wants a higher-fidelity glyph (e.g. real
   /// SF Symbols via `flutter_sficon`) or a different icon set with
@@ -141,7 +142,8 @@ class GlassSearchBarConfig {
   /// is provided (the builder is responsible for its own tap handling).
   final VoidCallback? onMicTap;
 
-  /// Color of the typed text. Defaults to white.
+  /// Color of the typed text. Defaults to `CupertinoColors.label`
+  /// (adapts to light/dark mode).
   final Color? textColor;
 
   /// Color of the text cursor (blinking caret) in the expanded

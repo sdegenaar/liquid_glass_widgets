@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoColors;
 import 'package:flutter/material.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
@@ -105,11 +106,9 @@ class GlassIconButton extends StatelessWidget {
     this.anchorStretchSettings = const AnchorStretchSettings(),
   });
 
-  // Cache default colors to avoid allocations
-  static const _defaultIconColorEnabled =
-      Color(0xFFFFFFFF); // white.withValues(alpha: 1.0)
-  static const _defaultIconColorDisabled =
-      Color(0x4DFFFFFF); // white.withValues(alpha: 0.3)
+  // Default icon colors are resolved at build time from CupertinoColors.label
+  // so they adapt to light/dark mode. Disabled state uses secondaryLabel
+  // for natural dimming across both appearances.
 
   // ===========================================================================
   // Content Properties
@@ -226,8 +225,9 @@ class GlassIconButton extends StatelessWidget {
 
     // Build icon content wrapped in IconTheme so standard Icon widgets
     // inherit the correct size and color automatically.
-    final iconColor =
-        isEnabled ? _defaultIconColorEnabled : _defaultIconColorDisabled;
+    final iconColor = isEnabled
+        ? CupertinoColors.label.resolveFrom(context)
+        : CupertinoColors.tertiaryLabel.resolveFrom(context);
     final iconWidget = IconTheme(
       data: IconThemeData(
         color: iconColor,

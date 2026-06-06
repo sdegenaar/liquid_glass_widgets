@@ -303,13 +303,17 @@ void main() {
   directionalInfluence *= directionalInfluence; // squared for tighter highlight
 
   // Constant base rim (structural edge) + small directional bonus.
-  // The base (kRimAlphaBase = 0.65) is independent of uLightIntensity so
-  // AdaptiveGlass normalization (×0.6) cannot weaken it. This matches
-  // Premium's 3D bevel which is always visible from geometry regardless
-  // of light settings. The directional bonus adds subtle lit-side variation.
-  float rimAlphaBase = kRimAlphaBase + 0.15 * directionalInfluence * uLightIntensity;
+  // iOS 26 uses near-invisible rims in light mode — the glass edge is
+  // defined by subtle refraction and shadow, not by an opaque border.
+  //
+  // smoothstep(0.3, 0.5, luma) creates a sharp binary-like transition:
+  //   dark  (luma=0.15) → smoothstep=0.0 → rimFade=1.0  (FULL rim, untouched)
+  //   light (luma=0.85) → smoothstep=1.0 → rimFade=0.08 (near-invisible rim)
+  // Dark mode is completely unaffected.
+  float rimFade = 1.0 - smoothstep(0.3, 0.5, uBackdropLuma) * 0.92;
+  float rimAlphaBase = kRimAlphaBase * rimFade + 0.15 * directionalInfluence * uLightIntensity;
   rimAlphaBase *= uRefractiveIndex;
-  rimAlphaBase += totalSpecular * kRimAlphaSpecular;
+  rimAlphaBase += totalSpecular * kRimAlphaSpecular * rimFade;
   rimAlphaBase *= (1.0 + thicknessOffset * kThicknessRimBoost) * (1.0 + densityFactor * 0.1);
   rimAlphaBase *= borderMask;
   rimAlphaBase = clamp(rimAlphaBase, 0.0, 1.0);
@@ -429,15 +433,13 @@ void main() {
     float ambientDarken = clamp((uAmbientStrength * 0.25 + 0.03) * (1.0 + densityFactor * 0.5) + bottomDarken, 0.0, 0.8);
     pmA = pmA + ambientDarken * (1.0 - pmA);
 
-    // Contrast-adaptive rim: over bright backgrounds white-on-white has no contrast.
-    // Shift rim colour toward a mid-grey (0.55) proportional to backdrop brightness,
-    // so the border ring remains distinguishable regardless of background lightness.
-    float rimContrast = mix(1.0, 0.55, uBackdropLuma);
-    vec3 pathBRimColor = rimColorBase * rimContrast;
+    // Rim color: full white in dark mode, no dimming needed in light mode
+    // because rimAlphaBase is already near-zero via rimFade.
+    vec3 pathBRimColor = rimColorBase;
 
-    // Guarantee a minimum border presence: even if rimAlphaBase computed above is
-    // low (low light, low thickness), the border should always read as glass.
-    float minRimAlpha = borderMask * 0.10;
+    // Minimum border floor: only active in dark mode (rimFade=1.0).
+    // In light mode rimFade≈0.08, so this floor is effectively zero.
+    float minRimAlpha = borderMask * 0.06 * rimFade;
     float effectiveRimAlpha = max(rimAlphaBase, minRimAlpha);
 
     // Rim composited over body.

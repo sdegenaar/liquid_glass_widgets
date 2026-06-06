@@ -132,28 +132,45 @@ Almost every widget hardcodes `Colors.white` for text and icons, assuming a
 dark background. This means the library is **broken in light mode** — text
 becomes invisible. iOS 26 liquid glass works on both light and dark backgrounds.
 
+**Resources:**
+- [iOS 26 Liquid Glass: Comprehensive Reference](https://medium.com/@madebyluddy/overview-37b3685227aa)
+  — Material variants (`.regular`/`.clear`), hierarchy rules ("glass cannot
+  sample glass"), accessibility modes, specular highlights, and adaptive shadow
+  principles. Key validation against our implementation:
+  - ✅ Lensing (not just blur) — our `LiquidGlassRenderer` does true refraction
+  - ✅ 135° upper-left key light — both theme variants use `lightAngle: 2.356`
+  - ✅ Glass isolation — `GlassIsolationScope` prevents glass-sampling-glass
+  - ✅ Navigation-layer-only — all widgets map to iOS navigation-tier components
+  - ✅ Adaptive shadows — existing `Color(0x33000000)` shadow works for both modes
+    (20% black provides natural lift on light, subtle depth on dark)
+- Apple HIG: Liquid Glass guidelines (WWDC 2025 sessions)
+
 **0.15.0 fixed:** `GlassMenuItem`, `GlassMenuDivider`, `GlassMenuLabel` now
 resolve colours from `CupertinoTheme.of(context)`. Internal `TextField` →
 `CupertinoTextField` to eliminate `MaterialLocalizations` dependency (library
 now works under `CupertinoApp`, `MaterialApp`, or `WidgetsApp`).
 
+**0.16.0 fixed (content colour audit):**
+- [x] `tab_bar_internal.dart` — selected label/icon colors now resolve from
+  `CupertinoTheme`; divider uses `CupertinoColors.separator`
+- [x] `glass_icon_button.dart` — icon color resolves from `CupertinoColors.label`
+  (was hardcoded white)
+- [x] `glass_page_control.dart` — active/inactive dot colors resolve from
+  `CupertinoColors.label` / `.tertiaryLabel`
+- [x] `searchable_bottom_bar_internal.dart` — search icon and text colors
+  resolve from `CupertinoColors.secondaryLabel` / `.label`
+- [x] `glass_search_bar_config.dart` — doc comments updated
+- [x] Example app — brightness toggle, light-mode background, adaptive text
+
 **Still needed:**
 
-- [ ] **Content colour audit** — every widget with default text/icon colours
-  must resolve from `CupertinoTheme.of(context)` instead of hardcoding white:
+- [ ] **Remaining content colour audit** — widgets not yet audited:
   - `GlassTextField` — `_defaultTextStyle` uses `Color.fromRGBO(255, 255, 255, 0.9)`
-  - `GlassListTile` — title, subtitle, detail text
   - `GlassToolbar` — title and icon colours
   - `GlassAppBar` — title text
   - `GlassStepper` — labels and value text
-  - `GlassBadge` — badge text
   - `GlassToast` — message text
-  - `GlassDialog` — title, message, button text
-  - `GlassActionSheet` — title, message, action text
   - `GlassProgressIndicator` — track/fill colours
-- [ ] **Theme integration** — ensure `GlassThemeData` exposes foreground
-  colour tokens that widgets resolve at build time, with sensible defaults for
-  both light and dark.
 - [ ] **Light-mode golden tests** — add golden snapshots for key widgets in
   `Brightness.light` to catch regressions.
 

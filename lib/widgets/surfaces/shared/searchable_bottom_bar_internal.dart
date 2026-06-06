@@ -701,7 +701,8 @@ class SearchPillState extends State<SearchPill> {
 
   @override
   Widget build(BuildContext context) {
-    final iconColor = widget.config.searchIconColor ?? Colors.white60;
+    final iconColor = widget.config.searchIconColor ??
+        CupertinoColors.secondaryLabel.resolveFrom(context);
     final micColor = widget.config.micIconColor ?? iconColor;
     final shape =
         LiquidRoundedSuperellipse(borderRadius: widget.barBorderRadius);
@@ -804,7 +805,8 @@ class SearchPillState extends State<SearchPill> {
 
   Widget _buildExpanded(Color iconColor, Color micColor) {
     final config = widget.config;
-    final textColor = config.textColor ?? Colors.white;
+    final textColor = config.textColor ??
+        CupertinoColors.label.resolveFrom(context);
 
     // Trailing slot priority:
     //   1. trailingBuilder — caller has full control.

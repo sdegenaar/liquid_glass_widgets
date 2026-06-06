@@ -24,22 +24,22 @@ class _OverlaysPageState extends State<OverlaysPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(CupertinoIcons.checkmark_circle_fill,
+            Icon(CupertinoIcons.checkmark_circle_fill,
                 color: Colors.green, size: 64),
-            const SizedBox(height: 16),
-            const Text('Success!',
+            SizedBox(height: 16),
+            Text('Success!',
                 style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white)),
-            const SizedBox(height: 8),
+                    color: CupertinoColors.label.resolveFrom(context))),
+            SizedBox(height: 8),
             Text(
               'This is a basic glass bottom sheet',
               style: TextStyle(
-                  fontSize: 16, color: Colors.white.withValues(alpha: 0.7)),
+                  fontSize: 16, color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.7)),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             _SheetButton(label: 'Dismiss', onTap: () => Navigator.pop(context)),
           ],
         ),
@@ -59,17 +59,17 @@ class _OverlaysPageState extends State<OverlaysPage> {
               padding: const EdgeInsets.all(24),
               child: Text(
                 'Scrollable Content',
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white),
+                    color: CupertinoColors.label.resolveFrom(context)),
               ),
             ),
             Expanded(
               child: ListView.separated(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 itemCount: 15,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                separatorBuilder: (_, __) => SizedBox(height: 12),
                 itemBuilder: (context, index) => GlassCard(
                   padding: const EdgeInsets.all(16),
                   child: Row(
@@ -85,18 +85,18 @@ class _OverlaysPageState extends State<OverlaysPage> {
                         ),
                         child: Center(
                           child: Text('${index + 1}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white)),
+                                  color: CupertinoColors.label.resolveFrom(context))),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      SizedBox(width: 16),
                       Text('Item ${index + 1}',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: Colors.white)),
+                              color: CupertinoColors.label.resolveFrom(context))),
                     ],
                   ),
                 ),
@@ -213,22 +213,22 @@ class _OverlaysPageState extends State<OverlaysPage> {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            const SizedBox(height: 16),
-            const Text(
+            SizedBox(height: 16),
+            Text(
               'Modal Sheet',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: CupertinoColors.label.resolveFrom(context),
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'Drag up for full, down to dismiss. '
               'Multi-state: peek → half → full.',
               style: TextStyle(
                 fontSize: 15,
-                color: Colors.white.withValues(alpha: 0.7),
+                color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.7),
               ),
               textAlign: TextAlign.center,
             ),
@@ -240,16 +240,16 @@ class _OverlaysPageState extends State<OverlaysPage> {
               useOwnLayer: true,
               settings: RecommendedGlassSettings.overlay,
               shape: const LiquidRoundedSuperellipse(borderRadius: 12),
-              child: const Text(
+              child: Text(
                 'Dismiss',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  color: CupertinoColors.label.resolveFrom(context),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
           ],
         ),
       ),
@@ -259,15 +259,15 @@ class _OverlaysPageState extends State<OverlaysPage> {
   @override
   Widget build(BuildContext context) {
     return GlassPage(
-      background: buildShowcaseBackground(),
+      background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
-      statusBarStyle: GlassStatusBarStyle.light,
+      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark ? GlassStatusBarStyle.light : GlassStatusBarStyle.dark,
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: GlassAppBar(
           leading: GlassButton(
             quality: GlassQuality.premium,
-            icon: const Icon(CupertinoIcons.back),
+            icon: Icon(CupertinoIcons.back),
             onTap: () => Navigator.of(context).pop(),
             width: 40,
             height: 40,
@@ -286,7 +286,7 @@ class _OverlaysPageState extends State<OverlaysPage> {
                 ),
               ),
               // ── Large page title (iOS 26 inline style) ──────────────
-              const SliverToBoxAdapter(
+              SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(24, 0, 24, 16),
                   child: Text(
@@ -295,7 +295,7 @@ class _OverlaysPageState extends State<OverlaysPage> {
                       fontSize: 34,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.5,
-                      color: Colors.white,
+                      color: CupertinoColors.label.resolveFrom(context),
                     ),
                   ),
                 ),
@@ -308,49 +308,49 @@ class _OverlaysPageState extends State<OverlaysPage> {
                     children: [
                       // ── GlassSheet ───────────────────────────────────
                       const _SectionTitle(title: 'GlassSheet'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       _ActionButton(
                         label: 'Basic Bottom Sheet',
                         glowColor: Colors.blue,
                         onTap: _showBasicSheet,
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       _ActionButton(
                         label: 'Scrollable Content',
                         glowColor: Colors.green,
                         onTap: _showScrollableSheet,
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── GlassDialog ──────────────────────────────────
                       const _SectionTitle(title: 'GlassDialog'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       _ActionButton(
                         label: 'Basic Alert',
                         glowColor: Colors.green,
                         onTap: _showBasicDialog,
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       _ActionButton(
                         label: 'Destructive Confirm',
                         glowColor: Colors.red,
                         onTap: _showDestructiveDialog,
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       _ActionButton(
                         label: 'Save Changes (3 Actions)',
                         glowColor: Colors.amber,
                         onTap: _showSaveDialog,
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── GlassMenu ────────────────────────────────────
                       const _SectionTitle(title: 'GlassMenu'),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       _QualityLabel(label: 'Premium vs Standard'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -358,7 +358,7 @@ class _OverlaysPageState extends State<OverlaysPage> {
                             children: [
                               _QualityBadge(
                                   label: 'Premium', color: Colors.amber),
-                              const SizedBox(height: 8),
+                              SizedBox(height: 8),
                               GlassMenu(
                                 quality: GlassQuality.premium,
                                 triggerBuilder: (context, toggle) =>
@@ -395,7 +395,7 @@ class _OverlaysPageState extends State<OverlaysPage> {
                             children: [
                               _QualityBadge(
                                   label: 'Standard', color: Colors.white38),
-                              const SizedBox(height: 8),
+                              SizedBox(height: 8),
                               GlassMenu(
                                 quality: GlassQuality.standard,
                                 triggerBuilder: (context, toggle) =>
@@ -430,19 +430,19 @@ class _OverlaysPageState extends State<OverlaysPage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       _ResultRow(
                         icon: CupertinoIcons.info_circle_fill,
                         label: 'Selection: $_lastMenuSelection',
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── GlassPopover ──────────────────────────────────
                       const _SectionTitle(title: 'GlassPopover'),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       _QualityLabel(label: 'Premium vs Standard'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
 
                       // ── Quality comparison row ──
                       Row(
@@ -453,14 +453,14 @@ class _OverlaysPageState extends State<OverlaysPage> {
                             children: [
                               _QualityBadge(
                                   label: 'Premium', color: Colors.amber),
-                              const SizedBox(height: 8),
+                              SizedBox(height: 8),
                               GlassPopover(
                                 quality: GlassQuality.premium,
                                 popoverWidth: 220,
                                 popoverHeight: 160,
                                 triggerBuilder: (context, toggle) =>
                                     GlassButton(
-                                  icon: const Icon(CupertinoIcons.sparkles),
+                                  icon: Icon(CupertinoIcons.sparkles),
                                   onTap: toggle,
                                   label: 'Premium',
                                   quality: GlassQuality.premium,
@@ -480,18 +480,18 @@ class _OverlaysPageState extends State<OverlaysPage> {
                                             color: Colors.amber,
                                             size: 20,
                                           ),
-                                          const SizedBox(width: 8),
-                                          const Text(
+                                          SizedBox(width: 8),
+                                          Text(
                                             'Liquid Glass',
                                             style: TextStyle(
                                               fontSize: 17,
                                               fontWeight: FontWeight.w600,
-                                              color: Colors.white,
+                                              color: CupertinoColors.label.resolveFrom(context),
                                             ),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 12),
+                                      SizedBox(height: 12),
                                       Text(
                                         'Premium quality with full '
                                         'metaball morph blending '
@@ -515,14 +515,14 @@ class _OverlaysPageState extends State<OverlaysPage> {
                             children: [
                               _QualityBadge(
                                   label: 'Standard', color: Colors.white38),
-                              const SizedBox(height: 8),
+                              SizedBox(height: 8),
                               GlassPopover(
                                 quality: GlassQuality.standard,
                                 popoverWidth: 220,
                                 popoverHeight: 160,
                                 triggerBuilder: (context, toggle) =>
                                     GlassButton(
-                                  icon: const Icon(CupertinoIcons.info_circle),
+                                  icon: Icon(CupertinoIcons.info_circle),
                                   onTap: toggle,
                                   label: 'Standard',
                                   quality: GlassQuality.standard,
@@ -539,21 +539,21 @@ class _OverlaysPageState extends State<OverlaysPage> {
                                         children: [
                                           Icon(
                                             CupertinoIcons.info_circle,
-                                            color: Colors.white70,
+                                            color: CupertinoColors.secondaryLabel.resolveFrom(context),
                                             size: 20,
                                           ),
-                                          const SizedBox(width: 8),
-                                          const Text(
+                                          SizedBox(width: 8),
+                                          Text(
                                             'Backdrop Filter',
                                             style: TextStyle(
                                               fontSize: 17,
                                               fontWeight: FontWeight.w600,
-                                              color: Colors.white,
+                                              color: CupertinoColors.label.resolveFrom(context),
                                             ),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 12),
+                                      SizedBox(height: 12),
                                       Text(
                                         'Standard quality uses backdrop '
                                         'filter — lighter on GPU but '
@@ -574,24 +574,24 @@ class _OverlaysPageState extends State<OverlaysPage> {
                         ],
                       ),
 
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
 
                       // ── Self-close use case ──
                       Text(
                         'Custom content with close callback',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       Center(
                         child: GlassPopover(
                           quality: GlassQuality.premium,
                           popoverWidth: 220,
                           popoverHeight: 240,
                           triggerBuilder: (context, toggle) => GlassButton(
-                            icon: const Icon(CupertinoIcons.person_circle),
+                            icon: Icon(CupertinoIcons.person_circle),
                             onTap: toggle,
                             label: 'Profile',
                             quality: GlassQuality.premium,
@@ -614,42 +614,42 @@ class _OverlaysPageState extends State<OverlaysPage> {
                                       ],
                                     ),
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     CupertinoIcons.person_fill,
-                                    color: Colors.white,
+                                    color: CupertinoColors.label.resolveFrom(context),
                                     size: 28,
                                   ),
                                 ),
-                                const SizedBox(height: 12),
-                                const Text(
+                                SizedBox(height: 12),
+                                Text(
                                   'Jane Doe',
                                   style: TextStyle(
                                     fontSize: 17,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.white,
+                                    color: CupertinoColors.label.resolveFrom(context),
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                SizedBox(height: 4),
                                 Text(
                                   'Flutter Developer',
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: Colors.white.withValues(alpha: 0.5),
+                                    color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
                                   ),
                                 ),
-                                const SizedBox(height: 16),
+                                SizedBox(height: 16),
                                 GlassButton.custom(
                                   onTap: close,
                                   width: 120,
                                   height: 36,
                                   shape: const LiquidRoundedSuperellipse(
                                       borderRadius: 18),
-                                  child: const Text(
+                                  child: Text(
                                     'Done',
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.white,
+                                      color: CupertinoColors.label.resolveFrom(context),
                                     ),
                                   ),
                                 ),
@@ -659,29 +659,29 @@ class _OverlaysPageState extends State<OverlaysPage> {
                         ),
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── GlassActionSheet ─────────────────────────────
                       const _SectionTitle(title: 'GlassActionSheet'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       _ActionButton(
                         label: 'Photo Options',
                         glowColor: Colors.purple,
                         onTap: _showPhotoActionSheet,
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── GlassModalSheet ────────────────────────────
                       const _SectionTitle(title: 'GlassModalSheet'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       _ActionButton(
                         label: 'Multi-State Modal Sheet',
                         glowColor: Colors.teal,
                         onTap: _showModalSheet,
                       ),
 
-                      const SizedBox(height: 100),
+                      SizedBox(height: 100),
                     ],
                   ),
                 ),
@@ -706,10 +706,10 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 24,
         fontWeight: FontWeight.bold,
-        color: Colors.white,
+        color: CupertinoColors.label.resolveFrom(context),
       ),
     );
   }
@@ -735,10 +735,10 @@ class _ActionButton extends StatelessWidget {
       glowColor: glowColor.withValues(alpha: 0.3),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
-          color: Colors.white,
+          color: CupertinoColors.label.resolveFrom(context),
         ),
       ),
     );
@@ -761,10 +761,10 @@ class _SheetButton extends StatelessWidget {
       shape: const LiquidRoundedSuperellipse(borderRadius: 12),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
-          color: Colors.white,
+          color: CupertinoColors.label.resolveFrom(context),
         ),
       ),
     );
@@ -781,12 +781,12 @@ class _ResultRow extends StatelessWidget {
     return Row(
       children: [
         Icon(icon, color: Colors.blue, size: 20),
-        const SizedBox(width: 12),
+        SizedBox(width: 12),
         Text(
           label,
           style: TextStyle(
             fontSize: 14,
-            color: Colors.white.withValues(alpha: 0.7),
+            color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.7),
           ),
         ),
       ],
@@ -804,7 +804,7 @@ class _QualityLabel extends StatelessWidget {
       label,
       style: TextStyle(
         fontSize: 13,
-        color: Colors.white.withValues(alpha: 0.5),
+        color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
       ),
     );
   }

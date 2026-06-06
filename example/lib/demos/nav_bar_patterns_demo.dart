@@ -44,7 +44,7 @@ class NavBarPatternsDemo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassScaffold(
-      background: buildShowcaseBackground(),
+      background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
       statusBarStyle: GlassStatusBarStyle.light,
       appBar: GlassAppBar(
@@ -293,7 +293,7 @@ class _InlineTitleDemo extends StatelessWidget {
     final topPad = MediaQuery.paddingOf(context).top;
 
     return GlassScaffold(
-      background: buildShowcaseBackground(),
+      background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
       statusBarStyle: GlassStatusBarStyle.light,
       appBar: GlassAppBar(
@@ -379,7 +379,7 @@ class _LargeTitleCollapseDemoState extends State<_LargeTitleCollapseDemo> {
     final topPad = MediaQuery.paddingOf(context).top;
 
     return GlassScaffold(
-      background: buildShowcaseBackground(),
+      background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
       statusBarStyle: GlassStatusBarStyle.light,
       appBar: GlassAppBar(
@@ -464,7 +464,7 @@ class _SolidBackgroundDemo extends StatelessWidget {
     final topPad = MediaQuery.paddingOf(context).top;
 
     return GlassScaffold(
-      background: buildShowcaseBackground(),
+      background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
       statusBarStyle: GlassStatusBarStyle.light,
       edgeFade: false,
@@ -529,7 +529,7 @@ class _FadeOnlyDemo extends StatelessWidget {
     final topPad = MediaQuery.paddingOf(context).top;
 
     return GlassScaffold(
-      background: buildShowcaseBackground(),
+      background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
       statusBarStyle: GlassStatusBarStyle.light,
       appBar: GlassAppBar(
@@ -589,7 +589,7 @@ class _TabBarBottomFadeDemoState extends State<_TabBarBottomFadeDemo> {
     final topPad = MediaQuery.paddingOf(context).top;
 
     return GlassScaffold(
-      background: buildShowcaseBackground(),
+      background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
       statusBarStyle: GlassStatusBarStyle.dark,
       bottomBar: GlassBottomBar(
@@ -676,7 +676,7 @@ class _FadeHeaderDemoState extends State<_FadeHeaderDemo> {
     final topPad = MediaQuery.paddingOf(context).top;
 
     return GlassScaffold(
-      background: buildShowcaseBackground(),
+      background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
       statusBarStyle: GlassStatusBarStyle.light,
       topEdgeFade: true,

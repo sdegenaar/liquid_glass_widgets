@@ -48,15 +48,15 @@ class _FeedbackPageState extends State<FeedbackPage> {
   @override
   Widget build(BuildContext context) {
     return GlassPage(
-      background: buildShowcaseBackground(),
+      background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
-      statusBarStyle: GlassStatusBarStyle.light,
+      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark ? GlassStatusBarStyle.light : GlassStatusBarStyle.dark,
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: GlassAppBar(
           leading: GlassButton(
             quality: GlassQuality.premium,
-            icon: const Icon(CupertinoIcons.back),
+            icon: Icon(CupertinoIcons.back),
             onTap: () => Navigator.of(context).pop(),
             width: 40,
             height: 40,
@@ -75,7 +75,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
                 ),
               ),
               // ── Large page title (iOS 26 inline style) ──────────────
-              const SliverToBoxAdapter(
+              SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(24, 0, 24, 16),
                   child: Text(
@@ -84,7 +84,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
                       fontSize: 34,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.5,
-                      color: Colors.white,
+                      color: CupertinoColors.label.resolveFrom(context),
                     ),
                   ),
                 ),
@@ -97,8 +97,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
                     children: [
                       // ── Circular Spinner ──────────────────────────────────
                       const _SectionTitle(title: 'Circular Spinner'),
-                      const SizedBox(height: 16),
-                      const Row(
+                      SizedBox(height: 16),
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _LabeledWidget(
@@ -122,11 +122,11 @@ class _FeedbackPageState extends State<FeedbackPage> {
                         ],
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── Circular Progress ────────────────────────────────
                       const _SectionTitle(title: 'Circular Progress'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -141,15 +141,15 @@ class _FeedbackPageState extends State<FeedbackPage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Slider(
                         value: _circularProgress,
                         onChanged: (v) => setState(() => _circularProgress = v),
                         activeColor: const Color(0xFF007AFF),
                         inactiveColor: Colors.white24,
                       ),
-                      const SizedBox(height: 12),
-                      const Row(
+                      SizedBox(height: 12),
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _ProgressStage(value: 0.0, label: '0%'),
@@ -160,12 +160,12 @@ class _FeedbackPageState extends State<FeedbackPage> {
                         ],
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── Color Variants ────────────────────────────────────
                       const _SectionTitle(title: 'Color Variants'),
-                      const SizedBox(height: 16),
-                      const Row(
+                      SizedBox(height: 16),
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _LabeledWidget(
@@ -207,13 +207,13 @@ class _FeedbackPageState extends State<FeedbackPage> {
                         ],
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── Linear Progress ──────────────────────────────────
                       const _SectionTitle(title: 'Linear Progress'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       const GlassProgressIndicator.linear(),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(
@@ -221,18 +221,18 @@ class _FeedbackPageState extends State<FeedbackPage> {
                               value: _linearProgress,
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          SizedBox(width: 16),
                           Text(
                             '${(_linearProgress * 100).toInt()}%',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: CupertinoColors.label.resolveFrom(context),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Slider(
                         value: _linearProgress,
                         onChanged: (v) => setState(() => _linearProgress = v),
@@ -240,11 +240,11 @@ class _FeedbackPageState extends State<FeedbackPage> {
                         inactiveColor: Colors.white24,
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── Toast Notifications ──────────────────────────────
                       const _SectionTitle(title: 'Toast Notifications'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Wrap(
                         spacing: 12,
                         runSpacing: 12,
@@ -294,29 +294,29 @@ class _FeedbackPageState extends State<FeedbackPage> {
                         ],
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── File Upload Example ──────────────────────────────
                       const _SectionTitle(title: 'File Upload'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Row(
                         children: [
-                          const Icon(CupertinoIcons.doc,
-                              color: Colors.white70, size: 32),
-                          const SizedBox(width: 16),
+                          Icon(CupertinoIcons.doc,
+                              color: CupertinoColors.secondaryLabel.resolveFrom(context), size: 32),
+                          SizedBox(width: 16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'document.pdf',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.white,
+                                    color: CupertinoColors.label.resolveFrom(context),
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                SizedBox(height: 4),
                                 Text(
                                   _isUploading
                                       ? 'Uploading... ${(_uploadProgress * 100).toInt()}%'
@@ -327,25 +327,25 @@ class _FeedbackPageState extends State<FeedbackPage> {
                                     fontSize: 14,
                                     color: _uploadProgress == 1.0
                                         ? Colors.green
-                                        : Colors.white60,
+                                        : CupertinoColors.tertiaryLabel.resolveFrom(context),
                                   ),
                                 ),
                               ],
                             ),
                           ),
                           if (_uploadProgress == 1.0)
-                            const Icon(CupertinoIcons.checkmark_circle_fill,
+                            Icon(CupertinoIcons.checkmark_circle_fill,
                                 color: Colors.green, size: 24),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       GlassProgressIndicator.linear(
                         value: _uploadProgress,
                         color: _uploadProgress == 1.0
                             ? Colors.green
                             : const Color(0xFF007AFF),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       GlassButton.custom(
                         onTap: _isUploading ? () {} : _startSimulatedUpload,
                         enabled: !_isUploading,
@@ -361,7 +361,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
                         ),
                       ),
 
-                      const SizedBox(height: 100),
+                      SizedBox(height: 100),
                     ],
                   ),
                 ),
@@ -386,10 +386,10 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 24,
         fontWeight: FontWeight.bold,
-        color: Colors.white,
+        color: CupertinoColors.label.resolveFrom(context),
       ),
     );
   }
@@ -405,10 +405,10 @@ class _LabeledWidget extends StatelessWidget {
     return Column(
       children: [
         child,
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: Colors.white60),
+          style: TextStyle(fontSize: 12, color: CupertinoColors.tertiaryLabel.resolveFrom(context)),
         ),
       ],
     );
@@ -429,10 +429,10 @@ class _ProgressStage extends StatelessWidget {
           size: 24.0,
           strokeWidth: 3.0,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         Text(
           label,
-          style: const TextStyle(fontSize: 11, color: Colors.white60),
+          style: TextStyle(fontSize: 11, color: CupertinoColors.tertiaryLabel.resolveFrom(context)),
         ),
       ],
     );
@@ -459,8 +459,8 @@ class _ToastButton extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 16, color: Colors.white),
-          const SizedBox(width: 8),
+          Icon(icon, size: 16, color: CupertinoColors.label.resolveFrom(context)),
+          SizedBox(width: 8),
           Text(label),
         ],
       ),

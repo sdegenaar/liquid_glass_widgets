@@ -3,6 +3,7 @@
 // NOT part of the public API — do not export from liquid_glass_widgets.dart.
 library;
 
+import 'package:flutter/cupertino.dart' show CupertinoColors, CupertinoTheme;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../../../src/renderer/liquid_glass_renderer.dart';
@@ -84,13 +85,9 @@ class TabBarContent extends StatefulWidget {
 @visibleForTesting
 class TabBarContentState extends State<TabBarContent>
     with TickerProviderStateMixin {
-  // Cache default colors to avoid allocations
+  // Cache default indicator color to avoid allocations
   static const _defaultIndicatorColor =
       Color(0x33FFFFFF); // white.withValues(alpha: 0.2)
-  static const _defaultUnselectedTextColor =
-      Color(0x99FFFFFF); // white.withValues(alpha: 0.6)
-  static const _defaultUnselectedIconColor =
-      Color(0x99FFFFFF); // white.withValues(alpha: 0.6)
 
   bool _isDown = false;
   bool _isDragging = false;
@@ -558,19 +555,27 @@ class TabBarContentState extends State<TabBarContent>
   Widget build(BuildContext context) {
     final indicatorColor = widget.indicatorColor ?? _defaultIndicatorColor;
 
+    // Resolve label and icon colors from CupertinoTheme — brightness-aware.
+    // Matches the pattern used by GlassBottomBar (glass_bottom_bar.dart L563).
+    final dynamicLabelColor =
+        CupertinoTheme.of(context).textTheme.textStyle.color ??
+            CupertinoColors.label.resolveFrom(context);
+    final dynamicSecondaryColor =
+        CupertinoColors.secondaryLabel.resolveFrom(context);
+
     final selectedLabelStyle = widget.selectedLabelStyle ??
-        const TextStyle(
-            fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white);
+        TextStyle(
+            fontSize: 14, fontWeight: FontWeight.w600, color: dynamicLabelColor);
 
     final unselectedLabelStyle = widget.unselectedLabelStyle ??
-        const TextStyle(
+        TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: _defaultUnselectedTextColor);
+            color: dynamicSecondaryColor);
 
-    final selectedIconColor = widget.selectedIconColor ?? Colors.white;
+    final selectedIconColor = widget.selectedIconColor ?? dynamicLabelColor;
     final unselectedIconColor =
-        widget.unselectedIconColor ?? _defaultUnselectedIconColor;
+        widget.unselectedIconColor ?? dynamicSecondaryColor;
 
     final Widget tabLabels = _buildTabLabels(
       selectedLabelStyle,
@@ -791,7 +796,9 @@ class TabBarContentState extends State<TabBarContent>
               width: d.thickness,
               margin: EdgeInsets.only(top: d.indent, bottom: d.endIndent),
               decoration: d.decoration ??
-                  BoxDecoration(color: Colors.white.withValues(alpha: 0.2)),
+                  BoxDecoration(
+                    color: CupertinoColors.separator.resolveFrom(context),
+                  ),
             ),
           ),
         );

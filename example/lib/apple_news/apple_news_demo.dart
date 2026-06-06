@@ -16,9 +16,9 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 const _kNewsRed = Color(0xFFFF2D55);
 const _kLiveBadge = Color(0xFFFF3B30);
-const _kBackground = Color(0xFF000000);
-const _kCardBackground = Color(0xFF1C1C1E);
-const _kSeparator = Color(0xFF38383A);
+const _kBackground = CupertinoDynamicColor.withBrightness(color: Color(0xFFF2F2F7), darkColor: Color(0xFF000000));
+const _kCardBackground = CupertinoDynamicColor.withBrightness(color: Color(0xFFFFFFFF), darkColor: Color(0xFF1C1C1E));
+const _kSeparator = CupertinoColors.separator;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DATA MODELS
@@ -259,8 +259,8 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
     final sysBottom = isIOS ? 0.0 : MediaQuery.viewPaddingOf(context).bottom;
 
     return GlassScaffold(
-      background: const ColoredBox(color: _kBackground),
-      statusBarStyle: GlassStatusBarStyle.light,
+      background: ColoredBox(color: _kBackground.resolveFrom(context)),
+      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark ? GlassStatusBarStyle.light : GlassStatusBarStyle.dark,
       topEdgeFade: true,
       bottomEdgeFade: true,
       resizeToAvoidBottomInset: false,
@@ -296,15 +296,15 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
             _isSearching = false;
           }),
           selectedIconColor: Color.fromRGBO(255, 90, 130, 1),
-          unselectedIconColor: Colors.white.withValues(alpha: 0.9),
+          unselectedIconColor: CupertinoColors.label.resolveFrom(context),
           labelFontSize: 10,
           iconSize: 28,
           iconLabelSpacing: 0,
-          indicatorColor: Colors.white.withValues(alpha: 0.20),
+          indicatorColor: CupertinoColors.tertiaryLabel.resolveFrom(context),
           quality: GlassQuality.premium,
           interactionBehavior: GlassInteractionBehavior.full,
           settings: LiquidGlassSettings(
-            glassColor: const Color(0xAA1C1C1E),
+            glassColor: CupertinoTheme.of(context).brightness == Brightness.dark ? const Color(0xAA1C1C1E) : const Color(0xCCFFFFFF),
             thickness: 30,
             blur: 2,
             chromaticAberration: .01,
@@ -323,7 +323,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
             }),
             onSearchFocusChanged: (focused) =>
                 setState(() => _searchFieldFocused = focused),
-            searchIconColor: Colors.white.withValues(alpha: 0.9),
+            searchIconColor: CupertinoColors.label.resolveFrom(context),
             textInputAction: TextInputAction.search,
             autoFocusOnExpand: false,
             showsCancelButton: true,
@@ -332,21 +332,21 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
           tabs: [
             GlassBottomBarTab(
               label: 'Today',
-              icon: const Icon(CupertinoIcons.house),
-              activeIcon: const Icon(CupertinoIcons.house_fill),
+              icon: Icon(CupertinoIcons.house),
+              activeIcon: Icon(CupertinoIcons.house_fill),
             ),
             GlassBottomBarTab(
               label: 'News+',
-              icon: const Icon(CupertinoIcons.news_solid),
-              activeIcon: const Icon(CupertinoIcons.news_solid),
+              icon: Icon(CupertinoIcons.news_solid),
+              activeIcon: Icon(CupertinoIcons.news_solid),
             ),
             GlassBottomBarTab(
               label: 'Audio',
-              icon: const Icon(CupertinoIcons.headphones),
+              icon: Icon(CupertinoIcons.headphones),
             ),
             GlassBottomBarTab(
               label: 'Following',
-              icon: const Icon(
+              icon: Icon(
                   CupertinoIcons.rectangle_fill_on_rectangle_angled_fill),
             ),
           ],
@@ -403,14 +403,14 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.apple, color: Colors.white, size: 28),
+                  Icon(Icons.apple, color: CupertinoColors.label.resolveFrom(context), size: 28),
                   SizedBox(width: 4),
                   Text(
                     'News',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: CupertinoColors.label.resolveFrom(context),
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.5,
@@ -421,7 +421,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
               Text(
                 '6 April',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color: CupertinoColors.secondaryLabel.resolveFrom(context),
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.5,
@@ -436,7 +436,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
               color: _kNewsRed,
               borderRadius: BorderRadius.circular(24),
             ),
-            child: const Text(
+            child: Text(
               'Try News+ Free',
               style: TextStyle(
                 color: Colors.white,
@@ -472,7 +472,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               color: _kNewsRed,
               fontSize: 22,
               fontWeight: FontWeight.w700,
@@ -482,7 +482,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
             Text(
               subtitle,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
+                color: CupertinoColors.secondaryLabel.resolveFrom(context),
                 fontSize: 14,
               ),
             ),
@@ -508,7 +508,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
               ),
             ),
             Container(
-              color: _kCardBackground,
+              color: _kCardBackground.resolveFrom(context),
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -518,7 +518,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
                   Text(
                     article.publication,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.55),
+                      color: CupertinoColors.secondaryLabel.resolveFrom(context),
                       fontSize: 13,
                       fontStyle: FontStyle.italic,
                     ),
@@ -526,8 +526,8 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
                   const SizedBox(height: 6),
                   Text(
                     article.headline,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: CupertinoColors.label.resolveFrom(context),
                       fontSize: 19,
                       fontWeight: FontWeight.w700,
                       height: 1.3,
@@ -535,12 +535,12 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
                   ),
                   if (article.moreCoverage) ...[
                     const SizedBox(height: 12),
-                    Container(height: 1, color: _kSeparator),
+                    Container(height: 1, color: _kSeparator.resolveFrom(context)),
                     const SizedBox(height: 10),
                     Text(
                       'MORE COVERAGE',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.45),
+                        color: CupertinoColors.tertiaryLabel.resolveFrom(context),
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.5,
@@ -562,7 +562,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
         child: Container(
-          color: _kCardBackground,
+          color: _kCardBackground.resolveFrom(context),
           padding: const EdgeInsets.all(16),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -578,7 +578,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
                     Text(
                       article.publication,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.55),
+                        color: CupertinoColors.secondaryLabel.resolveFrom(context),
                         fontSize: 12,
                         fontStyle: FontStyle.italic,
                       ),
@@ -588,8 +588,8 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
                       article.headline,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: CupertinoColors.label.resolveFrom(context),
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         height: 1.35,
@@ -600,7 +600,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
                       Text(
                         'MORE COVERAGE',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.45),
+                          color: CupertinoColors.tertiaryLabel.resolveFrom(context),
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.5,
@@ -634,7 +634,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
         color: _kLiveBadge,
         borderRadius: BorderRadius.circular(4),
       ),
-      child: const Text(
+      child: Text(
         'Live',
         style: TextStyle(
             color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
@@ -660,24 +660,24 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Apple News logo row — matches reference screenshot
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.apple, color: Colors.white, size: 22),
+                    Icon(Icons.apple, color: CupertinoColors.label.resolveFrom(context), size: 22),
                     SizedBox(width: 4),
                     Text(
                       'News',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: CupertinoColors.label.resolveFrom(context),
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
                 ),
-                const Text(
+                Text(
                   'Search',
                   style: TextStyle(
-                    color: Color(0xFF8E8E93), // iOS secondary-label grey
+                    color: CupertinoColors.secondaryLabel.resolveFrom(context), // iOS secondary-label grey
                     fontSize: 34,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.5,
@@ -716,7 +716,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
     final keyboardH = MediaQuery.viewInsetsOf(context).bottom;
     return Container(
       key: key,
-      color: Colors.black,
+      color: _kBackground.resolveFrom(context),
       child: SafeArea(
         bottom: false,
         child: Padding(
@@ -728,13 +728,13 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
                 Icon(
                   CupertinoIcons.search,
                   size: 64,
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: CupertinoColors.tertiaryLabel.resolveFrom(context),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'No Recent Searches',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: CupertinoColors.label.resolveFrom(context),
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.3,
@@ -744,7 +744,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
                 Text(
                   'Your recent searches will appear here.',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: CupertinoColors.tertiaryLabel.resolveFrom(context),
                     fontSize: 15,
                     fontWeight: FontWeight.w400,
                   ),
@@ -772,13 +772,13 @@ class _CategoryChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFF2C2C2E),
+        color: CupertinoColors.systemFill.resolveFrom(context),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: CupertinoColors.label.resolveFrom(context),
           fontSize: 14,
           fontWeight: FontWeight.w500,
         ),
@@ -815,11 +815,11 @@ class _TopicCard extends StatelessWidget {
             right: 12,
             child: Text(
               topic.name,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: CupertinoColors.label.resolveFrom(context),
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
-                shadows: [Shadow(blurRadius: 6, color: Colors.black54)],
+                shadows: [Shadow(blurRadius: 6, color: CupertinoColors.black.withValues(alpha: 0.54))],
               ),
             ),
           ),

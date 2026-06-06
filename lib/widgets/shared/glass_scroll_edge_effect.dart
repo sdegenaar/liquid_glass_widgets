@@ -158,7 +158,17 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _backgroundKey = LiquidGlassScope.of(context);
-    _captureBackground();
+    
+    // If we already have an image, this is likely a theme toggle or
+    // route dependency change. The new background won't paint until the
+    // end of this frame, so we must defer capture to the next frame.
+    if (_backgroundImage != null) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _captureBackground();
+      });
+    } else {
+      _captureBackground();
+    }
   }
 
   void _captureBackground() {

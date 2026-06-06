@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoColors;
 import 'package:flutter/widgets.dart';
 
 import '../../src/renderer/liquid_glass_renderer.dart';
@@ -169,8 +170,8 @@ class _GlassPageControlState extends State<GlassPageControl>
   late Animation<double> _animation;
   int _previousPage = 0;
 
-  static const _defaultActiveColor = Color(0xFFFFFFFF);
-  static const _defaultInactiveColor = Color(0x59FFFFFF); // white ~35% opacity
+  // Active/inactive dot colors are resolved at build time from
+  // CupertinoColors.label / .tertiaryLabel so they adapt to light/dark mode.
 
   @override
   void initState() {
@@ -209,9 +210,10 @@ class _GlassPageControlState extends State<GlassPageControl>
   Widget build(BuildContext context) {
     if (widget.count <= 0) return const SizedBox.shrink();
 
-    final effectiveActiveColor = widget.activeColor ?? _defaultActiveColor;
-    final effectiveInactiveColor =
-        widget.inactiveColor ?? _defaultInactiveColor;
+    final effectiveActiveColor = widget.activeColor ??
+        CupertinoColors.label.resolveFrom(context);
+    final effectiveInactiveColor = widget.inactiveColor ??
+        CupertinoColors.tertiaryLabel.resolveFrom(context);
 
     // Build the dot row content
     final dotsContent = AnimatedBuilder(

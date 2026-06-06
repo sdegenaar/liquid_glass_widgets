@@ -29,33 +29,78 @@ void main() async {
   runApp(LiquidGlassWidgets.wrap(child: const AppleLiquidGlassShowcaseApp()));
 }
 
-class AppleLiquidGlassShowcaseApp extends StatelessWidget {
+class AppleLiquidGlassShowcaseApp extends StatefulWidget {
   const AppleLiquidGlassShowcaseApp({super.key});
 
   @override
+  State<AppleLiquidGlassShowcaseApp> createState() =>
+      _AppleLiquidGlassShowcaseAppState();
+}
+
+class _AppleLiquidGlassShowcaseAppState
+    extends State<AppleLiquidGlassShowcaseApp> {
+  /// Global brightness toggle — shared via [_BrightnessScope].
+  Brightness _brightness = Brightness.dark;
+
+  void _toggleBrightness() {
+    setState(() {
+      _brightness = _brightness == Brightness.dark
+          ? Brightness.light
+          : Brightness.dark;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return CupertinoApp(
-      title: 'Liquid Glass Widgets',
-      theme: const CupertinoThemeData(
-        brightness: Brightness.dark,
+    final isDark = _brightness == Brightness.dark;
+
+    return _BrightnessScope(
+      brightness: _brightness,
+      toggleBrightness: _toggleBrightness,
+      child: CupertinoApp(
+        title: 'Liquid Glass Widgets',
+        theme: CupertinoThemeData(
+          brightness: _brightness,
+        ),
+        // Demo pages use Material widgets (Scaffold, showModalBottomSheet)
+        // that require these localizations. Not needed for glass widgets.
+        localizationsDelegates: const [
+          DefaultMaterialLocalizations.delegate,
+          DefaultWidgetsLocalizations.delegate,
+        ],
+        // Provide a matching Material Theme for any Scaffold widgets in demo pages.
+        builder: (context, child) => Theme(
+          data: isDark
+              ? ThemeData.dark(useMaterial3: true)
+              : ThemeData.light(useMaterial3: true),
+          child: child!,
+        ),
+        home: const ShowcaseHomePage(),
+        debugShowCheckedModeBanner: false,
       ),
-      // Demo pages use Material widgets (Scaffold, showModalBottomSheet)
-      // that require these localizations. Not needed for glass widgets.
-      localizationsDelegates: const [
-        DefaultMaterialLocalizations.delegate,
-        DefaultWidgetsLocalizations.delegate,
-      ],
-      // Provide a dark Material Theme for any Scaffold widgets in demo pages.
-      // CupertinoApp doesn't inject ThemeData, so bare Scaffolds would default
-      // to a white background without this.
-      builder: (context, child) => Theme(
-        data: ThemeData.dark(useMaterial3: true),
-        child: child!,
-      ),
-      home: const ShowcaseHomePage(),
-      debugShowCheckedModeBanner: false,
     );
   }
+}
+
+/// Inherited widget exposing the current [Brightness] and a toggle callback
+/// to any descendant widget in the example app.
+class _BrightnessScope extends InheritedWidget {
+  const _BrightnessScope({
+    required this.brightness,
+    required this.toggleBrightness,
+    required super.child,
+  });
+
+  final Brightness brightness;
+  final VoidCallback toggleBrightness;
+
+  static _BrightnessScope of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<_BrightnessScope>()!;
+  }
+
+  @override
+  bool updateShouldNotify(_BrightnessScope oldWidget) =>
+      brightness != oldWidget.brightness;
 }
 
 // =============================================================================
@@ -97,9 +142,13 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final scope = _BrightnessScope.of(context);
+    final isDark = scope.brightness == Brightness.dark;
+
     return GlassScaffold(
-      background: _buildBackground(),
-      statusBarStyle: GlassStatusBarStyle.light,
+      background: const ShowcaseBackground(),
+      statusBarStyle:
+          isDark ? GlassStatusBarStyle.light : GlassStatusBarStyle.dark,
       settings: RecommendedGlassSettings.standard,
       topEdgeFade: true,
       bottomBar: GlassBottomBar(
@@ -107,8 +156,6 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage> {
         onTabSelected: (i) => setState(() => _selectedTab = i),
         interactionBehavior: GlassInteractionBehavior.full,
         selectedIconColor: const Color(0xFFA855F7),
-        unselectedIconColor: Colors.white,
-        indicatorColor: Colors.white.withValues(alpha: 0.1),
         iconSize: 28,
         labelFontSize: 10,
         iconLabelSpacing: 0,
@@ -123,6 +170,11 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage> {
           refractiveIndex: 1.2,
           saturation: 1.2,
           specularSharpness: GlassSpecularSharpness.medium,
+        ),
+        extraButton: GlassBottomBarExtraButton(
+          icon: Icon(isDark ? CupertinoIcons.sun_max : CupertinoIcons.moon),
+          label: isDark ? 'Light mode' : 'Dark mode',
+          onTap: scope.toggleBrightness,
         ),
         tabs: _tabs,
       ),
@@ -139,117 +191,6 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage> {
   }
 }
 
-/// Deep navy background with ChemAlert-style purple/pink/blue glow accents.
-Widget _buildBackground() {
-  return Container(
-    color: const Color(0xFF020715), // ChemAlert deep navy
-    child: Stack(
-      children: [
-        // Purple glow — upper right (9B59FF / A246F7)
-        Positioned(
-          top: -50,
-          right: -100,
-          child: Container(
-            width: 500,
-            height: 500,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  const Color(0xFFA246F7).withValues(alpha: 0.32),
-                  const Color(0xFF9B59FF).withValues(alpha: 0.1),
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.5, 1.0],
-              ),
-            ),
-          ),
-        ),
-        // Hot pink glow — center left (E040FB / EB66FF)
-        Positioned(
-          top: 280,
-          left: -100,
-          child: Container(
-            width: 460,
-            height: 460,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  const Color(0xFFEB66FF).withValues(alpha: 0.16),
-                  const Color(0xFFE040FB).withValues(alpha: 0.05),
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.5, 1.0],
-              ),
-            ),
-          ),
-        ),
-        // Blue glow — bottom right (2077FF / 4FC3F7)
-        Positioned(
-          bottom: -60,
-          right: -40,
-          child: Container(
-            width: 420,
-            height: 420,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  const Color(0xFF2077FF).withValues(alpha: 0.18),
-                  const Color(0xFF4FC3F7).withValues(alpha: 0.06),
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.45, 1.0],
-              ),
-            ),
-          ),
-        ),
-        // Subtle purple accent — mid-left
-        Positioned(
-          top: 120,
-          left: 30,
-          child: Container(
-            width: 160,
-            height: 160,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  const Color(0xFF9B59FF).withValues(alpha: 0.10),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-        // Purple wash — center screen (behind catalog cards)
-        Positioned(
-          top: 500,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: Container(
-              width: 340,
-              height: 340,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFF9B59FF).withValues(alpha: 0.14),
-                    const Color(0xFF7B3FA8).withValues(alpha: 0.05),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.5, 1.0],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
 
 // =============================================================================
 // Explore Tab — hero overview
@@ -270,12 +211,12 @@ class _ExploreTab extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Liquid Glass',
                     style: TextStyle(
                       fontSize: 34,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: CupertinoColors.label.resolveFrom(context),
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -284,7 +225,7 @@ class _ExploreTab extends StatelessWidget {
                     'iOS 26 Widget Toolkit',
                     style: TextStyle(
                       fontSize: 17,
-                      color: Colors.white.withValues(alpha: 0.4),
+                      color: CupertinoColors.secondaryLabel.resolveFrom(context),
                       letterSpacing: -0.2,
                     ),
                   ),
@@ -381,7 +322,7 @@ class _ExploreTab extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: CupertinoColors.label.resolveFrom(context),
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -503,12 +444,12 @@ class _WidgetsTab extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Widgets',
                     style: TextStyle(
                       fontSize: 34,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: CupertinoColors.label.resolveFrom(context),
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -517,7 +458,7 @@ class _WidgetsTab extends StatelessWidget {
                     'Browse the full widget catalog.',
                     style: TextStyle(
                       fontSize: 15,
-                      color: Colors.white.withValues(alpha: 0.4),
+                      color: CupertinoColors.secondaryLabel.resolveFrom(context),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -623,12 +564,12 @@ class _DemosTab extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Demos',
                     style: TextStyle(
                       fontSize: 34,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: CupertinoColors.label.resolveFrom(context),
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -637,7 +578,7 @@ class _DemosTab extends StatelessWidget {
                     'Polished Apple app reproductions.',
                     style: TextStyle(
                       fontSize: 15,
-                      color: Colors.white.withValues(alpha: 0.4),
+                      color: CupertinoColors.secondaryLabel.resolveFrom(context),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -733,12 +674,12 @@ class _ExamplesTab extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Examples',
                     style: TextStyle(
                       fontSize: 34,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: CupertinoColors.label.resolveFrom(context),
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -747,7 +688,7 @@ class _ExamplesTab extends StatelessWidget {
                     'Widget modes & configuration reference.',
                     style: TextStyle(
                       fontSize: 15,
-                      color: Colors.white.withValues(alpha: 0.4),
+                      color: CupertinoColors.secondaryLabel.resolveFrom(context),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -890,14 +831,16 @@ class _StaggeredCatalogCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: Colors.white60, size: 24),
+            Icon(icon,
+                color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                size: 24),
             const Spacer(),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.white,
+                color: CupertinoColors.label.resolveFrom(context),
               ),
             ),
             const SizedBox(height: 2),
@@ -905,7 +848,7 @@ class _StaggeredCatalogCard extends StatelessWidget {
               subtitle,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.white.withValues(alpha: 0.4),
+                color: CupertinoColors.secondaryLabel.resolveFrom(context),
               ),
             ),
           ],

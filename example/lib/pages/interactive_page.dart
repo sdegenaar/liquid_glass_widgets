@@ -33,16 +33,16 @@ class _InteractivePageState extends State<InteractivePage> {
   @override
   Widget build(BuildContext context) {
     return GlassPage(
-      background: buildShowcaseBackground(),
+      background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
-      statusBarStyle: GlassStatusBarStyle.light,
+      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark ? GlassStatusBarStyle.light : GlassStatusBarStyle.dark,
       child: Scaffold(
         extendBodyBehindAppBar: true,
         backgroundColor: Colors.transparent,
         appBar: GlassAppBar(
           leading: GlassButton(
             quality: GlassQuality.premium,
-            icon: const Icon(CupertinoIcons.back),
+            icon: Icon(CupertinoIcons.back),
             onTap: () => Navigator.of(context).pop(),
             width: 40,
             height: 40,
@@ -62,7 +62,7 @@ class _InteractivePageState extends State<InteractivePage> {
                 ),
               ),
               // ── Large page title (iOS 26 inline style) ──────────────
-              const SliverToBoxAdapter(
+              SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(24, 0, 24, 16),
                   child: Text(
@@ -71,7 +71,7 @@ class _InteractivePageState extends State<InteractivePage> {
                       fontSize: 34,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.5,
-                      color: Colors.white,
+                      color: CupertinoColors.label.resolveFrom(context),
                     ),
                   ),
                 ),
@@ -84,7 +84,7 @@ class _InteractivePageState extends State<InteractivePage> {
                     children: [
                       // ── GlassButton ──────────────────────────────────────
                       const _SectionTitle(title: 'GlassButton'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(
@@ -97,14 +97,14 @@ class _InteractivePageState extends State<InteractivePage> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(CupertinoIcons.arrow_down_circle_fill,
-                                      color: Colors.white, size: 18),
-                                  const SizedBox(width: 8),
-                                  const Text(
+                                      color: CupertinoColors.label.resolveFrom(context), size: 18),
+                                  SizedBox(width: 8),
+                                  Text(
                                     'Download',
                                     style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.white,
+                                      color: CupertinoColors.label.resolveFrom(context),
                                     ),
                                   ),
                                 ],
@@ -113,7 +113,7 @@ class _InteractivePageState extends State<InteractivePage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -143,7 +143,7 @@ class _InteractivePageState extends State<InteractivePage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
 
                       // Shapes
                       Row(
@@ -172,17 +172,17 @@ class _InteractivePageState extends State<InteractivePage> {
                         ],
                       ),
 
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
 
                       // Prominent style
                       Text(
                         'GlassButtonStyle.prominent — primary CTA',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
@@ -194,14 +194,14 @@ class _InteractivePageState extends State<InteractivePage> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(CupertinoIcons.plus_circle_fill,
-                                      color: Colors.white, size: 20),
-                                  const SizedBox(width: 8),
-                                  const Text(
+                                      color: CupertinoColors.label.resolveFrom(context), size: 20),
+                                  SizedBox(width: 8),
+                                  Text(
                                     'Add to Library',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.white,
+                                      color: CupertinoColors.label.resolveFrom(context),
                                     ),
                                   ),
                                 ],
@@ -210,7 +210,7 @@ class _InteractivePageState extends State<InteractivePage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -235,11 +235,11 @@ class _InteractivePageState extends State<InteractivePage> {
                         ],
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── GlassIconButton ──────────────────────────────────
                       const _SectionTitle(title: 'GlassIconButton'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Wrap(
                         spacing: 12,
                         runSpacing: 12,
@@ -274,46 +274,46 @@ class _InteractivePageState extends State<InteractivePage> {
                         ],
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── GlassSegmentedControl ────────────────────────────
                       const _SectionTitle(title: 'GlassSegmentedControl'),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       _QualityLabel(label: 'Premium vs Standard'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       _QualityRow(
                         premiumLabel: 'Premium',
                         standardLabel: 'Standard',
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       GlassSegmentedControl(
-                        segments: const ['Daily', 'Weekly', 'Monthly'],
+                        segments: ['Daily', 'Weekly', 'Monthly'],
                         selectedIndex: _segment1,
                         onSegmentSelected: (i) => setState(() => _segment1 = i),
                         quality: GlassQuality.premium,
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       GlassSegmentedControl(
-                        segments: const ['Daily', 'Weekly', 'Monthly'],
+                        segments: ['Daily', 'Weekly', 'Monthly'],
                         selectedIndex: _segment1,
                         onSegmentSelected: (i) => setState(() => _segment1 = i),
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
                       GlassSegmentedControl(
-                        segments: const ['XS', 'S', 'M', 'L', 'XL'],
+                        segments: ['XS', 'S', 'M', 'L', 'XL'],
                         selectedIndex: _segment2,
                         onSegmentSelected: (i) => setState(() => _segment2 = i),
                         height: 28,
                         borderRadius: 14,
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── GlassSwitch ──────────────────────────────────────
                       const _SectionTitle(title: 'GlassSwitch'),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       _QualityLabel(label: 'Premium vs Standard'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       _SwitchComparisonRow(
                         title: 'Notifications',
                         value: _switch1,
@@ -332,42 +332,42 @@ class _InteractivePageState extends State<InteractivePage> {
                         onChanged: (v) => setState(() => _switch3 = v),
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── GlassSlider ──────────────────────────────────────
                       const _SectionTitle(title: 'GlassSlider'),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       _QualityLabel(label: 'Premium vs Standard'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       _QualityRow(
                         premiumLabel: 'Premium',
                         standardLabel: '',
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       GlassSlider(
                         value: _slider1,
                         onChanged: (v) => setState(() => _slider1 = v),
                         quality: GlassQuality.premium,
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         '${(_slider1 * 100).round()}%',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.6),
+                          color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.6),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20),
                       _QualityRow(
                         premiumLabel: '',
                         standardLabel: 'Standard',
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       GlassSlider(
                         value: _slider1,
                         onChanged: (v) => setState(() => _slider1 = v),
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
                       GlassSlider(
                         value: _slider2,
                         onChanged: (v) => setState(() => _slider2 = v),
@@ -375,11 +375,11 @@ class _InteractivePageState extends State<InteractivePage> {
                         thumbColor: Colors.blue.shade100,
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── GlassButtonGroup ─────────────────────────────────
                       const _SectionTitle(title: 'GlassButtonGroup'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Center(
                         child: GlassButtonGroup(
                           children: [
@@ -402,11 +402,11 @@ class _InteractivePageState extends State<InteractivePage> {
                         ),
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── GlassPullDownButton ──────────────────────────────
                       const _SectionTitle(title: 'GlassPullDownButton'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -440,7 +440,7 @@ class _InteractivePageState extends State<InteractivePage> {
                                 title: 'Name',
                                 onTap: () {},
                                 trailing: Icon(CupertinoIcons.checkmark_alt,
-                                    size: 16, color: Colors.white),
+                                    size: 16, color: CupertinoColors.label.resolveFrom(context)),
                               ),
                               GlassMenuItem(title: 'Date', onTap: () {}),
                               GlassMenuItem(title: 'Size', onTap: () {}),
@@ -449,11 +449,11 @@ class _InteractivePageState extends State<InteractivePage> {
                         ],
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── GlassBadge ───────────────────────────────────────
                       const _SectionTitle(title: 'GlassBadge'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Wrap(
                         spacing: 24,
                         runSpacing: 24,
@@ -497,11 +497,11 @@ class _InteractivePageState extends State<InteractivePage> {
                         ],
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── GlassChip ────────────────────────────────────────
                       const _SectionTitle(title: 'GlassChip'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
@@ -525,7 +525,7 @@ class _InteractivePageState extends State<InteractivePage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
@@ -549,19 +549,19 @@ class _InteractivePageState extends State<InteractivePage> {
                         }).toList(),
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── GlassPageControl ──────────────────────────────
                       const _SectionTitle(title: 'GlassPageControl'),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         'Glass capsule with dot indicators — iOS 26 style',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Center(
                         child: GlassPageControl(
                           count: 7,
@@ -570,26 +570,26 @@ class _InteractivePageState extends State<InteractivePage> {
                               setState(() => _currentPage = page),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Center(
                         child: Text(
                           'Page ${_currentPage + 1} of 7',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.white.withValues(alpha: 0.6),
+                            color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.6),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20),
                       // Weather-style bottom bar layout
                       Text(
                         'Weather-style bottom bar',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       Row(
                         children: [
                           // Map button (left)
@@ -597,7 +597,7 @@ class _InteractivePageState extends State<InteractivePage> {
                             icon: Icon(CupertinoIcons.map),
                             onTap: () {},
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           // Page control (center, fills remaining space)
                           Expanded(
                             child: GlassPageControl(
@@ -605,14 +605,14 @@ class _InteractivePageState extends State<InteractivePage> {
                               currentPage: _currentPage,
                               leadingIcon: Icon(
                                 CupertinoIcons.location_fill,
-                                color: Colors.white,
+                                color: CupertinoColors.label.resolveFrom(context),
                                 size: 10,
                               ),
                               onPageChanged: (page) =>
                                   setState(() => _currentPage = page),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           // List button (right)
                           GlassButton(
                             icon: Icon(CupertinoIcons.list_bullet),
@@ -621,7 +621,7 @@ class _InteractivePageState extends State<InteractivePage> {
                         ],
                       ),
 
-                      const SizedBox(height: 100),
+                      SizedBox(height: 100),
                     ],
                   ),
                 ),
@@ -646,10 +646,10 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 24,
         fontWeight: FontWeight.bold,
-        color: Colors.white,
+        color: CupertinoColors.label.resolveFrom(context),
       ),
     );
   }
@@ -665,7 +665,7 @@ class _QualityLabel extends StatelessWidget {
       label,
       style: TextStyle(
         fontSize: 13,
-        color: Colors.white.withValues(alpha: 0.5),
+        color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
       ),
     );
   }
@@ -739,10 +739,10 @@ class _SwitchComparisonRow extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: CupertinoColors.label.resolveFrom(context),
             ),
           ),
         ),
@@ -752,7 +752,7 @@ class _SwitchComparisonRow extends StatelessWidget {
           onChanged: onChanged,
           quality: GlassQuality.premium,
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: 16),
         // Standard
         GlassSwitch(
           value: value,

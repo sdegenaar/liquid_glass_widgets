@@ -31,15 +31,15 @@ class _InputPageState extends State<InputPage> {
   @override
   Widget build(BuildContext context) {
     return GlassPage(
-      background: buildShowcaseBackground(),
+      background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
-      statusBarStyle: GlassStatusBarStyle.light,
+      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark ? GlassStatusBarStyle.light : GlassStatusBarStyle.dark,
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: GlassAppBar(
           leading: GlassButton(
             quality: GlassQuality.premium,
-            icon: const Icon(CupertinoIcons.back),
+            icon: Icon(CupertinoIcons.back),
             onTap: () => Navigator.of(context).pop(),
             width: 40,
             height: 40,
@@ -58,7 +58,7 @@ class _InputPageState extends State<InputPage> {
                 ),
               ),
               // ── Large page title (iOS 26 inline style) ──────────────
-              const SliverToBoxAdapter(
+              SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(24, 0, 24, 16),
                   child: Text(
@@ -67,7 +67,7 @@ class _InputPageState extends State<InputPage> {
                       fontSize: 34,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.5,
-                      color: Colors.white,
+                      color: CupertinoColors.label.resolveFrom(context),
                     ),
                   ),
                 ),
@@ -80,41 +80,41 @@ class _InputPageState extends State<InputPage> {
                     children: [
                       // ── GlassTextField ────────────────────────────────
                       const _SectionTitle(title: 'GlassTextField'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       GlassTextField(
                         controller: _usernameController,
                         placeholder: 'Username',
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       GlassTextField(
                         controller: _emailController,
                         placeholder: 'Email',
                         keyboardType: TextInputType.emailAddress,
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       GlassTextField(
                         controller: _passwordController,
                         placeholder: 'Password',
                         obscureText: true,
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
 
                       // With icons
                       GlassTextField(
                         controller: _searchController,
                         placeholder: 'Search...',
-                        prefixIcon: const Icon(CupertinoIcons.search,
-                            size: 20, color: Colors.white70),
+                        prefixIcon: Icon(CupertinoIcons.search,
+                            size: 20, color: CupertinoColors.secondaryLabel.resolveFrom(context)),
                         suffixIcon: _searchController.text.isNotEmpty
-                            ? const Icon(CupertinoIcons.xmark_circle_fill,
-                                size: 20, color: Colors.white70)
+                            ? Icon(CupertinoIcons.xmark_circle_fill,
+                                size: 20, color: CupertinoColors.secondaryLabel.resolveFrom(context))
                             : null,
                         onSuffixTap: () {
                           setState(() => _searchController.clear());
                         },
                         onChanged: (value) => setState(() {}),
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
 
                       // Multiline
                       GlassTextField(
@@ -124,85 +124,85 @@ class _InputPageState extends State<InputPage> {
                         minLines: 3,
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── GlassSearchBar ────────────────────────────────
                       const _SectionTitle(title: 'GlassSearchBar'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       GlassSearchBar(
                         placeholder: 'Search',
                         onChanged: (value) {},
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       GlassSearchBar(
                         placeholder: 'Search messages',
                         showsCancelButton: true,
                         onCancel: () {},
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── Example Form ─────────────────────────────────
                       const _SectionTitle(title: 'Example Form'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       GlassCard(
                         padding: const EdgeInsets.all(24),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Create Account',
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: CupertinoColors.label.resolveFrom(context),
                               ),
                             ),
-                            const SizedBox(height: 24),
-                            const GlassTextField(
+                            SizedBox(height: 24),
+                            GlassTextField(
                               placeholder: 'Full Name',
                               prefixIcon: Icon(CupertinoIcons.person,
-                                  size: 20, color: Colors.white70),
+                                  size: 20, color: CupertinoColors.secondaryLabel.resolveFrom(context)),
                             ),
-                            const SizedBox(height: 16),
-                            const GlassTextField(
+                            SizedBox(height: 16),
+                            GlassTextField(
                               placeholder: 'Email Address',
                               prefixIcon: Icon(CupertinoIcons.mail,
-                                  size: 20, color: Colors.white70),
+                                  size: 20, color: CupertinoColors.secondaryLabel.resolveFrom(context)),
                               keyboardType: TextInputType.emailAddress,
                             ),
-                            const SizedBox(height: 16),
-                            const GlassTextField(
+                            SizedBox(height: 16),
+                            GlassTextField(
                               placeholder: 'Password',
                               prefixIcon: Icon(CupertinoIcons.lock,
-                                  size: 20, color: Colors.white70),
+                                  size: 20, color: CupertinoColors.secondaryLabel.resolveFrom(context)),
                               obscureText: true,
                             ),
-                            const SizedBox(height: 24),
+                            SizedBox(height: 24),
                             SizedBox(
                               width: double.infinity,
                               child: GlassButton.custom(
                                 onTap: () {},
                                 height: 56,
-                                child: const Center(
+                                child: Center(
                                   child: Text(
                                     'Sign Up',
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.white,
+                                      color: CupertinoColors.label.resolveFrom(context),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
                             Center(
                               child: Text(
                                 'Already have an account? Sign In',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: Colors.white.withValues(alpha: 0.7),
+                                  color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.7),
                                 ),
                               ),
                             ),
@@ -210,42 +210,42 @@ class _InputPageState extends State<InputPage> {
                         ),
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── GlassPasswordField ─────────────────────────
                       const _SectionTitle(title: 'GlassPasswordField'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       const GlassPasswordField(
                         placeholder: 'Enter password',
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── GlassTextArea ──────────────────────────────
                       const _SectionTitle(title: 'GlassTextArea'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       const GlassTextArea(
                         placeholder: 'Write a short description...',
                         minLines: 4,
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── GlassPicker ────────────────────────────────
                       const _SectionTitle(title: 'GlassPicker'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(
                             child: GlassPicker(
                               value: 'Administrator',
-                              icon: const Icon(CupertinoIcons.briefcase),
+                              icon: Icon(CupertinoIcons.briefcase),
                               useOwnLayer: true,
                               quality: GlassQuality.premium,
                               onTap: () {},
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12),
                           Expanded(
                             child: GlassPicker(
                               value: null,
@@ -258,31 +258,31 @@ class _InputPageState extends State<InputPage> {
                         ],
                       ),
 
-                      const SizedBox(height: 40),
+                      SizedBox(height: 40),
 
                       // ── GlassFormField ─────────────────────────────
                       const _SectionTitle(title: 'GlassFormField'),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       GlassCard(
                         padding: const EdgeInsets.all(24),
                         child: Column(
                           children: [
-                            const GlassFormField(
+                            GlassFormField(
                               label: 'Account Email',
                               child: GlassTextField(
                                 placeholder: 'example@email.com',
                                 keyboardType: TextInputType.emailAddress,
                                 prefixIcon: Icon(CupertinoIcons.mail,
-                                    color: Colors.white70, size: 20),
+                                    color: CupertinoColors.secondaryLabel.resolveFrom(context), size: 20),
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
                             const GlassFormField(
                               label: 'Password',
                               helperText: 'Must be at least 8 characters',
                               child: GlassPasswordField(),
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
                             GlassFormField(
                               label: 'Bio / Description',
                               child: GlassTextArea(
@@ -294,7 +294,7 @@ class _InputPageState extends State<InputPage> {
                         ),
                       ),
 
-                      const SizedBox(height: 100),
+                      SizedBox(height: 100),
                     ],
                   ),
                 ),
@@ -319,10 +319,10 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 24,
         fontWeight: FontWeight.bold,
-        color: Colors.white,
+        color: CupertinoColors.label.resolveFrom(context),
       ),
     );
   }
