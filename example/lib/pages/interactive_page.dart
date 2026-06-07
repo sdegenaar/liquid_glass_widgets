@@ -401,6 +401,78 @@ class _InteractivePageState extends State<InteractivePage> {
                           ],
                         ),
                       ),
+                      SizedBox(height: 24),
+                      Text(
+                        'Unified toolbars (showDividers: false) with shadows',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          GlassButtonGroup(
+                            showDividers: false,
+                            useOwnLayer: true,
+                            settings: const LiquidGlassSettings(shadowElevation: 1.0),
+                            children: [
+                              GlassButton(
+                                icon: Icon(CupertinoIcons.text_alignleft),
+                                style: GlassButtonStyle.transparent,
+                                onTap: () {},
+                              ),
+                              GlassButton(
+                                icon: Icon(CupertinoIcons.trash),
+                                style: GlassButtonStyle.transparent,
+                                onTap: () {},
+                              ),
+                              GlassButton(
+                                icon: Icon(CupertinoIcons.add),
+                                style: GlassButtonStyle.transparent,
+                                onTap: () {},
+                              ),
+                            ],
+                          ),
+                          GlassButton(
+                            icon: Icon(CupertinoIcons.pencil),
+                            useOwnLayer: true,
+                            settings: const LiquidGlassSettings(shadowElevation: 1.0),
+                            onTap: () {},
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 16),
+                      Center(
+                        child: GlassButtonGroup(
+                          showDividers: false,
+                          useOwnLayer: true,
+                          settings: const LiquidGlassSettings(shadowElevation: 1.0),
+                          children: [
+                            GlassButton(
+                              icon: Icon(CupertinoIcons.arrow_uturn_left),
+                              style: GlassButtonStyle.transparent,
+                              onTap: () {},
+                            ),
+                            GlassButton(
+                              icon: Icon(CupertinoIcons.arrow_uturn_right),
+                              style: GlassButtonStyle.transparent,
+                              onTap: () {},
+                            ),
+                            GlassButton(
+                              icon: Icon(CupertinoIcons.pencil_outline),
+                              style: GlassButtonStyle.transparent,
+                              onTap: () {},
+                            ),
+                            GlassButton(
+                              icon: Icon(CupertinoIcons.ellipsis),
+                              style: GlassButtonStyle.transparent,
+                              onTap: () {},
+                            ),
+                          ],
+                        ),
+                      ),
 
                       SizedBox(height: 40),
 

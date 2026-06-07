@@ -23,6 +23,7 @@ class GlassButtonGroup extends StatelessWidget {
     this.borderRadius = 16.0,
     this.borderColor,
     this.useOwnLayer = false,
+    this.showDividers = true,
   });
 
   /// The buttons to display in the group.
@@ -50,6 +51,11 @@ class GlassButtonGroup extends StatelessWidget {
   /// Whether to create its own glass layer.
   final bool useOwnLayer;
 
+  /// Whether to show dividers between buttons.
+  ///
+  /// Set to false to create a unified pill of buttons without separating lines.
+  final bool showDividers;
+
   @override
   Widget build(BuildContext context) {
     // Inherit quality from parent layer if not explicitly set.
@@ -63,34 +69,29 @@ class GlassButtonGroup extends StatelessWidget {
             ? CupertinoColors.black.withValues(alpha: 0.12)
             : CupertinoColors.white.withValues(alpha: 0.12));
 
-    // ClipRRect constrains the glass layer to the pill boundary on all backends.
-    // On Impeller, LiquidGlass.withOwnLayer (premium + useOwnLayer) can bleed
-    // its backdrop-capture rectangle outside the shape; ClipRRect.antiAlias
-    // hard-clips that bleed without downgrading the children's rendering quality,
-    // while allowing the shader's internal specular rim-light to serve as the outline.
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
+    return GlassContainer(
+      useOwnLayer: useOwnLayer,
+      quality: effectiveQuality,
+      settings: settings,
+      shape: LiquidRoundedSuperellipse(borderRadius: borderRadius),
+      padding: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
-      child: GlassContainer(
-        useOwnLayer: useOwnLayer,
-        quality: effectiveQuality,
-        settings: settings,
-        shape: LiquidRoundedSuperellipse(borderRadius: borderRadius),
-        padding: EdgeInsets.zero,
-        child: IntrinsicHeight(
-          child: Flex(
-            direction: direction,
-            mainAxisSize: MainAxisSize.min,
-            children: _buildChildrenWithDividers(effectiveBorderColor),
-          ),
+      child: IntrinsicHeight(
+        child: Flex(
+          direction: direction,
+          mainAxisSize: MainAxisSize.min,
+          children: _buildChildrenWithDividers(effectiveBorderColor),
         ),
       ),
     );
   }
 
   List<Widget> _buildChildrenWithDividers(Color resolvedBorderColor) {
-    final List<Widget> items = [];
+    if (!showDividers) {
+      return children;
+    }
 
+    final List<Widget> items = [];
     for (int i = 0; i < children.length; i++) {
       // Add divider before item (excluding first)
       if (i > 0) {
@@ -100,15 +101,8 @@ class GlassButtonGroup extends StatelessWidget {
               : Container(height: 1, color: resolvedBorderColor),
         );
       }
-
-      // Ensure GlassButtons are transparent if they are indeed GlassButtons
-      // (We can't forcefully mutate widgets, but we assume user follows pattern
-      // or we accept what they pass. Documentation guides them to use transparent.)
-      // Note: We could wrap in a Theme or provider if GlassButton supported it,
-      // but style property is explicit.
       items.add(children[i]);
     }
-
     return items;
   }
 }
