@@ -12,7 +12,8 @@ import 'package:flutter/material.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 const _kPodcastsPurple = Color(0xFFA855F7);
-const _kBackground = CupertinoDynamicColor.withBrightness(color: Color(0xFFF2F2F7), darkColor: Color(0xFF000000));
+const _kBackground = CupertinoDynamicColor.withBrightness(
+    color: Color(0xFFF2F2F7), darkColor: Color(0xFF000000));
 const _kBarH = 64.0;
 const _kPaddingH = 20.0;
 const _kPaddingV = 16.0;
@@ -326,7 +327,9 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
 
     return GlassScaffold(
       background: ColoredBox(color: _kBackground.resolveFrom(context)),
-      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark ? GlassStatusBarStyle.light : GlassStatusBarStyle.dark,
+      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark
+          ? GlassStatusBarStyle.light
+          : GlassStatusBarStyle.dark,
       topEdgeFade: true,
       bottomEdgeFade: true,
       topEdgeFadeExtent: 0, // no app bar — just status bar fade
@@ -378,9 +381,10 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
                 height: 50,
                 shape: const LiquidRoundedSuperellipse(borderRadius: 25),
                 settings: LiquidGlassSettings(
-                  glassColor: CupertinoTheme.brightnessOf(context) == Brightness.dark 
-                      ? const Color(0xCC1C1C1E) 
-                      : const Color(0xCCF2F2F7),
+                  glassColor:
+                      CupertinoTheme.brightnessOf(context) == Brightness.dark
+                          ? const Color(0xCC1C1C1E)
+                          : const Color(0xCCF2F2F7),
                   thickness: 30,
                   blur: 3,
                 ),
@@ -421,8 +425,8 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
           quality: GlassQuality.premium,
           interactionBehavior: GlassInteractionBehavior.full,
           settings: LiquidGlassSettings(
-            glassColor: CupertinoTheme.brightnessOf(context) == Brightness.dark 
-                ? const Color.fromRGBO(28, 28, 30, 0.8) 
+            glassColor: CupertinoTheme.brightnessOf(context) == Brightness.dark
+                ? const Color.fromRGBO(28, 28, 30, 0.8)
                 : const Color.fromRGBO(242, 242, 247, 0.8),
             thickness: 30,
             blur: 4,
@@ -581,8 +585,10 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
         const SliverToBoxAdapter(child: SizedBox(height: 8)),
         SliverList.separated(
           itemCount: 4,
-          separatorBuilder: (_, __) =>
-              Divider(color: CupertinoColors.tertiaryLabel.resolveFrom(context), height: 1, indent: 76),
+          separatorBuilder: (_, __) => Divider(
+              color: CupertinoColors.tertiaryLabel.resolveFrom(context),
+              height: 1,
+              indent: 76),
           itemBuilder: (context, i) {
             final item = _kYouMightLike[i];
             return Padding(
@@ -597,7 +603,8 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
                         color: item.color,
                         borderRadius: BorderRadius.circular(10)),
                     child: Icon(item.icon,
-                        color: CupertinoColors.label.resolveFrom(context), size: 28),
+                        color: CupertinoColors.label.resolveFrom(context),
+                        size: 28),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -608,26 +615,31 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                                color: CupertinoColors.label.resolveFrom(context),
+                                color:
+                                    CupertinoColors.label.resolveFrom(context),
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600)),
                         const SizedBox(height: 4),
                         Text(item.author,
                             style: TextStyle(
-                                color: CupertinoColors.secondaryLabel.resolveFrom(context), fontSize: 13)),
+                                color: CupertinoColors.secondaryLabel
+                                    .resolveFrom(context),
+                                fontSize: 13)),
                         const SizedBox(height: 6),
                         GlassProgressIndicator.linear(
                           value: 0.1 + i * 0.18,
                           height: 3,
                           color: _kPodcastsPurple,
-                          backgroundColor: CupertinoColors.tertiaryLabel.resolveFrom(context),
+                          backgroundColor: CupertinoColors.tertiaryLabel
+                              .resolveFrom(context),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 12),
                   Icon(CupertinoIcons.ellipsis,
-                      color: CupertinoColors.tertiaryLabel.resolveFrom(context), size: 20),
+                      color: CupertinoColors.tertiaryLabel.resolveFrom(context),
+                      size: 20),
                 ],
               ),
             );
@@ -680,7 +692,8 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
                     fontWeight: FontWeight.bold)),
             const SizedBox(width: 6),
             Icon(CupertinoIcons.chevron_right,
-                color: CupertinoColors.secondaryLabel.resolveFrom(context), size: 16),
+                color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                size: 16),
           ],
         ),
       ),
@@ -720,7 +733,8 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
               padding: const EdgeInsets.all(12),
               child: Text('Category ${i + 1}',
                   style: TextStyle(
-                      color: CupertinoColors.label.resolveFrom(context), fontWeight: FontWeight.bold)),
+                      color: CupertinoColors.label.resolveFrom(context),
+                      fontWeight: FontWeight.bold)),
             ),
           ),
         ),
@@ -804,7 +818,8 @@ class _Fallback extends StatelessWidget {
       color: item.color,
       child: Center(
           child: Icon(item.icon,
-              size: size * 0.42, color: CupertinoColors.secondaryLabel.resolveFrom(context))),
+              size: size * 0.42,
+              color: CupertinoColors.secondaryLabel.resolveFrom(context))),
     );
   }
 }
@@ -822,7 +837,10 @@ class _UpNextCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: item.color,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.08)),
+        border: Border.all(
+            color: CupertinoColors.label
+                .resolveFrom(context)
+                .withValues(alpha: 0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -840,7 +858,8 @@ class _UpNextCard extends StatelessWidget {
                     value: item.progress,
                     height: 3,
                     color: _kPodcastsPurple,
-                    backgroundColor: CupertinoColors.tertiaryLabel.resolveFrom(context),
+                    backgroundColor:
+                        CupertinoColors.tertiaryLabel.resolveFrom(context),
                   ),
               ],
             ),
@@ -869,23 +888,31 @@ class _UpNextCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.15),
+                          color: CupertinoColors.label
+                              .resolveFrom(context)
+                              .withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
                           children: [
                             Icon(CupertinoIcons.play_fill,
-                                size: 10, color: CupertinoColors.label.resolveFrom(context)),
+                                size: 10,
+                                color:
+                                    CupertinoColors.label.resolveFrom(context)),
                             const SizedBox(width: 4),
                             Text(item.duration,
                                 style: TextStyle(
-                                    color: CupertinoColors.label.resolveFrom(context), fontSize: 11)),
+                                    color: CupertinoColors.label
+                                        .resolveFrom(context),
+                                    fontSize: 11)),
                           ],
                         ),
                       ),
                       const Spacer(),
                       Icon(CupertinoIcons.ellipsis,
-                          color: CupertinoColors.tertiaryLabel.resolveFrom(context), size: 16),
+                          color: CupertinoColors.tertiaryLabel
+                              .resolveFrom(context),
+                          size: 16),
                     ],
                   ),
                 ],
@@ -911,7 +938,10 @@ class _VideoCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: item.color,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.08)),
+        border: Border.all(
+            color: CupertinoColors.label
+                .resolveFrom(context)
+                .withValues(alpha: 0.08)),
       ),
       child: Stack(
         fit: StackFit.expand,
@@ -942,10 +972,13 @@ class _VideoCard extends StatelessWidget {
               child: Row(
                 children: [
                   Icon(CupertinoIcons.video_camera_solid,
-                      size: 11, color: CupertinoColors.label.resolveFrom(context)),
+                      size: 11,
+                      color: CupertinoColors.label.resolveFrom(context)),
                   SizedBox(width: 4),
                   Text('Video',
-                      style: TextStyle(color: CupertinoColors.label.resolveFrom(context), fontSize: 10)),
+                      style: TextStyle(
+                          color: CupertinoColors.label.resolveFrom(context),
+                          fontSize: 10)),
                 ],
               ),
             ),
@@ -966,8 +999,10 @@ class _VideoCard extends StatelessWidget {
                           fontWeight: FontWeight.bold)),
                   const SizedBox(height: 2),
                   Text(item.author,
-                      style:
-                          TextStyle(color: CupertinoColors.secondaryLabel.resolveFrom(context), fontSize: 11)),
+                      style: TextStyle(
+                          color: CupertinoColors.secondaryLabel
+                              .resolveFrom(context),
+                          fontSize: 11)),
                 ],
               ),
             ),
@@ -1002,7 +1037,9 @@ class _SmallPodcastCard extends StatelessWidget {
           Text(item.author,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: CupertinoColors.secondaryLabel.resolveFrom(context), fontSize: 11)),
+              style: TextStyle(
+                  color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                  fontSize: 11)),
         ],
       ),
     );
@@ -1045,11 +1082,15 @@ class _MiniPlayerContent extends StatelessWidget {
                 Text('The New York Times',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: CupertinoColors.secondaryLabel.resolveFrom(context), fontSize: 12)),
+                    style: TextStyle(
+                        color:
+                            CupertinoColors.secondaryLabel.resolveFrom(context),
+                        fontSize: 12)),
               ],
             ),
           ),
-          Icon(CupertinoIcons.play_fill, color: CupertinoColors.label.resolveFrom(context), size: 24),
+          Icon(CupertinoIcons.play_fill,
+              color: CupertinoColors.label.resolveFrom(context), size: 24),
           const SizedBox(width: 16),
           Icon(CupertinoIcons.goforward_30,
               color: CupertinoColors.label.resolveFrom(context), size: 22),
@@ -1133,9 +1174,15 @@ class _NowPlayingViewState extends State<NowPlayingView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('15:30',
-                  style: TextStyle(color: CupertinoColors.secondaryLabel.resolveFrom(context), fontSize: 12)),
+                  style: TextStyle(
+                      color:
+                          CupertinoColors.secondaryLabel.resolveFrom(context),
+                      fontSize: 12)),
               Text('-34:10',
-                  style: TextStyle(color: CupertinoColors.secondaryLabel.resolveFrom(context), fontSize: 12)),
+                  style: TextStyle(
+                      color:
+                          CupertinoColors.secondaryLabel.resolveFrom(context),
+                      fontSize: 12)),
             ],
           ),
           const SizedBox(height: 20),
@@ -1149,15 +1196,17 @@ class _NowPlayingViewState extends State<NowPlayingView> {
                 useOwnLayer: true,
                 shape: const LiquidRoundedSuperellipse(borderRadius: 40),
                 settings: LiquidGlassSettings(
-                    thickness: 20, 
-                    blur: 2, 
-                    glassColor: CupertinoTheme.brightnessOf(context) == Brightness.dark 
-                        ? const Color(0x33FFFFFF) 
-                        : const Color(0x1A000000)),
+                    thickness: 20,
+                    blur: 2,
+                    glassColor:
+                        CupertinoTheme.brightnessOf(context) == Brightness.dark
+                            ? const Color(0x33FFFFFF)
+                            : const Color(0x1A000000)),
                 icon: Padding(
                   padding: EdgeInsets.all(24.0),
                   child: Icon(CupertinoIcons.play_fill,
-                      color: CupertinoColors.label.resolveFrom(context), size: 48),
+                      color: CupertinoColors.label.resolveFrom(context),
+                      size: 48),
                 ),
               ),
               Icon(CupertinoIcons.goforward_30,
@@ -1168,7 +1217,8 @@ class _NowPlayingViewState extends State<NowPlayingView> {
           Row(
             children: [
               Icon(CupertinoIcons.speaker_fill,
-                  color: CupertinoColors.secondaryLabel.resolveFrom(context), size: 16),
+                  color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                  size: 16),
               const SizedBox(width: 12),
               Expanded(
                 child: GlassSlider(
@@ -1181,7 +1231,8 @@ class _NowPlayingViewState extends State<NowPlayingView> {
               ),
               const SizedBox(width: 12),
               Icon(CupertinoIcons.speaker_3_fill,
-                  color: CupertinoColors.secondaryLabel.resolveFrom(context), size: 16),
+                  color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                  size: 16),
             ],
           ),
           const SizedBox(height: 30),

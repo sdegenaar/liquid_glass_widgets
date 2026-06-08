@@ -637,164 +637,177 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
         clipBehavior:
             Clip.antiAlias, // Clip items at the edges for edge-to-edge feel
         glowIntensity: widget.glowIntensity,
-        child: GlassGlow(
-          enabled: widget.enableInteractionGlow,
-          glowOnTapOnly: widget.glowOnTapOnly,
-          glowColor: widget.glowColor ?? Colors.white.withValues(alpha: 0.15),
-          glowRadius: widget.glowRadius,
-          glowBlurRadius: 40,
-          clipper: ShapeBorderClipper(
-            shape: teardropShape,
-          ),
-          child: Transform.scale(
-            scale: containerScale,
-            alignment: Alignment.center,
-            child: Stack(
-              alignment: _morphAlignment, // Align internal stack content
-              clipBehavior:
-                  Clip.none, // Prevent double-clip artifacts during stretch
-              children: [
-                // Menu content — only appears when container is nearly at
-                // full size (0.94+), so the teardrop morph is fully visible
-                // first. Items stagger in rapidly in the last 6% of animation.
-                if (clampedValue > 0.94)
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      // Sliding selection pill (background)
-                      ValueListenableBuilder<int?>(
-                        valueListenable: _hoveredIndexNotifier,
-                        builder: (context, hoveredIndex, _) {
-                          if (hoveredIndex == null) {
-                            return const SizedBox.shrink();
-                          }
-                          return AnimatedPositioned(
-                            duration: const Duration(milliseconds: 150),
-                            curve: Curves.easeOutCubic,
-                            left: 12,
-                            right: 12,
-                            top: _getItemOffset(hoveredIndex, context) -
-                                (_scrollController.hasClients
-                                    ? _scrollController.offset
-                                    : 0.0),
-                            height: _getScaledItemHeight(
-                                widget.items[hoveredIndex], context),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: widget.selectionColor,
-                                borderRadius: BorderRadius.circular(
-                                    widget.itemBorderRadius),
-                                border: Border.all(
-                                  color: const Color(
-                                      0x0DFFFFFF), // 5% white border
-                                  width: 0.5,
+        child: Builder(builder: (context) {
+          final isDark =
+              CupertinoTheme.brightnessOf(context) == Brightness.dark;
+          return GlassGlow(
+            enabled: widget.enableInteractionGlow,
+            glowOnTapOnly: widget.glowOnTapOnly,
+            glowColor: widget.glowColor ??
+                (isDark
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : Colors.black.withValues(alpha: 0.10)),
+            glowRadius: widget.glowRadius,
+            glowBlurRadius: 40,
+            clipper: ShapeBorderClipper(
+              shape: teardropShape,
+            ),
+            child: Transform.scale(
+              scale: containerScale,
+              alignment: Alignment.center,
+              child: Stack(
+                alignment: _morphAlignment, // Align internal stack content
+                clipBehavior:
+                    Clip.none, // Prevent double-clip artifacts during stretch
+                children: [
+                  // Menu content — only appears when container is nearly at
+                  // full size (0.94+), so the teardrop morph is fully visible
+                  // first. Items stagger in rapidly in the last 6% of animation.
+                  if (clampedValue > 0.94)
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        // Sliding selection pill (background)
+                        ValueListenableBuilder<int?>(
+                          valueListenable: _hoveredIndexNotifier,
+                          builder: (context, hoveredIndex, _) {
+                            if (hoveredIndex == null) {
+                              return const SizedBox.shrink();
+                            }
+                            return AnimatedPositioned(
+                              duration: const Duration(milliseconds: 150),
+                              curve: Curves.easeOutCubic,
+                              left: 12,
+                              right: 12,
+                              top: _getItemOffset(hoveredIndex, context) -
+                                  (_scrollController.hasClients
+                                      ? _scrollController.offset
+                                      : 0.0),
+                              height: _getScaledItemHeight(
+                                  widget.items[hoveredIndex], context),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: widget.selectionColor,
+                                  borderRadius: BorderRadius.circular(
+                                      widget.itemBorderRadius),
+                                  border: Border.all(
+                                    color:
+                                        CupertinoTheme.brightnessOf(context) ==
+                                                Brightness.dark
+                                            ? const Color(0x0DFFFFFF)
+                                            : const Color(0x0D000000),
+                                    width: 0.5,
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-                      Listener(
-                        onPointerDown: (event) {
-                          _isDragging = true;
-                          _isDraggingNotifier.value = true;
-                          _hasStretched = false;
-                          _initialLocalPosition = event.localPosition;
-                          _initialScrollOffset = _scrollController.hasClients
-                              ? _scrollController.offset
-                              : 0.0;
-                          _updateHoveredIndex(event.localPosition);
-                        },
-                        onPointerMove: (event) {
-                          if (_isDragging) {
-                            _updateHoveredIndex(event.localPosition);
-                          }
-                        },
-                        onPointerUp: (event) {
-                          if (_isDragging) {
-                            final currentOffset = _scrollController.hasClients
+                            );
+                          },
+                        ),
+                        Listener(
+                          onPointerDown: (event) {
+                            _isDragging = true;
+                            _isDraggingNotifier.value = true;
+                            _hasStretched = false;
+                            _initialLocalPosition = event.localPosition;
+                            _initialScrollOffset = _scrollController.hasClients
                                 ? _scrollController.offset
                                 : 0.0;
-                            final scrollDisplacement =
-                                (currentOffset - _initialScrollOffset).abs();
-                            final dragDisplacement =
-                                (event.localPosition - _initialLocalPosition)
-                                    .distance;
+                            _updateHoveredIndex(event.localPosition);
+                          },
+                          onPointerMove: (event) {
+                            if (_isDragging) {
+                              _updateHoveredIndex(event.localPosition);
+                            }
+                          },
+                          onPointerUp: (event) {
+                            if (_isDragging) {
+                              final currentOffset = _scrollController.hasClients
+                                  ? _scrollController.offset
+                                  : 0.0;
+                              final scrollDisplacement =
+                                  (currentOffset - _initialScrollOffset).abs();
+                              final dragDisplacement =
+                                  (event.localPosition - _initialLocalPosition)
+                                      .distance;
 
-                            // Slide-to-select tap logic (only for non-scrollable menus)
-                            if (scrollDisplacement < 10 &&
-                                dragDisplacement < 10 &&
-                                !_isScrollable) {
-                              final indexToTap = _hoveredIndex ??
-                                  _calculateIndexFromPosition(
-                                      event.localPosition, context);
-                              if (indexToTap != null) {
-                                final item = widget.items[indexToTap];
-                                if (item is GlassMenuItem && item.enabled) {
-                                  item.onTap();
-                                  _closeMenu();
+                              // Slide-to-select tap logic (only for non-scrollable menus)
+                              if (scrollDisplacement < 10 &&
+                                  dragDisplacement < 10 &&
+                                  !_isScrollable) {
+                                final indexToTap = _hoveredIndex ??
+                                    _calculateIndexFromPosition(
+                                        event.localPosition, context);
+                                if (indexToTap != null) {
+                                  final item = widget.items[indexToTap];
+                                  if (item is GlassMenuItem && item.enabled) {
+                                    item.onTap();
+                                    _closeMenu();
+                                  }
                                 }
                               }
+                              _isDragging = false;
+                              _isDraggingNotifier.value = false;
+                              _hoveredIndex = null;
+                              _hoveredIndexNotifier.value = null;
+                              _hasStretched = false;
                             }
+                          },
+                          onPointerCancel: (_) {
                             _isDragging = false;
                             _isDraggingNotifier.value = false;
                             _hoveredIndex = null;
                             _hoveredIndexNotifier.value = null;
-                            _hasStretched = false;
-                          }
-                        },
-                        onPointerCancel: (_) {
-                          _isDragging = false;
-                          _isDraggingNotifier.value = false;
-                          _hoveredIndex = null;
-                          _hoveredIndexNotifier.value = null;
-                        },
-                        child: SizedBox(
-                          width: currentWidth,
-                          height: widget.menuHeight, // Apply fixed height
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: SingleChildScrollView(
-                              controller: _scrollController,
-                              physics:
-                                  const ClampingScrollPhysics(), // iOS-style
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  const SizedBox(height: 12), // Top padding
-                                  ..._buildWrappedItems()
-                                      .asMap()
-                                      .entries
-                                      .expand((entry) {
-                                    // Items fade in smoothly over the second half of the animation.
-                                    // Removed the complex out-to-in 94% stagger so items show up
-                                    // naturally without a delayed "pop-in" on fast springs.
-                                    final itemOpacity =
-                                        ((clampedValue - 0.5) / 0.5)
-                                            .clamp(0.0, 1.0);
-                                    return [
-                                      Opacity(
-                                        opacity: itemOpacity,
-                                        child: entry.value,
-                                      ),
-                                      if (entry.key < widget.items.length - 1)
-                                        const SizedBox(height: 2),
-                                    ];
-                                  }),
-                                  const SizedBox(height: 12), // Bottom padding
-                                ],
+                          },
+                          child: SizedBox(
+                            width: currentWidth,
+                            height: widget.menuHeight, // Apply fixed height
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              child: SingleChildScrollView(
+                                controller: _scrollController,
+                                physics:
+                                    const ClampingScrollPhysics(), // iOS-style
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    const SizedBox(height: 12), // Top padding
+                                    ..._buildWrappedItems()
+                                        .asMap()
+                                        .entries
+                                        .expand((entry) {
+                                      // Items fade in smoothly over the second half of the animation.
+                                      // Removed the complex out-to-in 94% stagger so items show up
+                                      // naturally without a delayed "pop-in" on fast springs.
+                                      final itemOpacity =
+                                          ((clampedValue - 0.5) / 0.5)
+                                              .clamp(0.0, 1.0);
+                                      return [
+                                        Opacity(
+                                          opacity: itemOpacity,
+                                          child: entry.value,
+                                        ),
+                                        if (entry.key < widget.items.length - 1)
+                                          const SizedBox(height: 2),
+                                      ];
+                                    }),
+                                    const SizedBox(
+                                        height: 12), // Bottom padding
+                                  ],
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-              ],
-            ), // outer Stack
-          ), // Transform.scale
-        ), // GlassGlow
+                      ],
+                    ),
+                ],
+              ), // outer Stack
+            ), // Transform.scale
+          ); // GlassGlow
+        }), // Builder
       ), // GlassContainer
     ); // LiquidStretch (glassContent)
 

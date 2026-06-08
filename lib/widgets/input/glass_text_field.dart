@@ -438,7 +438,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
   Widget _wrapWithGlow(Widget child, bool isDark) {
     if (!widget.interactionBehavior.hasGlow) return child;
     return GlassGlow(
-      glowColor: widget.glowColor ?? 
+      glowColor: widget.glowColor ??
           (isDark ? const Color(0x1FFFFFFF) : const Color(0x1F000000)),
       glowRadius: widget.glowRadius,
       child: child,
@@ -578,9 +578,11 @@ class _GlassTextFieldState extends State<GlassTextField> {
     // Use MediaQuery textScaler for accurate line height calculation.
     final textScaler = MediaQuery.textScalerOf(context);
     final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
-    
+
     final defaultTextStyle = TextStyle(
-      color: isDark ? const Color.fromRGBO(255, 255, 255, 0.9) : const Color.fromRGBO(0, 0, 0, 0.9),
+      color: isDark
+          ? const Color.fromRGBO(255, 255, 255, 0.9)
+          : const Color.fromRGBO(0, 0, 0, 0.9),
       fontSize: 16,
       height: 1.2,
     );
@@ -601,15 +603,19 @@ class _GlassTextFieldState extends State<GlassTextField> {
   @override
   Widget build(BuildContext context) {
     final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
-    
+
     final defaultTextStyle = TextStyle(
-      color: isDark ? const Color.fromRGBO(255, 255, 255, 0.9) : const Color.fromRGBO(0, 0, 0, 0.9),
+      color: isDark
+          ? const Color.fromRGBO(255, 255, 255, 0.9)
+          : const Color.fromRGBO(0, 0, 0, 0.9),
       fontSize: 16,
       height: 1.2,
     );
 
     final defaultPlaceholderStyle = TextStyle(
-      color: isDark ? const Color.fromRGBO(255, 255, 255, 0.5) : const Color.fromRGBO(0, 0, 0, 0.5),
+      color: isDark
+          ? const Color.fromRGBO(255, 255, 255, 0.5)
+          : const Color.fromRGBO(0, 0, 0, 0.5),
       fontSize: 16,
     );
 

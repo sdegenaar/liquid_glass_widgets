@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/types/glass_interaction_behavior.dart';
@@ -143,15 +142,15 @@ class _GlassPasswordFieldState extends State<GlassPasswordField> {
       useOwnLayer: widget.useOwnLayer,
       quality: widget.quality,
       shape: widget.shape,
-      prefixIcon: const Icon(
+      prefixIcon: Icon(
         CupertinoIcons.lock_fill,
         size: 20,
-        color: Colors.white70,
+        color: CupertinoColors.secondaryLabel.resolveFrom(context),
       ),
       suffixIcon: Icon(
         _obscureText ? CupertinoIcons.eye_slash_fill : CupertinoIcons.eye_fill,
         size: 20,
-        color: Colors.white70,
+        color: CupertinoColors.secondaryLabel.resolveFrom(context),
       ),
       onSuffixTap: () {
         setState(() {

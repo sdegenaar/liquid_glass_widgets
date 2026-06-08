@@ -210,8 +210,8 @@ class _GlassPageControlState extends State<GlassPageControl>
   Widget build(BuildContext context) {
     if (widget.count <= 0) return const SizedBox.shrink();
 
-    final effectiveActiveColor = widget.activeColor ??
-        CupertinoColors.label.resolveFrom(context);
+    final effectiveActiveColor =
+        widget.activeColor ?? CupertinoColors.label.resolveFrom(context);
     final effectiveInactiveColor = widget.inactiveColor ??
         CupertinoColors.tertiaryLabel.resolveFrom(context);
 

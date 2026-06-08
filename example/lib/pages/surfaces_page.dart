@@ -12,7 +12,9 @@ class SurfacesPage extends StatelessWidget {
     return GlassPage(
       background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
-      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark ? GlassStatusBarStyle.light : GlassStatusBarStyle.dark,
+      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark
+          ? GlassStatusBarStyle.light
+          : GlassStatusBarStyle.dark,
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: GlassAppBar(
@@ -64,7 +66,9 @@ class SurfacesPage extends StatelessWidget {
                         'The navigation bar at the top of this page is a live GlassAppBar with leading and title support.',
                         style: TextStyle(
                           fontSize: 14,
-                          color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.7),
+                          color: CupertinoColors.label
+                              .resolveFrom(context)
+                              .withValues(alpha: 0.7),
                         ),
                       ),
 
@@ -77,7 +81,9 @@ class SurfacesPage extends StatelessWidget {
                         'Draggable jelly-physics tab bar with velocity snapping and per-tab glow colors.',
                         style: TextStyle(
                           fontSize: 14,
-                          color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.7),
+                          color: CupertinoColors.label
+                              .resolveFrom(context)
+                              .withValues(alpha: 0.7),
                         ),
                       ),
                       SizedBox(height: 16),
@@ -102,7 +108,9 @@ class SurfacesPage extends StatelessWidget {
                         'Bottom bar with integrated search — tabs spring-collapse into pills when search activates.',
                         style: TextStyle(
                           fontSize: 14,
-                          color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.7),
+                          color: CupertinoColors.label
+                              .resolveFrom(context)
+                              .withValues(alpha: 0.7),
                         ),
                       ),
                       SizedBox(height: 16),
@@ -132,7 +140,9 @@ class SurfacesPage extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.9),
+                          color: CupertinoColors.label
+                              .resolveFrom(context)
+                              .withValues(alpha: 0.9),
                         ),
                       ),
                       SizedBox(height: 8),
@@ -144,7 +154,9 @@ class SurfacesPage extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.9),
+                          color: CupertinoColors.label
+                              .resolveFrom(context)
+                              .withValues(alpha: 0.9),
                         ),
                       ),
                       SizedBox(height: 8),
@@ -156,7 +168,9 @@ class SurfacesPage extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.9),
+                          color: CupertinoColors.label
+                              .resolveFrom(context)
+                              .withValues(alpha: 0.9),
                         ),
                       ),
                       SizedBox(height: 8),
@@ -259,7 +273,9 @@ class _BottomBarDemoPageState extends State<_BottomBarDemoPage> {
   Widget build(BuildContext context) {
     return GlassPage(
       background: _buildDemoBackground(),
-      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark ? GlassStatusBarStyle.light : GlassStatusBarStyle.dark,
+      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark
+          ? GlassStatusBarStyle.light
+          : GlassStatusBarStyle.dark,
       child: Scaffold(
         extendBody: true,
         body: SafeArea(
@@ -286,7 +302,8 @@ class _BottomBarDemoPageState extends State<_BottomBarDemoPage> {
                             child: Text(
                               _tabTitles[_selectedIndex],
                               style: TextStyle(
-                                color: CupertinoColors.label.resolveFrom(context),
+                                color:
+                                    CupertinoColors.label.resolveFrom(context),
                                 fontSize: 34,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: -0.5,
@@ -383,7 +400,9 @@ class _SearchableBarDemoPageState extends State<_SearchableBarDemoPage> {
   Widget build(BuildContext context) {
     return GlassPage(
       background: _buildDemoBackground(),
-      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark ? GlassStatusBarStyle.light : GlassStatusBarStyle.dark,
+      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark
+          ? GlassStatusBarStyle.light
+          : GlassStatusBarStyle.dark,
       child: Scaffold(
         extendBody: true,
         resizeToAvoidBottomInset: false,
@@ -397,7 +416,9 @@ class _SearchableBarDemoPageState extends State<_SearchableBarDemoPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(CupertinoIcons.search,
-                              color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.3),
+                              color: CupertinoColors.label
+                                  .resolveFrom(context)
+                                  .withValues(alpha: 0.3),
                               size: 64),
                           SizedBox(height: 16),
                           Text(
@@ -412,7 +433,9 @@ class _SearchableBarDemoPageState extends State<_SearchableBarDemoPage> {
                           Text(
                             'Type to search for anything.',
                             style: TextStyle(
-                              color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.45),
+                              color: CupertinoColors.label
+                                  .resolveFrom(context)
+                                  .withValues(alpha: 0.45),
                               fontSize: 15,
                             ),
                           ),
@@ -439,7 +462,8 @@ class _SearchableBarDemoPageState extends State<_SearchableBarDemoPage> {
                                   child: Text(
                                     _tabTitles[_selectedIndex],
                                     style: TextStyle(
-                                      color: CupertinoColors.label.resolveFrom(context),
+                                      color: CupertinoColors.label
+                                          .resolveFrom(context),
                                       fontSize: 34,
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: -0.5,
@@ -558,7 +582,8 @@ class _ContentRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       height: 64,
       decoration: BoxDecoration(
-        color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.06),
+        color:
+            CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -599,7 +624,9 @@ class _ContentRow extends StatelessWidget {
                 Text(
                   'Scroll to see the bar behavior',
                   style: TextStyle(
-                    color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
+                    color: CupertinoColors.label
+                        .resolveFrom(context)
+                        .withValues(alpha: 0.5),
                     fontSize: 13,
                   ),
                 ),
@@ -666,7 +693,9 @@ class _DemoLauncher extends StatelessWidget {
                     subtitle,
                     style: TextStyle(
                       fontSize: 13,
-                      color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.6),
+                      color: CupertinoColors.label
+                          .resolveFrom(context)
+                          .withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -674,7 +703,9 @@ class _DemoLauncher extends StatelessWidget {
             ),
             Icon(
               CupertinoIcons.chevron_right,
-              color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.4),
+              color: CupertinoColors.label
+                  .resolveFrom(context)
+                  .withValues(alpha: 0.4),
               size: 16,
             ),
           ],
@@ -734,7 +765,9 @@ class _TabBarDemoState extends State<_TabBarDemo> {
           height: 100,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.05),
+            color: CupertinoColors.label
+                .resolveFrom(context)
+                .withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -747,7 +780,9 @@ class _TabBarDemoState extends State<_TabBarDemo> {
                         ? CupertinoIcons.folder
                         : CupertinoIcons.person_2,
                 size: 32,
-                color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.8),
+                color: CupertinoColors.label
+                    .resolveFrom(context)
+                    .withValues(alpha: 0.8),
               ),
               SizedBox(height: 8),
               Text(

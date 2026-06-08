@@ -257,8 +257,7 @@ class LiquidGlassSettings with EquatableMixin {
       specularSharpness: t < 0.5 ? a.specularSharpness : b.specularSharpness,
       standardOpacityMultiplier: lerpDouble(
           a.standardOpacityMultiplier, b.standardOpacityMultiplier, t)!,
-      shadowElevation:
-          lerpDouble(a.shadowElevation, b.shadowElevation, t)!,
+      shadowElevation: lerpDouble(a.shadowElevation, b.shadowElevation, t)!,
       shadow: t < 0.5 ? a.shadow : b.shadow,
     );
   }

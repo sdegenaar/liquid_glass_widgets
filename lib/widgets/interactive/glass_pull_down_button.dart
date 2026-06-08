@@ -5,6 +5,7 @@ import '../overlays/glass_menu.dart';
 import '../overlays/glass_menu_item.dart';
 import 'glass_button.dart';
 import '../../theme/glass_theme_helpers.dart';
+import '../../src/renderer/liquid_shape.dart';
 
 /// A toolbar button that opens a liquid glass pull-down menu.
 ///
@@ -19,10 +20,16 @@ class GlassPullDownButton extends StatelessWidget {
     super.key,
     this.buttonWidth = 44,
     this.buttonHeight = 44,
+    this.buttonShape,
     this.menuWidth = 200,
     this.quality,
     this.onSelected,
   }) : icon = icon ?? const Icon(CupertinoIcons.ellipsis_circle);
+
+  /// The shape of the trigger button.
+  ///
+  /// If null, defaults to [LiquidOval].
+  final LiquidShape? buttonShape;
 
   /// The icon widget to display on the button.
   final Widget icon;
@@ -71,6 +78,7 @@ class GlassPullDownButton extends StatelessWidget {
             onTap: toggleMenu,
             width: buttonWidth,
             height: buttonHeight,
+            shape: buttonShape ?? const LiquidOval(),
             quality: effectiveQuality,
             useOwnLayer: effectiveQuality == GlassQuality.premium,
             child: Row(
@@ -101,6 +109,7 @@ class GlassPullDownButton extends StatelessWidget {
           label: label ?? '',
           width: buttonWidth,
           height: buttonHeight,
+          shape: buttonShape ?? const LiquidOval(),
           quality: effectiveQuality,
           useOwnLayer: effectiveQuality == GlassQuality.premium,
         );

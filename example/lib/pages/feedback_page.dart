@@ -50,7 +50,9 @@ class _FeedbackPageState extends State<FeedbackPage> {
     return GlassPage(
       background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
-      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark ? GlassStatusBarStyle.light : GlassStatusBarStyle.dark,
+      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark
+          ? GlassStatusBarStyle.light
+          : GlassStatusBarStyle.dark,
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: GlassAppBar(
@@ -302,7 +304,9 @@ class _FeedbackPageState extends State<FeedbackPage> {
                       Row(
                         children: [
                           Icon(CupertinoIcons.doc,
-                              color: CupertinoColors.secondaryLabel.resolveFrom(context), size: 32),
+                              color: CupertinoColors.secondaryLabel
+                                  .resolveFrom(context),
+                              size: 32),
                           SizedBox(width: 16),
                           Expanded(
                             child: Column(
@@ -313,7 +317,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
-                                    color: CupertinoColors.label.resolveFrom(context),
+                                    color: CupertinoColors.label
+                                        .resolveFrom(context),
                                   ),
                                 ),
                                 SizedBox(height: 4),
@@ -327,7 +332,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
                                     fontSize: 14,
                                     color: _uploadProgress == 1.0
                                         ? Colors.green
-                                        : CupertinoColors.tertiaryLabel.resolveFrom(context),
+                                        : CupertinoColors.tertiaryLabel
+                                            .resolveFrom(context),
                                   ),
                                 ),
                               ],
@@ -408,7 +414,9 @@ class _LabeledWidget extends StatelessWidget {
         SizedBox(height: 8),
         Text(
           label,
-          style: TextStyle(fontSize: 12, color: CupertinoColors.tertiaryLabel.resolveFrom(context)),
+          style: TextStyle(
+              fontSize: 12,
+              color: CupertinoColors.tertiaryLabel.resolveFrom(context)),
         ),
       ],
     );
@@ -432,7 +440,9 @@ class _ProgressStage extends StatelessWidget {
         SizedBox(height: 8),
         Text(
           label,
-          style: TextStyle(fontSize: 11, color: CupertinoColors.tertiaryLabel.resolveFrom(context)),
+          style: TextStyle(
+              fontSize: 11,
+              color: CupertinoColors.tertiaryLabel.resolveFrom(context)),
         ),
       ],
     );
@@ -459,7 +469,8 @@ class _ToastButton extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 16, color: CupertinoColors.label.resolveFrom(context)),
+          Icon(icon,
+              size: 16, color: CupertinoColors.label.resolveFrom(context)),
           SizedBox(width: 8),
           Text(label),
         ],

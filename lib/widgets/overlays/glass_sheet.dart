@@ -583,8 +583,13 @@ class _GlassSheetState extends State<GlassSheet> with TickerProviderStateMixin {
         );
 
         if (widget.enableInteractionGlow && effectiveSettings.blur > 0.05) {
+          final isDark =
+              CupertinoTheme.brightnessOf(context) == Brightness.dark;
           result = GlassGlow(
-            glowColor: widget.glowColor ?? Colors.white.withValues(alpha: 0.15),
+            glowColor: widget.glowColor ??
+                (isDark
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : Colors.black.withValues(alpha: 0.10)),
             glowRadius: widget.glowRadius,
             clipper: ShapeBorderClipper(shape: shape),
             child: result,

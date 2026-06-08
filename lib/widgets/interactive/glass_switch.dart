@@ -455,8 +455,11 @@ class _GlassSwitchState extends State<GlassSwitch>
     final thumbTravelDistance = trackWidth - thumbWidth - 4.0;
 
     // Performance: Cache color calculations as const to avoid allocation
-    final inactiveTrackColor =
-        widget.inactiveColor ?? const Color(0x33FFFFFF); // alpha: 0.2
+    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    // Light mode: solid opaque grey matching native iOS switch track groove.
+    // Dark mode: semi-transparent white overlay for glass aesthetic.
+    final inactiveTrackColor = widget.inactiveColor ??
+        (isDark ? const Color(0x33FFFFFF) : const Color(0xFFC5C5C6));
     final activeTrackColor = widget.activeColor ?? CupertinoColors.systemGreen;
 
     return GestureDetector(
@@ -552,7 +555,7 @@ class _GlassSwitchState extends State<GlassSwitch>
                 // Combined scale: Squash for jump + slight Grow for the liquid bloom
                 scale: scale * (1.0 + thickness * 0.1),
                 child: _buildThumb(thumbSize, thickness, scale, vExpand,
-                    leadStretch, anchorOffset, effectiveQuality),
+                    leadStretch, anchorOffset, effectiveQuality, isDark),
               ),
             );
 
@@ -586,7 +589,8 @@ class _GlassSwitchState extends State<GlassSwitch>
       double vExpand,
       double leadStretch,
       double anchorOffset,
-      GlassQuality? effectiveQuality) {
+      GlassQuality? effectiveQuality,
+      bool isDark) {
     // iOS 26: Unified Material Melt with Directional Anchoring
     final thumbWidth = size * 1.6;
     final thumbHeight = size;
@@ -630,25 +634,33 @@ class _GlassSwitchState extends State<GlassSwitch>
         // Standard: same rim/light math as AnimatedGlassIndicator pill.
         //   rimThickness×0.35, lightIntensity×0.6 dampeners applied in GlassEffect.build().
         // Premium: original values preserved exactly — no change to Premium rendering.
+        // Light mode: clear refractive glass with thicker body — visibility comes
+        //   from optical distortion and edge highlights, not body fill colour.
         settings: LiquidGlassSettings(
-          glassColor: const Color.from(alpha: 0.08, red: 1, green: 1, blue: 1),
-          refractiveIndex: 1.12,
-          thickness: 10,
+          glassColor: isDark
+              ? const Color.from(alpha: 0.08, red: 1, green: 1, blue: 1)
+              : const Color.from(
+                  alpha: 0.12, red: 0.88, green: 0.88, blue: 0.90),
+          refractiveIndex: isDark ? 1.12 : 1.22,
+          thickness: isDark ? 10 : 14,
           lightIntensity: isStdPath
               ? 0.0
               : 2.0, // no specular on synthetic path (clamped by synthBase); premium unchanged
           blur: 0,
           lightAngle: GlassDefaults.lightAngle,
         ),
-        rimThickness:
-            isStdPath ? 0.5 : 0.5, // beautiful thin rim; premium unchanged
+        rimThickness: isStdPath
+            ? (isDark ? 0.5 : 0.7)
+            : 0.5, // slightly thicker rim in light mode
         ambientRim: isStdPath
-            ? 0.08
-            : 0.1, // ~80% of Premium ring strength; premium unchanged
-        baseAlphaMultiplier:
-            isStdPath ? 0.0 : 0.2, // clear glass body; premium unchanged
-        edgeAlphaMultiplier:
-            isStdPath ? 0.15 : 0.4, // soft edge glow; premium unchanged
+            ? (isDark ? 0.08 : 0.15)
+            : 0.1, // stronger ambient ring in light mode
+        baseAlphaMultiplier: isStdPath
+            ? (isDark ? 0.0 : 0.04)
+            : 0.2, // near-clear body — refraction provides visibility
+        edgeAlphaMultiplier: isStdPath
+            ? (isDark ? 0.15 : 0.28)
+            : 0.4, // stronger edge contrast in light mode
         quality: effectiveQuality ?? GlassQuality.standard,
         interactionIntensity: transition,
         child: Stack(

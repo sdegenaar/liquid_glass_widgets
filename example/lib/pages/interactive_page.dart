@@ -35,7 +35,9 @@ class _InteractivePageState extends State<InteractivePage> {
     return GlassPage(
       background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
-      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark ? GlassStatusBarStyle.light : GlassStatusBarStyle.dark,
+      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark
+          ? GlassStatusBarStyle.light
+          : GlassStatusBarStyle.dark,
       child: Scaffold(
         extendBodyBehindAppBar: true,
         backgroundColor: Colors.transparent,
@@ -89,6 +91,8 @@ class _InteractivePageState extends State<InteractivePage> {
                         children: [
                           Expanded(
                             child: GlassButton.custom(
+                              shape: const LiquidRoundedSuperellipse(
+                                  borderRadius: 28),
                               onTap: () {},
                               width: double.infinity,
                               height: 56,
@@ -97,14 +101,17 @@ class _InteractivePageState extends State<InteractivePage> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(CupertinoIcons.arrow_down_circle_fill,
-                                      color: CupertinoColors.label.resolveFrom(context), size: 18),
+                                      color: CupertinoColors.label
+                                          .resolveFrom(context),
+                                      size: 18),
                                   SizedBox(width: 8),
                                   Text(
                                     'Download',
                                     style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
-                                      color: CupertinoColors.label.resolveFrom(context),
+                                      color: CupertinoColors.label
+                                          .resolveFrom(context),
                                     ),
                                   ),
                                 ],
@@ -179,7 +186,9 @@ class _InteractivePageState extends State<InteractivePage> {
                         'GlassButtonStyle.prominent — primary CTA',
                         style: TextStyle(
                           fontSize: 13,
-                          color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
+                          color: CupertinoColors.label
+                              .resolveFrom(context)
+                              .withValues(alpha: 0.5),
                         ),
                       ),
                       SizedBox(height: 12),
@@ -187,6 +196,8 @@ class _InteractivePageState extends State<InteractivePage> {
                         children: [
                           Expanded(
                             child: GlassButton.custom(
+                              shape: const LiquidRoundedSuperellipse(
+                                  borderRadius: 26),
                               style: GlassButtonStyle.prominent,
                               onTap: () {},
                               height: 52,
@@ -194,14 +205,17 @@ class _InteractivePageState extends State<InteractivePage> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(CupertinoIcons.plus_circle_fill,
-                                      color: CupertinoColors.label.resolveFrom(context), size: 20),
+                                      color: CupertinoColors.label
+                                          .resolveFrom(context),
+                                      size: 20),
                                   SizedBox(width: 8),
                                   Text(
                                     'Add to Library',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
-                                      color: CupertinoColors.label.resolveFrom(context),
+                                      color: CupertinoColors.label
+                                          .resolveFrom(context),
                                     ),
                                   ),
                                 ],
@@ -354,7 +368,9 @@ class _InteractivePageState extends State<InteractivePage> {
                         '${(_slider1 * 100).round()}%',
                         style: TextStyle(
                           fontSize: 13,
-                          color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.6),
+                          color: CupertinoColors.label
+                              .resolveFrom(context)
+                              .withValues(alpha: 0.6),
                         ),
                       ),
                       SizedBox(height: 20),
@@ -384,7 +400,9 @@ class _InteractivePageState extends State<InteractivePage> {
                         'With dividers (children mode)',
                         style: TextStyle(
                           fontSize: 13,
-                          color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
+                          color: CupertinoColors.label
+                              .resolveFrom(context)
+                              .withValues(alpha: 0.5),
                         ),
                       ),
                       SizedBox(height: 16),
@@ -414,7 +432,9 @@ class _InteractivePageState extends State<InteractivePage> {
                         'Lightweight items (.icons constructor)',
                         style: TextStyle(
                           fontSize: 13,
-                          color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
+                          color: CupertinoColors.label
+                              .resolveFrom(context)
+                              .withValues(alpha: 0.5),
                         ),
                       ),
                       SizedBox(height: 16),
@@ -503,12 +523,16 @@ class _InteractivePageState extends State<InteractivePage> {
                             label: 'Sort By',
                             icon: Icon(CupertinoIcons.arrow_up_arrow_down),
                             buttonWidth: 120,
+                            buttonShape: const LiquidRoundedSuperellipse(
+                                borderRadius: 22),
                             items: [
                               GlassMenuItem(
                                 title: 'Name',
                                 onTap: () {},
                                 trailing: Icon(CupertinoIcons.checkmark_alt,
-                                    size: 16, color: CupertinoColors.label.resolveFrom(context)),
+                                    size: 16,
+                                    color: CupertinoColors.label
+                                        .resolveFrom(context)),
                               ),
                               GlassMenuItem(title: 'Date', onTap: () {}),
                               GlassMenuItem(title: 'Size', onTap: () {}),
@@ -626,7 +650,9 @@ class _InteractivePageState extends State<InteractivePage> {
                         'Glass capsule with dot indicators — iOS 26 style',
                         style: TextStyle(
                           fontSize: 13,
-                          color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
+                          color: CupertinoColors.label
+                              .resolveFrom(context)
+                              .withValues(alpha: 0.5),
                         ),
                       ),
                       SizedBox(height: 16),
@@ -644,7 +670,9 @@ class _InteractivePageState extends State<InteractivePage> {
                           'Page ${_currentPage + 1} of 7',
                           style: TextStyle(
                             fontSize: 14,
-                            color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.6),
+                            color: CupertinoColors.label
+                                .resolveFrom(context)
+                                .withValues(alpha: 0.6),
                           ),
                         ),
                       ),
@@ -654,7 +682,9 @@ class _InteractivePageState extends State<InteractivePage> {
                         'Weather-style bottom bar',
                         style: TextStyle(
                           fontSize: 13,
-                          color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
+                          color: CupertinoColors.label
+                              .resolveFrom(context)
+                              .withValues(alpha: 0.5),
                         ),
                       ),
                       SizedBox(height: 12),
@@ -673,7 +703,8 @@ class _InteractivePageState extends State<InteractivePage> {
                               currentPage: _currentPage,
                               leadingIcon: Icon(
                                 CupertinoIcons.location_fill,
-                                color: CupertinoColors.label.resolveFrom(context),
+                                color:
+                                    CupertinoColors.label.resolveFrom(context),
                                 size: 10,
                               ),
                               onPageChanged: (page) =>
@@ -733,7 +764,8 @@ class _QualityLabel extends StatelessWidget {
       label,
       style: TextStyle(
         fontSize: 13,
-        color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
+        color:
+            CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
       ),
     );
   }

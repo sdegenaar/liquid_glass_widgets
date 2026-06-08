@@ -565,7 +565,9 @@ class TabBarContentState extends State<TabBarContent>
 
     final selectedLabelStyle = widget.selectedLabelStyle ??
         TextStyle(
-            fontSize: 14, fontWeight: FontWeight.w600, color: dynamicLabelColor);
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: dynamicLabelColor);
 
     final unselectedLabelStyle = widget.unselectedLabelStyle ??
         TextStyle(

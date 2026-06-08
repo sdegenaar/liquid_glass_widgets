@@ -61,6 +61,9 @@ class DismissPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final safeColor = indicatorColor;
+    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final defaultIconColor =
+        isDark ? const Color(0xE6FFFFFF) : const Color(0xE6000000);
     return GlassButton(
       onTap: onTap,
       width: pillSize,
@@ -78,10 +81,10 @@ class DismissPill extends StatelessWidget {
       icon: cancelIcon ??
           Icon(
             CupertinoIcons.xmark,
-            color: cancelButtonColor ?? const Color(0xE6FFFFFF),
+            color: cancelButtonColor ?? defaultIconColor,
             size: cancelIconSize,
           ),
-      iconColor: cancelButtonColor ?? const Color(0xE6FFFFFF),
+      iconColor: cancelButtonColor ?? defaultIconColor,
     );
   }
 }
@@ -348,13 +351,11 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
 
   /// Wraps the bar pill with a light-mode drop shadow using inverse clipping.
   Widget _wrapWithBarShadow(BuildContext context, Widget bar) {
-    final isDark =
-        CupertinoTheme.of(context).brightness == Brightness.dark;
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
     if (isDark) return bar;
 
     // Resolve shadow from settings (inherited or global).
-    final effectiveSettings =
-        InheritedLiquidGlass.ofOrDefault(context);
+    final effectiveSettings = InheritedLiquidGlass.ofOrDefault(context);
     final shadows = effectiveSettings.effectiveShadow;
     if (shadows.isEmpty) return bar;
 
@@ -370,8 +371,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
               clipper: _InverseSearchBarClipper(_barShape),
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  borderRadius:
-                      BorderRadius.circular(widget.barBorderRadius),
+                  borderRadius: BorderRadius.circular(widget.barBorderRadius),
                   boxShadow: shadows,
                 ),
               ),
@@ -413,65 +413,66 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
     return _wrapWithBarShadow(
       context,
       SizedBox(
-        height: widget.barHeight,
-        child: _wrapWithGlow(
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // Glass background (Cached to prevent blur re-rasterization on pill drag)
-              Positioned.fill(
-                child: RepaintBoundary(
-                  child: AdaptiveGlass.grouped(
-                    quality: widget.quality,
-                    shape: _barShape,
-                    child: const SizedBox.expand(),
-                  ),
-                ),
-              ),
-
-              // Unselected icons — all tabs in unselected style (for refraction).
-              Positioned.fill(
-                child: Container(
-                  padding: widget.tabPadding,
-                  child: widget.childUnselected,
-                ),
-              ),
-              if (widget.visible && thickness > 0.05)
-                AnimatedGlassIndicator(
-                  velocity: velocity,
-                  itemCount: widget.tabCount,
-                  alignment: alignment,
-                  thickness: thickness,
-                  quality: widget.quality,
-                  indicatorColor: indicatorColor,
-                  isBackgroundIndicator: false,
-                  borderRadius: thickness < 1 ? backgroundRadius : glassRadius,
-                  padding: const EdgeInsets.all(4),
-                  expansion: widget.indicatorExpansion,
-                  settings: widget.indicatorSettings,
-                  backgroundKey: widget.backgroundKey,
-                ),
-
-              // Persistent selected-icon overlay — always at TARGET position
-              // so the selected icon stays vibrant (selected style) at rest.
-              if (widget.visible)
+          height: widget.barHeight,
+          child: _wrapWithGlow(
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Glass background (Cached to prevent blur re-rasterization on pill drag)
                 Positioned.fill(
-                  child: Align(
-                    alignment: targetAlignment,
-                    child: FractionallySizedBox(
-                      widthFactor: 1 / widget.tabCount,
-                      child: Container(
-                        padding: widget.tabPadding,
-                        height: widget.barHeight,
-                        child: widget.selectedTabBuilder(
-                            context, 1.0, targetAlignment),
-                      ),
+                  child: RepaintBoundary(
+                    child: AdaptiveGlass.grouped(
+                      quality: widget.quality,
+                      shape: _barShape,
+                      child: const SizedBox.expand(),
                     ),
                   ),
                 ),
-            ],
-          ),
-        )),
+
+                // Unselected icons — all tabs in unselected style (for refraction).
+                Positioned.fill(
+                  child: Container(
+                    padding: widget.tabPadding,
+                    child: widget.childUnselected,
+                  ),
+                ),
+                if (widget.visible && thickness > 0.05)
+                  AnimatedGlassIndicator(
+                    velocity: velocity,
+                    itemCount: widget.tabCount,
+                    alignment: alignment,
+                    thickness: thickness,
+                    quality: widget.quality,
+                    indicatorColor: indicatorColor,
+                    isBackgroundIndicator: false,
+                    borderRadius:
+                        thickness < 1 ? backgroundRadius : glassRadius,
+                    padding: const EdgeInsets.all(4),
+                    expansion: widget.indicatorExpansion,
+                    settings: widget.indicatorSettings,
+                    backgroundKey: widget.backgroundKey,
+                  ),
+
+                // Persistent selected-icon overlay — always at TARGET position
+                // so the selected icon stays vibrant (selected style) at rest.
+                if (widget.visible)
+                  Positioned.fill(
+                    child: Align(
+                      alignment: targetAlignment,
+                      child: FractionallySizedBox(
+                        widthFactor: 1 / widget.tabCount,
+                        child: Container(
+                          padding: widget.tabPadding,
+                          height: widget.barHeight,
+                          child: widget.selectedTabBuilder(
+                              context, 1.0, targetAlignment),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          )),
     );
   }
 
@@ -488,103 +489,103 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
     return _wrapWithBarShadow(
       context,
       SizedBox(
-        height: widget.barHeight,
-        child: _wrapWithGlow(
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // 1. Static Blur Background (Cached)
-              Positioned.fill(
-                child: RepaintBoundary(
-                  child: AdaptiveGlass.grouped(
-                    quality: widget.quality,
-                    shape: _barShape,
-                    child: const SizedBox.expand(),
+          height: widget.barHeight,
+          child: _wrapWithGlow(
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // 1. Static Blur Background (Cached)
+                Positioned.fill(
+                  child: RepaintBoundary(
+                    child: AdaptiveGlass.grouped(
+                      quality: widget.quality,
+                      shape: _barShape,
+                      child: const SizedBox.expand(),
+                    ),
                   ),
                 ),
-              ),
 
-              // 1.5. Solid Indicator Background (drawn below icons so selected icons are vibrant)
-              AnimatedGlassIndicator(
-                velocity: velocity,
-                itemCount: widget.tabCount,
-                alignment: alignment,
-                thickness: thickness,
-                quality: widget.quality,
-                indicatorColor: indicatorColor,
-                isBackgroundIndicator: false,
-                paintBackground: true,
-                paintGlass: false,
-                borderRadius: effRadius,
-                padding: const EdgeInsets.all(4),
-                expansion: widget.indicatorExpansion,
-                settings: widget.indicatorSettings,
-                backgroundKey: widget.backgroundKey,
-              ),
+                // 1.5. Solid Indicator Background (drawn below icons so selected icons are vibrant)
+                AnimatedGlassIndicator(
+                  velocity: velocity,
+                  itemCount: widget.tabCount,
+                  alignment: alignment,
+                  thickness: thickness,
+                  quality: widget.quality,
+                  indicatorColor: indicatorColor,
+                  isBackgroundIndicator: false,
+                  paintBackground: true,
+                  paintGlass: false,
+                  borderRadius: effRadius,
+                  padding: const EdgeInsets.all(4),
+                  expansion: widget.indicatorExpansion,
+                  settings: widget.indicatorSettings,
+                  backgroundKey: widget.backgroundKey,
+                ),
 
-              // 2. Icon Content Layer (Unselected + Selected combined for refraction)
-              Positioned.fill(
-                child: RepaintBoundary(
-                  child: Stack(
-                    children: [
-                      ClipPath(
-                        clipper: JellyClipper(
-                          itemCount: widget.tabCount,
-                          alignment: alignment,
-                          thickness: thickness,
-                          expansion: widget.indicatorExpansion,
-                          transform: jellyTransform,
-                          borderRadius: effRadius,
-                          inverse: true,
+                // 2. Icon Content Layer (Unselected + Selected combined for refraction)
+                Positioned.fill(
+                  child: RepaintBoundary(
+                    child: Stack(
+                      children: [
+                        ClipPath(
+                          clipper: JellyClipper(
+                            itemCount: widget.tabCount,
+                            alignment: alignment,
+                            thickness: thickness,
+                            expansion: widget.indicatorExpansion,
+                            transform: jellyTransform,
+                            borderRadius: effRadius,
+                            inverse: true,
+                          ),
+                          child: Container(
+                            padding: widget.tabPadding,
+                            height: widget.barHeight,
+                            child: widget.childUnselected,
+                          ),
                         ),
-                        child: Container(
-                          padding: widget.tabPadding,
-                          height: widget.barHeight,
-                          child: widget.childUnselected,
+                        ClipPath(
+                          clipper: JellyClipper(
+                            itemCount: widget.tabCount,
+                            alignment: alignment,
+                            thickness: thickness,
+                            expansion: widget.indicatorExpansion,
+                            transform: jellyTransform,
+                            borderRadius: effRadius,
+                          ),
+                          child: Container(
+                            padding: widget.tabPadding,
+                            height: widget.barHeight,
+                            child: widget.selectedTabBuilder(
+                                context, thickness, alignment),
+                          ),
                         ),
-                      ),
-                      ClipPath(
-                        clipper: JellyClipper(
-                          itemCount: widget.tabCount,
-                          alignment: alignment,
-                          thickness: thickness,
-                          expansion: widget.indicatorExpansion,
-                          transform: jellyTransform,
-                          borderRadius: effRadius,
-                        ),
-                        child: Container(
-                          padding: widget.tabPadding,
-                          height: widget.barHeight,
-                          child: widget.selectedTabBuilder(
-                              context, thickness, alignment),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-              // 3. Moving Glass Indicator Layer — on top so it refracts
-              // the merged icon RepaintBoundary beneath it.
-              AnimatedGlassIndicator(
-                velocity: velocity,
-                itemCount: widget.tabCount,
-                alignment: alignment,
-                thickness: thickness,
-                quality: widget.quality,
-                indicatorColor: indicatorColor,
-                isBackgroundIndicator: false,
-                paintBackground: false,
-                paintGlass: true,
-                borderRadius: effRadius,
-                padding: const EdgeInsets.all(4),
-                expansion: widget.indicatorExpansion,
-                settings: widget.indicatorSettings,
-                backgroundKey: widget.backgroundKey,
-              ),
-            ],
-          ),
-        )),
+                // 3. Moving Glass Indicator Layer — on top so it refracts
+                // the merged icon RepaintBoundary beneath it.
+                AnimatedGlassIndicator(
+                  velocity: velocity,
+                  itemCount: widget.tabCount,
+                  alignment: alignment,
+                  thickness: thickness,
+                  quality: widget.quality,
+                  indicatorColor: indicatorColor,
+                  isBackgroundIndicator: false,
+                  paintBackground: false,
+                  paintGlass: true,
+                  borderRadius: effRadius,
+                  padding: const EdgeInsets.all(4),
+                  expansion: widget.indicatorExpansion,
+                  settings: widget.indicatorSettings,
+                  backgroundKey: widget.backgroundKey,
+                ),
+              ],
+            ),
+          )),
     );
   }
 }
@@ -724,7 +725,6 @@ class SearchPillState extends State<SearchPill> {
     }
   }
 
-
   /// Wraps [child] in [GlassGlow] only when the resolved glow color is
   /// non-transparent. Skips the wrapper entirely for
   /// [GlassInteractionBehavior.none] and [scaleOnly], avoiding three extra
@@ -763,49 +763,49 @@ class SearchPillState extends State<SearchPill> {
 
         if (!widget.isActive || w < kExpandThreshold) {
           return Stack(
-              fit: StackFit.expand,
-              children: [
-                GlassButton(
-                  key: const ValueKey('pill-collapsed'),
-                  // Use caller-supplied search icon when provided;
-                  // otherwise fall back to the upstream default
-                  // CupertinoIcons.search glyph. Letting callers
-                  // override here lets apps that need a higher-fidelity
-                  // glyph (real SF Symbols, Material Symbols at a
-                  // specific weight, etc.) supply their own without
-                  // forking — see GlassSearchBarConfig.searchIcon.
-                  icon: widget.config.searchIcon ??
-                      Icon(CupertinoIcons.search, color: iconColor),
-                  // No-op while mid-animation to avoid double-toggling, EXCEPT
-                  // if expandWhenActive is false, which means this is a persistent
-                  // collapsed search button that needs to be tappable to activate search.
-                  onTap: (widget.isActive && widget.config.expandWhenActive)
-                      ? () {}
-                      : () => widget.config.onSearchToggle(true),
-                  width: double.infinity,
-                  height: double.infinity,
-                  quality: widget.quality,
-                  iconColor: iconColor,
-                  // When fully collapsed (square), LiquidOval gives a perfect
-                  // circle that stretches uniformly. During the collapse
-                  // animation the width is still wider than height — use the
-                  // superellipse there so it doesn't render as a squashed oval.
-                  shape: (w - constraints.maxHeight).abs() < 2
-                      ? const LiquidOval()
-                      : shape,
+            fit: StackFit.expand,
+            children: [
+              GlassButton(
+                key: const ValueKey('pill-collapsed'),
+                // Use caller-supplied search icon when provided;
+                // otherwise fall back to the upstream default
+                // CupertinoIcons.search glyph. Letting callers
+                // override here lets apps that need a higher-fidelity
+                // glyph (real SF Symbols, Material Symbols at a
+                // specific weight, etc.) supply their own without
+                // forking — see GlassSearchBarConfig.searchIcon.
+                icon: widget.config.searchIcon ??
+                    Icon(CupertinoIcons.search, color: iconColor),
+                // No-op while mid-animation to avoid double-toggling, EXCEPT
+                // if expandWhenActive is false, which means this is a persistent
+                // collapsed search button that needs to be tappable to activate search.
+                onTap: (widget.isActive && widget.config.expandWhenActive)
+                    ? () {}
+                    : () => widget.config.onSearchToggle(true),
+                width: double.infinity,
+                height: double.infinity,
+                quality: widget.quality,
+                iconColor: iconColor,
+                // When fully collapsed (square), LiquidOval gives a perfect
+                // circle that stretches uniformly. During the collapse
+                // animation the width is still wider than height — use the
+                // superellipse there so it doesn't render as a squashed oval.
+                shape: (w - constraints.maxHeight).abs() < 2
+                    ? const LiquidOval()
+                    : shape,
+              ),
+              // IgnorePointer+Opacity(0): forces Dart to JIT-compile the
+              // expanded widget tree on first frame. Unlike Offstage, this
+              // does NOT interact with the focus/IME system so there is no
+              // risk of hidden TextFields stealing keyboard input.
+              IgnorePointer(
+                child: Opacity(
+                  opacity: 0,
+                  child: _buildExpanded(iconColor, micColor),
                 ),
-                // IgnorePointer+Opacity(0): forces Dart to JIT-compile the
-                // expanded widget tree on first frame. Unlike Offstage, this
-                // does NOT interact with the focus/IME system so there is no
-                // risk of hidden TextFields stealing keyboard input.
-                IgnorePointer(
-                  child: Opacity(
-                    opacity: 0,
-                    child: _buildExpanded(iconColor, micColor),
-                  ),
-                ),
-              ],
-            );
+              ),
+            ],
+          );
         }
 
         // Wrap with an opaque GestureDetector so taps anywhere inside the
@@ -849,8 +849,8 @@ class SearchPillState extends State<SearchPill> {
 
   Widget _buildExpanded(Color iconColor, Color micColor) {
     final config = widget.config;
-    final textColor = config.textColor ??
-        CupertinoColors.label.resolveFrom(context);
+    final textColor =
+        config.textColor ?? CupertinoColors.label.resolveFrom(context);
 
     // Trailing slot priority:
     //   1. trailingBuilder — caller has full control.

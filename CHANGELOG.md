@@ -7,6 +7,10 @@
 - **Configurable glass shadow** — `LiquidGlassSettings.shadowElevation` scales the light-mode drop shadow (`0.0` = off, `1.0` = default, `2.0` = double). `LiquidGlassSettings.shadow` accepts a custom `List<BoxShadow>` for full control. Both flow through `globalSettings` (theme-level) and per-widget `settings:`.
 - **`GlassShadow` constants** — centralised shadow values (`GlassShadow.elevation`, `.contact`, `.defaults`, `.scaled(double)`) exported for custom widget authors.
 - **`GlassButtonGroup.icons()`** — introduced a lightweight group constructor for iOS 26 style segmented icon toolbars. Uses a single `GlassButton` parent to drive cohesive group-level stretch/glow interaction, while children are rendered as zero-overhead stateless tap targets.
+- **`GlassMenuController`** — imperative controller for `GlassMenu` with `open()`, `close()`, and `isOpen`. Drives the menu programmatically instead of (or in addition to) tapping the trigger — useful for gesture-arena-driven menus. _(contributed by [@F1orian](https://github.com/F1orian))_
+- **`GlassMenu.showDismissBarrier`** — when `false`, suppresses the full-screen tap-to-dismiss barrier so an external gesture owner can keep receiving pointer events while the menu is open. Defaults to `true`. _(contributed by [@F1orian](https://github.com/F1orian))_
+- **`GlassMenu.morphFromZero`** — when `true`, the menu body lerps from a zero-size point at the trigger center instead of from the trigger's own dimensions, suppressing the spawn blob (Blob A). For invisible or zero-sized triggers. _(contributed by [@F1orian](https://github.com/F1orian))_
+- **`GlassMenuController.setFollowOffset(Offset)`** — nudges the open menu to track a moving anchor in real-time. The offset is added to the captured trigger position each frame and reset on the next `open()`. _(contributed by [@F1orian](https://github.com/F1orian))_
 
 ### Improvements
 
@@ -23,6 +27,15 @@
 - Fixed `GlassMenu` selection pill alignment and hit-test accuracy when system text scaler is active.
 - Fixed `GlassChip` resolving with invisible white text and icons in light mode.
 - Fixed Apple Podcasts demo incorrectly forcing dark-mode glass colors in light mode.
+- Fixed `GlassFormField` label (`Colors.white`) and helper text (`Color(0x99FFFFFF)`) being invisible in light mode — now resolves from `CupertinoColors.label` / `.secondaryLabel`.
+- Fixed `GlassPicker` value text (`Colors.white`) and chevron icon (`Colors.white70`) being invisible in light mode — now resolves from `CupertinoColors.label` / `.secondaryLabel`.
+- Fixed `GlassPasswordField` lock and eye toggle icons (`Colors.white70`) being invisible in light mode — now resolves from `CupertinoColors.secondaryLabel`.
+- Fixed `GlassActionSheet` forcing dark card background (`Colors.black @ 0.65`), dividers, and pressed highlights regardless of brightness — now resolves to light frosted glass in light mode.
+- Fixed `GlassToast` forcing dark pill (`Colors.black @ 0.7`) and white text regardless of brightness — background and text now resolve from brightness for correct contrast in both modes.
+- Removed unnecessary `import 'package:flutter/material.dart'` from `GlassFormField`, `GlassPicker`, `GlassPasswordField`, and `GlassToast`.
+- Fixed `GlassMenu` morph size going negative during spring undershoot on small triggers — `currentWidth`/`currentHeight` now clamped to `>= 0` to prevent debug `BoxConstraints` assertion. _(contributed by [@F1orian](https://github.com/F1orian))_
+- Fixed `GlassMenu` sub-pixel Impeller crash — body container is replaced with `SizedBox.shrink()` when dimensions fall below 1.0 logical pixel, preventing 0-area matte rasterisation. _(contributed by [@F1orian](https://github.com/F1orian))_
+- Fixed `GlassIconButton` bypassing theme quality chain — `quality` now passes `null` through to `GlassButton.custom()` so `GlassThemeHelpers.resolveQuality` can resolve from ancestor layers, theme, then widget default. _(contributed by [@F1orian](https://github.com/F1orian))_
 
 ### ⚠️ Breaking — Removed frosted well overlay from `GlassTextField`
 

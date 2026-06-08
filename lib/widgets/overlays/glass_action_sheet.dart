@@ -209,6 +209,13 @@ class _GlassActionSheetContent extends StatelessWidget {
   Widget _buildActionsCard(BuildContext context) {
     final themeData = GlassThemeData.of(context);
     final glowColors = themeData.glowColorsFor(context);
+    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final cardColor = isDark
+        ? CupertinoColors.black.withValues(alpha: 0.65)
+        : CupertinoColors.white.withValues(alpha: 0.65);
+    final dividerColor = isDark
+        ? CupertinoColors.white.withValues(alpha: 0.2)
+        : CupertinoColors.black.withValues(alpha: 0.1);
 
     return AdaptiveLiquidGlassLayer(
       settings: settings ??
@@ -221,7 +228,7 @@ class _GlassActionSheetContent extends StatelessWidget {
       quality: quality,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.65),
+          color: cardColor,
           borderRadius: BorderRadius.circular(14),
         ),
         child: ClipRRect(
@@ -238,7 +245,7 @@ class _GlassActionSheetContent extends StatelessWidget {
                   Divider(
                     height: 1,
                     thickness: 0.5,
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: dividerColor,
                   ),
                 _ActionSheetButton(
                   action: actions[i],
@@ -284,6 +291,11 @@ class _GlassActionSheetContent extends StatelessWidget {
   }
 
   Widget _buildCancelButton(BuildContext context) {
+    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final cardColor = isDark
+        ? CupertinoColors.black.withValues(alpha: 0.65)
+        : CupertinoColors.white.withValues(alpha: 0.65);
+
     return AdaptiveLiquidGlassLayer(
       settings: settings ??
           const LiquidGlassSettings(
@@ -295,7 +307,7 @@ class _GlassActionSheetContent extends StatelessWidget {
       quality: quality,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.65),
+          color: cardColor,
           borderRadius: BorderRadius.circular(14),
         ),
         child: ClipRRect(
@@ -356,8 +368,8 @@ class _ActionSheetButtonState extends State<_ActionSheetButton> {
             _isPressed ? Duration.zero : const Duration(milliseconds: 150),
         curve: Curves.easeOutCubic,
         color: _isPressed
-            ? Colors.white.withValues(alpha: 0.08)
-            : Colors.transparent,
+            ? CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.06)
+            : const Color(0x00000000),
         width: double.infinity,
         padding: const EdgeInsets.symmetric(
           horizontal: 16,

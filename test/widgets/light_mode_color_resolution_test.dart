@@ -468,4 +468,332 @@ void main() {
       expect(find.byType(GlassSwitch), findsOneWidget);
     });
   });
+
+  // ===========================================================================
+  // GlassFormField — label resolves from CupertinoColors.label
+  // ===========================================================================
+
+  group('GlassFormField brightness-aware colors', () {
+    testWidgets('label is white-ish in dark mode', (tester) async {
+      await tester.pumpWidget(
+        _buildApp(
+          brightness: Brightness.dark,
+          child: GlassFormField(
+            label: 'Email',
+            child: const SizedBox(height: 40),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final text = tester.widget<Text>(find.text('Email'));
+      expect(text.style?.color, isNotNull);
+      final color = text.style!.color!;
+      expect(color.r, greaterThan(0.9));
+      expect(color.g, greaterThan(0.9));
+      expect(color.b, greaterThan(0.9));
+    });
+
+    testWidgets('label is black-ish in light mode', (tester) async {
+      await tester.pumpWidget(
+        _buildApp(
+          brightness: Brightness.light,
+          child: GlassFormField(
+            label: 'Email',
+            child: const SizedBox(height: 40),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final text = tester.widget<Text>(find.text('Email'));
+      expect(text.style?.color, isNotNull);
+      final color = text.style!.color!;
+      expect(color.r, lessThan(0.1));
+      expect(color.g, lessThan(0.1));
+      expect(color.b, lessThan(0.1));
+    });
+
+    testWidgets('helper text uses secondaryLabel in light mode',
+        (tester) async {
+      await tester.pumpWidget(
+        _buildApp(
+          brightness: Brightness.light,
+          child: GlassFormField(
+            label: 'Name',
+            helperText: 'Enter your full name',
+            child: const SizedBox(height: 40),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final text = tester.widget<Text>(find.text('Enter your full name'));
+      expect(text.style?.color, isNotNull);
+      // secondaryLabel in light mode is semi-transparent black (≈60% opacity)
+      final color = text.style!.color!;
+      expect(color.a, lessThan(0.7));
+    });
+  });
+
+  // ===========================================================================
+  // GlassPicker — text resolves from CupertinoColors.label
+  // ===========================================================================
+
+  group('GlassPicker brightness-aware colors', () {
+    testWidgets('value text is white-ish in dark mode', (tester) async {
+      await tester.pumpWidget(
+        _buildApp(
+          brightness: Brightness.dark,
+          child: GlassPicker(
+            value: 'Developer',
+            onTap: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final text = tester.widget<Text>(find.text('Developer'));
+      expect(text.style?.color, isNotNull);
+      final color = text.style!.color!;
+      expect(color.r, greaterThan(0.9));
+      expect(color.g, greaterThan(0.9));
+      expect(color.b, greaterThan(0.9));
+    });
+
+    testWidgets('value text is black-ish in light mode', (tester) async {
+      await tester.pumpWidget(
+        _buildApp(
+          brightness: Brightness.light,
+          child: GlassPicker(
+            value: 'Developer',
+            onTap: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final text = tester.widget<Text>(find.text('Developer'));
+      expect(text.style?.color, isNotNull);
+      final color = text.style!.color!;
+      expect(color.r, lessThan(0.1));
+      expect(color.g, lessThan(0.1));
+      expect(color.b, lessThan(0.1));
+    });
+  });
+
+  // ===========================================================================
+  // GlassPasswordField — icons resolve from CupertinoColors.secondaryLabel
+  // ===========================================================================
+
+  group('GlassPasswordField brightness-aware colors', () {
+    testWidgets('renders in light mode without error', (tester) async {
+      await tester.pumpWidget(
+        _buildApp(
+          brightness: Brightness.light,
+          child: const GlassPasswordField(
+            placeholder: 'Password',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GlassPasswordField), findsOneWidget);
+    });
+
+    testWidgets('renders in dark mode without error', (tester) async {
+      await tester.pumpWidget(
+        _buildApp(
+          brightness: Brightness.dark,
+          child: const GlassPasswordField(
+            placeholder: 'Password',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GlassPasswordField), findsOneWidget);
+    });
+  });
+
+  // ===========================================================================
+  // GlassToast — background and text resolve from brightness
+  // ===========================================================================
+
+  group('GlassToast brightness-aware colors', () {
+    testWidgets('toast text is white-ish in dark mode', (tester) async {
+      await tester.pumpWidget(
+        _buildApp(
+          brightness: Brightness.dark,
+          child: const GlassToast(
+            message: 'Success!',
+            type: GlassToastType.success,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final text = tester.widget<Text>(find.text('Success!'));
+      expect(text.style?.color, isNotNull);
+      final color = text.style!.color!;
+      expect(color.r, greaterThan(0.9));
+      expect(color.g, greaterThan(0.9));
+      expect(color.b, greaterThan(0.9));
+    });
+
+    testWidgets('toast text is black-ish in light mode', (tester) async {
+      await tester.pumpWidget(
+        _buildApp(
+          brightness: Brightness.light,
+          child: const GlassToast(
+            message: 'Success!',
+            type: GlassToastType.success,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final text = tester.widget<Text>(find.text('Success!'));
+      expect(text.style?.color, isNotNull);
+      final color = text.style!.color!;
+      expect(color.r, lessThan(0.1));
+      expect(color.g, lessThan(0.1));
+      expect(color.b, lessThan(0.1));
+    });
+
+    testWidgets('toast background is dark-tinted in dark mode', (tester) async {
+      await tester.pumpWidget(
+        _buildApp(
+          brightness: Brightness.dark,
+          child: const GlassToast(
+            message: 'Info',
+            type: GlassToastType.info,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Find the Container with BoxDecoration (background)
+      final containers = find.descendant(
+        of: find.byType(GlassToast),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Container &&
+              widget.decoration is BoxDecoration &&
+              (widget.decoration as BoxDecoration).color != null,
+        ),
+      );
+      expect(containers, findsWidgets);
+      final container = tester.widget<Container>(containers.first);
+      final bgColor = (container.decoration as BoxDecoration).color!;
+      // Dark mode: black-based background
+      expect(bgColor.r, lessThan(0.1));
+      expect(bgColor.g, lessThan(0.1));
+      expect(bgColor.b, lessThan(0.1));
+    });
+
+    testWidgets('toast background is light-tinted in light mode',
+        (tester) async {
+      await tester.pumpWidget(
+        _buildApp(
+          brightness: Brightness.light,
+          child: const GlassToast(
+            message: 'Info',
+            type: GlassToastType.info,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Find the Container with BoxDecoration (background)
+      final containers = find.descendant(
+        of: find.byType(GlassToast),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Container &&
+              widget.decoration is BoxDecoration &&
+              (widget.decoration as BoxDecoration).color != null,
+        ),
+      );
+      expect(containers, findsWidgets);
+      final container = tester.widget<Container>(containers.first);
+      final bgColor = (container.decoration as BoxDecoration).color!;
+      // Light mode: white-based background
+      expect(bgColor.r, greaterThan(0.9));
+      expect(bgColor.g, greaterThan(0.9));
+      expect(bgColor.b, greaterThan(0.9));
+    });
+  });
+
+  // ===========================================================================
+  // GlassActionSheet — card background resolves from brightness
+  // ===========================================================================
+
+  group('GlassActionSheet brightness-aware colors', () {
+    testWidgets('renders in light mode without error', (tester) async {
+      await tester.pumpWidget(
+        _buildApp(
+          brightness: Brightness.light,
+          child: Builder(
+            builder: (context) => CupertinoButton(
+              onPressed: () {
+                showGlassActionSheet(
+                  context: context,
+                  title: 'Test',
+                  actions: [
+                    GlassActionSheetAction(
+                      label: 'Action 1',
+                      onPressed: () {},
+                    ),
+                  ],
+                );
+              },
+              child: const Text('Show'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap the button to show the action sheet
+      await tester.tap(find.text('Show'));
+      await tester.pumpAndSettle();
+
+      // Verify the action sheet is displayed
+      expect(find.text('Test'), findsOneWidget);
+      expect(find.text('Action 1'), findsOneWidget);
+    });
+
+    testWidgets('renders in dark mode without error', (tester) async {
+      await tester.pumpWidget(
+        _buildApp(
+          brightness: Brightness.dark,
+          child: Builder(
+            builder: (context) => CupertinoButton(
+              onPressed: () {
+                showGlassActionSheet(
+                  context: context,
+                  title: 'Test',
+                  actions: [
+                    GlassActionSheetAction(
+                      label: 'Action 1',
+                      onPressed: () {},
+                    ),
+                  ],
+                );
+              },
+              child: const Text('Show'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Show'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Test'), findsOneWidget);
+      expect(find.text('Action 1'), findsOneWidget);
+    });
+  });
 }

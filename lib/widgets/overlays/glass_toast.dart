@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../theme/glass_theme_data.dart';
@@ -269,6 +268,11 @@ class _GlassToastState extends State<GlassToast> {
   Widget _buildToastContent(
       BuildContext context, Color semanticColor, Widget displayIcon) {
     final hasAction = widget.action != null;
+    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final bgColor = isDark
+        ? CupertinoColors.black.withValues(alpha: 0.7)
+        : CupertinoColors.white.withValues(alpha: 0.7);
+    final textColor = CupertinoColors.label.resolveFrom(context);
 
     return AdaptiveLiquidGlassLayer(
       settings: widget.settings ??
@@ -285,7 +289,7 @@ class _GlassToastState extends State<GlassToast> {
           maxWidth: 400,
         ),
         decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.7),
+          color: bgColor,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: semanticColor.withValues(alpha: 0.2),
@@ -317,8 +321,8 @@ class _GlassToastState extends State<GlassToast> {
             Flexible(
               child: Text(
                 widget.message,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: textColor,
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                   letterSpacing: -0.2,
@@ -365,7 +369,7 @@ class _GlassToastState extends State<GlassToast> {
       case GlassToastType.warning:
         return glowColors.warning ?? GlassGlowColors.fallback.warning!;
       case GlassToastType.neutral:
-        return Colors.white.withValues(alpha: 0.6);
+        return CupertinoColors.secondaryLabel.resolveFrom(context);
     }
   }
 }

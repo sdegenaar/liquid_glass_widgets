@@ -26,7 +26,11 @@ import '../constants/sf_symbols.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const _kBg = CupertinoDynamicColor.withBrightness(
-    color: Color(0xFFFFFFFF), darkColor: Color(0xFF000000));
+    // iOS system grouped background — subtle cool gray so glass pills remain
+    // visible against the background even when the press specular fires bright.
+    // Pure white (#FFF) gives zero contrast and makes pressed glass disappear.
+    color: Color(0xFFF2F2F7),
+    darkColor: Color(0xFF000000));
 const _kSeparator = CupertinoColors.separator; // ~20% white
 const _kAvatarBg = CupertinoDynamicColor.withBrightness(
     color: Color(0xFFE5E5EA),
@@ -34,32 +38,38 @@ const _kAvatarBg = CupertinoDynamicColor.withBrightness(
 const _kBlue = CupertinoColors.systemBlue; // iOS 26 blue
 
 // Glass shared by both menu triggers — matches the "Edit" pill aesthetic
-LiquidGlassSettings _kTriggerGlass(BuildContext context) => LiquidGlassSettings(
-      glassColor: CupertinoTheme.of(context).brightness == Brightness.dark
-          ? Colors.white10
-          : Colors.black.withValues(alpha: 0.04),
-      thickness: 18,
-      blur: 8,
-      lightIntensity: 0.4,
-      ambientStrength: 0.08,
-      chromaticAberration: 0.01,
-      refractiveIndex: 1.2,
-      saturation: 1.0,
-    );
+LiquidGlassSettings _kTriggerGlass(BuildContext context) {
+  final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+  return LiquidGlassSettings(
+    // Light: very subtle white tint — transparent enough that the shader's
+    // light tracking stays fully visible on press and drag.
+    glassColor: isDark ? Colors.white10 : Colors.white.withValues(alpha: 0.15),
+    thickness: 18,
+    blur: 8,
+    lightIntensity: isDark ? 0.4 : 0.45,
+    ambientStrength: isDark ? 0.08 : 0.12,
+    chromaticAberration: 0.01,
+    refractiveIndex: 1.2,
+    saturation: 1.0,
+    shadowElevation: isDark ? 0.0 : 0.8,
+  );
+}
 
 // Glass for the search+compose bar (blended group — premium needed for merging)
-LiquidGlassSettings _kSearchGlass(BuildContext context) => LiquidGlassSettings(
-      glassColor: CupertinoTheme.of(context).brightness == Brightness.dark
-          ? Colors.white10
-          : Colors.black.withValues(alpha: 0.04),
-      thickness: 18,
-      blur: 8,
-      lightIntensity: 0.4,
-      ambientStrength: 0.1,
-      chromaticAberration: 0.1,
-      refractiveIndex: 1.2,
-      saturation: 1.0,
-    );
+LiquidGlassSettings _kSearchGlass(BuildContext context) {
+  final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+  return LiquidGlassSettings(
+    glassColor: isDark ? Colors.white10 : Colors.white.withValues(alpha: 0.15),
+    thickness: 18,
+    blur: 8,
+    lightIntensity: isDark ? 0.4 : 0.45,
+    ambientStrength: isDark ? 0.1 : 0.12,
+    chromaticAberration: isDark ? 0.1 : 0.05,
+    refractiveIndex: 1.2,
+    saturation: 1.0,
+    shadowElevation: isDark ? 0.0 : 0.8,
+  );
+}
 
 // Glass for the menus themselves
 LiquidGlassSettings _kMenuGlass(BuildContext context) => LiquidGlassSettings(
@@ -72,7 +82,7 @@ LiquidGlassSettings _kMenuGlass(BuildContext context) => LiquidGlassSettings(
       ambientStrength: 0.1,
       chromaticAberration: 0.01,
       refractiveIndex: 1.2,
-      saturation: 1.0,
+      saturation: 1.5,
     );
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -423,25 +433,29 @@ class _EditMenu extends StatelessWidget {
       settings: _kMenuGlass(context),
       menuBorderRadius: 16,
       quality: GlassQuality.premium,
-      triggerBuilder: (context, toggleMenu) => GlassButton.custom(
-        onTap: toggleMenu,
-        width: 68,
-        height: 44,
-        // True capsule pill — borderRadius = height/2
-        shape: const LiquidRoundedSuperellipse(borderRadius: 22),
-        quality: GlassQuality.premium,
-        child: Center(
-          child: Text(
-            'Edit',
-            style: TextStyle(
-              color: CupertinoColors.label.resolveFrom(context),
-              fontSize: 17,
-              fontWeight: FontWeight.w400,
-              letterSpacing: -0.1,
+      triggerBuilder: (context, toggleMenu) {
+        final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+        return GlassButton.custom(
+          onTap: toggleMenu,
+          width: 68,
+          height: 44,
+          shape: const LiquidRoundedSuperellipse(borderRadius: 22),
+          quality: GlassQuality.premium,
+          persistPressOnDrag: true,
+          ambientBaseLight: isDark ? 0.08 : 0.25,
+          child: Center(
+            child: Text(
+              'Edit',
+              style: TextStyle(
+                color: CupertinoColors.label.resolveFrom(context),
+                fontSize: 17,
+                fontWeight: FontWeight.w400,
+                letterSpacing: -0.1,
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
       items: [
         GlassMenuItem(
           title: 'Select Messages',
@@ -484,18 +498,25 @@ class _FilterMenu extends StatelessWidget {
       settings: _kMenuGlass(context),
       menuBorderRadius: 16,
       quality: GlassQuality.premium,
-      triggerBuilder: (context, toggleMenu) => GlassButton(
-        onTap: toggleMenu,
-        width: 44,
-        height: 44,
-        shape: const LiquidOval(), // 44×44 = perfect circle
-        quality: GlassQuality.premium,
-        icon: Icon(
-          SFSymbols.line_horizontal_3_decrease,
-          color: CupertinoColors.label.resolveFrom(context),
-          size: 24,
-        ),
-      ),
+      triggerBuilder: (context, toggleMenu) {
+        final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+        return GlassButton(
+          onTap: toggleMenu,
+          width: 44,
+          height: 44,
+          shape: const LiquidOval(), // 44×44 = perfect circle
+          quality: GlassQuality.premium,
+          // Keep pressed state active while finger is held down and dragged off.
+          persistPressOnDrag: true,
+          // Light mode: higher ambient so pressed state stays visible when glow drags off.
+          ambientBaseLight: isDark ? 0.08 : 0.25,
+          icon: Icon(
+            SFSymbols.line_horizontal_3_decrease,
+            color: CupertinoColors.label.resolveFrom(context),
+            size: 24,
+          ),
+        );
+      },
       items: [
         GlassMenuItem(
           title: 'Messages',
@@ -720,6 +741,8 @@ class _SearchBarState extends State<_SearchBar> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = CupertinoTheme.of(context).brightness == Brightness.light;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -743,22 +766,23 @@ class _SearchBarState extends State<_SearchBar> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Search pill — joins blend group
+                  // Search pill
                   Expanded(
                     child: GlassSearchBar(
                       focusNode: _focusNode,
                       placeholder: 'Search',
-                      useOwnLayer: false, // joins blend group
+                      useOwnLayer:
+                          isLight, // joins blend group in dark, separates in light to show shadow
                       settings: _kSearchGlass(context),
                       quality: GlassQuality.premium,
                       showsCancelButton: true,
-                      height: 44,
+                      height: 48,
                       onChanged: (_) {},
                       onCancel: () {},
                     ),
                   ),
 
-                  // Compose circle — joins blend group
+                  // Compose circle
                   AnimatedSize(
                     duration: const Duration(milliseconds: 250),
                     curve: Curves.easeInOutCubic,
@@ -770,13 +794,15 @@ class _SearchBarState extends State<_SearchBar> {
                               padding: const EdgeInsets.only(left: 10),
                               child: GlassButton(
                                 onTap: () {},
-                                width: 44,
-                                height: 44,
+                                width: 48,
+                                height: 48,
                                 shape: const LiquidOval(),
                                 settings: _kSearchGlass(context),
                                 quality: GlassQuality.premium,
-                                useOwnLayer: false, // joins blend group
+                                useOwnLayer: isLight,
                                 stretch: 0.25,
+                                // Light mode: higher ambient so pressed state stays visible.
+                                ambientBaseLight: isLight ? 0.25 : 0.08,
                                 icon: Icon(
                                   SFSymbols.square_and_pencil,
                                   color: CupertinoColors.label

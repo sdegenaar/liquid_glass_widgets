@@ -12,7 +12,9 @@ class ContainersPage extends StatelessWidget {
     return GlassPage(
       background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
-      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark ? GlassStatusBarStyle.light : GlassStatusBarStyle.dark,
+      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark
+          ? GlassStatusBarStyle.light
+          : GlassStatusBarStyle.dark,
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: GlassAppBar(
@@ -72,7 +74,8 @@ class ContainersPage extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: CupertinoColors.label.resolveFrom(context),
+                                  color: CupertinoColors.label
+                                      .resolveFrom(context),
                                 ),
                               ),
                               SizedBox(height: 8),
@@ -80,7 +83,9 @@ class ContainersPage extends StatelessWidget {
                                 'The foundational container with glass effect.',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.8),
+                                  color: CupertinoColors.label
+                                      .resolveFrom(context)
+                                      .withValues(alpha: 0.8),
                                 ),
                               ),
                             ],
@@ -105,8 +110,9 @@ class ContainersPage extends StatelessWidget {
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color:
-                                            CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.9),
+                                        color: CupertinoColors.label
+                                            .resolveFrom(context)
+                                            .withValues(alpha: 0.9),
                                       ),
                                     ),
                                   ],
@@ -122,7 +128,9 @@ class ContainersPage extends StatelessWidget {
                                 child: Text(
                                   'Fixed Size',
                                   style: TextStyle(
-                                      fontSize: 14, color: CupertinoColors.label.resolveFrom(context)),
+                                      fontSize: 14,
+                                      color: CupertinoColors.label
+                                          .resolveFrom(context)),
                                 ),
                               ),
                             ),
@@ -147,8 +155,7 @@ class ContainersPage extends StatelessWidget {
                                           Colors.purple.withValues(alpha: 0.3),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: Icon(
-                                        CupertinoIcons.rectangle_stack,
+                                    child: Icon(CupertinoIcons.rectangle_stack,
                                         color: Colors.purple),
                                   ),
                                   SizedBox(width: 12),
@@ -162,14 +169,17 @@ class ContainersPage extends StatelessWidget {
                                           style: TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold,
-                                            color: CupertinoColors.label.resolveFrom(context),
+                                            color: CupertinoColors.label
+                                                .resolveFrom(context),
                                           ),
                                         ),
                                         Text(
                                           'Opinionated defaults for card content',
                                           style: TextStyle(
                                               fontSize: 14,
-                                              color: CupertinoColors.secondaryLabel.resolveFrom(context)),
+                                              color: CupertinoColors
+                                                  .secondaryLabel
+                                                  .resolveFrom(context)),
                                         ),
                                       ],
                                     ),
@@ -263,12 +273,10 @@ class ContainersPage extends StatelessWidget {
                                 onTap: () {},
                               ),
                               GlassListTile(
-                                leading: Icon(
-                                    CupertinoIcons.paintbrush_fill,
+                                leading: Icon(CupertinoIcons.paintbrush_fill,
                                     color: Colors.purple),
                                 title: Text('Appearance'),
-                                subtitle:
-                                    Text('Dark mode, accent colour'),
+                                subtitle: Text('Dark mode, accent colour'),
                                 trailing: GlassListTile.chevron,
                                 isLast: true,
                                 onTap: () {},
@@ -286,7 +294,9 @@ class ContainersPage extends StatelessWidget {
                           'Auto-manages isLast on final tile',
                           style: TextStyle(
                             fontSize: 13,
-                            color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
+                            color: CupertinoColors.label
+                                .resolveFrom(context)
+                                .withValues(alpha: 0.5),
                           ),
                         ),
                         SizedBox(height: 16),
@@ -296,7 +306,9 @@ class ContainersPage extends StatelessWidget {
                             child: Text(
                               'NETWORK',
                               style: TextStyle(
-                                color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
+                                color: CupertinoColors.label
+                                    .resolveFrom(context)
+                                    .withValues(alpha: 0.5),
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.5,
@@ -305,8 +317,8 @@ class ContainersPage extends StatelessWidget {
                           ),
                           children: [
                             GlassListTile(
-                              leading: Icon(CupertinoIcons.wifi,
-                                  color: Colors.blue),
+                              leading:
+                                  Icon(CupertinoIcons.wifi, color: Colors.blue),
                               title: Text('Wi-Fi'),
                               subtitle: Text('Connected'),
                               trailing: GlassListTile.chevron,
@@ -338,7 +350,9 @@ class ContainersPage extends StatelessWidget {
                             child: Text(
                               'DISPLAY',
                               style: TextStyle(
-                                color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
+                                color: CupertinoColors.label
+                                    .resolveFrom(context)
+                                    .withValues(alpha: 0.5),
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.5,
@@ -350,7 +364,9 @@ class ContainersPage extends StatelessWidget {
                             child: Text(
                               'Adjusts the colour temperature of your display.',
                               style: TextStyle(
-                                color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.4),
+                                color: CupertinoColors.label
+                                    .resolveFrom(context)
+                                    .withValues(alpha: 0.4),
                                 fontSize: 12,
                               ),
                             ),
@@ -438,7 +454,9 @@ class _MiniCard extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.9),
+                color: CupertinoColors.label
+                    .resolveFrom(context)
+                    .withValues(alpha: 0.9),
               ),
             ),
           ],
@@ -469,7 +487,9 @@ class _StepperDemoState extends State<_StepperDemo> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Quantity',
-                  style: TextStyle(color: CupertinoColors.label.resolveFrom(context), fontSize: 16)),
+                  style: TextStyle(
+                      color: CupertinoColors.label.resolveFrom(context),
+                      fontSize: 16)),
               Row(
                 children: [
                   Text(
@@ -499,7 +519,9 @@ class _StepperDemoState extends State<_StepperDemo> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Temperature',
-                  style: TextStyle(color: CupertinoColors.label.resolveFrom(context), fontSize: 16)),
+                  style: TextStyle(
+                      color: CupertinoColors.label.resolveFrom(context),
+                      fontSize: 16)),
               Row(
                 children: [
                   Text(
@@ -531,7 +553,9 @@ class _StepperDemoState extends State<_StepperDemo> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Rating (wraps)',
-                      style: TextStyle(color: CupertinoColors.label.resolveFrom(context), fontSize: 16)),
+                      style: TextStyle(
+                          color: CupertinoColors.label.resolveFrom(context),
+                          fontSize: 16)),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: List.generate(5, (i) {

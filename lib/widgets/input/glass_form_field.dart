@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 
 /// A standard form field wrapper for glass inputs following iOS design patterns.
 ///
@@ -54,10 +53,6 @@ class GlassFormField extends StatelessWidget {
     this.crossAxisAlignment = CrossAxisAlignment.start,
   });
 
-  // Cache default helper text color to avoid allocations
-  static const _defaultHelperTextColor =
-      Color(0x99FFFFFF); // white.withValues(alpha: 0.6)
-
   /// The input widget (e.g., GlassTextField).
   final Widget child;
 
@@ -82,10 +77,10 @@ class GlassFormField extends StatelessWidget {
         if (label != null) ...[
           Text(
             label!,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+              color: CupertinoColors.label.resolveFrom(context),
             ),
           ),
           const SizedBox(height: 8),
@@ -109,9 +104,9 @@ class GlassFormField extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             helperText!,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: _defaultHelperTextColor,
+              color: CupertinoColors.secondaryLabel.resolveFrom(context),
             ),
           ),
         ],

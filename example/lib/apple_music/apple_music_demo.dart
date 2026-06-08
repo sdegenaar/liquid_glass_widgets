@@ -31,8 +31,10 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const _kMusicRed = Color(0xFFFA2D48);
-const _kBackground = CupertinoDynamicColor.withBrightness(color: Color(0xFFF2F2F7), darkColor: Color(0xFF000000));
-const _kCardGray = CupertinoDynamicColor.withBrightness(color: Color(0xFFFFFFFF), darkColor: Color(0xFF2C2C2E));
+const _kBackground = CupertinoDynamicColor.withBrightness(
+    color: Color(0xFFF2F2F7), darkColor: Color(0xFF000000));
+const _kCardGray = CupertinoDynamicColor.withBrightness(
+    color: Color(0xFFFFFFFF), darkColor: Color(0xFF2C2C2E));
 
 const _kBarH = 64.0;
 const _kPaddingH = 20.0;
@@ -41,12 +43,14 @@ const _kSpacing = 8.0;
 
 /// Glass shared by every pill (play bar, home icon, search icon).
 LiquidGlassSettings _kPillGlass(BuildContext context) => LiquidGlassSettings(
-  glassColor: CupertinoTheme.of(context).brightness == Brightness.dark ? const Color(0xCC1C1C1E) : const Color(0xCCF2F2F7),
-  thickness: 30,
-  blur: 3,
-  lightIntensity: 0.35,
-  chromaticAberration: .01,
-);
+      glassColor: CupertinoTheme.of(context).brightness == Brightness.dark
+          ? const Color(0xCC1C1C1E)
+          : const Color(0xCCF2F2F7),
+      thickness: 30,
+      blur: 3,
+      lightIntensity: 0.35,
+      chromaticAberration: .01,
+    );
 
 // ─────────────────────────────────────────────────────────────────────────────
 // APP
@@ -174,7 +178,9 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
   }
 
   LiquidGlassSettings get _barGlassSettings => LiquidGlassSettings(
-        glassColor: CupertinoTheme.of(context).brightness == Brightness.dark ? const Color(0xAA1C1C1E) : const Color(0xAAF2F2F7),
+        glassColor: CupertinoTheme.of(context).brightness == Brightness.dark
+            ? const Color(0xAA1C1C1E)
+            : const Color(0xAAF2F2F7),
         thickness: 30,
         blur: 2,
         chromaticAberration: .01,
@@ -253,7 +259,9 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
     return GlassScaffold(
       background: ColoredBox(color: _kBackground.resolveFrom(context)),
       settings: _kPillGlass(context),
-      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark ? GlassStatusBarStyle.light : GlassStatusBarStyle.dark,
+      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark
+          ? GlassStatusBarStyle.light
+          : GlassStatusBarStyle.dark,
       topEdgeFade: true,
       bottomEdgeFade: true,
       topEdgeFadeExtent: 0, // no app bar — just status bar fade
@@ -353,8 +361,11 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
           verticalPadding: _kPaddingV,
           spacing: _kSpacing,
           selectedIconColor: _kMusicRed,
-          unselectedIconColor: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.9),
-          indicatorColor: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.20),
+          unselectedIconColor:
+              CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.9),
+          indicatorColor: CupertinoColors.label
+              .resolveFrom(context)
+              .withValues(alpha: 0.20),
           labelFontSize: 10,
           iconSize: 28,
           iconLabelSpacing: 0,
@@ -380,13 +391,17 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
             },
             onSearchFocusChanged: (focused) =>
                 setState(() => _searchFieldFocused = focused),
-            searchIconColor: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.9),
+            searchIconColor: CupertinoColors.label
+                .resolveFrom(context)
+                .withValues(alpha: 0.9),
             textInputAction: TextInputAction.search,
             collapsedLogoBuilder: (context) {
               final tab = _kTabs[_selectedTab];
               final iconColor = _isMiniMode && !_isSearching
                   ? _kMusicRed
-                  : CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.9);
+                  : CupertinoColors.label
+                      .resolveFrom(context)
+                      .withValues(alpha: 0.9);
               return Center(
                 child: IconTheme(
                   data: IconThemeData(color: iconColor, size: 28),
@@ -495,7 +510,9 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
                           borderRadius: const BorderRadius.horizontal(
                               left: Radius.circular(14)),
                         ),
-                        child: Icon(s.$3, color: CupertinoColors.label.resolveFrom(context), size: 28),
+                        child: Icon(s.$3,
+                            color: CupertinoColors.label.resolveFrom(context),
+                            size: 28),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -505,12 +522,14 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
                           children: [
                             Text(s.$1,
                                 style: TextStyle(
-                                    color: CupertinoColors.label.resolveFrom(context),
+                                    color: CupertinoColors.label
+                                        .resolveFrom(context),
                                     fontWeight: FontWeight.w600,
                                     fontSize: 15)),
                             Text(s.$2,
                                 style: TextStyle(
-                                    color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                                    color: CupertinoColors.secondaryLabel
+                                        .resolveFrom(context),
                                     fontSize: 13)),
                           ],
                         ),
@@ -572,14 +591,20 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
                     ),
                     title: Text(
                       sections[i % sections.length],
-                      style: TextStyle(color: CupertinoColors.label.resolveFrom(context), fontSize: 17),
+                      style: TextStyle(
+                          color: CupertinoColors.label.resolveFrom(context),
+                          fontSize: 17),
                     ),
                     trailing: Icon(CupertinoIcons.chevron_forward,
-                        color: CupertinoColors.tertiaryLabel.resolveFrom(context), size: 16),
+                        color:
+                            CupertinoColors.tertiaryLabel.resolveFrom(context),
+                        size: 16),
                   ),
                   Divider(
                       height: 1,
-                      color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.1),
+                      color: CupertinoColors.label
+                          .resolveFrom(context)
+                          .withValues(alpha: 0.1),
                       indent: 56),
                 ],
               ),
@@ -617,8 +642,9 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
             alignment: Alignment.center,
             child: Text(
               'SD',
-              style:
-                  TextStyle(color: CupertinoColors.label.resolveFrom(context), fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  color: CupertinoColors.label.resolveFrom(context),
+                  fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -641,7 +667,9 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.apple, color: CupertinoColors.label.resolveFrom(context), size: 22),
+                    Icon(Icons.apple,
+                        color: CupertinoColors.label.resolveFrom(context),
+                        size: 22),
                     SizedBox(width: 4),
                     Text(
                       'Music',
@@ -702,7 +730,8 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(CupertinoIcons.search,
-                    size: 64, color: CupertinoColors.tertiaryLabel.resolveFrom(context)),
+                    size: 64,
+                    color: CupertinoColors.tertiaryLabel.resolveFrom(context)),
                 const SizedBox(height: 16),
                 Text(
                   'No Recent Searches',
@@ -789,7 +818,8 @@ class _PlayBarPill extends StatelessWidget {
                   ),
                 ),
                 child: Icon(Icons.music_note,
-                    color: CupertinoColors.secondaryLabel.resolveFrom(context), size: 20),
+                    color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                    size: 20),
               ),
             ),
             const SizedBox(width: 10),
@@ -811,7 +841,10 @@ class _PlayBarPill extends StatelessWidget {
                   ),
                   Text(
                     'Foo Fighters',
-                    style: TextStyle(color: CupertinoColors.secondaryLabel.resolveFrom(context), fontSize: 12),
+                    style: TextStyle(
+                        color:
+                            CupertinoColors.secondaryLabel.resolveFrom(context),
+                        fontSize: 12),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -822,7 +855,8 @@ class _PlayBarPill extends StatelessWidget {
                 color: CupertinoColors.label.resolveFrom(context), size: 24),
             const SizedBox(width: 12),
             Icon(CupertinoIcons.forward_end_fill,
-                color: CupertinoColors.secondaryLabel.resolveFrom(context), size: 20),
+                color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                size: 20),
             const SizedBox(width: 2),
           ],
         ),
@@ -839,7 +873,8 @@ class _AppleMusicLogo extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.apple, color: CupertinoColors.label.resolveFrom(context), size: 56),
+        Icon(Icons.apple,
+            color: CupertinoColors.label.resolveFrom(context), size: 56),
         Text(
           'Music',
           style: TextStyle(
@@ -883,7 +918,9 @@ class _HeroCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         border: showBorder
             ? Border.all(
-                color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.15),
+                color: CupertinoColors.label
+                    .resolveFrom(context)
+                    .withValues(alpha: 0.15),
                 width: 1.0,
               )
             : null,
@@ -916,7 +953,8 @@ class _HeroCard extends StatelessWidget {
           Text(
             subtext,
             style: TextStyle(
-              color: (textColor ?? CupertinoColors.label.resolveFrom(context)).withValues(alpha: 0.8),
+              color: (textColor ?? CupertinoColors.label.resolveFrom(context))
+                  .withValues(alpha: 0.8),
               fontSize: 12,
             ),
           ),

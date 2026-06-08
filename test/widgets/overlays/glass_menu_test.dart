@@ -501,4 +501,192 @@ void main() {
     expect(find.text('ZeroItem'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  // ── GlassMenuController (PR #88 / #89) ──────────────────────────────────────
+  test('GlassMenuController defaults to detached (isOpen is false)', () {
+    final controller = GlassMenuController();
+    expect(controller.isOpen, isFalse);
+  });
+
+  testWidgets('GlassMenuController.open() opens the menu imperatively',
+      (tester) async {
+    final controller = GlassMenuController();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassMenu(
+              controller: controller,
+              trigger:
+                  const SizedBox(width: 60, height: 40, child: Text('Ctrl')),
+              items: [
+                GlassMenuItem(title: 'CtrlItem', onTap: () {}),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(controller.isOpen, isFalse);
+    expect(find.text('CtrlItem'), findsNothing);
+
+    // Open via controller (not via trigger tap)
+    controller.open();
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(controller.isOpen, isTrue);
+    expect(find.text('CtrlItem'), findsOneWidget);
+  });
+
+  testWidgets('GlassMenuController.close() closes the menu imperatively',
+      (tester) async {
+    final controller = GlassMenuController();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassMenu(
+              controller: controller,
+              trigger:
+                  const SizedBox(width: 60, height: 40, child: Text('Ctrl2')),
+              items: [
+                GlassMenuItem(title: 'CtrlItem2', onTap: () {}),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Open via controller
+    controller.open();
+    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(find.text('CtrlItem2'), findsOneWidget);
+
+    // Close via controller
+    controller.close();
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(controller.isOpen, isFalse);
+    expect(find.text('CtrlItem2'), findsNothing);
+  });
+
+  // ── showDismissBarrier (PR #88 / #89) ───────────────────────────────────────
+  test('GlassMenu.showDismissBarrier defaults to true', () {
+    final menu = GlassMenu(
+      trigger: const SizedBox(width: 40, height: 40),
+      items: [GlassMenuItem(title: 'Item', onTap: () {})],
+    );
+    expect(menu.showDismissBarrier, isTrue);
+  });
+
+  testWidgets(
+      'GlassMenu showDismissBarrier=false renders without barrier crash',
+      (tester) async {
+    final controller = GlassMenuController();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassMenu(
+              controller: controller,
+              showDismissBarrier: false,
+              trigger: const SizedBox(
+                  width: 60, height: 40, child: Text('NoBarrier')),
+              items: [
+                GlassMenuItem(title: 'BarrierItem', onTap: () {}),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    controller.open();
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('BarrierItem'), findsOneWidget);
+
+    // Close via controller since there's no barrier to tap
+    controller.close();
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('BarrierItem'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  // ── setFollowOffset (PR #89) ────────────────────────────────────────────────
+  testWidgets('GlassMenuController.setFollowOffset does not crash',
+      (tester) async {
+    final controller = GlassMenuController();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassMenu(
+              controller: controller,
+              trigger:
+                  const SizedBox(width: 60, height: 40, child: Text('Follow')),
+              items: [
+                GlassMenuItem(title: 'FollowItem', onTap: () {}),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    controller.open();
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // Nudge the menu position — must not crash
+    controller.setFollowOffset(const Offset(10, 5));
+    await tester.pump();
+
+    expect(find.text('FollowItem'), findsOneWidget);
+
+    // Reset offset
+    controller.setFollowOffset(Offset.zero);
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+
+    controller.close();
+    await tester.pump();
+    await tester.pumpAndSettle();
+  });
+
+  // ── GlassIconButton quality null pass-through (PR #90) ──────────────────────
+  testWidgets('GlassIconButton passes null quality to let theme chain resolve',
+      (tester) async {
+    // Exercises the fix: quality must NOT be coerced to GlassQuality.standard
+    // before reaching GlassButton.custom(), so the theme chain can resolve it.
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassIconButton(
+              icon: const Icon(Icons.star),
+              onPressed: () {},
+              // quality intentionally omitted — must resolve through theme
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(GlassIconButton), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

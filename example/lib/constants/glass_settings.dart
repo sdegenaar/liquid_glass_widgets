@@ -10,7 +10,9 @@ class ShowcaseBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
-    return isDark ? const _DarkShowcaseBackground() : const _LightShowcaseBackground();
+    return isDark
+        ? const _DarkShowcaseBackground()
+        : const _LightShowcaseBackground();
   }
 }
 

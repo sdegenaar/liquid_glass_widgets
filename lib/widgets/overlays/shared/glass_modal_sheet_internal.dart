@@ -243,38 +243,47 @@ class _SheetLayout extends StatelessWidget {
                             ),
                             // 4. Glow overlay + content.
                             Positioned.fill(
-                              child: GlassGlow(
-                                glowColor: (enableInteractionGlow &&
-                                        glassOpacity > 0.05 &&
-                                        expandProgress < 0.9)
-                                    ? (glowColor ??
-                                        Colors.white.withValues(alpha: 0.15))
-                                    : Colors.transparent,
-                                glowRadius: glowRadius,
-                                hitTestBehavior: HitTestBehavior.translucent,
-                                pulse: (enableSaturationGlow &&
-                                        expandProgress < 0.9)
-                                    ? saturationAnimation.value
-                                    : 0,
-                                child: Stack(
-                                  children: [
-                                    Positioned.fill(
-                                      child: Material(
-                                        color: Colors.transparent,
-                                        child: child!,
+                              child: Builder(builder: (innerContext) {
+                                final isDark =
+                                    CupertinoTheme.brightnessOf(innerContext) ==
+                                        Brightness.dark;
+                                return GlassGlow(
+                                  glowColor: (enableInteractionGlow &&
+                                          glassOpacity > 0.05 &&
+                                          expandProgress < 0.9)
+                                      ? (glowColor ??
+                                          (isDark
+                                              ? Colors.white
+                                                  .withValues(alpha: 0.15)
+                                              : Colors.black
+                                                  .withValues(alpha: 0.10)))
+                                      : Colors.transparent,
+                                  glowRadius: glowRadius,
+                                  hitTestBehavior: HitTestBehavior.translucent,
+                                  pulse: (enableSaturationGlow &&
+                                          expandProgress < 0.9)
+                                      ? saturationAnimation.value
+                                      : 0,
+                                  child: Stack(
+                                    children: [
+                                      Positioned.fill(
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          child: child!,
+                                        ),
                                       ),
-                                    ),
-                                    if (showDragIndicator)
-                                      Positioned(
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        height: 44,
-                                        child: handleZone,
-                                      ),
-                                  ],
-                                ),
-                              ),
+                                      if (showDragIndicator)
+                                        Positioned(
+                                          top: 0,
+                                          left: 0,
+                                          right: 0,
+                                          height: 44,
+                                          child: handleZone,
+                                        ),
+                                    ],
+                                  ),
+                                ); // GlassGlow
+                              }), // Builder
                             ),
                           ],
                         ),

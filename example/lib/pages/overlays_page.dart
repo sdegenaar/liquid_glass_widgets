@@ -36,7 +36,10 @@ class _OverlaysPageState extends State<OverlaysPage> {
             Text(
               'This is a basic glass bottom sheet',
               style: TextStyle(
-                  fontSize: 16, color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.7)),
+                  fontSize: 16,
+                  color: CupertinoColors.label
+                      .resolveFrom(context)
+                      .withValues(alpha: 0.7)),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 24),
@@ -88,7 +91,8 @@ class _OverlaysPageState extends State<OverlaysPage> {
                               style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: CupertinoColors.label.resolveFrom(context))),
+                                  color: CupertinoColors.label
+                                      .resolveFrom(context))),
                         ),
                       ),
                       SizedBox(width: 16),
@@ -96,7 +100,8 @@ class _OverlaysPageState extends State<OverlaysPage> {
                           style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: CupertinoColors.label.resolveFrom(context))),
+                              color:
+                                  CupertinoColors.label.resolveFrom(context))),
                     ],
                   ),
                 ),
@@ -228,7 +233,9 @@ class _OverlaysPageState extends State<OverlaysPage> {
               'Multi-state: peek → half → full.',
               style: TextStyle(
                 fontSize: 15,
-                color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.7),
+                color: CupertinoColors.label
+                    .resolveFrom(context)
+                    .withValues(alpha: 0.7),
               ),
               textAlign: TextAlign.center,
             ),
@@ -261,7 +268,9 @@ class _OverlaysPageState extends State<OverlaysPage> {
     return GlassPage(
       background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
-      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark ? GlassStatusBarStyle.light : GlassStatusBarStyle.dark,
+      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark
+          ? GlassStatusBarStyle.light
+          : GlassStatusBarStyle.dark,
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: GlassAppBar(
@@ -486,7 +495,8 @@ class _OverlaysPageState extends State<OverlaysPage> {
                                             style: TextStyle(
                                               fontSize: 17,
                                               fontWeight: FontWeight.w600,
-                                              color: CupertinoColors.label.resolveFrom(context),
+                                              color: CupertinoColors.label
+                                                  .resolveFrom(context),
                                             ),
                                           ),
                                         ],
@@ -539,7 +549,9 @@ class _OverlaysPageState extends State<OverlaysPage> {
                                         children: [
                                           Icon(
                                             CupertinoIcons.info_circle,
-                                            color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                                            color: CupertinoColors
+                                                .secondaryLabel
+                                                .resolveFrom(context),
                                             size: 20,
                                           ),
                                           SizedBox(width: 8),
@@ -548,7 +560,8 @@ class _OverlaysPageState extends State<OverlaysPage> {
                                             style: TextStyle(
                                               fontSize: 17,
                                               fontWeight: FontWeight.w600,
-                                              color: CupertinoColors.label.resolveFrom(context),
+                                              color: CupertinoColors.label
+                                                  .resolveFrom(context),
                                             ),
                                           ),
                                         ],
@@ -581,7 +594,9 @@ class _OverlaysPageState extends State<OverlaysPage> {
                         'Custom content with close callback',
                         style: TextStyle(
                           fontSize: 13,
-                          color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
+                          color: CupertinoColors.label
+                              .resolveFrom(context)
+                              .withValues(alpha: 0.5),
                         ),
                       ),
                       SizedBox(height: 12),
@@ -616,7 +631,8 @@ class _OverlaysPageState extends State<OverlaysPage> {
                                   ),
                                   child: Icon(
                                     CupertinoIcons.person_fill,
-                                    color: CupertinoColors.label.resolveFrom(context),
+                                    color: CupertinoColors.label
+                                        .resolveFrom(context),
                                     size: 28,
                                   ),
                                 ),
@@ -626,7 +642,8 @@ class _OverlaysPageState extends State<OverlaysPage> {
                                   style: TextStyle(
                                     fontSize: 17,
                                     fontWeight: FontWeight.w600,
-                                    color: CupertinoColors.label.resolveFrom(context),
+                                    color: CupertinoColors.label
+                                        .resolveFrom(context),
                                   ),
                                 ),
                                 SizedBox(height: 4),
@@ -634,7 +651,9 @@ class _OverlaysPageState extends State<OverlaysPage> {
                                   'Flutter Developer',
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
+                                    color: CupertinoColors.label
+                                        .resolveFrom(context)
+                                        .withValues(alpha: 0.5),
                                   ),
                                 ),
                                 SizedBox(height: 16),
@@ -649,7 +668,8 @@ class _OverlaysPageState extends State<OverlaysPage> {
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
-                                      color: CupertinoColors.label.resolveFrom(context),
+                                      color: CupertinoColors.label
+                                          .resolveFrom(context),
                                     ),
                                   ),
                                 ),
@@ -786,7 +806,9 @@ class _ResultRow extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: 14,
-            color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.7),
+            color: CupertinoColors.label
+                .resolveFrom(context)
+                .withValues(alpha: 0.7),
           ),
         ),
       ],
@@ -804,7 +826,8 @@ class _QualityLabel extends StatelessWidget {
       label,
       style: TextStyle(
         fontSize: 13,
-        color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
+        color:
+            CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
       ),
     );
   }

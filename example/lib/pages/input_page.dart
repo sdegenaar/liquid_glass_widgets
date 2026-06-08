@@ -33,7 +33,9 @@ class _InputPageState extends State<InputPage> {
     return GlassPage(
       background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
-      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark ? GlassStatusBarStyle.light : GlassStatusBarStyle.dark,
+      statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark
+          ? GlassStatusBarStyle.light
+          : GlassStatusBarStyle.dark,
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: GlassAppBar(
@@ -104,10 +106,14 @@ class _InputPageState extends State<InputPage> {
                         controller: _searchController,
                         placeholder: 'Search...',
                         prefixIcon: Icon(CupertinoIcons.search,
-                            size: 20, color: CupertinoColors.secondaryLabel.resolveFrom(context)),
+                            size: 20,
+                            color: CupertinoColors.secondaryLabel
+                                .resolveFrom(context)),
                         suffixIcon: _searchController.text.isNotEmpty
                             ? Icon(CupertinoIcons.xmark_circle_fill,
-                                size: 20, color: CupertinoColors.secondaryLabel.resolveFrom(context))
+                                size: 20,
+                                color: CupertinoColors.secondaryLabel
+                                    .resolveFrom(context))
                             : null,
                         onSuffixTap: () {
                           setState(() => _searchController.clear());
@@ -147,7 +153,8 @@ class _InputPageState extends State<InputPage> {
                       SizedBox(height: 16),
                       DecoratedBox(
                         decoration: BoxDecoration(
-                          color: CupertinoColors.systemFill.resolveFrom(context),
+                          color:
+                              CupertinoColors.systemFill.resolveFrom(context),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Padding(
@@ -160,7 +167,8 @@ class _InputPageState extends State<InputPage> {
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
-                                  color: CupertinoColors.label.resolveFrom(context),
+                                  color: CupertinoColors.label
+                                      .resolveFrom(context),
                                 ),
                               ),
                               SizedBox(height: 24),
@@ -168,14 +176,18 @@ class _InputPageState extends State<InputPage> {
                                 placeholder: 'Full Name',
                                 useOwnLayer: true,
                                 prefixIcon: Icon(CupertinoIcons.person,
-                                    size: 20, color: CupertinoColors.secondaryLabel.resolveFrom(context)),
+                                    size: 20,
+                                    color: CupertinoColors.secondaryLabel
+                                        .resolveFrom(context)),
                               ),
                               SizedBox(height: 16),
                               GlassTextField(
                                 placeholder: 'Email Address',
                                 useOwnLayer: true,
                                 prefixIcon: Icon(CupertinoIcons.mail,
-                                    size: 20, color: CupertinoColors.secondaryLabel.resolveFrom(context)),
+                                    size: 20,
+                                    color: CupertinoColors.secondaryLabel
+                                        .resolveFrom(context)),
                                 keyboardType: TextInputType.emailAddress,
                               ),
                               SizedBox(height: 16),
@@ -183,7 +195,9 @@ class _InputPageState extends State<InputPage> {
                                 placeholder: 'Password',
                                 useOwnLayer: true,
                                 prefixIcon: Icon(CupertinoIcons.lock,
-                                    size: 20, color: CupertinoColors.secondaryLabel.resolveFrom(context)),
+                                    size: 20,
+                                    color: CupertinoColors.secondaryLabel
+                                        .resolveFrom(context)),
                                 obscureText: true,
                               ),
                               SizedBox(height: 24),
@@ -192,13 +206,15 @@ class _InputPageState extends State<InputPage> {
                                 child: GlassButton.custom(
                                   onTap: () {},
                                   height: 56,
+                                  shape: const LiquidRoundedSuperellipse(borderRadius: 12),
                                   child: Center(
                                     child: Text(
                                       'Sign Up',
                                       style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
-                                        color: CupertinoColors.label.resolveFrom(context),
+                                        color: CupertinoColors.label
+                                            .resolveFrom(context),
                                       ),
                                     ),
                                   ),
@@ -210,7 +226,9 @@ class _InputPageState extends State<InputPage> {
                                   'Already have an account? Sign In',
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.7),
+                                    color: CupertinoColors.label
+                                        .resolveFrom(context)
+                                        .withValues(alpha: 0.7),
                                   ),
                                 ),
                               ),
@@ -274,7 +292,8 @@ class _InputPageState extends State<InputPage> {
                       SizedBox(height: 16),
                       DecoratedBox(
                         decoration: BoxDecoration(
-                          color: CupertinoColors.systemFill.resolveFrom(context),
+                          color:
+                              CupertinoColors.systemFill.resolveFrom(context),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Padding(
@@ -288,7 +307,9 @@ class _InputPageState extends State<InputPage> {
                                   keyboardType: TextInputType.emailAddress,
                                   useOwnLayer: true,
                                   prefixIcon: Icon(CupertinoIcons.mail,
-                                      color: CupertinoColors.secondaryLabel.resolveFrom(context), size: 20),
+                                      color: CupertinoColors.secondaryLabel
+                                          .resolveFrom(context),
+                                      size: 20),
                                 ),
                               ),
                               SizedBox(height: 16),

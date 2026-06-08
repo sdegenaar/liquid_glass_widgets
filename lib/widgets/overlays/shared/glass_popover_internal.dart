@@ -477,31 +477,38 @@ class _GlassPopoverState extends State<GlassPopover>
         shape: teardropShape,
         clipBehavior: Clip.antiAlias,
         glowIntensity: widget.glowIntensity,
-        child: GlassGlow(
-          enabled: widget.enableInteractionGlow,
-          glowOnTapOnly: widget.glowOnTapOnly,
-          glowColor: widget.glowColor ?? Colors.white.withValues(alpha: 0.15),
-          glowRadius: widget.glowRadius,
-          glowBlurRadius: 40,
-          clipper: ShapeBorderClipper(
-            shape: teardropShape,
-          ),
-          child: Transform.scale(
-            scale: containerScale,
-            alignment: Alignment.center,
-            child: Stack(
-              alignment: _morphAlignment,
-              clipBehavior: Clip.none,
-              children: [
-                // Content — only visible when container is nearly full size
-                // AND not currently closing. During close the teardrop morph
-                // plays without any content, matching GlassMenu behaviour.
-                if (clampedValue > 0.94 && !_morphController.isClosing)
-                  _buildContentWithMeasurement(clampedValue),
-              ],
+        child: Builder(builder: (context) {
+          final isDark =
+              CupertinoTheme.brightnessOf(context) == Brightness.dark;
+          return GlassGlow(
+            enabled: widget.enableInteractionGlow,
+            glowOnTapOnly: widget.glowOnTapOnly,
+            glowColor: widget.glowColor ??
+                (isDark
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : Colors.black.withValues(alpha: 0.10)),
+            glowRadius: widget.glowRadius,
+            glowBlurRadius: 40,
+            clipper: ShapeBorderClipper(
+              shape: teardropShape,
             ),
-          ),
-        ),
+            child: Transform.scale(
+              scale: containerScale,
+              alignment: Alignment.center,
+              child: Stack(
+                alignment: _morphAlignment,
+                clipBehavior: Clip.none,
+                children: [
+                  // Content — only visible when container is nearly full size
+                  // AND not currently closing. During close the teardrop morph
+                  // plays without any content, matching GlassMenu behaviour.
+                  if (clampedValue > 0.94 && !_morphController.isClosing)
+                    _buildContentWithMeasurement(clampedValue),
+                ],
+              ),
+            ),
+          ); // GlassGlow
+        }), // Builder
       ),
     );
   }

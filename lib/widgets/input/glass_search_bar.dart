@@ -322,12 +322,12 @@ class _GlassSearchBarState extends State<GlassSearchBar> {
   @override
   Widget build(BuildContext context) {
     final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
-    
-    final searchIconColor = widget.searchIconColor ?? 
+
+    final searchIconColor = widget.searchIconColor ??
         (isDark ? const Color(0x99FFFFFF) : const Color(0x99000000));
-    final clearIconColor = widget.clearIconColor ?? 
+    final clearIconColor = widget.clearIconColor ??
         (isDark ? const Color(0x99FFFFFF) : const Color(0x99000000));
-    final cancelButtonColor = widget.cancelButtonColor ?? 
+    final cancelButtonColor = widget.cancelButtonColor ??
         (isDark ? const Color(0xE6FFFFFF) : const Color(0xE6000000));
 
     return Row(

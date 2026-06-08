@@ -246,8 +246,10 @@ class GlassChip extends StatelessWidget {
     final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
     final baseColor = isDark ? CupertinoColors.white : CupertinoColors.black;
     final defaultContentColor = baseColor.withValues(alpha: 0.9);
-    final defaultSelectedColor = baseColor.withValues(alpha: isDark ? 0.3 : 0.1);
-    final defaultGlowUnselected = baseColor.withValues(alpha: isDark ? 0.2 : 0.05);
+    final defaultSelectedColor =
+        baseColor.withValues(alpha: isDark ? 0.3 : 0.1);
+    final defaultGlowUnselected =
+        baseColor.withValues(alpha: isDark ? 0.2 : 0.05);
 
     final effectiveIconColor = iconColor ?? defaultContentColor;
     final effectiveLabelStyle = labelStyle ??

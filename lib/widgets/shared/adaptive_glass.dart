@@ -364,8 +364,7 @@ class AdaptiveGlass extends StatelessWidget {
   // bars, which span edge-to-edge and don't need individual elevation.
   // ---------------------------------------------------------------------------
   Widget _wrapWithLightModeShadow(BuildContext context, Widget glass) {
-    final isDark =
-        CupertinoTheme.of(context).brightness == Brightness.dark;
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
 
     // Skip shadow in dark mode or for flat-edge shapes (bars, full-width surfaces).
     if (isDark || _FrostedFallback._isFlatEdge(shape)) {
@@ -458,10 +457,9 @@ class _InverseShapeClipper extends CustomClipper<Path> {
   }
 
   @override
-  bool shouldReclip(_InverseShapeClipper oldClipper) => oldClipper.shape != shape;
+  bool shouldReclip(_InverseShapeClipper oldClipper) =>
+      oldClipper.shape != shape;
 }
-
-
 
 // ---------------------------------------------------------------------------
 // _FrostedFallback — shader-free glass fallback surface
@@ -627,7 +625,10 @@ class _FrostedFallback extends StatelessWidget {
             child: DecoratedBox(
               decoration: ShapeDecoration(
                 shape: shape,
-                color: Colors.white.withValues(alpha: 0.15 * glowIntensity),
+                color: (CupertinoTheme.brightnessOf(context) == Brightness.dark
+                        ? Colors.white
+                        : Colors.black)
+                    .withValues(alpha: 0.15 * glowIntensity),
               ),
             ),
           ),

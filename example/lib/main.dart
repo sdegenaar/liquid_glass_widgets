@@ -44,9 +44,8 @@ class _AppleLiquidGlassShowcaseAppState
 
   void _toggleBrightness() {
     setState(() {
-      _brightness = _brightness == Brightness.dark
-          ? Brightness.light
-          : Brightness.dark;
+      _brightness =
+          _brightness == Brightness.dark ? Brightness.light : Brightness.dark;
     });
   }
 
@@ -191,7 +190,6 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage> {
   }
 }
 
-
 // =============================================================================
 // Explore Tab — hero overview
 // =============================================================================
@@ -225,7 +223,8 @@ class _ExploreTab extends StatelessWidget {
                     'iOS 26 Widget Toolkit',
                     style: TextStyle(
                       fontSize: 17,
-                      color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                      color:
+                          CupertinoColors.secondaryLabel.resolveFrom(context),
                       letterSpacing: -0.2,
                     ),
                   ),
@@ -458,7 +457,8 @@ class _WidgetsTab extends StatelessWidget {
                     'Browse the full widget catalog.',
                     style: TextStyle(
                       fontSize: 15,
-                      color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                      color:
+                          CupertinoColors.secondaryLabel.resolveFrom(context),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -578,7 +578,8 @@ class _DemosTab extends StatelessWidget {
                     'Polished Apple app reproductions.',
                     style: TextStyle(
                       fontSize: 15,
-                      color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                      color:
+                          CupertinoColors.secondaryLabel.resolveFrom(context),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -688,7 +689,8 @@ class _ExamplesTab extends StatelessWidget {
                     'Widget modes & configuration reference.',
                     style: TextStyle(
                       fontSize: 15,
-                      color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                      color:
+                          CupertinoColors.secondaryLabel.resolveFrom(context),
                     ),
                   ),
                   const SizedBox(height: 24),

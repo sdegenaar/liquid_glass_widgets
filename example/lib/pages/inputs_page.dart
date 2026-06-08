@@ -17,7 +17,9 @@ class InputsPage extends StatelessWidget {
           title: Text(
             'Inputs',
             style: TextStyle(
-                fontSize: 20, fontWeight: FontWeight.bold, color: CupertinoColors.label.resolveFrom(context)),
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: CupertinoColors.label.resolveFrom(context)),
           ),
         ),
         body: SingleChildScrollView(
@@ -38,7 +40,9 @@ class InputsPage extends StatelessWidget {
                 'New iOS 26 style input primitives.',
                 style: TextStyle(
                   fontSize: 16,
-                  color: CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.7),
+                  color: CupertinoColors.label
+                      .resolveFrom(context)
+                      .withValues(alpha: 0.7),
                 ),
               ),
               SizedBox(height: 32),
@@ -61,7 +65,9 @@ class InputsPage extends StatelessWidget {
                           keyboardType: TextInputType.emailAddress,
                           useOwnLayer: true,
                           prefixIcon: Icon(CupertinoIcons.mail,
-                              color: CupertinoColors.secondaryLabel.resolveFrom(context), size: 20),
+                              color: CupertinoColors.secondaryLabel
+                                  .resolveFrom(context),
+                              size: 20),
                         ),
                       ),
                       SizedBox(height: 16),

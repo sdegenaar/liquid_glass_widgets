@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../types/glass_quality.dart';
 import '../shared/adaptive_glass.dart';
@@ -27,10 +26,6 @@ class GlassPicker extends StatelessWidget {
     this.quality,
     this.shape = const LiquidRoundedSuperellipse(borderRadius: 10),
   });
-
-  // Cache default placeholder color to avoid allocations
-  static const _defaultPlaceholderColor =
-      Color(0x80FFFFFF); // white.withValues(alpha: 0.5)
 
   /// The currently selected text value.
   final String? value;
@@ -79,11 +74,14 @@ class GlassPicker extends StatelessWidget {
       widgetQuality: quality,
     );
 
-    final effectiveTextStyle =
-        textStyle ?? const TextStyle(fontSize: 16, color: Colors.white);
+    final labelColor = CupertinoColors.label.resolveFrom(context);
+    final secondaryColor = CupertinoColors.secondaryLabel.resolveFrom(context);
 
-    final effectivePlaceholderStyle = placeholderStyle ??
-        const TextStyle(fontSize: 16, color: _defaultPlaceholderColor);
+    final effectiveTextStyle =
+        textStyle ?? TextStyle(fontSize: 16, color: labelColor);
+
+    final effectivePlaceholderStyle =
+        placeholderStyle ?? TextStyle(fontSize: 16, color: secondaryColor);
 
     final child = Container(
       height: height,
@@ -103,7 +101,7 @@ class GlassPicker extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           IconTheme(
-            data: const IconThemeData(size: 16, color: Colors.white70),
+            data: IconThemeData(size: 16, color: secondaryColor),
             child: icon ?? const Icon(CupertinoIcons.chevron_up_chevron_down),
           ),
         ],
