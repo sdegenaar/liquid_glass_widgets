@@ -1,6 +1,16 @@
 # 0.15.1
 
-## Light-Mode Aesthetics & Shadows
+## Full Light & Dark Mode — Complete Adaptive UI Kit
+
+`liquid_glass_widgets` is now a **fully adaptive** iOS 26 UI kit. Every widget
+— buttons, menus, search bars, sliders, switches, sheets, toasts, chips, form
+fields, and all surface bars — automatically resolves the correct glass color,
+rim lighting, shadow, text, and icon values for both **Light** and **Dark**
+mode. No manual configuration required.
+
+This release closes the last remaining light-mode rendering gaps and ships a
+polished reference implementation in the Apple Messages demo that matches the
+real iOS 26 Messages app in both modes.
 
 ### New features
 
@@ -12,8 +22,9 @@
 - **`GlassMenu.morphFromZero`** — when `true`, the menu body lerps from a zero-size point at the trigger center instead of from the trigger's own dimensions, suppressing the spawn blob (Blob A). For invisible or zero-sized triggers. _(contributed by [@F1orian](https://github.com/F1orian))_
 - **`GlassMenuController.setFollowOffset(Offset)`** — nudges the open menu to track a moving anchor in real-time. The offset is added to the captured trigger position each frame and reset on the next `open()`. _(contributed by [@F1orian](https://github.com/F1orian))_
 
-### Improvements
+### Light & dark mode improvements
 
+- **Complete adaptive rendering** — all widgets now resolve glass color, rim borders, shadows, text, and icon colors from `CupertinoTheme.brightnessOf(context)`. Switching between light and dark mode requires zero widget-level changes.
 - **Light-mode rim borders** — removed the heavy dark rim border on glass surfaces in light mode. Dark mode rim lighting remains fully intact and unchanged.
 - **Light-mode drop shadows** — added inverse-clipped drop shadows to glass surfaces in light mode (cards, standalone buttons, bottom bars). Shadows render outside the glass boundary so the backdrop filter doesn't blur them. Note: morphing elements like the search pill do not have shadows to prevent animation artifacts.
 - **Standard glass white frost** — standard quality glass in light mode now correctly renders as clean frosted white instead of muddy grey.
@@ -27,7 +38,7 @@
 - Fixed `GlassMenu` selection pill alignment and hit-test accuracy when system text scaler is active.
 - Fixed `GlassChip` resolving with invisible white text and icons in light mode.
 - Fixed Apple Podcasts demo incorrectly forcing dark-mode glass colors in light mode.
-- Fixed `GlassFormField` label (`Colors.white`) and helper text (`Color(0x99FFFFFF)`) being invisible in light mode — now resolves from `CupertinoColors.label` / `.secondaryLabel`.
+- Fixed `GlassFormField` label (`Colors.white`) and helper text (`Color(0x99FFFFFF)`) being invisible in light mode — now resolves from `CupertinoColors.label` / `.secondaryLabel`
 - Fixed `GlassPicker` value text (`Colors.white`) and chevron icon (`Colors.white70`) being invisible in light mode — now resolves from `CupertinoColors.label` / `.secondaryLabel`.
 - Fixed `GlassPasswordField` lock and eye toggle icons (`Colors.white70`) being invisible in light mode — now resolves from `CupertinoColors.secondaryLabel`.
 - Fixed `GlassActionSheet` forcing dark card background (`Colors.black @ 0.65`), dividers, and pressed highlights regardless of brightness — now resolves to light frosted glass in light mode.
@@ -50,7 +61,7 @@
 ### Example app
 
 - **Input demos** — replaced `GlassCard` wrappers around form fields with flat `CupertinoColors.systemFill` containers. Glass text fields now render as standalone hero surfaces (`useOwnLayer: true`) inside flat-colored form sections, demonstrating the correct pattern. Glass-in-glass nesting is an anti-pattern.
-- **Apple Messages demo** — refined light-mode glass settings with tuned alpha values for a closer match to the real iOS Messages app.
+- **Apple Messages demo** — fully adaptive light and dark mode implementation. Light mode uses the iOS system grouped background (`#F2F2F7`), brightness-aware white glass tint, and dynamic layer separation to enable shadows. Dark mode retains liquid blending via the shared `AdaptiveLiquidGlassLayer`. Press interactions use `persistPressOnDrag: true` and an elevated `ambientBaseLight` in light mode so the pressed state remains visible while holding and dragging off the button edge.
 
 
 # 0.15.0

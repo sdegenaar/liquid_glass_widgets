@@ -206,7 +206,8 @@ class _InputPageState extends State<InputPage> {
                                 child: GlassButton.custom(
                                   onTap: () {},
                                   height: 56,
-                                  shape: const LiquidRoundedSuperellipse(borderRadius: 12),
+                                  shape: const LiquidRoundedSuperellipse(
+                                      borderRadius: 12),
                                   child: Center(
                                     child: Text(
                                       'Sign Up',
