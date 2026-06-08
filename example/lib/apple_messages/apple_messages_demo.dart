@@ -42,6 +42,7 @@ LiquidGlassSettings _kTriggerGlass(BuildContext context) => LiquidGlassSettings(
   chromaticAberration: 0.01,
   refractiveIndex: 1.2,
   saturation: 1.0,
+  shadowElevation: 0.3,
 );
 
 // Glass for the search+compose bar (blended group — premium needed for merging)
@@ -56,6 +57,7 @@ LiquidGlassSettings _kSearchGlass(BuildContext context) => LiquidGlassSettings(
   chromaticAberration: 0.1,
   refractiveIndex: 1.2,
   saturation: 1.0,
+  shadowElevation: 0.3,
 );
 
 // Glass for the menus themselves
