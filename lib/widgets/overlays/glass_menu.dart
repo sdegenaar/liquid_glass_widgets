@@ -186,6 +186,42 @@ class GlassMenu extends StatefulWidget {
   /// [GlassMorphController] status changes directly.
   final VoidCallback? onClose;
 
+  /// Optional controller to drive the menu imperatively
+  /// ([GlassMenuController.open] / [GlassMenuController.close]) instead of — or
+  /// in addition to — tapping the trigger.
+  ///
+  /// Tapping the trigger goes through [_GlassMenuState._toggleMenu], which is
+  /// gated on the morph progress (a close that lands while the menu is still
+  /// expanding is ignored). The controller commands [_GlassMenuState._openMenu]
+  /// / [_GlassMenuState._closeMenu] directly, so it is deterministic for any
+  /// timing — useful when an external gesture owner (e.g. a central gesture
+  /// arena) decides when to show and dismiss the menu.
+  final GlassMenuController? controller;
+
+  /// Whether to render the full-screen tap-to-dismiss barrier behind the open
+  /// menu. Defaults to `true` (modal: a tap outside the menu closes it).
+  ///
+  /// Set to `false` when an external gesture owner (e.g. a canvas gesture arena)
+  /// must keep receiving pointer events while the menu is open and will handle
+  /// dismissal itself — the barrier otherwise sits in the root overlay above
+  /// everything and swallows all input. Pairs with [controller]-driven open/close.
+  final bool showDismissBarrier;
+
+  /// Whether the open/close morph blooms from a zero-size point at the trigger
+  /// center instead of from a glass blob the size of the trigger. Defaults to
+  /// `false` (the menu spawns as a small rounded "metaball" matching the trigger
+  /// and morphs outward — the standard iOS-26 liquid-glass behavior).
+  ///
+  /// Set to `true` when the trigger is invisible or zero-sized (e.g. an
+  /// imperatively-driven menu positioned by an external gesture owner via
+  /// [controller]), so there is no button for the spawn blob to grow from. In
+  /// that case the trigger ghost (Blob A) is suppressed entirely and the menu
+  /// body lerps its size from 0 → full while keeping the identical teardrop
+  /// shape morph (radius circle→rounded-rect, J-curve travel, and spring). The
+  /// shape still spawns at — and collapses back to — the trigger center, so a
+  /// zero-sized trigger reads as a point bloom rather than an 8px glass dot.
+  final bool morphFromZero;
+
   /// Creates a liquid glass menu.
   const GlassMenu({
     super.key,
@@ -216,9 +252,49 @@ class GlassMenu extends StatefulWidget {
     this.glowRadius = 0.6,
     this.glowIntensity = 0.0,
     this.onClose,
+    this.controller,
+    this.showDismissBarrier = true,
+    this.morphFromZero = false,
   }) : assert(trigger != null || triggerBuilder != null,
             'Either trigger or triggerBuilder must be provided');
 
   @override
   State<GlassMenu> createState() => _GlassMenuState();
+}
+
+/// Drives a [GlassMenu] imperatively, bypassing the trigger tap.
+///
+/// Pass it to [GlassMenu.controller]. Unlike tapping the trigger (which toggles
+/// and is gated on the morph progress), [open] and [close] command the menu's
+/// morph directly, so a [close] that lands mid-open reliably dismisses the menu
+/// instead of re-opening it. Intended for cases where something other than the
+/// menu's own trigger decides when it appears — e.g. a central gesture arena.
+///
+/// One controller drives one mounted [GlassMenu] at a time.
+class GlassMenuController {
+  _GlassMenuState? _state;
+
+  void _attach(_GlassMenuState state) => _state = state;
+
+  void _detach(_GlassMenuState state) {
+    if (identical(_state, state)) _state = null;
+  }
+
+  /// Whether the menu's overlay is currently shown (open, or animating closed).
+  bool get isOpen => _state?._overlayController.isShowing ?? false;
+
+  /// Opens the menu, morphing from the trigger's current position. Safe to call
+  /// while a close is still animating — the spring reverses toward open.
+  void open() => _state?._openMenu();
+
+  /// Closes the menu with the rubber-band morph. Deterministic for any timing:
+  /// unlike a trigger tap, it never re-opens a still-expanding menu.
+  void close() => _state?._closeMenu();
+
+  /// Nudges the open menu to track a moving anchor: [offset] (screen px) is added
+  /// to the menu's captured trigger position every frame until reset. A no-op
+  /// while closed; cleared on the next [open]. Used by external gesture owners
+  /// that move the anchor AFTER opening — e.g. a canvas tile trailing under a
+  /// rubberband, where the menu should stay glued to the tile.
+  void setFollowOffset(Offset offset) => _state?.setFollowOffset(offset);
 }

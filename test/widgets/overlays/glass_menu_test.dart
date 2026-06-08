@@ -457,4 +457,48 @@ void main() {
 
     expect(tester.takeException(), isNull);
   });
+
+  // ── morphFromZero (point bloom) ───────────────────────────────────────────
+  test('GlassMenu.morphFromZero defaults to false', () {
+    final menu = GlassMenu(
+      trigger: const SizedBox(width: 8, height: 8),
+      items: [GlassMenuItem(title: 'Item', onTap: () {})],
+    );
+    expect(menu.morphFromZero, isFalse);
+  });
+
+  testWidgets('GlassMenu morphFromZero opens and closes without crashing',
+      (tester) async {
+    // morphFromZero lerps Blob B's size from 0 → full and suppresses Blob A,
+    // exercising the radius-0 / 0-area degenerate path the default-false tests
+    // never hit. The zero-size render guard must keep this from throwing.
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassMenu(
+              morphFromZero: true,
+              trigger: const SizedBox(width: 8, height: 8, child: Text('Zero')),
+              items: [
+                GlassMenuItem(title: 'ZeroItem', onTap: () {}),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Zero'));
+    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(find.text('ZeroItem'), findsOneWidget);
+
+    // Close via outside tap — the collapse-to-point tail must not throw.
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('ZeroItem'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }

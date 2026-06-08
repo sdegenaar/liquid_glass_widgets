@@ -195,8 +195,9 @@ class GlassIconButton extends StatelessWidget {
 
   /// Rendering quality for the glass effect.
   ///
-  /// If null, inherits from parent [InheritedLiquidGlass] or defaults to
-  /// [GlassQuality.standard] (backdrop filter).
+  /// If null, resolved via [GlassThemeHelpers.resolveQuality] — inherits from
+  /// the nearest ancestor layer, then the theme, then the [GlassButton]
+  /// widget-class default ([GlassQuality.standard]).
   final GlassQuality? quality;
 
   /// Whether the pressed glass distortion persists while the finger is held
@@ -245,7 +246,7 @@ class GlassIconButton extends StatelessWidget {
       shape: glassShape,
       settings: settings,
       useOwnLayer: useOwnLayer,
-      quality: quality ?? GlassQuality.standard,
+      quality: quality,
       interactionScale: interactionScale,
       glowColor: glowColor, // Let GlassButton use theme if null
       glowRadius: glowRadius,

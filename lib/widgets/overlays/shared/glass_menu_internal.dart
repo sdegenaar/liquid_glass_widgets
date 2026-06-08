@@ -18,6 +18,16 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   double _horizontalOffset = 0.0;
   double _verticalOffset = 0.0;
 
+  /// Live screen-space nudge added to the captured trigger position while the
+  /// menu is OPEN, so an external owner can keep the floating menu glued to a
+  /// moving anchor (e.g. a canvas tile trailing under a rubberband) WITHOUT
+  /// re-opening. Reset to zero on each [_openMenu]. Applied to both morph blobs
+  /// in [_buildMorphingOverlay]. It deliberately does NOT recompute the
+  /// screen-edge clamping ([_horizontalOffset]/[_verticalOffset]) — trails are
+  /// small and bounded, and recomputing per-frame is not worth the cost. Driven
+  /// via [GlassMenuController.setFollowOffset] / [setFollowOffset].
+  Offset _followOffset = Offset.zero;
+
   // --- Granular Update System (Performance + No flicker) ---
   // We cache the outer list but use notifiers to update selection state
   // without rebuilding the entire menu tree.
@@ -28,6 +38,10 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   @override
   void didUpdateWidget(GlassMenu oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!identical(widget.controller, oldWidget.controller)) {
+      oldWidget.controller?._detach(this);
+      widget.controller?._attach(this);
+    }
     if (!identical(widget.items, oldWidget.items)) {
       _cachedWrappedItems = null;
       // BUG 12 FIX: Clear hover state if items shrink while menu is open
@@ -92,10 +106,12 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     _scrollController = ScrollController();
     _hoveredIndexNotifier = ValueNotifier(null);
     _isDraggingNotifier = ValueNotifier(false);
+    widget.controller?._attach(this);
   }
 
   @override
   void dispose() {
+    widget.controller?._detach(this);
     _morphController.dispose();
     _scrollController.dispose();
     _hoveredIndexNotifier.dispose();
@@ -191,6 +207,15 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     }
   }
 
+  /// Nudges the OPEN menu by [offset] (screen px) on top of its captured trigger
+  /// position, so an external owner can track a moving anchor live. A no-op
+  /// delta is skipped to avoid needless rebuilds. Has no visible effect while
+  /// closed; the next [_openMenu] resets it to zero.
+  void setFollowOffset(Offset offset) {
+    if (_followOffset == offset) return;
+    setState(() => _followOffset = offset);
+  }
+
   void _openMenu() {
     // Capture geometry and screen position for morphing
     final renderBox = context.findRenderObject() as RenderBox?;
@@ -203,6 +228,8 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     _triggerBorderRadius = _triggerSize!.height / 2;
     _triggerGlobalPosition =
         renderBox.localToGlobal(Offset.zero); // store for overlay
+    // A fresh open must never inherit a previous open's live anchor nudge.
+    _followOffset = Offset.zero;
     final position = _triggerGlobalPosition;
     final mediaQuery = MediaQuery.maybeOf(context);
     final screenWidth = mediaQuery?.size.width ?? double.infinity;
@@ -336,8 +363,21 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     );
 
     final targetHeight = widget.menuHeight ?? menuHeight;
-    final currentHeight = lerpDouble(th, targetHeight, state.sizeT)!;
-    final currentWidth = lerpDouble(tw, widget.menuWidth, state.sizeT)!;
+    // Under morphFromZero the body lerps from a zero-size point at the trigger
+    // center (collapse-to-point) rather than from the trigger's own size; the
+    // false path keeps tw/th so the spawn-blob behavior is byte-identical.
+    final double sizeStartW = widget.morphFromZero ? 0.0 : tw;
+    final double sizeStartH = widget.morphFromZero ? 0.0 : th;
+    // Clamp to >= 0: the rubber-band close drives sizeT slightly negative during
+    // the undershoot, which lerps the size below zero for a tiny trigger and
+    // trips a debug BoxConstraints assert. A size can't be negative; 0 (fully
+    // collapsed) is the correct floor and is visually identical to the intended
+    // shrink-to-nothing at the close tail. Under morphFromZero the lerp already
+    // starts at 0, so this same clamp still floors the close undershoot.
+    final currentHeight = lerpDouble(sizeStartH, targetHeight, state.sizeT)!
+        .clamp(0.0, double.infinity);
+    final currentWidth = lerpDouble(sizeStartW, widget.menuWidth, state.sizeT)!
+        .clamp(0.0, double.infinity);
 
     final inheritedSettings = InheritedLiquidGlass.of(context);
     final effectiveSettings = widget.settings ??
@@ -362,7 +402,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     return Stack(
       children: [
         // Invisible full-screen tap-to-close barrier
-        if (clampedValue > 0.3)
+        if (clampedValue > 0.3 && widget.showDismissBarrier)
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
@@ -398,24 +438,30 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                       // closing momentum (pushDx/pushDy) to bounce when slammed.
                       // Shrinks to 0 scale over the first 40% of the animation to
                       // smoothly break the liquid bridge.
-                      Positioned(
-                        left: _triggerGlobalPosition.dx + state.pushDx,
-                        top: _triggerGlobalPosition.dy + state.pushDy,
-                        child: Transform.scale(
-                          scale: state.anchorScale,
-                          child: GlassContainer(
-                            useOwnLayer: false,
-                            settings: effectiveSettings,
-                            quality: effectiveQuality,
-                            width: tw,
-                            height: th,
-                            shape: LiquidRoundedSuperellipse(
-                              borderRadius: _triggerBorderRadius ??
-                                  _triggerSize!.shortestSide / 2.0,
+                      // Blob A is the spawn blob; under morphFromZero there is no trigger to ghost.
+                      if (!widget.morphFromZero)
+                        Positioned(
+                          left: _triggerGlobalPosition.dx +
+                              _followOffset.dx +
+                              state.pushDx,
+                          top: _triggerGlobalPosition.dy +
+                              _followOffset.dy +
+                              state.pushDy,
+                          child: Transform.scale(
+                            scale: state.anchorScale,
+                            child: GlassContainer(
+                              useOwnLayer: false,
+                              settings: effectiveSettings,
+                              quality: effectiveQuality,
+                              width: tw,
+                              height: th,
+                              shape: LiquidRoundedSuperellipse(
+                                borderRadius: _triggerBorderRadius ??
+                                    _triggerSize!.shortestSide / 2.0,
+                              ),
                             ),
                           ),
                         ),
-                      ),
 
                       // ── Blob B: Menu Body ───────────────────────────────────
                       // Its center travels diagonally relative to the trigger.
@@ -423,11 +469,13 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                       // its edges stay perfectly pinned while it grows!
                       Positioned(
                         left: _triggerGlobalPosition.dx +
+                            _followOffset.dx +
                             tw / 2.0 +
                             state.currentDx -
                             currentWidth / 2.0 +
                             (_horizontalOffset * clampedValue),
                         top: _triggerGlobalPosition.dy +
+                            _followOffset.dy +
                             th / 2.0 +
                             state.currentDy -
                             currentHeight / 2.0 +
@@ -490,6 +538,17 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
 
   Widget _buildMorphingContainer(LiquidMorphState state, double clampedValue,
       double currentWidth, double currentHeight) {
+    // Sub-pixel blob registers no blend-group shape: skip it so the premium
+    // Impeller geometry never rasterizes a 0-area matte (Invalid image dimensions).
+    // The 1.0 logical-px floor is provably safe at every devicePixelRatio: a
+    // logical size in [0.5, 1.0) can still snap to a 0-area matte at dpr=1.0
+    // (matteBounds = (bounds * dpr).snapToPixels(1); ceil() == 0), which would
+    // reach the unclamped toImageSync in the geometry raster. Below 1.0 px is
+    // invisible on any display, so flooring here costs nothing visually.
+    if (currentWidth < 1.0 || currentHeight < 1.0) {
+      return const SizedBox.shrink();
+    }
+
     // Inherit quality from parent layer if not explicitly set
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
