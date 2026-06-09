@@ -210,16 +210,20 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
 
     if (_capturePending) return; // Already in-flight — don't stack captures.
     _capturePending = true;
-    boundary.toImage(pixelRatio: 1.0).then((image) {
+    try {
+      boundary.toImage(pixelRatio: 1.0).then((image) {
+        _capturePending = false;
+        if (!mounted) {
+          image.dispose();
+          return;
+        }
+        _backgroundImage?.dispose();
+        _backgroundImage = image;
+        setState(() {});
+      }).catchError((_) => _capturePending = false);
+    } on Object {
       _capturePending = false;
-      if (!mounted) {
-        image.dispose();
-        return;
-      }
-      _backgroundImage?.dispose();
-      _backgroundImage = image;
-      setState(() {});
-    });
+    }
   }
 
   @override
