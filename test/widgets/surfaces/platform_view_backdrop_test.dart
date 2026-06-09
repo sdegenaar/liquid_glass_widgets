@@ -80,5 +80,28 @@ void main() {
       await tester.pump();
       expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
     });
+
+    testWidgets(
+        'GlassBottomBar(platformViewBackdrop) refracts the icon layer',
+        (tester) async {
+      // Exercises the TabIndicator's `backgroundKey: platformViewBackdrop ?
+      // _iconLayerKey : widget.backgroundKey` branch plus the
+      // AdaptiveLiquidGlassLayer plumbing we added for API parity.
+      await tester.pumpWidget(createTestApp(
+        child: SizedBox(
+          height: 90,
+          width: 400,
+          child: GlassBottomBar(
+            tabs: _tabs,
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            quality: GlassQuality.premium,
+            platformViewBackdrop: true,
+          ),
+        ),
+      ));
+      await tester.pump();
+      expect(find.byType(GlassBottomBar), findsOneWidget);
+    });
   });
 }
