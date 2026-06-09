@@ -223,6 +223,7 @@ class GlassBottomBar extends StatefulWidget {
     this.interactionGlowRadius = 1.5,
     this.interactionBehavior = GlassInteractionBehavior.full,
     this.pressScale = 1.04,
+    this.platformViewBackdrop = false,
   })  : assert(tabs.length > 0, 'GlassBottomBar requires at least one tab'),
         assert(
           selectedIndex >= 0 && selectedIndex < tabs.length,
@@ -273,6 +274,10 @@ class GlassBottomBar extends StatefulWidget {
 
   /// Optional background key for Skia/Web refraction.
   final GlobalKey? backgroundKey;
+
+  /// Render the bar's glass via the live BackdropFilter path so it composites
+  /// over a PlatformView.
+  final bool platformViewBackdrop;
 
   /// The color of the directional glow effect when interacting with the bar.
   ///
@@ -581,6 +586,7 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
     return AdaptiveLiquidGlassLayer(
       settings: effectiveSettings,
       quality: effectiveQuality,
+      platformViewBackdrop: widget.platformViewBackdrop,
       blendAmount: widget.enableBlend
           ? widget.blendAmount
           : 0, // Impeller-only (gracefully ignored on Skia)
@@ -660,6 +666,7 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
                           backgroundKey: widget.backgroundKey,
                           maskingQuality: widget.maskingQuality,
                           indicatorExpansion: widget.indicatorExpansion,
+                          platformViewBackdrop: widget.platformViewBackdrop,
                           interactionGlowColor:
                               widget.interactionBehavior.hasGlow
                                   ? effectiveInteractionGlowColor

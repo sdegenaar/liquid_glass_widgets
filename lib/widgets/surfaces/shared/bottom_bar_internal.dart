@@ -329,6 +329,7 @@ class TabIndicator extends StatefulWidget {
     this.interactionGlowSpreadRadius = 0,
     this.interactionGlowOpacity = 1,
     this.interactionScale = 1.0,
+    this.platformViewBackdrop = false,
     super.key,
   });
 
@@ -368,6 +369,8 @@ class TabIndicator extends StatefulWidget {
   /// [GlassInteractionBehavior] before being forwarded here.
   final double interactionScale;
 
+  final bool platformViewBackdrop;
+
   @override
   State<TabIndicator> createState() => TabIndicatorState();
 }
@@ -387,6 +390,8 @@ class TabIndicatorState extends State<TabIndicator>
   // Cache fallback indicator color to avoid allocations
   static const _fallbackIndicatorColor =
       Color(0x1AFFFFFF); // white.withValues(alpha: 0.1)
+
+  final GlobalKey _iconLayerKey = GlobalKey();
 
   // Cached shape to avoid recreation on every animation frame
   late LiquidRoundedSuperellipse _barShape =
@@ -487,6 +492,7 @@ class TabIndicatorState extends State<TabIndicator>
                         ),
                         child: AdaptiveGlass.grouped(
                           quality: widget.quality,
+                          platformViewBackdrop: widget.platformViewBackdrop,
                           shape: _barShape,
                           child: Container(
                             padding: widget.tabPadding,
@@ -607,6 +613,7 @@ class TabIndicatorState extends State<TabIndicator>
               child: RepaintBoundary(
                 child: AdaptiveGlass.grouped(
                   quality: widget.quality,
+                  platformViewBackdrop: widget.platformViewBackdrop,
                   shape: _barShape,
                   child: const SizedBox.expand(),
                 ),
@@ -636,7 +643,7 @@ class TabIndicatorState extends State<TabIndicator>
                 padding: const EdgeInsets.all(4),
                 expansion: widget.indicatorExpansion,
                 settings: widget.indicatorSettings,
-                backgroundKey: widget.backgroundKey,
+                backgroundKey: widget.platformViewBackdrop ? _iconLayerKey : widget.backgroundKey,
               ),
 
             // Persistent selected-icon overlay — always rendered at the TARGET
@@ -687,6 +694,7 @@ class TabIndicatorState extends State<TabIndicator>
               child: RepaintBoundary(
                 child: AdaptiveGlass.grouped(
                   quality: widget.quality,
+                  platformViewBackdrop: widget.platformViewBackdrop,
                   shape: _barShape,
                   child: const SizedBox.expand(),
                 ),
@@ -708,12 +716,13 @@ class TabIndicatorState extends State<TabIndicator>
               padding: const EdgeInsets.all(4),
               expansion: widget.indicatorExpansion,
               settings: widget.indicatorSettings,
-              backgroundKey: widget.backgroundKey,
+              backgroundKey: widget.platformViewBackdrop ? _iconLayerKey : widget.backgroundKey,
             ),
 
             // 2. Icon Content Layer (Unselected + Selected combined for refraction)
             Positioned.fill(
               child: RepaintBoundary(
+                key: _iconLayerKey,
                 child: Stack(
                   children: [
                     // Unselected (inverse clipped — visible OUTSIDE pill)
@@ -773,7 +782,7 @@ class TabIndicatorState extends State<TabIndicator>
               padding: const EdgeInsets.all(4),
               expansion: widget.indicatorExpansion,
               settings: widget.indicatorSettings,
-              backgroundKey: widget.backgroundKey,
+              backgroundKey: widget.platformViewBackdrop ? _iconLayerKey : widget.backgroundKey,
             ),
           ],
         ),

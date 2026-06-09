@@ -9,9 +9,7 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 //
 // The ONLY change from their broken code is one line:
 //   quality: GlassQuality.premium,          // ← their code (crashes on iOS)
-//   quality: Platform.isIOS                  // ← the fix
-//       ? GlassQuality.standard
-//       : GlassQuality.premium,
+//   platformViewBackdrop: Platform.isIOS     // ← the fix
 //
 // WebView stands in for GoogleMap — same UIKitView PlatformView type on iOS.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -68,21 +66,16 @@ class _PlatformViewDemoState extends State<PlatformViewDemo> {
         bottomNavigationBar: GlassBottomBar(
           settings: const LiquidGlassSettings(glassColor: Colors.black54),
           // ┌─────────────────────────────────────────────────────────────┐
-          // │  THE FIX: Use GlassQuality.standard on iOS.               │
+          // │  THE FIX: Use platformViewBackdrop: true on iOS.          │
           // │                                                           │
-          // │  Premium uses Impeller's backdrop-sampling shader which    │
+          // │  Premium uses Impeller's backdrop-sampling shader which   │
           // │  cannot read pixels from a native UIKitView (GoogleMap,   │
-          // │  WebView, MapLibre). Standard uses the lightweight        │
-          // │  shader (specular + Fresnel + light-angle) with           │
-          // │  Flutter's built-in BackdropFilter for blur — which       │
-          // │  correctly composites over PlatformViews via the          │
-          // │  ClipRRect mutator stack.                                 │
-          // │                                                           │
-          // │  Android uses Hybrid Composition (TextureLayer inside     │
-          // │  Flutter's tree), so premium works fine there.            │
+          // │  WebView, MapLibre). Setting platformViewBackdrop ensures │
+          // │  it falls back to standard BackdropFilter rendering over  │
+          // │  native views while maintaining the premium indicator.    │
           // └─────────────────────────────────────────────────────────────┘
-          quality:
-              Platform.isIOS ? GlassQuality.standard : GlassQuality.premium,
+          quality: GlassQuality.premium,
+          platformViewBackdrop: Platform.isIOS,
           selectedIndex: _selectedIndex,
           onTabSelected: _onTabSelected,
           tabs: _tabs,

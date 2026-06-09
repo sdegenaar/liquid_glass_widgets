@@ -50,6 +50,7 @@ class AdaptiveLiquidGlassLayer extends StatelessWidget {
     this.quality,
     this.clipBehavior = Clip.antiAlias,
     this.blendAmount = 10.0,
+    this.platformViewBackdrop = false,
     super.key,
   });
 
@@ -79,6 +80,10 @@ class AdaptiveLiquidGlassLayer extends StatelessWidget {
   ///
   /// Defaults to 10.0.
   final double blendAmount;
+
+  /// When true (typically for iOS PlatformViews), forces the fallback rendering
+  /// path (BackdropFilter) instead of the Impeller-native shader.
+  final bool platformViewBackdrop;
 
   /// Detects if Impeller rendering engine is active.
   static bool get _canUseImpeller => ui.ImageFilter.isShaderFilterSupported;
@@ -126,7 +131,7 @@ class AdaptiveLiquidGlassLayer extends StatelessWidget {
 
     // Detect if we should use the full Impeller-native rendering pipeline
     final bool useFullRenderer =
-        _canUseImpeller && effectiveQuality == GlassQuality.premium;
+        _canUseImpeller && effectiveQuality == GlassQuality.premium && !platformViewBackdrop;
 
     // Resolve shadow for SDF rendering. Shadows only apply in light mode.
     final bool isDark =
