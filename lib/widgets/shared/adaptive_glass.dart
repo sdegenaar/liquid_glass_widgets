@@ -199,11 +199,12 @@ class AdaptiveGlass extends StatelessWidget {
 
     // platformViewBackdrop forces the live BackdropFilter path even at premium:
     // the premium shader's toImageSync backdrop can't capture a PlatformView, so
-    // over one it must use BackdropFilter (live) instead.
+    // over one it must use BackdropFilter (live) instead. The local/cheap checks
+    // are evaluated before the platform shader-support query (_canUseImpeller).
     final bool canUsePremiumShader = !kIsWeb &&
-        _canUseImpeller &&
+        !platformViewBackdrop &&
         quality == GlassQuality.premium &&
-        !platformViewBackdrop;
+        _canUseImpeller;
 
     if (!canUsePremiumShader) {
       // 1. Detect Grouped Elevation
