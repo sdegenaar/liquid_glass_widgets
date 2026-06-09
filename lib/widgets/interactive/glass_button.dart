@@ -709,31 +709,6 @@ class _GlassButtonState extends State<GlassButton>
           );
         }
 
-        // Fix jagged edges on premium glass during stretch animations while
-        // preserving crisp rim rendering at rest.
-        //
-        // Problem: Impeller's LiquidGlassLayer rasterizes at a fixed resolution.
-        // LiquidStretch's TransformLayer scales this cached texture → bilinear
-        // interpolation at shape edges → jagged.
-        //
-        // Solution: Always-present vector ClipPath with animated expansion:
-        //  • At rest (not interacting): clip expanded by 2px on all sides so
-        //    the shader's rim/refraction extends beyond the shape boundary
-        //    without being clipped → crisp premium rim.
-        //  • During interaction (pressing/stretching): clip tightens to the
-        //    exact shape boundary, hiding jagged rasterization artifacts that
-        //    appear at the shape edge during transform scaling.
-        //
-        // Using a constant ClipPath (instead of toggling it on/off) avoids
-        // widget tree instability and the associated rebuild cost.
-        final bool needsEdgeClip =
-            widget.stretch > 0 && effectiveQuality == GlassQuality.premium;
-
-        // Expansion goes from 2px (rest) → 0px (interacting).
-        // The saturation animation is 0.0 at rest, 1.0 when pressed.
-        final double clipExpansion =
-            needsEdgeClip ? 2.0 * (1.0 - _saturationAnimation.value) : 0.0;
-
         // useOwnLayer is passed through to AdaptiveGlass, which automatically
         // promotes interactive elements to own-layer in premium mode (via
         // isInteractive: true). No need to auto-promote here.
@@ -741,7 +716,7 @@ class _GlassButtonState extends State<GlassButton>
         // Pass glow intensity directly to AdaptiveGlass for Skia shader feedback.
         // On Impeller, GlassGlow widget is used instead (separate from glass effect).
         // On Skia/Web, glowIntensity controls shader-based additive brightness.
-        Widget glass = AdaptiveGlass(
+        return AdaptiveGlass(
           shape: widget.shape,
           settings: baseSettings, // Preserve user's saturation setting!
           quality: effectiveQuality,
@@ -750,19 +725,6 @@ class _GlassButtonState extends State<GlassButton>
           isInteractive: true, // Buttons manage their own RepaintBoundary
           child: child!,
         );
-
-        if (needsEdgeClip) {
-          glass = ClipPath(
-            clipper: _ExpandedShapeClipper(
-              shape: widget.shape,
-              expansion: clipExpansion,
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: glass,
-          );
-        }
-
-        return glass;
       },
     );
 
@@ -775,13 +737,16 @@ class _GlassButtonState extends State<GlassButton>
     // - Minimal: always skipped (vector ClipPath — no bitmap to distort).
     // - Premium + stretch: skipped. Impeller's LiquidGlassLayer compositing
     //   bakes shape edges into the cached texture; scaling that texture causes
-    //   bilinear interpolation artefacts ("jagged edges"). Standard's 2D shader
-    //   re-executes within the boundary so it stays sharp.
+    //   bilinear interpolation artefacts. This is a known Impeller limitation
+    //   — the fix belongs at the shader/compositing level, not as a per-button
+    //   ClipPath workaround. Standard's 2D shader re-executes within the
+    //   boundary so it stays sharp.
     // - Premium + no stretch (stretch == 0): kept. No scaling means no
     //   artefacts, and the boundary gives a pure performance win for the
     //   expensive Impeller pipeline.
     // - Standard: always kept. The lightweight shader re-executes at the
     //   correct resolution even inside a RepaintBoundary.
+
     final bool hasStretch = widget.stretch > 0;
     final bool skipBoundary = effectiveQuality == GlassQuality.minimal ||
         (effectiveQuality == GlassQuality.premium && hasStretch);

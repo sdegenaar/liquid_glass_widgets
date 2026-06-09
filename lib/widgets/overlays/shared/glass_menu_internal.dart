@@ -169,6 +169,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
             isHandoff ? (finalDy + _verticalOffset) * rawValue : 0.0;
 
         return Stack(
+          clipBehavior: Clip.none,
           children: [
             // Trigger — physically bounces when slammed by the closing menu!
             Transform.translate(
@@ -399,6 +400,33 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
       widgetQuality: widget.quality,
     );
 
+    final maxRadius = math.min(currentWidth, currentHeight) / 2.0;
+    final double radiusT =
+        Curves.easeInExpo.transform(state.sizeT.clamp(0.0, 1.0));
+    final currentRadius =
+        lerpDouble(maxRadius, widget.menuBorderRadius, radiusT)!;
+
+    final blobBLeft = _triggerGlobalPosition.dx +
+        _followOffset.dx +
+        tw / 2.0 +
+        state.currentDx -
+        currentWidth / 2.0 +
+        (_horizontalOffset * clampedValue);
+
+    final blobBTop = _triggerGlobalPosition.dy +
+        _followOffset.dy +
+        th / 2.0 +
+        state.currentDy -
+        currentHeight / 2.0 +
+        (_verticalOffset * clampedValue);
+
+    // Fade the shadow in aggressively at the end of the morph.
+    // clampedValue goes from 0.0 to 1.0. We want the shadow to appear
+    // during the last 20% of the expansion.
+    final shadowOpacity = ((clampedValue - 0.8) / 0.2).clamp(0.0, 1.0);
+
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+
     return Stack(
       children: [
         // Invisible full-screen tap-to-close barrier
@@ -408,6 +436,31 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
               behavior: HitTestBehavior.translucent,
               onTap: _closeMenu,
               child: Container(color: Colors.black.withValues(alpha: 0.0)),
+            ),
+          ),
+
+        // ── Post-Morph Fading Drop Shadow ────────────────────────────────────
+        // Because the SDF metaball shader cannot draw shadows for morphed geometry,
+        // we fade in a standard drop shadow beneath the final menu body shape
+        // as the morph completes.
+        if (!isDark &&
+            shadowOpacity > 0.0 &&
+            effectiveSettings.shadowElevation > 0)
+          Positioned(
+            left: blobBLeft,
+            top: blobBTop,
+            child: Opacity(
+              opacity: shadowOpacity,
+              child: IgnorePointer(
+                child: Container(
+                  width: currentWidth,
+                  height: currentHeight,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(currentRadius),
+                    boxShadow: effectiveSettings.effectiveShadow,
+                  ),
+                ),
+              ),
             ),
           ),
 
@@ -468,22 +521,17 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                       // By scaling the x/y offsets with the width/height curves,
                       // its edges stay perfectly pinned while it grows!
                       Positioned(
-                        left: _triggerGlobalPosition.dx +
-                            _followOffset.dx +
-                            tw / 2.0 +
-                            state.currentDx -
-                            currentWidth / 2.0 +
-                            (_horizontalOffset * clampedValue),
-                        top: _triggerGlobalPosition.dy +
-                            _followOffset.dy +
-                            th / 2.0 +
-                            state.currentDy -
-                            currentHeight / 2.0 +
-                            (_verticalOffset * clampedValue),
+                        left: blobBLeft,
+                        top: blobBTop,
                         child: IgnorePointer(
                           ignoring: clampedValue < 0.8,
                           child: _buildMorphingContainer(
-                              state, clampedValue, currentWidth, currentHeight),
+                            state,
+                            clampedValue,
+                            currentWidth,
+                            currentHeight,
+                            currentRadius,
+                          ),
                         ),
                       ),
                     ],
@@ -537,7 +585,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   }
 
   Widget _buildMorphingContainer(LiquidMorphState state, double clampedValue,
-      double currentWidth, double currentHeight) {
+      double currentWidth, double currentHeight, double currentRadius) {
     // Sub-pixel blob registers no blend-group shape: skip it so the premium
     // Impeller geometry never rasterizes a 0-area matte (Invalid image dimensions).
     // The 1.0 logical-px floor is provably safe at every devicePixelRatio: a
@@ -563,22 +611,6 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     // and the pinched neck connecting back to the trigger.
     //
     // No more faking the shape with tall, thin rectangles! Let the shader do the work.
-
-    // By keeping the border radius uniform, the container starts as a perfect circle
-    // or pill and naturally morphs into a rounded rectangle.
-    // To ensure it stays perfectly round as it grows (preventing it from becoming a box early),
-    // we interpolate from the MAX possible radius (perfect pill) to the final menu radius.
-    final maxRadius = math.min(currentWidth, currentHeight) / 2.0;
-
-    // Delay the radius transition so the shape stays highly rounded (teardrop-like)
-    // while it pulls away from the trigger. Only morph to the sharper menu border
-    // radius towards the end of the expansion.
-    // Clamp to [0,1] for the curve: a border-radius cannot meaningfully overshoot,
-    // but sizeT can exceed 1.0 during the spring overshoot phase.
-    final double radiusT =
-        Curves.easeInExpo.transform(state.sizeT.clamp(0.0, 1.0));
-    final currentRadius =
-        lerpDouble(maxRadius, widget.menuBorderRadius, radiusT)!;
 
     // Build the shape
     final teardropShape = LiquidRoundedSuperellipse(

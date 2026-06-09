@@ -496,8 +496,8 @@ void main() {
       );
       await tester.pump();
 
-      // Should render a GlassButton (the dismiss button)
-      expect(find.byType(GlassButton), findsWidgets);
+      // Should render a GestureDetector (the dismiss button) around the AdaptiveGlass
+      expect(find.byType(GestureDetector), findsWidgets);
     });
 
     testWidgets('search-active tap calls onDismissSearch', (tester) async {
@@ -508,7 +508,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byType(GlassButton).first);
+      await tester.tap(find.byType(GestureDetector).first);
       await tester.pump();
       expect(dismissed, isTrue);
     });

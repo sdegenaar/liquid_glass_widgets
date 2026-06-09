@@ -140,6 +140,7 @@ class AdaptiveGlass extends StatelessWidget {
     if (quality == GlassQuality.minimal || baseSettings.effectiveBlur == 0) {
       return _wrapWithLightModeShadow(
         context,
+        baseSettings,
         _FrostedFallback(
           shape: shape,
           settings: baseSettings,
@@ -169,6 +170,7 @@ class AdaptiveGlass extends StatelessWidget {
     if (accessibilityData.reduceTransparency) {
       return _wrapWithLightModeShadow(
         context,
+        baseSettings,
         _FrostedFallback(
           shape: shape,
           settings: baseSettings,
@@ -263,6 +265,7 @@ class AdaptiveGlass extends StatelessWidget {
       if (!allowElevation) {
         return _wrapWithLightModeShadow(
           context,
+          baseSettings,
           LightweightLiquidGlass(
             shape: shape,
             settings: effectiveSettings,
@@ -289,7 +292,7 @@ class AdaptiveGlass extends StatelessWidget {
         child: child,
       );
 
-      return _wrapWithLightModeShadow(context, lightweightWidget);
+      return _wrapWithLightModeShadow(context, baseSettings, lightweightWidget);
     }
 
     // Impeller + Premium Path: Use the renderer's native path.
@@ -331,6 +334,7 @@ class AdaptiveGlass extends StatelessWidget {
 
       return _wrapWithLightModeShadow(
         context,
+        baseSettings,
         PremiumGlassTracker(
           child: premium,
         ),
@@ -363,7 +367,8 @@ class AdaptiveGlass extends StatelessWidget {
   // Suppressed for flat-edge shapes (borderRadius: 0) like app bars and bottom
   // bars, which span edge-to-edge and don't need individual elevation.
   // ---------------------------------------------------------------------------
-  Widget _wrapWithLightModeShadow(BuildContext context, Widget glass) {
+  Widget _wrapWithLightModeShadow(
+      BuildContext context, LiquidGlassSettings baseSettings, Widget glass) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
 
     // Skip shadow in dark mode or for flat-edge shapes (bars, full-width surfaces).
@@ -372,7 +377,7 @@ class AdaptiveGlass extends StatelessWidget {
     }
 
     // Resolve the shadow from settings (per-widget or inherited).
-    final shadows = settings.effectiveShadow;
+    final shadows = baseSettings.effectiveShadow;
     if (shadows.isEmpty) return glass;
 
     // Extract border radius from the shape for the shadow decoration.

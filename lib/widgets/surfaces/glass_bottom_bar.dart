@@ -606,9 +606,45 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
 
             return SizedBox(
               height: widget.barHeight,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
+              child: Builder(
+                builder: (context) {
+                  // Resolve shadows for sibling shadow layers painted
+                  // BELOW the glass pills.
+                  final isDark = CupertinoTheme.of(context).brightness ==
+                      Brightness.dark;
+                  final shadows = isDark
+                      ? const <BoxShadow>[]
+                      : InheritedLiquidGlass.ofOrDefault(context)
+                          .effectiveShadow;
+                  final barShape = LiquidRoundedSuperellipse(
+                      borderRadius: widget.barBorderRadius);
+
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // ── 0. Shadow layers ───────────────────────────
+                      if (shadows.isNotEmpty) ...[
+                        // Tab pill shadow
+                        Positioned(
+                          left: 0,
+                          top: 0,
+                          width: tabPillW,
+                          height: widget.barHeight,
+                          child: IgnorePointer(
+                            child: ClipPath(
+                              clipBehavior: Clip.antiAlias,
+                              clipper: _InversePillClipper(barShape),
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(
+                                      widget.barBorderRadius),
+                                  boxShadow: shadows,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                   // 1. Optional extra button — painted first (bottom of z-order).
                   // Pinned to the trailing edge. Painted before the tab pill
                   // so the jelly indicator's glass effect correctly overlaps and
@@ -627,6 +663,7 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
                           quality: effectiveQuality,
                           iconColor: widget.extraButton!.iconColor ??
                               resolvedUnselectedIconColor,
+                          enableBlend: widget.enableBlend,
                           borderRadius: widget.barBorderRadius ==
                                   GlassBottomBar._defaultBarBorderRadius
                               ? null
@@ -703,9 +740,11 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
                       innerBlur: widget.innerBlur,
                     ),
                   ),
-                ],
-              ),
-            );
+                    ],
+                  );  // Stack
+                },  // Builder.builder
+              ),  // Builder
+            );  // SizedBox
           },
         ),
       ),
@@ -1048,3 +1087,26 @@ class JellyClipper extends CustomClipper<Path> {
 /// - Objects stretch perpendicular to movement
 ///
 /// Used by [_TabIndicator] to animate the draggable indicator.
+
+/// Clips out the interior of a pill shape, leaving only the exterior.
+///
+/// Used by the bar-level shadow layers to paint drop-shadows outside the
+/// pill boundary without the glass shader sampling its own shadow.
+class _InversePillClipper extends CustomClipper<Path> {
+  const _InversePillClipper(this.shape);
+
+  final LiquidRoundedSuperellipse shape;
+
+  @override
+  Path getClip(Size size) {
+    final rect = Offset.zero & size;
+    final shapePath = shape.getOuterPath(rect);
+    final outerRect = rect.inflate(50.0);
+    final outerPath = Path()..addRect(outerRect);
+    return Path.combine(PathOperation.difference, outerPath, shapePath);
+  }
+
+  @override
+  bool shouldReclip(_InversePillClipper oldClipper) =>
+      oldClipper.shape != shape;
+}

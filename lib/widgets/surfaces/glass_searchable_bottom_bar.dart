@@ -12,6 +12,7 @@ import '../../types/glass_quality.dart';
 import '../../theme/glass_theme_data.dart';
 import '../../theme/glass_theme_helpers.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
+import '../shared/inherited_liquid_glass.dart';
 import 'glass_bottom_bar.dart'
     show
         ExtraButtonPosition,
@@ -702,12 +703,74 @@ class _GlassSearchableBottomBarState extends State<GlassSearchableBottomBar>
                 final totalH = animH + floatY;
 
                 // ── Stack layout ──────────────────────────────────────────────────
+                // Resolve shadows once for sibling shadow layers painted
+                // BELOW the glass pills (outside per-pill widget trees so
+                // they cannot interfere with the blend group compositing).
+                final isDark =
+                    CupertinoTheme.of(context).brightness == Brightness.dark;
+                final shadows = isDark
+                    ? const <BoxShadow>[]
+                    : InheritedLiquidGlass.ofOrDefault(context)
+                        .effectiveShadow;
+
                 return SizedBox(
                   width: totalW,
                   height: totalH,
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
+                      // ── 0. Shadow layers (painted first → behind everything) ───
+                      // Uses the same Positioned coordinates as the glass
+                      // pills below, with inverse clipping so the shadow
+                      // only renders outside the shape boundary.
+                      if (shadows.isNotEmpty) ...[
+                        // Search pill shadow
+                        Positioned(
+                          left: curSearchLeft,
+                          bottom: floatY,
+                          width: math.max(0.01, curSearchW),
+                          height: animH,
+                          child: IgnorePointer(
+                            child: ClipPath(
+                              clipBehavior: Clip.antiAlias,
+                              clipper: _InversePillClipper(
+                                LiquidRoundedSuperellipse(
+                                    borderRadius: widget.barBorderRadius),
+                              ),
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(
+                                      widget.barBorderRadius),
+                                  boxShadow: shadows,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Tab pill shadow
+                        Positioned(
+                          left: curTabLeft,
+                          bottom: 0,
+                          width: math.max(0.01, curTabW),
+                          height: animH,
+                          child: IgnorePointer(
+                            child: ClipPath(
+                              clipBehavior: Clip.antiAlias,
+                              clipper: _InversePillClipper(
+                                LiquidRoundedSuperellipse(
+                                    borderRadius: widget.barBorderRadius),
+                              ),
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(
+                                      widget.barBorderRadius),
+                                  boxShadow: shadows,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                       // ── 1. Search pill (spring-driven left + width) ─────────────
                       // Painted first (bottom of stack) so the tab pill's glass
                       // indicator can render on top when it overlaps. Both pills
@@ -790,6 +853,7 @@ class _GlassSearchableBottomBarState extends State<GlassSearchableBottomBar>
                                   quality: effectiveQuality,
                                   iconColor: widget.extraButton!.iconColor ??
                                       resolvedUnselectedIconColor,
+                                  enableBlend: widget.enableBlend,
                                   borderRadius: widget.barBorderRadius ==
                                           GlassSearchableBottomBar
                                               ._kDefaultBorderRadius
@@ -1013,3 +1077,26 @@ class _GlassSearchableBottomBarState extends State<GlassSearchableBottomBar>
 // have been extracted to:
 //   lib/widgets/surfaces/shared/searchable_bottom_bar_internal.dart
 // They are imported above as DismissPill, SearchPill, SearchableTabIndicator.
+
+/// Clips out the interior of a pill shape, leaving only the exterior.
+///
+/// Used by the bar-level shadow layers to paint drop-shadows outside the
+/// pill boundary without the glass shader sampling its own shadow.
+class _InversePillClipper extends CustomClipper<Path> {
+  const _InversePillClipper(this.shape);
+
+  final LiquidRoundedSuperellipse shape;
+
+  @override
+  Path getClip(Size size) {
+    final rect = Offset.zero & size;
+    final shapePath = shape.getOuterPath(rect);
+    final outerRect = rect.inflate(50.0);
+    final outerPath = Path()..addRect(outerRect);
+    return Path.combine(PathOperation.difference, outerPath, shapePath);
+  }
+
+  @override
+  bool shouldReclip(_InversePillClipper oldClipper) =>
+      oldClipper.shape != shape;
+}

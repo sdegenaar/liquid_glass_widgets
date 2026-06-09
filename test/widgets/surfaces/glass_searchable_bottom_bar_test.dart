@@ -666,18 +666,18 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // The collapsed logo pill is a GlassButton. Its glowColor should be
-      // exactly the theme primary we injected — not the old hardcoded 0x33FFFFFF.
-      final buttons = tester.widgetList<GlassButton>(find.byType(GlassButton));
-      expect(buttons, isNotEmpty,
-          reason: 'Expected at least one GlassButton in collapsed bar');
+      // The collapsed logo pill is now an AdaptiveGlass.grouped wrapped in GlassGlow.
+      // Its glowColor should be exactly the theme primary we injected.
+      final glows = tester.widgetList<GlassGlow>(find.byType(GlassGlow));
+      expect(glows, isNotEmpty,
+          reason: 'Expected at least one GlassGlow in collapsed bar');
 
-      // At least one GlassButton must carry the theme color.
-      final match = buttons.any((b) => b.glowColor == expectedColor);
+      // At least one GlassGlow must carry the theme color.
+      final match = glows.any((g) => g.glowColor == expectedColor);
       expect(match, isTrue,
           reason:
-              'No GlassButton received the theme glow color $expectedColor. '
-              'Found: ${buttons.map((b) => b.glowColor).toList()}');
+              'No GlassGlow received the theme glow color $expectedColor. '
+              'Found: ${glows.map((g) => g.glowColor).toList()}');
     });
 
     testWidgets(
@@ -717,15 +717,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final buttons = tester.widgetList<GlassButton>(find.byType(GlassButton));
-      expect(buttons, isNotEmpty);
+      final glows = tester.widgetList<GlassGlow>(find.byType(GlassGlow));
+      expect(glows, isNotEmpty);
 
-      final hasExplicit = buttons.any((b) => b.glowColor == explicitColor);
+      final hasExplicit = glows.any((g) => g.glowColor == explicitColor);
       expect(hasExplicit, isTrue,
           reason: 'Explicit interactionGlowColor should override theme');
 
       // The theme green must NOT appear — widget param has priority
-      final hasTheme = buttons.any((b) => b.glowColor == themeColor);
+      final hasTheme = glows.any((g) => g.glowColor == themeColor);
       expect(hasTheme, isFalse,
           reason: 'Theme color should be overridden by explicit param');
     });
@@ -744,9 +744,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // With .none behavior the bar passes Colors.transparent so the glow
-      // wrapper is skipped. No GlassButton should have the theme green.
-      final buttons = tester.widgetList<GlassButton>(find.byType(GlassButton));
-      final hasGreen = buttons.any((b) => b.glowColor == primaryGlow);
+      // wrapper is skipped. No GlassGlow should have the theme green.
+      final glows = tester.widgetList<GlassGlow>(find.byType(GlassGlow));
+      final hasGreen = glows.any((g) => g.glowColor == primaryGlow);
       expect(hasGreen, isFalse,
           reason:
               'GlassInteractionBehavior.none should suppress theme glow color');

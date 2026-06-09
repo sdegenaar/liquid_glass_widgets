@@ -13,6 +13,7 @@ import 'package:liquid_glass_widgets_example/demos/glass_modal_sheet_demo.dart';
 import 'package:liquid_glass_widgets_example/demos/video_player_demo.dart';
 import 'package:liquid_glass_widgets_example/demos/text_field_demo.dart';
 import 'package:liquid_glass_widgets_example/demos/bottom_bar_tab_width_demo.dart';
+import 'package:liquid_glass_widgets_example/demos/buttons_and_shadows_demo.dart';
 
 import 'package:liquid_glass_widgets_example/demos/google_maps_demo.dart'
     show PlatformViewDemo;
@@ -643,6 +644,18 @@ class _DemosTab extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  _LargeDemoCard(
+                    title: 'Buttons & Shadows',
+                    subtitle: 'Glass elevations and dynamic shadow clipping\n(Best viewed in Light Mode)',
+                    icon: CupertinoIcons.layers_fill,
+                    gradient: const [
+                      Color(0xFFE5B2CA),
+                      Color(0xFFCD82A0),
+                    ],
+                    destination: const ShadowClippingDemoPage(),
                   ),
 
                   const SizedBox(height: 120),
