@@ -1,3 +1,23 @@
+# 0.15.5
+
+## 🎬 Scale-with-Morph — Cohesive Overlay Content Reveal
+
+Menu items and popover content now scale in alongside the liquid morph animation
+instead of popping in at the tail. The glass container and its content feel like
+a single continuous motion.
+
+- **Items enter the tree at 30% morph progress** (down from 94%) and scale from
+  0.5× to 1.0× via an `easeOut` curve alongside opacity. Text and icons visually
+  grow with the expanding glass container.
+- **Applied to both `GlassMenu` and `GlassPopover`** for consistent overlay
+  behaviour across the widget family. Content scales in on open and scales
+  back out on close — the morph animation is symmetrical in both directions.
+- No new API surface. No breaking changes. Purely visual polish.
+
+*`GlassMenu` scale-with-morph contributed by [@F1orian](https://github.com/F1orian) in [PR #97](https://github.com/sdegenaar/liquid_glass_widgets/pull/97).*
+
+---
+
 # 0.15.4
 
 ## ⚡ Render Pipeline Performance Pass — FPS & Battery

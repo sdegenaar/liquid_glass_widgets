@@ -499,10 +499,11 @@ class _GlassPopoverState extends State<GlassPopover>
                 alignment: _morphAlignment,
                 clipBehavior: Clip.none,
                 children: [
-                  // Content — only visible when container is nearly full size
-                  // AND not currently closing. During close the teardrop morph
-                  // plays without any content, matching GlassMenu behaviour.
-                  if (clampedValue > 0.94 && !_morphController.isClosing)
+                  // Content scales up with the container morph — enters the
+                  // tree at 30% and scales from 0.5× to 1.0×. On close the
+                  // reverse plays: content shrinks back down with the
+                  // collapsing container, matching GlassMenu behaviour.
+                  if (clampedValue > 0.3)
                     _buildContentWithMeasurement(clampedValue),
                 ],
               ),
@@ -514,8 +515,18 @@ class _GlassPopoverState extends State<GlassPopover>
   }
 
   Widget _buildContentWithMeasurement(double clampedValue) {
-    // Fade content in smoothly over the second half of the animation
-    final contentOpacity = ((clampedValue - 0.5) / 0.5).clamp(0.0, 1.0);
+    // Fade content in smoothly: fully opaque by 70% morph progress.
+    final contentOpacity = ((clampedValue - 0.3) / 0.4).clamp(0.0, 1.0);
+
+    // Scale content from 0.5× to 1.0× with easeOut so it grows alongside
+    // the expanding glass container (matches GlassMenu behaviour).
+    final contentScale = lerpDouble(
+      0.5,
+      1.0,
+      Curves.easeOut.transform(
+        ((clampedValue - 0.3) / 0.7).clamp(0.0, 1.0),
+      ),
+    )!;
 
     final content = widget.contentBuilder(context, _closePopover);
 
@@ -548,9 +559,26 @@ class _GlassPopoverState extends State<GlassPopover>
       );
     }
 
-    return Opacity(
-      opacity: contentOpacity,
-      child: measuredContent,
+    // Provide full target dimensions during layout so the content Column
+    // doesn't overflow inside the still-morphing container. The visual scale
+    // transform handles the size illusion; the GlassContainer's Clip.antiAlias
+    // clips anything outside the morph boundary.
+    final targetHeight =
+        widget.popoverHeight ?? _measuredContentHeight ?? 200.0;
+
+    return OverflowBox(
+      alignment: Alignment.center,
+      minWidth: widget.popoverWidth,
+      maxWidth: widget.popoverWidth,
+      minHeight: 0,
+      maxHeight: targetHeight,
+      child: Opacity(
+        opacity: contentOpacity,
+        child: Transform.scale(
+          scale: contentScale,
+          child: measuredContent,
+        ),
+      ),
     );
   }
 }

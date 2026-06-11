@@ -505,4 +505,107 @@ void main() {
     expect(popover.onClose, isNull);
     expect(popover.onOpen, isNull);
   });
+  // ── Scale-with-morph animation (aligned with GlassMenu PR #97) ─────────────
+  testWidgets(
+      'GlassPopover content is wrapped in Transform.scale when fully open',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassPopover(
+              trigger: const SizedBox(
+                  width: 60, height: 40, child: Text('ScaleOpen')),
+              contentBuilder: (context, close) => const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('ScaledContent'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('ScaleOpen'));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('ScaledContent'), findsOneWidget);
+
+    // A Transform widget wrapping the content should exist in the tree.
+    final transformFinder = find.ancestor(
+      of: find.text('ScaledContent'),
+      matching: find.byType(Transform),
+    );
+    expect(transformFinder, findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'GlassPopover content is wrapped in Opacity when fully open',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassPopover(
+              trigger: const SizedBox(
+                  width: 60, height: 40, child: Text('FadeOpen')),
+              contentBuilder: (context, close) => const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('FadedContent'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('FadeOpen'));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('FadedContent'), findsOneWidget);
+
+    final opacityFinder = find.ancestor(
+      of: find.text('FadedContent'),
+      matching: find.byType(Opacity),
+    );
+    expect(opacityFinder, findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'GlassPopover content not present immediately after opening (early morph)',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassPopover(
+              trigger: const SizedBox(
+                  width: 60, height: 40, child: Text('EarlyPopover')),
+              contentBuilder: (context, close) => const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('EarlyContent'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Tap to open — pump only one frame (spring is near 0%).
+    await tester.tap(find.text('EarlyPopover'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+
+    // At this very early stage of the spring, content should not yet be
+    // in the tree (clampedValue is well below 0.3).
+    expect(find.text('EarlyContent'), findsNothing);
+
+    // Let the animation complete so teardown is clean.
+    await tester.pumpAndSettle();
+    expect(find.text('EarlyContent'), findsOneWidget);
+  });
 }

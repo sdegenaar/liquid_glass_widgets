@@ -689,4 +689,108 @@ void main() {
     expect(find.byType(GlassIconButton), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+  // ── Scale-with-morph animation (PR #97) ────────────────────────────────────
+  testWidgets(
+      'GlassMenu items are wrapped in Transform.scale when fully open',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassMenu(
+              trigger:
+                  const SizedBox(width: 60, height: 40, child: Text('Scale')),
+              items: [
+                GlassMenuItem(title: 'ScaleItem', onTap: () {}),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Open the menu and let the spring fully settle.
+    await tester.tap(find.text('Scale'));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // The item text must be visible.
+    expect(find.text('ScaleItem'), findsOneWidget);
+
+    // A Transform widget wrapping items should exist in the tree.
+    // At rest (clampedValue ≈ 1.0) the scale should be ≈ 1.0.
+    final transformFinder = find.ancestor(
+      of: find.text('ScaleItem'),
+      matching: find.byType(Transform),
+    );
+    expect(transformFinder, findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'GlassMenu items are wrapped in Opacity when fully open',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassMenu(
+              trigger:
+                  const SizedBox(width: 60, height: 40, child: Text('Fade')),
+              items: [
+                GlassMenuItem(title: 'FadeItem', onTap: () {}),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Fade'));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('FadeItem'), findsOneWidget);
+
+    // An Opacity widget wrapping items should exist in the tree.
+    final opacityFinder = find.ancestor(
+      of: find.text('FadeItem'),
+      matching: find.byType(Opacity),
+    );
+    expect(opacityFinder, findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'GlassMenu items not present immediately after opening (early morph)',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassMenu(
+              trigger: const SizedBox(
+                  width: 60, height: 40, child: Text('EarlyMorph')),
+              items: [
+                GlassMenuItem(title: 'EarlyItem', onTap: () {}),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Tap to open — pump only one frame (spring is near 0%).
+    await tester.tap(find.text('EarlyMorph'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+
+    // At this very early stage of the spring, items should not yet be in
+    // the tree (clampedValue is well below 0.3).
+    expect(find.text('EarlyItem'), findsNothing);
+
+    // Let the animation complete so teardown is clean.
+    await tester.pumpAndSettle();
+    expect(find.text('EarlyItem'), findsOneWidget);
+  });
 }
