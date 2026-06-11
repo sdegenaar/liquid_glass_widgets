@@ -26,7 +26,8 @@ precision highp float; // mediump causes colour banding (10-bit mantissa on mobi
 // Slots 10-12: uOpticalProps (refractiveIndex, chromaticAberration, thickness)
 // Slots 13-15: uLightConfig  (lightIntensity, ambientStrength, saturation)
 // Slots 16-17: uLightDirection
-// Slot 18: uBlurSigma
+// Slot 18: uWhiten
+// Slot 19: uWhitenGated
 uniform vec2 uSize;          // physical-pixel size of the backdrop capture
 uniform vec2 uGeometryOffset;
 uniform vec2 uGeometrySize;
@@ -35,6 +36,20 @@ uniform vec4 uGlassColor;
 uniform vec3 uOpticalProps;
 uniform vec3 uLightConfig;
 uniform vec2 uLightDirection;
+
+// Slot 18: uWhiten — whitening ("legibility veil") amount [0..1]. Lifts the
+// glass toward white (result = mix(glass, white, uWhiten)). A single
+// control-wide value (not spatially varying), so there is no spatial seam and
+// therefore no halo/outline artifacts. Models iOS 26 light-mode glass, which
+// places an even whitening veil over the refracted content for legibility on
+// light backgrounds. 0 = pure glass (no-op); higher = whiter.
+uniform float uWhiten;
+
+// Slot 19: uWhitenGated. 1 = the whiten is luminance-gated (protects dark
+// pixels — the light-mode behaviour, keeps text/icons beneath the glass dark);
+// 0 = ungated, uniform whiten across the whole control (the dark-mode
+// behaviour, gives dark glass a small even lift toward white).
+uniform float uWhitenGated;
 
 uniform sampler2D uBackgroundTexture;
 uniform sampler2D uGeometryTexture;
@@ -202,6 +217,37 @@ void main() {
                          uGlassColor.rgb,
                          uGlassColor.a * 0.12 * (adaptiveStrength - 1.0));
 
+    // Whitening veil — applied here, right after the body tint and BEFORE the
+    // rim/fresnel passes. Applying it before the edge lighting means the rim
+    // and fresnel highlights are drawn on top of the whitened body, so the
+    // bright edges stay crisp even when the body is heavily whitened —
+    // matching iOS 26's light-mode bar, where the white ring / edge
+    // reflections stay sharp over a whitened interior.
+    //
+    // Luminance-gated mode: scale the whiten by how bright this pixel already
+    // is, so near-white content beneath the glass lifts to pure white while
+    // darks (text, icons) are left untouched — instead of a uniform veil that
+    // grays the darks too. This is a point operation (per-pixel, depending
+    // only on this pixel's own luminance — no neighbourhood sampling), so
+    // unlike a spatial content detector it cannot produce a halo or seam; at
+    // a dark-on-light edge it just steepens the existing gradient (crisper
+    // edge, no gray ring).
+    //
+    // WHITEN_LO / WHITEN_HI are content-classification thresholds (what
+    // luminance counts as "a dark to protect" vs "a white to push"), not
+    // aesthetic per-recipe values — so they are hardcoded rather than passed
+    // as uniforms. The single tunable lever is uWhiten (the strength).
+    //   below WHITEN_LO → gate 0 (fully protected, stays dark)
+    //   above WHITEN_HI → gate 1 (fully whitened, lifts to white)
+    const float WHITEN_LO = 0.40;
+    const float WHITEN_HI = 0.80;
+    float whitenLuma = dot(finalColor.rgb, LUMA_WEIGHTS);
+    // uWhitenGated 1 → gate by luminance (light mode, protects darks);
+    // uWhitenGated 0 → gate = 1, uniform whiten (dark mode, even lift).
+    float whitenGate =
+        mix(1.0, smoothstep(WHITEN_LO, WHITEN_HI, whitenLuma), uWhitenGated);
+    finalColor.rgb =
+        mix(finalColor.rgb, vec3(1.0), clamp(uWhiten, 0.0, 1.0) * whitenGate);
 
     // Edge lighting — uses the true normal.xy (V1; was normalize(displacement))
     float normalizedHeight = geometryData.b;

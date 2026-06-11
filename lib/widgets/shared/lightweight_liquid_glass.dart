@@ -847,7 +847,24 @@ class _RenderLightweightGlass extends RenderProxyBox {
     // modulation in Stage 2.5 (lightweight_glass.frag) so the alpha creates
     // a depth gradient (full at rim, 12% at center) instead of a flat fill.
     // This correctly approximates the 3D SDF Fresnel of the Premium path.
-    final color = _settings.effectiveGlassColor;
+    //
+    // Whiten veil: lift glassColor toward white by a ramp of
+    // [LiquidGlassSettings.whitenStrength]. This is the Standard-path
+    // approximation of the Premium shader's whiten — the Fresnel modulation
+    // keeps the center lighter (content reads through) and the rim brighter.
+    // Because it is a tint overlay rather than a backdrop color operation, it
+    // also works over platform views, where BackdropFilter color ops don't
+    // apply. The gain calibrates the veil so a single whitenStrength value
+    // reads close to the Premium path's gated whiten at the same value.
+    final double whitenStrength =
+        _settings.whitenStrength.clamp(0.0, 1.0).toDouble();
+    const double kWhitenVeilGain = 1.5;
+    final double whitenVeil =
+        (whitenStrength * kWhitenVeilGain).clamp(0.0, 1.0).toDouble();
+    final color = whitenVeil <= 0.0
+        ? _settings.effectiveGlassColor
+        : Color.lerp(_settings.effectiveGlassColor, const Color(0xFFFFFFFF),
+            whitenVeil)!;
     shader.setFloat(index++, (color.r * 255.0).round().clamp(0, 255) / 255.0);
     shader.setFloat(index++, (color.g * 255.0).round().clamp(0, 255) / 255.0);
     shader.setFloat(index++, (color.b * 255.0).round().clamp(0, 255) / 255.0);

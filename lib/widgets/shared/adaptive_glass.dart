@@ -275,6 +275,11 @@ class AdaptiveGlass extends StatelessWidget {
                   (normalizedSettings.effectiveAmbientStrength * 0.4)
                       .clamp(0.0, 1.0),
               glowIntensity: normalizedSettings.glowIntensity,
+              // Preserve whiten through the elevation rebuild; otherwise the
+              // whitening would silently drop to 0 for grouped/elevated
+              // surfaces such as bars.
+              whitenStrength: normalizedSettings.whitenStrength,
+              whitenGated: normalizedSettings.whitenGated,
             )
           : normalizedSettings;
 
@@ -558,7 +563,22 @@ class _FrostedFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final blur = settings.effectiveBlur.clamp(0.0, 40.0);
-    final tint = settings.effectiveGlassColor;
+    // Whiten veil: lift the tint toward white by a ramp of
+    // [LiquidGlassSettings.whitenStrength], matching the Standard path
+    // (lightweight_liquid_glass.dart). This is why minimal-tier controls
+    // whiten from the same single knob — no per-widget code needed. The veil
+    // ramp uses the same gain as the Standard path so a single whitenStrength
+    // value reads consistently across tiers. Minimal's tint is already a
+    // uniform flat fill, so this lerp is the whole whiten here.
+    const double kWhitenVeilGain = 1.5;
+    final double whiten = settings.whitenStrength.clamp(0.0, 1.0).toDouble();
+    final double veil = whiten <= 0.0
+        ? 0.0
+        : (whiten * kWhitenVeilGain).clamp(0.0, 1.0).toDouble();
+    final tint = veil <= 0.0
+        ? settings.effectiveGlassColor
+        : Color.lerp(
+            settings.effectiveGlassColor, const Color(0xFFFFFFFF), veil)!;
 
     final double frostedAlpha = isAccessibilityFallback
         // Accessibility: boost opacity so content remains legible

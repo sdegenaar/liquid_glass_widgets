@@ -27,6 +27,8 @@ class LiquidGlassSettings with EquatableMixin {
     this.standardOpacityMultiplier = 1.0,
     this.shadowElevation = 1.0,
     this.shadow,
+    this.whitenStrength = 0.0,
+    this.whitenGated = true,
   });
 
   /// Creates [LiquidGlassSettings] using Figma-inspired parameter names.
@@ -219,6 +221,36 @@ class LiquidGlassSettings with EquatableMixin {
     return GlassShadow.scaled(shadowElevation);
   }
 
+  /// Light-mode whitening ("legibility veil") amount, from 0 to 1.
+  ///
+  /// On the Premium (Impeller) path this is applied as the last step of the
+  /// render: the finished glass is mixed uniformly toward white,
+  /// `mix(glass, white, whitenStrength)`. Because it is a single control-wide
+  /// value (not per-pixel) there is no spatial seam, so no halo or outline
+  /// artifacts. This models iOS 26 light-mode glass, which lays an even
+  /// whitening layer over the refracted content for legibility on bright
+  /// backgrounds — content stays visible, just whiter.
+  ///
+  /// The Standard and Frosted paths approximate the same knob by lifting the
+  /// glass tint toward white (a "veil"), so a single value reads consistently
+  /// across all quality tiers.
+  ///
+  /// Defaults to 0.0, which disables whitening entirely.
+  final double whitenStrength;
+
+  /// Whether [whitenStrength] is luminance-gated (true, the default) or
+  /// applied uniformly (false).
+  ///
+  /// Gated: the lift only affects brighter pixels and leaves dark content
+  /// (text, icons) crisp — the light-mode behaviour. Ungated: an even lift
+  /// across the whole control — useful in dark mode to give dark glass a
+  /// subtle frost, where a per-pixel gate over an all-dark backdrop would
+  /// zero the whitening out entirely.
+  ///
+  /// Only affects the Premium (Impeller) path; the Standard and Frosted
+  /// approximations are always uniform.
+  final bool whitenGated;
+
   /// The effective saturation taking visibility into account.
   double get effectiveSaturation => 1 + (saturation - 1) * visibility;
 
@@ -259,6 +291,8 @@ class LiquidGlassSettings with EquatableMixin {
           a.standardOpacityMultiplier, b.standardOpacityMultiplier, t)!,
       shadowElevation: lerpDouble(a.shadowElevation, b.shadowElevation, t)!,
       shadow: t < 0.5 ? a.shadow : b.shadow,
+      whitenStrength: lerpDouble(a.whitenStrength, b.whitenStrength, t)!,
+      whitenGated: t < 0.5 ? a.whitenGated : b.whitenGated,
     );
   }
 
@@ -288,6 +322,8 @@ class LiquidGlassSettings with EquatableMixin {
     double? standardOpacityMultiplier,
     double? shadowElevation,
     List<BoxShadow>? shadow,
+    double? whitenStrength,
+    bool? whitenGated,
   }) =>
       LiquidGlassSettings(
         visibility: visibility ?? this.visibility,
@@ -306,6 +342,8 @@ class LiquidGlassSettings with EquatableMixin {
             standardOpacityMultiplier ?? this.standardOpacityMultiplier,
         shadowElevation: shadowElevation ?? this.shadowElevation,
         shadow: shadow ?? this.shadow,
+        whitenStrength: whitenStrength ?? this.whitenStrength,
+        whitenGated: whitenGated ?? this.whitenGated,
       );
 
   @override
@@ -325,5 +363,7 @@ class LiquidGlassSettings with EquatableMixin {
         standardOpacityMultiplier,
         shadowElevation,
         shadow,
+        whitenStrength,
+        whitenGated,
       ];
 }

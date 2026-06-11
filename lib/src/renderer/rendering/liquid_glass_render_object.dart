@@ -143,6 +143,13 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
         // not on every visibility, blur, or color animation frame.
         ..setOffset(_cachedLightDir);
     });
+    // Slot 18: uWhiten (whitening amount); slot 19: uWhitenGated
+    // (1 = luminance-gated, the light-mode behaviour; 0 = uniform lift).
+    renderShader.setFloatUniforms(initialIndex: 18, (value) {
+      value
+        ..setFloat(settings.whitenStrength)
+        ..setFloat(settings.whitenGated ? 1.0 : 0.0);
+    });
   }
 
   ui.Rect _paintBounds = ui.Rect.zero;
