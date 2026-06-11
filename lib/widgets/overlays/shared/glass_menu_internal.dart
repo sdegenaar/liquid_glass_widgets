@@ -657,10 +657,9 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                 clipBehavior:
                     Clip.none, // Prevent double-clip artifacts during stretch
                 children: [
-                  // Menu content — only appears when container is nearly at
-                  // full size (0.94+), so the teardrop morph is fully visible
-                  // first. Items stagger in rapidly in the last 6% of animation.
-                  if (clampedValue > 0.94)
+                  // Menu content scales up with the container morph — items
+                  // enter the tree at 30% and scale from 0.5× to 1.0×.
+                  if (clampedValue > 0.3)
                     Stack(
                       clipBehavior: Clip.none,
                       children: [
@@ -775,16 +774,24 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                                         .asMap()
                                         .entries
                                         .expand((entry) {
-                                      // Items fade in smoothly over the second half of the animation.
-                                      // Removed the complex out-to-in 94% stagger so items show up
-                                      // naturally without a delayed "pop-in" on fast springs.
                                       final itemOpacity =
-                                          ((clampedValue - 0.5) / 0.5)
+                                          ((clampedValue - 0.3) / 0.4)
                                               .clamp(0.0, 1.0);
+                                      final itemScale = lerpDouble(
+                                        0.5,
+                                        1.0,
+                                        Curves.easeOut.transform(
+                                          ((clampedValue - 0.3) / 0.7)
+                                              .clamp(0.0, 1.0),
+                                        ),
+                                      )!;
                                       return [
                                         Opacity(
                                           opacity: itemOpacity,
-                                          child: entry.value,
+                                          child: Transform.scale(
+                                            scale: itemScale,
+                                            child: entry.value,
+                                          ),
                                         ),
                                         if (entry.key < widget.items.length - 1)
                                           const SizedBox(height: 2),
