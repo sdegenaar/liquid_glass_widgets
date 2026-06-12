@@ -411,7 +411,7 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
     // is used as the luma estimate — dark mode → richer glass (0.15),
     // light mode → subtler glass (0.85). Maps to adaptiveStrength [1.2, 0.8]
     // in the shader, matching iOS 26's adaptive material behaviour.
-    final isDark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final backdropLuma = isDark ? 0.15 : 0.85;
 
     // IMPORTANT — always return the same widget tree structure regardless of
