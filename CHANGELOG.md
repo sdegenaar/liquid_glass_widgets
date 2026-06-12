@@ -1,3 +1,13 @@
+# 0.15.7
+
+## 🌙 Adaptive Brightness Fix
+
+Fixed a bug in `LightweightLiquidGlass` where the shader's internal brightness estimation (`backdropLuma`) was incorrectly reading from the OS-level `MediaQuery.platformBrightnessOf(context)` rather than the inherited Flutter `Theme.of(context).brightness`. 
+
+This ensures that glass surfaces now correctly switch to Light Mode parameters (such as the legibility veil) when the app itself overrides the theme to Light Mode, even if the user's physical device remains in Dark Mode.
+
+---
+
 # 0.15.6
 
 ## 🌫️ Scroll Edge Fade — Perceptual Gradient Curve
