@@ -187,8 +187,8 @@ class GlassContentAwareScope extends StatefulWidget {
   /// Used by [GlassContentAwareBrightness] (and available to custom
   /// controls) to register for verdicts.
   static GlassContentAwareScopeState? maybeOf(BuildContext context) {
-    final marker = context
-        .dependOnInheritedWidgetOfExactType<_ContentAwareScopeMarker>();
+    final marker =
+        context.dependOnInheritedWidgetOfExactType<_ContentAwareScopeMarker>();
     return marker?.state;
   }
 
@@ -246,8 +246,7 @@ class GlassContentAwareScope extends StatefulWidget {
       // contrast over light AND medium content; light glyphs only win once
       // the content is genuinely dark — so the vote keeps controls light
       // through the medium range and flips late, like the native bars.
-      final lightVariantContrast =
-          _contrast(_lightVariantGlyphLuma, cellLuma);
+      final lightVariantContrast = _contrast(_lightVariantGlyphLuma, cellLuma);
       final darkVariantContrast = _contrast(_darkVariantGlyphLuma, cellLuma);
       if (lightVariantContrast >= darkVariantContrast) {
         votesLight++;
@@ -291,8 +290,7 @@ class GlassContentAwareScope extends StatefulWidget {
   }
 
   @override
-  State<GlassContentAwareScope> createState() =>
-      GlassContentAwareScopeState();
+  State<GlassContentAwareScope> createState() => GlassContentAwareScopeState();
 }
 
 /// State (and registration surface) of a [GlassContentAwareScope].
@@ -505,8 +503,8 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
 
       // Downscale so a cell maps to ~16 physical pixels — enough for a
       // stable average, cheap enough to read back at scroll rates.
-      final pixelRatio = (_kTargetCellPixels / math.max(minCellExtent, 1.0))
-          .clamp(0.05, 0.5);
+      final pixelRatio =
+          (_kTargetCellPixels / math.max(minCellExtent, 1.0)).clamp(0.05, 0.5);
       final image = await boundary.toImage(pixelRatio: pixelRatio);
       final width = image.width;
       final height = image.height;
@@ -546,9 +544,22 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
           sub._onBrightnessChanged(verdict);
         }
       }
-    } catch (_) {
+    } catch (e, stack) {
       // Transient capture failure (boundary mid-mutation, detached layer).
       // The next scroll tick retries; never let sampling take a screen down.
+      // Surface errors in debug/profile so programming mistakes are visible.
+      assert(() {
+        FlutterError.reportError(FlutterErrorDetails(
+          exception: e,
+          stack: stack,
+          library: 'liquid_glass_widgets',
+          context: ErrorDescription(
+            'during content-aware brightness sample',
+          ),
+          silent: true,
+        ));
+        return true;
+      }());
     } finally {
       _sampling = false;
     }
@@ -837,7 +848,8 @@ class _GlassContentAwareBrightnessState
       duration: duration,
       curve: curve,
     );
-    if (mounted) setState(() {});
+    // AnimatedBuilder listens to _flip and rebuilds on every tick;
+    // no explicit setState needed.
   }
 
   /// Keeps the scope registration in sync with the widget configuration.
@@ -879,8 +891,7 @@ class _GlassContentAwareBrightnessState
         // The discrete residue (shadow gating, dynamic-color resolution in
         // user content) flips at the fade midpoint, where the lerped colors
         // cross and the swap is least visible.
-        final displayBrightness =
-            t >= 0.5 ? Brightness.dark : Brightness.light;
+        final displayBrightness = t >= 0.5 ? Brightness.dark : Brightness.light;
         final baseTheme = GlassThemeData.of(context);
         final variant = GlassThemeVariant.lerp(
           baseTheme.light,

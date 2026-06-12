@@ -193,14 +193,14 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a verdict callback can cancel a later subscription mid-'
+    testWidgets(
+        'a verdict callback can cancel a later subscription mid-'
         'delivery', (tester) async {
       final contentKey = GlobalKey();
       await tester.pumpWidget(MaterialApp(
         home: GlassContentAwareScope(
           child: GlassContentAwareContent(
-            child: ColoredBox(
-                key: contentKey, color: const Color(0xFF000000)),
+            child: ColoredBox(key: contentKey, color: const Color(0xFF000000)),
           ),
         ),
       ));
@@ -244,8 +244,8 @@ void main() {
       ));
       final scope = tester.state<GlassContentAwareScopeState>(
           find.byType(GlassContentAwareScope));
-      final contentBox = tester.renderObject(
-          find.byType(GlassContentAwareContent)) as RenderBox;
+      final contentBox = tester
+          .renderObject(find.byType(GlassContentAwareContent)) as RenderBox;
       var flipped = Brightness.light;
       final sub = scope.register(
         controlBox: () => contentBox,
@@ -272,8 +272,8 @@ void main() {
       ));
       final scope = tester.state<GlassContentAwareScopeState>(
           find.byType(GlassContentAwareScope));
-      final contentBox = tester.renderObject(
-          find.byType(GlassContentAwareContent)) as RenderBox;
+      final contentBox = tester
+          .renderObject(find.byType(GlassContentAwareContent)) as RenderBox;
       var flipped = Brightness.light;
       final sub = scope.register(
         controlBox: () => contentBox,
@@ -406,10 +406,8 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: GlassContentAwareScope(
           child: Column(children: [
-            Expanded(
-                child: GlassContentAwareContent(child: Container())),
-            Expanded(
-                child: GlassContentAwareContent(child: Container())),
+            Expanded(child: GlassContentAwareContent(child: Container())),
+            Expanded(child: GlassContentAwareContent(child: Container())),
           ]),
         ),
       ));
@@ -418,8 +416,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: GlassContentAwareScope(
           child: Column(children: [
-            Expanded(
-                child: GlassContentAwareContent(child: Container())),
+            Expanded(child: GlassContentAwareContent(child: Container())),
           ]),
         ),
       ));
@@ -536,15 +533,13 @@ void main() {
       expect(built, Brightness.dark);
     });
 
-    testWidgets('changing the grid re-registers the control',
-        (tester) async {
+    testWidgets('changing the grid re-registers the control', (tester) async {
       Widget host(int columns) => MaterialApp(
             home: GlassContentAwareScope(
               child: GlassContentAwareBrightness(
                 gridColumns: columns,
                 gridRows: columns == 6 ? 1 : 2,
-                builder: (context, brightness, t) =>
-                    const SizedBox.expand(),
+                builder: (context, brightness, t) => const SizedBox.expand(),
               ),
             ),
           );

@@ -128,8 +128,7 @@ class GlassGlowColors {
       danger: _lerpColorField(a.danger, b.danger, t),
       info: _lerpColorField(a.info, b.info, t),
       glowBlurRadius: lerpDouble(a.glowBlurRadius, b.glowBlurRadius, t)!,
-      glowSpreadRadius:
-          lerpDouble(a.glowSpreadRadius, b.glowSpreadRadius, t)!,
+      glowSpreadRadius: lerpDouble(a.glowSpreadRadius, b.glowSpreadRadius, t)!,
       glowOpacity: lerpDouble(a.glowOpacity, b.glowOpacity, t)!,
     );
   }
@@ -356,10 +355,11 @@ class GlassThemeVariant {
           runtimeType == other.runtimeType &&
           settings == other.settings &&
           quality == other.quality &&
-          glowColors == other.glowColors;
+          glowColors == other.glowColors &&
+          borderRadius == other.borderRadius;
 
   @override
-  int get hashCode => Object.hash(settings, quality, glowColors);
+  int get hashCode => Object.hash(settings, quality, glowColors, borderRadius);
 }
 
 /// Theme data for liquid glass widgets.

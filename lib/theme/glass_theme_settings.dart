@@ -149,8 +149,7 @@ class GlassThemeSettings {
       refractiveIndex:
           _lerpDoubleField(a.refractiveIndex, b.refractiveIndex, t),
       saturation: _lerpDoubleField(a.saturation, b.saturation, t),
-      specularSharpness:
-          t < 0.5 ? a.specularSharpness : b.specularSharpness,
+      specularSharpness: t < 0.5 ? a.specularSharpness : b.specularSharpness,
     );
   }
 

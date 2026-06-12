@@ -32,8 +32,7 @@ Uint8List _rowOf(int width, Color color, {int alpha = 255}) {
 }
 
 List<Rect> _cells(int count) => <Rect>[
-      for (var i = 0; i < count; i++)
-        Rect.fromLTWH(i.toDouble(), 0, 1, 1),
+      for (var i = 0; i < count; i++) Rect.fromLTWH(i.toDouble(), 0, 1, 1),
     ];
 
 /// Runs one deterministic sample to completion.
@@ -86,8 +85,7 @@ void main() {
       expect(_verdict(rgba, 6, current: Brightness.dark), Brightness.light);
     });
 
-    test('medium content keeps the control light (WCAG vote flips late)',
-        () {
+    test('medium content keeps the control light (WCAG vote flips late)', () {
       // Mid-gray (#808080) has WCAG luminance ≈ 0.22 — above the ≈ 0.18
       // contrast crossover, so dark glyphs still read better and the
       // control stays light. This is the vote-not-threshold property.
@@ -100,8 +98,7 @@ void main() {
       final rgba = _rowOf(6, const Color(0xFF000000));
       expect(_verdict(rgba, 6, cells: const <Rect>[]), Brightness.light);
       expect(
-        _verdict(rgba, 6,
-            cells: const <Rect>[], current: Brightness.dark),
+        _verdict(rgba, 6, cells: const <Rect>[], current: Brightness.dark),
         Brightness.dark,
       );
     });
@@ -128,8 +125,7 @@ void main() {
       final rgba = _rowOf(6, const Color(0xFF000000), alpha: 0);
       expect(
         _verdict(rgba, 6,
-            current: Brightness.dark,
-            background: const Color(0xFFFFFFFF)),
+            current: Brightness.dark, background: const Color(0xFFFFFFFF)),
         Brightness.light,
       );
     });
@@ -144,8 +140,7 @@ void main() {
   });
 
   group('computeVerdict — sticky ties and hysteresis', () {
-    test('a 50/50 split keeps the current appearance in both directions',
-        () {
+    test('a 50/50 split keeps the current appearance in both directions', () {
       // 3 black + 3 white pixels — a tie under any threshold > 0.5.
       final rgba = Uint8List.fromList([
         ..._rowOf(3, const Color(0xFF000000)),
@@ -174,13 +169,11 @@ void main() {
         ..._rowOf(2, const Color(0xFF000000)),
       ]);
       expect(
-        _verdict(lightish, 6,
-            current: Brightness.dark, darkToLight: 0.6),
+        _verdict(lightish, 6, current: Brightness.dark, darkToLight: 0.6),
         Brightness.light,
       );
       expect(
-        _verdict(lightish, 6,
-            current: Brightness.dark, darkToLight: 0.7),
+        _verdict(lightish, 6, current: Brightness.dark, darkToLight: 0.7),
         Brightness.dark,
       );
     });
@@ -233,8 +226,7 @@ void main() {
         builder: (context, brightness, darkAmount) {
           builtBrightness = brightness;
           builtDarkAmount = darkAmount;
-          innerPlatformBrightness =
-              MediaQuery.platformBrightnessOf(context);
+          innerPlatformBrightness = MediaQuery.platformBrightnessOf(context);
           innerCupertinoBrightness = CupertinoTheme.of(context).brightness;
           return const SizedBox.expand();
         },
@@ -243,9 +235,8 @@ void main() {
       expect(builtDarkAmount, 0.0);
       expect(innerPlatformBrightness, Brightness.light);
 
-      final scopeState = tester
-          .state<GlassContentAwareScopeState>(
-              find.byType(GlassContentAwareScope));
+      final scopeState = tester.state<GlassContentAwareScopeState>(
+          find.byType(GlassContentAwareScope));
       await _settleSample(tester, scopeState);
       await tester.pump();
 
@@ -277,9 +268,8 @@ void main() {
         content: const ColoredBox(color: Color(0xFFFFFFFF)),
         onBrightnessChanged: flips.add,
       ));
-      final scopeState = tester
-          .state<GlassContentAwareScopeState>(
-              find.byType(GlassContentAwareScope));
+      final scopeState = tester.state<GlassContentAwareScopeState>(
+          find.byType(GlassContentAwareScope));
       await _settleSample(tester, scopeState);
       await tester.pump();
       expect(flips, isEmpty);
@@ -295,9 +285,8 @@ void main() {
         ]),
         onBrightnessChanged: flips.add,
       ));
-      final scopeState = tester
-          .state<GlassContentAwareScopeState>(
-              find.byType(GlassContentAwareScope));
+      final scopeState = tester.state<GlassContentAwareScopeState>(
+          find.byType(GlassContentAwareScope));
       await _settleSample(tester, scopeState);
       await tester.pump();
       expect(flips, isEmpty);
@@ -313,9 +302,8 @@ void main() {
           return const SizedBox.expand();
         },
       ));
-      final scopeState = tester
-          .state<GlassContentAwareScopeState>(
-              find.byType(GlassContentAwareScope));
+      final scopeState = tester.state<GlassContentAwareScopeState>(
+          find.byType(GlassContentAwareScope));
 
       // At rest (light), both slots of the synthetic data hold the light
       // variant, so variant resolution is brightness-independent.
@@ -346,10 +334,8 @@ void main() {
                 child: GlassContentAwareContent(
                   child: ListView(
                     children: [
-                      Container(
-                          height: 600, color: const Color(0xFFFFFFFF)),
-                      Container(
-                          height: 2000, color: const Color(0xFF000000)),
+                      Container(height: 600, color: const Color(0xFFFFFFFF)),
+                      Container(height: 2000, color: const Color(0xFF000000)),
                     ],
                   ),
                 ),
@@ -369,9 +355,8 @@ void main() {
           ),
         ),
       ));
-      final scopeState = tester
-          .state<GlassContentAwareScopeState>(
-              find.byType(GlassContentAwareScope));
+      final scopeState = tester.state<GlassContentAwareScopeState>(
+          find.byType(GlassContentAwareScope));
 
       // Idle: no periodic sampler.
       expect(scopeState.isScrollSamplingActive, isFalse);

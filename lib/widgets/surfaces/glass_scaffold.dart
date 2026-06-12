@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../types/glass_quality.dart';
 import '../../theme/glass_theme_data.dart';
+import '../shared/glass_content_aware_scope.dart';
 import '../shared/glass_isolation_scope.dart';
 import '../shared/glass_page.dart';
 import '../shared/glass_scroll_edge_effect.dart';
@@ -135,6 +136,7 @@ class GlassScaffold extends StatelessWidget {
     this.header,
     this.headerScrollController,
     this.headerFadeDistance = 60.0,
+    this.contentAwareBrightness = false,
   });
 
   // ===========================================================================
@@ -325,6 +327,30 @@ class GlassScaffold extends StatelessWidget {
   /// fully opaque to fully transparent. Defaults to 60.0.
   final double headerFadeDistance;
 
+  /// Whether to install a [GlassContentAwareScope] around the scaffold's
+  /// body and bars.
+  ///
+  /// When `true`, the scaffold wraps the body in [GlassContentAwareContent]
+  /// and the entire Stack in [GlassContentAwareScope]. This enables bars
+  /// with `adaptiveBrightness: true` to sample the body content and
+  /// automatically flip between light and dark appearance.
+  ///
+  /// The standalone [GlassContentAwareScope] and [GlassContentAwareContent]
+  /// widgets remain available for custom layouts that don't use
+  /// `GlassScaffold`.
+  ///
+  /// ```dart
+  /// GlassScaffold(
+  ///   contentAwareBrightness: true,
+  ///   bottomBar: GlassBottomBar(
+  ///     adaptiveBrightness: true,
+  ///     ...
+  ///   ),
+  ///   body: CustomScrollView(...),
+  /// )
+  /// ```
+  final bool contentAwareBrightness;
+
   // ===========================================================================
   // Build
   // ===========================================================================
@@ -370,6 +396,12 @@ class GlassScaffold extends StatelessWidget {
         style: edgeStyle,
         child: bodyContent,
       );
+    }
+
+    // Wrap in GlassContentAwareContent when content-aware brightness is on.
+    // This installs the RepaintBoundary that the scope captures.
+    if (contentAwareBrightness) {
+      bodyContent = GlassContentAwareContent(child: bodyContent);
     }
 
     // Build the Stack with guaranteed z-ordering.
@@ -478,6 +510,16 @@ class GlassScaffold extends StatelessWidget {
       GlassStatusBarStyle.none => true, // doesn't matter — no region
     };
 
+    Widget stackWidget = Stack(children: stackChildren);
+
+    // Wrap in GlassContentAwareScope when content-aware brightness is on.
+    // The scope must be an ancestor of both the sampled body
+    // (GlassContentAwareContent) and the adaptive controls (bars with
+    // adaptiveBrightness: true).
+    if (contentAwareBrightness) {
+      stackWidget = GlassContentAwareScope(child: stackWidget);
+    }
+
     Widget scaffold = Scaffold(
       // Only force transparent when a background widget is provided — mirrors
       // GlassPage's own logic. Without a background the Scaffold should
@@ -486,7 +528,7 @@ class GlassScaffold extends StatelessWidget {
       backgroundColor: background != null ? Colors.transparent : null,
       resizeToAvoidBottomInset: resizeToAvoidBottomInset,
       floatingActionButton: floatingActionButton,
-      body: Stack(children: stackChildren),
+      body: stackWidget,
     );
 
     // Wrap in AnnotatedRegion so the status bar style sticks even on

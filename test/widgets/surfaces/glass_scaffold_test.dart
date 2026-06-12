@@ -400,4 +400,57 @@ void main() {
       expect(find.text('Title'), findsOneWidget);
     });
   });
+
+  // ── contentAwareBrightness ────────────────────────────────────────────────
+
+  group('GlassScaffold.contentAwareBrightness', () {
+    testWidgets('installs scope and content wrapper when true', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: GlassScaffold(
+              contentAwareBrightness: true,
+              body: const Text('Body'),
+              bottomBar: GlassBottomBar(
+                selectedIndex: 0,
+                onTabSelected: (_) {},
+                tabs: const [
+                  GlassBottomBarTab(label: 'Home', icon: Icon(Icons.home)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(GlassContentAwareScope), findsOneWidget);
+      expect(find.byType(GlassContentAwareContent), findsOneWidget);
+      expect(find.text('Body'), findsOneWidget);
+    });
+
+    testWidgets('does not install scope when false (default)', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: GlassScaffold(
+              body: const Text('Body'),
+              bottomBar: GlassBottomBar(
+                selectedIndex: 0,
+                onTabSelected: (_) {},
+                tabs: const [
+                  GlassBottomBarTab(label: 'Home', icon: Icon(Icons.home)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(GlassContentAwareScope), findsNothing);
+      expect(find.byType(GlassContentAwareContent), findsNothing);
+      expect(find.text('Body'), findsOneWidget);
+    });
+  });
 }

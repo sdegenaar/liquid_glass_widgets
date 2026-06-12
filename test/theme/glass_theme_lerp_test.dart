@@ -86,8 +86,7 @@ void main() {
     test('one-sided null color switches at the midpoint', () {
       const a = GlassThemeSettings(glassColor: Color(0xFF112233));
       const b = GlassThemeSettings();
-      expect(
-          GlassThemeSettings.lerp(a, b, 0.2)!.glassColor, a.glassColor);
+      expect(GlassThemeSettings.lerp(a, b, 0.2)!.glassColor, a.glassColor);
       expect(GlassThemeSettings.lerp(a, b, 0.8)!.glassColor, isNull);
     });
 
@@ -140,8 +139,8 @@ void main() {
         glowOpacity: 1.0,
       );
       final mid = GlassGlowColors.lerp(a, b, 0.5)!;
-      final expected = Color.lerp(const Color(0xFF000000),
-          const Color(0xFFFFFFFF), 0.5);
+      final expected =
+          Color.lerp(const Color(0xFF000000), const Color(0xFFFFFFFF), 0.5);
       expect(mid.primary, expected);
       expect(mid.secondary, expected);
       expect(mid.success, expected);
@@ -158,8 +157,7 @@ void main() {
       const a = GlassGlowColors.fallback;
       const b = GlassGlowColors(primary: Color(0xFF123456));
       expect(GlassGlowColors.lerp(a, b, 0.3)!.primary, isNull);
-      expect(GlassGlowColors.lerp(a, b, 0.7)!.primary,
-          const Color(0xFF123456));
+      expect(GlassGlowColors.lerp(a, b, 0.7)!.primary, const Color(0xFF123456));
       // Scalars still interpolate even when colors switch discretely.
       expect(GlassGlowColors.lerp(a, b, 0.3)!.glowBlurRadius,
           closeTo(0.7 * a.glowBlurRadius + 0.3 * b.glowBlurRadius, 1e-9));
@@ -172,8 +170,7 @@ void main() {
       expect(GlassThemeVariant.lerp(a, a, 0.4), same(a));
     });
 
-    test('delegates settings and glowColors, switches quality at midpoint',
-        () {
+    test('delegates settings and glowColors, switches quality at midpoint', () {
       const a = GlassThemeVariant(
         settings: GlassThemeSettings(thickness: 12.0),
         quality: GlassQuality.standard,
@@ -204,8 +201,8 @@ void main() {
     });
 
     test('lerping the built-in light and dark variants is well-formed', () {
-      final mid =
-          GlassThemeVariant.lerp(GlassThemeVariant.light, GlassThemeVariant.dark, 0.5);
+      final mid = GlassThemeVariant.lerp(
+          GlassThemeVariant.light, GlassThemeVariant.dark, 0.5);
       expect(mid.settings!.thickness, closeTo(11.0, 1e-9));
       expect(mid.settings!.blur, closeTo(4.5, 1e-9));
       expect(mid.quality, isNull);

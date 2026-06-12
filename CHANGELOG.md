@@ -1,3 +1,109 @@
+# 0.16.0
+
+## 🎨 Content-Aware Light/Dark Adaptation
+
+Glass bars now automatically adapt their icon and label colors to match the
+content scrolling behind them — light glyphs over dark content, dark glyphs over
+light content — with a smooth cross-fade transition. This matches the iOS 26
+behaviour where navigation chrome remains legible regardless of what is visible
+underneath.
+
+*Core engine contributed by [@jfhair](https://github.com/jfhair) in [PR #103](https://github.com/sdegenaar/liquid_glass_widgets/pull/103).*
+
+### New widgets
+
+- **`GlassContentAwareScope`** — wraps a screen and owns the sampling engine.
+  Captures the content boundary at scroll rate (~5 fps), divides each registered
+  control's rectangle into voting cells, and delivers per-control brightness
+  verdicts via WCAG contrast ratios and dual-threshold hysteresis.
+- **`GlassContentAwareContent`** — marks the sampled content region. Installs a
+  `RepaintBoundary` that the scope captures. Controls must be **outside** this
+  region (e.g. in `Scaffold.bottomNavigationBar` with `extendBody: true`).
+- **`GlassContentAwareBrightness`** — per-control consumer that cross-fades
+  between the light and dark `GlassThemeVariant` via `GlassThemeVariant.lerp`.
+  Supports an external `brightnessOverride` (for PlatformView escape hatches),
+  configurable grid dimensions, and per-control flip duration/curve overrides.
+
+### New parameters on existing widgets
+
+- **`GlassBottomBar`** — `adaptiveBrightness`, `brightnessOverride`,
+  `onBrightnessChanged`. Set `adaptiveBrightness: true` to opt in.
+- **`GlassSearchableBottomBar`** — same three parameters. Both bars
+  automatically wrap in `GlassContentAwareBrightness` when enabled.
+- **`GlassScaffold`** — `contentAwareBrightness`. When `true`, the scaffold
+  automatically wraps the body in `GlassContentAwareContent` and the entire
+  layout in `GlassContentAwareScope`. One flag, no manual widget wiring.
+
+### New API surface
+
+- **`GlassThemeVariant.lerp(a, b, t)`** — interpolates settings, glow colors,
+  quality, and border radius between two theme variants. Used internally by the
+  cross-fade but available to consumers building custom transitions.
+- **`GlassThemeSettings.lerp(a, b, t)`** — interpolates all 9 glass setting
+  fields (thickness, blur, glassColor, lightAngle, lightIntensity, etc.).
+- **`resolveBarLabelColor(context, brightness)`** — shared utility for bars
+  to resolve label color from `CupertinoTheme` given an overridden brightness.
+
+### Usage
+
+The recommended path — one flag on `GlassScaffold`, one on the bar:
+
+```dart
+GlassScaffold(
+  contentAwareBrightness: true,
+  bottomBar: GlassBottomBar(
+    adaptiveBrightness: true,
+    onBrightnessChanged: (b) => /* flip your own icon colors */,
+    tabs: [...],
+    selectedIndex: _index,
+    onTabSelected: (i) => setState(() => _index = i),
+  ),
+  body: CustomScrollView(...),
+)
+```
+
+For custom layouts without `GlassScaffold`, use the standalone widgets directly:
+
+```dart
+GlassContentAwareScope(
+  child: Scaffold(
+    extendBody: true,
+    body: GlassContentAwareContent(
+      child: ListView(...),
+    ),
+    bottomNavigationBar: GlassBottomBar(
+      adaptiveBrightness: true,
+      ...
+    ),
+  ),
+)
+```
+
+### Bug fix
+
+- **`GlassThemeVariant.==` / `hashCode` missing `borderRadius`** — fixed a
+  pre-existing bug where two variants differing only in `borderRadius` compared
+  equal. This caused stale radius during content-aware cross-fades where
+  intermediate lerped variants would not trigger rebuilds.
+
+### Polish
+
+- **`_sample()` error reporting** — the bare `catch (_)` in the sampling
+  pipeline now reports to `FlutterError` inside an assert closure. Errors are
+  still suppressed in release builds but surface in debug mode so programming
+  mistakes are visible.
+- **Removed redundant `setState`** — `_GlassContentAwareBrightnessState._setBrightness`
+  no longer calls `setState` since `AnimatedBuilder` already listens to the
+  animation controller and rebuilds on every tick.
+
+### Example app
+
+- **Content-Aware Brightness demo** (new) — dedicated showcase with alternating
+  light and dark content bands that force visible bar flips during scrolling.
+  Available in the Examples tab.
+
+---
+
 # 0.15.7
 
 ## 🌙 Adaptive Brightness Fix

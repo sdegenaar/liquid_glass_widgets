@@ -24,6 +24,7 @@ https://github.com/user-attachments/assets/2fe28f46-96ad-459d-b816-e6d6001d90de
 - **Adaptive quality** *(experimental)* — `GlassAdaptiveScope` benchmarks the device at startup and adjusts quality in real time: `minimal` on slow hardware, `standard` on mid-range, `premium` on fast devices. Degrades on thermal throttle, recovers when cool
 - **Minimal dependencies** — only `equatable`, `flutter_shaders`, and `logging` beyond the Flutter SDK
 - **One-line setup** — `LiquidGlassWidgets.wrap(child: myApp)` handles accessibility bridging, adaptive quality, and global theming; use `GlassScaffold` per screen for automatic backdrop isolation, z-ordering, edge fading, and status bar styling
+- **Content-aware brightness** — glass bars automatically flip between light and dark icons/labels based on the content scrolling behind them. One flag on `GlassScaffold`, matches iOS 26 behaviour
 - **Gyroscope lighting** — `GlassMotionScope` drives specular highlights from any `Stream<double>`
 - **WCAG-compliant by default** — Reduce Motion and Reduce Transparency are respected automatically; no setup required
 
@@ -93,6 +94,7 @@ Eight focused, self-contained demos — one widget, one file, runnable standalon
 | `shape_debug_demo.dart` — GlassButton shapes | `cd example && flutter run -t lib/demos/shape_debug_demo.dart` |
 | `quality_comparison_demo.dart` — premium & standard quality comparison playground | `cd example && flutter run -t lib/demos/quality_comparison_demo.dart` |
 | `nav_bar_patterns_demo.dart` — GlassScaffold layout patterns | `cd example && flutter run -t lib/demos/nav_bar_patterns_demo.dart` |
+| `content_aware_brightness_demo.dart` — light/dark bar adaptation on scroll | `cd example && flutter run -t lib/demos/content_aware_brightness_demo.dart` |
 
 
 ## Glass vs Content — Design Philosophy
@@ -149,14 +151,14 @@ Most apps should use `GlassCard` or `GlassGroupedSection` instead.
 `GlassDialog` · `GlassSheet` · `GlassModalSheet` · `showGlassActionSheet` · `GlassMenu` · `GlassMenuItem` · `GlassMenuDivider` · `GlassMenuLabel` · `GlassPopover`
 
 ### Surfaces
-`GlassScaffold` · `GlassAppBar` · `GlassBottomBar` · `GlassSearchableBottomBar` · `GlassTabBar` · `GlassToolbar`
+`GlassScaffold` · `GlassAppBar` · `GlassBottomBar` · `GlassSearchableBottomBar` · `GlassTabBar` · `GlassToolbar` · `GlassContentAwareScope` · `GlassContentAwareContent` · `GlassContentAwareBrightness`
 
 
 ## Installation
 
 ```yaml
 dependencies:
-  liquid_glass_widgets: ^0.15.7
+  liquid_glass_widgets: ^0.16.0
 ```
 
 ```bash
@@ -392,6 +394,53 @@ GlassScaffold(
 | Status bar icons | Must call `SystemChrome.setSystemUIOverlayStyle` and restore it |
 
 > See `example/lib/demos/nav_bar_patterns_demo.dart` for complete `GlassScaffold` usage patterns.
+
+### Content-Aware Brightness
+
+Glass bars automatically adapt their icon and label colors to match the content
+scrolling behind them — light icons over dark content, dark icons over light
+content — with a smooth cross-fade transition. One flag on `GlassScaffold`,
+one on the bar:
+
+```dart
+GlassScaffold(
+  contentAwareBrightness: true,
+  bottomBar: GlassBottomBar(
+    adaptiveBrightness: true,
+    onBrightnessChanged: (b) => debugPrint('Bar is now: $b'),
+    tabs: [...],
+    selectedIndex: _index,
+    onTabSelected: (i) => setState(() => _index = i),
+  ),
+  body: CustomScrollView(
+    slivers: [...], // content scrolls underneath the bar
+  ),
+)
+```
+
+`GlassScaffold.contentAwareBrightness` handles all the wiring — it wraps the
+body in `GlassContentAwareContent` and the layout in `GlassContentAwareScope`
+automatically. The bar uses WCAG contrast ratios with dual-threshold hysteresis
+to prevent flickering on borderline content.
+
+For custom layouts without `GlassScaffold`, use the standalone widgets directly:
+
+```dart
+GlassContentAwareScope(
+  child: Scaffold(
+    extendBody: true,
+    body: GlassContentAwareContent(
+      child: ListView(...),
+    ),
+    bottomNavigationBar: GlassBottomBar(
+      adaptiveBrightness: true,
+      ...
+    ),
+  ),
+)
+```
+
+> See `example/lib/demos/content_aware_brightness_demo.dart` for a focused showcase.
 
 ---
 

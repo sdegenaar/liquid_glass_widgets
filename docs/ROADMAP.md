@@ -176,6 +176,11 @@ brightness-aware `GlassSearchBar` / `GlassTextField` defaults were all shipped.
 - [ ] **Light-mode golden tests** — add golden snapshots for key widgets in
   `Brightness.light` to catch regressions.
 
+### Platform Edge Cases / Engine Bugs
+
+- [ ] **CanvasKit Web circular clipping** — `LiquidOval` relies on `ClipRRect(borderRadius: 9999)` inside `_ShapeClip` to work around an iOS PlatformView compositing bug (Flutter #177551). However, on Web (CanvasKit), this massive radius breaks path clipping, causing the interaction `GlassGlow` to spill out as a giant square and destroying the CSS/SVG drop-shadow extraction on `DecoratedBox`. 
+  - **Proposed fix:** We need a way to branch and use `ClipOval` / `BoxShape.circle` strictly for Web/CanvasKit, or wait for an upstream engine fix for `ClipRRect(9999)` bounds calculation on Web.
+
 ### RTL / Internationalisation
 
 Only `GlassTextField` and the shared renderer reference `TextDirection`. No

@@ -54,8 +54,7 @@ Widget _wrapBar(Widget bar) => MaterialApp(
 
 void main() {
   group('GlassBottomBar — adaptive brightness plumbing', () {
-    testWidgets('classic path mounts no adaptive machinery',
-        (tester) async {
+    testWidgets('classic path mounts no adaptive machinery', (tester) async {
       await tester.pumpWidget(_wrapBar(GlassBottomBar(
         tabs: _tabs(),
         selectedIndex: 0,
@@ -114,8 +113,7 @@ void main() {
       expect(probePlatform, Brightness.light);
     });
 
-    testWidgets('end-to-end: bar over dark content flips dark',
-        (tester) async {
+    testWidgets('end-to-end: bar over dark content flips dark', (tester) async {
       final flips = <Brightness>[];
       await tester.pumpWidget(MaterialApp(
         home: GlassContentAwareScope(
@@ -171,8 +169,7 @@ void main() {
       ));
     }
 
-    testWidgets('classic path mounts no adaptive machinery',
-        (tester) async {
+    testWidgets('classic path mounts no adaptive machinery', (tester) async {
       await tester.pumpWidget(searchableBar());
       expect(find.byType(GlassContentAwareBrightness), findsNothing);
     });
@@ -231,8 +228,7 @@ void main() {
       expect(color.toARGB32(), CupertinoColors.label.color.toARGB32());
     });
 
-    testWidgets('dynamic label colors lerp with darkAmount',
-        (tester) async {
+    testWidgets('dynamic label colors lerp with darkAmount', (tester) async {
       final context =
           await contextUnder(tester, (child) => MaterialApp(home: child));
       final light = resolveBarLabelColor(context, 0.0);
@@ -287,8 +283,7 @@ void main() {
         ),
       );
       final lerped = resolveBarLabelColor(context, 1.0);
-      expect(
-          lerped.toARGB32(), CupertinoColors.label.darkColor.toARGB32());
+      expect(lerped.toARGB32(), CupertinoColors.label.darkColor.toARGB32());
     });
   });
 }
