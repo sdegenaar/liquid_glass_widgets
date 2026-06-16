@@ -365,8 +365,7 @@ void main() {
     //
     // Strength 0.10 produces a gentle brightening calibrated against Apple
     // reference screenshots. Fully branchless — no extra GPU divergence.
-    // Scaled by uAmbientStrength so it can be disabled for interactive indicators.
-    float fresnel = (1.0 - normalZ) * edgeFactor * 0.10 * uAmbientStrength;
+    float fresnel = (1.0 - normalZ) * edgeFactor * 0.10;
     finalColor.rgb = clamp(finalColor.rgb + vec3(fresnel), 0.0, 1.0);
 
     float alpha  = geometryData.a;
