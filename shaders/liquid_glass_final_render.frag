@@ -175,12 +175,15 @@ void main() {
         // L6 norm: (x^6 + y^6)^(1/6). Flatter than a circle, rounder than a square.
         float squircleDist = pow(pow(absCentered.x, 6.0) + pow(absCentered.y, 6.0), 1.0 / 6.0);
         
-        // Smooth ramp starting from the center outwards
-        float pinchRamp = smoothstep(0.0, 1.0, squircleDist);
+        // Taper from 0.0 at center, to 1.0 midway, and back to 0.0 at the edge.
+        // This ensures the background perfectly anchors to the unpinched horizontal bar
+        // at the boundary of the pill, completely eliminating any "ghost" mismatch!
+        float centeredDist = (squircleDist - 0.5) * 2.0;
+        float pinchRamp = smoothstep(1.0, 0.0, abs(centeredDist));
         
         // Shift using the radial vector, scaled by the squircle distance ramp.
-        // 0.025 UV max shift gives the perfect Apple-like pinch strength.
-        vec2 pinchShift = centered * pinchRamp * uPinchStrength * 0.025;
+        // We can increase the strength slightly because it now tapers off.
+        vec2 pinchShift = centered * pinchRamp * uPinchStrength * 0.040;
         
         // Correct Y-axis for OpenGL ES
         #ifdef IMPELLER_TARGET_OPENGLES
