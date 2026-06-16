@@ -169,35 +169,29 @@ void main() {
         // This mathematically mimics the physical shape of a rounded rectangle:
         // perfectly flat on the top/bottom/sides, and perfectly rounded in the corners.
         vec2 centered = geometryUV - vec2(0.5);
+        vec2 absCentered = abs(centered) * 2.0; // 0.0 to 1.0
 
-        // Calculate physical distance from the pill's center
-        vec2 p_signed = centered * uGeometrySize;
-        vec2 p_abs = abs(p_signed);
-        float radius = min(uGeometrySize.x, uGeometrySize.y) * 0.5;
-        vec2 flatSize = max(uGeometrySize * 0.5 - vec2(radius), 0.0);
+        // Compute x^6 and y^6 using multiply chains instead of pow().
+        // pow(x, 6.0) compiles to exp(6*log(x)) — a pair of transcendentals.
+        // Two squares and two multiplies is significantly faster.
+        float x2 = absCentered.x * absCentered.x;
+        float ax6 = x2 * x2 * x2;
+        float y2 = absCentered.y * absCentered.y;
+        float ay6 = y2 * y2 * y2;
 
-        // Distance vector from the flat inner skeleton
-        vec2 d_signed = sign(p_signed) * max(p_abs - flatSize, 0.0);
-        float distFromInner = length(d_signed);
+        // An L6 superellipse (squircle) distance field.
+        // Approximates the rounded-rectangle shape of the pill, ensuring
+        // the pinch effect smoothly maps to the corners rather than bleeding
+        // out as a raw circle or sharp box.
+        float squircleDist = pow(ax6 + ay6, 1.0 / 6.0);
 
-        // edgeDist is 0.0 in the flat center, and 1.0 at the absolute curved edge
-        float edgeDist = distFromInner / max(radius, 0.001);
+        // Map the squircle distance to a 0..1 smooth curve.
+        float pinchRamp = smoothstep(0.0, 1.0, squircleDist);
 
-        // Apple's iOS 26 pill is a smooth, continuous "blister" (like a water drop).
-        // It does NOT have a harsh, cut-glass edge. The background warps smoothly.
-        // To achieve this, the displacement must return to 0.0 at the boundary.
-        // We use a sine wave so the shift smoothly curves up to maximum at the
-        // middle of the radius, and back to 0.0 at the absolute edge.
-        float pinchRamp = sin(edgeDist * 3.14159265);
-
-        // Normalize d_signed safely to get the physical radial direction
-        vec2 shiftDir = d_signed / max(distFromInner, 0.001);
-
-        // Because we taper back to 0 at the edge, the visual "strength" of the
-        // pinch is distributed over a smooth curve. We need a larger max physical
-        // shift (e.g., 24.0 pixels) in the middle of the curve so the pinch is
-        // clearly visible, while remaining perfectly mathematically continuous.
-        vec2 pinchShift = (shiftDir * pinchRamp * uPinchStrength * 24.0) / uSize;
+        // Vector pointing outwards from the pill centre, scaled by the ramp.
+        // uPinchStrength interpolates the effect during spring animations.
+        // 0.025 is the baseline UV shift magnitude (subtle but visible).
+        vec2 pinchShift = centered * pinchRamp * uPinchStrength * 0.025;
 
         // Correct Y-axis for OpenGL ES.
         #ifdef IMPELLER_TARGET_OPENGLES
