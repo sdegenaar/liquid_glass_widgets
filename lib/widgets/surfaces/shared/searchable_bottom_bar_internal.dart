@@ -120,7 +120,7 @@ class SearchableTabIndicator extends StatefulWidget {
     this.indicatorPinchStrength = 1.0,
     this.backgroundKey,
     this.collapsedLogoBuilder,
-    this.indicatorExpansion = 14,
+    this.indicatorExpansion = 8,
     this.interactionGlowColor,
     this.interactionGlowRadius = 1.5,
     this.interactionGlowBlurRadius = 0,

@@ -99,7 +99,7 @@ class GlassSearchableBottomBar extends StatefulWidget {
     this.interactionBehavior = GlassInteractionBehavior.full,
     this.pressScale = 1.04,
     this.tabWidth,
-    this.indicatorExpansion = 14,
+    this.indicatorExpansion = 8,
     this.onBarTap,
     // ── Whiten-at-bottom (light-mode legibility) ─────────────────────────────
     this.whitenAtBottom = true,

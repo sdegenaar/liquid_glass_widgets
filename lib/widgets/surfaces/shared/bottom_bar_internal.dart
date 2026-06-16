@@ -345,7 +345,7 @@ class TabIndicator extends StatefulWidget {
     required this.maskingQuality,
     this.indicatorSettings,
     this.backgroundKey,
-    this.indicatorExpansion = 14,
+    this.indicatorExpansion = 8,
     this.indicatorPinchStrength = 1.0,
     this.interactionGlowColor,
     this.interactionGlowRadius = 1.5,

@@ -222,7 +222,7 @@ class GlassBottomBar extends StatefulWidget {
     this.maskingQuality = MaskingQuality.high,
     this.backgroundKey,
     this.tabWidth,
-    this.indicatorExpansion = 14,
+    this.indicatorExpansion = 8,
     this.interactionGlowColor,
     this.interactionGlowRadius = 1.5,
     this.interactionBehavior = GlassInteractionBehavior.full,
