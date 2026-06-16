@@ -44,6 +44,7 @@ class SegmentedControlContent extends StatefulWidget {
     required this.borderRadius,
     required this.quality,
     this.indicatorSettings,
+    this.indicatorPinchStrength = 1.0,
     this.backgroundKey,
     this.interactionBehavior = GlassInteractionBehavior.full,
     this.glowColor,
@@ -58,6 +59,8 @@ class SegmentedControlContent extends StatefulWidget {
   final TextStyle? unselectedTextStyle;
   final Color? indicatorColor;
   final LiquidGlassSettings? indicatorSettings;
+  /// Maximum concave lens pinch strength. Forwarded to [AnimatedGlassIndicator].
+  final double indicatorPinchStrength;
   final double borderRadius;
   final GlassQuality quality;
   final GlobalKey? backgroundKey;
@@ -270,6 +273,7 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
                         isBackgroundIndicator: false,
                         borderRadius: indicatorRadius,
                         settings: widget.indicatorSettings,
+                        pinchStrength: widget.indicatorPinchStrength,
                         backgroundKey: widget.backgroundKey,
                       ),
                       // Segment labels always paint above the glass indicator.

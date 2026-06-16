@@ -117,6 +117,7 @@ class SearchableTabIndicator extends StatefulWidget {
     required this.onDismissSearch,
     this.indicatorColor,
     this.indicatorSettings,
+    this.indicatorPinchStrength = 1.0,
     this.backgroundKey,
     this.collapsedLogoBuilder,
     this.indicatorExpansion = 14,
@@ -138,6 +139,8 @@ class SearchableTabIndicator extends StatefulWidget {
   final Widget Function(BuildContext, double, Alignment) selectedTabBuilder;
   final Color? indicatorColor;
   final LiquidGlassSettings? indicatorSettings;
+  /// Maximum concave lens pinch strength. Forwarded to [AnimatedGlassIndicator].
+  final double indicatorPinchStrength;
   final ValueChanged<int> onTabChanged;
   final GlassQuality quality;
   final double barHeight;
@@ -471,6 +474,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                   padding: const EdgeInsets.all(4),
                   expansion: widget.indicatorExpansion,
                   settings: widget.indicatorSettings,
+                  pinchStrength: widget.indicatorPinchStrength,
                   backgroundKey: widget.backgroundKey,
                 ),
 
@@ -539,6 +543,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                 padding: const EdgeInsets.all(4),
                 expansion: widget.indicatorExpansion,
                 settings: widget.indicatorSettings,
+                pinchStrength: widget.indicatorPinchStrength,
                 backgroundKey: widget.backgroundKey,
               ),
 
@@ -603,6 +608,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                 padding: const EdgeInsets.all(4),
                 expansion: widget.indicatorExpansion,
                 settings: widget.indicatorSettings,
+                pinchStrength: widget.indicatorPinchStrength,
                 // Over a PlatformView the normal backdrop (map region) can't be
                 // captured by toImageSync, so the premium indicator refracts the
                 // bar's own icon layer instead (capturable) — keeping the

@@ -29,6 +29,8 @@ class LiquidGlassSettings with EquatableMixin {
     this.shadow,
     this.whitenStrength = 0.0,
     this.whitenGated = true,
+    // Internal transport for the render shader — not a public material property.
+    // Set via AnimatedGlassIndicator.pinchStrength / indicatorPinchStrength.
     this.pinchStrength = 0.0,
   });
 
@@ -252,18 +254,38 @@ class LiquidGlassSettings with EquatableMixin {
   /// approximations are always uniform.
   final bool whitenGated;
 
-  /// Concave horizontal-pinch strength for the interactive pill indicator.
+  /// Internal shader transport value for the concave lens pinch effect.
   ///
-  /// When > 0, the premium render shader applies a concave inward displacement
-  /// at the left and right edges of the glass surface, creating the iOS 26
-  /// "pinched through a lens" look. The centre of the surface (over the icon
-  /// and label) is left flat and undistorted.
-  ///
-  /// Only affects the Premium (Impeller) path via
-  /// [liquid_glass_final_render.frag].
-  ///
-  /// Range: 0.0 (no pinch, the default) to 1.0 (full concave waist).
+  /// Set exclusively by [AnimatedGlassIndicator] via [copyWithPinch].
+  /// Do not set this directly — use [AnimatedGlassIndicator.pinchStrength]
+  /// or the hosting widget's `indicatorPinchStrength` parameter instead.
   final double pinchStrength;
+
+  /// Returns a copy of these settings with the given [pinchStrength] applied.
+  ///
+  /// Internal use only — called by [AnimatedGlassIndicator] to thread the
+  /// animated pinch value to the render shader without exposing [pinchStrength]
+  /// in the public [copyWith] API.
+  LiquidGlassSettings copyWithPinch(double pinchStrength) => LiquidGlassSettings(
+        visibility: visibility,
+        glassColor: glassColor,
+        thickness: thickness,
+        blur: blur,
+        chromaticAberration: chromaticAberration,
+        lightAngle: lightAngle,
+        lightIntensity: lightIntensity,
+        ambientStrength: ambientStrength,
+        refractiveIndex: refractiveIndex,
+        saturation: saturation,
+        glowIntensity: glowIntensity,
+        specularSharpness: specularSharpness,
+        standardOpacityMultiplier: standardOpacityMultiplier,
+        shadowElevation: shadowElevation,
+        shadow: shadow,
+        whitenStrength: whitenStrength,
+        whitenGated: whitenGated,
+        pinchStrength: pinchStrength,
+      );
 
   /// The effective saturation taking visibility into account.
   double get effectiveSaturation => 1 + (saturation - 1) * visibility;
@@ -339,7 +361,6 @@ class LiquidGlassSettings with EquatableMixin {
     List<BoxShadow>? shadow,
     double? whitenStrength,
     bool? whitenGated,
-    double? pinchStrength,
   }) =>
       LiquidGlassSettings(
         visibility: visibility ?? this.visibility,
@@ -360,7 +381,11 @@ class LiquidGlassSettings with EquatableMixin {
         shadow: shadow ?? this.shadow,
         whitenStrength: whitenStrength ?? this.whitenStrength,
         whitenGated: whitenGated ?? this.whitenGated,
-        pinchStrength: pinchStrength ?? this.pinchStrength,
+        // pinchStrength is intentionally preserved here — copyWith is used
+        // internally by AnimatedGlassIndicator to change visibility while
+        // keeping the current pinch value alive. To set a NEW pinch value,
+        // call copyWithPinch() instead.
+        pinchStrength: pinchStrength,
       );
 
   @override

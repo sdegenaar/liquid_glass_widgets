@@ -41,6 +41,7 @@ class TabBarContent extends StatefulWidget {
     required this.quality,
     this.indicatorBorderRadius,
     this.indicatorSettings,
+    this.indicatorPinchStrength = 1.0,
     this.backgroundKey,
     this.maskingQuality = MaskingQuality.high,
     this.dividerSettings,
@@ -64,6 +65,8 @@ class TabBarContent extends StatefulWidget {
   final GlassQuality quality;
   final BorderRadius? indicatorBorderRadius;
   final LiquidGlassSettings? indicatorSettings;
+  /// Maximum concave lens pinch strength. Forwarded to [AnimatedGlassIndicator].
+  final double indicatorPinchStrength;
   final GlobalKey? backgroundKey;
   final MaskingQuality maskingQuality;
   final DividerSettings? dividerSettings;
@@ -661,6 +664,7 @@ class TabBarContentState extends State<TabBarContent>
                   isBackgroundIndicator: false,
                   borderRadius: widget.indicatorBorderRadius?.topLeft.x ?? 16,
                   settings: widget.indicatorSettings,
+                  pinchStrength: widget.indicatorPinchStrength,
                   backgroundKey: widget.backgroundKey,
                   expansion:
                       widget.maskingQuality == MaskingQuality.off ? 0.0 : 8.0,

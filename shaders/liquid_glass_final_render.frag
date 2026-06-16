@@ -162,31 +162,43 @@ void main() {
     if (uPinchStrength > 0.001) {
         // We cannot use normalXY because it is 0.0 in the flat interior of the pill,
         // which prevents the background from being pinched at all.
-        // We also cannot use a circular distance field, because a circle mapped to a 
+        // We also cannot use a circular distance field, because a circle mapped to a
         // wide pill creates an elliptical lens that curves the flat top/bottom edges.
         //
         // Solution: Use an L6 norm (superellipse/squircle) distance field.
         // This mathematically mimics the physical shape of a rounded rectangle:
         // perfectly flat on the top/bottom/sides, and perfectly rounded in the corners.
-        
+
         vec2 centered = geometryUV - vec2(0.5);
         vec2 absCentered = abs(centered) * 2.0; // 0.0 to 1.0
-        
-        // L6 norm: (x^6 + y^6)^(1/6). Flatter than a circle, rounder than a square.
-        float squircleDist = pow(pow(absCentered.x, 6.0) + pow(absCentered.y, 6.0), 1.0 / 6.0);
-        
-        // Smooth ramp starting from the center outwards
+
+        // Compute x^6 and y^6 using multiply chains instead of pow().
+        // pow(x, 6.0) compiles to exp(6*log(x)) — a pair of transcendental ops.
+        // x^6 via squaring and multiplying is 3 scalar multiplies with no
+        // transcendentals: faster on every GPU backend (Metal, Vulkan, OpenGL ES).
+        // Mathematically identical result.
+        float ax2 = absCentered.x * absCentered.x;
+        float ay2 = absCentered.y * absCentered.y;
+        float ax6 = ax2 * ax2 * ax2;
+        float ay6 = ay2 * ay2 * ay2;
+
+        // L6 norm: (x^6 + y^6)^(1/6).
+        // The outer pow() cannot be replaced without changing the distance metric,
+        // so it is retained. The dominant cost (the two inner pow() calls) is gone.
+        float squircleDist = pow(ax6 + ay6, 1.0 / 6.0);
+
+        // Smooth ramp from centre outward.
         float pinchRamp = smoothstep(0.0, 1.0, squircleDist);
-        
+
         // Shift using the radial vector, scaled by the squircle distance ramp.
         // 0.025 UV max shift gives the perfect Apple-like pinch strength.
         vec2 pinchShift = centered * pinchRamp * uPinchStrength * 0.025;
-        
-        // Correct Y-axis for OpenGL ES
+
+        // Correct Y-axis for OpenGL ES.
         #ifdef IMPELLER_TARGET_OPENGLES
             pinchShift.y = -pinchShift.y;
         #endif
-        
+
         screenUV += pinchShift;
     }
 

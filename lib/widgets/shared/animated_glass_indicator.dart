@@ -74,6 +74,20 @@ class AnimatedGlassIndicator extends StatelessWidget {
   /// muddy the liquid glass animation. Pass `null` (default) for no shadow.
   final List<BoxShadow>? shadows;
 
+  /// Maximum concave lens pinch strength for the active indicator pill.
+  ///
+  /// During a drag, the pill's left and right edges appear to pinch inward
+  /// (iOS 26 "through a lens" effect). This value is the ceiling of that
+  /// effect at [thickness] == 1.0.
+  ///
+  /// - `1.0` (default) — full Apple-calibrated pinch
+  /// - `0.5` — half the pinch depth
+  /// - `0.0` — pinch fully disabled
+  ///
+  /// Configure per-bar via [GlassBottomBar.indicatorPinchStrength],
+  /// [GlassTabBar.indicatorPinchStrength], etc.
+  final double pinchStrength;
+
   const AnimatedGlassIndicator({
     super.key,
     required this.velocity,
@@ -94,6 +108,7 @@ class AnimatedGlassIndicator extends StatelessWidget {
     this.exactWidth,
     this.exactOffset,
     this.shadows,
+    this.pinchStrength = 1.0,
   });
 
   static const _baseGlassSettings = LiquidGlassSettings(
@@ -163,14 +178,9 @@ class AnimatedGlassIndicator extends StatelessWidget {
     // than wrapping the widget in `Opacity`.
     final fade = thickness.clamp(0.0, 1.0);
     final base = settings ?? _baseGlassSettings;
-    final effectiveSettings = base.copyWith(
-      visibility: fade,
-      // Concave pinch driven by interaction intensity — the pill appears
-      // "squeezed through a lens" at the left/right edges during drag,
-      // matching iOS 26's indicator look. Full 0→1 range; fine-tuning
-      // happens in the shader multipliers.
-      pinchStrength: fade,
-    );
+    final effectiveSettings = base
+        .copyWith(visibility: fade)
+        .copyWithPinch(fade * pinchStrength);
 
     final shape = useSuperellipse
         ? LiquidRoundedSuperellipse(borderRadius: borderRadius * 2)

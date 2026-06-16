@@ -346,6 +346,7 @@ class TabIndicator extends StatefulWidget {
     this.indicatorSettings,
     this.backgroundKey,
     this.indicatorExpansion = 14,
+    this.indicatorPinchStrength = 1.0,
     this.interactionGlowColor,
     this.interactionGlowRadius = 1.5,
     this.interactionGlowBlurRadius = 0,
@@ -379,6 +380,10 @@ class TabIndicator extends StatefulWidget {
   /// tighter, more iOS-native feel. Defaults to `14` to match the
   /// pre-existing visual.
   final double indicatorExpansion;
+
+  /// Maximum concave lens pinch strength for the animated pill.
+  /// Forwarded directly to [AnimatedGlassIndicator.pinchStrength].
+  final double indicatorPinchStrength;
 
   final Color? interactionGlowColor;
   final double interactionGlowRadius;
@@ -692,6 +697,7 @@ class TabIndicatorState extends State<TabIndicator>
               padding: const EdgeInsets.all(4),
               expansion: widget.indicatorExpansion,
               settings: widget.indicatorSettings,
+              pinchStrength: widget.indicatorPinchStrength,
               backgroundKey: widget.platformViewBackdrop
                   ? _iconLayerKey
                   : widget.backgroundKey,
@@ -842,6 +848,7 @@ class TabIndicatorState extends State<TabIndicator>
             padding: const EdgeInsets.all(4),
             expansion: widget.indicatorExpansion,
             settings: widget.indicatorSettings,
+            pinchStrength: widget.indicatorPinchStrength,
             backgroundKey: widget.platformViewBackdrop
                 ? _iconLayerKey
                 : widget.backgroundKey,

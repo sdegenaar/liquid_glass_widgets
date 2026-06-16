@@ -118,6 +118,7 @@ class GlassTabBar extends StatefulWidget {
     this.borderRadius,
     this.indicatorBorderRadius,
     this.indicatorSettings,
+    this.indicatorPinchStrength = 1.0,
     this.backgroundKey,
     this.maskingQuality = MaskingQuality.high,
     this.dividerSettings,
@@ -204,6 +205,12 @@ class GlassTabBar extends StatefulWidget {
 
   /// Glass settings for the sliding indicator.
   final LiquidGlassSettings? indicatorSettings;
+
+  /// Maximum concave lens pinch strength for the sliding indicator pill.
+  ///
+  /// - `1.0` (default) — full Apple-calibrated pinch
+  /// - `0.0` — pinch fully disabled
+  final double indicatorPinchStrength;
 
   /// Optional background key for Skia/Web refraction.
   final GlobalKey? backgroundKey;
@@ -306,6 +313,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
         quality: effectiveQuality,
         indicatorBorderRadius: widget.indicatorBorderRadius,
         indicatorSettings: widget.indicatorSettings,
+        indicatorPinchStrength: widget.indicatorPinchStrength,
         backgroundKey: widget.backgroundKey,
         maskingQuality: widget.maskingQuality,
         dividerSettings: widget.dividerSettings,

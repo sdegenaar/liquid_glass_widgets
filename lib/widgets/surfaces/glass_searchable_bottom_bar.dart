@@ -75,6 +75,7 @@ class GlassSearchableBottomBar extends StatefulWidget {
     this.showIndicator = true,
     this.indicatorColor,
     this.indicatorSettings,
+    this.indicatorPinchStrength = 1.0,
     this.selectedIconColor,
     this.unselectedIconColor,
     this.iconSize = 24,
@@ -305,6 +306,12 @@ class GlassSearchableBottomBar extends StatefulWidget {
 
   /// Custom glass settings for the indicator element.
   final LiquidGlassSettings? indicatorSettings;
+
+  /// Maximum concave lens pinch strength for the draggable indicator pill.
+  ///
+  /// - `1.0` (default) — full Apple-calibrated pinch
+  /// - `0.0` — pinch fully disabled
+  final double indicatorPinchStrength;
 
   // ── Tab style ────────────────────────────────────────────────────────────────
   /// Icon color when a tab is selected. Defaults to dynamic label color.
@@ -1008,6 +1015,7 @@ class _GlassSearchableBottomBarState extends State<GlassSearchableBottomBar>
                           indicatorColor: widget.indicatorColor,
                           indicatorExpansion: widget.indicatorExpansion,
                           indicatorSettings: widget.indicatorSettings,
+                          indicatorPinchStrength: widget.indicatorPinchStrength,
                           backgroundKey: widget.backgroundKey,
                           platformViewBackdrop: widget.platformViewBackdrop,
                           isSearchActive: searching,

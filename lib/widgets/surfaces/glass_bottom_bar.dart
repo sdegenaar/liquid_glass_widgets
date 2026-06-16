@@ -206,6 +206,7 @@ class GlassBottomBar extends StatefulWidget {
     this.showIndicator = true,
     this.indicatorColor,
     this.indicatorSettings,
+    this.indicatorPinchStrength = 1.0,
     this.selectedIconColor,
     this.unselectedIconColor,
     this.iconSize = 24,
@@ -521,6 +522,16 @@ class GlassBottomBar extends StatefulWidget {
   /// - blur: 0
   final LiquidGlassSettings? indicatorSettings;
 
+  /// Maximum concave lens pinch strength for the draggable indicator pill.
+  ///
+  /// Controls how strongly the bar content appears to pinch inward through
+  /// the pill's left and right edges during a drag (iOS 26 lens effect).
+  ///
+  /// - `1.0` (default) — full Apple-calibrated effect
+  /// - `0.5` — half the pinch depth
+  /// - `0.0` — pinch fully disabled
+  final double indicatorPinchStrength;
+
   // ===========================================================================
   // Tab Style Properties
   // ===========================================================================
@@ -711,6 +722,7 @@ class _GlassBottomBarState extends State<GlassBottomBar> {
                           tabCount: widget.tabs.length,
                           indicatorColor: widget.indicatorColor,
                           indicatorSettings: widget.indicatorSettings,
+                          indicatorPinchStrength: widget.indicatorPinchStrength,
                           onTabChanged: widget.onTabSelected,
                           barHeight: widget.barHeight,
                           barBorderRadius: widget.barBorderRadius,
