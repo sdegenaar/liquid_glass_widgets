@@ -645,49 +645,57 @@ class TabIndicatorState extends State<TabIndicator>
   }) {
     return SizedBox(
       height: widget.barHeight,
-      child: _wrapWithGlow(
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // Glass background (Cached to prevent blur re-rasterization on pill drag)
-            Positioned.fill(
-              child: RepaintBoundary(
-                child: AdaptiveGlass.grouped(
-                  quality: widget.quality,
-                  platformViewBackdrop: widget.platformViewBackdrop,
-                  shape: _barShape,
-                  child: const SizedBox.expand(),
-                ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: _wrapWithGlow(
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // Glass background (Cached to prevent blur re-rasterization on pill drag)
+                  Positioned.fill(
+                    child: RepaintBoundary(
+                      child: AdaptiveGlass.grouped(
+                        quality: widget.quality,
+                        platformViewBackdrop: widget.platformViewBackdrop,
+                        shape: _barShape,
+                        child: const SizedBox.expand(),
+                      ),
+                    ),
+                  ),
+
+                  // Unselected icons — always visible, all tabs in unselected style.
+                  // The glass indicator refracts this layer as the pill moves over it.
+                  Positioned.fill(
+                    child: Container(
+                      padding: widget.tabPadding,
+                      child: widget.childUnselected,
+                    ),
+                  ),
+                ],
               ),
             ),
+          ),
 
-            // Unselected icons — always visible, all tabs in unselected style.
-            // The glass indicator refracts this layer as the pill moves over it.
-            Positioned.fill(
-              child: Container(
-                padding: widget.tabPadding,
-                child: widget.childUnselected,
-              ),
+          // Glass indicator — on top so it refracts the icon layer AND the glow beneath.
+          if (widget.visible && thickness > 0.05)
+            AnimatedGlassIndicator(
+              velocity: velocity,
+              itemCount: widget.tabCount,
+              alignment: alignment,
+              thickness: thickness,
+              quality: widget.quality,
+              indicatorColor: indicatorColor,
+              isBackgroundIndicator: false,
+              borderRadius: thickness < 1 ? backgroundRadius : glassRadius,
+              padding: const EdgeInsets.all(4),
+              expansion: widget.indicatorExpansion,
+              settings: widget.indicatorSettings,
+              backgroundKey: widget.platformViewBackdrop
+                  ? _iconLayerKey
+                  : widget.backgroundKey,
             ),
-
-            // Glass indicator — on top so it refracts the icon layer beneath.
-            if (widget.visible && thickness > 0.05)
-              AnimatedGlassIndicator(
-                velocity: velocity,
-                itemCount: widget.tabCount,
-                alignment: alignment,
-                thickness: thickness,
-                quality: widget.quality,
-                indicatorColor: indicatorColor,
-                isBackgroundIndicator: false,
-                borderRadius: thickness < 1 ? backgroundRadius : glassRadius,
-                padding: const EdgeInsets.all(4),
-                expansion: widget.indicatorExpansion,
-                settings: widget.indicatorSettings,
-                backgroundKey: widget.platformViewBackdrop
-                    ? _iconLayerKey
-                    : widget.backgroundKey,
-              ),
 
             // Persistent selected-icon overlay — always rendered at the TARGET
             // (settled) tab position regardless of spring thickness. This ensures
@@ -710,7 +718,6 @@ class TabIndicatorState extends State<TabIndicator>
               ),
           ],
         ),
-      ),
     );
   }
 
@@ -728,111 +735,118 @@ class TabIndicatorState extends State<TabIndicator>
   }) {
     return SizedBox(
       height: widget.barHeight,
-      child: _wrapWithGlow(
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // 1. Glass Background (Blur / Frosted Glass Layer — Cached)
-            Positioned.fill(
-              child: RepaintBoundary(
-                child: AdaptiveGlass.grouped(
-                  quality: widget.quality,
-                  platformViewBackdrop: widget.platformViewBackdrop,
-                  shape: _barShape,
-                  child: const SizedBox.expand(),
-                ),
-              ),
-            ),
-
-            // 1.5. Solid Indicator Background (drawn below icons so selected icons are vibrant)
-            AnimatedGlassIndicator(
-              velocity: velocity,
-              itemCount: widget.tabCount,
-              alignment: alignment,
-              thickness: thickness,
-              quality: widget.quality,
-              indicatorColor: indicatorColor,
-              isBackgroundIndicator: false,
-              paintBackground: true,
-              paintGlass: false,
-              borderRadius: thickness < 1 ? backgroundRadius : glassRadius,
-              padding: const EdgeInsets.all(4),
-              expansion: widget.indicatorExpansion,
-              settings: widget.indicatorSettings,
-              backgroundKey: widget.platformViewBackdrop
-                  ? _iconLayerKey
-                  : widget.backgroundKey,
-            ),
-
-            // 2. Icon Content Layer (Unselected + Selected combined for refraction)
-            Positioned.fill(
-              child: RepaintBoundary(
-                key: _iconLayerKey,
-                child: Stack(
-                  children: [
-                    // Unselected (inverse clipped — visible OUTSIDE pill)
-                    ClipPath(
-                      clipper: JellyClipper(
-                        itemCount: widget.tabCount,
-                        alignment: alignment,
-                        thickness: thickness,
-                        expansion: widget.indicatorExpansion,
-                        transform: jellyTransform,
-                        borderRadius:
-                            thickness < 1 ? backgroundRadius : glassRadius,
-                        inverse: true,
-                      ),
-                      child: Container(
-                        padding: widget.tabPadding,
-                        height: widget.barHeight,
-                        child: widget.childUnselected,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: _wrapWithGlow(
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // 1. Glass Background (Blur / Frosted Glass Layer — Cached)
+                  Positioned.fill(
+                    child: RepaintBoundary(
+                      child: AdaptiveGlass.grouped(
+                        quality: widget.quality,
+                        platformViewBackdrop: widget.platformViewBackdrop,
+                        shape: _barShape,
+                        child: const SizedBox.expand(),
                       ),
                     ),
-                    // Selected (forward clipped — visible INSIDE pill)
-                    ClipPath(
-                      clipper: JellyClipper(
-                        itemCount: widget.tabCount,
-                        alignment: alignment,
-                        thickness: thickness,
-                        expansion: widget.indicatorExpansion,
-                        transform: jellyTransform,
-                        borderRadius:
-                            thickness < 1 ? backgroundRadius : glassRadius,
-                      ),
-                      child: Container(
-                        padding: widget.tabPadding,
-                        height: widget.barHeight,
-                        child: widget.selectedTabBuilder(
-                            context, thickness, alignment),
+                  ),
+
+                  // 1.5. Solid Indicator Background (drawn below icons so selected icons are vibrant)
+                  AnimatedGlassIndicator(
+                    velocity: velocity,
+                    itemCount: widget.tabCount,
+                    alignment: alignment,
+                    thickness: thickness,
+                    quality: widget.quality,
+                    indicatorColor: indicatorColor,
+                    isBackgroundIndicator: false,
+                    paintBackground: true,
+                    paintGlass: false,
+                    borderRadius: thickness < 1 ? backgroundRadius : glassRadius,
+                    padding: const EdgeInsets.all(4),
+                    expansion: widget.indicatorExpansion,
+                    settings: widget.indicatorSettings,
+                    backgroundKey: widget.platformViewBackdrop
+                        ? _iconLayerKey
+                        : widget.backgroundKey,
+                  ),
+
+                  // 2. Icon Content Layer (Unselected + Selected combined for refraction)
+                  Positioned.fill(
+                    child: RepaintBoundary(
+                      key: _iconLayerKey,
+                      child: Stack(
+                        children: [
+                          // Unselected (inverse clipped — visible OUTSIDE pill)
+                          ClipPath(
+                            clipper: JellyClipper(
+                              itemCount: widget.tabCount,
+                              alignment: alignment,
+                              thickness: thickness,
+                              expansion: widget.indicatorExpansion,
+                              transform: jellyTransform,
+                              borderRadius:
+                                  thickness < 1 ? backgroundRadius : glassRadius,
+                              inverse: true,
+                            ),
+                            child: Container(
+                              padding: widget.tabPadding,
+                              height: widget.barHeight,
+                              child: widget.childUnselected,
+                            ),
+                          ),
+                          // Selected (forward clipped — visible INSIDE pill)
+                          ClipPath(
+                            clipper: JellyClipper(
+                              itemCount: widget.tabCount,
+                              alignment: alignment,
+                              thickness: thickness,
+                              expansion: widget.indicatorExpansion,
+                              transform: jellyTransform,
+                              borderRadius:
+                                  thickness < 1 ? backgroundRadius : glassRadius,
+                            ),
+                            child: Container(
+                              padding: widget.tabPadding,
+                              height: widget.barHeight,
+                              child: widget.selectedTabBuilder(
+                                  context, thickness, alignment),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
+          ),
 
-            // 3. Moving Glass Indicator Layer — on top so it refracts
-            // the merged icon RepaintBoundary beneath it.
-            AnimatedGlassIndicator(
-              velocity: velocity,
-              itemCount: widget.tabCount,
-              alignment: alignment,
-              thickness: thickness,
-              quality: widget.quality,
-              indicatorColor: indicatorColor,
-              isBackgroundIndicator: false,
-              paintBackground: false,
-              paintGlass: true,
-              borderRadius: thickness < 1 ? backgroundRadius : glassRadius,
-              padding: const EdgeInsets.all(4),
-              expansion: widget.indicatorExpansion,
-              settings: widget.indicatorSettings,
-              backgroundKey: widget.platformViewBackdrop
-                  ? _iconLayerKey
-                  : widget.backgroundKey,
-            ),
-          ],
-        ),
+          // 3. Moving Glass Indicator Layer — on top so it refracts
+          // the merged icon RepaintBoundary AND the glow beneath it.
+          AnimatedGlassIndicator(
+            velocity: velocity,
+            itemCount: widget.tabCount,
+            alignment: alignment,
+            thickness: thickness,
+            quality: widget.quality,
+            indicatorColor: indicatorColor,
+            isBackgroundIndicator: false,
+            paintBackground: false,
+            paintGlass: true,
+            borderRadius: thickness < 1 ? backgroundRadius : glassRadius,
+            padding: const EdgeInsets.all(4),
+            expansion: widget.indicatorExpansion,
+            settings: widget.indicatorSettings,
+            backgroundKey: widget.platformViewBackdrop
+                ? _iconLayerKey
+                : widget.backgroundKey,
+          ),
+        ],
       ),
     );
   }
