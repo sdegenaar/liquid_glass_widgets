@@ -404,9 +404,6 @@ class TabIndicator extends StatefulWidget {
 @visibleForTesting
 class TabIndicatorState extends State<TabIndicator>
     with TabDragGestureMixin<TabIndicator> {
-  final GlobalKey _iconLayerKey = GlobalKey();
-  final GlobalKey _barBackgroundKey = GlobalKey();
-
   // ── Mixin interface ────────────────────────────────────────────────────────
   @override
   int get tabCount => widget.tabCount;
@@ -419,6 +416,7 @@ class TabIndicatorState extends State<TabIndicator>
   static const _fallbackIndicatorColor =
       Color(0x1AFFFFFF); // white.withValues(alpha: 0.1)
 
+  final GlobalKey _iconLayerKey = GlobalKey();
 
   // Cached shape to avoid recreation on every animation frame
   late LiquidRoundedSuperellipse _barShape =
@@ -654,7 +652,6 @@ class TabIndicatorState extends State<TabIndicator>
             // Glass background (Cached to prevent blur re-rasterization on pill drag)
             Positioned.fill(
               child: RepaintBoundary(
-                key: _barBackgroundKey,
                 child: AdaptiveGlass.grouped(
                   quality: widget.quality,
                   platformViewBackdrop: widget.platformViewBackdrop,
@@ -689,7 +686,7 @@ class TabIndicatorState extends State<TabIndicator>
                 settings: widget.indicatorSettings,
                 backgroundKey: widget.platformViewBackdrop
                     ? _iconLayerKey
-                    : _barBackgroundKey,
+                    : widget.backgroundKey,
               ),
 
             // Persistent selected-icon overlay — always rendered at the TARGET
@@ -738,7 +735,6 @@ class TabIndicatorState extends State<TabIndicator>
             // 1. Glass Background (Blur / Frosted Glass Layer — Cached)
             Positioned.fill(
               child: RepaintBoundary(
-                key: _barBackgroundKey,
                 child: AdaptiveGlass.grouped(
                   quality: widget.quality,
                   platformViewBackdrop: widget.platformViewBackdrop,
@@ -765,7 +761,7 @@ class TabIndicatorState extends State<TabIndicator>
               settings: widget.indicatorSettings,
               backgroundKey: widget.platformViewBackdrop
                   ? _iconLayerKey
-                  : _barBackgroundKey,
+                  : widget.backgroundKey,
             ),
 
             // 2. Icon Content Layer (Unselected + Selected combined for refraction)
@@ -833,7 +829,7 @@ class TabIndicatorState extends State<TabIndicator>
               settings: widget.indicatorSettings,
               backgroundKey: widget.platformViewBackdrop
                   ? _iconLayerKey
-                  : _barBackgroundKey,
+                  : widget.backgroundKey,
             ),
           ],
         ),
