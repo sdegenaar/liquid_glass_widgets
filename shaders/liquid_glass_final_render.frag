@@ -97,21 +97,56 @@ void main() {
     // renders a faint glass stripe in the _clipExpansion zone (20 px on each
     // side). That stripe is visible at the pill's vertical midpoint as a short
     // line protruding left and right from the pill edges.
-    if (any(lessThan(geometryUV, vec2(0.0))) || any(greaterThan(geometryUV, vec2(1.0)))) {
-        fragColor = vec4(0.0);
-        return;
+    vec2 centered = geometryUV - vec2(0.5);
+    vec2 absCentered = abs(centered) * 2.0; 
+    
+    // L6 norm: (x^6 + y^6)^(1/6).
+    float squircleDist = pow(pow(absCentered.x, 6.0) + pow(absCentered.y, 6.0), 1.0 / 6.0);
+    
+    float pinchRamp = 0.0;
+    vec2 pinchedUV = screenUV;
+    if (uPinchStrength > 0.001) {
+        if (squircleDist <= 1.0) {
+            pinchRamp = smoothstep(0.0, 1.0, squircleDist);
+        } else {
+            float pixelRadius = length(centered * uGeometrySize) / max(0.001, squircleDist);
+            float distanceFromEdgePixels = (squircleDist - 1.0) * pixelRadius;
+            // Taper off over 15 pixels. The clipRect is expanded by 20 pixels,
+            // so this will seamlessly merge with the unpinched background before the clip edge.
+            pinchRamp = 1.0 - smoothstep(0.0, 15.0, distanceFromEdgePixels);
+        }
+        
+        if (pinchRamp > 0.001) {
+            vec2 pinchShift = centered * pinchRamp * uPinchStrength * 0.025;
+            #ifdef IMPELLER_TARGET_OPENGLES
+                pinchShift.y = -pinchShift.y;
+            #endif
+            pinchedUV = screenUV + pinchShift;
+        }
     }
-
-    vec4 geometryData = texture(uGeometryTexture, geometryUV);
-
+    
+    bool outsideBounds = any(lessThan(geometryUV, vec2(0.0))) || any(greaterThan(geometryUV, vec2(1.0)));
+    vec4 geometryData = outsideBounds ? vec4(0.0) : texture(uGeometryTexture, geometryUV);
+    
     #if DEBUG_GEOMETRY
-        fragColor = geometryData;
-        return;
+        if (!outsideBounds) {
+            fragColor = geometryData;
+            return;
+        }
     #endif
 
     if (geometryData.a < 0.01) {
-        fragColor = vec4(0);
-        return;
+        if (pinchRamp > 0.001) {
+            // Outside the pill, but still inside the pinch taper zone.
+            // Output the pinched background directly, completely opaque.
+            fragColor = texture(uBackgroundTexture, pinchedUV);
+            // Force alpha to 1.0 to completely overwrite the unpinched screen
+            fragColor.a = 1.0; 
+            return;
+        } else {
+            fragColor = vec4(0.0);
+            return;
+        }
     }
 
     // --- V1: Decode true surface normal from geometry texture ---
@@ -148,47 +183,9 @@ void main() {
 
     // ── Concave horizontal pinch ──────────────────────────────────────────────
     // iOS 26 indicator pills make the bar content behind the left/right edges
-    // appear slightly compressed inward — as if the pill is a convex lens
-    // squeezing the bar through its edges. The effect is HORIZONTAL ONLY:
-    // the bar content at the pill edges is sampled from a position slightly
-    // closer to the pill centre, making those edge regions appear to pinch in.
-    //
-    // The centre of the pill (over the icon/label) is left completely flat.
-    //
-    // Scale: shifts are in UV space relative to the FULL backdrop (uSize).
-    // 0.015 UV on a 390pt screen ≈ 6pt logical pixels — subtle but visible.
-    //
-    // ── iOS 26 Concave Lens Pinch ─────────────────────────────────────────────
-    if (uPinchStrength > 0.001) {
-        // We cannot use normalXY because it is 0.0 in the flat interior of the pill,
-        // which prevents the background from being pinched at all.
-        // We also cannot use a circular distance field, because a circle mapped to a 
-        // wide pill creates an elliptical lens that curves the flat top/bottom edges.
-        //
-        // Solution: Use an L6 norm (superellipse/squircle) distance field.
-        // This mathematically mimics the physical shape of a rounded rectangle:
-        // perfectly flat on the top/bottom/sides, and perfectly rounded in the corners.
-        
-        vec2 centered = geometryUV - vec2(0.5);
-        vec2 absCentered = abs(centered) * 2.0; // 0.0 to 1.0
-        
-        // L6 norm: (x^6 + y^6)^(1/6). Flatter than a circle, rounder than a square.
-        float squircleDist = pow(pow(absCentered.x, 6.0) + pow(absCentered.y, 6.0), 1.0 / 6.0);
-        
-        // Smooth ramp starting from the center outwards
-        float pinchRamp = smoothstep(0.0, 1.0, squircleDist);
-        
-        // Shift using the radial vector, scaled by the squircle distance ramp.
-        // 0.025 UV max shift gives the perfect Apple-like pinch strength.
-        vec2 pinchShift = centered * pinchRamp * uPinchStrength * 0.025;
-        
-        // Correct Y-axis for OpenGL ES
-        #ifdef IMPELLER_TARGET_OPENGLES
-            pinchShift.y = -pinchShift.y;
-        #endif
-        
-        screenUV += pinchShift;
-    }
+    // appear slightly compressed inward.
+    // (Pinch logic has been moved to the top of the shader to support tapering
+    // outside the pill boundary).
 
     // PP1 optimisation: when the surface normal is flat (pointing straight up,
     // i.e. normalXY ≈ 0), refract() always produces displacement = vec2(0) and
@@ -204,18 +201,18 @@ void main() {
     if (dot(normalXY, normalXY) < 1e-4) {
         // Flat interior — surface is pointing straight at the camera.
         // Displacement is mathematically zero; sample the background directly.
-        refractColor = texture(uBackgroundTexture, screenUV);
+        refractColor = texture(uBackgroundTexture, pinchedUV);
     } else if (uChromaticAberration < 0.01) {
-        vec2 refractedUV = screenUV + displacement * invTexSize;
+        vec2 refractedUV = pinchedUV + displacement * invTexSize;
         refractColor = texture(uBackgroundTexture, refractedUV);
     } else {
         float dispersionStrength = uChromaticAberration * 0.5;
         vec2 redOffset  = displacement * (1.0 + dispersionStrength);
         vec2 blueOffset = displacement * (1.0 - dispersionStrength);
 
-        vec2 redUV   = screenUV + redOffset   * invTexSize;
-        vec2 greenUV = screenUV + displacement * invTexSize;
-        vec2 blueUV  = screenUV + blueOffset  * invTexSize;
+        vec2 redUV   = pinchedUV + redOffset   * invTexSize;
+        vec2 greenUV = pinchedUV + displacement * invTexSize;
+        vec2 blueUV  = pinchedUV + blueOffset  * invTexSize;
 
         float red         = texture(uBackgroundTexture, redUV).r;
         vec4  greenSample = texture(uBackgroundTexture, greenUV);
@@ -352,11 +349,25 @@ void main() {
     // and doesn't accumulate on interior pixels where edgeFactor ≈ 0.
     //
     // Strength 0.10 produces a gentle brightening calibrated against Apple
-    // reference screenshots.  Fully branchless — no extra GPU divergence.
-    float fresnel = (1.0 - normalZ) * edgeFactor * 0.10;
+    // reference screenshots. Fully branchless — no extra GPU divergence.
+    // Scaled by uAmbientStrength so it can be disabled for interactive indicators.
+    float fresnel = (1.0 - normalZ) * edgeFactor * 0.10 * uAmbientStrength;
     finalColor.rgb = clamp(finalColor.rgb + vec3(fresnel), 0.0, 1.0);
 
     float alpha  = geometryData.a;
-    fragColor    = vec4(finalColor.rgb * alpha, alpha);
+    if (uPinchStrength > 0.001 && pinchRamp > 0.0) {
+        // We are applying a lens pinch. We cannot use standard srcOver blending
+        // with alpha < 1.0, because standard blending allows the unpinched background 
+        // (which is already on the screen) to show through the semi-transparent 
+        // edges of the pill, creating a "ghost" of the original bar.
+        // Instead, we sample the pinched background, blend it manually with the 
+        // glass color using the pill's alpha, and output a fully opaque pixel 
+        // to completely overwrite the unpinched screen.
+        vec3 pinchedBg = texture(uBackgroundTexture, pinchedUV).rgb;
+        vec3 blendedColor = mix(pinchedBg, finalColor.rgb, alpha);
+        fragColor = vec4(blendedColor, 1.0);
+    } else {
+        fragColor = vec4(finalColor.rgb * alpha, alpha);
+    }
 }
 
