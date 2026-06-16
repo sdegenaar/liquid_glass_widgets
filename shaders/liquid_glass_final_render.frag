@@ -169,48 +169,29 @@ void main() {
         // This mathematically mimics the physical shape of a rounded rectangle:
         // perfectly flat on the top/bottom/sides, and perfectly rounded in the corners.
         vec2 centered = geometryUV - vec2(0.5);
+        vec2 absCentered = abs(centered) * 2.0; // 0.0 to 1.0
 
-        // Calculate physical distance from the pill's center
-        vec2 p_signed = centered * uGeometrySize;
-        vec2 p_abs = abs(p_signed);
-        float radius = min(uGeometrySize.x, uGeometrySize.y) * 0.5;
-        vec2 flatSize = max(uGeometrySize * 0.5 - vec2(radius), 0.0);
+        // Compute x^6 and y^6 using multiply chains instead of pow().
+        // pow(x, 6.0) compiles to exp(6*log(x)) — a pair of transcendentals.
+        // Two squares and two multiplies is significantly faster.
+        float x2 = absCentered.x * absCentered.x;
+        float ax6 = x2 * x2 * x2;
+        float y2 = absCentered.y * absCentered.y;
+        float ay6 = y2 * y2 * y2;
 
-        // Distance vector from the flat inner skeleton
-        vec2 d_signed = sign(p_signed) * max(p_abs - flatSize, 0.0);
-        float distFromInner = length(d_signed);
+        // An L6 superellipse (squircle) distance field.
+        // Approximates the rounded-rectangle shape of the pill, ensuring
+        // the pinch effect smoothly maps to the corners rather than bleeding
+        // out as a raw circle or sharp box.
+        float squircleDist = pow(ax6 + ay6, 1.0 / 6.0);
 
-        // edgeDist is 0.0 in the flat center, and 1.0 at the absolute curved edge
-        float edgeDist = distFromInner / max(radius, 0.001);
+        // Map the squircle distance to a 0..1 smooth curve.
+        float pinchRamp = smoothstep(0.0, 1.0, squircleDist);
 
-        // Ramp from 0.0 at the inner skeleton to 1.0 at the edge.
-        // This keeps the flat middle of the pill perfectly sharp (0 shift),
-        // preventing distortion of icons, while applying maximum shift at the edge
-        // to create the thick, physical glass lens discontinuity.
-        float pinchRamp = smoothstep(0.0, 1.0, edgeDist);
-
-        // Normalize d_signed safely to get the physical radial direction
-        vec2 shiftDir = d_signed / max(distFromInner, 0.001);
-
-        // 1. Uniform convex magnification of the flat center
-        // 0.035 = 3.5% magnification. Scales by uPinchStrength so it only affects the pill.
-        // Sampling inwards (negative vector) stretches the background outwards, zooming it in.
-        float magFactor = 0.035;
-        vec2 magShiftPhysical = -centered * uGeometrySize * magFactor * uPinchStrength;
-
-        // 2. Strong outward pinch at the caps
-        // We want a constant 12.0px outward optical discontinuity at the absolute edge.
-        // Because the magnification pulls the edge inwards, we calculate exactly how much
-        // it pulled inwards at this specific boundary tangent, and push out harder
-        // to compensate. This guarantees a perfectly uniform 12px glass rim on any pill size!
-        float localMagPull = dot(abs(shiftDir), uGeometrySize * 0.5) * magFactor;
-        float requiredPinch = 12.0 + localMagPull;
-        
-        vec2 pinchShiftPhysical = shiftDir * pinchRamp * uPinchStrength * requiredPinch;
-
-        // 3. Combine magnification and edge pinch, then convert to UV space
-        vec2 totalShiftPhysical = magShiftPhysical + pinchShiftPhysical;
-        vec2 pinchShift = totalShiftPhysical / uSize;
+        // Vector pointing outwards from the pill centre, scaled by the ramp.
+        // uPinchStrength interpolates the effect during spring animations.
+        // 0.025 is the baseline UV shift magnitude (subtle but visible).
+        vec2 pinchShift = centered * pinchRamp * uPinchStrength * 0.025;
 
         // Correct Y-axis for OpenGL ES.
         #ifdef IMPELLER_TARGET_OPENGLES
