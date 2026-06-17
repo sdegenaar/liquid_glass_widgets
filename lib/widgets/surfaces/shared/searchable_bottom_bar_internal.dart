@@ -570,6 +570,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                       child: Stack(
                         children: [
                           ClipPath(
+                            clipBehavior: Clip.antiAliasWithSaveLayer,
                             clipper: JellyClipper(
                               itemCount: widget.tabCount,
                               alignment: alignment,
@@ -586,6 +587,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                             ),
                           ),
                           ClipPath(
+                            clipBehavior: Clip.antiAliasWithSaveLayer,
                             clipper: JellyClipper(
                               itemCount: widget.tabCount,
                               alignment: alignment,

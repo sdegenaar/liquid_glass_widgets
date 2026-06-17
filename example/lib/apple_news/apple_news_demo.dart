@@ -295,7 +295,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
       bottomBar: Padding(
         padding: EdgeInsets.only(bottom: sysBottom),
         child: GlassSearchableBottomBar(
-          indicatorPinchStrength: 0.35,
+          indicatorPinchStrength: 0.4,
           selectedIndex: _selectedTab,
           isSearchActive: _isSearching,
           onTabSelected: (index) => setState(() {
@@ -320,7 +320,8 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
                 : const Color(0xCCFFFFFF),
             thickness: 30,
             blur: 2,
-            chromaticAberration: 0,
+            chromaticAberration:
+                0.15, // iOS 26 has subtle iridescent rainbow fringing
             lightAngle: GlassDefaults.lightAngle,
             lightIntensity: .3,
             ambientStrength: 0,
@@ -337,6 +338,13 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
             onSearchFocusChanged: (focused) =>
                 setState(() => _searchFieldFocused = focused),
             searchIconColor: CupertinoColors.label.resolveFrom(context),
+            // Slightly larger (26 pt) to match Apple News's proportionally bold
+            // magnifying-glass icon in the collapsed search pill.
+            searchIcon: Icon(
+              CupertinoIcons.search,
+              size: 30,
+              color: CupertinoColors.label.resolveFrom(context),
+            ),
             textInputAction: TextInputAction.search,
             autoFocusOnExpand: false,
             showsCancelButton: true,
@@ -345,35 +353,97 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
           tabs: [
             GlassBottomBarTab(
               label: 'Today',
-              icon: SvgPicture.asset(
-                'assets/news_logo.svg',
-                width: 18,
-                colorFilter: ColorFilter.mode(
-                  CupertinoColors.label.resolveFrom(context),
-                  BlendMode.srcIn,
+              icon: SizedBox(
+                width: 26,
+                height: 26,
+                child: SvgPicture.asset(
+                  'assets/news_logo.svg',
+                  fit: BoxFit.contain,
+                  colorFilter: ColorFilter.mode(
+                    CupertinoColors.label.resolveFrom(context),
+                    BlendMode.srcIn,
+                  ),
                 ),
               ),
-              activeIcon: SvgPicture.asset(
-                'assets/news_logo.svg',
-                width: 18,
-                colorFilter: const ColorFilter.mode(
-                  Color.fromRGBO(255, 90, 130, 1),
-                  BlendMode.srcIn,
+              activeIcon: SizedBox(
+                width: 26,
+                height: 26,
+                child: SvgPicture.asset(
+                  'assets/news_logo.svg',
+                  fit: BoxFit.contain,
+                  colorFilter: const ColorFilter.mode(
+                    Color.fromRGBO(255, 90, 130, 1),
+                    BlendMode.srcIn,
+                  ),
                 ),
               ),
             ),
             GlassBottomBarTab(
               label: 'News+',
-              icon: Icon(SFSymbols.newspaper),
-              activeIcon: Icon(SFSymbols.newspaper_fill),
+              icon: SizedBox(
+                width: 26,
+                height: 26,
+                child: Icon(SFSymbols.newspaper_fill, size: 26),
+              ),
+              activeIcon: SizedBox(
+                width: 26,
+                height: 26,
+                child: Icon(SFSymbols.newspaper_fill, size: 26),
+              ),
             ),
             GlassBottomBarTab(
               label: 'Audio',
-              icon: Icon(SFSymbols.headphones),
+              icon: SizedBox(
+                width: 26,
+                height: 26,
+                child: SvgPicture.asset(
+                  'assets/audio.svg',
+                  fit: BoxFit.contain,
+                  colorFilter: ColorFilter.mode(
+                    CupertinoColors.label.resolveFrom(context),
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ),
+              activeIcon: SizedBox(
+                width: 26,
+                height: 26,
+                child: SvgPicture.asset(
+                  'assets/audio.svg',
+                  fit: BoxFit.contain,
+                  colorFilter: const ColorFilter.mode(
+                    Color.fromRGBO(255, 90, 130, 1),
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ),
             ),
             GlassBottomBarTab(
               label: 'Following',
-              icon: Icon(SFSymbols.rectangle_fill_on_rectangle_angled_fill),
+              icon: SizedBox(
+                width: 26,
+                height: 26,
+                child: SvgPicture.asset(
+                  'assets/following.svg',
+                  fit: BoxFit.contain,
+                  colorFilter: ColorFilter.mode(
+                    CupertinoColors.label.resolveFrom(context),
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ),
+              activeIcon: SizedBox(
+                width: 26,
+                height: 26,
+                child: SvgPicture.asset(
+                  'assets/following.svg',
+                  fit: BoxFit.contain,
+                  colorFilter: const ColorFilter.mode(
+                    Color.fromRGBO(255, 90, 130, 1),
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ),
             ),
           ],
         ),

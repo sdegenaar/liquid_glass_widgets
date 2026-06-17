@@ -36,6 +36,8 @@ flutter:
     - assets/mountain_landscape.jpg
     - assets/bulldog.jpeg
     - assets/news_logo.svg
+    - assets/audio.svg
+    - assets/following.svg
     - assets/news_images/
     - assets/modal_sheet_showcase/
     - assets/podcast_images/

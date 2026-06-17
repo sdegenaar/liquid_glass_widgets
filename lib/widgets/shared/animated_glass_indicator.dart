@@ -120,7 +120,9 @@ class AnimatedGlassIndicator extends StatelessWidget {
     ),
     refractiveIndex: GlassDefaults.refractiveIndex,
     lightIntensity: GlassDefaults.lightIntensity,
-    chromaticAberration: 0.0, // iOS 26 pill does not have chromatic aberration
+    // Real iOS 26 glass has visible iridescent/rainbow fringing at edges —
+    // the earlier comment claiming no aberration was incorrect.
+    chromaticAberration: 0.15,
     lightAngle: GlassDefaults.lightAngle,
     blur: 0,
   );
@@ -200,13 +202,13 @@ class AnimatedGlassIndicator extends StatelessWidget {
       // Map settings.thickness → rimThickness (logical px rim width).
       // uThickness is declared but unused in interactive_indicator.frag;
       // uRimThickness is what actually controls the visible hairline rim width.
-      // Minimum 0.5 guarantees the SDF has a defined anti-aliased edge even
-      // when effectiveThickness is 0 (the base indicator settings omit thickness).
-      // Without the minimum, rimThickness = 0 forces the edge to rely solely on
-      // the coarser Dart-side ClipPath AA, which produces visible pixelation at
-      // the pinch curves where the jelly transform distorts the pre-computed AA.
+      // Minimum 0.8 (was 0.5): the wider SDF AA band covers the gap between the
+      // shader's SDF edge and the Dart-side ClipPath AA. At 0.5 the boundary
+      // was too thin to absorb the jelly-transform distortion and the concave
+      // pinch UV shift, producing a visible pixelated/aliased rim at the pill
+      // edges — especially at the horizontal pinch curves.
       // Clamp ceiling 8 px: beyond 8 the rim bleeds into the pill body.
-      rimThickness: (settings?.effectiveThickness ?? 0.5).clamp(0.5, 8.0),
+      rimThickness: (settings?.effectiveThickness ?? 0.8).clamp(0.8, 8.0),
       // Calibrate standard-tier indicator styling in Dart space instead of the shader:
       // Soften the forced rim outline to match premium's elegance and keep the body translucent.
       ambientRim: isStdPath ? 0.08 : 0.1,
@@ -219,17 +221,20 @@ class AnimatedGlassIndicator extends StatelessWidget {
       ),
     );
 
-    final bool isMinimal = quality == GlassQuality.minimal;
-    // Mount early (0.01) so geometry is built before the indicator is visible,
-    // preventing a 1-frame flicker at the edges on fast drags.
+    // Mount early (0.01) so geometry is built before the indicator is visible.
+    // We MUST NOT wrap this in a RepaintBoundary because the jelly Transform
+    // below will apply a sub-pixel shift/scale. If we pre-rasterise the glass
+    // with a RepaintBoundary, the pre-computed AA will misalign with the pixel
+    // grid during the transform, causing stair-stepping on the edges.
     final interactiveIndicator = thickness > 0.01
-        ? (isMinimal ? glassWidget : RepaintBoundary(child: glassWidget))
+        ? glassWidget
         : const SizedBox.expand();
 
-    // Unified indicator child
-    final indicatorChild = Stack(
+    // Only the active glass effect needs jelly physics — the solid
+    // background pill is always at rest and must NOT go through the
+    // Transform chain.
+    final glassChild = Stack(
       children: [
-        if (paintBackground && backgroundOpacity > 0) backgroundIndicator,
         if (paintGlass && fade > 0.05) interactiveIndicator,
       ],
     );
@@ -237,18 +242,25 @@ class AnimatedGlassIndicator extends StatelessWidget {
     final indicatorBody = Stack(
       clipBehavior: Clip.none,
       children: [
+        // Background painted directly — no RepaintBoundary, no Transform.
+        // This guarantees sub-pixel border-radius AA at the GPU composition step.
+        if (paintBackground && backgroundOpacity > 0)
+          Positioned.fromRelativeRect(
+            rect: rect!,
+            child: backgroundIndicator,
+          ),
+        // Jelly-physics glass layer — apply Transform directly so GPU
+        // computes anti-aliasing dynamically.
         Positioned.fromRelativeRect(
           rect: rect!,
-          child: RepaintBoundary(
-            child: Transform(
-              alignment: Alignment.center,
-              transform: DraggableIndicatorPhysics.buildJellyTransform(
-                velocity: Offset(velocity, 0),
-                maxDistortion: 0.8,
-                velocityScale: 10,
-              ),
-              child: indicatorChild,
+          child: Transform(
+            alignment: Alignment.center,
+            transform: DraggableIndicatorPhysics.buildJellyTransform(
+              velocity: Offset(velocity, 0),
+              maxDistortion: 0.8,
+              velocityScale: 10,
             ),
+            child: glassChild,
           ),
         ),
       ],

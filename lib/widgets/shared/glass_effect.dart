@@ -420,11 +420,23 @@ class _GlassEffectState extends State<GlassEffect>
 
     // Path B: Native Impeller (Premium only)
     if (isImpeller && widget.quality == GlassQuality.premium) {
-      return LiquidGlass.withOwnLayer(
-        shape: widget.shape,
-        settings: widget.settings,
-        clipExpansion: widget.clipExpansion,
-        child: widget.child,
+      // ClipPath(Clip.antiAlias) adds a GPU-accelerated compositor clip that
+      // provides hardware sub-pixel AA on the indicator boundary.  We cannot
+      // use Clip.antiAliasWithSaveLayer here because LiquidGlass.withOwnLayer
+      // contains a BackdropFilterLayer — a saveLayer would isolate it from the
+      // real compositor backdrop and destroy the glass refraction effect.
+      // Clip.antiAlias creates a ClipPathLayer (no saveLayer isolation) which
+      // gives smooth GPU-native path AA applied AFTER the glass renders,
+      // overriding any pre-baked edge from the RepaintBoundary + Transform chain.
+      return ClipPath(
+        clipper: ShapeBorderClipper(shape: widget.shape),
+        clipBehavior: Clip.antiAlias,
+        child: LiquidGlass.withOwnLayer(
+          shape: widget.shape,
+          settings: widget.settings,
+          clipExpansion: widget.clipExpansion,
+          child: widget.child,
+        ),
       );
     }
 

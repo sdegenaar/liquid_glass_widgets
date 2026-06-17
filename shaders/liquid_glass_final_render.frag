@@ -193,6 +193,17 @@ void main() {
         // 0.025 is the baseline UV shift magnitude (subtle but visible).
         vec2 pinchShift = centered * pinchRamp * uPinchStrength * 0.025;
 
+        // Feather the pinch shift to zero at the pill's SDF boundary.
+        // Without this, there is a hard UV discontinuity at the pill edge:
+        // the background content inside the pill is sampled from a shifted UV
+        // while the content immediately outside is at the natural UV — this
+        // mismatch produces the "stepped/aliased" edge visible through the lens,
+        // especially where the bar's own clip edge is refracted inward.
+        // Multiplying by geometryData.a (which is 0 at the boundary and 1 by 2 px
+        // inside) ramps the shift smoothly from 0 → full pinch over the same AA
+        // zone as the pill alpha, eliminating the hard UV seam.
+        pinchShift *= geometryData.a;
+
         // Correct Y-axis for OpenGL ES.
         #ifdef IMPELLER_TARGET_OPENGLES
             pinchShift.y = -pinchShift.y;
@@ -368,7 +379,11 @@ void main() {
     //
     // Strength 0.10 produces a gentle brightening calibrated against Apple
     // reference screenshots. Fully branchless — no extra GPU divergence.
-    float fresnel = (1.0 - normalZ) * edgeFactor * 0.10;
+    // Fresnel strength 0.12 (was 0.10 in the calibration build).
+    // The extra 0.02 restores the subtle rim luminosity that the geometry AA band
+    // experiment temporarily reduced — keeping the glass edge visually present
+    // against dark bar backgrounds without making it glowing or harsh.
+    float fresnel = (1.0 - normalZ) * edgeFactor * 0.12;
     finalColor.rgb = clamp(finalColor.rgb + vec3(fresnel), 0.0, 1.0);
 
     float alpha  = geometryData.a;

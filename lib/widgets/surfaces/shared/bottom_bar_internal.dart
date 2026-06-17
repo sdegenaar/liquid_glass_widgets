@@ -789,6 +789,7 @@ class TabIndicatorState extends State<TabIndicator>
                         children: [
                           // Unselected (inverse clipped — visible OUTSIDE pill)
                           ClipPath(
+                            clipBehavior: Clip.antiAliasWithSaveLayer,
                             clipper: JellyClipper(
                               itemCount: widget.tabCount,
                               alignment: alignment,
@@ -807,6 +808,7 @@ class TabIndicatorState extends State<TabIndicator>
                           ),
                           // Selected (forward clipped — visible INSIDE pill)
                           ClipPath(
+                            clipBehavior: Clip.antiAliasWithSaveLayer,
                             clipper: JellyClipper(
                               itemCount: widget.tabCount,
                               alignment: alignment,

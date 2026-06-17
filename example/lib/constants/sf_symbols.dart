@@ -39,7 +39,26 @@ class SFSymbols {
       IconData(108, fontFamily: 'SFSymbols', fontPackage: null);
   static const IconData rectangle_fill_on_rectangle_angled_fill =
       IconData(63425, fontFamily: 'SFSymbols', fontPackage: null);
-  
+
+  static const IconData books_vertical_fill =
+      IconData(2605, fontFamily: 'SFSymbols', fontPackage: null);
+
+  static const IconData books_vertical =
+      IconData(2608, fontFamily: 'SFSymbols', fontPackage: null);
+
+  /// tray.fill — inbox/tray shape.
+  static const IconData tray_fill =
+      IconData(62162, fontFamily: 'SFSymbols', fontPackage: null);
+
+  /// list.bullet.rectangle.portrait.fill — portrait rect with list rows inside.
+  /// Matches the real iOS 26 Apple News "Following" tab icon.
+  static const IconData list_bullet_rectangle_portrait_fill =
+      IconData(64787, fontFamily: 'SFSymbols', fontPackage: null);
+
+  static const IconData rectangle_stack_fill =
+      IconData(63269, fontFamily: 'SFSymbols', fontPackage: null);
+
+
   static const IconData trash =
       IconData(62185, fontFamily: 'SFSymbols', fontPackage: null);
   static const IconData xmark_bin =
