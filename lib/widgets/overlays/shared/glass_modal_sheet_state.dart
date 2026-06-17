@@ -12,6 +12,16 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   SheetState get _currentState => _currentStateNotifier.value;
   set _currentState(SheetState v) => _currentStateNotifier.value = v;
 
+  /// True for the lifetime of a handle drag (pointer-down in the top
+  /// handle zone through pointer-up/cancel). While set, the inner
+  /// content scroll is disabled so the scrollable never claims the
+  /// vertical-drag gesture and fights the handle drag — the cause of a
+  /// stall where, at full state, grabbing the handle let the content
+  /// overscroll and steal the pointer. Folded into the build's
+  /// [AnimatedBuilder] listenable so it takes effect on pointer-down,
+  /// BEFORE the scrollable's drag recognizer can claim (needs slop).
+  final ValueNotifier<bool> _handleDragActive = ValueNotifier(false);
+
   /// The state most recently published to consumers via
   /// [GlassModalSheet.onStateChanged] (and from which haptics and
   /// scroll-to-top side effects fired).
@@ -105,6 +115,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     _saturationController.dispose();
     _scrollController.dispose();
     _currentStateNotifier.dispose();
+    _handleDragActive.dispose();
     super.dispose();
   }
 
@@ -244,8 +255,13 @@ class _GlassModalSheetState extends State<GlassModalSheet>
         event.position.dy, event.position.dx, _currentPosition, event.kind);
 
     // If the touch is in the handle zone (top 44 pixels), immediately set phase.
+    // Also disable the inner scroll for this gesture so the content scrollable
+    // can't claim the vertical drag and fight the handle drag. Set here, on
+    // pointer-down, so the physics swap lands before the scrollable's drag
+    // recognizer accumulates enough slop to claim.
     if (event.localPosition.dy <= 44.0) {
       _gestureArena.phase = GesturePhase.handleDrag;
+      _handleDragActive.value = true;
     }
 
     // Now, if we are interacting with a child (e.g. a button), we SUPPRESS
@@ -322,6 +338,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   }
 
   void _onPointerUp(PointerUpEvent event) {
+    _handleDragActive.value = false;
     _isInteractingWithChild = false;
     _suppressScalingForSession = false;
     _saturationController.reverse();
@@ -352,6 +369,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   }
 
   void _onPointerCancel(PointerCancelEvent event) {
+    _handleDragActive.value = false;
     _isInteractingWithChild = false;
     _suppressScalingForSession = false;
     _saturationController.reverse();
@@ -744,8 +762,8 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     );
 
     return AnimatedBuilder(
-      animation:
-          Listenable.merge([_animationController, _saturationController]),
+      animation: Listenable.merge(
+          [_animationController, _saturationController, _handleDragActive]),
       builder: (context, _) {
         final fullPos = _geometry.positionForState(SheetState.full, mqHeight);
         final halfPos = _geometry.positionForState(SheetState.half, mqHeight);
@@ -823,6 +841,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
           scrollController: _scrollController,
           currentStateNotifier: _currentStateNotifier,
           expandProgressValue: t,
+          disableInnerScroll: _handleDragActive.value,
           maintainContentGlass: widget.maintainContentGlass,
           fullStateContentSettings: widget.fullStateContentSettings,
           enableSaturationGlow: widget.enableSaturationGlow,

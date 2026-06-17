@@ -268,6 +268,54 @@ class GlassContentAwareScope extends StatefulWidget {
         : Brightness.dark;
   }
 
+  /// Mean content luminance of [cellRects] in a raw RGBA capture.
+  ///
+  /// Exposed for tests; production code goes through the sampling pipeline.
+  /// Returns the average **perceptual** luminance (BT.601 weights on the
+  /// non-linear sRGB channels, 0 = black, 1 = white) across the cells, with
+  /// [background] substituted for transparent pixels. This is deliberately a
+  /// different metric from the vote in [computeVerdict]: the vote is a
+  /// late-flipping WCAG contrast decision, while this axis moves smoothly
+  /// through the medium range — the input early-darkening consumers (e.g.
+  /// the adaptive scroll edge fade) key their thresholds off.
+  @visibleForTesting
+  static double computeMeanLuminance({
+    required Uint8List rgba,
+    required int width,
+    required int height,
+    required List<Rect> cellRects,
+    required Color background,
+  }) {
+    if (width <= 0 || height <= 0) return 1.0;
+    var sum = 0.0;
+    var n = 0;
+    for (final r in cellRects) {
+      final x0 = r.left.floor().clamp(0, width - 1);
+      final x1 = r.right.ceil().clamp(x0 + 1, width);
+      final y0 = r.top.floor().clamp(0, height - 1);
+      final y1 = r.bottom.ceil().clamp(y0 + 1, height);
+      for (var y = y0; y < y1; y++) {
+        for (var x = x0; x < x1; x++) {
+          final i = (y * width + x) * 4;
+          final a = rgba[i + 3] / 255.0;
+          double rr, gg, bb;
+          if (a < 0.02) {
+            rr = background.r;
+            gg = background.g;
+            bb = background.b;
+          } else {
+            rr = rgba[i] / 255.0;
+            gg = rgba[i + 1] / 255.0;
+            bb = rgba[i + 2] / 255.0;
+          }
+          sum += 0.299 * rr + 0.587 * gg + 0.114 * bb;
+          n++;
+        }
+      }
+    }
+    return n == 0 ? 1.0 : sum / n;
+  }
+
   /// WCAG relative luminance of the light variant's glyphs (near-black).
   static const double _lightVariantGlyphLuma = 0.0;
 
@@ -323,11 +371,20 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
   /// [onBrightnessChanged] fires only when the verdict actually flips;
   /// [initialBrightness] seeds the hysteresis state.
   ///
+  /// [onLuminanceChanged] additionally delivers the rect's **mean content
+  /// luminance** (perceptual BT.601, 0 = black, 1 = white) each time it
+  /// changes meaningfully. Unlike the verdict — a late-flipping contrast
+  /// vote — this is the continuous axis: it moves through the medium range,
+  /// which is what early-darkening consumers such as the adaptive scroll
+  /// edge fade need. Registrations that only need the luminance may omit
+  /// [onBrightnessChanged].
+  ///
   /// Call [GlassContentAwareSubscription.cancel] when the control goes away.
   GlassContentAwareSubscription register({
     required RenderBox? Function() controlBox,
-    required ValueChanged<Brightness> onBrightnessChanged,
-    required Brightness initialBrightness,
+    ValueChanged<Brightness>? onBrightnessChanged,
+    ValueChanged<double>? onLuminanceChanged,
+    Brightness initialBrightness = Brightness.light,
     int gridColumns = 6,
     int gridRows = 1,
   }) {
@@ -336,6 +393,7 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
       this,
       controlBox,
       onBrightnessChanged,
+      onLuminanceChanged,
       gridColumns,
       gridRows,
       initialBrightness,
@@ -529,19 +587,37 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
               c.bottom * pixelRatio,
             ),
         ];
-        final verdict = GlassContentAwareScope.computeVerdict(
-          rgba: rgba,
-          width: width,
-          height: height,
-          cellRects: pixelCells,
-          current: sub._brightness,
-          lightToDarkThreshold: widget.lightToDarkThreshold,
-          darkToLightThreshold: widget.darkToLightThreshold,
-          background: background,
-        );
-        if (verdict != sub._brightness) {
-          sub._brightness = verdict;
-          sub._onBrightnessChanged(verdict);
+        if (sub._onBrightnessChanged != null) {
+          final verdict = GlassContentAwareScope.computeVerdict(
+            rgba: rgba,
+            width: width,
+            height: height,
+            cellRects: pixelCells,
+            current: sub._brightness,
+            lightToDarkThreshold: widget.lightToDarkThreshold,
+            darkToLightThreshold: widget.darkToLightThreshold,
+            background: background,
+          );
+          if (verdict != sub._brightness) {
+            sub._brightness = verdict;
+            sub._onBrightnessChanged!(verdict);
+          }
+        }
+        if (sub._onLuminanceChanged != null) {
+          final luminance = GlassContentAwareScope.computeMeanLuminance(
+            rgba: rgba,
+            width: width,
+            height: height,
+            cellRects: pixelCells,
+            background: background,
+          );
+          // Deliver on meaningful movement only — sub-0.005 jitter would
+          // churn consumer animations without a visible result.
+          final previous = sub._meanLuminance;
+          if (previous == null || (luminance - previous).abs() > 0.005) {
+            sub._meanLuminance = luminance;
+            sub._onLuminanceChanged!(luminance);
+          }
         }
       }
     } catch (e, stack) {
@@ -589,6 +665,7 @@ class GlassContentAwareSubscription {
     this._scope,
     this._controlBox,
     this._onBrightnessChanged,
+    this._onLuminanceChanged,
     this.gridColumns,
     this.gridRows,
     this._brightness,
@@ -596,7 +673,8 @@ class GlassContentAwareSubscription {
 
   final GlassContentAwareScopeState _scope;
   final RenderBox? Function() _controlBox;
-  final ValueChanged<Brightness> _onBrightnessChanged;
+  final ValueChanged<Brightness>? _onBrightnessChanged;
+  final ValueChanged<double>? _onLuminanceChanged;
 
   /// Number of horizontal voting cells for this control.
   final int gridColumns;
@@ -605,10 +683,16 @@ class GlassContentAwareSubscription {
   final int gridRows;
 
   Brightness _brightness;
+  double? _meanLuminance;
   bool _cancelled = false;
 
   /// The control's current content-aware verdict.
   Brightness get brightness => _brightness;
+
+  /// The rect's latest mean content luminance (perceptual BT.601, 0–1), or
+  /// null before the first sample or when no luminance listener is
+  /// registered.
+  double? get meanLuminance => _meanLuminance;
 
   /// Detaches the control from the scope. Safe to call more than once.
   void cancel() {

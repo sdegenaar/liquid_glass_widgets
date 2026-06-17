@@ -5,6 +5,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../interactive/liquid_glass_scope.dart';
+import 'glass_content_aware_scope.dart';
 
 /// Edge effect style matching iOS 26's `.scrollEdgeEffectStyle`.
 ///
@@ -95,7 +96,15 @@ class GlassScrollEdgeEffect extends StatefulWidget {
     this.fadeBottom = true,
     this.style = GlassScrollEdgeStyle.soft,
     this.fadeColor,
-  });
+    this.contentAwareFade = false,
+    this.darkFadeColor,
+    this.luminanceDarkBelow = 0.45,
+    this.luminanceLightAbove = 0.72,
+    this.fadeDuration = const Duration(milliseconds: 280),
+  }) : assert(
+          luminanceDarkBelow < luminanceLightAbove,
+          'luminanceDarkBelow must be below luminanceLightAbove',
+        );
 
   /// The scrollable content to apply edge fading to.
   final Widget child;
@@ -144,15 +153,151 @@ class GlassScrollEdgeEffect extends StatefulWidget {
   /// current theme.
   final Color? fadeColor;
 
+  /// Whether each fade band darkens with the content scrolling beneath it.
+  ///
+  /// This is the continuous companion to the content-aware brightness
+  /// verdict — the App Store-style scrim lever. Each enabled edge registers
+  /// its own band with the enclosing [GlassContentAwareScope] and receives
+  /// the band's **mean content luminance** per sample. As the content under
+  /// a band moves through the medium range, a [darkFadeColor] gradient
+  /// cross-fades in over the normal fade (fully dark at
+  /// [luminanceDarkBelow], fully off at [luminanceLightAbove]) — so the
+  /// scrim darkens *early* over medium content while the bars' contrast
+  /// vote flips their appearance *late*, matching the native behavior.
+  ///
+  /// Requires an enclosing [GlassContentAwareScope] with the content wrapped
+  /// in a `GlassContentAwareContent` (one flag on `GlassScaffold` wires all
+  /// of it). Without a scope the bands keep their static appearance.
+  ///
+  /// Defaults to false.
+  final bool contentAwareFade;
+
+  /// The scrim colour the bands darken toward when [contentAwareFade] is on.
+  ///
+  /// Rendered as an additional gradient (same curve as the base fade) whose
+  /// opacity follows the band's content darkness. Defaults to black.
+  final Color? darkFadeColor;
+
+  /// Mean band luminance at or below which the dark scrim is fully opaque.
+  ///
+  /// Must be below [luminanceLightAbove]. Defaults to 0.45 — medium-dark
+  /// content already pulls the scrim fully dark, the early-darkening
+  /// behavior of the native bottom scrim.
+  final double luminanceDarkBelow;
+
+  /// Mean band luminance at or above which the dark scrim is fully off.
+  ///
+  /// Must be above [luminanceDarkBelow]. Defaults to 0.72.
+  final double luminanceLightAbove;
+
+  /// Duration of the scrim darkness animation between sampled targets.
+  ///
+  /// Defaults to 280 ms with an ease-out curve.
+  final Duration fadeDuration;
+
   @override
   State<GlassScrollEdgeEffect> createState() => _GlassScrollEdgeEffectState();
 }
 
-class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
+class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect>
+    with TickerProviderStateMixin {
   GlobalKey? _backgroundKey;
   ui.Image? _backgroundImage;
   bool _hasAttemptedCapture = false;
   bool _capturePending = false;
+
+  // ── Content-aware fade (the scrim lever) ──────────────────────────────────
+  // Each enabled edge registers its own band rect with the enclosing
+  // GlassContentAwareScope and animates a darkness value from the band's
+  // sampled mean luminance. Independent per edge: the bottom band can sit
+  // over dark content while the top band is over light content.
+  final GlobalKey _topBandKey = GlobalKey();
+  final GlobalKey _bottomBandKey = GlobalKey();
+  // Created eagerly in initState — a lazy `late final` here would be
+  // first touched in dispose() when the adaptive fade was never used,
+  // and creating a vsync'd controller during teardown looks up TickerMode
+  // on a deactivated element.
+  late final AnimationController _topDarkness;
+  late final AnimationController _bottomDarkness;
+  GlassContentAwareScopeState? _scope;
+  GlassContentAwareSubscription? _topSub;
+  GlassContentAwareSubscription? _bottomSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _topDarkness = AnimationController(vsync: this);
+    _bottomDarkness = AnimationController(vsync: this);
+  }
+
+  /// Current darkness (0–1) of the top band's adaptive scrim.
+  @visibleForTesting
+  double get topDarkness => _topDarkness.value;
+
+  /// Current darkness (0–1) of the bottom band's adaptive scrim.
+  @visibleForTesting
+  double get bottomDarkness => _bottomDarkness.value;
+
+  /// Keeps the per-edge scope registrations in sync with the configuration.
+  ///
+  /// Runs at the top of build (inherited lookups are legal there and this is
+  /// where dependencies must be registered anyway) and is idempotent.
+  void _syncContentAware() {
+    final want = widget.contentAwareFade
+        ? GlassContentAwareScope.maybeOf(context)
+        : null;
+    final wantTop = want != null && widget.fadeTop;
+    final wantBottom = want != null && widget.fadeBottom;
+    if (_scope == want &&
+        (_topSub != null) == wantTop &&
+        (_bottomSub != null) == wantBottom) {
+      return;
+    }
+    _topSub?.cancel();
+    _bottomSub?.cancel();
+    _topSub = null;
+    _bottomSub = null;
+    _scope = want;
+    if (wantTop) {
+      _topSub = want.register(
+        controlBox: () => _bandBox(_topBandKey),
+        onLuminanceChanged: (luminance) =>
+            _onBandLuminance(_topDarkness, luminance),
+        gridColumns: 4,
+      );
+    }
+    if (wantBottom) {
+      _bottomSub = want.register(
+        controlBox: () => _bandBox(_bottomBandKey),
+        onLuminanceChanged: (luminance) =>
+            _onBandLuminance(_bottomDarkness, luminance),
+        gridColumns: 4,
+      );
+    }
+  }
+
+  RenderBox? _bandBox(GlobalKey key) {
+    if (!mounted) return null;
+    final ro = key.currentContext?.findRenderObject();
+    return ro is RenderBox ? ro : null;
+  }
+
+  void _onBandLuminance(AnimationController darkness, double luminance) {
+    // Map mean luminance to scrim darkness: fully dark at/below
+    // luminanceDarkBelow, fully off at/above luminanceLightAbove, smooth
+    // crossfade in between — darkens EARLY over medium content, unlike the
+    // late-flipping contrast vote.
+    final target = 1.0 -
+        ((luminance - widget.luminanceDarkBelow) /
+                (widget.luminanceLightAbove - widget.luminanceDarkBelow))
+            .clamp(0.0, 1.0);
+    if ((target - darkness.value).abs() < 0.01) return;
+    darkness.animateTo(
+      target,
+      duration: widget.fadeDuration,
+      curve: Curves.easeOut,
+    );
+  }
 
   @override
   void didChangeDependencies() {
@@ -230,6 +375,10 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
 
   @override
   void dispose() {
+    _topSub?.cancel();
+    _bottomSub?.cancel();
+    _topDarkness.dispose();
+    _bottomDarkness.dispose();
     _backgroundImage?.dispose();
     _backgroundImage = null;
     super.dispose();
@@ -237,6 +386,8 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
 
   @override
   Widget build(BuildContext context) {
+    _syncContentAware();
+
     // No fading needed — return child directly.
     if (!widget.fadeTop && !widget.fadeBottom) return widget.child;
 
@@ -276,6 +427,38 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
     required Size screenSize,
     required bool hasTexture,
   }) {
+    // Adaptive path: the fade's target darkens toward darkFadeColor by the
+    // band's sampled content luminance, so over dark content it dissolves
+    // toward dark (invisible against dark content) instead of always toward
+    // the light page background. The band key marks the rect the scope samples
+    // (the scope reads the CONTENT behind the fade, not the fade itself — the
+    // GlassScaffold wrap order keeps the fade outside the captured region, so
+    // there's no feedback loop).
+    if (widget.contentAwareFade) {
+      final darkness = isTop ? _topDarkness : _bottomDarkness;
+      return Positioned(
+        top: isTop ? 0 : null,
+        bottom: isTop ? null : 0,
+        left: 0,
+        right: 0,
+        height: height,
+        child: IgnorePointer(
+          key: isTop ? _topBandKey : _bottomBandKey,
+          child: AnimatedBuilder(
+            animation: darkness,
+            builder: (context, _) => _fadeLayer(
+              isTop: isTop,
+              height: height,
+              screenSize: screenSize,
+              hasTexture: hasTexture,
+              darkness: darkness.value,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Non-adaptive path — unchanged behaviour (darkness fixed at 0).
     return Positioned(
       top: isTop ? 0 : null,
       bottom: isTop ? null : 0,
@@ -283,25 +466,53 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
       right: 0,
       height: height,
       child: IgnorePointer(
-        child: hasTexture
-            ? CustomPaint(
-                size: Size(screenSize.width, height),
-                painter: _TextureFadePainter(
-                  image: _backgroundImage!,
-                  isTop: isTop,
-                  screenHeight: screenSize.height,
-                  style: widget.style,
-                ),
-              )
-            : _buildColorOverlay(isTop: isTop),
+        child: _fadeLayer(
+          isTop: isTop,
+          height: height,
+          screenSize: screenSize,
+          hasTexture: hasTexture,
+          darkness: 0.0,
+        ),
       ),
     );
   }
 
-  /// Fallback: solid-colour gradient overlay for use outside [GlassPage].
-  Widget _buildColorOverlay({required bool isTop}) {
-    final color =
+  /// Builds one edge's fade layer: the captured-texture painter inside a
+  /// [GlassPage], or the solid-colour gradient otherwise. [darkness] (0–1)
+  /// drives content-aware darkening on both paths (0 = the plain fade).
+  Widget _fadeLayer({
+    required bool isTop,
+    required double height,
+    required Size screenSize,
+    required bool hasTexture,
+    required double darkness,
+  }) {
+    return hasTexture
+        ? CustomPaint(
+            size: Size(screenSize.width, height),
+            painter: _TextureFadePainter(
+              image: _backgroundImage!,
+              isTop: isTop,
+              screenHeight: screenSize.height,
+              style: widget.style,
+              darkness: darkness,
+              darkColor: widget.darkFadeColor ?? const Color(0xFF000000),
+            ),
+          )
+        : _buildColorOverlay(isTop: isTop, darkness: darkness);
+  }
+
+  /// Solid-colour gradient overlay (used outside [GlassPage], and for the
+  /// adaptive path). When [darkness] > 0 the fade target is lerped toward
+  /// [GlassScrollEdgeEffect.darkFadeColor], so the whole gradient — including
+  /// the visible region above the bar — reflects the content's darkness.
+  Widget _buildColorOverlay({required bool isTop, double darkness = 0.0}) {
+    final base =
         widget.fadeColor ?? CupertinoTheme.of(context).scaffoldBackgroundColor;
+    final color = darkness > 0
+        ? Color.lerp(
+            base, widget.darkFadeColor ?? const Color(0xFF000000), darkness)!
+        : base;
     final curve = _kFadeCurves[widget.style]!;
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -386,12 +597,21 @@ class _TextureFadePainter extends CustomPainter {
     required this.isTop,
     required this.screenHeight,
     required this.style,
+    this.darkness = 0.0,
+    this.darkColor = const Color(0xFF000000),
   });
 
   final ui.Image image;
   final bool isTop;
   final double screenHeight;
   final GlassScrollEdgeStyle style;
+
+  /// Content-aware darkening, 0–1. When > 0 the captured strip is blended
+  /// toward [darkColor] by this amount BEFORE the gradient mask, so the
+  /// adaptive fade dissolves toward dark over dark content instead of
+  /// revealing the (typically light) page background as a bright scrim.
+  final double darkness;
+  final Color darkColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -420,6 +640,18 @@ class _TextureFadePainter extends CustomPainter {
     // Draw the background texture slice.
     canvas.drawImageRect(image, srcRect, dstRect, Paint());
 
+    // Content-aware darkening: blend the whole strip toward darkColor by
+    // [darkness] BEFORE the alpha mask. Applying it pre-mask (uniform over the
+    // strip) means the darkening survives across the full visible band rather
+    // than concentrating at the occluded edge — so over dark content the fade
+    // reads dark, not as the light page background.
+    if (darkness > 0) {
+      canvas.drawRect(
+        dstRect,
+        Paint()..color = darkColor.withValues(alpha: darkness.clamp(0.0, 1.0)),
+      );
+    }
+
     // Apply gradient alpha mask: opaque at the edge, transparent towards
     // the content. Uses a multi-stop eased gradient to produce a
     // perceptually smooth fade without a visible seam at the boundary.
@@ -444,5 +676,9 @@ class _TextureFadePainter extends CustomPainter {
       image != oldDelegate.image ||
       isTop != oldDelegate.isTop ||
       screenHeight != oldDelegate.screenHeight ||
-      style != oldDelegate.style;
+      style != oldDelegate.style ||
+      darkColor != oldDelegate.darkColor ||
+      // darkness last: it changes every animation tick (other fields equal),
+      // so this clause is the one always reached/evaluated.
+      darkness != oldDelegate.darkness;
 }

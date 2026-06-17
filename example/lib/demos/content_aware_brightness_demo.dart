@@ -118,6 +118,10 @@ class _ContentAwareBrightnessDemoState
       topEdgeFade: true,
       bottomEdgeFade: true,
       contentAwareBrightness: true,
+      // The continuous companion: the scroll-edge fades darken early as
+      // medium/dark content scrolls under them (the App Store scrim), while
+      // the bar's contrast vote flips its appearance late.
+      contentAwareEdgeFade: true,
 
       // ── Body ──────────────────────────────────────────────────────────────
       body: CustomScrollView(

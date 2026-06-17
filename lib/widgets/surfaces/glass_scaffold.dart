@@ -137,6 +137,7 @@ class GlassScaffold extends StatelessWidget {
     this.headerScrollController,
     this.headerFadeDistance = 60.0,
     this.contentAwareBrightness = false,
+    this.contentAwareEdgeFade = false,
   });
 
   // ===========================================================================
@@ -351,6 +352,20 @@ class GlassScaffold extends StatelessWidget {
   /// ```
   final bool contentAwareBrightness;
 
+  /// Whether the scroll-edge fades darken with the content beneath them —
+  /// the continuous scrim companion to [contentAwareBrightness].
+  ///
+  /// Forwarded to [GlassScrollEdgeEffect.contentAwareFade]: each fade band
+  /// registers its own rect with the content-aware scope and cross-fades a
+  /// dark scrim in as the content under it moves through the medium range —
+  /// darkening *early*, while the bars' contrast vote flips their appearance
+  /// *late*, matching the native App Store behavior.
+  ///
+  /// Requires [contentAwareBrightness] (which installs the scope and the
+  /// sampled content region) and the edge fades to be enabled; otherwise it
+  /// is inert. Defaults to false.
+  final bool contentAwareEdgeFade;
+
   // ===========================================================================
   // Build
   // ===========================================================================
@@ -386,7 +401,18 @@ class GlassScaffold extends StatelessWidget {
     // Build the body content.
     Widget bodyContent = body;
 
-    // Wrap with edge fading if enabled.
+    // Wrap in GlassContentAwareContent when content-aware brightness is on.
+    // This installs the RepaintBoundary that the scope captures. It must
+    // wrap the BODY ONLY — before the edge fade — so the fade overlays stay
+    // outside the captured region: the sampler must see the content, not
+    // the things reacting to it. (With the adaptive edge fade this is load-
+    // bearing: a scrim inside its own sampling input is a feedback loop —
+    // it would darken what it samples and run away.)
+    if (contentAwareBrightness) {
+      bodyContent = GlassContentAwareContent(child: bodyContent);
+    }
+
+    // Wrap with edge fading if enabled — outside the sampled region.
     if (extendBody && (doFadeTop || doFadeBottom)) {
       bodyContent = GlassScrollEdgeEffect(
         topFadeHeight: topFadeHeight,
@@ -394,14 +420,9 @@ class GlassScaffold extends StatelessWidget {
         fadeTop: doFadeTop,
         fadeBottom: doFadeBottom,
         style: edgeStyle,
+        contentAwareFade: contentAwareEdgeFade,
         child: bodyContent,
       );
-    }
-
-    // Wrap in GlassContentAwareContent when content-aware brightness is on.
-    // This installs the RepaintBoundary that the scope captures.
-    if (contentAwareBrightness) {
-      bodyContent = GlassContentAwareContent(child: bodyContent);
     }
 
     // Build the Stack with guaranteed z-ordering.

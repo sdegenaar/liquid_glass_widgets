@@ -281,4 +281,27 @@ void main() {
       expect(true, isTrue); // no exception
     });
   });
+
+  group('GlassModalSheet — handle-drag gesture lifecycle', () {
+    testWidgets('pointer down in the handle zone then cancel clears the '
+        'handle-drag state without stalling', (tester) async {
+      await tester.pumpWidget(_makeSheet());
+      await tester.pumpAndSettle();
+
+      final handleFinder = find.byElementPredicate(
+          (e) => e.widget.runtimeType.toString() == '_GlassDragIndicator');
+      expect(handleFinder, findsOneWidget);
+
+      // Pointer-down in the handle zone arms the handle drag (disables the
+      // inner scroll for the gesture); a cancel must clear it again
+      // (_onPointerCancel) so the sheet isn't left with its inner scroll
+      // permanently disabled.
+      final gesture =
+          await tester.startGesture(tester.getCenter(handleFinder));
+      await tester.pump();
+      await gesture.cancel();
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  });
 }

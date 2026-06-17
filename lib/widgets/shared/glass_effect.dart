@@ -275,6 +275,26 @@ class _GlassEffectState extends State<GlassEffect>
   /// Synchronous capture path for native (non-web) platforms.
   void _captureBackgroundSync(
       RenderRepaintBoundary boundary, Size size, Offset? pos) {
+    // In debug, toImageSync ASSERTS when the boundary is marked needing paint
+    // (no valid layer yet). `_handleTick` captures in the transient phase —
+    // BEFORE this frame paints — and during interaction it captures every
+    // frame, so while the backdrop repaints the boundary is dirty and the
+    // assert throws on (almost) every frame, spamming the console with
+    // "[GlassEffect] toImageSync failed". Defer to the post-frame callback in
+    // that case: capture the freshly-painted frame once it's clean. (Asserts
+    // are stripped in release, so `debugNeedsPaint` must be read inside an
+    // assert closure — reading it in a release build throws.)
+    bool needsPaint = false;
+    assert(() {
+      needsPaint = boundary.debugNeedsPaint;
+      return true;
+    }());
+    if (needsPaint) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _captureBackgroundSync(boundary, size, pos);
+      });
+      return;
+    }
     try {
       // pixelRatio: 1.0 — logical resolution is sufficient for refraction.
       // Stays in GPU-accessible memory; handed directly to setImageSampler.
