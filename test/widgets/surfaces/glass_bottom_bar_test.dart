@@ -869,4 +869,179 @@ void main() {
       expect(find.byType(GlassBottomBar), findsOneWidget);
     });
   });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 5-tab stress test — new default expansion (h:12, v:8) on narrow tabs
+  // ─────────────────────────────────────────────────────────────────────────
+  //
+  // With 5 tabs on a 375-pt iPhone screen each tab is ~75 pt wide.
+  // At the new default expansion (horizontal: 12) the pill extends 12 pt
+  // past the tab boundary during a fast drag. This group verifies no layout
+  // assertion fires, no overflow error, and all labels remain findable.
+
+  group('GlassBottomBar 5-tab expansion stress', () {
+    final fiveTabs = [
+      const GlassBottomBarTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+      const GlassBottomBarTab(label: 'Search', icon: Icon(CupertinoIcons.search)),
+      const GlassBottomBarTab(label: 'Inbox', icon: Icon(CupertinoIcons.tray)),
+      const GlassBottomBarTab(label: 'Profile', icon: Icon(CupertinoIcons.person)),
+      const GlassBottomBarTab(label: 'Settings', icon: Icon(CupertinoIcons.settings)),
+    ];
+
+    testWidgets(
+        'fast full-width drag on 5-tab bar does not crash or overflow',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: SizedBox(
+            width: 375,
+            child: StatefulBuilder(
+              builder: (context, setState) => GlassBottomBar(
+                tabs: fiveTabs,
+                selectedIndex: 0,
+                onTabSelected: (_) {},
+                maskingQuality: MaskingQuality.off,
+                // Uses default expansion: symmetric(h:12, v:8)
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final bar = find.byType(GlassBottomBar);
+      await tester.drag(bar, const Offset(350, 0));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GlassBottomBar), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('all 5 labels remain findable after drag with default expansion',
+        (tester) async {
+      int selected = 0;
+      await tester.pumpWidget(
+        createTestApp(
+          child: SizedBox(
+            width: 375,
+            child: StatefulBuilder(
+              builder: (context, setState) => GlassBottomBar(
+                tabs: fiveTabs,
+                selectedIndex: selected,
+                onTabSelected: (i) => setState(() => selected = i),
+                maskingQuality: MaskingQuality.off,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.drag(find.byType(GlassBottomBar), const Offset(300, 0));
+      await tester.pumpAndSettle();
+
+      for (final label in ['Home', 'Search', 'Inbox', 'Profile', 'Settings']) {
+        expect(find.text(label), findsWidgets,
+            reason: '$label disappeared after drag with h:12 expansion');
+      }
+    });
+
+    testWidgets('wider h:16 expansion does not crash on 5-tab bar',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: SizedBox(
+            width: 375,
+            child: GlassBottomBar(
+              tabs: fiveTabs,
+              selectedIndex: 2,
+              onTabSelected: (_) {},
+              maskingQuality: MaskingQuality.off,
+              indicatorExpansion:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(GlassBottomBar), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // AnimatedGlassIndicator settings merge — baseIndicatorSettings
+  // ─────────────────────────────────────────────────────────────────────────
+
+  group('AnimatedGlassIndicator.baseIndicatorSettings', () {
+    test('has chromaticAberration 0.15', () {
+      expect(
+        AnimatedGlassIndicator.baseIndicatorSettings.chromaticAberration,
+        0.15,
+      );
+    });
+
+    test('blur: 0 (indicator has no blur by default)', () {
+      expect(AnimatedGlassIndicator.baseIndicatorSettings.blur, 0.0);
+    });
+
+    test('glassColor is fully transparent (optics only — no base tint)', () {
+      expect(
+        AnimatedGlassIndicator.baseIndicatorSettings.glassColor.a,
+        0.0,
+      );
+    });
+
+    testWidgets(
+        'indicatorSettings with only blur overridden preserves 0.15 aberration',
+        (tester) async {
+      // Verifies the merge gap fix: a caller passing LiquidGlassSettings(blur:2)
+      // should keep chromaticAberration: 0.15 from baseIndicatorSettings.
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassBottomBar(
+            tabs: [
+              const GlassBottomBarTab(
+                  label: 'A', icon: Icon(CupertinoIcons.home)),
+              const GlassBottomBarTab(
+                  label: 'B', icon: Icon(CupertinoIcons.search)),
+            ],
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            maskingQuality: MaskingQuality.off,
+            // Only blur is changed — chromaticAberration should stay 0.15
+            indicatorSettings: const LiquidGlassSettings(blur: 2),
+          ),
+        ),
+      );
+      expect(find.byType(GlassBottomBar), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+        'indicatorSettings chromaticAberration: 0.0 correctly overrides base',
+        (tester) async {
+      // 0.0 differs from LiquidGlassSettings() default (0.01) so it IS an
+      // intentional override and must replace the base 0.15.
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassBottomBar(
+            tabs: [
+              const GlassBottomBarTab(
+                  label: 'A', icon: Icon(CupertinoIcons.home)),
+              const GlassBottomBarTab(
+                  label: 'B', icon: Icon(CupertinoIcons.search)),
+            ],
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            maskingQuality: MaskingQuality.off,
+            indicatorSettings:
+                const LiquidGlassSettings(chromaticAberration: 0.0),
+          ),
+        ),
+      );
+      expect(find.byType(GlassBottomBar), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
 }

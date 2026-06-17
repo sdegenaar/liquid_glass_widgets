@@ -38,6 +38,8 @@ export 'src/types/glass_interaction_behavior.dart'; // GlassInteractionBehavior 
 // Shared widgets
 export 'widgets/shared/adaptive_glass.dart';
 export 'widgets/shared/adaptive_liquid_glass_layer.dart';
+export 'widgets/shared/animated_glass_indicator.dart'
+    show AnimatedGlassIndicator; // baseIndicatorSettings for partial overrides
 export 'widgets/shared/glass_accessibility_scope.dart'; // GlassAccessibilityScope + GlassAccessibilityData
 export 'widgets/shared/glass_adaptive_scope.dart'; // GlassAdaptiveScope + GlassAdaptiveScopeData + GlassAdaptiveDiagnostic
 export 'widgets/shared/glass_backdrop_scope.dart'; // GlassBackdropScope — per-screen backdrop isolation

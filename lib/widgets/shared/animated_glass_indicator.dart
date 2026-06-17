@@ -49,6 +49,24 @@ class AnimatedGlassIndicator extends StatelessWidget {
   final double borderRadius;
 
   /// Optional glass settings override.
+  ///
+  /// When non-null, fields in [settings] that differ from the
+  /// [LiquidGlassSettings()] constructor defaults are applied **on top of**
+  /// [baseIndicatorSettings] — not as a full replacement. This means
+  /// `chromaticAberration: 0.15` (the iOS 26 iridescent rim default) is
+  /// preserved unless the caller explicitly overrides it.
+  ///
+  /// Example — only change blur while keeping iOS 26 aberration:
+  /// ```dart
+  /// indicatorSettings: LiquidGlassSettings(blur: 2)
+  /// ```
+  ///
+  /// To fully reset to the `LiquidGlassSettings()` constructor defaults,
+  /// start from that and specify every field you want:
+  /// ```dart
+  /// indicatorSettings: AnimatedGlassIndicator.baseIndicatorSettings
+  ///     .copyWith(blur: 2, chromaticAberration: 0.0)
+  /// ```
   final LiquidGlassSettings? settings;
 
   /// Padding to apply around the indicator (e.g., for GlassBottomBar).
@@ -111,7 +129,19 @@ class AnimatedGlassIndicator extends StatelessWidget {
     this.pinchStrength = 1.0,
   });
 
-  static const _baseGlassSettings = LiquidGlassSettings(
+  /// The iOS 26-calibrated default glass settings for all indicator pills.
+  ///
+  /// Used as the merge base when the caller provides [settings]. Fields the
+  /// caller leaves at [LiquidGlassSettings()] defaults are filled in from
+  /// here, so `chromaticAberration: 0.15` persists unless explicitly changed.
+  ///
+  /// Pass this as a starting point when you need partial overrides while
+  /// keeping iOS 26 parity:
+  /// ```dart
+  /// indicatorSettings: AnimatedGlassIndicator.baseIndicatorSettings
+  ///     .copyWith(blur: 2)
+  /// ```
+  static const baseIndicatorSettings = LiquidGlassSettings(
     glassColor: Color.from(
       alpha: 0.0,
       red: 1,
@@ -120,12 +150,81 @@ class AnimatedGlassIndicator extends StatelessWidget {
     ),
     refractiveIndex: GlassDefaults.refractiveIndex,
     lightIntensity: GlassDefaults.lightIntensity,
-    // Real iOS 26 glass has visible iridescent/rainbow fringing at edges —
-    // the earlier comment claiming no aberration was incorrect.
+    // Real iOS 26 glass has visible iridescent/rainbow fringing at edges.
     chromaticAberration: 0.15,
     lightAngle: GlassDefaults.lightAngle,
     blur: 0,
   );
+
+  // Sentinel representing the LiquidGlassSettings() constructor defaults, used
+  // by _mergeWithBase to detect which fields the caller explicitly changed.
+  static const _settingsDefaults = LiquidGlassSettings();
+
+  /// Merges [override] on top of [baseIndicatorSettings].
+  ///
+  /// Only fields that differ from [LiquidGlassSettings()] defaults are
+  /// treated as intentional overrides. Fields the caller left at the
+  /// constructor default are filled from [baseIndicatorSettings] instead.
+  ///
+  /// Edge-case: if a caller explicitly wants a field value that happens to
+  /// equal the [LiquidGlassSettings()] default (e.g. `chromaticAberration:
+  /// 0.01`), they should start from [baseIndicatorSettings] and use
+  /// [LiquidGlassSettings.copyWith] directly to express the intent clearly.
+  static LiquidGlassSettings _mergeWithBase(LiquidGlassSettings override) {
+    return baseIndicatorSettings.copyWith(
+      glassColor: override.glassColor != _settingsDefaults.glassColor
+          ? override.glassColor
+          : null,
+      thickness: override.thickness != _settingsDefaults.thickness
+          ? override.thickness
+          : null,
+      blur: override.blur != _settingsDefaults.blur ? override.blur : null,
+      chromaticAberration:
+          override.chromaticAberration != _settingsDefaults.chromaticAberration
+              ? override.chromaticAberration
+              : null,
+      lightAngle: override.lightAngle != _settingsDefaults.lightAngle
+          ? override.lightAngle
+          : null,
+      lightIntensity: override.lightIntensity != _settingsDefaults.lightIntensity
+          ? override.lightIntensity
+          : null,
+      ambientStrength:
+          override.ambientStrength != _settingsDefaults.ambientStrength
+              ? override.ambientStrength
+              : null,
+      refractiveIndex:
+          override.refractiveIndex != _settingsDefaults.refractiveIndex
+              ? override.refractiveIndex
+              : null,
+      saturation:
+          override.saturation != _settingsDefaults.saturation
+              ? override.saturation
+              : null,
+      glowIntensity: override.glowIntensity != _settingsDefaults.glowIntensity
+          ? override.glowIntensity
+          : null,
+      specularSharpness:
+          override.specularSharpness != _settingsDefaults.specularSharpness
+              ? override.specularSharpness
+              : null,
+      standardOpacityMultiplier: override.standardOpacityMultiplier !=
+              _settingsDefaults.standardOpacityMultiplier
+          ? override.standardOpacityMultiplier
+          : null,
+      shadowElevation:
+          override.shadowElevation != _settingsDefaults.shadowElevation
+              ? override.shadowElevation
+              : null,
+      shadow: override.shadow,
+      whitenStrength: override.whitenStrength != _settingsDefaults.whitenStrength
+          ? override.whitenStrength
+          : null,
+      whitenGated: override.whitenGated != _settingsDefaults.whitenGated
+          ? override.whitenGated
+          : null,
+    );
+  }
 
   /// Clip budget for the Impeller BackdropFilterLayer.
   ///
@@ -180,7 +279,9 @@ class AnimatedGlassIndicator extends StatelessWidget {
     // We fade the glass in/out by setting `visibility` on the settings rather
     // than wrapping the widget in `Opacity`.
     final fade = thickness.clamp(0.0, 1.0);
-    final base = settings ?? _baseGlassSettings;
+    final base = settings != null
+        ? _mergeWithBase(settings!)
+        : baseIndicatorSettings;
     final effectiveSettings = base
         .copyWith(visibility: fade)
         .copyWithPinch(fade * pinchStrength);
