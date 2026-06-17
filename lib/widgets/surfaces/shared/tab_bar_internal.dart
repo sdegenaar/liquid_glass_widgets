@@ -41,7 +41,8 @@ class TabBarContent extends StatefulWidget {
     required this.quality,
     this.indicatorBorderRadius,
     this.indicatorSettings,
-    this.indicatorPinchStrength = 1.0,
+    this.indicatorPinchStrength = 0.4,
+    this.indicatorExpansion = const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     this.backgroundKey,
     this.maskingQuality = MaskingQuality.high,
     this.dividerSettings,
@@ -67,6 +68,8 @@ class TabBarContent extends StatefulWidget {
   final LiquidGlassSettings? indicatorSettings;
   /// Maximum concave lens pinch strength. Forwarded to [AnimatedGlassIndicator].
   final double indicatorPinchStrength;
+  /// Expansion padding applied to the pill during drag — mirrors [GlassBottomBar].
+  final EdgeInsetsGeometry indicatorExpansion;
   final GlobalKey? backgroundKey;
   final MaskingQuality maskingQuality;
   final DividerSettings? dividerSettings;
@@ -666,8 +669,9 @@ class TabBarContentState extends State<TabBarContent>
                   settings: widget.indicatorSettings,
                   pinchStrength: widget.indicatorPinchStrength,
                   backgroundKey: widget.backgroundKey,
-                  expansion:
-                      widget.maskingQuality == MaskingQuality.off ? EdgeInsets.zero : const EdgeInsets.all(8.0),
+                  expansion: widget.maskingQuality == MaskingQuality.off
+                      ? EdgeInsets.zero
+                      : widget.indicatorExpansion,
                   paintBackground: paintBackground,
                   paintGlass: paintGlass,
                   shadows: paintBackground ? _effectiveShadow : null,

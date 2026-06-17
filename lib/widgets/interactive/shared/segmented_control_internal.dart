@@ -44,7 +44,8 @@ class SegmentedControlContent extends StatefulWidget {
     required this.borderRadius,
     required this.quality,
     this.indicatorSettings,
-    this.indicatorPinchStrength = 1.0,
+    this.indicatorPinchStrength = 0.4,
+    this.indicatorExpansion = const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     this.backgroundKey,
     this.interactionBehavior = GlassInteractionBehavior.full,
     this.glowColor,
@@ -61,6 +62,8 @@ class SegmentedControlContent extends StatefulWidget {
   final LiquidGlassSettings? indicatorSettings;
   /// Maximum concave lens pinch strength. Forwarded to [AnimatedGlassIndicator].
   final double indicatorPinchStrength;
+  /// Expansion padding applied to the pill during drag — mirrors [GlassBottomBar].
+  final EdgeInsetsGeometry indicatorExpansion;
   final double borderRadius;
   final GlassQuality quality;
   final GlobalKey? backgroundKey;
@@ -274,6 +277,7 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
                         borderRadius: indicatorRadius,
                         settings: widget.indicatorSettings,
                         pinchStrength: widget.indicatorPinchStrength,
+                        expansion: widget.indicatorExpansion,
                         backgroundKey: widget.backgroundKey,
                       ),
                       // Segment labels always paint above the glass indicator.

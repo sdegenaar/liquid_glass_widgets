@@ -118,7 +118,8 @@ class GlassTabBar extends StatefulWidget {
     this.borderRadius,
     this.indicatorBorderRadius,
     this.indicatorSettings,
-    this.indicatorPinchStrength = 1.0,
+    this.indicatorPinchStrength = 0.4,
+    this.indicatorExpansion = const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     this.backgroundKey,
     this.maskingQuality = MaskingQuality.high,
     this.dividerSettings,
@@ -210,7 +211,21 @@ class GlassTabBar extends StatefulWidget {
   ///
   /// - `1.0` (default) — full Apple-calibrated pinch
   /// - `0.0` — pinch fully disabled
+  /// Maximum concave lens pinch strength. Forwarded to [AnimatedGlassIndicator].
+  ///
+  /// Defaults to `0.4` — the iOS 26-calibrated gentle concave lens warp.
+  /// Set to `0.0` to disable the effect entirely, or `1.0` to restore the
+  /// original full-strength warp.
   final double indicatorPinchStrength;
+
+  /// Expansion padding applied to the active indicator pill during interaction.
+  ///
+  /// The pill grows by this amount beyond its cell boundary as the user drags,
+  /// creating the iOS 26 "jelly" overshoot. Defaults to
+  /// `EdgeInsets.symmetric(horizontal: 12, vertical: 8)` which matches
+  /// [GlassBottomBar] for a consistent look across all indicator widgets.
+  final EdgeInsetsGeometry indicatorExpansion;
+
 
   /// Optional background key for Skia/Web refraction.
   final GlobalKey? backgroundKey;
@@ -314,6 +329,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
         indicatorBorderRadius: widget.indicatorBorderRadius,
         indicatorSettings: widget.indicatorSettings,
         indicatorPinchStrength: widget.indicatorPinchStrength,
+        indicatorExpansion: widget.indicatorExpansion,
         backgroundKey: widget.backgroundKey,
         maskingQuality: widget.maskingQuality,
         dividerSettings: widget.dividerSettings,
