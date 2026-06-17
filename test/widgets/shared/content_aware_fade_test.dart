@@ -40,7 +40,9 @@ double _meanLuma(
     width: width,
     height: 1,
     cellRects: cells ??
-        <Rect>[for (var i = 0; i < width; i++) Rect.fromLTWH(i.toDouble(), 0, 1, 1)],
+        <Rect>[
+          for (var i = 0; i < width; i++) Rect.fromLTWH(i.toDouble(), 0, 1, 1)
+        ],
     background: background,
   );
 }
@@ -61,8 +63,10 @@ Future<void> _settleSample(
 void main() {
   group('computeMeanLuminance', () {
     test('black is 0, white is 1, mid-gray is mid', () {
-      expect(_meanLuma(_rowOf(4, const Color(0xFF000000)), 4), closeTo(0, 1e-6));
-      expect(_meanLuma(_rowOf(4, const Color(0xFFFFFFFF)), 4), closeTo(1, 1e-6));
+      expect(
+          _meanLuma(_rowOf(4, const Color(0xFF000000)), 4), closeTo(0, 1e-6));
+      expect(
+          _meanLuma(_rowOf(4, const Color(0xFFFFFFFF)), 4), closeTo(1, 1e-6));
       expect(
         _meanLuma(_rowOf(4, const Color(0xFF808080)), 4),
         closeTo(0.5, 0.01),
@@ -119,8 +123,8 @@ void main() {
       await tester.pumpWidget(host(content: const Color(0xFF000000)));
       final scope = tester.state<GlassContentAwareScopeState>(
           find.byType(GlassContentAwareScope));
-      final box = tester.renderObject(
-          find.byType(GlassContentAwareContent)) as RenderBox;
+      final box = tester.renderObject(find.byType(GlassContentAwareContent))
+          as RenderBox;
       final received = <double>[];
       final sub = scope.register(
         controlBox: () => box,
@@ -144,8 +148,8 @@ void main() {
       await tester.pumpWidget(host(content: const Color(0xFF000000)));
       final scope = tester.state<GlassContentAwareScopeState>(
           find.byType(GlassContentAwareScope));
-      final box = tester.renderObject(
-          find.byType(GlassContentAwareContent)) as RenderBox;
+      final box = tester.renderObject(find.byType(GlassContentAwareContent))
+          as RenderBox;
       Brightness? verdict;
       double? luminance;
       final sub = scope.register(
@@ -213,7 +217,8 @@ void main() {
       expect(effectState.bottomDarkness, 0.0);
     });
 
-    testWidgets('medium content pulls the scrim mostly dark — early '
+    testWidgets(
+        'medium content pulls the scrim mostly dark — early '
         'darkening', (tester) async {
       // Mid-gray ≈ 0.5 perceptual luminance → darkness ≈
       // 1 - (0.5 - 0.45)/(0.72 - 0.45) ≈ 0.81: the scrim darkens over
@@ -230,8 +235,8 @@ void main() {
     });
 
     testWidgets('inert without a scope', (tester) async {
-      await tester.pumpWidget(
-          host(content: const Color(0xFF000000), withScope: false));
+      await tester
+          .pumpWidget(host(content: const Color(0xFF000000), withScope: false));
       final effectState =
           tester.state(find.byType(GlassScrollEdgeEffect)) as dynamic;
       await tester.pump(const Duration(milliseconds: 350));
@@ -251,8 +256,7 @@ void main() {
       expect(effectState.bottomDarkness, 0.0);
     });
 
-    testWidgets('single-edge config registers a single band',
-        (tester) async {
+    testWidgets('single-edge config registers a single band', (tester) async {
       await tester.pumpWidget(host(
         content: const Color(0xFF000000),
         fadeTop: false,
@@ -332,8 +336,8 @@ void main() {
       ));
       await tester.pump();
 
-      final effect = tester.widget<GlassScrollEdgeEffect>(
-          find.byType(GlassScrollEdgeEffect));
+      final effect = tester
+          .widget<GlassScrollEdgeEffect>(find.byType(GlassScrollEdgeEffect));
       expect(effect.contentAwareFade, isTrue);
 
       // Wrap order: the sampled region must NOT contain the edge effect
