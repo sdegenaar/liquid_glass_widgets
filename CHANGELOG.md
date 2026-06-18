@@ -12,6 +12,10 @@ The `indicatorPinchStrength` concave lens warp is now unified across all four in
 - **`GlassSegmentedControl.indicatorExpansion`** (default `EdgeInsets.symmetric(horizontal: 12, vertical: 8)`)
 - **`AnimatedGlassIndicator`** exported from the public API — enables `baseIndicatorSettings.copyWith(...)` from app code.
 
+### Changed defaults (`AnimatedGlassIndicator.baseIndicatorSettings`)
+
+- `glassColor`: `alpha: 0.15` → `alpha: 0.0` — glass pill no longer applies a white tint overlay by default.
+- `chromaticAberration`: `GlassDefaults.chromaticAberration` → `0.15` — the iridescent rim fringe is now explicitly set for iOS 26 parity.
 
 ### Bug fixes
 

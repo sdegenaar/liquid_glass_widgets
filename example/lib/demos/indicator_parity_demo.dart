@@ -56,6 +56,8 @@ class _IndicatorParityDemoPageState extends State<IndicatorParityDemoPage> {
   double _expansionH = 12.0;
   double _expansionV = 8.0;
   double _aberration = 0.15;
+  // glassColor alpha — 0.0 = no tint (new default), 0.15 = old default
+  double _glassTint = 0.0;
 
   // ── Per-widget state ───────────────────────────────────────────────────────
   int _segSelected = 0;
@@ -84,12 +86,18 @@ class _IndicatorParityDemoPageState extends State<IndicatorParityDemoPage> {
 
   // ── Derived ────────────────────────────────────────────────────────────────
 
-  /// Builds the shared indicatorSettings from the aberration slider.
+  /// Builds the shared indicatorSettings from the live sliders.
   /// Uses baseIndicatorSettings.copyWith so other base values (blur:0, etc.)
   /// are preserved — this is the merge-gap fix in action.
   LiquidGlassSettings get _indicatorSettings =>
       AnimatedGlassIndicator.baseIndicatorSettings.copyWith(
         chromaticAberration: _aberration,
+        glassColor: Color.from(
+          alpha: _glassTint,
+          red: 1,
+          green: 1,
+          blue: 1,
+        ),
       );
 
   EdgeInsets get _expansion =>
@@ -180,10 +188,12 @@ class _IndicatorParityDemoPageState extends State<IndicatorParityDemoPage> {
                   expansionH: _expansionH,
                   expansionV: _expansionV,
                   aberration: _aberration,
+                  glassTint: _glassTint,
                   onPinchChanged: (v) => setState(() => _pinchStrength = v),
                   onExpansionHChanged: (v) => setState(() => _expansionH = v),
                   onExpansionVChanged: (v) => setState(() => _expansionV = v),
                   onAberrationChanged: (v) => setState(() => _aberration = v),
+                  onGlassTintChanged: (v) => setState(() => _glassTint = v),
                 ),
 
                 const SizedBox(height: 28),
@@ -311,20 +321,24 @@ class _TunerPanel extends StatefulWidget {
     required this.expansionH,
     required this.expansionV,
     required this.aberration,
+    required this.glassTint,
     required this.onPinchChanged,
     required this.onExpansionHChanged,
     required this.onExpansionVChanged,
     required this.onAberrationChanged,
+    required this.onGlassTintChanged,
   });
 
   final double pinchStrength;
   final double expansionH;
   final double expansionV;
   final double aberration;
+  final double glassTint;
   final ValueChanged<double> onPinchChanged;
   final ValueChanged<double> onExpansionHChanged;
   final ValueChanged<double> onExpansionVChanged;
   final ValueChanged<double> onAberrationChanged;
+  final ValueChanged<double> onGlassTintChanged;
 
   @override
   State<_TunerPanel> createState() => _TunerPanelState();
@@ -464,6 +478,17 @@ class _TunerPanelState extends State<_TunerPanel> {
                                   widget.aberration.toStringAsFixed(2),
                               accentColor: const Color(0xFFFF9F0A),
                               onChanged: widget.onAberrationChanged,
+                            ),
+                            _SliderRow(
+                              label: 'Glass Tint (α)',
+                              value: widget.glassTint,
+                              min: 0,
+                              max: 0.5,
+                              divisions: 50,
+                              displayValue:
+                                  widget.glassTint.toStringAsFixed(2),
+                              accentColor: const Color(0xFFBF5AF2),
+                              onChanged: widget.onGlassTintChanged,
                             ),
                           ],
                         ),
