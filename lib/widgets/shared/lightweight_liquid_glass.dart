@@ -1022,5 +1022,10 @@ class _RenderLightweightGlass extends RenderProxyBox {
     shader.setFloat(index++, bgOrigin.dy);
     shader.setFloat(index++, bgSize.width);
     shader.setFloat(index++, bgSize.height);
+
+    // 32: uTintBlend — how the tint blends with the body (0 = auto chroma
+    // gate, 1 = force luminosity-preserving, 2 = force flat blend). See
+    // GlassTintBlend.
+    shader.setFloat(index++, _settings.tintBlend.glslValue);
   }
 }

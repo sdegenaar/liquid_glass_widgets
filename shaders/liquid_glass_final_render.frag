@@ -28,6 +28,7 @@ precision highp float; // mediump causes colour banding (10-bit mantissa on mobi
 // Slots 16-17: uLightDirection
 // Slot 18: uWhiten
 // Slot 19: uWhitenGated
+// Slot 20: uTintBlend
 uniform vec2 uSize;          // physical-pixel size of the backdrop capture
 uniform vec2 uGeometryOffset;
 uniform vec2 uGeometrySize;
@@ -50,6 +51,14 @@ uniform float uWhiten;
 // 0 = ungated, uniform whiten across the whole control (the dark-mode
 // behaviour, gives dark glass a small even lift toward white).
 uniform float uWhitenGated;
+
+// Slot 20: uTintBlend — how uGlassColor blends with the refracted backdrop
+// (mirrors GlassTintBlend in Dart). 0 = auto: pick the path from the tint's
+// chroma (the historical behavior). 1 = always luminosity-preserving — for
+// near-neutral tints that must keep the glassy look instead of falling to
+// the flat film. 2 = always flat blend — for dimming layers and backing
+// scrims, where imposing the tint's brightness is the point.
+uniform float uTintBlend;
 
 uniform sampler2D uBackgroundTexture;
 uniform sampler2D uGeometryTexture;
@@ -177,7 +186,7 @@ void main() {
         refractColor = vec4(red, greenSample.g, blue, greenSample.a);
     }
 
-    vec4 finalColor = applyGlassColor(refractColor, uGlassColor);
+    vec4 finalColor = applyGlassColor(refractColor, uGlassColor, uTintBlend);
 
     // VQ4: Content-adaptive glass strength.
     //

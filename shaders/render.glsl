@@ -158,7 +158,12 @@ vec3 applySaturation(vec3 color, float saturation) {
 // whites collapse to a luminance-matched grey and can never frost the surface.
 // The chroma factor blends smoothly between the two paths — fully branchless.
 // glassColor.a = 0 naturally returns liquidColor via mix() in both paths.
-vec4 applyGlassColor(vec4 liquidColor, vec4 glassColor) {
+//
+// tintBlend selects the blending path (mirrors GlassTintBlend in Dart):
+//   0 = auto — pick from the tint's chroma (the historical behavior)
+//   1 = always luminosity-preserving (near-neutral tints that must stay glassy)
+//   2 = always flat blend (dimming layers, backing scrims, frost films)
+vec4 applyGlassColor(vec4 liquidColor, vec4 glassColor, float tintBlend) {
     float backdropLuminance = dot(liquidColor.rgb, LUMA_WEIGHTS);
     float glassLuminance    = dot(glassColor.rgb, LUMA_WEIGHTS);
 
@@ -169,7 +174,10 @@ vec4 applyGlassColor(vec4 liquidColor, vec4 glassColor) {
     // Use a sharp ramp so anything with meaningful colour uses the luminosity path.
     float chroma = max(max(glassColor.r, glassColor.g), glassColor.b)
                  - min(min(glassColor.r, glassColor.g), glassColor.b);
-    float chromaWeight = clamp(chroma * 8.0, 0.0, 1.0);
+    float autoWeight = clamp(chroma * 8.0, 0.0, 1.0);
+    // Tri-state select: auto → chroma gate; 1 → force 1.0; 2 → force 0.0.
+    float chromaWeight = tintBlend < 0.5 ? autoWeight
+                       : (tintBlend < 1.5 ? 1.0 : 0.0);
 
     // achromatic path: direct mix toward the glass colour (white lifts to white)
     vec3 directMix     = mix(liquidColor.rgb, glassColor.rgb, glassColor.a);
@@ -194,8 +202,9 @@ vec4 renderLiquidGlass(vec2 screenUV, vec2 p, vec2 uSize, float sd, float thickn
     // Calculate lighting effects using background color
     vec3 lighting = calculateLighting(screenUV, normal, sd, thickness, height, lightDirection, lightIntensity, ambientStrength, backgroundColor);
     
-    // Apply glass color tint
-    vec4 finalColor = applyGlassColor(refractColor, glassColor);
+    // Apply glass color tint (auto blend — the historical behavior; the live
+    // pipeline in liquid_glass_final_render.frag passes the configured mode).
+    vec4 finalColor = applyGlassColor(refractColor, glassColor, 0.0);
 
     // Saturation before lighting — specular highlights should remain white/neutral,
     // not be pushed towards the desaturated midpoint. Matches liquid_glass_final_render.frag.

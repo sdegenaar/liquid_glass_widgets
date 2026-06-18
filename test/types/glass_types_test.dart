@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/types/glass_button_style.dart';
 import 'package:liquid_glass_widgets/types/glass_quality.dart';
 import 'package:liquid_glass_widgets/types/glass_specular_sharpness.dart';
+import 'package:liquid_glass_widgets/types/glass_tint_blend.dart';
 
 void main() {
   // ──────────────────────────────────────────────────────────────────────────
@@ -198,6 +199,28 @@ void main() {
         expect(GlassSpecularSharpness.medium.index,
             lessThan(GlassSpecularSharpness.sharp.index));
       });
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // GlassTintBlend enum
+  // ──────────────────────────────────────────────────────────────────────────
+
+  group('GlassTintBlend', () {
+    test('has exactly 3 values in shader order', () {
+      expect(GlassTintBlend.values, hasLength(3));
+      expect(GlassTintBlend.values, [
+        GlassTintBlend.auto,
+        GlassTintBlend.luminosity,
+        GlassTintBlend.flat,
+      ]);
+    });
+
+    test('glslValue matches the shader tri-state encoding', () {
+      // The shaders select: <0.5 -> auto gate, <1.5 -> luminosity, else flat.
+      expect(GlassTintBlend.auto.glslValue, 0.0);
+      expect(GlassTintBlend.luminosity.glslValue, 1.0);
+      expect(GlassTintBlend.flat.glslValue, 2.0);
     });
   });
 }

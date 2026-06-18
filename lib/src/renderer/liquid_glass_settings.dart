@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import '../../constants/glass_defaults.dart';
 import '../../constants/glass_shadow.dart';
 import '../../types/glass_specular_sharpness.dart';
+import '../../types/glass_tint_blend.dart';
 import 'liquid_glass_renderer.dart';
 import 'liquid_glass_render_scope.dart';
 
@@ -29,6 +30,7 @@ class LiquidGlassSettings with EquatableMixin {
     this.shadow,
     this.whitenStrength = 0.0,
     this.whitenGated = true,
+    this.tintBlend = GlassTintBlend.auto,
   });
 
   /// Creates [LiquidGlassSettings] using Figma-inspired parameter names.
@@ -251,6 +253,20 @@ class LiquidGlassSettings with EquatableMixin {
   /// approximations are always uniform.
   final bool whitenGated;
 
+  /// How [glassColor] blends with the refracted backdrop.
+  ///
+  /// [GlassTintBlend.auto] (the default) picks the path from the tint's
+  /// chroma — colorful tints preserve backdrop luminosity, achromatic tints
+  /// use the flat blend — which is the historical behavior. Force
+  /// [GlassTintBlend.luminosity] for near-neutral tints that must keep the
+  /// glassy look (e.g. a light-mode recipe with the color dialed almost
+  /// out), or [GlassTintBlend.flat] when imposing the tint's brightness is
+  /// the point (dimming layers, shape-matched backing scrims).
+  ///
+  /// Applies to the Premium and Standard paths; the Frosted fallback tier
+  /// renders a flat tint by construction and ignores this setting.
+  final GlassTintBlend tintBlend;
+
   /// The effective saturation taking visibility into account.
   double get effectiveSaturation => 1 + (saturation - 1) * visibility;
 
@@ -293,6 +309,7 @@ class LiquidGlassSettings with EquatableMixin {
       shadow: t < 0.5 ? a.shadow : b.shadow,
       whitenStrength: lerpDouble(a.whitenStrength, b.whitenStrength, t)!,
       whitenGated: t < 0.5 ? a.whitenGated : b.whitenGated,
+      tintBlend: t < 0.5 ? a.tintBlend : b.tintBlend,
     );
   }
 
@@ -324,6 +341,7 @@ class LiquidGlassSettings with EquatableMixin {
     List<BoxShadow>? shadow,
     double? whitenStrength,
     bool? whitenGated,
+    GlassTintBlend? tintBlend,
   }) =>
       LiquidGlassSettings(
         visibility: visibility ?? this.visibility,
@@ -344,6 +362,7 @@ class LiquidGlassSettings with EquatableMixin {
         shadow: shadow ?? this.shadow,
         whitenStrength: whitenStrength ?? this.whitenStrength,
         whitenGated: whitenGated ?? this.whitenGated,
+        tintBlend: tintBlend ?? this.tintBlend,
       );
 
   @override
@@ -365,5 +384,6 @@ class LiquidGlassSettings with EquatableMixin {
         shadow,
         whitenStrength,
         whitenGated,
+        tintBlend,
       ];
 }

@@ -20,6 +20,10 @@ uniform vec4 uData5; // 20..23 (densityFactor, indicatorWeight, specularSharpnes
 // cornerRadius < 0 → asymmetric mode; per-corner radii come from uData6.
 uniform vec4 uData6; // 24..27 (topLeft, topRight, bottomRight, bottomLeft) — asymmetric only
 uniform vec4 uData7; // 28..31 (bgOrigin.x, bgOrigin.y, bgSize.width, bgSize.height)
+// Slot 32: how the tint blends with the body (mirrors GlassTintBlend).
+// 0 = auto (chroma gate, historical), 1 = force luminosity-preserving,
+// 2 = force flat blend.
+uniform float uTintBlend;
 
 uniform sampler2D uBackground; // The captured background texture
 // Slot 22 (uData5.z): specular sharpness level — passed as float 0.0/1.0/2.0, cast to int.
@@ -91,7 +95,10 @@ vec3 applyGlassColorLW(vec3 liquidColor, vec4 glassColor) {
     // Sharp ramp so anything with meaningful colour uses the luminosity path.
     float chroma = max(max(glassColor.r, glassColor.g), glassColor.b)
                  - min(min(glassColor.r, glassColor.g), glassColor.b);
-    float chromaWeight = clamp(chroma * 8.0, 0.0, 1.0);
+    float autoWeight = clamp(chroma * 8.0, 0.0, 1.0);
+    // Tri-state select (uTintBlend): auto → chroma gate; 1 → 1.0; 2 → 0.0.
+    float chromaWeight = uTintBlend < 0.5 ? autoWeight
+                       : (uTintBlend < 1.5 ? 1.0 : 0.0);
 
     vec3 directMix     = mix(liquidColor, glassColor.rgb, glassColor.a); // achromatic: lift toward glass
     vec3 luminosityMix = mix(liquidColor, tinted,         glassColor.a); // chromatic:  hue-shift, brightness held

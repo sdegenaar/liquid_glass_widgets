@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/constants/glass_defaults.dart';
 import 'package:liquid_glass_widgets/src/renderer/liquid_glass_settings.dart';
+import 'package:liquid_glass_widgets/types/glass_tint_blend.dart';
 
 void main() {
   group('LiquidGlassSettings', () {
@@ -388,6 +389,48 @@ void main() {
         const s = LiquidGlassSettings(whitenStrength: 0.4, whitenGated: false);
         expect(s.props, contains(0.4));
         expect(s.props, contains(false));
+      });
+    });
+
+    group('tintBlend', () {
+      test('defaults to GlassTintBlend.auto (no behavior change)', () {
+        const s = LiquidGlassSettings();
+        expect(s.tintBlend, GlassTintBlend.auto);
+      });
+
+      test('copyWith round-trips tintBlend', () {
+        const base = LiquidGlassSettings();
+        final copy = base.copyWith(tintBlend: GlassTintBlend.luminosity);
+        expect(copy.tintBlend, GlassTintBlend.luminosity);
+        // Other fields untouched.
+        expect(copy.whitenStrength, base.whitenStrength);
+        expect(copy.blur, base.blur);
+        // Round-trip back.
+        expect(copy.copyWith(tintBlend: GlassTintBlend.auto), equals(base));
+      });
+
+      test('lerp switches tintBlend at t=0.5', () {
+        const a = LiquidGlassSettings(tintBlend: GlassTintBlend.luminosity);
+        const b = LiquidGlassSettings(tintBlend: GlassTintBlend.flat);
+        expect(LiquidGlassSettings.lerp(a, b, 0.49).tintBlend,
+            GlassTintBlend.luminosity);
+        expect(
+            LiquidGlassSettings.lerp(a, b, 0.5).tintBlend, GlassTintBlend.flat);
+        expect(
+            LiquidGlassSettings.lerp(a, b, 1.0).tintBlend, GlassTintBlend.flat);
+      });
+
+      test('equality includes tintBlend', () {
+        const a = LiquidGlassSettings(tintBlend: GlassTintBlend.flat);
+        const b = LiquidGlassSettings(tintBlend: GlassTintBlend.flat);
+        const c = LiquidGlassSettings();
+        expect(a, equals(b));
+        expect(a, isNot(equals(c)));
+      });
+
+      test('props contains tintBlend', () {
+        const s = LiquidGlassSettings(tintBlend: GlassTintBlend.luminosity);
+        expect(s.props, contains(GlassTintBlend.luminosity));
       });
     });
   });

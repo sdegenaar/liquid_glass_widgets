@@ -280,6 +280,9 @@ class AdaptiveGlass extends StatelessWidget {
               // surfaces such as bars.
               whitenStrength: normalizedSettings.whitenStrength,
               whitenGated: normalizedSettings.whitenGated,
+              // Preserve the tint blend for the same reason — a forced
+              // luminosity/flat path must survive grouping/elevation.
+              tintBlend: normalizedSettings.tintBlend,
             )
           : normalizedSettings;
 

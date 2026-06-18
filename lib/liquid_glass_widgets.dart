@@ -16,6 +16,7 @@ export 'src/renderer/liquid_glass_renderer.dart'
 export 'src/renderer/liquid_shape.dart'; // all shapes are public
 export 'src/renderer/internal/interaction_notification.dart'; // public for Smart Silence support
 export 'types/glass_specular_sharpness.dart'; // GlassSpecularSharpness enum
+export 'types/glass_tint_blend.dart'; // GlassTintBlend enum
 
 // Setup and Configuration
 export 'liquid_glass_setup.dart';

@@ -145,10 +145,13 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
     });
     // Slot 18: uWhiten (whitening amount); slot 19: uWhitenGated
     // (1 = luminance-gated, the light-mode behaviour; 0 = uniform lift).
+    // Slot 20: uTintBlend (0 = auto chroma gate, 1 = force luminosity-
+    // preserving, 2 = force flat blend — see GlassTintBlend).
     renderShader.setFloatUniforms(initialIndex: 18, (value) {
       value
         ..setFloat(settings.whitenStrength)
-        ..setFloat(settings.whitenGated ? 1.0 : 0.0);
+        ..setFloat(settings.whitenGated ? 1.0 : 0.0)
+        ..setFloat(settings.tintBlend.glslValue);
     });
   }
 
