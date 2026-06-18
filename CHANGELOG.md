@@ -1,3 +1,23 @@
+# 0.16.3
+
+## ✨ `GlassTintBlend` — selectable tint blending path ([#107](https://github.com/sdegenaar/liquid_glass_widgets/pull/107) by [@jfhair](https://github.com/jfhair))
+
+New `GlassTintBlend` enum on `LiquidGlassSettings` to explicitly control how `glassColor` blends with the refracted backdrop, instead of relying entirely on the chroma heuristic.
+
+- `GlassTintBlend.auto` — the default. Existing chroma gate, byte-for-byte unchanged behavior.
+- `GlassTintBlend.luminosity` — always preserve backdrop luminosity. For near-neutral tints that need to keep the glassy look rather than flattening to a film.
+- `GlassTintBlend.flat` — always impose the tint's brightness. For dimming layers, backing scrims, or deliberate frost-film surfaces.
+
+Fully threaded through `LiquidGlassSettings` (`copyWith`, `lerp`, `props`), both the Premium and Standard shader paths, and preserved through `AdaptiveGlass` elevation rebuilds. Frosted fallback renders flat by construction and ignores the setting.
+
+## ✨ `GlassScrollEdgeEffect.bottomFadeInset` ([#109](https://github.com/sdegenaar/liquid_glass_widgets/pull/109) by [@jfhair](https://github.com/jfhair))
+
+New optional `bottomFadeInset` parameter (default `0.0`) that lifts the bottom fade off the widget's true bottom edge by the specified logical pixels. Fixes cases where the scroll viewport extends below the visible area — such as a bottom sheet whose content box overflows past the screen bottom — causing the bottom fade to anchor off-screen and never appear.
+
+**No breaking changes.** All new parameters are optional with safe defaults.
+
+---
+
 # 0.16.2
 
 ## 🐛 Bug Fix — `GlassMenu` / `GlassPopover` rebuild on keyboard open/close

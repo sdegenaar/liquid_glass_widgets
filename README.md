@@ -158,7 +158,7 @@ Most apps should use `GlassCard` or `GlassGroupedSection` instead.
 
 ```yaml
 dependencies:
-  liquid_glass_widgets: ^0.16.2
+  liquid_glass_widgets: ^0.16.3
 ```
 
 ```bash
@@ -393,6 +393,8 @@ GlassScaffold(
 | Bar isolation | Must wrap bars in `GlassIsolationScope` manually |
 | Status bar icons | Must call `SystemChrome.setSystemUIOverlayStyle` and restore it |
 
+If the bottom fade appears off-screen (e.g. a bottom sheet whose content box overflows past the screen bottom), set `GlassScrollEdgeEffect(bottomFadeInset: n)` to lift the fade by `n` logical pixels.
+
 > See `example/lib/demos/nav_bar_patterns_demo.dart` for complete `GlassScaffold` usage patterns.
 
 ### Content-Aware Brightness
@@ -441,6 +443,8 @@ GlassContentAwareScope(
 ```
 
 > See `example/lib/demos/content_aware_brightness_demo.dart` for a focused showcase.
+
+To also fade scroll edges as content darkens, add `contentAwareEdgeFade: true` to `GlassScaffold` — it enables luminance-driven fade on both bars automatically, composing with `contentAwareBrightness`.
 
 ---
 
@@ -515,6 +519,18 @@ GlassCard(
 | `GlassSpecularSharpness.sharp` | Tight, polished — mirror-like surface |
 
 Each value maps to a fixed power-of-2 exponent. The GPU uses a zero-transcendental multiply chain for each — no `pow()` overhead.
+
+### Tint Blend Mode
+
+Control how `glassColor` blends with the refracted backdrop via `LiquidGlassSettings.tintBlend`:
+
+| Value | Effect |
+|---|---|
+| `GlassTintBlend.auto` | **Default.** Chroma-gated: colorful tints preserve backdrop luminosity, achromatic tints use flat blend |
+| `GlassTintBlend.luminosity` | Always preserve backdrop luminosity — for near-neutral tints that must keep the glassy look |
+| `GlassTintBlend.flat` | Always impose the tint's brightness — for dimming layers and backing scrims |
+
+Applies to Premium and Standard paths. The Frosted fallback renders flat by construction and ignores this setting.
 
 
 ## Performance Tips
