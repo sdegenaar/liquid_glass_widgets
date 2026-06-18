@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
-import '../../src/renderer/liquid_shape.dart';
-import '../shared/adaptive_glass.dart';
 
 import '../../constants/glass_defaults.dart';
 import '../../types/glass_quality.dart';
