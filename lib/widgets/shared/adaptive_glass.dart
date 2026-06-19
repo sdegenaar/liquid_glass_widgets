@@ -150,7 +150,7 @@ class AdaptiveGlass extends StatelessWidget {
     // Zero fragment shader cost on any device.
     // --------------------------------------------------------------------------
     if (quality == GlassQuality.minimal || baseSettings.effectiveBlur == 0) {
-      return _wrapWithLightModeShadow(
+      return _wrapWithDecorations(
         context,
         baseSettings,
         _FrostedFallback(
@@ -180,7 +180,7 @@ class AdaptiveGlass extends StatelessWidget {
     // --------------------------------------------------------------------------
     final accessibilityData = GlassAccessibilityData.of(context);
     if (accessibilityData.reduceTransparency) {
-      return _wrapWithLightModeShadow(
+      return _wrapWithDecorations(
         context,
         baseSettings,
         _FrostedFallback(
@@ -289,7 +289,7 @@ class AdaptiveGlass extends StatelessWidget {
       // If this is a container (allowElevation=false), we are providing a blur
       // for all our children to use. We update the InheritedLiquidGlass tree.
       if (!allowElevation) {
-        return _wrapWithLightModeShadow(
+        return _wrapWithDecorations(
           context,
           baseSettings,
           LightweightLiquidGlass(
@@ -318,7 +318,7 @@ class AdaptiveGlass extends StatelessWidget {
         child: child,
       );
 
-      return _wrapWithLightModeShadow(context, baseSettings, lightweightWidget);
+      return _wrapWithDecorations(context, baseSettings, lightweightWidget);
     }
 
     // Impeller + Premium Path: Use the renderer's native path.
@@ -365,8 +365,11 @@ class AdaptiveGlass extends StatelessWidget {
         ),
       );
 
-      return PremiumGlassTracker(
-        child: premium,
+      return _wrapWithBacker(
+        baseSettings,
+        PremiumGlassTracker(
+          child: premium,
+        ),
       );
     } else {
       // Grouped elements (e.g. inside GlassBottomBar) rely on the ancestor's
@@ -436,6 +439,57 @@ class AdaptiveGlass extends StatelessWidget {
             ),
           ),
         ),
+      ],
+    );
+  }
+
+  /// Applies the backer (behind the glass) and the light-mode drop shadow
+  /// (outside the glass) to [glass]. Both are no-ops when their respective
+  /// settings are unset, so existing recipes are unaffected. Same signature as
+  /// [_wrapWithLightModeShadow] so the non-premium call sites just swap names.
+  Widget _wrapWithDecorations(
+      BuildContext context, LiquidGlassSettings baseSettings, Widget glass) {
+    return _wrapWithBacker(
+      baseSettings,
+      _wrapWithLightModeShadow(context, baseSettings, glass),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Backer — Apple "dimming layer" behind the glass
+  //
+  // A shape-matched color pad composited BEHIND the glass (the inverse of the
+  // drop shadow, which sits OUTSIDE the boundary). Gives a control's content
+  // contrast over rich/colorful backdrops — video, maps, photography — where
+  // the glass tint alone can't. Rendered at the widget level via [_ShapeClip]
+  // (ClipRRect for superellipses, so the clip forwards to the iOS PlatformView
+  // mutator stack), independent of the shader tier — so it works over a
+  // PlatformView, where a shader-side tint cannot reach.
+  //
+  // Unlike the shadow, it applies in BOTH brightnesses and for flat-edge shapes
+  // (a bar over a map is a primary use case). NOT applied on the grouped path:
+  // like the shadow, inserting a Stack between a grouped glass and its shared
+  // layer would break metaball morphing.
+  // ---------------------------------------------------------------------------
+  Widget _wrapWithBacker(LiquidGlassSettings baseSettings, Widget glass) {
+    final backerColor = baseSettings.backerColor;
+    if (backerColor == null || backerColor.a == 0) return glass;
+
+    return Stack(
+      fit: StackFit.passthrough,
+      clipBehavior: Clip.none,
+      children: [
+        // 1. The dimming pad — BEHIND the glass, clipped to the glass shape.
+        Positioned.fill(
+          child: IgnorePointer(
+            child: _ShapeClip(
+              shape: shape,
+              child: ColoredBox(color: backerColor),
+            ),
+          ),
+        ),
+        // 2. The glass on top; its translucency lets the pad dim it through.
+        glass,
       ],
     );
   }

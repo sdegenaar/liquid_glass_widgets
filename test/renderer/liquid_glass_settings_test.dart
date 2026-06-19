@@ -433,5 +433,56 @@ void main() {
         expect(s.props, contains(GlassTintBlend.luminosity));
       });
     });
+
+    group('backerColor', () {
+      test('defaults to null (no backer, no behavior change)', () {
+        const s = LiquidGlassSettings();
+        expect(s.backerColor, isNull);
+      });
+
+      test('copyWith sets backerColor without touching other fields', () {
+        const base = LiquidGlassSettings();
+        final copy = base.copyWith(backerColor: const Color(0x59000000));
+        expect(copy.backerColor, const Color(0x59000000));
+        expect(copy.glassColor, base.glassColor);
+        expect(copy.blur, base.blur);
+      });
+
+      test('lerp fades backerColor smoothly (not a midpoint switch)', () {
+        const a = LiquidGlassSettings(backerColor: Color(0x00000000));
+        const b = LiquidGlassSettings(backerColor: Color(0xFF000000));
+        expect(LiquidGlassSettings.lerp(a, b, 0.25).backerColor!.a,
+            closeTo(0.25, 0.02));
+        expect(LiquidGlassSettings.lerp(a, b, 0.75).backerColor!.a,
+            closeTo(0.75, 0.02));
+      });
+
+      test('lerp from null fades in from transparent (Color.lerp semantics)',
+          () {
+        const a = LiquidGlassSettings(); // backerColor null
+        const b = LiquidGlassSettings(backerColor: Color(0xFF000000));
+        expect(LiquidGlassSettings.lerp(a, b, 0.5).backerColor!.a,
+            closeTo(0.5, 0.02));
+      });
+
+      test('lerp of two null backers stays null', () {
+        const a = LiquidGlassSettings();
+        const b = LiquidGlassSettings();
+        expect(LiquidGlassSettings.lerp(a, b, 0.5).backerColor, isNull);
+      });
+
+      test('equality includes backerColor', () {
+        const a = LiquidGlassSettings(backerColor: Color(0x59000000));
+        const b = LiquidGlassSettings(backerColor: Color(0x59000000));
+        const c = LiquidGlassSettings();
+        expect(a, equals(b));
+        expect(a, isNot(equals(c)));
+      });
+
+      test('props contains backerColor', () {
+        const s = LiquidGlassSettings(backerColor: Color(0x59000000));
+        expect(s.props, contains(const Color(0x59000000)));
+      });
+    });
   });
 }

@@ -77,6 +77,98 @@ void main() {
     });
   });
 
+  group('AdaptiveGlass — backer (dimming layer)', () {
+    // A distinctive color nothing else in the glass stack uses, so the
+    // backer's ColoredBox is unambiguous to find.
+    const backer = Color(0x80FF00FF);
+    Finder backerFinder() =>
+        find.byWidgetPredicate((w) => w is ColoredBox && w.color == backer);
+
+    testWidgets('renders a clipped dimming pad behind the glass when set',
+        (tester) async {
+      await tester.pumpWidget(_wrap(const SizedBox(
+        width: 200,
+        height: 100,
+        child: AdaptiveGlass(
+          shape: _shape,
+          settings: LiquidGlassSettings(blur: 5, backerColor: backer),
+          quality: GlassQuality.standard,
+          child: SizedBox.expand(),
+        ),
+      )));
+      await tester.pump();
+      expect(backerFinder(), findsOneWidget);
+    });
+
+    testWidgets('no backer when backerColor is null', (tester) async {
+      await tester.pumpWidget(_wrap(const SizedBox(
+        width: 200,
+        height: 100,
+        child: AdaptiveGlass(
+          shape: _shape,
+          settings: _settings, // no backerColor
+          quality: GlassQuality.standard,
+          child: SizedBox.expand(),
+        ),
+      )));
+      await tester.pump();
+      expect(backerFinder(), findsNothing);
+    });
+
+    testWidgets('a fully-transparent backer is treated as no backer',
+        (tester) async {
+      await tester.pumpWidget(_wrap(const SizedBox(
+        width: 200,
+        height: 100,
+        child: AdaptiveGlass(
+          shape: _shape,
+          settings:
+              LiquidGlassSettings(blur: 5, backerColor: Color(0x00FF00FF)),
+          quality: GlassQuality.standard,
+          child: SizedBox.expand(),
+        ),
+      )));
+      await tester.pump();
+      expect(
+        find.byWidgetPredicate(
+            (w) => w is ColoredBox && w.color == const Color(0x00FF00FF)),
+        findsNothing,
+      );
+    });
+
+    testWidgets('backer also applies on the minimal/frosted path',
+        (tester) async {
+      await tester.pumpWidget(_wrap(const SizedBox(
+        width: 200,
+        height: 100,
+        child: AdaptiveGlass(
+          shape: _shape,
+          settings: LiquidGlassSettings(backerColor: backer),
+          quality: GlassQuality.minimal,
+          child: SizedBox.expand(),
+        ),
+      )));
+      await tester.pump();
+      expect(backerFinder(), findsOneWidget);
+    });
+
+    testWidgets('backer applies on the premium own-layer path', (tester) async {
+      await tester.pumpWidget(_wrap(const SizedBox(
+        width: 200,
+        height: 100,
+        child: AdaptiveGlass(
+          shape: _shape,
+          settings: LiquidGlassSettings(blur: 5, backerColor: backer),
+          quality: GlassQuality.premium,
+          useOwnLayer: true,
+          child: SizedBox.expand(),
+        ),
+      )));
+      await tester.pump();
+      expect(backerFinder(), findsOneWidget);
+    });
+  });
+
   group('AdaptiveGlass — accessibility path', () {
     testWidgets('reduce transparency triggers frosted fallback',
         (tester) async {
