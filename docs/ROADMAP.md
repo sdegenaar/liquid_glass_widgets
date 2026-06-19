@@ -1,6 +1,6 @@
 # Roadmap: 0.15.0 → 1.0.0
 
-> Last updated: 2026-06-08
+> Last updated: 2026-06-19
 
 This document tracks the planned work to get `liquid_glass_widgets` from the
 current 0.14.x series to a stable 1.0.0 release. The guiding principle is:
@@ -54,9 +54,10 @@ Every remaining widget should map to a recognisable iOS 26 component:
 | `GlassPage` | Full-screen glass page root | ✅ Solid |
 | `GlassScaffold` | `CupertinoPageScaffold` + glass | ✅ New in 0.14, solid |
 | `GlassAppBar` | `UINavigationBar` (transparent) | ✅ Name is Flutter-discoverable, implementation is iOS 26 |
-| `GlassBottomBar` | `UITabBar` | ✅ Solid, jelly physics |
-| `GlassSearchableBottomBar` | `UITabBar` + pull-up search | ✅ Solid |
-| `GlassTabBar` | `UISegmentedControl` (scrollable) | ✅ Solid |
+| `GlassTabBar` | `UITabBarController` (unified) | ✅ One widget: `.bottom()`, `.searchable()`, default inline |
+| `GlassFilterBar` | Scrollable category chips | ✅ NEW — promoted from `GlassTabBar.isScrollable` |
+| `GlassBottomBar` | `@Deprecated` → `GlassTabBar.bottom()` | Thin shim, removed in 2.0 |
+| `GlassSearchableBottomBar` | `@Deprecated` → `GlassTabBar.searchable()` | Thin shim, removed in 2.0 |
 | `GlassToolbar` | `UIToolbar` | ✅ Solid |
 | **Containers** | | |
 | `GlassContainer` | Base glass surface | ✅ Core primitive |
@@ -104,10 +105,57 @@ Every remaining widget should map to a recognisable iOS 26 component:
 
 ---
 
-## 0.15.x → 0.19.x — Hardening
+## 0.18.0 — `GlassTabBar` Unification (All-in-One)
+
+The defining architectural change before 1.0. Ships everything in one release:
+
+### What Ships
+
+1. **Internal `pill_internal.dart` merge** — `bottom_bar_internal.dart` +
+   `tab_bar_internal.dart` merged into one engine with a `placement` flag.
+   Prerequisite for everything else.
+
+2. **Expanded `GlassTab`** — gains `activeIcon`, `glowColor` fields from
+   `GlassBottomBarTab`. `GlassBottomBarTab` becomes `@Deprecated` typedef.
+
+3. **`GlassTabBar` named constructors** — `.bottom()` (current `GlassBottomBar`
+   behaviour) and `.searchable()` (current `GlassSearchableBottomBar`). Default
+   constructor retains current inline tab bar behaviour.
+
+4. **Deprecation shims** — `GlassBottomBar` and `GlassSearchableBottomBar`
+   become zero-logic `StatelessWidget` wrappers forwarding to
+   `GlassTabBar.bottom()` / `.searchable()`. Kept through 1.x, removed in 2.0.
+
+5. **`GlassFilterBar`** — new widget for scrollable horizontal chip rows.
+   Promoted from `GlassTabBar(isScrollable: true)`. That flag is deprecated.
+
+6. **Always-visible resting glass** — spring target from `0.0` → `restingThickness`
+   (default `0.35`). `indicatorColor` remapped from solid fill → glass tint.
+   See ARCHITECTURE.md § v0.18.0 for full technical details.
+
+### Breaking Changes
+
+- **Visual:** All resting-state goldens regenerate (glass pill now visible at rest)
+- **Semantic:** `indicatorColor` changes from solid-pill fill to glass tint
+- **Deprecations:** `GlassBottomBar`, `GlassSearchableBottomBar`,
+  `GlassBottomBarTab`, `GlassTabBar(isScrollable: true)` — all still work, IDE warnings only
+
+### Migration
+
+```dart
+// BEFORE
+GlassBottomBar(tabs: [...], ...)           → GlassTabBar.bottom(tabs: [...], ...)
+GlassSearchableBottomBar(tabs: [...], ...) → GlassTabBar.searchable(tabs: [...], ...)
+GlassBottomBarTab(label: 'Home', icon: ...)→ GlassTab(label: 'Home', icon: ...)
+GlassTabBar(isScrollable: true, ...)       → GlassFilterBar(items: [...], ...)
+```
+
+---
+
+## 0.18.x → 0.19.x — Hardening
 
 Focus areas to address before 1.0. These are not all confirmed — they will be
-refined based on 0.15.x feedback and community requests.
+refined based on 0.18.x feedback and community requests.
 
 ### Material Artifact Purge (continued from 0.14.2)
 
@@ -190,7 +238,7 @@ widget-level RTL testing exists.
   `EdgeInsets.only(left:)` work correctly in RTL locales. Replace
   directional padding with `EdgeInsetsDirectional` where appropriate.
 - [ ] **RTL golden tests** — at minimum for `GlassListTile`, `GlassAppBar`,
-  `GlassBottomBar`, and `GlassSearchableBottomBar`.
+  `GlassTabBar.bottom()`, and `GlassTabBar.searchable()`.
 
 ### Quality & Reliability
 
@@ -253,7 +301,7 @@ All of the following must be true before tagging 1.0.0:
   quality differences, Windows SkSL compatibility rules).
 - [ ] **Keyboard & focus support** — all interactive widgets support Tab
   focus traversal and Enter/Space activation for macOS/iPadOS keyboard use.
-- [ ] No deprecated symbols remain — everything is either removed or promoted.
+- [ ] No deprecated symbols from pre-0.15 remain (0.18.0 deprecation shims stay through 1.x).
 - [ ] CHANGELOG documents every breaking change from the 0.x series with
   migration instructions.
 - [ ] README widget table is accurate and complete.
@@ -282,12 +330,18 @@ Ideas for consideration after stable. None of these are committed.
   `CupertinoPageRoute` push/pop transitions.
 
 ### Enhancements
+- [ ] **Scroll-to-minimize** (`GlassBarMinimizeBehavior.onScrollDown`) — tab bar
+  shrinks on scroll-down, re-expands on scroll-up. Matches iOS 26
+  `tabBarMinimizeBehavior`. High priority post-1.0.
+- [ ] **Tab bar bottom accessory** — persistent widget (mini player) above
+  the tab bar that animates with minimize. Matches iOS 26 `tabViewBottomAccessory`.
+  Currently achieved via `GlassScaffold.bodyOverlays` manually.
 - [ ] Scroll-driven glass materialisation — app bar surface that transitions
   from transparent to glass on scroll (the feature removed from `GlassAppBar`
   in 0.14.0, done properly as a standalone widget or `GlassScaffold` feature).
 - [ ] `GlassToast` queue management — show multiple toasts sequentially
   instead of overlapping.
-- [ ] Drag-to-reorder support in `GlassBottomBar` — long-press to rearrange
+- [ ] Drag-to-reorder support in `GlassTabBar.bottom()` — long-press to rearrange
   tabs, matching iOS tab bar customisation.
 - [ ] `GlassSheet` snap points — configurable detent heights (peek / half /
   full) matching `UISheetPresentationController.Detent`.
