@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/constants/glass_defaults.dart';
 import 'package:liquid_glass_widgets/src/renderer/liquid_glass_settings.dart';
+import 'package:liquid_glass_widgets/types/glass_tint_blend.dart';
 
 void main() {
   group('LiquidGlassSettings', () {

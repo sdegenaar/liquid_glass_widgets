@@ -375,33 +375,32 @@ class LiquidGlassSettings with EquatableMixin {
     if (b == null) return a;
 
     return LiquidGlassSettings._withPinch(
-      visibility: lerpDouble(a.visibility, b.visibility, t)!,
-      glassColor: Color.lerp(a.glassColor, b.glassColor, t)!,
-      thickness: lerpDouble(a.thickness, b.thickness, t)!,
-      blur: lerpDouble(a.blur, b.blur, t)!,
-      chromaticAberration:
-          lerpDouble(a.chromaticAberration, b.chromaticAberration, t)!,
-      lightAngle: lerpDouble(a.lightAngle, b.lightAngle, t)!,
-      lightIntensity: lerpDouble(a.lightIntensity, b.lightIntensity, t)!,
-      ambientStrength: lerpDouble(a.ambientStrength, b.ambientStrength, t)!,
-      refractiveIndex: lerpDouble(a.refractiveIndex, b.refractiveIndex, t)!,
-      saturation: lerpDouble(a.saturation, b.saturation, t)!,
-      glowIntensity: lerpDouble(a.glowIntensity, b.glowIntensity, t)!,
-      specularSharpness: t < 0.5 ? a.specularSharpness : b.specularSharpness,
-      standardOpacityMultiplier: lerpDouble(
-          a.standardOpacityMultiplier, b.standardOpacityMultiplier, t)!,
-      shadowElevation: lerpDouble(a.shadowElevation, b.shadowElevation, t)!,
-      shadow: t < 0.5 ? a.shadow : b.shadow,
-      whitenStrength: lerpDouble(a.whitenStrength, b.whitenStrength, t)!,
-      whitenGated: t < 0.5 ? a.whitenGated : b.whitenGated,
-      tintBlend: t < 0.5 ? a.tintBlend : b.tintBlend,
-      // Lerp the color so the backer fades smoothly (from/to transparent when
-      // one side is null), rather than popping at the midpoint.
-      backerColor: Color.lerp(a.backerColor, b.backerColor, t),
-      // pinchStrength is interaction state — lerp it so transitions are smooth
-      // when the indicator fades between active/resting states.
-      pinchStrength: lerpDouble(a.pinchStrength, b.pinchStrength, t)!
-    );
+        visibility: lerpDouble(a.visibility, b.visibility, t)!,
+        glassColor: Color.lerp(a.glassColor, b.glassColor, t)!,
+        thickness: lerpDouble(a.thickness, b.thickness, t)!,
+        blur: lerpDouble(a.blur, b.blur, t)!,
+        chromaticAberration:
+            lerpDouble(a.chromaticAberration, b.chromaticAberration, t)!,
+        lightAngle: lerpDouble(a.lightAngle, b.lightAngle, t)!,
+        lightIntensity: lerpDouble(a.lightIntensity, b.lightIntensity, t)!,
+        ambientStrength: lerpDouble(a.ambientStrength, b.ambientStrength, t)!,
+        refractiveIndex: lerpDouble(a.refractiveIndex, b.refractiveIndex, t)!,
+        saturation: lerpDouble(a.saturation, b.saturation, t)!,
+        glowIntensity: lerpDouble(a.glowIntensity, b.glowIntensity, t)!,
+        specularSharpness: t < 0.5 ? a.specularSharpness : b.specularSharpness,
+        standardOpacityMultiplier: lerpDouble(
+            a.standardOpacityMultiplier, b.standardOpacityMultiplier, t)!,
+        shadowElevation: lerpDouble(a.shadowElevation, b.shadowElevation, t)!,
+        shadow: t < 0.5 ? a.shadow : b.shadow,
+        whitenStrength: lerpDouble(a.whitenStrength, b.whitenStrength, t)!,
+        whitenGated: t < 0.5 ? a.whitenGated : b.whitenGated,
+        tintBlend: t < 0.5 ? a.tintBlend : b.tintBlend,
+        // Lerp the color so the backer fades smoothly (from/to transparent when
+        // one side is null), rather than popping at the midpoint.
+        backerColor: Color.lerp(a.backerColor, b.backerColor, t),
+        // pinchStrength is interaction state — lerp it so transitions are smooth
+        // when the indicator fades between active/resting states.
+        pinchStrength: lerpDouble(a.pinchStrength, b.pinchStrength, t)!);
   }
 
   /// Helper for linear interpolation of doubles.

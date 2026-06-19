@@ -28,6 +28,23 @@ The `indicatorPinchStrength` concave lens warp is now unified across all four in
 
 The example app includes a live **Indicator Parity** demo (`Demos → Indicator Parity`) with all four pill widgets side-by-side and real-time sliders for `pinchStrength`, `indicatorExpansion`, and `chromaticAberration`. Use it to tune parameters before writing any code.
 
+## 🌑 Apple Dimming Layer — `LiquidGlassSettings.backerColor` ([#111](https://github.com/sdegenaar/liquid_glass_widgets/pull/111) by [@jfhair](https://github.com/jfhair))
+
+New optional `backerColor` on `LiquidGlassSettings` — a shape-matched color pad composited *behind* the glass, giving a control's content contrast over rich or colorful backdrops (video, maps, photography) where the glass tint alone can't. This is Apple's "dimming layer" guidance from the Human Interface Guidelines (Materials section) and the pattern behind SwiftUI's clear `Glass` variant.
+
+```dart
+LiquidGlassSettings(
+  glassColor: Color(0x20FFFFFF),
+  backerColor: Color(0x59000000), // ~35% black — Apple's starting point
+)
+```
+
+- **`backerColor`** (`Color?`, default `null`) — the color's alpha *is* the dimming opacity. `null` means no backer, so all existing recipes are untouched.
+- Rendered at the widget level (like `shadow`) and clipped to the glass shape via `ClipRRect`, so it composites correctly even over a `PlatformView` — maps, video — where a shader-side tint cannot reach.
+- Applies in both light and dark mode, and for flat-edge shapes (a bar over a map is a primary use case).
+- Skipped on the grouped path (like shadow) — inserting a `Stack` between grouped glass and its shared layer would break metaball morphing.
+- `lerp` fades `backerColor` smoothly from transparent when one side is `null`, rather than snapping at the midpoint.
+
 ### Migration
 
 All four widgets share the same tuning API:
