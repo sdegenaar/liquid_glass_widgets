@@ -204,7 +204,7 @@ class _ContentAwareBrightnessDemoState
       ),
 
       // ── Bottom bar ────────────────────────────────────────────────────────
-      bottomBar: GlassBottomBar(
+      bottomBar: GlassTabBar.bottom(
         selectedIndex: _selectedTab,
         onTabSelected: (i) => setState(() => _selectedTab = i),
         adaptiveBrightness: true,
@@ -216,21 +216,21 @@ class _ContentAwareBrightnessDemoState
         labelFontSize: 10,
         iconLabelSpacing: 1,
         tabs: const [
-          GlassBottomBarTab(
+          GlassTab(
             label: 'Home',
             icon: Icon(CupertinoIcons.house),
             activeIcon: Icon(CupertinoIcons.house_fill),
           ),
-          GlassBottomBarTab(
+          GlassTab(
             label: 'Search',
             icon: Icon(CupertinoIcons.search),
           ),
-          GlassBottomBarTab(
+          GlassTab(
             label: 'Library',
             icon: Icon(CupertinoIcons.book),
             activeIcon: Icon(CupertinoIcons.book_fill),
           ),
-          GlassBottomBarTab(
+          GlassTab(
             label: 'Settings',
             icon: Icon(CupertinoIcons.gear),
             activeIcon: Icon(CupertinoIcons.gear_solid),

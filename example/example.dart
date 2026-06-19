@@ -66,9 +66,9 @@ class _HomePageState extends State<_HomePage> {
   int _selectedTab = 0;
 
   static const _tabs = [
-    GlassBottomBarTab(icon: Icon(Icons.home_rounded), label: 'Home'),
-    GlassBottomBarTab(icon: Icon(Icons.explore_rounded), label: 'Explore'),
-    GlassBottomBarTab(
+    GlassTab(icon: Icon(Icons.home_rounded), label: 'Home'),
+    GlassTab(icon: Icon(Icons.explore_rounded), label: 'Explore'),
+    GlassTab(
         icon: Icon(Icons.library_music_rounded), label: 'Library'),
   ];
 
@@ -189,7 +189,7 @@ class _HomePageState extends State<_HomePage> {
           ),
         ),
         // ── Glass searchable nav bar ─────────────────────────────────────
-        bottomNavigationBar: GlassSearchableBottomBar(
+        bottomNavigationBar: GlassTabBar.searchable(
           tabs: _tabs,
           selectedIndex: _selectedTab,
           onTabSelected: (i) => setState(() => _selectedTab = i),

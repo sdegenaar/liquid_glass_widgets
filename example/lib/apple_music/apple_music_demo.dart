@@ -118,16 +118,16 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
   int _selectedTab = 0;
 
   static const _kTabs = [
-    GlassBottomBarTab(
+    GlassTab(
       label: 'Home',
       icon: Icon(CupertinoIcons.house),
       activeIcon: Icon(CupertinoIcons.house_fill),
     ),
-    GlassBottomBarTab(
+    GlassTab(
       label: 'Radio',
       icon: Icon(CupertinoIcons.antenna_radiowaves_left_right),
     ),
-    GlassBottomBarTab(
+    GlassTab(
       label: 'Library',
       icon: Icon(CupertinoIcons.music_albums),
       activeIcon: Icon(CupertinoIcons.music_albums_fill),
@@ -335,7 +335,7 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
       // ── Bottom navigation bar ──────────────────────────────────────────────
       bottomBar: Padding(
         padding: EdgeInsets.only(bottom: bottomOffset),
-        child: GlassSearchableBottomBar(
+        child: GlassTabBar.searchable(
           isSearchActive: _isMiniMode || _isSearching,
           selectedIndex: _selectedTab,
           onTabSelected: (index) {
@@ -405,7 +405,7 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
               return Center(
                 child: IconTheme(
                   data: IconThemeData(color: iconColor, size: 28),
-                  child: tab.activeIcon ?? tab.icon,
+                  child: tab.activeIcon ?? tab.icon ?? const SizedBox.shrink(),
                 ),
               );
             },

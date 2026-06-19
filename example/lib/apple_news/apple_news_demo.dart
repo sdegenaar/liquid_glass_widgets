@@ -294,7 +294,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
       // ── Bottom navigation bar ──────────────────────────────────────────────
       bottomBar: Padding(
         padding: EdgeInsets.only(bottom: sysBottom),
-        child: GlassSearchableBottomBar(
+        child: GlassTabBar.searchable(
           selectedIndex: _selectedTab,
           isSearchActive: _isSearching,
           onTabSelected: (index) => setState(() {
@@ -348,7 +348,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
             onMicTap: () {},
           ),
           tabs: [
-            GlassBottomBarTab(
+            GlassTab(
               label: 'Today',
               icon: SizedBox(
                 width: 24,
@@ -375,7 +375,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
                 ),
               ),
             ),
-            GlassBottomBarTab(
+            GlassTab(
               label: 'News+',
               icon: SizedBox(
                 width: 28,
@@ -388,7 +388,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
                 child: Icon(SFSymbols.newspaper_fill, size: 28),
               ),
             ),
-            GlassBottomBarTab(
+            GlassTab(
               label: 'Audio',
               icon: SizedBox(
                 width: 26,
@@ -415,7 +415,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
                 ),
               ),
             ),
-            GlassBottomBarTab(
+            GlassTab(
               label: 'Following',
               icon: SizedBox(
                 width: 26,

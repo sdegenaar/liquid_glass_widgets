@@ -9,7 +9,6 @@
 //     GlassBottomBarTab still render correctly
 // ignore_for_file: deprecated_member_use
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -204,6 +203,7 @@ void main() {
     });
 
     testWidgets('extraButton parameter wires correctly', (tester) async {
+      // ignore: unused_local_variable
       bool extraTapped = false;
 
       await tester.pumpWidget(_wrap(_box(

@@ -736,7 +736,7 @@ class _ComparisonPageState extends State<_ComparisonPage> {
               settings: _kGlass,
               indicatorSettings: _kGlass,
               quality: GlassQuality.premium,
-              segments: const ['Day', 'Week', 'Month'],
+              segments: [GlassTab(label: 'Day'), GlassTab(label: 'Week'), GlassTab(label: 'Month')],
               selectedIndex: _segIndex,
               onSegmentSelected: (i) => setState(() => _segIndex = i),
             ),
@@ -745,7 +745,7 @@ class _ComparisonPageState extends State<_ComparisonPage> {
               settings: _kGlassCard, // surface / background
               indicatorSettings: _kGlassPill, // animated pill indicator
               quality: GlassQuality.standard,
-              segments: const ['Day', 'Week', 'Month'],
+              segments: [GlassTab(label: 'Day'), GlassTab(label: 'Week'), GlassTab(label: 'Month')],
               selectedIndex: _segIndex,
               onSegmentSelected: (i) => setState(() => _segIndex = i),
             ),
@@ -823,31 +823,31 @@ class _ComparisonPageState extends State<_ComparisonPage> {
           // ── GlassTabBar (full-width stacked) ─────────────────────────────
           _FullWidthRow(
             label: 'GlassTabBar',
-            premiumWidget: GlassTabBar(
+            premiumWidget: GlassSegmentedControl(
               useOwnLayer: true,
               settings: _kGlass,
               quality: GlassQuality.premium,
-              tabs: [
+              segments: [
                 GlassTab(icon: const Icon(CupertinoIcons.home)),
                 GlassTab(icon: const Icon(CupertinoIcons.search)),
                 GlassTab(icon: const Icon(CupertinoIcons.person)),
               ],
               selectedIndex: _tabIndex,
-              onTabSelected: (i) => setState(() => _tabIndex = i),
+              onSegmentSelected: (i) => setState(() => _tabIndex = i),
             ),
-            standardWidget: GlassTabBar(
+            standardWidget: GlassSegmentedControl(
               useOwnLayer: true,
               settings: _kGlassCard, // tab bar background glass
               indicatorSettings:
                   _kGlassPill, // the pill indicator glass ← tuned here
               quality: GlassQuality.standard,
-              tabs: [
+              segments: [
                 GlassTab(icon: const Icon(CupertinoIcons.home)),
                 GlassTab(icon: const Icon(CupertinoIcons.search)),
                 GlassTab(icon: const Icon(CupertinoIcons.person)),
               ],
               selectedIndex: _tabIndex,
-              onTabSelected: (i) => setState(() => _tabIndex = i),
+              onSegmentSelected: (i) => setState(() => _tabIndex = i),
             ),
           ),
 

@@ -351,7 +351,7 @@ class _DetailPageState extends State<DetailPage>
 
   Widget _buildSegmentedControl() {
     return GlassSegmentedControl(
-      segments: const ['Overview', 'Amenities', 'Reviews'],
+      segments: [GlassTab(label: 'Overview'), GlassTab(label: 'Amenities'), GlassTab(label: 'Reviews')],
       selectedIndex: _selectedSegment,
       onSegmentSelected: (index) {
         setState(() {

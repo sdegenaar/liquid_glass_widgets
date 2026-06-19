@@ -71,12 +71,12 @@ class _TabBarScrollableHomeState extends State<TabBarScrollableHome> {
               // Scrollable GlassTabBar — grows horizontally as tabs are added.
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: GlassTabBar(
+                child: GlassSegmentedControl.scrollable(
                   quality: GlassQuality.premium,
                   selectedIndex: _selectedIndex,
-                  onTabSelected: (i) => setState(() => _selectedIndex = i),
-                  isScrollable: true,
-                  tabs: List.generate(
+                  onSegmentSelected: (i) => setState(() => _selectedIndex = i),
+                  
+                  segments: List.generate(
                     _tabCount,
                     (i) => GlassTab(label: 'Tab ${i + 1}'),
                   ),

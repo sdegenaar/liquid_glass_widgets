@@ -398,7 +398,7 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
       // ── Bottom navigation bar ──────────────────────────────────────────────
       bottomBar: Padding(
         padding: EdgeInsets.only(bottom: bottomOffset),
-        child: GlassSearchableBottomBar(
+        child: GlassTabBar.searchable(
           isSearchActive: _isMiniMode || _isSearching,
           selectedIndex: _selectedTab,
           onTabSelected: (index) {
@@ -482,15 +482,15 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
             textInputAction: TextInputAction.search,
           ),
           tabs: [
-            GlassBottomBarTab(
+            GlassTab(
                 label: 'Home',
                 icon: Icon(CupertinoIcons.play_circle),
                 activeIcon: Icon(CupertinoIcons.play_circle_fill)),
-            GlassBottomBarTab(
+            GlassTab(
                 label: 'New',
                 icon: Icon(CupertinoIcons.square_grid_2x2),
                 activeIcon: Icon(CupertinoIcons.square_grid_2x2_fill)),
-            GlassBottomBarTab(
+            GlassTab(
                 label: 'Library',
                 icon: Icon(CupertinoIcons.square_stack_3d_up),
                 activeIcon: Icon(CupertinoIcons.square_stack_3d_up_fill)),
@@ -1237,7 +1237,7 @@ class _NowPlayingViewState extends State<NowPlayingView> {
           ),
           const SizedBox(height: 30),
           GlassSegmentedControl(
-            segments: const ['0.5x', '1x', '1.5x', '2x'],
+            segments: [GlassTab(label: '0.5x'), GlassTab(label: '1x'), GlassTab(label: '1.5x'), GlassTab(label: '2x')],
             selectedIndex: _speedIndex,
             onSegmentSelected: (i) => setState(() => _speedIndex = i),
             useOwnLayer: true,
