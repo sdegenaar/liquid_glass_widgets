@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use_from_same_package
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show ValueListenable;
+import 'package:flutter/physics.dart' show SpringDescription;
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../src/types/glass_interaction_behavior.dart';
@@ -17,11 +18,12 @@ import 'glass_bottom_bar.dart'
         MaskingQuality;
 import 'glass_searchable_bottom_bar.dart' show GlassSearchableBottomBar;
 import 'shared/glass_search_bar_config.dart';
-import 'shared/searchable_bottom_bar_controller.dart';
-import 'shared/tab_bar_internal.dart';
+import 'shared/tab_bar_searchable_controller.dart';
+import 'shared/tab_bar_inline_internal.dart';
+import 'shared/tab_bar_bottom_layout.dart';
+import 'shared/tab_bar_searchable_layout.dart';
 
 export 'shared/glass_search_bar_config.dart';
-
 
 /// A glass morphism tab bar following Apple's iOS design patterns.
 ///
@@ -283,13 +285,14 @@ class GlassTabBar extends StatefulWidget {
         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     Color? interactionGlowColor,
     double interactionGlowRadius = 1.5,
-    GlassInteractionBehavior interactionBehavior = GlassInteractionBehavior.full,
+    GlassInteractionBehavior interactionBehavior =
+        GlassInteractionBehavior.full,
     double pressScale = 1.04,
     bool platformViewBackdrop = false,
     bool adaptiveBrightness = false,
     ValueChanged<Brightness>? onBrightnessChanged,
     ValueListenable<Brightness>? brightnessOverride,
-  })  : this._(
+  }) : this._(
           key: key,
           placement: _GlassTabBarPlacement.bottom,
           tabs: tabs,
@@ -376,7 +379,8 @@ class GlassTabBar extends StatefulWidget {
     double glowBlurRadius = 32,
     double glowSpreadRadius = 8,
     double glowOpacity = 0.6,
-    GlassInteractionBehavior interactionBehavior = GlassInteractionBehavior.full,
+    GlassInteractionBehavior interactionBehavior =
+        GlassInteractionBehavior.full,
     double pressScale = 1.04,
     Color? interactionGlowColor,
     double interactionGlowRadius = 1.5,
@@ -399,7 +403,7 @@ class GlassTabBar extends StatefulWidget {
     bool adaptiveBrightness = false,
     ValueChanged<Brightness>? onBrightnessChanged,
     ValueListenable<Brightness>? brightnessOverride,
-  })  : this._(
+  }) : this._(
           key: key,
           placement: _GlassTabBarPlacement.searchable,
           tabs: tabs,
@@ -533,7 +537,8 @@ class GlassTabBar extends StatefulWidget {
       this.whitenAtBottomTarget = 1.0,
       this.scrollController})
       : _placement = placement,
-        assert(tabs.length >= (placement == _GlassTabBarPlacement.inline ? 2 : 1),
+        assert(
+            tabs.length >= (placement == _GlassTabBarPlacement.inline ? 2 : 1),
             'GlassTabBar requires at least 1 tab'),
         assert(
           selectedIndex >= 0 && selectedIndex < tabs.length,
@@ -840,10 +845,9 @@ class _GlassTabBarState extends State<GlassTabBar> {
     }
   }
 
-  /// Delegates to GlassBottomBar's rendering engine via a thin bridge.
+  /// Dispatches to [TabBarBottomLayout] — the iOS 26-style bottom placement engine.
   Widget _buildBottom(BuildContext context) {
-    // Convert GlassTab list to GlassBottomBarTab list for the legacy engine.
-    final legacyTabs = widget.tabs
+    final tabs = widget.tabs
         .map((t) => GlassBottomBarTab(
               icon: t.icon ?? const SizedBox.shrink(),
               label: t.label,
@@ -852,8 +856,8 @@ class _GlassTabBarState extends State<GlassTabBar> {
               thickness: t.thickness,
             ))
         .toList();
-    return _GlassBottomBarBridge(
-      tabs: legacyTabs,
+    return TabBarBottomLayout(
+      tabs: tabs,
       selectedIndex: widget.selectedIndex,
       onTabSelected: widget.onTabSelected,
       extraButton: widget.extraButton,
@@ -898,9 +902,9 @@ class _GlassTabBarState extends State<GlassTabBar> {
     );
   }
 
-  /// Delegates to GlassSearchableBottomBar's rendering engine.
+  /// Dispatches to [TabBarSearchableLayout] — the iOS 26-style searchable placement engine.
   Widget _buildSearchable(BuildContext context) {
-    final legacyTabs = widget.tabs
+    final tabs = widget.tabs
         .map((t) => GlassBottomBarTab(
               icon: t.icon ?? const SizedBox.shrink(),
               label: t.label,
@@ -909,8 +913,8 @@ class _GlassTabBarState extends State<GlassTabBar> {
               thickness: t.thickness,
             ))
         .toList();
-    return _GlassSearchableBridge(
-      tabs: legacyTabs,
+    return TabBarSearchableLayout(
+      tabs: tabs,
       selectedIndex: widget.selectedIndex,
       onTabSelected: widget.onTabSelected,
       searchConfig: widget.searchConfig!,
@@ -1189,323 +1193,4 @@ class DividerSettings {
   }
 }
 
-// =============================================================================
-// Bridge classes — delegate to the legacy rendering engines
-// =============================================================================
 
-/// Internal bridge that delegates [GlassTabBar.bottom] rendering to
-/// [GlassBottomBar]'s proven rendering engine without code duplication.
-///
-/// This will be removed once the shared pill_internal.dart engine is extracted.
-class _GlassBottomBarBridge extends StatelessWidget {
-  const _GlassBottomBarBridge({
-    required this.tabs,
-    required this.selectedIndex,
-    required this.onTabSelected,
-    this.extraButton,
-    this.spacing = 8,
-    this.horizontalPadding = 20,
-    this.verticalPadding = 20,
-    this.barHeight = 64,
-    this.barBorderRadius = 32,
-    this.tabPadding = const EdgeInsets.symmetric(horizontal: 4),
-    this.iconLabelSpacing = 4,
-    this.enableBlend = true,
-    this.blendAmount = 10,
-    this.settings,
-    this.showIndicator = true,
-    this.indicatorColor,
-    this.indicatorSettings,
-    this.indicatorPinchStrength = 0.4,
-    this.selectedIconColor,
-    this.unselectedIconColor,
-    this.iconSize = 24,
-    this.labelFontSize = 11,
-    this.textStyle,
-    this.glowDuration = const Duration(milliseconds: 300),
-    this.glowBlurRadius = 32,
-    this.glowSpreadRadius = 8,
-    this.glowOpacity = 0.6,
-    this.quality,
-    this.magnification = 1.15,
-    this.innerBlur = 0.0,
-    this.maskingQuality = MaskingQuality.high,
-    this.backgroundKey,
-    this.tabWidth,
-    this.indicatorExpansion =
-        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    this.interactionGlowColor,
-    this.interactionGlowRadius = 1.5,
-    this.interactionBehavior = GlassInteractionBehavior.full,
-    this.pressScale = 1.04,
-    this.platformViewBackdrop = false,
-    this.adaptiveBrightness = false,
-    this.onBrightnessChanged,
-    this.brightnessOverride,
-  });
-
-  final List<GlassBottomBarTab> tabs;
-  final int selectedIndex;
-  final ValueChanged<int> onTabSelected;
-  final GlassBottomBarExtraButton? extraButton;
-  final double spacing;
-  final double horizontalPadding;
-  final double verticalPadding;
-  final double barHeight;
-  final double barBorderRadius;
-  final EdgeInsetsGeometry tabPadding;
-  final double iconLabelSpacing;
-  final bool enableBlend;
-  final double blendAmount;
-  final LiquidGlassSettings? settings;
-  final bool showIndicator;
-  final Color? indicatorColor;
-  final LiquidGlassSettings? indicatorSettings;
-  final double indicatorPinchStrength;
-  final Color? selectedIconColor;
-  final Color? unselectedIconColor;
-  final double iconSize;
-  final double labelFontSize;
-  final TextStyle? textStyle;
-  final Duration glowDuration;
-  final double glowBlurRadius;
-  final double glowSpreadRadius;
-  final double glowOpacity;
-  final GlassQuality? quality;
-  final double magnification;
-  final double innerBlur;
-  final MaskingQuality maskingQuality;
-  final GlobalKey? backgroundKey;
-  final double? tabWidth;
-  final EdgeInsetsGeometry indicatorExpansion;
-  final Color? interactionGlowColor;
-  final double interactionGlowRadius;
-  final GlassInteractionBehavior interactionBehavior;
-  final double pressScale;
-  final bool platformViewBackdrop;
-  final bool adaptiveBrightness;
-  final ValueChanged<Brightness>? onBrightnessChanged;
-  final ValueListenable<Brightness>? brightnessOverride;
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassBottomBar(
-      tabs: tabs,
-      selectedIndex: selectedIndex,
-      onTabSelected: onTabSelected,
-      extraButton: extraButton,
-      spacing: spacing,
-      horizontalPadding: horizontalPadding,
-      verticalPadding: verticalPadding,
-      barHeight: barHeight,
-      barBorderRadius: barBorderRadius,
-      tabPadding: tabPadding,
-      iconLabelSpacing: iconLabelSpacing,
-      enableBlend: enableBlend,
-      blendAmount: blendAmount,
-      settings: settings,
-      showIndicator: showIndicator,
-      indicatorColor: indicatorColor,
-      indicatorSettings: indicatorSettings,
-      indicatorPinchStrength: indicatorPinchStrength,
-      selectedIconColor: selectedIconColor,
-      unselectedIconColor: unselectedIconColor,
-      iconSize: iconSize,
-      labelFontSize: labelFontSize,
-      textStyle: textStyle,
-      glowDuration: glowDuration,
-      glowBlurRadius: glowBlurRadius,
-      glowSpreadRadius: glowSpreadRadius,
-      glowOpacity: glowOpacity,
-      quality: quality,
-      magnification: magnification,
-      innerBlur: innerBlur,
-      maskingQuality: maskingQuality,
-      backgroundKey: backgroundKey,
-      tabWidth: tabWidth,
-      indicatorExpansion: indicatorExpansion,
-      interactionGlowColor: interactionGlowColor,
-      interactionGlowRadius: interactionGlowRadius,
-      interactionBehavior: interactionBehavior,
-      pressScale: pressScale,
-      platformViewBackdrop: platformViewBackdrop,
-      adaptiveBrightness: adaptiveBrightness,
-      onBrightnessChanged: onBrightnessChanged,
-      brightnessOverride: brightnessOverride,
-    );
-  }
-}
-
-/// Internal bridge that delegates [GlassTabBar.searchable] rendering to
-/// [GlassSearchableBottomBar]'s proven rendering engine.
-class _GlassSearchableBridge extends StatelessWidget {
-  const _GlassSearchableBridge({
-    required this.tabs,
-    required this.selectedIndex,
-    required this.onTabSelected,
-    required this.searchConfig,
-    this.controller,
-    this.isSearchActive = false,
-    this.extraButton,
-    this.spacing = 8,
-    this.horizontalPadding = 20,
-    this.verticalPadding = 20,
-    this.barHeight = 64,
-    this.searchBarHeight = 50,
-    this.barBorderRadius = 32,
-    this.tabPadding = const EdgeInsets.symmetric(horizontal: 4),
-    this.iconLabelSpacing = 4,
-    this.enableBlend = true,
-    this.blendAmount = 10,
-    this.settings,
-    this.showIndicator = true,
-    this.indicatorColor,
-    this.indicatorSettings,
-    this.indicatorPinchStrength = 0.4,
-    this.selectedIconColor,
-    this.unselectedIconColor,
-    this.iconSize = 24,
-    this.labelFontSize = 11,
-    this.textStyle,
-    this.glowDuration = const Duration(milliseconds: 300),
-    this.glowBlurRadius = 32,
-    this.glowSpreadRadius = 8,
-    this.glowOpacity = 0.6,
-    this.interactionBehavior = GlassInteractionBehavior.full,
-    this.pressScale = 1.04,
-    this.interactionGlowColor,
-    this.interactionGlowRadius = 1.5,
-    this.quality,
-    this.magnification = 1.15,
-    this.innerBlur = 0.0,
-    this.platformViewBackdrop = false,
-    this.maskingQuality = MaskingQuality.high,
-    this.backgroundKey,
-    this.springDescription,
-    this.tabPillAnchor = GlassTabPillAnchor.start,
-    this.tabWidth,
-    this.indicatorExpansion =
-        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    this.onBarTap,
-    this.whitenAtBottom = true,
-    this.whitenBottomThreshold = 45.0,
-    this.whitenAtBottomTarget = 1.0,
-    this.scrollController,
-    this.adaptiveBrightness = false,
-    this.onBrightnessChanged,
-    this.brightnessOverride,
-  });
-
-  final List<GlassBottomBarTab> tabs;
-  final int selectedIndex;
-  final ValueChanged<int> onTabSelected;
-  final GlassSearchBarConfig searchConfig;
-  final SearchableBottomBarController? controller;
-  final bool isSearchActive;
-  final GlassBottomBarExtraButton? extraButton;
-  final double spacing;
-  final double horizontalPadding;
-  final double verticalPadding;
-  final double barHeight;
-  final double searchBarHeight;
-  final double barBorderRadius;
-  final EdgeInsetsGeometry tabPadding;
-  final double iconLabelSpacing;
-  final bool enableBlend;
-  final double blendAmount;
-  final LiquidGlassSettings? settings;
-  final bool showIndicator;
-  final Color? indicatorColor;
-  final LiquidGlassSettings? indicatorSettings;
-  final double indicatorPinchStrength;
-  final Color? selectedIconColor;
-  final Color? unselectedIconColor;
-  final double iconSize;
-  final double labelFontSize;
-  final TextStyle? textStyle;
-  final Duration glowDuration;
-  final double glowBlurRadius;
-  final double glowSpreadRadius;
-  final double glowOpacity;
-  final GlassInteractionBehavior interactionBehavior;
-  final double pressScale;
-  final Color? interactionGlowColor;
-  final double interactionGlowRadius;
-  final GlassQuality? quality;
-  final double magnification;
-  final double innerBlur;
-  final bool platformViewBackdrop;
-  final MaskingQuality maskingQuality;
-  final GlobalKey? backgroundKey;
-  final SpringDescription? springDescription;
-  final GlassTabPillAnchor tabPillAnchor;
-  final double? tabWidth;
-  final EdgeInsetsGeometry indicatorExpansion;
-  final VoidCallback? onBarTap;
-  final bool whitenAtBottom;
-  final double whitenBottomThreshold;
-  final double whitenAtBottomTarget;
-  final ScrollController? scrollController;
-  final bool adaptiveBrightness;
-  final ValueChanged<Brightness>? onBrightnessChanged;
-  final ValueListenable<Brightness>? brightnessOverride;
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassSearchableBottomBar(
-      tabs: tabs,
-      selectedIndex: selectedIndex,
-      onTabSelected: onTabSelected,
-      searchConfig: searchConfig,
-      controller: controller,
-      isSearchActive: isSearchActive,
-      extraButton: extraButton,
-      spacing: spacing,
-      horizontalPadding: horizontalPadding,
-      verticalPadding: verticalPadding,
-      barHeight: barHeight,
-      searchBarHeight: searchBarHeight,
-      barBorderRadius: barBorderRadius,
-      tabPadding: tabPadding,
-      iconLabelSpacing: iconLabelSpacing,
-      enableBlend: enableBlend,
-      blendAmount: blendAmount,
-      settings: settings,
-      showIndicator: showIndicator,
-      indicatorColor: indicatorColor,
-      indicatorSettings: indicatorSettings,
-      indicatorPinchStrength: indicatorPinchStrength,
-      selectedIconColor: selectedIconColor,
-      unselectedIconColor: unselectedIconColor,
-      iconSize: iconSize,
-      labelFontSize: labelFontSize,
-      textStyle: textStyle,
-      glowDuration: glowDuration,
-      glowBlurRadius: glowBlurRadius,
-      glowSpreadRadius: glowSpreadRadius,
-      glowOpacity: glowOpacity,
-      interactionBehavior: interactionBehavior,
-      pressScale: pressScale,
-      interactionGlowColor: interactionGlowColor,
-      interactionGlowRadius: interactionGlowRadius,
-      quality: quality,
-      magnification: magnification,
-      innerBlur: innerBlur,
-      platformViewBackdrop: platformViewBackdrop,
-      maskingQuality: maskingQuality,
-      backgroundKey: backgroundKey,
-      springDescription: springDescription,
-      tabPillAnchor: tabPillAnchor,
-      tabWidth: tabWidth,
-      indicatorExpansion: indicatorExpansion,
-      onBarTap: onBarTap,
-      whitenAtBottom: whitenAtBottom,
-      whitenBottomThreshold: whitenBottomThreshold,
-      whitenAtBottomTarget: whitenAtBottomTarget,
-      scrollController: scrollController,
-      adaptiveBrightness: adaptiveBrightness,
-      onBrightnessChanged: onBrightnessChanged,
-      brightnessOverride: brightnessOverride,
-    );
-  }
-}

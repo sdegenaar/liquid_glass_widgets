@@ -10,7 +10,7 @@ import 'package:flutter/cupertino.dart';
 import '../../../src/renderer/liquid_glass_renderer.dart';
 import '../../../types/glass_quality.dart';
 import '../../../utils/draggable_indicator_physics.dart';
-import 'tab_drag_gesture_mixin.dart';
+import 'tab_bar_drag_gesture_mixin.dart';
 import '../../../utils/glass_spring.dart';
 import '../../interactive/glass_button.dart';
 import '../../shared/adaptive_glass.dart';

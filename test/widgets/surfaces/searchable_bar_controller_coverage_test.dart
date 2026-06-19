@@ -5,7 +5,7 @@ import 'package:flutter/physics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/widgets/surfaces/glass_bottom_bar.dart'
     show ExtraButtonPosition, GlassTabPillAnchor;
-import 'package:liquid_glass_widgets/widgets/surfaces/shared/searchable_bottom_bar_controller.dart';
+import 'package:liquid_glass_widgets/widgets/surfaces/shared/tab_bar_searchable_controller.dart';
 
 void main() {
   // ── SearchablePillLayout value-type ───────────────────────────────────────

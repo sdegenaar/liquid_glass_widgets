@@ -20,7 +20,7 @@ import '../../shared/animated_glass_indicator.dart';
 import '../../shared/inherited_liquid_glass.dart';
 import '../glass_bottom_bar.dart' show MaskingQuality, JellyClipper;
 import 'glass_search_bar_config.dart';
-import 'tab_drag_gesture_mixin.dart';
+import 'tab_bar_drag_gesture_mixin.dart';
 
 // =============================================================================
 // _DismissPill

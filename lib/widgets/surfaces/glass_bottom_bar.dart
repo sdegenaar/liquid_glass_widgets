@@ -1,32 +1,12 @@
-// Using deprecated Colors.withOpacity for backwards compatibility with
-// existing code patterns in the codebase.
 // ignore_for_file: deprecated_member_use
-
-// Implementation inspired by example code in the liquid_glass_renderer package
-// by whynotmake-it team (https://github.com/whynotmake-it/flutter_liquid_glass).
-// Used under MIT License.
-
-import 'dart:ui' as ui;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show ValueListenable;
 import '../../src/renderer/liquid_glass_renderer.dart';
-
+import '../../src/types/glass_interaction_behavior.dart';
 import '../../types/glass_quality.dart';
 import '../interactive/glass_button.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
-import '../shared/glass_content_aware_scope.dart';
-import '../shared/inherited_liquid_glass.dart';
-import '../../theme/glass_theme_data.dart';
-import '../../theme/glass_theme_helpers.dart';
-import '../../src/types/glass_interaction_behavior.dart';
-import 'shared/bottom_bar_internal.dart'
-    show
-        BottomBarExtraBtn,
-        BottomBarTabItem,
-        TabIndicator,
-        kBottomBarGlassDefaults,
-        resolveBarLabelColor;
-import 'shared/bar_layout_utils.dart';
+import 'shared/tab_bar_bottom_layout.dart';
 
 /// A glass morphism bottom navigation bar following Apple's design patterns.
 ///
@@ -201,7 +181,7 @@ enum MaskingQuality {
     'GlassBottomBar will be removed in v2.0. '
     'Migration: replace GlassBottomBar( with GlassTabBar.bottom( '
     'and GlassBottomBarTab( with GlassTab(.')
-class GlassBottomBar extends StatefulWidget {
+class GlassBottomBar extends StatelessWidget {
   /// Creates a glass bottom navigation bar.
   const GlassBottomBar({
     required this.tabs,
@@ -615,248 +595,52 @@ class GlassBottomBar extends StatefulWidget {
   final double glowOpacity;
 
   @override
-  State<GlassBottomBar> createState() => _GlassBottomBarState();
+  Widget build(BuildContext context) => TabBarBottomLayout(
+        tabs: tabs,
+        selectedIndex: selectedIndex,
+        onTabSelected: onTabSelected,
+        extraButton: extraButton,
+        spacing: spacing,
+        horizontalPadding: horizontalPadding,
+        verticalPadding: verticalPadding,
+        barHeight: barHeight,
+        barBorderRadius: barBorderRadius,
+        tabPadding: tabPadding,
+        iconLabelSpacing: iconLabelSpacing,
+        enableBlend: enableBlend,
+        blendAmount: blendAmount,
+        settings: settings,
+        showIndicator: showIndicator,
+        indicatorColor: indicatorColor,
+        indicatorSettings: indicatorSettings,
+        indicatorPinchStrength: indicatorPinchStrength,
+        selectedIconColor: selectedIconColor,
+        unselectedIconColor: unselectedIconColor,
+        iconSize: iconSize,
+        labelFontSize: labelFontSize,
+        textStyle: textStyle,
+        glowDuration: glowDuration,
+        glowBlurRadius: glowBlurRadius,
+        glowSpreadRadius: glowSpreadRadius,
+        glowOpacity: glowOpacity,
+        quality: quality,
+        magnification: magnification,
+        innerBlur: innerBlur,
+        maskingQuality: maskingQuality,
+        backgroundKey: backgroundKey,
+        tabWidth: tabWidth,
+        indicatorExpansion: indicatorExpansion,
+        interactionGlowColor: interactionGlowColor,
+        interactionGlowRadius: interactionGlowRadius,
+        interactionBehavior: interactionBehavior,
+        pressScale: pressScale,
+        platformViewBackdrop: platformViewBackdrop,
+        adaptiveBrightness: adaptiveBrightness,
+        onBrightnessChanged: onBrightnessChanged,
+        brightnessOverride: brightnessOverride,
+      );
 }
 
-class _GlassBottomBarState extends State<GlassBottomBar> {
-  // Delegate to the shared const — single source of truth in bottom_bar_internal.dart.
-  // Both bars reference kBottomBarGlassDefaults so their glass is guaranteed identical.
-  static const _defaultGlassSettings = kBottomBarGlassDefaults;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!widget.adaptiveBrightness && widget.brightnessOverride == null) {
-      return _buildBar(context, null);
-    }
-    return GlassContentAwareBrightness(
-      brightnessOverride: widget.brightnessOverride,
-      onBrightnessChanged: widget.onBrightnessChanged,
-      builder: (context, brightness, darkAmount) =>
-          _buildBar(context, darkAmount),
-    );
-  }
-
-  /// Builds the bar. [darkAmount] is the animated light→dark cross-fade
-  /// position when the adaptive brightness machinery is active, or null in
-  /// the classic (ambient-brightness) path.
-  Widget _buildBar(BuildContext context, double? darkAmount) {
-    final effectiveQuality = GlassThemeHelpers.resolveQuality(
-      context,
-      widgetQuality: widget.quality,
-      fallback: GlassQuality.premium,
-    );
-
-    // Resolve interaction glow color: explicit param → GlassThemeData.primary → null
-    // (null lets the internal widget use its own hardcoded fallback).
-    final resolvedGlowColors =
-        GlassThemeData.of(context).glowColorsFor(context);
-    final effectiveInteractionGlowColor =
-        widget.interactionGlowColor ?? resolvedGlowColors.primary;
-
-    final dynamicLabelColor = resolveBarLabelColor(context, darkAmount);
-    final resolvedSelectedIconColor =
-        widget.selectedIconColor ?? dynamicLabelColor;
-    final resolvedUnselectedIconColor =
-        widget.unselectedIconColor ?? dynamicLabelColor;
-
-    // Glow appearance fields come from the theme; they cannot be set per-widget
-    // because they are part of the theme palette. Widgets that need custom
-    // values should supply a custom GlassGlowColors via GlassTheme.
-    final effectiveGlowBlurRadius = resolvedGlowColors.glowBlurRadius;
-    final effectiveGlowSpreadRadius = resolvedGlowColors.glowSpreadRadius;
-    final effectiveGlowOpacity = resolvedGlowColors.glowOpacity;
-
-    // Use custom glass settings or cached defaults for bottom bars
-    final effectiveSettings = widget.settings ?? _defaultGlassSettings;
-
-    return AdaptiveLiquidGlassLayer(
-      settings: effectiveSettings,
-      quality: effectiveQuality,
-      platformViewBackdrop: widget.platformViewBackdrop,
-      blendAmount: widget.enableBlend
-          ? widget.blendAmount
-          : 0, // Impeller-only (gracefully ignored on Skia)
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: widget.horizontalPadding,
-          vertical: widget.verticalPadding,
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            // Compute how much width the extra button consumes, if present.
-            final extraBtnW = widget.extraButton != null
-                ? widget.extraButton!.size + widget.spacing
-                : 0.0;
-            // Available width for the tab pill inside the padded row.
-            final maxTabW = constraints.maxWidth - extraBtnW;
-            // Resolve the pill width: compact (tabWidth × count) or fill (null).
-            final tabPillW = resolveTabPillWidth(
-              tabWidth: widget.tabWidth,
-              tabCount: widget.tabs.length,
-              maxAvailable: maxTabW,
-            );
-
-            return SizedBox(
-              height: widget.barHeight,
-              child: Builder(
-                builder: (context) {
-                  return Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      // 1. Optional extra button — painted first (bottom of z-order).
-                      // Pinned to the trailing edge. Painted before the tab pill
-                      // so the jelly indicator's glass effect correctly overlaps and
-                      // refracts the extra button during horizontal stretch physics.
-                      // This matches the z-order pattern in GlassSearchableBottomBar.
-                      if (widget.extraButton != null)
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          bottom: 0,
-                          child: SizedBox(
-                            width: widget.extraButton!.size,
-                            height: widget.barHeight,
-                            child: BottomBarExtraBtn(
-                              config: widget.extraButton!,
-                              quality: effectiveQuality,
-                              iconColor: widget.extraButton!.iconColor ??
-                                  resolvedUnselectedIconColor,
-                              enableBlend: widget.enableBlend,
-                              borderRadius: widget.barBorderRadius ==
-                                      GlassBottomBar._defaultBarBorderRadius
-                                  ? null
-                                  : widget.barBorderRadius,
-                            ),
-                          ),
-                        ),
-
-                      // 2. Tab pill — painted last (top of z-order).
-                      // The jelly indicator uses Stack(clipBehavior: Clip.none)
-                      // internally, so it can overflow past the pill bounds.
-                      Positioned(
-                        left: 0,
-                        top: 0,
-                        width: tabPillW,
-                        height: widget.barHeight,
-                        child: TabIndicator(
-                          quality: effectiveQuality,
-                          visible: widget.showIndicator,
-                          tabIndex: widget.selectedIndex,
-                          tabCount: widget.tabs.length,
-                          indicatorColor: widget.indicatorColor,
-                          indicatorSettings: widget.indicatorSettings,
-                          indicatorPinchStrength: widget.indicatorPinchStrength,
-                          onTabChanged: widget.onTabSelected,
-                          barHeight: widget.barHeight,
-                          barBorderRadius: widget.barBorderRadius,
-                          tabPadding: widget.tabPadding,
-                          backgroundKey: widget.backgroundKey,
-                          maskingQuality: widget.maskingQuality,
-                          indicatorExpansion: widget.indicatorExpansion,
-                          platformViewBackdrop: widget.platformViewBackdrop,
-                          interactionGlowColor:
-                              widget.interactionBehavior.hasGlow
-                                  ? effectiveInteractionGlowColor
-                                  : const Color(0x00000000),
-                          interactionGlowRadius: widget.interactionGlowRadius,
-                          interactionGlowBlurRadius: effectiveGlowBlurRadius,
-                          interactionGlowSpreadRadius:
-                              effectiveGlowSpreadRadius,
-                          interactionGlowOpacity: effectiveGlowOpacity,
-                          interactionScale: widget.interactionBehavior.hasScale
-                              ? widget.pressScale
-                              : 1.0,
-                          childUnselected: Row(
-                            children: [
-                              for (var i = 0; i < widget.tabs.length; i++)
-                                Expanded(
-                                  child: BottomBarTabItem(
-                                    tab: widget.tabs[i],
-                                    selected: false,
-                                    selectedIconColor:
-                                        resolvedSelectedIconColor,
-                                    unselectedIconColor:
-                                        resolvedUnselectedIconColor,
-                                    iconSize: widget.iconSize,
-                                    labelFontSize: widget.labelFontSize,
-                                    textStyle: widget.textStyle,
-                                    iconLabelSpacing: widget.iconLabelSpacing,
-                                    glowDuration: widget.glowDuration,
-                                    glowBlurRadius: widget.glowBlurRadius,
-                                    glowSpreadRadius: widget.glowSpreadRadius,
-                                    glowOpacity: widget.glowOpacity,
-                                    // onTap is null: all tap selection goes through
-                                    // TabIndicator.onBarTapDown (prevents double-fire).
-                                    onTap: null,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          // Pass selected tabs (foreground/masked layer)
-                          selectedTabBuilder: (context, intensity, alignment) =>
-                              _buildSelectedTabs(
-                                  intensity,
-                                  alignment,
-                                  resolvedSelectedIconColor,
-                                  resolvedUnselectedIconColor),
-                          magnification: widget.magnification,
-                          innerBlur: widget.innerBlur,
-                        ),
-                      ),
-                    ],
-                  ); // Stack
-                }, // Builder.builder
-              ), // Builder
-            ); // SizedBox
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSelectedTabs(double intensity, Alignment alignment,
-      Color resolvedSelectedIconColor, Color resolvedUnselectedIconColor) {
-    // Lerp magnification: 1.0 -> widget.magnification
-    final scale = ui.lerpDouble(1.0, widget.magnification, intensity) ?? 1.0;
-
-    // Selective rendering: only render tabs near the indicator (within +/- 1 tab).
-    final currentTabFloat = ((alignment.x + 1) / 2) * widget.tabs.length;
-    final affectedStart =
-        (currentTabFloat - 1).floor().clamp(0, widget.tabs.length - 1);
-    final affectedEnd =
-        (currentTabFloat + 1).ceil().clamp(0, widget.tabs.length - 1);
-
-    return Row(
-      children: [
-        for (var i = 0; i < widget.tabs.length; i++)
-          Expanded(
-            child: (i >= affectedStart && i <= affectedEnd)
-                ? Transform.scale(
-                    scale: scale,
-                    child: BottomBarTabItem(
-                      tab: widget.tabs[i],
-                      selected: true,
-                      selectedIconColor: resolvedSelectedIconColor,
-                      unselectedIconColor: resolvedUnselectedIconColor,
-                      iconSize: widget.iconSize,
-                      labelFontSize: widget.labelFontSize,
-                      textStyle: widget.textStyle,
-                      iconLabelSpacing: widget.iconLabelSpacing,
-                      glowDuration: widget.glowDuration,
-                      glowBlurRadius: widget.glowBlurRadius,
-                      glowSpreadRadius: widget.glowSpreadRadius,
-                      glowOpacity: widget.glowOpacity,
-                      // onTap is null: all tap selection goes through
-                      // TabIndicator.onBarTapDown (prevents double-fire).
-                      onTap: null,
-                    ),
-                  )
-                : const SizedBox.shrink(),
-          ),
-      ],
-    );
-  }
-}
 
 /// Configuration for a tab in [GlassBottomBar].
 ///
@@ -1040,7 +824,7 @@ class GlassBottomBarExtraButton {
   final bool collapseOnSearchFocus;
 }
 
-// TabIndicator and TabIndicatorState live in shared/bottom_bar_internal.dart.
+// TabIndicator and TabIndicatorState live in shared/tab_bar_bottom_internal.dart.
 // JellyClipper is defined below — kept here because bottom_bar_internal.dart
 // and searchable_bottom_bar_internal.dart import it via `show JellyClipper`.
 

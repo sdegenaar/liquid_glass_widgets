@@ -12,7 +12,7 @@ import 'package:flutter/physics.dart';
 
 import '../../surfaces/glass_bottom_bar.dart'
     show ExtraButtonPosition, GlassTabPillAnchor;
-import 'bar_layout_utils.dart';
+import 'tab_bar_layout_utils.dart';
 
 // =============================================================================
 // SearchablePillLayout — immutable layout result

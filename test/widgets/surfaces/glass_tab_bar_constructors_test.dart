@@ -452,7 +452,7 @@ void main() {
       expect(find.byType(GlassBottomBar), findsNothing);
     });
 
-    testWidgets('.bottom() dispatches to GlassBottomBar internally',
+    testWidgets('.bottom() dispatches to TabBarBottomLayout',
         (tester) async {
       await tester.pumpWidget(_wrap(_box(
         GlassTabBar.bottom(
@@ -463,11 +463,13 @@ void main() {
       )));
       await tester.pump();
 
-      // The bridge renders a GlassBottomBar widget in the tree
-      expect(find.byType(GlassBottomBar), findsOneWidget);
+      // GlassTabBar.bottom() now renders directly via TabBarBottomLayout
+      // (no bridge class) — GlassBottomBar does NOT appear in the tree.
+      expect(find.byType(GlassTabBar), findsOneWidget);
+      expect(find.byType(GlassBottomBar), findsNothing);
     });
 
-    testWidgets('.searchable() dispatches to GlassSearchableBottomBar internally',
+    testWidgets('.searchable() dispatches to TabBarSearchableLayout',
         (tester) async {
       await tester.pumpWidget(_wrap(
         SizedBox(
@@ -483,7 +485,10 @@ void main() {
       ));
       await tester.pump();
 
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      // GlassTabBar.searchable() now renders directly via TabBarSearchableLayout
+      // (no bridge class) — GlassSearchableBottomBar does NOT appear in the tree.
+      expect(find.byType(GlassTabBar), findsOneWidget);
+      expect(find.byType(GlassSearchableBottomBar), findsNothing);
     });
   });
 

@@ -5,7 +5,7 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_glass_widgets/widgets/surfaces/shared/bar_layout_utils.dart';
+import 'package:liquid_glass_widgets/widgets/surfaces/shared/tab_bar_layout_utils.dart';
 
 void main() {
   // ── Helpers ────────────────────────────────────────────────────────────────

@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 // Direct relative import for the internal @visibleForTesting function
 // ignore: implementation_imports
-import 'package:liquid_glass_widgets/widgets/surfaces/shared/bottom_bar_internal.dart';
+import 'package:liquid_glass_widgets/widgets/surfaces/shared/tab_bar_bottom_internal.dart';
 
 void main() {
   // ── buildIconShadows ────────────────────────────────────────────────────────

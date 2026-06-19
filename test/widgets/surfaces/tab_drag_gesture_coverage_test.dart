@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
-import 'package:liquid_glass_widgets/widgets/surfaces/shared/bottom_bar_internal.dart';
+import 'package:liquid_glass_widgets/widgets/surfaces/shared/tab_bar_bottom_internal.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
       home: Scaffold(body: LiquidGlassWidgets.wrap(child: child)),
