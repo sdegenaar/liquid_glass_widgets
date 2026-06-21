@@ -78,7 +78,7 @@ class _TabBarScrollableHomeState extends State<TabBarScrollableHome> {
                   
                   segments: List.generate(
                     _tabCount,
-                    (i) => GlassTab(label: 'Tab ${i + 1}'),
+                    (i) => GlassSegment(label: 'Tab ${i + 1}'),
                   ),
                 ),
               ),

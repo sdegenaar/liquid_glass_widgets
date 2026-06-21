@@ -129,13 +129,13 @@ class TabBarContentState extends State<TabBarContent>
     super.initState();
     _indOffsetSpring = SingleSpringController(
       vsync: this,
-      spring: GlassSpring.snappy(duration: const Duration(milliseconds: 300)),
+      spring: GlassSpring.snappy(duration: const Duration(milliseconds: 350)),
     )..addListener(() {
         if (mounted) setState(() {});
       });
     _indWidthSpring = SingleSpringController(
       vsync: this,
-      spring: GlassSpring.snappy(duration: const Duration(milliseconds: 300)),
+      spring: GlassSpring.snappy(duration: const Duration(milliseconds: 350)),
     )..addListener(() {
         if (mounted) setState(() {});
       });
@@ -257,7 +257,7 @@ class TabBarContentState extends State<TabBarContent>
       if (widget.isScrollable &&
           widget.selectedIndex < _tabOffsets.length &&
           widget.selectedIndex < _tabWidths.length) {
-        _indOffsetSpring.animateTo(_tabOffsets[widget.selectedIndex]);
+        _indOffsetSpring.setValue(_tabOffsets[widget.selectedIndex]);
         _indWidthSpring.animateTo(_tabWidths[widget.selectedIndex]);
       }
       // Programmatic selection change — ensure the new tab scrolls into view.
@@ -426,15 +426,16 @@ class TabBarContentState extends State<TabBarContent>
       _handleDragCancel();
       return;
     }
-    final double velocityThreshold = 400.0;
-    final double fixedDistanceThresholdFactor = 0.2;
     final box = context.findRenderObject() as RenderBox?;
     final double width = box?.size.width ?? 1.0;
     final double velocityX = details.velocity.pixelsPerSecond.dx;
     int targetTabIndex;
 
     if (widget.isScrollable) {
-      // Determine closest tab by physical offset
+      // Scrollable mode: find closest tab by raw pixel offset, then
+      // apply a velocity override if the user flicked hard enough.
+      // (computeTargetIndex works in normalised 0–1 space; pixel-space
+      // nearest-tab search is intentionally kept here.)
       targetTabIndex = widget.selectedIndex;
       double minDistance = double.infinity;
       for (int i = 0; i < _tabOffsets.length; i++) {
@@ -444,40 +445,29 @@ class TabBarContentState extends State<TabBarContent>
           targetTabIndex = i;
         }
       }
-
-      // Override target if flicked with sufficient velocity
-      if (velocityX.abs() > velocityThreshold) {
+      // Fling override: normalise velocity to 0–1 relative units and
+      // delegate to the shared utility so both branches share the same
+      // at-least-one-tab guarantee.
+      final double relativeVelocity = width > 0 ? velocityX / width : 0.0;
+      if (relativeVelocity.abs() > 0.5) {
         targetTabIndex =
-            (velocityX > 0 ? targetTabIndex + 1 : targetTabIndex - 1)
+            (relativeVelocity > 0 ? targetTabIndex + 1 : targetTabIndex - 1)
                 .clamp(0, widget.tabs.length - 1);
       }
     } else {
-      // Fixed mode: calculate position relative to current tab center
-      final double currentPx = ((_xAlign + 1) / 2) * width;
-      final double tabWidth = width / widget.tabs.length;
-      final double centerOfSelected = (widget.selectedIndex + 0.5) * tabWidth;
-
-      // Use direction and a 20% threshold for effortless switching
-      // Added: logic to determine how many tabs were actually traversed
-      final double offsetFromStart = (currentPx - centerOfSelected);
-      final int tabsJumped = (offsetFromStart / tabWidth).round();
-
-      if (offsetFromStart.abs() > tabWidth * fixedDistanceThresholdFactor ||
-          velocityX.abs() > velocityThreshold) {
-        // If we flicked or moved significantly, we calculate target relative to start
-        // but allow it to be more than just +/- 1
-        if (tabsJumped.abs() > 1) {
-          targetTabIndex = widget.selectedIndex + tabsJumped;
-        } else {
-          targetTabIndex = currentPx > centerOfSelected
-              ? widget.selectedIndex + 1
-              : widget.selectedIndex - 1;
-        }
-      } else {
-        targetTabIndex = widget.selectedIndex;
-      }
-
-      targetTabIndex = targetTabIndex.clamp(0, widget.tabs.length - 1);
+      // Fixed mode: delegate entirely to DraggableIndicatorPhysics so this
+      // widget no longer duplicates the snapping math used by the rest of
+      // the package. Velocity is normalised from px/s → 0–1 relative units
+      // to match computeTargetIndex's coordinate contract.
+      final double currentRelativeX = (_xAlign + 1) / 2;
+      final double relativeVelocity = width > 0 ? velocityX / width : 0.0;
+      final double itemWidth = 1.0 / widget.tabs.length;
+      targetTabIndex = DraggableIndicatorPhysics.computeTargetIndex(
+        currentRelativeX: currentRelativeX,
+        velocityX: relativeVelocity,
+        itemWidth: itemWidth,
+        itemCount: widget.tabs.length,
+      );
     }
 
     setState(() {
@@ -492,8 +482,8 @@ class TabBarContentState extends State<TabBarContent>
     if (targetTabIndex != widget.selectedIndex) {
       widget.onTabSelected(targetTabIndex);
     } else if (widget.isScrollable) {
-      // Snap scrollable indicator to the precise tab position
-      _indOffsetSpring.animateTo(_tabOffsets[targetTabIndex]);
+      // Snap scrollable indicator to the precise tab position.
+      _indOffsetSpring.setValue(_tabOffsets[targetTabIndex]);
       _indWidthSpring.animateTo(_tabWidths[targetTabIndex]);
     }
   }
@@ -621,7 +611,7 @@ class TabBarContentState extends State<TabBarContent>
           // Normalizing velocity: pixels-per-frame to a manageable 0.0-2.0 scale for the shader
           // in scrollable mode. Prevents over-stretching into a vertical line during drag.
           final double normalizedVelocity =
-              widget.isScrollable ? velocity / 300.0 : velocity;
+              widget.isScrollable ? velocity / 150.0 : velocity;
 
           final Alignment alignment = widget.isScrollable
               ? Alignment.center
