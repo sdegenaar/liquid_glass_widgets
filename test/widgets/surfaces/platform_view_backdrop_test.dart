@@ -102,5 +102,66 @@ void main() {
       await tester.pump();
       expect(find.byType(GlassBottomBar), findsOneWidget);
     });
+
+    testWidgets('GlassContainer(platformViewBackdrop) forwards to AdaptiveGlass',
+        (tester) async {
+      // The flag threads GlassContainer → AdaptiveGlass, forcing the
+      // BackdropFilter fallback path even at premium quality.
+      await tester.pumpWidget(_wrap(const SizedBox(
+        width: 200,
+        height: 100,
+        child: GlassContainer(
+          useOwnLayer: true,
+          quality: GlassQuality.premium,
+          platformViewBackdrop: true,
+          settings: LiquidGlassSettings(blur: 5),
+          child: SizedBox.expand(),
+        ),
+      )));
+      await tester.pump();
+      expect(find.byType(GlassContainer), findsWidgets);
+    });
+
+    testWidgets('GlassIconButton(platformViewBackdrop) forwards to GlassButton',
+        (tester) async {
+      // The flag threads GlassIconButton → GlassButton → AdaptiveGlass.
+      await tester.pumpWidget(_wrap(
+        GlassIconButton(
+          icon: const Icon(Icons.add),
+          onPressed: () {},
+          useOwnLayer: true,
+          quality: GlassQuality.premium,
+          platformViewBackdrop: true,
+        ),
+      ));
+      await tester.pump();
+      expect(find.byType(GlassIconButton), findsWidgets);
+    });
+
+    testWidgets('GlassMenu(platformViewBackdrop) builds and opens',
+        (tester) async {
+      // The flag threads GlassMenu → AdaptiveLiquidGlassLayer (and the morph
+      // blob GlassContainers) once the morphing overlay is shown.
+      await tester.pumpWidget(_wrap(
+        GlassMenu(
+          quality: GlassQuality.premium,
+          platformViewBackdrop: true,
+          trigger: const Icon(Icons.more_vert),
+          items: [
+            GlassMenuItem(title: 'One', onTap: () {}),
+            GlassMenuItem(title: 'Two', onTap: () {}),
+          ],
+        ),
+      ));
+      await tester.pump();
+      expect(find.byType(GlassMenu), findsWidgets);
+
+      // Open the menu so the AdaptiveLiquidGlassLayer in the overlay builds
+      // with the forwarded flag.
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byType(GlassMenu), findsWidgets);
+    });
   });
 }

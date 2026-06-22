@@ -111,6 +111,7 @@ class GlassButtonGroup extends StatelessWidget {
     this.showDividers = true,
     this.iconSize = 22.0,
     this.itemPadding = const EdgeInsets.all(12),
+    this.platformViewBackdrop = false,
   }) : items = null;
 
   /// Creates a group of glass buttons from lightweight [GlassGroupItem]s.
@@ -133,6 +134,7 @@ class GlassButtonGroup extends StatelessWidget {
     this.showDividers = false,
     this.iconSize = 22.0,
     this.itemPadding = const EdgeInsets.all(12),
+    this.platformViewBackdrop = false,
   }) : children = const [];
 
   /// The buttons to display in the group (widget children mode).
@@ -183,6 +185,19 @@ class GlassButtonGroup extends StatelessWidget {
   /// Defaults to `EdgeInsets.all(12)`.
   final EdgeInsetsGeometry itemPadding;
 
+  /// Forces the BackdropFilter fallback render path so premium glass
+  /// renders cleanly over an iOS PlatformView.
+  ///
+  /// The premium shader pipeline cannot sample PlatformView pixels (e.g.
+  /// a Mapbox `MapWidget`), so over one it would render the group as a
+  /// solid slab. When true, the group falls back to Flutter's
+  /// BackdropFilter — which *can* sample PlatformViews on Impeller — so
+  /// `quality: GlassQuality.premium` can be used over a PlatformView
+  /// without the slab artifact. Forwarded to the underlying
+  /// [GlassButton.custom] (items mode) / [GlassContainer] (children mode).
+  /// Defaults to false.
+  final bool platformViewBackdrop;
+
   @override
   Widget build(BuildContext context) {
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
@@ -209,6 +224,7 @@ class GlassButtonGroup extends StatelessWidget {
         settings: settings,
         useOwnLayer: useOwnLayer,
         quality: effectiveQuality,
+        platformViewBackdrop: platformViewBackdrop,
         width: null, // Size to content
         height: null, // Size to content
         // Reduce stretch for grouped buttons — full stretch looks too dramatic
@@ -236,6 +252,7 @@ class GlassButtonGroup extends StatelessWidget {
       useOwnLayer: useOwnLayer,
       quality: effectiveQuality,
       settings: settings,
+      platformViewBackdrop: platformViewBackdrop,
       shape: LiquidRoundedSuperellipse(borderRadius: borderRadius),
       padding: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,

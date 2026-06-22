@@ -795,6 +795,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
         Widget result = _SheetLayout(
           interactionScale: metrics.interactionScale,
           enableInteractionGlow: widget.enableInteractionGlow,
+          platformViewBackdrop: widget.platformViewBackdrop,
           glowColor: widget.glowColor,
           glowRadius: widget.glowRadius,
           stretch: widget.stretch,

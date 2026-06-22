@@ -104,6 +104,7 @@ class GlassIconButton extends StatelessWidget {
     this.persistPressOnDrag = true,
     this.anchorStretch = true,
     this.anchorStretchSettings = const AnchorStretchSettings(),
+    this.platformViewBackdrop = false,
   });
 
   // Default icon colors are resolved at build time from CupertinoColors.label
@@ -218,6 +219,11 @@ class GlassIconButton extends StatelessWidget {
   /// See [AnchorStretchSettings] for details.
   final AnchorStretchSettings anchorStretchSettings;
 
+  /// When true (typically for iOS PlatformViews), forces the BackdropFilter
+  /// fallback render path instead of the Impeller-native shader. Forwarded to
+  /// the underlying [GlassButton] (and on to its [AdaptiveGlass]).
+  final bool platformViewBackdrop;
+
   @override
   Widget build(BuildContext context) {
     final effectiveIconSize = iconSize ?? (size * 0.5);
@@ -253,6 +259,7 @@ class GlassIconButton extends StatelessWidget {
       persistPressOnDrag: persistPressOnDrag,
       anchorStretch: anchorStretch,
       anchorStretchSettings: anchorStretchSettings,
+      platformViewBackdrop: platformViewBackdrop,
       child: iconWidget,
     );
   }
