@@ -271,6 +271,7 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
 
     geometryShader.setFloatUniforms(initialIndex: 6, (value) {
       value.setFloat(shapes.length.toDouble());
+      value.setFloat(devicePixelRatio);
       for (final shape in shapes) {
         final center = shape.shapeBounds.center;
         final size = shape.shapeBounds.size;

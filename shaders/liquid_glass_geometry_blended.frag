@@ -21,7 +21,7 @@ precision highp float; // mediump caused ~1.5px displacement banding on mobile (
 
 layout(location = 0) uniform vec2 uSize;
 layout(location = 1) uniform vec4 uOpticalProps;
-layout(location = 2) uniform float uNumShapes;
+layout(location = 2) uniform vec2 uShapeSettings; // x = numShapes, y = dpr
 layout(location = 3) uniform float uShapeData[MAX_SHAPES * 7];
 
 // sdf.glsl functions access uShapeData as a global (no array-by-value parameters,
@@ -38,11 +38,18 @@ void main() {
     float uThickness = uOpticalProps.z;
     float uBlend = uOpticalProps.w;
 
+    float uNumShapes = uShapeSettings.x;
+    float uDpr = uShapeSettings.y;
+
     vec2 fragCoord = FlutterFragCoord().xy;
 
     float sd = sceneSDF(fragCoord, int(uNumShapes), uBlend);
 
-    float foregroundAlpha = 1.0 - smoothstep(-2.0, 0.0, sd);
+    // Apply DPR-aware anti-aliasing.
+    // 1.5 logical pixels of smoothing guarantees a pristine edge that matches
+    // Flutter's native path AA.
+    float smoothing = 1.5 * uDpr;
+    float foregroundAlpha = 1.0 - smoothstep(-smoothing, 0.0, sd);
     if (foregroundAlpha < 0.01) {
         fragColor = vec4(0.0);
         return;
