@@ -225,7 +225,11 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
     return SizedBox(
       width: 160,
       child: GlassSegmentedControl(
-        segments: [GlassTab(label: 'Standard'), GlassTab(label: 'Premium'), GlassTab(label: 'Minimal')],
+        segments: [
+          GlassTab(label: 'Standard'),
+          GlassTab(label: 'Premium'),
+          GlassTab(label: 'Minimal')
+        ],
         selectedIndex: currentIndex >= 0 ? currentIndex : 1,
         onSegmentSelected: (index) {
           widget.onQualityChanged(qualities[index]);

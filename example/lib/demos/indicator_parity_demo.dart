@@ -67,7 +67,11 @@ class _IndicatorParityDemoPageState extends State<IndicatorParityDemoPage> {
   bool _isSearching = false;
 
   // ── Tab/segment data ───────────────────────────────────────────────────────
-  static const _segments = <GlassTab>[GlassTab(label: 'Journals'), GlassTab(label: 'Photos'), GlassTab(label: 'Clips')];
+  static const _segments = <GlassTab>[
+    GlassTab(label: 'Journals'),
+    GlassTab(label: 'Photos'),
+    GlassTab(label: 'Clips')
+  ];
 
   static const _tabs = [
     GlassTab(label: 'Featured', icon: Icon(CupertinoIcons.star_fill)),
@@ -219,16 +223,17 @@ class _IndicatorParityDemoPageState extends State<IndicatorParityDemoPage> {
 
                 const SizedBox(height: 16),
 
-                // ── GlassTabBar ──────────────────────────────────────────────
+                // ── GlassSegmentedControl ──────────────────────────────────────────────
                 _WidgetSection(
-                  label: 'GlassTabBar',
+                  label: 'GlassSegmentedControl',
                   color: const Color(0xFF0A84FF),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: GlassSegmentedControl(
                       segments: _tabs,
                       selectedIndex: _tabSelected,
-                      onSegmentSelected: (i) => setState(() => _tabSelected = i),
+                      onSegmentSelected: (i) =>
+                          setState(() => _tabSelected = i),
                       quality: GlassQuality.premium,
                       // height: 56 required for icon + label tabs.
                       // Default 44 is for icon-only or text-only.
@@ -264,7 +269,7 @@ class _IndicatorParityDemoPageState extends State<IndicatorParityDemoPage> {
                     quality: GlassQuality.premium,
                     indicatorPinchStrength: _pinchStrength,
                     indicatorExpansion: _expansion,
-                    indicatorSettings: _indicatorSettings,
+                    // indicatorSettings: _indicatorSettings,
                   ),
                 ),
 
@@ -673,7 +678,8 @@ class _WidgetSection extends StatelessWidget {
               color: color.withValues(alpha: 0.2),
             ),
           ),
-          clipBehavior: Clip.antiAlias,
+          clipBehavior:
+              Clip.none, // Allow jelly physics and glow to overshoot the card
           child: child,
         ),
       ],

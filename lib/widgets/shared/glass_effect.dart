@@ -420,27 +420,22 @@ class _GlassEffectState extends State<GlassEffect>
 
     // Path B: Native Impeller (Premium only)
     if (isImpeller && widget.quality == GlassQuality.premium) {
-      // ClipPath(Clip.antiAlias) adds a GPU-accelerated compositor clip that
-      // provides hardware sub-pixel AA on the indicator boundary.  We cannot
-      // use Clip.antiAliasWithSaveLayer here because LiquidGlass.withOwnLayer
-      // contains a BackdropFilterLayer — a saveLayer would isolate it from the
-      // real compositor backdrop and destroy the glass refraction effect.
-      // Clip.antiAlias creates a ClipPathLayer (no saveLayer isolation) which
-      // gives smooth GPU-native path AA applied AFTER the glass renders,
-      // overriding any pre-baked edge from the RepaintBoundary + Transform chain.
+      // No outer ClipPath here: a ClipPath clips in the widget's LOCAL (pre-jelly)
+      // coordinate space. When the parent Transform stretches the indicator taller
+      // during jelly physics, the already-clipped content has a hard edge at the
+      // original pill height, which becomes visible as a cutoff after scaling.
+      // LiquidGlass.withOwnLayer performs its own internal ClipPath for the child,
+      // and the shader uses SDF alpha masking for the pill boundary — both of which
+      // DO stretch correctly with the parent Transform.
       //
       // coverage:ignore-start
       // Unreachable in unit tests: isImpeller=false (no real GPU renderer).
       // Tested on physical device / Impeller integration tests only.
-      return ClipPath(
-        clipper: ShapeBorderClipper(shape: widget.shape),
-        clipBehavior: Clip.antiAlias,
-        child: LiquidGlass.withOwnLayer(
-          shape: widget.shape,
-          settings: widget.settings,
-          clipExpansion: widget.clipExpansion,
-          child: widget.child,
-        ),
+      return LiquidGlass.withOwnLayer(
+        shape: widget.shape,
+        settings: widget.settings,
+        clipExpansion: widget.clipExpansion,
+        child: widget.child,
       );
       // coverage:ignore-end
     }
@@ -493,27 +488,29 @@ class _GlassEffectState extends State<GlassEffect>
 
     // Path B: High-Fidelity Refraction Shader (Custom GLSL)
     // This is the "New Shader" featuring magnification and liquid distortion.
+    // No outer ClipPath: the shader computes SDF alpha internally for the pill
+    // boundary. An outer ClipPath would clip in local (pre-jelly) space,
+    // producing a hard cutoff at the original pill height when the parent
+    // jelly Transform stretches the indicator vertically. Blur is constrained
+    // to the pill path via an inner ClipPathLayer in the render object's paint.
     if (canUseRefraction && shader != null) {
-      return ClipPath(
-        clipper: ShapeBorderClipper(shape: widget.shape),
-        clipBehavior: Clip.antiAliasWithSaveLayer,
-        child: _InteractiveIndicatorEffect(
-          shader: shader,
-          settings: effectiveSettings,
-          shape: widget.shape,
-          interactionIntensity: widget.interactionIntensity,
-          densityFactor: widget.densityFactor,
-          backdropLuma: backdropLuma,
-          backgroundImage: _backgroundImage,
-          backgroundKey: effectiveKey,
-          devicePixelRatio: View.of(context).devicePixelRatio,
-          ambientRim: effectiveAmbientRim,
-          baseAlphaMultiplier: widget.baseAlphaMultiplier,
-          edgeAlphaMultiplier: effectiveEdgeAlpha,
-          rimThickness: effectiveRimThickness,
-          rimSmoothing: widget.rimSmoothing,
-          child: widget.child,
-        ),
+      return _InteractiveIndicatorEffect(
+        shader: shader,
+        settings: effectiveSettings,
+        shape: widget.shape,
+        interactionIntensity: widget.interactionIntensity,
+        densityFactor: widget.densityFactor,
+        backdropLuma: backdropLuma,
+        backgroundImage: _backgroundImage,
+        backgroundKey: effectiveKey,
+        devicePixelRatio: View.of(context).devicePixelRatio,
+        ambientRim: effectiveAmbientRim,
+        baseAlphaMultiplier: widget.baseAlphaMultiplier,
+        edgeAlphaMultiplier: effectiveEdgeAlpha,
+        rimThickness: effectiveRimThickness,
+        rimSmoothing: widget.rimSmoothing,
+        clipExpansion: widget.clipExpansion,
+        child: widget.child,
       );
     }
 
@@ -521,38 +518,30 @@ class _GlassEffectState extends State<GlassEffect>
     // Even if no background image is available, we use the custom indicator shader
     // to preserve the signature lighting, rim highlights, and structural "vibe".
     // The shader will automatically switch to "Synthetic Frost" mode.
+    // No outer ClipPath — same reason as Path B (jelly clipping).
     if (shader != null) {
-      return ClipPath(
-        clipper: ShapeBorderClipper(shape: widget.shape),
-        clipBehavior: Clip.antiAliasWithSaveLayer,
-        child: _InteractiveIndicatorEffect(
-          shader: shader,
-          settings: effectiveSettings.copyWith(blur: 0),
-          shape: widget.shape,
-          interactionIntensity: widget.interactionIntensity,
-          densityFactor: widget.densityFactor,
-          backdropLuma: backdropLuma,
-          backgroundImage: null, // Fallback mode
-          backgroundKey: null,
-          devicePixelRatio: View.of(context).devicePixelRatio,
-          ambientRim: effectiveAmbientRim,
-          baseAlphaMultiplier: widget.baseAlphaMultiplier,
-          edgeAlphaMultiplier: effectiveEdgeAlpha,
-          rimThickness: effectiveRimThickness,
-          rimSmoothing: widget.rimSmoothing,
-          child: widget.child,
-        ),
+      return _InteractiveIndicatorEffect(
+        shader: shader,
+        settings: effectiveSettings.copyWith(blur: 0),
+        shape: widget.shape,
+        interactionIntensity: widget.interactionIntensity,
+        densityFactor: widget.densityFactor,
+        backdropLuma: backdropLuma,
+        backgroundImage: null, // Fallback mode
+        backgroundKey: null,
+        devicePixelRatio: View.of(context).devicePixelRatio,
+        ambientRim: effectiveAmbientRim,
+        baseAlphaMultiplier: widget.baseAlphaMultiplier,
+        edgeAlphaMultiplier: effectiveEdgeAlpha,
+        rimThickness: effectiveRimThickness,
+        rimSmoothing: widget.rimSmoothing,
+        clipExpansion: widget.clipExpansion,
+        child: widget.child,
       );
     }
 
-    // Ultra-clean fallback if shader hasn't loaded yet
-    return ClipPath(
-      clipper: ShapeBorderClipper(shape: widget.shape),
-      child: Container(
-        color: Colors.transparent, // Invisible fallback to prevent flicker
-        child: widget.child,
-      ),
-    );
+    // Ultra-clean fallback if shader hasn't loaded yet — transparent, no clip.
+    return widget.child;
   }
 }
 
@@ -572,6 +561,7 @@ class _InteractiveIndicatorEffect extends SingleChildRenderObjectWidget {
     required this.edgeAlphaMultiplier,
     required this.rimThickness,
     required this.rimSmoothing,
+    this.clipExpansion = EdgeInsets.zero,
     required super.child,
   });
 
@@ -590,6 +580,12 @@ class _InteractiveIndicatorEffect extends SingleChildRenderObjectWidget {
   final double rimThickness;
   final double rimSmoothing;
 
+  /// Inflation budget matching the parent [AnimatedGlassIndicator._jellyClipExpansion].
+  /// The shader drawRect is inflated by this amount so that pixels pushed
+  /// outside the pill's layout bounds by horizontal/vertical jelly physics
+  /// are still painted by the shader (which self-masks via SDF alpha).
+  final EdgeInsets clipExpansion;
+
   @override
   RenderObject createRenderObject(BuildContext context) {
     return _RenderInteractiveIndicator(
@@ -607,6 +603,7 @@ class _InteractiveIndicatorEffect extends SingleChildRenderObjectWidget {
       edgeAlphaMultiplier: edgeAlphaMultiplier,
       rimThickness: rimThickness,
       rimSmoothing: rimSmoothing,
+      clipExpansion: clipExpansion,
     );
   }
 
@@ -629,7 +626,8 @@ class _InteractiveIndicatorEffect extends SingleChildRenderObjectWidget {
       ..baseAlphaMultiplier = baseAlphaMultiplier
       ..edgeAlphaMultiplier = edgeAlphaMultiplier
       ..rimThickness = rimThickness
-      ..rimSmoothing = rimSmoothing;
+      ..rimSmoothing = rimSmoothing
+      ..clipExpansion = clipExpansion;
   }
 }
 
@@ -649,6 +647,7 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
     required double edgeAlphaMultiplier,
     required double rimThickness,
     required double rimSmoothing,
+    EdgeInsets clipExpansion = EdgeInsets.zero,
   })  : _shader = shader,
         _settings = settings,
         _shape = shape,
@@ -663,6 +662,7 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
         _edgeAlphaMultiplier = edgeAlphaMultiplier,
         _rimThickness = rimThickness,
         _rimSmoothing = rimSmoothing,
+        _clipExpansion = clipExpansion,
         _cachedLightCos = math.cos(settings.lightAngle),
         _cachedLightSin = -math.sin(settings.lightAngle);
 
@@ -773,6 +773,13 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
     markNeedsPaint();
   }
 
+  EdgeInsets _clipExpansion;
+  set clipExpansion(EdgeInsets value) {
+    if (_clipExpansion == value) return;
+    _clipExpansion = value;
+    markNeedsPaint();
+  }
+
   // ── Cached light direction ────────────────────────────────────────────────
   // Avoids recomputing cos/sin on every _updateShaderUniforms call.
   // Matches the caching pattern in _RenderLightweightGlass.
@@ -830,23 +837,52 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
     return _cachedInteractiveFilter!;
   }
 
+  // Reusable ClipPathLayer handle — avoids allocation on every paint frame.
+  final _clipPathLayerHandle = LayerHandle<ClipPathLayer>();
+
+  @override
+  void dispose() {
+    _clipPathLayerHandle.layer = null;
+    super.dispose();
+  }
+
   @override
   void paint(PaintingContext context, Offset offset) {
-    if (child != null) {
-      final blurSigma = _settings.effectiveBlur;
-      if (blurSigma > 0) {
-        final filter = _getInteractiveFilter(blurSigma);
+    if (child == null) return;
 
-        context.pushLayer(
-          BackdropFilterLayer(filter: filter),
-          (context, offset) {
-            _paintGlassContent(context, offset);
-          },
-          offset,
-        );
-      } else {
-        _paintGlassContent(context, offset);
-      }
+    final blurSigma = _settings.effectiveBlur;
+    if (blurSigma > 0) {
+      final filter = _getInteractiveFilter(blurSigma);
+
+      // Clip blur to the pill shape so the BackdropFilterLayer does not bleed
+      // into the expansion zone around the jelly-physics draw rect.
+      //
+      // Clip.antiAlias is used (not Clip.antiAliasWithSaveLayer) because
+      // antiAliasWithSaveLayer would isolate the BackdropFilter from the real
+      // compositor backdrop via a saveLayer, destroying the frosted-glass effect.
+      // antiAlias creates a ClipPathLayer with no saveLayer, giving sub-pixel AA
+      // on the pill edge without compositor isolation.
+      final pillPath = _shape.getOuterPath(offset & size);
+      _clipPathLayerHandle.layer = context.pushClipPath(
+        needsCompositing,
+        offset,
+        offset & size,
+        pillPath,
+        (context, offset) {
+          context.pushLayer(
+            BackdropFilterLayer(filter: filter),
+            (context, offset) {
+              _paintGlassContent(context, offset);
+            },
+            offset,
+          );
+        },
+        clipBehavior: Clip.antiAlias,
+        oldLayer: _clipPathLayerHandle.layer,
+      );
+    } else {
+      _clipPathLayerHandle.layer = null;
+      _paintGlassContent(context, offset);
     }
   }
 
@@ -904,9 +940,26 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
       _shader.setImageSampler(0, imageToBind);
     }
 
-    // 4. Paint shader overlay
+    // 4. Paint shader overlay — inflate the draw rect by the clip expansion budget.
+    //
+    // WHY: canvas.drawRect(offset & size) normally covers only the pill's layout
+    // bounds (e.g. 90×64px). The parent jelly Transform can stretch the indicator
+    // wider/taller than those bounds. Without inflation, pixels pushed outside the
+    // layout rect by the jelly physics are never painted by the shader, producing
+    // a hard cutoff at the layout edge.
+    //
+    // The shader self-masks via SDF alpha (vec4(0.0) outside pill), so inflating
+    // the rect into the expansion zone causes zero visual bleed — only the SDF
+    // region of the pill is rendered. The expansion values match
+    // AnimatedGlassIndicator._jellyClipExpansion (20px H, 15px V).
     final paint = Paint()..shader = _shader;
-    canvas.drawRect(offset & size, paint);
+    final expandedRect = Rect.fromLTRB(
+      offset.dx - _clipExpansion.left,
+      offset.dy - _clipExpansion.top,
+      offset.dx + size.width + _clipExpansion.right,
+      offset.dy + size.height + _clipExpansion.bottom,
+    );
+    canvas.drawRect(expandedRect, paint);
   }
 
   void _updateShaderUniforms(Size size, Offset physicalOrigin,

@@ -121,6 +121,8 @@ class BottomBarTabItem extends StatelessWidget {
     required this.selected,
     required this.selectedIconColor,
     required this.unselectedIconColor,
+    this.selectedLabelColor,
+    this.unselectedLabelColor,
     required this.iconSize,
     required this.textStyle,
     required this.labelFontSize,
@@ -137,6 +139,8 @@ class BottomBarTabItem extends StatelessWidget {
   final bool selected;
   final Color selectedIconColor;
   final Color unselectedIconColor;
+  final Color? selectedLabelColor;
+  final Color? unselectedLabelColor;
   final double iconSize;
   final TextStyle? textStyle;
 
@@ -158,6 +162,9 @@ class BottomBarTabItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final iconColor = selected ? selectedIconColor : unselectedIconColor;
+    final labelColor = selected
+        ? (selectedLabelColor ?? selectedIconColor)
+        : (unselectedLabelColor ?? unselectedIconColor);
     final iconWidget = selected ? (tab.activeIcon ?? tab.icon) : tab.icon;
 
     return GestureDetector(
@@ -250,7 +257,7 @@ class BottomBarTabItem extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: textStyle ??
                         TextStyle(
-                          color: iconColor,
+                          color: labelColor,
                           fontSize: labelFontSize,
                           fontWeight:
                               selected ? FontWeight.w600 : FontWeight.w500,
@@ -339,6 +346,7 @@ class TabIndicator extends StatefulWidget {
     required this.quality,
     required this.barHeight,
     required this.barBorderRadius,
+    this.indicatorBorderRadius,
     required this.tabPadding,
     required this.magnification,
     required this.innerBlur,
@@ -368,6 +376,7 @@ class TabIndicator extends StatefulWidget {
   final GlassQuality quality;
   final double barHeight;
   final double barBorderRadius;
+  final double? indicatorBorderRadius;
   final EdgeInsetsGeometry tabPadding;
   final double magnification;
   final double innerBlur;
@@ -449,9 +458,11 @@ class TabIndicatorState extends State<TabIndicator>
 
     // AnimatedGlassIndicator multiplies by 2 for the glass superellipse shape,
     // but uses the value directly for the background DecoratedBox.
-    final backgroundRadius = widget.barBorderRadius * 2; // 64
+    final effectiveIndicatorRadius =
+        widget.indicatorBorderRadius ?? widget.barBorderRadius;
+    final backgroundRadius = effectiveIndicatorRadius * 2; // 64
     final glassRadius =
-        widget.barBorderRadius; // 32 → becomes 64 after internal *2
+        effectiveIndicatorRadius; // 32 → becomes 64 after internal *2
 
     // Lateral sway: the bar body subtly follows the interactive pill during
     // horizontal drags, mimicking iOS 26 bottom bar physics. The SpringBuilder

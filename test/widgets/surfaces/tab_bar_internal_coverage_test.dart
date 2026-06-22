@@ -308,7 +308,8 @@ void main() {
       final sel = ValueNotifier<int>(0);
       await _pumpBar(tester, tabs: _tabs, selectedIndex: sel);
 
-      await tester.drag(find.byType(GlassSegmentedControl), const Offset(45, 0));
+      await tester.drag(
+          find.byType(GlassSegmentedControl), const Offset(45, 0));
       await tester.pumpAndSettle();
 
       expect(sel.value, greaterThan(0));
@@ -319,7 +320,8 @@ void main() {
       final sel = ValueNotifier<int>(0);
       await _pumpBar(tester, tabs: _tabs3, selectedIndex: sel, width: 300);
 
-      await tester.fling(find.byType(GlassSegmentedControl), const Offset(10, 0), 600);
+      await tester.fling(
+          find.byType(GlassSegmentedControl), const Offset(10, 0), 600);
       await tester.pumpAndSettle();
 
       expect(sel.value, 1);
@@ -330,7 +332,8 @@ void main() {
       final sel = ValueNotifier<int>(2);
       await _pumpBar(tester, tabs: _tabs3, selectedIndex: sel, width: 300);
 
-      await tester.fling(find.byType(GlassSegmentedControl), const Offset(-10, 0), 600);
+      await tester.fling(
+          find.byType(GlassSegmentedControl), const Offset(-10, 0), 600);
       await tester.pumpAndSettle();
 
       expect(sel.value, 1);
@@ -341,7 +344,8 @@ void main() {
       final sel = ValueNotifier<int>(0);
       await _pumpBar(tester, tabs: _tabs3, selectedIndex: sel, width: 300);
 
-      await tester.fling(find.byType(GlassSegmentedControl), const Offset(-200, 0), 800);
+      await tester.fling(
+          find.byType(GlassSegmentedControl), const Offset(-200, 0), 800);
       await tester.pumpAndSettle();
 
       expect(sel.value, 0);
@@ -352,7 +356,8 @@ void main() {
       final sel = ValueNotifier<int>(2);
       await _pumpBar(tester, tabs: _tabs3, selectedIndex: sel, width: 300);
 
-      await tester.fling(find.byType(GlassSegmentedControl), const Offset(200, 0), 800);
+      await tester.fling(
+          find.byType(GlassSegmentedControl), const Offset(200, 0), 800);
       await tester.pumpAndSettle();
 
       expect(sel.value, 2);
@@ -363,8 +368,8 @@ void main() {
       final sel = ValueNotifier<int>(0);
       await _pumpBar(tester, tabs: _tabs3, selectedIndex: sel);
 
-      final gesture =
-          await tester.startGesture(tester.getCenter(find.byType(GlassSegmentedControl)));
+      final gesture = await tester
+          .startGesture(tester.getCenter(find.byType(GlassSegmentedControl)));
       await gesture.moveBy(const Offset(-500, 0));
       await tester.pump(const Duration(milliseconds: 16));
       await gesture.up();
@@ -378,8 +383,8 @@ void main() {
       final sel = ValueNotifier<int>(2);
       await _pumpBar(tester, tabs: _tabs3, selectedIndex: sel);
 
-      final gesture =
-          await tester.startGesture(tester.getCenter(find.byType(GlassSegmentedControl)));
+      final gesture = await tester
+          .startGesture(tester.getCenter(find.byType(GlassSegmentedControl)));
       await gesture.moveBy(const Offset(500, 0));
       await tester.pump(const Duration(milliseconds: 16));
       await gesture.up();
@@ -413,7 +418,8 @@ void main() {
       await _pumpBar(tester,
           tabs: _tabs, selectedIndex: sel, isScrollable: true);
 
-      await tester.fling(find.byType(GlassSegmentedControl), const Offset(5, 0), 600);
+      await tester.fling(
+          find.byType(GlassSegmentedControl), const Offset(5, 0), 600);
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
@@ -478,7 +484,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
       await tester.pumpAndSettle();
 
-      await tester.fling(find.byType(GlassSegmentedControl), const Offset(200, 0), 200);
+      await tester.fling(
+          find.byType(GlassSegmentedControl), const Offset(200, 0), 200);
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);

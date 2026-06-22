@@ -78,10 +78,10 @@ class GlassPicker extends StatelessWidget {
     final secondaryColor = CupertinoColors.secondaryLabel.resolveFrom(context);
 
     final effectiveTextStyle =
-        textStyle ?? TextStyle(fontSize: 16, color: labelColor);
+        TextStyle(fontSize: 16, color: labelColor).merge(textStyle);
 
     final effectivePlaceholderStyle =
-        placeholderStyle ?? TextStyle(fontSize: 16, color: secondaryColor);
+        TextStyle(fontSize: 16, color: secondaryColor).merge(placeholderStyle);
 
     final child = Container(
       height: height,

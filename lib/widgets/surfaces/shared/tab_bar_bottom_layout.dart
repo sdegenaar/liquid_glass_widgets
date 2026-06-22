@@ -18,10 +18,7 @@ import '../../shared/glass_content_aware_scope.dart';
 import '../../../theme/glass_theme_data.dart';
 import '../../../theme/glass_theme_helpers.dart';
 import '../glass_bottom_bar.dart'
-    show
-        GlassBottomBarExtraButton,
-        GlassBottomBarTab,
-        MaskingQuality;
+    show GlassBottomBarExtraButton, GlassBottomBarTab, MaskingQuality;
 import 'tab_bar_bottom_internal.dart'
     show
         BottomBarExtraBtn,
@@ -58,6 +55,8 @@ class TabBarBottomLayout extends StatefulWidget {
     this.indicatorPinchStrength = 0.4,
     this.selectedIconColor,
     this.unselectedIconColor,
+    this.selectedLabelColor,
+    this.unselectedLabelColor,
     this.iconSize = 24,
     this.labelFontSize = 11,
     this.textStyle,
@@ -71,6 +70,7 @@ class TabBarBottomLayout extends StatefulWidget {
     this.maskingQuality = MaskingQuality.high,
     this.backgroundKey,
     this.tabWidth,
+    this.indicatorBorderRadius,
     this.indicatorExpansion =
         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     this.interactionGlowColor,
@@ -105,6 +105,8 @@ class TabBarBottomLayout extends StatefulWidget {
   final double indicatorPinchStrength;
   final Color? selectedIconColor;
   final Color? unselectedIconColor;
+  final Color? selectedLabelColor;
+  final Color? unselectedLabelColor;
   final double iconSize;
   final double labelFontSize;
   final TextStyle? textStyle;
@@ -118,6 +120,7 @@ class TabBarBottomLayout extends StatefulWidget {
   final MaskingQuality maskingQuality;
   final GlobalKey? backgroundKey;
   final double? tabWidth;
+  final double? indicatorBorderRadius;
   final EdgeInsetsGeometry indicatorExpansion;
   final Color? interactionGlowColor;
   final double interactionGlowRadius;
@@ -182,11 +185,12 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
     final effectiveSettings = widget.settings ?? _defaultGlassSettings;
 
     return AdaptiveLiquidGlassLayer(
+      clipExpansion:
+          const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
       settings: effectiveSettings,
       quality: effectiveQuality,
       platformViewBackdrop: widget.platformViewBackdrop,
-      blendAmount:
-          widget.enableBlend ? widget.blendAmount : 0,
+      blendAmount: widget.enableBlend ? widget.blendAmount : 0,
       child: Padding(
         padding: EdgeInsets.symmetric(
           horizontal: widget.horizontalPadding,
@@ -254,6 +258,7 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
                           onTabChanged: widget.onTabSelected,
                           barHeight: widget.barHeight,
                           barBorderRadius: widget.barBorderRadius,
+                          indicatorBorderRadius: widget.indicatorBorderRadius,
                           tabPadding: widget.tabPadding,
                           backgroundKey: widget.backgroundKey,
                           maskingQuality: widget.maskingQuality,
@@ -265,12 +270,12 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
                                   : const Color(0x00000000),
                           interactionGlowRadius: widget.interactionGlowRadius,
                           interactionGlowBlurRadius: effectiveGlowBlurRadius,
-                          interactionGlowSpreadRadius: effectiveGlowSpreadRadius,
+                          interactionGlowSpreadRadius:
+                              effectiveGlowSpreadRadius,
                           interactionGlowOpacity: effectiveGlowOpacity,
-                          interactionScale:
-                              widget.interactionBehavior.hasScale
-                                  ? widget.pressScale
-                                  : 1.0,
+                          interactionScale: widget.interactionBehavior.hasScale
+                              ? widget.pressScale
+                              : 1.0,
                           childUnselected: Row(
                             children: [
                               for (var i = 0; i < widget.tabs.length; i++)
@@ -278,9 +283,14 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
                                   child: BottomBarTabItem(
                                     tab: widget.tabs[i],
                                     selected: false,
-                                    selectedIconColor: resolvedSelectedIconColor,
+                                    selectedIconColor:
+                                        resolvedSelectedIconColor,
                                     unselectedIconColor:
                                         resolvedUnselectedIconColor,
+                                    selectedLabelColor:
+                                        widget.selectedLabelColor,
+                                    unselectedLabelColor:
+                                        widget.unselectedLabelColor,
                                     iconSize: widget.iconSize,
                                     labelFontSize: widget.labelFontSize,
                                     textStyle: widget.textStyle,
@@ -337,6 +347,8 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
                       selected: true,
                       selectedIconColor: resolvedSelectedIconColor,
                       unselectedIconColor: resolvedUnselectedIconColor,
+                      selectedLabelColor: widget.selectedLabelColor,
+                      unselectedLabelColor: widget.unselectedLabelColor,
                       iconSize: widget.iconSize,
                       labelFontSize: widget.labelFontSize,
                       textStyle: widget.textStyle,

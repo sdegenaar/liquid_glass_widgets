@@ -55,7 +55,7 @@ Every remaining widget should map to a recognisable iOS 26 component:
 | `GlassScaffold` | `CupertinoPageScaffold` + glass | ✅ New in 0.14, solid |
 | `GlassAppBar` | `UINavigationBar` (transparent) | ✅ Name is Flutter-discoverable, implementation is iOS 26 |
 | `GlassTabBar` | `UITabBarController` (unified) | ✅ One widget: `.bottom()`, `.searchable()`, default inline |
-| `GlassFilterBar` | Scrollable category chips | ✅ NEW — promoted from `GlassTabBar.isScrollable` |
+| `GlassSegmentedControl` | `UISegmentedControl` | ✅ `GlassSegmentedControl.scrollable()` covers filter chips |
 | `GlassBottomBar` | `@Deprecated` → `GlassTabBar.bottom()` | Thin shim, removed in 2.0 |
 | `GlassSearchableBottomBar` | `@Deprecated` → `GlassTabBar.searchable()` | Thin shim, removed in 2.0 |
 | `GlassToolbar` | `UIToolbar` | ✅ Solid |
@@ -126,12 +126,10 @@ The defining architectural change before 1.0. Ships everything in one release:
    become zero-logic `StatelessWidget` wrappers forwarding to
    `GlassTabBar.bottom()` / `.searchable()`. Kept through 1.x, removed in 2.0.
 
-5. **`GlassFilterBar`** — new widget for scrollable horizontal chip rows.
+5. **`GlassSegmentedControl.scrollable()`** — handles scrollable horizontal chip rows.
    Promoted from `GlassTabBar(isScrollable: true)`. That flag is deprecated.
 
-6. **Always-visible resting glass** — spring target from `0.0` → `restingThickness`
-   (default `0.35`). `indicatorColor` remapped from solid fill → glass tint.
-   See ARCHITECTURE.md § v0.18.0 for full technical details.
+6. ~~**Always-visible resting glass**~~ — *Omitted: Native iOS 26 uses a flat translucent pill at rest to save GPU cycles, blooming into glass only during interactions. Our existing implementation using `indicatorColor` already handles this correctly. Forcing the Impeller glass shader to run permanently at rest was deemed a performance waste and a deviation from native behaviour.*
 
 ### Breaking Changes
 
@@ -147,7 +145,7 @@ The defining architectural change before 1.0. Ships everything in one release:
 GlassBottomBar(tabs: [...], ...)           → GlassTabBar.bottom(tabs: [...], ...)
 GlassSearchableBottomBar(tabs: [...], ...) → GlassTabBar.searchable(tabs: [...], ...)
 GlassBottomBarTab(label: 'Home', icon: ...)→ GlassTab(label: 'Home', icon: ...)
-GlassTabBar(isScrollable: true, ...)       → GlassFilterBar(items: [...], ...)
+GlassTabBar(isScrollable: true, ...)       → GlassSegmentedControl.scrollable(segments: [...], ...)
 ```
 
 ---

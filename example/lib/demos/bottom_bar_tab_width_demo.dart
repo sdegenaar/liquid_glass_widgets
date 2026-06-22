@@ -71,14 +71,11 @@ class _TabWidthDemoPageState extends State<TabWidthDemoPage> {
 
   List<GlassTab> get _tabs => [
         const GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
-        const GlassTab(
-            label: 'Browse', icon: Icon(CupertinoIcons.compass)),
-        const GlassTab(
-            label: 'Library', icon: Icon(CupertinoIcons.book)),
+        const GlassTab(label: 'Browse', icon: Icon(CupertinoIcons.compass)),
+        const GlassTab(label: 'Library', icon: Icon(CupertinoIcons.book)),
         const GlassTab(
             label: 'Radio', icon: Icon(CupertinoIcons.radiowaves_left)),
-        const GlassTab(
-            label: 'Profile', icon: Icon(CupertinoIcons.person)),
+        const GlassTab(label: 'Profile', icon: Icon(CupertinoIcons.person)),
       ].take(_tabCount).toList();
 
   @override

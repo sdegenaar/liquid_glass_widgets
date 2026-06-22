@@ -157,6 +157,8 @@ class GlassTabBar extends StatefulWidget {
     double indicatorPinchStrength = 0.4,
     Color? selectedIconColor,
     Color? unselectedIconColor,
+    Color? selectedLabelColor,
+    Color? unselectedLabelColor,
     double iconSize = 24,
     double labelFontSize = 11,
     TextStyle? textStyle,
@@ -170,6 +172,7 @@ class GlassTabBar extends StatefulWidget {
     MaskingQuality maskingQuality = MaskingQuality.high,
     GlobalKey? backgroundKey,
     double? tabWidth,
+    double? indicatorBorderRadius,
     EdgeInsetsGeometry indicatorExpansion =
         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     Color? interactionGlowColor,
@@ -204,6 +207,8 @@ class GlassTabBar extends StatefulWidget {
           indicatorPinchStrength: indicatorPinchStrength,
           selectedIconColor: selectedIconColor,
           unselectedIconColor: unselectedIconColor,
+          selectedLabelColor: selectedLabelColor,
+          unselectedLabelColor: unselectedLabelColor,
           iconSize: iconSize,
           labelFontSize: labelFontSize,
           textStyle: textStyle,
@@ -217,6 +222,7 @@ class GlassTabBar extends StatefulWidget {
           maskingQuality: maskingQuality,
           backgroundKey: backgroundKey,
           tabWidth: tabWidth,
+          indicatorBorderRadius: indicatorBorderRadius,
           indicatorExpansion: indicatorExpansion,
           interactionGlowColor: interactionGlowColor,
           interactionGlowRadius: interactionGlowRadius,
@@ -261,6 +267,8 @@ class GlassTabBar extends StatefulWidget {
     double indicatorPinchStrength = 0.4,
     Color? selectedIconColor,
     Color? unselectedIconColor,
+    Color? selectedLabelColor,
+    Color? unselectedLabelColor,
     double iconSize = 24,
     double labelFontSize = 11,
     TextStyle? textStyle,
@@ -282,6 +290,7 @@ class GlassTabBar extends StatefulWidget {
     SpringDescription? springDescription,
     GlassTabPillAnchor tabPillAnchor = GlassTabPillAnchor.start,
     double? tabWidth,
+    double? indicatorBorderRadius,
     EdgeInsetsGeometry indicatorExpansion =
         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     VoidCallback? onBarTap,
@@ -319,6 +328,8 @@ class GlassTabBar extends StatefulWidget {
           indicatorPinchStrength: indicatorPinchStrength,
           selectedIconColor: selectedIconColor,
           unselectedIconColor: unselectedIconColor,
+          selectedLabelColor: selectedLabelColor,
+          unselectedLabelColor: unselectedLabelColor,
           iconSize: iconSize,
           labelFontSize: labelFontSize,
           textStyle: textStyle,
@@ -339,6 +350,7 @@ class GlassTabBar extends StatefulWidget {
           springDescription: springDescription,
           tabPillAnchor: tabPillAnchor,
           tabWidth: tabWidth,
+          indicatorBorderRadius: indicatorBorderRadius,
           indicatorExpansion: indicatorExpansion,
           onBarTap: onBarTap,
           whitenAtBottom: whitenAtBottom,
@@ -362,6 +374,8 @@ class GlassTabBar extends StatefulWidget {
       this.indicatorColor,
       this.selectedIconColor,
       this.unselectedIconColor,
+      this.selectedLabelColor,
+      this.unselectedLabelColor,
       this.iconSize = 24.0,
       this.settings,
       this.quality,
@@ -391,6 +405,7 @@ class GlassTabBar extends StatefulWidget {
       this.labelFontSize = 11,
       this.textStyle,
       this.tabWidth,
+      this.indicatorBorderRadius,
       this.extraButton,
       this.interactionBehavior = GlassInteractionBehavior.full,
       this.pressScale = 1.04,
@@ -436,6 +451,12 @@ class GlassTabBar extends StatefulWidget {
 
   /// Icon color for unselected tabs.
   final Color? unselectedIconColor;
+
+  /// Label color for selected tab.
+  final Color? selectedLabelColor;
+
+  /// Label color for unselected tabs.
+  final Color? unselectedLabelColor;
 
   /// Size of the icons.
   final double iconSize;
@@ -556,6 +577,9 @@ class GlassTabBar extends StatefulWidget {
   /// Fixed width per tab slot. Null = fill all available space.
   final double? tabWidth;
 
+  /// Override border radius for the indicator. Null = inherits from barBorderRadius.
+  final double? indicatorBorderRadius;
+
   /// Optional extra action button (bottom/searchable only).
   final GlassBottomBarExtraButton? extraButton;
 
@@ -673,6 +697,8 @@ class _GlassTabBarState extends State<GlassTabBar> {
       indicatorPinchStrength: widget.indicatorPinchStrength,
       selectedIconColor: widget.selectedIconColor,
       unselectedIconColor: widget.unselectedIconColor,
+      selectedLabelColor: widget.selectedLabelColor,
+      unselectedLabelColor: widget.unselectedLabelColor,
       iconSize: widget.iconSize,
       labelFontSize: widget.labelFontSize,
       textStyle: widget.textStyle,
@@ -686,6 +712,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
       maskingQuality: widget.maskingQuality,
       backgroundKey: widget.backgroundKey,
       tabWidth: widget.tabWidth,
+      indicatorBorderRadius: widget.indicatorBorderRadius,
       indicatorExpansion: widget.indicatorExpansion,
       interactionGlowColor: widget.interactionGlowColor,
       interactionGlowRadius: widget.interactionGlowRadius,
@@ -734,6 +761,8 @@ class _GlassTabBarState extends State<GlassTabBar> {
       indicatorPinchStrength: widget.indicatorPinchStrength,
       selectedIconColor: widget.selectedIconColor,
       unselectedIconColor: widget.unselectedIconColor,
+      selectedLabelColor: widget.selectedLabelColor,
+      unselectedLabelColor: widget.unselectedLabelColor,
       iconSize: widget.iconSize,
       labelFontSize: widget.labelFontSize,
       textStyle: widget.textStyle,
@@ -754,6 +783,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
       springDescription: widget.springDescription,
       tabPillAnchor: widget.tabPillAnchor,
       tabWidth: widget.tabWidth,
+      indicatorBorderRadius: widget.indicatorBorderRadius,
       indicatorExpansion: widget.indicatorExpansion,
       onBarTap: widget.onBarTap,
       whitenAtBottom: widget.whitenAtBottom,

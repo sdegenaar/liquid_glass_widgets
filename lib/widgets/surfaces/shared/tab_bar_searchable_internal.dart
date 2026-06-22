@@ -109,6 +109,7 @@ class SearchableTabIndicator extends StatefulWidget {
     required this.quality,
     required this.barHeight,
     required this.barBorderRadius,
+    this.indicatorBorderRadius,
     required this.tabPadding,
     required this.magnification,
     required this.innerBlur,
@@ -147,6 +148,7 @@ class SearchableTabIndicator extends StatefulWidget {
   final GlassQuality quality;
   final double barHeight;
   final double barBorderRadius;
+  final double? indicatorBorderRadius;
   final EdgeInsetsGeometry tabPadding;
   final double magnification;
   final double innerBlur;
@@ -263,8 +265,10 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
         theme.textTheme.textStyle.color?.withValues(alpha: .1) ??
         _fallbackIndicatorColor;
     final targetAlignment = computeTabAlignment(widget.tabIndex);
-    final backgroundRadius = widget.barBorderRadius * 2;
-    final glassRadius = widget.barBorderRadius;
+    final indicatorRadius =
+        widget.indicatorBorderRadius ?? widget.barBorderRadius;
+    final backgroundRadius = indicatorRadius * 2;
+    final glassRadius = indicatorRadius;
 
     // Lateral sway: the bar body subtly follows the interactive pill during
     // horizontal drags, mimicking iOS 26 bottom bar physics. The SpringBuilder

@@ -75,7 +75,6 @@ class _TabBarScrollableHomeState extends State<TabBarScrollableHome> {
                   quality: GlassQuality.premium,
                   selectedIndex: _selectedIndex,
                   onSegmentSelected: (i) => setState(() => _selectedIndex = i),
-                  
                   segments: List.generate(
                     _tabCount,
                     (i) => GlassSegment(label: 'Tab ${i + 1}'),

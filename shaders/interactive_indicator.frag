@@ -190,9 +190,9 @@ void main() {
       bg = vec3(colR.r, colG.g, colB.b);
     }
   } else {
-    // SYNTHETIC LIQUID: Bright clear base with subtle tint
-    // We use a high base color (0.9) to ensure it looks like pure glass
-    bg = vec3(0.9);
+    // SYNTHETIC LIQUID: Use the passed indicator color
+    // This allows the standard mode to respect the color passed to the widget
+    bg = uGlassColor.rgb;
   }
   
   // uLightDirection is passed from Dart as [cos(angle), -sin(angle)]
@@ -259,13 +259,11 @@ void main() {
   // ==========================================================================
   
   // Start with background — glass transmits and adds luminosity, not darkness.
-  // uSaturation doubles as bgBoost for Standard (how much the captured bg is brightened).
-  // uSaturation also sets the synthetic bright base when no background is captured.
-  // Default: saturation=1.08 → bgBoost=1.08 (compensates for backdrop being slightly darker).
-  // Synthetic base = uSaturation * 1.11 → 1.08 * 1.11 ≈ 1.2 (same as before).
-  float bgBoost = uSaturation;         // TUNE via LiquidGlassSettings.saturation
-  float synthBase = uSaturation * 1.11; // TUNE: synthetic bright base (no-bg path)
-  vec3 finalColor = (uHasBackground > 0.5) ? (bg * bgBoost) : vec3(synthBase);
+  // bgBoost boosts the background texture (if present) based on saturation.
+  // In synthetic mode, we just use the un-boosted bg color so it matches exactly
+  // what the user passed as the indicatorColor, preserving its brightness.
+  float bgBoost = uSaturation;
+  vec3 finalColor = (uHasBackground > 0.5) ? (bg * bgBoost) : bg;
   
   // Add rim highlight (only if rimColor is non-zero)
   finalColor += rimColor * borderMask;

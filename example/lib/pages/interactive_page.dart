@@ -301,20 +301,34 @@ class _InteractivePageState extends State<InteractivePage> {
                       ),
                       SizedBox(height: 12),
                       GlassSegmentedControl(
-                        segments: [GlassTab(label: 'Daily'), GlassTab(label: 'Weekly'), GlassTab(label: 'Monthly')],
+                        segments: [
+                          GlassTab(label: 'Daily'),
+                          GlassTab(label: 'Weekly'),
+                          GlassTab(label: 'Monthly')
+                        ],
                         selectedIndex: _segment1,
                         onSegmentSelected: (i) => setState(() => _segment1 = i),
                         quality: GlassQuality.premium,
                       ),
                       SizedBox(height: 12),
                       GlassSegmentedControl(
-                        segments: [GlassTab(label: 'Daily'), GlassTab(label: 'Weekly'), GlassTab(label: 'Monthly')],
+                        segments: [
+                          GlassTab(label: 'Daily'),
+                          GlassTab(label: 'Weekly'),
+                          GlassTab(label: 'Monthly')
+                        ],
                         selectedIndex: _segment1,
                         onSegmentSelected: (i) => setState(() => _segment1 = i),
                       ),
                       SizedBox(height: 24),
                       GlassSegmentedControl(
-                        segments: [GlassTab(label: 'XS'), GlassTab(label: 'S'), GlassTab(label: 'M'), GlassTab(label: 'L'), GlassTab(label: 'XL')],
+                        segments: [
+                          GlassTab(label: 'XS'),
+                          GlassTab(label: 'S'),
+                          GlassTab(label: 'M'),
+                          GlassTab(label: 'L'),
+                          GlassTab(label: 'XL')
+                        ],
                         selectedIndex: _segment2,
                         onSegmentSelected: (i) => setState(() => _segment2 = i),
                         height: 28,

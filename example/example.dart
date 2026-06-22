@@ -68,8 +68,7 @@ class _HomePageState extends State<_HomePage> {
   static const _tabs = [
     GlassTab(icon: Icon(Icons.home_rounded), label: 'Home'),
     GlassTab(icon: Icon(Icons.explore_rounded), label: 'Explore'),
-    GlassTab(
-        icon: Icon(Icons.library_music_rounded), label: 'Library'),
+    GlassTab(icon: Icon(Icons.library_music_rounded), label: 'Library'),
   ];
 
   @override

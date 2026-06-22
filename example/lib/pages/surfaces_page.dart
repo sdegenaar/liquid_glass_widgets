@@ -128,8 +128,10 @@ class SurfacesPage extends StatelessWidget {
 
                       SizedBox(height: 40),
 
-                      // ── GlassTabBar ──────────────────────────────────
-                      const _SectionTitle(title: 'GlassTabBar'),
+                      // ── GlassSegmentedControl / GlassTabBar (Inline) ────────
+                      const _SectionTitle(
+                          title:
+                              'GlassTabBar (Inline) / GlassSegmentedControl'),
                       SizedBox(height: 16),
                       const _TabBarDemo(),
 
@@ -875,8 +877,7 @@ class _TabBarScrollableExampleState extends State<_TabBarScrollableExample> {
 
   @override
   Widget build(BuildContext context) {
-    return GlassSegmentedControl(
-      isScrollable: true,
+    return GlassSegmentedControl.scrollable(
       segments: List.generate(
         10,
         (i) => GlassTab(label: 'Category ${i + 1}'),

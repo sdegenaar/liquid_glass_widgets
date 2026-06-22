@@ -27,7 +27,11 @@ import '../glass_bottom_bar.dart'
         GlassTabPillAnchor,
         MaskingQuality;
 import 'tab_bar_bottom_internal.dart'
-    show BottomBarExtraBtn, BottomBarTabItem, kBottomBarGlassDefaults, resolveBarLabelColor;
+    show
+        BottomBarExtraBtn,
+        BottomBarTabItem,
+        kBottomBarGlassDefaults,
+        resolveBarLabelColor;
 import 'glass_search_bar_config.dart';
 import 'tab_bar_searchable_controller.dart';
 import 'tab_bar_searchable_internal.dart'
@@ -64,6 +68,8 @@ class TabBarSearchableLayout extends StatefulWidget {
     this.indicatorPinchStrength = 0.4,
     this.selectedIconColor,
     this.unselectedIconColor,
+    this.selectedLabelColor,
+    this.unselectedLabelColor,
     this.iconSize = 24,
     this.labelFontSize = 11,
     this.textStyle,
@@ -84,6 +90,7 @@ class TabBarSearchableLayout extends StatefulWidget {
     this.interactionBehavior = GlassInteractionBehavior.full,
     this.pressScale = 1.04,
     this.tabWidth,
+    this.indicatorBorderRadius,
     this.indicatorExpansion =
         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     this.onBarTap,
@@ -126,6 +133,8 @@ class TabBarSearchableLayout extends StatefulWidget {
   final double indicatorPinchStrength;
   final Color? selectedIconColor;
   final Color? unselectedIconColor;
+  final Color? selectedLabelColor;
+  final Color? unselectedLabelColor;
   final double iconSize;
   final double labelFontSize;
   final TextStyle? textStyle;
@@ -146,6 +155,7 @@ class TabBarSearchableLayout extends StatefulWidget {
   final GlassInteractionBehavior interactionBehavior;
   final double pressScale;
   final double? tabWidth;
+  final double? indicatorBorderRadius;
   final EdgeInsetsGeometry indicatorExpansion;
   final VoidCallback? onBarTap;
   final bool whitenAtBottom;
@@ -278,8 +288,9 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
   LiquidGlassSettings _applyWhiten(LiquidGlassSettings s, bool isLight) {
     final base = s.whitenStrength;
     final t = (widget.whitenAtBottom && isLight) ? _whitenBoostCtrl.value : 0.0;
-    final eff =
-        (base + (widget.whitenAtBottomTarget - base) * t).clamp(0.0, 1.0).toDouble();
+    final eff = (base + (widget.whitenAtBottomTarget - base) * t)
+        .clamp(0.0, 1.0)
+        .toDouble();
     return s.copyWith(whitenStrength: eff);
   }
 
@@ -303,7 +314,8 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
       fallback: GlassQuality.premium,
     );
 
-    final resolvedGlowColors = GlassThemeData.of(context).glowColorsFor(context);
+    final resolvedGlowColors =
+        GlassThemeData.of(context).glowColorsFor(context);
     final effectiveInteractionGlowColor =
         widget.interactionGlowColor ?? resolvedGlowColors.primary;
 
@@ -506,7 +518,8 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                                   : const Color(0x00000000),
                           interactionGlowRadius: widget.interactionGlowRadius,
                           interactionGlowBlurRadius: effectiveGlowBlurRadius,
-                          interactionGlowSpreadRadius: effectiveGlowSpreadRadius,
+                          interactionGlowSpreadRadius:
+                              effectiveGlowSpreadRadius,
                           interactionGlowOpacity: effectiveGlowOpacity,
                           onFocusChanged: (focused) {
                             if (focused) {
@@ -576,6 +589,7 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                           onTabChanged: widget.onTabSelected,
                           barHeight: animH,
                           barBorderRadius: widget.barBorderRadius,
+                          indicatorBorderRadius: widget.indicatorBorderRadius,
                           tabPadding: widget.tabPadding,
                           maskingQuality: widget.maskingQuality,
                           magnification: widget.magnification,
@@ -593,7 +607,8 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                                   : const Color(0x00000000),
                           interactionGlowRadius: widget.interactionGlowRadius,
                           interactionGlowBlurRadius: effectiveGlowBlurRadius,
-                          interactionGlowSpreadRadius: effectiveGlowSpreadRadius,
+                          interactionGlowSpreadRadius:
+                              effectiveGlowSpreadRadius,
                           interactionGlowOpacity: effectiveGlowOpacity,
                           enableBackgroundAnimation:
                               widget.interactionBehavior.hasScale,
@@ -618,7 +633,8 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                               widget.searchConfig.onSearchToggle(false),
                           childUnselected: _buildTabRow(
                             selected: false,
-                            resolvedSelectedIconColor: resolvedSelectedIconColor,
+                            resolvedSelectedIconColor:
+                                resolvedSelectedIconColor,
                             resolvedUnselectedIconColor:
                                 resolvedUnselectedIconColor,
                           ),
@@ -627,7 +643,8 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                             selected: true,
                             intensity: intensity,
                             alignment: alignment,
-                            resolvedSelectedIconColor: resolvedSelectedIconColor,
+                            resolvedSelectedIconColor:
+                                resolvedSelectedIconColor,
                             resolvedUnselectedIconColor:
                                 resolvedUnselectedIconColor,
                           ),
@@ -702,6 +719,8 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                         selected: true,
                         selectedIconColor: resolvedSelectedIconColor,
                         unselectedIconColor: resolvedUnselectedIconColor,
+                        selectedLabelColor: widget.selectedLabelColor,
+                        unselectedLabelColor: widget.unselectedLabelColor,
                         iconSize: widget.iconSize,
                         labelFontSize: widget.labelFontSize,
                         textStyle: widget.textStyle,
@@ -728,6 +747,8 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
               selected: false,
               selectedIconColor: resolvedSelectedIconColor,
               unselectedIconColor: resolvedUnselectedIconColor,
+              selectedLabelColor: widget.selectedLabelColor,
+              unselectedLabelColor: widget.unselectedLabelColor,
               iconSize: widget.iconSize,
               labelFontSize: widget.labelFontSize,
               textStyle: widget.textStyle,

@@ -281,6 +281,37 @@ void main() {
       expect(find.text('Home'), findsWidgets);
     });
 
+    testWidgets('selectedLabelColor and unselectedLabelColor pass through',
+        (tester) async {
+      await tester.pumpWidget(_wrap(_box(
+        GlassTabBar.bottom(
+          tabs: [_tab('Home'), _tab('Settings')],
+          selectedIndex: 0,
+          onTabSelected: (_) {},
+          selectedLabelColor: Colors.purple,
+          unselectedLabelColor: Colors.teal,
+        ),
+      )));
+      await tester.pump();
+
+      expect(find.text('Home'), findsWidgets);
+    });
+
+    testWidgets('indicatorBorderRadius passes through without crash',
+        (tester) async {
+      await tester.pumpWidget(_wrap(_box(
+        GlassTabBar.bottom(
+          tabs: [_tab('Home'), _tab('Settings')],
+          selectedIndex: 0,
+          onTabSelected: (_) {},
+          indicatorBorderRadius: 12.0,
+        ),
+      )));
+      await tester.pump();
+
+      expect(find.text('Home'), findsWidgets);
+    });
+
     testWidgets('GlassInteractionBehavior.none renders without crash',
         (tester) async {
       await tester.pumpWidget(_wrap(_box(

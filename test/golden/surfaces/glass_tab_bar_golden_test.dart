@@ -22,14 +22,14 @@ void main() {
               Center(
                 child: AdaptiveLiquidGlassLayer(
                   settings: settingsWithoutLighting,
-                  child: GlassTabBar(
-                    tabs: const [
-                      GlassTab(label: 'Timeline'),
-                      GlassTab(label: 'Mentions'),
-                      GlassTab(label: 'Messages'),
+                  child: GlassSegmentedControl(
+                    segments: const [
+                      GlassSegment(label: 'Timeline'),
+                      GlassSegment(label: 'Mentions'),
+                      GlassSegment(label: 'Messages'),
                     ],
                     selectedIndex: 0,
-                    onTabSelected: (_) {},
+                    onSegmentSelected: (_) {},
                   ),
                 ),
               ),
@@ -41,14 +41,14 @@ void main() {
               Center(
                 child: AdaptiveLiquidGlassLayer(
                   settings: settingsWithoutLighting,
-                  child: GlassTabBar(
-                    tabs: const [
-                      GlassTab(label: 'Timeline'),
-                      GlassTab(label: 'Mentions'),
-                      GlassTab(label: 'Messages'),
+                  child: GlassSegmentedControl(
+                    segments: const [
+                      GlassSegment(label: 'Timeline'),
+                      GlassSegment(label: 'Mentions'),
+                      GlassSegment(label: 'Messages'),
                     ],
                     selectedIndex: 1,
-                    onTabSelected: (_) {},
+                    onSegmentSelected: (_) {},
                   ),
                 ),
               ),
@@ -71,15 +71,15 @@ void main() {
               Center(
                 child: AdaptiveLiquidGlassLayer(
                   settings: settingsWithoutLighting,
-                  child: GlassTabBar(
-                    tabs: const [
-                      GlassTab(icon: Icon(Icons.home)),
-                      GlassTab(icon: Icon(Icons.search)),
-                      GlassTab(icon: Icon(Icons.notifications)),
-                      GlassTab(icon: Icon(Icons.settings)),
+                  child: GlassSegmentedControl(
+                    segments: const [
+                      GlassSegment(icon: Icon(Icons.home)),
+                      GlassSegment(icon: Icon(Icons.search)),
+                      GlassSegment(icon: Icon(Icons.notifications)),
+                      GlassSegment(icon: Icon(Icons.settings)),
                     ],
                     selectedIndex: 0,
-                    onTabSelected: (_) {},
+                    onSegmentSelected: (_) {},
                   ),
                 ),
               ),
@@ -102,15 +102,15 @@ void main() {
               Center(
                 child: AdaptiveLiquidGlassLayer(
                   settings: settingsWithoutLighting,
-                  child: GlassTabBar(
+                  child: GlassSegmentedControl(
                     height: 56,
-                    tabs: const [
-                      GlassTab(icon: Icon(Icons.home), label: 'Home'),
-                      GlassTab(icon: Icon(Icons.search), label: 'Search'),
-                      GlassTab(icon: Icon(Icons.person), label: 'Profile'),
+                    segments: const [
+                      GlassSegment(icon: Icon(Icons.home), label: 'Home'),
+                      GlassSegment(icon: Icon(Icons.search), label: 'Search'),
+                      GlassSegment(icon: Icon(Icons.person), label: 'Profile'),
                     ],
                     selectedIndex: 0,
-                    onTabSelected: (_) {},
+                    onSegmentSelected: (_) {},
                   ),
                 ),
               ),
@@ -133,21 +133,21 @@ void main() {
               Center(
                 child: AdaptiveLiquidGlassLayer(
                   settings: settingsWithoutLighting,
-                  child: GlassTabBar(
+                  child: GlassSegmentedControl(
                     height: 60,
-                    tabs: const [
-                      GlassTab(label: 'Tab 1'),
-                      GlassTab(label: 'Tab 2'),
-                      GlassTab(label: 'Tab 3'),
+                    segments: const [
+                      GlassSegment(label: 'Tab 1'),
+                      GlassSegment(label: 'Tab 2'),
+                      GlassSegment(label: 'Tab 3'),
                     ],
                     selectedIndex: 1,
-                    onTabSelected: (_) {},
-                    selectedLabelStyle: const TextStyle(
+                    onSegmentSelected: (_) {},
+                    selectedTextStyle: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Colors.blue,
                     ),
-                    unselectedLabelStyle: TextStyle(
+                    unselectedTextStyle: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       color: Colors.white.withValues(alpha: 0.5),
@@ -175,14 +175,13 @@ void main() {
               Center(
                 child: AdaptiveLiquidGlassLayer(
                   settings: settingsWithoutLighting,
-                  child: GlassTabBar(
-                    isScrollable: true,
-                    tabs: List.generate(
+                  child: GlassSegmentedControl.scrollable(
+                    segments: List.generate(
                       8,
-                      (i) => GlassTab(label: 'Category ${i + 1}'),
+                      (i) => GlassSegment(label: 'Category ${i + 1}'),
                     ),
                     selectedIndex: 3,
-                    onTabSelected: (_) {},
+                    onSegmentSelected: (_) {},
                   ),
                 ),
               ),
@@ -203,16 +202,16 @@ void main() {
             name: 'with own layer',
             child: buildWithGradientBackground(
               Center(
-                child: GlassTabBar(
+                child: GlassSegmentedControl(
                   useOwnLayer: true,
                   settings: settingsWithoutLighting,
-                  tabs: const [
-                    GlassTab(label: 'Tab 1'),
-                    GlassTab(label: 'Tab 2'),
-                    GlassTab(label: 'Tab 3'),
+                  segments: const [
+                    GlassSegment(label: 'Tab 1'),
+                    GlassSegment(label: 'Tab 2'),
+                    GlassSegment(label: 'Tab 3'),
                   ],
                   selectedIndex: 1,
-                  onTabSelected: (_) {},
+                  onSegmentSelected: (_) {},
                 ),
               ),
             ),

@@ -446,11 +446,10 @@ class GlassScaffold extends StatelessWidget {
                       // are multiple positions. Falling back to 0.0 for that
                       // brief ~300 ms window is correct UX — the header just
                       // stays fully visible during the transition.
-                      final offset =
-                          headerScrollController!.hasClients &&
-                                  headerScrollController!.positions.length == 1
-                              ? headerScrollController!.offset
-                              : 0.0;
+                      final offset = headerScrollController!.hasClients &&
+                              headerScrollController!.positions.length == 1
+                          ? headerScrollController!.offset
+                          : 0.0;
                       // Guard against divide-by-zero if headerFadeDistance == 0.
                       final opacity = headerFadeDistance > 0
                           ? (1.0 - offset / headerFadeDistance).clamp(0.0, 1.0)

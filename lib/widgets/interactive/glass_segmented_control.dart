@@ -489,8 +489,7 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
 
     // ── Scrollable mode: 100% mirrors GlassTabBar(isScrollable: true) ────────
     if (widget.isScrollable) {
-      final isLight =
-          CupertinoTheme.brightnessOf(context) == Brightness.light;
+      final isLight = CupertinoTheme.brightnessOf(context) == Brightness.light;
       final bg = widget.backgroundColor ??
           (isLight ? _defaultLightBg : _defaultDarkBg);
       final borderRadius = BorderRadius.circular(widget.borderRadius);
@@ -531,10 +530,10 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
         return AdaptiveLiquidGlassLayer(
           settings: effectiveSettings,
           quality: effectiveQuality,
-          child: RepaintBoundary(child: content),
+          child: content,
         );
       }
-      return RepaintBoundary(child: content);
+      return content;
     }
 
     // ── Fixed mode: equal-width SegmentedControlContent ───────────────────────
@@ -543,41 +542,45 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
             ? CupertinoColors.black.withValues(alpha: 0.08)
             : CupertinoColors.white.withValues(alpha: 0.12));
 
-    final control = Container(
+    // SizedBox sets the height without clipping. DecoratedBox paints the
+    // background without enforcing a clip — jelly expansion can overflow freely.
+    final control = SizedBox(
       height: widget.height,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(widget.borderRadius),
-      ),
-      padding: widget.padding,
-      child: SegmentedControlContent(
-        segments: widget.segments,
-        selectedIndex: widget.selectedIndex,
-        onSegmentSelected: widget.onSegmentSelected,
-        selectedTextStyle: widget.selectedTextStyle,
-        unselectedTextStyle: widget.unselectedTextStyle,
-        indicatorColor: widget.indicatorColor,
-        indicatorSettings: widget.indicatorSettings,
-        indicatorPinchStrength: widget.indicatorPinchStrength,
-        indicatorExpansion: widget.indicatorExpansion,
-        borderRadius: widget.borderRadius,
-        quality: effectiveQuality,
-        backgroundKey: widget.backgroundKey,
-        interactionBehavior: widget.interactionBehavior,
-        glowColor: widget.glowColor,
-        glowRadius: widget.glowRadius,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(widget.borderRadius),
+        ),
+        child: Padding(
+          padding: widget.padding,
+          child: SegmentedControlContent(
+            segments: widget.segments,
+            selectedIndex: widget.selectedIndex,
+            onSegmentSelected: widget.onSegmentSelected,
+            selectedTextStyle: widget.selectedTextStyle,
+            unselectedTextStyle: widget.unselectedTextStyle,
+            indicatorColor: widget.indicatorColor,
+            indicatorSettings: widget.indicatorSettings,
+            indicatorPinchStrength: widget.indicatorPinchStrength,
+            indicatorExpansion: widget.indicatorExpansion,
+            borderRadius: widget.borderRadius,
+            quality: effectiveQuality,
+            backgroundKey: widget.backgroundKey,
+            interactionBehavior: widget.interactionBehavior,
+            glowColor: widget.glowColor,
+            glowRadius: widget.glowRadius,
+          ),
+        ),
       ),
     );
-
-    final isolatedControl = RepaintBoundary(child: control);
 
     if (widget.useOwnLayer) {
       return AdaptiveLiquidGlassLayer(
         settings: effectiveSettings,
         quality: effectiveQuality,
-        child: isolatedControl,
+        child: control,
       );
     }
-    return isolatedControl;
+    return control;
   }
 }

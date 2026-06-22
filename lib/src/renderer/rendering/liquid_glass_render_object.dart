@@ -427,7 +427,11 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
     Rect bounds,
   ) {
     // Work in local coordinate space — no matteTransform applied.
-    final localBounds = bounds.snapToPixels(devicePixelRatio);
+    // Inflate by 2 logical pixels (= 2×DPR physical pixels after snapToPixels
+    // aligns to the pixel grid) to ensure the anti-aliased SDF edge is fully
+    // captured. Without this, the picture boundaries tightly crop the fractional
+    // edge pixels, abruptly cutting off the rim lighting at the pill boundary.
+    final localBounds = bounds.snapToPixels(devicePixelRatio).inflate(2.0);
     final size = localBounds.size * devicePixelRatio;
 
     final logging = LgrLogs.isLogActive(logger);

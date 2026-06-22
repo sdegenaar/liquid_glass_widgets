@@ -217,19 +217,17 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
         CupertinoTheme.of(context).textTheme.textStyle.color ??
             CupertinoColors.label;
 
-    final selectedTextStyle = widget.selectedTextStyle ??
-        TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: dynamicLabelColor,
-        );
+    final selectedTextStyle = TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+      color: dynamicLabelColor,
+    ).merge(widget.selectedTextStyle);
 
-    final unselectedTextStyle = widget.unselectedTextStyle ??
-        TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          color: dynamicLabelColor.withValues(alpha: 0.6),
-        );
+    final unselectedTextStyle = TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w500,
+      color: dynamicLabelColor.withValues(alpha: 0.6),
+    ).merge(widget.unselectedTextStyle);
 
     return Listener(
       // Raw pointer events fire BEFORE gesture recognizers and never compete
@@ -269,13 +267,36 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
                   : 0.0,
               builder: (context, thickness, child) {
                 final isPremiumQuality = widget.quality == GlassQuality.premium;
-                return RepaintBoundary(
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      // Pass 1 — solid background pill, always below labels.
-                      // For non-premium quality the glass effect is also included
-                      // here (single-pass, cheaper path).
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    // Pass 1 — solid background pill, always below labels.
+                    // For non-premium quality the glass effect is also included
+                    // here (single-pass, cheaper path).
+                    AnimatedGlassIndicator(
+                      velocity: velocity,
+                      itemCount: widget.segments.length,
+                      alignment: alignment,
+                      thickness: thickness,
+                      quality: widget.quality,
+                      indicatorColor: indicatorColor,
+                      isBackgroundIndicator: false,
+                      paintBackground: true,
+                      paintGlass: !isPremiumQuality,
+                      borderRadius: indicatorRadius,
+                      settings: widget.indicatorSettings,
+                      pinchStrength: widget.indicatorPinchStrength,
+                      expansion: widget.indicatorExpansion,
+                      backgroundKey: widget.backgroundKey,
+                    ),
+                    // Segment labels paint between the two indicator passes so
+                    // the premium glass layer above can refract them.
+                    child!,
+                    // Pass 2 (premium only) — glass-only pass rendered ABOVE
+                    // the labels so the shader samples and refracts them,
+                    // matching the iOS 26 refraction seen in GlassTabBar /
+                    // GlassBottomBar.
+                    if (isPremiumQuality)
                       AnimatedGlassIndicator(
                         velocity: velocity,
                         itemCount: widget.segments.length,
@@ -284,40 +305,15 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
                         quality: widget.quality,
                         indicatorColor: indicatorColor,
                         isBackgroundIndicator: false,
-                        paintBackground: true,
-                        paintGlass: !isPremiumQuality,
+                        paintBackground: false,
+                        paintGlass: true,
                         borderRadius: indicatorRadius,
                         settings: widget.indicatorSettings,
                         pinchStrength: widget.indicatorPinchStrength,
                         expansion: widget.indicatorExpansion,
                         backgroundKey: widget.backgroundKey,
                       ),
-                      // Segment labels paint between the two indicator passes so
-                      // the premium glass layer above can refract them.
-                      child!,
-                      // Pass 2 (premium only) — glass-only pass rendered ABOVE
-                      // the labels so the shader samples and refracts them,
-                      // matching the iOS 26 refraction seen in GlassTabBar /
-                      // GlassBottomBar.
-                      if (isPremiumQuality)
-                        AnimatedGlassIndicator(
-                          velocity: velocity,
-                          itemCount: widget.segments.length,
-                          alignment: alignment,
-                          thickness: thickness,
-                          quality: widget.quality,
-                          indicatorColor: indicatorColor,
-                          isBackgroundIndicator: false,
-                          paintBackground: false,
-                          paintGlass: true,
-                          borderRadius: indicatorRadius,
-                          settings: widget.indicatorSettings,
-                          pinchStrength: widget.indicatorPinchStrength,
-                          expansion: widget.indicatorExpansion,
-                          backgroundKey: widget.backgroundKey,
-                        ),
-                    ],
-                  ),
+                  ],
                 );
               },
               child: Row(

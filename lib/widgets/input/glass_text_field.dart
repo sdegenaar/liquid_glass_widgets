@@ -586,7 +586,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
       fontSize: 16,
       height: 1.2,
     );
-    final effectiveStyle = widget.textStyle ?? defaultTextStyle;
+    final effectiveStyle = defaultTextStyle.merge(widget.textStyle);
     final fontSize = effectiveStyle.fontSize ?? 16.0;
     final effectiveLineHeight =
         textScaler.scale(fontSize) * (effectiveStyle.height ?? 1.2);
@@ -662,10 +662,10 @@ class _GlassTextFieldState extends State<GlassTextField> {
             onTapOutside: widget.onTapOutside ??
                 (event) => FocusManager.instance.primaryFocus?.unfocus(),
             inputFormatters: widget.inputFormatters,
-            style: widget.textStyle ?? defaultTextStyle,
+            style: defaultTextStyle.merge(widget.textStyle),
             placeholder: widget.placeholder,
             placeholderStyle:
-                widget.placeholderStyle ?? defaultPlaceholderStyle,
+                defaultPlaceholderStyle.merge(widget.placeholderStyle),
             padding: EdgeInsets.zero,
             decoration: null,
           ),

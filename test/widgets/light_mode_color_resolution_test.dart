@@ -228,12 +228,12 @@ void main() {
       await tester.pumpWidget(
         _buildApp(
           brightness: Brightness.dark,
-          child: GlassTabBar(
+          child: GlassSegmentedControl(
             selectedIndex: 0,
-            onTabSelected: (_) {},
-            tabs: const [
-              GlassTab(label: 'Tab 1'),
-              GlassTab(label: 'Tab 2'),
+            onSegmentSelected: (_) {},
+            segments: const [
+              GlassSegment(label: 'Tab 1'),
+              GlassSegment(label: 'Tab 2'),
             ],
           ),
         ),
@@ -241,13 +241,18 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should render without error
-      expect(find.byType(GlassTabBar), findsOneWidget);
+      expect(find.byType(GlassSegmentedControl), findsOneWidget);
       // Selected tab text should be visible (white-ish in dark mode)
-      final selectedText = tester.widget<Text>(
-        find.text('Tab 1'),
+      final styleWidget = tester.widget<AnimatedDefaultTextStyle>(
+        find
+            .ancestor(
+              of: find.text('Tab 1'),
+              matching: find.byType(AnimatedDefaultTextStyle),
+            )
+            .first,
       );
-      expect(selectedText.style?.color, isNotNull);
-      final color = selectedText.style!.color!;
+      expect(styleWidget.style.color, isNotNull);
+      final color = styleWidget.style.color!;
       expect(color.r, greaterThan(0.9));
       expect(color.g, greaterThan(0.9));
       expect(color.b, greaterThan(0.9));
@@ -257,12 +262,12 @@ void main() {
       await tester.pumpWidget(
         _buildApp(
           brightness: Brightness.light,
-          child: GlassTabBar(
+          child: GlassSegmentedControl(
             selectedIndex: 0,
-            onTabSelected: (_) {},
-            tabs: const [
-              GlassTab(label: 'Tab 1'),
-              GlassTab(label: 'Tab 2'),
+            onSegmentSelected: (_) {},
+            segments: const [
+              GlassSegment(label: 'Tab 1'),
+              GlassSegment(label: 'Tab 2'),
             ],
           ),
         ),
@@ -270,13 +275,18 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should render without error
-      expect(find.byType(GlassTabBar), findsOneWidget);
+      expect(find.byType(GlassSegmentedControl), findsOneWidget);
       // Selected tab text should be visible (black-ish in light mode)
-      final selectedText = tester.widget<Text>(
-        find.text('Tab 1'),
+      final styleWidget = tester.widget<AnimatedDefaultTextStyle>(
+        find
+            .ancestor(
+              of: find.text('Tab 1'),
+              matching: find.byType(AnimatedDefaultTextStyle),
+            )
+            .first,
       );
-      expect(selectedText.style?.color, isNotNull);
-      final color = selectedText.style!.color!;
+      expect(styleWidget.style.color, isNotNull);
+      final color = styleWidget.style.color!;
       expect(color.r, lessThan(0.1));
       expect(color.g, lessThan(0.1));
       expect(color.b, lessThan(0.1));
@@ -287,50 +297,59 @@ void main() {
       await tester.pumpWidget(
         _buildApp(
           brightness: Brightness.light,
-          child: GlassTabBar(
+          child: GlassSegmentedControl(
             selectedIndex: 0,
-            onTabSelected: (_) {},
-            tabs: const [
-              GlassTab(label: 'Selected'),
-              GlassTab(label: 'Unselected'),
+            onSegmentSelected: (_) {},
+            segments: const [
+              GlassSegment(label: 'Selected'),
+              GlassSegment(label: 'Unselected'),
             ],
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      final unselectedText = tester.widget<Text>(find.text('Unselected'));
-      expect(unselectedText.style?.color, isNotNull);
+      final styleWidget = tester.widget<AnimatedDefaultTextStyle>(
+        find
+            .ancestor(
+              of: find.text('Unselected'),
+              matching: find.byType(AnimatedDefaultTextStyle),
+            )
+            .first,
+      );
+      expect(styleWidget.style.color, isNotNull);
       // secondaryLabel in light mode is semi-transparent black (≈60% opacity)
-      final color = unselectedText.style!.color!;
+      final color = styleWidget.style.color!;
       expect(color.a, lessThan(0.7));
     });
 
-    testWidgets('custom selectedLabelStyle overrides brightness resolution',
+    testWidgets('custom selectedLabelColor overrides brightness resolution',
         (tester) async {
-      const customStyle = TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.bold,
-        color: Color(0xFFFF0000),
-      );
       await tester.pumpWidget(
         _buildApp(
           brightness: Brightness.light,
-          child: GlassTabBar(
+          child: GlassSegmentedControl(
             selectedIndex: 0,
-            onTabSelected: (_) {},
-            selectedLabelStyle: customStyle,
-            tabs: const [
-              GlassTab(label: 'Custom'),
-              GlassTab(label: 'Other'),
+            onSegmentSelected: (_) {},
+            selectedTextStyle: const TextStyle(color: Color(0xFFFF0000)),
+            segments: const [
+              GlassSegment(label: 'Custom'),
+              GlassSegment(label: 'Other'),
             ],
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      final selectedText = tester.widget<Text>(find.text('Custom'));
-      expect(selectedText.style?.color, equals(const Color(0xFFFF0000)));
+      final styleWidget = tester.widget<AnimatedDefaultTextStyle>(
+        find
+            .ancestor(
+              of: find.text('Custom'),
+              matching: find.byType(AnimatedDefaultTextStyle),
+            )
+            .first,
+      );
+      expect(styleWidget.style.color, equals(const Color(0xFFFF0000)));
     });
   });
 

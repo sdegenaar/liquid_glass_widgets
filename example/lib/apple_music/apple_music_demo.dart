@@ -361,55 +361,53 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
         selectedIconColor: _kMusicRed,
         unselectedIconColor:
             CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.9),
-        indicatorColor: CupertinoColors.label
-            .resolveFrom(context)
-            .withValues(alpha: 0.20),
+        indicatorColor:
+            CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.20),
         labelFontSize: 10,
         iconSize: 28,
         iconLabelSpacing: 0,
         quality: GlassQuality.premium,
         interactionBehavior: GlassInteractionBehavior.full,
-          settings: _barGlassSettings,
-          searchConfig: GlassSearchBarConfig(
-            focusNode: _searchFocusNode,
-            autoFocusOnExpand: false,
-            showsCancelButton: true,
-            expandWhenActive: !_isMiniMode || _isSearching,
-            hintText: 'Apple Music',
-            onSearchToggle: (active) {
-              if (active) {
-                setState(() => _isSearching = true);
-              } else {
-                setState(() {
-                  _isSearching = false;
-                  _searchFieldFocused = false;
-                });
-                if (_isMiniMode) _dismissMiniMode();
-              }
-            },
-            onSearchFocusChanged: (focused) =>
-                setState(() => _searchFieldFocused = focused),
-            searchIconColor: CupertinoColors.label
-                .resolveFrom(context)
-                .withValues(alpha: 0.9),
-            textInputAction: TextInputAction.search,
-            collapsedLogoBuilder: (context) {
-              final tab = _kTabs[_selectedTab];
-              final iconColor = _isMiniMode && !_isSearching
-                  ? _kMusicRed
-                  : CupertinoColors.label
-                      .resolveFrom(context)
-                      .withValues(alpha: 0.9);
-              return Center(
-                child: IconTheme(
-                  data: IconThemeData(color: iconColor, size: 28),
-                  child: tab.activeIcon ?? tab.icon ?? const SizedBox.shrink(),
-                ),
-              );
-            },
-          ),
-          tabs: _kTabs,
+        settings: _barGlassSettings,
+        searchConfig: GlassSearchBarConfig(
+          focusNode: _searchFocusNode,
+          autoFocusOnExpand: false,
+          showsCancelButton: true,
+          expandWhenActive: !_isMiniMode || _isSearching,
+          hintText: 'Apple Music',
+          onSearchToggle: (active) {
+            if (active) {
+              setState(() => _isSearching = true);
+            } else {
+              setState(() {
+                _isSearching = false;
+                _searchFieldFocused = false;
+              });
+              if (_isMiniMode) _dismissMiniMode();
+            }
+          },
+          onSearchFocusChanged: (focused) =>
+              setState(() => _searchFieldFocused = focused),
+          searchIconColor:
+              CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.9),
+          textInputAction: TextInputAction.search,
+          collapsedLogoBuilder: (context) {
+            final tab = _kTabs[_selectedTab];
+            final iconColor = _isMiniMode && !_isSearching
+                ? _kMusicRed
+                : CupertinoColors.label
+                    .resolveFrom(context)
+                    .withValues(alpha: 0.9);
+            return Center(
+              child: IconTheme(
+                data: IconThemeData(color: iconColor, size: 28),
+                child: tab.activeIcon ?? tab.icon ?? const SizedBox.shrink(),
+              ),
+            );
+          },
         ),
+        tabs: _kTabs,
+      ),
     );
   }
 

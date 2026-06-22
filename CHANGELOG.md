@@ -205,6 +205,29 @@ GlassSegmentedControl(
 
 ---
 
+### New: Configurable label colors and indicator border radius for bottom bars
+
+`GlassTabBar.bottom()`, `GlassTabBar.searchable()`, `GlassBottomBar`, and `GlassSearchableBottomBar` expose three additional styling parameters:
+
+- **`selectedLabelColor`** — tab label colour when selected, independent of `selectedIconColor`
+- **`unselectedLabelColor`** — tab label colour when unselected, independent of `unselectedIconColor`
+- **`indicatorBorderRadius`** — pill indicator corner radius, independent of `barBorderRadius` (e.g. `100` for a fully round pill on a subtly curved bar)
+
+All three are optional; omitting them preserves existing behaviour exactly.
+
+```dart
+GlassTabBar.bottom(
+  tabs: [...],
+  selectedIndex: _selectedIndex,
+  onTabSelected: (i) => setState(() => _selectedIndex = i),
+  selectedLabelColor: Colors.blue,
+  unselectedLabelColor: Colors.grey,
+  indicatorBorderRadius: 100,
+)
+```
+
+---
+
 # 0.17.0
 
 

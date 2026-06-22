@@ -5,6 +5,7 @@ import '../../constants/glass_defaults.dart';
 import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
 import 'glass_effect.dart';
+import 'inherited_liquid_glass.dart';
 
 /// A shared component that renders the interactive "Jelly" indicator
 /// used in [GlassTabBar], [GlassSegmentedControl], and [GlassBottomBar].
@@ -262,18 +263,29 @@ class AnimatedGlassIndicator extends StatelessWidget {
     // 1. Background Indicator (Resting state)
     // Fade out as the drag spring thickness increases toward 0.15.
     final backgroundOpacity = (1.0 - (thickness / 0.15)).clamp(0.0, 1.0);
-    final backgroundIndicator = IgnorePointer(
-      child: Opacity(
-        opacity: backgroundOpacity,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: indicatorColor,
-            borderRadius: BorderRadius.circular(borderRadius),
-            boxShadow: shadows,
+    final backgroundIndicator = Builder(
+      builder: (context) {
+        // HIDE during capture so GlassEffect doesn't bake the pill into its snapshot
+        final avoidsRefraction = context
+                .dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>()
+                ?.avoidsRefraction ??
+            false;
+        if (avoidsRefraction) return const SizedBox.expand();
+
+        return IgnorePointer(
+          child: Opacity(
+            opacity: backgroundOpacity,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: indicatorColor,
+                borderRadius: BorderRadius.circular(borderRadius),
+                boxShadow: shadows,
+              ),
+              child: const SizedBox.expand(),
+            ),
           ),
-          child: const SizedBox.expand(),
-        ),
-      ),
+        );
+      },
     );
 
     // 2. Glass Indicator (Active/Dragging state)
@@ -314,24 +326,15 @@ class AnimatedGlassIndicator extends StatelessWidget {
       interactionIntensity: thickness,
       backgroundKey: backgroundKey,
       clipExpansion: _jellyClipExpansion,
-      // Map settings.thickness → rimThickness (logical px rim width).
-      // uThickness is declared but unused in interactive_indicator.frag;
-      // uRimThickness is what actually controls the visible hairline rim width.
-      // Minimum 0.8 (was 0.5): the wider SDF AA band covers the gap between the
-      // shader's SDF edge and the Dart-side ClipPath AA. At 0.5 the boundary
-      // was too thin to absorb the jelly-transform distortion and the concave
-      // pinch UV shift, producing a visible pixelated/aliased rim at the pill
-      // edges — especially at the horizontal pinch curves.
-      // Clamp ceiling 8 px: beyond 8 the rim bleeds into the pill body.
       rimThickness: (settings?.effectiveThickness ?? 0.8).clamp(0.8, 8.0),
-      // Calibrate standard-tier indicator styling in Dart space instead of the shader:
-      // Soften the forced rim outline to match premium's elegance and keep the body translucent.
+      // iOS 26 Standard glass matching GlassSwitch/Slider pattern
       ambientRim: isStdPath ? 0.08 : 0.1,
-      baseAlphaMultiplier: isStdPath ? 0.15 : 0.2,
-      edgeAlphaMultiplier: isStdPath ? 0.35 : 0.4,
+      baseAlphaMultiplier:
+          isStdPath ? 0.08 : 0.2, // Match GlassSlider (near clear center)
+      edgeAlphaMultiplier:
+          isStdPath ? 0.15 : 0.4, // Match GlassSlider/Switch (subtle rim)
       child: const GlassGlow(
-        glowColor: Colors
-            .transparent, // caused grey rectangle flicker if clicking multiple times
+        glowColor: Colors.transparent,
         child: SizedBox.expand(),
       ),
     );
@@ -344,11 +347,12 @@ class AnimatedGlassIndicator extends StatelessWidget {
     final interactiveIndicator =
         thickness > 0.01 ? glassWidget : const SizedBox.expand();
 
-    // Only the active glass effect needs jelly physics — the solid
-    // background pill is always at rest and must NOT go through the
-    // Transform chain.
+    // Standard: background inside Transform to get jelly physics
     final glassChild = Stack(
+      clipBehavior: Clip.none,
       children: [
+        if (paintBackground && isStdPath && backgroundOpacity > 0)
+          backgroundIndicator,
         if (paintGlass && fade > 0.05) interactiveIndicator,
       ],
     );
@@ -356,15 +360,13 @@ class AnimatedGlassIndicator extends StatelessWidget {
     final indicatorBody = Stack(
       clipBehavior: Clip.none,
       children: [
-        // Background painted directly — no RepaintBoundary, no Transform.
-        // This guarantees sub-pixel border-radius AA at the GPU composition step.
-        if (paintBackground && backgroundOpacity > 0)
+        // Premium: background painted statically (no Transform), fading out
+        if (paintBackground && !isStdPath && backgroundOpacity > 0)
           Positioned.fromRelativeRect(
             rect: rect!,
             child: backgroundIndicator,
           ),
-        // Jelly-physics glass layer — apply Transform directly so GPU
-        // computes anti-aliasing dynamically.
+        // Jelly-physics glass layer
         Positioned.fromRelativeRect(
           rect: rect!,
           child: Transform(

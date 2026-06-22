@@ -736,7 +736,11 @@ class _ComparisonPageState extends State<_ComparisonPage> {
               settings: _kGlass,
               indicatorSettings: _kGlass,
               quality: GlassQuality.premium,
-              segments: [GlassTab(label: 'Day'), GlassTab(label: 'Week'), GlassTab(label: 'Month')],
+              segments: [
+                GlassTab(label: 'Day'),
+                GlassTab(label: 'Week'),
+                GlassTab(label: 'Month')
+              ],
               selectedIndex: _segIndex,
               onSegmentSelected: (i) => setState(() => _segIndex = i),
             ),
@@ -745,7 +749,11 @@ class _ComparisonPageState extends State<_ComparisonPage> {
               settings: _kGlassCard, // surface / background
               indicatorSettings: _kGlassPill, // animated pill indicator
               quality: GlassQuality.standard,
-              segments: [GlassTab(label: 'Day'), GlassTab(label: 'Week'), GlassTab(label: 'Month')],
+              segments: [
+                GlassTab(label: 'Day'),
+                GlassTab(label: 'Week'),
+                GlassTab(label: 'Month')
+              ],
               selectedIndex: _segIndex,
               onSegmentSelected: (i) => setState(() => _segIndex = i),
             ),

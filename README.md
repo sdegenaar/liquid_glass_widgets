@@ -42,7 +42,7 @@ cd example/showcase && flutter pub get && flutter run
 
 ### [Apple Music Demo](example/lib/apple_music/) — iOS 26 Replica
 
-A recreation of the Apple Music app demonstrating `GlassSearchableBottomBar`, a floating playback pill, and the full iOS 26 navigation model with smooth morphing transitions.
+A recreation of the Apple Music app demonstrating `GlassTabBar.searchable()`, a floating playback pill, and the full iOS 26 navigation model with smooth morphing transitions.
 
 ```bash
 cd example && flutter pub get && flutter run -t lib/apple_music/apple_music_demo.dart
@@ -60,7 +60,7 @@ cd example && flutter pub get && flutter run -t lib/apple_messages/apple_message
 
 ### [Apple News Demo](example/lib/apple_news/) — iOS 26 Replica
 
-A recreation of the Apple News app demonstrating `GlassSearchableBottomBar` with its morphing search pill, category chips, hero cards, and rounded article tiles.
+A recreation of the Apple News app demonstrating `GlassTabBar.searchable()` with its morphing search pill, category chips, hero cards, and rounded article tiles.
 
 ```bash
 cd example && flutter pub get && flutter run -t lib/apple_news/apple_news_demo.dart
@@ -152,14 +152,14 @@ Most apps should use `GlassCard` or `GlassGroupedSection` instead.
 `GlassDialog` · `GlassSheet` · `GlassModalSheet` · `showGlassActionSheet` · `GlassMenu` · `GlassMenuItem` · `GlassMenuDivider` · `GlassMenuLabel` · `GlassPopover`
 
 ### Surfaces
-`GlassScaffold` · `GlassAppBar` · `GlassBottomBar` · `GlassSearchableBottomBar` · `GlassTabBar` · `GlassToolbar` · `GlassContentAwareScope` · `GlassContentAwareContent` · `GlassContentAwareBrightness`
+`GlassScaffold` · `GlassAppBar` · `GlassTabBar` · `GlassToolbar` · `GlassContentAwareScope` · `GlassContentAwareContent` · `GlassContentAwareBrightness`
 
 
 ## Installation
 
 ```yaml
 dependencies:
-  liquid_glass_widgets: ^0.17.0
+  liquid_glass_widgets: ^0.18.0
 ```
 
 ```bash
@@ -371,12 +371,12 @@ GlassScaffold(
       onTap: () {},
     ),
   ),
-  bottomBar: GlassBottomBar(
+  bottomBar: GlassTabBar.bottom(
     selectedIndex: 0,
     onTabSelected: (_) {},
     tabs: const [
-      GlassBottomBarTab(icon: Icon(Icons.home), label: 'Home'),
-      GlassBottomBarTab(icon: Icon(Icons.search), label: 'Search'),
+      GlassTab(icon: Icon(Icons.home), label: 'Home'),
+      GlassTab(icon: Icon(Icons.search), label: 'Search'),
     ],
   ),
   body: CustomScrollView(
@@ -406,7 +406,7 @@ one on the bar:
 ```dart
 GlassScaffold(
   contentAwareBrightness: true,
-  bottomBar: GlassBottomBar(
+  bottomBar: GlassTabBar.bottom(
     adaptiveBrightness: true,
     onBrightnessChanged: (b) => debugPrint('Bar is now: $b'),
     tabs: [...],
@@ -433,7 +433,7 @@ GlassContentAwareScope(
     body: GlassContentAwareContent(
       child: ListView(...),
     ),
-    bottomNavigationBar: GlassBottomBar(
+    bottomNavigationBar: GlassTabBar.bottom(
       adaptiveBrightness: true,
       ...
     ),

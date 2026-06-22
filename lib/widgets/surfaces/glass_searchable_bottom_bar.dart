@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show ValueListenable;
 
-
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/types/glass_interaction_behavior.dart';
 import '../../types/glass_quality.dart';
@@ -82,6 +81,8 @@ class GlassSearchableBottomBar extends StatelessWidget {
     this.indicatorPinchStrength = 0.4,
     this.selectedIconColor,
     this.unselectedIconColor,
+    this.selectedLabelColor,
+    this.unselectedLabelColor,
     this.iconSize = 24,
     this.labelFontSize = 11,
     this.textStyle,
@@ -103,6 +104,7 @@ class GlassSearchableBottomBar extends StatelessWidget {
     this.interactionBehavior = GlassInteractionBehavior.full,
     this.pressScale = 1.04,
     this.tabWidth,
+    this.indicatorBorderRadius,
     this.indicatorExpansion =
         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     this.onBarTap,
@@ -320,6 +322,12 @@ class GlassSearchableBottomBar extends StatelessWidget {
   /// Icon color when a tab is unselected. Defaults to dynamic label color.
   final Color? unselectedIconColor;
 
+  /// Label color for selected tab.
+  final Color? selectedLabelColor;
+
+  /// Label color for unselected tabs.
+  final Color? unselectedLabelColor;
+
   /// Size of tab icons. Defaults to 24.
   final double iconSize;
 
@@ -441,6 +449,11 @@ class GlassSearchableBottomBar extends StatelessWidget {
   /// ```
   final double? tabWidth;
 
+  /// Override border radius for the indicator pill. Null = inherits from
+  /// [barBorderRadius]. Use a higher value (e.g. 100) for a fully round
+  /// indicator on a more subtly curved bar.
+  final double? indicatorBorderRadius;
+
   /// How far the jelly indicator's leading and trailing edges expand
   /// past the tab boundary as the indicator translates between tabs.
   /// Higher values give a more dramatic "puff" stretch; lower values
@@ -489,6 +502,8 @@ class GlassSearchableBottomBar extends StatelessWidget {
         indicatorPinchStrength: indicatorPinchStrength,
         selectedIconColor: selectedIconColor,
         unselectedIconColor: unselectedIconColor,
+        selectedLabelColor: selectedLabelColor,
+        unselectedLabelColor: unselectedLabelColor,
         iconSize: iconSize,
         labelFontSize: labelFontSize,
         textStyle: textStyle,
@@ -509,6 +524,7 @@ class GlassSearchableBottomBar extends StatelessWidget {
         springDescription: springDescription,
         tabPillAnchor: tabPillAnchor,
         tabWidth: tabWidth,
+        indicatorBorderRadius: indicatorBorderRadius,
         indicatorExpansion: indicatorExpansion,
         onBarTap: onBarTap,
         whitenAtBottom: whitenAtBottom,
@@ -520,4 +536,3 @@ class GlassSearchableBottomBar extends StatelessWidget {
         brightnessOverride: brightnessOverride,
       );
 }
-

@@ -49,6 +49,7 @@ class AdaptiveLiquidGlassLayer extends StatelessWidget {
     this.settings,
     this.quality,
     this.clipBehavior = Clip.antiAlias,
+    this.clipExpansion = EdgeInsets.zero,
     this.blendAmount = 10.0,
     this.platformViewBackdrop = false,
     super.key,
@@ -72,6 +73,9 @@ class AdaptiveLiquidGlassLayer extends StatelessWidget {
 
   /// Clip behavior for the glass shape.
   final Clip clipBehavior;
+
+  /// Expansion margin for the compositor clip rect to allow jelly physics to exceed bounds.
+  final EdgeInsets clipExpansion;
 
   /// Blend amount for smooth glass transitions (Impeller-only).
   ///
@@ -148,6 +152,7 @@ class AdaptiveLiquidGlassLayer extends StatelessWidget {
       child: LiquidGlassLayer(
         settings: effectiveSettings,
         shadows: resolvedShadows,
+        clipExpansion: clipExpansion,
         child: GlassIsolationScope(
           isolated: false,
           child: InheritedLiquidGlass(

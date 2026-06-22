@@ -205,6 +205,8 @@ class GlassBottomBar extends StatelessWidget {
     this.indicatorPinchStrength = 0.4,
     this.selectedIconColor,
     this.unselectedIconColor,
+    this.selectedLabelColor,
+    this.unselectedLabelColor,
     this.iconSize = 24,
     this.labelFontSize = 11,
     this.textStyle,
@@ -218,6 +220,7 @@ class GlassBottomBar extends StatelessWidget {
     this.maskingQuality = MaskingQuality.high,
     this.backgroundKey,
     this.tabWidth,
+    this.indicatorBorderRadius,
     this.indicatorExpansion =
         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     this.interactionGlowColor,
@@ -371,6 +374,9 @@ class GlassBottomBar extends StatelessWidget {
   ///   * [GlassSearchableBottomBar.tabWidth], the equivalent parameter on the
   ///     searchable variant which uses the same default and clamping logic.
   final double? tabWidth;
+
+  /// Override border radius for the indicator. Null = inherits from barBorderRadius.
+  final double? indicatorBorderRadius;
 
   /// How far the jelly indicator's leading and trailing edges expand
   /// past the tab boundary as the indicator translates between tabs.
@@ -547,6 +553,12 @@ class GlassBottomBar extends StatelessWidget {
   /// Defaults to [Colors.white].
   final Color? unselectedIconColor;
 
+  /// Label color for selected tab.
+  final Color? selectedLabelColor;
+
+  /// Label color for unselected tabs.
+  final Color? unselectedLabelColor;
+
   /// Size of the tab icons.
   ///
   /// Defaults to 24.
@@ -616,6 +628,8 @@ class GlassBottomBar extends StatelessWidget {
         indicatorPinchStrength: indicatorPinchStrength,
         selectedIconColor: selectedIconColor,
         unselectedIconColor: unselectedIconColor,
+        selectedLabelColor: selectedLabelColor,
+        unselectedLabelColor: unselectedLabelColor,
         iconSize: iconSize,
         labelFontSize: labelFontSize,
         textStyle: textStyle,
@@ -629,6 +643,7 @@ class GlassBottomBar extends StatelessWidget {
         maskingQuality: maskingQuality,
         backgroundKey: backgroundKey,
         tabWidth: tabWidth,
+        indicatorBorderRadius: indicatorBorderRadius,
         indicatorExpansion: indicatorExpansion,
         interactionGlowColor: interactionGlowColor,
         interactionGlowRadius: interactionGlowRadius,
@@ -640,7 +655,6 @@ class GlassBottomBar extends StatelessWidget {
         brightnessOverride: brightnessOverride,
       );
 }
-
 
 /// Configuration for a tab in [GlassBottomBar].
 ///

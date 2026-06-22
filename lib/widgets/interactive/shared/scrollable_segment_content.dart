@@ -87,7 +87,8 @@ class ScrollableSegmentContent extends StatefulWidget {
   final BorderRadius? tabBarBorderRadius;
 
   @override
-  State<ScrollableSegmentContent> createState() => ScrollableSegmentContentState();
+  State<ScrollableSegmentContent> createState() =>
+      ScrollableSegmentContentState();
 }
 
 /// State for [ScrollableSegmentContent]. Public for testing via `@visibleForTesting`.
@@ -562,17 +563,17 @@ class ScrollableSegmentContentState extends State<ScrollableSegmentContent>
     final dynamicSecondaryColor =
         CupertinoColors.secondaryLabel.resolveFrom(context);
 
-    final selectedLabelStyle = widget.selectedLabelStyle ??
-        TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: dynamicLabelColor);
+    final selectedLabelStyle = TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.w600,
+      color: dynamicLabelColor,
+    ).merge(widget.selectedLabelStyle);
 
-    final unselectedLabelStyle = widget.unselectedLabelStyle ??
-        TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: dynamicSecondaryColor);
+    final unselectedLabelStyle = TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+      color: dynamicSecondaryColor,
+    ).merge(widget.unselectedLabelStyle);
 
     final selectedIconColor = widget.selectedIconColor ?? dynamicLabelColor;
     final unselectedIconColor =
