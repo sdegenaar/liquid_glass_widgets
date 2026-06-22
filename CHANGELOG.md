@@ -1,3 +1,17 @@
+# Unreleased
+
+## 🧹 Removed — `GlassTintBlend` (a no-op since 0.17.0)
+
+`GlassTintBlend` (added in [#107](https://github.com/sdegenaar/liquid_glass_widgets/pull/107)) and the `LiquidGlassSettings.tintBlend` field have been removed.
+
+Since the 0.17.0 shader rewrite, `tintBlend` was never wired into the renderer — it was packed into no uniform, so setting it had no effect: every surface used the automatic chroma-gated blend regardless of the value. We only caught this during real-device tuning, after all the related PRs had already landed.
+
+The automatic behavior is unchanged. `applyGlassColor` still picks luminosity-preserving blending for chromatic tints and flat blending for achromatic tints. Recipes that previously passed `tintBlend: flat` for achromatic (white / grey / near-black) tints render identically, because the chroma gate already resolves those to the flat path.
+
+**Breaking, but inert:** code that passed `LiquidGlassSettings(tintBlend: …)` must drop the argument. No rendered output changes.
+
+---
+
 # 0.18.1
 
 - **Hotfix:** Resolved missing coverage in layout engines and segmented controls.
