@@ -1,107 +1,178 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() {
-  testWidgets('GlassButtonGroup renders children with dividers',
-      (WidgetTester tester) async {
-    int tappedIndex = -1;
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: AdaptiveLiquidGlassLayer(
-            child: Center(
-              child: GlassButtonGroup(
-                children: [
-                  GlassButton(
-                    icon: Icon(CupertinoIcons.back),
-                    style: GlassButtonStyle.transparent,
-                    onTap: () => tappedIndex = 0,
-                  ),
-                  GlassButton(
-                    icon: Icon(CupertinoIcons.forward),
-                    style: GlassButtonStyle.transparent,
-                    onTap: () => tappedIndex = 1,
-                  ),
-                ],
-              ),
+  group('GlassButtonGroup', () {
+    testWidgets('renders children in horizontal direction by default',
+        (tester) async {
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: Center(
+            child: GlassButtonGroup(
+              children: [
+                GlassButton(
+                  icon: const Icon(CupertinoIcons.add),
+                  style: GlassButtonStyle.transparent,
+                  onTap: () {},
+                ),
+                GlassButton(
+                  icon: const Icon(CupertinoIcons.minus),
+                  style: GlassButtonStyle.transparent,
+                  onTap: () {},
+                ),
+              ],
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    // Verify both icons are present
-    expect(find.byIcon(CupertinoIcons.back), findsOneWidget);
-    expect(find.byIcon(CupertinoIcons.forward), findsOneWidget);
+      expect(find.byType(GlassButtonGroup), findsOneWidget);
+      expect(find.byType(GlassContainer), findsOneWidget);
+      expect(find.byType(Flex), findsOneWidget);
 
-    // Verify interaction works (transparent button should still tap)
-    await tester.tap(find.byIcon(CupertinoIcons.back));
-    expect(tappedIndex, equals(0));
+      final Flex flex = tester.widget(find.byType(Flex));
+      expect(flex.direction, Axis.horizontal);
 
-    await tester.tap(find.byIcon(CupertinoIcons.forward));
-    expect(tappedIndex, equals(1));
+      // Should find the two buttons
+      expect(find.byType(GlassButton), findsNWidgets(2));
 
-    // Check for divider (Container with width 1)
-    // We can find by type Container and filter? Hard to be robust.
-    // Acceptance of rendering is main goal here.
+      // Should find the divider by default
+      expect(find.byType(Container), findsWidgets);
+    });
+
+    testWidgets('renders children in vertical direction', (tester) async {
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: Center(
+            child: GlassButtonGroup(
+              direction: Axis.vertical,
+              children: [
+                GlassButton(
+                  icon: const Icon(CupertinoIcons.add),
+                  style: GlassButtonStyle.transparent,
+                  onTap: () {},
+                ),
+                GlassButton(
+                  icon: const Icon(CupertinoIcons.minus),
+                  style: GlassButtonStyle.transparent,
+                  onTap: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final Flex flex = tester.widget(find.byType(Flex));
+      expect(flex.direction, Axis.vertical);
+    });
+
+    testWidgets('suppresses dividers when showDividers is false',
+        (tester) async {
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: Center(
+            child: GlassButtonGroup(
+              showDividers: false,
+              children: [
+                GlassButton(
+                  icon: const Icon(CupertinoIcons.add),
+                  style: GlassButtonStyle.transparent,
+                  onTap: () {},
+                ),
+                GlassButton(
+                  icon: const Icon(CupertinoIcons.minus),
+                  style: GlassButtonStyle.transparent,
+                  onTap: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // In children mode with showDividers: false, no Container dividers should be added
+      // Note: children might contain containers natively but the explicit divider is a Container with width/height 1
+      final containers = tester.widgetList<Container>(find.byType(Container));
+      final hasDivider = containers.any((c) =>
+          (c.constraints?.maxWidth == 1.0) ||
+          (c.constraints?.maxHeight == 1.0));
+      expect(hasDivider, isFalse);
+    });
   });
 
-  testWidgets('GlassButton respects transparent style',
-      (WidgetTester tester) async {
-    // This test ensures that when style is transparent, we don't crash and we do render content
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: AdaptiveLiquidGlassLayer(
-            child: GlassButton(
-              icon: Icon(CupertinoIcons.add),
-              style: GlassButtonStyle.transparent,
-              onTap: () {},
+  group('GlassButtonGroup.icons', () {
+    testWidgets('renders lightweight items properly', (tester) async {
+      int tapCount = 0;
+
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: Center(
+            child: GlassButtonGroup.icons(
+              items: [
+                GlassGroupItem(
+                  icon: const Icon(CupertinoIcons.bold),
+                  onTap: () => tapCount++,
+                  label: 'Bold',
+                ),
+                GlassGroupItem(
+                  icon: const Icon(CupertinoIcons.italic),
+                  onTap: () {},
+                  enabled: false,
+                ),
+              ],
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    expect(find.byIcon(CupertinoIcons.add), findsOneWidget);
-    // Should NOT find LiquidGlass widget internally if we could check,
-    // but verifying it pumps without error is key.
-  });
+      expect(find.byType(GlassButtonGroup), findsOneWidget);
+      // It should wrap in a GlassButton.custom
+      expect(find.byType(GlassButton), findsOneWidget);
 
-  // ── Vertical direction (line 97: Container height divider) ──────────────────
-  testWidgets('GlassButtonGroup vertical direction renders height dividers',
-      (WidgetTester tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: AdaptiveLiquidGlassLayer(
-            child: Center(
-              child: GlassButtonGroup(
-                direction:
-                    Axis.vertical, // exercises line 97: Container(height:1)
-                children: [
-                  GlassButton(
-                    icon: Icon(CupertinoIcons.up_arrow),
-                    style: GlassButtonStyle.transparent,
-                    onTap: () {},
-                  ),
-                  GlassButton(
-                    icon: Icon(CupertinoIcons.down_arrow),
-                    style: GlassButtonStyle.transparent,
-                    onTap: () {},
-                  ),
-                ],
-              ),
+      // Should find the icons
+      expect(find.byIcon(CupertinoIcons.bold), findsOneWidget);
+      expect(find.byIcon(CupertinoIcons.italic), findsOneWidget);
+
+      // Should find semantics
+      expect(find.bySemanticsLabel('Bold'), findsOneWidget);
+
+      // Tap the first item
+      await tester.tap(find.byIcon(CupertinoIcons.bold));
+      expect(tapCount, 1);
+
+      // Tap the disabled item (should not trigger anything or crash)
+      await tester.tap(find.byIcon(CupertinoIcons.italic));
+      // Handled internally by ignoring taps on disabled
+    });
+
+    testWidgets('renders lightweight items with dividers if enabled',
+        (tester) async {
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: Center(
+            child: GlassButtonGroup.icons(
+              showDividers: true,
+              direction: Axis.vertical,
+              items: [
+                GlassGroupItem(
+                  icon: const Icon(CupertinoIcons.bold),
+                  onTap: () {},
+                ),
+                GlassGroupItem(
+                  icon: const Icon(CupertinoIcons.italic),
+                  onTap: () {},
+                ),
+              ],
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    expect(find.byIcon(CupertinoIcons.up_arrow), findsOneWidget);
-    expect(find.byIcon(CupertinoIcons.down_arrow), findsOneWidget);
+      final containers = tester.widgetList<Container>(find.byType(Container));
+      final hasDivider = containers.any((c) => c.constraints?.maxHeight == 1.0);
+      expect(hasDivider, isTrue);
+    });
   });
 }

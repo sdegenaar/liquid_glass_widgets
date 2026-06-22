@@ -42,7 +42,7 @@ import 'inherited_liquid_glass.dart';
 ///   child: YourContent(), // Uses GlassTheme settings automatically
 /// )
 /// ```
-class AdaptiveLiquidGlassLayer extends StatelessWidget {
+class AdaptiveLiquidGlassLayer extends StatefulWidget {
   const AdaptiveLiquidGlassLayer({
     required this.child,
     this.shape = const LiquidRoundedSuperellipse(borderRadius: 0),
@@ -93,6 +93,23 @@ class AdaptiveLiquidGlassLayer extends StatelessWidget {
   static bool get _canUseImpeller => ui.ImageFilter.isShaderFilterSupported;
 
   @override
+  State<AdaptiveLiquidGlassLayer> createState() =>
+      _AdaptiveLiquidGlassLayerState();
+}
+
+class _AdaptiveLiquidGlassLayerState extends State<AdaptiveLiquidGlassLayer> {
+  // Stable identity for the child subtree across the structural wrapper toggle
+  // in build(). `useFullRenderer` (which flips with [platformViewBackdrop])
+  // decides whether the child is wrapped in a [LiquidGlassBlendGroup]. Without a
+  // stable key, toggling the flag changes the child's depth in the element tree,
+  // so Flutter REMOUNTS the whole subtree — re-running initState on any
+  // animation controllers inside it. For a bottom bar that re-seeds the
+  // selected-indicator springs at their settled value, so the indicator SNAPS
+  // to the new tab instead of morphing. A GlobalKey lets Flutter reparent the
+  // subtree across the wrapper change (preserving the live controllers) instead.
+  final GlobalKey _contentKey = GlobalKey();
+
+  @override
   Widget build(BuildContext context) {
     // Resolve settings: start with base defaults, apply theme partial override
     // (only non-null fields), then let explicit widget settings win entirely.
@@ -100,9 +117,10 @@ class AdaptiveLiquidGlassLayer extends StatelessWidget {
     const baseSettings = LiquidGlassSettings();
     final themeOverride = themeData.settingsFor(context);
     final withTheme = themeOverride?.applyTo(baseSettings) ?? baseSettings;
-    final effectiveSettings = settings ?? withTheme;
-    final effectiveQuality =
-        quality ?? themeData.qualityFor(context) ?? GlassQuality.standard;
+    final effectiveSettings = widget.settings ?? withTheme;
+    final effectiveQuality = widget.quality ??
+        themeData.qualityFor(context) ??
+        GlassQuality.standard;
 
     // ---- MINIMAL FAST-PATH --------------------------------------------------
     // GlassQuality.minimal skips LiquidGlassLayer entirely.
@@ -128,15 +146,15 @@ class AdaptiveLiquidGlassLayer extends StatelessWidget {
           settings: effectiveSettings,
           quality: effectiveQuality,
           isBlurProvidedByAncestor: false,
-          child: child,
+          child: KeyedSubtree(key: _contentKey, child: widget.child),
         ),
       );
     }
 
     // Detect if we should use the full Impeller-native rendering pipeline
-    final bool useFullRenderer = _canUseImpeller &&
+    final bool useFullRenderer = AdaptiveLiquidGlassLayer._canUseImpeller &&
         effectiveQuality == GlassQuality.premium &&
-        !platformViewBackdrop;
+        !widget.platformViewBackdrop;
 
     // Resolve shadow for SDF rendering. Shadows only apply in light mode.
     final bool isDark =
@@ -144,9 +162,10 @@ class AdaptiveLiquidGlassLayer extends StatelessWidget {
     final List<BoxShadow> resolvedShadows =
         isDark ? const <BoxShadow>[] : effectiveSettings.effectiveShadow;
 
-    // On Skia/Web, we want to provide a single BackdropFilter for the whole layer
-    // to avoid each child doing its own expensive blur.
-    Widget content = child;
+    // Keep the child subtree's element identity stable across the wrapper toggle
+    // below (see [_contentKey]) so its animation controllers survive.
+    final Widget keyedContent =
+        KeyedSubtree(key: _contentKey, child: widget.child);
 
     return PremiumGlassTracker(
       child: LiquidGlassLayer(
@@ -162,10 +181,10 @@ class AdaptiveLiquidGlassLayer extends StatelessWidget {
                 false, // Root never provides the blur; containers do.
             child: useFullRenderer
                 ? LiquidGlassBlendGroup(
-                    blend: blendAmount,
-                    child: content,
+                    blend: widget.blendAmount,
+                    child: keyedContent,
                   )
-                : content,
+                : keyedContent,
           ),
         ),
       ),

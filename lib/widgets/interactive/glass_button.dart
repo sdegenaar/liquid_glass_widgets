@@ -277,7 +277,7 @@ class GlassButton extends StatefulWidget {
   /// Height of the button in logical pixels.
   ///
   /// Defaults to 56.0.
-  final double height;
+  final double? height;
 
   // ===========================================================================
   // Glass Effect Properties

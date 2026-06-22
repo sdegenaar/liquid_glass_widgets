@@ -1,264 +1,171 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_glass_widgets/widgets/shared/glass_scroll_edge_effect.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() {
   group('GlassScrollEdgeEffect', () {
-    testWidgets('renders child', (tester) async {
+    testWidgets('renders children and overlays', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: GlassScrollEdgeEffect(
-            child: ListView(
-              children: const [Text('Hello')],
+        CupertinoApp(
+          home: Center(
+            child: SizedBox(
+              height: 500,
+              width: 300,
+              child: GlassScrollEdgeEffect(
+                topFadeHeight: 100,
+                bottomFadeHeight: 60,
+                // Use a non-scrollable child to prevent scrollbar widgets from messing up counts
+                child: const SizedBox(key: Key('child')),
+              ),
             ),
           ),
         ),
       );
 
-      expect(find.text('Hello'), findsOneWidget);
+      // Verify child is rendered
+      expect(find.byKey(const Key('child')), findsOneWidget);
+
+      final effectFinder = find.byType(GlassScrollEdgeEffect);
+
+      // Verify the two fade overlays are created
+      final decoratedBoxes = tester.widgetList<DecoratedBox>(
+        find.descendant(of: effectFinder, matching: find.byType(DecoratedBox)),
+      );
+      expect(decoratedBoxes.length, 2);
+
+      // Verify they are positioned correctly
+      final positionedWidgets = tester.widgetList<Positioned>(
+        find.descendant(of: effectFinder, matching: find.byType(Positioned)),
+      );
+      expect(positionedWidgets.length, 2);
+
+      final topOverlay = positionedWidgets.firstWhere((p) => p.top == 0);
+      final bottomOverlay = positionedWidgets.firstWhere((p) => p.bottom == 0);
+
+      expect(topOverlay.height, 100);
+      expect(bottomOverlay.height, 60);
     });
 
-    testWidgets('wraps child in Stack with fade overlays when fading',
-        (tester) async {
+    testWidgets('respects fadeTop and fadeBottom flags', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: GlassScrollEdgeEffect(
-            child: ListView(
-              children: const [Text('Content')],
+        CupertinoApp(
+          home: Center(
+            child: SizedBox(
+              height: 500,
+              width: 300,
+              child: GlassScrollEdgeEffect(
+                topFadeHeight: 100,
+                bottomFadeHeight: 60,
+                fadeTop: false,
+                fadeBottom: false,
+                child: const SizedBox(),
+              ),
             ),
           ),
         ),
       );
 
+      final effectFinder = find.byType(GlassScrollEdgeEffect);
       expect(
-        find.descendant(
-          of: find.byType(GlassScrollEdgeEffect),
-          matching: find.byType(Stack),
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('skips Stack when both fades disabled', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: GlassScrollEdgeEffect(
-            fadeTop: false,
-            fadeBottom: false,
-            child: ListView(
-              children: const [Text('No Fade')],
-            ),
-          ),
-        ),
-      );
-
-      // Should not have a Stack
-      expect(
-        find.descendant(
-          of: find.byType(GlassScrollEdgeEffect),
-          matching: find.byType(Stack),
-        ),
+        find.descendant(of: effectFinder, matching: find.byType(Positioned)),
         findsNothing,
       );
     });
 
-    test('defaults are correct', () {
-      final widget = GlassScrollEdgeEffect(
-        child: const SizedBox(),
-      );
-
-      expect(widget.topFadeHeight, equals(100.0));
-      expect(widget.bottomFadeHeight, equals(60.0));
-      expect(widget.fadeTop, isTrue);
-      expect(widget.fadeBottom, isTrue);
-      expect(widget.style, equals(GlassScrollEdgeStyle.soft));
-    });
-
-    test('GlassScrollEdgeStyle has soft and hard values', () {
-      expect(GlassScrollEdgeStyle.values, hasLength(2));
-      expect(GlassScrollEdgeStyle.values, contains(GlassScrollEdgeStyle.soft));
-      expect(GlassScrollEdgeStyle.values, contains(GlassScrollEdgeStyle.hard));
-    });
-
-    testWidgets('top-only fade renders one overlay', (tester) async {
+    testWidgets('clamps overlay height to 40% of screen height',
+        (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        CupertinoApp(
           home: GlassScrollEdgeEffect(
-            fadeTop: true,
-            fadeBottom: false,
-            child: ListView(
-              children: const [Text('Top only')],
-            ),
+            topFadeHeight: 500, // greater than 600 * 0.4 (240)
+            bottomFadeHeight: 500,
+            child: const SizedBox(),
           ),
         ),
       );
 
-      // One Stack and one Positioned for the top fade
-      expect(
-        find.descendant(
-          of: find.byType(GlassScrollEdgeEffect),
-          matching: find.byType(Positioned),
-        ),
-        findsOneWidget,
+      final effectFinder = find.byType(GlassScrollEdgeEffect);
+      final positionedWidgets = tester.widgetList<Positioned>(
+        find.descendant(of: effectFinder, matching: find.byType(Positioned)),
       );
+      final topOverlay = positionedWidgets.firstWhere((p) => p.top == 0);
+
+      expect(topOverlay.height, 240); // 600 * 0.4
     });
 
-    testWidgets('bottom-only fade renders one overlay', (tester) async {
+    testWidgets('applies hard style height adjustment (0.5x)', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        CupertinoApp(
           home: GlassScrollEdgeEffect(
-            fadeTop: false,
-            fadeBottom: true,
-            child: ListView(
-              children: const [Text('Bottom only')],
-            ),
-          ),
-        ),
-      );
-
-      expect(
-        find.descendant(
-          of: find.byType(GlassScrollEdgeEffect),
-          matching: find.byType(Positioned),
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('hard style renders without error', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: GlassScrollEdgeEffect(
+            topFadeHeight: 100,
             style: GlassScrollEdgeStyle.hard,
-            child: ListView(
-              children: const [Text('Hard edge')],
-            ),
+            fadeBottom: false,
+            child: const SizedBox(),
           ),
         ),
       );
 
-      expect(find.text('Hard edge'), findsOneWidget);
+      final effectFinder = find.byType(GlassScrollEdgeEffect);
+      final positionedWidgets = tester.widgetList<Positioned>(
+        find.descendant(of: effectFinder, matching: find.byType(Positioned)),
+      );
+      final topOverlay = positionedWidgets.firstWhere((p) => p.top == 0);
+
+      // 100 * 0.5 = 50
+      expect(topOverlay.height, 50);
     });
 
-    testWidgets('custom fade heights render without error', (tester) async {
+    testWidgets('uses provided fadeColor', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        CupertinoApp(
           home: GlassScrollEdgeEffect(
-            topFadeHeight: 200,
-            bottomFadeHeight: 120,
-            child: ListView(
-              children: const [Text('Custom heights')],
-            ),
+            fadeColor: const Color(0xFFFF0000),
+            child: const SizedBox(),
           ),
         ),
       );
 
-      expect(find.text('Custom heights'), findsOneWidget);
+      final effectFinder = find.byType(GlassScrollEdgeEffect);
+      final decoratedBox = tester.firstWidget<DecoratedBox>(
+        find.descendant(of: effectFinder, matching: find.byType(DecoratedBox)),
+      );
+      final gradient = decoratedBox.decoration as BoxDecoration;
+      final linearGradient = gradient.gradient as LinearGradient;
+
+      expect(linearGradient.colors.first.r, 1.0);
+      expect(linearGradient.colors.first.g, 0.0);
+      expect(linearGradient.colors.first.b, 0.0);
     });
 
-    // ── New code paths from 0.17.0 refactor ─────────────────────────────────
-    // Covers: bottom edge positioning (isTop: false → bottom: 0),
-    // _buildColorOverlay with explicit fadeColor, and the hasTexture=false
-    // branch (outside GlassPage, no captured image → colour overlay).
-
-    testWidgets(
-        'bottom-only fade with explicit fadeColor exercises _buildColorOverlay',
+    testWidgets('attempts background capture within LiquidGlassScope',
         (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: SizedBox(
-            width: 400,
-            height: 600,
-            child: GlassScrollEdgeEffect(
-              fadeTop: false,
-              fadeBottom: true,
-              fadeColor:
-                  const Color(0xFFFFFFFF), // explicit → skips theme lookup
-              child: ListView(
-                children: const [Text('Bottom only with color')],
+        CupertinoApp(
+          home: Scaffold(
+            body: LiquidGlassScope(
+              child: Stack(
+                children: [
+                  GlassBackgroundSource(
+                    child: SizedBox(
+                        width: 800,
+                        height: 600,
+                        child: ColoredBox(color: Colors.red)),
+                  ),
+                  GlassScrollEdgeEffect(
+                    child: const SizedBox(),
+                  ),
+                ],
               ),
             ),
           ),
         ),
       );
-      await tester.pumpAndSettle();
-      expect(find.byType(GlassScrollEdgeEffect), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
 
-    testWidgets(
-        'both fades enabled exercises top and bottom positioning branches',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: SizedBox(
-            width: 400,
-            height: 600,
-            child: GlassScrollEdgeEffect(
-              fadeTop: true,
-              fadeBottom: true,
-              child: ListView(
-                children: const [Text('Both fades')],
-              ),
-            ),
-          ),
-        ),
-      );
+      // Wait for post-frame callbacks to execute
       await tester.pumpAndSettle();
-      expect(find.byType(GlassScrollEdgeEffect), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
 
-    testWidgets(
-        'bottom fade with hard style exercises style branch in _buildColorOverlay',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: SizedBox(
-            width: 400,
-            height: 600,
-            child: GlassScrollEdgeEffect(
-              fadeTop: false,
-              fadeBottom: true,
-              style: GlassScrollEdgeStyle.hard,
-              fadeColor: const Color(0xFFF5F5F5),
-              child: ListView(
-                children: const [Text('Bottom hard')],
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
       expect(find.byType(GlassScrollEdgeEffect), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets(
-        'both fades with custom fadeColor covers both top and bottom overlay builds',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: SizedBox(
-            width: 400,
-            height: 600,
-            child: GlassScrollEdgeEffect(
-              fadeTop: true,
-              fadeBottom: true,
-              fadeColor: const Color(0xFFEEEEEE),
-              topFadeHeight: 80,
-              bottomFadeHeight: 60,
-              child: ListView(
-                children:
-                    List.generate(20, (i) => Text('Item $i', key: ValueKey(i))),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.byType(GlassScrollEdgeEffect), findsOneWidget);
-      expect(tester.takeException(), isNull);
     });
   });
 }

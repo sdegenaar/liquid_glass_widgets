@@ -228,6 +228,18 @@ GlassTabBar.bottom(
 
 ---
 
+# 0.17.1
+
+## 🐛 Fix — `platformViewBackdrop` toggle no longer snaps the selected-tab indicator ([#112](https://github.com/sdegenaar/liquid_glass_widgets/pull/112) by [@jfhair](https://github.com/jfhair))
+
+Toggling `platformViewBackdrop` at runtime (e.g. switching between a map tab and a Flutter-content tab) caused the selected-indicator pill to snap to the new tab instead of sliding. The spring animation controllers inside the indicator subtree were being re-seeded at their already-settled value because the toggle added or removed the `LiquidGlassBlendGroup` wrapper in `AdaptiveLiquidGlassLayer`, changing the child's depth in the element tree and forcing Flutter to discard and re-inflate the whole subtree via `initState`.
+
+**Fix:** `AdaptiveLiquidGlassLayer` is now a `StatefulWidget` that holds a stable `GlobalKey`. The child is always wrapped in a `KeyedSubtree` with that key, so the element identity is preserved across the wrapper toggle — the indicator's `AnimationController`s survive and the morph continues correctly.
+
+No API changes. No breaking changes.
+
+---
+
 # 0.17.0
 
 

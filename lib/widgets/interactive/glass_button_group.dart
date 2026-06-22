@@ -210,6 +210,7 @@ class GlassButtonGroup extends StatelessWidget {
         useOwnLayer: useOwnLayer,
         quality: effectiveQuality,
         width: null, // Size to content
+        height: null, // Size to content
         // Reduce stretch for grouped buttons — full stretch looks too dramatic
         // on a wide pill. This matches iOS 26 toolbar feel.
         stretch: 0.15,
