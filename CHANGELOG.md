@@ -1,3 +1,16 @@
+# Unreleased
+
+## ✨ `innerBlur` — Apple-style rest-blur behind the selected tab
+
+The `innerBlur` parameter on `GlassTabBar.bottom`/`.searchable` (and the deprecated `GlassBottomBar`/`GlassSearchableBottomBar` shims) now renders. It was declared and threaded bar→internal, but never forwarded to the indicator, and `AnimatedGlassIndicator` had no implementation. This wires it through the tab-bar internals and adds the rest-gated `BackdropFilter`.
+
+It paints a backdrop blur behind the **resting** selected pill — the iOS 26 "frost at rest" look — with the sigma scaled by the pill's resting opacity, so the frost is full when settled and fades out as it morphs into the liquid-glass lens during a drag/tap (motion stays crisp).
+
+- `0.0` (default) disables it — no behavior change for existing callers.
+- Only the background-painting indicator is affected (reads through a translucent `indicatorColor`).
+
+---
+
 # 0.18.1
 
 - **Hotfix:** Resolved missing coverage in layout engines and segmented controls.

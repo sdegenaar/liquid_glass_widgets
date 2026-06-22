@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
@@ -107,6 +109,14 @@ class AnimatedGlassIndicator extends StatelessWidget {
   /// [GlassTabBar.indicatorPinchStrength], etc.
   final double pinchStrength;
 
+  /// Sigma of the backdrop blur painted behind the RESTING selected pill
+  /// (Apple-style "frost at rest"). Scaled internally by the resting opacity so
+  /// it is full when settled and fades out as the pill morphs into the
+  /// liquid-glass lens during a drag/tap — keeping motion crisp. `0.0` (default)
+  /// disables it. Only renders on the background-painting indicator
+  /// ([paintBackground] == true); reads through a translucent [indicatorColor].
+  final double innerBlur;
+
   const AnimatedGlassIndicator({
     super.key,
     required this.velocity,
@@ -128,6 +138,7 @@ class AnimatedGlassIndicator extends StatelessWidget {
     this.exactOffset,
     this.shadows,
     this.pinchStrength = 1.0,
+    this.innerBlur = 0.0,
   });
 
   /// The iOS 26-calibrated default glass settings for all indicator pills.
@@ -360,6 +371,25 @@ class AnimatedGlassIndicator extends StatelessWidget {
     final indicatorBody = Stack(
       clipBehavior: Clip.none,
       children: [
+        // Rest-blur: an Apple-style backdrop frost behind the RESTING pill.
+        // Sigma is scaled by backgroundOpacity so it is full when settled and
+        // fades out as the pill morphs into the glass lens (motion stays crisp).
+        // Sits at the bottom of the stack so the (translucent) pill + icons read
+        // on top of the frosted backdrop.
+        if (paintBackground && innerBlur > 0 && backgroundOpacity > 0)
+          Positioned.fromRelativeRect(
+            rect: rect!,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(borderRadius),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(
+                  sigmaX: innerBlur * backgroundOpacity,
+                  sigmaY: innerBlur * backgroundOpacity,
+                ),
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ),
         // Premium: background painted statically (no Transform), fading out
         if (paintBackground && !isStdPath && backgroundOpacity > 0)
           Positioned.fromRelativeRect(
