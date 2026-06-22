@@ -37,6 +37,7 @@ AnimatedGlassIndicator _make({
   double? exactWidth,
   double? exactOffset,
   double velocity = 0.0,
+  double innerBlur = 0.0,
   GlassQuality quality = GlassQuality.standard,
 }) =>
     AnimatedGlassIndicator(
@@ -55,6 +56,7 @@ AnimatedGlassIndicator _make({
       paintGlass: paintGlass,
       exactWidth: exactWidth,
       exactOffset: exactOffset,
+      innerBlur: innerBlur,
     );
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -310,6 +312,47 @@ void main() {
       await tester.pumpWidget(_wrap(_make(
         thickness: 0.6,
         velocity: -150.0,
+      )));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  // ── innerBlur (rest-blur) ────────────────────────────────────────────────
+
+  group('AnimatedGlassIndicator — innerBlur (rest-blur)', () {
+    testWidgets('innerBlur > 0 at rest renders the rest-blur BackdropFilter',
+        (tester) async {
+      // paintBackground=true + innerBlur>0 + backgroundOpacity>0 (thickness 0 →
+      // backgroundOpacity 1.0) → the rest-gated BackdropFilter block renders.
+      await tester.pumpWidget(_wrap(_make(
+        thickness: 0.0,
+        innerBlur: 6.0,
+        paintBackground: true,
+      )));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(BackdropFilter), findsWidgets);
+    });
+
+    testWidgets('innerBlur > 0 mid-morph (backgroundOpacity 0) skips the blur',
+        (tester) async {
+      // thickness 0.5 → backgroundOpacity clamps to 0 → the guard short-circuits
+      // even with innerBlur set, so the rest-blur block is not added.
+      await tester.pumpWidget(_wrap(_make(
+        thickness: 0.5,
+        innerBlur: 6.0,
+      )));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('innerBlur with paintBackground: false adds no rest-blur',
+        (tester) async {
+      await tester.pumpWidget(_wrap(_make(
+        thickness: 0.0,
+        innerBlur: 6.0,
+        paintBackground: false,
       )));
       await tester.pump();
       expect(tester.takeException(), isNull);
