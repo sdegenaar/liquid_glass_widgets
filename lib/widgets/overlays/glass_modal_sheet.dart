@@ -110,6 +110,12 @@ class GlassModalSheet extends StatefulWidget {
   /// Rendering quality (BackdropFilter vs Shader). Defaults to standard.
   final GlassQuality? quality;
 
+  /// When true (typically over an iOS PlatformView), forces the BackdropFilter
+  /// fallback render path so premium glass renders cleanly over the
+  /// PlatformView instead of as a solid slab. Forwarded to the sheet's
+  /// underlying [AdaptiveGlass]. Defaults to false.
+  final bool platformViewBackdrop;
+
   // ===========================================================================
   // Physics & Interaction Properties
   // ===========================================================================
@@ -217,6 +223,7 @@ class GlassModalSheet extends StatefulWidget {
     this.velocityThreshold = 700.0,
     this.settings,
     this.quality,
+    this.platformViewBackdrop = false,
     this.expandedColor,
     this.controller,
     this.onStateChanged,
@@ -256,6 +263,7 @@ class GlassModalSheet extends StatefulWidget {
     SheetMode mode = SheetMode.dismissible,
     double peekSize = 90.0,
     GlassQuality? quality,
+    bool platformViewBackdrop = false,
     Color barrierColor = Colors.black54,
     bool isDismissible = true,
     bool useRootNavigator = false,
@@ -337,6 +345,7 @@ class GlassModalSheet extends StatefulWidget {
           mode: mode,
           peekSize: peekSize,
           quality: quality,
+          platformViewBackdrop: platformViewBackdrop,
           interactionScale: interactionScale,
           enableInteractionGlow: enableInteractionGlow,
           enableSaturationGlow: enableSaturationGlow,

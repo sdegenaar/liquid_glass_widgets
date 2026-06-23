@@ -155,6 +155,7 @@ class GlassButton extends StatefulWidget {
     this.anchorStretchSettings = const AnchorStretchSettings(),
     this.alignment = Alignment.center,
     this.ambientBaseLight = 0.08,
+    this.platformViewBackdrop = false,
   }) : child = null;
 
   /// Creates a glass button with custom content.
@@ -208,6 +209,7 @@ class GlassButton extends StatefulWidget {
     this.anchorStretchSettings = const AnchorStretchSettings(),
     this.alignment = Alignment.center,
     this.ambientBaseLight = 0.08,
+    this.platformViewBackdrop = false,
   })  : icon = null,
         iconSize = 24.0,
         iconColor = null;
@@ -512,6 +514,11 @@ class GlassButton extends StatefulWidget {
   /// Set to 0.0 to disable.
   final double ambientBaseLight;
 
+  /// When true (typically for iOS PlatformViews), forces the BackdropFilter
+  /// fallback render path instead of the Impeller-native shader. Forwarded to
+  /// the underlying [AdaptiveGlass].
+  final bool platformViewBackdrop;
+
   @override
   State<GlassButton> createState() => _GlassButtonState();
 }
@@ -723,6 +730,7 @@ class _GlassButtonState extends State<GlassButton>
           useOwnLayer: widget.useOwnLayer,
           glowIntensity: _saturationAnimation.value, // 0.0-1.0 animation
           isInteractive: true, // Buttons manage their own RepaintBoundary
+          platformViewBackdrop: widget.platformViewBackdrop,
           child: child!,
         );
       },

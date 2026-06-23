@@ -40,7 +40,58 @@ uniform vec4 uData7; // 28..31 (baseAlphaMultiplier, edgeAlphaMultiplier, rimThi
 
 uniform sampler2D uTexture;         // Captured background image
 
+// 32: Device pixel ratio — passed from Dart _RenderInteractiveIndicator.
+// The background texture is now captured at full DPR resolution, so the
+// physical texel size = logical uBackgroundSize * uDpr.
+uniform float uDpr;
+
 out vec4 fragColor;
+
+// ── Manual Bilinear Filtering ─────────────────────────────────────────────
+// Impeller's explicit setImageSampler() binding may also default to
+// Nearest-Neighbor. Even when it does not, the background texture was
+// previously captured at pixelRatio: 1.0, meaning each "texel" covered
+// a 3×3 block of physical pixels on a 3× Retina screen. Both issues
+// produced blocky staircase aliasing on edge refraction and chromatic
+// aberration.
+//
+// This function replaces all uTexture lookups with a 4-texel bilinear
+// interpolation in GLSL, guaranteeing smooth sub-pixel sampling regardless
+// of Impeller's sampler default.
+//
+// uv       — UV coordinate in [0,1] (relative to logical uBackgroundSize)
+// logSize  — uBackgroundSize in logical pixels
+// physSize — uBackgroundSize * uDpr = actual pixel dimensions of the texture
+// invPhys  — 1.0 / physSize (precomputed for efficiency)
+vec4 textureBilinear(vec2 uv, vec2 physSize, vec2 invPhys) {
+    // Convert UV to physical texel coordinate, centre on the texel grid.
+    vec2 px = uv * physSize - 0.5;
+    vec2 f  = fract(px);
+    vec2 p0 = floor(px);
+    vec2 p1 = p0 + vec2(1.0, 0.0);
+    vec2 p2 = p0 + vec2(0.0, 1.0);
+    vec2 p3 = p0 + vec2(1.0, 1.0);
+
+    // Explicitly clamp to texture bounds. In Impeller, custom FragmentShader 
+    // samplers may not use ClampToEdge by default. When the indicator pill 
+    // expands outside the RepaintBoundary bounds (e.g. via jelly overshoot 
+    // or LiquidStretch scaling), out-of-bounds UVs cause extreme wrap-around 
+    // chromatic aliasing (jagged rainbows) on the pill's top/left edges.
+    vec2 maxPx = max(vec2(0.0), physSize - 1.0);
+    p0 = clamp(p0, vec2(0.0), maxPx);
+    p1 = clamp(p1, vec2(0.0), maxPx);
+    p2 = clamp(p2, vec2(0.0), maxPx);
+    p3 = clamp(p3, vec2(0.0), maxPx);
+
+    vec4 c0 = texture(uTexture, (p0 + 0.5) * invPhys);
+    vec4 c1 = texture(uTexture, (p1 + 0.5) * invPhys);
+    vec4 c2 = texture(uTexture, (p2 + 0.5) * invPhys);
+    vec4 c3 = texture(uTexture, (p3 + 0.5) * invPhys);
+
+    vec4 cTop = mix(c0, c1, f.x);
+    vec4 cBot = mix(c2, c3, f.x);
+    return mix(cTop, cBot, f.y);
+}
 
 void main() {
   vec2 uSize = uData0.xy;
@@ -178,15 +229,19 @@ void main() {
   
   vec3 bg;
   if (uHasBackground > 0.5) {
+    // Physical texture size (actual pixel dimensions after DPR capture).
+    // uBackgroundSize is in LOGICAL pixels; the texture has uDpr× more texels.
+    vec2 physBgSize = uBackgroundSize * uDpr;
+    vec2 invPhysBgSize = 1.0 / physBgSize;
+
     if (uChromaticAberration < 0.001) {
-      // No chromatic aberration — single texture fetch (2/3 fewer samples vs
-      // the 3-channel path). This is the common default configuration.
-      bg = texture(uTexture, localRefracted / uBackgroundSize).rgb;
+      // No chromatic aberration — single bilinear fetch.
+      bg = textureBilinear(localRefracted / uBackgroundSize, physBgSize, invPhysBgSize).rgb;
     } else {
-      // REAL REFRACTION with chromatic aberration: separate RGB channels
-      vec3 colR = texture(uTexture, (localRefracted + chromaticShift) / uBackgroundSize).rgb;
-      vec3 colG = texture(uTexture, localRefracted / uBackgroundSize).rgb;
-      vec3 colB = texture(uTexture, (localRefracted - chromaticShift) / uBackgroundSize).rgb;
+      // Chromatic aberration: separate RGB channels with bilinear filtering.
+      vec3 colR = textureBilinear((localRefracted + chromaticShift) / uBackgroundSize, physBgSize, invPhysBgSize).rgb;
+      vec3 colG = textureBilinear(localRefracted / uBackgroundSize, physBgSize, invPhysBgSize).rgb;
+      vec3 colB = textureBilinear((localRefracted - chromaticShift) / uBackgroundSize, physBgSize, invPhysBgSize).rgb;
       bg = vec3(colR.r, colG.g, colB.b);
     }
   } else {

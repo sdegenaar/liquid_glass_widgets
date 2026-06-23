@@ -447,6 +447,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
               settings: effectiveSettings,
               quality: effectiveQuality,
               blendAmount: state.blend,
+              platformViewBackdrop: widget.platformViewBackdrop,
               child: LiquidGlassBlendGroup(
                 blend: state.blend,
                 child: Stack(
@@ -472,6 +473,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                             useOwnLayer: false,
                             settings: effectiveSettings,
                             quality: effectiveQuality,
+                            platformViewBackdrop: widget.platformViewBackdrop,
                             width: tw,
                             height: th,
                             shape: LiquidRoundedSuperellipse(
@@ -626,6 +628,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
         useOwnLayer: false, // blends with the trigger ghost
         settings: effectiveSettings,
         quality: effectiveQuality,
+        platformViewBackdrop: widget.platformViewBackdrop,
         allowElevation:
             false, // Menu is overlay - don't darken when outside parent
         width: currentWidth,

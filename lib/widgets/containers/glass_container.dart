@@ -90,6 +90,7 @@ class GlassContainer extends StatelessWidget {
     this.alignment,
     this.allowElevation = false,
     this.glowIntensity = 0.0,
+    this.platformViewBackdrop = false,
   });
 
   // ===========================================================================
@@ -215,6 +216,11 @@ class GlassContainer extends StatelessWidget {
   /// drives a shader-based highlight layer. Defaults to 0.0 (no glow).
   final double glowIntensity;
 
+  /// When true (typically for iOS PlatformViews), forces the BackdropFilter
+  /// fallback render path instead of the Impeller-native shader. Forwarded to
+  /// the underlying [AdaptiveGlass].
+  final bool platformViewBackdrop;
+
   @override
   Widget build(BuildContext context) {
     // Inherit quality from parent layer if not explicitly set
@@ -280,6 +286,7 @@ class GlassContainer extends StatelessWidget {
       clipBehavior: clipBehavior,
       allowElevation: allowElevation, // Configurable elevation behavior
       glowIntensity: glowIntensity,
+      platformViewBackdrop: platformViewBackdrop,
       child: InheritedLiquidGlass(
         settings: effectiveSettings,
         quality: effectiveQuality,

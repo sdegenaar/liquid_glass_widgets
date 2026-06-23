@@ -18,6 +18,7 @@ class _SheetLayout extends StatelessWidget {
   final Color effectiveExpandedColor;
   final LiquidGlassSettings fadedSettings;
   final GlassQuality effectiveQuality;
+  final bool platformViewBackdrop;
   final Animation<double> saturationAnimation;
   final double expandProgress;
   final PointerDownEventListener onPointerDown;
@@ -58,6 +59,7 @@ class _SheetLayout extends StatelessWidget {
     required this.effectiveExpandedColor,
     required this.fadedSettings,
     required this.effectiveQuality,
+    required this.platformViewBackdrop,
     required this.saturationAnimation,
     required this.expandProgress,
     required this.onPointerDown,
@@ -220,6 +222,7 @@ class _SheetLayout extends StatelessWidget {
                         shape: shape,
                         settings: currentSettings,
                         quality: effectiveQuality,
+                        platformViewBackdrop: platformViewBackdrop,
                         useOwnLayer: true,
                         clipBehavior: Clip.antiAlias,
                         child: Stack(
@@ -556,6 +559,10 @@ class GlassModalSheetScaffold extends StatelessWidget {
   /// Rendering quality (BackdropFilter vs Shader). Defaults to standard.
   final GlassQuality? quality;
 
+  /// Forces the BackdropFilter fallback so premium glass renders cleanly over
+  /// an iOS PlatformView. Forwarded to the sheet's [AdaptiveGlass].
+  final bool platformViewBackdrop;
+
   /// Color/Saturation transition mode when expanding to full.
   final FillTransition fillTransition;
 
@@ -669,6 +676,7 @@ class GlassModalSheetScaffold extends StatelessWidget {
     this.mode = SheetMode.dismissible,
     this.peekSize = 90.0,
     this.quality = GlassQuality.standard,
+    this.platformViewBackdrop = false,
     this.interactionScale = 1.01,
     this.enableInteractionGlow = true,
     this.enableSaturationGlow = true,
@@ -733,6 +741,7 @@ class GlassModalSheetScaffold extends StatelessWidget {
           mode: mode,
           peekSize: peekSize,
           quality: quality,
+          platformViewBackdrop: platformViewBackdrop,
           interactionScale: interactionScale,
           enableInteractionGlow: enableInteractionGlow,
           enableSaturationGlow: enableSaturationGlow,
