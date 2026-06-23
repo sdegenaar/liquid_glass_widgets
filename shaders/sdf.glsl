@@ -1,4 +1,5 @@
 // Copyright 2025, Tim Lehmann for whynotmake.it
+// Modified 2026 by Sebastian Degenaar (liquid_glass_widgets)
 //
 // SDF primitives and scene composition for liquid glass geometry shaders.
 //

@@ -30,17 +30,14 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
         _cachedLightDir = Offset(
           cos(settings.lightAngle),
           -sin(settings.lightAngle),
-        ) {
-    _updateShaderSettings();
-  }
+        );
 
   static final logger = Logger(LgrLogNames.render);
 
   final FragmentShader renderShader;
 
   /// Cached light direction vector — updated only when [settings.lightAngle]
-  /// changes. Avoids recomputing cos/sin on every _updateShaderSettings() call
-  /// (which fires for any property change: visibility, blur, color, etc.).
+  /// changes. Avoids recomputing cos/sin on every setting change.
   Offset _cachedLightDir;
 
   /// The size that the geometry texture should have.
@@ -68,7 +65,6 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
       );
     }
     _settings = value;
-    _updateShaderSettings();
     markNeedsPaint();
   }
 
@@ -77,7 +73,6 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
   set devicePixelRatio(double value) {
     if (_devicePixelRatio == value) return;
     _devicePixelRatio = value;
-    _updateShaderSettings();
     markNeedsPaint();
   }
 
@@ -125,33 +120,6 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
   void layout(Constraints constraints, {bool parentUsesSize = false}) {
     needsGeometryUpdate = true;
     super.layout(constraints, parentUsesSize: parentUsesSize);
-  }
-
-  void _updateShaderSettings() {
-    renderShader.setFloatUniforms(initialIndex: 6, (value) {
-      value
-        ..setColor(settings.effectiveGlassColor)
-        ..setFloats([
-          settings.effectiveRefractiveIndex,
-          settings.effectiveChromaticAberration,
-          settings.effectiveThickness,
-          settings.effectiveLightIntensity,
-          settings.effectiveAmbientStrength,
-          settings.effectiveSaturation,
-        ])
-        // Use pre-cached direction — cos/sin only recomputed when lightAngle changes,
-        // not on every visibility, blur, or color animation frame.
-        ..setOffset(_cachedLightDir);
-    });
-    // Slot 18: uWhiten (whitening amount); slot 19: uWhitenGated
-    // (1 = luminance-gated, the light-mode behaviour; 0 = uniform lift).
-    // Slot 20: uPinchStrength (concave horizontal-pinch for indicator pills).
-    renderShader.setFloatUniforms(initialIndex: 18, (value) {
-      value
-        ..setFloat(settings.whitenStrength)
-        ..setFloat(settings.whitenGated ? 1.0 : 0.0)
-        ..setFloat(settings.pinchStrength);
-    });
   }
 
   ui.Rect _paintBounds = ui.Rect.zero;
@@ -295,7 +263,33 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
               ..setOffset(activeBounds.topLeft * devicePixelRatio)
               ..setSize(activeBounds.size * devicePixelRatio);
           })
-          ..setImageSampler(1, geometryImage);
+          ..setFloatUniforms(initialIndex: 6, (value) {
+            value
+              ..setColor(settings.effectiveGlassColor)
+              ..setFloats([
+                settings.effectiveRefractiveIndex,
+                settings.effectiveChromaticAberration,
+                settings.effectiveThickness,
+                settings.effectiveLightIntensity,
+                settings.effectiveAmbientStrength,
+                settings.effectiveSaturation,
+              ])
+              ..setOffset(_cachedLightDir);
+          })
+          // Slot 18: uWhiten (whitening amount); slot 19: uWhitenGated
+          // (1 = luminance-gated, the light-mode behaviour; 0 = uniform lift).
+          // Slot 20: uPinchStrength (concave horizontal-pinch for indicator pills).
+          ..setFloatUniforms(initialIndex: 18, (value) {
+            value
+              ..setFloat(settings.whitenStrength)
+              ..setFloat(settings.whitenGated ? 1.0 : 0.0)
+              ..setFloat(settings.pinchStrength);
+          })
+          ..setImageSampler(
+            1,
+            geometryImage,
+            filterQuality: FilterQuality.medium,
+          );
         paintLiquidGlass(
           context,
           offset,

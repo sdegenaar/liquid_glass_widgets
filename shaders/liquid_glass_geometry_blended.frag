@@ -21,7 +21,7 @@ precision highp float; // mediump caused ~1.5px displacement banding on mobile (
 
 layout(location = 0) uniform vec2 uSize;
 layout(location = 1) uniform vec4 uOpticalProps;
-layout(location = 2) uniform float uNumShapes;
+layout(location = 2) uniform vec2 uShapeSettings; // x = numShapes, y = dpr
 layout(location = 3) uniform float uShapeData[MAX_SHAPES * 7];
 
 // sdf.glsl functions access uShapeData as a global (no array-by-value parameters,
@@ -38,11 +38,21 @@ void main() {
     float uThickness = uOpticalProps.z;
     float uBlend = uOpticalProps.w;
 
+    float uNumShapes = uShapeSettings.x;
+    float uDpr = uShapeSettings.y;
+
     vec2 fragCoord = FlutterFragCoord().xy;
 
     float sd = sceneSDF(fragCoord, int(uNumShapes), uBlend);
 
-    float foregroundAlpha = 1.0 - smoothstep(-2.0, 0.0, sd);
+    // Apply logical-pixel anti-aliasing.
+    // Centering the smoothstep around 0.0 ensures the mathematical boundary (sd=0)
+    // is exactly 50% opaque. This correctly aligns the peak edge highlight with
+    // the visual edge of the shape, restoring maximum brightness.
+    // 1.5 logical pixels of smoothing guarantees a pristine edge that survives
+    // the 4% bilinear scaling of press animations without stair-stepping.
+    float smoothing = 1.5 * max(1.0, uDpr);
+    float foregroundAlpha = smoothstep(smoothing * 0.5, -smoothing * 0.5, sd);
     if (foregroundAlpha < 0.01) {
         fragColor = vec4(0.0);
         return;
@@ -50,24 +60,16 @@ void main() {
 
     // Compute the SDF gradient for surface normal generation.
     //
-    // Metal (iOS/macOS): hardware dFdx/dFdy give the sharpest possible normals
-    // with zero extra SDF evaluations. Metal's shader compiler handles dFdx on
-    // scalar float without issue.
-    //
-    // Vulkan & OpenGL ES (Android/Windows): glslang rejects dFdx/dFdy on scalar
-    // float during SPIR-V compilation. Use centered ±0.5 px finite differences
-    // instead, which are symmetric (no neck lean bias) and match the ~1 px
-    // spatial resolution of hardware derivatives. Since normalize() cancels
-    // magnitude, only the gradient direction matters.
-    #ifdef IMPELLER_TARGET_METAL
-    float dx = dFdx(sd);
-    float dy = dFdy(sd);
-    #else
+    // We MUST use central ±0.5 px finite differences on ALL platforms.
+    // While Metal supports dFdx/dFdy on scalar floats, hardware derivatives are
+    // computed in 2x2 pixel quads, resulting in blocky 2x2 normals. When these
+    // blocky normals refract high-contrast edges (like the base pill's white rim),
+    // they produce severe stair-step aliasing.
+    // Central differences guarantee a perfectly smooth, continuous normal per-pixel.
     float dx = sceneSDF(fragCoord + vec2(0.5, 0.0), int(uNumShapes), uBlend)
              - sceneSDF(fragCoord - vec2(0.5, 0.0), int(uNumShapes), uBlend);
     float dy = sceneSDF(fragCoord + vec2(0.0, 0.5), int(uNumShapes), uBlend)
              - sceneSDF(fragCoord - vec2(0.0, 0.5), int(uNumShapes), uBlend);
-    #endif
 
     float n_cos = max(uThickness + sd, 0.0) / uThickness;
     float n_sin = sqrt(max(0.0, 1.0 - n_cos * n_cos));

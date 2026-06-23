@@ -141,6 +141,9 @@ class _GlassEffectState extends State<GlassEffect>
   Offset? _lastCapturePosition;
   // Web only: guards against overlapping async captures.
   bool _isCapturingAsync = false;
+  // Device pixel ratio — updated in didChangeDependencies so it is always
+  // current when _captureBackgroundSync / _captureBackgroundAsync runs.
+  double _devicePixelRatio = 1.0;
 
   @override
   void initState() {
@@ -178,6 +181,9 @@ class _GlassEffectState extends State<GlassEffect>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _cachedScopeKey = LiquidGlassScope.of(context);
+    // Keep DPR in sync — changes on orientation, accessibility zoom, or
+    // moving between displays with different densities.
+    _devicePixelRatio = View.of(context).devicePixelRatio;
     _updateTicker();
   }
 
@@ -276,9 +282,13 @@ class _GlassEffectState extends State<GlassEffect>
   void _captureBackgroundSync(
       RenderRepaintBoundary boundary, Size size, Offset? pos) {
     try {
-      // pixelRatio: 1.0 — logical resolution is sufficient for refraction.
-      // Stays in GPU-accessible memory; handed directly to setImageSampler.
-      final image = boundary.toImageSync(pixelRatio: 1.0);
+      // Capture at the device's physical pixel ratio so the background texture
+      // has full-DPR resolution. This gives the bilinear filter in
+      // interactive_indicator.frag genuine sub-pixel texels to interpolate
+      // across, eliminating the blocky 3×3 pixel "staircase" aliasing on
+      // Retina/3× displays when pixelRatio: 1.0 was used.
+      final dpr = _devicePixelRatio;
+      final image = boundary.toImageSync(pixelRatio: dpr);
       // Guard: if the widget was disposed between the toImageSync call and
       // this point (possible during rapid navigation), dispose the image
       // immediately rather than leaking it into a dead State.
@@ -309,7 +319,10 @@ class _GlassEffectState extends State<GlassEffect>
     if (_isCapturingAsync) return; // prevent overlapping futures
     _isCapturingAsync = true;
     try {
-      final image = await boundary.toImage(pixelRatio: 1.0);
+      // Web: async at full DPR. Still a 1-frame lag during drag but now
+      // provides full-resolution texels for the bilinear filter.
+      final image = await boundary.toImage(
+          pixelRatio: _devicePixelRatio); // coverage:ignore-line
       if (mounted) {
         setState(() {
           _backgroundImage?.dispose();
@@ -922,11 +935,14 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
         // Keep in LOGICAL pixels (don't multiply by DPR)
         bgRelativeOffset = indGlobalPos - bgGlobalPos;
 
-        // Image captured at pixelRatio: 1.0 — dimensions are already logical pixels.
-        // No DPR conversion needed (was previously physical→logical).
+        // Image is now captured at pixelRatio: _devicePixelRatio.
+        // Divide by DPR to convert physical pixel dimensions back to logical
+        // pixels, keeping uBackgroundSize in the same coordinate space as
+        // localLogical/posInBg in the shader. The bilinear function in GLSL
+        // uses the physical size (uBgPhysicalSize = logical × DPR) internally.
         bgSize = Size(
-          _backgroundImage!.width.toDouble(),
-          _backgroundImage!.height.toDouble(),
+          _backgroundImage!.width / _devicePixelRatio,
+          _backgroundImage!.height / _devicePixelRatio,
         );
       }
     }
@@ -937,7 +953,11 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
     // 3. Set Sampler
     final imageToBind = _backgroundImage ?? GlassEffect._dummyImage;
     if (imageToBind != null) {
-      _shader.setImageSampler(0, imageToBind);
+      _shader.setImageSampler(
+        0,
+        imageToBind,
+        filterQuality: FilterQuality.medium,
+      );
     }
 
     // 4. Paint shader overlay — inflate the draw rect by the clip expansion budget.
@@ -1052,5 +1072,10 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
     _shader.setFloat(index++, _edgeAlphaMultiplier);
     _shader.setFloat(index++, _rimThickness);
     _shader.setFloat(index++, _rimSmoothing);
+
+    // Device pixel ratio — used by textureBilinear() in the shader to
+    // convert logical uBackgroundSize to physical texel dimensions.
+    // index 32 (after the 32 floats mapped to uData0..uData7).
+    _shader.setFloat(index++, _devicePixelRatio);
   }
 }
