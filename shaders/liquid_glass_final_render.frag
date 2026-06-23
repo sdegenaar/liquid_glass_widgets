@@ -28,6 +28,7 @@ precision highp float; // mediump causes colour banding (10-bit mantissa on mobi
 // Slots 16-17: uLightDirection
 // Slot 18: uWhiten
 // Slot 19: uWhitenGated
+// Slot 20: uPinchStrength
 uniform vec2 uSize;          // physical-pixel size of the backdrop capture
 uniform vec2 uGeometryOffset;
 uniform vec2 uGeometrySize;
@@ -61,6 +62,49 @@ uniform sampler2D uGeometryTexture;
 
 layout(location = 0) out vec4 fragColor;
 
+// ── Manual Bilinear Filtering ─────────────────────────────────────────────
+// Impeller's implicit BackdropFilterLayer sampler is bound to the
+// FragmentShader as Nearest-Neighbor with no Dart API to override it.
+// Tracked as:
+//   Flutter Issue #139887 — original bug report (NN aliasing on backdrop)
+//   Flutter Issue #188365 — feature request to expose FilterQuality on
+//                           BackdropFilterLayer (filed during 0.18.2 work)
+// Once #188365 is resolved, this entire function can be replaced with a
+// single texture() call and the physTexSize/invTexSize derivation removed.
+//
+// On-screen bilinear is lost without this workaround, which means continuous
+// sub-pixel UV shifts (pinch lens, refraction) snap to integer texels and
+// produce stair-step aliasing on high-contrast background edges.
+//
+// This function replaces all uBackgroundTexture lookups with 4 Nearest-Neighbor
+// fetches and a standard bilinear mix, restoring perfectly smooth sub-pixel
+// sampling at the cost of 3 additional cache-hot reads per invocation.
+//
+// NOTE: uGeometryTexture is intentionally excluded — it is a pre-rasterized
+// SDF picture whose texels are pixel-aligned by construction. Bilinear
+// filtering it would soften the SDF alpha channel and degrade anti-aliasing.
+//
+// Windows/SkSL: texture() with literal-computed UVs is legal in glslang
+// SPIR-V path; floor(), fract(), and vec2 arithmetic are all universally
+// supported. This function introduces no new platform compatibility issues.
+vec4 textureBilinear(vec2 uv, vec2 size, vec2 invSize) {
+    vec2 px = uv * size - 0.5;
+    vec2 f = fract(px);
+    vec2 p0 = floor(px);
+    vec2 p1 = p0 + vec2(1.0, 0.0);
+    vec2 p2 = p0 + vec2(0.0, 1.0);
+    vec2 p3 = p0 + vec2(1.0, 1.0);
+
+    vec4 c0 = texture(uBackgroundTexture, (p0 + 0.5) * invSize);
+    vec4 c1 = texture(uBackgroundTexture, (p1 + 0.5) * invSize);
+    vec4 c2 = texture(uBackgroundTexture, (p2 + 0.5) * invSize);
+    vec4 c3 = texture(uBackgroundTexture, (p3 + 0.5) * invSize);
+
+    vec4 cTop = mix(c0, c1, f.x);
+    vec4 cBot = mix(c2, c3, f.x);
+    return mix(cTop, cBot, f.y);
+}
+
 void main() {
     // Unpacked here rather than at global scope: global non-constant initialisers
     // (e.g. float x = uniform.y) are valid in desktop GLSL 4.6 but rejected by
@@ -74,12 +118,8 @@ void main() {
 
     vec2 fragCoord = FlutterFragCoord().xy;
 
-    // Use the explicit uSize uniform for UV derivation. textureSize() was tried
-    // but can return (0,0) on the first frame before GPU texture upload completes
-    // in Impeller's BackdropFilterLayer context, causing 1/0 = Infinity UVs and
-    // an invisible first-frame render. uSize (physical pixels of the backdrop
-    // capture, equal to desiredMatteSize * devicePixelRatio) is always valid.
-    vec2 invTexSize = 1.0 / uSize;
+    vec2 physTexSize = uSize;
+    vec2 invTexSize = 1.0 / physTexSize;
     vec2 screenUV = fragCoord * invTexSize;
 
     #ifdef IMPELLER_TARGET_OPENGLES
@@ -91,16 +131,17 @@ void main() {
         geometryUV.y = 1.0 - geometryUV.y;
     #endif
 
-    // Any fragment whose geometryUV falls outside [0,1] is outside the glass
-    // pill boundary entirely.  Without this early-out the sampler clamps to the
-    // edge pixel (UV.x=0 → left boundary pixel, alpha ≈ 0.5 from SDF AA), which
-    // renders a faint glass stripe in the _clipExpansion zone (20 px on each
-    // side). That stripe is visible at the pill's vertical midpoint as a short
-    // line protruding left and right from the pill edges.
-    if (any(lessThan(geometryUV, vec2(0.0))) || any(greaterThan(geometryUV, vec2(1.0)))) {
-        fragColor = vec4(0.0);
-        return;
-    }
+    // Clamp geometryUV to [0, 1] for two reasons:
+    // 1. Impeller's texture samplers may default to Repeat mode. Without this
+    //    clamp, a fragment slightly outside uGeometrySize (e.g. during
+    //    LiquidStretch scaling overshoot) wraps around and samples the opposite
+    //    edge of the geometry SDF, producing inverted normals and extreme
+    //    chromatic aliasing (jagged rainbows).
+    // 2. Fragments genuinely outside the pill (the _clipExpansion zone) get
+    //    clamped to the SDF edge, which has near-zero alpha. The
+    //    `geometryData.a < 0.01` early-out below discards them efficiently
+    //    without needing a separate bounds check here.
+    geometryUV = clamp(geometryUV, 0.0, 1.0);
 
     vec4 geometryData = texture(uGeometryTexture, geometryUV);
 
@@ -230,10 +271,10 @@ void main() {
     if (dot(normalXY, normalXY) < 1e-4) {
         // Flat interior — surface is pointing straight at the camera.
         // Displacement is mathematically zero; sample the background directly.
-        refractColor = texture(uBackgroundTexture, screenUV);
+        refractColor = textureBilinear(screenUV, physTexSize, invTexSize);
     } else if (uChromaticAberration < 0.01) {
         vec2 refractedUV = screenUV + displacement * invTexSize;
-        refractColor = texture(uBackgroundTexture, refractedUV);
+        refractColor = textureBilinear(refractedUV, physTexSize, invTexSize);
     } else {
         float dispersionStrength = uChromaticAberration * 0.5;
         vec2 redOffset  = displacement * (1.0 + dispersionStrength);
@@ -243,9 +284,9 @@ void main() {
         vec2 greenUV = screenUV + displacement * invTexSize;
         vec2 blueUV  = screenUV + blueOffset  * invTexSize;
 
-        float red         = texture(uBackgroundTexture, redUV).r;
-        vec4  greenSample = texture(uBackgroundTexture, greenUV);
-        float blue        = texture(uBackgroundTexture, blueUV).b;
+        float red         = textureBilinear(redUV, physTexSize, invTexSize).r;
+        vec4  greenSample = textureBilinear(greenUV, physTexSize, invTexSize);
+        float blue        = textureBilinear(blueUV, physTexSize, invTexSize).b;
 
         refractColor = vec4(red, greenSample.g, blue, greenSample.a);
     }

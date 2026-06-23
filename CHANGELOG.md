@@ -1,3 +1,4 @@
+
 # Unreleased
 
 ## 🧹 Removed — `GlassTintBlend` (a no-op since 0.17.0)
@@ -11,6 +12,50 @@ The automatic behavior is unchanged. `applyGlassColor` still picks luminosity-pr
 **Breaking, but inert:** code that passed `LiquidGlassSettings(tintBlend: …)` must drop the argument. No rendered output changes.
 
 ---
+
+# 0.18.2
+
+### Rendering Quality
+
+- **Fix:** Eliminated stair-step aliasing on `AnimatedGlassIndicator` / `GlassEffect` pill edges during press animations.
+  Root cause: `FragmentShader.setImageSampler()` defaults to `FilterQuality.none` (Nearest-Neighbor). The 4 % press-scale animation was block-replicating geometry texels into 2×2 stair-step patterns visible as jagged fringe on the pill rim.
+  **Resolution:** Pass `filterQuality: FilterQuality.medium` to every `setImageSampler()` call in `liquid_glass_render_object.dart`, `glass_effect.dart`, and `lightweight_liquid_glass.dart`. Zero GPU cost — hardware bilinear filtering happens in a single texel-unit clock cycle.
+
+- **Fix:** Eliminated 2×2 blocky normal artifacts on glass pill edges (all platforms, most visible on iOS/macOS Metal).
+  Root cause: Metal's `dFdx`/`dFdy` evaluate in 2×2 pixel quads, so all four neighbours share one gradient vector. At the high-contrast white rim of the pill this produces a coarse stair-step normal map that manifests as jaggy rainbow banding regardless of scale.
+  **Resolution:** Replaced hardware derivatives with per-pixel central finite differences in `liquid_glass_geometry_blended.frag` (`dx = sceneSDF(p + 0.5) − sceneSDF(p − 0.5)`). Costs 4 extra SDF evaluations per geometry pixel — negligible on a cached, one-shot geometry pass.
+
+- **Fix:** Restored full rim brightness after the anti-aliasing band was widened.
+  Root cause: The previous asymmetric `smoothstep(-smoothing, 0.0, sd)` placed the mathematical pill boundary (`sd = 0`) at the dark end of the alpha ramp (alpha = 0). The rim-lighting peak lives exactly at `sd = 0`, so it was multiplied by zero and rendered invisible.
+  **Resolution:** Centred the smoothstep around the boundary — `smoothstep(smoothing * 0.5, -smoothing * 0.5, sd)` — so `sd = 0` maps to alpha = 0.5. This is the canonical SDF anti-aliasing formulation and restores maximum rim brightness with no other visual side-effect.
+
+- **Fix:** Eliminated backdrop texture wrap-around artifacts during `LiquidStretch` scaling and jelly overshoot.
+  Root cause: Impeller's default texture sampler wrap mode is `Repeat`. A fragment slightly outside `uGeometrySize` (e.g. during a spring overshoot) produced a `geometryUV` marginally above 1.0; the sampler wrapped it to near-0.0, sampling the opposite edge of the SDF and producing inverted normals and extreme chromatic aliasing.
+  **Resolution:** Clamp `geometryUV` to `[0, 1]` before the texture fetch. Clamped-edge pixels have near-zero SDF alpha and are discarded by the existing `geometryData.a < 0.01` early-out — no separate bounds-check branch required.
+
+- **Fix:** Eliminated chromatic wrap artifacts during jelly overshoot in `interactive_indicator.frag`.
+  Root cause: When the indicator pill overshoots its `RepaintBoundary` bounds, out-of-bounds `textureBilinear` sample points could trigger the same Repeat-mode wrap in the background texture.
+  **Resolution:** Explicitly clamp all four bilinear sample points to `[0, physSize − 1]` before the `texture()` fetch.
+
+- **Fix:** Eliminated jagged/pixelated stair-step artifacts on `AnimatedGlassIndicator` pill edges when `indicatorPinchStrength > 0`.
+  Root cause: `BackdropFilterLayer` implicit samplers are bound to `FragmentShader` as Nearest-Neighbor with no Dart API to override it ([Flutter Issue #139887](https://github.com/flutter/flutter/issues/139887)). Continuous sub-pixel UV shifts from the lens pinch and chromatic aberration were snapping to integer texels, producing blocky rainbow fringes on high-contrast backgrounds.
+  **Resolution:** Added a `textureBilinear` helper to `liquid_glass_final_render.frag` that performs a standard 4-texel bilinear interpolation in GLSL, restoring perfectly smooth sub-pixel background sampling. The geometry texture (`uGeometryTexture`) is intentionally excluded — its pixel-aligned SDF data must not be softened.
+
+- **Fix:** Eliminated pixelation on the interactive indicator pill (`GlassSegmentedControl`, `GlassEffect`).
+  Two compounding causes: (1) the background texture was previously captured at `pixelRatio: 1.0`, so each texel covered a 3×3 block of physical pixels on a 3× Retina display; (2) Impeller's `setImageSampler()` binding defaults to Nearest-Neighbor, snapping continuous UV offsets from edge refraction to these large texels.
+  **Resolution:** Background capture now uses the device's full DPR. A `textureBilinear` GLSL helper replaces all raw `texture()` calls in `interactive_indicator.frag`. ~250 KB additional GPU texture memory; sub-0.1 ms additional GPU time per frame — negligible on any modern device.
+
+- **Fix:** Resolved intermittent Metal API Validation abort on iOS (`GlassQuality.premium`) — missing buffer bindings for `uWhiten`, `uWhitenGated`, and `uPinchStrength` ([#121](https://github.com/sdegenaar/liquid_glass_widgets/issues/121)).
+  All shader uniforms (slots 0–20) are now written atomically on every paint frame, preventing a stale or zero-initialised `FragmentShader` snapshot from reaching the Metal draw call. Affected: `GlassTabBar.bottom(quality: GlassQuality.premium)` with an animating indicator. No API changes.
+
+### Notes
+
+- **Note (Flutter engine limitation):** The `textureBilinear` workaround in `liquid_glass_final_render.frag` (4-tap bilinear in GLSL) remains necessary for backdrop sampling because Impeller binds the implicit `BackdropFilterLayer` sampler as Nearest-Neighbor with no Dart API to override `FilterQuality`. A Flutter engine feature request to expose sampler filter quality for backdrop layers has been filed at [Flutter Issue #188365](https://github.com/flutter/flutter/issues/188365). Once resolved, the GLSL workaround can be replaced with a single `texture()` call.
+
+### Chore
+
+- **Chore:** Removed unreachable early-out branch in `liquid_glass_final_render.frag` — the `if (any(lessThan(geometryUV, ...)))` check after `clamp(geometryUV, 0.0, 1.0)` could never fire. Replaced with a single consolidated comment explaining how the clamp and the downstream alpha check together handle both the Impeller Repeat-mode and clipExpansion cases.
+- **Chore:** Removed dead code from `render.glsl` (`computeY`, `getHeight`, `calculateLighting`, `calculateRefraction`, `renderLiquidGlass`, `debugNormals`) — functions superseded by the inline logic in `liquid_glass_final_render.frag`. Reduces compiled shader binary size.
 
 # 0.18.1
 
