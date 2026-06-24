@@ -8,6 +8,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import '../../../src/renderer/liquid_glass_renderer.dart';
+import '../../../theme/glass_theme.dart';
 import '../../../types/glass_quality.dart';
 import '../../../utils/draggable_indicator_physics.dart';
 import 'tab_bar_drag_gesture_mixin.dart';
@@ -635,7 +636,7 @@ class TabIndicatorState extends State<TabIndicator>
   /// so it doesn't interfere with the blend group compositing.
   /// Returns null in dark mode or when no shadow is configured.
   Widget? buildShadowOverlay(BuildContext context) {
-    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     if (isDark) return null;
 
     final effectiveSettings = InheritedLiquidGlass.ofOrDefault(context);

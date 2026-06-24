@@ -478,8 +478,7 @@ class _GlassPopoverState extends State<GlassPopover>
         clipBehavior: Clip.antiAlias,
         glowIntensity: widget.glowIntensity,
         child: Builder(builder: (context) {
-          final isDark =
-              CupertinoTheme.brightnessOf(context) == Brightness.dark;
+          final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
           return GlassGlow(
             enabled: widget.enableInteractionGlow,
             glowOnTapOnly: widget.glowOnTapOnly,

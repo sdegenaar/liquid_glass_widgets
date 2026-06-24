@@ -20,6 +20,7 @@ import 'package:flutter/cupertino.dart';
 
 import '../../../src/renderer/liquid_glass_renderer.dart';
 import '../../../src/types/glass_interaction_behavior.dart';
+import '../../../theme/glass_theme.dart';
 import '../../../types/glass_quality.dart';
 import '../../../utils/draggable_indicator_physics.dart';
 import '../../../utils/glass_spring.dart';
@@ -204,7 +205,7 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
   @override
   Widget build(BuildContext context) {
     final indicatorColor = widget.indicatorColor ??
-        (CupertinoTheme.brightnessOf(context) == Brightness.light
+        (GlassTheme.brightnessOf(context) == Brightness.light
             ? CupertinoColors.black.withValues(alpha: 0.08)
             : CupertinoColors.white.withValues(alpha: 0.2));
     final targetAlignment = _computeXAlignmentForSegment(widget.selectedIndex);

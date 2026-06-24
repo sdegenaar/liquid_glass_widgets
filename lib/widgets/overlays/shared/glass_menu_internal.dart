@@ -638,8 +638,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
             Clip.antiAlias, // Clip items at the edges for edge-to-edge feel
         glowIntensity: widget.glowIntensity,
         child: Builder(builder: (context) {
-          final isDark =
-              CupertinoTheme.brightnessOf(context) == Brightness.dark;
+          final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
           return GlassGlow(
             enabled: widget.enableInteractionGlow,
             glowOnTapOnly: widget.glowOnTapOnly,
@@ -690,11 +689,10 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                                   borderRadius: BorderRadius.circular(
                                       widget.itemBorderRadius),
                                   border: Border.all(
-                                    color:
-                                        CupertinoTheme.brightnessOf(context) ==
-                                                Brightness.dark
-                                            ? const Color(0x0DFFFFFF)
-                                            : const Color(0x0D000000),
+                                    color: GlassTheme.brightnessOf(context) ==
+                                            Brightness.dark
+                                        ? const Color(0x0DFFFFFF)
+                                        : const Color(0x0D000000),
                                     width: 0.5,
                                   ),
                                 ),

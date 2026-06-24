@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import '../../constants/glass_defaults.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/types/glass_interaction_behavior.dart';
+import '../../theme/glass_theme.dart';
 import '../../theme/glass_theme_helpers.dart';
 import '../../types/glass_quality.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
@@ -489,7 +490,7 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
 
     // ── Scrollable mode: 100% mirrors GlassTabBar(isScrollable: true) ────────
     if (widget.isScrollable) {
-      final isLight = CupertinoTheme.brightnessOf(context) == Brightness.light;
+      final isLight = GlassTheme.brightnessOf(context) == Brightness.light;
       final bg = widget.backgroundColor ??
           (isLight ? _defaultLightBg : _defaultDarkBg);
       final borderRadius = BorderRadius.circular(widget.borderRadius);
@@ -538,7 +539,7 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
 
     // ── Fixed mode: equal-width SegmentedControlContent ───────────────────────
     final backgroundColor = widget.backgroundColor ??
-        (CupertinoTheme.brightnessOf(context) == Brightness.light
+        (GlassTheme.brightnessOf(context) == Brightness.light
             ? CupertinoColors.black.withValues(alpha: 0.08)
             : CupertinoColors.white.withValues(alpha: 0.12));
 

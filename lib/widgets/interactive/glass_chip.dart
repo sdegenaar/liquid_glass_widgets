@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
+import '../../theme/glass_theme.dart';
 import '../../theme/glass_theme_data.dart';
 import '../../types/glass_quality.dart';
 import 'glass_button.dart';
@@ -243,7 +244,7 @@ class GlassChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     final baseColor = isDark ? CupertinoColors.white : CupertinoColors.black;
     final defaultContentColor = baseColor.withValues(alpha: 0.9);
     final defaultSelectedColor =

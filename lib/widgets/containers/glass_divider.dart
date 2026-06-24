@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import '../../theme/glass_theme.dart';
 
 /// A glass-aesthetic separator for use between glass content sections.
 ///
@@ -107,7 +108,7 @@ class GlassDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Resolve colour: prefer explicit, fall back to theme-adaptive default.
-    final brightness = CupertinoTheme.brightnessOf(context);
+    final brightness = GlassTheme.brightnessOf(context);
     final effectiveColor = color ??
         (brightness == Brightness.dark
             ? CupertinoColors.white.withValues(alpha: 0.20)

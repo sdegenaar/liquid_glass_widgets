@@ -202,8 +202,13 @@ void main() {
         (tester) async {
       late LiquidGlassSettings result;
 
+      tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+      addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
       await tester.pumpWidget(
         MaterialApp(
+          theme: ThemeData.light(),
+          darkTheme: ThemeData.dark(),
+          themeMode: ThemeMode.system,
           home: GlassTheme(
             data: GlassThemeData(
               light: GlassThemeVariant(
@@ -213,15 +218,10 @@ void main() {
                 settings: GlassThemeSettings(thickness: 88.0),
               ),
             ),
-            child: MediaQuery(
-              data: const MediaQueryData(
-                platformBrightness: Brightness.dark,
-              ),
-              child: Builder(builder: (context) {
-                result = GlassThemeHelpers.resolveSettings(context);
-                return const SizedBox.shrink();
-              }),
-            ),
+            child: Builder(builder: (context) {
+              result = GlassThemeHelpers.resolveSettings(context);
+              return const SizedBox.shrink();
+            }),
           ),
         ),
       );

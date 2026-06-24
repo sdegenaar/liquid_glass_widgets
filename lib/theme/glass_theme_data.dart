@@ -2,6 +2,7 @@ import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
 import '../src/renderer/liquid_glass_renderer.dart';
+import '../utils/glass_brightness.dart';
 import 'glass_interaction_settings.dart';
 import 'glass_theme_settings.dart';
 
@@ -365,7 +366,10 @@ class GlassThemeVariant {
 /// Theme data for liquid glass widgets.
 ///
 /// Provides centralized styling for all glass widgets in your app, with
-/// automatic light/dark mode support based on [MediaQuery] brightness.
+/// automatic light/dark mode support. Brightness is resolved via a priority
+/// cascade: [GlassThemeData.brightness] override → Cupertino explicit pin →
+/// Material [ThemeMode] → system/device setting. This ensures glass widgets
+/// always follow the **app's** intended brightness, not the device OS setting.
 ///
 /// ## Usage
 ///
@@ -407,6 +411,7 @@ class GlassThemeData {
     this.light = GlassThemeVariant.light,
     this.dark = GlassThemeVariant.dark,
     this.interaction = const GlassInteractionSettings(),
+    this.brightness,
   });
 
   /// Creates glass theme data from a flat set of common properties.
@@ -444,6 +449,7 @@ class GlassThemeData {
     double? saturation,
     double? borderRadius,
     GlassInteractionSettings? interaction,
+    Brightness? brightness,
   }) {
     final settings = GlassThemeSettings(
       blur: blur,
@@ -485,6 +491,7 @@ class GlassThemeData {
         borderRadius: borderRadius,
       ),
       interaction: interaction ?? const GlassInteractionSettings(),
+      brightness: brightness,
     );
   }
 
@@ -504,6 +511,24 @@ class GlassThemeData {
   /// don't change between light and dark mode.
   final GlassInteractionSettings interaction;
 
+  /// Explicit brightness override for all glass widgets under this theme.
+  ///
+  /// When non-null, **all** glass widgets in this subtree render at this
+  /// fixed brightness, regardless of the device OS setting, Material
+  /// [ThemeMode], or Cupertino theme brightness.
+  ///
+  /// This is the highest-priority level in the four-level brightness cascade:
+  /// `GlassThemeData.brightness` → Cupertino pin → Material ThemeMode → system.
+  ///
+  /// **Use cases**
+  /// - Force a specific section of your UI to always render in light mode
+  ///   (e.g. a camera viewfinder overlay that should always be dark).
+  /// - Testing: pin brightness to a known value in widget tests.
+  ///
+  /// When null (default), brightness resolves automatically through the
+  /// cascade. See [GlassTheme.brightnessOf] for the resolution logic.
+  final Brightness? brightness;
+
   /// Retrieves the theme data from the widget tree.
   ///
   /// Returns the current [GlassThemeData] from the nearest GlassTheme
@@ -512,13 +537,16 @@ class GlassThemeData {
     return GlassThemeHelpers.of(context);
   }
 
-  /// Retrieves the appropriate theme variant based on current brightness.
+  /// Retrieves the appropriate theme variant based on the resolved brightness.
   ///
-  /// Automatically selects light or dark variant based on [MediaQuery]
-  /// brightness. Individual widgets can use this to get theme-aware settings.
+  /// Uses the four-level cascade: [brightness] override → Cupertino pin →
+  /// Material [ThemeMode] → system/device. This ensures the correct variant
+  /// is selected even when the device OS and app theme differ.
   GlassThemeVariant variantFor(BuildContext context) {
-    final brightness = MediaQuery.platformBrightnessOf(context);
-    return brightness == Brightness.dark ? dark : light;
+    // Level 1: own brightness override takes absolute priority.
+    // Levels 2-4: delegated to the package-private utility.
+    final b = brightness ?? resolveGlassBrightness(context);
+    return b == Brightness.dark ? dark : light;
   }
 
   /// Gets the partial glass settings override for the current brightness.
@@ -557,7 +585,11 @@ class GlassThemeData {
     // Only inject the adaptive primary when the caller has not provided one.
     if (colors.primary != null) return colors;
 
-    final isDark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+    // Resolve brightness consistently with variantFor — own override first,
+    // then the package cascade. Do NOT call MediaQuery.platformBrightnessOf
+    // directly here, or the glow and the variant would use different sources.
+    final isDark =
+        (brightness ?? resolveGlassBrightness(context)) == Brightness.dark;
     // 0x3D = ~24% opacity in light mode (matches the pre-0.9.1 Colors.white24
     // default that GlassButton used before theme propagation was introduced).
     // 0x2A = ~16% opacity in dark mode — dark glass surfaces are already
@@ -574,13 +606,19 @@ class GlassThemeData {
     GlassThemeVariant? light,
     GlassThemeVariant? dark,
     GlassInteractionSettings? interaction,
+    Object? brightness = _sentinel,
   }) {
     return GlassThemeData(
       light: light ?? this.light,
       dark: dark ?? this.dark,
       interaction: interaction ?? this.interaction,
+      // Use sentinel so callers can explicitly clear the override with null.
+      brightness:
+          brightness == _sentinel ? this.brightness : brightness as Brightness?,
     );
   }
+
+  static const Object _sentinel = Object();
 
   /// Default fallback theme when no [GlassTheme] is present in widget tree.
   factory GlassThemeData.fallback() {
@@ -597,8 +635,9 @@ class GlassThemeData {
           runtimeType == other.runtimeType &&
           light == other.light &&
           dark == other.dark &&
-          interaction == other.interaction;
+          interaction == other.interaction &&
+          brightness == other.brightness;
 
   @override
-  int get hashCode => Object.hash(light, dark, interaction);
+  int get hashCode => Object.hash(light, dark, interaction, brightness);
 }

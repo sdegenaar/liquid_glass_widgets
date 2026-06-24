@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'dart:ui';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../utils/glass_morph_controller.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
@@ -12,6 +11,7 @@ import '../shared/adaptive_liquid_glass_layer.dart';
 import '../shared/inherited_liquid_glass.dart';
 import 'glass_menu_item.dart';
 import '../../theme/glass_theme_helpers.dart';
+import '../../theme/glass_theme.dart';
 
 part 'shared/glass_menu_internal.dart';
 

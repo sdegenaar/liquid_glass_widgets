@@ -9,6 +9,7 @@ import '../../src/renderer/liquid_glass_renderer.dart';
 
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/scheduler.dart';
+import '../../theme/glass_theme.dart';
 import '../../widgets/interactive/liquid_glass_scope.dart';
 import 'inherited_liquid_glass.dart';
 
@@ -405,7 +406,7 @@ class _GlassEffectState extends State<GlassEffect>
     final shader = _activeShader;
 
     // VQ4: Content-adaptive glass strength proxy.
-    final isDark = MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     final backdropLuma = isDark ? 0.15 : 0.85;
 
     // 3. Selection Logic:

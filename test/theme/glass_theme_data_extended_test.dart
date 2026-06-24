@@ -331,17 +331,19 @@ void main() {
       );
 
       Color? injected;
+      tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+      addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
       await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(platformBrightness: Brightness.dark),
-          child: MaterialApp(
-            home: GlassTheme(
-              data: data,
-              child: Builder(builder: (context) {
-                injected = data.glowColorsFor(context).primary;
-                return const SizedBox.shrink();
-              }),
-            ),
+        MaterialApp(
+          theme: ThemeData.light(),
+          darkTheme: ThemeData.dark(),
+          themeMode: ThemeMode.system,
+          home: GlassTheme(
+            data: data,
+            child: Builder(builder: (context) {
+              injected = data.glowColorsFor(context).primary;
+              return const SizedBox.shrink();
+            }),
           ),
         ),
       );
@@ -482,15 +484,17 @@ void main() {
       );
 
       GlassThemeVariant? variant;
+      tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+      addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
       await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(platformBrightness: Brightness.dark),
-          child: MaterialApp(
-            home: Builder(builder: (context) {
-              variant = data.variantFor(context);
-              return const SizedBox.shrink();
-            }),
-          ),
+        MaterialApp(
+          theme: ThemeData.light(),
+          darkTheme: ThemeData.dark(),
+          themeMode: ThemeMode.system,
+          home: Builder(builder: (context) {
+            variant = data.variantFor(context);
+            return const SizedBox.shrink();
+          }),
         ),
       );
 
@@ -761,17 +765,19 @@ void main() {
         );
 
         GlassGlowColors? resolved;
+        tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+        addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
         await tester.pumpWidget(
-          MediaQuery(
-            data: const MediaQueryData(platformBrightness: Brightness.dark),
-            child: MaterialApp(
-              home: GlassTheme(
-                data: data,
-                child: Builder(builder: (context) {
-                  resolved = data.glowColorsFor(context);
-                  return const SizedBox.shrink();
-                }),
-              ),
+          MaterialApp(
+            theme: ThemeData.light(),
+            darkTheme: ThemeData.dark(),
+            themeMode: ThemeMode.system,
+            home: GlassTheme(
+              data: data,
+              child: Builder(builder: (context) {
+                resolved = data.glowColorsFor(context);
+                return const SizedBox.shrink();
+              }),
             ),
           ),
         );

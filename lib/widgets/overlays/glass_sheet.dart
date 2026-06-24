@@ -1,5 +1,4 @@
 import 'dart:ui';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/renderer/internal/interaction_notification.dart';
@@ -7,6 +6,7 @@ import '../../src/renderer/internal/interaction_notification.dart';
 import '../../types/glass_quality.dart';
 import '../shared/adaptive_glass.dart';
 import '../../theme/glass_theme_helpers.dart';
+import '../../theme/glass_theme.dart';
 import 'package:flutter/services.dart';
 import 'shared/glass_sheet_defaults.dart';
 
@@ -583,8 +583,7 @@ class _GlassSheetState extends State<GlassSheet> with TickerProviderStateMixin {
         );
 
         if (widget.enableInteractionGlow && effectiveSettings.blur > 0.05) {
-          final isDark =
-              CupertinoTheme.brightnessOf(context) == Brightness.dark;
+          final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
           result = GlassGlow(
             glowColor: widget.glowColor ??
                 (isDark
@@ -673,7 +672,7 @@ class _GlassDragIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     // iOS 26: white at 35% in dark mode, black at 20% in light mode
     final defaultColor =
         isDark ? const Color(0x59FFFFFF) : const Color(0x33000000);

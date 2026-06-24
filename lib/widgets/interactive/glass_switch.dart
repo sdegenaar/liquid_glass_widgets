@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../constants/glass_defaults.dart';
+import '../../theme/glass_theme.dart';
 import '../../types/glass_quality.dart';
 import '../shared/glass_effect.dart';
 import '../../theme/glass_theme_helpers.dart';
@@ -455,7 +456,7 @@ class _GlassSwitchState extends State<GlassSwitch>
     final thumbTravelDistance = trackWidth - thumbWidth - 4.0;
 
     // Performance: Cache color calculations as const to avoid allocation
-    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     // Light mode: solid opaque grey matching native iOS switch track groove.
     // Dark mode: semi-transparent white overlay for glass aesthetic.
     final inactiveTrackColor = widget.inactiveColor ??

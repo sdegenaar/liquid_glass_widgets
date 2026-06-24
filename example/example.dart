@@ -1,202 +1,205 @@
-/// Liquid Glass Widgets — standalone pub.dev example.
+/// Liquid Glass Widgets — pub.dev example.
 ///
-/// Demonstrates the key APIs and correct initialisation pattern:
-///   • LiquidGlassWidgets.initialize() — shader pre-warming (no first-frame flash)
-///   • LiquidGlassWidgets.wrap()       — adaptive quality + theming scope
-///   • GlassPage                       — per-screen background, Scaffold transparency, backdrop
-///   • GlassSearchableBottomBar        — glass nav bar with search
-///   • GlassCard                       — glass surface container
-///   • GlassButton                     — interactive glass button
+/// Minimal recommended usage with [GlassScaffold]:
+/// [LiquidGlassWidgets.initialize], [LiquidGlassWidgets.wrap],
+/// [GlassScaffold], [GlassAppBar], [GlassTabBar], [GlassCard], [GlassButton].
 ///
-/// Run from the example/ directory:
-///   flutter pub get && flutter run -t example.dart
+///   cd example && flutter run -t example.dart
 
 library;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() async {
-  // Required: initialise Flutter engine before loading shaders.
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Pre-warm all liquid glass shaders — prevents the white flash on first render
-  // and compiles the Impeller pipeline on iOS/macOS/Android.
   await LiquidGlassWidgets.initialize();
-
-  // wrap() installs the adaptive quality scope and optional GlassTheme at the
-  // root of the widget tree. Each glass layer manages its own GPU backdrop
-  // capture automatically — no manual scoping needed.
-  runApp(LiquidGlassWidgets.wrap(child: const LiquidGlassExampleApp()));
+  runApp(LiquidGlassWidgets.wrap(child: const _App()));
 }
 
-class LiquidGlassExampleApp extends StatelessWidget {
-  const LiquidGlassExampleApp({super.key});
+class _App extends StatefulWidget {
+  const _App();
+
+  @override
+  State<_App> createState() => _AppState();
+}
+
+class _AppState extends State<_App> {
+  Brightness _brightness = Brightness.dark;
+
+  void _toggle() => setState(() {
+        _brightness =
+            _brightness == Brightness.dark ? Brightness.light : Brightness.dark;
+      });
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return CupertinoApp(
       title: 'Liquid Glass Widgets',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        useMaterial3: true,
-        colorScheme: ColorScheme.dark(
-          primary: Colors.blue,
-          surface: Colors.black,
-        ),
-      ),
-      home: const _HomePage(),
+      theme: CupertinoThemeData(brightness: _brightness),
+      home: _HomePage(brightness: _brightness, onToggle: _toggle),
     );
   }
 }
 
-// ---------------------------------------------------------------------------
-// Home page — glass nav bar + scrollable content
-// ---------------------------------------------------------------------------
-
 class _HomePage extends StatefulWidget {
-  const _HomePage();
+  const _HomePage({required this.brightness, required this.onToggle});
+  final Brightness brightness;
+  final VoidCallback onToggle;
 
   @override
   State<_HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<_HomePage> {
-  int _selectedTab = 0;
+  int _tab = 0;
 
   static const _tabs = [
-    GlassTab(icon: Icon(Icons.home_rounded), label: 'Home'),
-    GlassTab(icon: Icon(Icons.explore_rounded), label: 'Explore'),
-    GlassTab(icon: Icon(Icons.library_music_rounded), label: 'Library'),
+    GlassTab(icon: Icon(CupertinoIcons.house_fill), label: 'Home'),
+    GlassTab(icon: Icon(CupertinoIcons.compass_fill), label: 'Explore'),
+    GlassTab(icon: Icon(CupertinoIcons.music_note_2), label: 'Library'),
   ];
 
   @override
   Widget build(BuildContext context) {
-    // GlassPage is the recommended pattern for screens that use glass surfaces.
-    // It handles Scaffold transparency, backdrop isolation, and background
-    // texture sampling for real refraction — all in one widget.
-    return GlassPage(
-      background: Container(
-        decoration: const BoxDecoration(
+    final isDark = widget.brightness == Brightness.dark;
+
+    return GlassScaffold(
+      background: AnimatedContainer(
+        duration: const Duration(milliseconds: 400),
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF0A0A2E), Color(0xFF1A0A3E), Color(0xFF0D1B2A)],
+            colors: isDark
+                ? const [
+                    Color(0xFF0A0A2E),
+                    Color(0xFF1A0A3E),
+                    Color(0xFF0D1B2A)
+                  ]
+                : const [
+                    Color(0xFFE8F0FE),
+                    Color(0xFFF3E8FF),
+                    Color(0xFFE8F4FD)
+                  ],
           ),
         ),
       ),
-      child: Scaffold(
-        extendBody: true,
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 72, 20, 120),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 24),
-
-              // ── Hero card ──────────────────────────────────────────────
-              GlassCard(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Liquid Glass',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+      appBar: GlassAppBar(
+        title: const Text('Liquid Glass'),
+        actions: [
+          GlassIconButton(
+            onPressed: widget.onToggle,
+            icon: Icon(
+              isDark ? CupertinoIcons.sun_max_fill : CupertinoIcons.moon_fill,
+            ),
+          ),
+        ],
+      ),
+      bottomBar: GlassTabBar.searchable(
+        tabs: _tabs,
+        selectedIndex: _tab,
+        onTabSelected: (i) => setState(() => _tab = i),
+        searchConfig: GlassSearchBarConfig(
+          hintText: 'Search widgets…',
+          onSearchToggle: (_) {},
+          onSearchFocusChanged: (_) {},
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GlassCard(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'iOS 26 Liquid Glass',
+                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Shader-based refraction · jelly physics · dynamic lighting. '
+                    'Tap ☀/☾ to toggle the app brightness independently of the OS.',
+                    style: TextStyle(height: 1.5),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      GlassButton(
+                        icon: const Icon(CupertinoIcons.play_fill),
+                        onTap: () {},
+                        label: 'Get Started',
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'iOS 26-inspired glassmorphism for Flutter. '
-                      'Shader-based refraction, jelly physics, '
-                      'and dynamic lighting on every platform.',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.75),
-                        height: 1.5,
+                      const SizedBox(width: 12),
+                      GlassButton(
+                        icon: const Icon(CupertinoIcons.star_fill),
+                        onTap: () {},
+                        label: 'Star on GitHub',
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    // Glass icon button
-                    GlassButton(
-                      icon: const Icon(Icons.play_arrow_rounded),
-                      onTap: () {},
-                      label: 'Play',
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
               ),
-
-              const SizedBox(height: 16),
-
-              // ── Example list items ─────────────────────────────────────
-              for (final item in [
-                (
-                  Icons.grid_view_rounded,
-                  'Containers',
-                  'GlassCard, GlassContainer'
-                ),
-                (
-                  Icons.touch_app_rounded,
-                  'Interactive',
-                  'GlassButton, GlassSwitch, GlassChip'
-                ),
-                (
-                  Icons.layers_rounded,
-                  'Surfaces',
-                  'GlassBottomBar, GlassAppBar, GlassModalSheet'
-                ),
-              ])
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: GlassCard(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Icon(item.$1, color: Colors.white70, size: 28),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.$2,
+            ),
+            const SizedBox(height: 20),
+            for (final item in [
+              (
+                CupertinoIcons.square_grid_2x2_fill,
+                'Containers',
+                'GlassCard · GlassContainer · GlassListTile'
+              ),
+              (
+                CupertinoIcons.hand_point_left,
+                'Interactive',
+                'GlassButton · GlassSwitch · GlassSlider · GlassChip'
+              ),
+              (
+                CupertinoIcons.layers_fill,
+                'Surfaces',
+                'GlassTabBar · GlassAppBar · GlassToolbar'
+              ),
+              (
+                CupertinoIcons.rectangle_stack_fill,
+                'Overlays',
+                'GlassSheet · GlassMenu · GlassDialog · GlassToast'
+              ),
+              (
+                CupertinoIcons.textformat,
+                'Input',
+                'GlassTextField · GlassSearchBar · GlassPicker'
+              ),
+            ])
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: GlassCard(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(item.$1, size: 26),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(item.$2,
                                 style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                item.$3,
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.6),
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
+                                    fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 2),
+                            Text(item.$3, style: const TextStyle(fontSize: 12)),
+                          ],
                         ),
-                        const Icon(Icons.chevron_right, color: Colors.white38),
-                      ],
-                    ),
+                      ),
+                      const Icon(CupertinoIcons.chevron_right, size: 16),
+                    ],
                   ),
                 ),
-            ],
-          ),
-        ),
-        // ── Glass searchable nav bar ─────────────────────────────────────
-        bottomNavigationBar: GlassTabBar.searchable(
-          tabs: _tabs,
-          selectedIndex: _selectedTab,
-          onTabSelected: (i) => setState(() => _selectedTab = i),
-          searchConfig: GlassSearchBarConfig(
-            hintText: 'Search',
-            onSearchToggle: (_) {},
-            onSearchFocusChanged: (_) {},
-          ),
+              ),
+          ],
         ),
       ),
     );

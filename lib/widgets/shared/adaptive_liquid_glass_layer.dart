@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/cupertino.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
+import '../../theme/glass_theme.dart';
 import '../../theme/glass_theme_data.dart';
 import '../../types/glass_quality.dart';
 import '../../utils/glass_performance_monitor.dart';
@@ -157,8 +158,7 @@ class _AdaptiveLiquidGlassLayerState extends State<AdaptiveLiquidGlassLayer> {
         !widget.platformViewBackdrop;
 
     // Resolve shadow for SDF rendering. Shadows only apply in light mode.
-    final bool isDark =
-        CupertinoTheme.of(context).brightness == Brightness.dark;
+    final bool isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     final List<BoxShadow> resolvedShadows =
         isDark ? const <BoxShadow>[] : effectiveSettings.effectiveShadow;
 

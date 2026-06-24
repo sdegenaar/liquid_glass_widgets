@@ -163,23 +163,28 @@ void main() {
 
       expect(find.text('30.0'), findsOneWidget);
 
-      // Test dark mode
+      // Test dark mode: use tester.platformDispatcher so MaterialApp correctly
+      // selects darkTheme when ThemeMode.system is used.
+      tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+      addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+
       await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(platformBrightness: Brightness.dark),
-          child: MaterialApp(
-            home: GlassTheme(
-              data: themeData,
-              child: Builder(
-                builder: (context) {
-                  final variant = themeData.variantFor(context);
-                  return Text('${variant.settings?.thickness}');
-                },
-              ),
+        MaterialApp(
+          theme: ThemeData.light(),
+          darkTheme: ThemeData.dark(),
+          themeMode: ThemeMode.system,
+          home: GlassTheme(
+            data: themeData,
+            child: Builder(
+              builder: (context) {
+                final variant = themeData.variantFor(context);
+                return Text('${variant.settings?.thickness}');
+              },
             ),
           ),
         ),
       );
+      await tester.pumpAndSettle();
 
       expect(find.text('50.0'), findsOneWidget);
     });

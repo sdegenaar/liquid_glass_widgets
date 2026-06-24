@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../src/renderer/liquid_glass_renderer.dart';
+import '../../theme/glass_theme.dart';
 import '../../types/glass_quality.dart';
 import 'glass_container.dart';
 import 'glass_divider.dart';
@@ -300,7 +301,7 @@ class _GlassListTileState extends State<GlassListTile> {
                 _isPressed ? Duration.zero : const Duration(milliseconds: 150),
             curve: Curves.easeOutCubic,
             color: _isPressed
-                ? (CupertinoTheme.brightnessOf(context) == Brightness.light
+                ? (GlassTheme.brightnessOf(context) == Brightness.light
                     ? CupertinoColors.black.withValues(alpha: 0.08)
                     : CupertinoColors.white.withValues(alpha: 0.08))
                 : Colors.transparent,

@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import '../../theme/glass_theme.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
@@ -321,7 +322,7 @@ class _GlassSearchBarState extends State<GlassSearchBar> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
 
     final searchIconColor = widget.searchIconColor ??
         (isDark ? const Color(0x99FFFFFF) : const Color(0x99000000));

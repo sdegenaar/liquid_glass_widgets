@@ -10,6 +10,7 @@ import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
 import '../../utils/glass_spring.dart';
 import '../shared/glass_effect.dart';
+import '../../theme/glass_theme.dart';
 import '../../theme/glass_theme_helpers.dart';
 
 /// A glass morphism slider following Apple's iOS 26 design patterns.
@@ -426,7 +427,7 @@ class _GlassSliderState extends State<GlassSlider>
             .clamp(0.0, 1.0);
 
     // Performance: Cache color calculations - these allocate on every build
-    final brightness = CupertinoTheme.brightnessOf(context);
+    final brightness = GlassTheme.brightnessOf(context);
     final isDark = brightness == Brightness.dark;
     final activeColor = widget.activeColor ??
         (brightness == Brightness.light

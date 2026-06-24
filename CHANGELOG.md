@@ -1,3 +1,41 @@
+# 0.18.6
+
+## 🐛 Fix: Glass widgets now honour app `ThemeMode`, not OS dark mode
+
+Resolves a class of UI inconsistency where glass widgets incorrectly read the **device/OS** brightness instead of the **app**'s brightness. The most visible symptom was `GlassBottomTabBar` shadows disappearing when the device was in Dark Mode but the app was pinned to Light Mode via `MaterialApp(themeMode: ThemeMode.light)`.
+
+### Root cause
+
+Every glass widget that needed to decide between light/dark colours or shadow visibility called either `CupertinoTheme.of(context).brightness` or `MediaQuery.platformBrightnessOf(context)` directly. Both of these APIs fall back to the OS/device setting and are blind to `MaterialApp.themeMode`.
+
+### Fix: Centralised brightness cascade
+
+A new `GlassTheme.brightnessOf(context)` authority now governs all brightness decisions in the library. It resolves via a four-level cascade:
+
+1. **`GlassThemeData.brightness`** — new field; an explicit developer override pinned in the `GlassTheme` widget tree (highest priority).
+2. **`CupertinoThemeData.brightness`** — explicit Cupertino pin (non-null only; intentional opt-in).
+3. **`Theme.maybeBrightnessOf(context)`** — Material `ThemeMode.light`/`.dark`/`.system`, honouring `MaterialApp.themeMode`.
+4. **`MediaQuery.platformBrightnessOf(context)`** — OS/device setting (safe fallback).
+
+### Changes
+
+- **New:** `lib/utils/glass_brightness.dart` — `resolveGlassBrightness(context)` utility (package-private).
+- **New field:** `GlassThemeData.brightness` — explicit brightness override for fine-grained glass-subtree control. Accepted by both the default and `GlassThemeData.simple()` constructors.
+- **New method:** `GlassTheme.brightnessOf(context)` — the single, mandatory brightness authority for the entire library.
+- **Fixed:** Shadow suppression in `GlassBottomTabBar`, `GlassSearchableBottomBar`, `AdaptiveLiquidGlassLayer`, and `AdaptiveGlass` (`_FrostedFallback`).
+- **Fixed:** Shader `backdropLuma` proxy in `GlassEffect` (controls glass strength in the GPU path).
+- **Fixed:** Light/dark colour selection in 20+ widget files across `interactive/`, `containers/`, `input/`, `overlays/`, and `surfaces/` layers.
+
+### Tests
+
+Three new test files cover every level of the cascade:
+
+- `test/utils/glass_brightness_test.dart` — unit tests for `resolveGlassBrightness`.
+- `test/theme/glass_theme_brightness_test.dart` — `GlassTheme.brightnessOf` integration tests including the canonical regression scenario.
+- `test/theme/glass_theme_data_brightness_test.dart` — `GlassThemeData.brightness` override field, `copyWith`, equality, and backward-compat tests.
+
+---
+
 # 0.18.5
 
 ## 🔧 Corrected minimum SDK constraint — Flutter ≥ 3.41.0
@@ -14,6 +52,7 @@
 ---
 
 # 0.18.3
+
 
 ## ✨ Per-state label text style on bottom bars — `selectedLabelStyle` / `unselectedLabelStyle`
 

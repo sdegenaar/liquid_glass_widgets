@@ -14,6 +14,7 @@ import '../../../src/renderer/liquid_glass_renderer.dart';
 import '../../../types/glass_quality.dart';
 import '../../../utils/draggable_indicator_physics.dart';
 import '../../../utils/glass_spring.dart';
+import '../../../theme/glass_theme.dart';
 import '../../interactive/glass_button.dart';
 import '../../shared/adaptive_glass.dart';
 import '../../shared/animated_glass_indicator.dart';
@@ -61,7 +62,7 @@ class DismissPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final safeColor = indicatorColor;
-    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     final defaultIconColor =
         isDark ? const Color(0xE6FFFFFF) : const Color(0xE6000000);
     return GlassButton(
@@ -393,7 +394,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
   /// so it doesn't interfere with the blend group compositing.
   /// Returns null in dark mode or when no shadow is configured.
   Widget? buildShadowOverlay(BuildContext context) {
-    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     if (isDark) return null;
 
     final effectiveSettings = InheritedLiquidGlass.ofOrDefault(context);
@@ -836,7 +837,7 @@ class SearchPillState extends State<SearchPill> {
   /// so it doesn't interfere with the blend group compositing.
   /// Returns null in dark mode or when no shadow is configured.
   Widget? buildShadowOverlay(BuildContext context, ShapeBorder pillShape) {
-    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     if (isDark) return null;
 
     final effectiveSettings = InheritedLiquidGlass.ofOrDefault(context);

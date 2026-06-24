@@ -6,6 +6,7 @@ import '../../src/types/glass_interaction_behavior.dart';
 import '../../types/glass_quality.dart';
 import '../shared/adaptive_glass.dart';
 import '../../theme/glass_theme_helpers.dart';
+import '../../theme/glass_theme.dart';
 
 /// A glass text field widget following Apple's input field design.
 ///
@@ -577,7 +578,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
 
     // Use MediaQuery textScaler for accurate line height calculation.
     final textScaler = MediaQuery.textScalerOf(context);
-    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
 
     final defaultTextStyle = TextStyle(
       color: isDark
@@ -602,7 +603,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
 
     final defaultTextStyle = TextStyle(
       color: isDark

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../theme/glass_theme_data.dart';
+import '../../theme/glass_theme.dart';
 import '../../types/glass_quality.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
 
@@ -209,7 +210,7 @@ class _GlassActionSheetContent extends StatelessWidget {
   Widget _buildActionsCard(BuildContext context) {
     final themeData = GlassThemeData.of(context);
     final glowColors = themeData.glowColorsFor(context);
-    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     final cardColor = isDark
         ? CupertinoColors.black.withValues(alpha: 0.65)
         : CupertinoColors.white.withValues(alpha: 0.65);
@@ -291,7 +292,7 @@ class _GlassActionSheetContent extends StatelessWidget {
   }
 
   Widget _buildCancelButton(BuildContext context) {
-    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     final cardColor = isDark
         ? CupertinoColors.black.withValues(alpha: 0.65)
         : CupertinoColors.white.withValues(alpha: 0.65);

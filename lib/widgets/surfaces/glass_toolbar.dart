@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../theme/glass_theme_helpers.dart';
+import '../../theme/glass_theme.dart';
 import '../../types/glass_quality.dart';
 import '../shared/adaptive_glass.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
@@ -134,10 +135,9 @@ class GlassToolbar extends StatelessWidget {
     final effectiveBackgroundColor =
         backgroundColor ?? CupertinoColors.systemGrey.withValues(alpha: 0.08);
 
-    final dividerColor =
-        CupertinoTheme.brightnessOf(context) == Brightness.light
-            ? CupertinoColors.black.withValues(alpha: 0.12)
-            : CupertinoColors.white.withValues(alpha: 0.12);
+    final dividerColor = GlassTheme.brightnessOf(context) == Brightness.light
+        ? CupertinoColors.black.withValues(alpha: 0.12)
+        : CupertinoColors.white.withValues(alpha: 0.12);
 
     return AdaptiveLiquidGlassLayer(
       settings: effectiveSettings,

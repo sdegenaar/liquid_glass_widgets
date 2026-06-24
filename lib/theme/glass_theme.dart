@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
+import '../utils/glass_brightness.dart';
 import 'glass_theme_data.dart';
 
 /// Provides glass theme configuration to descendant widgets.
@@ -45,9 +46,17 @@ import 'glass_theme_data.dart';
 ///
 /// ## Light/Dark Mode
 ///
-/// The theme automatically switches between light and dark variants based on
-/// [MediaQuery.platformBrightnessOf]. You don't need to manually check
-/// brightness in your widgets.
+/// The theme automatically switches between light and dark variants using a
+/// four-level priority cascade (highest first):
+///
+/// 1. **[GlassThemeData.brightness]** — explicit override on this theme.
+/// 2. **Cupertino theme brightness** — explicit pin in [CupertinoThemeData].
+/// 3. **Material [ThemeMode]** — honours [ThemeMode.light] / [ThemeMode.dark].
+/// 4. **[MediaQuery.platformBrightnessOf]** — device/OS system setting.
+///
+/// Use [GlassTheme.brightnessOf] to resolve brightness inside glass widgets.
+/// Never read [MediaQuery.platformBrightnessOf] or [CupertinoTheme.brightnessOf]
+/// directly in glass widget code — those bypass the cascade.
 class GlassTheme extends InheritedWidget {
   /// Creates a glass theme.
   ///
@@ -80,6 +89,35 @@ class GlassTheme extends InheritedWidget {
       'Wrap your app with GlassTheme to provide theme configuration.',
     );
     return theme!;
+  }
+
+  /// Resolves the effective brightness for all glass widgets in this context.
+  ///
+  /// This is the **single authority** for brightness within the package.
+  /// All glass widgets must call this instead of querying
+  /// [CupertinoTheme.brightnessOf] or [MediaQuery.platformBrightnessOf]
+  /// directly.
+  ///
+  /// Resolution cascade (highest priority first):
+  ///
+  /// 1. **[GlassThemeData.brightness]** — an explicit brightness override set
+  ///    by the developer on the nearest [GlassTheme] ancestor.
+  /// 2. **[CupertinoThemeData.brightness]** — an explicit Cupertino brightness
+  ///    pin (non-null only when the developer set it intentionally).
+  /// 3. **Material [Theme] brightness** — honours [ThemeMode.light],
+  ///    [ThemeMode.dark], and [ThemeMode.system].
+  /// 4. **[MediaQuery.platformBrightnessOf]** — the device/OS system setting
+  ///    (historical default, safe fallback).
+  ///
+  /// This ensures glass widgets always follow the **app's** intended
+  /// brightness even when the device OS and app theme disagree (e.g. device
+  /// is in Dark Mode but the app is pinned to Light Mode).
+  static Brightness brightnessOf(BuildContext context) {
+    // Level 1: explicit glass-theme override.
+    final override = GlassTheme.maybeOf(context)?.data.brightness;
+    if (override != null) return override;
+    // Levels 2-4: framework cascade (Cupertino pin → Material → system).
+    return resolveGlassBrightness(context);
   }
 
   @override

@@ -18,6 +18,7 @@ import '../../../types/glass_quality.dart';
 import '../../shared/adaptive_liquid_glass_layer.dart';
 import '../../shared/glass_content_aware_scope.dart';
 import '../../../theme/glass_theme_data.dart';
+import '../../../theme/glass_theme.dart';
 import '../../../theme/glass_theme_helpers.dart';
 import '../glass_bottom_bar.dart'
     show
@@ -333,8 +334,7 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
     final effectiveGlowSpreadRadius = resolvedGlowColors.glowSpreadRadius;
     final effectiveGlowOpacity = resolvedGlowColors.glowOpacity;
 
-    final bool isLight =
-        CupertinoTheme.brightnessOf(context) == Brightness.light;
+    final bool isLight = GlassTheme.brightnessOf(context) == Brightness.light;
     final effectiveSettings =
         _applyWhiten(widget.settings ?? _defaultGlassSettings, isLight);
     final searching = widget.isSearchActive;

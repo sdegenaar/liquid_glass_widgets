@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:flutter/cupertino.dart' show CupertinoTheme;
 import 'package:flutter/material.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
+import '../../theme/glass_theme.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../../types/glass_quality.dart';
@@ -341,7 +341,7 @@ class AdaptiveGlass extends StatelessWidget {
 
     if (effectiveUseOwnLayer) {
       // Resolve shadows for the GPU cutout method
-      final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+      final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
       final shadows = (isDark || _FrostedFallback._isFlatEdge(shape))
           ? const <BoxShadow>[]
           : baseSettings.effectiveShadow;
@@ -398,7 +398,7 @@ class AdaptiveGlass extends StatelessWidget {
   // ---------------------------------------------------------------------------
   Widget _wrapWithLightModeShadow(
       BuildContext context, LiquidGlassSettings baseSettings, Widget glass) {
-    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
 
     // Skip shadow in dark mode or for flat-edge shapes (bars, full-width surfaces).
     if (isDark || _FrostedFallback._isFlatEdge(shape)) {
@@ -725,7 +725,7 @@ class _FrostedFallback extends StatelessWidget {
             child: DecoratedBox(
               decoration: ShapeDecoration(
                 shape: shape,
-                color: (CupertinoTheme.brightnessOf(context) == Brightness.dark
+                color: (GlassTheme.brightnessOf(context) == Brightness.dark
                         ? Colors.white
                         : Colors.black)
                     .withValues(alpha: 0.15 * glowIntensity),

@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../theme/glass_theme_data.dart';
+import '../../theme/glass_theme.dart';
 import '../../types/glass_quality.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
 
@@ -268,7 +269,7 @@ class _GlassToastState extends State<GlassToast> {
   Widget _buildToastContent(
       BuildContext context, Color semanticColor, Widget displayIcon) {
     final hasAction = widget.action != null;
-    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     final bgColor = isDark
         ? CupertinoColors.black.withValues(alpha: 0.7)
         : CupertinoColors.white.withValues(alpha: 0.7);

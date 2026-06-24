@@ -172,7 +172,7 @@ icons to Cupertino equivalents in `GlassListTile`, `GlassActionSheet`, and
   - All should resolve from `GlassThemeData.glowColors` or
     `CupertinoColors.systemRed` / `.systemGreen`
 
-### Light Mode / Theming Gap ✅ Resolved
+### Light Mode / Theming Gap ✅ Resolved (infrastructure complete)
 
 The library is no longer broken in light mode. A comprehensive content colour
 audit across 0.15.0 and 0.15.1 replaced all hardcoded `Colors.white` /
@@ -218,6 +218,18 @@ brightness-aware `GlassSearchBar` / `GlassTextField` defaults were all shipped.
 - [x] `GlassToast` — background and text resolve from brightness
 - [x] `GlassProgressIndicator` — no hardcoded `Colors.white`/`Colors.black`
 
+**0.18.6 fixed:**
+- Centralised brightness authority — `GlassTheme.brightnessOf(context)` is now
+  the single mandatory call site for all brightness decisions in the library.
+- Four-level cascade: `GlassThemeData.brightness` override → explicit Cupertino
+  pin → `MaterialApp` `ThemeMode` (the root fix) → OS/device fallback.
+- New `GlassThemeData.brightness` field for per-glass-subtree overrides.
+- All 26 widget files migrated from ad-hoc `CupertinoTheme` / `MediaQuery`
+  brightness lookups to `GlassTheme.brightnessOf`.
+- Canonical regression: `GlassBottomTabBar` shadow disappearing when device is
+  in Dark Mode but app is pinned to `ThemeMode.light` — fully fixed.
+- 39 new tests covering the full cascade including the regression scenario.
+
 **Remaining:**
 - [ ] **Light-mode golden tests** — add golden snapshots for key widgets in
   `Brightness.light` to catch regressions.
@@ -241,13 +253,19 @@ widget-level RTL testing exists.
 ### Quality & Reliability
 
 - [ ] **Test coverage push** — target 90%+ line coverage on all remaining
-  public widgets. Currently at ~1900 tests; identify gaps.
+  public widgets. Currently at ~2219 tests; identify gaps.
 - [ ] **Golden test audit** — ensure every widget has at least one golden for
   both Standard and Premium quality modes.
 - [ ] **Accessibility audit** — verify every interactive widget has correct
   `Semantics`, focus traversal, and VoiceOver/TalkBack support.
 - [ ] **Performance profiling** — document frame budgets for common layouts
   (list of 50 cards, bottom bar + body, modal sheet stack).
+- [ ] **Brightness enforcement lint / CI check** — a grep-based CI script (or
+  eventually a `custom_lint_builder` rule) that fails the build if any widget
+  calls `MediaQuery.platformBrightnessOf` or `CupertinoTheme.of(context).brightness`
+  directly, enforcing that all brightness decisions go through
+  `GlassTheme.brightnessOf`. The three intentional exceptions in `glass_page.dart`
+  and `glass_scaffold.dart` (OS status-bar icon colour) are whitelisted.
 
 ### API Polish
 
@@ -291,6 +309,8 @@ All of the following must be true before tagging 1.0.0:
 - [ ] No Material `InkWell`, `Icons.*`, or hardcoded `Colors.*` in widget
   implementations (doc examples may still reference them for familiarity).
 - [ ] Light mode and dark mode both produce acceptable visuals for all widgets.
+  *(0.18.6: brightness resolution infrastructure is now solid — all widgets honour
+  `ThemeMode`. Remaining gap: golden coverage in `Brightness.light`.)*
 - [ ] RTL layout verified for all widgets that lay out children horizontally.
 - [ ] Tested on: iOS (Impeller), Android (Impeller), Android (Skia), Web,
   macOS, Windows.

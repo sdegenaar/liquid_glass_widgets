@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
+import '../../theme/glass_theme.dart';
 import '../../types/glass_button_style.dart';
 import '../../types/glass_quality.dart';
 import '../containers/glass_container.dart';
@@ -244,7 +245,7 @@ class GlassButtonGroup extends StatelessWidget {
     // Children mode: use GlassContainer for full widget flexibility.
     // ---------------------------------------------------------------------------
     final effectiveBorderColor = borderColor ??
-        (CupertinoTheme.brightnessOf(context) == Brightness.light
+        (GlassTheme.brightnessOf(context) == Brightness.light
             ? CupertinoColors.black.withValues(alpha: 0.12)
             : CupertinoColors.white.withValues(alpha: 0.12));
 

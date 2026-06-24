@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
 import '../../src/renderer/liquid_glass_renderer.dart';
+import '../../theme/glass_theme.dart';
 import '../../types/glass_quality.dart';
 import '../shared/adaptive_glass.dart';
 
@@ -282,10 +283,9 @@ class _GlassStepperState extends State<GlassStepper> {
                   width: widget.dividerWidth,
                   height: widget.height,
                   child: ColoredBox(
-                    color:
-                        CupertinoTheme.brightnessOf(context) == Brightness.light
-                            ? CupertinoColors.black.withValues(alpha: 0.25)
-                            : CupertinoColors.white.withValues(alpha: 0.25),
+                    color: GlassTheme.brightnessOf(context) == Brightness.light
+                        ? CupertinoColors.black.withValues(alpha: 0.25)
+                        : CupertinoColors.white.withValues(alpha: 0.25),
                   ),
                 ),
 

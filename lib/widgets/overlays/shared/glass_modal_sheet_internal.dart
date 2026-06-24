@@ -248,7 +248,7 @@ class _SheetLayout extends StatelessWidget {
                             Positioned.fill(
                               child: Builder(builder: (innerContext) {
                                 final isDark =
-                                    CupertinoTheme.brightnessOf(innerContext) ==
+                                    GlassTheme.brightnessOf(innerContext) ==
                                         Brightness.dark;
                                 return GlassGlow(
                                   glowColor: (enableInteractionGlow &&
@@ -365,7 +365,7 @@ class _GlassDragIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     // iOS 26: white at 35% in dark mode, black at 20% in light mode
     final defaultColor =
         isDark ? const Color(0x59FFFFFF) : const Color(0x33000000);
