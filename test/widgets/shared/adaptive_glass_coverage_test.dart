@@ -355,4 +355,46 @@ void main() {
       expect(find.byType(ClipPath), findsWidgets);
     });
   });
+
+  group('AdaptiveGlass — platformViewBackdrop routes to the frost', () {
+    // Over a PlatformView the premium/standard shaders sample a captured
+    // backdrop that excludes the platform view (inert), so platformViewBackdrop
+    // must route to the frosted fallback (a live BackdropFilter) regardless of
+    // the requested quality. The frost path wraps in ClipRRect via _ShapeClip;
+    // the lightweight/shader paths do not. (settings has blur:5, so this is the
+    // platformViewBackdrop branch, not the blur==0 fast path.)
+    testWidgets('forces the frost at premium quality', (tester) async {
+      await tester.pumpWidget(_wrap(const SizedBox(
+        width: 200,
+        height: 100,
+        child: AdaptiveGlass(
+          shape: _shape,
+          settings: _settings,
+          quality: GlassQuality.premium,
+          platformViewBackdrop: true,
+          child: SizedBox.expand(),
+        ),
+      )));
+      await tester.pump();
+      expect(find.byType(ClipRRect), findsWidgets,
+          reason: 'platformViewBackdrop must take the frosted-fallback path at '
+              'premium, not the shader path that is inert over a PlatformView');
+    });
+
+    testWidgets('forces the frost at standard quality', (tester) async {
+      await tester.pumpWidget(_wrap(const SizedBox(
+        width: 200,
+        height: 100,
+        child: AdaptiveGlass(
+          shape: _shape,
+          settings: _settings,
+          quality: GlassQuality.standard,
+          platformViewBackdrop: true,
+          child: SizedBox.expand(),
+        ),
+      )));
+      await tester.pump();
+      expect(find.byType(ClipRRect), findsWidgets);
+    });
+  });
 }

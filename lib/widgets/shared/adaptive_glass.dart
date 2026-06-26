@@ -148,8 +148,17 @@ class AdaptiveGlass extends StatelessWidget {
     // _FrostedFallback: ClipPath(ShapeBorderClipper) + BackdropFilter + tint.
     // ClipPath correctly clips ALL shape types (oval, superellipse, rect).
     // Zero fragment shader cost on any device.
+    //
+    // platformViewBackdrop ALSO routes here: over a PlatformView only a live
+    // BackdropFilter samples the composited map. The premium/standard shaders
+    // read a captured backdrop that EXCLUDES the platform view (see
+    // canUsePremiumShader below), so they render inert there — the frost is the
+    // one tier that actually blurs over a PlatformView. This finally delivers
+    // the "live BackdropFilter path" the canUsePremiumShader comment promises.
     // --------------------------------------------------------------------------
-    if (quality == GlassQuality.minimal || baseSettings.effectiveBlur == 0) {
+    if (quality == GlassQuality.minimal ||
+        baseSettings.effectiveBlur == 0 ||
+        platformViewBackdrop) {
       return _wrapWithDecorations(
         context,
         baseSettings,
