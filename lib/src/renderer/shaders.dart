@@ -1,5 +1,8 @@
 // ignore_for_file: public_member_api_docs
 
+import 'dart:io' show Platform;
+import 'dart:ui' as ui;
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:meta/meta.dart';
 
@@ -15,6 +18,8 @@ abstract class ShaderKeys {
   static final blendedGeometry =
       '${_shadersRoot}shaders/liquid_glass_geometry_blended.frag';
 
-  static final liquidGlassRender =
-      '${_shadersRoot}shaders/liquid_glass_final_render.frag';
+  static final liquidGlassRender = Platform.isAndroid &&
+          ui.ImageFilter.isShaderFilterSupported
+      ? '${_shadersRoot}shaders/liquid_glass_final_render.origin-bottom_left.frag'
+      : '${_shadersRoot}shaders/liquid_glass_final_render.frag';
 }

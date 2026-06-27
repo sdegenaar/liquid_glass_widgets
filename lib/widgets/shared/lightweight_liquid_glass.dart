@@ -1,5 +1,6 @@
 // ignore_for_file: require_trailing_commas
 
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -142,8 +143,15 @@ class LightweightLiquidGlass extends StatefulWidget {
   static Future<void> preWarm() async {
     if (_cachedProgram != null || _isPreparing) return;
     _isPreparing = true;
-    const path = 'packages/liquid_glass_widgets/shaders/lightweight_glass.frag';
-    const testPath = 'shaders/lightweight_glass.frag';
+    final isImpeller =
+        Platform.isAndroid && ui.ImageFilter.isShaderFilterSupported;
+
+    final path = isImpeller
+        ? 'packages/liquid_glass_widgets/shaders/lightweight_glass-origin-bottom_left.frag'
+        : 'packages/liquid_glass_widgets/shaders/lightweight_glass.frag';
+    final testPath = isImpeller
+        ? 'shaders/lightweight_glass.origin-bottom_left.frag'
+        : 'shaders/lightweight_glass.frag';
 
     try {
       ui.FragmentProgram program;
