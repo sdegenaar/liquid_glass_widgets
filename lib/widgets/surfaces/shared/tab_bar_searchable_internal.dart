@@ -294,17 +294,22 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
               onPointerDown: (_) {
                 if (mounted) setState(() => tabIsDown = true);
               },
-              onPointerUp: (_) {
-                if (!tabIsDragging && mounted) {
-                  setState(() => tabIsDown = false);
-                }
+              onPointerUp: (e) {
+                if (!mounted) return;
+                if (!tabIsDragging) setState(() => tabIsDown = false);
+                // If a gesture is still flagged active after the pointer lifts,
+                // its terminal callback was dropped (PlatformView arena race) —
+                // self-heal on the next frame, honoring the lift position so a
+                // recovering tap also navigates. No-ops on a clean gesture.
+                recoverIfGestureStuck(e.position);
               },
-              onPointerCancel: (_) {
-                if (!tabIsDragging && mounted) {
-                  setState(() => tabIsDown = false);
-                }
+              onPointerCancel: (e) {
+                if (!mounted) return;
+                if (!tabIsDragging) setState(() => tabIsDown = false);
+                recoverIfGestureStuck(e.position);
               },
               child: GestureDetector(
+                key: ValueKey(gestureEpoch),
                 behavior: HitTestBehavior.opaque,
                 onHorizontalDragDown: onBarDragDown,
                 onHorizontalDragStart: onBarDragStart,
