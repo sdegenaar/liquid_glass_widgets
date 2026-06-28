@@ -148,8 +148,17 @@ class AdaptiveGlass extends StatelessWidget {
     // _FrostedFallback: ClipPath(ShapeBorderClipper) + BackdropFilter + tint.
     // ClipPath correctly clips ALL shape types (oval, superellipse, rect).
     // Zero fragment shader cost on any device.
+    //
+    // platformViewBackdrop ALSO routes here: over a PlatformView only a live
+    // BackdropFilter samples the composited map. The premium/standard shaders
+    // read a captured backdrop that EXCLUDES the platform view (see
+    // canUsePremiumShader below), so they render inert there — the frost is the
+    // one tier that actually blurs over a PlatformView. This finally delivers
+    // the "live BackdropFilter path" the canUsePremiumShader comment promises.
     // --------------------------------------------------------------------------
-    if (quality == GlassQuality.minimal || baseSettings.effectiveBlur == 0) {
+    if (quality == GlassQuality.minimal ||
+        baseSettings.effectiveBlur == 0 ||
+        platformViewBackdrop) {
       return _wrapWithDecorations(
         context,
         baseSettings,
@@ -160,6 +169,7 @@ class AdaptiveGlass extends StatelessWidget {
           glowIntensity: glowIntensity,
           isAccessibilityFallback: false,
           isInteractive: isInteractive,
+          platformViewBackdrop: platformViewBackdrop,
           child: child,
         ),
       );
@@ -572,6 +582,7 @@ class _FrostedFallback extends StatelessWidget {
     this.glowIntensity = 0.0,
     this.isAccessibilityFallback = false,
     this.isInteractive = false,
+    this.platformViewBackdrop = false,
   });
 
   final LiquidShape shape;
@@ -594,6 +605,14 @@ class _FrostedFallback extends StatelessWidget {
   /// When true, during [GlassQuality.minimal] we omit the [BackdropFilter] to
   /// prevent compositor desync flicker caused by the bounds changing continuously.
   final bool isInteractive;
+
+  /// When true, this frost sits directly over a PlatformView (map/video) via the
+  /// `platformViewBackdrop` route. The live [BackdropFilter] is the ONLY path
+  /// that blurs a hybrid-composed PlatformView, so it must run even for
+  /// interactive surfaces — otherwise the [isInteractive] blur-omission below
+  /// leaves over-map buttons with no blur at all (the brief tap-scale flicker is
+  /// negligible next to having no blur).
+  final bool platformViewBackdrop;
 
   /// Rec. 709 saturation matrix — identical to upstream FakeGlass.
   ///
@@ -663,9 +682,14 @@ class _FrostedFallback extends StatelessWidget {
     //   mode because BackdropFilter re-samples the background every frame and
     //   desyncs with spring bounds changes, causing a "flashing" or flickering
     //   artifact beneath the element.
+    // - EXCEPT when platformViewBackdrop is set: over a PlatformView the live
+    //   BackdropFilter is the only path that blurs the (hybrid-composed) map, so
+    //   it must run even for interactive buttons. Without this, #128's frost
+    //   route delivers no blur for over-map controls (heading, 2D, ⋯ buttons).
     // ────────────────────────────────────────────────────────────────────────
     final bool useBlur =
-        (isAccessibilityFallback || !isInteractive) && blur > 0;
+        (isAccessibilityFallback || !isInteractive || platformViewBackdrop) &&
+            blur > 0;
 
     Widget body;
     if (useBlur) {

@@ -182,6 +182,14 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
   late SearchableBottomBarController _controller;
   bool _ownsController = false;
 
+  // Stable identity for the tab indicator. Without it the indicator's State is
+  // torn down + recreated on every rebuild — which orphans a live press-hold
+  // gesture mid-flight and freezes the bar (reproduced at standard/minimal over
+  // an iOS PlatformView; the premium render path happens to avoid the churn). A
+  // GlobalKey preserves the State across rebuilds AND across the
+  // AdaptiveLiquidGlassLayer wrapper's quality-path reparenting.
+  final GlobalKey _indicatorKey = GlobalKey();
+
   void _onControllerChanged() => setState(() {});
 
   // D1: whitenBoostCtrl still uses setState — it fires at most once per scroll-to-bottom
@@ -633,6 +641,7 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                             width: math.max(0.01, curTabW),
                             height: animH,
                             child: SearchableTabIndicator(
+                              key: _indicatorKey,
                               quality: effectiveQuality,
                               visible: widget.showIndicator && !searching,
                               tabIndex: widget.selectedIndex,
