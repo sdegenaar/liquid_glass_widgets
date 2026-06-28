@@ -550,20 +550,27 @@ class _GlassButtonState extends State<GlassButton>
   // ---------------------------------------------------------------------------
   // Tap-based pressed state (persistPressOnDrag: false)
   // Used by lock screen camera/torch buttons — cancels on drag.
+  //
+  // All press handlers below guard on `mounted` before touching
+  // [_saturationController]: a button can be DISPOSED mid-press — e.g. a
+  // collapsing nav mini-bar removed by the very tap that expands it — after which
+  // a queued pointerUp / pointerCancel still dispatches here and would call
+  // `.reverse()` on the disposed controller, throwing
+  // `AnimationController.reverse() called after dispose()` (assert `_ticker != null`).
   // ---------------------------------------------------------------------------
 
   void _handleTapDown(TapDownDetails details) {
-    if (!widget.enabled) return;
+    if (!mounted || !widget.enabled) return;
     _saturationController.forward();
   }
 
   void _handleTapUp(TapUpDetails details) {
-    if (!widget.enabled) return;
+    if (!mounted || !widget.enabled) return;
     _saturationController.reverse();
   }
 
   void _handleTapCancel() {
-    if (!widget.enabled) return;
+    if (!mounted || !widget.enabled) return;
     _saturationController.reverse();
   }
 
@@ -575,17 +582,17 @@ class _GlassButtonState extends State<GlassButton>
   // ---------------------------------------------------------------------------
 
   void _handlePointerDown(PointerDownEvent event) {
-    if (!widget.enabled) return;
+    if (!mounted || !widget.enabled) return;
     _saturationController.forward();
   }
 
   void _handlePointerUp(PointerUpEvent event) {
-    if (!widget.enabled) return;
+    if (!mounted || !widget.enabled) return;
     _saturationController.reverse();
   }
 
   void _handlePointerCancel(PointerCancelEvent event) {
-    if (!widget.enabled) return;
+    if (!mounted || !widget.enabled) return;
     _saturationController.reverse();
   }
 
