@@ -379,18 +379,29 @@ class AnimatedGlassIndicator extends StatelessWidget {
       children: [
         // Rest-blur: an Apple-style backdrop frost behind the RESTING pill.
         // Sigma is scaled by backgroundOpacity so it is full when settled and
-        // fades out as the pill morphs into the glass lens (motion stays crisp).
-        // Sits at the bottom of the stack so the (translucent) pill + icons read
-        // on top of the frosted backdrop.
-        if (paintBackground && innerBlur > 0 && backgroundOpacity > 0)
+        // fades toward zero as the pill morphs into the glass lens (motion stays
+        // crisp). Sits at the bottom of the stack so the (translucent) pill +
+        // icons read on top of the frosted backdrop.
+        //
+        // The ClipRRect + BackdropFilter stay MOUNTED for the whole gesture — we
+        // gate only on [innerBlur] > 0, never on backgroundOpacity. Adding or
+        // removing a clip layer over an iOS PlatformView mid-gesture makes the
+        // engine reconstruct the platform-view clip-view chain, which cancels
+        // the in-flight touch and freezes an interactive bar overlaid on it.
+        // Fading the sigma (rather than unmounting the layer) keeps the look
+        // without the churn; a small sigma floor keeps it a real backdrop layer
+        // so the engine can't drop it on its own either.
+        if (paintBackground && innerBlur > 0)
           Positioned.fromRelativeRect(
             rect: rect!,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(borderRadius),
               child: BackdropFilter(
                 filter: ImageFilter.blur(
-                  sigmaX: innerBlur * backgroundOpacity,
-                  sigmaY: innerBlur * backgroundOpacity,
+                  sigmaX:
+                      (innerBlur * backgroundOpacity).clamp(0.001, double.infinity),
+                  sigmaY:
+                      (innerBlur * backgroundOpacity).clamp(0.001, double.infinity),
                 ),
                 child: const SizedBox.expand(),
               ),
