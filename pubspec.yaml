@@ -44,8 +44,6 @@ dev_dependencies:
 flutter:
   shaders:
     - shaders/lightweight_glass.frag
-    - shaders/lightweight_glass.origin-bottom_left.frag
     - shaders/interactive_indicator.frag
     - shaders/liquid_glass_geometry_blended.frag
     - shaders/liquid_glass_final_render.frag
-    - shaders/liquid_glass_final_render.origin-bottom_left.frag

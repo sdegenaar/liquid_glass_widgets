@@ -149,9 +149,7 @@ class LightweightLiquidGlass extends StatefulWidget {
     final path = isImpeller
         ? 'packages/liquid_glass_widgets/shaders/lightweight_glass-origin-bottom_left.frag'
         : 'packages/liquid_glass_widgets/shaders/lightweight_glass.frag';
-    final testPath = isImpeller
-        ? 'shaders/lightweight_glass.origin-bottom_left.frag'
-        : 'shaders/lightweight_glass.frag';
+    final testPath = 'shaders/lightweight_glass.frag';
 
     try {
       ui.FragmentProgram program;

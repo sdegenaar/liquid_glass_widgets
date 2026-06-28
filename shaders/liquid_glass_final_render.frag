@@ -122,9 +122,9 @@ void main() {
     vec2 invTexSize = 1.0 / physTexSize;
     vec2 screenUV = fragCoord * invTexSize;
 
-    #ifdef IMPELLER_TARGET_OPENGLES
-        screenUV.y = 1.0 - screenUV.y;
-    #endif
+    // #ifdef IMPELLER_TARGET_OPENGLES
+    //    screenUV.y = 1.0 - screenUV.y;
+    // #endif
 
     vec2 geometryUV = (fragCoord - uGeometryOffset) / uGeometrySize;
     #ifdef IMPELLER_TARGET_OPENGLES
