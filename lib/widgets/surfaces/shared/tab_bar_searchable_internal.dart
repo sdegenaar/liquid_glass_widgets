@@ -239,6 +239,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
               onTap: widget.onDismissSearch,
               child: AdaptiveGlass.grouped(
                 quality: widget.quality,
+                platformViewBackdrop: widget.platformViewBackdrop,
                 shape: currentShape,
                 child: _wrapWithGlow(
                   child: widget.collapsedLogoBuilder != null
@@ -338,6 +339,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                             decoration: ShapeDecoration(shape: _barShape),
                             child: AdaptiveGlass.grouped(
                               quality: widget.quality,
+                              platformViewBackdrop: widget.platformViewBackdrop,
                               shape: _barShape,
                               child: Container(
                                 padding: widget.tabPadding,
@@ -899,12 +901,10 @@ class SearchPillState extends State<SearchPill> {
                       : () => widget.config.onSearchToggle(true),
                   child: AdaptiveGlass.grouped(
                     shape: currentShape,
-                    // Over a PlatformView the collapsed button uses the lightweight
-                    // veil so it matches the rest of the bar (premium can't sample
-                    // the PlatformView).
-                    quality: widget.platformViewBackdrop
-                        ? GlassQuality.standard
-                        : widget.quality,
+                    // Over a PlatformView AdaptiveGlass routes to the frost veil
+                    // automatically (platformViewBackdrop), so the requested
+                    // quality passes through unchanged here.
+                    quality: widget.quality,
                     platformViewBackdrop: widget.platformViewBackdrop,
                     child: _wrapWithGlow(
                       child: Center(
