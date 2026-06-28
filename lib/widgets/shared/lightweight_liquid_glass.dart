@@ -1,6 +1,5 @@
 // ignore_for_file: require_trailing_commas
 
-import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -143,12 +142,8 @@ class LightweightLiquidGlass extends StatefulWidget {
   static Future<void> preWarm() async {
     if (_cachedProgram != null || _isPreparing) return;
     _isPreparing = true;
-    final isImpeller =
-        Platform.isAndroid && ui.ImageFilter.isShaderFilterSupported;
 
-    final path = isImpeller
-        ? 'packages/liquid_glass_widgets/shaders/lightweight_glass-origin-bottom_left.frag'
-        : 'packages/liquid_glass_widgets/shaders/lightweight_glass.frag';
+    final path = 'packages/liquid_glass_widgets/shaders/lightweight_glass.frag';
     final testPath = 'shaders/lightweight_glass.frag';
 
     try {
@@ -317,7 +312,10 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
   /// The [_capturePending] flag prevents concurrent captures from stacking up
   /// when the ticker fires multiple times before the first capture completes.
   void _captureBackground(
-      RenderRepaintBoundary boundary, Size size, Offset pos) {
+    RenderRepaintBoundary boundary,
+    Size size,
+    Offset pos,
+  ) {
     if (_capturePending) return; // Already capturing — wait for it to finish.
     _capturePending = true;
     boundary.toImage(pixelRatio: 1.0).then((image) {
@@ -397,7 +395,8 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
           _webShader = LightweightLiquidGlass._cachedProgram!.fragmentShader();
           if (!_loggedCreation) {
             debugPrint(
-                '[LightweightGlass] ✓ Created web shader for ${widget.shape.runtimeType}');
+              '[LightweightGlass] ✓ Created web shader for ${widget.shape.runtimeType}',
+            );
             _loggedCreation = true;
           }
         });
@@ -796,18 +795,11 @@ class _RenderLightweightGlass extends RenderProxyBox {
       //
       // The filter is cached on the render object and only rebuilt when blur
       // sigma or saturation changes — see _getBlurFilter().
-      final filter = _getBlurFilter(
-        blurSigma,
-        _settings.effectiveSaturation,
-      );
+      final filter = _getBlurFilter(blurSigma, _settings.effectiveSaturation);
 
-      context.pushLayer(
-        BackdropFilterLayer(filter: filter),
-        (context, offset) {
-          _paintGlassContent(context, offset);
-        },
-        offset,
-      );
+      context.pushLayer(BackdropFilterLayer(filter: filter), (context, offset) {
+        _paintGlassContent(context, offset);
+      }, offset);
     } else {
       _paintGlassContent(context, offset);
     }
@@ -867,8 +859,13 @@ class _RenderLightweightGlass extends RenderProxyBox {
     super.paint(context, offset);
   }
 
-  void _updateShaderUniforms(Size size, Offset physicalOrigin,
-      Offset physicalScale, Offset bgOrigin, Size bgSize) {
+  void _updateShaderUniforms(
+    Size size,
+    Offset physicalOrigin,
+    Offset physicalScale,
+    Offset bgOrigin,
+    Size bgSize,
+  ) {
     // _updateShaderUniforms is only ever called from _paintGlassContent,
     // which is only reached when _shader != null (guarded in paint()).
     // The assertion makes the non-nullability explicit for the analyser.
@@ -905,8 +902,11 @@ class _RenderLightweightGlass extends RenderProxyBox {
         (whitenStrength * kWhitenVeilGain).clamp(0.0, 1.0).toDouble();
     final color = whitenVeil <= 0.0
         ? _settings.effectiveGlassColor
-        : Color.lerp(_settings.effectiveGlassColor, const Color(0xFFFFFFFF),
-            whitenVeil)!;
+        : Color.lerp(
+            _settings.effectiveGlassColor,
+            const Color(0xFFFFFFFF),
+            whitenVeil,
+          )!;
     shader.setFloat(index++, (color.r * 255.0).round().clamp(0, 255) / 255.0);
     shader.setFloat(index++, (color.g * 255.0).round().clamp(0, 255) / 255.0);
     shader.setFloat(index++, (color.b * 255.0).round().clamp(0, 255) / 255.0);
