@@ -236,6 +236,12 @@ class AnimatedGlassIndicator extends StatelessWidget {
       whitenGated: override.whitenGated != _settingsDefaults.whitenGated
           ? override.whitenGated
           : null,
+      // backerColor was added to LiquidGlassSettings after this merge was
+      // written; without it the indicator silently drops any backerColor passed
+      // via indicatorSettings (e.g. the per-mode over-map stand-in colour).
+      backerColor: override.backerColor != _settingsDefaults.backerColor
+          ? override.backerColor
+          : null,
     );
   }
 

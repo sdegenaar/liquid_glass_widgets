@@ -285,6 +285,15 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
               ..setFloat(settings.whitenGated ? 1.0 : 0.0)
               ..setFloat(settings.pinchStrength);
           })
+          // Slots 21-24: uBackgroundFallback (straight RGBA). An opaque stand-in
+          // for backdrop regions the engine can't capture (e.g. a PlatformView
+          // past the glass, which the lens would otherwise render black); a == 0
+          // (the default when no backerColor is set) disables it. See the
+          // over-composite in textureBilinear (liquid_glass_final_render.frag).
+          ..setFloatUniforms(initialIndex: 21, (value) {
+            final b = settings.backerColor ?? const Color(0x00000000);
+            value.setFloats(<double>[b.r, b.g, b.b, b.a]);
+          })
           ..setImageSampler(
             1,
             geometryImage,

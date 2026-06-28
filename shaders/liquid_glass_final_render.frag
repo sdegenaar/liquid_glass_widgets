@@ -57,6 +57,13 @@ uniform float uWhitenGated;
 // creating the iOS 26 "pinched through a lens" look. The centre is left flat.
 uniform float uPinchStrength;
 
+// Per-mode opaque stand-in for backdrop regions the engine can't capture: a
+// PlatformView past the glass reads as transparent black in the backdrop
+// texture, which otherwise renders as black through the lens. The sampled
+// backdrop is composited OVER this in textureBilinear, so empty regions read as
+// this colour instead. Straight (non-premultiplied) RGBA; a == 0 disables it.
+uniform vec4 uBackgroundFallback;
+
 uniform sampler2D uBackgroundTexture;
 uniform sampler2D uGeometryTexture;
 
@@ -102,7 +109,16 @@ vec4 textureBilinear(vec2 uv, vec2 size, vec2 invSize) {
 
     vec4 cTop = mix(c0, c1, f.x);
     vec4 cBot = mix(c2, c3, f.x);
-    return mix(cTop, cBot, f.y);
+    vec4 bg = mix(cTop, cBot, f.y);
+
+    // Composite the (premultiplied) backdrop sample OVER the fallback colour.
+    // Where the engine couldn't capture a backdrop (a PlatformView past the bar
+    // → transparent black, bg.a ≈ 0) this yields the fallback; where the
+    // backdrop is real (bg.a ≈ 1) it is left untouched. uBackgroundFallback is
+    // straight RGBA, so premultiply it by its own alpha before the over.
+    bg.rgb += uBackgroundFallback.rgb * uBackgroundFallback.a * (1.0 - bg.a);
+    bg.a += uBackgroundFallback.a * (1.0 - bg.a);
+    return bg;
 }
 
 void main() {

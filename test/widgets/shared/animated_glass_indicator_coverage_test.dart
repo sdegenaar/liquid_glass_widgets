@@ -15,6 +15,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets/widgets/shared/glass_effect.dart';
 
 import '../../shared/test_helpers.dart';
 
@@ -131,6 +132,22 @@ void main() {
       )));
       await tester.pump();
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('non-default backerColor survives onto the built glass',
+        (tester) async {
+      // Regression: _mergeWithBase rebuilds settings field-by-field and used to
+      // OMIT backerColor, silently dropping any backerColor set via
+      // indicatorSettings. It must now reach the rendered GlassEffect.
+      const backer = Color(0xFF123456);
+      await tester.pumpWidget(_wrap(_make(
+        thickness: 0.5,
+        settings: const LiquidGlassSettings(backerColor: backer),
+      )));
+      await tester.pump();
+      final glass =
+          tester.widget<GlassEffect>(find.byType(GlassEffect).first);
+      expect(glass.settings.backerColor, backer);
     });
 
     testWidgets('non-default thickness exercises thickness branch',
