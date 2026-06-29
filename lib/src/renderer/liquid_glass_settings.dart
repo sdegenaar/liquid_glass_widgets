@@ -36,6 +36,7 @@ class LiquidGlassSettings with EquatableMixin {
     this.whitenStrength = 0.0,
     this.whitenGated = true,
     this.backerColor,
+    this.platformViewFallbackColor,
   }) : pinchStrength = 0.0;
 
   /// Private constructor used exclusively by [copyWithPinch].
@@ -62,6 +63,7 @@ class LiquidGlassSettings with EquatableMixin {
     required this.whitenStrength,
     required this.whitenGated,
     this.backerColor,
+    this.platformViewFallbackColor,
     required this.pinchStrength,
   });
 
@@ -320,6 +322,7 @@ class LiquidGlassSettings with EquatableMixin {
         whitenStrength: whitenStrength,
         whitenGated: whitenGated,
         backerColor: backerColor,
+        platformViewFallbackColor: platformViewFallbackColor,
         pinchStrength: value,
       );
 
@@ -342,6 +345,21 @@ class LiquidGlassSettings with EquatableMixin {
   ///
   /// Defaults to null: no backer, and no change to existing rendering.
   final Color? backerColor;
+
+  /// Solid stand-in color the lens composites where the engine can't capture the
+  /// backdrop — i.e. behind a PlatformView past the glass, which the lens would
+  /// otherwise render black (see `platformViewBackdrop` on the glass widgets).
+  ///
+  /// Distinct from [backerColor]: [backerColor] is an *aesthetic* dimming pad
+  /// painted behind the glass everywhere; this is the *fallback fill* used only
+  /// where the shader has no backdrop to sample. Splitting them lets a control
+  /// have one without the other (e.g. a transparent over-map fill with no dim, or
+  /// a dim pad off-PlatformView with no fill).
+  ///
+  /// Defaults to null, in which case it falls back to [backerColor] — so existing
+  /// recipes that relied on `backerColor` doubling as the PlatformView fill are
+  /// unchanged.
+  final Color? platformViewFallbackColor;
 
   /// The effective saturation taking visibility into account.
   double get effectiveSaturation => 1 + (saturation - 1) * visibility;
@@ -388,6 +406,8 @@ class LiquidGlassSettings with EquatableMixin {
         // Lerp the color so the backer fades smoothly (from/to transparent when
         // one side is null), rather than popping at the midpoint.
         backerColor: Color.lerp(a.backerColor, b.backerColor, t),
+        platformViewFallbackColor: Color.lerp(
+            a.platformViewFallbackColor, b.platformViewFallbackColor, t),
         // pinchStrength is interaction state — lerp it so transitions are smooth
         // when the indicator fades between active/resting states.
         pinchStrength: lerpDouble(a.pinchStrength, b.pinchStrength, t)!);
@@ -422,6 +442,7 @@ class LiquidGlassSettings with EquatableMixin {
     double? whitenStrength,
     bool? whitenGated,
     Color? backerColor,
+    Color? platformViewFallbackColor,
   }) =>
       LiquidGlassSettings._withPinch(
         visibility: visibility ?? this.visibility,
@@ -443,6 +464,8 @@ class LiquidGlassSettings with EquatableMixin {
         whitenStrength: whitenStrength ?? this.whitenStrength,
         whitenGated: whitenGated ?? this.whitenGated,
         backerColor: backerColor ?? this.backerColor,
+        platformViewFallbackColor:
+            platformViewFallbackColor ?? this.platformViewFallbackColor,
         // Preserve current pinchStrength — copyWith is called by AnimatedGlassIndicator
         // to change visibility while keeping the live pinch value alive.
         // To set a new pinch value, call copyWithPinch() instead.
@@ -469,6 +492,7 @@ class LiquidGlassSettings with EquatableMixin {
         whitenStrength,
         whitenGated,
         backerColor,
+        platformViewFallbackColor,
         pinchStrength,
       ];
 }

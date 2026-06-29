@@ -288,10 +288,17 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
           // Slots 21-24: uBackgroundFallback (straight RGBA). An opaque stand-in
           // for backdrop regions the engine can't capture (e.g. a PlatformView
           // past the glass, which the lens would otherwise render black); a == 0
-          // (the default when no backerColor is set) disables it. See the
-          // over-composite in textureBilinear (liquid_glass_final_render.frag).
+          // (the default) disables it. See the over-composite in textureBilinear
+          // (liquid_glass_final_render.frag).
+          //
+          // Sourced from platformViewFallbackColor, falling back to backerColor
+          // when unset — so backerColor keeps doubling as the fill for existing
+          // recipes, while platformViewFallbackColor lets callers decouple the
+          // PlatformView fill from the aesthetic backer.
           ..setFloatUniforms(initialIndex: 21, (value) {
-            final b = settings.backerColor ?? const Color(0x00000000);
+            final b = settings.platformViewFallbackColor ??
+                settings.backerColor ??
+                const Color(0x00000000);
             value.setFloats(<double>[b.r, b.g, b.b, b.a]);
           })
           ..setImageSampler(
