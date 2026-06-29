@@ -1,6 +1,6 @@
 # Roadmap: 0.15.0 → 1.0.0
 
-> Last updated: 2026-06-19
+> Last updated: 2026-06-29
 
 This document tracks the planned work to get `liquid_glass_widgets` from the
 current 0.14.x series to a stable 1.0.0 release. The guiding principle is:
@@ -236,8 +236,41 @@ brightness-aware `GlassSearchBar` / `GlassTextField` defaults were all shipped.
 
 ### Platform Edge Cases / Engine Bugs
 
-- [ ] **CanvasKit Web circular clipping** — `LiquidOval` relies on `ClipRRect(borderRadius: 9999)` inside `_ShapeClip` to work around an iOS PlatformView compositing bug (Flutter #177551). However, on Web (CanvasKit), this massive radius breaks path clipping, causing the interaction `GlassGlow` to spill out as a giant square and destroying the CSS/SVG drop-shadow extraction on `DecoratedBox`. 
+- [ ] **CanvasKit Web circular clipping** — `LiquidOval` relies on `ClipRRect(borderRadius: 9999)` inside `_ShapeClip` to work around an iOS PlatformView compositing bug (Flutter #177551). However, on Web (CanvasKit), this massive radius breaks path clipping, causing the interaction `GlassGlow` to spill out as a giant square and destroying the CSS/SVG drop-shadow extraction on `DecoratedBox`.
   - **Proposed fix:** We need a way to branch and use `ClipOval` / `BoxShape.circle` strictly for Web/CanvasKit, or wait for an upstream engine fix for `ClipRRect(9999)` bounds calculation on Web.
+
+- [ ] **`platformViewBackdrop` quality cliff** — When `platformViewBackdrop: true` is set on any
+  `AdaptiveGlass`-backed widget (bar body, indicator, extra button), rendering is forced to
+  `_FrostedFallback` (a live `BackdropFilter`) regardless of the requested quality tier. This is
+  the only technically correct path — the Impeller shader reads a captured backdrop that excludes
+  hybrid-composed PlatformViews. However, it creates a silent quality degradation: premium glass
+  becomes a standard `BackdropFilter` over a map, and the `isInteractive` blur-omission is
+  overridden so the draggable pill also runs a `BackdropFilter` continuously while repositioning
+  (GPU-expensive). Two actions needed before 1.0:
+  - **API doc:** Add a prominent note to `platformViewBackdrop` dartdoc explaining that quality
+    is capped at the frosted fallback when set, and that this is a Flutter engine limitation
+    (captured backdrop excludes PlatformViews).
+  - **Long-term:** Track Flutter engine progress on making `RepaintBoundary`/`ImageFilter`
+    capture include hybrid-composed PlatformViews. When that lands, `platformViewBackdrop` can
+    route back to the native shader and this quality cliff disappears.
+  - Introduced in: `0.19.2` (PR [#128](https://github.com/sdegenaar/liquid_glass_widgets/pull/128) by [@jfhair](https://github.com/jfhair)).
+
+- [ ] **`backerColor` dual-use / API design debt** — `LiquidGlassSettings.backerColor` currently
+  serves two distinct purposes:
+  1. **Aesthetic dimming layer** — a tinted colour composited behind the glass surface for visual
+     depth, used across all quality tiers.
+  2. **PlatformView backdrop fill** — bound to `uBackgroundFallback` in the premium Impeller
+     shader to give the lens a colour to refract when the captured backdrop is transparent black
+     (i.e. over a PlatformView).
+  These are conceptually different; sharing one field makes the API ambiguous and makes the
+  behaviour surprising (why does `backerColor` fix black glass over a map?). Before 1.0, consider
+  splitting into:
+  - `backerColor` — aesthetic dimming only (current meaning).
+  - `platformViewFallbackColor` — explicit PlatformView fill colour, only honoured when
+    `platformViewBackdrop: true`.
+  This is a breaking parameter rename, so it should land in a coordinated `0.20.0` or `1.0.0`
+  breaking release.
+  - Introduced in: `0.19.2` (PR [#129](https://github.com/sdegenaar/liquid_glass_widgets/pull/129) by [@jfhair](https://github.com/jfhair)).
 
 ### RTL / Internationalisation
 

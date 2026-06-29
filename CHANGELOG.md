@@ -1,4 +1,91 @@
+# 0.19.2
+
+## 🐛 Bug Fixes — Search Pill Colors & PlatformView Compositing
+
+- Fixed an issue where the `SearchPill` icon colors (search, mic) would incorrectly render as black in light mode when used with dark glass over an iOS PlatformView. The widget now correctly resolves the dynamic label color through the `GlassTheme`'s brightness cascade and explicitly passes the `IconThemeData(color: ...)` down to the fallback standard Icons.
+- Mitigated a Flutter engine clipping bug (see Flutter PR #177551) over PlatformViews by ensuring `LiquidRoundedSuperellipse` and `LiquidOval` correctly clip their bounds using an internal `ClipRRect` when rendering their fallback implementations.
+- Updated the `google_maps_demo` to correctly demonstrate how to configure `selectedIconColor`, `unselectedIconColor`, and `searchIconColor` for dark glass bottom bars to ensure all tab elements remain visible over the map layer.
+
+## 🐛 Bug Fixes — PlatformView Gesture & Rendering
+
+This release resolves a pair of related issues that caused the glass bottom bar
+to freeze and render incorrectly when floating over an iOS PlatformView (e.g. a
+Mapbox map). All three fixes were contributed by [@jfhair](https://github.com/jfhair)
+via detailed PRs that included root-cause analysis, regression tests, and working
+reproductions. Many thanks for the exceptional quality of this contribution.
+
+### Gesture freeze over an iOS PlatformView ([#127](https://github.com/sdegenaar/liquid_glass_widgets/pull/127))
+
+**Problem:** `GlassTabBar.searchable` (and `GlassBottomBar`) would freeze when
+the draggable indicator was dragged or tapped while the bar floated over an iOS
+PlatformView. The freeze was permanent until the widget was rebuilt or disposed.
+
+**Root cause:** iOS reconstructs the platform-view clip chain whenever a clip
+layer is added or removed mid-gesture. The engine responds by cancelling the
+active touch, which left the bar's `GestureDetector` recognizer wedged — it
+never received a terminal callback (`onDragEnd` / `onDragCancel`) and stopped
+responding to input. The most frequent trigger was the indicator's `innerBlur`
+frost layer unmounting at drag-start (a clip-add/remove cycle).
+
+**Fix — two-part:**
+- **Primary fix (PR #127):** The indicator's frost `ClipRRect + BackdropFilter`
+  layer now stays _mounted_ across the full drag lifecycle by tracking a
+  persistent `bool _frostMounted` flag in `AnimatedGlassIndicator`. This
+  eliminates the clip-add/remove cycle that was triggering the iOS clip-chain
+  reconstruction.
+- **Backstop fix (PR #127):** `TabBarDragGestureMixin` gains a
+  `gestureEpoch` counter, a `_gestureActive` liveness flag, and a raw
+  `Listener` on the `GestureDetector` subtree. If the raw pointer-up or
+  pointer-cancel arrives while `_gestureActive` is still `true` (i.e. the
+  terminal callback was silently dropped by the platform-view gesture arena),
+  `recoverIfGestureStuck` is called: it selects a fallback tab, bumps
+  `gestureEpoch` (forcing the `GestureDetector` to be torn down and
+  recreated via `ValueKey`), and clears the stuck state. Covers both the
+  tap-without-cancel and drag-start-without-end freeze signatures.
+
+### PlatformView backdrop routing ([#128](https://github.com/sdegenaar/liquid_glass_widgets/pull/128))
+
+**Problem:** Setting `platformViewBackdrop: true` on a bar had no visible effect
+for the glass indicator or bar body — the premium/standard Impeller shader paths
+read a captured backdrop that excludes hybrid-composed PlatformViews, so the
+glass rendered inert (opaque black or clear) over a map.
+
+**Fix:** `AdaptiveGlass` now routes any surface with `platformViewBackdrop: true`
+to the frosted fallback (`_FrostedFallback`) regardless of the requested quality
+tier. The frosted fallback uses a live `BackdropFilter`, which correctly blurs
+hybrid-composed PlatformViews. `_FrostedFallback` also overrides the
+`isInteractive` blur-omission that would otherwise skip the blur for interactive
+indicator surfaces — over a PlatformView the live blur must always run.
+
+### Premium glass goes black over a PlatformView — `backerColor` fallback ([#129](https://github.com/sdegenaar/liquid_glass_widgets/pull/129))
+
+**Problem:** At `GlassQuality.premium` over a PlatformView, the Impeller shader
+sampled a captured backdrop that contained only transparent black where the
+PlatformView sat. With no real background pixels to refract, the glass lens
+rendered black.
+
+**Fix:** A new `uBackgroundFallback` (vec4) uniform was added to
+`liquid_glass_final_render.frag`. The shader composites the fallback colour
+over the captured backdrop using a standard `over` blend weighted by the
+backdrop's own alpha — where the backdrop is real (alpha ≈ 1) it is left
+untouched; where it is transparent black (alpha ≈ 0, i.e. over a PlatformView)
+the fallback fills in. `backerColor` from `LiquidGlassSettings` is bound to
+this uniform at render time, giving the premium lens a solid colour to refract
+instead of transparent black.
+
+### Extra button `platformViewBackdrop` threading (follow-up, this release)
+
+`GlassTabBarExtraButton` previously ignored the bar's `platformViewBackdrop`
+flag — the internal `BottomBarExtraBtn` widget was not forwarding it to the
+underlying `GlassButton`, so the extra button continued to use the inert shader
+path even when the rest of the bar correctly used the frosted fallback.
+`platformViewBackdrop` is now threaded through `BottomBarExtraBtn` and both
+call sites (`TabBarBottomLayout`, `TabBarSearchableLayout`) to `GlassButton`.
+
+---
+
 # 0.19.1
+
 
 ## 🛡️ Stability Improvements
 

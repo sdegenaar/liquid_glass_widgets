@@ -70,7 +70,18 @@ Color resolveBarLabelColor(BuildContext context, double? darkAmount) {
   final labelColor = CupertinoTheme.of(context).textTheme.textStyle.color ??
       CupertinoColors.label;
   if (darkAmount != null && labelColor is CupertinoDynamicColor) {
+    // Content-aware path: animated cross-fade between light/dark variants.
     return Color.lerp(labelColor.color, labelColor.darkColor, darkAmount)!;
+  }
+  // Static path: resolve any CupertinoDynamicColor eagerly using the glass
+  // brightness cascade. CupertinoDynamicColor returned unresolved works for
+  // BottomBarTabItem (IconTheme resolves it during painting), but breaks for
+  // SearchPill icons where .value is always the light-mode black. Using
+  // GlassTheme.brightnessOf() — the package's single brightness authority —
+  // ensures dark glass always produces white glyphs regardless of system brightness.
+  if (labelColor is CupertinoDynamicColor) {
+    final brightness = GlassTheme.brightnessOf(context);
+    return brightness == Brightness.dark ? labelColor.darkColor : labelColor.color;
   }
   return labelColor;
 }
@@ -315,6 +326,7 @@ class BottomBarExtraBtn extends StatelessWidget {
     required this.iconColor,
     this.enableBlend = false,
     this.borderRadius,
+    this.platformViewBackdrop = false,
     super.key,
   });
 
@@ -324,11 +336,27 @@ class BottomBarExtraBtn extends StatelessWidget {
   final bool enableBlend;
   final double? borderRadius;
 
+  /// When true, routes rendering through the frosted fallback (live
+  /// [BackdropFilter]) instead of the Impeller-native shader. Required when
+  /// the button floats over an iOS PlatformView (e.g. a map) — the shader
+  /// paths read a captured backdrop that excludes the platform view, so they
+  /// render inert there. Matches [GlassButton.platformViewBackdrop].
+  final bool platformViewBackdrop;
+
   @override
   Widget build(BuildContext context) {
-    final effectiveShape = borderRadius == null
-        ? const LiquidOval()
-        : LiquidRoundedRectangle(borderRadius: borderRadius!);
+    // When platformViewBackdrop is true the frosted fallback (BackdropFilter)
+    // is used instead of the Impeller shader. BackdropFilter + ClipPath bleeds
+    // the blur effect to the full rectangular render-object bounds — the visible
+    // "light square" around the circular button. ClipRRect (used by
+    // LiquidRoundedSuperellipse) creates a compositing-layer clip that constrains
+    // the blur to the rounded shape. Use a radius of half the button size to
+    // approximate the circle that LiquidOval would normally produce.
+    final effectiveShape = borderRadius != null
+        ? LiquidRoundedRectangle(borderRadius: borderRadius!)
+        : (platformViewBackdrop
+            ? LiquidRoundedSuperellipse(borderRadius: config.size / 2)
+            : const LiquidOval());
 
     final button = GlassButton(
       icon: config.icon,
@@ -340,13 +368,38 @@ class BottomBarExtraBtn extends StatelessWidget {
       iconColor: iconColor,
       useOwnLayer: !enableBlend, // When blending, share the parent's layer
       shape: effectiveShape,
+      platformViewBackdrop: platformViewBackdrop,
     );
 
-    // Shadows are now handled at the parent bar level as sibling Positioned
-    // elements, BELOW the glass layer. No per-widget Stack wrapper needed.
-    return button;
+    if (!platformViewBackdrop) {
+      // Shadows are now handled at the parent bar level as sibling Positioned
+      // elements, BELOW the glass layer. No per-widget Stack wrapper needed.
+      return button;
+    }
+
+    // ── PlatformView backdrop: dual-layer clip ─────────────────────────────
+    // The inner ClipRRect (inside _ShapeClip → inside GlassButton's
+    // RepaintBoundary) clips the frosted surface correctly. However,
+    // BackdropFilter's CAPTURE AREA is determined by the RepaintBoundary
+    // bounds — always rectangular. On iOS, this rectangular capture region
+    // maps to a rectangular UIKitView sample, which shows as a light square
+    // around the circular button when the map is visible.
+    //
+    // This outer ClipRRect is in the PARENT compositor layer (above the
+    // RepaintBoundary). The iOS engine's PlatformView mutator stack picks up
+    // ancestor ClipRRect nodes and forwards them as UIView.layer.mask
+    // operations on the UIKitView itself, constraining the map content that
+    // can be sampled by the BackdropFilter to the circle before compositing.
+    //
+    // The borderRadius must match: size / 2 makes a perfect circle for the
+    // square button (same value as the inner LiquidRoundedSuperellipse).
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(config.size / 2),
+      child: button,
+    );
   }
 }
+
 
 // =============================================================================
 // TabIndicator — draggable pill indicator with spring physics

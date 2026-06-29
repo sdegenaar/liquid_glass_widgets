@@ -535,6 +535,7 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                               enableBackgroundAnimation:
                                   widget.interactionBehavior.hasScale,
                               backgroundPressScale: widget.pressScale,
+                              iconColor: resolvedUnselectedIconColor,
                               interactionGlowColor:
                                   widget.interactionBehavior.hasGlow
                                       ? effectiveInteractionGlowColor
@@ -608,6 +609,8 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                                                   ._kDefaultBorderRadius
                                           ? null
                                           : widget.barBorderRadius,
+                                      platformViewBackdrop:
+                                          widget.platformViewBackdrop,
                                     ),
                                   ),
                                 ),

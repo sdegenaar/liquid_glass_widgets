@@ -145,8 +145,7 @@ void main() {
         settings: const LiquidGlassSettings(backerColor: backer),
       )));
       await tester.pump();
-      final glass =
-          tester.widget<GlassEffect>(find.byType(GlassEffect).first);
+      final glass = tester.widget<GlassEffect>(find.byType(GlassEffect).first);
       expect(glass.settings.backerColor, backer);
     });
 

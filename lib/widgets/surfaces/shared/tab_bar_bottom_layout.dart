@@ -241,6 +241,7 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
                                       TabBarBottomLayout._kDefaultBorderRadius
                                   ? null
                                   : widget.barBorderRadius,
+                              platformViewBackdrop: widget.platformViewBackdrop,
                             ),
                           ),
                         ),

@@ -1,17 +1,18 @@
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// This demo mirrors the exact structure from the user's Google Maps issue:
-//   GlassPage → Scaffold → PageView → GlassBottomBar
+// PlatformView demo — shows GlassTabBar.searchable floating over a WebView
+// (same UIKitView PlatformView type as GoogleMap / MapLibre on iOS).
 //
-// The ONLY change from their broken code is one line:
-//   quality: GlassQuality.premium,          // ← their code (crashes on iOS)
-//   platformViewBackdrop: Platform.isIOS     // ← the fix
-//
-// WebView stands in for GoogleMap — same UIKitView PlatformView type on iOS.
+// Key point: platformViewBackdrop: Platform.isIOS
+//   Premium quality uses Impeller's backdrop-sampling shader which cannot
+//   read pixels from a native UIKitView. Setting platformViewBackdrop routes
+//   rendering through a live BackdropFilter that correctly blurs hybrid-
+//   composed platform views.
 // ─────────────────────────────────────────────────────────────────────────────
 
 class PlatformViewDemo extends StatefulWidget {
@@ -24,11 +25,12 @@ class PlatformViewDemo extends StatefulWidget {
 class _PlatformViewDemoState extends State<PlatformViewDemo> {
   int _selectedIndex = 0;
   late final PageController _pageController;
+  bool _searchActive = false;
 
   static const _tabs = [
-    GlassTab(icon: Icon(Icons.home_rounded), label: 'Home'),
-    GlassTab(icon: Icon(Icons.map_rounded), label: 'Map'),
-    GlassTab(icon: Icon(Icons.person_rounded), label: 'Profile'),
+    GlassTab(icon: Icon(CupertinoIcons.house_fill), label: 'Home'),
+    GlassTab(icon: Icon(CupertinoIcons.map_fill), label: 'Map'),
+    GlassTab(icon: Icon(CupertinoIcons.person_fill), label: 'Profile'),
   ];
 
   @override
@@ -45,41 +47,49 @@ class _PlatformViewDemoState extends State<PlatformViewDemo> {
 
   void _onTabSelected(int index) {
     if (_selectedIndex == index) return;
+    setState(() => _selectedIndex = index);
     _pageController.jumpToPage(index);
   }
 
   @override
   Widget build(BuildContext context) {
-    return GlassPage(
-      child: Scaffold(
-        extendBody: true,
-        body: PageView(
-          controller: _pageController,
-          physics: const NeverScrollableScrollPhysics(),
-          onPageChanged: (index) => setState(() => _selectedIndex = index),
-          children: const [
-            PlaceholderTab(label: 'Home'),
-            MapTab(),
-            PlaceholderTab(label: 'Profile'),
-          ],
+    return GlassScaffold(
+      // ┌─────────────────────────────────────────────────────────────────┐
+      // │  THE FIX: platformViewBackdrop: Platform.isIOS                │
+      // │                                                               │
+      // │  Premium uses Impeller's backdrop-sampling shader which       │
+      // │  cannot read pixels from a native UIKitView (GoogleMap,       │
+      // │  WebView, MapLibre). Setting platformViewBackdrop ensures     │
+      // │  it falls back to standard BackdropFilter rendering over      │
+      // │  native views while maintaining the premium indicator.        │
+      // └─────────────────────────────────────────────────────────────────┘
+      bottomBar: GlassTabBar.searchable(
+        settings: const LiquidGlassSettings(glassColor: Colors.black26),
+        quality: GlassQuality.premium,
+        platformViewBackdrop: Platform.isIOS,
+        isSearchActive: _searchActive,
+        selectedIconColor: Colors.white,
+        unselectedIconColor: Colors.white70,
+        selectedLabelColor: Colors.white,
+        unselectedLabelColor: Colors.white70,
+        searchConfig: GlassSearchBarConfig(
+          onSearchToggle: (active) => setState(() => _searchActive = active),
+          // Dark glass (glassColor: Colors.black26) needs explicit white icons.
+          searchIconColor: Colors.white,
         ),
-        bottomNavigationBar: GlassTabBar.bottom(
-          settings: const LiquidGlassSettings(glassColor: Colors.black54),
-          // ┌─────────────────────────────────────────────────────────────┐
-          // │  THE FIX: Use platformViewBackdrop: true on iOS.          │
-          // │                                                           │
-          // │  Premium uses Impeller's backdrop-sampling shader which   │
-          // │  cannot read pixels from a native UIKitView (GoogleMap,   │
-          // │  WebView, MapLibre). Setting platformViewBackdrop ensures │
-          // │  it falls back to standard BackdropFilter rendering over  │
-          // │  native views while maintaining the premium indicator.    │
-          // └─────────────────────────────────────────────────────────────┘
-          quality: GlassQuality.premium,
-          platformViewBackdrop: Platform.isIOS,
-          selectedIndex: _selectedIndex,
-          onTabSelected: _onTabSelected,
-          tabs: _tabs,
-        ),
+        selectedIndex: _selectedIndex,
+        onTabSelected: _onTabSelected,
+        tabs: _tabs,
+      ),
+      body: PageView(
+        controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(),
+        onPageChanged: (index) => setState(() => _selectedIndex = index),
+        children: const [
+          PlaceholderTab(label: 'Home'),
+          MapTab(),
+          PlaceholderTab(label: 'Profile'),
+        ],
       ),
     );
   }
@@ -121,7 +131,7 @@ class _MapTabState extends State<MapTab> with AutomaticKeepAliveClientMixin {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Placeholder tabs — identical to the user's code
+// Placeholder tabs
 // ─────────────────────────────────────────────────────────────────────────────
 
 class PlaceholderTab extends StatefulWidget {
@@ -144,7 +154,7 @@ class _PlaceholderTabState extends State<PlaceholderTab>
     return Center(
       child: Text(
         widget.label,
-        style: Theme.of(context).textTheme.headlineMedium,
+        style: CupertinoTheme.of(context).textTheme.navLargeTitleTextStyle,
       ),
     );
   }

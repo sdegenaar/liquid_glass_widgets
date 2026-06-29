@@ -398,10 +398,10 @@ class AnimatedGlassIndicator extends StatelessWidget {
               borderRadius: BorderRadius.circular(borderRadius),
               child: BackdropFilter(
                 filter: ImageFilter.blur(
-                  sigmaX:
-                      (innerBlur * backgroundOpacity).clamp(0.001, double.infinity),
-                  sigmaY:
-                      (innerBlur * backgroundOpacity).clamp(0.001, double.infinity),
+                  sigmaX: (innerBlur * backgroundOpacity)
+                      .clamp(0.001, double.infinity),
+                  sigmaY: (innerBlur * backgroundOpacity)
+                      .clamp(0.001, double.infinity),
                 ),
                 child: const SizedBox.expand(),
               ),

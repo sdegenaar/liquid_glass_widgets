@@ -159,7 +159,7 @@ Most apps should use `GlassCard` or `GlassGroupedSection` instead.
 
 ```yaml
 dependencies:
-  liquid_glass_widgets: ^0.19.1
+  liquid_glass_widgets: ^0.19.2
 ```
 
 ```bash
@@ -217,7 +217,7 @@ The package is centred around **navigation chrome** — `GlassScaffold` with `Gl
 | Screen with app bar and/or tab bar | **`GlassScaffold`** — the primary pattern |
 | Custom layout without standard scaffold structure | **`GlassPage`** — lower-level building block |
 | Standalone glass card or panel in an existing layout | **`GlassCard` / `GlassContainer`** — opt-in, not the core pattern |
-| `AdaptiveLiquidGlassLayer` | Internal infrastructure — do not use directly in app code |
+| Localised group of glass elements in an existing layout | **`AdaptiveLiquidGlassLayer`** — scope a layer to a region; grouped cards share its settings |
 
 > `GlassContainer` / `GlassCard` are fully supported for localised glass UI (floating panels, settings cards, etc.) but most screens should start with `GlassScaffold`.
 
