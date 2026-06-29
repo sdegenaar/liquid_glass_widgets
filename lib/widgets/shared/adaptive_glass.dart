@@ -730,7 +730,11 @@ class _FrostedFallback extends StatelessWidget {
           // around rounded glass surfaces stacked over PlatformViews
           // (e.g. mapbox_maps_flutter, video_player on iOS).
           Positioned.fill(
-            child: _ShapeClip(shape: shape, child: body),
+            child: _ShapeClip(
+              shape: shape,
+              platformViewBackdrop: platformViewBackdrop,
+              child: body,
+            ),
           ),
 
         if (!useBlur)
@@ -760,7 +764,11 @@ class _FrostedFallback extends StatelessWidget {
         // Text and contents MUST be strictly clipped to corner radii.
         // Same ClipRRect-over-ClipPath rationale as the blur body
         // above — see the [_ShapeClip] doc comment.
-        _ShapeClip(shape: shape, child: child),
+        _ShapeClip(
+          shape: shape,
+          platformViewBackdrop: platformViewBackdrop,
+          child: child,
+        ),
 
         // Specular Rim: drawn as a pure native overlay vector perfectly on top.
         // Wrapped in _ShapeClip because canvas.drawPath draws a center-aligned
@@ -933,10 +941,27 @@ class _SpecularRimPainter extends CustomPainter {
 /// renders identically to a circle on a square widget and triggers the
 /// engine fix.
 class _ShapeClip extends StatelessWidget {
-  const _ShapeClip({required this.shape, required this.child});
+  const _ShapeClip({
+    required this.shape,
+    required this.child,
+    this.platformViewBackdrop = false,
+  });
 
   final LiquidShape shape;
   final Widget child;
+
+  /// When the clipped subtree sits over an iOS PlatformView, force a
+  /// [ClipRRect]-based clip even for shapes that would otherwise fall through to
+  /// a [ClipPath] (e.g. [LiquidOval], [LiquidRoundedRectangle]).
+  ///
+  /// Flutter's clip forwarding (#177551, 3.41+) only sends ClipRRect clip data
+  /// to the iOS PlatformView mutator stack — a ClipPath leaves a descendant
+  /// [BackdropFilter] unclipped, so the frost leaks a rectangular halo around
+  /// the (visually round) surface. A ClipRRect with a full radius renders the
+  /// same circle/stadium but IS forwarded, bounding the frost to the shape.
+  /// Off a PlatformView the ClipPath path is exact (a true ellipse), so the swap
+  /// is gated on this flag.
+  final bool platformViewBackdrop;
 
   @override
   Widget build(BuildContext context) {
@@ -955,6 +980,17 @@ class _ShapeClip extends StatelessWidget {
         ),
         child: child,
       );
+    }
+    // Over a PlatformView, route any radius-expressible shape (oval →
+    // circle/stadium, rounded rect, vertical variants) through ClipRRect so the
+    // clip is forwarded to the PlatformView mutator and a descendant
+    // BackdropFilter is bounded to the shape — eliminating the rectangular halo.
+    // #177551 only forwards ClipRRect, never ClipPath.
+    if (platformViewBackdrop) {
+      final borderRadius = AdaptiveGlass._borderRadiusFromShape(shape);
+      if (borderRadius != null) {
+        return ClipRRect(borderRadius: borderRadius, child: child);
+      }
     }
     return ClipPath(
       clipper: ShapeBorderClipper(shape: shape),
