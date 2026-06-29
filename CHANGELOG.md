@@ -1,10 +1,12 @@
-# 0.19.2
+# 0.19.3
 
 ## 🐛 Bug Fixes — Search Pill Colors & PlatformView Compositing
 
 - Fixed an issue where the `SearchPill` icon colors (search, mic) would incorrectly render as black when using dark glass (`glassColor: Colors.black26`) over an iOS PlatformView. The root cause was that the color resolution used the OS system brightness (light) instead of the glass brightness (dark), causing `CupertinoDynamicColor.label` to always resolve to its light-mode black variant. The widget now resolves colors through `GlassTheme.brightnessOf()` — the package's single brightness authority — and explicitly passes the resolved color via `IconThemeData` to guarantee white glyphs on dark glass regardless of system brightness.
-- Mitigated a Flutter engine clipping bug (see Flutter PR #177551) over PlatformViews by ensuring `LiquidRoundedSuperellipse` and `LiquidOval` correctly clip their bounds using an internal `ClipRRect` when rendering their fallback implementations.
+- Mitigated a Flutter engine clipping bug over PlatformViews by ensuring `LiquidRoundedSuperellipse` and `LiquidOval` correctly clip their bounds using an outer `ClipRRect` when rendering over an iOS PlatformView, preventing blur bleed outside the circular button shape.
 - Updated the `google_maps_demo` to correctly demonstrate how to configure `selectedIconColor`, `unselectedIconColor`, and `searchIconColor` for dark glass bottom bars to ensure all tab elements remain visible over the map layer.
+
+# 0.19.2
 
 ## 🐛 Bug Fixes — PlatformView Gesture & Rendering
 
