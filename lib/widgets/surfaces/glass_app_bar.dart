@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../types/glass_quality.dart';
 import '../shared/glass_isolation_scope.dart';
+import 'glass_large_title.dart' show GlassLargeTitleController;
 
 /// A navigation bar layout widget following Apple's iOS 26 design patterns.
 ///
@@ -12,6 +13,30 @@ import '../shared/glass_isolation_scope.dart';
 /// individual interactive elements (buttons, pills) — not the bar surface
 /// itself. This matches iOS 26's navigation bar where the bar is a simple
 /// layout container and glass is reserved for buttons.
+///
+/// ## Large-title collapse (iOS 26 pattern)
+///
+/// Pair with [GlassLargeTitle] and [GlassLargeTitleController] to get
+/// automatic cross-fade between the large title (in the scroll view) and the
+/// inline bar title — with zero boilerplate:
+///
+/// ```dart
+/// final _titleController = GlassLargeTitleController();
+///
+/// GlassScaffold(
+///   appBar: GlassAppBar(
+///     title: Text('Chats'),
+///     largeTitleController: _titleController,   // ← fades in as user scrolls
+///   ),
+///   body: CustomScrollView(
+///     controller: _titleController.scrollController,
+///     slivers: [
+///       GlassLargeTitle(text: 'Chats', controller: _titleController),
+///       // ... content slivers
+///     ],
+///   ),
+/// )
+/// ```
 ///
 /// ## Transparent (default — iOS 26 style)
 ///
@@ -70,6 +95,7 @@ class GlassAppBar extends StatelessWidget
     this.preferredSize = const Size.fromHeight(44.0),
     this.padding = const EdgeInsets.symmetric(horizontal: 8),
     this.buttonSettings,
+    this.largeTitleController,
   });
 
   // ===========================================================================
@@ -136,6 +162,17 @@ class GlassAppBar extends StatelessWidget
   /// ```
   final LiquidGlassSettings? buttonSettings;
 
+  /// Optional controller that drives the inline title opacity.
+  ///
+  /// When provided, the [title] widget is automatically wrapped in a
+  /// [ListenableBuilder] that fades it **in** as [GlassLargeTitle]
+  /// (the large title in the scroll view) fades **out**.
+  ///
+  /// This replicates iOS 26's `UINavigationBar.prefersLargeTitles` collapse
+  /// behaviour with zero boilerplate. See [GlassLargeTitle] and
+  /// [GlassLargeTitleController] for full usage.
+  final GlassLargeTitleController? largeTitleController;
+
   @override
   Widget build(BuildContext context) {
     Widget content = ColoredBox(
@@ -152,17 +189,9 @@ class GlassAppBar extends StatelessWidget
                 // Leading widget
                 if (leading != null) leading!,
 
-                // Flexible title
+                // Flexible title — optionally driven by collapse controller
                 Expanded(
-                  child: centerTitle
-                      ? Center(child: title ?? const SizedBox.shrink())
-                      : Align(
-                          alignment: Alignment.centerLeft,
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 8),
-                            child: title ?? const SizedBox.shrink(),
-                          ),
-                        ),
+                  child: _buildTitle(),
                 ),
 
                 // Trailing actions
@@ -197,6 +226,42 @@ class GlassAppBar extends StatelessWidget
       isolated: true,
       defaultQuality: GlassQuality.premium,
       child: content,
+    );
+  }
+
+  /// Builds the title widget, optionally driven by [largeTitleController].
+  ///
+  /// Without a controller, returns the title as-is (same as before).
+  /// With a controller, wraps in [ListenableBuilder] so only the title
+  /// Opacity rebuilds on scroll — not the entire bar.
+  Widget _buildTitle() {
+    final titleWidget = centerTitle
+        ? Center(child: title ?? const SizedBox.shrink())
+        : Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: title ?? const SizedBox.shrink(),
+            ),
+          );
+
+    if (largeTitleController == null) return titleWidget;
+
+    return ListenableBuilder(
+      listenable: largeTitleController!,
+      builder: (context, _) {
+        final progress = largeTitleController!.collapseProgress;
+        // iOS 26 bar title behaviour: invisible during the first half of the
+        // collapse, then fades in with ease-out over the second half.
+        // This matches UIKit's two-phase crossfade where the bar title only
+        // appears once the large title is mostly gone.
+        final barProgress = ((progress - 0.5) / 0.5).clamp(0.0, 1.0);
+        final barOpacity = Curves.easeOut.transform(barProgress);
+        return Opacity(
+          opacity: barOpacity,
+          child: titleWidget,
+        );
+      },
     );
   }
 }

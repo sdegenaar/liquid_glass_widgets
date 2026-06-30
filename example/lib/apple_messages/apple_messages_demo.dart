@@ -266,31 +266,14 @@ class MessagesScreen extends StatefulWidget {
 }
 
 class _MessagesScreenState extends State<MessagesScreen> {
-  final _scrollController = ScrollController();
-  bool _headerCollapsed = false;
+  final _titleController = GlassLargeTitleController();
 
   // Tracks which filter is selected in the right menu
   String _activeFilter = 'Messages';
 
   @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
-
-  void _onScroll() {
-    final collapsed =
-        _scrollController.hasClients && _scrollController.offset > 60;
-    if (collapsed != _headerCollapsed) {
-      setState(() => _headerCollapsed = collapsed);
-    }
-  }
-
-  @override
   void dispose() {
-    _scrollController
-      ..removeListener(_onScroll)
-      ..dispose();
+    _titleController.dispose();
     super.dispose();
   }
 
@@ -311,35 +294,22 @@ class _MessagesScreenState extends State<MessagesScreen> {
       bottomBarHeight: 60,
       appBar: _NavBar(
         topPad: topPad,
-        headerCollapsed: _headerCollapsed,
+        titleController: _titleController,
         activeFilter: _activeFilter,
         onFilterChanged: (filter) => setState(() => _activeFilter = filter),
       ),
       bottomBar: _SearchBar(bottomPad: botPad),
       body: CustomScrollView(
-        controller: _scrollController,
+        controller: _titleController.scrollController,
         slivers: [
           // Status bar space + nav bar height
           SliverToBoxAdapter(child: SizedBox(height: topPad + 52)),
 
-          // Large "Messages" title (collapses on scroll)
-          SliverToBoxAdapter(
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 200),
-              opacity: _headerCollapsed ? 0 : 1,
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(16, 4, 16, 8),
-                child: Text(
-                  'Messages',
-                  style: TextStyle(
-                    color: CupertinoColors.label.resolveFrom(context),
-                    fontSize: 34,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-              ),
-            ),
+          // Large "Messages" title (collapses on scroll automatically)
+          GlassLargeTitle(
+            text: 'Messages',
+            controller: _titleController,
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
           ),
 
           // Conversation rows
@@ -367,56 +337,37 @@ class _MessagesScreenState extends State<MessagesScreen> {
 class _NavBar extends StatelessWidget {
   const _NavBar({
     required this.topPad,
-    required this.headerCollapsed,
+    required this.titleController,
     required this.activeFilter,
     required this.onFilterChanged,
   });
 
   final double topPad;
-  final bool headerCollapsed;
+  final GlassLargeTitleController titleController;
   final String activeFilter;
   final ValueChanged<String> onFilterChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(height: topPad),
-        SizedBox(
-          height: 52,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // ── Edit menu (top-left) ─────────────────────────────────
-                const _EditMenu(),
-                const Spacer(),
-
-                // Inline "Messages" title when scrolled
-                AnimatedOpacity(
-                  duration: const Duration(milliseconds: 200),
-                  opacity: headerCollapsed ? 1 : 0,
-                  child: Text(
-                    'Messages',
-                    style: TextStyle(
-                      color: CupertinoColors.label.resolveFrom(context),
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-
-                // ── Filter menu (top-right) ──────────────────────────────
-                _FilterMenu(
-                  activeFilter: activeFilter,
-                  onFilterChanged: onFilterChanged,
-                ),
-              ],
-            ),
-          ),
+    return GlassAppBar(
+      preferredSize: const Size.fromHeight(52),
+      // Bar title fades in automatically when large title collapses
+      title: Text(
+        'Messages',
+        style: TextStyle(
+          color: CupertinoColors.label.resolveFrom(context),
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      largeTitleController: titleController,
+      // The menus get their own paddings so we override the default AppBar insets
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      leading: const _EditMenu(),
+      actions: [
+        _FilterMenu(
+          activeFilter: activeFilter,
+          onFilterChanged: onFilterChanged,
         ),
       ],
     );

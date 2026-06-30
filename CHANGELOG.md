@@ -1,4 +1,51 @@
+# 0.19.6
+
+## ✨ New — `GlassLargeTitle` + `GlassLargeTitleController`
+
+First-class iOS 26 large-title + search-bar collapse. Replaces manual
+`ScrollController` + `setState` wiring with a single controller and two
+widgets.
+
+### Two-phase collapse
+
+- **Phase 1** — large title fades out (`Curves.easeIn`, rubber-band overscroll stretch).
+- **Phase 2** — optional inline search bar collapses under the nav bar immediately after.
+
+### New API
+
+- `GlassLargeTitle` — sliver widget. Drop it as the first sliver in any `CustomScrollView`.
+  - `searchBar: Widget?` — Phase 2 collapse (e.g. `GlassSearchBar`).
+  - `trailing`, `fontSize`, `fontWeight`, `letterSpacing`, `padding`, `searchBarPadding`, `color`.
+- `GlassLargeTitleController` — owns the `ScrollController`, exposes `collapseProgress` and `searchBarCollapseProgress`. Self-calibrates to Dynamic Type via `reportMeasuredHeight` / `reportSearchBarHeight`.
+- `GlassAppBar.largeTitleController` — new optional param. Bar title cross-fades in as the large title collapses. Non-breaking.
+
+```dart
+final _ctrl = GlassLargeTitleController(); // dispose in State.dispose()
+
+// Phase 1 only
+GlassLargeTitle(text: 'Chats', controller: _ctrl)
+
+// Phase 1 + 2
+GlassLargeTitle(
+  text: 'Messages',
+  controller: _ctrl,
+  searchBar: GlassSearchBar(placeholder: 'Search', onChanged: (_) {}),
+)
+```
+
+### Demo
+
+- Pattern 2 updated to new API. Pattern 7 (Large Title + Search Bar) added.
+- Apple Messages demo migrated from manual `AnimatedOpacity` to `GlassLargeTitle`.
+
++10 tests. **2,291 total, all passing.**
+
+
+
+
 # 0.19.5
+
+
 
 - **`LiquidGlassSettings`** — adds `platformViewFallbackColor` (#138, @jfhair). Splits
   `backerColor`'s dual role: `backerColor` remains the aesthetic backer pad; the new

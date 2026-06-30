@@ -8,6 +8,7 @@
 ///   4. Transparent fade-only (no title in bar)
 ///   5. Tab bar with bottom fade
 ///   6. Fade header (no app bar) — Apple Music / Podcasts style
+///   7. Large title + Search Bar — two-phase iOS 26 collapse
 ///
 /// Run standalone:
 ///   flutter run -t lib/demos/nav_bar_patterns_demo.dart
@@ -130,6 +131,14 @@ class NavBarPatternsDemo extends StatelessWidget {
                   subtitle: 'Fixed title fades on scroll — Apple Music style',
                   icon: CupertinoIcons.music_note_2,
                   onTap: () => _push(context, const _FadeHeaderDemo()),
+                ),
+                const SizedBox(height: 16),
+                _PatternTile(
+                  title: 'Large Title + Search Bar',
+                  subtitle:
+                      'Two-phase collapse: title then search — iOS 26 Messages/Mail style',
+                  icon: CupertinoIcons.search,
+                  onTap: () => _push(context, const _LargeTitleSearchDemo()),
                 ),
                 const SizedBox(height: 100),
               ],
@@ -354,30 +363,13 @@ class _LargeTitleCollapseDemo extends StatefulWidget {
 }
 
 class _LargeTitleCollapseDemoState extends State<_LargeTitleCollapseDemo> {
-  final _scrollController = ScrollController();
-  double _scrollOffset = 0;
-
-  static const _largeTitleHeight = 52.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
+  final _titleController = GlassLargeTitleController();
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
+    _titleController.dispose();
     super.dispose();
   }
-
-  void _onScroll() {
-    setState(() => _scrollOffset = _scrollController.offset);
-  }
-
-  double get _collapseProgress =>
-      (_scrollOffset / _largeTitleHeight).clamp(0.0, 1.0);
 
   @override
   Widget build(BuildContext context) {
@@ -388,17 +380,16 @@ class _LargeTitleCollapseDemoState extends State<_LargeTitleCollapseDemo> {
       settings: RecommendedGlassSettings.standard,
       statusBarStyle: GlassStatusBarStyle.auto,
       appBar: GlassAppBar(
-        title: Opacity(
-          opacity: _collapseProgress,
-          child: Text(
-            'Chats',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: CupertinoColors.label.resolveFrom(context),
-            ),
+        // Bar title fades in automatically as the large title scrolls away.
+        title: Text(
+          'Chats',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: CupertinoColors.label.resolveFrom(context),
           ),
         ),
+        largeTitleController: _titleController,
         leading: GlassButton(
           quality: GlassQuality.premium,
           icon: const Icon(CupertinoIcons.back),
@@ -425,27 +416,15 @@ class _LargeTitleCollapseDemoState extends State<_LargeTitleCollapseDemo> {
         ],
       ),
       body: CustomScrollView(
-        controller: _scrollController,
+        controller: _titleController.scrollController,
         slivers: [
           SliverToBoxAdapter(
             child: SizedBox(height: topPad + 44),
           ),
-          // Large title that scrolls away
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-              child: Text(
-                'Chats',
-                style: TextStyle(
-                  fontSize: 34,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.5,
-                  color: CupertinoColors.label.resolveFrom(context).withValues(
-                        alpha: 1.0 - _collapseProgress,
-                      ),
-                ),
-              ),
-            ),
+          // Large title fades out as user scrolls — zero boilerplate.
+          GlassLargeTitle(
+            text: 'Chats',
+            controller: _titleController,
           ),
           _buildDummyContent(),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
@@ -756,6 +735,95 @@ class _FadeHeaderDemoState extends State<_FadeHeaderDemo> {
           ),
           _buildDummyContent(),
           const SliverToBoxAdapter(child: SizedBox(height: 120)),
+        ],
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// 7. Large Title + Search Bar — Two-Phase iOS 26 Collapse
+// =============================================================================
+//
+// iOS 26 Messages / Mail pattern:
+//   Phase 1 (0 → ~52pt): Large title fades out.
+//   Phase 2 (~52pt → ~96pt): Search bar collapses under the nav bar.
+//
+// GlassLargeTitleController drives both phases from a single ScrollController.
+
+class _LargeTitleSearchDemo extends StatefulWidget {
+  const _LargeTitleSearchDemo();
+
+  @override
+  State<_LargeTitleSearchDemo> createState() => _LargeTitleSearchDemoState();
+}
+
+class _LargeTitleSearchDemoState extends State<_LargeTitleSearchDemo> {
+  final _titleController = GlassLargeTitleController();
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final topPad = MediaQuery.paddingOf(context).top;
+
+    return GlassScaffold(
+      background: const ShowcaseBackground(),
+      settings: RecommendedGlassSettings.standard,
+      statusBarStyle: GlassStatusBarStyle.auto,
+      appBar: GlassAppBar(
+        // Bar title fades in automatically in Phase 1.
+        title: Text(
+          'Messages',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: CupertinoColors.label.resolveFrom(context),
+          ),
+        ),
+        largeTitleController: _titleController,
+        leading: GlassButton(
+          quality: GlassQuality.premium,
+          icon: const Icon(CupertinoIcons.back),
+          onTap: () => Navigator.of(context).pop(),
+          width: 40,
+          height: 40,
+          iconSize: 20,
+        ),
+        actions: [
+          GlassButton(
+            icon: const Icon(CupertinoIcons.pencil),
+            onTap: () {},
+            width: 40,
+            height: 40,
+            iconSize: 20,
+          ),
+        ],
+      ),
+      body: CustomScrollView(
+        controller: _titleController.scrollController,
+        slivers: [
+          SliverToBoxAdapter(
+            child: SizedBox(height: topPad + 44),
+          ),
+          // Phase 1: large title fades out.
+          // Phase 2: search bar collapses under nav bar.
+          // Both driven automatically by GlassLargeTitleController.
+          GlassLargeTitle(
+            text: 'Messages',
+            controller: _titleController,
+            searchBar: GlassSearchBar(
+              placeholder: 'Search',
+              useOwnLayer: true,
+              onChanged: (_) {},
+            ),
+          ),
+          _buildDummyContent(),
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
     );
