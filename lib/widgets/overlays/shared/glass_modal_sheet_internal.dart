@@ -190,28 +190,17 @@ class _SheetLayout extends StatelessWidget {
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    // 1. Shape outline + drop shadow (transparent fill —
-                    //    actual fill lives inside AdaptiveGlass below).
+                    // 1. Empty slot placeholder — kept so the glass surface below
+                    //    keeps its element identity (this Stack is sensitive to slot
+                    //    shifts re-initing the glass). It used to hold a BoxShadow
+                    //    for faux depth, but behind the transparent fill + the
+                    //    translucent frost it never read as a drop shadow: it bled
+                    //    THROUGH the glass as interior darkening (an inner-shadow /
+                    //    vignette), was invisible behind the opaque full state, and
+                    //    broke light mode. Apple's glass sheets don't darken their
+                    //    interior — removed.
                     Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: ShapeDecoration(
-                          color: Colors.transparent,
-                          shape: RoundedSuperellipseBorder(
-                            borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(currentTopRadius),
-                              bottom: Radius.circular(currentBottomRadius),
-                            ),
-                          ),
-                          shadows: [
-                            BoxShadow(
-                              color: Colors.black
-                                  .withValues(alpha: 0.2 * glassOpacity),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                      ),
+                      child: const SizedBox.shrink(),
                     ),
                     // 2. Single unified glass surface — owns the SDF clip,
                     //    solid fill, glow, and content. Consolidating into one
