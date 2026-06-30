@@ -200,7 +200,9 @@ class _SheetLayout extends StatelessWidget {
                     //    broke light mode. Apple's glass sheets don't darken their
                     //    interior — removed.
                     Positioned.fill(
-                      child: const SizedBox.shrink(),
+                      child: const SizedBox.shrink(
+                        key: Key('glass_modal_sheet_shadow_slot'),
+                      ),
                     ),
                     // 2. Single unified glass surface — owns the SDF clip,
                     //    solid fill, glow, and content. Consolidating into one

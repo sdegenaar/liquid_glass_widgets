@@ -1,8 +1,20 @@
+# 0.19.5
+
+- **`LiquidGlassSettings`** — adds `platformViewFallbackColor` (#138, @jfhair). Splits
+  `backerColor`'s dual role: `backerColor` remains the aesthetic backer pad; the new
+  field controls the `uBackgroundFallback` shader uniform (PlatformView fill).
+  Fully backwards-compatible — defaults to `null`, falling back to `backerColor`.
+
+- **`GlassModalSheet`** — removes the interior `BoxShadow` that bled through the glass
+  as a vignette (#137, @jfhair). Elevation now flows via `LiquidGlassSettings.shadowElevation`.
+  Pass `shadowElevation: 0` to disable entirely.
+
 # 0.19.4
 
 ## ✨ Enhancements — `GlassButtonGroupItem.menu` & `GlassPullDownButton` improvements
 
 ### `GlassButtonGroupItem.menu` — whole-pill liquid glass morph
+
 
 Adds a new `GlassButtonGroupItem.menu` named constructor that turns any item in a
 `GlassButtonGroup.icons` pill into a pull-down menu trigger.
