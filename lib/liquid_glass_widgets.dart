@@ -113,6 +113,7 @@ export 'widgets/overlays/glass_toast.dart';
 export 'widgets/overlays/glass_popover.dart';
 // Widgets - Surfaces
 export 'widgets/surfaces/glass_app_bar.dart';
+export 'widgets/surfaces/glass_large_title.dart';
 export 'widgets/shared/glass_isolation_scope.dart';
 export 'widgets/surfaces/glass_scaffold.dart';
 export 'widgets/surfaces/glass_bottom_bar.dart';
