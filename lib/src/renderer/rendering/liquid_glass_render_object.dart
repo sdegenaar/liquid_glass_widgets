@@ -23,9 +23,13 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
     required LiquidGlassSettings settings,
     required double devicePixelRatio,
     BackdropKey? backdropKey,
+    ui.Image? captureImage,
+    Offset captureOriginInScreenSpace = Offset.zero,
   })  : _settings = settings,
         _devicePixelRatio = devicePixelRatio,
         _backdropKey = backdropKey,
+        _captureImage = captureImage,
+        _captureOriginInScreenSpace = captureOriginInScreenSpace,
         _link = link,
         _cachedLightDir = Offset(
           cos(settings.lightAngle),
@@ -84,6 +88,35 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
   set backdropKey(BackdropKey? value) {
     if (_backdropKey == value) return;
     _backdropKey = value;
+    markNeedsPaint();
+  }
+
+  // ── Capture-path fields ───────────────────────────────────────────────────
+  //
+  // When [captureImage] is non-null, [paintLiquidGlass] implementations MUST
+  // use [paintLiquidGlassWithCapture] instead of the BackdropFilterLayer path.
+  // The captured image is the background texture fed directly to the shader,
+  // bypassing the live compositor read entirely.
+  //
+  // [captureOriginInScreenSpace] is the global (screen-space) logical-pixel
+  // position of the RepaintBoundary that produced [captureImage]. It is used
+  // to derive [uCaptureOffset]: the physical-pixel shift from the render
+  // surface's canvas origin to the capture boundary's origin, which corrects
+  // [FlutterFragCoord()] (canvas-local) into capture-image space.
+
+  ui.Image? _captureImage;
+  ui.Image? get captureImage => _captureImage;
+  set captureImage(ui.Image? value) {
+    if (identical(_captureImage, value)) return;
+    _captureImage = value;
+    markNeedsPaint();
+  }
+
+  Offset _captureOriginInScreenSpace = Offset.zero;
+  Offset get captureOriginInScreenSpace => _captureOriginInScreenSpace;
+  set captureOriginInScreenSpace(Offset value) {
+    if (_captureOriginInScreenSpace == value) return;
+    _captureOriginInScreenSpace = value;
     markNeedsPaint();
   }
 
@@ -301,6 +334,11 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
                 const Color(0x00000000);
             value.setFloats(<double>[b.r, b.g, b.b, b.a]);
           })
+          // Slots 25-26: uCaptureOffset — zero in BackdropFilter mode (no-op).
+          // The capture path sets this non-zero via paintLiquidGlassWithCapture.
+          ..setFloatUniforms(initialIndex: 25, (value) {
+            value.setOffset(Offset.zero);
+          })
           ..setImageSampler(
             1,
             geometryImage,
@@ -331,6 +369,139 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
     List<(RenderLiquidGlassGeometry, GeometryCache, Matrix4)> shapes,
     Rect boundingBox,
   );
+
+  /// Direct-draw paint path used when [captureImage] is non-null.
+  ///
+  /// Instead of emitting a [BackdropFilterLayer] (which reads from the live
+  /// compositor), this draws the shader as a plain rect onto the current canvas,
+  /// binding the pre-captured background image to sampler slot 0.
+  ///
+  /// Coordinate math:
+  ///   [FlutterFragCoord()] in a plain canvas.drawRect gives the fragment
+  ///   position within the current compositing layer (the RepaintBoundary that
+  ///   [LiquidGlassLayer] creates). [captureOriginInScreenSpace] is the global
+  ///   logical-pixel origin of the capture boundary (from localToGlobal).
+  ///   The physical-pixel offset between the two coordinate origins is:
+  ///
+  ///     uCaptureOffset = (captureOriginGlobal - thisRenderOriginGlobal) * dpr
+  ///
+  ///   Adding this to [FlutterFragCoord()] maps each fragment into capture-image
+  ///   space, so [screenUV] correctly addresses the pre-captured bar texture.
+  @protected
+  void paintLiquidGlassWithCapture(
+    PaintingContext context,
+    Offset offset,
+    List<(RenderLiquidGlassGeometry, GeometryCache, Matrix4)> shapes,
+    Rect boundingBox,
+    ui.Image capture,
+  ) {
+    if (!attached) return;
+
+    final dpr = devicePixelRatio;
+
+    // Our render object's global logical-pixel origin.
+    final thisOriginGlobal = getTransformTo(null).getTranslation();
+    final thisOriginLogical = Offset(thisOriginGlobal.x, thisOriginGlobal.y);
+
+    // Physical-pixel offset from our canvas origin → capture-boundary origin.
+    // This is the uCaptureOffset uniform: it shifts FlutterFragCoord() (which
+    // is relative to the compositing layer, i.e. our RepaintBoundary surface)
+    // into the capture image's coordinate space.
+    final captureOffset =
+        (_captureOriginInScreenSpace - thisOriginLogical) * dpr;
+
+    // uSize: physical pixel dimensions of the captured image.
+    final captureSize =
+        ui.Size(capture.width.toDouble(), capture.height.toDouble());
+
+    // Geometry bounds in screen space, snapped to pixels.
+    final activeBounds = MatrixUtils.transformRect(
+      matteTransform,
+      _geometryLocalBounds,
+    ).snapToPixels(dpr);
+
+    // uGeometryOffset/uGeometrySize are relative to the capture image origin
+    // (not screen origin) so that geometryUV = (fragCoord + uCaptureOffset -
+    // uGeometryOffset) / uGeometrySize resolves correctly.
+    final geometryOffsetInCapture =
+        (activeBounds.topLeft - _captureOriginInScreenSpace) * dpr;
+    final geometrySizePhysical = activeBounds.size * dpr;
+
+    renderShader
+      // Slot 0-1: uSize — physical size of the capture image.
+      ..setFloatUniforms(initialIndex: 0, (value) {
+        value.setSize(captureSize);
+      })
+      // Slots 2-5: uGeometryOffset + uGeometrySize, relative to capture origin.
+      ..setFloatUniforms(initialIndex: 2, (value) {
+        value
+          ..setOffset(geometryOffsetInCapture)
+          ..setSize(geometrySizePhysical);
+      })
+      ..setFloatUniforms(initialIndex: 6, (value) {
+        value
+          ..setColor(settings.effectiveGlassColor)
+          ..setFloats([
+            settings.effectiveRefractiveIndex,
+            settings.effectiveChromaticAberration,
+            settings.effectiveThickness,
+            settings.effectiveLightIntensity,
+            settings.effectiveAmbientStrength,
+            settings.effectiveSaturation,
+          ])
+          ..setOffset(_cachedLightDir);
+      })
+      ..setFloatUniforms(initialIndex: 18, (value) {
+        value
+          ..setFloat(settings.whitenStrength)
+          ..setFloat(settings.whitenGated ? 1.0 : 0.0)
+          ..setFloat(settings.pinchStrength);
+      })
+      ..setFloatUniforms(initialIndex: 21, (value) {
+        final b = settings.platformViewFallbackColor ??
+            settings.backerColor ??
+            const Color(0x00000000);
+        value.setFloats(<double>[b.r, b.g, b.b, b.a]);
+      })
+      // Slot 25-26: uCaptureOffset — shift fragCoord into capture-image space.
+      ..setFloatUniforms(initialIndex: 25, (value) {
+        value.setOffset(captureOffset);
+      })
+      // Slot 0: captured background image (replaces the BackdropFilter read).
+      ..setImageSampler(0, capture)
+      ..setImageSampler(1, geometryImage!, filterQuality: FilterQuality.medium);
+
+    // Draw the capture path: no BackdropFilterLayer needed — draw directly
+    // onto the canvas over the expanded clip rect.
+    final clipRect = boundingBox.expandToInclude(
+      Rect.fromLTRB(
+        boundingBox.left - 20,
+        boundingBox.top - 15,
+        boundingBox.right + 20,
+        boundingBox.bottom + 15,
+      ),
+    );
+
+    // Pass 1 (blur): retained even in capture mode — the blur layer reads from
+    // the BackdropGroup which is the internal bar blur, not the external capture.
+    // This is correct: the inner blur pass blurs icon content inside the glass,
+    // the capture provides the bar background behind the glass.
+    paintShapeContents(context, offset, shapes, insideGlass: true);
+
+    // Pass 2: glass refraction shader as a plain canvas.drawRect.
+    // No BackdropFilter wrapper; the captured image is already bound to slot 0.
+    context.canvas
+      ..save()
+      ..clipRect(clipRect.shift(offset))
+      ..drawRect(
+        clipRect.shift(offset),
+        Paint()..shader = renderShader,
+      )
+      ..restore();
+
+    // Pass 3: shape contents painted on top (non-glass child layer).
+    paintShapeContents(context, offset, shapes, insideGlass: false);
+  }
 
   @protected
   void paintShapeContents(
