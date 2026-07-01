@@ -144,6 +144,19 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
   // Both bars reference kBottomBarGlassDefaults so their glass is guaranteed identical.
   static const _defaultGlassSettings = kBottomBarGlassDefaults;
 
+  /// Lays out the tab [Row] in physical (LTR) order regardless of the ambient
+  /// direction, so the first child is on the left — matching the indicator and
+  /// gesture coordinate space. RTL ordering is carried by the reversed tab data
+  /// in [_buildBar], not by the ambient direction of these Rows. Scoping the
+  /// pin to the Rows keeps `Directionality.of(context)` intact for the rest of
+  /// the subtree (notably [indicatorExpansion] / [tabPadding] resolution).
+  static Widget _ltrTabRow({required List<Widget> children}) {
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Row(children: children),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!widget.adaptiveBrightness && widget.brightnessOverride == null) {
@@ -188,6 +201,37 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
 
     final effectiveSettings = widget.settings ?? _defaultGlassSettings;
 
+    // RTL support.
+    //
+    // The indicator/gesture coordinate system and the [AnimatedGlassIndicator]
+    // position both operate in physical, left-anchored alignment space (x == -1
+    // is always the left edge), and the gesture math is derived from the render
+    // box geometry — all direction-independent. The only direction-sensitive
+    // part is the two tab [Row]s, which honour the ambient [Directionality] and
+    // visually reverse under RTL. That reversal is what disagrees with the
+    // physical coordinate space, so the pill — and the tap/drag hit-testing —
+    // land on the mirror-image tab.
+    //
+    // Normalise by reversing the tab data and mirroring the selected index and
+    // the tap callback, then pin *only* the tab Rows to LTR (see [_ltrTabRow])
+    // so their physical order matches the coordinate space. Net effect under
+    // RTL: correct ordering (the first tab sits on the trailing/right edge)
+    // with the pill and hit-testing aligned to it. In LTR everything is a
+    // no-op.
+    //
+    // The pin is deliberately scoped to the Rows: [TabIndicator] resolves
+    // [indicatorExpansion] and [tabPadding] against `Directionality.of(context)`,
+    // so wrapping the whole subtree would force those to LTR and silently ignore
+    // any `EdgeInsetsDirectional` a consumer passes in an RTL app.
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final tabs = isRtl ? widget.tabs.reversed.toList() : widget.tabs;
+    final selectedIndex = isRtl
+        ? widget.tabs.length - 1 - widget.selectedIndex
+        : widget.selectedIndex;
+    final onTabSelected = isRtl
+        ? (int i) => widget.onTabSelected(widget.tabs.length - 1 - i)
+        : widget.onTabSelected;
+
     return AdaptiveLiquidGlassLayer(
       clipExpansion:
           const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
@@ -208,7 +252,7 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
             final maxTabW = constraints.maxWidth - extraBtnW;
             final tabPillW = resolveTabPillWidth(
               tabWidth: widget.tabWidth,
-              tabCount: widget.tabs.length,
+              tabCount: tabs.length,
               maxAvailable: maxTabW,
             );
 
@@ -255,12 +299,12 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
                         child: TabIndicator(
                           quality: effectiveQuality,
                           visible: widget.showIndicator,
-                          tabIndex: widget.selectedIndex,
-                          tabCount: widget.tabs.length,
+                          tabIndex: selectedIndex,
+                          tabCount: tabs.length,
                           indicatorColor: widget.indicatorColor,
                           indicatorSettings: widget.indicatorSettings,
                           indicatorPinchStrength: widget.indicatorPinchStrength,
-                          onTabChanged: widget.onTabSelected,
+                          onTabChanged: onTabSelected,
                           barHeight: widget.barHeight,
                           barBorderRadius: widget.barBorderRadius,
                           indicatorBorderRadius: widget.indicatorBorderRadius,
@@ -281,12 +325,12 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
                           interactionScale: widget.interactionBehavior.hasScale
                               ? widget.pressScale
                               : 1.0,
-                          childUnselected: Row(
+                          childUnselected: _ltrTabRow(
                             children: [
-                              for (var i = 0; i < widget.tabs.length; i++)
+                              for (var i = 0; i < tabs.length; i++)
                                 Expanded(
                                   child: BottomBarTabItem(
-                                    tab: widget.tabs[i],
+                                    tab: tabs[i],
                                     selected: false,
                                     selectedIconColor:
                                         resolvedSelectedIconColor,
@@ -317,6 +361,7 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
                               _buildSelectedTabs(
                                   intensity,
                                   alignment,
+                                  tabs,
                                   resolvedSelectedIconColor,
                                   resolvedUnselectedIconColor),
                           magnification: widget.magnification,
@@ -334,25 +379,29 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
     );
   }
 
-  Widget _buildSelectedTabs(double intensity, Alignment alignment,
-      Color resolvedSelectedIconColor, Color resolvedUnselectedIconColor) {
+  Widget _buildSelectedTabs(
+      double intensity,
+      Alignment alignment,
+      List<GlassBottomBarTab> tabs,
+      Color resolvedSelectedIconColor,
+      Color resolvedUnselectedIconColor) {
     final scale = ui.lerpDouble(1.0, widget.magnification, intensity) ?? 1.0;
 
-    final currentTabFloat = ((alignment.x + 1) / 2) * widget.tabs.length;
+    final currentTabFloat = ((alignment.x + 1) / 2) * tabs.length;
     final affectedStart =
-        (currentTabFloat - 1).floor().clamp(0, widget.tabs.length - 1);
+        (currentTabFloat - 1).floor().clamp(0, tabs.length - 1);
     final affectedEnd =
-        (currentTabFloat + 1).ceil().clamp(0, widget.tabs.length - 1);
+        (currentTabFloat + 1).ceil().clamp(0, tabs.length - 1);
 
-    return Row(
+    return _ltrTabRow(
       children: [
-        for (var i = 0; i < widget.tabs.length; i++)
+        for (var i = 0; i < tabs.length; i++)
           Expanded(
             child: (i >= affectedStart && i <= affectedEnd)
                 ? Transform.scale(
                     scale: scale,
                     child: BottomBarTabItem(
-                      tab: widget.tabs[i],
+                      tab: tabs[i],
                       selected: true,
                       selectedIconColor: resolvedSelectedIconColor,
                       unselectedIconColor: resolvedUnselectedIconColor,

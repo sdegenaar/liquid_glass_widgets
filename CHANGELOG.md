@@ -1,3 +1,15 @@
+# Unreleased
+
+- **`GlassTabBar.bottom` / `GlassBottomBar`** — fixes RTL support (#142, @naeemeltaief).
+  The indicator/gesture coordinate system operates in physical (left-anchored) alignment
+  space while the tab `Row`s honour the ambient `Directionality`, so under RTL the pill and
+  the tap/drag hit-testing landed on the mirror-image tab. The bottom layout now normalises
+  the tab order, selected index and tap callback for RTL and pins *only the tab rows* to LTR,
+  so the first tab sits on the trailing edge with the pill and hit-testing aligned to it.
+  `indicatorExpansion` / `tabPadding` continue to resolve against the ambient direction, so
+  `EdgeInsetsDirectional` values still work in RTL. Consumers no longer need to force
+  `Directionality.ltr` and reverse tabs by hand.
+=======
 # 0.19.6
 
 ## ✨ New — `GlassLargeTitle` + `GlassLargeTitleController`
@@ -60,7 +72,6 @@ GlassLargeTitle(
 - `GlassContainer`, `GlassCard`, `GlassGroupedSection`, `GlassSegmentedControl` — added
   **⚠️ Anti-Pattern** sections documenting the glass-in-glass restriction: placing interactive
   glass controls inside a container degrades refraction and clips jelly animations.
-
 
 # 0.19.5
 
