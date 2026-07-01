@@ -463,6 +463,20 @@ class _GlassEffectState extends State<GlassEffect>
       // and the shader uses SDF alpha masking for the pill boundary — both of which
       // DO stretch correctly with the parent Transform.
       //
+      // Capture path: when _backgroundImage is available (the ticker has already
+      // captured the background boundary at least once), pass it directly to
+      // LiquidGlass.withOwnLayer so the shader reads from the deterministic
+      // captured texture instead of emitting a live BackdropFilterLayer.
+      // This eliminates the Impeller compositor ordering dependency that caused
+      // the opaque-white indicator bug (#99) while preserving the full 3D
+      // geometry rendering pipeline. Performance is strictly better: one
+      // toImageSync capture per frame (already happening) replaces a heavyweight
+      // BackdropFilterLayer compositor pass.
+      //
+      // Falls back to the live BackdropFilter path if no capture is available
+      // yet (first frame before the ticker has fired) — zero visual difference
+      // since the indicator is invisible until thickness > 0.01 anyway.
+      //
       // coverage:ignore-start
       // Unreachable in unit tests: isImpeller=false (no real GPU renderer).
       // Tested on physical device / Impeller integration tests only.
@@ -470,6 +484,8 @@ class _GlassEffectState extends State<GlassEffect>
         shape: widget.shape,
         settings: widget.settings,
         clipExpansion: widget.clipExpansion,
+        captureImage: _backgroundImage,
+        captureOriginInScreenSpace: _lastCapturePosition ?? Offset.zero,
         child: widget.child,
       );
       // coverage:ignore-end

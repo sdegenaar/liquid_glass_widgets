@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_setters_without_getters
 
 import 'dart:ui';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -39,7 +40,9 @@ class LiquidGlass extends StatelessWidget {
         blendGroupLink = null,
         clipExpansion = EdgeInsets.zero,
         shadows = const <BoxShadow>[],
-        ownLayerConfig = null;
+        ownLayerConfig = null,
+        _captureImage = null,
+        _captureOriginInScreenSpace = Offset.zero;
 
   /// Creates a new [LiquidGlass] that is part of a [LiquidGlassBlendGroup].
   ///
@@ -56,6 +59,8 @@ class LiquidGlass extends StatelessWidget {
   })  : ownLayerConfig = null,
         clipExpansion = EdgeInsets.zero,
         shadows = const <BoxShadow>[],
+        _captureImage = null,
+        _captureOriginInScreenSpace = Offset.zero,
         grouped = true;
 
   /// Creates a new [LiquidGlass] that creates its own [LiquidGlassLayer].
@@ -75,7 +80,11 @@ class LiquidGlass extends StatelessWidget {
     this.clipBehavior = Clip.hardEdge,
     this.blendGroupLink,
     this.clipExpansion = EdgeInsets.zero,
+    ui.Image? captureImage,
+    Offset captureOriginInScreenSpace = Offset.zero,
   })  : ownLayerConfig = settings,
+        _captureImage = captureImage,
+        _captureOriginInScreenSpace = captureOriginInScreenSpace,
         grouped = false;
 
   /// The child of this widget.
@@ -122,6 +131,12 @@ class LiquidGlass extends StatelessWidget {
   /// the grouped or default constructors.
   final EdgeInsets clipExpansion;
 
+  // Capture-path fields — only set by LiquidGlass.withOwnLayer.
+  // When non-null, LiquidGlassLayer bypasses its BackdropFilterLayer and
+  // feeds this image directly to the shader as uBackgroundTexture.
+  final ui.Image? _captureImage;
+  final Offset _captureOriginInScreenSpace;
+
   @override
   Widget build(BuildContext context) {
     // If we have our own layer config, we create our own layer.
@@ -130,6 +145,8 @@ class LiquidGlass extends StatelessWidget {
         settings: settings,
         shadows: shadows,
         clipExpansion: clipExpansion,
+        captureImage: _captureImage,
+        captureOriginInScreenSpace: _captureOriginInScreenSpace,
         child: LiquidGlassBlendGroup(
           blend: 0,
           child: Builder(

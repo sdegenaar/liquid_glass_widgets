@@ -1,3 +1,10 @@
+# 0.19.6
+
+- **`GlassBottomBar` indicator** — eliminates the live `BackdropFilterLayer` on Impeller
+  premium, replacing it with a deterministic `toImageSync` capture path. Fixes the
+  opaque-white indicator rendering on physical iOS (#99) and improves drag performance
+  by removing a redundant compositor pass.
+
 # 0.19.5
 
 - **`LiquidGlassSettings`** — adds `platformViewFallbackColor` (#138, @jfhair). Splits

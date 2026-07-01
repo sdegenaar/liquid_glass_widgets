@@ -57,12 +57,29 @@ uniform float uWhitenGated;
 // creating the iOS 26 "pinched through a lens" look. The centre is left flat.
 uniform float uPinchStrength;
 
-// Per-mode opaque stand-in for backdrop regions the engine can't capture: a
-// PlatformView past the glass reads as transparent black in the backdrop
-// texture, which otherwise renders as black through the lens. The sampled
-// backdrop is composited OVER this in textureBilinear, so empty regions read as
-// this colour instead. Straight (non-premultiplied) RGBA; a == 0 disables it.
+// Slot 21-24: uBackgroundFallback — Per-mode opaque stand-in for backdrop
+// regions the engine can't capture (e.g. a PlatformView past the glass).
+// Straight (non-premultiplied) RGBA; a == 0 disables it.
 uniform vec4 uBackgroundFallback;
+
+// Slot 25-26: uCaptureOffset — physical-pixel offset from the render surface
+// origin to the capture-boundary origin. Only non-zero on the Impeller capture
+// path (GlassEffect with backgroundKey on Impeller premium). When zero (the
+// default / BackdropFilter path), (fragCoord + uCaptureOffset) == fragCoord, so
+// this is a mathematical no-op and has zero performance impact on existing paths.
+//
+// BackdropFilter mode (default, uCaptureOffset == vec2(0)):
+//   FlutterFragCoord() is screen-space physical pixels.
+//   uSize == full-screen physical pixel size.
+//   screenUV = fragCoord / uSize → samples the backdrop at screen position.
+//
+// Capture mode (uCaptureOffset != vec2(0)):
+//   FlutterFragCoord() is RepaintBoundary-surface-space physical pixels.
+//   uSize == captured image physical pixel size.
+//   uCaptureOffset shifts fragCoord so that (fragCoord + offset) is the
+//   position within the capture image — mapping the indicator's fragment
+//   to the correct texel in the pre-captured bar texture.
+uniform vec2 uCaptureOffset;
 
 uniform sampler2D uBackgroundTexture;
 uniform sampler2D uGeometryTexture;
@@ -136,7 +153,9 @@ void main() {
 
     vec2 physTexSize = uSize;
     vec2 invTexSize = 1.0 / physTexSize;
-    vec2 screenUV = fragCoord * invTexSize;
+    // uCaptureOffset shifts the fragment into capture-image space.
+    // In BackdropFilter mode uCaptureOffset == vec2(0) so this is a no-op.
+    vec2 screenUV = (fragCoord + uCaptureOffset) * invTexSize;
 
     #ifdef IMPELLER_TARGET_OPENGLES
         screenUV.y = 1.0 - screenUV.y;
@@ -306,6 +325,16 @@ void main() {
         float blue        = textureBilinear(blueUV, physTexSize, invTexSize).b;
 
         refractColor = vec4(red, greenSample.g, blue, greenSample.a);
+    }
+
+    // Un-premultiply the background sample before refraction math.
+    // BackdropFilter delivers premultiplied RGBA; toImageSync captures also
+    // deliver premultiplied RGBA. Without un-premultiply, the chromatic
+    // aberration dispersion channels (red/blue split) operate on premultiplied
+    // values, which biases saturated colours toward grey at the edges.
+    // On fully-opaque backdrops (refractColor.a == 1.0) this is a no-op.
+    if (refractColor.a > 0.001) {
+        refractColor.rgb /= refractColor.a;
     }
 
     vec4 finalColor = applyGlassColor(refractColor, uGlassColor);

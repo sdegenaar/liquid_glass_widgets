@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_setters_without_getters
 
 import 'dart:ui';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -74,6 +75,8 @@ class LiquidGlassLayer extends StatefulWidget {
     this.settings = const LiquidGlassSettings(),
     this.shadows = const <BoxShadow>[],
     this.clipExpansion = EdgeInsets.zero,
+    this.captureImage,
+    this.captureOriginInScreenSpace = Offset.zero,
     super.key,
   });
 
@@ -100,6 +103,26 @@ class LiquidGlassLayer extends StatefulWidget {
   ///
   /// Defaults to [EdgeInsets.zero] — zero extra GPU cost for static glass.
   final EdgeInsets clipExpansion;
+
+  /// Pre-captured background image to use instead of a live [BackdropFilterLayer].
+  ///
+  /// When non-null, the glass shader reads from this image directly (sampler
+  /// slot 0) instead of letting the compositor extract the backdrop. This
+  /// eliminates the Impeller compositor ordering dependency that caused the
+  /// opaque-white indicator bug (#99). The image must come from a
+  /// [RenderRepaintBoundary.toImageSync] call on a boundary that covers the
+  /// full background region behind the glass.
+  ///
+  /// Defaults to null — falls through to the BackdropFilterLayer path.
+  final ui.Image? captureImage;
+
+  /// The global (screen-space) logical-pixel origin of the [RepaintBoundary]
+  /// that produced [captureImage]. Used to compute [uCaptureOffset] inside
+  /// the shader so [FlutterFragCoord()] fragments are correctly mapped into
+  /// the capture image's coordinate space.
+  ///
+  /// Ignored when [captureImage] is null.
+  final Offset captureOriginInScreenSpace;
 
   @override
   State<LiquidGlassLayer> createState() => _LiquidGlassLayerState();
@@ -147,6 +170,8 @@ class _LiquidGlassLayerState extends State<LiquidGlassLayer>
                 shadows: widget.shadows,
                 link: _link,
                 clipExpansion: widget.clipExpansion,
+                captureImage: widget.captureImage,
+                captureOriginInScreenSpace: widget.captureOriginInScreenSpace,
                 child: child!,
               ),
               child: widget.child,
@@ -167,6 +192,8 @@ class _RawShapes extends SingleChildRenderObjectWidget {
     required Widget super.child,
     required this.link,
     this.clipExpansion = EdgeInsets.zero,
+    this.captureImage,
+    this.captureOriginInScreenSpace = Offset.zero,
   });
 
   final FragmentShader renderShader;
@@ -175,6 +202,8 @@ class _RawShapes extends SingleChildRenderObjectWidget {
   final List<BoxShadow> shadows;
   final GeometryRenderLink link;
   final EdgeInsets clipExpansion;
+  final ui.Image? captureImage;
+  final Offset captureOriginInScreenSpace;
 
   @override
   RenderObject createRenderObject(BuildContext context) {
@@ -186,6 +215,8 @@ class _RawShapes extends SingleChildRenderObjectWidget {
       shadows: shadows,
       link: link,
       clipExpansion: clipExpansion,
+      captureImage: captureImage,
+      captureOriginInScreenSpace: captureOriginInScreenSpace,
     );
   }
 
@@ -200,7 +231,9 @@ class _RawShapes extends SingleChildRenderObjectWidget {
       ..settings = settings
       ..shadows = shadows
       ..backdropKey = backdropKey
-      ..clipExpansion = clipExpansion;
+      ..clipExpansion = clipExpansion
+      ..captureImage = captureImage
+      ..captureOriginInScreenSpace = captureOriginInScreenSpace;
   }
 }
 
@@ -214,6 +247,8 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
     required this.shadows,
     required super.link,
     super.backdropKey,
+    super.captureImage,
+    super.captureOriginInScreenSpace,
     EdgeInsets clipExpansion = EdgeInsets.zero,
   }) : _clipExpansion = clipExpansion;
 
@@ -382,6 +417,28 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
             boundingBox.bottom + _clipExpansion.bottom,
           );
 
+    // Capture path: when a pre-captured background image is available, bypass
+    // the BackdropFilterLayer entirely and draw the shader directly onto the
+    // canvas, binding the captured image as uBackgroundTexture (slot 0).
+    // This eliminates the live compositor read, making the indicator rendering
+    // deterministic and immune to Impeller compositor ordering bugs (#99).
+    if (captureImage case final capture?) {
+      paintLiquidGlassWithCapture(
+        context,
+        offset,
+        shapes,
+        clipRect,
+        capture,
+      );
+      // paintLiquidGlassWithCapture handles all three passes (blur, shader, contents).
+      // Release the stale BackdropFilter layer handles so the engine can collect
+      // the offscreen surface when we're no longer using the backdrop path.
+      _shaderHandle.layer = null;
+      _clipRectLayerHandle.layer = null;
+      return;
+    }
+
+    // BackdropFilter path (default): live compositor read via BackdropFilterLayer.
     final shaderLayer = (_shaderHandle.layer ??= BackdropFilterLayer())
       ..filter = ImageFilter.shader(renderShader);
 
