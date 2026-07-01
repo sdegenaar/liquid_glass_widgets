@@ -9,8 +9,73 @@
   `indicatorExpansion` / `tabPadding` continue to resolve against the ambient direction, so
   `EdgeInsetsDirectional` values still work in RTL. Consumers no longer need to force
   `Directionality.ltr` and reverse tabs by hand.
+=======
+# 0.19.6
+
+## ✨ New — `GlassLargeTitle` + `GlassLargeTitleController`
+
+First-class iOS 26 large-title + search-bar collapse. Replaces manual
+`ScrollController` + `setState` wiring with a single controller and two
+widgets.
+
+### Two-phase collapse
+
+- **Phase 1** — large title fades out (`Curves.easeIn`, rubber-band overscroll stretch).
+- **Phase 2** — optional inline search bar collapses under the nav bar immediately after.
+
+### New API
+
+- `GlassLargeTitle` — sliver widget. Drop it as the first sliver in any `CustomScrollView`.
+  - `searchBar: Widget?` — Phase 2 collapse (e.g. `GlassSearchBar`).
+  - `trailing`, `fontSize`, `fontWeight`, `letterSpacing`, `padding`, `searchBarPadding`, `color`.
+- `GlassLargeTitleController` — owns the `ScrollController`, exposes `collapseProgress` and `searchBarCollapseProgress`. Self-calibrates to Dynamic Type via `reportMeasuredHeight` / `reportSearchBarHeight`.
+- `GlassAppBar.largeTitleController` — new optional param. Bar title cross-fades in as the large title collapses. Non-breaking.
+
+```dart
+final _ctrl = GlassLargeTitleController(); // dispose in State.dispose()
+
+// Phase 1 only
+GlassLargeTitle(text: 'Chats', controller: _ctrl)
+
+// Phase 1 + 2
+GlassLargeTitle(
+  text: 'Messages',
+  controller: _ctrl,
+  searchBar: GlassSearchBar(placeholder: 'Search', onChanged: (_) {}),
+)
+```
+
+### Demo
+
+- Pattern 2 updated to new API. Pattern 7 (Large Title + Search Bar) added.
+- Apple Messages demo migrated from manual `AnimatedOpacity` to `GlassLargeTitle`.
+
++10 tests. **2,291 total, all passing.**
+
+## ⚡ Performance — `GlassBottomBar` Indicator (Impeller)
+
+- **`GlassBottomBar` indicator** — eliminates the live `BackdropFilterLayer` on Impeller
+  premium, replacing it with a deterministic `toImageSync` capture path. Fixes the
+  opaque-white indicator rendering on physical iOS (#99) and improves drag performance
+  by removing a redundant compositor pass.
+
+## 🔧 `GlassGroupedSection` — Header/Footer styling
+
+- Header and footer text is now styled automatically via `DefaultTextStyle`
+  (`CupertinoColors.secondaryLabel`, 13pt) — callers no longer need to style them manually.
+- Margin is now applied via `Padding` wrapping the full section rather than on the inner
+  `GlassCard`, fixing card-edge clipping when a header or footer is present.
+- Import changed to `cupertino.dart` for correct `CupertinoColors` resolution.
+
+## 📝 Dart doc improvements
+
+- `GlassContainer`, `GlassCard`, `GlassGroupedSection`, `GlassSegmentedControl` — added
+  **⚠️ Anti-Pattern** sections documenting the glass-in-glass restriction: placing interactive
+  glass controls inside a container degrades refraction and clips jelly animations.
 
 # 0.19.5
+
+
 
 - **`LiquidGlassSettings`** — adds `platformViewFallbackColor` (#138, @jfhair). Splits
   `backerColor`'s dual role: `backerColor` remains the aesthetic backer pad; the new

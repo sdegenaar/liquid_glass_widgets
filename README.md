@@ -130,6 +130,25 @@ Building a Settings screen? Use `GlassScaffold` + `GlassAppBar` for navigation
 chrome, and `CupertinoListTile` or standard Flutter containers for the rows.
 Use `GlassGroupedSection` when you want glass-styled grouped rows.
 
+### Glass Composition Rule: Glass is a Platter, Not a Wrapper
+
+`GlassCard`, `GlassContainer`, and `GlassGroupedSection` are **base surfaces** — they sit
+beneath your content. They are not generic styling wrappers for other glass controls.
+
+| ✅ Place inside GlassCard / GlassContainer | ❌ Do not place inside GlassCard / GlassContainer |
+|---|---|
+| `Text`, `Icon`, `ListTile`, `CupertinoListTile` | `GlassSegmentedControl`, `GlassSlider`, `GlassSwitch` |
+| `GlassListTile`, `GlassDivider` | `GlassButton`, `GlassChip`, `GlassIconButton` |
+| Standard Flutter form widgets | Any other refractive glass widget |
+
+**Why?** `GlassContainer` sets `avoidsRefraction: true` on its children so nested glass
+cannot refract through the outer layer — the inner effect degrades by design. On Impeller
+with `useOwnLayer: true`, the container's own-layer clip also cuts jelly-physics overshots
+from interactive indicators (segmented control pill, slider thumb) during animations.
+
+Interactive glass controls already provide their own surface appearance via `backgroundColor`
+and `indicatorColor` — no outer container is needed for the track or background.
+
 
 ## Widget Categories
 
@@ -159,7 +178,7 @@ Most apps should use `GlassCard` or `GlassGroupedSection` instead.
 
 ```yaml
 dependencies:
-  liquid_glass_widgets: ^0.19.5
+  liquid_glass_widgets: ^0.19.6
 ```
 
 ```bash

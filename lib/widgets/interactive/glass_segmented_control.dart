@@ -27,17 +27,23 @@ import 'shared/segmented_control_internal.dart';
 /// - **Flexible Sizing**: Automatically sizes segments evenly
 /// - **Customizable Appearance**: Full control over colors, sizes, and effects
 ///
-/// ## Performance Note
+/// ## ⚠️ Do Not Wrap in GlassContainer or GlassCard
 ///
-/// When placing inside glass containers (GlassCard) with blur,
-/// use one of these approaches for best performance:
-/// - Set parent container to `quality: GlassQuality.premium` (no BackdropFilter)
-/// - Or set parent settings to `blur: 0` (skips BackdropFilter)
-/// - Or place outside glass containers (like bottom bars)
+/// Placing this widget inside a [GlassContainer] or [GlassCard] is an
+/// anti-pattern that causes two problems:
 ///
-/// Standard quality glass containers with blur may show minor flicker during
-/// indicator animations due to BackdropFilter recomposition.
+/// 1. **Visual degradation** — the container sets `avoidsRefraction: true`
+///    on its children, causing the indicator's glass refraction to fall back
+///    to a non-refracting path.
+/// 2. **Jelly-physics clipping** — with `useOwnLayer: true` on the container,
+///    the container's own-layer clip cuts the indicator's jelly overshoot
+///    during drag animations.
 ///
+/// The track background is already handled by [backgroundColor] — no outer
+/// container is needed. For a standalone glass layer, use [useOwnLayer] on
+/// this widget directly.
+///
+
 /// ## Usage
 ///
 /// ### Basic Usage

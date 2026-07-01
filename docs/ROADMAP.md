@@ -396,6 +396,18 @@ Ideas for consideration after stable. None of these are committed.
   tabs, matching iOS tab bar customisation.
 - [ ] `GlassSheet` snap points — configurable detent heights (peek / half /
   full) matching `UISheetPresentationController.Detent`.
+- [ ] **`GlassAppBar` Phase 3 compact search icon** — when both
+  `GlassLargeTitle.searchBar` and `GlassAppBar.largeTitleController` are in use
+  and `searchBarCollapseProgress == 1.0`, the navigation bar should grow slightly
+  and show a compact search affordance (a pill or icon button) that re-expands
+  the search bar when tapped. This matches iOS 26's `UINavigationItem.searchController`
+  end-state in apps like Mail and Contacts.
+  **Blocked by:** `GlassAppBar` currently implements `ObstructingPreferredSizeWidget`
+  with a fixed `preferredSize`. Phase 3 requires the bar to change height
+  dynamically, which touches the layout contract with `Scaffold` /
+  `CupertinoPageScaffold`. This needs careful architecture work and its own
+  breaking-change release plan. **Phase 1 + 2 (shipped in 0.19.6) deliver 90%
+  of the value; Phase 3 is a polish milestone.**
 
 ### Ecosystem
 - [ ] Dedicated documentation site (GitHub Pages or similar).

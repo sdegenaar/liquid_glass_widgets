@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../types/glass_quality.dart';
 import 'glass_card.dart';
@@ -20,7 +20,7 @@ import 'glass_list_tile.dart';
 ///
 /// ```dart
 /// GlassGroupedSection(
-///   header: Text('Network', style: TextStyle(color: CupertinoColors.white.withOpacity(0.7))),
+///   header: const Text('NETWORK'),
 ///   children: [
 ///     GlassListTile(
 ///       leading: Icon(CupertinoIcons.wifi, color: CupertinoColors.white),
@@ -43,25 +43,15 @@ import 'glass_list_tile.dart';
 /// )
 /// ```
 ///
-/// ## With a section header
+/// ## Children
 ///
-/// ```dart
-/// GlassGroupedSection(
-///   header: Padding(
-///     padding: EdgeInsets.only(left: 16, bottom: 8),
-///     child: Text(
-///       'GENERAL',
-///       style: TextStyle(
-///         color: CupertinoColors.white.withOpacity(0.54),
-///         fontSize: 13,
-///         fontWeight: FontWeight.w600,
-///         letterSpacing: 0.5,
-///       ),
-///     ),
-///   ),
-///   children: [ ... ],
-/// )
-/// ```
+/// [GlassGroupedSection] is designed to contain [GlassListTile] rows and
+/// standard Flutter content. Do not place interactive glass controls
+/// (`GlassSegmentedControl`, `GlassSlider`, `GlassSwitch`, `GlassButton`)
+/// as direct children — this is a glass-in-glass anti-pattern that degrades
+/// refraction and can clip indicator animations. See [GlassContainer] for
+/// the full explanation.
+
 class GlassGroupedSection extends StatelessWidget {
   /// Creates a grouped section of glass list tiles.
   const GlassGroupedSection({
@@ -118,6 +108,37 @@ class GlassGroupedSection extends StatelessWidget {
   /// Rendering quality.
   final GlassQuality? quality;
 
+  Widget _buildHeader(BuildContext context) {
+    if (header == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 6.0),
+      child: DefaultTextStyle(
+        style: TextStyle(
+          color: CupertinoColors.secondaryLabel.resolveFrom(context),
+          fontSize: 13,
+          fontWeight: FontWeight.w400,
+          letterSpacing: 0.2,
+        ),
+        child: header!,
+      ),
+    );
+  }
+
+  Widget _buildFooter(BuildContext context) {
+    if (footer == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 6.0),
+      child: DefaultTextStyle(
+        style: TextStyle(
+          color: CupertinoColors.secondaryLabel.resolveFrom(context),
+          fontSize: 13,
+          fontWeight: FontWeight.w400,
+        ),
+        child: footer!,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final effectiveMargin =
@@ -142,7 +163,7 @@ class GlassGroupedSection extends StatelessWidget {
 
     final card = GlassCard(
       padding: EdgeInsets.zero,
-      margin: effectiveMargin,
+      margin: EdgeInsets.zero,
       shape: shape ?? const LiquidRoundedSuperellipse(borderRadius: 12),
       settings: settings,
       useOwnLayer: useOwnLayer,
@@ -153,17 +174,24 @@ class GlassGroupedSection extends StatelessWidget {
       ),
     );
 
-    if (header == null && footer == null) return card;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    Widget section = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (header != null) header!,
+        _buildHeader(context),
         card,
-        if (footer != null) footer!,
+        _buildFooter(context),
       ],
     );
+
+    if (effectiveMargin != EdgeInsets.zero) {
+      section = Padding(
+        padding: effectiveMargin,
+        child: section,
+      );
+    }
+
+    return section;
   }
 }
 

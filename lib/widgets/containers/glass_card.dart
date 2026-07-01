@@ -85,6 +85,14 @@ import 'glass_container.dart';
 ///   child: Text('Card with margin'),
 /// )
 /// ```
+///
+/// ## ⚠️ Anti-Pattern: Do Not Place Glass Controls Inside a GlassCard
+///
+/// [GlassCard] inherits the same glass-in-glass restrictions as [GlassContainer].
+/// Do not place interactive glass controls (`GlassSegmentedControl`,
+/// `GlassSlider`, `GlassSwitch`, `GlassButton`) inside a [GlassCard] — see
+/// [GlassContainer] for the full explanation and correct alternatives.
+
 class GlassCard extends StatelessWidget {
   /// Creates a glass card.
   const GlassCard({

@@ -73,6 +73,38 @@ import '../../theme/glass_theme_helpers.dart';
 ///   child: Image.network('...'),
 /// )
 /// ```
+///
+/// ## ⚠️ Anti-Pattern: Do Not Place Glass Controls Inside a GlassContainer
+///
+/// [GlassContainer] is a **foundational surface**, not a generic wrapper.
+/// Placing interactive glass controls inside it causes two problems:
+///
+/// 1. **Visual degradation** — [GlassContainer] sets
+///    [InheritedLiquidGlass.avoidsRefraction] to `true` for its entire child
+///    subtree. Any [GlassEffect] descendant falls back to a non-refracting
+///    path — the inner glass effect is degraded by design.
+///
+/// 2. **Jelly-physics clipping** — With [useOwnLayer] `= true` on Impeller,
+///    the container routes through `LiquidGlass.withOwnLayer` which applies
+///    its own internal shape clip. Interactive indicator widgets overshoot
+///    their bounds during spring animations — that overshoot gets cut.
+///
+/// Interactive glass controls already manage their own surface appearance via
+/// `backgroundColor` and `indicatorColor` — no outer container is needed.
+///
+/// ```dart
+/// // ✅ Correct — control manages its own surface
+/// GlassSegmentedControl(
+///   segments: [...],
+///   selectedIndex: _index,
+///   onSegmentSelected: (i) => setState(() => _index = i),
+/// )
+///
+/// // ❌ Anti-pattern — degrades refraction, clips jelly animation
+/// GlassContainer(
+///   child: GlassSegmentedControl(...),
+/// )
+/// ```
 class GlassContainer extends StatelessWidget {
   /// Creates a glass container.
   const GlassContainer({
