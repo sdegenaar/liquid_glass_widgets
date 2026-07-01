@@ -7,7 +7,6 @@ import '../../constants/glass_defaults.dart';
 import '../../types/glass_quality.dart';
 import '../../utils/draggable_indicator_physics.dart';
 import 'glass_effect.dart';
-import 'inherited_liquid_glass.dart';
 
 /// A shared component that renders the interactive "Jelly" indicator
 /// used in [GlassTabBar], [GlassSegmentedControl], and [GlassBottomBar].
@@ -280,29 +279,18 @@ class AnimatedGlassIndicator extends StatelessWidget {
     // 1. Background Indicator (Resting state)
     // Fade out as the drag spring thickness increases toward 0.15.
     final backgroundOpacity = (1.0 - (thickness / 0.15)).clamp(0.0, 1.0);
-    final backgroundIndicator = Builder(
-      builder: (context) {
-        // HIDE during capture so GlassEffect doesn't bake the pill into its snapshot
-        final avoidsRefraction = context
-                .dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>()
-                ?.avoidsRefraction ??
-            false;
-        if (avoidsRefraction) return const SizedBox.expand();
-
-        return IgnorePointer(
-          child: Opacity(
-            opacity: backgroundOpacity,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: indicatorColor,
-                borderRadius: BorderRadius.circular(borderRadius),
-                boxShadow: shadows,
-              ),
-              child: const SizedBox.expand(),
-            ),
+    final backgroundIndicator = IgnorePointer(
+      child: Opacity(
+        opacity: backgroundOpacity,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: indicatorColor,
+            borderRadius: BorderRadius.circular(borderRadius),
+            boxShadow: shadows,
           ),
-        );
-      },
+          child: const SizedBox.expand(),
+        ),
+      ),
     );
 
     // 2. Glass Indicator (Active/Dragging state)
