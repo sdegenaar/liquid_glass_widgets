@@ -158,6 +158,30 @@ void main() {
       expect(sizedBox.height, equals(customHeight));
     });
 
+    testWidgets('GlassButton.custom shrink-wraps to child when sizes are null',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: Center(
+              child: GlassButton.custom(
+                onTap: () {},
+                // No explicit width or height
+                child: const SizedBox(width: 40, height: 20),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final buttonSize = tester.getSize(find.byType(GlassButton));
+
+      // Should perfectly wrap the 40x20 child, not expand to fill the screen
+      expect(buttonSize.width, equals(40));
+      expect(buttonSize.height, equals(20));
+    });
+
     testWidgets('has proper semantics', (tester) async {
       const semanticLabel = 'Add Item';
 

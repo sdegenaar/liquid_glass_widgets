@@ -1,3 +1,15 @@
+# 0.20.1
+
+## 🐛 Bug Fix — `GlassButton.custom` layout expansion
+
+**Fixes:** `GlassButton.custom` unexpectedly expanding to fill bounded parent constraints (e.g., inside `AppBar` actions) ([#146](https://github.com/sdegenaar/liquid_glass_widgets/issues/146)).
+
+- `GlassButton.custom` `height` now correctly defaults to `null` (matching documented behavior).
+- The button now properly shrink-wraps to its content when explicit width/height are not provided.
+- **Migration:** No breaking changes. If you were relying on the undocumented `56px` default height, explicitly set `height: 56`.
+
+---
+
 # 0.20.0
 
 ## 💥 Breaking — `GlassListTile` divider refactor
