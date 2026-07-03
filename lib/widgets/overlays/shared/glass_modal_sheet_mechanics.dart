@@ -274,6 +274,14 @@ class GlassModalSheetController {
   set value(double newValue) {
     _state?._jumpTo(newValue);
   }
+
+  /// Live progress between the half and full snaps: 0.0 at (or below) the half
+  /// snap, 1.0 at full. Use with [progressListenable] to react during a drag.
+  double get progress => _state?._expandProgress ?? 0.0;
+
+  /// Notifies on every sheet position change — drag and snap animation alike.
+  /// Null until the sheet is mounted; read [progress] from inside the listener.
+  Listenable? get progressListenable => _state?._animationController;
 }
 
 // ===========================================================================

@@ -185,7 +185,7 @@ class GlassButton extends StatefulWidget {
     super.key,
     this.label = '',
     this.width,
-    this.height = 56,
+    this.height,
     this.shape = const LiquidOval(),
     this.settings,
     this.useOwnLayer = false,
@@ -627,6 +627,8 @@ class _GlassButtonState extends State<GlassButton>
       width: widget.width,
       child: Align(
         alignment: widget.alignment,
+        widthFactor: widget.width == null ? 1.0 : null,
+        heightFactor: widget.height == null ? 1.0 : null,
         child: widget.child ??
             IconTheme(
               data: IconThemeData(
@@ -670,6 +672,7 @@ class _GlassButtonState extends State<GlassButton>
 
     final contentWithAmbient = ambientOverlay != null
         ? Stack(
+            alignment: widget.alignment,
             children: [
               contentWidget,
               ambientOverlay,
