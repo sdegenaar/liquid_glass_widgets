@@ -281,7 +281,7 @@ class GlassModalSheetController {
 
   /// Notifies on every sheet position change — drag and snap animation alike.
   /// Null until the sheet is mounted; read [progress] from inside the listener.
-  Listenable? get progressListenable => _state?._animationController;
+  Listenable? get progressListenable => _state?._progressNotifier;
 }
 
 // ===========================================================================

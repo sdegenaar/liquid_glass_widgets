@@ -6,6 +6,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   late AnimationController _animationController;
   late AnimationController _saturationController;
   late Animation<double> _saturationAnimation;
+  final _progressNotifier = ChangeNotifier();
 
   // ── State ─────────────────────────────────────────────────────────────────
   late final ValueNotifier<GlassSheetState> _currentStateNotifier;
@@ -57,6 +58,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     _geometry = _buildGeometry();
 
     _animationController = AnimationController.unbounded(vsync: this);
+    _animationController.addListener(_progressNotifier.notifyListeners);
     _saturationController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
@@ -101,7 +103,9 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     widget.controller?._detach();
+    _animationController.removeListener(_progressNotifier.notifyListeners);
     _animationController.dispose();
+    _progressNotifier.dispose();
     _saturationController.dispose();
     _scrollController.dispose();
     _currentStateNotifier.dispose();

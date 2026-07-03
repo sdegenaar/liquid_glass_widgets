@@ -1,4 +1,11 @@
-# 0.20.2
+# 0.21.0
+
+## ✨ New Features
+
+- **`GlassModalSheet` drag progress** — controller now exposes a `progress` getter and `progressListenable` reporting the live 0–1 drag position between half↔full snap points, so hosts can drive coordinated UI in real time. ([#148](https://github.com/sdegenaar/liquid_glass_widgets/pull/148), [@jfhair](https://github.com/jfhair))
+- **`GlassTabBar.inline` spring control** — the `.inline` factory now accepts `springDescription`, matching the other factory constructors. Previously inline tab bars were locked to the shared default spring. ([#149](https://github.com/sdegenaar/liquid_glass_widgets/pull/149), [@jfhair](https://github.com/jfhair))
+- **`LiquidGlassSettings.ambientRim`** — tunable full-perimeter rim on the moving indicator pill. Defaults match Apple Music's segmented control (brighter in light mode, off in dark). ([#150](https://github.com/sdegenaar/liquid_glass_widgets/pull/150), [@jfhair](https://github.com/jfhair))
+- **`AnimatedGlassIndicator` shadow** — `shadowElevation`/`shadow` in `indicatorSettings` now correctly paints a drop shadow on the glass jelly. Previously these values were silently ignored. ([#151](https://github.com/sdegenaar/liquid_glass_widgets/pull/151), [@jfhair](https://github.com/jfhair))
 
 ## 🐛 Bug Fixes — PlatformView gesture stability
 
