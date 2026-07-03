@@ -322,9 +322,14 @@ class GlassTabBar extends StatefulWidget {
     bool adaptiveBrightness = false,
     ValueChanged<Brightness>? onBrightnessChanged,
     ValueListenable<Brightness>? brightnessOverride,
+    // Indicator snap spring — null keeps the shared default. Exposed so
+    // inline hosts can match a reference feel (e.g. Apple Music's snappier
+    // settle) without forking the physics.
+    SpringDescription? springDescription,
   }) : this._(
           key: key,
           placement: _GlassTabBarPlacement.inline,
+          springDescription: springDescription,
           tabs: tabs,
           selectedIndex: selectedIndex,
           onTabSelected: onTabSelected,
