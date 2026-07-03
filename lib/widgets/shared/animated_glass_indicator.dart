@@ -205,6 +205,9 @@ class AnimatedGlassIndicator extends StatelessWidget {
           override.ambientStrength != _settingsDefaults.ambientStrength
               ? override.ambientStrength
               : null,
+      ambientRim: override.ambientRim != _settingsDefaults.ambientRim
+          ? override.ambientRim
+          : null,
       refractiveIndex:
           override.refractiveIndex != _settingsDefaults.refractiveIndex
               ? override.refractiveIndex
@@ -332,8 +335,14 @@ class AnimatedGlassIndicator extends StatelessWidget {
       backgroundKey: backgroundKey,
       clipExpansion: _jellyClipExpansion,
       rimThickness: (settings?.effectiveThickness ?? 0.8).clamp(0.8, 8.0),
-      // iOS 26 Standard glass matching GlassSwitch/Slider pattern
-      ambientRim: isStdPath ? 0.08 : 0.1,
+      // iOS 26 Standard glass matching GlassSwitch/Slider pattern.
+      // settings.ambientRim (default 0) overrides the hardcoded floor — the
+      // omnidirectional ring that the directional key/kick highlights can't
+      // provide. Same field boosts the premium Fresnel rim, so one knob
+      // brightens the ring on either quality path.
+      ambientRim: (effectiveSettings.ambientRim > 0)
+          ? effectiveSettings.ambientRim
+          : (isStdPath ? 0.08 : 0.1),
       baseAlphaMultiplier:
           isStdPath ? 0.08 : 0.2, // Match GlassSlider (near clear center)
       edgeAlphaMultiplier:

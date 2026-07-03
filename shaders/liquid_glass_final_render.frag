@@ -81,6 +81,10 @@ uniform vec4 uBackgroundFallback;
 //   to the correct texel in the pre-captured bar texture.
 uniform vec2 uCaptureOffset;
 
+// Slot 27: uAmbientRim — full-perimeter Fresnel rim boost. Added to the base
+// 0.12 edge-luminosity strength; 0 = unchanged default rendering.
+uniform float uAmbientRim;
+
 uniform sampler2D uBackgroundTexture;
 uniform sampler2D uGeometryTexture;
 
@@ -470,7 +474,21 @@ void main() {
     // The extra 0.02 restores the subtle rim luminosity that the geometry AA band
     // experiment temporarily reduced — keeping the glass edge visually present
     // against dark bar backgrounds without making it glowing or harsh.
-    float fresnel = (1.0 - normalZ) * edgeFactor * 0.12;
+    float rimBase = (1.0 - normalZ) * edgeFactor;
+    // uAmbientRim > 0 draws an ADDITIONAL rim band of that width (in the
+    // SDF's pixel units). The stock Fresnel profile cannot be widened by
+    // intensity scaling: within the circular bevel normalizedHeight == normalZ
+    // == sqrt(1-((T-d)/T)^2), which rises so steeply that the edgeFactor gate
+    // confines (1-normalZ)*edgeFactor to the outer ~10% of the bevel — a
+    // hairline. Inverting that profile recovers the true distance from the
+    // shape edge, d = T*(1-sqrt(1-h^2)), so the band below has an exact,
+    // thickness-independent geometric width with a ±0.75px AA edge.
+    // At uAmbientRim = 0 rendering is exactly stock.
+    float cosTerm = sqrt(max(0.0, 1.0 - normalizedHeight * normalizedHeight));
+    float rimDist = uThickness * (1.0 - cosTerm);
+    float ring    = (1.0 - smoothstep(uAmbientRim - 0.75, uAmbientRim + 0.75, rimDist))
+                  * step(0.001, uAmbientRim);
+    float fresnel = rimBase * 0.12 + ring * 0.45;
     finalColor.rgb = clamp(finalColor.rgb + vec3(fresnel), 0.0, 1.0);
 
     float alpha  = geometryData.a;

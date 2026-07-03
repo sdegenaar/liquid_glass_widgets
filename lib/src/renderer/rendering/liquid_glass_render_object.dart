@@ -334,6 +334,10 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
           ..setFloatUniforms(initialIndex: 25, (value) {
             value.setOffset(Offset.zero);
           })
+          // Slot 27: uAmbientRim — full-perimeter Fresnel rim boost.
+          ..setFloatUniforms(initialIndex: 27, (value) {
+            value.setFloat(settings.ambientRim);
+          })
           ..setImageSampler(
             1,
             geometryImage,
@@ -461,6 +465,10 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
       // Slot 25-26: uCaptureOffset — shift fragCoord into capture-image space.
       ..setFloatUniforms(initialIndex: 25, (value) {
         value.setOffset(captureOffset);
+      })
+      // Slot 27: uAmbientRim — full-perimeter Fresnel rim boost.
+      ..setFloatUniforms(initialIndex: 27, (value) {
+        value.setFloat(settings.ambientRim);
       })
       // Slot 0: captured background image (replaces the BackdropFilter read).
       ..setImageSampler(0, capture)

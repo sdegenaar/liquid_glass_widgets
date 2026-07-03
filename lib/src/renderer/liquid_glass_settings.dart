@@ -26,6 +26,7 @@ class LiquidGlassSettings with EquatableMixin {
     this.lightAngle = GlassDefaults.lightAngle,
     this.lightIntensity = .5,
     this.ambientStrength = 0,
+    this.ambientRim = 0,
     this.refractiveIndex = 1.2,
     this.saturation = 1.5,
     this.glowIntensity = 0.75,
@@ -53,6 +54,7 @@ class LiquidGlassSettings with EquatableMixin {
     required this.lightAngle,
     required this.lightIntensity,
     required this.ambientStrength,
+    this.ambientRim = 0,
     required this.refractiveIndex,
     required this.saturation,
     required this.glowIntensity,
@@ -175,6 +177,15 @@ class LiquidGlassSettings with EquatableMixin {
   ///
   /// Higher values create more pronounced ambient light.
   final double ambientStrength;
+
+  /// Full-perimeter rim ("ring") boost, 0 to ~1.
+  ///
+  /// Premium: added to the Fresnel edge-luminosity strength (base 0.12), so
+  /// the glass edge reads as a bright ring regardless of light direction —
+  /// the iOS 26 in-motion pill look. Standard interactive glass: overrides
+  /// the hardcoded ambientRim floor in [AnimatedGlassIndicator]. Default 0 =
+  /// existing rendering everywhere.
+  final double ambientRim;
 
   /// The effective ambient strength taking visibility into account.
   double get effectiveAmbientStrength => ambientStrength * visibility;
@@ -312,6 +323,7 @@ class LiquidGlassSettings with EquatableMixin {
         lightAngle: lightAngle,
         lightIntensity: lightIntensity,
         ambientStrength: ambientStrength,
+        ambientRim: ambientRim,
         refractiveIndex: refractiveIndex,
         saturation: saturation,
         glowIntensity: glowIntensity,
@@ -393,6 +405,7 @@ class LiquidGlassSettings with EquatableMixin {
         lightAngle: lerpDouble(a.lightAngle, b.lightAngle, t)!,
         lightIntensity: lerpDouble(a.lightIntensity, b.lightIntensity, t)!,
         ambientStrength: lerpDouble(a.ambientStrength, b.ambientStrength, t)!,
+        ambientRim: lerpDouble(a.ambientRim, b.ambientRim, t)!,
         refractiveIndex: lerpDouble(a.refractiveIndex, b.refractiveIndex, t)!,
         saturation: lerpDouble(a.saturation, b.saturation, t)!,
         glowIntensity: lerpDouble(a.glowIntensity, b.glowIntensity, t)!,
@@ -432,6 +445,7 @@ class LiquidGlassSettings with EquatableMixin {
     double? lightAngle,
     double? lightIntensity,
     double? ambientStrength,
+    double? ambientRim,
     double? refractiveIndex,
     double? saturation,
     double? glowIntensity,
@@ -453,6 +467,7 @@ class LiquidGlassSettings with EquatableMixin {
         lightAngle: lightAngle ?? this.lightAngle,
         lightIntensity: lightIntensity ?? this.lightIntensity,
         ambientStrength: ambientStrength ?? this.ambientStrength,
+        ambientRim: ambientRim ?? this.ambientRim,
         refractiveIndex: refractiveIndex ?? this.refractiveIndex,
         saturation: saturation ?? this.saturation,
         glowIntensity: glowIntensity ?? this.glowIntensity,
@@ -482,6 +497,7 @@ class LiquidGlassSettings with EquatableMixin {
         lightAngle,
         lightIntensity,
         ambientStrength,
+        ambientRim,
         refractiveIndex,
         saturation,
         glowIntensity,
