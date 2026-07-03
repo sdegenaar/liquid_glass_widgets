@@ -191,8 +191,9 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
   /// bumped here — disposing the [GestureDetector] mid-dispatch would lose the
   /// new pointer; the previous pointer's [onBarPointerUp]/[onBarPointerCancel]
   /// handles eviction.
-  void onBarPointerDown() {
+  void onBarPointerDown(Offset position) {
     if (!mounted) return;
+    bool wasWedged = false;
     setState(() {
       if (_gestureActive || tabIsDown || tabIsDragging) {
         // Proactive cleanup: previous terminal callback was dropped, OR
@@ -201,11 +202,27 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
         tabIsDragging = false;
         tabIsDown = false;
         _forceSnapToNearestTab();
+        wasWedged = true;
       }
       _gestureId++;
       _gestureActive = true;
       tabIsDown = true;
+      
+      if (wasWedged) {
+        // The recognizer is wedged because a previous touch dropped its terminal callbacks.
+        // Bump gestureEpoch to destroy the old recognizer immediately.
+        gestureEpoch++;
+      }
     });
+
+    if (wasWedged) {
+      // Because gestureEpoch bumped, this tap will be lost by the new gesture arena.
+      // We manually process the tap right now so the user's tap works immediately.
+      final alignment = alignmentFromGlobal(position);
+      final relX = (alignment + 1) / 2;
+      final target = (relX * tabCount).floor().clamp(0, tabCount - 1);
+      notifyTabChanged(target);
+    }
   }
 
   /// `onPointerUp` (raw Listener) — called regardless of gesture arena result.

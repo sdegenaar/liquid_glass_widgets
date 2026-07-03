@@ -292,7 +292,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
             resistance: 0.08,
             anchorStretch: false, // Tab bars use jelly-follow, not anchored
             child: Listener(
-              onPointerDown: (_) => onBarPointerDown(),
+              onPointerDown: (e) => onBarPointerDown(e.position),
               onPointerUp: (e) => onBarPointerUp(e.position),
               onPointerCancel: (e) => onBarPointerCancel(e.position),
               child: GestureDetector(

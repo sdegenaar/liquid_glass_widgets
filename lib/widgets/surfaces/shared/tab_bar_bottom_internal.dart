@@ -553,7 +553,7 @@ class TabIndicatorState extends State<TabIndicator>
             child: Listener(
               // Raw pointer events fire BEFORE gesture recognizers and never compete
               // in the gesture arena, so tabIsDown is always set on the very first event.
-              onPointerDown: (_) => onBarPointerDown(),
+              onPointerDown: (e) => onBarPointerDown(e.position),
               onPointerUp: (e) => onBarPointerUp(e.position),
               onPointerCancel: (e) => onBarPointerCancel(e.position),
               child: GestureDetector(

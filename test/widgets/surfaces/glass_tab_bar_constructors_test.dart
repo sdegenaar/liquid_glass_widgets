@@ -540,7 +540,8 @@ void main() {
     });
 
     testWidgets('forwards springDescription to TabIndicator', (tester) async {
-      const customSpring = SpringDescription(mass: 2, stiffness: 200, damping: 20);
+      const customSpring =
+          SpringDescription(mass: 2, stiffness: 200, damping: 20);
 
       await tester.pumpWidget(_wrap(_box(
         GlassTabBar.inline(
