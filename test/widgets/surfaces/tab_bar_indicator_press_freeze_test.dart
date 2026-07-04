@@ -56,6 +56,8 @@ class _RecoverHarnessState extends State<_RecoverHarness>
   @override
   int get tabIndex => 0;
   @override
+  bool get isPlatformViewBackdrop => true;
+  @override
   void notifyTabChanged(int index) => widget.onChange(index);
 
   @override
@@ -123,8 +125,8 @@ void main() {
 
     final box = find.byType(_RecoverHarness);
     // A gesture began (recognizer live) but its terminal callback is dropped —
-    // onBarDragDown with no matching end/cancel.
-    st.onBarDragDown(DragDownDetails(globalPosition: tester.getCenter(box)));
+    // onBarPointerDown with no matching end/cancel.
+    st.onBarPointerDown(tester.getCenter(box));
     final epochBefore = st.gestureEpoch;
 
     // The raw Listener calls this on the real pointer-up; with the terminal

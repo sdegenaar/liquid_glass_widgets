@@ -14,10 +14,20 @@
   The iOS gesture arena can silently drop terminal callbacks, leaving the recognizer
   wedged. Fixed with proactive cleanup on `PointerDown`, post-frame recovery, and
   a gesture ID guard to prevent rapid-tap state corruption.
-- **Stretch & scale disabled on `platformViewBackdrop: true`:** Flutter's
-  `BackdropFilter` snaps to integer pixels over a native view, causing sub-pixel
-  spring animations to jitter. Stretch and interaction-scale are now skipped when
-  `platformViewBackdrop` is set. No impact on any other screen or platform.
+- **Hybrid gesture mode on `platformViewBackdrop: true`:** When the tab bar
+  floats over a `PlatformView`, the visual indicator now animates to its new
+  position instantly on touch-down (matching native iOS responsiveness), while the
+  actual tab content swap is deferred safely to touch-up. This prevents the iOS
+  UIKit view system from dropping the touch stream mid-gesture due to a mid-frame
+  unmount of the `PlatformView`. No impact on any screen where
+  `platformViewBackdrop` is `false` — those continue to swap instantly on down.
+- **Stretch disabled on `platformViewBackdrop: true`:** Flutter's `BackdropFilter`
+  must re-acquire the native pixel buffer every time its bounding box changes.
+  Stretch animations resize the glass container, causing a one-frame flicker over
+  a `PlatformView`. Stretch is now skipped on all bar elements when
+  `platformViewBackdrop` is set; press-scale (`interactionScale`) is unaffected
+  because it is a GPU-level transform that leaves the backdrop bounds stable.
+  No impact on any other screen or platform.
 
 ---
 

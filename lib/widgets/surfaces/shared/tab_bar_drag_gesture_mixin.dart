@@ -38,6 +38,9 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
   /// Index of the currently selected tab.
   int get tabIndex;
 
+  /// Whether this tab bar is floating over a PlatformView (enables hybrid gesture mode).
+  bool get isPlatformViewBackdrop;
+
   /// Called once per gesture lifecycle when the active tab should change.
   ///
   /// Always invoked unconditionally — callers may use repeat-tap to trigger
@@ -45,6 +48,9 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
   void notifyTabChanged(int index);
 
   // ── Shared state ──────────────────────────────────────────────────────────
+
+  /// Stores the target tab index during a hybrid tap (platform view backdrop).
+  int? _pendingHybridTabIndex;
 
   /// True while the pointer is physically held down.
   ///
@@ -58,8 +64,7 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
   /// Bumped to force the interactive [GestureDetector] — and its underlying
   /// framework gesture recognizer — to be torn down and recreated. Used by
   /// [recoverIfGestureStuck] to clear a recognizer left wedged after a dropped
-  /// terminal callback over a PlatformView. Concrete classes must key the
-  /// detector on this value.
+  /// terminal callback.
   int gestureEpoch = 0;
 
   /// True from [onBarPointerDown] until a terminal callback ([onBarDragEnd],
@@ -137,6 +142,8 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
           _gestureActive = false;
           tabIsDragging = false;
           tabIsDown = false;
+          _pendingHybridTabIndex =
+              null; // abort any in-flight hybrid tab switch
           _forceSnapToNearestTab();
           _gestureId++;
           gestureEpoch++; // The old gesture recognizer is hopelessly wedged, kill it.
@@ -193,36 +200,11 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
   /// handles eviction.
   void onBarPointerDown(Offset position) {
     if (!mounted) return;
-    bool wasWedged = false;
     setState(() {
-      if (_gestureActive || tabIsDown || tabIsDragging) {
-        // Proactive cleanup: previous terminal callback was dropped, OR
-        // it's a multi-touch scenario. Eagerly reset to accept the new touch.
-        _gestureActive = false;
-        tabIsDragging = false;
-        tabIsDown = false;
-        _forceSnapToNearestTab();
-        wasWedged = true;
-      }
       _gestureId++;
       _gestureActive = true;
       tabIsDown = true;
-      
-      if (wasWedged) {
-        // The recognizer is wedged because a previous touch dropped its terminal callbacks.
-        // Bump gestureEpoch to destroy the old recognizer immediately.
-        gestureEpoch++;
-      }
     });
-
-    if (wasWedged) {
-      // Because gestureEpoch bumped, this tap will be lost by the new gesture arena.
-      // We manually process the tap right now so the user's tap works immediately.
-      final alignment = alignmentFromGlobal(position);
-      final relX = (alignment + 1) / 2;
-      final target = (relX * tabCount).floor().clamp(0, tabCount - 1);
-      notifyTabChanged(target);
-    }
   }
 
   /// `onPointerUp` (raw Listener) — called regardless of gesture arena result.
@@ -249,10 +231,8 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
   /// `onHorizontalDragDown` — marks pointer as pressed for jelly activation.
   void onBarDragDown(DragDownDetails d) {
     if (!mounted) return;
-    // _gestureActive already set by onBarPointerDown; set again defensively
-    // in case the concrete class wired GestureDetector without a raw Listener.
-    _gestureActive = true;
-    setState(() => tabIsDown = true);
+    // _gestureActive and tabIsDown are set by the raw Listener in
+    // onBarPointerDown, which reliably fires alongside this recognizer.
   }
 
   /// `onHorizontalDragStart` — drag confirmed; lock position to pointer.
@@ -376,30 +356,47 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
     }
   }
 
-  /// `onTapDown` — selects tab on tap, including repeat-tap on the active tab.
+  /// `onTapDown` — selects tab instantly, or animates indicator in hybrid mode.
   ///
-  /// DX1: fires immediately (before gesture arena resolution) so [tabIsDown]
-  /// is set on the same frame as the touch, keeping jelly visible on desktop
-  /// where tapDown+tapUp arrive in the same frame.
+  /// DX1: [tabIsDown] is already set on the same frame as the touch by the
+  /// raw Listener ([onBarPointerDown]), keeping jelly visible on desktop taps.
   void onBarTapDown(TapDownDetails d) {
     final alignment = alignmentFromGlobal(d.globalPosition);
     final relX = (alignment + 1) / 2;
     final index = (relX * tabCount).floor().clamp(0, tabCount - 1);
-    notifyTabChanged(index);
+
+    if (isPlatformViewBackdrop) {
+      // Hybrid mode: instantly slide the visual indicator for native responsiveness,
+      // but delay the actual content swap (PlatformView unmount) until onTapUp
+      // to prevent iOS mid-gesture touch drops.
+      setState(() {
+        tabXAlign = computeTabAlignment(index);
+        _pendingHybridTabIndex = index;
+      });
+    } else {
+      // Standard native behavior: swap everything instantly on down.
+      notifyTabChanged(index);
+    }
   }
 
-  /// `onTapUp` — clears active state when a tap completes successfully.
+  /// `onTapUp` — clears active state and resolves hybrid tab changes.
   void onBarTapUp(TapUpDetails d) {
     if (!mounted) return;
     setState(() {
       _gestureActive = false;
       tabIsDown = false;
     });
+
+    if (isPlatformViewBackdrop && _pendingHybridTabIndex != null) {
+      notifyTabChanged(_pendingHybridTabIndex!);
+      _pendingHybridTabIndex = null;
+    }
   }
 
   /// `onTapCancel` — clears visual press state if the tap loses the gesture arena.
   void onBarTapCancel() {
     if (!mounted) return;
+    _pendingHybridTabIndex = null;
     if (!tabIsDragging) {
       _applyDragResolution(() {
         setState(() => tabIsDown = false);

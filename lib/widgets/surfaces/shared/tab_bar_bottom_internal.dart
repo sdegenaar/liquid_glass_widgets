@@ -493,6 +493,8 @@ class TabIndicatorState extends State<TabIndicator>
   @override
   int get tabIndex => widget.tabIndex;
   @override
+  bool get isPlatformViewBackdrop => widget.platformViewBackdrop;
+  @override
   void notifyTabChanged(int index) => widget.onTabChanged(index);
 
   // Cache fallback indicator color to avoid allocations
@@ -545,9 +547,9 @@ class TabIndicatorState extends State<TabIndicator>
         return Transform.translate(
           offset: Offset(swayValue, 0),
           child: LiquidStretch(
-            interactionScale:
-                (!widget.platformViewBackdrop) ? widget.interactionScale : 1.0,
-            stretch: 0.0,
+            interactionScale: widget.interactionScale,
+            stretch:
+                0.0, // stretch disabled on platformViewBackdrop to prevent BackdropFilter pixel-snap jitter
             resistance: 0.08,
             anchorStretch: false, // Tab bars use jelly-follow, not anchored
             child: Listener(

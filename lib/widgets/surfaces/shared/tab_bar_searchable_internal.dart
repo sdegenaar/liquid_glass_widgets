@@ -191,6 +191,8 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
   @override
   int get tabIndex => widget.tabIndex;
   @override
+  bool get isPlatformViewBackdrop => widget.platformViewBackdrop;
+  @override
   void notifyTabChanged(int index) => widget.onTabChanged(index);
 
   static const _fallbackIndicatorColor = Color(0x1AFFFFFF);
@@ -284,11 +286,11 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
         return Transform.translate(
           offset: Offset(swayValue, 0),
           child: LiquidStretch(
-            interactionScale: (widget.enableBackgroundAnimation &&
-                    !widget.platformViewBackdrop)
+            interactionScale: widget.enableBackgroundAnimation
                 ? widget.backgroundPressScale
                 : 1.0,
-            stretch: 0.0,
+            stretch:
+                0.0, // stretch disabled on platformViewBackdrop to prevent BackdropFilter pixel-snap jitter
             resistance: 0.08,
             anchorStretch: false, // Tab bars use jelly-follow, not anchored
             child: Listener(
@@ -903,8 +905,7 @@ class SearchPillState extends State<SearchPill> {
             fit: StackFit.expand,
             children: [
               LiquidStretch(
-                interactionScale: (widget.enableBackgroundAnimation &&
-                        !widget.platformViewBackdrop)
+                interactionScale: widget.enableBackgroundAnimation
                     ? widget.backgroundPressScale
                     : 1.0,
                 stretch: widget.platformViewBackdrop ? 0.0 : 0.5,
@@ -961,10 +962,9 @@ class SearchPillState extends State<SearchPill> {
         // No scale animation here — the pill is spring-positioned alongside
         // the dismiss button so any visual overflow causes overlap.
         return LiquidStretch(
-          interactionScale:
-              (widget.enableBackgroundAnimation && !widget.platformViewBackdrop)
-                  ? widget.backgroundPressScale
-                  : 1.0,
+          interactionScale: widget.enableBackgroundAnimation
+              ? widget.backgroundPressScale
+              : 1.0,
           stretch: 0.0,
           resistance: 0.08,
           anchorStretch: false, // Search pill uses jelly-follow, not anchored
