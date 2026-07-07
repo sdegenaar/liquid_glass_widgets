@@ -308,7 +308,10 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
           magnification: 1.15,
           iconLabelSpacing: 0,
           spacing: 8,
-          indicatorColor: Colors.white.withValues(alpha: 0.14),
+          indicatorColor:
+              CupertinoTheme.of(context).brightness == Brightness.dark
+                  ? Colors.white.withValues(alpha: 0.14)
+                  : Colors.black.withValues(alpha: 0.10),
           quality: GlassQuality.premium,
           interactionBehavior: GlassInteractionBehavior.full,
           settings: LiquidGlassSettings(
