@@ -19,6 +19,7 @@ class _InteractivePageState extends State<InteractivePage> {
   // Segmented control state
   int _segment1 = 0;
   int _segment2 = 1;
+  int _verticalSegment = 0;
 
   // Slider state
   double _slider1 = 0.5;
@@ -333,6 +334,68 @@ class _InteractivePageState extends State<InteractivePage> {
                         onSegmentSelected: (i) => setState(() => _segment2 = i),
                         height: 28,
                         borderRadius: 14,
+                      ),
+                      SizedBox(height: 24),
+                      _QualityLabel(label: 'Vertical — tap or drag'),
+                      SizedBox(height: 16),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          GlassSegmentedControl(
+                            direction: Axis.vertical,
+                            height: 52,
+                            segmentExtent: 56,
+                            segments: const [
+                              GlassSegment(
+                                icon: Icon(CupertinoIcons.square_grid_2x2),
+                                semanticLabel: 'Canvas',
+                              ),
+                              GlassSegment(
+                                icon: Icon(CupertinoIcons.circle_grid_hex),
+                                semanticLabel: 'Flow',
+                              ),
+                              GlassSegment(
+                                icon: Icon(CupertinoIcons.layers_alt),
+                                semanticLabel: 'Deep Dive',
+                              ),
+                            ],
+                            selectedIndex: _verticalSegment,
+                            onSegmentSelected: (i) =>
+                                setState(() => _verticalSegment = i),
+                          ),
+                          SizedBox(width: 20),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  const [
+                                    'Canvas',
+                                    'Flow',
+                                    'Deep Dive'
+                                  ][_verticalSegment],
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w600,
+                                    color: CupertinoColors.label
+                                        .resolveFrom(context),
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                  'The indicator, jelly motion, drag physics, '
+                                  'and icon state all follow the vertical axis.',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    height: 1.35,
+                                    color: CupertinoColors.secondaryLabel
+                                        .resolveFrom(context),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
 
                       SizedBox(height: 40),

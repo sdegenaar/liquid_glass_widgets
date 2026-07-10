@@ -1,3 +1,20 @@
+# Unreleased
+
+## ✨ New Features
+
+- **Vertical `GlassSegmentedControl`** — fixed controls now accept
+  `direction: Axis.vertical` and an optional `segmentExtent`. Layout,
+  fractional indicator positioning, jelly expansion, drag velocity, snapping,
+  and gesture recognition all follow the vertical axis. The horizontal default
+  and scrollable constructor remain unchanged.
+
+## 🧪 Example
+
+- Added an icon-only vertical segmented control to the Interactive page for
+  tap, drag, indicator, and accessibility testing on a physical device.
+
+---
+
 # 0.21.3
 
 ## 🐛 Bug Fixes

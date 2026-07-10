@@ -32,6 +32,11 @@ class AnimatedGlassIndicator extends StatelessWidget {
   /// Current alignment of the indicator.
   final Alignment alignment;
 
+  /// Axis along which fixed-size indicators travel.
+  ///
+  /// Defaults to horizontal so existing tab bars and bottom bars are unchanged.
+  final Axis direction;
+
   /// Animation value (0.0 to 1.0) indicating drag state.
   /// 0 = resting, >0 = dragging/animating.
   final double thickness;
@@ -142,6 +147,7 @@ class AnimatedGlassIndicator extends StatelessWidget {
     this.shadows,
     this.pinchStrength = 1.0,
     this.innerBlur = 0.0,
+    this.direction = Axis.horizontal,
   });
 
   /// The iOS 26-calibrated default glass settings for all indicator pills.
@@ -268,10 +274,26 @@ class AnimatedGlassIndicator extends StatelessWidget {
     vertical: 15.0,
   );
 
+  /// Rotated clip budget for indicators whose travel axis is vertical.
+  static const _jellyClipExpansionVertical = EdgeInsets.symmetric(
+    horizontal: 15.0,
+    vertical: 20.0,
+  );
+
   @override
   Widget build(BuildContext context) {
+    final isVertical = direction == Axis.vertical;
+
     // Calculate expansion rectangle based on thickness
-    final resolvedExpansion = expansion.resolve(Directionality.of(context));
+    final resolved = expansion.resolve(Directionality.of(context));
+    final resolvedExpansion = isVertical
+        ? EdgeInsets.fromLTRB(
+            resolved.top,
+            resolved.left,
+            resolved.bottom,
+            resolved.right,
+          )
+        : resolved;
     final rect = RelativeRect.lerp(
       RelativeRect.fill,
       RelativeRect.fromLTRB(
@@ -341,7 +363,8 @@ class AnimatedGlassIndicator extends StatelessWidget {
       quality: quality,
       interactionIntensity: thickness,
       backgroundKey: backgroundKey,
-      clipExpansion: _jellyClipExpansion,
+      clipExpansion:
+          isVertical ? _jellyClipExpansionVertical : _jellyClipExpansion,
       // rimThickness translation: Premium uses thickness as 3D glass depth
       // (Impeller SDF — no visible border drawn). Standard uses rimThickness
       // as a literal pixel-width border in the GLSL shader, so the same raw
@@ -480,7 +503,9 @@ class AnimatedGlassIndicator extends StatelessWidget {
           child: Transform(
             alignment: Alignment.center,
             transform: DraggableIndicatorPhysics.buildJellyTransform(
-              velocity: Offset(velocity, 0),
+              velocity: direction == Axis.horizontal
+                  ? Offset(velocity, 0)
+                  : Offset(0, velocity),
               maxDistortion: isStdPath ? 0.35 : 0.8,
               velocityScale: 10,
             ),
@@ -493,6 +518,10 @@ class AnimatedGlassIndicator extends StatelessWidget {
     Widget positioning;
     if (exactWidth != null && exactOffset != null) {
       // Exact pixel positioning for scrollable mode with variable-width tabs
+      assert(
+        !isVertical,
+        'exactWidth/exactOffset positioning is horizontal-only',
+      );
       positioning = Positioned(
         left: exactOffset,
         top: 0,
@@ -504,7 +533,8 @@ class AnimatedGlassIndicator extends StatelessWidget {
       // Fractional positioning for fixed-width tabs
       positioning = Positioned.fill(
         child: FractionallySizedBox(
-          widthFactor: 1 / itemCount,
+          widthFactor: direction == Axis.horizontal ? 1 / itemCount : null,
+          heightFactor: direction == Axis.vertical ? 1 / itemCount : null,
           alignment: alignment,
           child: indicatorBody,
         ),
