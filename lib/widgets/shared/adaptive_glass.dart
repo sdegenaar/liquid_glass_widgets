@@ -4,7 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../theme/glass_theme.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 
 import '../../types/glass_quality.dart';
 import '../../utils/glass_performance_monitor.dart';
@@ -352,7 +352,11 @@ class AdaptiveGlass extends StatelessWidget {
     if (effectiveUseOwnLayer) {
       // Resolve shadows for the GPU cutout method
       final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
-      final shadows = (isDark || _FrostedFallback._isFlatEdge(shape))
+      
+      // Fallback to the CSS-style shadow for platforms with known saveLayer Impeller bugs
+      final useFallbackShadow = kIsWeb || defaultTargetPlatform == TargetPlatform.windows;
+      
+      final shadows = (isDark || _FrostedFallback._isFlatEdge(shape) || useFallbackShadow)
           ? const <BoxShadow>[]
           : baseSettings.effectiveShadow;
 
@@ -372,12 +376,18 @@ class AdaptiveGlass extends StatelessWidget {
         ),
       );
 
-      return _wrapWithBacker(
+      final premiumTracker = _wrapWithBacker(
         baseSettings,
         PremiumGlassTracker(
           child: premium,
         ),
       );
+
+      // If we bypassed the GPU cutout shadow, apply the standard CSS-style shadow instead
+      if (useFallbackShadow && baseSettings.effectiveShadow.isNotEmpty && !isDark && !_FrostedFallback._isFlatEdge(shape)) {
+        return _wrapWithLightModeShadow(context, baseSettings, premiumTracker);
+      }
+      return premiumTracker;
     } else {
       // Grouped elements (e.g. inside GlassBottomBar) rely on the ancestor's
       // LiquidGlassLayer to provide the RepaintBoundary and BackdropGroup.
@@ -545,11 +555,13 @@ class _InverseShapeClipper extends CustomClipper<Path> {
     // Create an outer rect that encompasses the entire shadow blur radius
     // 50px is plenty for our 12px max blur radius.
     final outerRect = rect.inflate(50.0);
-    final outerPath = Path()..addRect(outerRect);
 
     // Subtract the shape from the outer bounds, leaving a hole in the middle.
-    // Uses CPU path operations (supported in Impeller).
-    return Path.combine(PathOperation.difference, outerPath, shapePath);
+    // Uses the winding rule (evenOdd) to avoid buggy CPU boolean path operations on Impeller.
+    return Path()
+      ..addRect(outerRect)
+      ..addPath(shapePath, Offset.zero)
+      ..fillType = PathFillType.evenOdd;
   }
 
   @override
