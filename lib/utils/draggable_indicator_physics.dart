@@ -164,7 +164,7 @@ class DraggableIndicatorPhysics {
     return (relativeIndex * 2) - 1;
   }
 
-  /// Converts a global drag position to horizontal alignment (-1 to 1).
+  /// Converts a global drag position to alignment (-1 to 1) along [direction].
   ///
   /// Applies rubber band resistance when dragging beyond edges.
   ///
@@ -172,13 +172,15 @@ class DraggableIndicatorPhysics {
   /// - [globalPosition]: The global position from drag details
   /// - [context]: Build context to find the render box
   /// - [itemCount]: Total number of items
+  /// - [direction]: Axis whose coordinate and extent drive the mapping
   ///
   /// Returns: Alignment value with rubber band resistance applied.
   static double getAlignmentFromGlobalPosition(
     Offset globalPosition,
     BuildContext context,
-    int itemCount,
-  ) {
+    int itemCount, {
+    Axis direction = Axis.horizontal,
+  }) {
     final box = context.findRenderObject()! as RenderBox;
     final localPosition = box.globalToLocal(globalPosition);
 
@@ -188,7 +190,11 @@ class DraggableIndicatorPhysics {
     final padding = indicatorWidth / 2;
 
     // Map drag position to 0-1 range
-    final rawRelativeX = (localPosition.dx / box.size.width).clamp(0.0, 1.0);
+    final mainPosition =
+        direction == Axis.horizontal ? localPosition.dx : localPosition.dy;
+    final mainExtent =
+        direction == Axis.horizontal ? box.size.width : box.size.height;
+    final rawRelativeX = (mainPosition / mainExtent).clamp(0.0, 1.0);
     final normalizedX = (rawRelativeX - padding) / draggableRange;
 
     // Apply rubber band resistance for overdrag

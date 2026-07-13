@@ -45,6 +45,7 @@ class SegmentedControlContent extends StatefulWidget {
     required this.indicatorColor,
     required this.borderRadius,
     required this.quality,
+    this.direction = Axis.horizontal,
     this.indicatorSettings,
     this.indicatorPinchStrength = 0.4,
     this.indicatorExpansion =
@@ -73,6 +74,7 @@ class SegmentedControlContent extends StatefulWidget {
   final EdgeInsetsGeometry indicatorExpansion;
   final double borderRadius;
   final GlassQuality quality;
+  final Axis direction;
   final GlobalKey? backgroundKey;
   final GlassInteractionBehavior interactionBehavior;
   final Color? glowColor;
@@ -94,8 +96,8 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
   bool _isDown = false;
   bool _isDragging = false;
 
-  /// Current horizontal alignment of the indicator in the range [-1, 1].
-  late double _xAlign = _computeXAlignmentForSegment(widget.selectedIndex);
+  /// Current main-axis alignment of the indicator in the range [-1, 1].
+  late double _mainAlign = _computeAlignmentForSegment(widget.selectedIndex);
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -105,15 +107,15 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
     if (oldWidget.selectedIndex != widget.selectedIndex ||
         oldWidget.segments.length != widget.segments.length) {
       setState(() {
-        _xAlign = _computeXAlignmentForSegment(widget.selectedIndex);
+        _mainAlign = _computeAlignmentForSegment(widget.selectedIndex);
       });
     }
   }
 
   // ── Coordinate helpers ────────────────────────────────────────────────────
 
-  /// Converts a segment index to horizontal alignment (-1 to 1).
-  double _computeXAlignmentForSegment(int segmentIndex) {
+  /// Converts a segment index to main-axis alignment (-1 to 1).
+  double _computeAlignmentForSegment(int segmentIndex) {
     return DraggableIndicatorPhysics.computeAlignment(
       segmentIndex,
       widget.segments.length,
@@ -126,6 +128,7 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
       globalPosition,
       context,
       widget.segments.length,
+      direction: widget.direction,
     );
   }
 
@@ -136,9 +139,11 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
   }
 
   void _onDragUpdate(DragUpdateDetails details) {
+    final nextAlignment =
+        _getAlignmentFromGlobalPosition(details.globalPosition);
     setState(() {
       _isDragging = true;
-      _xAlign = _getAlignmentFromGlobalPosition(details.globalPosition);
+      _mainAlign = nextAlignment;
     });
   }
 
@@ -149,21 +154,25 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
     });
 
     final box = context.findRenderObject()! as RenderBox;
-    final currentRelativeX = (_xAlign + 1) / 2;
+    final currentRelative = (_mainAlign + 1) / 2;
     final segmentWidth = 1.0 / widget.segments.length;
     final indicatorWidth = 1.0 / widget.segments.length;
     final draggableRange = 1.0 - indicatorWidth;
-    final velocityX =
-        (details.velocity.pixelsPerSecond.dx / box.size.width) / draggableRange;
+    final mainVelocity = widget.direction == Axis.horizontal
+        ? details.velocity.pixelsPerSecond.dx
+        : details.velocity.pixelsPerSecond.dy;
+    final mainExtent =
+        widget.direction == Axis.horizontal ? box.size.width : box.size.height;
+    final velocityX = (mainVelocity / mainExtent) / draggableRange;
 
     final targetSegmentIndex = DraggableIndicatorPhysics.computeTargetIndex(
-      currentRelativeX: currentRelativeX,
+      currentRelativeX: currentRelative,
       velocityX: velocityX,
       itemWidth: segmentWidth,
       itemCount: widget.segments.length,
     );
 
-    _xAlign = _computeXAlignmentForSegment(targetSegmentIndex);
+    _mainAlign = _computeAlignmentForSegment(targetSegmentIndex);
 
     if (targetSegmentIndex != widget.selectedIndex) {
       widget.onSegmentSelected(targetSegmentIndex);
@@ -172,9 +181,9 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
 
   void _onDragCancel() {
     if (_isDragging) {
-      final currentRelativeX = (_xAlign + 1) / 2;
+      final currentRelative = (_mainAlign + 1) / 2;
       final targetSegmentIndex = DraggableIndicatorPhysics.computeTargetIndex(
-        currentRelativeX: currentRelativeX,
+        currentRelativeX: currentRelative,
         velocityX: 0,
         itemWidth: 1.0 / widget.segments.length,
         itemCount: widget.segments.length,
@@ -182,14 +191,14 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
       setState(() {
         _isDragging = false;
         _isDown = false;
-        _xAlign = _computeXAlignmentForSegment(targetSegmentIndex);
+        _mainAlign = _computeAlignmentForSegment(targetSegmentIndex);
       });
       if (targetSegmentIndex != widget.selectedIndex) {
         widget.onSegmentSelected(targetSegmentIndex);
       }
     } else {
       setState(
-        () => _xAlign = _computeXAlignmentForSegment(widget.selectedIndex),
+        () => _mainAlign = _computeAlignmentForSegment(widget.selectedIndex),
       );
     }
   }
@@ -209,7 +218,7 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
         (GlassTheme.brightnessOf(context) == Brightness.light
             ? CupertinoColors.black.withValues(alpha: 0.08)
             : CupertinoColors.white.withValues(alpha: 0.2));
-    final targetAlignment = _computeXAlignmentForSegment(widget.selectedIndex);
+    final targetAlignment = _computeAlignmentForSegment(widget.selectedIndex);
 
     // Indicator is slightly less rounded than the container to account for
     // the inset padding.
@@ -243,19 +252,36 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
         if (!_isDragging) setState(() => _isDown = false);
       },
       child: GestureDetector(
-        onHorizontalDragDown: _onDragDown,
-        onHorizontalDragUpdate: _onDragUpdate,
-        onHorizontalDragEnd: _onDragEnd,
-        onHorizontalDragCancel: _onDragCancel,
+        onHorizontalDragDown:
+            widget.direction == Axis.horizontal ? _onDragDown : null,
+        onHorizontalDragUpdate:
+            widget.direction == Axis.horizontal ? _onDragUpdate : null,
+        onHorizontalDragEnd:
+            widget.direction == Axis.horizontal ? _onDragEnd : null,
+        onHorizontalDragCancel:
+            widget.direction == Axis.horizontal ? _onDragCancel : null,
+        onVerticalDragDown:
+            widget.direction == Axis.vertical ? _onDragDown : null,
+        onVerticalDragUpdate:
+            widget.direction == Axis.vertical ? _onDragUpdate : null,
+        onVerticalDragEnd:
+            widget.direction == Axis.vertical ? _onDragEnd : null,
+        onVerticalDragCancel:
+            widget.direction == Axis.vertical ? _onDragCancel : null,
         child: VelocitySpringBuilder(
-          value: _xAlign,
+          value: _mainAlign,
           springWhenActive: GlassSpring.interactive(),
           springWhenReleased: GlassSpring.snappy(
             duration: const Duration(milliseconds: 350),
           ),
           active: _isDragging,
           builder: (context, value, velocity, child) {
-            final alignment = Alignment(value, 0);
+            final alignment = widget.direction == Axis.horizontal
+                ? Alignment(value, 0)
+                : Alignment(0, value);
+            final alignmentDelta = widget.direction == Axis.horizontal
+                ? alignment.x - targetAlignment
+                : alignment.y - targetAlignment;
 
             return SpringBuilder(
               spring: GlassSpring.snappy(
@@ -264,9 +290,7 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
               // Show glass bloom when: pressed, dragging, OR indicator is still
               // settling toward its target. Threshold 0.05 matches
               // tab_bar_internal.dart for consistent cross-component behaviour.
-              value: _isDown || (alignment.x - targetAlignment).abs() > 0.05
-                  ? 1.0
-                  : 0.0,
+              value: _isDown || alignmentDelta.abs() > 0.05 ? 1.0 : 0.0,
               builder: (context, thickness, child) {
                 final isPremiumQuality = widget.quality == GlassQuality.premium;
                 return Stack(
@@ -279,6 +303,7 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
                       velocity: velocity,
                       itemCount: widget.segments.length,
                       alignment: alignment,
+                      direction: widget.direction,
                       thickness: thickness,
                       quality: widget.quality,
                       indicatorColor: indicatorColor,
@@ -303,6 +328,7 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
                         velocity: velocity,
                         itemCount: widget.segments.length,
                         alignment: alignment,
+                        direction: widget.direction,
                         thickness: thickness,
                         quality: widget.quality,
                         indicatorColor: indicatorColor,
@@ -318,7 +344,8 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
                   ],
                 );
               },
-              child: Row(
+              child: Flex(
+                direction: widget.direction,
                 children: [
                   for (var i = 0; i < widget.segments.length; i++)
                     Expanded(
@@ -361,7 +388,8 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
               ),
             );
           },
-          child: Row(
+          child: Flex(
+            direction: widget.direction,
             children: [
               for (var i = 0; i < widget.segments.length; i++)
                 Expanded(
