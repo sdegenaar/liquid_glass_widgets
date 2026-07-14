@@ -1,3 +1,11 @@
+# 0.21.5
+
+## 🐛 Bug Fixes
+
+- **`GlassTabBar` loses shadow when OS is Dark but app is `ThemeMode.light`** — fixed an issue where glass components incorrectly resolved to `Brightness.dark` when the device OS was in Dark Mode but the `MaterialApp` was explicitly set to `ThemeMode.light`. The brightness cascade in `resolveGlassBrightness` was checking the `CupertinoTheme` before the Material `ThemeMode`; inside a `MaterialApp` the Cupertino theme is implicitly derived from the OS, causing it to return the wrong brightness. The cascade now correctly prioritises `ThemeMode` in `MaterialApp` contexts. Thanks to @minhtritc97 for the detailed report!
+
+---
+
 # 0.21.4
 
 ## ✨ New Features
