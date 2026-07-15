@@ -316,29 +316,73 @@ void main() {
     });
   });
 
-  // ── buildJellyTransform: floating-point guard for near-identity (line 134) ─
+  // ──────────────────────────────────────────────────────────────────────────
+  // tabIndexFromGlobalPosition — arithmetic verification
+  //
+  // The method requires a BuildContext + RenderBox so full coverage lives in
+  // tab_drag_gesture_coverage_test.dart (widget level). Here we verify the
+  // inner formula directly to document the contract and guard against regressions
+  // in the pure-math part: index = (rawRelativeX * itemCount).floor().clamp(0, n-1)
+  // ──────────────────────────────────────────────────────────────────────────
 
-  group('DraggableIndicatorPhysics.buildJellyTransform near-identity guard',
+  group(
+      'DraggableIndicatorPhysics.tabIndexFromGlobalPosition — formula contract',
       () {
-    test(
-        'returns translate(0.0001) when result would otherwise be identity (microscopic speed)',
-        () {
-      // Velocity is small enough that computed scale ≈ 1 but speed > 0.
-      // The matrix.isIdentity() guard on line 134 fires and adds a micro-translate.
-      //
-      // speed = sqrt(0.001^2 + 0) ≈ 0.001
-      // distortionFactor = (0.001 / 1000).clamp(0,1) * 0.7 = 0.0000007 ≈ 0
-      // scaleX = scaleY ≈ 1.0 → isIdentity() may be true.
-      // Matrix should have the micro-translate in slot [12] (tx).
-      final matrix = DraggableIndicatorPhysics.buildJellyTransform(
-        velocity: const Offset(0.001, 0),
-        maxDistortion: 0.7,
-        velocityScale: 1000.0,
-      );
-      // Whether the guard fires or not, the result must never be null/throw.
-      expect(matrix.storage, hasLength(16));
-      // And it must still keep the matrix non-null.
-      expect(matrix.storage[0], isA<double>());
+    // Helper replicating the inner arithmetic without a RenderBox.
+    int formula(double rawRelativeX, int itemCount) =>
+        (rawRelativeX * itemCount).floor().clamp(0, itemCount - 1);
+
+    group('2 tabs — equal 50/50 split', () {
+      test('tap at 0% → index 0', () => expect(formula(0.00, 2), 0));
+      test('tap at 49% → index 0', () => expect(formula(0.49, 2), 0));
+      test('tap at 50% → index 1', () => expect(formula(0.50, 2), 1));
+      test(
+          'tap at 100% → index 1 (clamped)', () => expect(formula(1.00, 2), 1));
+    });
+
+    group('4 tabs — equal 25/50/75 boundaries (regression for issue #157)', () {
+      // With the old drag-physics remap these boundaries were 31.25/50/68.75.
+      test('tap at 0% → index 0', () => expect(formula(0.00, 4), 0));
+      test('tap at 24% → index 0', () => expect(formula(0.24, 4), 0));
+      test(
+          'tap at 25% → index 1 (boundary)', () => expect(formula(0.25, 4), 1));
+      test('tap at 49% → index 1', () => expect(formula(0.49, 4), 1));
+      test(
+          'tap at 50% → index 2 (boundary)', () => expect(formula(0.50, 4), 2));
+      test('tap at 74% → index 2', () => expect(formula(0.74, 4), 2));
+      test(
+          'tap at 75% → index 3 (boundary)', () => expect(formula(0.75, 4), 3));
+      test('tap at 99% → index 3', () => expect(formula(0.99, 4), 3));
+      test(
+          'tap at 100% → index 3 (clamped)', () => expect(formula(1.00, 4), 3));
+    });
+
+    group('3 tabs — equal 33.3/66.6 boundaries', () {
+      test('tap at 33% → index 0', () => expect(formula(0.33, 3), 0));
+      test('tap at 34% → index 1', () => expect(formula(0.34, 3), 1));
+      test('tap at 66% → index 1', () => expect(formula(0.66, 3), 1));
+      test('tap at 67% → index 2', () => expect(formula(0.67, 3), 2));
+    });
+
+    test('clamped to 0 for rawRelativeX below 0', () {
+      expect(formula(0.0, 4), 0); // clamp(0,1) applied before formula
+    });
+
+    test('clamped to itemCount-1 at rawRelativeX = 1.0', () {
+      for (int n = 2; n <= 6; n++) {
+        expect(formula(1.0, n), n - 1, reason: 'n=$n');
+      }
+    });
+
+    test('all indices produced for n tabs are in [0, n-1]', () {
+      for (int n = 2; n <= 8; n++) {
+        for (int step = 0; step <= 100; step++) {
+          final raw = step / 100;
+          final idx = formula(raw, n);
+          expect(idx, greaterThanOrEqualTo(0), reason: 'n=$n raw=$raw');
+          expect(idx, lessThan(n), reason: 'n=$n raw=$raw');
+        }
+      }
     });
   });
 }

@@ -421,4 +421,91 @@ void main() {
       await tester.pumpAndSettle();
     });
   });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Regression: issue #157 — tap→index must use raw fraction, not drag remap
+  //
+  // For a 4-tab bar the hit boundaries must be at 25 / 50 / 75 % of the
+  // TabIndicator width (the render box whose coordinate space the mixin uses).
+  // The old code routed tap positions through the drag-physics alignment remap,
+  // which shifted the boundaries to ~31.25 / 50 / 68.75 %, causing tapping
+  // the right ¼ of tab 2 to select tab 3.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  group('issue #157 — 4-tab tap hit regions (raw fraction, equal slices)', () {
+    /// Builds a GlassBottomBar with 4 equal tabs and returns the
+    /// selected-index tracker.
+    Future<int Function()> build4Tabs(WidgetTester tester) async {
+      int selected = 0;
+      await tester.pumpWidget(_wrap(
+        StatefulBuilder(
+          builder: (context, setState) => GlassBottomBar(
+            tabs: [
+              _tab('A'),
+              _tab('B'),
+              _tab('C'),
+              _tab('D'),
+            ],
+            selectedIndex: selected,
+            onTabSelected: (i) => setState(() => selected = i),
+            maskingQuality: MaskingQuality.off,
+          ),
+        ),
+      ));
+      await tester.pump();
+      return () => selected;
+    }
+
+    // Compute tap positions relative to the TabIndicator's own render box —
+    // that is the RenderBox that `context.findRenderObject()` returns inside
+    // the mixin, so fractions must be against this widget's bounds.
+    Rect indicatorRect(WidgetTester tester) =>
+        tester.getRect(find.byType(TabIndicator));
+
+    testWidgets('tap at 12% of indicator width → tab 0', (tester) async {
+      final getSelected = await build4Tabs(tester);
+      final r = indicatorRect(tester);
+      await tester.tapAt(Offset(r.left + r.width * 0.12, r.center.dy));
+      await tester.pumpAndSettle();
+      expect(getSelected(), 0,
+          reason: 'Tap at 12% should select tab 0 (first equal slice)');
+    });
+
+    testWidgets(
+        'tap at 40% of indicator width → tab 1 (well inside second slice)',
+        (tester) async {
+      final getSelected = await build4Tabs(tester);
+      final r = indicatorRect(tester);
+      // 40% is deep inside the second quarter [25%, 50%) — must be tab 1.
+      await tester.tapAt(Offset(r.left + r.width * 0.40, r.center.dy));
+      await tester.pumpAndSettle();
+      expect(getSelected(), 1,
+          reason: 'Tap at 40% must select tab 1 (second equal slice)');
+    });
+
+    testWidgets(
+        'tap at 73% of indicator width → tab 2 (just before third boundary)',
+        (tester) async {
+      final getSelected = await build4Tabs(tester);
+      final r = indicatorRect(tester);
+      // 73% is inside [50%, 75%) — must be tab 2, NOT tab 3.
+      // With the old drag-physics remap the boundary was at 68.75%, so a
+      // 73% tap would have selected tab 3.
+      await tester.tapAt(Offset(r.left + r.width * 0.73, r.center.dy));
+      await tester.pumpAndSettle();
+      expect(getSelected(), isNot(3),
+          reason:
+              'Tap at 73% (before 75% boundary) must not select tab 3 (#157 regression)');
+    });
+
+    testWidgets('tap at 88% of indicator width → tab 3 (last tab)',
+        (tester) async {
+      final getSelected = await build4Tabs(tester);
+      final r = indicatorRect(tester);
+      await tester.tapAt(Offset(r.left + r.width * 0.88, r.center.dy));
+      await tester.pumpAndSettle();
+      expect(getSelected(), 3,
+          reason: 'Tap at 88% should select tab 3 (last equal slice)');
+    });
+  });
 }

@@ -1,3 +1,11 @@
+# 0.21.6
+
+## 🐛 Bug Fixes
+
+- **`GlassTabBar.bottom` / `GlassBottomBar` distorted tap hit regions with >2 tabs** (#157) — Tapping a tab incorrectly routed through `DraggableIndicatorPhysics.getAlignmentFromGlobalPosition`, which applies an indicator-center remap (`±½ tab-width` padding) designed for continuous drag tracking. For discrete taps this shifted the hit boundaries from the correct `25/50/75 %` to `~31.25/50/68.75 %` on a 4-tab bar, making the right ~25 % of tab 2 select tab 3 instead. A new `tabIndexFromGlobalPosition` helper bypasses the drag remap and computes the tab index directly from the raw position fraction. The same incorrect remap was present in the `recoverIfGestureStuck` path (PlatformView gesture recovery) and is fixed there too. The drag path (`onHorizontalDragUpdate` / `onHorizontalDragStart`) is unaffected. Thanks to @bayraktarmdkaraca for the precise root-cause analysis!
+
+---
+
 # 0.21.5
 
 ## 🐛 Bug Fixes

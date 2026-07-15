@@ -176,8 +176,28 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
 
   /// Maps a global pointer position to alignment in [-1, 1] with rubber-band
   /// resistance applied at the edges.
+  ///
+  /// Use for **continuous drag tracking** where the indicator center must stay
+  /// within its physical travel range (indicator-center physics).
   double alignmentFromGlobal(Offset globalPosition) =>
       DraggableIndicatorPhysics.getAlignmentFromGlobalPosition(
+        globalPosition,
+        context,
+        tabCount,
+      );
+
+  /// Maps a global tap/pointer position to a tab index using the raw
+  /// (un-remapped) position fraction.
+  ///
+  /// Unlike [alignmentFromGlobal], this does **not** apply the
+  /// indicator-center padding/draggable-range remap — it divides the bar into
+  /// [tabCount] equal slices and returns which slice contains the point.
+  ///
+  /// Use for **discrete tap-to-index conversions** (`onTapDown`, gesture
+  /// recovery) where each tab's hit region should be an equal slice of the
+  /// pill width. See issue #157.
+  int tabIndexFromGlobal(Offset globalPosition) =>
+      DraggableIndicatorPhysics.tabIndexFromGlobalPosition(
         globalPosition,
         context,
         tabCount,
@@ -360,10 +380,12 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
   ///
   /// DX1: [tabIsDown] is already set on the same frame as the touch by the
   /// raw Listener ([onBarPointerDown]), keeping jelly visible on desktop taps.
+  ///
+  /// Uses [tabIndexFromGlobal] (raw fraction, equal slices) rather than the
+  /// drag-physics [alignmentFromGlobal] remap to ensure each tab's hit region
+  /// matches its visual region exactly. See issue #157.
   void onBarTapDown(TapDownDetails d) {
-    final alignment = alignmentFromGlobal(d.globalPosition);
-    final relX = (alignment + 1) / 2;
-    final index = (relX * tabCount).floor().clamp(0, tabCount - 1);
+    final index = tabIndexFromGlobal(d.globalPosition);
 
     if (isPlatformViewBackdrop) {
       // Hybrid mode: instantly slide the visual indicator for native responsiveness,
@@ -431,8 +453,9 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
     final int capturedId = _gestureId;
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_gestureActive || _gestureId != capturedId) return;
-      final relX = (alignmentFromGlobal(upPosition) + 1) / 2;
-      final target = (relX * tabCount).floor().clamp(0, tabCount - 1);
+      // Use raw-fraction index (not drag-physics remap) so the recovery
+      // target matches the visual tab that was under the lift point. (#157)
+      final target = tabIndexFromGlobal(upPosition);
       setState(() {
         _gestureActive = false;
         tabIsDragging = false;
