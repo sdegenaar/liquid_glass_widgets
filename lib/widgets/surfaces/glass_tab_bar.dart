@@ -832,6 +832,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
               icon: t.icon ?? const SizedBox.shrink(),
               label: t.label,
               activeIcon: t.activeIcon,
+              semanticLabel: t.semanticLabel,
               glowColor: t.glowColor,
               thickness: t.thickness,
             ))
@@ -899,6 +900,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
               icon: t.icon ?? const SizedBox.shrink(),
               label: t.label,
               activeIcon: t.activeIcon,
+              semanticLabel: t.semanticLabel,
               glowColor: t.glowColor,
               thickness: t.thickness,
             ))
@@ -962,6 +964,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
               icon: t.icon ?? const SizedBox.shrink(),
               label: t.label,
               activeIcon: t.activeIcon,
+              semanticLabel: t.semanticLabel,
               glowColor: t.glowColor,
               thickness: t.thickness,
             ))
