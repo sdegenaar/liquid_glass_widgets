@@ -1,3 +1,29 @@
+# 0.21.8
+
+## 🐛 Bug Fixes
+
+- **`GlassPopover` drifted off its trigger inside a nested overlay** — the
+  morphing overlay is positioned with absolute, root-relative coordinates (the
+  trigger's `localToGlobal(Offset.zero)`), but its `OverlayPortal` attached to
+  the *nearest* overlay. When that nearest overlay is itself offset from the
+  screen origin — e.g. a `ShellRoute` / nested-`Navigator` content area sitting
+  beside a side rail — its origin is counted twice and the popover appears
+  shifted away from the button that opened it. The portal now targets
+  `OverlayChildLocation.rootOverlay`, which always shares the global coordinate
+  space, so the popover lands on its trigger in every embedding. Top-level usage
+  (no nested overlay) is unaffected.
+
+- **Intrinsic-height `GlassPopover` overflowed when its content grew while open**
+  — with no `popoverHeight`, the popover measured its content once at open time
+  and froze that height. Content that grew afterwards (a row expanding after a
+  toggle, an async list filling in) overflowed the frozen box. The popover now
+  wraps its content in a `SizeChangedLayoutNotifier` and re-measures on the next
+  frame, so it follows the live content height (bounded by the screen) instead of
+  clamping to the open-time measurement. Fixed-`popoverHeight` popovers are
+  unchanged (the caller owns scrolling there).
+
+---
+
 # 0.21.6
 
 ## 🐛 Bug Fixes
