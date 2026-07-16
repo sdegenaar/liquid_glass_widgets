@@ -31,6 +31,8 @@ part 'shared/glass_popover_internal.dart';
 /// - **Auto-positioning**: Detects best alignment from trigger position
 /// - **Screen-edge clamping**: Keeps popover within safe area
 /// - **Barrier dismissal**: Tap outside to close (configurable)
+/// - **Blur ramp**: The backdrop blur eases in with the morph instead of
+///   paying its full raster cost from the first frame — see [blurRampDuration]
 ///
 /// ## Usage
 ///
@@ -118,6 +120,8 @@ class GlassPopover extends StatefulWidget {
     this.onClose,
     this.onOpen,
     this.barrierDismissible = true,
+    this.blurRampDuration = const Duration(milliseconds: 260),
+    this.blurRampCurve = Curves.easeOut,
   }) : assert(trigger != null || triggerBuilder != null,
             'Either trigger or triggerBuilder must be provided');
 
@@ -279,6 +283,38 @@ class GlassPopover extends StatefulWidget {
   ///
   /// Defaults to true.
   final bool barrierDismissible;
+
+  /// How long the backdrop blur takes to ramp from `0` up to [settings]'s
+  /// `blur` once the popover starts morphing open.
+  ///
+  /// **Why this exists.** The per-frame [BackdropFilter] blur is the dominant
+  /// raster cost while a popover morphs out of its trigger. Rendering it at
+  /// full strength from the very first frame pays that cost during the
+  /// cheapest, still-growing part of the morph — precisely the frames most
+  /// prone to dropping. Easing the blur in over the morph keeps those early
+  /// frames cheap and reaches full strength only as the popover settles.
+  /// Measured on mid-range mobile GPUs this roughly halves the raster time of
+  /// the open transition (see `CHANGELOG.md` for `0.21.7` and
+  /// `docs/POPOVER_BLUR_RAMP.md`).
+  ///
+  /// Because it is animated continuously (rather than snapped on after a fixed
+  /// delay) the transition is never visible as an on/off switch — the blur
+  /// simply blooms in with the glass.
+  ///
+  /// Defaults to `Duration(milliseconds: 260)` — about the window the liquid
+  /// morph itself settles in. Set to [Duration.zero] to disable the ramp and
+  /// render the blur at full strength from the first frame (the behaviour
+  /// prior to `0.21.7`). The ramp is also skipped automatically when the
+  /// platform "reduce motion" accessibility setting is active.
+  final Duration blurRampDuration;
+
+  /// The easing curve the blur ramp follows from `0` → full strength over
+  /// [blurRampDuration].
+  ///
+  /// Defaults to [Curves.easeOut] so the blur arrives gently and is already
+  /// near-full by the time the content fades in. Ignored when
+  /// [blurRampDuration] is [Duration.zero].
+  final Curve blurRampCurve;
 
   @override
   State<GlassPopover> createState() => _GlassPopoverState();

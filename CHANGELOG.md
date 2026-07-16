@@ -1,3 +1,36 @@
+# 0.21.7
+
+## ⚡ Performance
+
+- **`GlassPopover` now eases its backdrop blur in over the opening morph**
+  instead of rendering it at full strength from the first frame. The per-frame
+  `BackdropFilter` blur is the dominant raster cost while a popover morphs out
+  of its trigger, and paying it in full during the cheapest, still-growing part
+  of the morph is exactly where frames drop. The blur now ramps
+  `0 → settings.blur` over the morph, so the early frames stay cheap and full
+  strength is reached only as the popover settles. Measured on a mid-range
+  Android device this roughly **halved the raster time of the open transition**,
+  with no perceptible visual change — the blur simply blooms in with the glass
+  rather than snapping on. See [`docs/POPOVER_BLUR_RAMP.md`](docs/POPOVER_BLUR_RAMP.md)
+  for the mechanism and rationale.
+
+  Two new **backwards-compatible** parameters on `GlassPopover`:
+
+  - **`blurRampDuration`** — how long the blur takes to reach full strength.
+    Defaults to `Duration(milliseconds: 260)` (about the window the morph itself
+    settles in). Set it to **`Duration.zero`** to restore the previous
+    render-full-blur-from-frame-one behaviour.
+  - **`blurRampCurve`** — the easing curve of the ramp. Defaults to
+    `Curves.easeOut`.
+
+  The ramp is skipped automatically when the platform "reduce motion"
+  accessibility setting is active (full blur, no animation). It is driven by a
+  dedicated controller — not the morph spring — so the blur eases monotonically
+  to full and never wobbles with the spring's underdamped overshoot; on close it
+  is held (not wound back) so the collapsing blob stays visually coherent.
+
+---
+
 # 0.21.6
 
 ## 🐛 Bug Fixes

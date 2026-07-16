@@ -6,6 +6,16 @@ class _GlassPopoverState extends State<GlassPopover>
 
   late final GlassMorphController _morphController;
 
+  /// Ramps the backdrop blur from `0` → [GlassPopover.settings]'s blur over the
+  /// opening morph, so the expensive full-strength [BackdropFilter] is not paid
+  /// on the cheap early frames (see [GlassPopover.blurRampDuration]).
+  ///
+  /// Driven independently of [_morphController] so the blur follows a clean,
+  /// monotonic ease to full strength instead of wobbling with the morph
+  /// spring's underdamped overshoot. Held at `1.0` (full blur, no animation)
+  /// when the ramp is disabled or reduced-motion is active.
+  late final AnimationController _blurRamp;
+
   Size? _triggerSize;
   double? _triggerBorderRadius;
   Offset _triggerGlobalPosition = Offset.zero;
@@ -69,6 +79,18 @@ class _GlassPopoverState extends State<GlassPopover>
   @override
   void initState() {
     super.initState();
+    _blurRamp = AnimationController(
+      vsync: this,
+      // A valid non-zero duration for the controller even when the ramp is
+      // disabled (Duration.zero) — in that case it is never driven, just held
+      // at full. The real duration is (re)applied in [_startMorphOpen].
+      duration: widget.blurRampDuration > Duration.zero
+          ? widget.blurRampDuration
+          : const Duration(milliseconds: 260),
+      // Start full so any paint before the first open (or a disabled ramp) is
+      // never under-blurred; [_startMorphOpen] forces it back to 0 on open.
+      value: 1.0,
+    );
     _morphController = GlassMorphController(vsync: this);
     _morphController.addListener(() {
       // Hide the overlay only when the spring has FULLY SETTLED near zero.
@@ -81,6 +103,9 @@ class _GlassPopoverState extends State<GlassPopover>
         _overlayController.hide();
         // Reset per-open-cycle state so stale values from a previous position
         // never bleed into the next open cycle.
+        // Reset the blur ramp to sharp so the next open blooms in from 0 again
+        // (it was frozen mid-value by _closePopover, not wound back).
+        _blurRamp.value = 0.0;
         setState(() {
           _horizontalOffset = 0.0;
           _verticalOffset = 0.0;
@@ -94,6 +119,7 @@ class _GlassPopoverState extends State<GlassPopover>
 
   @override
   void dispose() {
+    _blurRamp.dispose();
     _morphController.dispose();
     super.dispose();
   }
@@ -243,8 +269,48 @@ class _GlassPopoverState extends State<GlassPopover>
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Blur ramp (see GlassPopover.blurRampDuration)
+  // ---------------------------------------------------------------------------
+
+  /// Whether the backdrop-blur ramp should run for this open cycle. Disabled
+  /// when the caller opts out ([GlassPopover.blurRampDuration] == zero) or when
+  /// reduced-motion is active — in both cases the blur is shown at full
+  /// strength immediately.
+  bool get _blurRampEnabled =>
+      widget.blurRampDuration > Duration.zero &&
+      !_morphController.disableAnimations;
+
+  /// The current fraction (`0` → `1`) of [GlassPopover.settings]'s blur to
+  /// apply this frame. `1.0` means full strength.
+  double get _blurFactor {
+    if (!_blurRampEnabled) return 1.0;
+    return widget.blurRampCurve.transform(_blurRamp.value.clamp(0.0, 1.0));
+  }
+
+  /// Launches the morph and, in lock-step, the blur ramp. Called at every point
+  /// the morph actually starts opening (immediately for fixed-height popovers,
+  /// or after the intrinsic-height measurement pass).
+  void _startMorphOpen() {
+    _morphController.open();
+    if (_blurRampEnabled) {
+      _blurRamp
+        ..duration = widget.blurRampDuration
+        ..forward(from: 0.0);
+    } else {
+      // No ramp — show the blur at full strength from the first painted frame.
+      _blurRamp.value = 1.0;
+    }
+  }
+
   void _closePopover() {
     if (!mounted) return;
+    // Freeze the blur where it is for the collapse. Ramping it back down here
+    // would race the morph and read as the blur "popping off" while the blob is
+    // still visibly shrinking; holding it keeps the close visually coherent.
+    // It is reset to 0 when the overlay finally hides (see the initState
+    // listener), so the next open still ramps from sharp.
+    _blurRamp.stop();
     // GlassMorphController.close() injects the −2.5 velocity hint internally,
     // maximising the rubber-band bounce amplitude on close.
     _morphController.close();
@@ -286,7 +352,7 @@ class _GlassPopoverState extends State<GlassPopover>
     });
 
     if (_contentMeasured) {
-      _morphController.open();
+      _startMorphOpen();
     }
     widget.onOpen?.call();
   }
@@ -437,7 +503,7 @@ class _GlassPopoverState extends State<GlassPopover>
                   _contentMeasured = true;
                   _updatePositionAndClamping();
                 });
-                _morphController.open();
+                _startMorphOpen();
               }
             });
             return SizedBox(
@@ -490,11 +556,23 @@ class _GlassPopoverState extends State<GlassPopover>
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
 
     // ── Per-frame AnimatedBuilder ────────────────────────────────────────────
+    // Listens to BOTH the morph spring and the blur ramp so the backdrop blur
+    // repaints as it eases in, independently of where the morph spring is.
     return AnimatedBuilder(
-      animation: _morphController.animation,
+      animation: Listenable.merge([_morphController.animation, _blurRamp]),
       builder: (context, child) {
         final rawValue = _morphController.value;
         final clampedValue = rawValue.clamp(0.0, 1.0);
+
+        // Ease the backdrop blur in over the opening morph instead of paying
+        // its full raster cost from frame one. A factor of 1 (ramp complete or
+        // disabled) reuses the hoisted settings unchanged — no per-frame alloc.
+        final blurFactor = _blurFactor;
+        final rampedSettings = blurFactor >= 1.0
+            ? effectiveSettings
+            : effectiveSettings.copyWith(
+                blur: effectiveSettings.blur * blurFactor,
+              );
 
         // Physics delegated to GlassMorphController — pure arithmetic, no
         // tree traversal, safe at 60 fps.
@@ -534,9 +612,9 @@ class _GlassPopoverState extends State<GlassPopover>
                     ? 0.0
                     : 1.0,
                 child: LiquidGlassLayer(
-                  settings: effectiveSettings,
+                  settings: rampedSettings,
                   child: InheritedLiquidGlass(
-                    settings: effectiveSettings,
+                    settings: rampedSettings,
                     quality: effectiveQuality,
                     isBlurProvidedByAncestor: false,
                     child: LiquidGlassBlendGroup(
@@ -555,7 +633,7 @@ class _GlassPopoverState extends State<GlassPopover>
                               scale: state.anchorScale,
                               child: GlassContainer(
                                 useOwnLayer: false,
-                                settings: effectiveSettings,
+                                settings: rampedSettings,
                                 quality: effectiveQuality,
                                 width: tw,
                                 height: th,
@@ -586,7 +664,7 @@ class _GlassPopoverState extends State<GlassPopover>
                                 clampedValue,
                                 currentWidth,
                                 currentHeight,
-                                effectiveSettings,
+                                rampedSettings,
                                 effectiveQuality,
                                 isDark,
                                 popoverHeight,
