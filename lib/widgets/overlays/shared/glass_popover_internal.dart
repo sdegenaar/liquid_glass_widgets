@@ -43,6 +43,32 @@ class _GlassPopoverState extends State<GlassPopover>
   /// Key used to measure the intrinsic height of the content subtree.
   final GlobalKey _contentKey = GlobalKey();
 
+  /// Guards against stacking multiple post-frame re-measure callbacks when the
+  /// live content reports several size changes within one frame.
+  bool _remeasureScheduled = false;
+
+  /// Re-measures the live content after it changed size while the popover is
+  /// open (e.g. a row growing taller after a state toggle) and grows/shrinks
+  /// the popover to match, instead of overflowing the frozen initial height.
+  void _scheduleRemeasure() {
+    if (_remeasureScheduled || !_contentMeasured) return;
+    _remeasureScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _remeasureScheduled = false;
+      if (!mounted || !_contentMeasured) return;
+      final renderBox =
+          _contentKey.currentContext?.findRenderObject() as RenderBox?;
+      if (renderBox == null || !renderBox.hasSize) return;
+      final newHeight = renderBox.size.height;
+      if (_measuredContentHeight != newHeight) {
+        setState(() {
+          _measuredContentHeight = newHeight;
+          _updatePositionAndClamping();
+        });
+      }
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // Alignment helper
   // ---------------------------------------------------------------------------
@@ -246,8 +272,19 @@ class _GlassPopoverState extends State<GlassPopover>
             // ── Overlay portal ─────────────────────────────────────────────
             // OverlayPortal renders in the overlay layer, not in-tree, so it
             // is zero-sized here and does not affect the Stack's dimensions.
+            //
+            // Target the ROOT overlay, not the nearest one. The morph is placed
+            // with absolute, root-relative coordinates (the trigger's
+            // `localToGlobal(Offset.zero)`), so it must render in the overlay
+            // that shares that coordinate space. Rendering into a *nested*
+            // overlay (e.g. a ShellRoute / nested-Navigator content area offset
+            // by a side rail) shifts the popover by that overlay's origin — the
+            // trigger's global position gets double-counted. The root overlay
+            // always coincides with the global coordinate space, so the popover
+            // lands exactly on its trigger in every embedding.
             OverlayPortal(
               controller: _overlayController,
+              overlayLocation: OverlayChildLocation.rootOverlay,
               overlayChildBuilder: _buildMorphingOverlay,
             ),
           ],
@@ -776,9 +813,21 @@ class _GlassPopoverState extends State<GlassPopover>
 
     Widget measuredContent;
     if (widget.popoverHeight == null) {
-      measuredContent = SizedBox(
-        width: widget.popoverWidth,
-        child: content,
+      // Intrinsic-height mode: track live size changes (content growing or
+      // shrinking while open) and re-measure, so the popover follows instead
+      // of overflowing the height frozen at open time.
+      measuredContent = NotificationListener<SizeChangedLayoutNotification>(
+        onNotification: (_) {
+          _scheduleRemeasure();
+          return true;
+        },
+        child: SizeChangedLayoutNotifier(
+          child: SizedBox(
+            key: _contentKey,
+            width: widget.popoverWidth,
+            child: content,
+          ),
+        ),
       );
     } else {
       measuredContent = SizedBox(
@@ -797,8 +846,10 @@ class _GlassPopoverState extends State<GlassPopover>
       minWidth: widget.popoverWidth,
       maxWidth: widget.popoverWidth,
       minHeight: 0,
-      maxHeight:
-          widget.popoverHeight ?? _measuredContentHeight ?? double.infinity,
+      // Intrinsic mode is bounded by the screen (not the frozen measurement)
+      // so the content can re-layout to a new natural height and the
+      // SizeChangedLayoutNotifier above can report it for re-measurement.
+      maxHeight: widget.popoverHeight ?? _getMaxPopoverHeight(),
       child: Opacity(
         opacity: contentOpacity,
         child: Transform.scale(
