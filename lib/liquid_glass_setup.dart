@@ -14,6 +14,7 @@ import 'widgets/shared/glass_adaptive_scope.dart';
 import 'widgets/shared/glass_effect.dart';
 import 'widgets/shared/glass_accessibility_scope.dart';
 import 'widgets/shared/lightweight_liquid_glass.dart';
+import 'widgets/effects/progressive_blur.dart';
 
 /// Entry point and configuration for the Liquid Glass Widgets library.
 ///
@@ -109,6 +110,7 @@ class LiquidGlassWidgets {
   /// | `interactive_indicator.frag` | Custom refraction effect |
   /// | `liquid_glass_geometry_blended.frag` | Geometry / SDF pass |
   /// | `liquid_glass_final_render.frag` | Final composite pass |
+  /// | `progressive_blur.frag` | Graduated backdrop blur ([ProgressiveBlur]) |
   static Future<void> initialize({
     bool enablePerformanceMonitor = true,
   }) async {
@@ -130,6 +132,10 @@ class LiquidGlassWidgets {
         ShaderKeys.blendedGeometry,
         ShaderKeys.liquidGlassRender,
       ]),
+      // ProgressiveBlur's graduated-blur shader — warmed here too so consumers
+      // never need a separate preload call (it degrades to a uniform blur if the
+      // shader can't load, so this never throws).
+      ProgressiveBlur.preload(),
     ]);
 
     // 2. Schedule Impeller pipeline warm-up after the first frame — zero

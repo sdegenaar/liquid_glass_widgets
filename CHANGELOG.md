@@ -1,3 +1,56 @@
+# 0.22.0
+
+## ✨ New feature — `ProgressiveBlur`
+
+- **`ProgressiveBlur`** + **`ProgressiveBlurDirection`** — a *graduated*
+  (progressive) backdrop blur: a clean gaussian frost that is strongest at one
+  edge and eases to perfectly sharp at the opposite edge — the Signal / iOS-26
+  header dissolve. Stack it behind a translucent app bar or bottom bar so
+  scrolling content dissolves beneath the bar instead of ending on a hard
+  cut-off.
+
+  The library's glass surfaces apply a **uniform** blur; this is the missing
+  *progressive* primitive, and it is self-contained — it needs no
+  `LiquidGlassLayer` or glass ancestor, so it can back any bar.
+
+  **How it works.** The naive "blur then fade with a `ShaderMask`" recipe does
+  not work: a `BackdropFilter`'s captured backdrop is not part of an ancestor
+  `ShaderMask`'s layer on Impeller, so the mask reveals nothing. Instead this
+  binds a fragment shader as the `ImageFilter` of a `BackdropFilter` (via
+  `ui.ImageFilter.shader`), so the engine hands the captured backdrop to the
+  shader's sampler and it reads reliably on every backend.
+  `shaders/progressive_blur.frag` is a **separable** gaussian run twice
+  (horizontal then vertical via `ImageFilter.compose`) whose sigma follows the
+  gradient — one backdrop capture + one draw, band-free. Where shader-based
+  `ImageFilter`s are unavailable (Skia / web), it degrades to a uniform
+  `BackdropFilter` so nothing breaks.
+
+  ```dart
+  Stack(
+    children: [
+      const Positioned(
+        top: 0, left: 0, right: 0, height: 96,
+        child: ProgressiveBlur(maxSigma: 20),
+      ),
+      // ... translucent app bar on top ...
+    ],
+  )
+  ```
+
+  - **`maxSigma`** — blur sigma at the strong edge (`0` ⇒ passthrough). Drive it
+    from a scroll offset to fade the blur in/out.
+  - **`direction`** — which edge the blur is strongest at
+    (`topToBottom` / `bottomToTop` / `leftToRight` / `rightToLeft`).
+  - **`falloff`** — gradient gamma.
+
+  The shader is pre-warmed by `LiquidGlassWidgets.initialize()` alongside the
+  other library shaders, so apps get the compiled program for free;
+  `ProgressiveBlur.preload()` remains available (and idempotent) for standalone
+  use without `initialize()`. See
+  [`docs/PROGRESSIVE_BLUR.md`](docs/PROGRESSIVE_BLUR.md).
+
+---
+
 # 0.21.8
 
 ## 🐛 Bug Fixes
