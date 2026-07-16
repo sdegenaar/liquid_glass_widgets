@@ -8,11 +8,32 @@
   of its trigger, and paying it in full during the cheapest, still-growing part
   of the morph is exactly where frames drop. The blur now ramps
   `0 → settings.blur` over the morph, so the early frames stay cheap and full
-  strength is reached only as the popover settles. Measured on a mid-range
-  Android device this roughly **halved the raster time of the open transition**,
-  with no perceptible visual change — the blur simply blooms in with the glass
-  rather than snapping on. See [`docs/POPOVER_BLUR_RAMP.md`](docs/POPOVER_BLUR_RAMP.md)
-  for the mechanism and rationale.
+  strength is reached only as the popover settles, with no perceptible change to
+  the resting look — the blur simply blooms in with the glass rather than
+  snapping on.
+
+  **Measured** on the app this was developed for (Android emulator, profile
+  build; `integration_test` opening the popover 6×, 143 frames/run via
+  `flutter drive --profile` + `watchPerformance`; ms, lower is better):
+
+  | Metric | Full blur¹ | Blur ramp² |
+  | --- | --: | --: |
+  | Raster avg | 10.10 | **5.84** |
+  | Raster p90 | 16.96 | **6.03** |
+  | Raster p99 | 53.15 | **28.93** |
+  | Raster worst | 58.70 | **28.96** |
+  | Missed raster budgets (16 ms) | 15 | **6** |
+  | Build avg | 0.69 | **0.23** |
+  | New-gen GC runs | 16 | **2** |
+
+  ¹ full-strength blur from frame one (`blurRampDuration: Duration.zero`).
+  ² this change (260 ms `easeOut` ramp). Worst-case raster time roughly
+  **halved** and over-budget frames dropped from 15 → 6. This is an end-to-end
+  app measurement on an emulator, so it also reflects app-level content trimming
+  in the same iteration and run-to-run noise — the ramp's own contribution is
+  keeping the full-strength `BackdropFilter` off the early morph frames. The full
+  4-variant table, methodology, and caveats are in
+  [`docs/POPOVER_BLUR_RAMP.md`](docs/POPOVER_BLUR_RAMP.md).
 
   Two new **backwards-compatible** parameters on `GlassPopover`:
 
