@@ -75,9 +75,16 @@ jobs:
           fi
 
           # Strip GPU renderer paths that are physically untestable in a headless VM.
+          # lcov 2.0+ requires explicitly ignoring "empty" function coverage errors.
+          if lcov --version | grep -q 'lcov: LCOV version 2'; then
+            IGNORE_FLAGS="--ignore-errors unused,empty"
+          else
+            IGNORE_FLAGS="--ignore-errors unused"
+          fi
+
           lcov --remove coverage/lcov.info \
             'lib/src/renderer/*' \
-            --ignore-errors unused \
+            $IGNORE_FLAGS \
             -o coverage/lcov_effective.info
 
           TOTAL=$(lcov --summary coverage/lcov_effective.info 2>&1 \
