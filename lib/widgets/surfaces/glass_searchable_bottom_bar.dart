@@ -13,6 +13,7 @@ import 'glass_bottom_bar.dart'
 import 'shared/glass_search_bar_config.dart';
 import 'shared/tab_bar_searchable_controller.dart';
 import 'shared/tab_bar_searchable_layout.dart';
+import 'glass_tab_bar.dart' show GlassTab;
 
 export 'shared/glass_search_bar_config.dart';
 
@@ -487,7 +488,16 @@ class GlassSearchableBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => TabBarSearchableLayout(
-        tabs: tabs,
+        tabs: tabs
+            .map((t) => GlassTab(
+                  icon: t.icon,
+                  activeIcon: t.activeIcon,
+                  label: t.label,
+                  semanticLabel: t.semanticLabel,
+                  glowColor: t.glowColor,
+                  thickness: t.thickness,
+                ))
+            .toList(),
         selectedIndex: selectedIndex,
         onTabSelected: onTabSelected,
         searchConfig: searchConfig,

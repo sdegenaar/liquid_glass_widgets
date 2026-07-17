@@ -7,6 +7,7 @@ import '../../types/glass_quality.dart';
 import '../interactive/glass_button.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
 import 'shared/tab_bar_bottom_layout.dart';
+import 'glass_tab_bar.dart' show GlassTab;
 
 /// A glass morphism bottom navigation bar following Apple's design patterns.
 ///
@@ -617,7 +618,16 @@ class GlassBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => TabBarBottomLayout(
-        tabs: tabs,
+        tabs: tabs
+            .map((t) => GlassTab(
+                  icon: t.icon,
+                  activeIcon: t.activeIcon,
+                  label: t.label,
+                  semanticLabel: t.semanticLabel,
+                  glowColor: t.glowColor,
+                  thickness: t.thickness,
+                ))
+            .toList(),
         selectedIndex: selectedIndex,
         onTabSelected: onTabSelected,
         extraButton: extraButton,

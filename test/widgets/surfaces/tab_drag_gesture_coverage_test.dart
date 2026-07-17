@@ -200,9 +200,9 @@ void main() {
           height: 80,
           width: 80,
           child: BottomBarTabItem(
-            tab: GlassBottomBarTab(
+            tab: const GlassTab(
               label: 'Test',
-              icon: const Icon(Icons.home),
+              icon: Icon(Icons.home),
             ),
             selected: false,
             selectedIconColor: Colors.blue,
@@ -229,9 +229,9 @@ void main() {
           height: 80,
           width: 80,
           child: BottomBarTabItem(
-            tab: GlassBottomBarTab(
+            tab: const GlassTab(
               label: 'Test',
-              icon: const Icon(Icons.home),
+              icon: Icon(Icons.home),
               glowColor: Colors.blue,
             ),
             selected: true,

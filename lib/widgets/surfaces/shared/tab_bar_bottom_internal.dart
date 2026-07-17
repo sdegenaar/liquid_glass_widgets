@@ -18,11 +18,8 @@ import '../../shared/adaptive_glass.dart';
 import '../../shared/animated_glass_indicator.dart';
 import '../../shared/inherited_liquid_glass.dart';
 import '../glass_bottom_bar.dart'
-    show
-        GlassTabBarExtraButton,
-        GlassBottomBarTab,
-        MaskingQuality,
-        JellyClipper;
+    show GlassTabBarExtraButton, MaskingQuality, JellyClipper;
+import '../glass_tab_bar.dart' show GlassTab;
 
 // =============================================================================
 // kBottomBarGlassDefaults — shared glass preset
@@ -133,6 +130,7 @@ class BottomBarTabItem extends StatelessWidget {
   const BottomBarTabItem({
     required this.tab,
     required this.selected,
+    this.semanticsSelected,
     required this.selectedIconColor,
     required this.unselectedIconColor,
     this.selectedLabelColor,
@@ -151,8 +149,9 @@ class BottomBarTabItem extends StatelessWidget {
     super.key,
   });
 
-  final GlassBottomBarTab tab;
+  final GlassTab tab;
   final bool selected;
+  final bool? semanticsSelected;
   final Color selectedIconColor;
   final Color unselectedIconColor;
   final Color? selectedLabelColor;
@@ -187,15 +186,7 @@ class BottomBarTabItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final iconColor = selected ? selectedIconColor : unselectedIconColor;
     final iconWidget = selected ? (tab.activeIcon ?? tab.icon) : tab.icon;
-
-    // SizedBox.shrink() (width:0, height:0, no child) is the sentinel used
-    // by glass_tab_bar.dart when a GlassTab has no icon. Detect it by checking
-    // that all three fields match — a caller-supplied SizedBox wrapping a real
-    // icon will have a non-zero size OR a non-null child.
-    final bool hasIcon = !(iconWidget is SizedBox &&
-        (iconWidget.width ?? 0) == 0 &&
-        (iconWidget.height ?? 0) == 0 &&
-        iconWidget.child == null);
+    final bool hasIcon = iconWidget != null;
 
     // Label style resolution — most-specific-wins:
     //   1. Base typography: caller [textStyle], else the built-in default keyed
@@ -232,7 +223,7 @@ class BottomBarTabItem extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Semantics(
         button: true,
-        selected: selected,
+        selected: semanticsSelected ?? selected,
         // An icon-only tab has no label to announce, so semanticLabel is the
         // caller's only way to name it — the 'Tab' fallback is a last resort,
         // not a name.

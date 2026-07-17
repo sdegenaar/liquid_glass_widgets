@@ -827,18 +827,8 @@ class _GlassTabBarState extends State<GlassTabBar> {
 
   /// Dispatches to [TabBarBottomLayout] — the iOS 26-style bottom placement engine.
   Widget _buildBottom(BuildContext context) {
-    final tabs = widget.tabs
-        .map((t) => GlassBottomBarTab(
-              icon: t.icon ?? const SizedBox.shrink(),
-              label: t.label,
-              activeIcon: t.activeIcon,
-              semanticLabel: t.semanticLabel,
-              glowColor: t.glowColor,
-              thickness: t.thickness,
-            ))
-        .toList();
     return TabBarBottomLayout(
-      tabs: tabs,
+      tabs: widget.tabs,
       selectedIndex: widget.selectedIndex,
       onTabSelected: widget.onTabSelected,
       extraButton: widget.extraButton,
@@ -895,18 +885,8 @@ class _GlassTabBarState extends State<GlassTabBar> {
   /// The track glass comes from [AdaptiveGlass.grouped] inside [TabBarBottomLayout]
   /// exactly as in the bottom placement — no new rendering path needed.
   Widget _buildInline(BuildContext context) {
-    final tabs = widget.tabs
-        .map((t) => GlassBottomBarTab(
-              icon: t.icon ?? const SizedBox.shrink(),
-              label: t.label,
-              activeIcon: t.activeIcon,
-              semanticLabel: t.semanticLabel,
-              glowColor: t.glowColor,
-              thickness: t.thickness,
-            ))
-        .toList();
     return TabBarBottomLayout(
-      tabs: tabs,
+      tabs: widget.tabs,
       selectedIndex: widget.selectedIndex,
       onTabSelected: widget.onTabSelected,
       spacing: widget.spacing,
@@ -959,18 +939,8 @@ class _GlassTabBarState extends State<GlassTabBar> {
 
   /// Dispatches to [TabBarSearchableLayout] — the iOS 26-style searchable placement engine.
   Widget _buildSearchable(BuildContext context) {
-    final tabs = widget.tabs
-        .map((t) => GlassBottomBarTab(
-              icon: t.icon ?? const SizedBox.shrink(),
-              label: t.label,
-              activeIcon: t.activeIcon,
-              semanticLabel: t.semanticLabel,
-              glowColor: t.glowColor,
-              thickness: t.thickness,
-            ))
-        .toList();
     return TabBarSearchableLayout(
-      tabs: tabs,
+      tabs: widget.tabs,
       selectedIndex: widget.selectedIndex,
       onTabSelected: widget.onTabSelected,
       searchConfig: widget.searchConfig!,

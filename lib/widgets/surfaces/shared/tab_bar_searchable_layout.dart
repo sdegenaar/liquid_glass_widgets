@@ -24,9 +24,9 @@ import '../glass_bottom_bar.dart'
     show
         GlassExtraButtonPosition,
         GlassTabBarExtraButton,
-        GlassBottomBarTab,
         GlassTabPillAnchor,
         MaskingQuality;
+import '../glass_tab_bar.dart' show GlassTab;
 import 'tab_bar_bottom_internal.dart'
     show
         BottomBarExtraBtn,
@@ -112,7 +112,7 @@ class TabBarSearchableLayout extends StatefulWidget {
   static const _kSpring =
       SpringDescription(mass: 1.0, stiffness: 350.0, damping: 30.0);
 
-  final List<GlassBottomBarTab> tabs;
+  final List<GlassTab> tabs;
   final int selectedIndex;
   final ValueChanged<int> onTabSelected;
   final GlassSearchBarConfig searchConfig;
@@ -692,7 +692,8 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                                               size: widget.iconSize,
                                             ),
                                             child: currentTab.activeIcon ??
-                                                currentTab.icon,
+                                                currentTab.icon ??
+                                                const SizedBox.shrink(),
                                           ),
                                         );
                                       },
@@ -770,36 +771,38 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
       final aEnd =
           (currentTabFloat + 1).ceil().clamp(0, widget.tabs.length - 1);
 
-      return Row(
-        children: [
-          for (var i = 0; i < widget.tabs.length; i++)
-            Expanded(
-              child: (i >= aStart && i <= aEnd)
-                  ? Transform.scale(
-                      scale: scale,
-                      child: BottomBarTabItem(
-                        tab: widget.tabs[i],
-                        selected: true,
-                        selectedIconColor: resolvedSelectedIconColor,
-                        unselectedIconColor: resolvedUnselectedIconColor,
-                        selectedLabelColor: widget.selectedLabelColor,
-                        unselectedLabelColor: widget.unselectedLabelColor,
-                        selectedLabelStyle: widget.selectedLabelStyle,
-                        unselectedLabelStyle: widget.unselectedLabelStyle,
-                        iconSize: widget.iconSize,
-                        labelFontSize: widget.labelFontSize,
-                        textStyle: widget.textStyle,
-                        iconLabelSpacing: widget.iconLabelSpacing,
-                        glowDuration: widget.glowDuration,
-                        glowBlurRadius: widget.glowBlurRadius,
-                        glowSpreadRadius: widget.glowSpreadRadius,
-                        glowOpacity: widget.glowOpacity,
-                        onTap: null,
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-        ],
+      return ExcludeSemantics(
+        child: Row(
+          children: [
+            for (var i = 0; i < widget.tabs.length; i++)
+              Expanded(
+                child: (i >= aStart && i <= aEnd)
+                    ? Transform.scale(
+                        scale: scale,
+                        child: BottomBarTabItem(
+                          tab: widget.tabs[i],
+                          selected: true,
+                          selectedIconColor: resolvedSelectedIconColor,
+                          unselectedIconColor: resolvedUnselectedIconColor,
+                          selectedLabelColor: widget.selectedLabelColor,
+                          unselectedLabelColor: widget.unselectedLabelColor,
+                          selectedLabelStyle: widget.selectedLabelStyle,
+                          unselectedLabelStyle: widget.unselectedLabelStyle,
+                          iconSize: widget.iconSize,
+                          labelFontSize: widget.labelFontSize,
+                          textStyle: widget.textStyle,
+                          iconLabelSpacing: widget.iconLabelSpacing,
+                          glowDuration: widget.glowDuration,
+                          glowBlurRadius: widget.glowBlurRadius,
+                          glowSpreadRadius: widget.glowSpreadRadius,
+                          glowOpacity: widget.glowOpacity,
+                          onTap: null,
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+          ],
+        ),
       );
     }
 
@@ -810,6 +813,7 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
             child: BottomBarTabItem(
               tab: widget.tabs[i],
               selected: false,
+              semanticsSelected: i == widget.selectedIndex,
               selectedIconColor: resolvedSelectedIconColor,
               unselectedIconColor: resolvedUnselectedIconColor,
               selectedLabelColor: widget.selectedLabelColor,

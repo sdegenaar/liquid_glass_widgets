@@ -17,8 +17,8 @@ import '../../shared/adaptive_liquid_glass_layer.dart';
 import '../../shared/glass_content_aware_scope.dart';
 import '../../../theme/glass_theme_data.dart';
 import '../../../theme/glass_theme_helpers.dart';
-import '../glass_bottom_bar.dart'
-    show GlassTabBarExtraButton, GlassBottomBarTab, MaskingQuality;
+import '../glass_bottom_bar.dart' show GlassTabBarExtraButton, MaskingQuality;
+import '../glass_tab_bar.dart' show GlassTab;
 import 'tab_bar_bottom_internal.dart'
     show
         BottomBarExtraBtn,
@@ -88,7 +88,7 @@ class TabBarBottomLayout extends StatefulWidget {
 
   static const double _kDefaultBorderRadius = 32.0;
 
-  final List<GlassBottomBarTab> tabs;
+  final List<GlassTab> tabs;
   final int selectedIndex;
   final ValueChanged<int> onTabSelected;
   final GlassTabBarExtraButton? extraButton;
@@ -355,6 +355,7 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
                                     glowBlurRadius: widget.glowBlurRadius,
                                     glowSpreadRadius: widget.glowSpreadRadius,
                                     glowOpacity: widget.glowOpacity,
+                                    semanticsSelected: i == selectedIndex,
                                     onTap: null,
                                   ),
                                 ),
@@ -385,7 +386,7 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
   Widget _buildSelectedTabs(
       double intensity,
       Alignment alignment,
-      List<GlassBottomBarTab> tabs,
+      List<GlassTab> tabs,
       Color resolvedSelectedIconColor,
       Color resolvedUnselectedIconColor) {
     final scale = ui.lerpDouble(1.0, widget.magnification, intensity) ?? 1.0;
@@ -395,36 +396,38 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
         (currentTabFloat - 1).floor().clamp(0, tabs.length - 1);
     final affectedEnd = (currentTabFloat + 1).ceil().clamp(0, tabs.length - 1);
 
-    return _ltrTabRow(
-      children: [
-        for (var i = 0; i < tabs.length; i++)
-          Expanded(
-            child: (i >= affectedStart && i <= affectedEnd)
-                ? Transform.scale(
-                    scale: scale,
-                    child: BottomBarTabItem(
-                      tab: tabs[i],
-                      selected: true,
-                      selectedIconColor: resolvedSelectedIconColor,
-                      unselectedIconColor: resolvedUnselectedIconColor,
-                      selectedLabelColor: widget.selectedLabelColor,
-                      unselectedLabelColor: widget.unselectedLabelColor,
-                      selectedLabelStyle: widget.selectedLabelStyle,
-                      unselectedLabelStyle: widget.unselectedLabelStyle,
-                      iconSize: widget.iconSize,
-                      labelFontSize: widget.labelFontSize,
-                      textStyle: widget.textStyle,
-                      iconLabelSpacing: widget.iconLabelSpacing,
-                      glowDuration: widget.glowDuration,
-                      glowBlurRadius: widget.glowBlurRadius,
-                      glowSpreadRadius: widget.glowSpreadRadius,
-                      glowOpacity: widget.glowOpacity,
-                      onTap: null,
-                    ),
-                  )
-                : const SizedBox.shrink(),
-          ),
-      ],
+    return ExcludeSemantics(
+      child: _ltrTabRow(
+        children: [
+          for (var i = 0; i < tabs.length; i++)
+            Expanded(
+              child: (i >= affectedStart && i <= affectedEnd)
+                  ? Transform.scale(
+                      scale: scale,
+                      child: BottomBarTabItem(
+                        tab: tabs[i],
+                        selected: true,
+                        selectedIconColor: resolvedSelectedIconColor,
+                        unselectedIconColor: resolvedUnselectedIconColor,
+                        selectedLabelColor: widget.selectedLabelColor,
+                        unselectedLabelColor: widget.unselectedLabelColor,
+                        selectedLabelStyle: widget.selectedLabelStyle,
+                        unselectedLabelStyle: widget.unselectedLabelStyle,
+                        iconSize: widget.iconSize,
+                        labelFontSize: widget.labelFontSize,
+                        textStyle: widget.textStyle,
+                        iconLabelSpacing: widget.iconLabelSpacing,
+                        glowDuration: widget.glowDuration,
+                        glowBlurRadius: widget.glowBlurRadius,
+                        glowSpreadRadius: widget.glowSpreadRadius,
+                        glowOpacity: widget.glowOpacity,
+                        onTap: null,
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+        ],
+      ),
     );
   }
 }

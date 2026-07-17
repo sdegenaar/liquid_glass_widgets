@@ -12,10 +12,9 @@ import '../../shared/test_helpers.dart';
 /// the caller's only way to name it.
 ///
 /// These bars paint an unselected row plus a selected-styled row that the
-/// indicator clips, and the second row only covers the tabs the indicator
-/// currently touches. A tab therefore yields one or two semantics nodes
-/// depending on where the indicator sits, so these expectations assert which
-/// labels reach the tree rather than how many nodes carry them.
+/// indicator clips. The selected row is wrapped in `ExcludeSemantics`, meaning
+/// a tab yields exactly ONE semantics node regardless of where the indicator
+/// sits, avoiding duplicate button announcements.
 void main() {
   const iconOnlyTabs = [
     GlassTab(icon: Icon(CupertinoIcons.home), semanticLabel: 'Home'),
@@ -38,9 +37,9 @@ void main() {
         ),
       );
 
-      expect(find.bySemanticsLabel('Home'), findsWidgets);
-      expect(find.bySemanticsLabel('Search'), findsWidgets);
-      expect(find.bySemanticsLabel('Profile'), findsWidgets);
+      expect(find.bySemanticsLabel('Home'), findsOneWidget);
+      expect(find.bySemanticsLabel('Search'), findsOneWidget);
+      expect(find.bySemanticsLabel('Profile'), findsOneWidget);
       expect(find.bySemanticsLabel('Tab'), findsNothing);
 
       semantics.dispose();
@@ -69,7 +68,7 @@ void main() {
         ),
       );
 
-      expect(find.bySemanticsLabel('Home, first of two tabs'), findsWidgets);
+      expect(find.bySemanticsLabel('Home, first of two tabs'), findsOneWidget);
       // Replaced, not prefixed: the label text is not announced as well.
       expect(find.bySemanticsLabel('Home'), findsNothing);
       // The visible label still renders; only the announcement changes.
@@ -97,7 +96,7 @@ void main() {
         ),
       );
 
-      expect(find.bySemanticsLabel('Home'), findsWidgets);
+      expect(find.bySemanticsLabel('Home'), findsOneWidget);
       expect(find.bySemanticsLabel('Search'), findsWidgets);
 
       semantics.dispose();
@@ -120,7 +119,7 @@ void main() {
         ),
       );
 
-      expect(find.bySemanticsLabel('Tab'), findsWidgets);
+      expect(find.bySemanticsLabel('Tab'), findsNWidgets(2));
 
       semantics.dispose();
     });
@@ -141,8 +140,8 @@ void main() {
         ),
       );
 
-      expect(find.bySemanticsLabel('Home'), findsWidgets);
-      expect(find.bySemanticsLabel('Profile'), findsWidgets);
+      expect(find.bySemanticsLabel('Home'), findsOneWidget);
+      expect(find.bySemanticsLabel('Profile'), findsOneWidget);
       expect(find.bySemanticsLabel('Tab'), findsNothing);
 
       semantics.dispose();
@@ -165,8 +164,8 @@ void main() {
         ),
       );
 
-      expect(find.bySemanticsLabel('Home'), findsWidgets);
-      expect(find.bySemanticsLabel('Profile'), findsWidgets);
+      expect(find.bySemanticsLabel('Home'), findsOneWidget);
+      expect(find.bySemanticsLabel('Profile'), findsOneWidget);
       expect(find.bySemanticsLabel('Tab'), findsNothing);
 
       semantics.dispose();
@@ -197,8 +196,8 @@ void main() {
         ),
       );
 
-      expect(find.bySemanticsLabel('Home'), findsWidgets);
-      expect(find.bySemanticsLabel('Search'), findsWidgets);
+      expect(find.bySemanticsLabel('Home'), findsOneWidget);
+      expect(find.bySemanticsLabel('Search'), findsOneWidget);
       expect(find.bySemanticsLabel('Tab'), findsNothing);
 
       semantics.dispose();

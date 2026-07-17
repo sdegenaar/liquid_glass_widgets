@@ -1,26 +1,16 @@
-# Unreleased
+# 0.22.1
 
 ## 🐛 Bug Fixes
 
-- **Icon-only tabs announce `'Tab'` on `GlassTabBar.bottom` / `.inline` /
-  `.searchable`** — `GlassTab.semanticLabel` never reached the bar. All three
-  constructors map `GlassTab` onto the internal `GlassBottomBarTab`, which had
-  no `semanticLabel` field, so the value was dropped before
-  `BottomBarTabItem` ran and its `label: tab.label ?? 'Tab'` fell through to
-  the untranslated `'Tab'` fallback. Because the icon subtree is wrapped in
-  `ExcludeSemantics`, a caller could not inject a name through the icon
-  either, which left icon-only tabs — a supported configuration — with no way
-  to be named at all. `GlassBottomBarTab` now carries `semanticLabel`, the
-  three constructors pass it through, and the announcement resolves
-  `semanticLabel ?? label ?? 'Tab'`. `GlassSegmentedControl` already behaved
-  this way; the bottom bars now match it.
+- **Tab Bar Semantics** — Fixed multiple accessibility issues in `GlassTabBar` and `GlassBottomBar`:
+  - `GlassTab.semanticLabel` is now properly propagated, allowing icon-only tabs to be correctly announced instead of defaulting to `'Tab'`.
+  - Fixed an issue where tab labels were announced twice by wrapping the internal `Text` widget in `ExcludeSemantics`.
+  - Eliminated duplicate semantic nodes for the active tab by hiding the visual clipping indicator from the accessibility tree, ensuring exactly one node per tab.
+  Thanks to @simiwe (#159).
 
-- **Tab labels were announced twice** — the label `Text` sat inside the tab's
-  own `Semantics`, so its text merged into the announcement on top of the
-  label already set there: a tab labelled `Home` announced as `Home\nHome`,
-  and `semanticLabel` acted as a prefix rather than the override its docs
-  promise. The label text is now wrapped in `ExcludeSemantics`, mirroring the
-  icon beside it.
+## ♻️ Refactoring
+
+- **Internal Tab Models** — Deprecated `GlassBottomBarTab` is no longer used by the internal layout engines. They now natively accept `GlassTab`, removing the need for mapping closures and `SizedBox.shrink()` sentinels.
 
 ---
 
