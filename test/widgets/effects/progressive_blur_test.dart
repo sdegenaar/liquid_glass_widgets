@@ -73,7 +73,8 @@ void main() {
 
   testWidgets('honours the direction without throwing', (tester) async {
     for (final dir in ProgressiveBlurDirection.values) {
-      await tester.pumpWidget(host(ProgressiveBlur(maxSigma: 18, direction: dir)));
+      await tester
+          .pumpWidget(host(ProgressiveBlur(maxSigma: 18, direction: dir)));
       await tester.pump();
       expect(tester.takeException(), isNull);
     }

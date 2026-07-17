@@ -1,10 +1,10 @@
-/// Debug example for testing GlassButton shape and radius behavior.
+/// Shape comparison demo — LiquidRoundedRectangle vs LiquidRoundedSuperellipse
+/// across both Standard and Premium quality tiers.
 ///
-/// This example demonstrates how different shapes and sizes render
-/// with GlassButton, including the default LiquidOval, explicit
-/// rounded rectangles, and superellipses.
+/// Standard quality: lightweight shader + _SquircleClipper (CPU L4/L2 path).
+/// Premium quality:  Impeller geometry shader (sdfSquircle on GPU).
 ///
-/// To run: flutter run -t lib/repro_issue.dart
+/// To run standalone: flutter run -t lib/demos/shape_debug_demo.dart
 library;
 
 import 'package:flutter/cupertino.dart';
@@ -35,8 +35,15 @@ class ShapeDebugApp extends StatelessWidget {
   }
 }
 
-class ShapeDebugPage extends StatelessWidget {
+class ShapeDebugPage extends StatefulWidget {
   const ShapeDebugPage({super.key});
+
+  @override
+  State<ShapeDebugPage> createState() => _ShapeDebugPageState();
+}
+
+class _ShapeDebugPageState extends State<ShapeDebugPage> {
+  GlassQuality _quality = GlassQuality.standard;
 
   @override
   Widget build(BuildContext context) {
@@ -46,123 +53,133 @@ class ShapeDebugPage extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF1a1a2e), Color(0xFF16213e), Color(0xFF0f3460)],
+            colors: [Color(0xFF0d1117), Color(0xFF161b22), Color(0xFF1c2526)],
           ),
         ),
       ),
       child: Scaffold(
+        backgroundColor: Colors.transparent,
         body: AdaptiveLiquidGlassLayer(
           settings: RecommendedGlassSettings.standard,
           quality: GlassQuality.standard,
           child: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'GlassButton Shape Debug',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Verifying shape and radius behavior',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Default shape (LiquidOval)
-                  const _SectionLabel('Default (LiquidOval)'),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            child: Column(
+              children: [
+                // ── Header + quality toggle ──────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                  child: Row(
                     children: [
-                      _IconButton(
-                        icon: Icon(Icons.arrow_back_ios_new),
-                        label: 'Back',
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Shape Debug',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'RoundedRect vs Superellipse',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.white54,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      _IconButton(
-                          icon: Icon(Icons.favorite), label: 'Favorite'),
-                      _IconButton(icon: Icon(Icons.share), label: 'Share'),
-                      _IconButton(icon: Icon(Icons.close), label: 'Close'),
+                      // Quality toggle pill
+                      _QualityToggle(
+                        quality: _quality,
+                        onChanged: (q) => setState(() => _quality = q),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 32),
+                ),
+                const SizedBox(height: 8),
 
-                  // Explicit shapes
-                  const _SectionLabel('Explicit Shapes'),
-                  const SizedBox(height: 10),
-                  _ShapeRow(
-                    shape: const LiquidRoundedRectangle(borderRadius: 20),
-                    label: 'RoundedRect(20)',
-                  ),
-                  const SizedBox(height: 12),
-                  _ShapeRow(
-                    shape: const LiquidRoundedRectangle(borderRadius: 0),
-                    label: 'RoundedRect(0)',
-                  ),
-                  const SizedBox(height: 12),
-                  _ShapeRow(
-                    shape: const LiquidRoundedSuperellipse(borderRadius: 12),
-                    label: 'Superellipse(12)',
-                  ),
-                  const SizedBox(height: 32),
+                // ── Quality badge ─────────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _QualityBadge(quality: _quality),
+                ),
+                const SizedBox(height: 16),
 
-                  // In a Stack (positioned layout)
-                  const _SectionLabel('Stack + Positioned'),
-                  const SizedBox(height: 10),
-                  Container(
-                    height: 200,
-                    decoration: BoxDecoration(
-                      color: Colors.black26,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Stack(
+                // ── Scrollable content ────────────────────────────────────────
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Center(
-                          child: Text(
-                            'Content behind buttons',
-                            style: TextStyle(color: Colors.white54),
+                        // Moderate radii — squircle difference is visible here
+                        const _SectionLabel('Moderate Radius'),
+                        const SizedBox(height: 4),
+                        const _SectionHint(
+                          'Squircle corners fill further into the diagonal — '
+                          'look for the smoother "sweep" vs the circular arc pop.',
+                        ),
+                        const SizedBox(height: 14),
+                        for (final r in [16.0, 24.0, 32.0]) ...[
+                          _CardComparisonRow(
+                            radius: r,
+                            quality: _quality,
+                            cardHeight: 100,
                           ),
+                          const SizedBox(height: 16),
+                        ],
+
+                        const SizedBox(height: 12),
+
+                        // Button-sized shapes — still distinguishable at r=12-18
+                        const _SectionLabel('Button Size'),
+                        const SizedBox(height: 4),
+                        const _SectionHint(
+                          'Smaller shapes at typical button radii (r = 12–18).',
                         ),
-                        Positioned(
-                          left: 8,
-                          top: 16,
-                          child: _IconButton(
-                            icon: Icon(Icons.arrow_back_ios_new),
+                        const SizedBox(height: 14),
+                        for (final r in [12.0, 18.0]) ...[
+                          _CardComparisonRow(
+                            radius: r,
+                            quality: _quality,
+                            cardHeight: 52,
                           ),
+                          const SizedBox(height: 16),
+                        ],
+
+                        const SizedBox(height: 12),
+
+                        // Pill / Stadium — BOTH identical by design
+                        const _SectionLabel('Pill / Stadium (r ≥ half-height)'),
+                        const SizedBox(height: 4),
+                        const _SectionHint(
+                          'When radius is clamped to the half-height, both '
+                          'shapes become a perfect stadium — identical by design.',
                         ),
-                        Positioned(
-                          right: 8,
-                          top: 16,
-                          child: _IconButton(icon: Icon(Icons.close)),
+                        const SizedBox(height: 14),
+                        _CardComparisonRow(
+                          radius: 999,
+                          quality: _quality,
+                          cardHeight: 62,
+                          radiusLabel: '∞ (pill)',
                         ),
+                        const SizedBox(height: 32),
+
+                        // Inline buttons
+                        const _SectionLabel('Inline Buttons'),
+                        const SizedBox(height: 14),
+                        _ButtonComparisonRow(quality: _quality),
+                        const SizedBox(height: 32),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 32),
-
-                  // Different sizes
-                  const _SectionLabel('Different Sizes'),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _SizedButton(size: 32, iconSize: 14),
-                      _SizedButton(size: 40, iconSize: 18),
-                      _SizedButton(size: 56, iconSize: 24),
-                    ],
-                  ),
-                  const SizedBox(height: 100),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -172,45 +189,96 @@ class ShapeDebugPage extends StatelessWidget {
 }
 
 // =============================================================================
-// Reusable icon button (matches reporter's pattern)
+// Quality toggle + badge
 // =============================================================================
 
-class _IconButton extends StatelessWidget {
-  const _IconButton({required this.icon, this.label});
+class _QualityToggle extends StatelessWidget {
+  const _QualityToggle({
+    required this.quality,
+    required this.onChanged,
+  });
 
-  final Widget icon;
-  final String? label;
+  final GlassQuality quality;
+  final ValueChanged<GlassQuality> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final button = GlassButton(
-      icon: icon,
-      width: 40,
-      height: 40,
-      iconSize: 16,
-      quality: GlassQuality.standard,
-      iconColor: Colors.white,
-      onTap: () {},
-      glowColor: Colors.blue.withValues(alpha: 0.4),
-    );
-
-    if (label == null) return button;
-
-    return Column(
-      children: [
-        button,
-        const SizedBox(height: 8),
-        Text(
-          label!,
-          style: const TextStyle(color: Colors.white54, fontSize: 12),
+    return GlassButton.custom(
+      onTap: () => onChanged(
+        quality == GlassQuality.standard
+            ? GlassQuality.premium
+            : GlassQuality.standard,
+      ),
+      height: 36,
+      quality: GlassQuality.premium,
+      useOwnLayer: true,
+      shape: const LiquidRoundedSuperellipse(borderRadius: 18),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              quality == GlassQuality.premium
+                  ? Icons.diamond_outlined
+                  : Icons.layers_outlined,
+              color: Colors.white70,
+              size: 14,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              quality == GlassQuality.premium ? 'Premium' : 'Standard',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+}
+
+class _QualityBadge extends StatelessWidget {
+  const _QualityBadge({required this.quality});
+  final GlassQuality quality;
+
+  @override
+  Widget build(BuildContext context) {
+    final isPremium = quality == GlassQuality.premium;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: isPremium
+            ? const Color(0xFF7B61FF).withValues(alpha: 0.15)
+            : Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isPremium
+              ? const Color(0xFF7B61FF).withValues(alpha: 0.4)
+              : Colors.white.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Text(
+        isPremium
+            ? '⬦ Premium — Impeller sdfSquircle geometry shader (GPU L4 blend)'
+            : '◈ Standard — _SquircleClipper + lightweight shader (CPU L4/L2 path)',
+        style: TextStyle(
+          fontSize: 11,
+          color: isPremium
+              ? const Color(0xFFB09FFF)
+              : Colors.white.withValues(alpha: 0.5),
+          fontFamily: 'monospace',
+        ),
+      ),
     );
   }
 }
 
 // =============================================================================
-// Helper widgets
+// Section labels
 // =============================================================================
 
 class _SectionLabel extends StatelessWidget {
@@ -222,69 +290,233 @@ class _SectionLabel extends StatelessWidget {
     return Text(
       text,
       style: const TextStyle(
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: FontWeight.w600,
         color: Colors.white70,
+        letterSpacing: 0.2,
       ),
     );
   }
 }
 
-class _ShapeRow extends StatelessWidget {
-  const _ShapeRow({required this.shape, required this.label});
-
-  final LiquidShape shape;
-  final String label;
+class _SectionHint extends StatelessWidget {
+  const _SectionHint(this.text);
+  final String text;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 12,
+        color: Colors.white.withValues(alpha: 0.38),
+        height: 1.4,
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// Card comparison row — RoundedRect (left) vs Superellipse (right)
+// =============================================================================
+
+class _CardComparisonRow extends StatelessWidget {
+  const _CardComparisonRow({
+    required this.radius,
+    required this.quality,
+    required this.cardHeight,
+    this.radiusLabel,
+  });
+
+  final double radius;
+  final GlassQuality quality;
+  final double cardHeight;
+  final String? radiusLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GlassButton(
-          icon: Icon(Icons.star),
-          width: 40,
-          height: 40,
-          iconSize: 16,
-          quality: GlassQuality.standard,
-          iconColor: Colors.white,
-          onTap: () {},
-          glowColor: Colors.blue.withValues(alpha: 0.4),
-          shape: shape,
-        ),
-        const SizedBox(width: 16),
         Text(
-          label,
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
+          'r = ${radiusLabel ?? radius.toInt()}',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.3),
+            fontSize: 11,
+            fontFamily: 'monospace',
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: _LabelledCard(
+                shape: LiquidRoundedRectangle(borderRadius: radius),
+                label: 'RoundedRect',
+                sublabel: 'sdfRRect / circular arc',
+                height: cardHeight,
+                quality: quality,
+                accentColor: const Color(0xFF4A9EFF),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _LabelledCard(
+                shape: LiquidRoundedSuperellipse(borderRadius: radius),
+                label: 'Superellipse',
+                sublabel: 'sdfSquircle / L4 blend',
+                height: cardHeight,
+                quality: quality,
+                accentColor: const Color(0xFF7B61FF),
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 }
 
-class _SizedButton extends StatelessWidget {
-  const _SizedButton({required this.size, required this.iconSize});
+class _LabelledCard extends StatelessWidget {
+  const _LabelledCard({
+    required this.shape,
+    required this.label,
+    required this.sublabel,
+    required this.height,
+    required this.quality,
+    required this.accentColor,
+  });
 
-  final double size;
-  final double iconSize;
+  final LiquidShape shape;
+  final String label;
+  final String sublabel;
+  final double height;
+  final GlassQuality quality;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final showSublabel = height >= 70;
+    return GlassContainer(
+      shape: shape,
+      useOwnLayer: quality == GlassQuality.premium,
+      quality: quality,
+      height: height,
+      child: showSublabel
+          ? Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: accentColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    sublabel,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      fontSize: 9,
+                      fontFamily: 'monospace',
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            )
+          : Center(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: accentColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ),
+    );
+  }
+}
+
+// =============================================================================
+// Inline button comparison row
+// =============================================================================
+
+class _ButtonComparisonRow extends StatelessWidget {
+  const _ButtonComparisonRow({required this.quality});
+  final GlassQuality quality;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _LabelledButton(
+          shape: const LiquidRoundedRectangle(borderRadius: 14),
+          label: 'RoundedRect',
+          quality: quality,
+          accentColor: const Color(0xFF4A9EFF),
+        ),
+        const SizedBox(width: 16),
+        _LabelledButton(
+          shape: const LiquidRoundedSuperellipse(borderRadius: 14),
+          label: 'Superellipse',
+          quality: quality,
+          accentColor: const Color(0xFF7B61FF),
+        ),
+      ],
+    );
+  }
+}
+
+class _LabelledButton extends StatelessWidget {
+  const _LabelledButton({
+    required this.shape,
+    required this.label,
+    required this.quality,
+    required this.accentColor,
+  });
+
+  final LiquidShape shape;
+  final String label;
+  final GlassQuality quality;
+  final Color accentColor;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        GlassButton(
-          icon: Icon(Icons.add),
-          width: size,
-          height: size,
-          iconSize: iconSize,
-          quality: GlassQuality.standard,
-          iconColor: Colors.white,
+        GlassButton.custom(
+          shape: shape,
+          quality: quality,
+          useOwnLayer: quality == GlassQuality.premium,
+          height: 44,
+          width: 140,
           onTap: () {},
-          glowColor: Colors.blue.withValues(alpha: 0.4),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: accentColor,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
-          '${size.toInt()}px',
-          style: const TextStyle(color: Colors.white54, fontSize: 12),
+          'r = 14',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.3),
+            fontSize: 10,
+            fontFamily: 'monospace',
+          ),
         ),
       ],
     );

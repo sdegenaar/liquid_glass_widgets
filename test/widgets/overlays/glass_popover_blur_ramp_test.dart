@@ -98,8 +98,11 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pump();
 
-    expect(layerBlur(tester), closeTo(target, 0.001),
-        reason: 'reduce-motion must not add a blur ramp',);
+    expect(
+      layerBlur(tester),
+      closeTo(target, 0.001),
+      reason: 'reduce-motion must not add a blur ramp',
+    );
 
     await tester.pumpAndSettle();
   });
