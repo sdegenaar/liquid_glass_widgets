@@ -26,7 +26,7 @@ jobs:
         flutter-channel: [stable, beta]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: subosito/flutter-action@v2
         with:
@@ -103,7 +103,7 @@ jobs:
       # Only uploaded once (stable macOS) to avoid duplicate reports.
       - name: Upload coverage to Codecov
         if: matrix.os == 'macos-latest' && matrix.flutter-channel == 'stable'
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: coverage/lcov_effective.info
@@ -120,7 +120,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install glslang
         run: sudo apt-get install -y glslang-tools
@@ -142,7 +142,7 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: subosito/flutter-action@v2
         with:
