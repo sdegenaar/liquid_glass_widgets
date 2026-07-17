@@ -183,8 +183,9 @@ class _ProgressiveBlurState extends State<ProgressiveBlur> {
     // rectangle to normalise the gradient over the bar (see the .frag header).
     // The bar is anchored at the top-left of the backdrop layer (true for top
     // app bars), so its origin is (0,0); LayoutBuilder gives its size.
-    // coverage:ignore-start — requires a compiled FragmentProgram; the
-    // headless test VM never provides one. The fallback path above is tested.
+    // coverage:ignore-start
+    // Requires a compiled FragmentProgram; the headless test VM never provides
+    // one. The fallback path above is tested.
     final dpr = MediaQuery.devicePixelRatioOf(context);
     return LayoutBuilder(
       builder: (context, constraints) {
