@@ -88,4 +88,41 @@ void main() {
     await ProgressiveBlur.preload();
     await ProgressiveBlur.preload();
   });
+
+  testWidgets('negative maxSigma is also a passthrough', (tester) async {
+    await tester.pumpWidget(host(const ProgressiveBlur(maxSigma: -5)));
+    await tester.pump();
+    expect(find.byType(BackdropFilter), findsNothing);
+  });
+
+  testWidgets('custom falloff parameter renders without error', (tester) async {
+    await tester.pumpWidget(
+      host(const ProgressiveBlur(maxSigma: 20, falloff: 2.5)),
+    );
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(find.byType(BackdropFilter), findsOneWidget);
+  });
+
+  testWidgets('widget can be removed from tree without error', (tester) async {
+    await tester.pumpWidget(host(const ProgressiveBlur(maxSigma: 20)));
+    await tester.pump();
+    expect(find.byType(ProgressiveBlur), findsOneWidget);
+
+    // Replace with an empty container — triggers dispose().
+    await tester.pumpWidget(host(const SizedBox.shrink()));
+    await tester.pump();
+    expect(find.byType(ProgressiveBlur), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  test('ProgressiveBlurDirection has exactly 4 values', () {
+    expect(ProgressiveBlurDirection.values, hasLength(4));
+    expect(ProgressiveBlurDirection.values, [
+      ProgressiveBlurDirection.topToBottom,
+      ProgressiveBlurDirection.bottomToTop,
+      ProgressiveBlurDirection.leftToRight,
+      ProgressiveBlurDirection.rightToLeft,
+    ]);
+  });
 }

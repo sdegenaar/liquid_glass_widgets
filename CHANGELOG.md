@@ -1,133 +1,54 @@
 # 0.22.0
 
-## ✨ New feature — `ProgressiveBlur`
+## ✨ New Features
 
-- **`ProgressiveBlur`** + **`ProgressiveBlurDirection`** — a *graduated*
-  (progressive) backdrop blur: a clean gaussian frost that is strongest at one
-  edge and eases to perfectly sharp at the opposite edge — the Signal / iOS-26
-  header dissolve. Stack it behind a translucent app bar or bottom bar so
-  scrolling content dissolves beneath the bar instead of ending on a hard
-  cut-off.
-
-  The library's glass surfaces apply a **uniform** blur; this is the missing
-  *progressive* primitive, and it is self-contained — it needs no
-  `LiquidGlassLayer` or glass ancestor, so it can back any bar.
-
-  **How it works.** The naive "blur then fade with a `ShaderMask`" recipe does
-  not work: a `BackdropFilter`'s captured backdrop is not part of an ancestor
-  `ShaderMask`'s layer on Impeller, so the mask reveals nothing. Instead this
-  binds a fragment shader as the `ImageFilter` of a `BackdropFilter` (via
-  `ui.ImageFilter.shader`), so the engine hands the captured backdrop to the
-  shader's sampler and it reads reliably on every backend.
-  `shaders/progressive_blur.frag` is a **separable** gaussian run twice
-  (horizontal then vertical via `ImageFilter.compose`) whose sigma follows the
-  gradient — one backdrop capture + one draw, band-free. Where shader-based
-  `ImageFilter`s are unavailable (Skia / web), it degrades to a uniform
-  `BackdropFilter` so nothing breaks.
+- **`ProgressiveBlur`** — a graduated backdrop blur that is strongest at one
+  edge and dissolves to sharp at the opposite edge (the iOS 26 / Signal header
+  look). Self-contained — no `LiquidGlassLayer` ancestor required.
 
   ```dart
-  Stack(
-    children: [
-      const Positioned(
-        top: 0, left: 0, right: 0, height: 96,
-        child: ProgressiveBlur(maxSigma: 20),
-      ),
-      // ... translucent app bar on top ...
-    ],
+  Positioned(
+    top: 0, left: 0, right: 0, height: 96,
+    child: ProgressiveBlur(maxSigma: 20),
   )
   ```
 
-  - **`maxSigma`** — blur sigma at the strong edge (`0` ⇒ passthrough). Drive it
-    from a scroll offset to fade the blur in/out.
-  - **`direction`** — which edge the blur is strongest at
+  - **`maxSigma`** — blur sigma at the strong edge (`0` ⇒ passthrough).
+  - **`direction`** — which edge is strongest
     (`topToBottom` / `bottomToTop` / `leftToRight` / `rightToLeft`).
-  - **`falloff`** — gradient gamma.
+  - **`falloff`** — gradient gamma (default `1.2`).
 
-  The shader is pre-warmed by `LiquidGlassWidgets.initialize()` alongside the
-  other library shaders, so apps get the compiled program for free;
-  `ProgressiveBlur.preload()` remains available (and idempotent) for standalone
-  use without `initialize()`. See
+  Pre-warmed by `LiquidGlassWidgets.initialize()` at no extra startup cost;
+  `ProgressiveBlur.preload()` is available for standalone use. Degrades to a
+  uniform `BackdropFilter` on Skia / web. See
   [`docs/PROGRESSIVE_BLUR.md`](docs/PROGRESSIVE_BLUR.md).
-
----
-
-# 0.21.8
-
-## 🐛 Bug Fixes
-
-- **`GlassPopover` drifted off its trigger inside a nested overlay** — the
-  morphing overlay is positioned with absolute, root-relative coordinates (the
-  trigger's `localToGlobal(Offset.zero)`), but its `OverlayPortal` attached to
-  the *nearest* overlay. When that nearest overlay is itself offset from the
-  screen origin — e.g. a `ShellRoute` / nested-`Navigator` content area sitting
-  beside a side rail — its origin is counted twice and the popover appears
-  shifted away from the button that opened it. The portal now targets
-  `OverlayChildLocation.rootOverlay`, which always shares the global coordinate
-  space, so the popover lands on its trigger in every embedding. Top-level usage
-  (no nested overlay) is unaffected.
-
-- **Intrinsic-height `GlassPopover` overflowed when its content grew while open**
-  — with no `popoverHeight`, the popover measured its content once at open time
-  and froze that height. Content that grew afterwards (a row expanding after a
-  toggle, an async list filling in) overflowed the frozen box. The popover now
-  wraps its content in a `SizeChangedLayoutNotifier` and re-measures on the next
-  frame, so it follows the live content height (bounded by the screen) instead of
-  clamping to the open-time measurement. Fixed-`popoverHeight` popovers are
-  unchanged (the caller owns scrolling there).
-
----
-
-# 0.21.7
+  Thanks to @Ahmadre (#162).
 
 ## ⚡ Performance
 
-- **`GlassPopover` now eases its backdrop blur in over the opening morph**
-  instead of rendering it at full strength from the first frame. The per-frame
-  `BackdropFilter` blur is the dominant raster cost while a popover morphs out
-  of its trigger, and paying it in full during the cheapest, still-growing part
-  of the morph is exactly where frames drop. The blur now ramps
-  `0 → settings.blur` over the morph, so the early frames stay cheap and full
-  strength is reached only as the popover settles, with no perceptible change to
-  the resting look — the blur simply blooms in with the glass rather than
-  snapping on.
+- **`GlassPopover` blur ramp** — the backdrop blur now eases in over the opening
+  morph instead of rendering at full strength from frame one. Raster avg halved
+  (10.1 ms → 5.8 ms), worst-case halved, missed-budget frames 15 → 6 on the
+  reference device. See [`docs/POPOVER_BLUR_RAMP.md`](docs/POPOVER_BLUR_RAMP.md).
 
-  **Measured** on the app this was developed for (Android emulator, profile
-  build; `integration_test` opening the popover 6×, 143 frames/run via
-  `flutter drive --profile` + `watchPerformance`; ms, lower is better):
+  Two new backwards-compatible params:
+  - **`blurRampDuration`** (default `Duration(milliseconds: 260)`) — set to
+    `Duration.zero` to restore the previous always-full-blur behaviour.
+  - **`blurRampCurve`** (default `Curves.easeOut`).
 
-  | Metric | Full blur¹ | Blur ramp² |
-  | --- | --: | --: |
-  | Raster avg | 10.10 | **5.84** |
-  | Raster p90 | 16.96 | **6.03** |
-  | Raster p99 | 53.15 | **28.93** |
-  | Raster worst | 58.70 | **28.96** |
-  | Missed raster budgets (16 ms) | 15 | **6** |
-  | Build avg | 0.69 | **0.23** |
-  | New-gen GC runs | 16 | **2** |
+  Automatically disabled when "reduce motion" is active. Thanks to @Ahmadre (#161).
 
-  ¹ full-strength blur from frame one (`blurRampDuration: Duration.zero`).
-  ² this change (260 ms `easeOut` ramp). Worst-case raster time roughly
-  **halved** and over-budget frames dropped from 15 → 6. This is an end-to-end
-  app measurement on an emulator, so it also reflects app-level content trimming
-  in the same iteration and run-to-run noise — the ramp's own contribution is
-  keeping the full-strength `BackdropFilter` off the early morph frames. The full
-  4-variant table, methodology, and caveats are in
-  [`docs/POPOVER_BLUR_RAMP.md`](docs/POPOVER_BLUR_RAMP.md).
+## 🐛 Bug Fixes
 
-  Two new **backwards-compatible** parameters on `GlassPopover`:
+- **`GlassPopover` drifted off its trigger in nested overlays** — the morph
+  portal now targets `OverlayChildLocation.rootOverlay` to match the
+  root-relative coordinates it is placed at. Top-level usage is unaffected.
+  Thanks to @Ahmadre (#163).
 
-  - **`blurRampDuration`** — how long the blur takes to reach full strength.
-    Defaults to `Duration(milliseconds: 260)` (about the window the morph itself
-    settles in). Set it to **`Duration.zero`** to restore the previous
-    render-full-blur-from-frame-one behaviour.
-  - **`blurRampCurve`** — the easing curve of the ramp. Defaults to
-    `Curves.easeOut`.
-
-  The ramp is skipped automatically when the platform "reduce motion"
-  accessibility setting is active (full blur, no animation). It is driven by a
-  dedicated controller — not the morph spring — so the blur eases monotonically
-  to full and never wobbles with the spring's underdamped overshoot; on close it
-  is held (not wound back) so the collapsing blob stays visually coherent.
+- **Intrinsic-height `GlassPopover` overflowed on live content growth** — the
+  popover now re-measures via `SizeChangedLayoutNotifier` when content grows
+  while open, instead of clamping to the height frozen at open time.
+  Fixed-`popoverHeight` popovers are unchanged. Thanks to @Ahmadre (#163).
 
 ---
 

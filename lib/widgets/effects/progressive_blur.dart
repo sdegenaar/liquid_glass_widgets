@@ -144,15 +144,15 @@ class _ProgressiveBlurState extends State<ProgressiveBlur> {
   void _makeShaders() {
     final p = ProgressiveBlur._program;
     if (p != null && _hShader == null) {
-      _hShader = p.fragmentShader();
-      _vShader = p.fragmentShader();
+      _hShader = p.fragmentShader(); // coverage:ignore-line
+      _vShader = p.fragmentShader(); // coverage:ignore-line
     }
   }
 
   @override
   void dispose() {
-    _hShader?.dispose();
-    _vShader?.dispose();
+    _hShader?.dispose(); // coverage:ignore-line
+    _vShader?.dispose(); // coverage:ignore-line
     super.dispose();
   }
 
@@ -183,6 +183,8 @@ class _ProgressiveBlurState extends State<ProgressiveBlur> {
     // rectangle to normalise the gradient over the bar (see the .frag header).
     // The bar is anchored at the top-left of the backdrop layer (true for top
     // app bars), so its origin is (0,0); LayoutBuilder gives its size.
+    // coverage:ignore-start — requires a compiled FragmentProgram; the
+    // headless test VM never provides one. The fallback path above is tested.
     final dpr = MediaQuery.devicePixelRatioOf(context);
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -218,5 +220,6 @@ class _ProgressiveBlurState extends State<ProgressiveBlur> {
         );
       },
     );
+    // coverage:ignore-end
   }
 }

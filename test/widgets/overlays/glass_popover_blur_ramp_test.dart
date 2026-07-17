@@ -115,4 +115,31 @@ void main() {
     expect(popover.blurRampDuration, const Duration(milliseconds: 260));
     expect(popover.blurRampCurve, Curves.easeOut);
   });
+
+  testWidgets(
+      'blurRampDuration change mid-open applies without crash and settles',
+      (tester) async {
+    // Start with a long ramp so we can catch it mid-animation.
+    await tester.pumpWidget(
+      buildApp(blurRampDuration: const Duration(milliseconds: 600)),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pump(); // ramp starts
+
+    // Confirm the blur is ramping (not yet full).
+    expect(layerBlur(tester)!, lessThan(target * 0.5));
+
+    // Rebuild with a much shorter duration while the ramp is still running.
+    // didUpdateWidget must not throw, and the widget must remain mounted.
+    await tester.pumpWidget(
+      buildApp(blurRampDuration: const Duration(milliseconds: 50)),
+    );
+    expect(tester.takeException(), isNull);
+    expect(find.byType(GlassPopover), findsOneWidget);
+
+    // After settling the blur must reach the full configured target.
+    await tester.pumpAndSettle();
+    expect(layerBlur(tester), closeTo(target, 0.01));
+  });
 }

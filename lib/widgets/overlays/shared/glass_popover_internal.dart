@@ -173,6 +173,19 @@ class _GlassPopoverState extends State<GlassPopover>
         _cachedContent = widget.contentBuilder(context, _closePopover);
       });
     }
+    // If the blur ramp params changed while a ramp is actively running, apply
+    // the new duration immediately so the current cycle uses it. The new curve
+    // is picked up automatically on the next _blurFactor read (it reads
+    // widget.blurRampCurve directly). No restart needed — the controller
+    // continues from its current value with the updated duration.
+    if (oldWidget.blurRampDuration != widget.blurRampDuration ||
+        oldWidget.blurRampCurve != widget.blurRampCurve) {
+      if (_blurRamp.isAnimating) {
+        _blurRamp.duration = widget.blurRampDuration > Duration.zero
+            ? widget.blurRampDuration
+            : const Duration(milliseconds: 260);
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------
