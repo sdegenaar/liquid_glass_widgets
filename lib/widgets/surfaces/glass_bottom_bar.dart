@@ -707,12 +707,24 @@ class GlassBottomBarTab {
     this.label,
     required this.icon,
     this.activeIcon,
+    this.semanticLabel,
     this.glowColor,
     this.thickness,
   });
 
   /// Label text displayed below the icon.
   final String? label;
+
+  /// Overrides the accessibility announcement for this tab.
+  ///
+  /// Falls back to [label], then to `'Tab'`. Set this when the tab renders
+  /// without a [label] — an icon-only tab has nothing else to announce, so
+  /// without it screen readers read the untranslated `'Tab'` fallback.
+  ///
+  /// Also carries [GlassTab.semanticLabel] through [GlassTabBar.bottom],
+  /// [GlassTabBar.inline], and [GlassTabBar.searchable], which build on this
+  /// type internally.
+  final String? semanticLabel;
 
   /// Widget displayed when the tab is not selected.
   ///

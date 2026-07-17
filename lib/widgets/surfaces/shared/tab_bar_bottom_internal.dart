@@ -233,7 +233,10 @@ class BottomBarTabItem extends StatelessWidget {
       child: Semantics(
         button: true,
         selected: selected,
-        label: tab.label ?? 'Tab',
+        // An icon-only tab has no label to announce, so semanticLabel is the
+        // caller's only way to name it — the 'Tab' fallback is a last resort,
+        // not a name.
+        label: tab.semanticLabel ?? tab.label ?? 'Tab',
         child: SizedBox.expand(
           child: FittedBox(
             fit: BoxFit.scaleDown,
@@ -308,12 +311,18 @@ class BottomBarTabItem extends StatelessWidget {
                     ),
                   ),
                 if (tab.label != null)
-                  Text(
-                    tab.label!,
-                    maxLines: 1,
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    style: resolvedLabelStyle,
+                  // The enclosing Semantics already announces the tab, so the
+                  // label text would otherwise be merged in a second time —
+                  // announcing 'Home' as 'Home\nHome', and demoting
+                  // semanticLabel from an override to a prefix.
+                  ExcludeSemantics(
+                    child: Text(
+                      tab.label!,
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      style: resolvedLabelStyle,
+                    ),
                   ),
               ],
             ),
