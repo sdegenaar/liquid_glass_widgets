@@ -587,13 +587,9 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
     }
 
     // ── Fixed mode: equal-width SegmentedControlContent ───────────────────────
-    final defaultBackerColor =
-        GlassTheme.brightnessOf(context) == Brightness.light
-            ? CupertinoColors.black.withValues(alpha: 0.08)
-            : CupertinoColors.white.withValues(alpha: 0.12);
-    final trackSettings = effectiveSettings.copyWith(
-      backerColor: widget.backgroundColor ?? defaultBackerColor,
-    );
+    final trackSettings = widget.backgroundColor == null
+        ? effectiveSettings
+        : effectiveSettings.copyWith(backerColor: widget.backgroundColor);
 
     // SizedBox sets the fixed control bounds. The glass track and indicator
     // are sibling layers so the track can clip itself without clipping the
