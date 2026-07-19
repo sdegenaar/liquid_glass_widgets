@@ -417,7 +417,8 @@ class GlassSegmentedControl extends StatefulWidget {
 
   /// Glass effect settings for the segmented-control track.
   ///
-  /// If null, uses optimized defaults:
+  /// If null, resolves from inherited/global/theme settings before falling
+  /// back to optimized defaults:
   /// - thickness: 30
   /// - blur: 3
   /// - chromaticAberration: 0.5
