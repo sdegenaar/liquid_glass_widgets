@@ -6,6 +6,7 @@ import '../../src/types/glass_interaction_behavior.dart';
 import '../../theme/glass_theme.dart';
 import '../../theme/glass_theme_helpers.dart';
 import '../../types/glass_quality.dart';
+import '../shared/adaptive_glass.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
 import '../surfaces/glass_bottom_bar.dart' show MaskingQuality;
 import '../surfaces/glass_tab_bar.dart' show DividerSettings, GlassSegment;
@@ -39,9 +40,10 @@ import 'shared/segmented_control_internal.dart';
 ///    the container's own-layer clip cuts the indicator's jelly overshoot
 ///    during drag animations.
 ///
-/// The track background is already handled by [backgroundColor] — no outer
-/// container is needed. For a standalone glass layer, use [useOwnLayer] on
-/// this widget directly.
+/// The track background is rendered as glass by this widget — no outer
+/// [GlassContainer] or [GlassCard] is needed. [backgroundColor] customizes the
+/// track's dimming backer; the glass material itself resolves from the inherited
+/// theme unless [settings] or [quality] is passed explicitly.
 ///
 
 /// ## Usage
@@ -413,9 +415,9 @@ class GlassSegmentedControl extends StatefulWidget {
   // Glass Effect Properties
   // ===========================================================================
 
-  /// Glass effect settings (only used when [useOwnLayer] is true).
+  /// Glass effect settings for the segmented-control track.
   ///
-  /// If null when [useOwnLayer] is true, uses optimized defaults:
+  /// If null, uses optimized defaults:
   /// - thickness: 30
   /// - blur: 3
   /// - chromaticAberration: 0.5
@@ -423,10 +425,10 @@ class GlassSegmentedControl extends StatefulWidget {
   /// - refractiveIndex: 1.15
   final LiquidGlassSettings? settings;
 
-  /// Whether to create its own layer or use grouped glass.
+  /// Whether the track glass creates its own layer or renders as grouped glass.
   ///
-  /// - `false` (default): Uses grouped glass, must be inside [LiquidGlassLayer]
-  /// - `true`: Creates own layer with [LiquidGlass.withOwnLayer]
+  /// The moving indicator is always rendered as a sibling above the track so
+  /// its jelly expansion is not clipped by the track shape.
   ///
   /// Defaults to false.
   final bool useOwnLayer;
@@ -522,15 +524,18 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
       widgetQuality: widget.quality,
     );
 
-    final effectiveSettings = widget.settings ??
-        const LiquidGlassSettings(
-          thickness: GlassDefaults.thickness,
-          blur: GlassDefaults.blur,
-          chromaticAberration: GlassDefaults.chromaticAberration,
-          lightIntensity: GlassDefaults.lightIntensity,
-          refractiveIndex: GlassDefaults.refractiveIndex,
-          lightAngle: GlassDefaults.lightAngle,
-        );
+    final effectiveSettings = GlassThemeHelpers.resolveSettings(
+      context,
+      explicit: widget.settings,
+      fallback: const LiquidGlassSettings(
+        thickness: GlassDefaults.thickness,
+        blur: GlassDefaults.blur,
+        chromaticAberration: GlassDefaults.chromaticAberration,
+        lightIntensity: GlassDefaults.lightIntensity,
+        refractiveIndex: GlassDefaults.refractiveIndex,
+        lightAngle: GlassDefaults.lightAngle,
+      ),
+    );
 
     // ── Scrollable mode: 100% mirrors GlassTabBar(isScrollable: true) ────────
     if (widget.isScrollable) {
@@ -582,55 +587,66 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
     }
 
     // ── Fixed mode: equal-width SegmentedControlContent ───────────────────────
-    final backgroundColor = widget.backgroundColor ??
-        (GlassTheme.brightnessOf(context) == Brightness.light
+    final defaultBackerColor =
+        GlassTheme.brightnessOf(context) == Brightness.light
             ? CupertinoColors.black.withValues(alpha: 0.08)
-            : CupertinoColors.white.withValues(alpha: 0.12));
+            : CupertinoColors.white.withValues(alpha: 0.12);
+    final trackSettings = effectiveSettings.copyWith(
+      backerColor: widget.backgroundColor ?? defaultBackerColor,
+    );
 
-    // SizedBox sets the height without clipping. DecoratedBox paints the
-    // background without enforcing a clip — jelly expansion can overflow freely.
+    // SizedBox sets the fixed control bounds. The glass track and indicator
+    // are sibling layers so the track can clip itself without clipping the
+    // moving indicator's jelly expansion.
     final isVertical = widget.direction == Axis.vertical;
+    final trackShape = LiquidRoundedSuperellipse(
+      borderRadius: widget.borderRadius,
+    );
     final control = SizedBox(
       width: isVertical ? widget.height : null,
       height: isVertical
           ? (widget.segmentExtent ?? widget.height) * widget.segments.length
           : widget.height,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(widget.borderRadius),
-        ),
-        child: Padding(
-          padding: widget.padding,
-          child: SegmentedControlContent(
-            segments: widget.segments,
-            direction: widget.direction,
-            selectedIndex: widget.selectedIndex,
-            onSegmentSelected: widget.onSegmentSelected,
-            selectedTextStyle: widget.selectedTextStyle,
-            unselectedTextStyle: widget.unselectedTextStyle,
-            indicatorColor: widget.indicatorColor,
-            indicatorSettings: widget.indicatorSettings,
-            indicatorPinchStrength: widget.indicatorPinchStrength,
-            indicatorExpansion: widget.indicatorExpansion,
-            borderRadius: widget.borderRadius,
-            quality: effectiveQuality,
-            backgroundKey: widget.backgroundKey,
-            interactionBehavior: widget.interactionBehavior,
-            glowColor: widget.glowColor,
-            glowRadius: widget.glowRadius,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: RepaintBoundary(
+              child: AdaptiveGlass(
+                shape: trackShape,
+                settings: trackSettings,
+                quality: effectiveQuality,
+                useOwnLayer: widget.useOwnLayer,
+                clipBehavior: Clip.antiAlias,
+                child: const SizedBox.expand(),
+              ),
+            ),
           ),
-        ),
+          Padding(
+            padding: widget.padding,
+            child: SegmentedControlContent(
+              segments: widget.segments,
+              direction: widget.direction,
+              selectedIndex: widget.selectedIndex,
+              onSegmentSelected: widget.onSegmentSelected,
+              selectedTextStyle: widget.selectedTextStyle,
+              unselectedTextStyle: widget.unselectedTextStyle,
+              indicatorColor: widget.indicatorColor,
+              indicatorSettings: widget.indicatorSettings,
+              indicatorPinchStrength: widget.indicatorPinchStrength,
+              indicatorExpansion: widget.indicatorExpansion,
+              borderRadius: widget.borderRadius,
+              quality: effectiveQuality,
+              backgroundKey: widget.backgroundKey,
+              interactionBehavior: widget.interactionBehavior,
+              glowColor: widget.glowColor,
+              glowRadius: widget.glowRadius,
+            ),
+          ),
+        ],
       ),
     );
 
-    if (widget.useOwnLayer) {
-      return AdaptiveLiquidGlassLayer(
-        settings: effectiveSettings,
-        quality: effectiveQuality,
-        child: control,
-      );
-    }
     return control;
   }
 }
