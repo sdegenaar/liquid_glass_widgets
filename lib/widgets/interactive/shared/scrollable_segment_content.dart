@@ -676,6 +676,7 @@ class ScrollableSegmentContentState extends State<ScrollableSegmentContent>
                       quality: widget.quality,
                       indicatorColor: indicatorColor,
                       isBackgroundIndicator: false,
+                      useSuperellipse: false,
                       borderRadius: widget.indicatorBorderRadius?.topLeft.x ??
                           widget.tabBarBorderRadius?.topLeft.x ??
                           16,

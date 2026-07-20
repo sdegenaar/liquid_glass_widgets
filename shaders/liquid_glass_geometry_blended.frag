@@ -60,26 +60,24 @@ void main() {
 
     // Compute the SDF gradient for surface normal generation.
     //
-    // We MUST use central ±0.5 px finite differences on ALL platforms.
-    // While Metal supports dFdx/dFdy on scalar floats, hardware derivatives are
-    // computed in 2x2 pixel quads, resulting in blocky 2x2 normals. When these
-    // blocky normals refract high-contrast edges (like the base pill's white rim),
-    // they produce severe stair-step aliasing.
-    // Central differences guarantee a perfectly smooth, continuous normal per-pixel.
-    //
-    // PP4: Reduce 5 sceneSDF() calls to 4 by approximating the center sample
-    // from the average of the 4 offset samples. The approximation error is ~0.5%
-    // — below the AA smoothstep band and imperceptible in the alpha/height output.
-    // For a blend group with N shapes this saves N smooth-union evaluations.
-    float sdPX = sceneSDF(fragCoord + vec2(0.5, 0.0), int(uNumShapes), uBlend);
-    float sdMX = sceneSDF(fragCoord - vec2(0.5, 0.0), int(uNumShapes), uBlend);
-    float sdPY = sceneSDF(fragCoord + vec2(0.0, 0.5), int(uNumShapes), uBlend);
-    float sdMY = sceneSDF(fragCoord - vec2(0.0, 0.5), int(uNumShapes), uBlend);
-    sd = (sdPX + sdMX + sdPY + sdMY) * 0.25; // reassign center approximation
-    float dx = sdPX - sdMX;
-    float dy = sdPY - sdMY;
+    // We use central ±1.0 px finite differences for the normal gradient.
+    // The wider 2px span acts as a spatial low-pass filter, smoothing out
+    // sub-pixel normal variations and giving a uniform rim highlight across
+    // straight edges. Hardware dFdx/dFdy operates in 2×2 pixel quads and
+    // produces blocky normals — central differences are per-pixel smooth.
+    float sdPX = sceneSDF(fragCoord + vec2(1.0, 0.0), int(uNumShapes), uBlend);
+    float sdMX = sceneSDF(fragCoord - vec2(1.0, 0.0), int(uNumShapes), uBlend);
+    float sdPY = sceneSDF(fragCoord + vec2(0.0, 1.0), int(uNumShapes), uBlend);
+    float sdMY = sceneSDF(fragCoord - vec2(0.0, 1.0), int(uNumShapes), uBlend);
 
-    float n_cos = max(uThickness + sd, 0.0) / uThickness;
+    // Span is 2.0px (±1.0), so multiply by 0.5 for the correct unit gradient.
+    float dx = (sdPX - sdMX) * 0.5;
+    float dy = (sdPY - sdMY) * 0.5;
+
+    float gradMag = sqrt(dx * dx + dy * dy);
+    float sdN = (gradMag > 0.1) ? sd / gradMag : sd;
+
+    float n_cos = max(uThickness + sdN, 0.0) / uThickness;
     float n_sin = sqrt(max(0.0, 1.0 - n_cos * n_cos));
 
     // True surface normal from the SDF gradient — this is what we store.
@@ -92,9 +90,9 @@ void main() {
         return;
     }
 
-    float x = uThickness + sd;
+    float x = uThickness + sdN;
     float sqrtTerm = sqrt(max(0.0, uThickness * uThickness - x * x));
-    float height = mix(sqrtTerm, uThickness, float(sd < -uThickness));
+    float height = mix(sqrtTerm, uThickness, float(sdN < -uThickness));
 
     // Encode normal.xy + height + alpha.
     // The render pass recomputes displacement = refract(incident, normal, 1/n)

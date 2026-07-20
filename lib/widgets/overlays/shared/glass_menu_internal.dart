@@ -476,7 +476,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                             platformViewBackdrop: widget.platformViewBackdrop,
                             width: tw,
                             height: th,
-                            shape: LiquidRoundedSuperellipse(
+                            shape: LiquidRoundedRectangle(
                               borderRadius: _triggerBorderRadius ??
                                   _triggerSize!.shortestSide / 2.0,
                             ),
@@ -580,7 +580,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     // No more faking the shape with tall, thin rectangles! Let the shader do the work.
 
     // Build the shape
-    final teardropShape = LiquidRoundedSuperellipse(
+    final teardropShape = LiquidRoundedRectangle(
       borderRadius: currentRadius,
     );
 

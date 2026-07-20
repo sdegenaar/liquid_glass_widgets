@@ -1,7 +1,7 @@
 /// Shape comparison demo — LiquidRoundedRectangle vs LiquidRoundedSuperellipse
 /// across both Standard and Premium quality tiers.
 ///
-/// Standard quality: lightweight shader + _SquircleClipper (CPU L4/L2 path).
+/// Standard quality: lightweight blur shader + ShapeBorderClipper (shape-type-blind).
 /// Premium quality:  Impeller geometry shader (sdfSquircle on GPU).
 ///
 /// To run standalone: flutter run -t lib/demos/shape_debug_demo.dart
@@ -61,7 +61,7 @@ class _ShapeDebugPageState extends State<ShapeDebugPage> {
         backgroundColor: Colors.transparent,
         body: AdaptiveLiquidGlassLayer(
           settings: RecommendedGlassSettings.standard,
-          quality: GlassQuality.standard,
+          quality: _quality,
           child: SafeArea(
             child: Column(
               children: [
@@ -264,7 +264,7 @@ class _QualityBadge extends StatelessWidget {
       child: Text(
         isPremium
             ? '⬦ Premium — Impeller sdfSquircle geometry shader (GPU L4 blend)'
-            : '◈ Standard — _SquircleClipper + lightweight shader (CPU L4/L2 path)',
+            : '◈ Standard — ShapeBorderClipper + lightweight blur shader (shape-blind)',
         style: TextStyle(
           fontSize: 11,
           color: isPremium

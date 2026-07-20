@@ -306,7 +306,7 @@ class _GlassPageControlState extends State<GlassPageControl>
         }
       },
       height: widget.height,
-      shape: const LiquidRoundedSuperellipse(borderRadius: 100),
+      shape: const LiquidRoundedRectangle(borderRadius: 100),
       settings: widget.settings,
       quality: widget.quality,
       useOwnLayer: widget.useOwnLayer,

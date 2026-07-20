@@ -509,8 +509,8 @@ class TabIndicatorState extends State<TabIndicator>
   final GlobalKey _iconLayerKey = GlobalKey();
 
   // Cached shape to avoid recreation on every animation frame
-  late LiquidRoundedSuperellipse _barShape =
-      LiquidRoundedSuperellipse(borderRadius: widget.barBorderRadius);
+  late LiquidRoundedRectangle _barShape =
+      LiquidRoundedRectangle(borderRadius: widget.barBorderRadius);
 
   @override
   void didUpdateWidget(covariant TabIndicator oldWidget) {
@@ -520,7 +520,7 @@ class TabIndicatorState extends State<TabIndicator>
     // Update cached shape if border radius changes
     if (oldWidget.barBorderRadius != widget.barBorderRadius) {
       _barShape =
-          LiquidRoundedSuperellipse(borderRadius: widget.barBorderRadius);
+          LiquidRoundedRectangle(borderRadius: widget.barBorderRadius);
     }
   }
 
@@ -532,8 +532,6 @@ class TabIndicatorState extends State<TabIndicator>
         _fallbackIndicatorColor;
     final targetAlignment = computeTabAlignment(widget.tabIndex);
 
-    // AnimatedGlassIndicator multiplies by 2 for the glass superellipse shape,
-    // but uses the value directly for the background DecoratedBox.
     final indicatorRadius =
         widget.indicatorBorderRadius ?? widget.barBorderRadius;
 
@@ -772,6 +770,7 @@ class TabIndicatorState extends State<TabIndicator>
               isBackgroundIndicator: false,
               innerBlur: widget.innerBlur,
               borderRadius: indicatorRadius,
+              useSuperellipse: false,
               padding: const EdgeInsets.all(4),
               expansion: widget.indicatorExpansion,
               settings: widget.indicatorSettings,
@@ -851,6 +850,7 @@ class TabIndicatorState extends State<TabIndicator>
                     paintGlass: false,
                     innerBlur: widget.innerBlur,
                     borderRadius: indicatorRadius,
+                    useSuperellipse: false,
                     padding: const EdgeInsets.all(4),
                     expansion: widget.indicatorExpansion,
                     settings: widget.indicatorSettings,
@@ -973,6 +973,7 @@ class TabIndicatorState extends State<TabIndicator>
             isBackgroundIndicator: false,
             paintBackground: false,
             paintGlass: true,
+            useSuperellipse: false,
             borderRadius: indicatorRadius,
             padding: const EdgeInsets.all(4),
             expansion:
@@ -994,7 +995,7 @@ class TabIndicatorState extends State<TabIndicator>
 class _InverseBarClipper extends CustomClipper<Path> {
   const _InverseBarClipper(this.shape);
 
-  final LiquidRoundedSuperellipse shape;
+  final LiquidShape shape;
 
   @override
   Path getClip(Size size) {

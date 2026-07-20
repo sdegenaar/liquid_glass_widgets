@@ -386,7 +386,7 @@ class _EditMenu extends StatelessWidget {
     return GlassMenu(
       menuWidth: 260,
       settings: _kMenuGlass(context),
-      menuBorderRadius: 16,
+      menuBorderRadius: 24,
       quality: GlassQuality.premium,
       triggerBuilder: (context, toggleMenu) {
         final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
@@ -452,7 +452,7 @@ class _FilterMenu extends StatelessWidget {
     return GlassMenu(
       menuWidth: 240,
       settings: _kMenuGlass(context),
-      menuBorderRadius: 16,
+      menuBorderRadius: 24,
       quality: GlassQuality.premium,
       triggerBuilder: (context, toggleMenu) {
         final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;

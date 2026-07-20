@@ -108,6 +108,9 @@ test/golden/**/failures/
 RENDERER_IMPROVEMENT_PLAN.md
 ARCHITECTURE.md
 
+# Local-only research & discussion docs (not for repo)
+docs/LIQUID_GLASS_EASY_STUDY.md
+
 # Example app — generated platform folders (not needed for a package example)
 example/android/
 example/ios/

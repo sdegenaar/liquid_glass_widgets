@@ -1,4 +1,57 @@
+# 0.22.2
+
+## ♻️ Refactoring — Shape Architecture Migration (iOS 26 SDF Correctness)
+
+This release consolidates all geometry decisions made during a deep architectural review of how `LiquidRoundedSuperellipse` and `LiquidRoundedRectangle` are used across the widget library. The goal was to align every widget with the mathematical realities of the underlying `sdfSquircle` and `sdfRRect` GPU shaders.
+
+### Root Problem Identified
+
+The `sdfSquircle` shader contains a deliberate "safety valve":
+
+```glsl
+float blend = min(sqrt((shortest - r) / max(shortest, 1e-5)), 1.0);
+float corner = mix(l2, l4, blend);  // l2 = circular arc, l4 = L4 squircle
+```
+
+When `cornerRadius ≥ halfHeight` (i.e., a pill/stadium shape), the blend factor collapses to `0.0` and the shader silently outputs a standard circular arc — indistinguishable from `LiquidRoundedRectangle`. Additionally, when a shape's aspect-ratio changes continuously during animation (drag, tab switch), computing SDF normals via `dFdx/dFdy` of the L4 norm introduces gradient drift that manifests as subtle shape instability.
+
+### Shape Assignment Rules (now enforced)
+
+| Widget / Component | Shape Before | Shape After | Reason |
+|---|---|---|---|
+| `GlassMenu` morph blobs | `LiquidOval` | `LiquidRoundedRectangle` | Dynamic morph — aspect-ratio changes every frame |
+| `GlassPopover` morph blobs | `LiquidOval` | `LiquidRoundedRectangle` | Dynamic morph — aspect-ratio changes every frame |
+| `GlassChip` | `LiquidRoundedSuperellipse(r=100)` | `LiquidRoundedRectangle(r=100)` | Pill shape — squircle blend = 0, was silently degrading |
+| `GlassIconButton.roundedSquare` | `LiquidRoundedSuperellipse` | `LiquidRoundedSuperellipse` | Static square — squircle fully visible ✅ |
+| `GlassCard`, `GlassContainer`, `GlassGroupedSection` | `LiquidRoundedSuperellipse` | `LiquidRoundedSuperellipse` | Static containers — squircle fully expressed ✅ |
+| `AnimatedGlassIndicator` (internal) | squircle (default `useSuperellipse: true`) | `LiquidRoundedRectangle` (`useSuperellipse: false`) | Stretching pill — squircle was already degrading; now explicit |
+
+### Specific Changes
+
+- **`AnimatedGlassIndicator.useSuperellipse`** default changed from `true` to `false`. The indicator is a dynamic morphing pill whose aspect-ratio changes on every drag frame. The squircle SDF degrades to a circular arc at pill proportions anyway; using `LiquidRoundedRectangle` explicitly makes this both correct and stable.
+  - Updated docstring to fully explain the SDF blend mathematics behind this decision.
+  - All **internal** call sites (tab bars, segmented controls) already updated in 0.22.1 to pass `useSuperellipse: false`; this release closes the public API default gap.
+
+- **`GlassMenu` / `GlassPopover` morph blobs** — replaced `LiquidOval` with `LiquidRoundedRectangle`. The ovoid morph SDF was producing unstable normals at extreme aspect ratios; the standard rounded rect SDF is stable across all proportions.
+
+- **`GlassChip`** — replaced `LiquidRoundedSuperellipse(r=100)` with `LiquidRoundedRectangle(r=100)`. At pill proportions the squircle and rounded rect are mathematically identical (blend = 0); being explicit avoids the misleading API signal.
+
+- **`GlassButtonGroup` / `GlassSlider` / `GlassPageControl`** indicators — confirmed and enforced `LiquidRoundedRectangle` for all stretching pill indicators.
+
+## 🐛 Bug Fixes
+
+- **`ShapeDebugDemo` quality toggle not working** — `AdaptiveLiquidGlassLayer` had `quality:` hardcoded to `GlassQuality.standard`, ignoring the page's `_quality` state variable. Fixed to use `quality: _quality`.
+
+## 📚 Documentation
+
+- **`shape_debug_demo.dart`** — corrected the Standard-mode description banner from the inaccurate `"_SquircleClipper + lightweight shader (CPU L4/L2 path)"` to the accurate `"ShapeBorderClipper + lightweight blur shader (shape-blind)"`. There is no `_SquircleClipper` class; the lightweight shader is shape-type-blind by design.
+
+- **`SQUIRCLE_GEOMETRY_FINDINGS.md`** — updated with full session findings covering SDF blend mathematics, the two-tier quality architecture rationale, and alignment with upstream `liquid_glass_renderer` shape API.
+
+---
+
 # 0.22.1
+
 
 ## 🐛 Bug Fixes
 

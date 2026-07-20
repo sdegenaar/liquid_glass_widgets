@@ -86,7 +86,18 @@ class AnimatedGlassIndicator extends StatelessWidget {
   /// How much to expand the indicator during drag.
   final EdgeInsetsGeometry expansion;
 
-  /// Whether to use LiquidRoundedSuperellipse (Apple style) or standard RoundedRectangle.
+  /// Whether to use [LiquidRoundedSuperellipse] (squircle) or [LiquidRoundedRectangle]
+  /// for the indicator pill shape.
+  ///
+  /// Defaults to `false` (rounded rectangle). The indicator is a dynamic,
+  /// morphing pill — during drag its aspect-ratio changes continuously, and the
+  /// squircle SDF (`sdfSquircle`) silently degrades to a plain circular arc
+  /// whenever the corner radius reaches half the shorter dimension (i.e., any
+  /// pill / stadium shape). Using [LiquidRoundedRectangle] avoids that
+  /// inconsistency and produces stable, predictable geometry during animation.
+  ///
+  /// Set to `true` only for static, fixed-aspect-ratio indicators where the
+  /// squircle corners will remain fully visible (e.g., a wide card indicator).
   final bool useSuperellipse;
 
   /// Optional exact width for varying tab sizes (bypasses widthFactor).
@@ -138,7 +149,7 @@ class AnimatedGlassIndicator extends StatelessWidget {
     this.settings,
     this.padding = EdgeInsets.zero,
     this.expansion = const EdgeInsets.all(8.0),
-    this.useSuperellipse = true,
+    this.useSuperellipse = false,
     this.backgroundKey,
     this.paintBackground = true,
     this.paintGlass = true,

@@ -240,7 +240,7 @@ class GlassChip extends StatelessWidget {
   /// See [AnchorStretchSettings] for details.
   final AnchorStretchSettings anchorStretchSettings;
 
-  static const _chipShape = LiquidRoundedSuperellipse(borderRadius: 100);
+  static const _chipShape = LiquidRoundedRectangle(borderRadius: 100);
 
   @override
   Widget build(BuildContext context) {

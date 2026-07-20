@@ -77,8 +77,33 @@ float sdfRect(vec2 p, vec2 b) {
     return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
 }
 
-// NOTE: sdfSquircle removed — byte-for-byte identical to sdfRRect.
-// Both squircle/superellipse and rounded-rect route through sdfRRect.
+// sdfSquircle: continuously-curved superellipse (squircle) SDF.
+float sdfSquircle(in vec2 p, in vec2 b, in float r) {
+    float shortest = min(b.x, b.y);
+    r = min(r, shortest);
+    vec2  q    = abs(p) - b + r;
+    vec2  qPos = max(q, 0.0);
+    float qx2  = qPos.x * qPos.x;
+    float qy2  = qPos.y * qPos.y;
+
+    float l4 = sqrt(sqrt(qx2 * qx2 + qy2 * qy2));
+    float l2 = sqrt(qx2 + qy2);
+
+    // Use a full blend up to 1.0 for a true iOS continuous curve.
+    // The previous 0.5 cap made it look too close to a standard circular arc
+    // (a rounded rectangle) rather than a true superellipse.
+    float blend  = min(sqrt((shortest - r) / max(shortest, 1e-5)), 1.0);
+    float corner = mix(l2, l4, blend);
+
+    return min(max(q.x, q.y), 0.0) + corner - r;
+}
+
+float sdfSquircleAsym(in vec2 p, in vec2 b, in float rTop, in float rBottom) {
+    float dT = sdfSquircle(p, b, rTop);
+    float dB = sdfSquircle(p, b, rBottom);
+    float t  = smoothstep(-2.0, 2.0, p.y);
+    return mix(dT, dB, t);
+}
 
 float sdfEllipse(vec2 p, vec2 r) {
     r = max(r, 1e-4);
@@ -104,7 +129,7 @@ float smoothUnion(float d1, float d2, float k) {
 // writes rBottom == rTop), so this dispatch is back-compat: routing through
 // `sdfRRectAsym` with equal radii is bit-identical to `sdfRRect`.
 float getShapeSDF(float type, vec2 p, vec2 center, vec2 size, float rTop, float rBottom) {
-    if      (type == 1.0) return sdfRRectAsym(p - center, size / 2.0, rTop, rBottom);
+    if      (type == 1.0) return sdfSquircleAsym(p - center, size / 2.0, rTop, rBottom);
     else if (type == 2.0) return sdfEllipse  (p - center, size / 2.0);
     else if (type == 3.0) return sdfRRectAsym(p - center, size / 2.0, rTop, rBottom);
     return 0.0;

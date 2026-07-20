@@ -687,7 +687,7 @@ class _GlassPopoverState extends State<GlassPopover>
                                 quality: effectiveQuality,
                                 width: tw,
                                 height: th,
-                                shape: LiquidRoundedSuperellipse(
+                                shape: LiquidRoundedRectangle(
                                   borderRadius: _triggerBorderRadius ??
                                       _triggerSize!.shortestSide / 2.0,
                                 ),
@@ -751,7 +751,7 @@ class _GlassPopoverState extends State<GlassPopover>
     final currentRadius =
         lerpDouble(maxRadius, widget.popoverBorderRadius, radiusT)!;
 
-    final teardropShape = LiquidRoundedSuperellipse(
+    final teardropShape = LiquidRoundedRectangle(
       borderRadius: currentRadius,
     );
 

@@ -78,7 +78,7 @@ class DismissPill extends StatelessWidget {
               (safeColor != null
                   ? LiquidGlassSettings(glassColor: safeColor)
                   : null),
-      shape: LiquidRoundedSuperellipse(borderRadius: barBorderRadius),
+      shape: LiquidRoundedRectangle(borderRadius: barBorderRadius),
       icon: cancelIcon ??
           Icon(
             CupertinoIcons.xmark,
@@ -202,8 +202,8 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
   final GlobalKey _iconLayerKey = GlobalKey();
 
   // Cached shape to avoid recreation on every animation frame
-  late LiquidRoundedSuperellipse _barShape =
-      LiquidRoundedSuperellipse(borderRadius: widget.barBorderRadius);
+  late LiquidRoundedRectangle _barShape =
+      LiquidRoundedRectangle(borderRadius: widget.barBorderRadius);
 
   @override
   void didUpdateWidget(covariant SearchableTabIndicator oldWidget) {
@@ -211,7 +211,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
     updateTabAlignIfNeeded(oldWidget.tabIndex, oldWidget.tabCount);
     if (oldWidget.barBorderRadius != widget.barBorderRadius) {
       _barShape =
-          LiquidRoundedSuperellipse(borderRadius: widget.barBorderRadius);
+          LiquidRoundedRectangle(borderRadius: widget.barBorderRadius);
     }
   }
 
@@ -483,6 +483,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
               isBackgroundIndicator: false,
               innerBlur: widget.innerBlur,
               borderRadius: indicatorRadius,
+              useSuperellipse: false,
               padding: const EdgeInsets.all(4),
               expansion: widget.indicatorExpansion,
               settings: widget.indicatorSettings,
@@ -556,6 +557,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                     paintGlass: false,
                     innerBlur: widget.innerBlur,
                     borderRadius: effRadius,
+                    useSuperellipse: false,
                     padding: const EdgeInsets.all(4),
                     expansion: widget.indicatorExpansion,
                     settings: widget.indicatorSettings,
@@ -647,6 +649,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
             paintBackground: false,
             paintGlass: true,
             borderRadius: effRadius,
+            useSuperellipse: false,
             padding: const EdgeInsets.all(4),
             expansion:
                 widget.indicatorExpansion.resolve(Directionality.of(context)),
@@ -876,7 +879,7 @@ class SearchPillState extends State<SearchPill> {
     final micColor =
         resolveIconColor(widget.config.micIconColor ?? rawIconColor);
     final shape =
-        LiquidRoundedSuperellipse(borderRadius: widget.barBorderRadius);
+        LiquidRoundedRectangle(borderRadius: widget.barBorderRadius);
 
     // LayoutBuilder reads the ACTUAL rendered width on every frame.
     // When isActive flips true, AnimatedContainer starts at compact width
@@ -892,8 +895,8 @@ class SearchPillState extends State<SearchPill> {
           final isOval = (w - constraints.maxHeight).abs() < 2;
           final currentShape = isOval
               ? (widget.platformViewBackdrop
-                  ? LiquidRoundedSuperellipse(borderRadius: w / 2)
-                  : const LiquidOval())
+                  ? LiquidRoundedRectangle(borderRadius: w / 2)
+                  : LiquidRoundedRectangle(borderRadius: w / 2))
               : shape;
 
           return Stack(
