@@ -45,37 +45,42 @@ void main() {
 
     float sd = sceneSDF(fragCoord, int(uNumShapes), uBlend);
 
-    // Apply logical-pixel anti-aliasing.
-    // Centering the smoothstep around 0.0 ensures the mathematical boundary (sd=0)
-    // is exactly 50% opaque. This correctly aligns the peak edge highlight with
-    // the visual edge of the shape, restoring maximum brightness.
-    // 1.5 logical pixels of smoothing guarantees a pristine edge that survives
-    // the 4% bilinear scaling of press animations without stair-stepping.
-    float smoothing = 1.5 * max(1.0, uDpr);
-    float foregroundAlpha = smoothstep(smoothing * 0.5, -smoothing * 0.5, sd);
-    if (foregroundAlpha < 0.01) {
-        fragColor = vec4(0.0);
-        return;
-    }
-
     // Compute the SDF gradient for surface normal generation.
     //
     // We use central ±1.0 px finite differences for the normal gradient.
     // The wider 2px span acts as a spatial low-pass filter, smoothing out
-    // sub-pixel normal variations and giving a uniform rim highlight across
-    // straight edges. Hardware dFdx/dFdy operates in 2×2 pixel quads and
-    // produces blocky normals — central differences are per-pixel smooth.
+    // sub-pixel normal variations and giving a uniform rim highlight.
+    // For the squircle (Ln-norm pseudo-SDF), the gradient magnitude varies
+    // ~0.875–1.0 across the corner. We correct for this via sdN normalization
+    // below rather than tightening the tap spacing — tighter taps reduce the
+    // spatial filtering benefit and produce a rougher rim highlight on plain
+    // backgrounds. Hardware dFdx/dFdy uses 2×2 quads; central differences are
+    // per-pixel smooth.
     float sdPX = sceneSDF(fragCoord + vec2(1.0, 0.0), int(uNumShapes), uBlend);
     float sdMX = sceneSDF(fragCoord - vec2(1.0, 0.0), int(uNumShapes), uBlend);
     float sdPY = sceneSDF(fragCoord + vec2(0.0, 1.0), int(uNumShapes), uBlend);
     float sdMY = sceneSDF(fragCoord - vec2(0.0, 1.0), int(uNumShapes), uBlend);
 
-    // Span is 2.0px (±1.0), so multiply by 0.5 for the correct unit gradient.
+    // Span is 2.0px (±1.0), so multiply by 0.5 for the unit gradient.
     float dx = (sdPX - sdMX) * 0.5;
     float dy = (sdPY - sdMY) * 0.5;
 
     float gradMag = sqrt(dx * dx + dy * dy);
+    // Normalize the SDF using the gradient magnitude. This converts a pseudo-SDF
+    // (like our continuous superellipse) into a true Euclidean distance metric.
     float sdN = (gradMag > 0.1) ? sd / gradMag : sd;
+
+    // Apply logical-pixel anti-aliasing using the NORMALIZED distance (sdN).
+    // Using raw `sd` for pseudo-SDFs causes pixelated edges because the field
+    // crosses zero too quickly. `sdN` guarantees exact 1-pixel wide gradients.
+    // 1.5 logical pixels of smoothing guarantees a pristine edge that survives
+    // the 4% bilinear scaling of press animations without stair-stepping.
+    float smoothing = 1.5 * max(1.0, uDpr);
+    float foregroundAlpha = smoothstep(smoothing * 0.5, -smoothing * 0.5, sdN);
+    if (foregroundAlpha < 0.01) {
+        fragColor = vec4(0.0);
+        return;
+    }
 
     float n_cos = max(uThickness + sdN, 0.0) / uThickness;
     float n_sin = sqrt(max(0.0, 1.0 - n_cos * n_cos));

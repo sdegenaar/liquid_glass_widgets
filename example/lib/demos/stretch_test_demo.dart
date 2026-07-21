@@ -186,8 +186,8 @@ class _StretchDemoPageState extends State<StretchTestDemo> {
                             height: 56,
                             iconSize: 0,
                             //  useOwnLayer: true,
-                            shape: const LiquidRoundedSuperellipse(
-                                borderRadius: 32),
+                            shape:
+                                const LiquidRoundedRectangle(borderRadius: 32),
                           ),
                         ),
                         const SizedBox(width: 12),

@@ -394,7 +394,7 @@ class _EditMenu extends StatelessWidget {
           onTap: toggleMenu,
           width: 68,
           height: 44,
-          shape: const LiquidRoundedSuperellipse(borderRadius: 22),
+          shape: const LiquidRoundedRectangle(borderRadius: 22),
           quality: GlassQuality.premium,
           useOwnLayer: true, // Enables standalone GPU shadows
           persistPressOnDrag: true,

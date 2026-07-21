@@ -254,8 +254,7 @@ class _IndicatorParityDemoPageState extends State<IndicatorParityDemoPage> {
                       // height: 56 required for icon + label tabs.
                       // Default 44 is for icon-only or text-only.
                       height: 56,
-                      // Full-pill radius — matches the bottom bars' rounded look.
-                      borderRadius: 28,
+                      // Full-pill radius is now the default out of the box!
                       iconSize: 20,
                       selectedTextStyle: const TextStyle(
                         fontSize: 11,
@@ -292,7 +291,6 @@ class _IndicatorParityDemoPageState extends State<IndicatorParityDemoPage> {
                               setState(() => _inlineSelected = i),
                           quality: GlassQuality.premium,
                           indicatorPinchStrength: _pinchStrength,
-                          indicatorExpansion: _expansion,
                           indicatorSettings: _indicatorSettings,
                         ),
                       ),
@@ -317,7 +315,6 @@ class _IndicatorParityDemoPageState extends State<IndicatorParityDemoPage> {
                         quality: GlassQuality.premium,
                         barHeight: 52,
                         indicatorPinchStrength: _pinchStrength,
-                        indicatorExpansion: _expansion,
                         indicatorSettings: _indicatorSettings,
                       ),
                       const SizedBox(height: 12),

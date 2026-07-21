@@ -360,9 +360,9 @@ class BottomBarExtraBtn extends StatelessWidget {
     // Shape selection for the frosted fallback (BackdropFilter) path:
     //
     // When platformViewBackdrop is true, LiquidOval is swapped for
-    // LiquidRoundedSuperellipse (radius = size / 2). Both produce a circle,
-    // but LiquidRoundedSuperellipse forwards its clip path to the engine's
-    // PlatformView mutator stack via _ShapeClip. This constrains the UIKitView
+    // LiquidRoundedRectangle (radius = size / 2). Both produce a circle,
+    // but AdaptiveGlass forwards LiquidRoundedRectangle's ClipRRect to the
+    // PlatformView mutator stack. This constrains the UIKitView
     // compositing sample area to the circle boundary, preventing a rectangular
     // "light square" bleed from the BackdropFilter's rectangular capture region.
     // LiquidOval relies on a shader-side SDF clip which the mutator stack cannot
@@ -370,7 +370,7 @@ class BottomBarExtraBtn extends StatelessWidget {
     final effectiveShape = borderRadius != null
         ? LiquidRoundedRectangle(borderRadius: borderRadius!)
         : (platformViewBackdrop
-            ? LiquidRoundedSuperellipse(borderRadius: config.size / 2)
+            ? LiquidRoundedRectangle(borderRadius: config.size / 2)
             : const LiquidOval());
 
     final button = GlassButton(
@@ -519,8 +519,7 @@ class TabIndicatorState extends State<TabIndicator>
 
     // Update cached shape if border radius changes
     if (oldWidget.barBorderRadius != widget.barBorderRadius) {
-      _barShape =
-          LiquidRoundedRectangle(borderRadius: widget.barBorderRadius);
+      _barShape = LiquidRoundedRectangle(borderRadius: widget.barBorderRadius);
     }
   }
 
@@ -769,8 +768,6 @@ class TabIndicatorState extends State<TabIndicator>
               indicatorColor: indicatorColor,
               isBackgroundIndicator: false,
               innerBlur: widget.innerBlur,
-              borderRadius: indicatorRadius,
-              useSuperellipse: false,
               padding: const EdgeInsets.all(4),
               expansion: widget.indicatorExpansion,
               settings: widget.indicatorSettings,
@@ -849,8 +846,6 @@ class TabIndicatorState extends State<TabIndicator>
                     paintBackground: true,
                     paintGlass: false,
                     innerBlur: widget.innerBlur,
-                    borderRadius: indicatorRadius,
-                    useSuperellipse: false,
                     padding: const EdgeInsets.all(4),
                     expansion: widget.indicatorExpansion,
                     settings: widget.indicatorSettings,
@@ -973,8 +968,6 @@ class TabIndicatorState extends State<TabIndicator>
             isBackgroundIndicator: false,
             paintBackground: false,
             paintGlass: true,
-            useSuperellipse: false,
-            borderRadius: indicatorRadius,
             padding: const EdgeInsets.all(4),
             expansion:
                 widget.indicatorExpansion.resolve(Directionality.of(context)),

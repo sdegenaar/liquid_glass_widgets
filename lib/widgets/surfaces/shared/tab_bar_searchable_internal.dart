@@ -210,8 +210,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
     super.didUpdateWidget(oldWidget);
     updateTabAlignIfNeeded(oldWidget.tabIndex, oldWidget.tabCount);
     if (oldWidget.barBorderRadius != widget.barBorderRadius) {
-      _barShape =
-          LiquidRoundedRectangle(borderRadius: widget.barBorderRadius);
+      _barShape = LiquidRoundedRectangle(borderRadius: widget.barBorderRadius);
     }
   }
 
@@ -482,8 +481,6 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
               indicatorColor: indicatorColor,
               isBackgroundIndicator: false,
               innerBlur: widget.innerBlur,
-              borderRadius: indicatorRadius,
-              useSuperellipse: false,
               padding: const EdgeInsets.all(4),
               expansion: widget.indicatorExpansion,
               settings: widget.indicatorSettings,
@@ -556,8 +553,6 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                     paintBackground: true,
                     paintGlass: false,
                     innerBlur: widget.innerBlur,
-                    borderRadius: effRadius,
-                    useSuperellipse: false,
                     padding: const EdgeInsets.all(4),
                     expansion: widget.indicatorExpansion,
                     settings: widget.indicatorSettings,
@@ -648,8 +643,6 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
             isBackgroundIndicator: false,
             paintBackground: false,
             paintGlass: true,
-            borderRadius: effRadius,
-            useSuperellipse: false,
             padding: const EdgeInsets.all(4),
             expansion:
                 widget.indicatorExpansion.resolve(Directionality.of(context)),
@@ -878,8 +871,7 @@ class SearchPillState extends State<SearchPill> {
     final iconColor = resolveIconColor(rawIconColor);
     final micColor =
         resolveIconColor(widget.config.micIconColor ?? rawIconColor);
-    final shape =
-        LiquidRoundedRectangle(borderRadius: widget.barBorderRadius);
+    final shape = LiquidRoundedRectangle(borderRadius: widget.barBorderRadius);
 
     // LayoutBuilder reads the ACTUAL rendered width on every frame.
     // When isActive flips true, AnimatedContainer starts at compact width

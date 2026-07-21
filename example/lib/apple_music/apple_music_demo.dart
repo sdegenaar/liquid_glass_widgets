@@ -795,7 +795,7 @@ class _PlayBarPill extends StatelessWidget {
       useOwnLayer: true,
       width: double.infinity,
       height: _kBarH,
-      shape: const LiquidRoundedSuperellipse(borderRadius: _kBarH / 2),
+      shape: const LiquidRoundedRectangle(borderRadius: _kBarH / 2),
       settings: _kPillGlass(context),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),

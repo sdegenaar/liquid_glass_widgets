@@ -212,7 +212,7 @@ class _QualityToggle extends StatelessWidget {
       height: 36,
       quality: GlassQuality.premium,
       useOwnLayer: true,
-      shape: const LiquidRoundedSuperellipse(borderRadius: 18),
+      shape: const LiquidRoundedRectangle(borderRadius: 18),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14),
         child: Row(
@@ -364,7 +364,7 @@ class _CardComparisonRow extends StatelessWidget {
               child: _LabelledCard(
                 shape: LiquidRoundedSuperellipse(borderRadius: radius),
                 label: 'Superellipse',
-                sublabel: 'sdfSquircle / L4 blend',
+                sublabel: 'sdfSquircle / Ln Lamé curve',
                 height: cardHeight,
                 quality: quality,
                 accentColor: const Color(0xFF7B61FF),

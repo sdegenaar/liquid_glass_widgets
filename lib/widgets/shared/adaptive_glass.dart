@@ -983,14 +983,32 @@ class _ShapeClip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final shape = this.shape;
+
+    // Over a PlatformView, ClipRSuperellipse is NOT forwarded to the
+    // PlatformView mutator stack (Flutter PR #177551 only forwards ClipRRect).
+    // The platformViewBackdrop guard must be checked FIRST so it can override
+    // shape-specific routing — otherwise a LiquidRoundedSuperellipse would take
+    // the ClipRSuperellipse branch below and leave the BackdropFilter unclipped,
+    // producing a rectangular halo around the glass surface.
+    if (platformViewBackdrop) {
+      final borderRadius = AdaptiveGlass._borderRadiusFromShape(shape);
+      if (borderRadius != null) {
+        return ClipRRect(borderRadius: borderRadius, child: child);
+      }
+    }
+
+    // Not over a PlatformView: use the native superellipse clip for exact
+    // iOS-continuous-curve fidelity. ClipRSuperellipse matches the shader SDF
+    // boundary precisely, eliminating the clip/shader mismatch that caused
+    // sub-pixel edge fringing on the frosted fallback path.
     if (shape is LiquidRoundedSuperellipse) {
-      return ClipRRect(
+      return ClipRSuperellipse(
         borderRadius: BorderRadius.all(Radius.circular(shape.borderRadius)),
         child: child,
       );
     }
     if (shape is LiquidVerticalRoundedSuperellipse) {
-      return ClipRRect(
+      return ClipRSuperellipse(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(shape.topRadius),
           bottom: Radius.circular(shape.bottomRadius),
@@ -998,17 +1016,14 @@ class _ShapeClip extends StatelessWidget {
         child: child,
       );
     }
-    // Over a PlatformView, route any radius-expressible shape (oval →
-    // circle/stadium, rounded rect, vertical variants) through ClipRRect so the
-    // clip is forwarded to the PlatformView mutator and a descendant
-    // BackdropFilter is bounded to the shape — eliminating the rectangular halo.
-    // #177551 only forwards ClipRRect, never ClipPath.
-    if (platformViewBackdrop) {
-      final borderRadius = AdaptiveGlass._borderRadiusFromShape(shape);
-      if (borderRadius != null) {
-        return ClipRRect(borderRadius: borderRadius, child: child);
-      }
+
+    if (shape is LiquidRoundedRectangle) {
+      return ClipRRect(
+        borderRadius: BorderRadius.all(Radius.circular((shape).borderRadius)),
+        child: child,
+      );
     }
+
     return ClipPath(
       clipper: ShapeBorderClipper(shape: shape),
       child: child,

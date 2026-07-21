@@ -56,7 +56,19 @@ class AnimatedGlassIndicator extends StatelessWidget {
   /// Whether to render the glass effect shader pass.
   final bool paintGlass;
 
-  /// Border radius of the indicator.
+  /// Corner radius of the indicator pill.
+  ///
+  /// Defaults to `9999.0`, which the shader's own `r = min(r, shortest)` clamp
+  /// reduces to a perfect capsule (stadium) at any indicator size — including
+  /// during drag expansion where a finite value such as `32` could be smaller
+  /// than the expanded half-height and leave visible corners.
+  ///
+  /// Pass a smaller value for indicators that deliberately show corner geometry,
+  /// for example a [GlassSegmentedControl] indicator inset by a few points from
+  /// its container radius:
+  /// ```dart
+  /// borderRadius: containerRadius - 3,
+  /// ```
   final double borderRadius;
 
   /// Optional glass settings override.
@@ -85,20 +97,6 @@ class AnimatedGlassIndicator extends StatelessWidget {
 
   /// How much to expand the indicator during drag.
   final EdgeInsetsGeometry expansion;
-
-  /// Whether to use [LiquidRoundedSuperellipse] (squircle) or [LiquidRoundedRectangle]
-  /// for the indicator pill shape.
-  ///
-  /// Defaults to `false` (rounded rectangle). The indicator is a dynamic,
-  /// morphing pill — during drag its aspect-ratio changes continuously, and the
-  /// squircle SDF (`sdfSquircle`) silently degrades to a plain circular arc
-  /// whenever the corner radius reaches half the shorter dimension (i.e., any
-  /// pill / stadium shape). Using [LiquidRoundedRectangle] avoids that
-  /// inconsistency and produces stable, predictable geometry during animation.
-  ///
-  /// Set to `true` only for static, fixed-aspect-ratio indicators where the
-  /// squircle corners will remain fully visible (e.g., a wide card indicator).
-  final bool useSuperellipse;
 
   /// Optional exact width for varying tab sizes (bypasses widthFactor).
   /// Used in scrollable mode where tabs have different widths.
@@ -145,11 +143,10 @@ class AnimatedGlassIndicator extends StatelessWidget {
     required this.quality,
     required this.indicatorColor,
     required this.isBackgroundIndicator,
-    required this.borderRadius,
+    this.borderRadius = 9999.0,
     this.settings,
     this.padding = EdgeInsets.zero,
     this.expansion = const EdgeInsets.all(8.0),
-    this.useSuperellipse = false,
     this.backgroundKey,
     this.paintBackground = true,
     this.paintGlass = true,
@@ -319,13 +316,16 @@ class AnimatedGlassIndicator extends StatelessWidget {
     final bool isStdPath =
         quality == GlassQuality.standard || quality == GlassQuality.minimal;
 
-    // Provide the doubled radius to layout layers when superellipse is active
-    // so they match the shader's true shape exactly.
-    final effectiveRadius = useSuperellipse ? borderRadius * 2 : borderRadius;
-
-    final shape = useSuperellipse
-        ? LiquidRoundedSuperellipse(borderRadius: borderRadius * 2)
-        : LiquidRoundedRectangle(borderRadius: borderRadius);
+    // The indicator defaults to a perfect capsule: borderRadius=9999.0 is
+    // reduced by the shader's own `r = min(r, shortest)` clamp to
+    // min(half_width, half_height) at any indicator size — including during
+    // drag expansion where a finite value such as 32 would be smaller than
+    // the expanded half-height, leaving visible squarish corners.
+    //
+    // Callers that need visible corner geometry (e.g. GlassSegmentedControl)
+    // can pass a smaller borderRadius explicitly.
+    final effectiveRadius = borderRadius;
+    final shape = LiquidRoundedRectangle(borderRadius: borderRadius);
 
     // 1. Background Indicator (Resting state)
     // Fade out as the drag spring thickness increases toward 0.15.
