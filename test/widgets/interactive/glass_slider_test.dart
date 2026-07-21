@@ -116,6 +116,48 @@ void main() {
       expect(find.byType(GlassSlider), findsOneWidget);
     });
 
+    testWidgets(
+      'discrete slider respects a non-zero minimum while dragging',
+      (tester) async {
+        double? changedValue;
+
+        await tester.pumpWidget(
+          createTestApp(
+            child: AdaptiveLiquidGlassLayer(
+              settings: defaultTestGlassSettings,
+              child: SizedBox(
+                width: 300,
+                child: GlassSlider(
+                  value: 22,
+                  min: 12,
+                  max: 32,
+                  divisions: 20,
+                  onChanged: (value) => changedValue = value,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final finder = find.byType(GlassSlider);
+        final slider = tester.widget<GlassSlider>(finder);
+        final rect = tester.getRect(finder);
+        final usableTrackWidth = rect.width - slider.thumbRadius * 2;
+        final target = Offset(
+          rect.left + slider.thumbRadius + usableTrackWidth * 0.1,
+          rect.center.dy,
+        );
+
+        final gesture = await tester.startGesture(rect.center);
+        await gesture.moveTo(target);
+        await tester.pump();
+
+        expect(changedValue, 14);
+
+        await gesture.up();
+      },
+    );
+
     testWidgets('works in standalone mode', (tester) async {
       await tester.pumpWidget(
         createTestApp(
