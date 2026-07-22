@@ -17,7 +17,8 @@ import '../../shared/adaptive_liquid_glass_layer.dart';
 import '../../shared/glass_content_aware_scope.dart';
 import '../../../theme/glass_theme_data.dart';
 import '../../../theme/glass_theme_helpers.dart';
-import '../glass_bottom_bar.dart' show GlassTabBarExtraButton, MaskingQuality;
+import '../glass_bottom_bar.dart'
+    show GlassExtraButtonPlacement, GlassTabBarExtraButton, MaskingQuality;
 import '../glass_tab_bar.dart' show GlassTab;
 import 'tab_bar_bottom_internal.dart'
     show
@@ -248,6 +249,10 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
+            final extraPlacement = widget.extraButton?.placement ??
+                GlassExtraButtonPlacement.right;
+            final extraOnLeft =
+                extraPlacement == GlassExtraButtonPlacement.left;
             final extraBtnW = widget.extraButton != null
                 ? widget.extraButton!.size + widget.spacing
                 : 0.0;
@@ -266,12 +271,13 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
                     clipBehavior: Clip.none,
                     children: [
                       // 1. Optional extra button — painted first (bottom of z-order).
-                      // Pinned to the trailing edge. Painted before the tab pill
-                      // so the jelly indicator's glass effect correctly overlaps and
-                      // refracts the extra button during horizontal stretch physics.
+                      // Painted before the tab pill so the jelly indicator's
+                      // glass effect correctly overlaps and refracts the extra
+                      // button during horizontal stretch physics.
                       if (widget.extraButton != null)
                         Positioned(
-                          right: 0,
+                          left: extraOnLeft ? 0 : null,
+                          right: extraOnLeft ? null : 0,
                           top: 0,
                           bottom: 0,
                           child: SizedBox(
@@ -294,7 +300,7 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
 
                       // 2. Tab pill — painted last (top of z-order).
                       Positioned(
-                        left: 0,
+                        left: extraOnLeft ? extraBtnW : 0,
                         top: 0,
                         width: tabPillW,
                         height: widget.barHeight,

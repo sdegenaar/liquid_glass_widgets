@@ -410,9 +410,11 @@ class GlassBottomBar extends StatelessWidget {
   /// your state and switch between pages.
   final ValueChanged<int> onTabSelected;
 
-  /// Optional extra button displayed to the right of the tab bar.
+  /// Optional extra button displayed beside the tab bar.
   ///
   /// Typically used for a primary action like "Create", "Add", or "Compose".
+  /// Defaults to the right side; set [GlassTabBarExtraButton.placement] to
+  /// [GlassExtraButtonPlacement.left] to place it before the tab pill.
   /// The button is rendered as a [GlassButton] and inherits the glass settings.
   final GlassTabBarExtraButton? extraButton;
 
@@ -770,8 +772,8 @@ class GlassBottomBarTab {
 /// Where a [GlassTabBarExtraButton] appears relative to the search pill
 /// in a [GlassSearchableBottomBar].
 ///
-/// Has no effect in [GlassBottomBar], where the extra button always sits
-/// between the tab content and the right edge.
+/// Has no effect in [GlassBottomBar] or [GlassTabBar.bottom], where
+/// [GlassExtraButtonPlacement] controls left/right placement instead.
 enum GlassExtraButtonPosition {
   /// Place the button **before** the search pill — between the tab pill and
   /// the search pill. This is the default and matches the classic iOS
@@ -784,6 +786,19 @@ enum GlassExtraButtonPosition {
   /// The search pill's spring calculations automatically reserve the required
   /// space so no RenderFlex overflow occurs during transitions.
   afterSearch,
+}
+
+/// Where a [GlassTabBarExtraButton] appears in a non-searchable
+/// [GlassBottomBar] or [GlassTabBar.bottom].
+///
+/// Defaults to [GlassExtraButtonPlacement.right], matching the original
+/// bottom-bar layout.
+enum GlassExtraButtonPlacement {
+  /// Place the button on the physical left side of the bar, before the tabs.
+  left,
+
+  /// Place the button on the physical right side of the bar, after the tabs.
+  right,
 }
 
 /// Controls how the tab pill is anchored **horizontally** during the morph
@@ -820,6 +835,7 @@ class GlassTabBarExtraButton {
     required this.label,
     this.iconColor,
     this.size = 64,
+    this.placement = GlassExtraButtonPlacement.right,
     this.position = GlassExtraButtonPosition.beforeSearch,
     this.collapseOnSearchFocus = true,
   });
@@ -842,6 +858,16 @@ class GlassTabBarExtraButton {
   ///
   /// Defaults to 64 to match the default bar height.
   final double size;
+
+  /// Where this button is placed in [GlassBottomBar] and [GlassTabBar.bottom].
+  ///
+  /// Defaults to [GlassExtraButtonPlacement.right], which preserves the
+  /// original bottom-bar behavior. Set to [GlassExtraButtonPlacement.left] to
+  /// place the action before the tab pill.
+  ///
+  /// Has no effect in [GlassSearchableBottomBar], where [position] controls
+  /// placement relative to the search pill.
+  final GlassExtraButtonPlacement placement;
 
   /// Where this button is placed relative to the search pill in a
   /// [GlassSearchableBottomBar].
