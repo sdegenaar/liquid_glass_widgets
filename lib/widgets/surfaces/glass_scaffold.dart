@@ -537,7 +537,8 @@ class GlassScaffold extends StatelessWidget {
       GlassStatusBarStyle.none => true, // doesn't matter — no region
     };
 
-    Widget stackWidget = Stack(children: stackChildren);
+    Widget stackWidget =
+        Stack(clipBehavior: Clip.none, children: stackChildren);
 
     // Wrap in GlassContentAwareScope when content-aware brightness is on.
     // The scope must be an ancestor of both the sampled body

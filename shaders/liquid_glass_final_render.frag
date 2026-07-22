@@ -85,6 +85,13 @@ uniform vec2 uCaptureOffset;
 // 0.12 edge-luminosity strength; 0 = unchanged default rendering.
 uniform float uAmbientRim;
 
+// Slot 28: uFresnelStrength — scales the natural Fresnel edge luminosity.
+// 1.0 (default) = full 0.12 coefficient, matching iOS 26 lit glass.
+// 0.0 = pure blur-overlay appearance with no physics-based rim highlight,
+//       matching iOS 26 system UI glass (Messages, Notification banners, etc).
+// Intermediate values fade smoothly between the two appearances.
+uniform float uFresnelStrength;
+
 uniform sampler2D uBackgroundTexture;
 uniform sampler2D uGeometryTexture;
 
@@ -481,7 +488,7 @@ void main() {
     float rimDist = uThickness * (1.0 - cosTerm);
     float ring    = (1.0 - smoothstep(uAmbientRim - 0.75, uAmbientRim + 0.75, rimDist))
                   * step(0.001, uAmbientRim);
-    float fresnel = rimBase * 0.12 + ring * 0.45;
+    float fresnel = rimBase * 0.12 * uFresnelStrength + ring * 0.45;
     finalColor.rgb = clamp(finalColor.rgb + vec3(fresnel), 0.0, 1.0);
 
     float alpha  = geometryData.a;

@@ -27,6 +27,7 @@ class LiquidGlassSettings extends Equatable {
     this.lightIntensity = .5,
     this.ambientStrength = 0,
     this.ambientRim = 0,
+    this.fresnelStrength = 1.0,
     this.refractiveIndex = 1.2,
     this.saturation = 1.5,
     this.glowIntensity = 0.75,
@@ -55,6 +56,7 @@ class LiquidGlassSettings extends Equatable {
     required this.lightIntensity,
     required this.ambientStrength,
     this.ambientRim = 0,
+    this.fresnelStrength = 1.0,
     required this.refractiveIndex,
     required this.saturation,
     required this.glowIntensity,
@@ -186,6 +188,25 @@ class LiquidGlassSettings extends Equatable {
   /// the hardcoded ambientRim floor in [AnimatedGlassIndicator]. Default 0 =
   /// existing rendering everywhere.
   final double ambientRim;
+
+  /// Scales the natural Fresnel edge luminosity on the Premium (Impeller) path.
+  ///
+  /// The Premium shader always computes a physics-based Fresnel rim from the
+  /// 3D surface normals of the glass bevel. This is the "lit physical glass"
+  /// appearance. [fresnelStrength] multiplies the coefficient of that term:
+  ///
+  /// - `1.0` (default) — full Fresnel, matching iOS 26 glass buttons and panels
+  ///   that simulate real optical glass.
+  /// - `0.0` — no Fresnel; the glass reads as a pure blur overlay with zero
+  ///   physics-based rim. Matches iOS 26 system UI glass such as Messages
+  ///   buttons, notification banners, and lock screen controls.
+  /// - Intermediate values fade smoothly between the two appearances.
+  ///
+  /// This has no effect on the Standard or Frosted rendering paths, which do
+  /// not compute a 3D Fresnel term.
+  ///
+  /// Defaults to `1.0`.
+  final double fresnelStrength;
 
   /// The effective ambient strength taking visibility into account.
   double get effectiveAmbientStrength => ambientStrength * visibility;
@@ -324,6 +345,7 @@ class LiquidGlassSettings extends Equatable {
         lightIntensity: lightIntensity,
         ambientStrength: ambientStrength,
         ambientRim: ambientRim,
+        fresnelStrength: fresnelStrength,
         refractiveIndex: refractiveIndex,
         saturation: saturation,
         glowIntensity: glowIntensity,
@@ -406,6 +428,7 @@ class LiquidGlassSettings extends Equatable {
         lightIntensity: lerpDouble(a.lightIntensity, b.lightIntensity, t)!,
         ambientStrength: lerpDouble(a.ambientStrength, b.ambientStrength, t)!,
         ambientRim: lerpDouble(a.ambientRim, b.ambientRim, t)!,
+        fresnelStrength: lerpDouble(a.fresnelStrength, b.fresnelStrength, t)!,
         refractiveIndex: lerpDouble(a.refractiveIndex, b.refractiveIndex, t)!,
         saturation: lerpDouble(a.saturation, b.saturation, t)!,
         glowIntensity: lerpDouble(a.glowIntensity, b.glowIntensity, t)!,
@@ -446,6 +469,7 @@ class LiquidGlassSettings extends Equatable {
     double? lightIntensity,
     double? ambientStrength,
     double? ambientRim,
+    double? fresnelStrength,
     double? refractiveIndex,
     double? saturation,
     double? glowIntensity,
@@ -468,6 +492,7 @@ class LiquidGlassSettings extends Equatable {
         lightIntensity: lightIntensity ?? this.lightIntensity,
         ambientStrength: ambientStrength ?? this.ambientStrength,
         ambientRim: ambientRim ?? this.ambientRim,
+        fresnelStrength: fresnelStrength ?? this.fresnelStrength,
         refractiveIndex: refractiveIndex ?? this.refractiveIndex,
         saturation: saturation ?? this.saturation,
         glowIntensity: glowIntensity ?? this.glowIntensity,
@@ -481,9 +506,6 @@ class LiquidGlassSettings extends Equatable {
         backerColor: backerColor ?? this.backerColor,
         platformViewFallbackColor:
             platformViewFallbackColor ?? this.platformViewFallbackColor,
-        // Preserve current pinchStrength — copyWith is called by AnimatedGlassIndicator
-        // to change visibility while keeping the live pinch value alive.
-        // To set a new pinch value, call copyWithPinch() instead.
         pinchStrength: pinchStrength,
       );
 
@@ -498,6 +520,7 @@ class LiquidGlassSettings extends Equatable {
         lightIntensity,
         ambientStrength,
         ambientRim,
+        fresnelStrength,
         refractiveIndex,
         saturation,
         glowIntensity,

@@ -15,6 +15,79 @@ import 'liquid_glass_render_object.dart';
 import '../shaders.dart';
 import 'package:meta/meta.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Scale-safe repaint boundary
+//
+// Flutter's built-in [RepaintBoundary] rasterises its subtree to a GPU texture
+// whose dimensions exactly match the widget's layout size.  When an ancestor
+// [Transform.scale] (e.g. from [LiquidStretch] during a press animation) tries
+// to expand that texture beyond its original bounds, Impeller clips at the
+// layer boundary — producing the "top-cut" artefact on nav-bar buttons.
+//
+// [_ScaleSafeRepaintBoundary] is a drop-in replacement that overrides
+// [paintBounds] to include the [clipExpansion] insets in all four directions.
+// This tells Impeller to allocate a slightly larger texture so the scale
+// animation has transparent headroom to paint into.
+//
+// When [clipExpansion] is [EdgeInsets.zero] (the default) the behaviour is
+// identical to a plain [RepaintBoundary] — zero extra GPU cost.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ScaleSafeRepaintBoundary extends SingleChildRenderObjectWidget {
+  const _ScaleSafeRepaintBoundary({
+    required super.child,
+    this.expansion = EdgeInsets.zero,
+  });
+
+  /// Extra space (logical pixels) to inflate [paintBounds] in each direction.
+  ///
+  /// Set this to the same value as [LiquidGlassLayer.clipExpansion] so the
+  /// repaint-boundary texture is large enough to absorb any ancestor scale or
+  /// translate transform without hard-clipping the glass content.
+  final EdgeInsets expansion;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderScaleSafeRepaintBoundary(expansion: expansion);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderScaleSafeRepaintBoundary renderObject,
+  ) {
+    renderObject.expansion = expansion;
+  }
+}
+
+class _RenderScaleSafeRepaintBoundary extends RenderProxyBox {
+  _RenderScaleSafeRepaintBoundary({required EdgeInsets expansion})
+      : _expansion = expansion;
+
+  EdgeInsets _expansion;
+  set expansion(EdgeInsets value) {
+    if (_expansion == value) return;
+    _expansion = value;
+    markNeedsPaint();
+  }
+
+  /// Acts as a repaint boundary — tells Flutter to rasterise the subtree into
+  /// its own GPU layer rather than painting inline into the parent.
+  @override
+  bool get isRepaintBoundary => true;
+
+  /// Inflate the declared paint area by [_expansion].  This causes Impeller to
+  /// allocate a texture whose pixel region includes the expansion margin, so
+  /// parent [Transform.scale] animations can expand into that space without
+  /// triggering a hard clip at the original layout boundary.
+  @override
+  Rect get paintBounds => Rect.fromLTRB(
+        -_expansion.left,
+        -_expansion.top,
+        size.width + _expansion.right,
+        size.height + _expansion.bottom,
+      );
+}
+
 /// Represents a layer of multiple [LiquidGlass] shapes or
 /// [LiquidGlassBlendGroup]s that have shared [LiquidGlassSettings] and will be
 /// rendered together.
@@ -156,7 +229,11 @@ class _LiquidGlassLayerState extends State<LiquidGlassLayer>
     }
 
     return BackdropGroup(
-      child: RepaintBoundary(
+      child: _ScaleSafeRepaintBoundary(
+        // Inflate the RepaintBoundary texture by clipExpansion so that any
+        // ancestor Transform.scale (e.g. LiquidStretch press animation) can
+        // expand into the margin without hard-clipping at the original bounds.
+        expansion: widget.clipExpansion,
         child: LiquidGlassRenderScope(
           settings: widget.settings,
           child: InheritedGeometryRenderLink(

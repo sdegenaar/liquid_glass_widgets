@@ -21,6 +21,18 @@
 
 ---
 
+## ✨ New Features
+
+- **`LiquidGlassSettings.fresnelStrength`** — New parameter (range `0.0`–`1.0`, default `1.0`) that scales the natural Fresnel edge luminosity on the Premium rendering path. At `1.0` the glass behaves as physically lit glass with a rim highlight at grazing angles (existing default). At `0.0` the rim is completely suppressed, producing a pure blur-overlay appearance that matches iOS 26 system UI glass (Messages buttons, notification banners, lock screen controls). Intermediate values interpolate smoothly. Fully backwards compatible — omitting the parameter preserves all existing rendering. Also exposed on `GlassThemeSettings` so it can be set app-wide via `GlassTheme`.
+
+---
+
+## 🐛 Bug Fixes
+
+- Fixed hard clip at the top of `useOwnLayer: true` buttons during press-scale animation on Impeller.
+
+---
+
 ## ♻️ Refactoring — Pure Geometry & iOS 26 Shape Parity
 
 This release fundamentally solves the long-standing geometry tension between Flutter's path rendering and our GPU shaders. We completely rewrote the squircle math to use pure analytical curves, fixed stretching bugs in tab indicators, and simplified the API.

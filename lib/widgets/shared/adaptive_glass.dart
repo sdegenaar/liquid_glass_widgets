@@ -46,6 +46,7 @@ class AdaptiveGlass extends StatelessWidget {
     this.glowIntensity = 0.0,
     this.isInteractive = false,
     this.platformViewBackdrop = false,
+    this.clipExpansion = EdgeInsets.zero,
     super.key,
   });
 
@@ -71,6 +72,18 @@ class AdaptiveGlass extends StatelessWidget {
   /// independently of the rest of the widget tree, at the cost of extra GPU
   /// memory. Defaults to `true`.
   final bool useOwnLayer;
+
+  /// Extra space (logical pixels) to inflate the [RepaintBoundary] paint bounds
+  /// in all four directions, forwarded to [LiquidGlass.withOwnLayer].
+  ///
+  /// Set this when an ancestor [Transform.scale] (e.g. [LiquidStretch]) can
+  /// push glass pixels outside the original layout bounds, producing a hard
+  /// clip at the layer edge. A value of `EdgeInsets.all(12)` handles the
+  /// default 5\% press scale for buttons up to 480 px in any dimension.
+  ///
+  /// Ignored for grouped glass (no own-layer, no own RepaintBoundary).
+  /// Defaults to [EdgeInsets.zero] — no extra GPU cost at rest.
+  final EdgeInsets clipExpansion;
 
   /// How to clip the child widget to the [shape] boundary.
   /// Defaults to [Clip.antiAlias].
@@ -368,6 +381,7 @@ class AdaptiveGlass extends StatelessWidget {
         settings: settings,
         shadows: shadows,
         clipBehavior: clipBehavior,
+        clipExpansion: clipExpansion,
         // De-isolate children so nested glass groups with this own-layer
         // rather than creating its own (which causes double-glass).
         // Carry the parent's defaultQuality through so quality hints

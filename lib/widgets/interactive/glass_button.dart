@@ -741,6 +741,15 @@ class _GlassButtonState extends State<GlassButton>
           glowIntensity: _saturationAnimation.value, // 0.0-1.0 animation
           isInteractive: true, // Buttons manage their own RepaintBoundary
           platformViewBackdrop: widget.platformViewBackdrop,
+          // Give the RepaintBoundary texture extra headroom for the press scale
+          // animation. When useOwnLayer: true, the glass layer creates its own
+          // Impeller texture; without this margin, Transform.scale in LiquidStretch
+          // clips at the original texture edge (the "top-cut" artefact on nav buttons).
+          // 12 px covers a 5% scale on buttons up to 480 px wide with no GPU cost
+          // at rest. Grouped buttons don't need this — they share the parent layer.
+          clipExpansion: widget.useOwnLayer && widget.interactionScale > 1.0
+              ? const EdgeInsets.all(12.0)
+              : EdgeInsets.zero,
           child: child!,
         );
       },
