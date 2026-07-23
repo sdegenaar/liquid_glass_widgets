@@ -297,8 +297,17 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
   }) {
     final collapseTowardsRightEdge =
         _collapseTowardsRightEdge(extraOnLeft: extraOnLeft);
-    if (!collapseTowardsRightEdge) return expandedLeft;
-    return expandedLeft + math.max(0.0, expandedWidth - _kCollapsedTabSize);
+    if (!collapseTowardsRightEdge) {
+      final leftGapToRemove = extraOnLeft ? widget.spacing : 0.0;
+      return math.max(0.0, expandedLeft - leftGapToRemove);
+    }
+
+    final rightGapToRemove = extraOnLeft ? 0.0 : widget.spacing;
+    return expandedLeft +
+        math.max(
+          0.0,
+          expandedWidth + rightGapToRemove - _kCollapsedTabSize,
+        );
   }
 
   bool _collapseTowardsRightEdge({required bool extraOnLeft}) {
@@ -538,100 +547,99 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
                           key: _kTabPillKey,
                           child: IgnorePointer(
                             ignoring: _isCollapsed,
-                            child: ClipRect(
-                              child: FittedBox(
-                                fit: BoxFit.fill,
-                                alignment: collapsedContentAlignment,
-                                child: SizedBox(
-                                  width: tabPillW,
-                                  height: widget.barHeight,
-                                  child: TabIndicator(
-                                    quality: effectiveQuality,
-                                    springDescription: widget.springDescription,
-                                    visible: widget.showIndicator,
-                                    tabIndex: selectedIndex,
-                                    tabCount: tabs.length,
-                                    indicatorColor: widget.indicatorColor,
-                                    indicatorSettings: widget.indicatorSettings,
-                                    indicatorPinchStrength:
-                                        widget.indicatorPinchStrength,
-                                    onTabChanged: onTabSelected,
-                                    barHeight: widget.barHeight,
-                                    barBorderRadius: widget.barBorderRadius,
-                                    indicatorBorderRadius:
-                                        widget.indicatorBorderRadius,
-                                    tabPadding: widget.tabPadding,
-                                    backgroundKey: widget.backgroundKey,
-                                    maskingQuality: widget.maskingQuality,
-                                    indicatorExpansion:
-                                        widget.indicatorExpansion,
-                                    platformViewBackdrop:
-                                        widget.platformViewBackdrop,
-                                    interactionGlowColor:
-                                        widget.interactionBehavior.hasGlow
-                                            ? effectiveInteractionGlowColor
-                                            : const Color(0x00000000),
-                                    interactionGlowRadius:
-                                        widget.interactionGlowRadius,
-                                    interactionGlowBlurRadius:
-                                        effectiveGlowBlurRadius,
-                                    interactionGlowSpreadRadius:
-                                        effectiveGlowSpreadRadius,
-                                    interactionGlowOpacity:
-                                        effectiveGlowOpacity,
-                                    interactionScale:
-                                        widget.interactionBehavior.hasScale
-                                            ? widget.pressScale
-                                            : 1.0,
-                                    childUnselected: _ltrTabRow(
-                                      children: [
-                                        for (var i = 0; i < tabs.length; i++)
-                                          Expanded(
-                                            child: BottomBarTabItem(
-                                              tab: tabs[i],
-                                              selected: false,
-                                              selectedIconColor:
-                                                  resolvedSelectedIconColor,
-                                              unselectedIconColor:
-                                                  resolvedUnselectedIconColor,
-                                              selectedLabelColor:
-                                                  widget.selectedLabelColor,
-                                              unselectedLabelColor:
-                                                  widget.unselectedLabelColor,
-                                              selectedLabelStyle:
-                                                  widget.selectedLabelStyle,
-                                              unselectedLabelStyle:
-                                                  widget.unselectedLabelStyle,
-                                              iconSize: widget.iconSize,
-                                              labelFontSize:
-                                                  widget.labelFontSize,
-                                              textStyle: widget.textStyle,
-                                              iconLabelSpacing:
-                                                  widget.iconLabelSpacing,
-                                              glowDuration: widget.glowDuration,
-                                              glowBlurRadius:
-                                                  widget.glowBlurRadius,
-                                              glowSpreadRadius:
-                                                  widget.glowSpreadRadius,
-                                              glowOpacity: widget.glowOpacity,
-                                              semanticsSelected:
-                                                  i == selectedIndex,
-                                              onTap: null,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    selectedTabBuilder:
-                                        (context, intensity, alignment) =>
-                                            _buildSelectedTabs(
-                                                intensity,
-                                                alignment,
-                                                tabs,
+                            // Keep the morphing pill un-clipped so its press
+                            // interaction can overflow horizontally the same
+                            // way GlassTabBar.searchable does.
+                            child: FittedBox(
+                              fit: BoxFit.fill,
+                              alignment: collapsedContentAlignment,
+                              child: SizedBox(
+                                width: tabPillW,
+                                height: widget.barHeight,
+                                child: TabIndicator(
+                                  quality: effectiveQuality,
+                                  springDescription: widget.springDescription,
+                                  visible: widget.showIndicator,
+                                  tabIndex: selectedIndex,
+                                  tabCount: tabs.length,
+                                  indicatorColor: widget.indicatorColor,
+                                  indicatorSettings: widget.indicatorSettings,
+                                  indicatorPinchStrength:
+                                      widget.indicatorPinchStrength,
+                                  onTabChanged: onTabSelected,
+                                  barHeight: widget.barHeight,
+                                  barBorderRadius: widget.barBorderRadius,
+                                  indicatorBorderRadius:
+                                      widget.indicatorBorderRadius,
+                                  tabPadding: widget.tabPadding,
+                                  backgroundKey: widget.backgroundKey,
+                                  maskingQuality: widget.maskingQuality,
+                                  indicatorExpansion: widget.indicatorExpansion,
+                                  platformViewBackdrop:
+                                      widget.platformViewBackdrop,
+                                  interactionGlowColor:
+                                      widget.interactionBehavior.hasGlow
+                                          ? effectiveInteractionGlowColor
+                                          : const Color(0x00000000),
+                                  interactionGlowRadius:
+                                      widget.interactionGlowRadius,
+                                  interactionGlowBlurRadius:
+                                      effectiveGlowBlurRadius,
+                                  interactionGlowSpreadRadius:
+                                      effectiveGlowSpreadRadius,
+                                  interactionGlowOpacity:
+                                      effectiveGlowOpacity,
+                                  interactionScale:
+                                      widget.interactionBehavior.hasScale
+                                          ? widget.pressScale
+                                          : 1.0,
+                                  childUnselected: _ltrTabRow(
+                                    children: [
+                                      for (var i = 0; i < tabs.length; i++)
+                                        Expanded(
+                                          child: BottomBarTabItem(
+                                            tab: tabs[i],
+                                            selected: false,
+                                            selectedIconColor:
                                                 resolvedSelectedIconColor,
-                                                resolvedUnselectedIconColor),
-                                    magnification: widget.magnification,
-                                    innerBlur: widget.innerBlur,
+                                            unselectedIconColor:
+                                                resolvedUnselectedIconColor,
+                                            selectedLabelColor:
+                                                widget.selectedLabelColor,
+                                            unselectedLabelColor:
+                                                widget.unselectedLabelColor,
+                                            selectedLabelStyle:
+                                                widget.selectedLabelStyle,
+                                            unselectedLabelStyle:
+                                                widget.unselectedLabelStyle,
+                                            iconSize: widget.iconSize,
+                                            labelFontSize: widget.labelFontSize,
+                                            textStyle: widget.textStyle,
+                                            iconLabelSpacing:
+                                                widget.iconLabelSpacing,
+                                            glowDuration: widget.glowDuration,
+                                            glowBlurRadius:
+                                                widget.glowBlurRadius,
+                                            glowSpreadRadius:
+                                                widget.glowSpreadRadius,
+                                            glowOpacity: widget.glowOpacity,
+                                            semanticsSelected:
+                                                i == selectedIndex,
+                                            onTap: null,
+                                          ),
+                                        ),
+                                    ],
                                   ),
+                                  selectedTabBuilder:
+                                      (context, intensity, alignment) =>
+                                          _buildSelectedTabs(
+                                              intensity,
+                                              alignment,
+                                              tabs,
+                                              resolvedSelectedIconColor,
+                                              resolvedUnselectedIconColor),
+                                  magnification: widget.magnification,
+                                  innerBlur: widget.innerBlur,
                                 ),
                               ),
                             ),
