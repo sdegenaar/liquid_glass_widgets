@@ -25,6 +25,7 @@ class GlassMenuItem extends StatefulWidget {
     this.iconColor,
     this.iconSize = 20.0,
     this.maxLines = 1,
+    this.enablePressScale = true,
   });
 
   /// The primary text of the item.
@@ -78,6 +79,16 @@ class GlassMenuItem extends StatefulWidget {
   /// Defaults to 1. Set to 2 for longer labels like "Set Up Name & Photo".
   final int maxLines;
 
+  /// Whether to apply the subtle scale-down animation on press.
+  ///
+  /// When `true` (default), the item shrinks to 0.98× on touch-down, matching
+  /// the standard iOS press feedback. Set to `false` on fill-rate-limited
+  /// devices to eliminate the per-frame GPU cost of animating a
+  /// [Transform.scale] over the glass layer.
+  ///
+  /// Defaults to `true`.
+  final bool enablePressScale;
+
   @override
   State<GlassMenuItem> createState() => _GlassMenuItemState();
 }
@@ -107,7 +118,7 @@ class GlassMenuDivider extends StatelessWidget {
     // Resolve from theme's label color, falling back to text color at 15%
     final defaultLineColor =
         (theme.textTheme.tabLabelTextStyle.color ?? CupertinoColors.label)
-            .withValues(alpha: 0.15);
+            .withValues(alpha: 0.45);
     return SizedBox(
       height: height,
       child: Center(
@@ -231,7 +242,8 @@ class _GlassMenuItemState extends State<GlassMenuItem> {
                 : Colors.transparent;
 
     // Scale effect on press (subtle squash like iOS buttons)
-    final double scale = effectivePressed ? 0.98 : 1.0;
+    final double scale =
+        (widget.enablePressScale && effectivePressed) ? 0.98 : 1.0;
 
     // Build the item content
     return GestureDetector(

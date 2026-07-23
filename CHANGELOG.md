@@ -25,6 +25,9 @@
 
 - **`LiquidGlassSettings.fresnelStrength`** — New parameter (range `0.0`–`1.0`, default `1.0`) that scales the natural Fresnel edge luminosity on the Premium rendering path. At `1.0` the glass behaves as physically lit glass with a rim highlight at grazing angles (existing default). At `0.0` the rim is completely suppressed, producing a pure blur-overlay appearance that matches iOS 26 system UI glass (Messages buttons, notification banners, lock screen controls). Intermediate values interpolate smoothly. Fully backwards compatible — omitting the parameter preserves all existing rendering. Also exposed on `GlassThemeSettings` so it can be set app-wide via `GlassTheme`.
 
+- **`GlassMenuItem.enablePressScale`** — New `bool` parameter (default `true`) that controls the 0.98× scale-down animation on press. Set to `false` on fill-rate-limited devices to eliminate the per-frame GPU cost of animating a `Transform.scale` over the glass layer. Fully backwards compatible.
+
+
 ---
 
 ## 🐛 Bug Fixes

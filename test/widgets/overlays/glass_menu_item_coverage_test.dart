@@ -138,6 +138,41 @@ void main() {
     });
   });
 
+  group('GlassMenuItem — enablePressScale', () {
+    testWidgets('respects enablePressScale=false on press', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: SizedBox(
+            width: 200,
+            child: GlassMenuItem(
+              title: 'Item',
+              onTap: () {},
+              enablePressScale: false,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final finder = find.byType(GlassMenuItem);
+      final gesture = await tester.startGesture(tester.getCenter(finder));
+      await tester.pump();
+
+      // Find Transform.scale inside the GlassMenuItem hierarchy
+      final transformFinder = find.descendant(
+        of: finder,
+        matching: find.byType(Transform),
+      );
+
+      // The matrix should be identity because scale is 1.0
+      final Transform transform = tester.widget(transformFinder.first);
+      expect(transform.transform.getMaxScaleOnAxis(), 1.0);
+
+      await gesture.cancel();
+      await tester.pumpAndSettle();
+    });
+  });
+
   group('GlassSlider — GlassGlow opacity branch (transition > 0.05)', () {
     testWidgets('dragging slider renders glow animation overlay',
         (tester) async {

@@ -47,10 +47,11 @@ LiquidGlassSettings _kTriggerGlass(BuildContext context) {
     // to match the flat UIVisualEffectView material iOS 26 uses. lightIntensity: 0.2
     // gives a soft, realistic press specular rather than an over-bright flash.
     // Light mode: full bevel (18) + Fresnel for premium 3D pressed feel.
-    glassColor: isDark ? Colors.white10 : Colors.white.withValues(alpha: 0.15),
-    thickness: isDark ? 8 : 18,
-    blur: 8,
-    lightIntensity: isDark ? 0.2 : 0.45,
+    glassColor:
+        isDark ? const Color(0xA6262626) : Colors.white.withValues(alpha: 0.15),
+    thickness: isDark ? 25.0 : 18.0,
+    blur: isDark ? 1.8 : 8.0, // Slightly more blur dims/softens text underneath
+    lightIntensity: isDark ? 0.18 : 0.45,
     ambientStrength: isDark ? 0.0 : 0.12,
     fresnelStrength: isDark ? 0.0 : 1.0,
     chromaticAberration: 0.01,
@@ -64,12 +65,14 @@ LiquidGlassSettings _kTriggerGlass(BuildContext context) {
 LiquidGlassSettings _kSearchGlass(BuildContext context) {
   final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
   return LiquidGlassSettings(
-    glassColor: isDark ? Colors.white10 : Colors.white.withValues(alpha: 0.15),
-    thickness: 18,
-    blur: 8,
-    lightIntensity: isDark ? 0.4 : 0.45,
+    glassColor:
+        isDark ? const Color(0xA6262626) : Colors.white.withValues(alpha: 0.15),
+    thickness: isDark ? 25.0 : 18.0,
+    blur: isDark ? 1.8 : 8.0, // Slightly more blur dims/softens text underneath
+    lightIntensity: isDark ? 0.18 : 0.45,
     ambientStrength: isDark ? 0.0 : 0.12,
-    chromaticAberration: isDark ? 0.1 : 0.05,
+    fresnelStrength: isDark ? 0.0 : 1.0,
+    chromaticAberration: 0.01,
     refractiveIndex: 1.2,
     saturation: 1.0,
     shadowElevation: isDark ? 0.0 : 1.5,
@@ -81,16 +84,19 @@ LiquidGlassSettings _kMenuGlass(BuildContext context) {
   final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
   return LiquidGlassSettings(
     glassColor: isDark
-        ? Colors.white12 // Beautiful translucent dark glass
-        : const Color(0x99FFFFFF), // Beautiful frosted white in light mode
-    thickness: 20,
-    blur: 12,
-    lightIntensity: 0.6,
-    ambientStrength: 0.1,
+        ? const Color(0xFF262626).withValues(
+            alpha:
+                0.5) // Standard Figma approximation for systemThinMaterialDark
+        : Colors.white.withValues(alpha: 0.15),
+    thickness: isDark ? 25.0 : 18.0,
+    blur: isDark ? 8 : 8.0, // Slightly more blur dims/softens text underneath
+    lightIntensity: isDark ? 0.18 : 0.45,
+    ambientStrength: isDark ? 0.0 : 0.12,
+    fresnelStrength: isDark ? 0.0 : 1.0,
     chromaticAberration: 0.01,
     refractiveIndex: 1.2,
-    saturation: 1.5,
-    shadowElevation: isDark ? 0.0 : 1.0, // GPU SDF shadows in light mode!
+    saturation: 1.0,
+    shadowElevation: isDark ? 0.0 : 1.5,
   );
 }
 
@@ -391,7 +397,7 @@ class _EditMenu extends StatelessWidget {
     return GlassMenu(
       menuWidth: 260,
       settings: _kMenuGlass(context),
-      menuBorderRadius: 24,
+      menuBorderRadius: 32,
       quality: GlassQuality.premium,
       triggerBuilder: (context, toggleMenu) {
         final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
@@ -458,7 +464,7 @@ class _FilterMenu extends StatelessWidget {
     return GlassMenu(
       menuWidth: 240,
       settings: _kMenuGlass(context),
-      menuBorderRadius: 24,
+      menuBorderRadius: 32,
       quality: GlassQuality.premium,
       triggerBuilder: (context, toggleMenu) {
         final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
@@ -475,7 +481,7 @@ class _FilterMenu extends StatelessWidget {
           icon: Icon(
             SFSymbols.line_horizontal_3_decrease,
             color: CupertinoColors.label.resolveFrom(context),
-            size: 24,
+            size: 26,
           ),
         );
       },
@@ -781,7 +787,7 @@ class _SearchBarState extends State<_SearchBar> {
                                   SFSymbols.square_and_pencil,
                                   color: CupertinoColors.label
                                       .resolveFrom(context),
-                                  size: 22,
+                                  size: 26, // Increased from 22
                                 ),
                               ),
                             )
