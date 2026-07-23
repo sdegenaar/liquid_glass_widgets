@@ -190,6 +190,7 @@ class GlassBottomBar extends StatelessWidget {
     required this.onTabSelected,
     super.key,
     this.extraButton,
+    this.collapseConfig,
     this.spacing = 8,
     this.horizontalPadding = 20,
     this.verticalPadding = 20,
@@ -234,10 +235,15 @@ class GlassBottomBar extends StatelessWidget {
     this.adaptiveBrightness = false,
     this.onBrightnessChanged,
     this.brightnessOverride,
+    this.scrollController,
   })  : assert(tabs.length > 0, 'GlassBottomBar requires at least one tab'),
         assert(
           selectedIndex >= 0 && selectedIndex < tabs.length,
           'selectedIndex must be between 0 and tabs.length - 1',
+        ),
+        assert(
+          collapseConfig == null || extraButton != null,
+          'GlassBottomBar.collapseConfig requires extraButton.',
         ),
         assert(
           tabWidth == null || tabWidth > 0,
@@ -417,6 +423,17 @@ class GlassBottomBar extends StatelessWidget {
   /// [GlassExtraButtonPlacement.left] to place it before the tab pill.
   /// The button is rendered as a [GlassButton] and inherits the glass settings.
   final GlassTabBarExtraButton? extraButton;
+
+  /// Optional vertical-swipe collapse behavior for the tab pill.
+  ///
+  /// Requires [extraButton]. When null, the bar remains fully expanded.
+  final GlassBottomBarCollapseConfig? collapseConfig;
+
+  /// Optional scroll controller that drives automatic collapse/expand.
+  ///
+  /// When both [collapseConfig] and [extraButton] are provided, upward content
+  /// scrolling collapses the tab pill and downward scrolling expands it.
+  final ScrollController? scrollController;
 
   // ===========================================================================
   // Layout Properties
@@ -633,6 +650,7 @@ class GlassBottomBar extends StatelessWidget {
         selectedIndex: selectedIndex,
         onTabSelected: onTabSelected,
         extraButton: extraButton,
+        collapseConfig: collapseConfig,
         spacing: spacing,
         horizontalPadding: horizontalPadding,
         verticalPadding: verticalPadding,
@@ -676,6 +694,7 @@ class GlassBottomBar extends StatelessWidget {
         adaptiveBrightness: adaptiveBrightness,
         onBrightnessChanged: onBrightnessChanged,
         brightnessOverride: brightnessOverride,
+        scrollController: scrollController,
       );
 }
 
@@ -799,6 +818,52 @@ enum GlassExtraButtonPlacement {
 
   /// Place the button on the physical right side of the bar, after the tabs.
   right,
+}
+
+/// Which way the tab pill retracts when the bottom bar collapses.
+enum GlassBottomBarCollapseDirection {
+  /// Retract toward the configured [GlassTabBarExtraButton].
+  towardsExtraButton,
+
+  /// Retract away from the configured [GlassTabBarExtraButton].
+  awayFromExtraButton,
+}
+
+/// Enables the bottom bar's collapse-to-extra-button interaction.
+///
+/// When provided to [GlassBottomBar] or [GlassTabBar.bottom], an upward swipe
+/// collapses the tab pill toward a single point while keeping the extra button
+/// visible. A downward swipe expands it again, and tapping the collapsed bar
+/// can optionally expand it before the extra action fires.
+class GlassBottomBarCollapseConfig {
+  /// Creates a collapse behavior configuration.
+  const GlassBottomBarCollapseConfig({
+    this.direction = GlassBottomBarCollapseDirection.towardsExtraButton,
+    this.expandOnTap = true,
+    this.animationDuration = const Duration(milliseconds: 220),
+    this.collapsedExtraButtonScale = 0.9,
+  }) : assert(
+          collapsedExtraButtonScale > 0,
+          'collapsedExtraButtonScale must be greater than 0.',
+        );
+
+  /// Which physical edge the tab pill collapses toward.
+  final GlassBottomBarCollapseDirection direction;
+
+  /// Whether tapping the collapsed bar expands it.
+  ///
+  /// Defaults to `true`.
+  final bool expandOnTap;
+
+  /// Duration of the collapse/expand animation.
+  ///
+  /// Defaults to 220 milliseconds.
+  final Duration animationDuration;
+
+  /// Scale applied to the extra button while collapsed.
+  ///
+  /// Defaults to `0.9`.
+  final double collapsedExtraButtonScale;
 }
 
 /// Controls how the tab pill is anchored **horizontally** during the morph
