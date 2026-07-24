@@ -4,6 +4,18 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 import '../../shared/test_helpers.dart';
 
+bool _hasAncestor(Element element, Element ancestor) {
+  var found = false;
+  element.visitAncestorElements((candidate) {
+    if (candidate == ancestor) {
+      found = true;
+      return false;
+    }
+    return true;
+  });
+  return found;
+}
+
 void main() {
   group('GlassSegmentedControl', () {
     testWidgets('can be instantiated with required parameters', (tester) async {
@@ -400,6 +412,123 @@ void main() {
         ),
       );
       expect(find.byType(GlassSegmentedControl), findsOneWidget);
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // Fixed-mode glass track regression
+  // --------------------------------------------------------------------------
+
+  group('GlassSegmentedControl fixed-mode glass track', () {
+    testWidgets('renders a glass track by default', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassSegmentedControl(
+            segments: const [
+              GlassSegment(label: 'A'),
+              GlassSegment(label: 'B'),
+              GlassSegment(label: 'C'),
+            ],
+            selectedIndex: 0,
+            onSegmentSelected: (_) {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final trackFinder = find.descendant(
+        of: find.byType(GlassSegmentedControl),
+        matching: find.byType(AdaptiveGlass),
+      );
+
+      expect(trackFinder, findsOneWidget);
+
+      final track = tester.widget<AdaptiveGlass>(trackFinder);
+      expect(track.useOwnLayer, isFalse);
+      expect(track.quality, GlassQuality.standard);
+      expect(
+        track.shape,
+        const LiquidRoundedSuperellipse(borderRadius: 16),
+      );
+    });
+
+    testWidgets('fixed track resolves theme quality and settings',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: LiquidGlassWidgets.wrap(
+            theme: GlassThemeData.simple(
+              quality: GlassQuality.minimal,
+              blur: 7,
+              thickness: 41,
+              saturation: 1.2,
+            ),
+            child: GlassSegmentedControl(
+              segments: const [
+                GlassSegment(label: 'A'),
+                GlassSegment(label: 'B'),
+              ],
+              selectedIndex: 0,
+              onSegmentSelected: (_) {},
+              backgroundColor: const Color(0x33010203),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final track = tester.widget<AdaptiveGlass>(
+        find.descendant(
+          of: find.byType(GlassSegmentedControl),
+          matching: find.byType(AdaptiveGlass),
+        ),
+      );
+
+      expect(track.quality, GlassQuality.minimal);
+      expect(track.settings.blur, 7);
+      expect(track.settings.thickness, 41);
+      expect(track.settings.saturation, 1.2);
+      expect(track.settings.backerColor, const Color(0x33010203));
+    });
+
+    testWidgets('moving indicator is not a child of the glass track',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassSegmentedControl(
+            direction: Axis.vertical,
+            height: 44,
+            segmentExtent: 52,
+            segments: const [
+              GlassSegment(label: 'Top'),
+              GlassSegment(label: 'Middle'),
+              GlassSegment(label: 'Bottom'),
+            ],
+            selectedIndex: 1,
+            onSegmentSelected: (_) {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final trackElement = tester.element(
+        find.descendant(
+          of: find.byType(GlassSegmentedControl),
+          matching: find.byType(AdaptiveGlass),
+        ),
+      );
+      final indicatorElements = find
+          .descendant(
+            of: find.byType(GlassSegmentedControl),
+            matching: find.byType(AnimatedGlassIndicator),
+          )
+          .evaluate()
+          .toList();
+
+      expect(indicatorElements, isNotEmpty);
+      for (final indicatorElement in indicatorElements) {
+        expect(_hasAncestor(indicatorElement, trackElement), isFalse);
+      }
     });
   });
 
