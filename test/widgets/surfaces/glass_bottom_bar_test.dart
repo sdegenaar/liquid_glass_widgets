@@ -114,6 +114,32 @@ void main() {
       expect(find.byIcon(CupertinoIcons.add), findsOneWidget);
     });
 
+    testWidgets('places extra button on the left when configured',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassBottomBar(
+            tabs: testTabs,
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            maskingQuality: MaskingQuality.off,
+            extraButton: GlassTabBarExtraButton(
+              icon: const Icon(CupertinoIcons.add),
+              label: 'Add',
+              onTap: () {},
+              placement: GlassExtraButtonPlacement.left,
+            ),
+          ),
+        ),
+      );
+
+      final addCenter = tester.getCenter(find.byIcon(CupertinoIcons.add));
+      final homeCenter =
+          tester.getCenter(find.byIcon(CupertinoIcons.home).first);
+
+      expect(addCenter.dx, lessThan(homeCenter.dx));
+    });
+
     testWidgets('extra button calls onTap when pressed', (tester) async {
       var tapped = false;
 
@@ -219,6 +245,25 @@ void main() {
         onTap: () {},
       );
       expect(button.position, GlassExtraButtonPosition.beforeSearch);
+    });
+
+    test('placement defaults to right', () {
+      final button = GlassTabBarExtraButton(
+        icon: Icon(CupertinoIcons.add),
+        label: 'Create',
+        onTap: () {},
+      );
+      expect(button.placement, GlassExtraButtonPlacement.right);
+    });
+
+    test('left placement works', () {
+      final button = GlassTabBarExtraButton(
+        icon: Icon(CupertinoIcons.add),
+        label: 'Create',
+        onTap: () {},
+        placement: GlassExtraButtonPlacement.left,
+      );
+      expect(button.placement, GlassExtraButtonPlacement.left);
     });
 
     test('afterSearch position works', () {
