@@ -587,8 +587,7 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
                                       effectiveGlowBlurRadius,
                                   interactionGlowSpreadRadius:
                                       effectiveGlowSpreadRadius,
-                                  interactionGlowOpacity:
-                                      effectiveGlowOpacity,
+                                  interactionGlowOpacity: effectiveGlowOpacity,
                                   interactionScale:
                                       widget.interactionBehavior.hasScale
                                           ? widget.pressScale

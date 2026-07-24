@@ -49,7 +49,7 @@ LiquidGlassSettings _kTriggerGlass(BuildContext context) {
     // Light mode: full bevel (18) + Fresnel for premium 3D pressed feel.
     glassColor:
         isDark ? const Color(0xA6262626) : Colors.white.withValues(alpha: 0.15),
-    thickness: isDark ? 25.0 : 18.0,
+    thickness: isDark ? 18.0 : 18.0,
     blur: isDark ? 1.8 : 8.0, // Slightly more blur dims/softens text underneath
     lightIntensity: isDark ? 0.18 : 0.45,
     ambientStrength: isDark ? 0.0 : 0.12,
