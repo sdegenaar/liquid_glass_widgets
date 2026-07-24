@@ -373,7 +373,7 @@ class _GlassSearchBarState extends State<GlassSearchBar> {
             textStyle: widget.textStyle,
             placeholderStyle: widget.placeholderStyle,
             height: widget.height,
-            shape: LiquidRoundedSuperellipse(
+            shape: LiquidRoundedRectangle(
               borderRadius: widget.height / 2,
             ),
             settings: widget.settings,

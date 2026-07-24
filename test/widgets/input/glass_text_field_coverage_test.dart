@@ -324,8 +324,7 @@ void main() {
       expect(field.iconSpacing, equals(8.0));
       expect(field.padding,
           equals(const EdgeInsets.symmetric(horizontal: 12, vertical: 8)));
-      expect(field.shape,
-          equals(const LiquidRoundedSuperellipse(borderRadius: 22)));
+      expect(field.shape, const LiquidRoundedRectangle(borderRadius: 22));
       expect(field.maxLines, equals(1));
       expect(field.obscureText, isFalse);
       expect(field.keyboardType, equals(TextInputType.text));

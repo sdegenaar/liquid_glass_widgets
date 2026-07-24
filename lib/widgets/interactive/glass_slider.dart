@@ -642,9 +642,8 @@ class _GlassSliderState extends State<GlassSlider>
       ),
     );
 
-    // Use liquid glass with clean superellipse shape
-    // Border radius scales with the total height
-    final thumbShape = LiquidRoundedSuperellipse(
+    // Use exact stadium SDF for the thumb — eliminates squircle drift.
+    final thumbShape = LiquidRoundedRectangle(
       borderRadius: totalHeight / 2,
     );
 

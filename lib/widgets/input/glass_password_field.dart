@@ -31,7 +31,7 @@ class GlassPasswordField extends StatefulWidget {
     this.settings,
     this.useOwnLayer = false,
     this.quality = GlassQuality.standard,
-    this.shape = const LiquidRoundedSuperellipse(borderRadius: 10),
+    this.shape = const LiquidRoundedRectangle(borderRadius: 10),
     // ── iOS 26 interaction ────────────────────────────────────────────────
     this.interactionBehavior = GlassInteractionBehavior.full,
     this.pressScale = 1.03,

@@ -458,15 +458,19 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
     // instead of the full glass effect — visually identical to the old fallback
     // but with a stable Element identity.
 
-    // ClipPath geometry matches the shader SDF (circular-arc rounded rect):
-    // Superellipse shapes use RoundedRectangleBorder so the ClipPath boundary
-    // aligns with the shader's SDF boundary, eliminating the gap that appears
-    // when a superellipse ClipPath is used with a circular-arc SDF
-    // (superellipse extends further into corners than a circular arc).
+    // clipShape drives both the ClipPath fallback and the fast-path
+    // ClipRRect / ClipRSuperellipse wrappers below.
+    // - LiquidRoundedRectangle    → RoundedRectangleBorder  → ClipRRect
+    // - LiquidRoundedSuperellipse → RoundedSuperellipseBorder → ClipRSuperellipse
+    // - Everything else           → widget.shape             → ClipPath
+    //
+    // ClipRRect/ClipRSuperellipse are preferred over ClipPath because Flutter
+    // PR #177551 (3.41+) forwards these clip types to the iOS PlatformView
+    // mutator stack, letting BackdropFilter clip correctly over PlatformViews.
     final ShapeBorder clipShape;
     if (widget.shape is LiquidVerticalRoundedSuperellipse) {
       final s = widget.shape as LiquidVerticalRoundedSuperellipse;
-      clipShape = RoundedRectangleBorder(
+      clipShape = RoundedSuperellipseBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(s.topRadius),
           bottom: Radius.circular(s.bottomRadius),
@@ -474,6 +478,11 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
       );
     } else if (widget.shape is LiquidRoundedSuperellipse) {
       final s = widget.shape as LiquidRoundedSuperellipse;
+      clipShape = RoundedSuperellipseBorder(
+        borderRadius: BorderRadius.all(Radius.circular(s.borderRadius)),
+      );
+    } else if (widget.shape is LiquidRoundedRectangle) {
+      final s = widget.shape as LiquidRoundedRectangle;
       clipShape = RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(s.borderRadius)),
       );
@@ -481,26 +490,13 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
       clipShape = widget.shape;
     }
 
-    // When the resolved clipShape is a RoundedRectangleBorder with a
-    // BorderRadius, wrap in ClipRRect instead of ClipPath. Flutter PR
-    // #177551 (in 3.41+) forwards ClipRRect clip data to the iOS
-    // PlatformView mutator stack, which lets the engine clip a
-    // descendant BackdropFilter over a PlatformView — eliminating the
-    // rectangular blur halo that appears around rounded glass surfaces
-    // stacked over a PlatformView (e.g. mapbox_maps_flutter,
-    // video_player on iOS). The same engine fix does NOT apply to
-    // ClipPath, even when the path inside is mathematically a rounded
-    // rect.
-    //
-    // LiquidOval is NOT covered: empirically the engine fix does not
-    // forward ClipRRect with circular(double.infinity), nor does it
-    // forward a LayoutBuilder-computed finite radius on a LiquidOval
-    // path. App code that needs a halo-free circular glass surface
-    // over a PlatformView should use
-    // LiquidRoundedSuperellipse(borderRadius: size/2) instead, which
-    // renders identically and triggers the engine fix.
     final BorderRadius? roundedRectRadius =
         (clipShape is RoundedRectangleBorder &&
+                clipShape.borderRadius is BorderRadius)
+            ? clipShape.borderRadius as BorderRadius
+            : null;
+    final BorderRadius? superellipseRadius =
+        (clipShape is RoundedSuperellipseBorder &&
                 clipShape.borderRadius is BorderRadius)
             ? clipShape.borderRadius as BorderRadius
             : null;
@@ -519,6 +515,9 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
     );
     if (roundedRectRadius != null) {
       return ClipRRect(borderRadius: roundedRectRadius, child: effect);
+    }
+    if (superellipseRadius != null) {
+      return ClipRSuperellipse(borderRadius: superellipseRadius, child: effect);
     }
     return ClipPath(
       clipper: ShapeBorderClipper(shape: clipShape),

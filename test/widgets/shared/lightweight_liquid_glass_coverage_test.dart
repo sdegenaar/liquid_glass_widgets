@@ -48,7 +48,7 @@ void main() {
       await tester.pumpWidget(
         createTestApp(
           child: LightweightLiquidGlass(
-            shape: const LiquidRoundedSuperellipse(borderRadius: 16),
+            shape: const LiquidRoundedRectangle(borderRadius: 16),
             settings: _settings,
             child: const SizedBox(width: 80, height: 40),
           ),

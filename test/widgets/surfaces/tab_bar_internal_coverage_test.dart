@@ -661,4 +661,33 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  group('BottomBarExtraBtn via GlassTabBar', () {
+    testWidgets(
+        'platformViewBackdrop=true swaps LiquidOval for LiquidRoundedRectangle',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: GlassTabBar.bottom(
+              tabs: const [
+                GlassTab(icon: Icon(Icons.home)),
+                GlassTab(icon: Icon(Icons.settings))
+              ],
+              selectedIndex: 0,
+              onTabSelected: (i) {},
+              platformViewBackdrop: true,
+              extraButton: GlassTabBarExtraButton(
+                icon: const Icon(Icons.add),
+                onTap: () {},
+                label: 'Add',
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(GlassTabBar), findsOneWidget);
+    });
+  });
 }

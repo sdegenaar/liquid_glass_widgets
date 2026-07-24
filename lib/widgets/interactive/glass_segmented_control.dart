@@ -180,7 +180,7 @@ class GlassSegmentedControl extends StatefulWidget {
     required this.onSegmentSelected,
     super.key,
     this.height = GlassDefaults.heightControl,
-    this.borderRadius = GlassDefaults.borderRadius,
+    this.borderRadius = 9999.0,
     this.padding = const EdgeInsets.all(2),
     this.selectedTextStyle,
     this.unselectedTextStyle,

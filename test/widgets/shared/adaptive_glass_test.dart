@@ -45,6 +45,23 @@ void main() {
       expect(find.text('std'), findsOneWidget);
     });
 
+    testWidgets('respects clipExpansion parameter', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveGlass(
+            shape: _shape,
+            settings: _settings,
+            quality: GlassQuality.premium,
+            useOwnLayer: true,
+            clipExpansion: const EdgeInsets.all(12.0),
+            child: const Text('clipExp'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('clipExp'), findsOneWidget);
+    });
+
     testWidgets('grouped helper creates AdaptiveGlass without own layer',
         (tester) async {
       await tester.pumpWidget(

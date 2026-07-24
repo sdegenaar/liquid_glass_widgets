@@ -96,7 +96,7 @@ class GlassTextField extends StatefulWidget {
     this.minHeight,
     this.maxHeight,
     this.bottom,
-    this.shape = const LiquidRoundedSuperellipse(borderRadius: 10),
+    this.shape = const LiquidRoundedRectangle(borderRadius: 10),
     this.settings,
     this.useOwnLayer = false,
     this.quality,
@@ -134,7 +134,7 @@ class GlassTextField extends StatefulWidget {
     this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     this.iconSpacing = 8.0,
     this.height = 44.0,
-    this.shape = const LiquidRoundedSuperellipse(borderRadius: 22),
+    this.shape = const LiquidRoundedRectangle(borderRadius: 22),
     this.settings,
     this.useOwnLayer = false,
     this.quality,
@@ -268,7 +268,7 @@ class GlassTextField extends StatefulWidget {
 
   /// Shape of the text field.
   ///
-  /// Defaults to [LiquidRoundedSuperellipse] with 10px border radius.
+  /// Defaults to [LiquidRoundedRectangle] with 10px border radius.
   final LiquidShape shape;
 
   /// Vertical alignment of prefix and suffix icons.

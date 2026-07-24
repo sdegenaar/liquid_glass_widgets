@@ -1,4 +1,70 @@
+# 0.23.0
+
+## ⚠️ Breaking Changes
+
+- **`AnimatedGlassIndicator.useSuperellipse` removed.** This parameter has been deleted from the constructor. Any call site passing `useSuperellipse: true` or `useSuperellipse: false` will fail to compile.
+
+  **Migration:** simply remove the parameter. The indicator is always a rounded rectangle (capsule) now, which is mathematically correct. Squircle geometry is unstable for dynamic stretching elements.
+
+  ```dart
+  // Before (0.22.1)
+  AnimatedGlassIndicator(
+    useSuperellipse: false,
+    ...
+  )
+
+  // After (0.23.0) — just remove the parameter
+  AnimatedGlassIndicator(
+    ...
+  )
+  ```
+
+---
+
+## ✨ New Features
+
+- **`LiquidGlassSettings.fresnelStrength`** — New parameter (range `0.0`–`1.0`, default `1.0`) that scales the natural Fresnel edge luminosity on the Premium rendering path. At `1.0` the glass behaves as physically lit glass with a rim highlight at grazing angles (existing default). At `0.0` the rim is completely suppressed, producing a pure blur-overlay appearance that matches iOS 26 system UI glass (Messages buttons, notification banners, lock screen controls). Intermediate values interpolate smoothly. Fully backwards compatible — omitting the parameter preserves all existing rendering. Also exposed on `GlassThemeSettings` so it can be set app-wide via `GlassTheme`.
+
+- **`GlassMenuItem.enablePressScale`** — New `bool` parameter (default `true`) that controls the 0.98× scale-down animation on press. Set to `false` on fill-rate-limited devices to eliminate the per-frame GPU cost of animating a `Transform.scale` over the glass layer. Fully backwards compatible.
+
+
+---
+
+## 🐛 Bug Fixes
+
+- Fixed hard clip at the top of `useOwnLayer: true` buttons during press-scale animation on Impeller.
+
+---
+
+## ♻️ Refactoring — Pure Geometry & iOS 26 Shape Parity
+
+This release fundamentally solves the long-standing geometry tension between Flutter's path rendering and our GPU shaders. We completely rewrote the squircle math to use pure analytical curves, fixed stretching bugs in tab indicators, and simplified the API.
+
+### 1. Pure Analytic Lamé Squircles
+- **Shader Rewrite (`sdf.glsl`)**: We completely removed the old piecewise 45-degree seam approach and the hacky `blend` safety valve. `sdfSquircle` now uses a pure, analytic Lamé curve (`|x|^n + |y|^n = 1`). Squircles now perfectly match Apple's continuous curve geometry with zero flattening on the edges.
+- **Graceful Degradation (The Ghost-Glow Fix)**: When a squircle is given a radius that physically cannot fit (e.g. `r = 18` on a `36px` tall button), the shader now dynamically recalculates the exponent `n` based on the clamped available space. As space runs out, `n` smoothly degrades to `2.0`, collapsing into a perfect circle. This mathematically guarantees that the shader's interaction glow always aligns perfectly flush against Flutter's clipping path, eliminating the dark corner gaps.
+
+### 2. Perfect iOS 26 Pills (Capsules)
+Apple never uses squircles for pill shapes (like "Edit" buttons or Tab Indicators). They use pure circular-arc capsules. We audited the library to align with this:
+- **`GlassChip` & Demo Buttons**: Replaced `LiquidRoundedSuperellipse` with `LiquidRoundedRectangle` for all pill-shaped elements. They now explicitly use `sdfRRectAsym`, ensuring perfect circular ends.
+- **`GlassMenu` & `GlassPopover` morph blobs**: Replaced `LiquidOval` with `LiquidRoundedRectangle`. The rounded rect SDF is mathematically stable at all aspect ratios during dynamic morphs.
+
+### 3. AnimatedGlassIndicator API Cleanup
+The glass tab indicator previously suffered from a "stretching bug" where it turned squarish during drag expansion because its finite `borderRadius` was outgrown by its expanding height.
+- **Removed `useSuperellipse`** *(see Breaking Changes above)*: This parameter was mathematically incorrect for dynamic stretching indicators.
+- **Optional `borderRadius` (Default `9999.0`)**: `borderRadius` is no longer required. It defaults to `9999.0`, which offloads the math entirely to the shader's `min(r, shortest)` clamp. This guarantees a perfect capsule at *any* drag size.
+- **Segmented Controls**: `GlassSegmentedControl` explicitly passes `borderRadius: containerRadius - 3`, ensuring it retains its correct inset rounded-rectangle geometry rather than defaulting to a capsule.
+
+
+## 📚 Documentation
+
+- **`shape_debug_demo.dart`** — corrected the Standard-mode description banner from the inaccurate `"_SquircleClipper + lightweight shader (CPU L4/L2 path)"` to the accurate `"ShapeBorderClipper + lightweight blur shader (shape-blind)"`. There is no `_SquircleClipper` class; the lightweight shader is shape-type-blind by design.
+
+
+---
+
 # 0.22.1
+
 
 ## 🐛 Bug Fixes
 

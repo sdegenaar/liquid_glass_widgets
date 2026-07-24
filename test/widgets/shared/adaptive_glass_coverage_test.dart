@@ -6,7 +6,7 @@ Widget _wrap(Widget child) => MaterialApp(
       home: Scaffold(body: LiquidGlassWidgets.wrap(child: child)),
     );
 
-const _shape = LiquidRoundedSuperellipse(borderRadius: 20);
+const _shape = LiquidRoundedRectangle(borderRadius: 20);
 const _settings = LiquidGlassSettings(blur: 5);
 
 void main() {
@@ -330,13 +330,13 @@ void main() {
   });
 
   // _ShapeClip — the private helper used by _FrostedFallback to route
-  // RoundedRectangleBorder-resolving shapes through ClipRRect (so the
-  // Flutter PR #177551 PlatformView clip-forward fix takes effect) and
-  // everything else through ClipPath. Exercise both branches that
-  // aren't covered by the LiquidRoundedSuperellipse cases above.
+  // superellipse shapes through ClipRSuperellipse (exact iOS continuous-curve
+  // fidelity), RoundedRectangleBorder-resolving shapes through ClipRRect
+  // (Flutter PR #177551 PlatformView clip-forwarding), and everything else
+  // through ClipPath. Exercise the branches not covered by the top-level cases.
   group('AdaptiveGlass — _ShapeClip shape branches via _FrostedFallback', () {
     testWidgets(
-        'LiquidVerticalRoundedSuperellipse routes through ClipRRect.vertical',
+        'LiquidVerticalRoundedSuperellipse routes through ClipRSuperellipse',
         (tester) async {
       await tester.pumpWidget(_wrap(const SizedBox(
         width: 200,
@@ -352,9 +352,9 @@ void main() {
         ),
       )));
       await tester.pump();
-      // Asymmetric vertical rounded rect should still resolve to
-      // ClipRRect (with BorderRadius.vertical) via _ShapeClip.
-      expect(find.byType(ClipRRect), findsWidgets);
+      // LiquidVerticalRoundedSuperellipse now routes to ClipRSuperellipse for
+      // exact iOS continuous-curve fidelity when not over a PlatformView.
+      expect(find.byType(ClipRSuperellipse), findsWidgets);
     });
 
     testWidgets('LiquidOval falls back to ClipPath via _ShapeClip',
@@ -397,6 +397,9 @@ void main() {
         ),
       )));
       await tester.pump();
+      // Over a PlatformView, ClipRSuperellipse is not forwarded to the mutator
+      // stack — the platformViewBackdrop guard must override the superellipse
+      // routing and fall back to ClipRRect so the frost is correctly bounded.
       expect(find.byType(ClipRRect), findsWidgets,
           reason: 'platformViewBackdrop must take the frosted-fallback path at '
               'premium, not the shader path that is inert over a PlatformView');

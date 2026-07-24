@@ -598,9 +598,8 @@ class _GlassSwitchState extends State<GlassSwitch>
     final totalWidth = thumbWidth + leadStretch;
     final totalHeight = thumbHeight + vExpand * 2;
 
-    // iOS 26: Synchronized Biological Bloom
-    // Restored perfect pill radius (no squareness)
-    final thumbShape = LiquidRoundedSuperellipse(
+    // Restored perfect pill radius with exact stadium SDF.
+    final thumbShape = LiquidRoundedRectangle(
       borderRadius: totalHeight / 2,
     );
     // Standard path only — Premium values are unchanged.

@@ -292,7 +292,7 @@ class GlassButtonGroup extends StatelessWidget {
     // the menu trigger; subsequent menu items are treated as plain tap items.
     // ---------------------------------------------------------------------------
     if (items != null) {
-      final shape = LiquidRoundedSuperellipse(borderRadius: borderRadius);
+      final shape = LiquidRoundedRectangle(borderRadius: borderRadius);
       final menuItemIndex = items!.indexWhere((item) => item.menuItems != null);
 
       // Helper that builds the pill shell — reused in both branches.
@@ -353,7 +353,7 @@ class GlassButtonGroup extends StatelessWidget {
       quality: effectiveQuality,
       settings: settings,
       platformViewBackdrop: platformViewBackdrop,
-      shape: LiquidRoundedSuperellipse(borderRadius: borderRadius),
+      shape: LiquidRoundedRectangle(borderRadius: borderRadius),
       padding: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: IntrinsicHeight(

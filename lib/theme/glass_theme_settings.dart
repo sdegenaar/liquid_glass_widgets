@@ -53,6 +53,7 @@ class GlassThemeSettings {
     this.lightAngle,
     this.lightIntensity,
     this.ambientStrength,
+    this.fresnelStrength,
     this.refractiveIndex,
     this.saturation,
     this.specularSharpness,
@@ -82,6 +83,9 @@ class GlassThemeSettings {
   /// See [LiquidGlassSettings.ambientStrength].
   final double? ambientStrength;
 
+  /// See [LiquidGlassSettings.fresnelStrength].
+  final double? fresnelStrength;
+
   /// See [LiquidGlassSettings.refractiveIndex].
   final double? refractiveIndex;
 
@@ -105,6 +109,7 @@ class GlassThemeSettings {
       lightAngle: lightAngle ?? base.lightAngle,
       lightIntensity: lightIntensity ?? base.lightIntensity,
       ambientStrength: ambientStrength ?? base.ambientStrength,
+      fresnelStrength: fresnelStrength ?? base.fresnelStrength,
       refractiveIndex: refractiveIndex ?? base.refractiveIndex,
       saturation: saturation ?? base.saturation,
       specularSharpness: specularSharpness ?? base.specularSharpness,
@@ -146,6 +151,8 @@ class GlassThemeSettings {
       lightIntensity: _lerpDoubleField(a.lightIntensity, b.lightIntensity, t),
       ambientStrength:
           _lerpDoubleField(a.ambientStrength, b.ambientStrength, t),
+      fresnelStrength:
+          _lerpDoubleField(a.fresnelStrength, b.fresnelStrength, t),
       refractiveIndex:
           _lerpDoubleField(a.refractiveIndex, b.refractiveIndex, t),
       saturation: _lerpDoubleField(a.saturation, b.saturation, t),
@@ -173,6 +180,7 @@ class GlassThemeSettings {
     double? lightAngle,
     double? lightIntensity,
     double? ambientStrength,
+    double? fresnelStrength,
     double? refractiveIndex,
     double? saturation,
     GlassSpecularSharpness? specularSharpness,
@@ -186,6 +194,7 @@ class GlassThemeSettings {
       lightAngle: lightAngle ?? this.lightAngle,
       lightIntensity: lightIntensity ?? this.lightIntensity,
       ambientStrength: ambientStrength ?? this.ambientStrength,
+      fresnelStrength: fresnelStrength ?? this.fresnelStrength,
       refractiveIndex: refractiveIndex ?? this.refractiveIndex,
       saturation: saturation ?? this.saturation,
       specularSharpness: specularSharpness ?? this.specularSharpness,
@@ -205,6 +214,7 @@ class GlassThemeSettings {
           lightAngle == other.lightAngle &&
           lightIntensity == other.lightIntensity &&
           ambientStrength == other.ambientStrength &&
+          fresnelStrength == other.fresnelStrength &&
           refractiveIndex == other.refractiveIndex &&
           saturation == other.saturation &&
           specularSharpness == other.specularSharpness;
@@ -219,6 +229,7 @@ class GlassThemeSettings {
         lightAngle,
         lightIntensity,
         ambientStrength,
+        fresnelStrength,
         refractiveIndex,
         saturation,
         specularSharpness,

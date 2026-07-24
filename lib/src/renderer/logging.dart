@@ -1,5 +1,6 @@
-// ignore_for_file: avoid_print, lines_longer_than_80_chars
+// ignore_for_file: lines_longer_than_80_chars
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 
@@ -28,7 +29,7 @@ abstract class LgrLogs {
 
     for (final logger in loggers) {
       if (!_activeLoggers.contains(logger)) {
-        print('Initializing logger: ${logger.name}');
+        debugPrint('Initializing logger: ${logger.name}');
         logger
           ..level = level
           ..onRecord.listen(_printLog);
@@ -61,7 +62,7 @@ abstract class LgrLogs {
   static void deactivateLoggers(Set<Logger> loggers) {
     for (final logger in loggers) {
       if (_activeLoggers.contains(logger)) {
-        print('Deactivating logger: ${logger.name}');
+        debugPrint('Deactivating logger: ${logger.name}');
         logger.clearListeners();
 
         _activeLoggers.remove(logger);
@@ -69,9 +70,9 @@ abstract class LgrLogs {
     }
   }
 
-  /// Logs a record using a print statement.
+  /// Logs a record using a debug print statement.
   static void _printLog(LogRecord record) {
-    print(
+    debugPrint(
       '${record.loggerName} > ${record.level.name}: ${record.message}',
     );
   }

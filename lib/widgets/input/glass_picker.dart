@@ -24,7 +24,7 @@ class GlassPicker extends StatelessWidget {
     this.settings,
     this.useOwnLayer = false,
     this.quality,
-    this.shape = const LiquidRoundedSuperellipse(borderRadius: 10),
+    this.shape = const LiquidRoundedRectangle(borderRadius: 10),
   });
 
   /// The currently selected text value.

@@ -271,7 +271,7 @@ class GlassIconButton extends StatelessWidget {
       case GlassIconButtonShape.circle:
         return _defaultOval;
       case GlassIconButtonShape.roundedSquare:
-        return LiquidRoundedSuperellipse(
+        return LiquidRoundedRectangle(
           borderRadius: borderRadius,
         );
     }

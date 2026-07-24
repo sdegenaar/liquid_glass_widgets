@@ -147,7 +147,7 @@ void main() {
       );
 
       expect(control.height, equals(32));
-      expect(control.borderRadius, equals(16));
+      expect(control.borderRadius, equals(9999.0));
       expect(control.useOwnLayer, isFalse);
       expect(control.quality, isNull);
     });

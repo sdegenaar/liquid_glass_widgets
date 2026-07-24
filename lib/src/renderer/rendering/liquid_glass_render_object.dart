@@ -338,6 +338,10 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
           ..setFloatUniforms(initialIndex: 27, (value) {
             value.setFloat(settings.ambientRim);
           })
+          // Slot 28: uFresnelStrength — scales the natural Fresnel rim (0=off, 1=full).
+          ..setFloatUniforms(initialIndex: 28, (value) {
+            value.setFloat(settings.fresnelStrength);
+          })
           ..setImageSampler(
             1,
             geometryImage,
@@ -469,6 +473,10 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
       // Slot 27: uAmbientRim — full-perimeter Fresnel rim boost.
       ..setFloatUniforms(initialIndex: 27, (value) {
         value.setFloat(settings.ambientRim);
+      })
+      // Slot 28: uFresnelStrength — scales the natural Fresnel rim (0=off, 1=full).
+      ..setFloatUniforms(initialIndex: 28, (value) {
+        value.setFloat(settings.fresnelStrength);
       })
       // Slot 0: captured background image (replaces the BackdropFilter read).
       ..setImageSampler(0, capture)

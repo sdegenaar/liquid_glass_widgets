@@ -379,7 +379,7 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
                 useOwnLayer: true,
                 width: double.infinity,
                 height: 50,
-                shape: const LiquidRoundedSuperellipse(borderRadius: 25),
+                shape: const LiquidRoundedRectangle(borderRadius: 25),
                 settings: LiquidGlassSettings(
                   glassColor:
                       CupertinoTheme.brightnessOf(context) == Brightness.dark
@@ -1190,7 +1190,7 @@ class _NowPlayingViewState extends State<NowPlayingView> {
               GlassButton(
                 onTap: () {},
                 useOwnLayer: true,
-                shape: const LiquidRoundedSuperellipse(borderRadius: 40),
+                shape: const LiquidRoundedRectangle(borderRadius: 40),
                 settings: LiquidGlassSettings(
                     thickness: 20,
                     blur: 2,

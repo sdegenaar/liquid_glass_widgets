@@ -85,6 +85,13 @@ uniform vec2 uCaptureOffset;
 // 0.12 edge-luminosity strength; 0 = unchanged default rendering.
 uniform float uAmbientRim;
 
+// Slot 28: uFresnelStrength — scales the natural Fresnel edge luminosity.
+// 1.0 (default) = full 0.12 coefficient, matching iOS 26 lit glass.
+// 0.0 = pure blur-overlay appearance with no physics-based rim highlight,
+//       matching iOS 26 system UI glass (Messages, Notification banners, etc).
+// Intermediate values fade smoothly between the two appearances.
+uniform float uFresnelStrength;
+
 uniform sampler2D uBackgroundTexture;
 uniform sampler2D uGeometryTexture;
 
@@ -421,32 +428,25 @@ void main() {
 
 
     if (edgeFactor > 0.01) {
-        // VQ1: Anisotropic specular — stretch the highlight lobe 20% along the
-        // surface tangent, producing an oval iOS 26 highlight instead of a dot.
-        //
-        // Pre-baked constant: normalXY from the geometry texture is unit-length
-        // by construction (stored as a unit normal in the geometry pass).
-        // The tangent vec2(-n.y, n.x) is therefore perp and also unit-length.
-        // length(normalXY + tangent * 0.20) = sqrt(1.0 + 0.04) = 1.0198039
-        // 1.0 / 1.0198039 = 0.9805806
-        // This eliminates max(length(normalXY), 0.01), division, and normalize().
-        // The edgeFactor > 0.01 gate above already guards the near-zero interior.
-        vec2  anisoN  = normalXY; // True non-chiral normal for symmetric highlights
+        // Re-normalize the bilinearly interpolated normal.
+        // Interpolating normals across pixels shrinks their magnitude (the 'chord' effect).
+        // If we don't re-normalize, this magnitude oscillation causes severe flickering
+        // when amplified by non-linear specular curves.
+        float len = max(length(normalXY), 1e-4);
+        vec2 anisoN = normalXY / len;
 
         float mainLight     = max(0.0, dot(anisoN, uLightDirection));
         float oppositeLight = max(0.0, dot(anisoN, -uLightDirection));
         float totalInfluence = mainLight + oppositeLight * 0.8;
 
-        // PP2 follow-up: pow(x, 1.5) = x·√x. sqrt() is a single hardware SFU
-        // instruction on all Metal/Vulkan/OpenGLES targets — not a transcendental.
-        // This replaces the last pow() in the Impeller path with zero exp/log ops.
+        // Restore the thin, sharp iOS 26 highlight lobe!
+        // pow(x, 1.5) = x * sqrt(x). This thins out the highlight without causing
+        // flickering because we properly re-normalized anisoN above.
         float directional = totalInfluence * sqrt(totalInfluence) * uLightIntensity * 3.0;
         float ambient     = uAmbientStrength * 0.5;
 
         // Soft-clamp brightness with x/(1+x) to prevent mix() extrapolating
-        // beyond highlightColor. The original * 3.0 drove the corner brightness
-        // to ~9.6, causing a blinding "leading dot". The soft clamp maps all
-        // values to [0, 1) so corners and edges converge gracefully.
+        // beyond highlightColor.
         float brightnessRaw = (directional + ambient) * edgeFactor * thicknessScale * 0.8;
         float brightness    = brightnessRaw / (1.0 + brightnessRaw);
 
@@ -488,7 +488,7 @@ void main() {
     float rimDist = uThickness * (1.0 - cosTerm);
     float ring    = (1.0 - smoothstep(uAmbientRim - 0.75, uAmbientRim + 0.75, rimDist))
                   * step(0.001, uAmbientRim);
-    float fresnel = rimBase * 0.12 + ring * 0.45;
+    float fresnel = rimBase * 0.12 * uFresnelStrength + ring * 0.45;
     finalColor.rgb = clamp(finalColor.rgb + vec3(fresnel), 0.0, 1.0);
 
     float alpha  = geometryData.a;

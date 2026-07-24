@@ -92,7 +92,7 @@ class _InteractivePageState extends State<InteractivePage> {
                         children: [
                           Expanded(
                             child: GlassButton.custom(
-                              shape: const LiquidRoundedSuperellipse(
+                              shape: const LiquidRoundedRectangle(
                                   borderRadius: 28),
                               onTap: () {},
                               width: double.infinity,
@@ -197,7 +197,7 @@ class _InteractivePageState extends State<InteractivePage> {
                         children: [
                           Expanded(
                             child: GlassButton.custom(
-                              shape: const LiquidRoundedSuperellipse(
+                              shape: const LiquidRoundedRectangle(
                                   borderRadius: 26),
                               style: GlassButtonStyle.prominent,
                               onTap: () {},
@@ -600,8 +600,8 @@ class _InteractivePageState extends State<InteractivePage> {
                             label: 'Sort By',
                             icon: Icon(CupertinoIcons.arrow_up_arrow_down),
                             buttonWidth: 120,
-                            buttonShape: const LiquidRoundedSuperellipse(
-                                borderRadius: 22),
+                            buttonShape:
+                                const LiquidRoundedRectangle(borderRadius: 22),
                             items: [
                               GlassMenuItem(
                                 title: 'Name',
