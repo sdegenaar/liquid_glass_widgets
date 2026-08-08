@@ -1,3 +1,11 @@
+# 0.29.3
+
+## Bug Fixes
+
+- **Premium glass lens detaches during `CupertinoSheet` drag (#192):** The refracted lens drifted away from its pill while an interactive `CupertinoSheet` drag scaled the background. Fixed by snapshotting the layer's unscaled screen-space coordinates on every paint frame and freezing them the moment a uniform ancestor scale-down is detected, keeping UV mapping locked to the captured texture for the duration of the drag.
+
+---
+
 # 0.29.2
 
 ## Universal DPR (Device Pixel Ratio) Normalization
@@ -16,6 +24,7 @@ The Liquid Glass rendering engine now achieves 1:1 mathematical parity across al
 - **Accessibility / Semantics (#189):** Restored VoiceOver/TalkBack tap-to-dismiss behavior. The `GlassModalSheet` drag indicator now exposes a `Semantics.onTap` action that correctly triggers sheet dismissal, matching Material's handle behavior.
 - **Customization (#190):** `GlassModalSheet`'s `dragIndicatorColor` is now honored. It was previously accepted by the API but dropped internally in favor of hard-coded defaults.
 - **Android Quality (Best Foot Forward):** `GlassAdaptiveScope` now seeds at `maxQuality` (premium) on Android from the very first frame. Previously, Android cold-started at `standard` and promoted to premium only after the 3-second Phase 2 benchmark. The ANR safety net (shader pre-compilation in `LiquidGlassWidgets.initialize()`) makes this safe; Phase 2 continues to demote genuinely slow/budget devices.
+
 
 ---
 

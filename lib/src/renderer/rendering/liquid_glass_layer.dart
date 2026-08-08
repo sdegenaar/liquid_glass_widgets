@@ -356,15 +356,73 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
         _ => Size.zero,
       };
 
+  Matrix4? _unscaledTransform;
+  Offset? _unscaledCaptureOrigin;
+
+  bool _hasScale(Matrix4 m) {
+    // Detects the CupertinoSheet push-back, which scales the page down
+    // uniformly on both X and Y axes simultaneously (< 1.0 on both).
+    //
+    // Requiring BOTH axes to shrink correctly rejects:
+    //   - 1D jelly physics (one axis squashes, the other stretches; always one >= 1.0)
+    //   - Pure translations (both axes remain 1.0)
+    //   - Z-axis perspective flattening (m[10] == 0 but m[0] == m[5] == 1)
+    final scaleX = m[0].abs();
+    final scaleY = m[5].abs();
+    // Use a very tight tolerance (0.9999) to catch the very first frame of the CupertinoSheet
+    // scale animation. A looser tolerance (0.99) allowed early frames of the animation
+    // (e.g., 0.995) to overwrite the snapshot before freezing, causing a slight jump.
+    return (scaleX < 0.9999 && scaleX > 0.0) &&
+        (scaleY < 0.9999 && scaleY > 0.0);
+  }
+
+  /// Snapshots the layer's current screen-space transform and capture origin
+  /// whenever no ancestor scale is active. When a scale IS active (e.g.
+  /// CupertinoSheet push-back), the snapshot is frozen at the last unscaled
+  /// values so [matteTransform] and [captureOriginInScreenSpace] can return
+  /// coordinates that match the unscaled [captureImage] texture.
+  ///
+  /// Called from [paintLiquidGlass] on every frame — not from
+  /// [onTransformChanged] — because [GeometryTransformTrackingLayer] skips
+  /// the callback on the very first frame (when [_lastTransform] is null), and
+  /// only fires again when the accumulated transform actually changes between
+  /// scene builds.  A CupertinoSheet that opens before any movement would leave
+  /// [_unscaledTransform] null if we relied on [onTransformChanged] alone,
+  /// causing the frozen-coordinate fallback to silently miss.
+  ///
+  /// Updating a cached field inside [paint] is safe: it calls no
+  /// [markNeedsPaint], no [setState], and no layout-invalidation, so it does
+  /// not violate Flutter's read-only paint contract.
+  void _updateScaleState(
+      Matrix4 currentTransform, Offset currentCaptureOrigin) {
+    if (!_hasScale(currentTransform)) {
+      _unscaledTransform = currentTransform;
+      _unscaledCaptureOrigin = currentCaptureOrigin;
+    }
+  }
+
   @override
-  Matrix4 get matteTransform => getTransformTo(null);
+  Matrix4 get matteTransform {
+    if (_unscaledTransform case final frozen?
+        when _hasScale(getTransformTo(null))) {
+      return frozen;
+    }
+    return getTransformTo(null);
+  }
+
+  @override
+  Offset get captureOriginInScreenSpace {
+    if (_unscaledCaptureOrigin case final frozen?
+        when _hasScale(getTransformTo(null))) {
+      return frozen;
+    }
+    return super.captureOriginInScreenSpace;
+  }
 
   @override
   void onTransformChanged() {
-    // Transform changes (position, jelly scale, scroll) no longer require a
-    // geometry rebuild. The geometry image is in LOCAL space; matteTransform is
-    // applied synchronously at paint time so the screen position is always
-    // exact with zero async lag.  Only layout() still sets needsGeometryUpdate.
+    // Geometry is in LOCAL space; matteTransform is applied at paint time,
+    // so only a repaint — not a layout/geometry rebuild — is required here.
     markNeedsPaint();
   }
 
@@ -499,6 +557,26 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
     // canvas, binding the captured image as uBackgroundTexture (slot 0).
     // This eliminates the live compositor read, making the indicator rendering
     // deterministic and immune to Impeller compositor ordering bugs (#99).
+    //
+    // IMPORTANT: skip the capture path when the ancestor transform applies a scale
+    // (e.g. during a CupertinoSheet drag). The capture image's UV coordinates are
+    // computed relative to the layer's original bounds. When scaled, FlutterFragCoord()
+    // shifts relative to the baked UV constants, sending samples out of range →
+    // The captureImage path correctly maps coordinates on Impeller, but suffers from
+    // double-scaling if the ancestor transform applies a scale (like CupertinoSheet drag),
+    // because the captureImage itself is captured unscaled.
+    // To fix this, we snapshot the layer's unscaled transform on every paint
+    // via _updateScaleState. The moment a 3D perspective scale is applied,
+    // the snapshot stops updating. The matteTransform and
+    // captureOriginInScreenSpace getters then return the last known unscaled
+    // coordinates, perfectly neutralising the double-scale artifact.
+    //
+    // NOTE: _updateScaleState is intentionally called from paint rather than
+    // onTransformChanged. GeometryTransformTrackingLayer skips the callback on
+    // the very first frame, so relying on it alone would leave _unscaledTransform
+    // null if a sheet opens before any position change ever occurs.
+    _updateScaleState(getTransformTo(null), super.captureOriginInScreenSpace);
+
     if (captureImage case final capture?) {
       paintLiquidGlassWithCapture(
         context,
@@ -514,7 +592,6 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
       _clipRectLayerHandle.layer = null;
       return;
     }
-
     // BackdropFilter path (default): live compositor read via BackdropFilterLayer.
     final shaderLayer = (_shaderHandle.layer ??= BackdropFilterLayer())
       ..filter = ImageFilter.shader(renderShader);

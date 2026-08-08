@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
+import '../../src/renderer/internal/transform_tracking_repaint_boundary_mixin.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../theme/glass_theme.dart';
 
@@ -588,7 +589,8 @@ class _LightweightGlassEffect extends SingleChildRenderObjectWidget {
   }
 }
 
-class _RenderLightweightGlass extends RenderProxyBox {
+class _RenderLightweightGlass extends RenderProxyBox
+    with TransformTrackingRenderObjectMixin {
   _RenderLightweightGlass({
     required ui.FragmentShader? shader,
     required LiquidGlassSettings settings,
@@ -612,6 +614,11 @@ class _RenderLightweightGlass extends RenderProxyBox {
         _backgroundKey = backgroundKey,
         _cachedLightCos = math.cos(settings.lightAngle),
         _cachedLightSin = -math.sin(settings.lightAngle);
+
+  @override
+  void onTransformChanged() {
+    markNeedsPaint();
+  }
 
   ui.FragmentShader? _shader;
   ui.FragmentShader? get shader => _shader;
