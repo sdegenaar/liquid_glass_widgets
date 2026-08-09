@@ -533,7 +533,35 @@ class GestureArena {
     final dy = (y - dragStartY).abs();
     final dx = (x - dragStartX).abs();
 
-    if (dy > threshold && dy > dx) {
+    // Decide the axis ONCE per touch, on the first movement past the
+    // threshold, and hold that decision for the rest of the gesture.
+    //
+    // The comparison is still cumulative from the touch origin, but it is now
+    // only ever read at the moment of decision, which fixes two things:
+    //
+    //  * A gesture that started horizontal stays horizontal. Previously the
+    //    test was re-run on every move, so a sideways swipe would grab the
+    //    sheet the instant total vertical travel happened to exceed total
+    //    horizontal — and conversely, after a long sideways scroll the sheet
+    //    could not be dragged at all without out-travelling that distance
+    //    vertically, which on a wide swipe is most of the screen.
+    //  * The reverse latch is gone. `contentDrag` was only ever set from a
+    //    vertical-looking move and then never re-evaluated, so a horizontal
+    //    swipe that began with a slight vertical wobble dragged the sheet for
+    //    its whole duration.
+    //
+    // Below the threshold on both axes the gesture is still undecided; return
+    // false and wait rather than guessing from a few pixels of noise.
+    if (dy <= threshold && dx <= threshold) return false;
+
+    if (dx >= dy) {
+      // Horizontal. An inner scrollable owns this touch; the sheet stays out
+      // of it until the finger lifts and `reset()` clears the phase.
+      phase = GesturePhase.scrolling;
+      return false;
+    }
+
+    if (dy > threshold) {
       // At the topmost detent the sheet can't expand further, so an inner
       // scroll view (if any) owns the gesture. maxState is `full` for a
       // normal sheet but `half` for a half-only sheet (enableFull: false),

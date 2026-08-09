@@ -270,6 +270,14 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   // ════════════════════════════════════════════════════════════════════════
 
   bool _onScrollNotification(ScrollNotification notification) {
+    // Vertical only. Scroll notifications bubble from ANY descendant, so a
+    // horizontal list inside the sheet — a date strip, a carousel — emits
+    // exactly this shape when it is pulled past its leading edge. Without the
+    // axis guard the sheet claimed the gesture and re-anchored its vertical
+    // drag origin to the finger's current y, so scrolling sideways dragged
+    // the sheet, and the re-anchoring could hold `dy` under the threshold
+    // indefinitely, leaving the sheet unable to expand.
+    if (notification.metrics.axis != Axis.vertical) return false;
     if (notification is OverscrollNotification && notification.overscroll < 0) {
       if (_gestureArena.phase == GesturePhase.scrolling ||
           _gestureArena.phase == GesturePhase.idle) {

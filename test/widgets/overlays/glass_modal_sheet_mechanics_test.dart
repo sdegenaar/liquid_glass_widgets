@@ -297,6 +297,56 @@ void main() {
       expect(arena.phase, GesturePhase.contentDrag);
     });
 
+    test('a horizontal gesture locks out the sheet for the whole touch', () {
+      // Regression: the axis test used to be re-run on every move, so a
+      // sideways swipe grabbed the sheet the moment cumulative vertical
+      // travel overtook horizontal — a wobble at the end of a scroll.
+      arena.beginPointer(100, 50, 0.3, PointerDeviceKind.touch);
+      // Decisive sideways movement first.
+      expect(
+          arena.evaluateMove(
+              102, 90, GlassSheetState.half, GlassSheetState.full, 5,
+              canScrollListUp: false, hasScrollClients: true),
+          isFalse);
+      expect(arena.phase, GesturePhase.scrolling);
+      // Now drag hard vertically WITHOUT lifting. The sheet must stay out.
+      expect(
+          arena.evaluateMove(
+              -200, 90, GlassSheetState.half, GlassSheetState.full, 5,
+              canScrollListUp: false, hasScrollClients: true),
+          isFalse);
+      expect(arena.phase, GesturePhase.scrolling);
+    });
+
+    test('a long sideways scroll does not block the NEXT drag', () {
+      // The other half of the same bug: after ~220pt sideways the sheet
+      // needed >220pt vertical before it would respond. A fresh touch must
+      // start clean.
+      arena.beginPointer(100, 50, 0.3, PointerDeviceKind.touch);
+      arena.evaluateMove(105, 270, GlassSheetState.half, GlassSheetState.full, 5,
+          canScrollListUp: false, hasScrollClients: true);
+      expect(arena.phase, GesturePhase.scrolling);
+      arena.reset();
+      arena.beginPointer(100, 270, 0.3, PointerDeviceKind.touch);
+      expect(
+          arena.evaluateMove(
+              80, 270, GlassSheetState.half, GlassSheetState.full, 5,
+              canScrollListUp: false, hasScrollClients: true),
+          isTrue);
+      expect(arena.phase, GesturePhase.contentDrag);
+    });
+
+    test('stays undecided until movement clears the threshold', () {
+      // A few pixels of noise must not pick an axis.
+      arena.beginPointer(100, 50, 0.3, PointerDeviceKind.touch);
+      expect(
+          arena.evaluateMove(
+              103, 52, GlassSheetState.half, GlassSheetState.full, 5,
+              canScrollListUp: false, hasScrollClients: true),
+          isFalse);
+      expect(arena.phase, GesturePhase.idle);
+    });
+
     test('half state vertical drag → contentDrag', () {
       arena.beginPointer(100, 50, 0.5, PointerDeviceKind.touch);
       final r = arena.evaluateMove(

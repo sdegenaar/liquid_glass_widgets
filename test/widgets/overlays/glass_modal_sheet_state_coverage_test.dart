@@ -34,6 +34,58 @@ Widget _makeSheet({
     );
 
 void main() {
+  group('horizontal content does not hijack the sheet', () {
+    testWidgets('a sideways gesture that turns vertical never moves the sheet',
+        (tester) async {
+      // The user-visible symptom both the axis guard and the one-shot axis
+      // lock exist to prevent. Scroll notifications bubble from ANY
+      // descendant, so pulling a HORIZONTAL list past its leading edge used
+      // to make the sheet claim the gesture and re-anchor its vertical drag
+      // origin; the axis test was also re-run on every move, so the moment
+      // the finger turned upward the sheet came with it.
+      //
+      // The L-shape is the point: a pure sideways drag never moved the sheet
+      // anyway (the vertical delta is ~zero), which is why this has to keep
+      // the finger down and change direction.
+      await tester.pumpWidget(_makeSheet(
+        sheetChild: ListView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          children: [
+            for (int i = 0; i < 20; i++)
+              SizedBox(width: 120, child: Text('col $i')),
+          ],
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      final before = tester.getTopLeft(find.text('col 0')).dy;
+      final g = await tester.startGesture(tester.getCenter(find.text('col 0')));
+      // Sideways first, past the leading edge — this is what emits
+      // OverscrollNotification with overscroll < 0.
+      for (var i = 0; i < 6; i++) {
+        await g.moveBy(const Offset(30, 0));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      // Now upward, WITHOUT lifting.
+      for (var i = 0; i < 8; i++) {
+        await g.moveBy(const Offset(0, -25));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      final during = tester.getTopLeft(find.text('col 0')).dy;
+      await g.up();
+      await tester.pumpAndSettle();
+
+      // Tolerance, not zero: the sheet applies `interactionScale` on
+      // pointer-down, which nudges its children a few points without any drag
+      // taking place. The bug moves the sheet by the FULL vertical travel
+      // (200pt here), so anything under ~20 cleanly separates "squeezed" from
+      // "dragged".
+      expect((during - before).abs(), lessThan(20.0),
+          reason: 'the sheet must not follow a gesture that began sideways');
+    });
+  });
+
   group('GlassModalSheetController — attach/detach', () {
     testWidgets('controller has valid currentState after mount',
         (tester) async {
