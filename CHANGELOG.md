@@ -1,3 +1,33 @@
+# 1.0.0
+
+## Major Milestone: General Availability
+
+This release marks the **1.0.0 General Availability** of `liquid_glass_widgets`, delivering a stable, unified API surface, zero third-party dependencies, and production-ready iOS 26 liquid glass rendering across all Flutter platforms.
+
+### Breaking Changes & API Unification
+
+- **Unified Navigation Surface (`GlassTabBar`)**:
+  - Consolidated bottom navigation into `GlassTabBar` via named constructors: `GlassTabBar.bottom()`, `GlassTabBar.searchable()`, and `GlassTabBar.inline()`.
+  - Removed legacy transitional shims `GlassBottomBar` and `GlassSearchableBottomBar`.
+  - Tab items are now canonically represented by `GlassTab` across all tab bars.
+  - Tab bar collapse types are unified under `GlassTabBarCollapseConfig` and `GlassTabBarCollapseDirection`.
+- **Modal Sheet Simplification**:
+  - Removed deprecated `enablePeek` parameter from `GlassModalSheet`, `GlassModalSheet.show()`, and `GlassModalSheetScaffold`. Sizing and peeking behavior is now governed cleanly and declaratively by `detents` and `mode`.
+- **Initialization & Setup Cleanup**:
+  - Removed deprecated `respectsAccessibility` from `LiquidGlassWidgets.initialize()`. System accessibility preferences (Reduce Motion, Reduce Transparency) are now automatically detected and respected out of the box.
+  - Removed deprecated `warmUpImpellerPipeline` from `LiquidGlassWidgets.initialize()`. Shader bytecode preloading is handled asynchronously and safely during app bootstrap.
+- **Shader Quality & Scope Purge**:
+  - Removed deprecated `usesBackdropFilter` getter from `GlassQuality`.
+  - Removed deprecated `LiquidGlassScope.stack`, `GlassRefractionSource`, and `LiquidGlassBackground` in favor of `GlassPage` and `GlassBackgroundSource`.
+  - Removed deprecated `GlassBackdropScope` stub.
+
+### Documentation & Tooling
+
+- Added comprehensive [Migration Guide](docs/MIGRATION_0.x_TO_1.0.md) detailing step-by-step code upgrades for 0.x projects.
+- Updated documentation and all example demo screens for 1.0.0 APIs.
+
+---
+
 # 0.30.1
 
 ## Bug Fixes

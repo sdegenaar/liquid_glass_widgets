@@ -1,9 +1,9 @@
 // ignore_for_file: public_member_api_docs
-// Internal sub-widgets for GlassSearchableBottomBar.
+// Internal sub-widgets for GlassTabBar.searchable.
 //
-// Extracted from glass_searchable_bottom_bar.dart to keep that file focused on
+// Extracted from glass_tab_bar.dart to keep that file focused on
 // the public API and layout orchestration. Mirrors the pattern established by
-// bottom_bar_internal.dart for GlassBottomBar.
+// tab_bar_bottom_internal.dart for GlassTabBar.bottom.
 //
 // None of these widgets are part of the public API.
 // ignore_for_file: deprecated_member_use
@@ -20,7 +20,7 @@ import '../../../widgets/interactive/glass_button.dart';
 import '../../../widgets/shared/adaptive_glass.dart';
 import '../../../widgets/shared/animated_glass_indicator.dart';
 import '../../../widgets/shared/inherited_liquid_glass.dart';
-import '../../../widgets/surfaces/glass_bottom_bar.dart'
+import '../../../widgets/surfaces/shared/tab_bar_collapse_config.dart'
     show MaskingQuality, JellyClipper;
 import '../../../widgets/surfaces/shared/glass_search_bar_config.dart';
 import 'tab_bar_drag_gesture_mixin.dart';
@@ -96,10 +96,10 @@ class DismissPill extends StatelessWidget {
 // SearchableTabIndicator
 // =============================================================================
 
-/// Draggable glass indicator for [GlassSearchableBottomBar].
+/// Draggable glass indicator for [GlassTabBar.searchable].
 ///
-/// Uses identical spring physics and masking to [GlassBottomBar]'s internal
-/// `_TabIndicator`. When [isSearchActive] is `true`, it collapses to show only
+/// Uses identical spring physics and masking to [GlassTabBar.bottom]'s internal
+/// `_TabIndicator`. When `isSearchActive` is `true`, it collapses to show only
 /// the [collapsedLogoBuilder] and a tap dismisses search.
 class SearchableTabIndicator extends StatefulWidget {
   const SearchableTabIndicator({
@@ -264,7 +264,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
       );
     }
 
-    // ── Normal draggable tab bar — identical logic to GlassBottomBar ─────────
+    // ── Normal draggable tab bar — identical logic to GlassTabBar.bottom ─────
     final theme = CupertinoTheme.of(context);
     final indicatorColor = widget.indicatorColor ??
         theme.textTheme.textStyle.color?.withValues(alpha: .1) ??

@@ -278,7 +278,7 @@ class GlassThemeVariant {
   /// Default light theme variant.
   ///
   /// [quality] is intentionally `null` here so that each widget's own
-  /// documented default quality is respected (e.g. [GlassBottomBar] defaults
+  /// documented default quality is respected (e.g. [GlassTabBar.bottom] defaults
   /// to [GlassQuality.premium]). Set quality explicitly in your
   /// [GlassThemeVariant] to override all widgets globally.
   static const GlassThemeVariant light = GlassThemeVariant(
@@ -300,7 +300,7 @@ class GlassThemeVariant {
   /// Default dark theme variant.
   ///
   /// [quality] is intentionally `null` here so that each widget's own
-  /// documented default quality is respected (e.g. [GlassBottomBar] defaults
+  /// documented default quality is respected (e.g. [GlassTabBar.bottom] defaults
   /// to [GlassQuality.premium]). Set quality explicitly in your
   /// [GlassThemeVariant] to override all widgets globally.
   static const GlassThemeVariant dark = GlassThemeVariant(

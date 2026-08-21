@@ -184,7 +184,7 @@ void main() {
       expect(textField.autofocus, isFalse);
       expect(textField.useOwnLayer, isFalse);
       expect(textField.quality, isNull);
-      // Interaction defaults — must match GlassBottomBar / GlassSearchableBottomBar
+      // Interaction defaults — must match GlassTabBar.bottom / GlassTabBar.searchable
       expect(textField.interactionBehavior, GlassInteractionBehavior.full);
       expect(textField.pressScale, 1.03);
       expect(textField.glowColor, isNull);

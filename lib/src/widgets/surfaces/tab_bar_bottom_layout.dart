@@ -1,10 +1,7 @@
 // ignore_for_file: public_member_api_docs
-// ignore_for_file: deprecated_member_use
 // Internal layout engine for [GlassTabBar] bottom placement.
 //
-// Extracted from the old _GlassBottomBarState so that [GlassTabBar] is the
-// single owner of all rendering logic. The deprecated [GlassBottomBar] shim
-// simply calls [GlassTabBar.bottom()] which dispatches here.
+// Extracted so that [GlassTabBar] is the single owner of all rendering logic.
 //
 // Do NOT import this file directly — use [GlassTabBar.bottom()] instead.
 
@@ -19,11 +16,11 @@ import '../../../widgets/shared/adaptive_liquid_glass_layer.dart';
 import '../../../widgets/shared/glass_content_aware_scope.dart';
 import '../../../theme/glass_theme_data.dart';
 import '../../../theme/glass_theme_helpers.dart';
-import '../../../widgets/surfaces/glass_bottom_bar.dart'
+import '../../../widgets/surfaces/shared/tab_bar_collapse_config.dart'
     show
-        GlassBottomBarCollapseConfig,
-        GlassBottomBarCollapseDirection,
         GlassExtraButtonPlacement,
+        GlassTabBarCollapseConfig,
+        GlassTabBarCollapseDirection,
         GlassTabBarExtraButton,
         MaskingQuality;
 import '../../../widgets/surfaces/glass_tab_bar.dart' show GlassTab;
@@ -106,7 +103,7 @@ class TabBarBottomLayout extends StatefulWidget {
   final int selectedIndex;
   final ValueChanged<int> onTabSelected;
   final GlassTabBarExtraButton? extraButton;
-  final GlassBottomBarCollapseConfig? collapseConfig;
+  final GlassTabBarCollapseConfig? collapseConfig;
   final Widget? bottomAccessory;
   final bool bottomAccessoryEnabled;
   final double bottomAccessorySpacing;
@@ -171,11 +168,11 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
   static const _kExtraButtonCollapseDelay = 0.08;
   static const _kSwipeVelocityThreshold = 250.0;
   static const _kGestureRegionKey = ValueKey<String>(
-    'glass_bottom_bar_gesture_region',
+    'glass_tab_bar_gesture_region',
   );
-  static const _kTabPillKey = ValueKey<String>('glass_bottom_bar_tab_pill');
+  static const _kTabPillKey = ValueKey<String>('glass_tab_bar_tab_pill');
   static const _kExtraButtonScaleKey = ValueKey<String>(
-    'glass_bottom_bar_extra_button_scale',
+    'glass_tab_bar_extra_button_scale',
   );
   static const _kScrollDeltaThreshold = 12.0;
 
@@ -328,15 +325,15 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
   bool _collapseTowardsExtraButton() {
     if (!_collapseEnabled) return false;
     return widget.collapseConfig!.direction ==
-        GlassBottomBarCollapseDirection.towardsExtraButton;
+        GlassTabBarCollapseDirection.towardsExtraButton;
   }
 
   bool _collapseTowardsRightEdge({required bool extraOnLeft}) {
     if (!_collapseEnabled) return false;
     final direction = widget.collapseConfig!.direction;
     return extraOnLeft
-        ? direction == GlassBottomBarCollapseDirection.awayFromExtraButton
-        : direction == GlassBottomBarCollapseDirection.towardsExtraButton;
+        ? direction == GlassTabBarCollapseDirection.awayFromExtraButton
+        : direction == GlassTabBarCollapseDirection.towardsExtraButton;
   }
 
   Alignment _collapsedContentAlignment({required bool extraOnLeft}) {

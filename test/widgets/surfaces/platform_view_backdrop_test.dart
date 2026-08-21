@@ -17,8 +17,8 @@ Widget _wrap(Widget child) => MaterialApp(
     );
 
 final _tabs = [
-  const GlassBottomBarTab(label: 'Home', icon: Icon(Icons.home)),
-  const GlassBottomBarTab(label: 'Map', icon: Icon(Icons.map)),
+  const GlassTab(label: 'Home', icon: Icon(Icons.home)),
+  const GlassTab(label: 'Map', icon: Icon(Icons.map)),
 ];
 
 void main() {
@@ -58,7 +58,7 @@ void main() {
     });
 
     testWidgets(
-        'GlassSearchableBottomBar(platformViewBackdrop) refracts the icon layer',
+        'GlassTabBar.searchable(platformViewBackdrop) refracts the icon layer',
         (tester) async {
       // Exercises the indicator's `backgroundKey: platformViewBackdrop ?
       // _iconLayerKey : widget.backgroundKey` branch plus the background
@@ -67,7 +67,7 @@ void main() {
         child: SizedBox(
           height: 90,
           width: 400,
-          child: GlassSearchableBottomBar(
+          child: GlassTabBar.searchable(
             tabs: _tabs,
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -78,10 +78,11 @@ void main() {
         ),
       ));
       await tester.pump();
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
-    testWidgets('GlassBottomBar(platformViewBackdrop) refracts the icon layer',
+    testWidgets(
+        'GlassTabBar.bottom(platformViewBackdrop) refracts the icon layer',
         (tester) async {
       // Exercises the TabIndicator's `backgroundKey: platformViewBackdrop ?
       // _iconLayerKey : widget.backgroundKey` branch plus the
@@ -90,7 +91,7 @@ void main() {
         child: SizedBox(
           height: 90,
           width: 400,
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             tabs: _tabs,
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -100,7 +101,7 @@ void main() {
         ),
       ));
       await tester.pump();
-      expect(find.byType(GlassBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets(

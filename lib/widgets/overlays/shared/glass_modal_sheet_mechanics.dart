@@ -180,24 +180,19 @@ class SheetGeometry {
     this.dismissible = true,
   });
 
-  /// Resolve whether the peek floor is active, from the public API's three
-  /// inputs. Pure and static so the precedence is testable and reviewable in
-  /// one place instead of inline in the widget's state.
+  /// Resolve whether the peek floor is active, from the public API's detents
+  /// and mode.
   ///
-  /// Precedence:
-  ///   1. [enablePeek] when set explicitly — deprecated, but an existing
-  ///      caller's intent must keep winning.
-  ///   2. [GlassSheetDetent.small] in [detents] — the current way.
-  ///   3. [GlassSheetMode.persistent], which is DEFINED by resting on a floor
-  ///      instead of dismissing, so it keeps peek under the default detents.
+  /// The peek floor is active when:
+  ///   1. [GlassSheetDetent.small] is in [detents].
+  ///   2. [GlassSheetMode.persistent] is active (a persistent sheet is DEFINED
+  ///      by resting on a floor instead of dismissing).
   static bool resolvePeek({
-    required bool? enablePeek,
     required Set<GlassSheetDetent> detents,
     required GlassSheetMode mode,
   }) =>
-      enablePeek ??
-      (detents.contains(GlassSheetDetent.small) ||
-          mode == GlassSheetMode.persistent);
+      detents.contains(GlassSheetDetent.small) ||
+      mode == GlassSheetMode.persistent;
 
   /// The rest states this sheet can occupy, ordered low → high. This is the
   /// single source of truth for the state machine — snapping, min/max bounds,

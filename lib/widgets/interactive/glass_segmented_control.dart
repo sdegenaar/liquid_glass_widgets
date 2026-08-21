@@ -7,7 +7,7 @@ import '../../theme/glass_theme.dart';
 import '../../theme/glass_theme_helpers.dart';
 import '../../types/glass_quality.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
-import '../surfaces/glass_bottom_bar.dart' show MaskingQuality;
+import '../surfaces/shared/tab_bar_collapse_config.dart' show MaskingQuality;
 import '../surfaces/glass_tab_bar.dart' show DividerSettings, GlassSegment;
 import '../../src/widgets/interactive/scrollable_segment_content.dart';
 import '../../src/widgets/interactive/segmented_control_internal.dart';
@@ -412,7 +412,7 @@ class GlassSegmentedControl extends StatefulWidget {
   /// Maximum concave lens pinch strength. Forwarded to [AnimatedGlassIndicator].
   ///
   /// Defaults to `0.4` — the iOS 26-calibrated gentle concave lens warp, matching
-  /// [GlassBottomBar] and [GlassTabBar] for a consistent feel across all
+  /// [GlassTabBar] for a consistent feel across all
   /// interactive indicator widgets. Set to `0.0` to disable, `1.0` to restore
   /// the original full-strength warp.
   final double indicatorPinchStrength;
@@ -421,8 +421,8 @@ class GlassSegmentedControl extends StatefulWidget {
   ///
   /// The pill grows by this amount beyond its segment boundary as the user drags,
   /// creating the iOS 26 "jelly" overshoot. Defaults to
-  /// `EdgeInsets.symmetric(horizontal: 12, vertical: 8)` matching [GlassBottomBar]
-  /// and [GlassTabBar].
+  /// `EdgeInsets.symmetric(horizontal: 12, vertical: 8)` matching
+  /// [GlassTabBar].
   final EdgeInsetsGeometry indicatorExpansion;
 
   // ===========================================================================

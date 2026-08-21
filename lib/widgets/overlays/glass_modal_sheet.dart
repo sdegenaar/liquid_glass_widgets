@@ -169,18 +169,6 @@ class GlassModalSheet extends StatefulWidget {
   /// Interaction mode (dismissible vs persistent).
   final GlassSheetMode mode;
 
-  /// Whether the 'peek' state is enabled.
-  ///
-  /// If null, it defaults to false for [GlassSheetMode.dismissible] and true for
-  /// [GlassSheetMode.persistent].
-  @Deprecated(
-    'Use GlassSheetDetent.small in `detents` instead. Peek is now a detent '
-    'like medium and large, so one mechanism describes every resting stop. '
-    'Still honoured when set (it wins over `detents`); will be removed in a '
-    'future release.',
-  )
-  final bool? enablePeek;
-
   /// The resting detents this sheet offers. Appearance follows the detent:
   /// [GlassSheetDetent.small] is the peek floor, [GlassSheetDetent.medium] is
   /// content-height glass, [GlassSheetDetent.large] is screen-height opaque.
@@ -274,7 +262,6 @@ class GlassModalSheet extends StatefulWidget {
     this.topFadeHeight = 40.0,
     this.maintainContentGlass = true,
     this.fullStateContentSettings,
-    this.enablePeek,
     this.detents = const {GlassSheetDetent.medium, GlassSheetDetent.large},
     this.dismissible = true,
     this.peekHorizontalMargin,
@@ -339,7 +326,6 @@ class GlassModalSheet extends StatefulWidget {
       GlassSheetDetent.large
     },
     bool dismissible = true,
-    bool? enablePeek,
     double? peekHorizontalMargin,
     double? peekBottomMargin,
     double? peekWidth,
@@ -435,7 +421,6 @@ class GlassModalSheet extends StatefulWidget {
           fullStateContentSettings: fullStateContentSettings,
           detents: detents,
           dismissible: dismissible,
-          enablePeek: enablePeek,
           peekHorizontalMargin: peekHorizontalMargin,
           peekBottomMargin: peekBottomMargin,
           peekWidth: peekWidth,

@@ -21,7 +21,7 @@ import 'dart:math' as math;
 ///
 /// This is the single authoritative implementation used by:
 /// - [SearchableBottomBarController.computeLayout] (searchable bar)
-/// - [GlassBottomBar]'s build method (standalone bar)
+/// - [GlassTabBar.bottom]'s build method (standalone bar)
 ///
 /// Both bars share the same compact-sizing semantics: [tabWidth] controls the
 /// per-tab slot width, and the total pill is bounded by the available space.

@@ -53,7 +53,7 @@ void main() {
     test('fallback variants have null quality to respect widget defaults', () {
       // This explicitly tests against the resolution bug fixed in 0.7.14
       // where GlassQuality.standard in the fallback was overriding
-      // premium widget defaults like GlassBottomBar.
+      // premium widget defaults like GlassTabBar.bottom.
       final fallback = GlassThemeData.fallback();
       expect(fallback.light.quality, isNull);
       expect(fallback.dark.quality, isNull);
@@ -507,14 +507,13 @@ void main() {
     });
   });
 
-  group('GlassBottomBar with theme', () {
-    // Regression guard for the fix in 0.9.0: GlassBottomBar must read
+  group('GlassTabBar.bottom with theme', () {
+    // Regression guard: GlassTabBar.bottom must read
     // interactionGlowColor from GlassThemeData when not explicitly provided.
 
     final tabs = [
-      const GlassBottomBarTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
-      const GlassBottomBarTab(
-          label: 'Search', icon: Icon(CupertinoIcons.search)),
+      const GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+      const GlassTab(label: 'Search', icon: Icon(CupertinoIcons.search)),
     ];
 
     testWidgets('mounts without error when theme provides a primary glow color',
@@ -530,7 +529,7 @@ void main() {
           home: GlassTheme(
             data: themeData,
             child: Scaffold(
-              bottomNavigationBar: GlassBottomBar(
+              bottomNavigationBar: GlassTabBar.bottom(
                 tabs: tabs,
                 selectedIndex: 0,
                 onTabSelected: (_) {},
@@ -542,7 +541,7 @@ void main() {
       );
 
       // No crash, widget present — the theme glow path executed successfully.
-      expect(find.byType(GlassBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets('explicit interactionGlowColor overrides theme',
@@ -558,7 +557,7 @@ void main() {
           home: GlassTheme(
             data: themeData,
             child: Scaffold(
-              bottomNavigationBar: GlassBottomBar(
+              bottomNavigationBar: GlassTabBar.bottom(
                 tabs: tabs,
                 selectedIndex: 0,
                 onTabSelected: (_) {},
@@ -571,7 +570,7 @@ void main() {
         ),
       );
 
-      expect(find.byType(GlassBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets(
@@ -597,7 +596,7 @@ void main() {
                 capturedGlowColor =
                     GlassThemeData.of(context).glowColorsFor(context).primary;
                 return Scaffold(
-                  bottomNavigationBar: GlassBottomBar(
+                  bottomNavigationBar: GlassTabBar.bottom(
                     tabs: tabs,
                     selectedIndex: 0,
                     onTabSelected: (_) {},
@@ -613,19 +612,18 @@ void main() {
 
       // The theme's primary color must be what glowColorsFor() returns.
       expect(capturedGlowColor, equals(customGlow));
-      expect(find.byType(GlassBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
   });
 
-  group('GlassSearchableBottomBar with theme', () {
-    // Regression guard for the fix in 0.9.0: both SearchableTabIndicator
+  group('GlassTabBar.searchable with theme', () {
+    // Regression guard: both SearchableTabIndicator
     // (normal tab pill + collapsed/logo state) and SearchPill must read
     // interactionGlowColor from GlassThemeData when not explicitly provided.
 
     final tabs = [
-      const GlassBottomBarTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
-      const GlassBottomBarTab(
-          label: 'Search', icon: Icon(CupertinoIcons.search)),
+      const GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+      const GlassTab(label: 'Search', icon: Icon(CupertinoIcons.search)),
     ];
 
     Widget buildWithTheme({
@@ -640,7 +638,7 @@ void main() {
             ),
           ),
           child: Scaffold(
-            body: GlassSearchableBottomBar(
+            body: GlassTabBar.searchable(
               tabs: tabs,
               selectedIndex: 0,
               onTabSelected: (_) {},
@@ -662,7 +660,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(buildWithTheme());
       await tester.pump();
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets(
@@ -670,7 +668,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(buildWithTheme(isSearchActive: true));
       await tester.pumpAndSettle();
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets('explicit interactionGlowColor overrides theme',
@@ -681,7 +679,7 @@ void main() {
         ),
       );
       await tester.pump();
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets('theme primary color is correctly resolved at build time',
@@ -702,7 +700,7 @@ void main() {
                 resolved =
                     GlassThemeData.of(context).glowColorsFor(context).primary;
                 return Scaffold(
-                  body: GlassSearchableBottomBar(
+                  body: GlassTabBar.searchable(
                     tabs: tabs,
                     selectedIndex: 0,
                     onTabSelected: (_) {},
@@ -719,7 +717,7 @@ void main() {
       );
 
       expect(resolved, equals(customGlow));
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
   });
 }

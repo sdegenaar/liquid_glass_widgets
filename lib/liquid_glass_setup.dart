@@ -53,16 +53,6 @@ class LiquidGlassWidgets {
   static set respectSystemAccessibility(bool value) =>
       glass_config.respectSystemAccessibility = value;
 
-  /// Deprecated — use [respectSystemAccessibility] instead.
-  ///
-  /// Retained for discoverability (the two-word form reads naturally as a
-  /// boolean predicate). Will be removed in v1.0.
-  @Deprecated('Use respectSystemAccessibility instead.')
-  static bool get respectsAccessibility => respectSystemAccessibility;
-  @Deprecated('Use respectSystemAccessibility instead.')
-  static set respectsAccessibility(bool value) =>
-      respectSystemAccessibility = value;
-
   /// Global [LiquidGlassSettings] override for the entire application.
   ///
   /// When set, these settings are used as the base for all glass widgets
@@ -113,12 +103,6 @@ class LiquidGlassWidgets {
   /// Controls shader preloading and warm-up behaviour during [initialize].
   static Future<void> initialize({
     bool enablePerformanceMonitor = true,
-    @Deprecated(
-      'warmUpImpellerPipeline is deprecated and has no effect. '
-      'GPU warm-up is now handled non-blockingly by GlassAdaptiveScope. '
-      'Will be removed in v1.0.',
-    )
-    bool warmUpImpellerPipeline = true,
     GlassWarmUpMode warmUpMode = GlassWarmUpMode.auto,
   }) async {
     debugPrint('[LiquidGlass] Initializing library...');

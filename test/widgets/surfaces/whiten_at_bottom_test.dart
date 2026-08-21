@@ -1,7 +1,7 @@
 // ignore_for_file: require_trailing_commas
 // Smoke tests for the whiten feature:
 //   - minimal-quality AdaptiveGlass renders the frosted whiten veil path
-//   - GlassSearchableBottomBar whiten-at-bottom engages/disengages with a
+//   - GlassTabBar.searchable whiten-at-bottom engages/disengages with a
 //     ScrollController without throwing
 //   - whitenAtBottom: false opt-out builds
 
@@ -12,8 +12,8 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import '../../shared/test_helpers.dart';
 
 final _testTabs = [
-  const GlassBottomBarTab(label: 'Home', icon: Icon(Icons.home)),
-  const GlassBottomBarTab(label: 'Music', icon: Icon(Icons.music_note)),
+  const GlassTab(label: 'Home', icon: Icon(Icons.home)),
+  const GlassTab(label: 'Music', icon: Icon(Icons.music_note)),
 ];
 
 GlassSearchBarConfig _basicSearchConfig() => GlassSearchBarConfig(
@@ -47,7 +47,7 @@ Widget _buildScrollPage({
           bottom: 0,
           child: SizedBox(
             height: 90,
-            child: GlassSearchableBottomBar(
+            child: GlassTabBar.searchable(
               tabs: _testTabs,
               selectedIndex: 0,
               onTabSelected: (_) {},
@@ -84,7 +84,7 @@ void main() {
     });
   });
 
-  group('GlassSearchableBottomBar — whiten-at-bottom', () {
+  group('GlassTabBar.searchable — whiten-at-bottom', () {
     testWidgets('boost engages at scroll bottom and releases at top',
         (tester) async {
       final controller = ScrollController();
@@ -106,7 +106,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.takeException(), isNull);
 
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets('whitenAtBottom: false builds and stays inert', (tester) async {
@@ -122,7 +122,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.takeException(), isNull);
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets('didUpdateWidget re-subscribes when the scrollController swaps',
@@ -177,7 +177,7 @@ void main() {
       await tester.pumpWidget(_buildScrollPage(controller: controller));
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.takeException(), isNull);
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
   });
 }

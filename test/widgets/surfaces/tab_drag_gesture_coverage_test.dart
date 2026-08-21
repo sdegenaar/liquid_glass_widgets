@@ -9,8 +9,8 @@ Widget _wrap(Widget child) => MaterialApp(
       home: Scaffold(body: LiquidGlassWidgets.wrap(child: child)),
     );
 
-GlassBottomBarTab _tab(String label) =>
-    GlassBottomBarTab(label: label, icon: const Icon(Icons.home));
+GlassTab _tab(String label) =>
+    GlassTab(label: label, icon: const Icon(Icons.home));
 
 void main() {
   group('buildIconShadows', () {
@@ -81,14 +81,14 @@ void main() {
     });
   });
 
-  group('TabDragGestureMixin — drag state machine via GlassBottomBar', () {
+  group('TabDragGestureMixin — drag state machine via GlassTabBar.bottom', () {
     testWidgets('drag left switches tab via velocity fling', (tester) async {
       int selectedTab = 2;
       await tester.pumpWidget(_wrap(
         StatefulBuilder(builder: (ctx, setState) {
           return SizedBox(
             height: 100,
-            child: GlassBottomBar(
+            child: GlassTabBar.bottom(
               tabs: [_tab('A'), _tab('B'), _tab('C')],
               selectedIndex: selectedTab,
               onTabSelected: (i) => setState(() => selectedTab = i),
@@ -100,7 +100,7 @@ void main() {
       await tester.pump();
 
       // Start a horizontal drag from right to left
-      final barFinder = find.byType(GlassBottomBar);
+      final barFinder = find.byType(GlassTabBar);
       final barCenter = tester.getCenter(barFinder);
       final gesture = await tester.startGesture(barCenter);
       await gesture.moveBy(const Offset(-200, 0));
@@ -117,7 +117,7 @@ void main() {
         StatefulBuilder(builder: (ctx, setState) {
           return SizedBox(
             height: 100,
-            child: GlassBottomBar(
+            child: GlassTabBar.bottom(
               tabs: [_tab('A'), _tab('B'), _tab('C')],
               selectedIndex: selectedTab,
               onTabSelected: (i) => setState(() => selectedTab = i),
@@ -130,7 +130,7 @@ void main() {
 
       // Move far enough to lock in tabIsDragging=true, then cancel.
       // onBarDragCancel's tabIsDragging=true branch (lines 143-151) is hit.
-      final barFinder = find.byType(GlassBottomBar);
+      final barFinder = find.byType(GlassTabBar);
       final barCenter = tester.getCenter(barFinder);
       final gesture = await tester.startGesture(barCenter);
       await gesture.moveBy(const Offset(80, 0)); // large enough for drag lock
@@ -148,7 +148,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         SizedBox(
           height: 100,
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             tabs: [_tab('A'), _tab('B'), _tab('C')],
             selectedIndex: 1,
             onTabSelected: (_) {},
@@ -159,7 +159,7 @@ void main() {
       await tester.pump();
 
       // Start and immediately cancel without moving → tabIsDragging stays false
-      final barFinder = find.byType(GlassBottomBar);
+      final barFinder = find.byType(GlassTabBar);
       final barCenter = tester.getCenter(barFinder);
       final gesture = await tester.startGesture(barCenter);
       await gesture.cancel(); // cancel before any move
@@ -172,7 +172,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         SizedBox(
           height: 100,
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             tabs: [_tab('A'), _tab('B'), _tab('C')],
             selectedIndex: 0,
             onTabSelected: (i) => lastSelected = i,
@@ -184,7 +184,7 @@ void main() {
 
       // Tap on the rightmost third (tab index 2) — may or may not hit test
       // depending on headless layout; we just verify no crash occurs.
-      final barFinder = find.byType(GlassBottomBar);
+      final barFinder = find.byType(GlassTabBar);
       final barRect = tester.getRect(barFinder);
       await tester.tapAt(Offset(barRect.right - 20, barRect.center.dy));
       await tester.pumpAndSettle();
@@ -259,7 +259,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         SizedBox(
           height: 100,
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             tabs: [_tab('A'), _tab('B'), _tab('C')],
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -276,7 +276,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         SizedBox(
           height: 100,
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             tabs: [_tab('A'), _tab('B'), _tab('C')],
             selectedIndex: 0, // leftmost tab
             onTabSelected: (_) {},
@@ -297,7 +297,7 @@ void main() {
         StatefulBuilder(builder: (ctx, setState) {
           return SizedBox(
             height: 100,
-            child: GlassBottomBar(
+            child: GlassTabBar.bottom(
               tabs: [_tab('A'), _tab('B'), _tab('C')],
               selectedIndex: selectedTab,
               onTabSelected: (i) => setState(() => selectedTab = i),
@@ -310,7 +310,7 @@ void main() {
 
       // Perform a horizontal drag — the bar should accept it without error
       // and the Transform.translate should appear in the tree.
-      final barFinder = find.byType(GlassBottomBar);
+      final barFinder = find.byType(GlassTabBar);
       final barCenter = tester.getCenter(barFinder);
       final gesture = await tester.startGesture(barCenter);
       await gesture.moveBy(const Offset(60, 0));
@@ -331,7 +331,7 @@ void main() {
         StatefulBuilder(builder: (ctx, setState) {
           return SizedBox(
             height: 100,
-            child: GlassBottomBar(
+            child: GlassTabBar.bottom(
               tabs: [_tab('A'), _tab('B'), _tab('C')],
               selectedIndex: selectedTab,
               onTabSelected: (i) => setState(() => selectedTab = i),
@@ -343,7 +343,7 @@ void main() {
       await tester.pump();
 
       // Drag and release
-      final barFinder = find.byType(GlassBottomBar);
+      final barFinder = find.byType(GlassTabBar);
       final barCenter = tester.getCenter(barFinder);
       final gesture = await tester.startGesture(barCenter);
       await gesture.moveBy(const Offset(100, 0));
@@ -361,7 +361,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         SizedBox(
           height: 100,
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             tabs: [_tab('A'), _tab('B'), _tab('C')],
             selectedIndex: 1,
             onTabSelected: (_) {},
@@ -372,7 +372,7 @@ void main() {
       await tester.pump();
 
       // Start drag, move, then cancel
-      final barFinder = find.byType(GlassBottomBar);
+      final barFinder = find.byType(GlassTabBar);
       final barCenter = tester.getCenter(barFinder);
       final gesture = await tester.startGesture(barCenter);
       await gesture.moveBy(const Offset(80, 0));
@@ -391,7 +391,7 @@ void main() {
         StatefulBuilder(builder: (ctx, setState) {
           return SizedBox(
             height: 100,
-            child: GlassBottomBar(
+            child: GlassTabBar.bottom(
               tabs: [_tab('A'), _tab('B'), _tab('C')],
               selectedIndex: selectedTab,
               onTabSelected: (i) => setState(() => selectedTab = i),
@@ -403,7 +403,7 @@ void main() {
       await tester.pump();
 
       // Drag very far to exceed the clamp
-      final barFinder = find.byType(GlassBottomBar);
+      final barFinder = find.byType(GlassTabBar);
       final barCenter = tester.getCenter(barFinder);
       final gesture = await tester.startGesture(barCenter);
       // Move in multiple large increments to try to exceed the 3px clamp
@@ -433,13 +433,13 @@ void main() {
   // ─────────────────────────────────────────────────────────────────────────
 
   group('issue #157 — 4-tab tap hit regions (raw fraction, equal slices)', () {
-    /// Builds a GlassBottomBar with 4 equal tabs and returns the
+    /// Builds a GlassTabBar.bottom with 4 equal tabs and returns the
     /// selected-index tracker.
     Future<int Function()> build4Tabs(WidgetTester tester) async {
       int selected = 0;
       await tester.pumpWidget(_wrap(
         StatefulBuilder(
-          builder: (context, setState) => GlassBottomBar(
+          builder: (context, setState) => GlassTabBar.bottom(
             tabs: [
               _tab('A'),
               _tab('B'),

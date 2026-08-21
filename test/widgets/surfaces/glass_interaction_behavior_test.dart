@@ -10,12 +10,12 @@ import '../../shared/test_helpers.dart';
 // =============================================================================
 
 final _tabs = [
-  const GlassBottomBarTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
-  const GlassBottomBarTab(label: 'Search', icon: Icon(CupertinoIcons.search)),
-  const GlassBottomBarTab(label: 'Profile', icon: Icon(CupertinoIcons.person)),
+  const GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+  const GlassTab(label: 'Search', icon: Icon(CupertinoIcons.search)),
+  const GlassTab(label: 'Profile', icon: Icon(CupertinoIcons.person)),
 ];
 
-// Builds a GlassBottomBar in a test wrapper — always uses MaskingQuality.off
+// Builds a GlassTabBar.bottom in a test wrapper — always uses MaskingQuality.off
 // for performance and to avoid dual-layer rendering complexity in tests.
 Widget _buildBottomBar({
   GlassInteractionBehavior behavior = GlassInteractionBehavior.full,
@@ -23,7 +23,7 @@ Widget _buildBottomBar({
   Color? interactionGlowColor,
 }) {
   return createTestApp(
-    child: GlassBottomBar(
+    child: GlassTabBar.bottom(
       tabs: _tabs,
       selectedIndex: 0,
       onTabSelected: (_) {},
@@ -42,7 +42,7 @@ Widget _buildSearchableBar({
   bool isSearchActive = false,
 }) {
   return createTestApp(
-    child: GlassSearchableBottomBar(
+    child: GlassTabBar.searchable(
       tabs: _tabs,
       selectedIndex: 0,
       onTabSelected: (_) {},
@@ -207,12 +207,12 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // GlassBottomBar — interaction API defaults
+  // GlassTabBar.bottom — interaction API defaults
   // ---------------------------------------------------------------------------
 
-  group('GlassBottomBar interaction API defaults', () {
+  group('GlassTabBar.bottom interaction API defaults', () {
     test('interactionBehavior defaults to full', () {
-      final bar = GlassBottomBar(
+      final bar = GlassTabBar.bottom(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -221,7 +221,7 @@ void main() {
     });
 
     test('pressScale defaults to 1.04', () {
-      final bar = GlassBottomBar(
+      final bar = GlassTabBar.bottom(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -230,7 +230,7 @@ void main() {
     });
 
     test('interactionGlowColor defaults to null', () {
-      final bar = GlassBottomBar(
+      final bar = GlassTabBar.bottom(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -239,7 +239,7 @@ void main() {
     });
 
     test('custom pressScale stored correctly', () {
-      final bar = GlassBottomBar(
+      final bar = GlassTabBar.bottom(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -249,7 +249,7 @@ void main() {
     });
 
     test('custom interactionBehavior stored correctly', () {
-      final bar = GlassBottomBar(
+      final bar = GlassTabBar.bottom(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -259,7 +259,7 @@ void main() {
     });
 
     test('custom interactionGlowColor stored correctly', () {
-      final bar = GlassBottomBar(
+      final bar = GlassTabBar.bottom(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -270,14 +270,14 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // GlassBottomBar — widget rendering per behavior
+  // GlassTabBar.bottom — widget rendering per behavior
   // ---------------------------------------------------------------------------
 
-  group('GlassBottomBar widget rendering per behavior', () {
+  group('GlassTabBar.bottom widget rendering per behavior', () {
     for (final behavior in GlassInteractionBehavior.values) {
       testWidgets('mounts cleanly with behavior=$behavior', (tester) async {
         await tester.pumpWidget(_buildBottomBar(behavior: behavior));
-        expect(find.byType(GlassBottomBar), findsOneWidget);
+        expect(find.byType(GlassTabBar), findsOneWidget);
       });
     }
 
@@ -361,7 +361,7 @@ void main() {
       int selected = 0;
       await tester.pumpWidget(
         createTestApp(
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             tabs: _tabs,
             selectedIndex: selected,
             onTabSelected: (i) => selected = i,
@@ -384,15 +384,15 @@ void main() {
           pressScale: 1.0,
         ),
       );
-      expect(find.byType(GlassBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
   });
 
   // ---------------------------------------------------------------------------
-  // GlassBottomBar — behavior changes at runtime (hot rebuild)
+  // GlassTabBar.bottom — behavior changes at runtime (hot rebuild)
   // ---------------------------------------------------------------------------
 
-  group('GlassBottomBar hot-rebuild behavior transitions', () {
+  group('GlassTabBar.bottom hot-rebuild behavior transitions', () {
     testWidgets('behavior can switch from full to none', (tester) async {
       GlassInteractionBehavior behavior = GlassInteractionBehavior.full;
 
@@ -401,7 +401,7 @@ void main() {
           child: StatefulBuilder(
             builder: (context, setState) => Column(
               children: [
-                GlassBottomBar(
+                GlassTabBar.bottom(
                   tabs: _tabs,
                   selectedIndex: 0,
                   onTabSelected: (_) {},
@@ -437,7 +437,7 @@ void main() {
           child: StatefulBuilder(
             builder: (context, setState) => Column(
               children: [
-                GlassBottomBar(
+                GlassTabBar.bottom(
                   tabs: _tabs,
                   selectedIndex: 0,
                   onTabSelected: (_) {},
@@ -465,12 +465,12 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // GlassSearchableBottomBar — interaction API defaults
+  // GlassTabBar.searchable — interaction API defaults
   // ---------------------------------------------------------------------------
 
-  group('GlassSearchableBottomBar interaction API defaults', () {
+  group('GlassTabBar.searchable interaction API defaults', () {
     test('interactionBehavior defaults to full', () {
-      final bar = GlassSearchableBottomBar(
+      final bar = GlassTabBar.searchable(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -480,7 +480,7 @@ void main() {
     });
 
     test('pressScale defaults to 1.04', () {
-      final bar = GlassSearchableBottomBar(
+      final bar = GlassTabBar.searchable(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -490,7 +490,7 @@ void main() {
     });
 
     test('interactionGlowColor defaults to null', () {
-      final bar = GlassSearchableBottomBar(
+      final bar = GlassTabBar.searchable(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -500,7 +500,7 @@ void main() {
     });
 
     test('custom interactionBehavior stored correctly', () {
-      final bar = GlassSearchableBottomBar(
+      final bar = GlassTabBar.searchable(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -511,7 +511,7 @@ void main() {
     });
 
     test('custom pressScale stored correctly', () {
-      final bar = GlassSearchableBottomBar(
+      final bar = GlassTabBar.searchable(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -526,7 +526,7 @@ void main() {
         () {
       // If this test compiles cleanly, the old API is fully removed.
       // We verify the NEW API exists and has the correct types.
-      final bar = GlassSearchableBottomBar(
+      final bar = GlassTabBar.searchable(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -540,15 +540,15 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // GlassSearchableBottomBar — widget rendering per behavior
+  // GlassTabBar.searchable — widget rendering per behavior
   // ---------------------------------------------------------------------------
 
-  group('GlassSearchableBottomBar widget rendering per behavior', () {
+  group('GlassTabBar.searchable widget rendering per behavior', () {
     for (final behavior in GlassInteractionBehavior.values) {
       testWidgets('mounts cleanly with behavior=$behavior (search inactive)',
           (tester) async {
         await tester.pumpWidget(_buildSearchableBar(behavior: behavior));
-        expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+        expect(find.byType(GlassTabBar), findsOneWidget);
       });
 
       testWidgets('mounts cleanly with behavior=$behavior (search active)',
@@ -556,7 +556,7 @@ void main() {
         await tester.pumpWidget(
             _buildSearchableBar(behavior: behavior, isSearchActive: true));
         await tester.pumpAndSettle();
-        expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+        expect(find.byType(GlassTabBar), findsOneWidget);
       });
     }
 
@@ -574,7 +574,7 @@ void main() {
     testWidgets(
         'behavior=none: resolved interactionGlowColor on bar is transparent',
         (tester) async {
-      final bar = GlassSearchableBottomBar(
+      final bar = GlassTabBar.searchable(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -589,7 +589,7 @@ void main() {
     testWidgets(
         'behavior=scaleOnly: resolved interactionGlowColor on bar is transparent',
         (tester) async {
-      final bar = GlassSearchableBottomBar(
+      final bar = GlassTabBar.searchable(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -603,7 +603,7 @@ void main() {
     testWidgets(
         'behavior=glowOnly: interactionGlowColor on bar is non-transparent',
         (tester) async {
-      final bar = GlassSearchableBottomBar(
+      final bar = GlassTabBar.searchable(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -615,7 +615,7 @@ void main() {
 
     testWidgets('behavior=full: interactionGlowColor on bar is non-transparent',
         (tester) async {
-      final bar = GlassSearchableBottomBar(
+      final bar = GlassTabBar.searchable(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -646,7 +646,7 @@ void main() {
       // The widget rendered successfully and behavior.hasGlow is false,
       // which means Colors.transparent is passed to the SearchPill.
       expect(GlassInteractionBehavior.none.hasGlow, isFalse);
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets(
@@ -667,7 +667,7 @@ void main() {
       int selected = 0;
       await tester.pumpWidget(
         createTestApp(
-          child: GlassSearchableBottomBar(
+          child: GlassTabBar.searchable(
             tabs: _tabs,
             selectedIndex: selected,
             onTabSelected: (i) => selected = i,
@@ -691,15 +691,15 @@ void main() {
   // API symmetry — both widgets must expose the same interaction parameters
   // ---------------------------------------------------------------------------
 
-  group('API symmetry: GlassBottomBar vs GlassSearchableBottomBar', () {
+  group('API symmetry: GlassTabBar.bottom vs GlassTabBar.searchable', () {
     test('both expose interactionBehavior field of the same type', () {
-      final bar = GlassBottomBar(
+      final bar = GlassTabBar.bottom(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
         interactionBehavior: GlassInteractionBehavior.glowOnly,
       );
-      final searchBar = GlassSearchableBottomBar(
+      final searchBar = GlassTabBar.searchable(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -710,12 +710,12 @@ void main() {
     });
 
     test('both default to interactionBehavior.full', () {
-      final bar = GlassBottomBar(
+      final bar = GlassTabBar.bottom(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
       );
-      final searchBar = GlassSearchableBottomBar(
+      final searchBar = GlassTabBar.searchable(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -725,12 +725,12 @@ void main() {
     });
 
     test('both default to pressScale 1.04', () {
-      final bar = GlassBottomBar(
+      final bar = GlassTabBar.bottom(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
       );
-      final searchBar = GlassSearchableBottomBar(
+      final searchBar = GlassTabBar.searchable(
         tabs: _tabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -739,10 +739,11 @@ void main() {
       expect(bar.pressScale, closeTo(searchBar.pressScale, 0.001));
     });
 
-    test('all four behaviors accepted by GlassBottomBar without assertion', () {
+    test('all four behaviors accepted by GlassTabBar.bottom without assertion',
+        () {
       for (final b in GlassInteractionBehavior.values) {
         expect(
-          () => GlassBottomBar(
+          () => GlassTabBar.bottom(
             tabs: _tabs,
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -754,11 +755,11 @@ void main() {
     });
 
     test(
-        'all four behaviors accepted by GlassSearchableBottomBar without assertion',
+        'all four behaviors accepted by GlassTabBar.searchable without assertion',
         () {
       for (final b in GlassInteractionBehavior.values) {
         expect(
-          () => GlassSearchableBottomBar(
+          () => GlassTabBar.searchable(
             tabs: _tabs,
             selectedIndex: 0,
             onTabSelected: (_) {},

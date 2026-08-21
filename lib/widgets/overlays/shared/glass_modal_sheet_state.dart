@@ -142,16 +142,10 @@ class _GlassModalSheetState extends State<GlassModalSheet>
         halfSize: widget.halfSize,
         fullSize: widget.fullSize,
         peekSize: widget.peekSize,
-        // Precedence lives in SheetGeometry.resolvePeek so it's unit-testable.
         enablePeek: SheetGeometry.resolvePeek(
-          // ignore: deprecated_member_use_from_same_package
-          enablePeek: widget.enablePeek,
           detents: widget.detents,
           mode: widget.mode,
         ),
-        // Public detents set → the internal per-detent bools the geometry
-        // runs on. Keeping SheetGeometry on bools leaves the physics /
-        // scroll-arena logic untouched by the surface change.
         enableHalf: widget.detents.contains(GlassSheetDetent.medium),
         enableFull: widget.detents.contains(GlassSheetDetent.large),
         dismissible: widget.dismissible,
@@ -935,11 +929,6 @@ class _GlassModalSheetState extends State<GlassModalSheet>
           enableTopFade: widget.enableTopFade,
           topFadeHeight: widget.topFadeHeight,
           onDismiss: () => _snapToState(GlassSheetState.hidden),
-          onFocusGained: () {
-            if (_currentState != _geometry.maxState) {
-              _snapToState(_geometry.maxState);
-            }
-          },
           suppressInteractionOnChildren: widget.suppressInteractionOnChildren,
           child: focusBridge,
         );

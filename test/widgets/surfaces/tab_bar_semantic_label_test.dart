@@ -6,7 +6,7 @@ import '../../shared/test_helpers.dart';
 
 /// Accessibility naming for the bars that render tabs through
 /// `BottomBarTabItem` — [GlassTabBar.bottom], [GlassTabBar.inline],
-/// [GlassTabBar.searchable] and the deprecated [GlassBottomBar].
+/// [GlassTabBar.searchable] and the deprecated [GlassTabBar.bottom].
 ///
 /// An icon-only tab has no label to announce, so [GlassTab.semanticLabel] is
 /// the caller's only way to name it.
@@ -172,19 +172,19 @@ void main() {
     });
   });
 
-  group('GlassBottomBar semantics', () {
+  group('GlassTabBar.bottom semantics', () {
     testWidgets('icon-only tabs announce their semanticLabel', (tester) async {
       final semantics = tester.ensureSemantics();
 
       await tester.pumpWidget(
         createTestApp(
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             tabs: const [
-              GlassBottomBarTab(
+              GlassTab(
                 icon: Icon(CupertinoIcons.home),
                 semanticLabel: 'Home',
               ),
-              GlassBottomBarTab(
+              GlassTab(
                 icon: Icon(CupertinoIcons.search),
                 semanticLabel: 'Search',
               ),

@@ -12,7 +12,8 @@ import '../../../types/glass_quality.dart';
 import '../../../utils/draggable_indicator_physics.dart';
 import '../../../utils/glass_spring.dart';
 import '../../../widgets/shared/animated_glass_indicator.dart';
-import '../../../widgets/surfaces/glass_bottom_bar.dart' show MaskingQuality;
+import '../../../widgets/surfaces/shared/tab_bar_collapse_config.dart'
+    show MaskingQuality;
 import '../../../widgets/surfaces/glass_tab_bar.dart'
     show GlassSegment, DividerSettings;
 
@@ -73,7 +74,7 @@ class ScrollableSegmentContent extends StatefulWidget {
   /// Maximum concave lens pinch strength. Forwarded to [AnimatedGlassIndicator].
   final double indicatorPinchStrength;
 
-  /// Expansion padding applied to the pill during drag — mirrors [GlassBottomBar].
+  /// Expansion padding applied to the pill during drag — mirrors [GlassTabBar.bottom].
   final EdgeInsetsGeometry indicatorExpansion;
   final GlobalKey? backgroundKey;
   final MaskingQuality maskingQuality;
@@ -563,7 +564,7 @@ class ScrollableSegmentContentState extends State<ScrollableSegmentContent>
     final indicatorColor = widget.indicatorColor ?? _defaultIndicatorColor;
 
     // Resolve label and icon colors from CupertinoTheme — brightness-aware.
-    // Matches the pattern used by GlassBottomBar (glass_bottom_bar.dart L563).
+    // Matches the pattern used by GlassTabBar.bottom (tab_bar_bottom_layout.dart).
     final dynamicLabelColor =
         CupertinoTheme.of(context).textTheme.textStyle.color ??
             CupertinoColors.label.resolveFrom(context);

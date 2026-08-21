@@ -51,29 +51,6 @@ void main() {
       });
     });
 
-    group('GlassQualityExtension.usesBackdropFilter (deprecated alias)', () {
-      // ignore: deprecated_member_use
-      test('standard usesBackdropFilter matches usesLightweightShader', () {
-        // ignore: deprecated_member_use
-        expect(GlassQuality.standard.usesBackdropFilter,
-            equals(GlassQuality.standard.usesLightweightShader));
-      });
-
-      // ignore: deprecated_member_use
-      test('premium usesBackdropFilter matches usesLightweightShader', () {
-        // ignore: deprecated_member_use
-        expect(GlassQuality.premium.usesBackdropFilter,
-            equals(GlassQuality.premium.usesLightweightShader));
-      });
-
-      // ignore: deprecated_member_use
-      test('minimal usesBackdropFilter matches usesLightweightShader', () {
-        // ignore: deprecated_member_use
-        expect(GlassQuality.minimal.usesBackdropFilter,
-            equals(GlassQuality.minimal.usesLightweightShader));
-      });
-    });
-
     group('shader matrix is consistent', () {
       // Any quality that uses the lightweight shader should also use any shader.
       test('usesLightweightShader implies usesAnyShader', () {

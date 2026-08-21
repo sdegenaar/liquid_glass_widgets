@@ -14,11 +14,11 @@ void main() {
             settings: defaultTestGlassSettings,
             child: GlassScaffold(
               body: const Text('Body'),
-              bottomBar: GlassBottomBar(
+              bottomBar: GlassTabBar.bottom(
                 selectedIndex: 0,
                 onTabSelected: (_) {},
                 tabs: const [
-                  GlassBottomBarTab(
+                  GlassTab(
                     label: 'Tab 1',
                     icon: Icon(Icons.home),
                   ),
@@ -30,7 +30,7 @@ void main() {
       );
 
       expect(find.text('Body'), findsOneWidget);
-      expect(find.byType(GlassBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets('renders with app bar', (tester) async {
@@ -117,11 +117,11 @@ void main() {
             child: GlassScaffold(
               appBar: const GlassAppBar(title: Text('Title')),
               body: const Text('Body'),
-              bottomBar: GlassBottomBar(
+              bottomBar: GlassTabBar.bottom(
                 selectedIndex: 0,
                 onTabSelected: (_) {},
                 tabs: const [
-                  GlassBottomBarTab(
+                  GlassTab(
                     label: 'Tab 1',
                     icon: Icon(Icons.home),
                   ),
@@ -144,11 +144,11 @@ void main() {
             child: GlassScaffold(
               appBar: const GlassAppBar(title: Text('Title')),
               body: const Text('Body'),
-              bottomBar: GlassBottomBar(
+              bottomBar: GlassTabBar.bottom(
                 selectedIndex: 0,
                 onTabSelected: (_) {},
                 tabs: const [
-                  GlassBottomBarTab(
+                  GlassTab(
                     label: 'Tab 1',
                     icon: Icon(Icons.home),
                   ),
@@ -351,11 +351,11 @@ void main() {
             settings: defaultTestGlassSettings,
             child: GlassScaffold(
               body: const SizedBox.expand(),
-              bottomBar: GlassBottomBar(
+              bottomBar: GlassTabBar.bottom(
                 selectedIndex: 0,
                 onTabSelected: (_) {},
                 tabs: const [
-                  GlassBottomBarTab(label: 'Home', icon: Icon(Icons.home)),
+                  GlassTab(label: 'Home', icon: Icon(Icons.home)),
                 ],
               ),
             ),
@@ -413,11 +413,11 @@ void main() {
             child: GlassScaffold(
               contentAwareBrightness: true,
               body: const Text('Body'),
-              bottomBar: GlassBottomBar(
+              bottomBar: GlassTabBar.bottom(
                 selectedIndex: 0,
                 onTabSelected: (_) {},
                 tabs: const [
-                  GlassBottomBarTab(label: 'Home', icon: Icon(Icons.home)),
+                  GlassTab(label: 'Home', icon: Icon(Icons.home)),
                 ],
               ),
             ),
@@ -437,11 +437,11 @@ void main() {
             settings: defaultTestGlassSettings,
             child: GlassScaffold(
               body: const Text('Body'),
-              bottomBar: GlassBottomBar(
+              bottomBar: GlassTabBar.bottom(
                 selectedIndex: 0,
                 onTabSelected: (_) {},
                 tabs: const [
-                  GlassBottomBarTab(label: 'Home', icon: Icon(Icons.home)),
+                  GlassTab(label: 'Home', icon: Icon(Icons.home)),
                 ],
               ),
             ),

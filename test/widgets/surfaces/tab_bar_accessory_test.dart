@@ -121,7 +121,7 @@ void main() {
                 onTap: () {},
                 label: 'Add',
               ),
-              collapseConfig: const GlassBottomBarCollapseConfig(),
+              collapseConfig: const GlassTabBarCollapseConfig(),
               bottomAccessory: Builder(builder: (context) {
                 final placement =
                     GlassTabBarAccessoryPlacementScope.of(context);

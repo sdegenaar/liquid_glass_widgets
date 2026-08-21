@@ -1,14 +1,14 @@
 import 'package:flutter/cupertino.dart';
 
-/// Configuration for the morphing search bar in [GlassSearchableBottomBar].
+/// Configuration for the morphing search bar in [GlassTabBar.searchable].
 ///
 /// When the user taps the collapsed search pill, [onSearchToggle] is called
-/// with `true`. Set [GlassSearchableBottomBar.isSearchActive] to `true` to
+/// with `true`. Set `isSearchActive` to `true` to
 /// expand the search bar and collapse the tab pill.
 ///
 /// ## Example
 /// ```dart
-/// GlassSearchableBottomBar(
+/// GlassTabBar.searchable(
 ///   tabs: [...],
 ///   selectedIndex: _tab,
 ///   onTabSelected: (i) => setState(() => _tab = i),
@@ -63,7 +63,7 @@ class GlassSearchBarConfig {
 
   /// Width of the collapsed tab pill when search is active.
   ///
-  /// If omitted, defaults to matching the [GlassSearchableBottomBar.searchBarHeight]
+  /// If omitted, defaults to matching the `searchBarHeight`
   /// to ensure the collapsed indicator perfectly shrinks proportionately into a circle.
   final double? collapsedTabWidth;
 
@@ -72,8 +72,8 @@ class GlassSearchBarConfig {
   /// Optional builder for a custom logo/icon shown on the collapsed tab pill
   /// when search is fully active.
   ///
-  /// If omitted, this defaults to displaying the [GlassBottomBarTab.activeIcon] (or fallback
-  /// [GlassBottomBarTab.icon]) of the currently selected [GlassBottomBarTab], matching the native
+  /// If omitted, this defaults to displaying the [GlassTab.activeIcon] (or fallback
+  /// [GlassTab.icon]) of the currently selected [GlassTab], matching the native
   /// iOS Apple News behavior.
   final WidgetBuilder? collapsedLogoBuilder;
 

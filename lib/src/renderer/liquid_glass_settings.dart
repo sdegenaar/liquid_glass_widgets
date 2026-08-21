@@ -347,8 +347,7 @@ class LiquidGlassSettings {
   /// **Internal use only** — called exclusively by [AnimatedGlassIndicator]
   /// to thread the animated pinch value into the render shader.
   /// Users should configure this via `indicatorPinchStrength` on
-  /// [GlassBottomBar], [GlassTabBar], [GlassSegmentedControl], or
-  /// [GlassSearchableBottomBar].
+  /// [GlassTabBar] or [GlassSegmentedControl].
   LiquidGlassSettings copyWithPinch(double value) =>
       LiquidGlassSettings._withPinch(
         visibility: visibility,

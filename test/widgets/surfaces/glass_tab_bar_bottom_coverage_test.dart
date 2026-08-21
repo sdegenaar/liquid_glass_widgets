@@ -7,10 +7,10 @@ Widget _wrap(Widget child) => MaterialApp(
       home: Scaffold(body: LiquidGlassWidgets.wrap(child: child)),
     );
 
-GlassBottomBarTab _tab(String label) =>
-    GlassBottomBarTab(label: label, icon: const Icon(Icons.home));
+GlassTab _tab(String label) =>
+    GlassTab(label: label, icon: const Icon(Icons.home));
 
-GlassBottomBarTab _tabWithGlow(String label) => GlassBottomBarTab(
+GlassTab _tabWithGlow(String label) => GlassTab(
       label: label,
       icon: const Icon(Icons.star),
       activeIcon: const Icon(Icons.star_border),
@@ -19,12 +19,12 @@ GlassBottomBarTab _tabWithGlow(String label) => GlassBottomBarTab(
     );
 
 void main() {
-  group('GlassBottomBar — rendering variants', () {
+  group('GlassTabBar.bottom — rendering variants', () {
     testWidgets('basic 2-tab bar renders without crash', (tester) async {
       await tester.pumpWidget(_wrap(
         SizedBox(
           height: 100,
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             tabs: [_tab('Home'), _tab('Profile')],
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -39,7 +39,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         SizedBox(
           height: 100,
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             tabs: [_tabWithGlow('Glow'), _tab('Normal')],
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -54,7 +54,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         SizedBox(
           height: 100,
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             tabs: [_tab('A'), _tab('B'), _tab('C')],
             selectedIndex: 1,
             onTabSelected: (_) {},
@@ -70,7 +70,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         SizedBox(
           height: 100,
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             tabs: [_tab('Home'), _tab('Profile')],
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -91,7 +91,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         SizedBox(
           height: 100,
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             tabs: [_tab('Home'), _tab('Profile')],
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -112,7 +112,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         SizedBox(
           height: 100,
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             tabs: [_tab('Home'), _tab('Settings')],
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -125,7 +125,7 @@ void main() {
     });
 
     testWidgets('enableBlend defaults to true', (tester) async {
-      final bar = GlassBottomBar(
+      final bar = GlassTabBar.bottom(
         tabs: [_tab('Home'), _tab('Profile')],
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -137,7 +137,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         SizedBox(
           height: 100,
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             tabs: [_tab('Home'), _tab('Profile')],
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -155,13 +155,13 @@ void main() {
     });
   });
 
-  group('GlassBottomBar — interaction behavior', () {
+  group('GlassTabBar.bottom — interaction behavior', () {
     testWidgets('GlassInteractionBehavior.none disables glow and scale',
         (tester) async {
       await tester.pumpWidget(_wrap(
         SizedBox(
           height: 100,
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             tabs: [_tab('X'), _tab('Y')],
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -177,7 +177,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         SizedBox(
           height: 100,
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             tabs: [_tab('X'), _tab('Y')],
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -190,12 +190,12 @@ void main() {
     });
   });
 
-  group('GlassBottomBar — tabWidth compact mode', () {
+  group('GlassTabBar.bottom — tabWidth compact mode', () {
     testWidgets('tabWidth=88 limits pill width', (tester) async {
       await tester.pumpWidget(_wrap(
         SizedBox(
           height: 100,
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             tabs: [_tab('H'), _tab('P'), _tab('S')],
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -211,7 +211,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         SizedBox(
           height: 100,
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             tabs: [_tab('H'), _tab('P')],
             selectedIndex: 0,
             onTabSelected: (_) {},

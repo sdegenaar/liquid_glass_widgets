@@ -6,12 +6,9 @@
 /// (ambient refraction at the finger position) and a physical scale/squish
 /// of the glass body itself.
 ///
-/// Use [GlassBottomBar.interactionBehavior] and
-/// [GlassSearchableBottomBar.interactionBehavior] to select the desired mode.
-/// Fine-tune each axis independently with [GlassBottomBar.pressScale] /
-/// [GlassSearchableBottomBar.pressScale] for the scale amount, and
-/// [GlassBottomBar.interactionGlowColor] /
-/// [GlassSearchableBottomBar.interactionGlowColor] for the light color.
+/// Use [GlassTabBar.interactionBehavior] to select the desired mode.
+/// Fine-tune each axis independently with [GlassTabBar.pressScale] for the scale amount, and
+/// [GlassTabBar.interactionGlowColor] for the light color.
 ///
 /// ### Physical model
 ///

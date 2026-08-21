@@ -36,8 +36,8 @@ typedef GlassBrightnessWidgetBuilder = Widget Function(
 ///    [GlassContentAwareContent]. This marks the region that is sampled.
 ///    The glass controls themselves must stay outside of it so the capture
 ///    sees the content *behind* them rather than their own rendering.
-/// 3. Set `adaptiveBrightness: true` on `GlassBottomBar` /
-///    `GlassSearchableBottomBar` (or wrap any custom control in a
+/// 3. Set `adaptiveBrightness: true` on `GlassTabBar.bottom` /
+///    `GlassTabBar.searchable` (or wrap any custom control in a
 ///    [GlassContentAwareBrightness]).
 ///
 /// ```dart
@@ -47,7 +47,7 @@ typedef GlassBrightnessWidgetBuilder = Widget Function(
 ///     body: GlassContentAwareContent(
 ///       child: ListView(...),
 ///     ),
-///     bottomNavigationBar: GlassBottomBar(
+///     bottomNavigationBar: GlassTabBar.bottom(
 ///       adaptiveBrightness: true,
 ///       ...
 ///     ),
@@ -108,7 +108,7 @@ typedef GlassBrightnessWidgetBuilder = Widget Function(
 /// Content rendered by an iOS PlatformView (e.g. a map) cannot be captured
 /// by `toImage` — the same wall as `platformViewBackdrop`. For those
 /// screens, drive the appearance explicitly with
-/// `GlassBottomBar.brightnessOverride` (which bypasses the sampler
+/// `GlassTabBar.bottom.brightnessOverride` (which bypasses the sampler
 /// entirely) keyed off your own signal, such as the active map style.
 ///
 /// See also:

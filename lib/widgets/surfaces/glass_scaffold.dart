@@ -166,7 +166,7 @@ class GlassScaffold extends StatelessWidget {
 
   /// An optional bottom bar placed at the bottom, always above the body.
   ///
-  /// Typically a [GlassBottomBar], [GlassSearchableBottomBar], or any widget.
+  /// Typically a [GlassTabBar.bottom], [GlassTabBar.searchable], or any widget.
   /// When provided, bottom edge fading is auto-calculated to cover the bar
   /// area plus safe zone.
   final Widget? bottomBar;
@@ -294,7 +294,7 @@ class GlassScaffold extends StatelessWidget {
   ///       child: PlayBarPill(),
   ///     ),
   ///   ],
-  ///   bottomBar: GlassSearchableBottomBar(...),
+  ///   bottomBar: GlassTabBar.searchable(...),
   ///   body: scrollContent,
   /// )
   /// ```
@@ -347,7 +347,7 @@ class GlassScaffold extends StatelessWidget {
   /// ```dart
   /// GlassScaffold(
   ///   contentAwareBrightness: true,
-  ///   bottomBar: GlassBottomBar(
+  ///   bottomBar: GlassTabBar.bottom(
   ///     adaptiveBrightness: true,
   ///     ...
   ///   ),

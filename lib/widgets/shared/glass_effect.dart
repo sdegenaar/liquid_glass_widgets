@@ -312,7 +312,7 @@ class _GlassEffectState extends State<GlassEffect>
       if (boundary.size.isEmpty) {
         debugPrint(
           '⚠️ [GlassEffect] Background boundary has zero size.\n'
-          '   Ensure GlassRefractionSource (or LiquidGlassScope.stack) wraps\n'
+          '   Ensure GlassBackgroundSource (or GlassPage) wraps\n'
           '   a widget with non-zero dimensions.',
         );
       }

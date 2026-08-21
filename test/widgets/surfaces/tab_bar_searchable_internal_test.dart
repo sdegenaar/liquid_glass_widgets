@@ -1,5 +1,5 @@
 // Widget tests for the internal sub-widgets extracted from
-// GlassSearchableBottomBar into searchable_bottom_bar_internal.dart.
+// GlassTabBar.searchable into searchable_bottom_bar_internal.dart.
 //
 // Covers:
 //   • DismissPill — render, tap, indicatorColor/settings branches

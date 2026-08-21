@@ -10,15 +10,15 @@ import '../../shared/test_helpers.dart';
 // ---------------------------------------------------------------------------
 
 final _testTabs = [
-  const GlassBottomBarTab(
+  const GlassTab(
     label: 'For You',
     icon: Icon(CupertinoIcons.news),
   ),
-  const GlassBottomBarTab(
+  const GlassTab(
     label: 'Following',
     icon: Icon(CupertinoIcons.person_2),
   ),
-  const GlassBottomBarTab(
+  const GlassTab(
     label: 'Saved',
     icon: Icon(CupertinoIcons.bookmark),
   ),
@@ -36,7 +36,7 @@ Widget _buildBar({
   GlassQuality? quality,
 }) {
   return createTestApp(
-    child: GlassSearchableBottomBar(
+    child: GlassTabBar.searchable(
       tabs: _testTabs,
       selectedIndex: selectedIndex,
       onTabSelected: onTabSelected ?? (_) {},
@@ -60,12 +60,12 @@ Widget _buildBar({
 // ---------------------------------------------------------------------------
 
 void main() {
-  group('GlassSearchableBottomBar', () {
+  group('GlassTabBar.searchable', () {
     // ── Instantiation ─────────────────────────────────────────────────────────
 
     testWidgets('can be instantiated with required parameters', (tester) async {
       await tester.pumpWidget(_buildBar());
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets('displays tab labels when search is inactive', (tester) async {
@@ -103,7 +103,7 @@ void main() {
 
     testWidgets('reflects selectedIndex correctly', (tester) async {
       await tester.pumpWidget(_buildBar(selectedIndex: 2));
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     // ── Search toggle ─────────────────────────────────────────────────────────
@@ -114,7 +114,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: GlassSearchableBottomBar(
+          child: GlassTabBar.searchable(
             tabs: _testTabs,
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -150,7 +150,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Widget should mount without errors when a controller is provided.
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     // ── Focus node ────────────────────────────────────────────────────────────
@@ -168,7 +168,7 @@ void main() {
       // Widget mounted successfully with external focus node — node must still
       // be alive (the widget must NOT have disposed it).
       expect(focusNode.dispose, isA<Function>());
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets('does not dispose caller-provided FocusNode on rebuild',
@@ -253,19 +253,19 @@ void main() {
     testWidgets('mounts correctly with GlassQuality.minimal', (tester) async {
       await tester.pumpWidget(_buildBar(quality: GlassQuality.minimal));
       await tester.pump();
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets('mounts correctly with GlassQuality.standard', (tester) async {
       await tester.pumpWidget(_buildBar(quality: GlassQuality.standard));
       await tester.pump();
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     // ── Defaults ──────────────────────────────────────────────────────────────
 
     test('widget defaults are correct', () {
-      final bar = GlassSearchableBottomBar(
+      final bar = GlassTabBar.searchable(
         tabs: _testTabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -277,7 +277,7 @@ void main() {
       expect(bar.isSearchActive, isFalse);
       expect(bar.spacing, equals(8));
       expect(bar.barHeight, equals(64));
-      expect(bar.barBorderRadius, equals(32));
+      expect(bar.barBorderRadius, equals(GlassDefaults.capsuleRadius));
       expect(bar.horizontalPadding, equals(20));
       expect(bar.verticalPadding, equals(20));
       expect(bar.showIndicator, isTrue);
@@ -288,7 +288,7 @@ void main() {
 
     test('asserts on empty tabs list', () {
       expect(
-        () => GlassSearchableBottomBar(
+        () => GlassTabBar.searchable(
           tabs: const [],
           selectedIndex: 0,
           onTabSelected: (_) {},
@@ -300,7 +300,7 @@ void main() {
 
     test('asserts when selectedIndex is out of range', () {
       expect(
-        () => GlassSearchableBottomBar(
+        () => GlassTabBar.searchable(
           tabs: _testTabs,
           selectedIndex: 99,
           onTabSelected: (_) {},
@@ -387,13 +387,13 @@ void main() {
 
   // ── Additional coverage for uncovered branches ───────────────────────────
 
-  group('GlassSearchableBottomBar uncovered branch coverage', () {
+  group('GlassTabBar.searchable uncovered branch coverage', () {
     testWidgets('quality inherited when quality param is null', (tester) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: settingsWithoutLighting,
-            child: GlassSearchableBottomBar(
+            child: GlassTabBar.searchable(
               tabs: _testTabs,
               selectedIndex: 0,
               onTabSelected: (_) {},
@@ -406,7 +406,7 @@ void main() {
         ),
       );
       await tester.pump();
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets('tabPillAnchor center activates centeredTab branch',
@@ -418,7 +418,7 @@ void main() {
           child: StatefulBuilder(
             builder: (ctx, setState) {
               outerSetState = setState;
-              return GlassSearchableBottomBar(
+              return GlassTabBar.searchable(
                 tabs: _testTabs,
                 selectedIndex: 0,
                 onTabSelected: (_) {},
@@ -438,7 +438,7 @@ void main() {
       outerSetState(() => searching = true);
       await tester.pumpAndSettle();
 
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets('didUpdateWidget clears _searchFocused when search deactivated',
@@ -450,7 +450,7 @@ void main() {
           child: StatefulBuilder(
             builder: (ctx, setState) {
               outerSetState = setState;
-              return GlassSearchableBottomBar(
+              return GlassTabBar.searchable(
                 tabs: _testTabs,
                 selectedIndex: 0,
                 onTabSelected: (_) {},
@@ -471,13 +471,13 @@ void main() {
       outerSetState(() => searching = false);
       await tester.pumpAndSettle();
 
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets('collapsedTabWidth positive value is accepted', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: GlassSearchableBottomBar(
+          child: GlassTabBar.searchable(
             tabs: _testTabs,
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -491,7 +491,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets(
@@ -499,7 +499,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: GlassSearchableBottomBar(
+          child: GlassTabBar.searchable(
             tabs: _testTabs,
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -530,7 +530,7 @@ void main() {
           child: StatefulBuilder(
             builder: (ctx, setState) {
               outerSetState = setState;
-              return GlassSearchableBottomBar(
+              return GlassTabBar.searchable(
                 tabs: _testTabs,
                 selectedIndex: 0,
                 onTabSelected: (_) {},
@@ -553,14 +553,14 @@ void main() {
       await tester.pump();
       outerSetState(() => searching = true);
       await tester.pumpAndSettle();
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets('showsCancelButton=false skips dismiss pill layout',
         (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: GlassSearchableBottomBar(
+          child: GlassTabBar.searchable(
             tabs: _testTabs,
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -574,7 +574,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets('autoFocusOnExpand=true requests focus when search expands',
@@ -586,7 +586,7 @@ void main() {
           child: StatefulBuilder(
             builder: (ctx, setState) {
               outerSetState = setState;
-              return GlassSearchableBottomBar(
+              return GlassTabBar.searchable(
                 tabs: _testTabs,
                 selectedIndex: 0,
                 onTabSelected: (_) {},
@@ -604,22 +604,22 @@ void main() {
       await tester.pump();
       outerSetState(() => searching = true);
       await tester.pumpAndSettle();
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
   });
 
   // ── Interaction glow color — theme propagation (fix for collapsed logo pill)
   //
   // Regression: the collapsed logo GlassButton was hardcoding 0x33FFFFFF as a
-  // fallback even though the outer GlassSearchableBottomBar had already resolved
+  // fallback even though the outer GlassTabBar.searchable had already resolved
   // the correct theme color. This group verifies the full propagation chain:
   //
   //   GlassThemeData.glowColors.primary
-  //       → effectiveInteractionGlowColor (GlassSearchableBottomBar.build)
+  //       → effectiveInteractionGlowColor (GlassTabBar.searchable.build)
   //       → SearchableTabIndicator.interactionGlowColor
   //       → GlassButton.glowColor  (collapsed logo pill, isSearchActive=true)
 
-  group('GlassSearchableBottomBar interaction glow — theme propagation', () {
+  group('GlassTabBar.searchable interaction glow — theme propagation', () {
     /// Builds the bar inside a [GlassTheme] with a known primary glow color,
     /// then returns the [GlassButton] widget rendered for the collapsed logo.
     Widget buildWithTheme({
@@ -640,7 +640,7 @@ void main() {
           ),
           child: Scaffold(
             backgroundColor: Colors.transparent,
-            body: GlassSearchableBottomBar(
+            body: GlassTabBar.searchable(
               tabs: _testTabs,
               selectedIndex: 0,
               onTabSelected: (_) {},
@@ -698,7 +698,7 @@ void main() {
             ),
             child: Scaffold(
               backgroundColor: Colors.transparent,
-              body: GlassSearchableBottomBar(
+              body: GlassTabBar.searchable(
                 tabs: _testTabs,
                 selectedIndex: 0,
                 onTabSelected: (_) {},
@@ -761,7 +761,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
   });
 
@@ -772,13 +772,13 @@ void main() {
   //   2. When onBarTap is null the bar returns barContent directly (no extra
   //      GestureDetector wrapper in the widget tree).
 
-  group('GlassSearchableBottomBar onBarTap', () {
+  group('GlassTabBar.searchable onBarTap', () {
     testWidgets('onBarTap fires when the bar is tapped', (tester) async {
       var tapCount = 0;
 
       await tester.pumpWidget(
         createTestApp(
-          child: GlassSearchableBottomBar(
+          child: GlassTabBar.searchable(
             tabs: _testTabs,
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -795,7 +795,7 @@ void main() {
 
       // Tap the bar at its top-left corner — no opaque child sits there,
       // so the translucent GestureDetector receives the event.
-      final barBox = tester.getRect(find.byType(GlassSearchableBottomBar));
+      final barBox = tester.getRect(find.byType(GlassTabBar));
       await tester.tapAt(barBox.topLeft + const Offset(4, 4));
       await tester.pump();
 
@@ -808,7 +808,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: GlassSearchableBottomBar(
+          child: GlassTabBar.searchable(
             tabs: _testTabs,
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -824,7 +824,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap the bar at its top-left corner.
-      final barBox = tester.getRect(find.byType(GlassSearchableBottomBar));
+      final barBox = tester.getRect(find.byType(GlassTabBar));
       await tester.tapAt(barBox.topLeft + const Offset(4, 4));
       await tester.pump();
 
@@ -838,7 +838,7 @@ void main() {
       await tester.pumpWidget(_buildBar());
       await tester.pump();
 
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets('tab selection still works when onBarTap is set',
@@ -850,7 +850,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: GlassSearchableBottomBar(
+          child: GlassTabBar.searchable(
             tabs: _testTabs,
             selectedIndex: 0,
             onTabSelected: (i) => selected = i,
@@ -903,7 +903,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: GlassSearchableBottomBar(
+          child: GlassTabBar.searchable(
             tabs: _testTabs,
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -933,7 +933,7 @@ void main() {
       // Regression guard: verify null callback doesn't throw.
       await tester.pumpWidget(
         createTestApp(
-          child: GlassSearchableBottomBar(
+          child: GlassTabBar.searchable(
             tabs: _testTabs,
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -953,7 +953,7 @@ void main() {
         await tester.tap(textField.first);
         await tester.pump();
         // Verify: no exception was thrown reaching this point.
-        expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+        expect(find.byType(GlassTabBar), findsOneWidget);
       }
     });
   });
@@ -975,7 +975,7 @@ void main() {
       VoidCallback? onCancelTap,
     }) {
       return createTestApp(
-        child: GlassSearchableBottomBar(
+        child: GlassTabBar.searchable(
           tabs: _testTabs,
           selectedIndex: 0,
           onTabSelected: (_) {},
@@ -1043,9 +1043,9 @@ void main() {
   // indicatorExpansion (PR #40 — jfhair)
   // ─────────────────────────────────────────────────────────────────────────
 
-  group('GlassSearchableBottomBar.indicatorExpansion', () {
+  group('GlassTabBar.searchable indicatorExpansion', () {
     test('default indicatorExpansion matches iOS 26 calibration', () {
-      final bar = GlassSearchableBottomBar(
+      final bar = GlassTabBar.searchable(
         tabs: _testTabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -1058,7 +1058,7 @@ void main() {
     });
 
     test('default indicatorPinchStrength is 0.4 (iOS 26 calibration)', () {
-      final bar = GlassSearchableBottomBar(
+      final bar = GlassTabBar.searchable(
         tabs: _testTabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -1070,7 +1070,7 @@ void main() {
     testWidgets('accepts custom indicatorExpansion', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: GlassSearchableBottomBar(
+          child: GlassTabBar.searchable(
             tabs: _testTabs,
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -1080,15 +1080,14 @@ void main() {
           ),
         ),
       );
-      final bar = tester.widget<GlassSearchableBottomBar>(
-          find.byType(GlassSearchableBottomBar).first);
+      final bar = tester.widget<GlassTabBar>(find.byType(GlassTabBar).first);
       expect(bar.indicatorExpansion, const EdgeInsets.all(6.0));
     });
 
     testWidgets('accepts zero indicatorExpansion', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: GlassSearchableBottomBar(
+          child: GlassTabBar.searchable(
             tabs: _testTabs,
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -1098,7 +1097,7 @@ void main() {
           ),
         ),
       );
-      expect(find.byType(GlassSearchableBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
   });
 
@@ -1123,7 +1122,7 @@ void main() {
         (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: GlassSearchableBottomBar(
+          child: GlassTabBar.searchable(
             tabs: _testTabs,
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -1142,7 +1141,7 @@ void main() {
           Icon(CupertinoIcons.star_fill, key: Key('custom_search_icon'));
       await tester.pumpWidget(
         createTestApp(
-          child: GlassSearchableBottomBar(
+          child: GlassTabBar.searchable(
             tabs: _testTabs,
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -1162,7 +1161,7 @@ void main() {
       const customIcon = Icon(CupertinoIcons.star_fill);
       await tester.pumpWidget(
         createTestApp(
-          child: GlassSearchableBottomBar(
+          child: GlassTabBar.searchable(
             tabs: _testTabs,
             selectedIndex: 0,
             onTabSelected: (_) {},

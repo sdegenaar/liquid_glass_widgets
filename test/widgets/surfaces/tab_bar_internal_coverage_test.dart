@@ -1,6 +1,6 @@
 // ignore_for_file: require_trailing_commas
 // Tests for scrollable_segment_content.dart (ScrollableSegmentContent) and
-// bottom_bar_internal.dart (GlassBottomBarClipper.shouldReclip).
+// bottom_bar_internal.dart (GlassTabBar.bottomClipper.shouldReclip).
 //
 // Coverage targets:
 //   scrollable_segment_content.dart:
@@ -11,7 +11,7 @@
 //     - Jelly physics: VelocitySpringBuilder in scrollable mode
 //     - Rubber-band overstep constants
 //   bottom_bar_internal.dart:
-//     - lines 472-482: GlassBottomBarClipper.shouldReclip full-check when values differ
+//     - lines 472-482: GlassTabBar.bottomClipper.shouldReclip full-check when values differ
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -198,7 +198,7 @@ void main() {
     });
   });
 
-  group('GlassBottomBarClipper — shouldReclip full-check path', () {
+  group('GlassTabBar.bottomClipper — shouldReclip full-check path', () {
     testWidgets('changing indicator alignment triggers shouldReclip',
         (tester) async {
       // Lines 472-482: shouldReclip returns true when alignment changes.
@@ -213,11 +213,11 @@ void main() {
             return SizedBox(
               height: 80,
               width: 300,
-              child: GlassBottomBar(
+              child: GlassTabBar.bottom(
                 tabs: [
-                  const GlassBottomBarTab(label: 'A', icon: Icon(Icons.home)),
-                  const GlassBottomBarTab(label: 'B', icon: Icon(Icons.search)),
-                  const GlassBottomBarTab(label: 'C', icon: Icon(Icons.person)),
+                  const GlassTab(label: 'A', icon: Icon(Icons.home)),
+                  const GlassTab(label: 'B', icon: Icon(Icons.search)),
+                  const GlassTab(label: 'C', icon: Icon(Icons.person)),
                 ],
                 selectedIndex: selectedTab,
                 onTabSelected: (i) => outerSetState(() => selectedTab = i),

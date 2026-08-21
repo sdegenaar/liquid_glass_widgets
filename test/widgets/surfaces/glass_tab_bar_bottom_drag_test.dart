@@ -1,4 +1,4 @@
-// Drag-gesture tests for GlassBottomBar tab indicator.
+// Drag-gesture tests for GlassTabBar.bottom tab indicator.
 //
 // Covers the _onDragEnd snap-to-tab logic and _onDragCancel paths that are
 // not exercised by the existing tap-based tests. These are the highest-risk
@@ -16,10 +16,9 @@ import '../../shared/test_helpers.dart';
 // ---------------------------------------------------------------------------
 
 final _tabs = [
-  const GlassBottomBarTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
-  const GlassBottomBarTab(
-      label: 'Following', icon: Icon(CupertinoIcons.person_2)),
-  const GlassBottomBarTab(label: 'Saved', icon: Icon(CupertinoIcons.bookmark)),
+  const GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+  const GlassTab(label: 'Following', icon: Icon(CupertinoIcons.person_2)),
+  const GlassTab(label: 'Saved', icon: Icon(CupertinoIcons.bookmark)),
 ];
 
 Widget _bar({
@@ -27,7 +26,7 @@ Widget _bar({
   required ValueChanged<int> onTabSelected,
 }) {
   return createTestApp(
-    child: GlassBottomBar(
+    child: GlassTabBar.bottom(
       tabs: _tabs,
       selectedIndex: selectedIndex,
       onTabSelected: onTabSelected,
@@ -45,7 +44,7 @@ void main() {
   // Regression tests — issue #22: same-tab repeat tap
   // ---------------------------------------------------------------------------
 
-  group('GlassBottomBar — same-tab repeat tap (issue #22)', () {
+  group('GlassTabBar.bottom — same-tab repeat tap (issue #22)', () {
     testWidgets('tapping the already-selected tab fires onTabChanged',
         (tester) async {
       final changes = <int>[];
@@ -55,7 +54,7 @@ void main() {
       );
       await tester.pump();
 
-      final rect = tester.getRect(find.byType(GlassBottomBar));
+      final rect = tester.getRect(find.byType(GlassTabBar));
       // Tap well into the left third — tab 0 zone (already selected).
       final tapX = rect.left + rect.width * 0.1;
       await tester.tapAt(Offset(tapX, rect.center.dy));
@@ -85,7 +84,7 @@ void main() {
       );
       await tester.pump();
 
-      final rect = tester.getRect(find.byType(GlassBottomBar));
+      final rect = tester.getRect(find.byType(GlassTabBar));
       final tapX = rect.left + rect.width * 0.1; // tab 0 zone
       final tapY = rect.center.dy;
 
@@ -105,12 +104,12 @@ void main() {
   // Regression tests — issue #23: coordinate space fix
   // ---------------------------------------------------------------------------
 
-  group('GlassBottomBar — drag-end coordinate fix (issue #23)', () {
+  group('GlassTabBar.bottom — drag-end coordinate fix (issue #23)', () {
     // Build a 5-tab bar inside a fixed-width container so coordinates are
     // predictable regardless of the test device screen size.
     final fiveTabs = List.generate(
       5,
-      (i) => GlassBottomBarTab(
+      (i) => GlassTab(
         label: 'T$i',
         icon: const Icon(CupertinoIcons.star),
       ),
@@ -125,7 +124,7 @@ void main() {
           body: SizedBox(
             width: 500,
             height: 80,
-            child: GlassBottomBar(
+            child: GlassTabBar.bottom(
               tabs: fiveTabs,
               selectedIndex: selectedIndex,
               onTabSelected: onTabSelected,
@@ -158,7 +157,7 @@ void main() {
       );
       await tester.pump();
 
-      final rect = tester.getRect(find.byType(GlassBottomBar));
+      final rect = tester.getRect(find.byType(GlassTabBar));
       // Drag from the far left (tab 0) to exactly the center of the bar.
       // With 5 equal tabs the center is the midpoint of tab 2.
       final startX = rect.left + rect.width * 0.05;
@@ -193,7 +192,7 @@ void main() {
       );
       await tester.pump();
 
-      final rect = tester.getRect(find.byType(GlassBottomBar));
+      final rect = tester.getRect(find.byType(GlassTabBar));
       final startX = rect.left + rect.width * 0.05;
       final endX = rect.left + rect.width * 0.25;
       final y = rect.center.dy;
@@ -225,7 +224,7 @@ void main() {
       );
       await tester.pump();
 
-      final rect = tester.getRect(find.byType(GlassBottomBar));
+      final rect = tester.getRect(find.byType(GlassTabBar));
       // Drag from far right (tab 4) back to 75%
       final startX = rect.left + rect.width * 0.95;
       final endX = rect.left + rect.width * 0.75;
@@ -241,7 +240,7 @@ void main() {
     });
   });
 
-  group('GlassBottomBar — drag gesture snap', () {
+  group('GlassTabBar.bottom — drag gesture snap', () {
     testWidgets('drag right from tab 0 reaches tab 1', (tester) async {
       final changes = <int>[];
       int currentIndex = 0;
@@ -259,7 +258,7 @@ void main() {
       );
       await tester.pump();
 
-      final bar = find.byType(GlassBottomBar);
+      final bar = find.byType(GlassTabBar);
       expect(bar, findsOneWidget);
 
       final rect = tester.getRect(bar);
@@ -272,7 +271,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // At minimum the bar survived the drag without throwing.
-      expect(find.byType(GlassBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
       // And if the drag crossed a tab boundary, a change was reported.
       if (changes.isNotEmpty) {
         expect(changes.last, inInclusiveRange(0, 2));
@@ -296,7 +295,7 @@ void main() {
       );
       await tester.pump();
 
-      final rect = tester.getRect(find.byType(GlassBottomBar));
+      final rect = tester.getRect(find.byType(GlassTabBar));
       final startX = rect.left + rect.width * 0.9;
       final endX = rect.left + rect.width * 0.45;
       final y = rect.center.dy;
@@ -304,7 +303,7 @@ void main() {
       await tester.dragFrom(Offset(startX, y), Offset(endX - startX, 0));
       await tester.pumpAndSettle();
 
-      expect(find.byType(GlassBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
       if (changes.isNotEmpty) {
         expect(changes.last, inInclusiveRange(0, 2));
       }
@@ -319,7 +318,7 @@ void main() {
       );
       await tester.pump();
 
-      final rect = tester.getRect(find.byType(GlassBottomBar));
+      final rect = tester.getRect(find.byType(GlassTabBar));
       final centerX = rect.center.dx;
       final y = rect.center.dy;
 
@@ -334,7 +333,7 @@ void main() {
       for (final idx in changes) {
         expect(idx, inInclusiveRange(0, 2));
       }
-      expect(find.byType(GlassBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets('drag cancel while mid-drag snaps to nearest tab',
@@ -345,7 +344,7 @@ void main() {
       );
       await tester.pump();
 
-      final rect = tester.getRect(find.byType(GlassBottomBar));
+      final rect = tester.getRect(find.byType(GlassTabBar));
       final startX = rect.left + rect.width * 0.1;
       final y = rect.center.dy;
 
@@ -358,7 +357,7 @@ void main() {
       await tester.pump();
       await tester.pumpAndSettle();
 
-      expect(find.byType(GlassBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
       for (final idx in changes) {
         expect(idx, inInclusiveRange(0, 2));
       }
@@ -371,7 +370,7 @@ void main() {
       );
       await tester.pump();
 
-      final rect = tester.getRect(find.byType(GlassBottomBar));
+      final rect = tester.getRect(find.byType(GlassTabBar));
       final center = rect.center;
 
       // Press without moving, then cancel
@@ -381,7 +380,7 @@ void main() {
       await tester.pump();
       await tester.pumpAndSettle();
 
-      expect(find.byType(GlassBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
     testWidgets('full drag left-to-right across all tabs fires ordered changes',
@@ -402,7 +401,7 @@ void main() {
       );
       await tester.pump();
 
-      final rect = tester.getRect(find.byType(GlassBottomBar));
+      final rect = tester.getRect(find.byType(GlassTabBar));
       // Drag from far left to far right in one gesture
       await tester.dragFrom(
         Offset(rect.left + 10, rect.center.dy),
@@ -410,7 +409,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(GlassBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
       for (final idx in changes) {
         expect(idx, inInclusiveRange(0, 2));
       }
@@ -434,7 +433,7 @@ void main() {
       );
       await tester.pump();
 
-      final rect = tester.getRect(find.byType(GlassBottomBar));
+      final rect = tester.getRect(find.byType(GlassTabBar));
       final startX = rect.left + rect.width * 0.15;
       final y = rect.center.dy;
 
@@ -450,7 +449,7 @@ void main() {
       await gesture.up();
       await tester.pumpAndSettle();
 
-      expect(find.byType(GlassBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
       for (final idx in changes) {
         expect(idx, inInclusiveRange(0, 2));
       }

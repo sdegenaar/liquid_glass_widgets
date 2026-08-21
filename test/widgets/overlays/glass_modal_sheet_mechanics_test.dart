@@ -407,44 +407,24 @@ void main() {
 
     test('small in detents enables the peek floor', () {
       expect(
-        SheetGeometry.resolvePeek(
-            enablePeek: null, detents: withSmall, mode: dismissible),
+        SheetGeometry.resolvePeek(detents: withSmall, mode: dismissible),
         isTrue,
       );
     });
 
     test('no small, dismissible → no peek', () {
       expect(
-        SheetGeometry.resolvePeek(
-            enablePeek: null, detents: twoStop, mode: dismissible),
+        SheetGeometry.resolvePeek(detents: twoStop, mode: dismissible),
         isFalse,
       );
     });
 
-    test('persistent keeps its floor without small (back-compat)', () {
+    test('persistent keeps its floor without small', () {
       // A persistent sheet is DEFINED by resting instead of dismissing, so the
-      // default {medium, large} must not silently strip its floor — that would
-      // break every released persistent sheet.
+      // default {medium, large} keeps its floor.
       expect(
-        SheetGeometry.resolvePeek(
-            enablePeek: null, detents: twoStop, mode: persistent),
+        SheetGeometry.resolvePeek(detents: twoStop, mode: persistent),
         isTrue,
-      );
-    });
-
-    test('explicit enablePeek wins over the detents set, both ways', () {
-      // The deprecated flag is still an existing caller's stated intent.
-      expect(
-        SheetGeometry.resolvePeek(
-            enablePeek: false, detents: withSmall, mode: persistent),
-        isFalse,
-        reason: 'enablePeek: false must defeat small + persistent',
-      );
-      expect(
-        SheetGeometry.resolvePeek(
-            enablePeek: true, detents: twoStop, mode: dismissible),
-        isTrue,
-        reason: 'enablePeek: true must add a floor with no small present',
       );
     });
 
@@ -454,8 +434,8 @@ void main() {
         halfSize: 400,
         fullSize: 800,
         peekSize: 100,
-        enablePeek: SheetGeometry.resolvePeek(
-            enablePeek: null, detents: withSmall, mode: dismissible),
+        enablePeek:
+            SheetGeometry.resolvePeek(detents: withSmall, mode: dismissible),
         enableHalf: withSmall.contains(GlassSheetDetent.medium),
         enableFull: withSmall.contains(GlassSheetDetent.large),
       );

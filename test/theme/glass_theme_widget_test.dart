@@ -326,14 +326,12 @@ void main() {
       });
     });
 
-    testWidgets('initialize() with deprecated warmUpImpellerPipeline completes',
-        (tester) async {
+    testWidgets('initialize() with warmUpMode completes', (tester) async {
       await tester.runAsync(() async {
-        // ignore: deprecated_member_use_from_same_package
         await expectLater(
           LiquidGlassWidgets.initialize(
             enablePerformanceMonitor: false,
-            warmUpImpellerPipeline: false,
+            warmUpMode: GlassWarmUpMode.never,
           ),
           completes,
         );

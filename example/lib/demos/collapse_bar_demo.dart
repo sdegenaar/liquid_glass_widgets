@@ -77,9 +77,9 @@ class _CollapseBarDemoPageState extends State<CollapseBarDemoPage> {
     ),
   ];
 
-  GlassBottomBarCollapseDirection get _direction => _directionIndex == 0
-      ? GlassBottomBarCollapseDirection.towardsExtraButton
-      : GlassBottomBarCollapseDirection.awayFromExtraButton;
+  GlassTabBarCollapseDirection get _direction => _directionIndex == 0
+      ? GlassTabBarCollapseDirection.towardsExtraButton
+      : GlassTabBarCollapseDirection.awayFromExtraButton;
 
   @override
   void dispose() {
@@ -199,7 +199,7 @@ class _CollapseBarDemoPageState extends State<CollapseBarDemoPage> {
             placement: _placement,
             onTap: () => _showActionFiredDialog(context),
           ),
-          collapseConfig: GlassBottomBarCollapseConfig(
+          collapseConfig: GlassTabBarCollapseConfig(
             direction: _direction,
             expandOnTap: true,
             // Intentionally slower than the 220ms package default so the

@@ -1,6 +1,6 @@
 import 'package:liquid_glass_widgets/widgets/interactive/glass_button.dart';
 import 'package:liquid_glass_widgets/widgets/surfaces/glass_app_bar.dart';
-import 'package:liquid_glass_widgets/widgets/surfaces/glass_bottom_bar.dart';
+import 'package:liquid_glass_widgets/widgets/surfaces/glass_tab_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
@@ -59,8 +59,8 @@ void main() {
   );
 
   goldenTest(
-    'GlassBottomBar renders correctly',
-    fileName: 'glass_bottom_bar',
+    'GlassTabBar.bottom renders correctly',
+    fileName: 'glass_tab_bar_bottom',
     pumpBeforeTest: pumpOnce,
     builder: () => GoldenTestGroup(
       scenarioConstraints:
@@ -69,17 +69,17 @@ void main() {
         GoldenTestScenario(
           name: 'three_tabs',
           child: buildWithGradientBackground(
-            GlassBottomBar(
+            GlassTabBar.bottom(
               tabs: const [
-                GlassBottomBarTab(
+                GlassTab(
                   label: 'Home',
                   icon: Icon(CupertinoIcons.home),
                 ),
-                GlassBottomBarTab(
+                GlassTab(
                   label: 'Search',
                   icon: Icon(CupertinoIcons.search),
                 ),
-                GlassBottomBarTab(
+                GlassTab(
                   label: 'Profile',
                   icon: Icon(CupertinoIcons.person),
                 ),
@@ -92,13 +92,13 @@ void main() {
         GoldenTestScenario(
           name: 'with_extra_button',
           child: buildWithGradientBackground(
-            GlassBottomBar(
+            GlassTabBar.bottom(
               tabs: const [
-                GlassBottomBarTab(
+                GlassTab(
                   label: 'Home',
                   icon: Icon(CupertinoIcons.home),
                 ),
-                GlassBottomBarTab(
+                GlassTab(
                   label: 'Search',
                   icon: Icon(CupertinoIcons.search),
                 ),
@@ -119,17 +119,17 @@ void main() {
         GoldenTestScenario(
           name: 'three_tabs_expand',
           child: buildWithGradientBackground(
-            GlassBottomBar(
+            GlassTabBar.bottom(
               tabs: const [
-                GlassBottomBarTab(
+                GlassTab(
                   label: 'Home',
                   icon: Icon(CupertinoIcons.home),
                 ),
-                GlassBottomBarTab(
+                GlassTab(
                   label: 'Search',
                   icon: Icon(CupertinoIcons.search),
                 ),
-                GlassBottomBarTab(
+                GlassTab(
                   label: 'Profile',
                   icon: Icon(CupertinoIcons.person),
                 ),

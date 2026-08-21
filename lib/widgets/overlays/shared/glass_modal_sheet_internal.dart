@@ -44,10 +44,6 @@ class _SheetLayout extends StatelessWidget {
   final bool enableTopFade;
   final double topFadeHeight;
   final bool enableSaturationGlow;
-  // TODO(sdegenaar): wire up onFocusGained — declared and threaded through
-  // the constructor but never invoked anywhere in the package. Pre-existing
-  // on main before this PR; wiring it up is a separate decision. See #156.
-  final VoidCallback onFocusGained;
   final bool suppressInteractionOnChildren;
   final VoidCallback? onDismiss;
 
@@ -90,7 +86,6 @@ class _SheetLayout extends StatelessWidget {
     required this.enableTopFade,
     required this.topFadeHeight,
     required this.enableSaturationGlow,
-    required this.onFocusGained,
     required this.suppressInteractionOnChildren,
     this.onDismiss,
   });
@@ -712,9 +707,6 @@ class GlassModalSheetScaffold extends StatelessWidget {
   /// rubber-bands at its lowest detent instead. Forwarded to the sheet.
   final bool dismissible;
 
-  /// Whether the 'peek' state is enabled.
-  final bool? enablePeek;
-
   /// Horizontal padding specifically for the 'peek' state.
   final double? peekHorizontalMargin;
 
@@ -777,7 +769,6 @@ class GlassModalSheetScaffold extends StatelessWidget {
     this.fullStateContentSettings,
     this.detents = const {GlassSheetDetent.medium, GlassSheetDetent.large},
     this.dismissible = true,
-    this.enablePeek,
     this.peekHorizontalMargin,
     this.peekBottomMargin,
     this.peekWidth,
@@ -847,7 +838,6 @@ class GlassModalSheetScaffold extends StatelessWidget {
           fullStateContentSettings: fullStateContentSettings,
           detents: detents,
           dismissible: dismissible,
-          enablePeek: enablePeek,
           peekHorizontalMargin: peekHorizontalMargin,
           peekBottomMargin: peekBottomMargin,
           peekWidth: peekWidth,

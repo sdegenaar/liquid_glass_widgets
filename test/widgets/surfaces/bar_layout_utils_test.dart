@@ -180,7 +180,7 @@ void main() {
     });
   });
 
-  // ── Symmetry with GlassBottomBar/GlassSearchableBottomBar defaults ─────────
+  // ── Symmetry with GlassTabBar.bottom/GlassTabBar.searchable defaults ─────────
 
   group('iOS 26 default (88 px) produces expected pill widths', () {
     // Simulates a 390-wide iPhone display with no extra button

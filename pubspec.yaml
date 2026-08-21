@@ -1,6 +1,6 @@
 name: liquid_glass_widgets
 description: "iOS 26-style liquid glass widgets for Flutter. Built on a custom fragment shader for real blur, liquid interactions, specular highlights, and chromatic aberration."
-version: 0.30.1
+version: 1.0.0
 
 
 homepage: https://github.com/sdegenaar/liquid_glass_widgets

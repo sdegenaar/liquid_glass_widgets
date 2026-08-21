@@ -393,7 +393,7 @@ void main() {
               isolated: false, // NOT isolated (shared layer)
               defaultQuality: GlassQuality.premium, // scope hint = premium
               child: Builder(builder: (context) {
-                // Simulates GlassBottomBar which passes fallback: premium.
+                // Simulates GlassTabBar.bottom which passes fallback: premium.
                 result = GlassThemeHelpers.resolveQuality(
                   context,
                   fallback: GlassQuality.premium,

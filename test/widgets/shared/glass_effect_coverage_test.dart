@@ -96,21 +96,29 @@ void main() {
       final bgKey = GlobalKey(debugLabel: 'bg_repaint');
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassScope.stack(
-            background: RepaintBoundary(
-              key: bgKey,
-              child: Container(
-                width: 300,
-                height: 600,
-                color: Colors.blue,
-              ),
-            ),
-            content: GlassEffect(
-              shape: const LiquidRoundedSuperellipse(borderRadius: 16),
-              settings: _settings,
-              interactionIntensity: 0.0,
-              quality: GlassQuality.standard,
-              child: const SizedBox(width: 80, height: 40),
+          child: LiquidGlassScope(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: GlassBackgroundSource(
+                    child: RepaintBoundary(
+                      key: bgKey,
+                      child: Container(
+                        width: 300,
+                        height: 600,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ),
+                ),
+                GlassEffect(
+                  shape: const LiquidRoundedSuperellipse(borderRadius: 16),
+                  settings: _settings,
+                  interactionIntensity: 0.0,
+                  quality: GlassQuality.standard,
+                  child: const SizedBox(width: 80, height: 40),
+                ),
+              ],
             ),
           ),
         ),
@@ -130,15 +138,23 @@ void main() {
                 key: explicitKey,
                 child: const SizedBox(width: 200, height: 200),
               ),
-              LiquidGlassScope.stack(
-                background: const SizedBox(width: 200, height: 200),
-                content: GlassEffect(
-                  shape: const LiquidRoundedSuperellipse(borderRadius: 16),
-                  settings: _settings,
-                  interactionIntensity: 0.0,
-                  quality: GlassQuality.standard,
-                  backgroundKey: explicitKey, // explicit key wins
-                  child: const SizedBox(width: 80, height: 40),
+              LiquidGlassScope(
+                child: Stack(
+                  children: [
+                    const Positioned.fill(
+                      child: GlassBackgroundSource(
+                        child: SizedBox(width: 200, height: 200),
+                      ),
+                    ),
+                    GlassEffect(
+                      shape: const LiquidRoundedSuperellipse(borderRadius: 16),
+                      settings: _settings,
+                      interactionIntensity: 0.0,
+                      quality: GlassQuality.standard,
+                      backgroundKey: explicitKey, // explicit key wins
+                      child: const SizedBox(width: 80, height: 40),
+                    ),
+                  ],
                 ),
               ),
             ],

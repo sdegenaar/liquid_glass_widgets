@@ -383,7 +383,7 @@ class _GlassSearchBarState extends State<GlassSearchBar> {
         ),
 
         // Cancel button — text style (iOS Spotlight / Messages pattern).
-        // Note: GlassSearchableBottomBar uses a glass ×‑icon button instead;
+        // Note: GlassTabBar.searchable uses a glass ×‑icon button instead;
         // the two patterns are intentionally different — each matches the iOS
         // convention for its context (standalone screen vs. bottom bar).
         AnimatedSize(

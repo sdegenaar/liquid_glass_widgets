@@ -12,7 +12,7 @@ import '../shared/adaptive_liquid_glass_layer.dart';
 /// utilizing the liquid glass material. It is typically used at the bottom
 /// of the screen to present a set of actions relevant to the current context.
 ///
-/// Unlike [GlassBottomBar] which is for navigation, [GlassToolbar] is for
+/// Unlike [GlassTabBar.bottom] which is for navigation, [GlassToolbar] is for
 /// actions (e.g., "Edit", "Share", "Delete").
 ///
 /// ## Key Features

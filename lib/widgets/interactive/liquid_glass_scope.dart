@@ -4,8 +4,8 @@ import 'package:flutter/widgets.dart';
 ///
 /// Place [LiquidGlassScope] at the root of a stack or page.
 /// Descendant [GlassEffect] widgets (used by [GlassSegmentedControl],
-/// [GlassTabBar], [GlassBottomBar]) will automatically find and sample the
-/// capture surface marked by [GlassRefractionSource].
+/// [GlassTabBar]) will automatically find and sample the
+/// capture surface marked by [GlassBackgroundSource].
 ///
 /// On Impeller, [LiquidGlassScope] is not needed — `GlassQuality.premium`
 /// uses the native scene graph for refraction.
@@ -16,7 +16,7 @@ import 'package:flutter/widgets.dart';
 ///   child: Stack(
 ///     children: [
 ///       // 1. Mark the capture surface
-///       GlassRefractionSource(
+///       GlassBackgroundSource(
 ///         child: Image.asset('wallpaper.jpg'),
 ///       ),
 ///
@@ -47,42 +47,6 @@ class LiquidGlassScope extends StatefulWidget {
   ///       ),
   ///       Positioned.fill(child: content),
   ///     ],
-  ///   ),
-  /// )
-  /// ```
-  ///
-  /// Example:
-  /// ```dart
-  /// LiquidGlassScope.stack(
-  ///   background: Image.asset('wallpaper.jpg', fit: BoxFit.cover),
-  ///   content: Scaffold(
-  ///     body: MyContent(),
-  ///     bottomNavigationBar: GlassBottomBar(...),
-  ///   ),
-  /// )
-  /// ```
-  @Deprecated(
-    'Use GlassPage instead. GlassPage automatically handles Scaffold transparency '
-    'and adaptive quality degradation. This factory will be removed in 1.0.0.',
-  )
-  factory LiquidGlassScope.stack({
-    Key? key,
-    required Widget background,
-    required Widget content,
-  }) {
-    return LiquidGlassScope(
-      key: key,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: GlassBackgroundSource(child: background),
-          ),
-          content, // Don't wrap in Positioned - let it naturally fill
-        ],
-      ),
-    );
-  }
-
   /// The child widget to display.
   final Widget child;
 
@@ -184,24 +148,6 @@ class GlassBackgroundSource extends StatelessWidget {
     );
   }
 }
-
-/// Deprecated: use [GlassBackgroundSource] instead.
-///
-/// [GlassRefractionSource] was renamed to [GlassBackgroundSource] in 0.11.0
-/// to better reflect its purpose for absorbing background colors, not just refraction.
-@Deprecated(
-  'Use GlassBackgroundSource instead. '
-  'GlassRefractionSource was renamed in 0.11.0 for clarity. '
-  'This alias will be removed in 1.0.0.',
-)
-typedef GlassRefractionSource = GlassBackgroundSource;
-
-/// Deprecated: use [GlassBackgroundSource] instead.
-@Deprecated(
-  'Use GlassBackgroundSource instead. '
-  'This alias will be removed in 1.0.0.',
-)
-typedef LiquidGlassBackground = GlassBackgroundSource;
 
 class _InheritedLiquidGlassScope extends InheritedWidget {
   const _InheritedLiquidGlassScope({

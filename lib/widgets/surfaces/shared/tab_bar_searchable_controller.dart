@@ -1,4 +1,4 @@
-// Extracted layout state machine for GlassSearchableBottomBar.
+// Extracted layout state machine for GlassTabBar.searchable.
 //
 // This file is intentionally free of Flutter widget dependencies
 // (no BuildContext, no TickerProvider, no setState) so the layout
@@ -10,7 +10,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/physics.dart';
 
-import '../../surfaces/glass_bottom_bar.dart'
+import 'tab_bar_collapse_config.dart'
     show GlassExtraButtonPosition, GlassTabPillAnchor;
 import '../../../src/widgets/surfaces/tab_bar_layout_utils.dart';
 
@@ -128,7 +128,7 @@ class SpringRetarget {
 // SearchableBottomBarController
 // =============================================================================
 
-/// Manages the layout state machine for [GlassSearchableBottomBar].
+/// Manages the layout state machine for [GlassTabBar.searchable].
 ///
 /// Owns the spring target computation, change-detection cache, and focus
 /// state so that this logic can be unit tested without a widget tree.
@@ -148,7 +148,7 @@ class SpringRetarget {
 ///
 /// Pass to the widget:
 /// ```dart
-/// GlassSearchableBottomBar(
+/// GlassTabBar.searchable(
 ///   controller: _searchController,
 ///   ...
 /// )
@@ -160,7 +160,7 @@ class SpringRetarget {
 /// _searchController.closeSearch(); // collapses back to tabs
 /// ```
 ///
-/// Or by driving [GlassSearchableBottomBar.isSearchActive] directly from
+/// Or by driving `isSearchActive` on [GlassTabBar.searchable] directly from
 /// your own state — both approaches work and are interchangeable.
 class SearchableBottomBarController extends ChangeNotifier {
   // ── Focus state ──────────────────────────────────────────────────────────
@@ -188,7 +188,7 @@ class SearchableBottomBarController extends ChangeNotifier {
   /// Whether the search bar is currently open (expanded).
   ///
   /// Set programmatically via [openSearch] / [closeSearch], or kept in sync
-  /// with [GlassSearchableBottomBar.isSearchActive] via [syncSearchActive].
+  /// with `isSearchActive` on [GlassTabBar.searchable] via [syncSearchActive].
   bool get isSearchOpen => _isSearchOpen;
 
   /// Expands the search bar.
@@ -249,7 +249,7 @@ class SearchableBottomBarController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Called from `didUpdateWidget` when [GlassSearchableBottomBar.isSearchActive] changes.
+  /// Called from `didUpdateWidget` when `isSearchActive` changes on [GlassTabBar.searchable].
   ///
   /// Clears [searchFocused] when search is deactivated externally.
   void onSearchActiveChanged({
@@ -366,7 +366,7 @@ class SearchableBottomBarController extends ChangeNotifier {
 
     // naturalTabW: intrinsic width when perTabWidth is specified.
     // Delegates to the shared resolveTabPillWidth function, which is also
-    // used by GlassBottomBar — single source of truth for this calculation.
+    // used by GlassTabBar.bottom — single source of truth for this calculation.
     final naturalTabW = resolveTabPillWidth(
       tabWidth: perTabWidth,
       tabCount: tabCount,

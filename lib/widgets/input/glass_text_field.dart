@@ -369,7 +369,7 @@ class GlassTextField extends StatefulWidget {
 
   /// Controls which press-interaction effects are active on this field.
   ///
-  /// Mirrors the API on [GlassBottomBar] and [GlassSearchableBottomBar] for
+  /// Mirrors the API on [GlassTabBar] for
   /// a consistent developer experience across all glass surfaces:
   ///
   /// | Value | Glow | Scale-on-focus |
@@ -711,7 +711,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
     // Apply glass effect
     // iOS 26: wrap in GlassGlow only when interactionBehavior includes glow.
     // _wrapWithGlow skips the widget entirely when glow is suppressed,
-    // saving 3 widget/render-object allocations — same pattern as GlassBottomBar.
+    // saving 3 widget/render-object allocations — same pattern as GlassTabBar.bottom.
     Widget glassWidget = AdaptiveGlass(
       shape: widget.shape,
       settings: GlassThemeHelpers.resolveSettings(

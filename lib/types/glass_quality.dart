@@ -108,12 +108,4 @@ extension GlassQualityExtension on GlassQuality {
         return false;
     }
   }
-
-  /// Whether to use backdrop filter (deprecated, kept for compatibility).
-  ///
-  /// This is now an alias for [usesLightweightShader] for backward
-  /// compatibility. The lightweight shader provides better performance
-  /// than BackdropFilter while maintaining visual quality.
-  @Deprecated('Use usesLightweightShader instead')
-  bool get usesBackdropFilter => usesLightweightShader;
 }

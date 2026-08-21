@@ -1,6 +1,6 @@
 // ignore_for_file: public_member_api_docs
 // ignore_for_file: deprecated_member_use
-// Shared internal widgets for GlassBottomBar and GlassSearchableBottomBar.
+// Shared internal sub-widgets for GlassTabBar.bottom and GlassTabBar.searchable.
 //
 // NOT part of the public API — do not export from liquid_glass_widgets.dart.
 library;
@@ -21,7 +21,7 @@ import '../../../widgets/interactive/glass_button.dart';
 import '../../../widgets/shared/adaptive_glass.dart';
 import '../../../widgets/shared/animated_glass_indicator.dart';
 import '../../../widgets/shared/inherited_liquid_glass.dart';
-import '../../../widgets/surfaces/glass_bottom_bar.dart'
+import '../../../widgets/surfaces/shared/tab_bar_collapse_config.dart'
     show GlassTabBarExtraButton, MaskingQuality, JellyClipper;
 import '../../../widgets/surfaces/glass_tab_bar.dart' show GlassTab;
 
@@ -29,8 +29,8 @@ import '../../../widgets/surfaces/glass_tab_bar.dart' show GlassTab;
 // kBottomBarGlassDefaults — shared glass preset
 // =============================================================================
 
-/// Default [LiquidGlassSettings] for both [GlassBottomBar] and
-/// [GlassSearchableBottomBar].
+/// Default [LiquidGlassSettings] for both [GlassTabBar.bottom] and
+/// [GlassTabBar.searchable].
 ///
 /// Centralised here so that both bars are guaranteed to produce visually
 /// identical glass when placed on the same screen — there is no risk of
@@ -127,7 +127,7 @@ List<Shadow>? buildIconShadows({
 // BottomBarTabItem — shared tab item widget
 // =============================================================================
 
-/// Renders a single tab item for [GlassBottomBar] and [GlassSearchableBottomBar].
+/// Renders a single tab item for [GlassTabBar.bottom] and [GlassTabBar.searchable].
 ///
 /// Previously duplicated as `_BottomBarTab` and `_TabItem`. Single source of truth.
 class BottomBarTabItem extends StatelessWidget {
@@ -409,7 +409,7 @@ class BottomBarExtraBtn extends StatelessWidget {
 
 /// Internal widget that manages the draggable indicator with physics.
 ///
-/// Extracted from [GlassBottomBar] to keep the public widget focused on layout
+/// Extracted from [GlassTabBar.bottom] to keep the public widget focused on layout
 /// and configuration, while this widget owns all gesture, animation, and
 /// rendering logic for the tab indicator pill.
 ///
@@ -547,7 +547,7 @@ class TabIndicatorState extends State<TabIndicator>
     // the indicator is also passed 9999 directly, so the glass shader clamps to
     // a true capsule even during jelly-bloom expansion (where the pill canvas
     // grows beyond its rest size and a finite radius would appear boxy).
-    // For custom radii (e.g. GlassBottomBar default 32), the indicator subtracts
+    // For custom radii (e.g. GlassTabBar.bottom default 32), the indicator subtracts
     // the padding inset (4 px) to produce concentric nested arcs (32 − 4 = 28).
     // An explicit indicatorBorderRadius always takes priority.
     const indicatorPadding = 4.0;

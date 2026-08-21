@@ -7,7 +7,7 @@
 //
 // Covers:
 //   • SearchPill — collapsed and expanded states
-//   • TabIndicator (GlassBottomBar) — via the internal _wrapWithBarShadow
+//   • TabIndicator (GlassTabBar.bottom) — via the internal _wrapWithBarShadow
 //   • GlassMenu trigger — Stack clipBehavior: Clip.none
 //   • AdaptiveGlass._wrapWithLightModeShadow — own-layer path
 import 'package:flutter/cupertino.dart';

@@ -388,7 +388,11 @@ void main() {
               GlassModalSheet(
                 controller: controller,
                 initialState: GlassSheetState.half,
-                enablePeek: true,
+                detents: const {
+                  GlassSheetDetent.small,
+                  GlassSheetDetent.medium,
+                  GlassSheetDetent.large
+                },
                 child: const SizedBox.expand(),
               ),
             ],
@@ -563,7 +567,11 @@ void main() {
               GlassModalSheet(
                 controller: controller,
                 initialState: GlassSheetState.half,
-                enablePeek: true,
+                detents: const {
+                  GlassSheetDetent.small,
+                  GlassSheetDetent.medium,
+                  GlassSheetDetent.large
+                },
                 child: const SizedBox.expand(),
               ),
             ],

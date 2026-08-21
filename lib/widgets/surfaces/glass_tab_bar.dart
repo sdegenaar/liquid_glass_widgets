@@ -1,4 +1,3 @@
-// ignore_for_file: deprecated_member_use_from_same_package
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show ValueListenable;
 
@@ -8,23 +7,16 @@ import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/types/glass_interaction_behavior.dart';
 import '../../types/glass_quality.dart';
 import '../shared/inherited_liquid_glass.dart';
-import 'glass_bottom_bar.dart'
-    show
-        GlassBottomBar,
-        GlassBottomBarCollapseConfig,
-        GlassTabBarExtraButton,
-        GlassBottomBarTab,
-        GlassTabPillAnchor,
-        MaskingQuality;
-import 'glass_searchable_bottom_bar.dart' show GlassSearchableBottomBar;
 import 'shared/glass_search_bar_config.dart';
+import 'shared/tab_bar_accessory_placement.dart';
+import 'shared/tab_bar_collapse_config.dart';
 import 'shared/tab_bar_searchable_controller.dart';
 import '../../src/widgets/surfaces/tab_bar_bottom_layout.dart';
 import '../../src/widgets/surfaces/tab_bar_searchable_layout.dart';
 
 export 'shared/glass_search_bar_config.dart';
 export 'shared/tab_bar_accessory_placement.dart';
-import 'shared/tab_bar_accessory_placement.dart';
+export 'shared/tab_bar_collapse_config.dart';
 
 /// The iOS 26 structural navigation bar widget.
 ///
@@ -108,14 +100,14 @@ enum _GlassTabBarPlacement { bottom, searchable, inline }
 ///
 /// - **[GlassTabBar.bottom]** — floating pill at the screen bottom with safe
 ///   area handling, jelly physics, and optional extra action button.
-///   Replaces the deprecated [GlassBottomBar].
+///   Replaces the legacy `GlassBottomBar`.
 ///
 /// - **[GlassTabBar.searchable]** — bottom pill that morphs into a search bar.
-///   Replaces the deprecated [GlassSearchableBottomBar].
+///   Replaces the legacy `GlassSearchableBottomBar`.
 ///
 /// For in-page / inline tab switching, use [GlassSegmentedControl] instead.
 ///
-/// ## Migration from v0.17.x
+/// ## Migration from v0.x
 ///
 /// ```dart
 /// // BEFORE
@@ -126,15 +118,13 @@ enum _GlassTabBarPlacement { bottom, searchable, inline }
 /// GlassTabBar.bottom(tabs: [...], ...)
 /// GlassTabBar.searchable(tabs: [...], searchConfig: ..., ...)
 /// ```
-///
-/// The old widgets still work — they are zero-logic deprecation shims.
 class GlassTabBar extends StatefulWidget implements PreferredSizeWidget {
   // ─── Bottom constructor ────────────────────────────────────────────────────
 
   /// Creates a floating bottom tab bar — the iOS 26 `UITabBarController` equivalent.
   ///
-  /// This constructor replaces the deprecated [GlassBottomBar] with identical
-  /// parameter names and defaults. Existing [GlassBottomBar] code migrates by
+  /// This constructor replaces `GlassBottomBar` with identical
+  /// parameter names and defaults. Existing `GlassBottomBar` code migrates by
   /// search-replacing `GlassBottomBar(` → `GlassTabBar.bottom(` and
   /// `GlassBottomBarTab(` → `GlassTab(`.
   ///
@@ -157,7 +147,7 @@ class GlassTabBar extends StatefulWidget implements PreferredSizeWidget {
     required ValueChanged<int> onTabSelected,
     Key? key,
     GlassTabBarExtraButton? extraButton,
-    GlassBottomBarCollapseConfig? collapseConfig,
+    GlassTabBarCollapseConfig? collapseConfig,
     ScrollController? scrollController,
     Widget? bottomAccessory,
     bool bottomAccessoryEnabled = true,
@@ -406,7 +396,7 @@ class GlassTabBar extends StatefulWidget implements PreferredSizeWidget {
 
   /// Creates a bottom bar with a morphing search pill.
   ///
-  /// This constructor replaces the deprecated [GlassSearchableBottomBar].
+  /// This constructor replaces the legacy `GlassSearchableBottomBar`.
   /// All parameters are identical to that widget. Migrate by replacing
   /// `GlassSearchableBottomBar(` → `GlassTabBar.searchable(`.
   const GlassTabBar.searchable({
@@ -687,8 +677,6 @@ class GlassTabBar extends StatefulWidget implements PreferredSizeWidget {
   ///   effect. Uses a dual-layer clipping path.
   /// - [MaskingQuality.off]: Simple clipping with no jelly expansion.
   ///   Cheaper on GPU; useful for low-end devices or accessibility modes.
-  ///
-  /// Mirrors the same parameter on [GlassBottomBar] for a consistent API.
   final MaskingQuality maskingQuality;
 
   /// Glass settings for the sliding indicator.
@@ -709,8 +697,8 @@ class GlassTabBar extends StatefulWidget implements PreferredSizeWidget {
   ///
   /// The pill grows by this amount beyond its cell boundary as the user drags,
   /// creating the iOS 26 "jelly" overshoot. Defaults to
-  /// `EdgeInsets.symmetric(horizontal: 12, vertical: 8)` which matches
-  /// [GlassBottomBar] for a consistent look across all indicator widgets.
+  /// `EdgeInsets.symmetric(horizontal: 12, vertical: 8)` for a consistent look
+  /// across all indicator widgets.
   final EdgeInsetsGeometry indicatorExpansion;
 
   /// Optional background key for Skia/Web refraction.
@@ -803,7 +791,7 @@ class GlassTabBar extends StatefulWidget implements PreferredSizeWidget {
   final GlassTabBarExtraButton? extraButton;
 
   /// Optional vertical-swipe collapse behavior for [GlassTabBar.bottom].
-  final GlassBottomBarCollapseConfig? collapseConfig;
+  final GlassTabBarCollapseConfig? collapseConfig;
 
   /// Which physical interaction effects are active. Defaults to [GlassInteractionBehavior.full].
   final GlassInteractionBehavior interactionBehavior;
@@ -1286,7 +1274,7 @@ class GlassSegment {
 /// )
 /// ```
 ///
-/// ## Migration from [GlassBottomBarTab]
+/// ## Migration from `GlassBottomBarTab`
 ///
 /// ```dart
 /// // BEFORE

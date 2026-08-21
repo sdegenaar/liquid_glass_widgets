@@ -410,7 +410,7 @@ class AdaptiveGlass extends StatelessWidget {
       }
       return premiumTracker;
     } else {
-      // Grouped elements (e.g. inside GlassBottomBar) rely on the ancestor's
+      // Grouped elements (e.g. inside GlassTabBar.bottom) rely on the ancestor's
       // LiquidGlassLayer to provide the RepaintBoundary and BackdropGroup.
       // IMPORTANT: Do NOT wrap grouped elements with the shadow Stack — it
       // inserts a widget between the grouped glass and its ancestor blend

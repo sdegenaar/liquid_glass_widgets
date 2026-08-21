@@ -1,6 +1,6 @@
 // ignore_for_file: require_trailing_commas
 // Tests for adaptiveBrightness / onBrightnessChanged / brightnessOverride on
-// GlassBottomBar and GlassSearchableBottomBar, plus the shared
+// GlassTabBar.bottom and GlassTabBar.searchable, plus the shared
 // resolveBarLabelColor helper:
 //   - classic path is untouched (no adaptive machinery in the tree)
 //   - adaptiveBrightness without a scope renders and stays ambient
@@ -34,12 +34,12 @@ class _BrightnessProbe extends StatelessWidget {
   }
 }
 
-List<GlassBottomBarTab> _tabs({Widget? probeIcon}) => [
-      GlassBottomBarTab(
+List<GlassTab> _tabs({Widget? probeIcon}) => [
+      GlassTab(
         label: 'Home',
         icon: probeIcon ?? const Icon(CupertinoIcons.home),
       ),
-      const GlassBottomBarTab(
+      const GlassTab(
         label: 'Music',
         icon: Icon(CupertinoIcons.music_note),
       ),
@@ -53,9 +53,9 @@ Widget _wrapBar(Widget bar) => MaterialApp(
     );
 
 void main() {
-  group('GlassBottomBar — adaptive brightness plumbing', () {
+  group('GlassTabBar.bottom — adaptive brightness plumbing', () {
     testWidgets('classic path mounts no adaptive machinery', (tester) async {
-      await tester.pumpWidget(_wrapBar(GlassBottomBar(
+      await tester.pumpWidget(_wrapBar(GlassTabBar.bottom(
         tabs: _tabs(),
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -66,7 +66,7 @@ void main() {
 
     testWidgets('adaptiveBrightness without a scope stays ambient',
         (tester) async {
-      await tester.pumpWidget(_wrapBar(GlassBottomBar(
+      await tester.pumpWidget(_wrapBar(GlassTabBar.bottom(
         tabs: _tabs(),
         selectedIndex: 0,
         onTabSelected: (_) {},
@@ -85,7 +85,7 @@ void main() {
       Brightness? probePlatform;
       Brightness? probeCupertino;
 
-      await tester.pumpWidget(_wrapBar(GlassBottomBar(
+      await tester.pumpWidget(_wrapBar(GlassTabBar.bottom(
         tabs: _tabs(
           probeIcon: _BrightnessProbe((platform, cupertino) {
             probePlatform = platform;
@@ -127,7 +127,7 @@ void main() {
             ),
             bottomNavigationBar: SizedBox(
               height: 100,
-              child: GlassBottomBar(
+              child: GlassTabBar.bottom(
                 tabs: _tabs(),
                 selectedIndex: 0,
                 onTabSelected: (_) {},
@@ -151,14 +151,14 @@ void main() {
     });
   });
 
-  group('GlassSearchableBottomBar — adaptive brightness plumbing', () {
+  group('GlassTabBar.searchable — adaptive brightness plumbing', () {
     Widget searchableBar({
       ValueListenable<Brightness>? override,
       ValueChanged<Brightness>? onBrightnessChanged,
       bool adaptive = false,
       Widget? probeIcon,
     }) {
-      return _wrapBar(GlassSearchableBottomBar(
+      return _wrapBar(GlassTabBar.searchable(
         tabs: _tabs(probeIcon: probeIcon),
         selectedIndex: 0,
         onTabSelected: (_) {},

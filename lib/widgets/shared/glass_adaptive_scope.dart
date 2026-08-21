@@ -290,8 +290,8 @@ class GlassAdaptiveScopeConfig {
   ///
   /// **Warning for Android**: Forcing this to [GlassQuality.premium] bypasses
   /// the conservative seeding. While `LiquidGlassWidgets.initialize()` protects
-  /// against ANRs by pre-compiling the shaders, if you explicitly disable the
-  /// Impeller warm-up (`warmUpImpellerPipeline: false`), forcing premium on
+  /// against ANRs by pre-compiling the shaders, if you disable warm-up
+  /// (`warmUpMode: GlassWarmUpMode.never`), forcing premium on
   /// frame 1 may cause a severe stutter or ANR on GLES-only Android devices.
   final GlassQuality? initialQuality;
 
@@ -473,8 +473,8 @@ class GlassAdaptiveScope extends StatefulWidget {
   ///
   /// **Warning for Android**: Forcing this to [GlassQuality.premium] bypasses
   /// the conservative seeding. While `LiquidGlassWidgets.initialize()` protects
-  /// against ANRs by pre-compiling the shaders, if you explicitly disable the
-  /// Impeller warm-up (`warmUpImpellerPipeline: false`), forcing premium on
+  /// against ANRs by pre-compiling the shaders, if you disable warm-up
+  /// (`warmUpMode: GlassWarmUpMode.never`), forcing premium on
   /// frame 1 may cause a severe stutter or ANR on GLES-only Android devices.
   final GlassQuality? initialQuality;
 

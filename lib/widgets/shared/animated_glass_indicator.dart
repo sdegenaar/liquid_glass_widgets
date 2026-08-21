@@ -13,7 +13,7 @@ import '../../utils/draggable_indicator_physics.dart';
 import 'glass_effect.dart';
 
 /// A shared component that renders the interactive "Jelly" indicator
-/// used in [GlassTabBar], [GlassSegmentedControl], and [GlassBottomBar].
+/// used in [GlassTabBar] and [GlassSegmentedControl].
 ///
 /// Handles:
 /// - Jelly physics (squash and stretch)
@@ -92,7 +92,7 @@ class AnimatedGlassIndicator extends StatelessWidget {
   /// ```
   final LiquidGlassSettings? settings;
 
-  /// Padding to apply around the indicator (e.g., for GlassBottomBar).
+  /// Padding to apply around the indicator (e.g., for GlassTabBar.bottom).
   final EdgeInsetsGeometry padding;
 
   /// How much to expand the indicator during drag.
@@ -122,8 +122,8 @@ class AnimatedGlassIndicator extends StatelessWidget {
   /// - `0.5` — half the pinch depth
   /// - `0.0` — pinch fully disabled
   ///
-  /// Configure per-bar via [GlassBottomBar.indicatorPinchStrength],
-  /// [GlassTabBar.indicatorPinchStrength], etc.
+  /// Configure per-bar via [GlassTabBar.indicatorPinchStrength],
+  /// [GlassSegmentedControl.indicatorPinchStrength], etc.
   final double pinchStrength;
 
   /// Sigma of the backdrop blur painted behind the RESTING selected pill

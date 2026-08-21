@@ -9,7 +9,7 @@ import '../../utils/accessibility_config.dart' as glass_config;
 //
 //   • Reduce Motion  — MediaQuery.disableAnimationsOf(context)
 //     When true, jelly/spring animations collapse to instant snaps.
-//     Affects: GlassSegmentedControl, GlassTabBar, GlassBottomBar, GlassSwitch,
+//     Affects: GlassSegmentedControl, GlassTabBar, GlassSwitch,
 //              GlassSlider — every widget that uses GlassSpring internally.
 //
 //   • Reduce Transparency — MediaQuery.highContrastOf(context)

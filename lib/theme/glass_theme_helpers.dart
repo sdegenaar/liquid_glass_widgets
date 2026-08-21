@@ -75,7 +75,7 @@ class GlassThemeHelpers {
   /// // A premium widget gets standard. A minimal widget stays minimal.
   /// GlassAdaptiveScope(
   ///   child: Column(children: [
-  ///     GlassBottomBar(quality: GlassQuality.premium),// → standard (capped)
+  ///     GlassTabBar.bottom(quality: GlassQuality.premium),// → standard (capped)
   ///     GlassButton(quality: GlassQuality.minimal),  // → minimal  (not raised)
   ///     GlassButton(),                               // → standard (from fallback, capped)
   ///   ]),
@@ -90,7 +90,7 @@ class GlassThemeHelpers {
   /// GlassAdaptiveScope(
   ///   minQuality: GlassQuality.premium, // floor = premium
   ///   maxQuality: GlassQuality.premium, // ceiling = premium → locked
-  ///   child: GlassBottomBar(quality: GlassQuality.premium),
+  ///   child: GlassTabBar.bottom(quality: GlassQuality.premium),
   /// )
   /// ```
   ///
@@ -125,7 +125,7 @@ class GlassThemeHelpers {
   ///
   /// | Widget class | Default quality | Rationale |
   /// |---|---|---|
-  /// | [GlassBottomBar] | `premium` | Static footer — full quality expected |
+  /// | [GlassTabBar.bottom] | `premium` | Static footer — full quality expected |
   /// | [GlassToolbar] | `premium` | Static surface |
   /// | [GlassTabBar] | `standard` | May be in a scrollable context |
   /// | [GlassButton] | `standard` | Interactive, potentially many on screen |
@@ -148,7 +148,7 @@ class GlassThemeHelpers {
   ///   2. inherited ancestor:       AdaptiveLiquidGlassLayer(quality: ...)
   ///   ── GlassAdaptiveScope ceiling applied to levels 1 & 2 above ──
   ///   3. theme quality:            GlassThemeVariant(quality: GlassQuality.standard)
-  ///   4. widget-class default:     GlassBottomBar → premium, GlassButton → standard
+  ///   4. widget-class default:     GlassTabBar.bottom → premium, GlassButton → standard
   ///   ── GlassAdaptiveScope ceiling applied to levels 3 & 4 above ──
   /// Lowest priority
   /// ```

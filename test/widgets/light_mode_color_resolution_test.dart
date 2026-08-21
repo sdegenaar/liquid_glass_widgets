@@ -354,23 +354,23 @@ void main() {
   });
 
   // ===========================================================================
-  // GlassBottomBar — verify existing brightness resolution still works
+  // GlassTabBar.bottom — verify existing brightness resolution still works
   // ===========================================================================
 
-  group('GlassBottomBar brightness-aware colors', () {
+  group('GlassTabBar.bottom brightness-aware colors', () {
     testWidgets('renders in light mode without error', (tester) async {
       await tester.pumpWidget(
         _buildApp(
           brightness: Brightness.light,
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             selectedIndex: 0,
             onTabSelected: (_) {},
             tabs: const [
-              GlassBottomBarTab(
+              GlassTab(
                 label: 'Home',
                 icon: Icon(CupertinoIcons.house),
               ),
-              GlassBottomBarTab(
+              GlassTab(
                 label: 'Search',
                 icon: Icon(CupertinoIcons.search),
               ),
@@ -380,7 +380,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(GlassBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
       expect(find.text('Home'), findsWidgets);
     });
 
@@ -388,15 +388,15 @@ void main() {
       await tester.pumpWidget(
         _buildApp(
           brightness: Brightness.dark,
-          child: GlassBottomBar(
+          child: GlassTabBar.bottom(
             selectedIndex: 0,
             onTabSelected: (_) {},
             tabs: const [
-              GlassBottomBarTab(
+              GlassTab(
                 label: 'Home',
                 icon: Icon(CupertinoIcons.house),
               ),
-              GlassBottomBarTab(
+              GlassTab(
                 label: 'Search',
                 icon: Icon(CupertinoIcons.search),
               ),
@@ -406,7 +406,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(GlassBottomBar), findsOneWidget);
+      expect(find.byType(GlassTabBar), findsOneWidget);
     });
   });
 

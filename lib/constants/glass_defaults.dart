@@ -49,8 +49,8 @@ class GlassDefaults {
   /// Sentinel radius that produces a perfect capsule (stadium) shape at any
   /// widget height.
   ///
-  /// Internally, interactive widgets such as [GlassSegmentedControl],
-  /// [GlassTabBar], and [GlassBottomBar] detect this value via a
+  /// Internally, interactive widgets such as [GlassSegmentedControl]
+  /// and [GlassTabBar] detect this value via a
   /// `>= capsuleRadius` guard and pass it straight through to the glass shader
   /// without subtracting the indicator padding inset. This guarantees a
   /// true circular pill even during jelly-bloom expansion, where the physics
@@ -58,7 +58,7 @@ class GlassDefaults {
   ///
   /// Use this constant instead of a raw `9999` literal:
   /// ```dart
-  /// GlassBottomBar(
+  /// GlassTabBar.bottom(
   ///   barBorderRadius: GlassDefaults.capsuleRadius, // true capsule
   /// )
   /// ```

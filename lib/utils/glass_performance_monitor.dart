@@ -209,7 +209,7 @@ class GlassPerformanceMonitor {
             '     → BackdropFilter only, zero custom shader cost\n'
             '  3. Set GlassThemeVariant(quality: GlassQuality.standard) globally\n'
             '     → All widgets default to standard unless explicitly overridden\n'
-            '  4. On GlassBottomBar: maskingQuality: MaskingQuality.off\n'
+            '  4. On GlassTabBar.bottom: maskingQuality: MaskingQuality.off\n'
             '     → Disables dual-layer rendering (biggest single win on old GPUs)\n'
             '\n'
             'This warning only appears in debug/profile builds.\n'

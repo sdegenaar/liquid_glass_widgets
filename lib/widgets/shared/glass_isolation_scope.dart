@@ -34,7 +34,7 @@ import '../../types/glass_quality.dart';
 ///   → body cards → join page blend group (grouped)
 ///   → GlassIsolationScope(isolated: true, defaultQuality: premium) ← bar
 ///     → GlassButton in app bar → uses own layer ✅
-///     → GlassSearchableBottomBar (provides its own isolated: false scope)
+///     → GlassTabBar.searchable (provides its own isolated: false scope)
 ///       → BottomBarExtraBtn → joins bottom bar blend group ✅
 /// ```
 ///
