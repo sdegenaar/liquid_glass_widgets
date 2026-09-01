@@ -2,6 +2,8 @@
 
 ## Bug Fixes
 
+- **Deterministic color overlay when `blur: 0` (#269):** When `blur: 0` is passed on standard/minimal quality, the surface routes to `_FrostedFallback` to render a pixel-accurate `glassColor` overlay without shader luminance normalization, ambient tinting, or color shifting. Premium quality remains on the full 3D shader pipeline to preserve optical refraction and specular rims.
+
 - **Inline bottom accessory reaches the trailing edge without a trailing button (#264):** On `GlassTabBar.minimizable`, a minimized bar with a bottom accessory and no trailing button left a dead gap on the trailing edge — the accessory geometry reserved space for the trailing pill regardless of whether one was present. The accessory now extends flush to the horizontal padding when no trailing button is configured, and still clears the pill when one is.
 
 Thanks to [@eomgerm](https://github.com/eomgerm) for the fix (#265).

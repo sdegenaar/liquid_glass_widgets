@@ -197,10 +197,15 @@ class AdaptiveGlass extends StatelessWidget {
     // BackdropFilter samples the composited map. The premium/standard shaders
     // read a captured backdrop that EXCLUDES the platform view (see
     // canUsePremiumShader below), so they render inert there — the frost is the
-    // one tier that actually blurs over a PlatformView. This finally delivers
-    // the "live BackdropFilter path" the canUsePremiumShader comment promises.
+    // blur == 0 on non-premium: When a user explicitly configures blur: 0,
+    // they want a clean, deterministic color overlay over an unblurred
+    // backdrop (#269). Routing to _FrostedFallback avoids shader luminance
+    // normalization and color shifting. Premium quality is exempt so its
+    // full 3D refraction and specular rim remain intact.
     // --------------------------------------------------------------------------
-    if (quality == GlassQuality.minimal || platformViewBackdrop) {
+    if (quality == GlassQuality.minimal ||
+        platformViewBackdrop ||
+        (baseSettings.blur == 0 && quality != GlassQuality.premium)) {
       return _wrapWithDecorations(
         context,
         baseSettings,

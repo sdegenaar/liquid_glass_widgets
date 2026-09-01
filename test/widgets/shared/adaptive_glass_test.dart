@@ -45,6 +45,25 @@ void main() {
       expect(find.text('std'), findsOneWidget);
     });
 
+    testWidgets('blur: 0 on standard quality routes to frosted fallback for deterministic color (#269)', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: const AdaptiveGlass(
+            shape: _shape,
+            settings: LiquidGlassSettings(
+              blur: 0,
+              glassColor: Color(0xD9C3E0F5),
+            ),
+            quality: GlassQuality.standard,
+            child: Text('blurZero'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('blurZero'), findsOneWidget);
+      expect(find.byType(BackdropFilter), findsNothing);
+    });
+
     testWidgets('respects clipExpansion parameter', (tester) async {
       await tester.pumpWidget(
         createTestApp(
