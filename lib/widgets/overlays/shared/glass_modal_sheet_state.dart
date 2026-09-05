@@ -71,7 +71,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     _geometry = _buildGeometry();
 
     _animationController = AnimationController.unbounded(vsync: this);
-    _animationController.addListener(_progressNotifier.notify);
+    _animationController.addListener(_onPositionTick);
     _saturationController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
@@ -124,7 +124,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     widget.controller?._detach(this);
-    _animationController.removeListener(_progressNotifier.notify);
+    _animationController.removeListener(_onPositionTick);
     _animationController.dispose();
     _progressNotifier.dispose();
     _saturationController.dispose();
@@ -248,6 +248,17 @@ class _GlassModalSheetState extends State<GlassModalSheet>
         _scrollController.jumpTo(0);
       }
     }
+  }
+
+  /// Every position change, drag and animation alike. Brings
+  /// [_currentPosition] — what the controller's `value` and `progress`
+  /// report — up to date BEFORE the progress listeners run. It used to be
+  /// written only in build, so a listener always read the position of the
+  /// previous frame, and the last tick of a drag never showed where the
+  /// sheet actually stopped.
+  void _onPositionTick() {
+    _currentPosition = _animationController.value;
+    _progressNotifier.notify();
   }
 
   void _jumpTo(double value) {
@@ -390,6 +401,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       return;
     }
 
+    final phaseBefore = _gestureArena.phase;
     final shouldClaim = _gestureArena.evaluateMove(
       event.position.dy,
       event.position.dx,
@@ -400,6 +412,19 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       canScrollListUp: _canScrollListUp,
       atTopDetent: _contentScrollProgress > _kTopDetentThreshold,
     );
+
+    if (!shouldClaim &&
+        phaseBefore == GesturePhase.contentDrag &&
+        _gestureArena.phase == GesturePhase.scrolling) {
+      // The sheet just handed this drag to its content. That happens at the
+      // top-detent THRESHOLD — up to (1 - _kTopDetentThreshold) of the
+      // travel short of the detent itself — and this pointer's up will see
+      // a scroll, not a drag, so nothing else would ever finish the trip.
+      // Snap the remainder now: the sheet arrives as the content starts to
+      // scroll, with the state callback and haptic an arrival deserves,
+      // instead of parking a few points shy of the top with no callback.
+      _snapToState(_geometry.maxState);
+    }
 
     if (shouldClaim) {
       if (_animationController.isAnimating) {

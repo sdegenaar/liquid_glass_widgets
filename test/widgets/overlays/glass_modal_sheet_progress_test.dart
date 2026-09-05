@@ -51,6 +51,25 @@ void main() {
       expect(controller.progress, 1.0);
     });
 
+    testWidgets('progress is current inside its own listener', (tester) async {
+      // A listener runs before the sheet rebuilds. It must still read the
+      // position the sheet is moving to, not the one it last built at —
+      // otherwise the final tick of any drag reports a frame too early.
+      final controller = GlassModalSheetController();
+      await tester.pumpWidget(_sheetApp(controller));
+      await tester.pumpAndSettle();
+
+      double? seen;
+      void listener() => seen = controller.progress;
+      controller.progressListenable!.addListener(listener);
+      addTearDown(() => controller.progressListenable?.removeListener(listener));
+
+      controller.snapToState(GlassSheetState.full, animate: false);
+      expect(seen, 1.0, reason: 'the jump to full should read as 1.0 at once');
+      await tester.pumpAndSettle();
+      expect(controller.progress, 1.0);
+    });
+
     testWidgets('snap back to half → progress returns to 0.0', (tester) async {
       final controller = GlassModalSheetController();
       await tester.pumpWidget(_sheetApp(controller));
