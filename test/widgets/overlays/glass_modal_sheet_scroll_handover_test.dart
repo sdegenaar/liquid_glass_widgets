@@ -48,6 +48,7 @@ void main() {
     bool ownController = false,
     bool withCarousel = false,
     ScrollController? contentController,
+    ValueChanged<GlassSheetState>? onStateChanged,
   }) {
     return createTestApp(
       child: Stack(
@@ -56,6 +57,7 @@ void main() {
             controller: controller,
             detents: detents,
             initialState: initialState,
+            onStateChanged: onStateChanged,
             child: Builder(
               builder: (context) {
                 final scroll = ScrollControllerProvider.of(context);
@@ -112,6 +114,38 @@ void main() {
     await gesture.up();
     await tester.pumpAndSettle();
     expect(controller.currentState, GlassSheetState.full);
+  });
+
+  testWidgets('the handover finishes the sheet\'s travel before the finger lifts',
+      (tester) async {
+    final states = <GlassSheetState>[];
+    final controller = GlassModalSheetController();
+    await tester.pumpWidget(
+      buildSheet(controller: controller, onStateChanged: states.add),
+    );
+    await tester.pumpAndSettle();
+
+    final gesture = await tester.startGesture(const Offset(400, 450));
+    await tester.pump(const Duration(milliseconds: 16));
+    await dragBy(tester, gesture, -540);
+    expect(contentPixels(tester), greaterThan(0.0),
+        reason: 'the drag should have been handed to the content');
+
+    // The handover happens at the top-detent THRESHOLD, short of the detent
+    // itself, and this pointer's up will see a scroll rather than a drag —
+    // so the sheet must finish the trip on its own, while the finger is
+    // still down: it arrives at full, and says so, as the content starts to
+    // scroll rather than when the finger eventually lifts.
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(controller.progress, 1.0,
+        reason: 'the sheet should complete its travel to the top detent');
+    expect(states, contains(GlassSheetState.full),
+        reason: 'arriving at full via the handover must be reported');
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(controller.currentState, GlassSheetState.full);
+    expect(controller.progress, 1.0);
   });
 
   testWidgets('scrolls content back to its top before collapsing',
