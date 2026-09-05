@@ -217,6 +217,15 @@ class GlassModalSheet extends StatefulWidget {
   /// too subtle relative to the rest of the sheet's content.
   final double dragIndicatorWidth;
 
+  /// Thickness of the drag handle pill in logical pixels. Defaults to 4.
+  /// Apple's sheets draw theirs 5pt thick.
+  final double dragIndicatorHeight;
+
+  /// Gap between the sheet's top edge and the drag handle pill, in logical
+  /// pixels. Defaults to 8. Apple's sheets sit theirs about 5pt down, which
+  /// also leaves more room between the pill and a header row beneath it.
+  final double dragIndicatorTopPadding;
+
   /// Whether to enable a gradient fade effect at the top of the sheet.
   final bool enableTopFade;
 
@@ -265,6 +274,8 @@ class GlassModalSheet extends StatefulWidget {
     this.showDragIndicator = true,
     this.dragIndicatorColor,
     this.dragIndicatorWidth = 36,
+    this.dragIndicatorHeight = 4,
+    this.dragIndicatorTopPadding = 8,
     this.glowColor,
     this.glowRadius = 1.5,
     this.suppressInteractionOnChildren = false,
@@ -371,6 +382,8 @@ class GlassModalSheet extends StatefulWidget {
     bool showDragIndicator = true,
     Color? dragIndicatorColor,
     double dragIndicatorWidth = 36,
+    double dragIndicatorHeight = 4,
+    double dragIndicatorTopPadding = 8,
     double? topBorderRadius = 56,
     double? bottomBorderRadius,
     double? fullTopBorderRadius = 46,
@@ -499,6 +512,8 @@ class GlassModalSheet extends StatefulWidget {
           showDragIndicator: showDragIndicator,
           dragIndicatorColor: dragIndicatorColor,
           dragIndicatorWidth: dragIndicatorWidth,
+          dragIndicatorHeight: dragIndicatorHeight,
+          dragIndicatorTopPadding: dragIndicatorTopPadding,
           topBorderRadius: topBorderRadius,
           bottomBorderRadius: bottomBorderRadius,
           fullTopBorderRadius: fullTopBorderRadius,
