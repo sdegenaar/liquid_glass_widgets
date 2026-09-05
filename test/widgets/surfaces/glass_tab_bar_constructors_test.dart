@@ -557,6 +557,25 @@ void main() {
 
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('forwards backgroundQuality to TabBarBottomLayout',
+        (tester) async {
+      await tester.pumpWidget(_wrap(_box(
+        GlassTabBar.inline(
+          tabs: [_tab('A'), _tab('B')],
+          selectedIndex: 0,
+          onTabSelected: (_) {},
+          quality: GlassQuality.premium,
+          backgroundQuality: GlassQuality.minimal,
+        ),
+      )));
+      await tester.pump();
+
+      final layout = tester.widget<TabBarBottomLayout>(
+        find.byType(TabBarBottomLayout),
+      );
+      expect(layout.backgroundQuality, equals(GlassQuality.minimal));
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -701,6 +720,29 @@ void main() {
       await tester.pump();
 
       expect(find.text('A'), findsWidgets);
+    });
+
+    testWidgets('forwards backgroundQuality to TabBarSearchableLayout',
+        (tester) async {
+      await tester.pumpWidget(_wrap(
+        SizedBox(
+          height: 150,
+          child: GlassTabBar.searchable(
+            tabs: [_tab('A'), _tab('B')],
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            searchConfig: searchConfig,
+            quality: GlassQuality.premium,
+            backgroundQuality: GlassQuality.minimal,
+          ),
+        ),
+      ));
+      await tester.pump();
+
+      final layout = tester.widget<TabBarSearchableLayout>(
+        find.byType(TabBarSearchableLayout),
+      );
+      expect(layout.backgroundQuality, equals(GlassQuality.minimal));
     });
   });
 

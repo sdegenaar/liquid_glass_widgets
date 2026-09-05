@@ -24,6 +24,25 @@ void main() {
       expect(find.byType(LightweightLiquidGlass), findsOneWidget);
     });
 
+    testWidgets('renders cleanly with bodyMode: GlassBodyMode.clear',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: LightweightLiquidGlass(
+            shape: const LiquidRoundedSuperellipse(borderRadius: 16),
+            settings: const LiquidGlassSettings(
+              bodyMode: GlassBodyMode.clear,
+              blur: 0,
+              glassColor: Color(0xD9C3E0F5),
+            ),
+            child: const Text('clear body mode'),
+          ),
+        ),
+      );
+      expect(find.byType(LightweightLiquidGlass), findsOneWidget);
+      expect(find.text('clear body mode'), findsOneWidget);
+    });
+
     testWidgets('inLayer constructor inherits settings from ancestor',
         (tester) async {
       await tester.pumpWidget(

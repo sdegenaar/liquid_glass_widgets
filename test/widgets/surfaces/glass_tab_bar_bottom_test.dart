@@ -295,6 +295,120 @@ void main() {
       );
       expect(button.iconColor, Colors.red);
     });
+
+    test('GlassTabBarExtraButton.menu constructor sets properties correctly', () {
+      final button = GlassTabBarExtraButton.menu(
+        icon: const Icon(CupertinoIcons.ellipsis),
+        label: 'More',
+        size: 72,
+        placement: GlassExtraButtonPlacement.left,
+        menuWidth: 220,
+        menuAlignment: GlassMenuAlignment.topRight,
+        menuItems: [
+          GlassMenuItem(
+            icon: const Icon(CupertinoIcons.share),
+            title: 'Share',
+            onTap: () {},
+          ),
+        ],
+      );
+
+      expect(button.isMenu, isTrue);
+      expect(button.label, 'More');
+      expect(button.enabled, isTrue);
+      expect(button.size, 72);
+      expect(button.placement, GlassExtraButtonPlacement.left);
+      expect(button.menuWidth, 220);
+      expect(button.menuAlignment, GlassMenuAlignment.topRight);
+      expect(button.menuItems?.length, 1);
+    });
+
+    testWidgets(
+        'tapping extraButton in menu mode opens GlassMenu in GlassTabBar.bottom',
+        (tester) async {
+      var itemTapped = false;
+      const tabs = [
+        GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+        GlassTab(label: 'Profile', icon: Icon(CupertinoIcons.person)),
+      ];
+
+      final menuButton = GlassTabBarExtraButton.menu(
+        icon: const Icon(CupertinoIcons.ellipsis),
+        label: 'Options',
+        menuItems: [
+          GlassMenuItem(
+            icon: const Icon(CupertinoIcons.share),
+            title: 'Share Action',
+            onTap: () => itemTapped = true,
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassTabBar.bottom(
+            tabs: tabs,
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            maskingQuality: MaskingQuality.off,
+            extraButton: menuButton,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Share Action'), findsNothing);
+
+      await tester.tap(find.byIcon(CupertinoIcons.ellipsis));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Share Action'), findsOneWidget);
+
+      await tester.tap(find.text('Share Action'));
+      await tester.pumpAndSettle();
+
+      expect(itemTapped, isTrue);
+      expect(find.text('Share Action'), findsNothing);
+    });
+
+    testWidgets('disabled extraButton in menu mode does not open menu on tap',
+        (tester) async {
+      const tabs = [
+        GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+        GlassTab(label: 'Profile', icon: Icon(CupertinoIcons.person)),
+      ];
+
+      final menuButton = GlassTabBarExtraButton.menu(
+        icon: const Icon(CupertinoIcons.ellipsis),
+        label: 'Options',
+        enabled: false,
+        menuItems: [
+          GlassMenuItem(
+            icon: const Icon(CupertinoIcons.share),
+            title: 'Share Action',
+            onTap: () {},
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassTabBar.bottom(
+            tabs: tabs,
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            maskingQuality: MaskingQuality.off,
+            extraButton: menuButton,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(CupertinoIcons.ellipsis));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Share Action'), findsNothing);
+    });
   });
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -1153,6 +1267,71 @@ void main() {
       final indicator = tester.widget<AnimatedGlassIndicator>(
           find.byType(AnimatedGlassIndicator).first);
       expect(indicator.borderRadius, equals(10.0));
+    });
+
+    group('backgroundQuality', () {
+      testWidgets(
+          'propagates backgroundQuality to track AdaptiveGlass and preserves quality on indicator',
+          (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassTabBar.bottom(
+              tabs: const [
+                GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
+                GlassTab(label: 'B', icon: Icon(CupertinoIcons.search)),
+              ],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              quality: GlassQuality.premium,
+              backgroundQuality: GlassQuality.minimal,
+            ),
+          ),
+        );
+
+        final bar = tester.widget<GlassTabBar>(find.byType(GlassTabBar));
+        expect(bar.backgroundQuality, equals(GlassQuality.minimal));
+        expect(bar.quality, equals(GlassQuality.premium));
+
+        final indicator = tester.widget<AnimatedGlassIndicator>(
+            find.byType(AnimatedGlassIndicator).first);
+        expect(indicator.quality, equals(GlassQuality.premium));
+
+        final adaptiveGlasses =
+            tester.widgetList<AdaptiveGlass>(find.byType(AdaptiveGlass));
+        expect(
+            adaptiveGlasses.any((g) => g.quality == GlassQuality.minimal), isTrue);
+      });
+
+      testWidgets('inherits from quality when backgroundQuality is null',
+          (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassTabBar.bottom(
+              tabs: const [
+                GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
+                GlassTab(label: 'B', icon: Icon(CupertinoIcons.search)),
+              ],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              quality: GlassQuality.standard,
+            ),
+          ),
+        );
+
+        final bar = tester.widget<GlassTabBar>(find.byType(GlassTabBar));
+        expect(bar.backgroundQuality, isNull);
+        expect(bar.quality, equals(GlassQuality.standard));
+
+        final indicator = tester.widget<AnimatedGlassIndicator>(
+            find.byType(AnimatedGlassIndicator).first);
+        expect(indicator.quality, equals(GlassQuality.standard));
+
+        final adaptiveGlasses =
+            tester.widgetList<AdaptiveGlass>(find.byType(AdaptiveGlass));
+        expect(
+            adaptiveGlasses.every((g) => g.quality == GlassQuality.standard),
+            isTrue);
+      });
     });
   });
 }

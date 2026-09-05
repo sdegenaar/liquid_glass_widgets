@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../../interactive/glass_button.dart';
+import '../../overlays/glass_menu.dart' show GlassMenuAlignment;
 
 // =============================================================================
 // Extra Button Configuration
@@ -43,6 +44,8 @@ enum GlassExtraButtonPlacement {
 /// The extra button is rendered as a [GlassButton] and typically used for
 /// primary actions like creating new content.
 class GlassTabBarExtraButton {
+  static void _noOp() {}
+
   /// Creates an extra button configuration.
   const GlassTabBarExtraButton({
     required this.icon,
@@ -53,7 +56,35 @@ class GlassTabBarExtraButton {
     this.placement = GlassExtraButtonPlacement.right,
     this.position = GlassExtraButtonPosition.beforeSearch,
     this.collapseOnSearchFocus = true,
-  });
+    this.enabled = true,
+  })  : menuItems = null,
+        menuAlignment = null,
+        menuWidth = 200;
+
+  /// Opens a [GlassMenu] pull-down when the extra button is tapped.
+  ///
+  /// The button morphs into the menu — the same liquid-spring behavior
+  /// as [GlassButtonGroupItem.menu] and [GlassBarItem.menu]. Equivalent to
+  /// a `UIBarButtonItem(image:menu:)` placed in a toolbar or tab bar.
+  ///
+  /// [menuItems] accepts [GlassMenuItem] and [GlassMenuDivider] widgets —
+  /// the same contract as [GlassMenu.items].
+  ///
+  /// [menuAlignment] defaults to auto-detection, which for a bottom-of-screen
+  /// button always expands upward.
+  const GlassTabBarExtraButton.menu({
+    required this.icon,
+    required List<Widget> this.menuItems,
+    required this.label,
+    this.iconColor,
+    this.size = 64,
+    this.placement = GlassExtraButtonPlacement.right,
+    this.position = GlassExtraButtonPosition.beforeSearch,
+    this.collapseOnSearchFocus = true,
+    this.enabled = true,
+    this.menuAlignment,
+    this.menuWidth = 200,
+  })  : onTap = _noOp;
 
   /// Icon widget displayed in the button.
   final Widget icon;
@@ -104,4 +135,30 @@ class GlassTabBarExtraButton {
   /// the search input. Use this for buttons with contextual relevance during
   /// active search (e.g. a "Filter" action that applies to search results).
   final bool collapseOnSearchFocus;
+
+  /// Whether the button is interactive.
+  ///
+  /// When false, the button does not respond to taps. Defaults to true.
+  final bool enabled;
+
+  /// When non-null, tapping this button opens a [GlassMenu] pull-down.
+  ///
+  /// Accepts [GlassMenuItem] and [GlassMenuDivider] widgets. Set via
+  /// [GlassTabBarExtraButton.menu].
+  final List<Widget>? menuItems;
+
+  /// Controls where the menu expands relative to the trigger button.
+  ///
+  /// Defaults to auto-detection (upward for bottom-bar placement). Set via
+  /// [GlassTabBarExtraButton.menu].
+  final GlassMenuAlignment? menuAlignment;
+
+  /// Width of the expanded menu panel in logical pixels.
+  ///
+  /// Defaults to 200. Set via [GlassTabBarExtraButton.menu].
+  final double menuWidth;
+
+  /// Whether this button opens a menu rather than firing a tap callback.
+  bool get isMenu => menuItems != null;
 }
+

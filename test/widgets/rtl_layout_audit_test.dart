@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -269,6 +268,67 @@ void main() {
         greaterThan(barCenter),
         reason:
             'RTL centerTitle:false — title centre must be right of bar centre',
+      );
+    });
+
+    testWidgets(
+        'centerTitle:false — title aligns to right padding without leading (RTL regression #282)',
+        (tester) async {
+      const double horizontalPadding = 16.0;
+
+      await tester.pumpWidget(
+        _rtlBare(
+          const Scaffold(
+            appBar: GlassAppBar(
+              title: Text('Title'),
+              centerTitle: false,
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+            ),
+          ),
+        ),
+      );
+
+      final appBarBox =
+          tester.renderObject<RenderBox>(find.byType(GlassAppBar));
+      final titleRight = tester.getTopRight(find.text('Title')).dx;
+
+      // In RTL with no leading, title's right edge should be at barWidth - horizontalPadding
+      expect(
+        titleRight,
+        appBarBox.size.width - horizontalPadding,
+        reason: 'RTL title should align to right padding without extra gap',
+      );
+    });
+
+    testWidgets(
+        'centerTitle:false — title places 8px to the left of leading without overlapping (RTL)',
+        (tester) async {
+      const double horizontalPadding = 16.0;
+      const double leadingWidth = 44.0;
+
+      await tester.pumpWidget(
+        _rtlBare(
+          const Scaffold(
+            appBar: GlassAppBar(
+              title: Text('Title'),
+              centerTitle: false,
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              leading: SizedBox(width: leadingWidth, height: 44),
+            ),
+          ),
+        ),
+      );
+
+      final appBarBox =
+          tester.renderObject<RenderBox>(find.byType(GlassAppBar));
+      final titleRight = tester.getTopRight(find.text('Title')).dx;
+
+      // Leading occupies [width - padding - 44, width - padding]
+      // Title right edge must be width - padding - leadingWidth - 8.0
+      expect(
+        titleRight,
+        appBarBox.size.width - horizontalPadding - leadingWidth - 8.0,
+        reason: 'RTL title should have an 8px gap to the left of leading',
       );
     });
   });

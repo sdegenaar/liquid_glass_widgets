@@ -791,4 +791,186 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('EarlyItem'), findsOneWidget);
   });
+
+  // ── Route-aware dismissal tests (#274) ────────────────────────────────────
+  testWidgets(
+      'GlassMenu dismisses instantly on route navigation without overlapping destination (#274)',
+      (tester) async {
+    bool closedCalled = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: GlassMenu(
+                onClose: () => closedCalled = true,
+                trigger: const SizedBox(
+                  width: 80,
+                  height: 40,
+                  child: Text('Open Menu'),
+                ),
+                items: [
+                  GlassMenuItem(
+                    title: 'Navigate Item',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const Scaffold(
+                            body: Center(child: Text('Page 2')),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Open the menu
+    await tester.tap(find.text('Open Menu'));
+    await tester.pumpAndSettle();
+    expect(find.text('Navigate Item'), findsOneWidget);
+    expect(closedCalled, isFalse);
+
+    // Tap navigate item
+    await tester.tap(find.text('Navigate Item'));
+
+    // Advance into the route transition
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    // Mid-transition into the new route, the menu must already be dismissed.
+    // It should not linger in the root overlay over the incoming page.
+    expect(find.text('Navigate Item'), findsNothing);
+    expect(find.text('Page 2'), findsOneWidget);
+    expect(closedCalled, isTrue);
+
+    // Complete the transition
+    await tester.pumpAndSettle();
+    expect(find.text('Page 2'), findsOneWidget);
+    expect(find.text('Navigate Item'), findsNothing);
+
+    // Pop back to Page 1
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+    navigator.pop();
+    await tester.pumpAndSettle();
+
+    // Back on Page 1: trigger is visible and menu is closed
+    expect(find.text('Open Menu'), findsOneWidget);
+    expect(find.text('Navigate Item'), findsNothing);
+
+    // Menu can be reopened cleanly
+    await tester.tap(find.text('Open Menu'));
+    await tester.pumpAndSettle();
+    expect(find.text('Navigate Item'), findsOneWidget);
+  });
+
+  testWidgets(
+      'GlassMenu dismisses instantly when route is pushed externally while open',
+      (tester) async {
+    late BuildContext homeContext;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) {
+            homeContext = context;
+            return Scaffold(
+              body: Center(
+                child: GlassMenu(
+                  trigger: const Text('Open Menu'),
+                  items: [
+                    GlassMenuItem(
+                      title: 'Option',
+                      onTap: () {},
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open Menu'));
+    await tester.pumpAndSettle();
+    expect(find.text('Option'), findsOneWidget);
+
+    // Push an external route
+    Navigator.of(homeContext).push(
+      MaterialPageRoute(
+        builder: (_) => const Scaffold(
+          body: Center(child: Text('External Route')),
+        ),
+      ),
+    );
+
+    // Advance into transition
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('Option'), findsNothing);
+    expect(find.text('External Route'), findsOneWidget);
+
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets(
+      'GlassMenu dismisses instantly when containing route is popped while open',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => Scaffold(
+                      appBar: AppBar(title: const Text('Second Route')),
+                      body: Center(
+                        child: GlassMenu(
+                          trigger: const Text('Open SubMenu'),
+                          items: [
+                            GlassMenuItem(
+                              title: 'Sub Option',
+                              onTap: () {},
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Go to Second'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Go to Second'));
+    await tester.pumpAndSettle();
+    expect(find.text('Second Route'), findsOneWidget);
+
+    // Open menu on second route
+    await tester.tap(find.text('Open SubMenu'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sub Option'), findsOneWidget);
+
+    // Pop the containing route
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+    navigator.pop();
+
+    // First frame of pop
+    await tester.pump();
+    expect(find.text('Sub Option'), findsNothing);
+
+    await tester.pumpAndSettle();
+    expect(find.text('Go to Second'), findsOneWidget);
+  });
 }

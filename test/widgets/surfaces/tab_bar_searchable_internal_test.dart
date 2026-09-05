@@ -234,6 +234,42 @@ void main() {
       expect(find.byType(SearchableTabIndicator), findsOneWidget);
     });
 
+    testWidgets('propagates backgroundQuality to track AdaptiveGlass.grouped',
+        (tester) async {
+      await tester.pumpWidget(_wrap(
+        SearchableTabIndicator(
+          tabIndex: 0,
+          tabCount: 3,
+          visible: true,
+          childUnselected: const SizedBox(),
+          selectedTabBuilder: (_, __, ___) => const SizedBox.shrink(),
+          onTabChanged: (_) {},
+          quality: GlassQuality.standard,
+          backgroundQuality: GlassQuality.minimal,
+          barHeight: 64,
+          barBorderRadius: 20,
+          tabPadding: EdgeInsets.zero,
+          magnification: 1.0,
+          innerBlur: 0,
+          maskingQuality: MaskingQuality.off,
+          isSearchActive: false,
+          onDismissSearch: () {},
+          enableBackgroundAnimation: true,
+          backgroundPressScale: 1.06,
+        ),
+      ));
+      await tester.pump();
+
+      final indicator = tester.widget<SearchableTabIndicator>(
+          find.byType(SearchableTabIndicator));
+      expect(indicator.quality, equals(GlassQuality.standard));
+      expect(indicator.backgroundQuality, equals(GlassQuality.minimal));
+
+      final glasses =
+          tester.widgetList<AdaptiveGlass>(find.byType(AdaptiveGlass));
+      expect(glasses.any((g) => g.quality == GlassQuality.minimal), isTrue);
+    });
+
     testWidgets('horizontal drag updates alignment and calls onTabChanged',
         (tester) async {
       final changedIndices = <int>[];

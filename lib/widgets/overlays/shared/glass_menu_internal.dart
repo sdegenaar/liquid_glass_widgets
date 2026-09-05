@@ -109,8 +109,12 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     widget.controller?._attach(this);
   }
 
+  ModalRoute<dynamic>? _route;
+
   @override
   void dispose() {
+    _removeRouteListeners();
+    _route = null;
     widget.controller?._detach(this);
     _morphController.dispose();
     _scrollController.dispose();
@@ -128,6 +132,81 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     _morphController.setDisableAnimations(
       MediaQuery.of(context).disableAnimations,
     );
+    _updateRouteListener();
+  }
+
+  void _updateRouteListener() {
+    final currentRoute = ModalRoute.of(context);
+    if (_route != currentRoute) {
+      _removeRouteListeners();
+      _route = currentRoute;
+      _addRouteListeners();
+    }
+  }
+
+  void _addRouteListeners() {
+    final route = _route;
+    if (route == null) return;
+    route.secondaryAnimation?.addListener(_handleSecondaryAnimation);
+    route.secondaryAnimation?.addStatusListener(_handleSecondaryAnimationStatus);
+    route.animation?.addStatusListener(_handlePrimaryAnimationStatus);
+  }
+
+  void _removeRouteListeners() {
+    final route = _route;
+    if (route == null) return;
+    route.secondaryAnimation?.removeListener(_handleSecondaryAnimation);
+    route.secondaryAnimation?.removeStatusListener(_handleSecondaryAnimationStatus);
+    route.animation?.removeStatusListener(_handlePrimaryAnimationStatus);
+  }
+
+  void _handleSecondaryAnimation() {
+    if (!_overlayController.isShowing) return;
+    final anim = _route?.secondaryAnimation;
+    if (anim == null) return;
+    if (anim.status == AnimationStatus.forward ||
+        anim.status == AnimationStatus.completed ||
+        (anim.value > 0.0 && anim.status != AnimationStatus.reverse)) {
+      _dismissImmediately();
+    }
+  }
+
+  void _handleSecondaryAnimationStatus(AnimationStatus status) {
+    if (!_overlayController.isShowing) return;
+    if (status == AnimationStatus.forward ||
+        status == AnimationStatus.completed) {
+      _dismissImmediately();
+    }
+  }
+
+  void _handlePrimaryAnimationStatus(AnimationStatus status) {
+    if (!_overlayController.isShowing) return;
+    if (status == AnimationStatus.reverse) {
+      _dismissImmediately();
+    }
+  }
+
+  void _dismissImmediately() {
+    if (!_overlayController.isShowing && _morphController.value == 0.0) {
+      return;
+    }
+    final wasClosing = _morphController.isClosing;
+    _overlayController.hide();
+    _morphController.reset();
+    _horizontalOffset = 0.0;
+    _verticalOffset = 0.0;
+    _hoveredIndex = null;
+    _hoveredIndexNotifier.value = null;
+    _isDragging = false;
+    _isDraggingNotifier.value = false;
+    _hasStretched = false;
+    _followOffset = Offset.zero;
+    if (!wasClosing) {
+      widget.onClose?.call();
+    }
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -330,6 +409,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   }
 
   void _closeMenu() {
+    if (!_overlayController.isShowing) return;
     setState(() {
       _hoveredIndex = null;
       _isDragging = false;

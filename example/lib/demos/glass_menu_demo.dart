@@ -110,6 +110,17 @@ class _MenuDemoPageState extends State<MenuDemoPage> {
   List<Widget> get _items => [
         // Section label — tests theme color inheritance
         const GlassMenuLabel(title: 'Actions'),
+        GlassMenuItem(
+          title: 'Navigate to Page',
+          icon: const Icon(CupertinoIcons.arrow_right_circle_fill),
+          onTap: () {
+            Navigator.of(context).push(
+              CupertinoPageRoute<void>(
+                builder: (_) => const _SampleDestinationPage(),
+              ),
+            );
+          },
+        ),
         ...List.generate(
           _itemCount,
           (i) => GlassMenuItem(
@@ -422,6 +433,52 @@ class _Trigger extends StatelessWidget {
                 letterSpacing: -0.2,
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SampleDestinationPage extends StatelessWidget {
+  const _SampleDestinationPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoPageScaffold(
+      navigationBar: const CupertinoNavigationBar(
+        middle: Text('Destination Page'),
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                CupertinoIcons.checkmark_seal_fill,
+                color: CupertinoColors.activeGreen,
+                size: 56,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Route Transition Test',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'The menu dismissed instantly on frame 0 of the transition without overlapping this page.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: CupertinoTheme.of(context)
+                      .textTheme
+                      .textStyle
+                      .color
+                      ?.withValues(alpha: 0.7),
+                  fontSize: 14,
+                ),
+              ),
+            ],
           ),
         ),
       ),

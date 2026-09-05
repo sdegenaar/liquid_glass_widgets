@@ -35,6 +35,9 @@ uniform float uEdgeAbsorption;
 // 33: uFresnelStrength — scales the grazing-angle Fresnel rim brightening [0..∞].
 // Default 1.0 = calibrated iOS 26 baseline. 0.0 = no rim highlight.
 uniform float uFresnelStrength;
+// 34: uBodyMode — 0.0 = adaptive (default, iOS 26 Glass.regular), 1.0 = clear (iOS 26 Glass.clear).
+// In clear mode, luminance normalization is bypassed for direct alpha compositing.
+uniform float uBodyMode;
 
 uniform sampler2D uBackground; // The captured background texture
 // Slot 22 (uData5.z): specular sharpness level — passed as float 0.0/1.0/2.0, cast to int.
@@ -434,8 +437,15 @@ void main() {
       float ambientDarken = clamp((uAmbientStrength * 0.25 + 0.08) * (1.0 + densityFactor * 0.5) + bottomDarken, 0.0, 0.8);
       vec3 darkenedBg = saturatedBg * (1.0 - ambientDarken);
 
-      // PATH A body: use luminosity-preserving glass tint (applyGlassColorLW).
-      vec3 bodyColor = applyGlassColorLW(darkenedBg, uGlassColor);
+      // PATH A body: use luminosity-preserving glass tint (applyGlassColorLW) in adaptive mode.
+      // In clear mode (uBodyMode > 0.5, iOS 26 Glass.clear), bypass luminosity normalization
+      // and directly alpha composite the glass color over the background.
+      vec3 bodyColor;
+      if (uBodyMode > 0.5) {
+        bodyColor = mix(saturatedBg, uGlassColor.rgb, uGlassColor.a);
+      } else {
+        bodyColor = applyGlassColorLW(darkenedBg, uGlassColor);
+      }
 
       // Adaptive rim color: brighten the background at the edge (Premium's getHighlightColor).
       vec3 adaptiveRimColor = mix(bgRgb, vec3(1.0), 0.7);
@@ -464,22 +474,25 @@ void main() {
     // PATH B: All Standard widgets use this path.
     // Flutter SrcOver composites us over the BackdropFilter(blur+saturation) background.
     float isLight = step(0.5, uBackdropLuma);
+    float isClear = step(0.5, uBodyMode);
     
-    // 8% frost floor ensures minimum material visibility
-    // In light mode, add more frost for a cleaner white look
-    float simulatedFrost = 0.08 + densityFactor * 0.05 + isLight * 0.04;
-    float pmA = max(glassAlpha, simulatedFrost);
+    // 8% frost floor ensures minimum material visibility in adaptive mode.
+    // In clear mode, simulated frost floor is zeroed out for exact color reproduction.
+    float simulatedFrost = mix(0.08 + densityFactor * 0.05 + isLight * 0.04, 0.0, isClear);
+    float pmA = mix(max(glassAlpha, simulatedFrost), glassAlpha, isClear);
     
     // In light mode, transparent glass becomes white frost. In dark mode, it remains black (ambient darken).
     vec3 frostRgb = vec3(isLight);
-    vec3 baseRgb = mix(frostRgb, uGlassColor.rgb, min(glassAlpha / (simulatedFrost + 0.01), 1.0));
+    vec3 adaptiveBaseRgb = mix(frostRgb, uGlassColor.rgb, min(glassAlpha / (simulatedFrost + 0.01), 1.0));
+    vec3 baseRgb = mix(adaptiveBaseRgb, uGlassColor.rgb, isClear);
     vec3 pmRgb = baseRgb * pmA;
 
-    // Min 3% ambient darkening + bottom volumetric gradient shadow:
+    // Min 3% ambient darkening + bottom volumetric gradient shadow (adaptive mode only):
     float bottomDarken = vertCoord * 0.04;
     float ambientDarken = clamp((uAmbientStrength * 0.25 + 0.03) * (1.0 + densityFactor * 0.5) + bottomDarken, 0.0, 0.8);
-    // Reduce ambient darken in light mode to prevent greyness
+    // Reduce ambient darken in light mode to prevent greyness; zero out in clear mode
     ambientDarken *= mix(1.0, 0.2, isLight);
+    ambientDarken *= (1.0 - isClear);
     
     pmA = pmA + ambientDarken * (1.0 - pmA);
 

@@ -62,14 +62,19 @@ vec3 applySaturation(vec3 color, float saturation) {
 
 // ── applyGlassColor ───────────────────────────────────────────────────────────
 // Apply glass color tinting to the liquid color.
-// iOS 26 model: chromatic glass (blue, amber) preserves backdrop luminance while
-// shifting hue — unlike Overlay which produced unintuitive darkening/brightening.
-// Achromatic glass (white, grey, black) uses a direct alpha-composite mix so
-// that white glass actually lifts toward white (brightness effect). Without this,
-// whites collapse to a luminance-matched grey and can never frost the surface.
-// The chroma factor blends smoothly between the two paths — fully branchless.
-// glassColor.a = 0 naturally returns liquidColor via mix() in both paths.
-vec4 applyGlassColor(vec4 liquidColor, vec4 glassColor) {
+// iOS 26 model:
+// - bodyMode == 0.0 (adaptive / Glass.regular): chromatic glass preserves
+//   backdrop luminance while shifting hue; achromatic glass lifts toward white.
+// - bodyMode == 1.0 (clear / Glass.clear): direct alpha-composite tint without
+//   luminance normalization, preserving exact design token hex values while
+//   retaining specular, Fresnel, and rim physics.
+// glassColor.a = 0 naturally returns liquidColor via mix() in all paths.
+vec4 applyGlassColor(vec4 liquidColor, vec4 glassColor, float bodyMode) {
+    vec3 directMix = mix(liquidColor.rgb, glassColor.rgb, glassColor.a);
+    if (bodyMode > 0.5) {
+        return vec4(directMix, liquidColor.a);
+    }
+
     float backdropLuminance = dot(liquidColor.rgb, LUMA_WEIGHTS);
     float glassLuminance    = dot(glassColor.rgb, LUMA_WEIGHTS);
 
@@ -82,10 +87,12 @@ vec4 applyGlassColor(vec4 liquidColor, vec4 glassColor) {
                  - min(min(glassColor.r, glassColor.g), glassColor.b);
     float chromaWeight = clamp(chroma * 8.0, 0.0, 1.0);
 
-    // achromatic path: direct mix toward the glass colour (white lifts to white)
-    vec3 directMix     = mix(liquidColor.rgb, glassColor.rgb, glassColor.a);
     // chromatic path:  mix toward luminosity-shifted tint (hue shift, brightness held)
     vec3 luminosityMix = mix(liquidColor.rgb, tinted, glassColor.a);
 
     return vec4(mix(directMix, luminosityMix, chromaWeight), liquidColor.a);
+}
+
+vec4 applyGlassColor(vec4 liquidColor, vec4 glassColor) {
+    return applyGlassColor(liquidColor, glassColor, 0.0);
 }

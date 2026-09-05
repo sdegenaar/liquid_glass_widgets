@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets/src/widgets/surfaces/tab_bar_searchable_layout.dart';
 
 import '../../shared/test_helpers.dart';
 
@@ -56,6 +57,25 @@ void main() {
     testWidgets('can be instantiated with required parameters', (tester) async {
       await tester.pumpWidget(_buildBar());
       expect(find.byType(GlassTabBar), findsOneWidget);
+    });
+
+    testWidgets('forwards backgroundQuality to underlying TabBarSearchableLayout',
+        (tester) async {
+      await tester.pumpWidget(createTestApp(
+        child: GlassTabBar.minimizable(
+          tabs: _testTabs,
+          selectedIndex: 0,
+          onTabSelected: (_) {},
+          quality: GlassQuality.premium,
+          backgroundQuality: GlassQuality.minimal,
+        ),
+      ));
+      await tester.pump();
+
+      final layout = tester.widget<TabBarSearchableLayout>(
+        find.byType(TabBarSearchableLayout),
+      );
+      expect(layout.backgroundQuality, equals(GlassQuality.minimal));
     });
 
     testWidgets('displays tab labels while expanded', (tester) async {
@@ -219,6 +239,99 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(taps, 1);
+    });
+
+    // ── Trailing button: menu mode (Issue #275) ──────────────────────────────
+
+    test('GlassTabBarTrailingButton.menu constructor sets properties correctly', () {
+      final button = GlassTabBarTrailingButton.menu(
+        icon: const Icon(CupertinoIcons.ellipsis),
+        label: 'Actions',
+        menuWidth: 240,
+        menuAlignment: GlassMenuAlignment.topLeft,
+        menuItems: [
+          GlassMenuItem(
+            icon: const Icon(CupertinoIcons.share),
+            title: 'Share',
+            onTap: () {},
+          ),
+        ],
+      );
+
+      expect(button.isMenu, isTrue);
+      expect(button.label, 'Actions');
+      expect(button.enabled, isTrue);
+      expect(button.menuWidth, 240);
+      expect(button.menuAlignment, GlassMenuAlignment.topLeft);
+      expect(button.menuItems?.length, 1);
+    });
+
+    testWidgets('tapping trailing button in menu mode opens GlassMenu',
+        (tester) async {
+      var itemTapped = false;
+
+      final menuButton = GlassTabBarTrailingButton.menu(
+        icon: const Icon(CupertinoIcons.ellipsis),
+        label: 'Options',
+        menuItems: [
+          GlassMenuItem(
+            icon: const Icon(CupertinoIcons.share),
+            title: 'Share Action',
+            onTap: () => itemTapped = true,
+          ),
+          GlassMenuItem(
+            icon: const Icon(CupertinoIcons.trash),
+            title: 'Delete Action',
+            isDestructive: true,
+            onTap: () {},
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(_buildBar(trailingButton: menuButton));
+      await tester.pumpAndSettle();
+
+      // Menu items should not be visible before tap
+      expect(find.text('Share Action'), findsNothing);
+
+      // Tap the trailing menu pill
+      await tester.tap(find.byIcon(CupertinoIcons.ellipsis).first);
+      await tester.pumpAndSettle();
+
+      // Menu overlay is now open and items are visible
+      expect(find.text('Share Action'), findsOneWidget);
+      expect(find.text('Delete Action'), findsOneWidget);
+
+      // Tap a menu item
+      await tester.tap(find.text('Share Action'));
+      await tester.pumpAndSettle();
+
+      expect(itemTapped, isTrue);
+      // Menu should be dismissed
+      expect(find.text('Share Action'), findsNothing);
+    });
+
+    testWidgets('disabled trailing menu button does not open menu on tap',
+        (tester) async {
+      final menuButton = GlassTabBarTrailingButton.menu(
+        icon: const Icon(CupertinoIcons.ellipsis),
+        enabled: false,
+        menuItems: [
+          GlassMenuItem(
+            icon: const Icon(CupertinoIcons.share),
+            title: 'Share Action',
+            onTap: () {},
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(_buildBar(trailingButton: menuButton));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(CupertinoIcons.ellipsis).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Share Action'), findsNothing);
     });
 
     // ── preferredSize ─────────────────────────────────────────────────────────

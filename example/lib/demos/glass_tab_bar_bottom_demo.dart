@@ -44,6 +44,23 @@ class GlassBottomBarDemoPage extends StatefulWidget {
 
 class _GlassBottomBarDemoPageState extends State<GlassBottomBarDemoPage> {
   int _selectedIndex = 0;
+  int _bgQualityIndex = 1; // Default to minimal to showcase decoupled track
+
+  GlassQuality? get _backgroundQuality => switch (_bgQualityIndex) {
+        0 => null, // Inherits quality (premium)
+        1 => GlassQuality.minimal,
+        2 => GlassQuality.standard,
+        3 => GlassQuality.premium,
+        _ => null,
+      };
+
+  String get _bgQualityLabel => switch (_bgQualityIndex) {
+        0 => 'Inherit (Premium)',
+        1 => 'Minimal (Frosted)',
+        2 => 'Standard (2D)',
+        3 => 'Premium (3D)',
+        _ => 'Unknown',
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -56,16 +73,82 @@ class _GlassBottomBarDemoPageState extends State<GlassBottomBarDemoPage> {
       child: GlassScaffold(
         extendBody: true,
         body: Center(
-          child: Text(
-            'Tab $_selectedIndex Selected',
-            style: TextStyle(
-              color: CupertinoColors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              shadows: [
-                Shadow(
-                  blurRadius: 10,
-                  color: CupertinoColors.black,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Tab $_selectedIndex Selected',
+                  style: const TextStyle(
+                    color: CupertinoColors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    shadows: [
+                      Shadow(
+                        blurRadius: 10,
+                        color: CupertinoColors.black,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // ── Decoupled Track Quality Selector ───────────────────
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: CupertinoColors.black.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: CupertinoColors.white.withValues(alpha: 0.15),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Decoupled Track Quality',
+                        style: TextStyle(
+                          color: CupertinoColors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Track: $_bgQualityLabel  ·  Pill: Premium',
+                        style: TextStyle(
+                          color: CupertinoColors.systemTeal,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      CupertinoSlidingSegmentedControl<int>(
+                        groupValue: _bgQualityIndex,
+                        children: const {
+                          0: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 6),
+                            child: Text('Inherit', style: TextStyle(fontSize: 12)),
+                          ),
+                          1: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 6),
+                            child: Text('Minimal', style: TextStyle(fontSize: 12)),
+                          ),
+                          2: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 6),
+                            child: Text('Standard', style: TextStyle(fontSize: 12)),
+                          ),
+                          3: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 6),
+                            child: Text('Premium', style: TextStyle(fontSize: 12)),
+                          ),
+                        },
+                        onValueChanged: (v) {
+                          if (v != null) setState(() => _bgQualityIndex = v);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -74,15 +157,33 @@ class _GlassBottomBarDemoPageState extends State<GlassBottomBarDemoPage> {
         bottomBar: GlassTabBar.bottom(
           selectedIndex: _selectedIndex,
           onTabSelected: (index) => setState(() => _selectedIndex = index),
+          backgroundQuality: _backgroundQuality,
           // Use distinct colors to verify masking
           selectedIconColor: CupertinoColors.white,
           unselectedIconColor: CupertinoColors.white.withValues(alpha: 0.4),
           indicatorColor: CupertinoColors.activeBlue.withValues(alpha: 0.2),
           maskingQuality: MaskingQuality.high,
-          extraButton: GlassTabBarExtraButton(
-            icon: Icon(CupertinoIcons.info),
-            label: 'something',
-            onTap: () {},
+          extraButton: GlassTabBarExtraButton.menu(
+            icon: const Icon(CupertinoIcons.ellipsis),
+            label: 'Options',
+            menuItems: [
+              GlassMenuItem(
+                icon: const Icon(CupertinoIcons.share),
+                title: 'Share',
+                onTap: () {},
+              ),
+              GlassMenuItem(
+                icon: const Icon(CupertinoIcons.bookmark),
+                title: 'Bookmark',
+                onTap: () {},
+              ),
+              const GlassMenuDivider(),
+              GlassMenuItem(
+                icon: const Icon(CupertinoIcons.gear),
+                title: 'Settings',
+                onTap: () {},
+              ),
+            ],
           ),
           tabs: [
             GlassTab(

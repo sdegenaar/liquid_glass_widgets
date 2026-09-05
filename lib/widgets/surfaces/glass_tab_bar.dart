@@ -6,6 +6,7 @@ import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../src/types/glass_interaction_behavior.dart';
 import '../../types/glass_quality.dart';
+import '../overlays/glass_menu.dart' show GlassMenuAlignment;
 import '../shared/inherited_liquid_glass.dart';
 import 'shared/glass_search_bar_config.dart';
 import 'shared/tab_bar_accessory_placement.dart';
@@ -218,6 +219,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
     double glowSpreadRadius = 8,
     double glowOpacity = 0.6,
     GlassQuality? quality,
+    GlassQuality? backgroundQuality,
     double magnification = 1.15,
     double innerBlur = 0.0,
     MaskingQuality maskingQuality = MaskingQuality.high,
@@ -275,6 +277,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
           glowSpreadRadius: glowSpreadRadius,
           glowOpacity: glowOpacity,
           quality: quality,
+          backgroundQuality: backgroundQuality,
           magnification: magnification,
           innerBlur: innerBlur,
           maskingQuality: maskingQuality,
@@ -356,6 +359,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
     double? tabWidth,
     LiquidGlassSettings? settings,
     GlassQuality? quality,
+    GlassQuality? backgroundQuality,
     MaskingQuality maskingQuality = MaskingQuality.high,
     GlobalKey? backgroundKey,
     double iconLabelSpacing = 4,
@@ -411,6 +415,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
           tabWidth: tabWidth,
           settings: settings,
           quality: quality,
+          backgroundQuality: backgroundQuality,
           maskingQuality: maskingQuality,
           backgroundKey: backgroundKey,
           iconLabelSpacing: iconLabelSpacing,
@@ -483,6 +488,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
     Color? interactionGlowColor,
     double interactionGlowRadius = 1.5,
     GlassQuality? quality,
+    GlassQuality? backgroundQuality,
     double magnification = 1.15,
     double innerBlur = 0.0,
     bool platformViewBackdrop = false,
@@ -550,6 +556,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
           interactionGlowColor: interactionGlowColor,
           interactionGlowRadius: interactionGlowRadius,
           quality: quality,
+          backgroundQuality: backgroundQuality,
           magnification: magnification,
           innerBlur: innerBlur,
           platformViewBackdrop: platformViewBackdrop,
@@ -641,6 +648,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
     GlassTabBarMinimizeController? minimizeController,
     VoidCallback? onMinimizedTabTap,
     GlassTabBarTrailingButton? trailingButton,
+    GlassTabBarExtraButton? extraButton,
     Widget? bottomAccessory,
     GlassTabBarAccessoryPlacement? bottomAccessoryPlacement,
     bool bottomAccessoryEnabled = true,
@@ -680,6 +688,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
     Color? interactionGlowColor,
     double interactionGlowRadius = 1.5,
     GlassQuality? quality,
+    GlassQuality? backgroundQuality,
     double magnification = 1.15,
     double innerBlur = 0.0,
     bool platformViewBackdrop = false,
@@ -708,6 +717,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
           isSearchActive: minimized,
           onMinimizedTabTap: onMinimizedTabTap,
           trailingButton: trailingButton,
+          extraButton: extraButton,
           minimizeController: minimizeController,
           bottomAccessoryPlacement: bottomAccessoryPlacement,
           bottomAccessory: bottomAccessory,
@@ -747,6 +757,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
           interactionGlowColor: interactionGlowColor,
           interactionGlowRadius: interactionGlowRadius,
           quality: quality,
+          backgroundQuality: backgroundQuality,
           magnification: magnification,
           innerBlur: innerBlur,
           platformViewBackdrop: platformViewBackdrop,
@@ -786,6 +797,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
       this.iconSize = 24.0,
       this.settings,
       this.quality,
+      this.backgroundQuality,
       this.indicatorSettings,
       this.indicatorPinchStrength = 0.4,
       this.indicatorExpansion =
@@ -905,6 +917,18 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
   /// If null, inherits from parent [InheritedLiquidGlass] or defaults to
   /// [GlassQuality.standard].
   final GlassQuality? quality;
+
+  /// Rendering quality for the tab bar track/background container.
+  ///
+  /// Matches UIKit's separation of `UITabBarAppearance.backgroundEffect` from
+  /// the system selection indicator pill:
+  /// - When null (default), inherits from [quality] (backward-compatible).
+  /// - When set, controls the quality tier of the track surface independently of
+  ///   the indicator pill. For example, setting [backgroundQuality] to
+  ///   [GlassQuality.minimal] or [GlassQuality.standard] while keeping [quality]
+  ///   at [GlassQuality.premium] delivers full Impeller chromatic refraction and
+  ///   jelly morphing on the indicator while saving GPU overhead on the static track.
+  final GlassQuality? backgroundQuality;
 
   /// Controls indicator clipping quality.
   ///
@@ -1290,6 +1314,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
       glowSpreadRadius: widget.glowSpreadRadius,
       glowOpacity: widget.glowOpacity,
       quality: widget.quality,
+      backgroundQuality: widget.backgroundQuality,
       magnification: widget.magnification,
       innerBlur: widget.innerBlur,
       maskingQuality: widget.maskingQuality,
@@ -1348,6 +1373,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
       glowSpreadRadius: widget.glowSpreadRadius,
       glowOpacity: widget.glowOpacity,
       quality: widget.quality,
+      backgroundQuality: widget.backgroundQuality,
       magnification: widget.magnification,
       innerBlur: widget.innerBlur,
       maskingQuality: widget.maskingQuality,
@@ -1438,6 +1464,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
       interactionGlowColor: widget.interactionGlowColor,
       interactionGlowRadius: widget.interactionGlowRadius,
       quality: widget.quality,
+      backgroundQuality: widget.backgroundQuality,
       magnification: widget.magnification,
       innerBlur: widget.innerBlur,
       platformViewBackdrop: widget.platformViewBackdrop,
@@ -1477,17 +1504,62 @@ class _GlassTabBarState extends State<GlassTabBar> {
 /// states; pass it conditionally (see [GlassTabBar.minimizable]) for
 /// app-defined policies such as a button that exists only while minimized.
 class GlassTabBarTrailingButton {
+  static void _noOp() {}
+
   /// Creates the trailing button.
   const GlassTabBarTrailingButton({
     required this.icon,
     required this.onTap,
-  });
+    this.label,
+    this.enabled = true,
+  })  : menuItems = null,
+        menuAlignment = null,
+        menuWidth = 200;
+
+  /// Opens a [GlassMenu] pull-down when the trailing pill is tapped.
+  ///
+  /// The whole pill morphs into the menu — the same liquid-spring behavior
+  /// as [GlassButtonGroupItem.menu] and [GlassBarItem.menu]. Equivalent to
+  /// a `UIBarButtonItem(image:menu:)` placed in the tab bar's trailing slot.
+  ///
+  /// [menuItems] accepts [GlassMenuItem] and [GlassMenuDivider] widgets —
+  /// the same contract as [GlassMenu.items].
+  ///
+  /// [menuAlignment] defaults to auto-detection, which for a bottom-of-screen
+  /// button always expands upward — pass [GlassMenuAlignment.topLeft] or
+  /// [GlassMenuAlignment.topRight] to pin the direction explicitly.
+  const GlassTabBarTrailingButton.menu({
+    required this.icon,
+    required List<Widget> this.menuItems,
+    this.label,
+    this.enabled = true,
+    this.menuAlignment,
+    this.menuWidth = 200,
+  })  : onTap = _noOp;
 
   /// The glyph centered on the pill.
   final Widget icon;
 
   /// Called when the pill is tapped.
   final VoidCallback onTap;
+
+  /// Optional accessibility label for the button.
+  final String? label;
+
+  /// Whether the button is interactive. Defaults to true.
+  final bool enabled;
+
+  /// When non-null, tapping this button opens a [GlassMenu] pull-down.
+  final List<Widget>? menuItems;
+
+  /// Controls where the menu expands relative to the trigger button.
+  final GlassMenuAlignment? menuAlignment;
+
+  /// Width of the expanded menu panel in logical pixels. Defaults to 200.
+  final double menuWidth;
+
+  /// Whether this button opens a menu rather than firing a tap callback.
+  bool get isMenu => menuItems != null;
 }
 
 // =============================================================================

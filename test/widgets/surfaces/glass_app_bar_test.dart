@@ -550,4 +550,181 @@ void main() {
       );
     });
   });
+
+  group('left-aligned title spacing (regression #282)', () {
+    testWidgets(
+      'left-aligned title respects padding without a leading widget (pinned)',
+      (tester) async {
+        tester.view.physicalSize = const Size(375, 812);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          const CupertinoApp(
+            home: GlassScaffold(
+              appBar: GlassAppBar.pinned(
+                backButton: false,
+                centerTitle: false,
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                title: Text('Activity Summary'),
+              ),
+              body: SizedBox.shrink(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final titleLeft = tester.getTopLeft(find.text('Activity Summary')).dx;
+
+        expect(
+          titleLeft,
+          16.0,
+          reason:
+              'Title should align to 16px content padding without extra gap',
+        );
+      },
+    );
+
+    testWidgets(
+      'left-aligned title respects padding without a leading widget (unpinned)',
+      (tester) async {
+        tester.view.physicalSize = const Size(375, 812);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          createTestApp(
+            child: const Scaffold(
+              appBar: GlassAppBar(
+                centerTitle: false,
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                title: Text('Activity Summary'),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final titleLeft = tester.getTopLeft(find.text('Activity Summary')).dx;
+
+        expect(
+          titleLeft,
+          16.0,
+          reason:
+              'Title should align directly to padding when no leading widget is provided',
+        );
+      },
+    );
+
+    testWidgets(
+      'left-aligned title applies 8px gap when leading widget is present',
+      (tester) async {
+        tester.view.physicalSize = const Size(375, 812);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        const double leadingWidth = 44.0;
+        const double horizontalPadding = 16.0;
+
+        await tester.pumpWidget(
+          createTestApp(
+            child: const Scaffold(
+              appBar: GlassAppBar(
+                centerTitle: false,
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                leading: SizedBox(width: leadingWidth, height: 44),
+                title: Text('Activity Summary'),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final titleLeft = tester.getTopLeft(find.text('Activity Summary')).dx;
+
+        // padding (16) + leadingWidth (44) + _titleGap (8) = 68.0
+        expect(
+          titleLeft,
+          horizontalPadding + leadingWidth + 8.0,
+          reason:
+              'Title should include an 8px gap when a leading widget is present',
+        );
+      },
+    );
+
+    testWidgets(
+      'left-aligned title constrains width to preserve 8px gap before actions',
+      (tester) async {
+        const double barWidth = 375.0;
+        const double horizontalPadding = 16.0;
+        const double actionsWidth = 50.0;
+
+        await tester.pumpWidget(
+          createTestApp(
+            child: SizedBox(
+              width: barWidth,
+              child: const Scaffold(
+                appBar: GlassAppBar(
+                  centerTitle: false,
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  actions: [SizedBox(width: actionsWidth, height: 44)],
+                  title: Text(
+                    'Very Long Title That Should Be Constrained By Layout',
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final titleRight = tester
+            .getTopRight(
+              find.text('Very Long Title That Should Be Constrained By Layout'),
+            )
+            .dx;
+
+        // Total width = 375.
+        // Actions start at 375 - 16 - 50 = 309.
+        // Title must end at or before 309 - 8 = 301.
+        expect(titleRight, lessThanOrEqualTo(301.0));
+      },
+    );
+
+    testWidgets(
+      'relayouts when centerTitle changes',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: const Scaffold(
+              appBar: GlassAppBar(
+                centerTitle: false,
+                title: Text('Title'),
+              ),
+            ),
+          ),
+        );
+
+        final initialLeft = tester.getTopLeft(find.text('Title')).dx;
+
+        // Rebuild with centerTitle: true
+        await tester.pumpWidget(
+          createTestApp(
+            child: const Scaffold(
+              appBar: GlassAppBar(
+                centerTitle: true,
+                title: Text('Title'),
+              ),
+            ),
+          ),
+        );
+
+        final centeredLeft = tester.getTopLeft(find.text('Title')).dx;
+        expect(centeredLeft, greaterThan(initialLeft));
+      },
+    );
+  });
 }

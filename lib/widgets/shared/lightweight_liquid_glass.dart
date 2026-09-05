@@ -1072,5 +1072,9 @@ class _RenderLightweightGlass extends RenderProxyBox
     // Matches the uniform wired in liquid_glass_final_render.frag via uEdgeConfig.y.
     // Default 1.0 = calibrated iOS 26 baseline (0.10 * adaptiveStrength in shader).
     shader.setFloat(index++, _settings.fresnelStrength.clamp(0.0, 4.0));
+
+    // 34: uBodyMode — 0.0 = adaptive, 1.0 = clear.
+    shader.setFloat(
+        index++, _settings.bodyMode == GlassBodyMode.clear ? 1.0 : 0.0);
   }
 }

@@ -8,6 +8,7 @@ library;
 export 'src/renderer/liquid_glass_renderer.dart'
     show
         AnchorStretchSettings,
+        GlassBodyMode,
         LiquidGlassSettings,
         PlatformViewGlassMode,
         LiquidGlassLayer,

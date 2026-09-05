@@ -110,6 +110,7 @@ class SearchableTabIndicator extends StatefulWidget {
     required this.onTabChanged,
     required this.visible,
     required this.quality,
+    this.backgroundQuality,
     required this.barHeight,
     required this.barBorderRadius,
     this.indicatorBorderRadius,
@@ -150,6 +151,7 @@ class SearchableTabIndicator extends StatefulWidget {
   final double indicatorPinchStrength;
   final ValueChanged<int> onTabChanged;
   final GlassQuality quality;
+  final GlassQuality? backgroundQuality;
   final double barHeight;
   final double barBorderRadius;
   final double? indicatorBorderRadius;
@@ -256,7 +258,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
               behavior: HitTestBehavior.opaque,
               onTap: widget.onDismissSearch,
               child: AdaptiveGlass.grouped(
-                quality: widget.quality,
+                quality: widget.backgroundQuality ?? widget.quality,
                 platformViewBackdrop: widget.platformViewBackdrop,
                 shape: currentShape,
                 child: _wrapWithGlow(
@@ -361,7 +363,8 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                             height: widget.barHeight,
                             decoration: ShapeDecoration(shape: _barShape),
                             child: AdaptiveGlass.grouped(
-                              quality: widget.quality,
+                              quality:
+                                  widget.backgroundQuality ?? widget.quality,
                               platformViewBackdrop: widget.platformViewBackdrop,
                               shape: _barShape,
                               child: Container(
@@ -479,7 +482,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                   Positioned.fill(
                     child: RepaintBoundary(
                       child: AdaptiveGlass.grouped(
-                        quality: widget.quality,
+                        quality: widget.backgroundQuality ?? widget.quality,
                         platformViewBackdrop: widget.platformViewBackdrop,
                         shape: _barShape,
                         child: const SizedBox.expand(),
@@ -563,7 +566,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                   Positioned.fill(
                     child: RepaintBoundary(
                       child: AdaptiveGlass.grouped(
-                        quality: widget.quality,
+                        quality: widget.backgroundQuality ?? widget.quality,
                         platformViewBackdrop: widget.platformViewBackdrop,
                         shape: _barShape,
                         child: const SizedBox.expand(),
@@ -1234,10 +1237,12 @@ class MinimizableTrailingPill extends StatelessWidget {
     this.interactionGlowOpacity = 1,
     this.platformViewBackdrop = false,
     this.iconColor,
+    this.label,
   });
 
   final Widget? icon;
   final VoidCallback? onTap;
+  final String? label;
   final double barBorderRadius;
   final GlassQuality quality;
   final bool enableBackgroundAnimation;
@@ -1310,13 +1315,18 @@ class MinimizableTrailingPill extends StatelessWidget {
             key: const ValueKey('pill-collapsed'),
             behavior: HitTestBehavior.opaque,
             onTap: onTap,
-            child: AdaptiveGlass.grouped(
-              shape: currentShape,
-              quality: quality,
-              platformViewBackdrop: platformViewBackdrop,
-              child: nativePress && nativePressHighlight
-                  ? PressAmbientLift(child: content)
-                  : _wrapWithGlow(child: content),
+            child: Semantics(
+              button: true,
+              label: label,
+              enabled: onTap != null,
+              child: AdaptiveGlass.grouped(
+                shape: currentShape,
+                quality: quality,
+                platformViewBackdrop: platformViewBackdrop,
+                child: nativePress && nativePressHighlight
+                    ? PressAmbientLift(child: content)
+                    : _wrapWithGlow(child: content),
+              ),
             ),
           ),
         );

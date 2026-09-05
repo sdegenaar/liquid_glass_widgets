@@ -23,6 +23,7 @@ import '../../../widgets/surfaces/shared/tab_bar_types.dart'
     show GlassTabPillAnchor, MaskingQuality;
 import '../../../widgets/surfaces/glass_tab_bar.dart'
     show GlassTab, GlassTabBarTrailingButton;
+import '../../../widgets/overlays/glass_menu.dart' show GlassMenu;
 import 'tab_bar_bottom_internal.dart'
     show
         BottomBarExtraBtn,
@@ -94,6 +95,7 @@ class TabBarSearchableLayout extends StatefulWidget {
     this.interactionGlowColor,
     this.interactionGlowRadius = 1.5,
     this.quality,
+    this.backgroundQuality,
     this.magnification = 1.15,
     this.innerBlur = 0.0,
     this.platformViewBackdrop = false,
@@ -184,6 +186,7 @@ class TabBarSearchableLayout extends StatefulWidget {
   final Color? interactionGlowColor;
   final double interactionGlowRadius;
   final GlassQuality? quality;
+  final GlassQuality? backgroundQuality;
   final double magnification;
   final double innerBlur;
   final bool platformViewBackdrop;
@@ -445,6 +448,11 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
       widgetQuality: widget.quality,
       fallback: GlassQuality.premium,
     );
+    final effectiveBackgroundQuality = GlassThemeHelpers.resolveQuality(
+      context,
+      widgetQuality: widget.backgroundQuality ?? widget.quality,
+      fallback: GlassQuality.premium,
+    );
 
     final resolvedGlowColors =
         GlassThemeData.of(context).glowColorsFor(context);
@@ -694,29 +702,55 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                           } else {
                             final renderedTrailing =
                                 widget.trailingButton ?? _lastTrailingButton;
-                            pillChild = MinimizableTrailingPill(
-                              icon: renderedTrailing?.icon,
-                              nativePressHighlight: nativePressHighlight,
-                              onTap: widget.trailingButton?.onTap,
-                              barBorderRadius: widget.barBorderRadius,
-                              quality: effectiveQuality,
-                              platformViewBackdrop: widget.platformViewBackdrop,
-                              enableBackgroundAnimation:
-                                  widget.interactionBehavior.hasScale,
-                              backgroundPressScale: widget.pressScale,
-                              iconColor: resolvedUnselectedIconColor,
-                              interactionGlowColor:
-                                  widget.interactionBehavior.hasGlow
-                                      ? effectiveInteractionGlowColor
-                                      : const Color(0x00000000),
-                              interactionGlowRadius:
-                                  widget.interactionGlowRadius,
-                              interactionGlowBlurRadius:
-                                  effectiveGlowBlurRadius,
-                              interactionGlowSpreadRadius:
-                                  effectiveGlowSpreadRadius,
-                              interactionGlowOpacity: effectiveGlowOpacity,
-                            );
+
+                            Widget buildTrailingPill({VoidCallback? onTap}) {
+                              return MinimizableTrailingPill(
+                                icon: renderedTrailing?.icon,
+                                nativePressHighlight: nativePressHighlight,
+                                onTap: onTap,
+                                label: renderedTrailing?.label,
+                                barBorderRadius: widget.barBorderRadius,
+                                quality: effectiveQuality,
+                                platformViewBackdrop:
+                                    widget.platformViewBackdrop,
+                                enableBackgroundAnimation:
+                                    widget.interactionBehavior.hasScale,
+                                backgroundPressScale: widget.pressScale,
+                                iconColor: resolvedUnselectedIconColor,
+                                interactionGlowColor:
+                                    widget.interactionBehavior.hasGlow
+                                        ? effectiveInteractionGlowColor
+                                        : const Color(0x00000000),
+                                interactionGlowRadius:
+                                    widget.interactionGlowRadius,
+                                interactionGlowBlurRadius:
+                                    effectiveGlowBlurRadius,
+                                interactionGlowSpreadRadius:
+                                    effectiveGlowSpreadRadius,
+                                interactionGlowOpacity: effectiveGlowOpacity,
+                              );
+                            }
+
+                            if (renderedTrailing?.isMenu == true) {
+                              pillChild = GlassMenu(
+                                menuAlignment: renderedTrailing!.menuAlignment,
+                                menuWidth: renderedTrailing.menuWidth,
+                                autoAdjustToScreen: true,
+                                items: renderedTrailing.menuItems!,
+                                triggerBuilder: (context, toggleMenu) =>
+                                    buildTrailingPill(
+                                  onTap: renderedTrailing.enabled
+                                      ? toggleMenu
+                                      : null,
+                                ),
+                              );
+                            } else {
+                              pillChild = buildTrailingPill(
+                                onTap: (renderedTrailing?.enabled == true)
+                                    ? widget.trailingButton?.onTap
+                                    : null,
+                              );
+                            }
                           }
 
                           return Positioned(
@@ -820,6 +854,7 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                             child: SearchableTabIndicator(
                               key: _indicatorKey,
                               quality: effectiveQuality,
+                              backgroundQuality: effectiveBackgroundQuality,
                               visible: widget.showIndicator && !searching,
                               tabIndex: widget.selectedIndex,
                               tabCount: widget.tabs.length,

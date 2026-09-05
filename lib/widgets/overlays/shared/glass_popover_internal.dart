@@ -143,8 +143,12 @@ class _GlassPopoverState extends State<GlassPopover>
     });
   }
 
+  ModalRoute<dynamic>? _route;
+
   @override
   void dispose() {
+    _removeRouteListeners();
+    _route = null;
     _blurRamp.dispose();
     _morphController.dispose();
     super.dispose();
@@ -157,6 +161,80 @@ class _GlassPopoverState extends State<GlassPopover>
     _morphController.setDisableAnimations(
       MediaQuery.of(context).disableAnimations,
     );
+    _updateRouteListener();
+  }
+
+  void _updateRouteListener() {
+    final currentRoute = ModalRoute.of(context);
+    if (_route != currentRoute) {
+      _removeRouteListeners();
+      _route = currentRoute;
+      _addRouteListeners();
+    }
+  }
+
+  void _addRouteListeners() {
+    final route = _route;
+    if (route == null) return;
+    route.secondaryAnimation?.addListener(_handleSecondaryAnimation);
+    route.secondaryAnimation?.addStatusListener(_handleSecondaryAnimationStatus);
+    route.animation?.addStatusListener(_handlePrimaryAnimationStatus);
+  }
+
+  void _removeRouteListeners() {
+    final route = _route;
+    if (route == null) return;
+    route.secondaryAnimation?.removeListener(_handleSecondaryAnimation);
+    route.secondaryAnimation?.removeStatusListener(_handleSecondaryAnimationStatus);
+    route.animation?.removeStatusListener(_handlePrimaryAnimationStatus);
+  }
+
+  void _handleSecondaryAnimation() {
+    if (!_overlayController.isShowing) return;
+    final anim = _route?.secondaryAnimation;
+    if (anim == null) return;
+    if (anim.status == AnimationStatus.forward ||
+        anim.status == AnimationStatus.completed ||
+        (anim.value > 0.0 && anim.status != AnimationStatus.reverse)) {
+      _dismissImmediately();
+    }
+  }
+
+  void _handleSecondaryAnimationStatus(AnimationStatus status) {
+    if (!_overlayController.isShowing) return;
+    if (status == AnimationStatus.forward ||
+        status == AnimationStatus.completed) {
+      _dismissImmediately();
+    }
+  }
+
+  void _handlePrimaryAnimationStatus(AnimationStatus status) {
+    if (!_overlayController.isShowing) return;
+    if (status == AnimationStatus.reverse) {
+      _dismissImmediately();
+    }
+  }
+
+  void _dismissImmediately() {
+    if (!_overlayController.isShowing && _morphController.value == 0.0) {
+      return;
+    }
+    final wasClosing = _morphController.isClosing;
+    _overlayController.hide();
+    _morphController.reset();
+    _blurRamp.stop();
+    _blurRamp.value = 0.0;
+    _horizontalOffset = 0.0;
+    _verticalOffset = 0.0;
+    _measuredContentHeight = null;
+    _contentMeasured = false;
+    _cachedContent = null;
+    if (!wasClosing) {
+      widget.onClose?.call();
+    }
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -354,7 +432,7 @@ class _GlassPopoverState extends State<GlassPopover>
   }
 
   void _closePopover() {
-    if (!mounted) return;
+    if (!mounted || !_overlayController.isShowing) return;
     // Freeze the blur where it is for the collapse. Ramping it back down here
     // would race the morph and read as the blur "popping off" while the blob is
     // still visibly shrinking; holding it keeps the close visually coherent.
