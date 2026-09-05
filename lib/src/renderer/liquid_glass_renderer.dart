@@ -16,7 +16,7 @@ export 'glass_glow.dart' show GlassGlow, GlassGlowLayer;
 export 'liquid_glass.dart' show LiquidGlass;
 export 'liquid_glass_blend_group.dart' show LiquidGlassBlendGroup;
 export 'liquid_glass_settings.dart'
-    show LiquidGlassSettings, PlatformViewGlassMode;
+    show GlassBodyMode, LiquidGlassSettings, PlatformViewGlassMode;
 export 'liquid_shape.dart';
 export 'internal/liquid_glass_self_scale_scope.dart'
     show LiquidGlassSelfScaleScope;

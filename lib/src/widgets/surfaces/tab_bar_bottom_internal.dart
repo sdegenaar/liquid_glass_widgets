@@ -18,6 +18,7 @@ import '../../../utils/draggable_indicator_physics.dart';
 import 'tab_bar_drag_gesture_mixin.dart';
 import '../../../utils/glass_spring.dart';
 import '../../../widgets/interactive/glass_button.dart';
+import '../../../widgets/overlays/glass_menu.dart' show GlassMenu;
 import '../../../widgets/shared/adaptive_glass.dart';
 import '../../../widgets/shared/animated_glass_indicator.dart';
 import '../../../widgets/shared/inherited_liquid_glass.dart';
@@ -381,27 +382,40 @@ class BottomBarExtraBtn extends StatelessWidget {
             ? LiquidRoundedRectangle(borderRadius: config.size / 2)
             : const LiquidOval());
 
-    final button = GlassButton(
-      icon: config.icon,
-      onTap: config.onTap,
-      label: config.label,
-      width: config.size,
-      height: config.size,
-      quality: quality,
-      iconColor: iconColor,
-      useOwnLayer: !enableBlend, // When blending, share the parent's layer
-      shape: effectiveShape,
-      platformViewBackdrop: platformViewBackdrop,
-      stretch: platformViewBackdrop ? 0.0 : 0.5,
-      // The extra button is anchored inside the compound bar and does not
-      // animate its layout bounds at rest. Marking it stationary lets
-      // AdaptiveGlass retain the BackdropFilter blur in GlassQuality.minimal,
-      // so it matches the frosted appearance of the main tab bar surface.
-      // See: https://github.com/sdegenaar/liquid_glass_widgets/issues/203
-      isStationary: true,
-    );
+    Widget buildButton(VoidCallback onTap) {
+      return GlassButton(
+        icon: config.icon,
+        onTap: onTap,
+        label: config.label,
+        width: config.size,
+        height: config.size,
+        quality: quality,
+        iconColor: iconColor,
+        useOwnLayer: !enableBlend, // When blending, share the parent's layer
+        shape: effectiveShape,
+        platformViewBackdrop: platformViewBackdrop,
+        stretch: platformViewBackdrop ? 0.0 : 0.5,
+        // The extra button is anchored inside the compound bar and does not
+        // animate its layout bounds at rest. Marking it stationary lets
+        // AdaptiveGlass retain the BackdropFilter blur in GlassQuality.minimal,
+        // so it matches the frosted appearance of the main tab bar surface.
+        // See: https://github.com/sdegenaar/liquid_glass_widgets/issues/203
+        isStationary: true,
+        enabled: config.enabled,
+      );
+    }
 
-    return button;
+    if (config.isMenu) {
+      return GlassMenu(
+        menuAlignment: config.menuAlignment,
+        menuWidth: config.menuWidth,
+        autoAdjustToScreen: true,
+        items: config.menuItems!,
+        triggerBuilder: (context, toggleMenu) => buildButton(toggleMenu),
+      );
+    }
+
+    return buildButton(config.onTap);
   }
 }
 
@@ -430,6 +444,7 @@ class TabIndicator extends StatefulWidget {
     required this.visible,
     required this.indicatorColor,
     required this.quality,
+    this.backgroundQuality,
     required this.barHeight,
     required this.barBorderRadius,
     this.indicatorBorderRadius,
@@ -461,6 +476,7 @@ class TabIndicator extends StatefulWidget {
   final LiquidGlassSettings? indicatorSettings;
   final ValueChanged<int> onTabChanged;
   final GlassQuality quality;
+  final GlassQuality? backgroundQuality;
   final double barHeight;
   final double barBorderRadius;
   final double? indicatorBorderRadius;
@@ -641,7 +657,8 @@ class TabIndicatorState extends State<TabIndicator>
                               shape: _barShape,
                             ),
                             child: AdaptiveGlass.grouped(
-                              quality: widget.quality,
+                              quality:
+                                  widget.backgroundQuality ?? widget.quality,
                               platformViewBackdrop: widget.platformViewBackdrop,
                               shape: _barShape,
                               child: Container(
@@ -769,7 +786,7 @@ class TabIndicatorState extends State<TabIndicator>
                   Positioned.fill(
                     child: RepaintBoundary(
                       child: AdaptiveGlass.grouped(
-                        quality: widget.quality,
+                        quality: widget.backgroundQuality ?? widget.quality,
                         platformViewBackdrop: widget.platformViewBackdrop,
                         shape: _barShape,
                         child: const SizedBox.expand(),
@@ -860,7 +877,7 @@ class TabIndicatorState extends State<TabIndicator>
                   Positioned.fill(
                     child: RepaintBoundary(
                       child: AdaptiveGlass.grouped(
-                        quality: widget.quality,
+                        quality: widget.backgroundQuality ?? widget.quality,
                         platformViewBackdrop: widget.platformViewBackdrop,
                         shape: _barShape,
                         child: const SizedBox.expand(),

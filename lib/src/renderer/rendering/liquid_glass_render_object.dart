@@ -337,13 +337,17 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
               settings.effectiveEdgeAbsorption,
             ]);
           })
-          // Slot 32: uPlatformViewMode.
+          // Slot 32: uPlatformViewMode; Slot 33: uBodyMode.
           ..setFloatUniforms(initialIndex: 32, (value) {
-            value.setFloat(
-              settings.platformViewMode == PlatformViewGlassMode.passthrough
-                  ? 1.0
-                  : 0.0,
-            );
+            value
+              ..setFloat(
+                settings.platformViewMode == PlatformViewGlassMode.passthrough
+                    ? 1.0
+                    : 0.0,
+              )
+              ..setFloat(
+                settings.bodyMode == GlassBodyMode.clear ? 1.0 : 0.0,
+              );
           })
           ..setImageSampler(
             1,
@@ -484,13 +488,17 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
           settings.effectiveEdgeAbsorption,
         ]);
       })
-      // Slot 32: uPlatformViewMode.
+      // Slot 32: uPlatformViewMode; Slot 33: uBodyMode.
       ..setFloatUniforms(initialIndex: 32, (value) {
-        value.setFloat(
-          settings.platformViewMode == PlatformViewGlassMode.passthrough
-              ? 1.0
-              : 0.0,
-        );
+        value
+          ..setFloat(
+            settings.platformViewMode == PlatformViewGlassMode.passthrough
+                ? 1.0
+                : 0.0,
+          )
+          ..setFloat(
+            settings.bodyMode == GlassBodyMode.clear ? 1.0 : 0.0,
+          );
       })
       // Slot 0: captured background image (replaces the BackdropFilter read).
       ..setImageSampler(0, capture)

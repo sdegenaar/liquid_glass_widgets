@@ -64,7 +64,8 @@ enum _ScrollSource {
 
 enum _TrailingMode {
   none('None'),
-  always('Always');
+  always('Always'),
+  menu('Menu');
 
   const _TrailingMode(this.label);
   final String label;
@@ -121,6 +122,7 @@ class _DemoHomeState extends State<_DemoHome> {
   _TrailingMode _trailingMode = _TrailingMode.always;
   _ScrollSource _scrollSource = _ScrollSource.controller;
   int _composerTaps = 0;
+  String? _lastMenuAction;
   bool _showAccessory = false;
   bool _extendBody = true;
 
@@ -166,13 +168,36 @@ class _DemoHomeState extends State<_DemoHome> {
   }
 
   GlassTabBarTrailingButton? get _trailingButton {
-    final button = GlassTabBarTrailingButton(
-      icon: const Icon(CupertinoIcons.square_pencil),
-      onTap: () => setState(() => _composerTaps++),
-    );
     return switch (_trailingMode) {
       _TrailingMode.none => null,
-      _TrailingMode.always => button,
+      _TrailingMode.always => GlassTabBarTrailingButton(
+          icon: const Icon(CupertinoIcons.square_pencil),
+          label: 'Compose',
+          onTap: () => setState(() => _composerTaps++),
+        ),
+      _TrailingMode.menu => GlassTabBarTrailingButton.menu(
+          icon: const Icon(CupertinoIcons.ellipsis),
+          label: 'More actions',
+          menuItems: [
+            GlassMenuItem(
+              icon: const Icon(CupertinoIcons.square_arrow_up),
+              title: 'Share',
+              onTap: () => setState(() => _lastMenuAction = 'Share'),
+            ),
+            GlassMenuItem(
+              icon: const Icon(CupertinoIcons.pencil),
+              title: 'Edit',
+              onTap: () => setState(() => _lastMenuAction = 'Edit'),
+            ),
+            const GlassMenuDivider(),
+            GlassMenuItem(
+              icon: const Icon(CupertinoIcons.trash),
+              title: 'Delete',
+              isDestructive: true,
+              onTap: () => setState(() => _lastMenuAction = 'Delete'),
+            ),
+          ],
+        ),
     };
   }
 
@@ -340,7 +365,8 @@ class _DemoHomeState extends State<_DemoHome> {
             'minimized: ${_minimize.minimized}   ·   '
             'resolved: ${_minimize.resolvedBehavior.name}   ·   '
             'source: ${_scrollSource.label}   ·   '
-            'composer taps: $_composerTaps',
+            'composer taps: $_composerTaps'
+            '${_lastMenuAction != null ? "   ·   menu: $_lastMenuAction" : ""}',
             style: TextStyle(
               fontSize: 12,
               fontFeatures: const [FontFeature.tabularFigures()],

@@ -21,6 +21,26 @@ void main() {
       );
     });
 
+    testWidgets('renders cleanly with bodyMode: GlassBodyMode.clear',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: LiquidGlass.withOwnLayer(
+              shape: const LiquidOval(),
+              settings: const LiquidGlassSettings(
+                bodyMode: GlassBodyMode.clear,
+                blur: 0,
+                glassColor: Color(0xD9C3E0F5),
+              ),
+              child: const SizedBox(width: 100, height: 100),
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(LiquidGlass), findsOneWidget);
+    });
+
     group('LiquidRoundedSuperellipse', () {
       goldenTest(
         'should render a rounded superellipse with different thickness',

@@ -1,6 +1,62 @@
-# 1.3.1
+# 1.4.0
+
+## Features
+
+- **`GlassBodyMode` (`adaptive` vs `clear`) — exact design token color fidelity (#269):**
+  Introduced `GlassBodyMode` enum and `bodyMode` property on `LiquidGlassSettings` (defaulting to `GlassBodyMode.adaptive`), achieving 1:1 parity with Apple iOS 26 Liquid Glass `Glass.regular` vs `Glass.clear`.
+  - `GlassBodyMode.adaptive` (default): Employs iOS 26 dynamic luminosity normalization, ambient tint modulation, and brightness compensation based on underlying backdrop luminance.
+  - `GlassBodyMode.clear`: Bypasses luminosity normalization, white-point lift, and content-adaptive modulation. Directly composites the designer's exact hex color and alpha from `glassColor` over the refracted scene while preserving all 3D optical properties (specular rim reflections, Fresnel edge glow, meniscus edge absorption, and surface refraction).
+  - Perfectly resolves color fidelity when `blur: 0` is combined with custom tinted glass surfaces.
+  - Fully integrated across all shader tiers (Impeller `liquid_glass_final_render.frag`, standard `lightweight_glass.frag`, and Skia `_FrostedFallback`).
+
+- **Decoupled track background quality in `GlassTabBar`:**
+  Added `backgroundQuality: GlassQuality?` across `GlassTabBar.bottom`, `GlassTabBar.inline`, `GlassTabBar.searchable`, and `GlassTabBar.minimizable`.
+  - Directly matches UIKit's `UITabBarAppearance.backgroundEffect` decoupling from the active selection capsule.
+  - Allows tab bar containers to render with lightweight frosted glass (e.g., `backgroundQuality: GlassQuality.minimal` or `.standard`) while the moving selection pill retains full liquid refraction (`quality: GlassQuality.premium`).
+  - Defaults to `null`, which seamlessly inherits from `quality` without any visual regression.
+
+- **`GlassTabBarTrailingButton.menu` and `GlassTabBarExtraButton.menu` — native pull-down menus from tab bars (#275):** Both the trailing pill on `GlassTabBar.minimizable` and the extra action button on `GlassTabBar.bottom` and `GlassTabBar.searchable` now support an optional `GlassMenu` pull-down, using the same `.menu` named-constructor pattern established by `GlassButtonGroupItem.menu` and `GlassBarItem.menu`.
+
+  ```dart
+  // Minimizable trailing pill → opens a menu on tap
+  GlassTabBarTrailingButton.menu(
+    icon: const Icon(CupertinoIcons.ellipsis_circle),
+    label: 'More',
+    menuItems: [
+      GlassMenuItem(label: 'Edit', onTap: _edit),
+      GlassMenuItem(label: 'Share', onTap: _share),
+    ],
+  )
+
+  // Bottom-bar extra button → opens a menu on tap
+  GlassTabBarExtraButton.menu(
+    icon: const Icon(CupertinoIcons.plus),
+    label: 'New',
+    menuItems: [
+      GlassMenuItem(label: 'New Note', onTap: _newNote),
+      GlassMenuDivider(),
+      GlassMenuItem(label: 'Import', onTap: _import),
+    ],
+  )
+  ```
+
+  - **Liquid spring origin:** The menu expansion spring originates from the button's actual render coordinates — identical behaviour to `GlassBarItem.menu` and `UIBarButtonItem(image:menu:)` in SwiftUI.
+  - **Auto-upward expansion:** `autoAdjustToScreen: true` is always applied, so menus anchored inside a bottom bar always expand upward, matching the iOS 26 Liquid Glass `UIMenu` behaviour on toolbar items.
+  - **`enabled` toggle:** Setting `enabled: false` on either constructor dims the button and suppresses the menu — consistent with the existing tap-callback variant.
+  - **Accessibility:** Both triggers are wrapped in a `Semantics` node using the required `label` so screen readers announce the control correctly.
+  - **API surface:**
+    - `GlassTabBarTrailingButton` gains: `menuItems`, `menuAlignment`, `menuWidth`, `label`, `enabled`.
+    - `GlassTabBarExtraButton` gains: `menuItems`, `menuAlignment`, `menuWidth`. The `label` and `enabled` fields were already present.
+    - The `isMenu` getter on both classes returns true when the menu variant is active.
+  - **No scope creep:** Direct pass-through of arbitrary widget trees to the trigger position is explicitly deferred; use `GlassMenu.triggerBuilder` directly for fully custom triggers.
+
+  Thanks to [@JoetineY](https://github.com/JoetineY) for the feature request (#275).
 
 ## Bug Fixes
+
+- **Color configuration is uncertain when blur=0 (#269):** When developers configured custom tint colors with `blur: 0`, the surface previously suffered from unexpected luminance and saturation drift because the shader applied adaptive ambient and light calculations intended for blurred glass. Developers can now set `bodyMode: GlassBodyMode.clear` on `LiquidGlassSettings` to bypass adaptive tinting and composite the exact designer hex color while maintaining specular highlights, Fresnel sheen, and 3D meniscus edge refraction.
+
+Thanks to [@JoetineY](https://github.com/JoetineY) for the bug report (#269).
 
 - **Minimized bar keeps the selected tab's icon colour (#279):** On `GlassTabBar.minimizable`, the minimized pill drew the selected tab's icon in `unselectedIconColor`, so a custom `selectedIconColor` dropped out on minimize and returned on expand. The pill now uses `selectedIconColor`, as the native bar does — the tab is still selected, only the bar has shrunk. `GlassTabBar.searchable` is unchanged: its collapsed pill shows the tab search was opened from, which is no longer the selected one.
 
@@ -9,6 +65,14 @@ Thanks to [@JakeThomson](https://github.com/JakeThomson) for the fix (#280).
 - **`GlassScrollEdgeStyle.blur` stays on its own route (#278):** The progressive blur is a backdrop filter, and left unclipped a backdrop filter frosts everything beneath it up to the nearest ancestor clip — under a Cupertino pop that included the route being revealed, which showed the outgoing screen's top and bottom bands until the transition settled. The shader path lost its `ClipRect` when the region moved to paint time in 0.30.1; it is back, so a `ProgressiveBlur` now frosts nothing outside its own rectangle wherever it sits.
 
 Thanks to [@JakeThomson](https://github.com/JakeThomson) for the fix and on-device integration tests (#281).
+
+- **`GlassAppBar` title alignment (#282):** Left-aligned titles (`centerTitle: false`) no longer add an unintended 8 px start gap when no leading widget is present, correctly aligning with content padding.
+
+Thanks to [@Vincen-dev](https://github.com/Vincen-dev) for the bug report and reproduction test (#282).
+
+- **Menu and popover dismiss instantly on route navigation (#274):** When an item or action navigates to another page, `GlassMenu` and `GlassPopover` dismiss immediately instead of playing the close spring across the destination route transition.
+
+Thanks to [@Vincen-dev](https://github.com/Vincen-dev) for the bug report (#274).
 
 ---
 

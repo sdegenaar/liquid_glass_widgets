@@ -578,15 +578,18 @@ class _ToolbarLayout extends MultiChildLayoutDelegate {
       );
     } else {
       // Leading-aligned: title occupies the space between the two side widgets
-      // with an 8 px logical-start gap.
+      // with an 8 px gap when adjacent to a leading or action widget.
       //
-      // Logical-start side = leadingWidth (LTR) or actionsWidth (RTL).
-      // Logical-end side   = actionsWidth (LTR) or leadingWidth (RTL).
-      final double startOccupied = _isLTR ? leadingWidth : actionsWidth;
-      final double endOccupied = _isLTR ? actionsWidth : leadingWidth;
+      // In both LTR and RTL:
+      //   - leading is positioned at the logical-start edge (0 in LTR, width - leadingWidth in RTL).
+      //   - actions is positioned at the logical-end edge (width - actionsWidth in LTR, 0 in RTL).
+      final double startOccupied = leadingWidth;
+      final double endOccupied = actionsWidth;
+      final double startGap = startOccupied > 0 ? _titleGap : 0.0;
+      final double endGap = endOccupied > 0 ? _titleGap : 0.0;
       final double maxWidth = math.max(
         0.0,
-        size.width - startOccupied - _titleGap - endOccupied,
+        size.width - startOccupied - startGap - endOccupied - endGap,
       );
 
       final Size ts = layoutChild(
@@ -596,8 +599,8 @@ class _ToolbarLayout extends MultiChildLayoutDelegate {
 
       // Pin to logical-start edge (left in LTR, right in RTL).
       final double titleX = _isLTR
-          ? startOccupied + _titleGap
-          : size.width - startOccupied - _titleGap - ts.width;
+          ? startOccupied + startGap
+          : size.width - startOccupied - startGap - ts.width;
 
       positionChild(
         _ToolbarSlot.title,

@@ -98,6 +98,10 @@ uniform vec4 uEdgeConfig;
 // See PlatformViewGlassMode. At 0 this shader is bit for bit unchanged.
 uniform float uPlatformViewMode;
 
+// Slot 33: uBodyMode — 0 = adaptive (default, iOS 26 Glass.regular), 1 = clear (iOS 26 Glass.clear).
+// See GlassBodyMode. In clear mode, luminance normalization is bypassed for direct alpha compositing.
+uniform float uBodyMode;
+
 // uThickness directly and is already DPR-independent).
 // uniform float uRefractScale; // Removed in favor of scaling uThickness
 
@@ -364,7 +368,7 @@ void main() {
         refractColor.rgb /= refractColor.a;
     }
 
-    vec4 finalColor = applyGlassColor(refractColor, uGlassColor);
+    vec4 finalColor = applyGlassColor(refractColor, uGlassColor, uBodyMode);
 
     // VQ4: Content-adaptive glass strength.
     //
@@ -400,9 +404,10 @@ void main() {
     // weight = ±2.4%) — within a single JND step, noticeable as a property
     // not a glitch.  Uses mix() to re-blend toward uGlassColor.rgb over the
     // already-tinted finalColor, scaled by the adaptive delta only.
+    // In clear mode (uBodyMode == 1.0), adaptive tint modulation is bypassed.
     finalColor.rgb = mix(finalColor.rgb,
                          uGlassColor.rgb,
-                         uGlassColor.a * 0.12 * (adaptiveStrength - 1.0));
+                         uGlassColor.a * 0.12 * (adaptiveStrength - 1.0) * (1.0 - uBodyMode));
 
     // Whitening veil — applied here, right after the body tint and BEFORE the
     // rim/fresnel passes. Applying it before the edge lighting means the rim

@@ -225,6 +225,16 @@ class GlassMorphController extends ChangeNotifier {
     _runSpring(0.0, velocityHint: LiquidMorphPhysics.closeVelocityHint);
   }
 
+  /// Immediately resets the controller to its resting closed state (value = 0.0,
+  /// velocity = 0.0) without running an animation.
+  void reset() {
+    _animationController.stop();
+    _isClosing = false;
+    _hasHandedOff = false;
+    _animationController.value = 0.0;
+    notifyListeners();
+  }
+
   // ─── Physics computation ──────────────────────────────────────────────────
 
   /// Computes the current [LiquidMorphState] for the given layout geometry.

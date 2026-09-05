@@ -27,6 +27,8 @@ import 'package:liquid_glass_widgets_example/demos/google_maps_demo.dart'
     show PlatformViewDemo;
 import 'package:liquid_glass_widgets_example/demos/quality_comparison_demo.dart'
     show GlassQualityComparisonDemo;
+import 'package:liquid_glass_widgets_example/demos/color_fidelity_demo.dart'
+    show ColorFidelityDemoPage;
 import 'package:liquid_glass_widgets_example/pages/containers_page.dart';
 import 'package:liquid_glass_widgets_example/pages/feedback_page.dart';
 import 'package:liquid_glass_widgets_example/pages/input_page.dart';
@@ -796,7 +798,7 @@ class _ExamplesTab extends StatelessWidget {
                   ),
                   SizedBox(height: 14),
 
-                  // Row 4: Quality Tiers (full width — Collapse Bar removed in v1.0.0)
+                  // Row 4: Quality Tiers & Color Fidelity
                   Row(
                     children: [
                       Expanded(
@@ -805,6 +807,15 @@ class _ExamplesTab extends StatelessWidget {
                           icon: CupertinoIcons.sparkles,
                           color: const Color(0xFFFFB340),
                           destination: const GlassQualityComparisonDemo(),
+                        ),
+                      ),
+                      SizedBox(width: 14),
+                      Expanded(
+                        child: _SmallDemoCard(
+                          title: 'Color Fidelity',
+                          icon: CupertinoIcons.color_filter,
+                          color: const Color(0xFF00F5D4),
+                          destination: const ColorFidelityDemoPage(),
                         ),
                       ),
                     ],
