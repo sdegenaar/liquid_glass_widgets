@@ -1,5 +1,9 @@
 # 1.3.1
 
+## New Features
+
+- **`GlassModalSheet` drag indicator geometry (#288):** `dragIndicatorHeight` (default 4) and `dragIndicatorTopPadding` (default 8) join `dragIndicatorWidth`, so a sheet can match a host's own pill. Apple's own apps vary the pill's thickness, width and inset from sheet to sheet, and sit it higher where a control row follows (Maps), so there is no one right value to bake in; the defaults are unchanged.
+
 ## Bug Fixes
 
 - **Minimized bar keeps the selected tab's icon colour (#279):** On `GlassTabBar.minimizable`, the minimized pill drew the selected tab's icon in `unselectedIconColor`, so a custom `selectedIconColor` dropped out on minimize and returned on expand. The pill now uses `selectedIconColor`, as the native bar does — the tab is still selected, only the bar has shrunk. `GlassTabBar.searchable` is unchanged: its collapsed pill shows the tab search was opened from, which is no longer the selected one.

@@ -38,6 +38,8 @@ class _SheetLayout extends StatelessWidget {
   final bool showDragIndicator;
   final Color? dragIndicatorColor;
   final double dragIndicatorWidth;
+  final double dragIndicatorHeight;
+  final double dragIndicatorTopPadding;
   final EdgeInsetsGeometry? padding;
   final bool maintainContentGlass;
   final LiquidGlassSettings? fullStateContentSettings;
@@ -80,6 +82,8 @@ class _SheetLayout extends StatelessWidget {
     required this.showDragIndicator,
     this.dragIndicatorColor,
     required this.dragIndicatorWidth,
+    required this.dragIndicatorHeight,
+    required this.dragIndicatorTopPadding,
     this.padding,
     required this.maintainContentGlass,
     this.fullStateContentSettings,
@@ -94,6 +98,8 @@ class _SheetLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     final handleZone = _SheetHandleZone(
       indicatorWidth: dragIndicatorWidth,
+      indicatorHeight: dragIndicatorHeight,
+      topPadding: dragIndicatorTopPadding,
       color: dragIndicatorColor,
       onDismiss: onDismiss,
     );
@@ -347,11 +353,15 @@ class _SheetLayout extends StatelessWidget {
 class _SheetHandleZone extends StatelessWidget {
   const _SheetHandleZone({
     required this.indicatorWidth,
+    required this.indicatorHeight,
+    required this.topPadding,
     this.color,
     this.onDismiss,
   });
 
   final double indicatorWidth;
+  final double indicatorHeight;
+  final double topPadding;
   final Color? color;
   final VoidCallback? onDismiss;
 
@@ -364,10 +374,11 @@ class _SheetHandleZone extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 8),
+          SizedBox(height: topPadding),
           _GlassDragIndicator(
             isGlass: isGlass,
             width: indicatorWidth,
+            height: indicatorHeight,
             color: color,
             onDismiss: onDismiss,
           ),
@@ -382,12 +393,14 @@ class _GlassDragIndicator extends StatelessWidget {
   const _GlassDragIndicator({
     required this.isGlass,
     required this.width,
+    required this.height,
     this.color,
     this.onDismiss,
   });
 
   final bool isGlass;
   final double width;
+  final double height;
   final Color? color;
   final VoidCallback? onDismiss;
 
@@ -404,10 +417,10 @@ class _GlassDragIndicator extends StatelessWidget {
       onTap: onDismiss ?? () => Navigator.maybePop(context),
       child: Container(
         width: width,
-        height: 4,
+        height: height,
         decoration: BoxDecoration(
           color: color ?? defaultColor,
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(height / 2),
         ),
       ),
     );
@@ -805,6 +818,13 @@ class GlassModalSheetScaffold extends StatelessWidget {
   /// too subtle relative to the rest of the sheet's content.
   final double dragIndicatorWidth;
 
+  /// Thickness of the drag handle pill in logical pixels. Defaults to 4.
+  final double dragIndicatorHeight;
+
+  /// Gap between the sheet's top edge and the drag handle pill. Defaults
+  /// to 8.
+  final double dragIndicatorTopPadding;
+
   /// Whether to enable a gradient fade effect at the top.
   final bool enableTopFade;
 
@@ -878,6 +898,8 @@ class GlassModalSheetScaffold extends StatelessWidget {
     this.showDragIndicator = true,
     this.dragIndicatorColor,
     this.dragIndicatorWidth = 36,
+    this.dragIndicatorHeight = 4,
+    this.dragIndicatorTopPadding = 8,
     this.glowColor,
     this.glowRadius = 1.5,
     this.suppressInteractionOnChildren = false,
@@ -947,6 +969,8 @@ class GlassModalSheetScaffold extends StatelessWidget {
           showDragIndicator: showDragIndicator,
           dragIndicatorColor: dragIndicatorColor,
           dragIndicatorWidth: dragIndicatorWidth,
+          dragIndicatorHeight: dragIndicatorHeight,
+          dragIndicatorTopPadding: dragIndicatorTopPadding,
           glowColor: glowColor,
           glowRadius: glowRadius,
           suppressInteractionOnChildren: suppressInteractionOnChildren,
