@@ -415,6 +415,32 @@ void main() {
   // GlassMenu — glowOnTapOnly
   // ==========================================================================
   group('GlassMenu — glowOnTapOnly', () {
+    test(
+        'GlassMenu defaults glowOnTapOnly to false for continuous pointer tracking',
+        () {
+      final menu = GlassMenu(
+        trigger: const SizedBox(),
+        items: [GlassMenuItem(title: 'Item', onTap: () {})],
+      );
+      // Parity guard: GlassMenu defaults to false (unlike GlassPopover which defaults to true)
+      // because GlassMenu contains discrete options where specular highlight
+      // tracks across items without being killed by gesture slop.
+      expect(menu.glowOnTapOnly, isFalse);
+    });
+
+    testWidgets(
+        'default glowOnTapOnly=false passes false to internal GlassGlow',
+        (tester) async {
+      await tester.pumpWidget(_app(GlassMenu(
+        trigger: const SizedBox(width: 60, height: 40, child: Text('Open')),
+        items: [GlassMenuItem(title: 'Item', onTap: () {})],
+      )));
+      await _openMenu(tester, 'Open');
+      expect(find.text('Item'), findsOneWidget);
+      final glow = tester.widget<GlassGlow>(find.byType(GlassGlow));
+      expect(glow.glowOnTapOnly, isFalse);
+    });
+
     testWidgets('renders without crash with glowOnTapOnly=true',
         (tester) async {
       await tester.pumpWidget(_app(GlassMenu(

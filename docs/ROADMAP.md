@@ -1,6 +1,6 @@
 # Roadmap: 1.x → 2.0
 
-> Last updated: 2026-09-08 (reflecting 1.4.2 state; `feat/1.5.0` branch active)
+> Last updated: 2026-09-08 (two 1.5.0 features shipped on `feat/1.5.0`)
 
 This document tracks planned and future work for `liquid_glass_widgets` post-1.0.
 The guiding principle remains: **fewer, better widgets that map 1:1 to real iOS 26 components**.
@@ -29,6 +29,8 @@ For historical version notes (0.14 → 1.0), see [`CHANGELOG.md`](../CHANGELOG.m
 | Platform view glass passthrough | ✅ Done (1.2.0) | `PlatformViewGlassMode.passthrough` (#247) |
 | `GlassBodyMode` adaptive vs clear | ✅ Done (1.4.0) | `Glass.regular` / `Glass.clear` parity (#269) |
 | Rec.709 luminance weights | ✅ Done (1.4.2) | All shader + Dart paths corrected from BT.601 |
+| Shader-level touch specular | ✅ Done (1.5.0 WIP) | `uTouchPosition`/`uTouchIntensity` uniforms + `_TouchSpecularBridge` |
+| Vibrancy fill for nested glass | ✅ Done (1.5.0 WIP) | `AdaptiveGlass.vibrancy()` / `_VibrancyFill`; zero BackdropFilter |
 | Light-mode golden tests | ⬜ Planned (1.5.0) | In `feat/1.5.0` |
 | `reduceTransparency` native detection | ⬜ Planned (1.5.0) | Method channel; currently approximated via `highContrast` |
 | Example app covers all widgets | ⚠️ Partial | Not verified against current widget catalogue |
@@ -38,7 +40,7 @@ For historical version notes (0.14 → 1.0), see [`CHANGELOG.md`](../CHANGELOG.m
 
 ## Active: 1.5.0 (`feat/1.5.0` branch)
 
-### Shader-Level Touch Specular (`uTouchPosition` uniform)
+### Shader-Level Touch Specular (`uTouchPosition` uniform) ✅ Done
 
 `GlassButton`'s touch-tracking specular sheen (shipped in 1.3.0) is a uniform additive
 brightness boost on the Standard path and **absent entirely on the Premium/Impeller path**.
@@ -46,19 +48,23 @@ The correct implementation passes the pointer coordinate as a shader uniform, bi
 specular light direction toward the touch point inside the fragment shader.
 
 Benefits: geometrically bounded by the SDF (no clipper needed), zero GPU cost at rest
-(`uTouchActive = 0.0` kills the specular term), physically correct highlight that conforms
-to capsule/pill corner geometry. See [ROADMAP.md L109-L144] for the full GLSL sketch.
+(`uTouchIntensity = 0.0` kills the specular term), physically correct highlight that conforms
+to capsule/pill corner geometry.
 
-**Scope:** New uniforms in `liquid_glass_final_render.frag`, pointer-event → shader UV
-mapping per `GlassGlowLayer`, Skia path retains existing additive brightness fallback.
+**Shipped:** Two new uniforms (`uTouchPosition vec2`, `uTouchIntensity float`) in
+`liquid_glass_final_render.frag` (slots 34–36). Pure 2D specular math (`pow(dot, 8.0)`,
+Reinhard compressed). Wired via zero-rebuild `_TouchSpecularBridge` + `ValueNotifier` from
+`GlassGlowLayerState`. DPR multiply on Dart side for coordinate alignment.
 
-### Vibrancy Fill Fallback for Nested Glass
+### Vibrancy Fill Fallback for Nested Glass ✅ Done
 
 When `InheritedLiquidGlass(avoidsRefraction: true)` is set by `GlassContainer`, an inner
-`GlassEffect` silently falls through to `GlassQuality.minimal` with no visible surface —
-looks like a broken widget. The correct fix renders a translucent tinted fill with rim and
-specular preserved but the refraction lens dropped, approximating iOS 26 vibrancy layer
-behaviour. The debug-assert stopgap is skipped in favour of shipping the correct fix.
+`GlassEffect` previously fell through to `GlassQuality.minimal` with no visible surface —
+looks like a broken widget.
+
+**Shipped:** `_VibrancyFill` widget in `adaptive_glass.dart`: `ShapeDecoration` tinted fill +
+`_SpecularRimPainter` rim, no `BackdropFilter`. `AdaptiveGlass.vibrancy()` static factory.
+Alpha ceiling 0.45 (lighter than standalone `_FrostedFallback`). All 2,932 tests pass.
 
 ### `reduceTransparency` Native Detection
 

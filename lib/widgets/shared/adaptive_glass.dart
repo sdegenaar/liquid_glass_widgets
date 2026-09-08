@@ -149,6 +149,27 @@ class AdaptiveGlass extends StatelessWidget {
     );
   }
 
+  /// Static helper that renders an iOS 26 vibrancy fill for nested glass.
+  ///
+  /// Returns a [_VibrancyFill]: a translucent tinted surface with specular rim
+  /// but no [BackdropFilter]. Used when [InheritedLiquidGlass.avoidsRefraction]
+  /// is `true` (set by [GlassContainer]) to prevent recursive compositor reads
+  /// that cause Impeller GPU tile-memory stalls and missing surfaces.
+  ///
+  /// This matches the UIKit model: a `UIVibrancyEffect` nested inside a
+  /// `UIVisualEffectView` never performs a second backdrop read.
+  static Widget vibrancy({
+    required LiquidShape shape,
+    required LiquidGlassSettings settings,
+    required Widget child,
+  }) {
+    return _VibrancyFill(
+      shape: shape,
+      settings: settings,
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // 1. Resolve Settings
@@ -212,6 +233,28 @@ class AdaptiveGlass extends StatelessWidget {
           isAccessibilityFallback: false,
           isInteractive: isInteractive,
           platformViewBackdrop: platformViewBackdrop,
+          child: content,
+        ),
+      );
+    }
+
+    // ---- NESTED GLASS VIBRANCY FAST-PATH (avoidsRefraction: true) ------------
+    // Triggered when an ancestor GlassContainer (or any widget that sets
+    // InheritedLiquidGlass.avoidsRefraction = true) is in the tree. A second
+    // BackdropFilter inside the parent glass surface causes Impeller GPU tile-
+    // memory thrash, missing surfaces, and visible compositor artifacts.
+    //
+    // The correct iOS 26 behaviour for nested glass is a UIVibrancyEffect-style
+    // translucent tinted fill: no refraction, no blur, but rim and specular
+    // highlights are preserved. _VibrancyFill delivers exactly this.
+    // --------------------------------------------------------------------------
+    if (inherited?.avoidsRefraction ?? false) {
+      return _wrapWithDecorations(
+        context,
+        baseSettings,
+        _VibrancyFill(
+          shape: shape,
+          settings: baseSettings,
           child: content,
         ),
       );
@@ -642,6 +685,122 @@ class _InverseShapeClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(_InverseShapeClipper oldClipper) =>
       oldClipper.shape != shape;
+}
+
+// ---------------------------------------------------------------------------
+// _VibrancyFill — nested glass vibrancy layer (avoidsRefraction: true)
+//
+// Used by:
+//   • GlassEffect when InheritedLiquidGlass.avoidsRefraction == true
+//     (set by GlassContainer to prevent recursive backdrop reads)
+//
+// iOS behaviour reference:
+//   When a UIVibrancyEffect is placed inside a UIVisualEffectView, the inner
+//   layer never issues a second backdrop read. It renders a translucent tinted
+//   fill over the already-blurred parent surface — exactly what this widget does.
+//
+// Visual composition (bottom to top):
+//   1. Translucent tinted ShapeDecoration fill (respects bodyMode/glassColor/
+//      whitenStrength — same knobs as the Standard shader path)
+//   2. Child content, clipped to shape via _ShapeClip
+//   3. _SpecularRimPainter — identical rim/specular as _FrostedFallback
+//
+// No BackdropFilter. No FragmentShader. No GPU compositor stall.
+// Runs identically on Skia, Impeller, Web, Windows, and Linux.
+//
+// Alpha ceiling: 0.45 (vs 0.80 in accessibility _FrostedFallback). Nested
+// glass sits behind the parent glass surface's own blur, so it must read
+// lighter than a standalone surface to avoid appearing opaque.
+// In GlassBodyMode.clear the exact tint alpha is used with no ceiling.
+// ---------------------------------------------------------------------------
+class _VibrancyFill extends StatelessWidget {
+  const _VibrancyFill({
+    required this.shape,
+    required this.settings,
+    required this.child,
+  });
+
+  final LiquidShape shape;
+  final LiquidGlassSettings settings;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final baseSettings = GlassMaterializeScope.resolveSettings(
+      context,
+      settings,
+    );
+    final content = GlassMaterializeScope.wrapContent(context, child);
+
+    if (baseSettings.visibility <= 0.0) {
+      return Opacity(opacity: 0.0, child: content);
+    }
+
+    // Apply whitenStrength veil — same ramp as _FrostedFallback so a single
+    // whitenStrength value reads consistently across all rendering tiers.
+    const double kWhitenVeilGain = 1.5;
+    final double whiten =
+        baseSettings.effectiveWhitenStrength.clamp(0.0, 1.0).toDouble();
+    final double veil = whiten <= 0.0
+        ? 0.0
+        : (whiten * kWhitenVeilGain).clamp(0.0, 1.0).toDouble();
+    final tint = veil <= 0.0
+        ? baseSettings.effectiveGlassColor
+        : Color.lerp(
+            baseSettings.effectiveGlassColor, const Color(0xFFFFFFFF), veil)!;
+
+    // Alpha: lighter ceiling than _FrostedFallback — nested glass is always
+    // behind a parent blur surface and must not look like an opaque panel.
+    final double vibrancyAlpha = baseSettings.bodyMode == GlassBodyMode.clear
+        ? tint.a.clamp(0.0, 1.0)
+        : tint.a.clamp(0.08, 0.45);
+    final vibrancyColor = tint.withValues(alpha: vibrancyAlpha);
+
+    final stack = Stack(
+      fit: StackFit.passthrough,
+      clipBehavior: Clip.hardEdge,
+      children: [
+        // 1. Tinted fill — no BackdropFilter, pure vector composition.
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: ShapeDecoration(color: vibrancyColor, shape: shape),
+            child: const SizedBox.expand(),
+          ),
+        ),
+
+        // 2. Child content clipped to shape.
+        _ShapeClip(
+          shape: shape,
+          child: content,
+        ),
+
+        // 3. Specular rim — reuses _FrostedFallback's painter unchanged.
+        //    Suppressed for flat-edge shapes (app bars / bottom bars) as in
+        //    _FrostedFallback, where the rim reads as a Material divider.
+        if (!_FrostedFallback._isFlatEdge(shape))
+          Positioned.fill(
+            child: IgnorePointer(
+              child: _ShapeClip(
+                shape: shape,
+                child: CustomPaint(
+                  painter: _SpecularRimPainter(
+                    shape: shape,
+                    settings: baseSettings,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+
+    return baseSettings.visibility >= 1.0
+        ? stack
+        : Opacity(
+            opacity: baseSettings.visibility.clamp(0.0, 1.0),
+            child: stack,
+          );
+  }
 }
 
 // ---------------------------------------------------------------------------

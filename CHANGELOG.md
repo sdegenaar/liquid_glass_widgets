@@ -2,8 +2,26 @@
 
 ## Features
 
-- **Shader-level touch specular (`uTouchPosition` uniform)** — _in progress_
-- **Vibrancy fill fallback for nested glass** — _in progress_
+- **Shader-level touch specular (`uTouchPosition`):** When a `GlassGlow` touch is active,
+  the specular highlight on the glass rim now concentrates on the side facing the finger — a
+  physically correct optical glint matching Apple iOS 26 Liquid Glass, driven by two new GLSL
+  uniforms (`uTouchPosition vec2`, `uTouchIntensity float`). The specular calculation is isotropic
+  in physical pixels (immune to aspect ratio warping on wide pills and bars), includes contact
+  distance falloff (`smoothstep`), aligns outward rim normals (`anisoN`) with touch rays, is
+  Reinhard-compressed, and costs zero at rest (GPU uniform coherence culls the branch when
+  `uTouchIntensity == 0`). Wired with zero frame lag via synchronous controller listeners on
+  `GlassGlowLayerState` and dual-direction propagation: child `_RenderGlassGlowLayer` objects
+  propagate directly to ancestor `LiquidGlassRenderObject`s, while ancestor `GlassGlowLayer`s
+  feed `_TouchSpecularBridge` on `RenderLiquidGlassLayer` without widget rebuilds.
+
+- **Vibrancy fill for nested glass (`avoidsRefraction: true`):** When a `GlassEffect` or
+  `AdaptiveGlass` sits inside a `GlassContainer` (or any surface that sets
+  `InheritedLiquidGlass.avoidsRefraction`), it now renders a proper `_VibrancyFill` — a translucent
+  tinted `ShapeDecoration` with `_SpecularRimPainter` rim highlights and full `GlassMaterializeScope`
+  support — instead of silently routing to `GlassQuality.minimal` and producing a near-invisible
+  widget. No `BackdropFilter`, no compositor stall, zero GPU overhead. Matches iOS 26 UIKit behaviour:
+  a `UIVibrancyEffect` nested inside a `UIVisualEffectView` never issues a second backdrop read.
+  `AdaptiveGlass.vibrancy()` static factory added as the public entry-point.
 
 ## Improvements
 

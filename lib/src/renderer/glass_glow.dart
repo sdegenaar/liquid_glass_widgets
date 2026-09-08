@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
 import '../../utils/glass_spring.dart';
+import 'rendering/liquid_glass_render_object.dart';
 
 /// {@template glass_glow}
 /// If placed as a descendant of a [GlassGlowLayer], this widget will
@@ -235,6 +236,21 @@ class GlassGlowLayer extends StatefulWidget {
     if (!context.mounted) return null;
     return context.findAncestorStateOfType<GlassGlowLayerState>();
   }
+
+  /// Returns the [ValueNotifier] that carries live touch-specular data from
+  /// the nearest ancestor [GlassGlowLayerState] to [LiquidGlassRenderObject].
+  ///
+  /// The notifier fires on every spring animation tick when a touch is active
+  /// (or on release, as intensity decays to 0). Listeners call
+  /// [LiquidGlassRenderObject.setTouchSpecular] directly — zero [setState],
+  /// zero widget rebuild, only [RenderObject.markNeedsPaint].
+  static ValueNotifier<({Offset position, double intensity})>?
+      touchSpecularNotifierOf(BuildContext context) {
+    if (!context.mounted) return null;
+    return context
+        .findAncestorStateOfType<GlassGlowLayerState>()
+        ?._touchSpecularNotifier;
+  }
 }
 
 class GlassGlowLayerState extends State<GlassGlowLayer>
@@ -259,6 +275,16 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
     initialValue: 1.2,
   );
 
+  /// Carries the current touch position (layer-local logical px) and
+  /// spring-animated intensity to [LiquidGlassRenderObject.setTouchSpecular].
+  ///
+  /// Updated on every spring animation tick, so listeners need not poll.
+  /// At rest: intensity == 0.0. While pressed: intensity rises to 1.0.
+  final _touchSpecularNotifier =
+      ValueNotifier<({Offset position, double intensity})>(
+    (position: Offset.zero, intensity: 0.0),
+  );
+
   bool _dragging = false;
 
   /// Whether a touch is currently active.
@@ -275,10 +301,33 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
   double _baseOpacity = 1;
 
   @override
+  void initState() {
+    super.initState();
+    _offsetController.addListener(_syncTouchSpecular);
+    _alphaController.addListener(_syncTouchSpecular);
+  }
+
+  void _syncTouchSpecular() {
+    final currentIntensity = _alphaController.value;
+    final currentPosition = _offsetController.value;
+    final prev = _touchSpecularNotifier.value;
+    if (prev.intensity != currentIntensity ||
+        prev.position != currentPosition) {
+      _touchSpecularNotifier.value = (
+        position: currentPosition,
+        intensity: currentIntensity,
+      );
+    }
+  }
+
+  @override
   void dispose() {
+    _offsetController.removeListener(_syncTouchSpecular);
+    _alphaController.removeListener(_syncTouchSpecular);
     _offsetController.dispose();
     _alphaController.dispose();
     _radiusController.dispose();
+    _touchSpecularNotifier.dispose();
     super.dispose();
   }
 
@@ -314,6 +363,13 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
     }
 
     _offsetController.animateTo(offset);
+    // Notify touch-specular listeners synchronously with the new position.
+    // _alphaController.value rises to 1.0 via spring; push the current value
+    // immediately so the first frame reflects the correct touch position.
+    _touchSpecularNotifier.value = (
+      position: offset,
+      intensity: _alphaController.value,
+    );
   }
 
   void removeTouch() {
@@ -327,6 +383,13 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
     _dragging = false;
     _radiusController.animateTo(1.2);
     _alphaController.animateTo(0);
+    // Notify touch-specular listeners that the touch is gone.
+    // Position is kept (last touch point) so the specular fades from the
+    // correct spot rather than jumping to Offset.zero.
+    _touchSpecularNotifier.value = (
+      position: _offsetController.value,
+      intensity: 0.0,
+    );
   }
 
   @override
@@ -339,6 +402,7 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
       ]),
       builder: (context, child) {
         final animatedAlpha = _baseColor.a * _alphaController.value;
+
         return _RenderGlassGlowLayerWidget(
           clipper: widget.clipper,
           pulse: widget.pulse,
@@ -506,6 +570,7 @@ class _RenderGlassGlowLayer extends RenderProxyBox {
   set glowColor(Color value) {
     if (_glowColor == value) return;
     _glowColor = value;
+    _propagateToAncestorLiquidGlass();
     markNeedsPaint();
   }
 
@@ -514,7 +579,26 @@ class _RenderGlassGlowLayer extends RenderProxyBox {
   set glowOffset(Offset value) {
     if (_glowOffset == value) return;
     _glowOffset = value;
+    _propagateToAncestorLiquidGlass();
     markNeedsPaint();
+  }
+
+  /// Propagates touch specular data to an ancestor [LiquidGlassRenderObject]
+  /// when [GlassGlow] is placed inside a glass surface (e.g. inside [GlassButton]).
+  void _propagateToAncestorLiquidGlass() {
+    RenderObject? p = parent;
+    while (p != null) {
+      if (p is LiquidGlassRenderObject) {
+        if (attached && p.attached && hasSize && p.hasSize) {
+          final layerPos = p.globalToLocal(localToGlobal(_glowOffset));
+          p.setTouchSpecular(layerPos, _glowColor.a);
+        } else {
+          p.setTouchSpecular(_glowOffset, _glowColor.a);
+        }
+        break;
+      }
+      p = p.parent;
+    }
   }
 
   double _glowBlurRadius;

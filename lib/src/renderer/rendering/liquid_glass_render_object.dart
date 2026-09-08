@@ -17,7 +17,7 @@ import '../internal/snap_rect_to_pixels.dart';
 abstract class LiquidGlassRenderObject extends RenderProxyBox {
   LiquidGlassRenderObject({
     required GeometryRenderLink link,
-    required this.renderShader,
+    this.renderShader,
     required LiquidGlassSettings settings,
     required double devicePixelRatio,
     BackdropKey? backdropKey,
@@ -34,7 +34,7 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
           -sin(settings.lightAngle),
         );
 
-  final FragmentShader renderShader;
+  final FragmentShader? renderShader;
 
   /// Cached light direction vector — updated only when [settings.lightAngle]
   /// changes. Avoids recomputing cos/sin on every setting change.
@@ -124,6 +124,43 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
   set captureOriginInScreenSpace(Offset value) {
     if (_captureOriginInScreenSpace == value) return;
     _captureOriginInScreenSpace = value;
+    markNeedsPaint();
+  }
+
+  // ── Touch Specular fields ─────────────────────────────────────────────────
+  //
+  // Driven by GlassGlowLayerState via a ValueNotifier. The logical-pixel touch
+  // position and spring-animated intensity are forwarded to the shader as
+  // uTouchPosition (physical px) and uTouchIntensity.
+  //
+  // setTouchSpecular() is the only public mutation point: it guards against
+  // redundant markNeedsPaint() calls (equality check on both fields) and
+  // performs the DPR scale so callers work in logical pixels.
+
+  /// Touch point in logical pixels (layer-local).
+  Offset _touchPosition = Offset.zero;
+
+  /// Spring-animated touch presence scalar [0.0 at rest, 1.0 while pressed].
+  double _touchIntensity = 0.0;
+
+  @visibleForTesting
+  Offset get touchPosition => _touchPosition;
+
+  @visibleForTesting
+  double get touchIntensity => _touchIntensity;
+
+  /// Updates the touch specular uniforms and schedules a repaint if changed.
+  ///
+  /// [position] must be in layer-local **logical pixels**.
+  /// [intensity] must be in [0.0, 1.0].
+  ///
+  /// Called from [GlassGlowLayerState] on every spring animation tick via a
+  /// [ValueNotifier] listener — never from a widget build or setState.
+  void setTouchSpecular(Offset position, double intensity) {
+    final clamped = intensity.clamp(0.0, 1.0);
+    if (_touchPosition == position && _touchIntensity == clamped) return;
+    _touchPosition = position;
+    _touchIntensity = clamped;
     markNeedsPaint();
   }
 
@@ -284,7 +321,7 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
         // The baseline visual thickness was tuned on a 3x Retina display.
         final scale = devicePixelRatio / 3.0;
 
-        renderShader
+        renderShader!
           // Slot 0-1: uSize — physical-pixel size of the backdrop layer.
           // Must be set before painting so the shader can derive correct screen UVs.
           ..setFloatUniforms(initialIndex: 0, (value) {
@@ -348,6 +385,14 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
               ..setFloat(
                 settings.bodyMode == GlassBodyMode.clear ? 1.0 : 0.0,
               );
+          })
+          // Slots 34-35: uTouchPosition (physical px); Slot 36: uTouchIntensity.
+          // Multiply by DPR here so the shader receives physical-pixel coords
+          // matching FlutterFragCoord() — GlassGlowLayerState delivers logical px.
+          ..setFloatUniforms(initialIndex: 34, (value) {
+            value
+              ..setOffset(_touchPosition * devicePixelRatio)
+              ..setFloat(_touchIntensity.clamp(0.0, 1.0));
           })
           ..setImageSampler(
             1,
@@ -438,7 +483,7 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
     final geometrySizePhysical = activeBounds.size * dpr;
     final scale = dpr / 3.0;
 
-    renderShader
+    renderShader!
       // Slot 0-1: uSize — physical size of the capture image.
       ..setFloatUniforms(initialIndex: 0, (value) {
         value.setSize(captureSize);
@@ -500,6 +545,14 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
             settings.bodyMode == GlassBodyMode.clear ? 1.0 : 0.0,
           );
       })
+      // Slots 34-35: uTouchPosition (physical px); Slot 36: uTouchIntensity.
+      // Multiply by DPR here so the shader receives physical-pixel coords
+      // matching FlutterFragCoord() — GlassGlowLayerState delivers logical px.
+      ..setFloatUniforms(initialIndex: 34, (value) {
+        value
+          ..setOffset(_touchPosition * dpr)
+          ..setFloat(_touchIntensity.clamp(0.0, 1.0));
+      })
       // Slot 0: captured background image (replaces the BackdropFilter read).
       ..setImageSampler(0, capture)
       ..setImageSampler(1, geometryImage!, filterQuality: FilterQuality.medium);
@@ -528,7 +581,7 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
       ..clipRect(clipRect.shift(offset))
       ..drawRect(
         clipRect.shift(offset),
-        Paint()..shader = renderShader,
+        Paint()..shader = renderShader!,
       )
       ..restore();
 

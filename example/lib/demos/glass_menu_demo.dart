@@ -96,6 +96,7 @@ class _MenuDemoPageState extends State<MenuDemoPage> {
   int _itemCount = 5;
   double _textScale = 1.0;
   bool _internalIsDark = true;
+  bool _glowOnTapOnly = false;
 
   bool get _isDark => widget.isDark ?? _internalIsDark;
 
@@ -277,6 +278,47 @@ class _MenuDemoPageState extends State<MenuDemoPage> {
                             ),
                           ],
                         ),
+
+                        // Touch glow tracking mode (1.5.0 parity test)
+                        Row(
+                          children: [
+                            Text(
+                              'Glow Mode:',
+                              style: TextStyle(
+                                color: labelColor,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            CupertinoButton(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
+                              onPressed: () => setState(
+                                  () => _glowOnTapOnly = !_glowOnTapOnly),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _glowOnTapOnly
+                                        ? CupertinoIcons.hand_point_right
+                                        : CupertinoIcons.hand_draw_fill,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _glowOnTapOnly
+                                        ? 'Tap-Only'
+                                        : 'Tracking (iOS 26 Default)',
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -292,74 +334,65 @@ class _MenuDemoPageState extends State<MenuDemoPage> {
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _row([
-                            _Trigger(
+                            _trigger(
                               label: '↖ TL',
                               alignment: GlassMenuAlignment.topLeft,
-                              items: _items,
                               width: 52,
                               height: 52,
                               shape: const LiquidOval(),
                             ),
-                            _Trigger(
+                            _trigger(
                               label: '↑ TC',
                               alignment: GlassMenuAlignment.topCenter,
-                              items: _items,
                               width: 96,
                               height: 40,
                             ),
-                            _Trigger(
+                            _trigger(
                               label: '↗ TR',
                               alignment: GlassMenuAlignment.topRight,
-                              items: _items,
                               width: 52,
                               height: 52,
                               shape: const LiquidOval(),
                             ),
                           ]),
                           _row([
-                            _Trigger(
+                            _trigger(
                               label: '← CL',
                               alignment: GlassMenuAlignment.centerLeft,
-                              items: _items,
                               width: 96,
                               height: 40,
                             ),
-                            _Trigger(
+                            _trigger(
                               label: '●',
                               alignment: GlassMenuAlignment.center,
-                              items: _items,
                               width: 56,
                               height: 56,
                               shape: const LiquidOval(),
                             ),
-                            _Trigger(
+                            _trigger(
                               label: 'CR →',
                               alignment: GlassMenuAlignment.centerRight,
-                              items: _items,
                               width: 96,
                               height: 40,
                             ),
                           ]),
                           _row([
-                            _Trigger(
+                            _trigger(
                               label: '↙ BL',
                               alignment: GlassMenuAlignment.bottomLeft,
-                              items: _items,
                               width: 52,
                               height: 52,
                               shape: const LiquidOval(),
                             ),
-                            _Trigger(
+                            _trigger(
                               label: '↓ BC',
                               alignment: GlassMenuAlignment.bottomCenter,
-                              items: _items,
                               width: 96,
                               height: 40,
                             ),
-                            _Trigger(
+                            _trigger(
                               label: '↘ BR',
                               alignment: GlassMenuAlignment.bottomRight,
-                              items: _items,
                               width: 52,
                               height: 52,
                               shape: const LiquidOval(),
@@ -383,6 +416,23 @@ class _MenuDemoPageState extends State<MenuDemoPage> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: children,
       );
+
+  Widget _trigger({
+    required String label,
+    required GlassMenuAlignment alignment,
+    double width = 96,
+    double height = 40,
+    LiquidShape? shape,
+  }) =>
+      _Trigger(
+        label: label,
+        alignment: alignment,
+        items: _items,
+        width: width,
+        height: height,
+        shape: shape,
+        glowOnTapOnly: _glowOnTapOnly,
+      );
 }
 
 // ── Trigger widget ───────────────────────────────────────────────────────────
@@ -395,6 +445,7 @@ class _Trigger extends StatelessWidget {
     this.width = 96,
     this.height = 40,
     this.shape,
+    this.glowOnTapOnly = false,
   });
 
   final String label;
@@ -403,6 +454,7 @@ class _Trigger extends StatelessWidget {
   final double width;
   final double height;
   final LiquidShape? shape;
+  final bool glowOnTapOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -415,6 +467,7 @@ class _Trigger extends StatelessWidget {
       items: items,
       settings: _kMenuGlass,
       quality: GlassQuality.premium,
+      glowOnTapOnly: glowOnTapOnly,
       triggerBuilder: (ctx, toggle) => AdaptiveLiquidGlassLayer(
         child: GlassButton.custom(
           onTap: toggle,

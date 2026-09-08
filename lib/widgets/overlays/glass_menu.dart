@@ -167,7 +167,12 @@ class GlassMenu extends StatefulWidget {
   ///
   /// If true, the glow will appear on tap but will automatically fade out
   /// if the user starts dragging. It will not reappear until a new tap starts.
-  /// Default: true.
+  ///
+  /// Defaults to `false` for [GlassMenu]: the menu has a dismiss barrier and
+  /// no scroll rows, so the specular light should continue to track the
+  /// finger as it moves between items. Set to `true` only on menus that
+  /// contain scrollable content where a drag gesture must not leave a
+  /// persistent glare behind.
   final bool glowOnTapOnly;
 
   /// Custom color for the touch interaction glow.
@@ -274,7 +279,7 @@ class GlassMenu extends StatefulWidget {
     this.menuPadding = EdgeInsets.zero,
     this.selectionColor = const Color(0x3DFFFFFF),
     this.enableInteractionGlow = true,
-    this.glowOnTapOnly = true,
+    this.glowOnTapOnly = false,
     this.glowColor,
     this.glowRadius = 0.6,
     this.glowIntensity = 0.0,
