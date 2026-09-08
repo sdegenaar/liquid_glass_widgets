@@ -1,3 +1,18 @@
+# 1.5.0 (WIP)
+
+## Features
+
+- **Shader-level touch specular (`uTouchPosition` uniform)** — _in progress_
+- **Vibrancy fill fallback for nested glass** — _in progress_
+
+## Improvements
+
+- **`reduceTransparency` native detection via method channel** — _in progress_
+
+## Tests
+
+- **Light-mode golden snapshots for key widgets** — _in progress_
+
 # 1.4.2
 
 ## Bug Fixes

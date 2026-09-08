@@ -1,6 +1,6 @@
 # Roadmap: 1.x → 2.0
 
-> Last updated: 2026-09-03 (reflecting 1.3.0 state)
+> Last updated: 2026-09-08 (reflecting 1.4.2 state; `feat/1.5.0` branch active)
 
 This document tracks planned and future work for `liquid_glass_widgets` post-1.0.
 The guiding principle remains: **fewer, better widgets that map 1:1 to real iOS 26 components**.
@@ -9,13 +9,13 @@ For historical version notes (0.14 → 1.0), see [`CHANGELOG.md`](../CHANGELOG.m
 
 ---
 
-## Current Status (1.1.0)
+## Current Status (1.4.2 — `main`)
 
 | Criterion | Status | Notes |
 |---|---|---|
 | No known P0/P1 bugs | ✅ Clear | No open crash reports |
 | Dartdoc complete on all public API | ✅ Done | `public_member_api_docs` enforced permanently |
-| Test coverage ≥ 90% | ✅ Done | ~92% line coverage (physical ceiling) |
+| Test coverage ≥ 90% | ✅ Done | ~92% line coverage (2,932 tests) |
 | No `Icons.*` (Material) in `lib/` | ✅ Done | Zero hits — fully `CupertinoIcons` |
 | No hardcoded `Colors.*` in `lib/` | ✅ Done | All replaced with `CupertinoColors` or explicit hex `Color` literals |
 | `material.dart` imports in `lib/` | ✅ Done | 36 → 0 files |
@@ -25,66 +25,52 @@ For historical version notes (0.14 → 1.0), see [`CHANGELOG.md`](../CHANGELOG.m
 | `docs/PLATFORM_SUPPORT.md` | ✅ Done | All platforms, shader tiers, known bugs documented |
 | Navigation transition morph | ✅ Done (1.1.0) | `GlassNavigationShell` + `GlassAppBar.pinned` (#221) |
 | Scroll-to-minimize | ✅ Done (1.1.0) | `GlassTabBarMinimizeController`, all four behaviour cases (#228) |
-| Tab bar bottom accessory | ✅ Done (1.1.0) | `bottomAccessory` / `bottomAccessoryHeight` on `GlassTabBar.bottom()` |
-| Materialize transitions | ✅ Done (1.2.0) | `GlassMaterialize` + `GlassMaterializeTransition`; pinned chrome materializes (#240) |
-| Custom bar pinning | ✅ Done (1.2.0) | `GlassPinnedBarChrome` public registration API (#236) |
-| Pinned leading API | ✅ Done (1.2.0) | `GlassAppBar.pinned(leading:)` + `GlassBarItemBackground` (#238) |
 | Native gel morph | ✅ Done (1.2.0) | Capsule reshapes natively on push/pop; swell, bounce, glyph blur (#243) |
-| Platform view glass passthrough | ✅ Done (1.2.0) | `PlatformViewGlassMode.passthrough` + `passthroughOverPlatformView` (#247) |
+| Platform view glass passthrough | ✅ Done (1.2.0) | `PlatformViewGlassMode.passthrough` (#247) |
+| `GlassBodyMode` adaptive vs clear | ✅ Done (1.4.0) | `Glass.regular` / `Glass.clear` parity (#269) |
+| Rec.709 luminance weights | ✅ Done (1.4.2) | All shader + Dart paths corrected from BT.601 |
+| Light-mode golden tests | ⬜ Planned (1.5.0) | In `feat/1.5.0` |
+| `reduceTransparency` native detection | ⬜ Planned (1.5.0) | Method channel; currently approximated via `highContrast` |
 | Example app covers all widgets | ⚠️ Partial | Not verified against current widget catalogue |
 | Platform testing matrix complete | ⚠️ Partial | iOS + Android confirmed; Web, Windows, macOS need QA |
-| CHANGELOG migration guides | ⚠️ Partial | Not audited for all 1.0.x → 1.1.0 changes |
-| README widget table accurate | ✅ Updated (1.2.0) | Surfaces and Effects categories updated |
 
 ---
 
-## Active: 1.1.x Hardening
+## Active: 1.5.0 (`feat/1.5.0` branch)
 
-### Scroll Edge Effect Fidelity (Shipped in 1.2.0)
+### Shader-Level Touch Specular (`uTouchPosition` uniform)
 
-`GlassScrollEdgeEffect` and `GlassScaffold` now default to `GlassScrollEdgeStyle.blur`,
-composing `ProgressiveBlur` with a 2-pass separable Gaussian shader (`shaders/progressive_blur.frag`).
-Content scrolling beneath navigation chrome now progressively blurs live (matching iOS 26
-`.scrollEdgeEffectStyle`), preserving contrast and legibility for bar controls while keeping
-underlying content visible. `maxSigma` is configurable and can be driven from scroll offset.
+`GlassButton`'s touch-tracking specular sheen (shipped in 1.3.0) is a uniform additive
+brightness boost on the Standard path and **absent entirely on the Premium/Impeller path**.
+The correct implementation passes the pointer coordinate as a shader uniform, biasing the
+specular light direction toward the touch point inside the fragment shader.
 
-See [`docs/PROGRESSIVE_BLUR.md`](PROGRESSIVE_BLUR.md) for the `ProgressiveBlur` API.
+Benefits: geometrically bounded by the SDF (no clipper needed), zero GPU cost at rest
+(`uTouchActive = 0.0` kills the specular term), physically correct highlight that conforms
+to capsule/pill corner geometry. See [ROADMAP.md L109-L144] for the full GLSL sketch.
 
-### Named `LiquidGlassSettings` Presets
+**Scope:** New uniforms in `liquid_glass_final_render.frag`, pointer-event → shader UV
+mapping per `GlassGlowLayer`, Skia path retains existing additive brightness fallback.
 
-The package exposes 22 `LiquidGlassSettings` parameters. Apple ships two named
-variants (`.regular`, `.clear`). In practice, the demo source contains calibrated
-presets (`_barGlassSettings`, `_kPillGlass`, `_kTriggerGlass`) that consumers
-copy out of demo files because the generic `interactive` preset reads flat in
-production. The demos are the real design system, and the design system should
-be in the package.
+### Vibrancy Fill Fallback for Nested Glass
 
-**Planned:** Named constructors on `LiquidGlassSettings`:
+When `InheritedLiquidGlass(avoidsRefraction: true)` is set by `GlassContainer`, an inner
+`GlassEffect` silently falls through to `GlassQuality.minimal` with no visible surface —
+looks like a broken widget. The correct fix renders a translucent tinted fill with rim and
+specular preserved but the refraction lens dropped, approximating iOS 26 vibrancy layer
+behaviour. The debug-assert stopgap is skipped in favour of shipping the correct fix.
 
-```dart
-LiquidGlassSettings.regular({Brightness brightness})  // adaptive control glass
-LiquidGlassSettings.clear({Brightness brightness})    // media-rich; pairs with backerColor
-LiquidGlassSettings.chrome({Brightness brightness})   // bars/pills — the apple_music values
-```
+### `reduceTransparency` Native Detection
 
-These would be additive (no breaking changes). Secondary: annotate tier-specific
-parameters consistently with a `/// Premium only.` or `/// Standard only.` first line.
+`GlassAccessibilityScope` currently approximates Reduce Transparency via
+`MediaQuery.highContrastOf(context)` (Increase Contrast on iOS — a different toggle).
+A small method channel reading `UIAccessibility.isReduceTransparencyEnabled` gives exact
+detection.
 
-### Nested Glass: Debug Assert + Vibrancy Fill
+### Light-Mode Golden Snapshots
 
-When a `GlassEffect` descendant reads `InheritedLiquidGlass(avoidsRefraction: true)`
-(set by `GlassContainer`), the inner glass effect currently renders with no visible
-surface at all — not a "degraded" surface as documented. The failure looks like a
-broken widget, not a guardrail.
-
-**Planned (in order of preference):**
-
-1. **Vibrancy fill fallback** — when `avoidsRefraction: true`, render as a translucent
-   tinted fill with the rim/specular preserved but the lens dropped. Approximates the
-   iOS 26 vibrancy layer behaviour.
-2. **Debug assert** — if (1) is too large for this cycle, at minimum assert in debug
-   mode with a message naming the offending ancestor. A silent invisible widget is the
-   worst available outcome.
+Add golden regression snapshots for key widgets in `Brightness.light` to catch visual
+regressions after the Rec.709 luma shift and any future shader calibration work.
 
 ---
 
