@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_glass_widgets/src/renderer/liquid_glass_renderer.dart';
-import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 /// Standard constraints for golden test scenarios
 final testScenarioConstraints = BoxConstraints.tight(const Size(500, 500));
@@ -169,6 +168,76 @@ void goldenTest(
   );
 }
 
+/// Executes a **light-mode** golden test.
+///
+/// Identical contract to [goldenTest] except:
+/// - [MaterialApp] theme is [Brightness.light] with `Color(0xFFF2F2F7)` scaffold.
+/// - A [GlassTheme] with `brightness: Brightness.light` is injected at the
+///   highest-priority cascade level so [GlassTheme.brightnessOf] always returns
+///   [Brightness.light] regardless of the test runner's OS setting.
+/// - The [ScaffoldBackgroundColor] matches the iOS system grouped background
+///   so drop-shadow rendering (`_InverseShapeClipper`, `_InverseBarClipper`) has
+///   a realistic light backdrop to paint against.
+///
+/// Use [buildWithLightBackground] and [LightGoldenTestGroup] inside [builder].
+void goldenTestLight(
+  String description, {
+  required String fileName,
+  required Widget Function() builder,
+  Future<void> Function(WidgetTester)? pumpBeforeTest,
+  BoxConstraints? scenarioConstraints,
+  BoxConstraints? constraints,
+  List<String>? tags,
+}) {
+  testWidgets(
+    description,
+    tags: tags,
+    (tester) async {
+      tester.view.physicalSize = const Size(1200, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        GlassTheme(
+          // Level-1 brightness override: all glass widgets see Brightness.light
+          // regardless of the runner's OS setting.
+          data: const GlassThemeData(brightness: Brightness.light),
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(
+              brightness: Brightness.light,
+              scaffoldBackgroundColor: const Color(0xFFF2F2F7),
+            ),
+            home: Scaffold(
+              backgroundColor: const Color(0xFFF2F2F7),
+              body: SingleChildScrollView(
+                child: RepaintBoundary(
+                  key: const ValueKey('golden_scenario_root'),
+                  child: builder(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      if (pumpBeforeTest != null) {
+        await pumpBeforeTest(tester);
+      } else {
+        await tester.pumpAndSettle();
+      }
+
+      await expectLater(
+        find.byKey(const ValueKey('golden_scenario_root')),
+        matchesGoldenFile('goldens/$fileName.png'),
+      );
+    },
+  );
+}
+
 /// Wraps a widget with grid paper background for visual reference in golden tests
 Widget buildWithGridPaper(Widget child) {
   return ColoredBox(
@@ -210,6 +279,122 @@ Widget buildWithGradientBackground(Widget child) {
       child: Center(child: child),
     ),
   );
+}
+
+/// Wraps a widget with the Apple iOS system grouped background (`#F2F2F7`)
+/// for light-mode golden tests.
+///
+/// This gives the inverse-clipped drop-shadow subsystem (`_InverseShapeClipper`,
+/// `_InverseBarClipper`) a realistic high-luminance backdrop to paint against,
+/// which is the key scenario that all-dark golden tests cannot exercise.
+Widget buildWithLightBackground(Widget child) {
+  return Container(
+    color: const Color(0xFFF2F2F7),
+    child: Directionality(
+      textDirection: TextDirection.ltr,
+      child: Center(child: child),
+    ),
+  );
+}
+
+/// A [GoldenTestGroup] variant for light-mode golden snapshots.
+///
+/// Uses a white-based panel (`Color(0xFFFFFFFF)`) with dark scenario labels
+/// (`Color(0xFF6E6E73)` — iOS secondary label) instead of the dark-mode
+/// panel that the standard [GoldenTestGroup] produces.
+class LightGoldenTestGroup extends StatelessWidget {
+  /// Creates a [LightGoldenTestGroup].
+  const LightGoldenTestGroup({
+    required this.children,
+    this.scenarioConstraints,
+    this.columns = 2,
+    super.key,
+  });
+
+  /// List of test scenarios to display.
+  final List<LightGoldenTestScenario> children;
+
+  /// Default constraints applied to each scenario child.
+  final BoxConstraints? scenarioConstraints;
+
+  /// Number of columns (when applicable).
+  final int columns;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFE5E5EA), // iOS system group background
+      padding: const EdgeInsets.all(20),
+      child: Wrap(
+        spacing: 20,
+        runSpacing: 20,
+        children: [
+          for (final scenario in children)
+            if (scenarioConstraints != null && scenario.constraints == null)
+              LightGoldenTestScenario(
+                name: scenario.name,
+                constraints: scenarioConstraints,
+                child: scenario.child,
+              )
+            else
+              scenario,
+        ],
+      ),
+    );
+  }
+}
+
+/// A scenario within a [LightGoldenTestGroup].
+///
+/// Renders the scenario label in iOS secondary-label gray (`#6E6E73`) so it
+/// is legible on the light panel background.
+class LightGoldenTestScenario extends StatelessWidget {
+  /// Creates a [LightGoldenTestScenario].
+  const LightGoldenTestScenario({
+    required this.name,
+    required this.child,
+    this.constraints,
+    super.key,
+  });
+
+  /// The name / label of the scenario.
+  final String name;
+
+  /// The widget under test.
+  final Widget child;
+
+  /// Optional constraints for the scenario.
+  final BoxConstraints? constraints;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget content = child;
+    if (constraints != null) {
+      content = ConstrainedBox(
+        constraints: constraints!,
+        child: content,
+      );
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Text(
+            name,
+            style: const TextStyle(
+              color: Color(0xFF6E6E73), // iOS secondary label
+              fontSize: 13,
+              fontFamily: 'monospace',
+              decoration: TextDecoration.none,
+            ),
+          ),
+        ),
+        content,
+      ],
+    );
+  }
 }
 
 /// Wraps a widget with gradient background AND a glass layer for golden tests

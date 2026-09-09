@@ -1,6 +1,6 @@
 # Roadmap: 1.x → 2.0
 
-> Last updated: 2026-09-08 (two 1.5.0 features shipped on `feat/1.5.0`)
+> Last updated: 2026-09-09 (1.5.0 features & fixes; SwiftUI & Apple HIG parity audit)
 
 This document tracks planned and future work for `liquid_glass_widgets` post-1.0.
 The guiding principle remains: **fewer, better widgets that map 1:1 to real iOS 26 components**.
@@ -15,7 +15,7 @@ For historical version notes (0.14 → 1.0), see [`CHANGELOG.md`](../CHANGELOG.m
 |---|---|---|
 | No known P0/P1 bugs | ✅ Clear | No open crash reports |
 | Dartdoc complete on all public API | ✅ Done | `public_member_api_docs` enforced permanently |
-| Test coverage ≥ 90% | ✅ Done | ~92% line coverage (2,932 tests) |
+| Test coverage ≥ 90% | ✅ Done | ~92% line coverage (2,969 tests) |
 | No `Icons.*` (Material) in `lib/` | ✅ Done | Zero hits — fully `CupertinoIcons` |
 | No hardcoded `Colors.*` in `lib/` | ✅ Done | All replaced with `CupertinoColors` or explicit hex `Color` literals |
 | `material.dart` imports in `lib/` | ✅ Done | 36 → 0 files |
@@ -31,8 +31,9 @@ For historical version notes (0.14 → 1.0), see [`CHANGELOG.md`](../CHANGELOG.m
 | Rec.709 luminance weights | ✅ Done (1.4.2) | All shader + Dart paths corrected from BT.601 |
 | Shader-level touch specular | ✅ Done (1.5.0 WIP) | `uTouchPosition`/`uTouchIntensity` uniforms + `_TouchSpecularBridge` |
 | Vibrancy fill for nested glass | ✅ Done (1.5.0 WIP) | `AdaptiveGlass.vibrancy()` / `_VibrancyFill`; zero BackdropFilter |
-| Light-mode golden tests | ⬜ Planned (1.5.0) | In `feat/1.5.0` |
-| `reduceTransparency` native detection | ⬜ Planned (1.5.0) | Method channel; currently approximated via `highContrast` |
+| Collapsed tab native press | ✅ Done (1.5.0 WIP) | Native press growth & lift on collapsed search button (#272) |
+| Light-mode golden tests | ✅ Done (1.5.0 WIP) | `goldenTestLight()` + 5 targeted golden files |
+| `reduceTransparency` native detection | ⏳ Upstream | Awaiting [Flutter #190318](https://github.com/flutter/flutter/issues/190318); currently approximated via `highContrast` |
 | Example app covers all widgets | ⚠️ Partial | Not verified against current widget catalogue |
 | Platform testing matrix complete | ⚠️ Partial | iOS + Android confirmed; Web, Windows, macOS need QA |
 
@@ -64,19 +65,62 @@ looks like a broken widget.
 
 **Shipped:** `_VibrancyFill` widget in `adaptive_glass.dart`: `ShapeDecoration` tinted fill +
 `_SpecularRimPainter` rim, no `BackdropFilter`. `AdaptiveGlass.vibrancy()` static factory.
-Alpha ceiling 0.45 (lighter than standalone `_FrostedFallback`). All 2,932 tests pass.
+Alpha ceiling 0.45 (lighter than standalone `_FrostedFallback`). All 2,969 tests pass.
 
-### `reduceTransparency` Native Detection
+### Native Press Parity for Collapsed Search-Active Tab Indicator ✅ Done
 
-`GlassAccessibilityScope` currently approximates Reduce Transparency via
-`MediaQuery.highContrastOf(context)` (Increase Contrast on iOS — a different toggle).
-A small method channel reading `UIAccessibility.isReduceTransparencyEnabled` gives exact
-detection.
+The collapsed left button on `GlassTabBar.searchable` (when `isSearchActive: true`)
+now shares the native press growth (`LiquidStretch.nativePressGrowth`), micro-tremor
+(`AnchorStretchSettings.nativeTremor`), and surface highlight (`PressAmbientLift`),
+matching `GlassButton`, `SearchPill`, and `MinimizableTrailingPill` (PR #272 parity).
 
-### Light-Mode Golden Snapshots
+### Light-Mode Golden Snapshots ✅ Done
 
 Add golden regression snapshots for key widgets in `Brightness.light` to catch visual
 regressions after the Rec.709 luma shift and any future shader calibration work.
+
+**Shipped:** `goldenTestLight()` helper + `LightGoldenTestGroup` / `LightGoldenTestScenario` /
+`buildWithLightBackground()` in `test/shared/test_helpers.dart`. Five targeted goldens in
+`test/golden/light_mode_widgets_golden_test.dart` — `GlassButton`, `GlassAppBar`,
+`GlassTabBar.bottom`, `AdaptiveGlass`/`GlassCard`, `GlassToolbar` — covering
+`_InverseShapeClipper`/`_InverseBarClipper` drop-shadow rendering, `ambientBaseLight`
+doubling, and Rec.709 adaptive glass strength on light backgrounds.
+
+---
+
+## SwiftUI & Apple HIG Parity (Roadmap to 2.0)
+
+Based on a systematic evaluation of modern SwiftUI and Apple HIG components against `liquid_glass_widgets`, the following gaps and deprecations guide ongoing development for the 2.0 release line. The standard iOS Contacts app benchmark is used as the baseline for system component completeness.
+
+### High-Priority Gaps (Contacts App Benchmark)
+
+Features appearing in standard iOS system flows (e.g. stock Contacts app) prioritized for implementation:
+
+| SwiftUI Feature | Proposed Liquid Glass API | Status | Description |
+|---|---|---|---|
+| `.swipeActions()` | `GlassListTile.swipeActions` / `GlassSwipeActionScope` | ⬜ Planned | Swipe-to-delete, call, message actions on list items and grouped rows. |
+| `DisclosureGroup` | `GlassDisclosureGroup` / `GlassCollapsibleSection` | ⬜ Planned | Collapsible accordion / disclosure section within `GlassGroupedSection`. |
+| `EditButton` + `ForEach` | `GlassEditableList` / `GlassListTile.editing` | ⬜ Planned | Edit mode with red delete badges, reorder drag handles, and row insertion. |
+| `.contextMenu()` | `GlassContextMenu` | ⬜ Planned | Context menu triggered by long-press / secondary click with haptic surface lift and action stack. |
+| `.fullScreenCover()` | `showGlassFullScreenCover` | ⬜ Planned | Dedicated full-viewport modal presentation (distinct from bottom sheets). |
+| `DatePicker` / `MultiDatePicker` | `GlassDatePicker` | ⬜ Planned | Liquid glass date/time picker (compact, inline, and wheel/graphical modes). |
+| `NavigationStack` + `Link` + `Title` | `GlassNavigationStack` / `GlassNavigationLink` | ⬜ Planned | Declarative typed-route navigation stack. Requires `GlassNavigationLink` as a typed destination link and a `Navigator 2.0`-style route stack manager — meaningfully more than just renaming `GlassNavigationShell`. |
+
+### Medium-Priority Gaps (Standard iOS HIG)
+
+- [ ] **`showGlassConfirmationDialog` (`.confirmationDialog()`)** — modern anchored confirmation popup replacing legacy ActionSheet.
+- [ ] **`GlassWheelPicker` (`Picker(.wheel)`)** — iOS-style rotating drum / wheel picker in glass.
+- [ ] **`GlassInlinePicker` (`Picker(.inline)`)** — inline embedded picker (e.g. date wheel directly in a form).
+- [ ] **`GlassNavigationLinkPicker` (`Picker(.navigationLink)`)** — navigation-link-style drill-down picker, common in Settings-style UIs.
+- [ ] **`GlassPalettePicker` (`Picker(.palette)`)** — colour / swatch grid picker; most relevant once `GlassColorWell` lands.
+- [ ] **`GlassRadioGroup` (`Picker(.radioGroup)`)** — radio button group selection control.
+- [ ] **`GlassPopover` compact variant (`.popover` compact)** — `GlassPopover` currently adapts to a sheet on compact screen sizes. The compact popover variant stays anchored beside the trigger even on iPhone, without falling back to a sheet. This adaptive behaviour needs explicit opt-in support.
+- [ ] **`GlassRefreshable` (`.refreshable()`)** — pull-to-refresh control with liquid glass stretch and dynamic blur spinner.
+- [ ] **`GlassGauge` (`Gauge`)** — radial, linear, and capacity gauges with specular rim styling.
+- [ ] **`GlassRenameButton` (`RenameButton`)** — standard inline edit/rename affordance.
+- [ ] **`GlassToggle.button` (`Toggle(.button)`)** — pressed/unpressed glass capsule toggle button.
+- [ ] **`GlassOutlineGroup` (`OutlineGroup`)** — hierarchical recursive tree list in glass containers.
+- [ ] **`.matchedGeometryEffect()`** — versatile hero morphing API for arbitrary shared-element glass transformations (investigatory).
 
 ---
 
@@ -86,9 +130,9 @@ Ideas under consideration. None committed.
 
 ### New Widgets
 
-- [ ] `GlassSplitView` — proper `UISplitViewController` equivalent with adaptive
-  columns, swipe-to-collapse, and navigation state. **Large scope — requires
-  dedicated planning before implementation.**
+- [ ] `GlassSplitView` (`NavigationSplitView`) — proper `UISplitViewController` equivalent with adaptive
+  columns, swipe-to-collapse, and navigation state. Scoped as Low Priority (non-iPhone / iPad / macOS).
+  **Large scope — requires dedicated planning before implementation.**
 - [ ] `GlassColorWell` — iOS 26 colour picker pill. Scoped as a trigger widget:
   a tappable glass swatch that opens a `GlassPopover`; colour picker content
   is supplied by the caller.
@@ -98,54 +142,17 @@ Ideas under consideration. None committed.
 - [ ] **Scroll-driven glass materialisation** — app bar surface transitions from
   transparent to frosted on scroll. Closely related to the scroll edge fidelity
   fix above; the two may ship together when `GlassScrollEdgeStyle.blur` lands.
-- [ ] **Shader-Level Touch Specular (`uTouchPosition` uniform, target 1.4.0)** —
-  `GlassButton`'s touch-tracking specular sheen (shipped in 1.3.0) is implemented
-  as a 2D `Canvas.drawCircle` painted with `BlendMode.plus` and clipped by
-  `ShapeBorderClipper`. This is a good approximation but not physically correct:
-  the specular term should be computed *inside* the fragment shader as a bias on
-  the SDF surface normal, not as an additive overlay on top.
-
-  The correct implementation passes the pointer coordinate to the glass fragment
-  shader as a new uniform:
-  ```glsl
-  uniform vec2  uTouchPosition; // Layer-local logical px; (-1,-1) when inactive
-  uniform float uTouchActive;   // 0.0 at rest → 1.0 while finger down (spring)
-
-  // Bias the specular light direction toward the touch point
-  vec2  touchOff = (uTouchPosition / uLayerSize) * 2.0 - 1.0;
-  vec3  biasedLight = normalize(uLightDir + vec3(touchOff * 0.4, 0.0));
-  float spec = pow(max(dot(surfaceNormal, biasedLight), 0.0), shininess)
-             * uTouchActive;
-  ```
-  Benefits over the 1.3.0 overlay approach:
-  - Geometrically impossible to escape the glass SDF boundary (no clipper needed).
-  - Zero GPU cost at rest (`uTouchActive = 0.0` kills the `spec` term entirely).
-  - Physically correct: the specular is part of the glass reflection, not painted
-    over it.
-  - Enables a clean, deprecation-friendly API: `glowRadius`/`glowBlurRadius`/
-    `glowSpreadRadius` can be removed in a 2.0 breaking change, replaced by the
-    declarative `interactionBehavior` enum analogous to SwiftUI's `.interactive()`.
-  - **Natural geometry adaptation across aspect ratios:** Because the SDF surface
-    normal inherently reflects the widget's exact shape and corner radii, the specular
-    highlight naturally conforms to capsule/pill geometries (concentrating on curved
-    caps while moderating across flat label spans), eliminating the need for
-    shape-specific radius tuning between circular and pill buttons.
-
-  **Scope:** Requires the vendored `liquid_glass_renderer` shaders to accept two new
-  uniforms, pointer-event → shader UV coordinate mapping per `GlassGlowLayer`, and
-  Skia/Web fallback (the existing `GlassGlow` overlay can remain the Skia path).
 - [ ] **`GlassAppBar` Phase 3 compact search icon** — when `GlassLargeTitle.searchBar`
   and `GlassAppBar.largeTitleController` are in use and `searchBarCollapseProgress == 1.0`,
   show a compact search affordance that re-expands on tap. Blocked by: `GlassAppBar`
   currently implements `ObstructingPreferredSizeWidget` with a fixed `preferredSize`;
   Phase 3 requires dynamic height, touching the layout contract with `CupertinoPageScaffold`.
   Phases 1 + 2 (shipped 0.19.6) deliver 90% of the value; Phase 3 is a polish milestone.
-- [ ] **`GlassToast` queue management** — show multiple toasts sequentially instead
-  of overlapping.
+- [ ] **Merge `GlassSheet` into `GlassModalSheet`** — consolidate non-modal and modal sheet
+  implementations into a unified sheet controller supporting both persistent/inline and modal
+  presentation modes with detents (peek / medium / large).
 - [ ] **Drag-to-reorder in `GlassTabBar.bottom()`** — long-press to rearrange tabs,
   matching iOS tab bar customisation.
-- [ ] **`GlassSheet` snap points** — configurable detent heights (peek / half / full)
-  matching `UISheetPresentationController.Detent`.
 - [ ] **`GlassNavigationTransition` pinning as default** — the `.pinned` constructor
   is the transition vehicle; once `GlassBarItem` reaches parity with the widget API,
   a major release can make the data-driven API the plain `GlassAppBar`. Remaining
@@ -174,13 +181,12 @@ Ideas under consideration. None committed.
 
 ### Accessibility
 
-- [ ] **`reduceTransparency` native detection** — `GlassAccessibilityScope` currently
-  approximates Reduce Transparency via `MediaQuery.highContrastOf(context)`, which maps
-  to **Increase Contrast** on iOS — a different toggle. A small method channel reading
-  `UIAccessibility.isReduceTransparencyEnabled` would give exact detection. Until then,
-  the README notes the approximation.
-- [ ] **Light-mode golden tests** — add golden snapshots for key widgets in
-  `Brightness.light` to catch regressions.
+- [ ] **`reduceTransparency` native detection** — Awaiting upstream Flutter engine support
+  ([Flutter #190318](https://github.com/flutter/flutter/issues/190318)). When Flutter exposes
+  `AccessibilityFeatures.reduceTransparency` (or `MediaQuery.reduceTransparencyOf`),
+  `liquid_glass_widgets` will adapt immediately. Until then, `GlassAccessibilityScope`
+  approximates it via `MediaQuery.highContrastOf(context)` (documented in README) to keep
+  the package 100% pure Dart with zero external dependencies.
 
 ### Documentation and pub.dev
 
@@ -206,8 +212,17 @@ Ideas under consideration. None committed.
 - **Minor** (1.x.0): New widgets, new parameters, non-breaking additions.
 - **Major** (2.0.0): Breaking changes (widget removal, parameter rename, behaviour change).
 
-Deprecated symbols from the 1.x series (`GlassBottomBar`, `GlassSearchableBottomBar`,
-`GlassBottomBarTab`, `GlassTabBar(isScrollable: true)`) are scheduled for removal in 2.0.0.
+### Deprecations & Consolidations Scheduled for 2.0.0
+
+The following symbols and patterns are scheduled for removal or consolidation in 2.0.0:
+
+- `GlassBottomBar`, `GlassSearchableBottomBar`, `GlassBottomBarTab` — replaced by `GlassTabBar` (shipped 1.0).
+- `GlassTabBar(isScrollable: true)` — superseded by `GlassFilterBar`.
+- `GlassToast` — non-standard iOS pattern; not part of native Apple HIG (which uses dynamic island, banners, or alerts).
+- `showGlassActionSheet` — legacy ActionSheet pattern; superseded by modern `showGlassConfirmationDialog`.
+- `GlassChip` — redundant; capsule-style `GlassButton` fulfills this use case.
+- `GlassContainer` / `GlassCard` consolidation — **decision: `GlassCard` becomes `GlassContainer.card(...)` named constructor** (opinionated preset with standard corner radius, shadow, and padding), mirroring how `GlassTabBar.bottom()` / `.inline()` / `.searchable()` work. The standalone `GlassCard` class is deprecated; `GlassContainer` is the single surface primitive.
+- `GlassSheet` — merged into `GlassModalSheet` for unified sheet mechanics.
 
 Behaviour changes scheduled for 2.0.0:
 

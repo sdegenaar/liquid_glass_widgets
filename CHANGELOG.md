@@ -1,4 +1,4 @@
-# 1.5.0 (WIP)
+# 1.5.0
 
 ## Features
 
@@ -23,13 +23,17 @@
   a `UIVibrancyEffect` nested inside a `UIVisualEffectView` never issues a second backdrop read.
   `AdaptiveGlass.vibrancy()` static factory added as the public entry-point.
 
-## Improvements
+## Bug Fixes
 
-- **`reduceTransparency` native detection via method channel** — _in progress_
+- **Native press parity for collapsed search-active tab indicator:** When search is active on
+  `GlassTabBar.searchable` and the tab bar collapses to the left dismiss/reopen button, tapping
+  it now features the native press growth (`LiquidStretch.nativePressGrowth`), micro-tremor
+  (`AnchorStretchSettings.nativeTremor`), and surface highlight (`PressAmbientLift`), exactly
+  matching `GlassButton`, `SearchPill`, and `MinimizableTrailingPill` (PR #272 parity).
 
 ## Tests
 
-- **Light-mode golden snapshots for key widgets** — _in progress_
+- **Light-mode golden snapshots for key widgets:** Added `goldenTestLight()` helper and companion `LightGoldenTestGroup` / `LightGoldenTestScenario` / `buildWithLightBackground()` utilities to `test/shared/test_helpers.dart`. New `test/golden/light_mode_widgets_golden_test.dart` provides 5 targeted light-mode goldens — `GlassButton`, `GlassAppBar`, `GlassTabBar.bottom`, `AdaptiveGlass`/`GlassCard`, and `GlassToolbar` — exercising subsystems that the all-dark suite cannot reach: `_InverseShapeClipper`/`_InverseBarClipper` drop-shadow rendering, `ambientBaseLight` doubling (`0.14` vs `0.07`), and Rec.709 adaptive glass strength (`0.8×` on high-luminance backgrounds). Goldens generated on macOS (Impeller); excluded from CI by existing `dart_test.yaml` tag filter.
 
 # 1.4.2
 

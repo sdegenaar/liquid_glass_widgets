@@ -715,21 +715,6 @@ class _ExamplesTab extends StatelessWidget {
                   ),
                   SizedBox(height: 24),
 
-                  // Featured 1.5.0 Card: Touch Specular & Vibrancy
-                  _LargeDemoCard(
-                    title: 'v1.5.0 Touch & Vibrancy',
-                    subtitle:
-                        'Shader contact specular highlight, nested vibrancy fill & menu tracking',
-                    icon: CupertinoIcons.sparkles,
-                    gradient: const [
-                      Color(0xFF0F2027),
-                      Color(0xFF203A43),
-                      Color(0xFF2C5364),
-                    ],
-                    destination: const TouchSpecularAndVibrancyDemo(),
-                  ),
-                  SizedBox(height: 14),
-
                   // Row 1: Nav Patterns + Context Menus
                   Row(
                     children: [
@@ -954,6 +939,20 @@ class _ExamplesTab extends StatelessWidget {
                       Color(0xFF0072FF),
                     ],
                     destination: const MeniscusAndBlurDemoPage(),
+                  ),
+                  SizedBox(height: 14),
+
+                  _LargeDemoCard(
+                    title: 'Touch & Vibrancy',
+                    subtitle:
+                        'Shader contact specular highlight, nested vibrancy fill & menu tracking',
+                    icon: CupertinoIcons.sparkles,
+                    gradient: const [
+                      Color(0xFF0F2027),
+                      Color(0xFF203A43),
+                      Color(0xFF2C5364),
+                    ],
+                    destination: const TouchSpecularAndVibrancyDemo(),
                   ),
                   SizedBox(height: 14),
 
