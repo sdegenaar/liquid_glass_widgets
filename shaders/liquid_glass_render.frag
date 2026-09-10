@@ -573,8 +573,11 @@ void main() {
                 // Rim fragments facing the contact point align with touchDir (dot > 0).
                 float rimTouchDot = max(0.0, dot(anisoN, touchDir));
 
-                // Tight specular glint curve (pow 6) scaled by touch distance falloff.
-                float tSpec = pow(rimTouchDot, 6.0) * distFactor;
+                // Tight specular glint curve (x⁶) scaled by touch distance falloff.
+                // (x²)³ = x⁶ — two multiplies, zero transcendentals (pow() compiles
+                // as exp2(6·log2(x)) on Mali/Adreno/Apple GPU).
+                float rtd2 = rimTouchDot * rimTouchDot;
+                float tSpec = rtd2 * rtd2 * rtd2 * distFactor;
 
                 // Scale by touch intensity, light intensity, and Reinhard compress.
                 float tBrightnessRaw = tSpec * uTouchIntensity * uLightIntensity * 2.5;

@@ -40,5 +40,5 @@ flutter:
     - shaders/lightweight_glass.frag
     - shaders/interactive_indicator.frag
     - shaders/liquid_glass_geometry_blended.frag
-    - shaders/liquid_glass_final_render.frag
+    - shaders/liquid_glass_render.frag
     - shaders/progressive_blur.frag

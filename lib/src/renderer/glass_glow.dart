@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
+import '../../widgets/shared/inherited_liquid_glass.dart';
 import '../../utils/glass_spring.dart';
 import 'rendering/liquid_glass_render_object.dart';
 
@@ -339,13 +340,20 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
     double spreadRadius = 0,
     double opacity = 1,
   }) {
-    setState(() {
-      _baseRadius = radius;
-      _baseColor = color;
-      _baseBlurRadius = blurRadius;
-      _baseSpreadRadius = spreadRadius;
-      _baseOpacity = opacity.clamp(0.0, 1.0);
-    });
+    final clampedOpacity = opacity.clamp(0.0, 1.0);
+    if (_baseRadius != radius ||
+        _baseColor != color ||
+        _baseBlurRadius != blurRadius ||
+        _baseSpreadRadius != spreadRadius ||
+        _baseOpacity != clampedOpacity) {
+      setState(() {
+        _baseRadius = radius;
+        _baseColor = color;
+        _baseBlurRadius = blurRadius;
+        _baseSpreadRadius = spreadRadius;
+        _baseOpacity = clampedOpacity;
+      });
+    }
 
     if (!_dragging) {
       _dragging = true;
@@ -355,21 +363,47 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
       _offsetController.value = offset;
       _alphaController.spring = GlassSpring.interactive();
       _radiusController.spring = GlassSpring.interactive();
-      // Switch position tracking to interactive spring so the glow follows
-      // the finger at the same responsive speed as alpha/radius.
-      _offsetController.spring = GlassSpring.interactive();
+      // Switch position tracking to a critically damped smooth spring so the
+      // glow follows the finger smoothly without any micro-bounce or resonance jitter.
+      _offsetController.spring = GlassSpring.smooth(
+        duration: const Duration(milliseconds: 100),
+      );
       _alphaController.animateTo(1, fromVelocity: 0);
       _radiusController.animateTo(1, fromVelocity: 0);
+      _touchSpecularNotifier.value = (
+        position: offset,
+        intensity: _alphaController.value,
+      );
+    } else {
+      // Deadband threshold (3.0 px, matching GlassDragBuilder._kTouchSlopPx):
+      // ignore capacitive sensor centroid fluctuations on a stationary finger to
+      // completely eliminate micro-shaking and spring oscillation during a stationary hold.
+      //
+      // Position uses an IMMEDIATE set (not animateTo) for the drag phase.
+      //
+      // Rationale: for buttons with a full glass shader (non-nested), the shader
+      // touch-specular is driven by _touchSpecularNotifier at the ACTUAL pointer
+      // position (no spring lag) and dominates visually. The local glow-circle
+      // spring lag is masked by the shader output.
+      //
+      // For nested glass (_VibrancyFill, avoidsRefraction = true), the local
+      // glow circle IS the only visual feedback — propagateToAncestor is false,
+      // so the shader path never fires. A 100 ms spring lag is fully visible on
+      // the clean vibrancy surface and reads as jitter/chase to the user.
+      //
+      // Using _offsetController.value (immediate) eliminates the lag while the
+      // 3 px deadband above continues to suppress capacitive noise at a stationary
+      // hold. The spring is preserved for the alpha fade-in/out and for the
+      // release drift configured in removeTouch().
+      final delta = offset - _offsetController.value;
+      if (delta.distanceSquared >= 9.0) {
+        _offsetController.value = offset;
+        _touchSpecularNotifier.value = (
+          position: offset,
+          intensity: _alphaController.value,
+        );
+      }
     }
-
-    _offsetController.animateTo(offset);
-    // Notify touch-specular listeners synchronously with the new position.
-    // _alphaController.value rises to 1.0 via spring; push the current value
-    // immediately so the first frame reflects the correct touch position.
-    _touchSpecularNotifier.value = (
-      position: offset,
-      intensity: _alphaController.value,
-    );
   }
 
   void removeTouch() {
@@ -394,6 +428,10 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
 
   @override
   Widget build(BuildContext context) {
+    final inherited =
+        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    final avoidsRefraction = inherited?.avoidsRefraction ?? false;
+
     return ListenableBuilder(
       listenable: Listenable.merge([
         _offsetController,
@@ -413,6 +451,7 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
           glowOffset: _offsetController.value,
           glowBlurRadius: _baseBlurRadius,
           glowSpreadRadius: _baseSpreadRadius,
+          propagateToAncestor: !avoidsRefraction,
           child: child,
         );
       },
@@ -430,6 +469,7 @@ class _RenderGlassGlowLayerWidget extends SingleChildRenderObjectWidget {
     required this.glowOffset,
     required this.glowBlurRadius,
     required this.glowSpreadRadius,
+    this.propagateToAncestor = true,
     required super.child,
   });
 
@@ -440,6 +480,7 @@ class _RenderGlassGlowLayerWidget extends SingleChildRenderObjectWidget {
   final Offset glowOffset;
   final double glowBlurRadius;
   final double glowSpreadRadius;
+  final bool propagateToAncestor;
 
   @override
   RenderObject createRenderObject(BuildContext context) {
@@ -451,6 +492,7 @@ class _RenderGlassGlowLayerWidget extends SingleChildRenderObjectWidget {
       glowOffset: glowOffset,
       glowBlurRadius: glowBlurRadius,
       glowSpreadRadius: glowSpreadRadius,
+      propagateToAncestor: propagateToAncestor,
     );
   }
 
@@ -466,7 +508,8 @@ class _RenderGlassGlowLayerWidget extends SingleChildRenderObjectWidget {
       ..glowColor = glowColor
       ..glowOffset = glowOffset
       ..glowBlurRadius = glowBlurRadius
-      ..glowSpreadRadius = glowSpreadRadius;
+      ..glowSpreadRadius = glowSpreadRadius
+      ..propagateToAncestor = propagateToAncestor;
   }
 }
 
@@ -478,6 +521,7 @@ class _RenderGlassGlowLayer extends RenderProxyBox {
     required double glowBlurRadius,
     required double glowSpreadRadius,
     required double pulse,
+    bool propagateToAncestor = true,
     CustomClipper<Path>? clipper,
   })  : _glowRadius = glowRadius,
         _glowColor = glowColor,
@@ -485,6 +529,7 @@ class _RenderGlassGlowLayer extends RenderProxyBox {
         _glowBlurRadius = glowBlurRadius,
         _glowSpreadRadius = glowSpreadRadius,
         _pulse = pulse,
+        _propagateToAncestor = propagateToAncestor,
         _clipper = clipper;
 
   // ---------------------------------------------------------------------------
@@ -583,9 +628,21 @@ class _RenderGlassGlowLayer extends RenderProxyBox {
     markNeedsPaint();
   }
 
+  bool _propagateToAncestor;
+  bool get propagateToAncestor => _propagateToAncestor;
+  set propagateToAncestor(bool value) {
+    if (_propagateToAncestor == value) return;
+    _propagateToAncestor = value;
+    // If toggled off while a touch is active, flush a zero-intensity
+    // notification so the ancestor LiquidGlassRenderObject doesn't retain
+    // stale specular data. Consistent with all other property setters.
+    _propagateToAncestorLiquidGlass();
+  }
+
   /// Propagates touch specular data to an ancestor [LiquidGlassRenderObject]
   /// when [GlassGlow] is placed inside a glass surface (e.g. inside [GlassButton]).
   void _propagateToAncestorLiquidGlass() {
+    if (!_propagateToAncestor) return;
     RenderObject? p = parent;
     while (p != null) {
       if (p is LiquidGlassRenderObject) {

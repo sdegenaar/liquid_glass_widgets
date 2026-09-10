@@ -41,64 +41,70 @@ class _TouchSpecularAndVibrancyDemoState
       chromaticAberration: 0.015,
     );
 
-    return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: const Text('Touch & Vibrancy'),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () => setState(() => _isDark = !_isDark),
-          child: Icon(
-            _isDark ? CupertinoIcons.sun_max_fill : CupertinoIcons.moon_fill,
-            size: 20,
+    return CupertinoTheme(
+      data: CupertinoThemeData(
+        brightness: _isDark ? Brightness.dark : Brightness.light,
+      ),
+      child: CupertinoPageScaffold(
+        navigationBar: CupertinoNavigationBar(
+          middle: const Text('Touch & Vibrancy'),
+          trailing: CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () => setState(() => _isDark = !_isDark),
+            child: Icon(
+              _isDark ? CupertinoIcons.sun_max_fill : CupertinoIcons.moon_fill,
+              size: 20,
+            ),
           ),
         ),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Background photo or rich gradient
-          Image.asset(
-            'assets/wallpaper.jpg',
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF0D0B18),
-                    Color(0xFF1B1435),
-                    Color(0xFF0F2B48),
-                    Color(0xFF091224),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Background photo or rich gradient
+            Image.asset(
+              'assets/wallpaper.jpg',
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFF0D0B18),
+                      Color(0xFF1B1435),
+                      Color(0xFF0F2B48),
+                      Color(0xFF091224),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                 ),
               ),
             ),
-          ),
 
-          // Theme tint scrim
-          Container(
-            color: _isDark
-                ? CupertinoColors.black.withValues(alpha: 0.35)
-                : CupertinoColors.white.withValues(alpha: 0.20),
-          ),
-
-          SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-              children: [
-                _buildTouchSpecularSection(settings),
-                const SizedBox(height: 28),
-                _buildNestedVibrancySection(settings),
-                const SizedBox(height: 28),
-                _buildMenuTrackingSection(),
-                const SizedBox(height: 28),
-                _buildControlsCard(settings),
-                const SizedBox(height: 48),
-              ],
+            // Theme tint scrim
+            Container(
+              color: _isDark
+                  ? CupertinoColors.black.withValues(alpha: 0.35)
+                  : CupertinoColors.white.withValues(alpha: 0.20),
             ),
-          ),
-        ],
+
+            SafeArea(
+              child: ListView(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                children: [
+                  _buildTouchSpecularSection(settings),
+                  const SizedBox(height: 28),
+                  _buildNestedVibrancySection(settings),
+                  const SizedBox(height: 28),
+                  _buildMenuTrackingSection(),
+                  const SizedBox(height: 28),
+                  _buildControlsCard(settings),
+                  const SizedBox(height: 48),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

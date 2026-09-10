@@ -53,7 +53,7 @@ Benefits: geometrically bounded by the SDF (no clipper needed), zero GPU cost at
 to capsule/pill corner geometry.
 
 **Shipped:** Two new uniforms (`uTouchPosition vec2`, `uTouchIntensity float`) in
-`liquid_glass_final_render.frag` (slots 34–36). Pure 2D specular math (`pow(dot, 8.0)`,
+`liquid_glass_render.frag` (slots 34–36). Pure 2D specular math (`pow(dot, 8.0)`,
 Reinhard compressed). Wired via zero-rebuild `_TouchSpecularBridge` + `ValueNotifier` from
 `GlassGlowLayerState`. DPR multiply on Dart side for coordinate alignment.
 

@@ -289,7 +289,13 @@ class LiquidStretch extends StatelessWidget {
               ? GlassSpring.bouncy(
                   extraBounce: anchorStretchSettings.bounciness,
                 )
-              : GlassSpring.interactive(),
+              : (anchorStretchSettings.bounciness == 0.0
+                  ? GlassSpring.smooth(
+                      duration: const Duration(milliseconds: 150),
+                    )
+                  : GlassSpring.interactive(
+                      extraBounce: anchorStretchSettings.bounciness - 0.14,
+                    )),
           builder: (context, offset, child) => SpringBuilder(
             value: pressTarget,
             spring: pressSpring,

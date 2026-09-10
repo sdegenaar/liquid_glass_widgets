@@ -99,7 +99,7 @@ class LiquidGlassWidgets {
   /// | `lightweight_glass.frag` | Minimal glass layer |
   /// | `interactive_indicator.frag` | Custom refraction effect |
   /// | `liquid_glass_geometry_blended.frag` | Geometry / SDF pass |
-  /// | `liquid_glass_final_render.frag` | Final composite pass |
+  /// | `liquid_glass_render.frag` | Final composite pass |
   /// Controls shader preloading and warm-up behaviour during [initialize].
   static Future<void> initialize({
     bool enablePerformanceMonitor = true,

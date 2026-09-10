@@ -78,7 +78,7 @@ exception at runtime.
 
 ### B2 — `shared.glsl` dead code
 **File:** `shaders/shared.glsl` (deleted)
-Was an orphaned copy of shared utilities. `liquid_glass_final_render.frag` was
+Was an orphaned copy of shared utilities. `liquid_glass_render.frag` was
 already using `render.glsl` (our optimised version); nothing included `shared.glsl`.
 
 ### B3 — Geometry shader banding on mobile
@@ -103,7 +103,7 @@ Renamed `GeometryRenderLink.markRebuilt` → `notifyGeometryChanged`. The old
 name implied the object was clean; the method actually sets `_dirty = true`.
 
 ### V4 — Duplicate highlight colour implementations
-**File:** `shaders/liquid_glass_final_render.frag`
+**File:** `shaders/liquid_glass_render.frag`
 Replaced 8-line inline highlight colour block with a call to `getHighlightColor()`
 from `render.glsl`, which is already `#include`d by the same shader.
 

@@ -35,6 +35,14 @@
 
 - **Light-mode golden snapshots for key widgets:** Added `goldenTestLight()` helper and companion `LightGoldenTestGroup` / `LightGoldenTestScenario` / `buildWithLightBackground()` utilities to `test/shared/test_helpers.dart`. New `test/golden/light_mode_widgets_golden_test.dart` provides 5 targeted light-mode goldens — `GlassButton`, `GlassAppBar`, `GlassTabBar.bottom`, `AdaptiveGlass`/`GlassCard`, and `GlassToolbar` — exercising subsystems that the all-dark suite cannot reach: `_InverseShapeClipper`/`_InverseBarClipper` drop-shadow rendering, `ambientBaseLight` doubling (`0.14` vs `0.07`), and Rec.709 adaptive glass strength (`0.8×` on high-luminance backgrounds). Goldens generated on macOS (Impeller); excluded from CI by existing `dart_test.yaml` tag filter.
 
+## Chores
+
+- **Shader rename:** `liquid_glass_final_render.frag` → `liquid_glass_render.frag`. Drops the redundant `_final_` prefix, aligning the on-disk filename 1:1 with the Dart constant `ShaderKeys.liquidGlassRender`. All references updated across `pubspec.yaml`, `shaders.dart`, setup docs, attribution, ROADMAP, and changelogs.
+
+- **Touch specular `pow()` elimination:** Replaced `pow(rimTouchDot, 6.0)` in the touch-specular block of `liquid_glass_render.frag` with a two-multiply chain `(x²)³ = x⁶`. `pow()` compiles as `exp2(6·log2(x))` on Mali/Adreno/Apple GPU — two transcendental SFU calls. The multiply chain is exact, branchless, and 4–8× faster per fragment on mobile.
+
+- **Beer-Lambert meniscus deduplication in `lightweight_glass.frag`:** Extracted the 5-line hemisphere-lens × light-modulated absorption formula (previously copy-pasted at 3 call sites: PATH A fallback, PATH A normal, and PATH B) into a shared `meniscusAbsorption()` function. Mathematically identical output; reduces maintenance surface and compiled shader binary size.
+
 # 1.4.2
 
 ## Bug Fixes
@@ -85,7 +93,7 @@ Thanks to [@Vincen-dev](https://github.com/Vincen-dev) for the reproduction and 
   - `GlassBodyMode.adaptive` (default): Employs iOS 26 dynamic luminosity normalization, ambient tint modulation, and brightness compensation based on underlying backdrop luminance.
   - `GlassBodyMode.clear`: Bypasses luminosity normalization, white-point lift, and content-adaptive modulation. Directly composites the designer's exact hex color and alpha from `glassColor` over the refracted scene while preserving all 3D optical properties (specular rim reflections, Fresnel edge glow, meniscus edge absorption, and surface refraction).
   - Perfectly resolves color fidelity when `blur: 0` is combined with custom tinted glass surfaces.
-  - Fully integrated across all shader tiers (Impeller `liquid_glass_final_render.frag`, standard `lightweight_glass.frag`, and Skia `_FrostedFallback`).
+  - Fully integrated across all shader tiers (Impeller `liquid_glass_render.frag`, standard `lightweight_glass.frag`, and Skia `_FrostedFallback`).
 
 - **Decoupled track background quality in `GlassTabBar`:**
   Added `backgroundQuality: GlassQuality?` across `GlassTabBar.bottom`, `GlassTabBar.inline`, `GlassTabBar.searchable`, and `GlassTabBar.minimizable`.
@@ -1581,7 +1589,7 @@ PlatformView sat. With no real background pixels to refract, the glass lens
 rendered black.
 
 **Fix:** A new `uBackgroundFallback` (vec4) uniform was added to
-`liquid_glass_final_render.frag`. The shader composites the fallback colour
+`liquid_glass_render.frag`. The shader composites the fallback colour
 over the captured backdrop using a standard `over` blend weighted by the
 backdrop's own alpha — where the backdrop is real (alpha ≈ 1) it is left
 untouched; where it is transparent black (alpha ≈ 0, i.e. over a PlatformView)
@@ -1678,13 +1686,13 @@ Internal types (`SheetSnapshot`, `SheetGeometry`, `GesturePhase`, `GestureArena`
 ## ⚡ Performance
 
 - **Shader:** `interactive_indicator.frag` — replaced `pow()` calls with multiply chains; collapsed duplicate rim pass; zero transcendental functions in highlight path.
-- **Shader:** `liquid_glass_final_render.frag` — `⁶√x` computed via sqrt cascade (3 SFU vs 2 transcendentals); `sceneSDF` samples reduced from 5 → 4.
+- **Shader:** `liquid_glass_render.frag` — `⁶√x` computed via sqrt cascade (3 SFU vs 2 transcendentals); `sceneSDF` samples reduced from 5 → 4.
 - **Dart:** `resolveAdaptiveRadius` scoped to `MediaQuery.viewPaddingOf` + `MediaQuery.sizeOf` — glass widgets no longer rebuild on keyboard or unrelated `MediaQueryData` changes.
 - **Dart:** Searchable tab bar and `GlassSegmentedControl` spring animations now use `ListenableBuilder` scoped to the indicator subtree. Verified on-device: zero `State.build()` calls during 120Hz spring animation.
 
 ## 🐛 Fix
 
-- **`LiquidGlassWidgets.initialize()`** now pre-warms all four shaders — `liquid_glass_geometry_blended.frag` and `liquid_glass_final_render.frag` were previously lazy-loaded, causing first-frame jank.
+- **`LiquidGlassWidgets.initialize()`** now pre-warms all four shaders — `liquid_glass_geometry_blended.frag` and `liquid_glass_render.frag` were previously lazy-loaded, causing first-frame jank.
 - **`GlassSegment.enabled = false` now blocks tap/tapDown** — disabled segments rendered at 38% opacity but still fired `onSegmentSelected` in both fixed-width and scrollable modes. Tap and `onTapDown` handlers now early-return when the target segment is disabled.
 
 
@@ -1815,7 +1823,7 @@ Raised minimum Flutter to `>=3.24.0` — this was incorrect. The actual minimum 
 
 - **Fix:** Eliminated jagged/pixelated stair-step artifacts on `AnimatedGlassIndicator` pill edges when `indicatorPinchStrength > 0`.
   Root cause: `BackdropFilterLayer` implicit samplers are bound to `FragmentShader` as Nearest-Neighbor with no Dart API to override it ([Flutter Issue #139887](https://github.com/flutter/flutter/issues/139887)). Continuous sub-pixel UV shifts from the lens pinch and chromatic aberration were snapping to integer texels, producing blocky rainbow fringes on high-contrast backgrounds.
-  **Resolution:** Added a `textureBilinear` helper to `liquid_glass_final_render.frag` that performs a standard 4-texel bilinear interpolation in GLSL, restoring perfectly smooth sub-pixel background sampling. The geometry texture (`uGeometryTexture`) is intentionally excluded — its pixel-aligned SDF data must not be softened.
+  **Resolution:** Added a `textureBilinear` helper to `liquid_glass_render.frag` that performs a standard 4-texel bilinear interpolation in GLSL, restoring perfectly smooth sub-pixel background sampling. The geometry texture (`uGeometryTexture`) is intentionally excluded — its pixel-aligned SDF data must not be softened.
 
 - **Fix:** Eliminated pixelation on the interactive indicator pill (`GlassSegmentedControl`, `GlassEffect`).
   Two compounding causes: (1) the background texture was previously captured at `pixelRatio: 1.0`, so each texel covered a 3×3 block of physical pixels on a 3× Retina display; (2) Impeller's `setImageSampler()` binding defaults to Nearest-Neighbor, snapping continuous UV offsets from edge refraction to these large texels.
@@ -1826,12 +1834,12 @@ Raised minimum Flutter to `>=3.24.0` — this was incorrect. The actual minimum 
 
 ### Notes
 
-- **Note (Flutter engine limitation):** The `textureBilinear` workaround in `liquid_glass_final_render.frag` (4-tap bilinear in GLSL) remains necessary for backdrop sampling because Impeller binds the implicit `BackdropFilterLayer` sampler as Nearest-Neighbor with no Dart API to override `FilterQuality`. A Flutter engine feature request to expose sampler filter quality for backdrop layers has been filed at [Flutter Issue #188365](https://github.com/flutter/flutter/issues/188365). Once resolved, the GLSL workaround can be replaced with a single `texture()` call.
+- **Note (Flutter engine limitation):** The `textureBilinear` workaround in `liquid_glass_render.frag` (4-tap bilinear in GLSL) remains necessary for backdrop sampling because Impeller binds the implicit `BackdropFilterLayer` sampler as Nearest-Neighbor with no Dart API to override `FilterQuality`. A Flutter engine feature request to expose sampler filter quality for backdrop layers has been filed at [Flutter Issue #188365](https://github.com/flutter/flutter/issues/188365). Once resolved, the GLSL workaround can be replaced with a single `texture()` call.
 
 ### Chore
 
-- **Chore:** Removed unreachable early-out branch in `liquid_glass_final_render.frag` — the `if (any(lessThan(geometryUV, ...)))` check after `clamp(geometryUV, 0.0, 1.0)` could never fire. Replaced with a single consolidated comment explaining how the clamp and the downstream alpha check together handle both the Impeller Repeat-mode and clipExpansion cases.
-- **Chore:** Removed dead code from `render.glsl` (`computeY`, `getHeight`, `calculateLighting`, `calculateRefraction`, `renderLiquidGlass`, `debugNormals`) — functions superseded by the inline logic in `liquid_glass_final_render.frag`. Reduces compiled shader binary size.
+- **Chore:** Removed unreachable early-out branch in `liquid_glass_render.frag` — the `if (any(lessThan(geometryUV, ...)))` check after `clamp(geometryUV, 0.0, 1.0)` could never fire. Replaced with a single consolidated comment explaining how the clamp and the downstream alpha check together handle both the Impeller Repeat-mode and clipExpansion cases.
+- **Chore:** Removed dead code from `render.glsl` (`computeY`, `getHeight`, `calculateLighting`, `calculateRefraction`, `renderLiquidGlass`, `debugNormals`) — functions superseded by the inline logic in `liquid_glass_render.frag`. Reduces compiled shader binary size.
 
 # 0.18.1
 

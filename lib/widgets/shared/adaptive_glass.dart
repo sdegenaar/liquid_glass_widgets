@@ -247,15 +247,22 @@ class AdaptiveGlass extends StatelessWidget {
     // The correct iOS 26 behaviour for nested glass is a UIVibrancyEffect-style
     // translucent tinted fill: no refraction, no blur, but rim and specular
     // highlights are preserved. _VibrancyFill delivers exactly this.
+    //
+    // Isolated in a RepaintBoundary so that interaction animations (such as
+    // GlassGlow, touch scale, or saturation pulses on nested buttons) do NOT
+    // trigger repaints of the ancestor GlassContainer layer or sibling glass cards.
+    // Exterior drop shadow is suppressed: nested vibrancy controls sit flush on
+    // the host glass surface without casting exterior drop shadows onto it.
     // --------------------------------------------------------------------------
     if (inherited?.avoidsRefraction ?? false) {
-      return _wrapWithDecorations(
-        context,
+      return _wrapWithBacker(
         baseSettings,
-        _VibrancyFill(
-          shape: shape,
-          settings: baseSettings,
-          child: content,
+        RepaintBoundary(
+          child: _VibrancyFill(
+            shape: shape,
+            settings: baseSettings,
+            child: child,
+          ),
         ),
       );
     }
@@ -758,7 +765,7 @@ class _VibrancyFill extends StatelessWidget {
 
     final stack = Stack(
       fit: StackFit.passthrough,
-      clipBehavior: Clip.hardEdge,
+      clipBehavior: Clip.none,
       children: [
         // 1. Tinted fill — no BackdropFilter, pure vector composition.
         Positioned.fill(
@@ -1136,32 +1143,43 @@ class _SpecularRimPainter extends CustomPainter {
       end: Alignment(-x, -y),
     ).createShader(squareBounds);
 
-    final path = shape.getOuterPath(bounds);
+    // Visible inner stroke widths:
+    // Pass 1: soft base stroke (visible width 0.5 to 1.0 px)
+    final w1 = ui.lerpDouble(0.5, 1.0, lightIntensity)!;
+    // Pass 2: sharp inner rim (visible width 0.25 to 1.0 px)
+    final w2 = (settings.effectiveThickness / 40).clamp(0.25, 1.0);
 
-    // Pass 1: soft base stroke.
-    // Doubled width since it is now clipped to the inner half.
-    // BlendMode.overlay ensures the highlight reacts organically to the
-    // background color underneath, rather than looking like a flat white line.
+    // Draw strokes along deflated paths so the stroke outer edge coincides
+    // with the shape boundary and stays strictly inside bounds. This eliminates
+    // coincident-edge anti-aliasing conflict with _ShapeClip during scaling/transforms.
+    final path1 = shape.getOuterPath(
+      bounds.width > w1 * 2 && bounds.height > w1 * 2
+          ? bounds.deflate(w1 / 2)
+          : bounds,
+    );
     canvas.drawPath(
-      path,
+      path1,
       Paint()
         ..shader = gradient
         ..color = white.withValues(alpha: white.a * 0.4)
         ..blendMode = BlendMode.overlay
         ..style = PaintingStyle.stroke
-        ..strokeWidth = ui.lerpDouble(1.0, 2.0, lightIntensity)!,
+        ..strokeWidth = w1,
     );
 
-    // Pass 2: sharp inner rim.
-    // Doubled width since it is clipped to the inner half.
+    final path2 = shape.getOuterPath(
+      bounds.width > w2 * 2 && bounds.height > w2 * 2
+          ? bounds.deflate(w2 / 2)
+          : bounds,
+    );
     canvas.drawPath(
-      path,
+      path2,
       Paint()
         ..shader = gradient
         ..color = white.withValues(alpha: white.a * 0.6)
         ..blendMode = BlendMode.overlay
         ..style = PaintingStyle.stroke
-        ..strokeWidth = (settings.effectiveThickness / 20).clamp(0.5, 2.0),
+        ..strokeWidth = w2,
     );
   }
 

@@ -118,6 +118,27 @@ vec3 applyGlassColorLW(vec3 liquidColor, vec4 glassColor) {
     return mix(directMix, luminosityMix, chromaWeight);
 }
 
+// ── Meniscus rim absorption (Beer-Lambert) ──────────────────────────────────
+// Hemisphere lens profile × light-modulated absorption strength.
+// Shared by PATH A (normal + fallback) and PATH B; previously inlined 3×.
+//
+// distFromEdge: unsigned SDF distance from the shape boundary (px)
+// zone:         edge influence zone width (px)
+// surfNormal:   2D surface normal at this fragment
+// lightDir:     normalised light direction
+// strength:     absorption coefficient [0..1]
+float meniscusAbsorption(
+    float distFromEdge, float zone, vec2 surfNormal,
+    vec2 lightDir, float strength) {
+    // [1] Hemisphere lens profile: r_norm maps edge→interior to 0→1.
+    float r_norm = clamp(distFromEdge / zone, 0.0, 1.0);
+    float lensTh = sqrt(max(0.0, 1.0 - r_norm * r_norm));
+    // [2] Light-modulated strength: weaker on lit side (0.6×), stronger on shadow (1.4×).
+    float litness = dot(surfNormal, lightDir);
+    float dirScale = mix(1.4, 0.6, litness * 0.5 + 0.5);
+    return max(0.0, 1.0 - lensTh * strength * dirScale);
+}
+
 out vec4 fragColor;
 
 void main() {
@@ -390,12 +411,7 @@ void main() {
       vec3 outRgb2 = rimColorBase * rimAlphaBase + pmRgb2 * (1.0 - rimAlphaBase);
       pmRgb2 = outRgb2 + vec3(0.05) * uIndicatorWeight + vec3(fresnel);
       // Meniscus rim darkening (PATH A fallback — no valid texture)
-      // Hemisphere profile + light-modulated strength.
-      float r_norm2 = clamp(distFromEdge / edgeZone, 0.0, 1.0);
-      float lensTh2 = sqrt(max(0.0, 1.0 - r_norm2 * r_norm2));
-      float litness2 = dot(surfaceNormal, uLightDirection);
-      float dirScale2 = mix(1.4, 0.6, litness2 * 0.5 + 0.5);
-      pmRgb2 *= max(0.0, 1.0 - lensTh2 * uEdgeAbsorption * dirScale2);
+      pmRgb2 *= meniscusAbsorption(distFromEdge, edgeZone, surfaceNormal, uLightDirection, uEdgeAbsorption);
       fragColor = vec4(clamp(pmRgb2, 0.0, 1.0) * mask, outA2 * mask);
     } else {
       // Normal PATH A — background texture is valid.
@@ -461,12 +477,7 @@ void main() {
       finalColor = clamp(finalColor + vec3(fresnel), 0.0, 1.0);
 
       // [1] Hemisphere lens profile + [2] light-modulated absorption (PATH A normal)
-      float r_normA = clamp(distFromEdge / edgeZone, 0.0, 1.0);
-      float lensThA = sqrt(max(0.0, 1.0 - r_normA * r_normA));
-      float litnessA = dot(surfaceNormal, uLightDirection);
-      float dirScaleA = mix(1.4, 0.6, litnessA * 0.5 + 0.5);
-      float absorptionA = 1.0 - lensThA * uEdgeAbsorption * dirScaleA;
-      finalColor *= max(0.0, absorptionA);
+      finalColor *= meniscusAbsorption(distFromEdge, edgeZone, surfaceNormal, uLightDirection, uEdgeAbsorption);
 
       fragColor = vec4(finalColor * mask, mask);
     }
@@ -521,11 +532,7 @@ void main() {
     pmA = max(pmA, uGlowIntensity * 0.3 * glowMask);
 
     // [1] Hemisphere + [2] light-modulated absorption (PATH B — no background texture)
-    float r_normB = clamp(distFromEdge / edgeZone, 0.0, 1.0);
-    float lensThB = sqrt(max(0.0, 1.0 - r_normB * r_normB));
-    float litnessB = dot(surfaceNormal, uLightDirection);
-    float dirScaleB = mix(1.4, 0.6, litnessB * 0.5 + 0.5);
-    pmRgb *= max(0.0, 1.0 - lensThB * uEdgeAbsorption * dirScaleB);
+    pmRgb *= meniscusAbsorption(distFromEdge, edgeZone, surfaceNormal, uLightDirection, uEdgeAbsorption);
 
     fragColor = vec4(clamp(pmRgb, 0.0, 1.0) * mask, pmA * mask);
   }
