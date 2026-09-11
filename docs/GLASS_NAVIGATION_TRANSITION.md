@@ -139,7 +139,8 @@ bar.
   such as a profile photo). A fourth, `own`, is `none` for content that is
   itself a glass surface: the shell dissolves it through the surface's own
   visibility instead of fading it under a layer, which a glass surface cannot
-  survive.
+  survive. Two `own` items matched across a route change take turns rather
+  than cross-fading, since each would sample the other.
 - **`id` mirrors `UIBarButtonItem.identifier`.** Items sharing an `id` across
   two routes are treated as the same item and hold their position while
   everything around them morphs. Without an `id`, items are matched
@@ -159,6 +160,14 @@ bar.
   transition is running, and one already open is dismissed if navigation
   starts — the capsule outlives the route that owns the menu, so nothing else
   would take it down.
+- **`GlassBarItem.sheet` morphs the capsule into a `GlassModalSheet`.** Its
+  tap is handed a `GlassMorphAnchor` for `GlassModalSheet.show(morphFrom:)`,
+  and the whole capsule empties for it, for the same reason `menu` morphs the
+  whole capsule. The anchor is always the route's own capsule rather than the
+  hoisted copy: presenting hands the chrome back to the route, so that is the
+  one still on screen under the sheet — and the only one a sheet can cover,
+  since the hoisted chrome is drawn above the `Navigator`. A hoisted tap is
+  routed back to the bar that registered it.
 - **Participation is the constructor.** A `GlassAppBar.pinned` screen keeps
   the chrome pinned even with no actions; a plain `GlassAppBar` screen does
   not participate, and the pinned chrome retreats while it covers the bar.
@@ -199,6 +208,20 @@ its own, and there is nothing to keep in sync with the item data.
 
 `chrome.hoisted` is there for a bar that wants to substitute *its own* chrome
 rather than the package's; reading it is not needed for the common case.
+
+`horizontalInset` is the guide your capsules sit on, defaulting to the
+`GlassNavPinnedMetrics.horizontalPadding` a `GlassAppBar` uses for its own.
+Pass yours if the bar is aligned to something else — an app's page gutter,
+say. The chrome hands back to the route whenever a sheet or dialog is
+presented over it, and that hand-over is invisible only while both renderings
+land on the same guide; a bar that disagrees steps sideways at every one.
+
+`platformViewBackdrop` is for a bar floating over a native platform view — a
+map, a video. `buttonSettings` cannot cover this on its own: the shader reads a
+captured backdrop the platform view is never part of, so the shell's capsule
+has nothing to refract there. The flag routes it to a live `BackdropFilter`
+instead, as `GlassButton.platformViewBackdrop` does for the bar's own, and is
+applied in-route as well so the two agree across the hand-over.
 
 `leading`, `backButton`, `leadingItemsSupplementBackButton`, `onBack` and
 `buttonSettings` mean exactly what they do on `GlassAppBar.pinned` — a

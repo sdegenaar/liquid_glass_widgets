@@ -45,6 +45,57 @@
 
 - **Beer-Lambert meniscus deduplication in `lightweight_glass.frag`:** Extracted the 5-line hemisphere-lens × light-modulated absorption formula (previously copy-pasted at 3 call sites: PATH A fallback, PATH A normal, and PATH B) into a shared `meniscusAbsorption()` function. Mathematically identical output; reduces maintenance surface and compiled shader binary size.
 
+# 1.4.4
+
+## Features
+
+- **`GlassPinnedBarChrome.horizontalInset` — the guide a hoisted bar is drawn on (#307):** The chrome was always positioned at `GlassNavPinnedMetrics.horizontalPadding`, which is right for a bar the package draws at both ends and wrong for one the app draws. Presenting a sheet hands the chrome back to its route, and a bar aligned to its own page gutter stepped sideways at every hand-over. It now takes the inset its bar reports, defaulting to the old one.
+
+Thanks to [@JakeThomson](https://github.com/JakeThomson) for the feature (#308).
+
+- **`GlassPinnedBarChrome.platformViewBackdrop` — pinned chrome over a platform view (#310):** The shell drew a hoisted capsule with its own `GlassButton` on the shader path, whose captured backdrop excludes a platform view — so over a map the capsule had nothing to refract and rendered clear with a rim, whatever `buttonSettings` said, while the bar's own capsule blurred through a live `BackdropFilter`. The registration carries the flag now and the host forwards it to the capsule and menu it draws, resolved to the route being entered so a pop back over the view is on the backdrop from its first frame.
+
+Thanks to [@JakeThomson](https://github.com/JakeThomson) for the feature (#311).
+
+## Bug Fixes
+
+- **`GlassSheet` removes redundant inner `SafeArea` (#309):** `GlassSheet`'s inner column wrapped its content in `SafeArea(bottom: true)` without disabling `top: true`, causing unconsumed top status-bar padding from the window to leak into the sheet and push the top drag handle 50+ dp down. In addition, the inner wrapper forced bottom safe-area insetting even when `GlassSheet.show(useSafeArea: false)` was requested. The redundant inner `SafeArea` has been removed while preserving outer `useSafeArea` behavior.
+
+Thanks to [@yohom](https://github.com/yohom) for the fix (#309).
+
+# 1.4.3
+
+## Features
+
+- **`GlassBarItem.sheet` — a bar item whose sheet morphs out of the capsule (#304):** Nothing reached the capsule a pinned bar draws, so an app wanting the liquid morph had to hoist its cluster as one `GlassBarItemBackground.own` item and give up the cross-route morph. The new item hands its tap a `GlassMorphAnchor` for `GlassModalSheet.show(morphFrom:)` — the route's own capsule, which is the one still on screen once the sheet has handed the chrome back, and the only one a sheet can cover.
+
+  ```dart
+  GlassAppBar.pinned(
+    actions: [
+      GlassBarItem.sheet(
+        icon: const Icon(CupertinoIcons.add),
+        onPresent: (anchor) => GlassModalSheet.show<void>(
+          context: context,
+          morphFrom: anchor,
+          builder: (context) => const AddSheet(),
+        ),
+      ),
+    ],
+  )
+  ```
+
+Thanks to [@JakeThomson](https://github.com/JakeThomson) for the feature (#304).
+
+## Bug Fixes
+
+- **Pinned chrome morphs over a sprung route's full duration (#302):** The shell drove its choreography from the route's animation value, which is non-linear for spring-based transitions (zoom), so the morph completed in the first few frames while the page was still flying. A route that answers `createSimulation` now plays chrome on the shell's own controller over `transitionDuration`; duration-driven routes are unchanged.
+
+- **Two custom items that draw their own glass no longer overlap mid-morph (#302):** A matched pair of `GlassBarItemBackground.own` items sharing the same id cross-faded like plain content, stacking both surfaces mid-transition and causing a visible brightness artifact. The outgoing surface now dissolves before the incoming one materializes.
+
+Thanks to [@JakeThomson](https://github.com/JakeThomson) for the fix (#302).
+
+- **`GlassTabBar.searchable` text colour now follows the app's ThemeMode, not the device OS brightness (#305):** `GlassSearchBarConfig.textColor` defaulted to `CupertinoColors.label.resolveFrom(context)`, which reads `MediaQuery.platformBrightness` rather than the app's `ThemeData`. On a device in OS dark mode with the app forced to light mode this produced invisible white-on-white text. Resolution now routes through `GlassTheme.brightnessOf`, the package's single brightness authority, consistent with how icon colours are resolved in the same widget.
+
 # 1.4.2
 
 ## Bug Fixes

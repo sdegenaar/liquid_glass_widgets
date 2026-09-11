@@ -20,6 +20,9 @@ class GlassNavBarRegistration {
     required this.showsBackButton,
     this.onBack,
     this.buttonSettings,
+    this.presentSheet,
+    this.horizontalInset,
+    this.platformViewBackdrop = false,
   });
 
   /// The trailing cluster items for this route.
@@ -40,6 +43,43 @@ class GlassNavBarRegistration {
 
   /// Glass settings applied to this route's pinned chrome.
   final LiquidGlassSettings? buttonSettings;
+
+  /// Presents [GlassBarItem.sheet]'s sheet out of the route's own capsule.
+  ///
+  /// The morph has to come out of a capsule the sheet can then cover, and the
+  /// hoisted one is drawn above the [Navigator] where no route reaches it — so
+  /// the shell hands the tap back to the bar that registered it, which owns a
+  /// capsule inside the route and empties that. By the frame the droplet is
+  /// drawn the chrome is in-route anyway: a presentation hands it back.
+  ///
+  /// Null for a registrant that offers no capsule of its own — one that draws
+  /// the items itself. The item is then presented with a null anchor, which
+  /// costs the morph and nothing else.
+  final void Function(GlassBarSheetItem item)? presentSheet;
+
+  /// Inset from each screen edge to the pinned chrome, in logical pixels.
+  ///
+  /// Defaults to [GlassNavPinnedMetrics.horizontalPadding], which is what
+  /// [GlassAppBar] insets its own chrome by — so a bar the package draws at
+  /// both ends already agrees with itself and passes nothing.
+  ///
+  /// A bar the app draws is the case for it. The chrome hoists and hands back
+  /// on its own schedule — a presented sheet gives it to the route, a
+  /// transition takes it away again — and each hand-over is invisible only
+  /// while the two renderings land on the same guide. A bar aligned to its
+  /// app's page gutter rather than to this default passes that gutter here.
+  final double? horizontalInset;
+
+  /// Whether the pinned chrome floats over a native platform view.
+  ///
+  /// The shell draws a hoisted cluster with its own [GlassButton], and the
+  /// shader that button uses reads a captured backdrop the platform view is
+  /// never part of — so over a map or a video the capsule has nothing to
+  /// refract and renders inert, whatever [buttonSettings] asks for. Only a
+  /// live `BackdropFilter` samples the composited view, and this is what
+  /// routes the shell's copy there, exactly as [GlassButton.platformViewBackdrop]
+  /// does for the bar's own.
+  final bool platformViewBackdrop;
 
   /// The tappable items in [actions], with spacers removed.
   List<GlassBarActionItem> get actionItems =>
@@ -131,7 +171,7 @@ class GlassNavigationShell extends StatefulWidget {
 /// so the shell always knows which route is on top and which sits beneath it
 /// mid-transition.
 class GlassNavigationShellState extends State<GlassNavigationShell>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   /// Registrations keyed by route, in registration order.
   final Map<ModalRoute<dynamic>, GlassNavBarRegistration> _registry =
       <ModalRoute<dynamic>, GlassNavBarRegistration>{};
@@ -199,6 +239,42 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
   /// Chrome progress the commit animation starts from.
   double _commitExitStart = 1.0;
 
+  // ---------------------------------------------------------------------------
+  // The chrome's own clock
+  // ---------------------------------------------------------------------------
+  // The choreography is timed against a route whose animation value is linear
+  // in time, which is what a duration-driven controller gives it. A route
+  // running a `Simulation` instead — a spring — reports a value that covers
+  // most of its travel in the first fraction of the flight and then creeps,
+  // so following it squeezed the whole morph into a few frames while the page
+  // was still moving. Such a route's chrome plays on its own controller over
+  // the route's declared `transitionDuration` (or `reverseTransitionDuration`)
+  // instead, which is the morph its duration promised. A duration-driven
+  // route is left on its own value, so it reads exactly as before; a
+  // back-swipe still scrubs the route's value, and a committed swipe is
+  // [_commitExit]'s.
+
+  /// Plays a sprung push or pop's chrome over the route's declared duration.
+  late final AnimationController _clock = AnimationController(vsync: this);
+
+  /// The route and direction [_clock] is playing, or null at rest.
+  ModalRoute<dynamic>? _clockRoute;
+  AnimationStatus? _clockStatus;
+
+  /// Where the current run starts from, held until the deferred start.
+  ///
+  /// A run begins from wherever the chrome already is, so a pop that
+  /// interrupts a push carries on from mid-morph rather than restarting at
+  /// the far end. Read in place of the controller while [_clockPending].
+  double _clockFrom = 0.0;
+
+  /// Whether a run has been scheduled but the controller not yet started.
+  bool _clockPending = false;
+
+  /// Each registered route's status listener, so it can be removed again.
+  final Map<ModalRoute<dynamic>, AnimationStatusListener> _clockListeners =
+      <ModalRoute<dynamic>, AnimationStatusListener>{};
+
   bool _pinningSupported = false;
 
   /// Whether pinning is currently active.
@@ -220,6 +296,12 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
         // starting from a controller still parked at 1.0.
         _commitExit.reset();
         _scheduleNotify();
+      });
+    _clock
+      ..addListener(_tick.notify)
+      // The frame the run ends is the frame the chrome settles.
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) _scheduleNotify();
       });
   }
 
@@ -272,6 +354,9 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
     if (existing == null) {
       _listenTo(route.animation);
       _listenTo(route.secondaryAnimation);
+      final listener =
+          _clockListeners[route] = (status) => _onRouteStatus(route, status);
+      route.animation?.addStatusListener(listener);
     }
     _scheduleNotify();
   }
@@ -281,7 +366,58 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
     if (_registry.remove(route) == null) return;
     _unlisten(route.animation);
     _unlisten(route.secondaryAnimation);
+    final listener = _clockListeners.remove(route);
+    if (listener != null) route.animation?.removeStatusListener(listener);
+    if (identical(_clockRoute, route)) _clockRoute = null;
     _scheduleNotify();
+  }
+
+  /// Starts [_clock] when [route]'s own transition does, if it needs one.
+  ///
+  /// A push or pop under a gesture is the swipe's — its rebound and commit
+  /// are handled where the hold is. A run begins from wherever the chrome
+  /// already is, so a pop that interrupts a push carries on from mid-morph
+  /// rather than restarting at the far end.
+  void _onRouteStatus(ModalRoute<dynamic> route, AnimationStatus status) {
+    if (status != AnimationStatus.forward &&
+        status != AnimationStatus.reverse) {
+      return;
+    }
+    if (route.navigator?.userGestureInProgress ?? false) return;
+    if (identical(_clockRoute, route) && _clockStatus == status) return;
+    // Only a route on a simulation needs the clock; `createSimulation` is
+    // the hook it overrides to run one.
+    final forward = status == AnimationStatus.forward;
+    if (route.createSimulation(forward: forward) == null) {
+      if (identical(_clockRoute, route)) _clockRoute = null;
+      return;
+    }
+    final current = identical(_clockRoute, route)
+        ? _clockProgress()
+        : route.animation?.value ?? 0.0;
+    _clockRoute = route;
+    _clockStatus = status;
+    _clockFrom = forward ? current : 1.0 - current;
+    _clock
+      ..stop()
+      ..duration =
+          forward ? route.transitionDuration : route.reverseTransitionDuration;
+    // A page-based Navigator starts a route inside the build phase, and
+    // starting a controller notifies synchronously. Defer exactly as a tick
+    // does; the frame in between reads the start value.
+    final phase = WidgetsBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.persistentCallbacks ||
+        phase == SchedulerPhase.midFrameMicrotasks) {
+      _clockPending = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !identical(_clockRoute, route)) return;
+        _clockPending = false;
+        _clock.forward(from: _clockFrom);
+      });
+    } else {
+      _clockPending = false;
+      _clock.forward(from: _clockFrom);
+    }
   }
 
   /// Listens to both the value and the status of [animation].
@@ -465,6 +601,12 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
     return progress;
   }
 
+  /// [_clock]'s run as chrome progress: 0 to 1 on a push, 1 to 0 on a pop.
+  double _clockProgress() {
+    final t = _clockPending ? _clockFrom : _clock.value;
+    return _clockStatus == AnimationStatus.forward ? t : 1.0 - t;
+  }
+
   /// Drops the gesture hold once a transition is over.
   ///
   /// Without this the next push would be re-timed against a release point
@@ -510,7 +652,12 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
 
     // Progress of the top route's own entrance: 1 at rest, 0 when it has just
     // been pushed, and scrubbed by the interactive back-swipe during a pop.
-    var progress = top.key.animation?.value ?? 1.0;
+    // A completed route is at 1 whatever its controller last reported — a
+    // simulation stops inside a tolerance of its end, not on it.
+    final status = top.key.animation?.status ?? AnimationStatus.completed;
+    var progress = status == AnimationStatus.completed
+        ? 1.0
+        : top.key.animation?.value ?? 1.0;
 
     // A route's `animation` is a ProxyAnimation that reports itself complete
     // at 1.0 until the navigator attaches the real controller in `didPush`,
@@ -527,7 +674,7 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
     if (below != null &&
         progress == 1.0 &&
         _coverageOf(below.key) == 0.0 &&
-        top.key.animation?.status == AnimationStatus.completed) {
+        status == AnimationStatus.completed) {
       progress = 0.0;
     }
 
@@ -543,6 +690,16 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
     // once that animation has finished.
     final userGesture = top.key.navigator?.userGestureInProgress ?? false;
 
+    // A push or pop under no gesture plays on [_clock], started by
+    // [_onRouteStatus]. The run outlives the route if the route's own value
+    // got there first; the chrome is not settled until it has.
+    final running =
+        status == AnimationStatus.forward || status == AnimationStatus.reverse;
+    final clocked = identical(_clockRoute, top.key) &&
+        !userGesture &&
+        (running || _clockPending || _clock.isAnimating);
+    if (clocked) progress = _clockProgress();
+
     // Whether the chrome may be tapped. Deliberately not derived from
     // `progress`: a pop starts at 1.0 and a back-swipe sits there until the
     // finger moves, so by value alone a transition that is very much running
@@ -550,9 +707,9 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
     // are what actually tell the two apart, and `isCurrent` covers a route
     // that something unregistered has been pushed over.
     final settled = top.key.isCurrent &&
-        (top.key.animation?.status ?? AnimationStatus.completed) ==
-            AnimationStatus.completed &&
-        !userGesture;
+        status == AnimationStatus.completed &&
+        !userGesture &&
+        !(clocked && (_clockPending || _clock.isAnimating));
 
     // Whether the finger is still down with the pop not yet committed — which
     // is narrower than [userGesture], and is what the chrome hold needs.
@@ -581,9 +738,9 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
     // controller at whatever value the finger dictates without ever entering
     // AnimationStatus.reverse.
     final popping = !settled &&
-        ((top.key.animation?.status ?? AnimationStatus.completed) ==
-                AnimationStatus.reverse ||
-            userGesture);
+        (status == AnimationStatus.reverse ||
+            userGesture ||
+            (clocked && _clockStatus == AnimationStatus.reverse));
 
     final state = GlassNavPinnedState(
       from: below?.value ??
@@ -628,7 +785,12 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
       animation.removeStatusListener(_onAnimationStatus);
     }
     _listened.clear();
+    for (final entry in _clockListeners.entries) {
+      entry.key.animation?.removeStatusListener(entry.value);
+    }
+    _clockListeners.clear();
     _commitExit.dispose();
+    _clock.dispose();
     _tick.dispose();
     super.dispose();
   }

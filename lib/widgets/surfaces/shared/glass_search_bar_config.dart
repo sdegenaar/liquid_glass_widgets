@@ -143,8 +143,16 @@ class GlassSearchBarConfig {
   /// is provided (the builder is responsible for its own tap handling).
   final VoidCallback? onMicTap;
 
-  /// Color of the typed text. Defaults to `CupertinoColors.label`
-  /// (adapts to light/dark mode).
+  /// Color of the typed text in the expanded search field.
+  ///
+  /// When `null` (the default), the colour is resolved from
+  /// `CupertinoColors.label` using the **app's** active ThemeMode via
+  /// `GlassTheme.brightnessOf` — the package's single brightness authority.
+  /// This ensures the text is always legible against the glass pill regardless
+  /// of whether the device OS is in dark mode, matching the iOS 26 behaviour
+  /// where `UIUserInterfaceStyle` overrides propagate to every sub-view.
+  ///
+  /// Pass an explicit colour (including a [CupertinoDynamicColor]) to override.
   final Color? textColor;
 
   /// Color of the text cursor (blinking caret) in the expanded

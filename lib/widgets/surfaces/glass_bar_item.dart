@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../overlays/glass_menu.dart';
+import '../overlays/glass_modal_sheet.dart';
 
 /// How an item's glass background is drawn.
 ///
@@ -38,8 +39,10 @@ enum GlassBarItemBackground {
   /// and blurs ordinary content under opacity and image-filter layers, and a
   /// glass surface painted under either has no backdrop to sample. An [own]
   /// item dissolves through its surface's own visibility instead, the channel
-  /// `GlassMaterialize` uses. For a capsule built from `GlassButton.custom`;
-  /// plain content stays [none].
+  /// `GlassMaterialize` uses. Two such items matched across a route change
+  /// take turns rather than cross-fading, since each would sample the other.
+  /// For a capsule built from `GlassButton.custom`; plain content stays
+  /// [none].
   own,
 }
 
@@ -126,6 +129,35 @@ sealed class GlassBarItem {
     String? label,
     GlassBarItemBackground background,
   }) = GlassBarMenuItem;
+
+  /// An icon whose tap presents a `GlassModalSheet` that morphs out of the
+  /// capsule, mirroring the iOS 26 bar button that grows into a sheet.
+  ///
+  /// [onPresent] is handed the [GlassMorphAnchor] of the capsule this item
+  /// sits in; pass it to `GlassModalSheet.show(morphFrom:)` and the capsule
+  /// empties, stretches into the sheet, and is poured back on dismissal. It is
+  /// the capsule rather than the icon's own slot for the reason
+  /// [GlassBarItem.menu] morphs the whole capsule: on screen the cluster is one
+  /// control, and a droplet crawling out of a hole in it reads as a second
+  /// object arriving.
+  ///
+  /// The anchor is always the one the *route's* bar owns, never the hoisted
+  /// copy — a presentation hands the chrome back to its route, so that is the
+  /// capsule still on screen once the sheet is up, and it is inside the
+  /// [Navigator] where the sheet can cover it. It is the group's own box where
+  /// the group draws no glass ([GlassBarItemBackground.none] and
+  /// [GlassBarItemBackground.own]).
+  ///
+  /// Dismiss the sheet before navigating, as an open [GlassMenu] is dismissed
+  /// for you.
+  const factory GlassBarItem.sheet({
+    required Widget icon,
+    required void Function(GlassMorphAnchor? anchor) onPresent,
+    Object? id,
+    String? label,
+    bool enabled,
+    GlassBarItemBackground background,
+  }) = GlassBarSheetItem;
 
   /// Splits the shared glass background, mirroring SwiftUI's
   /// `ToolbarSpacer(.fixed)` and UIKit's `UIBarButtonItem.fixedSpace`.
@@ -259,6 +291,40 @@ final class GlassBarMenuItem extends GlassBarActionItem {
 
   /// Width of the expanded menu panel, in logical pixels.
   final double menuWidth;
+
+  @override
+  Widget get content => icon;
+}
+
+/// A sheet-presenting item in a pinned navigation-bar cluster.
+///
+/// Created via [GlassBarItem.sheet].
+final class GlassBarSheetItem extends GlassBarActionItem {
+  /// Creates a sheet item. Prefer [GlassBarItem.sheet].
+  const GlassBarSheetItem({
+    required this.icon,
+    required this.onPresent,
+    super.id,
+    super.label,
+    super.enabled,
+    super.background,
+  }) : super(onTap: GlassBarActionItem._noOp);
+
+  /// The icon widget, typically an [Icon].
+  ///
+  /// Size and colour are applied by the enclosing cluster.
+  final Widget icon;
+
+  /// Called on tap with the anchor of the capsule this item sits in.
+  ///
+  /// Read at tap time, so a bar that moves between the pinned chrome and its
+  /// route hands out the anchor that is actually on screen.
+  ///
+  /// Null when no capsule can be resolved — a bar that renders the items
+  /// itself and offers no anchor of its own. `GlassModalSheet.show` takes a
+  /// null `morphFrom` and presents the way it always did, so the tap still
+  /// does its job and only the morph is lost.
+  final void Function(GlassMorphAnchor? anchor) onPresent;
 
   @override
   Widget get content => icon;

@@ -1369,4 +1369,175 @@ void main() {
           findsNothing);
     });
   });
+
+  // ── Regression: issue #305 ────────────────────────────────────────────────
+  // textColor must follow the app's ThemeMode (via GlassTheme.brightnessOf),
+  // NOT the device's OS brightness (MediaQuery.platformBrightness).
+
+  group('textColor follows app ThemeMode, not OS brightness (issue #305)', () {
+    /// Pumps the bar with [isSearchActive] = true so _buildExpanded() is
+    /// entered immediately, then extracts the [CupertinoTextField] style.
+    Future<TextStyle?> pumpAndGetStyle(
+      WidgetTester tester, {
+      required Brightness platformBrightness, // OS/device setting
+      required Brightness appBrightness, // app ThemeData
+    }) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: MediaQueryData(platformBrightness: platformBrightness),
+          child: MaterialApp(
+            theme: ThemeData(brightness: appBrightness),
+            home: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: GlassTabBar.searchable(
+                tabs: _testTabs,
+                selectedIndex: 0,
+                onTabSelected: (_) {},
+                isSearchActive: true,
+                maskingQuality: MaskingQuality.off,
+                searchConfig: GlassSearchBarConfig(
+                  onSearchToggle: (_) {},
+                  hintText: 'Search',
+                  // textColor intentionally omitted — testing the default
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      final field =
+          tester.widget<CupertinoTextField>(find.byType(CupertinoTextField));
+      return field.style;
+    }
+
+    testWidgets('app light + OS dark → text colour is dark (near-black label)',
+        (tester) async {
+      final style = await pumpAndGetStyle(
+        tester,
+        platformBrightness: Brightness.dark, // device OS is dark
+        appBrightness: Brightness.light, // app forced to light
+      );
+      // CupertinoColors.label.color is the light-mode variant (near-black).
+      // If the bug is present, the colour would be the dark-mode white instead.
+      expect(
+        style?.color,
+        equals(CupertinoColors.label.color),
+        reason: 'textColor should use app ThemeMode (light), not OS (dark)',
+      );
+    });
+
+    testWidgets('app dark + OS light → text colour is light (near-white label)',
+        (tester) async {
+      final style = await pumpAndGetStyle(
+        tester,
+        platformBrightness: Brightness.light, // device OS is light
+        appBrightness: Brightness.dark, // app forced to dark
+      );
+      // CupertinoColors.label.darkColor is the dark-mode variant (near-white).
+      expect(
+        style?.color,
+        equals(CupertinoColors.label.darkColor),
+        reason: 'textColor should use app ThemeMode (dark), not OS (light)',
+      );
+    });
+
+    testWidgets('explicit textColor is forwarded as-is', (tester) async {
+      const explicitColor = Color(0xFFABCDEF);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(brightness: Brightness.light),
+          home: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: GlassTabBar.searchable(
+              tabs: _testTabs,
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              isSearchActive: true,
+              maskingQuality: MaskingQuality.off,
+              searchConfig: GlassSearchBarConfig(
+                onSearchToggle: (_) {},
+                textColor: explicitColor,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      final field =
+          tester.widget<CupertinoTextField>(find.byType(CupertinoTextField));
+      expect(field.style?.color, equals(explicitColor));
+    });
+
+    testWidgets(
+        'explicit CupertinoDynamicColor in textColor is resolved using app brightness',
+        (tester) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(platformBrightness: Brightness.dark),
+          child: MaterialApp(
+            theme: ThemeData(brightness: Brightness.light),
+            home: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: GlassTabBar.searchable(
+                tabs: _testTabs,
+                selectedIndex: 0,
+                onTabSelected: (_) {},
+                isSearchActive: true,
+                maskingQuality: MaskingQuality.off,
+                searchConfig: GlassSearchBarConfig(
+                  onSearchToggle: (_) {},
+                  textColor: CupertinoColors.label,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      final field =
+          tester.widget<CupertinoTextField>(find.byType(CupertinoTextField));
+      expect(
+        field.style?.color,
+        equals(CupertinoColors.label.color),
+        reason:
+            'Dynamic color must be eagerly resolved to app light variant, not OS dark variant',
+      );
+    });
+
+    testWidgets('hintStyle without color preserves resolved textColor',
+        (tester) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(platformBrightness: Brightness.dark),
+          child: MaterialApp(
+            theme: ThemeData(brightness: Brightness.light),
+            home: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: GlassTabBar.searchable(
+                tabs: _testTabs,
+                selectedIndex: 0,
+                onTabSelected: (_) {},
+                isSearchActive: true,
+                maskingQuality: MaskingQuality.off,
+                searchConfig: GlassSearchBarConfig(
+                  onSearchToggle: (_) {},
+                  hintStyle: const TextStyle(fontSize: 15),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      final field =
+          tester.widget<CupertinoTextField>(find.byType(CupertinoTextField));
+      expect(field.style?.fontSize, equals(15));
+      expect(
+        field.style?.color,
+        equals(CupertinoColors.label.color),
+        reason: 'hintStyle without color must not drop resolved textColor',
+      );
+    });
+  });
 }

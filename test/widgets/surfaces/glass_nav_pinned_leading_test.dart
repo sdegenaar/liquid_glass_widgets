@@ -199,6 +199,41 @@ void main() {
       );
     });
 
+    testWidgets('two items that draw their own glass take turns',
+        (tester) async {
+      await tester.pumpWidget(shellApp(_Screen(
+        title: 'Root',
+        leading: [_ownCapsule(id: #cluster)],
+      )));
+      await settle(tester);
+      await _push(
+          tester,
+          _Screen(
+            title: 'Detail',
+            backButton: false,
+            leading: [_ownCapsule(id: #cluster, label: 'pill')],
+          ));
+
+      // A matched pair of plain items cross-fades; two glass surfaces cannot,
+      // because each would sample the other. Before the swap only the
+      // outgoing one is drawn, dissolving; after it only the incoming one.
+      await tester.pump(const Duration(milliseconds: 200));
+      final outgoing = nearestScope(tester, inHost(find.text('capsule')));
+      expect(outgoing.glassProgress, lessThan(1.0));
+      expect(outgoing.glassProgress, greaterThan(0.0));
+      expect(
+          nearestScope(tester, inHost(find.text('pill'))).glassProgress, 0.0);
+
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(
+        nearestScope(tester, inHost(find.text('capsule'))).glassProgress,
+        0.0,
+      );
+      final incoming = nearestScope(tester, inHost(find.text('pill')));
+      expect(incoming.glassProgress, lessThan(1.0));
+      expect(incoming.glassProgress, greaterThan(0.0));
+    });
+
     testWidgets(
         'plain content that hides its background keeps the cluster fade',
         (tester) async {
@@ -483,11 +518,13 @@ void main() {
 }
 
 /// A custom item that is a glass surface in its own right.
-GlassBarItem _ownCapsule() => GlassBarItem.custom(
+GlassBarItem _ownCapsule({Object? id, String label = 'capsule'}) =>
+    GlassBarItem.custom(
+      id: id,
       background: GlassBarItemBackground.own,
       child: GlassButton.custom(
         onTap: () {},
-        child: const Text('capsule'),
+        child: Text(label),
       ),
     );
 

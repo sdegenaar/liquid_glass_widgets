@@ -36,6 +36,150 @@ void main() {
   Finder inBar(Finder matching) =>
       find.descendant(of: find.byType(AppBar), matching: matching);
 
+  group('horizontal inset', () {
+    /// The chrome's own box, which is what the inset positions.
+    Rect hostRect(WidgetTester tester) {
+      final box =
+          tester.renderObject<RenderBox>(find.byType(GlassNavPinnedHost));
+      return box.localToGlobal(Offset.zero) & box.size;
+    }
+
+    testWidgets('defaults to the inset GlassAppBar draws its own chrome at',
+        (tester) async {
+      await tester.pumpWidget(shellApp(const _MaterialBarScreen(
+        title: 'Inbox',
+        actionIcon: CupertinoIcons.add,
+      )));
+      await settle(tester);
+
+      final screen =
+          tester.view.physicalSize.width / tester.view.devicePixelRatio;
+      final rect = hostRect(tester);
+      expect(rect.left, GlassNavPinnedMetrics.horizontalPadding);
+      expect(rect.right, screen - GlassNavPinnedMetrics.horizontalPadding);
+    });
+
+    testWidgets('follows the bar that registered it', (tester) async {
+      await tester.pumpWidget(shellApp(const _MaterialBarScreen(
+        title: 'Inbox',
+        actionIcon: CupertinoIcons.add,
+        horizontalInset: 16,
+      )));
+      await settle(tester);
+
+      // A bar aligned to its app's page gutter rather than the package's
+      // default steps sideways at every hand-over unless the shell follows it.
+      final screen =
+          tester.view.physicalSize.width / tester.view.devicePixelRatio;
+      final rect = hostRect(tester);
+      expect(rect.left, 16);
+      expect(rect.right, screen - 16);
+    });
+
+    testWidgets('a push lands on the incoming route\'s guide', (tester) async {
+      await tester.pumpWidget(shellApp(const _MaterialBarScreen(
+        title: 'Inbox',
+        actionIcon: CupertinoIcons.add,
+        horizontalInset: 16,
+      )));
+      await settle(tester);
+
+      final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+      navigator.push(MaterialPageRoute<void>(
+        builder: (_) => const _MaterialBarScreen(
+          title: 'Detail',
+          actionIcon: CupertinoIcons.share,
+          horizontalInset: 4,
+        ),
+      ));
+      await settle(tester);
+
+      expect(hostRect(tester).left, 4);
+    });
+  });
+
+  group('platform view backdrop', () {
+    /// Whether every glass capsule the shell draws is on the backdrop route.
+    bool hostOnBackdrop(WidgetTester tester) => tester
+        .widgetList<GlassButton>(inHost(find.byType(GlassButton)))
+        .every((b) => b.platformViewBackdrop);
+
+    testWidgets('is off unless the bar says otherwise', (tester) async {
+      await tester.pumpWidget(shellApp(const _MaterialBarScreen(
+        title: 'Inbox',
+        actionIcon: CupertinoIcons.add,
+      )));
+      await settle(tester);
+
+      expect(inHost(find.byType(GlassButton)), findsWidgets);
+      expect(hostOnBackdrop(tester), isFalse);
+    });
+
+    testWidgets('reaches the capsule the shell draws', (tester) async {
+      await tester.pumpWidget(shellApp(const _MaterialBarScreen(
+        title: 'Map',
+        actionIcon: CupertinoIcons.add,
+        platformViewBackdrop: true,
+      )));
+      await settle(tester);
+
+      // The material slot alone cannot do this: the shader reads a captured
+      // backdrop the platform view is never part of, so only the flag moves
+      // the hoisted copy onto the live BackdropFilter the in-route one uses.
+      expect(inHost(find.byType(GlassButton)), findsWidgets);
+      expect(hostOnBackdrop(tester), isTrue);
+    });
+
+    testWidgets('reaches the in-route capsules too', (tester) async {
+      await tester.pumpWidget(shellApp(
+        const _MaterialBarScreen(
+          title: 'Map',
+          actionIcon: CupertinoIcons.add,
+          platformViewBackdrop: true,
+        ),
+        shell: false,
+      ));
+      await settle(tester);
+
+      final group = tester.widget<GlassButtonGroup>(
+        inBar(find.byType(GlassButtonGroup)),
+      );
+      expect(group.platformViewBackdrop, isTrue);
+    });
+
+    testWidgets('follows the route being entered, from its first frame',
+        (tester) async {
+      await tester.pumpWidget(shellApp(const _MaterialBarScreen(
+        title: 'Map',
+        actionIcon: CupertinoIcons.add,
+        platformViewBackdrop: true,
+      )));
+      await settle(tester);
+
+      final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+      navigator.push(MaterialPageRoute<void>(
+        builder: (_) => const _MaterialBarScreen(
+          title: 'Detail',
+          actionIcon: CupertinoIcons.share,
+        ),
+      ));
+      await settle(tester);
+      expect(hostOnBackdrop(tester), isFalse);
+
+      // A change of route remounts the shell's surface, so the flip has to
+      // land on the first frame of the pop rather than once it settles —
+      // otherwise the returning capsule materializes through the shader and
+      // pops to the backdrop at the end.
+      navigator.pop();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(hostOnBackdrop(tester), isTrue);
+
+      await settle(tester);
+      expect(hostOnBackdrop(tester), isTrue);
+    });
+  });
+
   group('registration', () {
     testWidgets('a plain Material AppBar hands its items to the shell',
         (tester) async {
@@ -274,6 +418,8 @@ class _MaterialBarScreen extends StatelessWidget {
     this.onBack,
     this.backButton = true,
     this.enabled = true,
+    this.horizontalInset,
+    this.platformViewBackdrop = false,
   });
 
   final String title;
@@ -281,6 +427,8 @@ class _MaterialBarScreen extends StatelessWidget {
   final VoidCallback? onBack;
   final bool backButton;
   final bool enabled;
+  final double? horizontalInset;
+  final bool platformViewBackdrop;
 
   @override
   Widget build(BuildContext context) {
@@ -291,6 +439,8 @@ class _MaterialBarScreen extends StatelessWidget {
       backButton: backButton,
       onBack: onBack,
       enabled: enabled,
+      horizontalInset: horizontalInset,
+      platformViewBackdrop: platformViewBackdrop,
       builder: (context, chrome) => Scaffold(
         appBar: AppBar(
           title: Text(title),

@@ -193,6 +193,14 @@ class NavBarPatternsDemo extends StatelessWidget {
                 ),
                 SizedBox(height: 16),
                 _PatternTile(
+                  title: 'Sheet From The Capsule',
+                  subtitle: 'GlassBarItem.sheet — the capsule empties and '
+                      'stretches into the sheet, hoisted or in-route',
+                  icon: CupertinoIcons.arrow_up_left_square,
+                  onTap: () => _push(context, const _SheetItemDemo()),
+                ),
+                SizedBox(height: 16),
+                _PatternTile(
                   title: 'Title Centering',
                   subtitle:
                       'Verifies title is centred on full bar width with asymmetric leading/trailing (fix #198)',
@@ -2279,6 +2287,124 @@ class _PresentedSheetsDemo extends StatelessWidget {
                   icon: CupertinoIcons.square_arrow_up,
                   onTap: () => _showFullscreenDialog(context),
                 ),
+              ],
+            ),
+          ),
+          _buildDummyContent(),
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        ],
+      ),
+    );
+  }
+}
+
+/// A trailing cluster whose first item morphs into a sheet.
+///
+/// The counterpart to [_PresentedSheetsDemo]: presenting hands the chrome back
+/// to the route, and the morph comes out of the capsule that lands there —
+/// which is why nothing is drawn where it was until the droplet is caught.
+/// Push into the second screen to see the same item morph across a route
+/// change as ordinary data.
+class _SheetItemDemo extends StatelessWidget {
+  const _SheetItemDemo({this.detail = false});
+
+  void _push(BuildContext context, Widget page) {
+    Navigator.of(context).push(
+      CupertinoPageRoute<void>(builder: (_) => page),
+    );
+  }
+
+  /// Whether this is the pushed screen, which carries a second action.
+  final bool detail;
+
+  void _present(BuildContext context, GlassMorphAnchor? anchor) {
+    GlassModalSheet.show<void>(
+      context: context,
+      morphFrom: anchor,
+      initialState: GlassSheetState.half,
+      builder: (_) => const _PresentedSheetBody(
+        title: 'Out of the capsule',
+        body: 'The capsule emptied, a droplet stretched out of it and became '
+            'this sheet. Dismiss it and the droplet is poured back into the '
+            'bar it came from.',
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final topPad = MediaQuery.paddingOf(context).top;
+
+    return GlassScaffold(
+      background: const ShowcaseBackground(),
+      settings: RecommendedGlassSettings.standard,
+      statusBarStyle: GlassStatusBarStyle.auto,
+      appBar: GlassAppBar.pinned(
+        title: Text(
+          detail ? 'Detail' : 'Sheet Item',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: CupertinoColors.label.resolveFrom(context),
+          ),
+        ),
+        actions: [
+          GlassBarItem.sheet(
+            icon: const Icon(CupertinoIcons.add),
+            label: 'Add',
+            id: 'add',
+            onPresent: (anchor) => _present(context, anchor),
+          ),
+          if (detail)
+            GlassBarItem.icon(
+              icon: const Icon(CupertinoIcons.share),
+              label: 'Share',
+              id: 'share',
+              onTap: () {},
+            ),
+          GlassBarItem.menu(
+            icon: const Icon(CupertinoIcons.ellipsis),
+            label: 'More',
+            id: 'more',
+            menuItems: [
+              GlassMenuItem(
+                title: 'Rename',
+                icon: const Icon(CupertinoIcons.pencil),
+                onTap: () {},
+              ),
+            ],
+          ),
+        ],
+      ),
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: SizedBox(height: topPad + 44 + 16)),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            sliver: SliverList.list(
+              children: [
+                Text(
+                  'Tap (+). The whole capsule empties — the ellipsis with it, '
+                  'because on screen the cluster is one control — and the '
+                  'droplet stretches out of its frame rather than out of the '
+                  'glyph. Nothing is drawn where the capsule was until the '
+                  'sheet is dismissed.',
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.4,
+                    color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                if (!detail)
+                  _PatternTile(
+                    title: 'Push To A Second Screen',
+                    subtitle: 'The item is ordinary data, so the capsule '
+                        'morphs across the push and (+) holds its place',
+                    icon: CupertinoIcons.arrow_right,
+                    onTap: () =>
+                        _push(context, const _SheetItemDemo(detail: true)),
+                  ),
               ],
             ),
           ),

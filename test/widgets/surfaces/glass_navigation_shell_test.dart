@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/widgets/effects/shared/glass_materialize_effect.dart';
@@ -740,6 +741,136 @@ void main() {
     });
   });
 
+  group("the chrome's own clock", () {
+    GlassNavPinnedState state(WidgetTester tester) => tester
+        .widget<GlassNavPinnedHost>(find.byType(GlassNavPinnedHost))
+        .state;
+
+    double progress(WidgetTester tester) => state(tester).progress;
+
+    bool settled(WidgetTester tester) => state(tester).settled;
+
+    /// Two frames: the clock starts the frame after the route's status turns.
+    Future<void> start(WidgetTester tester) async {
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+
+    testWidgets('a sprung push morphs over its duration, not its spring',
+        (tester) async {
+      await tester
+          .pumpWidget(shellApp(const _Screen(title: 'Root', actions: [])));
+      await settle(tester);
+      tester.state<NavigatorState>(find.byType(Navigator)).push(
+          _SpringRoute<void>(const _Screen(title: 'Detail', actions: [])));
+      await tester.pump();
+      await start(tester);
+
+      // The spring is past halfway by 100ms and all but settled by 300ms;
+      // the 500ms duration the route declares is a fifth and three fifths in.
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(progress(tester), inExclusiveRange(0.1, 0.35));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(progress(tester), inExclusiveRange(0.5, 0.75));
+      expect(settled(tester), isFalse);
+
+      await settle(tester);
+      expect(progress(tester), 1.0);
+      expect(settled(tester), isTrue);
+    });
+
+    testWidgets('a curved push reads exactly as the route does',
+        (tester) async {
+      await tester
+          .pumpWidget(shellApp(const _Screen(title: 'Root', actions: [])));
+      await settle(tester);
+      await _push(tester, const _Screen(title: 'Detail', actions: []));
+      await start(tester);
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final route = ModalRoute.of(tester.element(find.text('Detail')))!;
+      expect(progress(tester), closeTo(route.animation!.value, 0.04));
+    });
+
+    testWidgets('a pop that interrupts a push carries on from mid-morph',
+        (tester) async {
+      await tester.pumpWidget(
+        shellApp(const _Screen(title: 'Root', actions: [])),
+      );
+      await settle(tester);
+      final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+      navigator.push(
+          _SpringRoute<void>(const _Screen(title: 'Detail', actions: [])));
+      await tester.pump();
+      await start(tester);
+      await tester.pump(const Duration(milliseconds: 200));
+      final before = progress(tester);
+      expect(before, inExclusiveRange(0.2, 0.6));
+
+      // The spring is nearly home by now; the chrome is not, and must not
+      // jump to the far end before coming back.
+      navigator.pop();
+      await tester.pump();
+      await start(tester);
+      expect(progress(tester), lessThanOrEqualTo(before));
+      expect(progress(tester), greaterThan(before - 0.15));
+    });
+
+    testWidgets('the chrome is not settled until its run has ended',
+        (tester) async {
+      await tester
+          .pumpWidget(shellApp(const _Screen(title: 'Root', actions: [])));
+      await settle(tester);
+      tester.state<NavigatorState>(find.byType(Navigator)).push(
+            _SpringRoute<void>(
+              const _Screen(title: 'Detail', actions: []),
+              duration: const Duration(milliseconds: 1500),
+            ),
+          );
+      await tester.pump();
+      await start(tester);
+
+      // The spring has come to rest; the declared second and a half has not.
+      await tester.pump(const Duration(milliseconds: 800));
+      final route = ModalRoute.of(tester.element(find.text('Detail')))!;
+      expect(route.animation!.status, AnimationStatus.completed);
+      expect(progress(tester), inExclusiveRange(0.5, 0.8));
+      expect(settled(tester), isFalse);
+
+      await settle(tester);
+      expect(settled(tester), isTrue);
+    });
+
+    testWidgets(
+        'an interactive back-swipe on a sprung route does not run the clock',
+        (tester) async {
+      await tester.pumpWidget(
+        shellApp(const _Screen(title: 'Root', actions: [])),
+      );
+      await settle(tester);
+      final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+      navigator.push(
+        _SpringRoute<void>(const _Screen(title: 'Detail', actions: [])),
+      );
+      await settle(tester);
+
+      final width =
+          tester.view.physicalSize.width / tester.view.devicePixelRatio;
+      final gesture = await tester.startGesture(const Offset(2, 300));
+      await gesture.moveTo(Offset(width * 0.5, 300));
+      await tester.pump();
+
+      // Holds still under gesture, not running on the clock.
+      expect(progress(tester), 1.0);
+      expect(settled(tester), isFalse);
+
+      await gesture.up();
+      await settle(tester);
+      expect(progress(tester), 1.0);
+      expect(settled(tester), isTrue);
+    });
+  });
+
   group('presented routes', () {
     /// The back button drawn by the route's own bar, as opposed to the shell's.
     Finder inRouteBack() => find.descendant(
@@ -1112,6 +1243,26 @@ void main() {
       await settle(tester);
       expect(find.text('Instant'), findsNothing);
     });
+
+    testWidgets(
+        'a sprung route pushed mid-build does not mark the chrome dirty',
+        (tester) async {
+      final key = GlobalKey<_PagesNavigatorState>();
+      await tester.pumpWidget(_PagesApp(navigatorKey: key));
+      await settle(tester);
+
+      key.currentState!.pushSpring(const _Screen(title: 'Detail', actions: []));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      await settle(tester);
+      expect(find.text('Detail'), findsOneWidget);
+
+      key.currentState!.pop();
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      await settle(tester);
+      expect(find.text('Detail'), findsNothing);
+    });
   });
 
   group('fallback rendering', () {
@@ -1279,6 +1430,41 @@ void main() {
   });
 }
 
+/// A push that runs on a stiff spring rather than a duration, the way a zoom
+/// transition does: most of its travel lands in the first hundred
+/// milliseconds and the rest creeps in.
+class _SpringRoute<T> extends PageRoute<T>
+    with CupertinoRouteTransitionMixin<T> {
+  _SpringRoute(
+    this.screen, {
+    this.duration = const Duration(milliseconds: 500),
+    super.settings,
+  });
+
+  final Widget screen;
+  final Duration duration;
+
+  @override
+  Duration get transitionDuration => duration;
+
+  @override
+  bool get maintainState => true;
+
+  @override
+  String? get title => null;
+
+  @override
+  Widget buildContent(BuildContext context) => screen;
+
+  @override
+  Simulation? createSimulation({required bool forward}) => SpringSimulation(
+        const SpringDescription(mass: 1, stiffness: 361, damping: 38),
+        forward ? 0.0 : 1.0,
+        forward ? 1.0 : 0.0,
+        0.0,
+      );
+}
+
 Future<void> _push(WidgetTester tester, Widget screen) async {
   final navigator = tester.state<NavigatorState>(find.byType(Navigator));
   navigator.push(CupertinoPageRoute<void>(builder: (_) => screen));
@@ -1390,6 +1576,15 @@ class _PagesNavigatorState extends State<_PagesNavigator> {
         );
       });
 
+  void pushSpring(Widget screen,
+          {Duration duration = const Duration(milliseconds: 500)}) =>
+      setState(() {
+        final key = ValueKey(_pages.length);
+        _pages.add(
+          _SpringPage(key: key, child: screen, duration: duration),
+        );
+      });
+
   void pop() => setState(() => _pages.removeLast());
 
   @override
@@ -1413,5 +1608,24 @@ class _InstantPage extends Page<void> {
         transitionDuration: Duration.zero,
         reverseTransitionDuration: Duration.zero,
         pageBuilder: (_, __, ___) => child,
+      );
+}
+
+/// A page whose route runs on a spring simulation.
+class _SpringPage extends Page<void> {
+  const _SpringPage({
+    required this.child,
+    this.duration = const Duration(milliseconds: 500),
+    super.key,
+  });
+
+  final Widget child;
+  final Duration duration;
+
+  @override
+  Route<void> createRoute(BuildContext context) => _SpringRoute<void>(
+        child,
+        duration: duration,
+        settings: this,
       );
 }

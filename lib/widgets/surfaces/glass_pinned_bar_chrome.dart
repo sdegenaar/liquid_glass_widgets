@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../interactive/glass_button.dart';
 import '../interactive/glass_button_group.dart';
+import '../overlays/glass_modal_sheet.dart';
 import 'glass_app_bar.dart' show DefaultButtonSettings, GlassAppBar;
 import 'glass_bar_item.dart';
 import 'glass_navigation_shell.dart';
@@ -113,6 +114,8 @@ class GlassPinnedBarChrome extends StatefulWidget {
     this.leadingItemsSupplementBackButton = false,
     this.onBack,
     this.buttonSettings,
+    this.horizontalInset,
+    this.platformViewBackdrop = false,
     this.enabled = true,
   });
 
@@ -159,6 +162,24 @@ class GlassPinnedBarChrome extends StatefulWidget {
   /// look identical across the hand-over.
   final LiquidGlassSettings? buttonSettings;
 
+  /// Inset from each screen edge to the pinned chrome, in logical pixels.
+  ///
+  /// Defaults to [GlassNavPinnedMetrics.horizontalPadding], the inset
+  /// [GlassAppBar] uses for its own. Pass the inset **your** bar draws its
+  /// capsules at, so the two land on the same guide and the hand-over between
+  /// them is invisible — a bar aligned to its app's page gutter otherwise
+  /// steps sideways every time a sheet hands the chrome back.
+  final double? horizontalInset;
+
+  /// Whether the bar floats over a native platform view — an iOS map, say.
+  ///
+  /// Forwarded to every capsule this bar draws, in-route and pinned alike, so
+  /// the two look identical across the hand-over. The glass shader reads a
+  /// captured backdrop the platform view is never part of, so without this a
+  /// capsule over one has nothing to refract; the flag routes it to the live
+  /// `BackdropFilter` instead, as [GlassButton.platformViewBackdrop] does.
+  final bool platformViewBackdrop;
+
   /// Whether this bar participates in pinning at all.
   ///
   /// When false the widget behaves as if no shell were installed: any existing
@@ -177,6 +198,9 @@ class GlassPinnedBarChrome extends StatefulWidget {
   @override
   State<GlassPinnedBarChrome> createState() => _GlassPinnedBarChromeState();
 }
+
+/// Which end of the bar a group sits at, so its anchor can be found again.
+enum _BarSlot { leading, actions }
 
 class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
   GlassNavigationShellState? _shell;
@@ -246,6 +270,9 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
         showsBackButton: _showsBack,
         onBack: widget.onBack,
         buttonSettings: widget.buttonSettings,
+        presentSheet: _presentSheet,
+        horizontalInset: widget.horizontalInset,
+        platformViewBackdrop: widget.platformViewBackdrop,
       ),
     );
   }
@@ -314,6 +341,7 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
       width: backSize,
       height: backSize,
       iconSize: GlassNavPinnedMetrics.iconSize,
+      platformViewBackdrop: widget.platformViewBackdrop,
       label: Localizations.of<CupertinoLocalizations>(
             context,
             CupertinoLocalizations,
@@ -330,40 +358,91 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
     );
   }
 
-  /// One group of items, drawn as the shell it asked for.
-  Widget _buildGroup(GlassNavBarGroup group) {
-    if (_handedOver) return _measuringGroup(group);
-    if (!group.glass) {
-      final item = group.items.single;
-      return Semantics(
-        button: true,
-        label: item.label,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: item.enabled ? item.onTap : null,
-          child: SizedBox(height: group.height, child: item.content),
-        ),
+  /// The morph anchor of each group's capsule, by slot and position.
+  ///
+  /// Written as the group builds and read at tap time, never captured: the
+  /// anchor belongs to the trigger's element, and a hoisted tap arrives from
+  /// the shell long after the build that produced it.
+  final Map<(_BarSlot, int), GlassMorphAnchor> _groupAnchors = {};
+
+  /// Presents [item]'s sheet out of this bar's own capsule.
+  ///
+  /// Handed to the shell in the registration, so a hoisted tap morphs the
+  /// capsule that will still be here when the sheet is up. Silently does
+  /// nothing if the item is no longer in this bar, which a rebuild between the
+  /// tap and the frame it lands on can leave true.
+  void _presentSheet(GlassBarSheetItem item) {
+    for (final entry in <(_BarSlot, List<GlassBarItem>)>[
+      (_BarSlot.leading, widget.leading),
+      (_BarSlot.actions, widget.actions),
+    ]) {
+      final groups = groupGlassNavBarItems(
+        entry.$2.whereType<GlassBarActionItem>().toList(),
       );
+      for (var i = 0; i < groups.length; i++) {
+        if (!groups[i].items.any((candidate) =>
+            identical(candidate, item) ||
+            (item.id != null && candidate.id == item.id))) {
+          continue;
+        }
+        item.onPresent(_groupAnchors[(entry.$1, i)]);
+        return;
+      }
     }
-    return GlassButtonGroup.icons(
-      items: [
-        for (final item in group.items)
-          if (item is GlassBarMenuItem)
-            GlassButtonGroupItem.menu(
-              icon: item.icon,
-              menuItems: item.menuItems,
-              menuAlignment: item.menuAlignment,
-              menuWidth: item.menuWidth,
-              label: item.label,
-            )
-          else
-            GlassButtonGroupItem(
-              icon: item.content,
-              onTap: item.onTap,
-              label: item.label,
-              enabled: item.enabled,
+  }
+
+  /// One group of items, drawn as the shell it asked for.
+  ///
+  /// The morph trigger wraps both renderings and is unconditional, matching
+  /// the pinned host's own wrappers: a group that gained or lost one would
+  /// remount its glass and pop its backdrop, and spanning the hand-over is
+  /// what lets a capsule emptied while the bar was hoisted stay emptied when
+  /// it comes back. At rest it paints through a zero translation and a full
+  /// opacity, neither of which pushes a layer.
+  Widget _buildGroup(GlassNavBarGroup group, _BarSlot slot, int index) {
+    return GlassMorphTrigger(
+      builder: (context, anchor) {
+        _groupAnchors[(slot, index)] = anchor;
+        if (_handedOver) return _measuringGroup(group);
+
+        VoidCallback tapOf(GlassBarActionItem item) => item is GlassBarSheetItem
+            ? () => item.onPresent(anchor)
+            : item.onTap;
+
+        if (!group.glass) {
+          final item = group.items.single;
+          return Semantics(
+            button: true,
+            label: item.label,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: item.enabled ? tapOf(item) : null,
+              child: SizedBox(height: group.height, child: item.content),
             ),
-      ],
+          );
+        }
+        return GlassButtonGroup.icons(
+          platformViewBackdrop: widget.platformViewBackdrop,
+          items: [
+            for (final item in group.items)
+              if (item is GlassBarMenuItem)
+                GlassButtonGroupItem.menu(
+                  icon: item.icon,
+                  menuItems: item.menuItems,
+                  menuAlignment: item.menuAlignment,
+                  menuWidth: item.menuWidth,
+                  label: item.label,
+                )
+              else
+                GlassButtonGroupItem(
+                  icon: item.content,
+                  onTap: tapOf(item),
+                  label: item.label,
+                  enabled: item.enabled,
+                ),
+          ],
+        );
+      },
     );
   }
 
@@ -407,7 +486,8 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
     );
     final slot = <Widget>[
       if (_showsBack) _buildBackButton(context),
-      for (final group in groups) _buildGroup(group),
+      for (var i = 0; i < groups.length; i++)
+        _buildGroup(groups[i], _BarSlot.leading, i),
     ];
     if (slot.isEmpty) return null;
     if (slot.length == 1) return slot.single;
@@ -423,7 +503,10 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
     final groups = groupGlassNavBarItems(
       widget.actions.whereType<GlassBarActionItem>().toList(),
     );
-    return [for (final group in groups) _buildGroup(group)];
+    return [
+      for (var i = 0; i < groups.length; i++)
+        _buildGroup(groups[i], _BarSlot.actions, i),
+    ];
   }
 
   @override
