@@ -21,6 +21,7 @@ class GlassNavBarRegistration {
     this.onBack,
     this.buttonSettings,
     this.presentSheet,
+    this.horizontalInset,
   });
 
   /// The trailing cluster items for this route.
@@ -54,6 +55,19 @@ class GlassNavBarRegistration {
   /// the items itself. The item is then presented with a null anchor, which
   /// costs the morph and nothing else.
   final void Function(GlassBarSheetItem item)? presentSheet;
+
+  /// Inset from each screen edge to the pinned chrome, in logical pixels.
+  ///
+  /// Defaults to [GlassNavPinnedMetrics.horizontalPadding], which is what
+  /// [GlassAppBar] insets its own chrome by — so a bar the package draws at
+  /// both ends already agrees with itself and passes nothing.
+  ///
+  /// A bar the app draws is the case for it. The chrome hoists and hands back
+  /// on its own schedule — a presented sheet gives it to the route, a
+  /// transition takes it away again — and each hand-over is invisible only
+  /// while the two renderings land on the same guide. A bar aligned to its
+  /// app's page gutter rather than to this default passes that gutter here.
+  final double? horizontalInset;
 
   /// The tappable items in [actions], with spacers removed.
   List<GlassBarActionItem> get actionItems =>
