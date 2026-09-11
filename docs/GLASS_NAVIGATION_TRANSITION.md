@@ -216,6 +216,13 @@ say. The chrome hands back to the route whenever a sheet or dialog is
 presented over it, and that hand-over is invisible only while both renderings
 land on the same guide; a bar that disagrees steps sideways at every one.
 
+`platformViewBackdrop` is for a bar floating over a native platform view — a
+map, a video. `buttonSettings` cannot cover this on its own: the shader reads a
+captured backdrop the platform view is never part of, so the shell's capsule
+has nothing to refract there. The flag routes it to a live `BackdropFilter`
+instead, as `GlassButton.platformViewBackdrop` does for the bar's own, and is
+applied in-route as well so the two agree across the hand-over.
+
 `leading`, `backButton`, `leadingItemsSupplementBackButton`, `onBack` and
 `buttonSettings` mean exactly what they do on `GlassAppBar.pinned` — a
 non-empty `leading` replaces the back button in `chrome.leading` unless

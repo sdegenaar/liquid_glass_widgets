@@ -4,6 +4,18 @@
 
 - **`GlassPinnedBarChrome.horizontalInset` — the guide a hoisted bar is drawn on (#307):** The chrome was always positioned at `GlassNavPinnedMetrics.horizontalPadding`, which is right for a bar the package draws at both ends and wrong for one the app draws. Presenting a sheet hands the chrome back to its route, and a bar aligned to its own page gutter stepped sideways at every hand-over. It now takes the inset its bar reports, defaulting to the old one.
 
+Thanks to [@JakeThomson](https://github.com/JakeThomson) for the feature (#308).
+
+- **`GlassPinnedBarChrome.platformViewBackdrop` — pinned chrome over a platform view (#310):** The shell drew a hoisted capsule with its own `GlassButton` on the shader path, whose captured backdrop excludes a platform view — so over a map the capsule had nothing to refract and rendered clear with a rim, whatever `buttonSettings` said, while the bar's own capsule blurred through a live `BackdropFilter`. The registration carries the flag now and the host forwards it to the capsule and menu it draws, resolved to the route being entered so a pop back over the view is on the backdrop from its first frame.
+
+Thanks to [@JakeThomson](https://github.com/JakeThomson) for the feature (#311).
+
+## Bug Fixes
+
+- **`GlassSheet` removes redundant inner `SafeArea` (#309):** `GlassSheet`'s inner column wrapped its content in `SafeArea(bottom: true)` without disabling `top: true`, causing unconsumed top status-bar padding from the window to leak into the sheet and push the top drag handle 50+ dp down. In addition, the inner wrapper forced bottom safe-area insetting even when `GlassSheet.show(useSafeArea: false)` was requested. The redundant inner `SafeArea` has been removed while preserving outer `useSafeArea` behavior.
+
+Thanks to [@yohom](https://github.com/yohom) for the fix (#309).
+
 # 1.4.3
 
 ## Features

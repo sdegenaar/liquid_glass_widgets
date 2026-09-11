@@ -1298,6 +1298,13 @@ class _PinnedGroupState extends State<_PinnedGroup> {
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
+    // The route being entered, in flow terms rather than stack terms. A
+    // change of render path remounts the shell's surface, so it should flip
+    // on the first frame of a transition and never at its end: on a pop back
+    // over a platform view [GlassNavPinnedState.to] is still the route
+    // leaving, and reading it would have the returning capsule materialize
+    // through the shader and pop to the backdrop once settled.
+    final platformViewBackdrop = state.flowTo.platformViewBackdrop;
     // The forward-choreography clock: mirrored on a pop, with the group's
     // sides already swapped to match by the side above.
     final p = state.flowProgress;
@@ -1604,12 +1611,14 @@ class _PinnedGroupState extends State<_PinnedGroup> {
           // The fallback is never read: with no menu item there is no trigger
           // to open one. It matches GlassMenu's own default.
           menuWidth: menuItem?.menuWidth ?? 200,
+          platformViewBackdrop: platformViewBackdrop,
           triggerBuilder: (context, _) => toGroup.glass
               ? _buildShell(
                   cluster: cluster,
                   stretch:
                       lerpDouble(fromGroup.stretch, toGroup.stretch, clampedT)!,
                   morphScale: morphScale,
+                  platformViewBackdrop: platformViewBackdrop,
                 )
               : cluster,
         ),
@@ -1630,9 +1639,11 @@ class _PinnedGroupState extends State<_PinnedGroup> {
     required Widget cluster,
     required double stretch,
     required double morphScale,
+    required bool platformViewBackdrop,
   }) {
     return GlassButton.custom(
       onTap: () {},
+      platformViewBackdrop: platformViewBackdrop,
       // The radius scales with the gel so the shape stays a true scaled
       // capsule rather than squaring off as it inflates.
       shape: LiquidRoundedRectangle(
