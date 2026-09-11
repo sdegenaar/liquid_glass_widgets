@@ -209,6 +209,13 @@ its own, and there is nothing to keep in sync with the item data.
 `chrome.hoisted` is there for a bar that wants to substitute *its own* chrome
 rather than the package's; reading it is not needed for the common case.
 
+`horizontalInset` is the guide your capsules sit on, defaulting to the
+`GlassNavPinnedMetrics.horizontalPadding` a `GlassAppBar` uses for its own.
+Pass yours if the bar is aligned to something else — an app's page gutter,
+say. The chrome hands back to the route whenever a sheet or dialog is
+presented over it, and that hand-over is invisible only while both renderings
+land on the same guide; a bar that disagrees steps sideways at every one.
+
 `leading`, `backButton`, `leadingItemsSupplementBackButton`, `onBack` and
 `buttonSettings` mean exactly what they do on `GlassAppBar.pinned` — a
 non-empty `leading` replaces the back button in `chrome.leading` unless

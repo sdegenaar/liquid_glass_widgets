@@ -36,6 +36,68 @@ void main() {
   Finder inBar(Finder matching) =>
       find.descendant(of: find.byType(AppBar), matching: matching);
 
+  group('horizontal inset', () {
+    /// The chrome's own box, which is what the inset positions.
+    Rect hostRect(WidgetTester tester) {
+      final box =
+          tester.renderObject<RenderBox>(find.byType(GlassNavPinnedHost));
+      return box.localToGlobal(Offset.zero) & box.size;
+    }
+
+    testWidgets('defaults to the inset GlassAppBar draws its own chrome at',
+        (tester) async {
+      await tester.pumpWidget(shellApp(const _MaterialBarScreen(
+        title: 'Inbox',
+        actionIcon: CupertinoIcons.add,
+      )));
+      await settle(tester);
+
+      final screen =
+          tester.view.physicalSize.width / tester.view.devicePixelRatio;
+      final rect = hostRect(tester);
+      expect(rect.left, GlassNavPinnedMetrics.horizontalPadding);
+      expect(rect.right, screen - GlassNavPinnedMetrics.horizontalPadding);
+    });
+
+    testWidgets('follows the bar that registered it', (tester) async {
+      await tester.pumpWidget(shellApp(const _MaterialBarScreen(
+        title: 'Inbox',
+        actionIcon: CupertinoIcons.add,
+        horizontalInset: 16,
+      )));
+      await settle(tester);
+
+      // A bar aligned to its app's page gutter rather than the package's
+      // default steps sideways at every hand-over unless the shell follows it.
+      final screen =
+          tester.view.physicalSize.width / tester.view.devicePixelRatio;
+      final rect = hostRect(tester);
+      expect(rect.left, 16);
+      expect(rect.right, screen - 16);
+    });
+
+    testWidgets('a push lands on the incoming route\'s guide', (tester) async {
+      await tester.pumpWidget(shellApp(const _MaterialBarScreen(
+        title: 'Inbox',
+        actionIcon: CupertinoIcons.add,
+        horizontalInset: 16,
+      )));
+      await settle(tester);
+
+      final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+      navigator.push(MaterialPageRoute<void>(
+        builder: (_) => const _MaterialBarScreen(
+          title: 'Detail',
+          actionIcon: CupertinoIcons.share,
+          horizontalInset: 4,
+        ),
+      ));
+      await settle(tester);
+
+      expect(hostRect(tester).left, 4);
+    });
+  });
+
   group('registration', () {
     testWidgets('a plain Material AppBar hands its items to the shell',
         (tester) async {
@@ -274,6 +336,7 @@ class _MaterialBarScreen extends StatelessWidget {
     this.onBack,
     this.backButton = true,
     this.enabled = true,
+    this.horizontalInset,
   });
 
   final String title;
@@ -281,6 +344,7 @@ class _MaterialBarScreen extends StatelessWidget {
   final VoidCallback? onBack;
   final bool backButton;
   final bool enabled;
+  final double? horizontalInset;
 
   @override
   Widget build(BuildContext context) {
@@ -291,6 +355,7 @@ class _MaterialBarScreen extends StatelessWidget {
       backButton: backButton,
       onBack: onBack,
       enabled: enabled,
+      horizontalInset: horizontalInset,
       builder: (context, chrome) => Scaffold(
         appBar: AppBar(
           title: Text(title),

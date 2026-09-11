@@ -114,6 +114,7 @@ class GlassPinnedBarChrome extends StatefulWidget {
     this.leadingItemsSupplementBackButton = false,
     this.onBack,
     this.buttonSettings,
+    this.horizontalInset,
     this.enabled = true,
   });
 
@@ -159,6 +160,15 @@ class GlassPinnedBarChrome extends StatefulWidget {
   /// Applied to the in-route buttons as well as the pinned ones, so the two
   /// look identical across the hand-over.
   final LiquidGlassSettings? buttonSettings;
+
+  /// Inset from each screen edge to the pinned chrome, in logical pixels.
+  ///
+  /// Defaults to [GlassNavPinnedMetrics.horizontalPadding], the inset
+  /// [GlassAppBar] uses for its own. Pass the inset **your** bar draws its
+  /// capsules at, so the two land on the same guide and the hand-over between
+  /// them is invisible — a bar aligned to its app's page gutter otherwise
+  /// steps sideways every time a sheet hands the chrome back.
+  final double? horizontalInset;
 
   /// Whether this bar participates in pinning at all.
   ///
@@ -251,6 +261,7 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
         onBack: widget.onBack,
         buttonSettings: widget.buttonSettings,
         presentSheet: _presentSheet,
+        horizontalInset: widget.horizontalInset,
       ),
     );
   }

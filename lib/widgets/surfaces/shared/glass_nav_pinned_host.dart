@@ -391,10 +391,17 @@ class GlassNavPinnedHost extends StatelessWidget {
       chrome = DefaultButtonSettings(settings: settings, child: chrome);
     }
 
+    // The incoming route's guide, as `buttonSettings` above resolves the
+    // material: a transition between two bars that disagree lands on the one
+    // being entered rather than sliding the chrome between them.
+    final inset = state.to.horizontalInset ??
+        state.from.horizontalInset ??
+        GlassNavPinnedMetrics.horizontalPadding;
+
     return Positioned(
       top: topPad,
-      left: GlassNavPinnedMetrics.horizontalPadding,
-      right: GlassNavPinnedMetrics.horizontalPadding,
+      left: inset,
+      right: inset,
       height: GlassNavPinnedMetrics.toolbarHeight,
       child: GlassIsolationScope(
         isolated: true,
