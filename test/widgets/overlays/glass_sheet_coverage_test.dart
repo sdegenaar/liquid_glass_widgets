@@ -45,6 +45,32 @@ void main() {
     });
   });
 
+  // ── scroll notification path ─────────────────────────────────────────────
+
+  group('GlassSheet — scroll notifications', () {
+    testWidgets('removes touch glow when content starts scrolling',
+        (tester) async {
+      await tester.pumpWidget(_app(
+        const SizedBox(
+          height: 400,
+          child: GlassSheet(
+            child: SizedBox(
+              height: 1000,
+              child: Text('Scrollable content'),
+            ),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      final scrollView = find.byType(SingleChildScrollView);
+      expect(scrollView, findsOneWidget);
+      await tester.drag(scrollView, const Offset(0, -200));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   // ── showDragIndicator=false path ──────────────────────────────────────────
 
   group('GlassSheet — showDragIndicator=false', () {
