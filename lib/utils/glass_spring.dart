@@ -1,8 +1,11 @@
-// Internal spring animation utilities — drop-in replacement for the motor
-// package, implemented entirely on top of Flutter's built-in physics.
+// Copyright 2024 Tim Lehmann for whynotmake.it
 //
-// Only the subset of motor that is actually used in this package is
-// implemented here.
+// SPDX-License-Identifier: MIT
+//
+// Adapted from motor (https://github.com/whynotmake-it/rivership/tree/main/packages/motor)
+// by Tim Lehmann for whynotmake.it.
+// Re-implemented using pure Flutter physics primitives without third-party dependencies.
+// See THIRD_PARTY_NOTICES for complete license terms.
 
 import 'package:flutter/physics.dart';
 import 'package:flutter/scheduler.dart';

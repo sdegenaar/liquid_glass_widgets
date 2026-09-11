@@ -1,15 +1,24 @@
+// Copyright 2024-2025 Tim Lehmann for whynotmake.it
+//
+// SPDX-License-Identifier: MIT
+//
+// Originally from liquid_glass_renderer (whynotmake.it).
+// Maintained and evolved in-tree for liquid_glass_widgets.
+// See lib/src/engine/ATTRIBUTION.md for provenance and modification history.
+
 // ignore_for_file: public_member_api_docs
 
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 
 import 'package:flutter/rendering.dart';
-import '../liquid_glass_renderer.dart';
-import 'fragment_shader_extensions.dart';
+import '../renderer/fragment_shader_extensions.dart';
+import 'liquid_glass.dart';
+import 'liquid_glass_blend_group.dart';
+import 'liquid_glass_settings.dart';
+import 'liquid_shape.dart';
+import 'rendering/liquid_glass_render_object.dart';
 import 'snap_rect_to_pixels.dart';
-import '../liquid_glass.dart';
-import '../liquid_glass_blend_group.dart';
-import '../rendering/liquid_glass_render_object.dart';
 
 /// The state of liquid glass geometry, used to determine if it needs to be
 /// updated.

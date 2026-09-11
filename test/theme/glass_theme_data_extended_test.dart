@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
-import 'package:liquid_glass_widgets/src/renderer/glass_glow.dart';
+import 'package:liquid_glass_widgets/src/engine/glass_glow.dart';
 
 /// Extended unit tests for [GlassThemeData], [GlassThemeVariant],
 /// [GlassGlowColors] and [GlassThemeHelpers] — covering fields and paths

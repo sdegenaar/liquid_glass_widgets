@@ -1,9 +1,11 @@
-# Build artifacts
+# Build and IDE artifacts
 build/
 .dart_tool/
 .packages
 *.log
 coverage/
+*.iml
+.idea/
 
 # Local working docs
 doc/
@@ -33,12 +35,13 @@ example/**/*.md
 example/lib/
 example/integration_test/
 
-# Tools (internal sync scripts)
+# Tools & internal scripts
 tools/
+scripts/
+modal_sheet_showcase/
 
 # Root-level scratch/debug output and scripts (not for package consumers)
 test_output.txt
 test_output2.log
 update_demo.py
 update_glow.py
-ARCHITECTURE.md

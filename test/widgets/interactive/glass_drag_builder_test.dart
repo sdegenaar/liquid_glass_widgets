@@ -8,7 +8,7 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_glass_widgets/src/renderer/internal/glass_drag_builder.dart';
+import 'package:liquid_glass_widgets/src/engine/glass_drag_builder.dart';
 
 void main() {
   group('GlassDragBuilder — latched continuous deadband', () {

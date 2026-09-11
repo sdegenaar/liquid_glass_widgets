@@ -13,10 +13,10 @@ import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
-import 'package:liquid_glass_widgets/src/renderer/liquid_glass.dart';
-import 'package:liquid_glass_widgets/src/renderer/internal/render_liquid_glass_geometry.dart';
-import 'package:liquid_glass_widgets/src/renderer/liquid_glass_blend_group.dart';
-import 'package:liquid_glass_widgets/src/renderer/rendering/liquid_glass_render_object.dart';
+import 'package:liquid_glass_widgets/src/engine/liquid_glass.dart';
+import 'package:liquid_glass_widgets/src/engine/render_liquid_glass_geometry.dart';
+import 'package:liquid_glass_widgets/src/engine/liquid_glass_blend_group.dart';
+import 'package:liquid_glass_widgets/src/engine/rendering/liquid_glass_render_object.dart';
 
 void main() {
   group('LiquidGlassBlendGroup', () {

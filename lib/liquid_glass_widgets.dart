@@ -15,8 +15,8 @@ export 'src/renderer/liquid_glass_renderer.dart'
         LiquidGlassBlendGroup,
         GlassGlow,
         debugPaintLiquidGlassGeometry;
-export 'src/renderer/liquid_shape.dart'; // all shapes are public
-export 'src/renderer/internal/interaction_notification.dart'; // public for Smart Silence support
+export 'src/engine/liquid_shape.dart'; // all shapes are public
+export 'types/interaction_notification.dart'; // public for Smart Silence support
 export 'types/glass_specular_sharpness.dart'; // GlassSpecularSharpness enum
 
 // Setup and Configuration

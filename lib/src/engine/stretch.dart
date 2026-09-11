@@ -1,11 +1,19 @@
+// Copyright 2024-2025 Tim Lehmann for whynotmake.it
+//
+// SPDX-License-Identifier: MIT
+//
+// Originally from liquid_glass_renderer (whynotmake.it).
+// Maintained and evolved in-tree for liquid_glass_widgets.
+// See lib/src/engine/ATTRIBUTION.md for provenance and modification history.
+
 // ignore_for_file: public_member_api_docs
 
 import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter/rendering.dart';
-import 'internal/glass_drag_builder.dart';
-import 'internal/liquid_glass_self_scale_scope.dart';
+import 'glass_drag_builder.dart';
+import '../renderer/liquid_glass_self_scale_scope.dart';
 import '../../utils/glass_spring.dart';
 
 /// Configuration for the anchor stretch effect on interactive glass widgets.

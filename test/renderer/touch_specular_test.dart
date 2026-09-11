@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
-import 'package:liquid_glass_widgets/src/renderer/glass_glow.dart';
-import 'package:liquid_glass_widgets/src/renderer/rendering/liquid_glass_render_object.dart';
+import 'package:liquid_glass_widgets/src/engine/glass_glow.dart';
+import 'package:liquid_glass_widgets/src/engine/rendering/liquid_glass_render_object.dart';
 
 class _TestLiquidGlassRenderObject extends LiquidGlassRenderObject {
   _TestLiquidGlassRenderObject({

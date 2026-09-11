@@ -1,11 +1,19 @@
+// Copyright 2024-2025 Tim Lehmann for whynotmake.it
+//
+// SPDX-License-Identifier: MIT
+//
+// Originally from liquid_glass_renderer (whynotmake.it).
+// Maintained and evolved in-tree for liquid_glass_widgets.
+// See lib/src/engine/ATTRIBUTION.md for provenance and modification history.
+
 // ignore_for_file: public_member_api_docs
 
 import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
-import '../../widgets/shared/inherited_liquid_glass.dart';
-import '../../utils/glass_spring.dart';
+import '../../../widgets/shared/inherited_liquid_glass.dart';
+import '../../../utils/glass_spring.dart';
 import 'rendering/liquid_glass_render_object.dart';
 
 /// {@template glass_glow}

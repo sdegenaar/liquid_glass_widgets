@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
-import 'package:liquid_glass_widgets/src/renderer/internal/glass_materialize_scope.dart';
+import 'package:liquid_glass_widgets/src/renderer/glass_materialize_scope.dart';
 import 'package:liquid_glass_widgets/widgets/effects/shared/glass_materialize_effect.dart';
 
 /// Resolves the settings a glass surface below [child] would render with.

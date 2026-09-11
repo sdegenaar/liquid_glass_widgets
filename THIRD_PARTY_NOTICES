@@ -11,9 +11,10 @@ third-party works vendored or adapted within liquid_glass_widgets.
 Source:  https://github.com/whynotmake-it/flutter_liquid_glass/tree/main/packages/liquid_glass_renderer
 Version: 0.2.0-dev.4 (vendored 2026-03-28)
 
-Portions of the code in lib/src/renderer/ are derived from liquid_glass_renderer
-by Tim Lehmann for whynotmake.it, which has been vendored, extended, and modified
-within this package (bug fixes, performance improvements, and shader optimisations).
+The foundational rendering engine in lib/src/engine/ is derived from
+liquid_glass_renderer by Tim Lehmann for whynotmake.it. It has been
+extensively evolved and maintained in-tree (pure Flutter SDK conversion,
+bug fixes, performance improvements, and shader optimisations).
 
 MIT License
 
@@ -75,5 +76,5 @@ SOFTWARE.
 ────────────────────────────────────────────────────────────────────────────────
 
 For a detailed description of what was vendored and what patches were applied,
-see lib/src/renderer/RENDERER_ATTRIBUTION.md and the header comments in
+see lib/src/engine/ATTRIBUTION.md and the header comments in
 lib/utils/glass_spring.dart.

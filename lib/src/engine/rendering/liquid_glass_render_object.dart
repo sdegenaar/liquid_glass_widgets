@@ -1,3 +1,11 @@
+// Copyright 2024-2025 Tim Lehmann for whynotmake.it
+//
+// SPDX-License-Identifier: MIT
+//
+// Originally from liquid_glass_renderer (whynotmake.it).
+// Maintained and evolved in-tree for liquid_glass_widgets.
+// See lib/src/engine/ATTRIBUTION.md for provenance and modification history.
+
 // ignore_for_file: public_member_api_docs
 
 import 'dart:collection';
@@ -7,10 +15,12 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
-import '../internal/fragment_shader_extensions.dart';
-import '../liquid_glass_renderer.dart';
-import '../internal/render_liquid_glass_geometry.dart';
-import '../internal/snap_rect_to_pixels.dart';
+import '../../renderer/fragment_shader_extensions.dart';
+import '../../renderer/liquid_glass_renderer.dart'
+    show debugPaintLiquidGlassGeometry;
+import '../liquid_glass_settings.dart';
+import '../render_liquid_glass_geometry.dart';
+import '../snap_rect_to_pixels.dart';
 
 /// A render object that can assemble [RenderLiquidGlassGeometry] shapes and
 /// render them to the screen with the liquid glass effect.

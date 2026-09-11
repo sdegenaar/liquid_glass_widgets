@@ -37,6 +37,8 @@
 
 ## Chores
 
+- **Engine organization & attribution:** Consolidated foundational rendering primitives into `lib/src/engine/` with formal attribution (`lib/src/engine/ATTRIBUTION.md`) crediting original work by Tim Lehmann. Internal refactoring only; no public API changes.
+
 - **Shader rename:** `liquid_glass_final_render.frag` → `liquid_glass_render.frag`. Drops the redundant `_final_` prefix, aligning the on-disk filename 1:1 with the Dart constant `ShaderKeys.liquidGlassRender`. All references updated across `pubspec.yaml`, `shaders.dart`, setup docs, attribution, ROADMAP, and changelogs.
 
 - **Touch specular `pow()` elimination:** Replaced `pow(rimTouchDot, 6.0)` in the touch-specular block of `liquid_glass_render.frag` with a two-multiply chain `(x²)³ = x⁶`. `pow()` compiles as `exp2(6·log2(x))` on Mali/Adreno/Apple GPU — two transcendental SFU calls. The multiply chain is exact, branchless, and 4–8× faster per fragment on mobile.

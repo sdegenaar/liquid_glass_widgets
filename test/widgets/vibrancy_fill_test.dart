@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
-import 'package:liquid_glass_widgets/src/renderer/internal/glass_materialize_scope.dart';
-import 'package:liquid_glass_widgets/src/renderer/rendering/liquid_glass_render_object.dart';
+import 'package:liquid_glass_widgets/src/renderer/glass_materialize_scope.dart';
+import 'package:liquid_glass_widgets/src/engine/rendering/liquid_glass_render_object.dart';
 import 'package:liquid_glass_widgets/widgets/shared/glass_effect.dart';
 
 import '../shared/test_helpers.dart';

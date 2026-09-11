@@ -1,15 +1,24 @@
+// Copyright 2024-2025 Tim Lehmann for whynotmake.it
+//
+// SPDX-License-Identifier: MIT
+//
+// Originally from liquid_glass_renderer (whynotmake.it).
+// Maintained and evolved in-tree for liquid_glass_widgets.
+// See lib/src/engine/ATTRIBUTION.md for provenance and modification history.
+
 // ignore_for_file: public_member_api_docs
 
 import 'dart:ui';
 
 import 'package:flutter/widgets.dart';
-import 'internal/fragment_shader_extensions.dart';
-import 'internal/multi_shader_builder.dart';
-import 'liquid_glass_renderer.dart';
-import 'internal/render_liquid_glass_geometry.dart';
+import '../renderer/fragment_shader_extensions.dart';
 import 'internal/transform_tracking_repaint_boundary_mixin.dart';
 import 'liquid_glass.dart';
 import 'liquid_glass_render_scope.dart';
+import 'liquid_glass_settings.dart';
+import 'liquid_shape.dart';
+import 'multi_shader_builder.dart';
+import 'render_liquid_glass_geometry.dart';
 import 'rendering/liquid_glass_render_object.dart';
 import 'shaders.dart';
 

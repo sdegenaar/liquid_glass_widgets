@@ -2,7 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
 
-import '../liquid_glass_settings.dart';
+import '../engine/liquid_glass_settings.dart';
 
 /// Threads a materialize transition's per-frame state to the glass surfaces
 /// below it, so they dissolve through the shader's own uniforms instead of

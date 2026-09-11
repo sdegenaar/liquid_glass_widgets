@@ -1,3 +1,11 @@
+// Copyright 2024-2025 Tim Lehmann for whynotmake.it
+//
+// SPDX-License-Identifier: MIT
+//
+// Originally from liquid_glass_renderer (whynotmake.it).
+// Maintained and evolved in-tree for liquid_glass_widgets.
+// See lib/src/engine/ATTRIBUTION.md for provenance and modification history.
+
 // ignore_for_file: avoid_setters_without_getters, public_member_api_docs
 
 import 'dart:ui';
@@ -5,16 +13,16 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter/rendering.dart';
-import '../internal/glass_materialize_scope.dart';
-import '../internal/multi_shader_builder.dart';
-import '../liquid_glass_renderer.dart';
-import '../internal/render_liquid_glass_geometry.dart';
-import '../internal/transform_tracking_repaint_boundary_mixin.dart';
-import '../liquid_glass_render_scope.dart';
-import 'liquid_glass_render_object.dart';
-import '../shaders.dart';
-// GlassGlowLayer is exported by liquid_glass_renderer.dart, which is already
-// imported above — no separate glass_glow.dart import needed.
+import '../renderer/glass_materialize_scope.dart';
+import '../renderer/liquid_glass_self_scale_scope.dart';
+import 'glass_glow.dart';
+import 'internal/transform_tracking_repaint_boundary_mixin.dart';
+import 'liquid_glass_render_scope.dart';
+import 'liquid_glass_settings.dart';
+import 'multi_shader_builder.dart';
+import 'render_liquid_glass_geometry.dart';
+import 'rendering/liquid_glass_render_object.dart';
+import 'shaders.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Scale-safe repaint boundary

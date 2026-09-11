@@ -7,9 +7,9 @@ import 'utils/accessibility_config.dart' as glass_config;
 import 'utils/glass_brightness.dart' show glassExternalBrightnessResolver;
 import 'utils/glass_performance_monitor.dart';
 import 'src/renderer/liquid_glass_renderer.dart';
-import 'src/renderer/shaders.dart';
+import 'src/engine/shaders.dart';
 
-import 'src/renderer/internal/multi_shader_builder.dart';
+import 'src/engine/multi_shader_builder.dart';
 import 'widgets/shared/glass_adaptive_scope.dart';
 import 'widgets/shared/glass_effect.dart';
 import 'widgets/shared/glass_accessibility_scope.dart';

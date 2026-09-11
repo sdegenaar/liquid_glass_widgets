@@ -2,7 +2,7 @@ import 'package:flutter/scheduler.dart' show SchedulerPhase;
 import 'package:flutter/widgets.dart';
 
 import '../../constants/glass_defaults.dart';
-import '../../src/renderer/liquid_glass_settings.dart';
+import '../../src/engine/liquid_glass_settings.dart';
 import '../effects/glass_materialize.dart';
 import 'glass_bar_item.dart';
 import 'shared/glass_nav_pinned_host.dart';
