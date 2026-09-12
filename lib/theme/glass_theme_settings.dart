@@ -2,7 +2,7 @@ import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/widgets.dart';
 
-import '../src/renderer/liquid_glass_settings.dart';
+import '../src/engine/liquid_glass_settings.dart';
 import '../types/glass_specular_sharpness.dart';
 
 /// A partial override of [LiquidGlassSettings] for use in [GlassThemeVariant].

@@ -16,7 +16,7 @@ import '../../utils/glass_morph_controller.dart';
 import '../../utils/liquid_morph_physics.dart';
 import '../shared/adaptive_glass.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
-import '../../src/renderer/internal/interaction_notification.dart';
+import '../../types/interaction_notification.dart';
 import '../../src/widgets/overlays/glass_sheet_defaults.dart';
 import '../../constants/glass_defaults.dart';
 

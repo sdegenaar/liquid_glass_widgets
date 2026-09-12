@@ -26,7 +26,7 @@ Bring Apple's iOS 26 Liquid Glass to your Flutter app — real shader-based blur
 
 ```yaml
 dependencies:
-  liquid_glass_widgets: ^1.4.4
+  liquid_glass_widgets: ^1.5.0
 ```
 
 ```bash
@@ -131,6 +131,23 @@ runApp(LiquidGlassWidgets.wrap(
 ```
 
 Both parameters are optional — omit them and the library uses sensible defaults.
+
+
+## AI Coding & Vibecoding Support
+
+Building with **Cursor**, **Claude Code**, **Antigravity**, or **GitHub Copilot**?
+AI models frequently hallucinate obsolete APIs or write manual `BackdropFilter` stacks instead of using the official Liquid Glass component suite.
+
+Teach your AI agent the exact API patterns and architectural rules:
+
+- **Antigravity / Gemini CLI**: Install the official skill into your project:
+  ```bash
+  mkdir -p .agents/skills/liquid-glass-widgets
+  curl -sSL https://raw.githubusercontent.com/sdegenaar/liquid_glass_widgets/main/skills/liquid-glass-widgets/SKILL.md -o .agents/skills/liquid-glass-widgets/SKILL.md
+  ```
+- **Cursor**: Copy [`skills/liquid-glass-widgets/SKILL.md`](skills/liquid-glass-widgets/SKILL.md) to `.cursor/rules/liquid-glass.mdc` in your project.
+- **Claude Code**: Add to `.claude/skills/liquid-glass-widgets/SKILL.md` or copy rules into your project's `CLAUDE.md`.
+- **Details & Other IDEs**: See [`skills/README.md`](skills/README.md).
 
 
 ## Features
@@ -997,14 +1014,16 @@ Focused, self-contained demos — one widget, one file, runnable standalone:
 
 ## Documentation
 
+- **[AI Coding Agent Skill](skills/liquid-glass-widgets/SKILL.md)** — Official guidelines and API reference for AI coding agents (Cursor, Claude Code, Antigravity, Copilot) to prevent hallucinations and obsolete APIs.
+- **[Repository Agent Guide (AGENTS.md)](AGENTS.md)** — Contributor workflows and coding agent instructions.
 - **[Migration Guide (0.x to 1.0.0)](docs/MIGRATION_0.x_TO_1.0.md)** — Step-by-step upgrade guide for 1.0.0 breaking changes.
-- **[Architecture & Guidelines](ARCHITECTURE.md)** — Core design principles and internal architecture.
+- **[Architecture & Guidelines](docs/ARCHITECTURE.md)** — Core design principles and internal architecture.
 - **[Platform Support](docs/PLATFORM_SUPPORT.md)** — Platform matrices and rendering pipeline compatibility.
 
 
 ## Contributing
 
-Contributions are welcome. For major changes, open an issue first to discuss your proposal.
+Contributions are welcome. Please review [AGENTS.md](AGENTS.md) for development workflows, testing commands, and code formatting conventions. For major changes, open an issue first to discuss your proposal.
 
 
 ## License
@@ -1012,9 +1031,13 @@ Contributions are welcome. For major changes, open an issue first to discuss you
 MIT — see the [LICENSE](LICENSE) file for details.
 
 
-## Credits
+## Acknowledgments & Credits
 
-**Special thanks** to the [whynotmake-it](https://github.com/whynotmake-it) team for their [`liquid_glass_renderer`](https://github.com/whynotmake-it/flutter_liquid_glass/tree/main/packages/liquid_glass_renderer) (MIT), whose shader pipeline, texture capture, and chromatic aberration work forms the foundation of the rendering engine in this library.
+Special thanks and sincere recognition to **Tim Lehmann** ([whynotmake.it](https://github.com/whynotmake-it)) and the [whynotmake-it](https://github.com/whynotmake-it/flutter_liquid_glass) team:
+- [`liquid_glass_renderer`](https://github.com/whynotmake-it/flutter_liquid_glass/tree/main/packages/liquid_glass_renderer) (MIT License): Pioneered the foundational fragment shader pipeline, blend group tracking, and texture capture architecture. Foundational work is maintained in-tree in [`lib/src/engine/`](lib/src/engine/) with full attribution.
+- [`motor`](https://github.com/whynotmake-it/rivership/tree/main/packages/motor) (MIT License): Designed the `CupertinoMotion` spring physics model and presets adapted with Flutter physics primitives in [`lib/utils/glass_spring.dart`](lib/utils/glass_spring.dart).
+
+For complete licenses, copyright notices, and local modification records, see [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES) and [`lib/src/engine/ATTRIBUTION.md`](lib/src/engine/ATTRIBUTION.md).
 
 ## Links
 

@@ -770,7 +770,7 @@ showing the computed pill width in real time.
   **Root cause:** OpenGL ES stores render-to-texture outputs with a bottom-left Y origin
   (Y increases upward), whereas Flutter's widget coordinate system uses Y-down. The shaders
   already flip `screenUV.y` and `geometryUV.y` with `1.0 − y` to compensate when _sampling_
-  textures. However, the `displacement` vector (in `liquid_glass_final_render.frag`) and
+  textures. However, the `displacement` vector (in `liquid_glass_render.frag`) and
   `edgeOffsetLogical` (in `interactive_indicator.frag`) were computed in Flutter's Y-down
   space and added directly to the Y-up UV without correcting the Y component. A positive Y
   displacement (outward at the bottom edge) therefore moved the sample _toward_ the centre

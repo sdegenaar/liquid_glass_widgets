@@ -1,11 +1,16 @@
+// Copyright 2024-2025 Tim Lehmann for whynotmake.it
+//
+// SPDX-License-Identifier: MIT
+//
+// Originally from liquid_glass_renderer (whynotmake.it).
+// Maintained and evolved in-tree for liquid_glass_widgets.
+// See lib/src/engine/ATTRIBUTION.md for provenance and modification history.
+
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/widgets.dart';
-// [LOCAL PATCH]: GlassSpecularSharpness is our own type (not vendored).
-// It lives in lib/types/ not lib/src/renderer/.
 import '../../constants/glass_defaults.dart';
 import '../../constants/glass_shadow.dart';
 import '../../types/glass_specular_sharpness.dart';
-import 'liquid_glass_renderer.dart';
 import 'liquid_glass_render_scope.dart';
 
 /// How a glass surface resolves the parts of its body that had nothing to

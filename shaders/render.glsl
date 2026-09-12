@@ -15,7 +15,7 @@
 //
 // Shared rendering functions for liquid glass shaders.
 //
-// Functions used by liquid_glass_final_render.frag:
+// Functions used by liquid_glass_render.frag:
 //   getHighlightColor  — adaptive specular highlight tint
 //   applySaturation    — ITU-R Rec. 709 luminance-preserving saturation
 //   applyGlassColor    — iOS 26 luminosity-preserving tint

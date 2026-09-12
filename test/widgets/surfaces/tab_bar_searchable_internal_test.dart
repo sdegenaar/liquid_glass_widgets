@@ -59,6 +59,10 @@ Widget _indicator({
   MaskingQuality maskingQuality = MaskingQuality.off,
   bool visible = true,
   WidgetBuilder? collapsedLogoBuilder,
+  double? backgroundPressScale = 1.06,
+  bool nativePressHighlight = false,
+  bool enableBackgroundAnimation = true,
+  bool platformViewBackdrop = false,
 }) {
   return _wrap(
     SearchableTabIndicator(
@@ -85,8 +89,10 @@ Widget _indicator({
       isSearchActive: isSearchActive,
       onDismissSearch: onDismissSearch ?? () {},
       collapsedLogoBuilder: collapsedLogoBuilder,
-      enableBackgroundAnimation: true,
-      backgroundPressScale: 1.06,
+      enableBackgroundAnimation: enableBackgroundAnimation,
+      backgroundPressScale: backgroundPressScale,
+      nativePressHighlight: nativePressHighlight,
+      platformViewBackdrop: platformViewBackdrop,
     ),
   );
 }
@@ -997,6 +1003,86 @@ void main() {
           matching: find.byType(LiquidStretch)));
       expect(stretch.pressGrowth, isNull);
       expect(find.byType(PressAmbientLift), findsNothing);
+    });
+  });
+
+  group('SearchableTabIndicator — collapsed search-active native press (#272)',
+      () {
+    Widget indicator({
+      double? pressScale,
+      bool nativePressHighlight = true,
+      bool enableBackgroundAnimation = true,
+      bool platformViewBackdrop = false,
+    }) {
+      return _indicator(
+        isSearchActive: true,
+        backgroundPressScale: pressScale,
+        nativePressHighlight: nativePressHighlight,
+        enableBackgroundAnimation: enableBackgroundAnimation,
+        platformViewBackdrop: platformViewBackdrop,
+      );
+    }
+
+    LiquidStretch stretchOf(WidgetTester tester) => tester.widget(find
+        .descendant(
+            of: find.byType(SearchableTabIndicator),
+            matching: find.byType(LiquidStretch))
+        .first);
+
+    testWidgets('the default collapsed circle presses like a native button',
+        (tester) async {
+      await tester.pumpWidget(indicator());
+      await tester.pump();
+      final stretch = stretchOf(tester);
+      expect(stretch.pressGrowth, LiquidStretch.nativePressGrowth);
+      expect(stretch.anchorStretchSettings, AnchorStretchSettings.nativeTremor);
+      expect(find.byType(PressAmbientLift), findsOneWidget);
+    });
+
+    testWidgets('a customised pressScale keeps the fixed factor and glow',
+        (tester) async {
+      await tester.pumpWidget(indicator(pressScale: 1.06));
+      await tester.pump();
+      final stretch = stretchOf(tester);
+      expect(stretch.pressGrowth, isNull);
+      expect(stretch.interactionScale, 1.06);
+      expect(find.byType(PressAmbientLift), findsNothing);
+    });
+
+    testWidgets('an explicit 1.04 is a fixed factor, not the native sizing',
+        (tester) async {
+      await tester.pumpWidget(indicator(pressScale: 1.04));
+      await tester.pump();
+      expect(stretchOf(tester).pressGrowth, isNull);
+      expect(stretchOf(tester).interactionScale, 1.04);
+      expect(find.byType(PressAmbientLift), findsNothing);
+    });
+
+    testWidgets('a customised glow colour keeps the directional glow',
+        (tester) async {
+      await tester.pumpWidget(indicator(nativePressHighlight: false));
+      await tester.pump();
+      final stretch = stretchOf(tester);
+      expect(stretch.pressGrowth, LiquidStretch.nativePressGrowth);
+      expect(find.byType(PressAmbientLift), findsNothing);
+    });
+
+    testWidgets(
+        'when enableBackgroundAnimation is false, native press is disabled',
+        (tester) async {
+      await tester.pumpWidget(indicator(enableBackgroundAnimation: false));
+      await tester.pump();
+      final stretch = stretchOf(tester);
+      expect(stretch.pressGrowth, isNull);
+      expect(stretch.interactionScale, 1.0);
+      expect(find.byType(PressAmbientLift), findsNothing);
+    });
+
+    testWidgets('platformViewBackdrop zeroes stretch', (tester) async {
+      await tester.pumpWidget(indicator(platformViewBackdrop: true));
+      await tester.pump();
+      final stretch = stretchOf(tester);
+      expect(stretch.stretch, 0.0);
     });
   });
 }

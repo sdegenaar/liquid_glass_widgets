@@ -7,9 +7,9 @@ import 'utils/accessibility_config.dart' as glass_config;
 import 'utils/glass_brightness.dart' show glassExternalBrightnessResolver;
 import 'utils/glass_performance_monitor.dart';
 import 'src/renderer/liquid_glass_renderer.dart';
-import 'src/renderer/shaders.dart';
+import 'src/engine/shaders.dart';
 
-import 'src/renderer/internal/multi_shader_builder.dart';
+import 'src/engine/multi_shader_builder.dart';
 import 'widgets/shared/glass_adaptive_scope.dart';
 import 'widgets/shared/glass_effect.dart';
 import 'widgets/shared/glass_accessibility_scope.dart';
@@ -99,7 +99,7 @@ class LiquidGlassWidgets {
   /// | `lightweight_glass.frag` | Minimal glass layer |
   /// | `interactive_indicator.frag` | Custom refraction effect |
   /// | `liquid_glass_geometry_blended.frag` | Geometry / SDF pass |
-  /// | `liquid_glass_final_render.frag` | Final composite pass |
+  /// | `liquid_glass_render.frag` | Final composite pass |
   /// Controls shader preloading and warm-up behaviour during [initialize].
   static Future<void> initialize({
     bool enablePerformanceMonitor = true,

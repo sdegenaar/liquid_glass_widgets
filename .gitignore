@@ -108,8 +108,10 @@ app.*.symbols
 test/golden/**/failures/
 
 # Root-level planning docs
-RENDERER_IMPROVEMENT_PLAN.md
-ARCHITECTURE.md
+/RENDERER_IMPROVEMENT_PLAN.md
+/ARCHITECTURE.md
+# Note: docs/ROADMAP.md is tracked (public). Only private root-level /ROADMAP.md is excluded.
+/ROADMAP.md
 
 # Local-only research & discussion docs (not for repo)
 docs/LIQUID_GLASS_EASY_STUDY.md
@@ -161,8 +163,10 @@ tools/build_hero_webp.sh
 
 # Generated API documentation
 doc/
+
+# Manual test checklists
 MANUAL_TEST_CHECKLIST.md
-/ROADMAP.md
 
 # Agent configuration and documentation
+.claude/
 .agents/

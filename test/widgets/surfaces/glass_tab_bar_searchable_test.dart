@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets/src/renderer/liquid_glass_renderer.dart';
 import 'package:liquid_glass_widgets/src/widgets/surfaces/tab_bar_bottom_internal.dart';
 import 'package:liquid_glass_widgets/src/widgets/surfaces/tab_bar_searchable_internal.dart';
 
@@ -1321,6 +1322,51 @@ void main() {
       final extraBtn =
           tester.widget<BottomBarExtraBtn>(find.byType(BottomBarExtraBtn));
       expect(extraBtn.quality, equals(GlassQuality.standard));
+    });
+  });
+
+  group('GlassTabBar.searchable — collapsed indicator native press (#272)', () {
+    testWidgets('collapsed tab indicator presses like native button by default',
+        (tester) async {
+      await tester.pumpWidget(_buildBar(isSearchActive: true));
+      await tester.pump();
+
+      final indicatorStretch = tester.widget<LiquidStretch>(find.descendant(
+          of: find.byType(SearchableTabIndicator),
+          matching: find.byType(LiquidStretch)));
+      expect(indicatorStretch.pressGrowth, LiquidStretch.nativePressGrowth);
+      expect(indicatorStretch.anchorStretchSettings,
+          AnchorStretchSettings.nativeTremor);
+      expect(
+          find.descendant(
+              of: find.byType(SearchableTabIndicator),
+              matching: find.byType(PressAmbientLift)),
+          findsOneWidget);
+    });
+
+    testWidgets(
+        'custom interactionGlowColor disables native press lift for collapsed indicator',
+        (tester) async {
+      await tester.pumpWidget(createTestApp(
+        child: GlassTabBar.searchable(
+          tabs: _testTabs,
+          selectedIndex: 0,
+          onTabSelected: (_) {},
+          isSearchActive: true,
+          maskingQuality: MaskingQuality.off,
+          interactionGlowColor: const Color(0xFFFF0000),
+          searchConfig: GlassSearchBarConfig(
+            onSearchToggle: (_) {},
+          ),
+        ),
+      ));
+      await tester.pump();
+
+      expect(
+          find.descendant(
+              of: find.byType(SearchableTabIndicator),
+              matching: find.byType(PressAmbientLift)),
+          findsNothing);
     });
   });
 

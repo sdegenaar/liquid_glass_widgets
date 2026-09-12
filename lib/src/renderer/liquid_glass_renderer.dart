@@ -1,32 +1,29 @@
-// Copyright 2025, Tim Lehmann for whynotmake.it
-// Copyright 2026, Sebastian Degenaar for pixel-innovations.com (liquid_glass_widgets)
+// Copyright 2025 Tim Lehmann for whynotmake.it
 //
 // SPDX-License-Identifier: MIT
 //
-// Vendored from liquid_glass_renderer at version 0.2.0-dev.4 (2026-03-28).
-// Source: https://github.com/whynotmake-it/flutter_liquid_glass/tree/main/packages/liquid_glass_renderer
-//
-// Modifications (2026):
-//   - Removed internal package dependencies; adapted for direct vendoring.
-//   - Extended public API surface with additional shape types and blend options.
-//   - Added Windows/SkSL shader compatibility layer.
+// Originally the barrel file of liquid_glass_renderer (whynotmake.it).
+// Maintained in-tree as the internal engine barrel, re-exporting Tim Lehmann's
+// foundational primitives from lib/src/engine/ along with custom rendering scopes.
+
 import 'package:flutter/foundation.dart' show kDebugMode;
 
-export 'glass_glow.dart' show GlassGlow, GlassGlowLayer;
-export 'liquid_glass.dart' show LiquidGlass;
-export 'liquid_glass_blend_group.dart' show LiquidGlassBlendGroup;
-export 'liquid_glass_settings.dart'
+export '../engine/glass_glow.dart' show GlassGlow, GlassGlowLayer;
+export '../engine/liquid_glass.dart' show LiquidGlass;
+export '../engine/liquid_glass_blend_group.dart' show LiquidGlassBlendGroup;
+export '../engine/liquid_glass_layer.dart' show LiquidGlassLayer;
+export '../engine/liquid_glass_settings.dart'
     show GlassBodyMode, LiquidGlassSettings, PlatformViewGlassMode;
-export 'liquid_shape.dart';
-export 'internal/liquid_glass_self_scale_scope.dart'
-    show LiquidGlassSelfScaleScope;
-export 'rendering/liquid_glass_layer.dart' show LiquidGlassLayer;
-export 'stretch.dart'
+export '../engine/liquid_shape.dart';
+export '../engine/stretch.dart'
     show
         AnchorStretchSettings,
         LiquidStretch,
         OffsetResistanceExtension,
         RawLiquidStretch;
+
+export 'glass_materialize_scope.dart' show GlassMaterializeScope;
+export 'liquid_glass_self_scale_scope.dart' show LiquidGlassSelfScaleScope;
 
 /// Whether to paint the liquid glass geometry texture for debugging purposes.
 ///

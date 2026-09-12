@@ -1,3 +1,11 @@
+// Copyright 2024-2025 Tim Lehmann for whynotmake.it
+//
+// SPDX-License-Identifier: MIT
+//
+// Originally from liquid_glass_renderer (whynotmake.it).
+// Maintained and evolved in-tree for liquid_glass_widgets.
+// See lib/src/engine/ATTRIBUTION.md for provenance and modification history.
+
 // ignore_for_file: avoid_setters_without_getters, public_member_api_docs
 
 import 'dart:ui';
@@ -5,14 +13,16 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter/rendering.dart';
-import '../internal/glass_materialize_scope.dart';
-import '../internal/multi_shader_builder.dart';
-import '../liquid_glass_renderer.dart';
-import '../internal/render_liquid_glass_geometry.dart';
-import '../internal/transform_tracking_repaint_boundary_mixin.dart';
-import '../liquid_glass_render_scope.dart';
-import 'liquid_glass_render_object.dart';
-import '../shaders.dart';
+import '../renderer/glass_materialize_scope.dart';
+import '../renderer/liquid_glass_self_scale_scope.dart';
+import 'glass_glow.dart';
+import 'internal/transform_tracking_repaint_boundary_mixin.dart';
+import 'liquid_glass_render_scope.dart';
+import 'liquid_glass_settings.dart';
+import 'multi_shader_builder.dart';
+import 'render_liquid_glass_geometry.dart';
+import 'rendering/liquid_glass_render_object.dart';
+import 'shaders.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Scale-safe repaint boundary
@@ -240,7 +250,7 @@ class _LiquidGlassLayerState extends State<LiquidGlassLayer>
             link: _link,
             child: ShaderBuilder(
               assetKey: ShaderKeys.liquidGlassRender,
-              (context, shader, child) => _RawShapes(
+              (context, shader, child) => _TouchSpecularBridge(
                 renderShader: shader,
                 backdropKey: BackdropGroup.of(context)?.backdropKey,
                 settings: settings,
@@ -261,6 +271,113 @@ class _LiquidGlassLayerState extends State<LiquidGlassLayer>
   }
 }
 
+// ---------------------------------------------------------------------------
+// _TouchSpecularBridge — zero-rebuild touch-specular wiring
+//
+// Subscribes to GlassGlowLayer.touchSpecularNotifierOf() and pushes position
+// + intensity directly to RenderLiquidGlassLayer.setTouchSpecular().
+//
+// No setState. No widget rebuild. The listener fires on every spring animation
+// tick (driven by GlassGlowLayerState's ListenableBuilder) and calls
+// markNeedsPaint() on the render object only when values have changed.
+//
+// If no GlassGlowLayer ancestor exists (e.g. GlassAppBar with no GlassButton
+// children), touchSpecularNotifierOf returns null and this bridge is a
+// transparent passthrough with zero overhead.
+// ---------------------------------------------------------------------------
+class _TouchSpecularBridge extends StatefulWidget {
+  const _TouchSpecularBridge({
+    required this.renderShader,
+    required this.backdropKey,
+    required this.settings,
+    required this.shadows,
+    required this.link,
+    required this.child,
+    this.clipExpansion = EdgeInsets.zero,
+    this.captureImage,
+    this.captureOriginInScreenSpace = Offset.zero,
+    this.selfScaled = false,
+  });
+
+  final FragmentShader renderShader;
+  final BackdropKey? backdropKey;
+  final LiquidGlassSettings settings;
+  final List<BoxShadow> shadows;
+  final GeometryRenderLink link;
+  final Widget child;
+  final EdgeInsets clipExpansion;
+  final ui.Image? captureImage;
+  final Offset captureOriginInScreenSpace;
+  final bool selfScaled;
+
+  @override
+  State<_TouchSpecularBridge> createState() => _TouchSpecularBridgeState();
+}
+
+class _TouchSpecularBridgeState extends State<_TouchSpecularBridge> {
+  final _rawShapesKey = GlobalKey();
+  ValueNotifier<({Offset position, double intensity})>? _notifier;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _rebindNotifier();
+  }
+
+  void _rebindNotifier() {
+    final next = GlassGlowLayer.touchSpecularNotifierOf(context);
+    if (next == _notifier) return;
+    _notifier?.removeListener(_onTouchSpecular);
+    _notifier = next;
+    _notifier?.addListener(_onTouchSpecular);
+  }
+
+  void _onTouchSpecular() {
+    final v = _notifier?.value;
+    if (v == null) return;
+    final ro = _rawShapesKey.currentContext?.findRenderObject()
+        as RenderLiquidGlassLayer?;
+    if (ro == null) return;
+
+    final layerBox = GlassGlowLayer.maybeOf(context)?.context.findRenderObject()
+        as RenderBox?;
+    final Offset pos;
+    if (layerBox != null &&
+        layerBox.attached &&
+        ro.attached &&
+        layerBox.hasSize &&
+        ro.hasSize) {
+      pos = ro.globalToLocal(layerBox.localToGlobal(v.position));
+    } else {
+      pos = v.position;
+    }
+    ro.setTouchSpecular(pos, v.intensity);
+  }
+
+  @override
+  void dispose() {
+    _notifier?.removeListener(_onTouchSpecular);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _RawShapes(
+      key: _rawShapesKey,
+      renderShader: widget.renderShader,
+      backdropKey: widget.backdropKey,
+      settings: widget.settings,
+      shadows: widget.shadows,
+      link: widget.link,
+      clipExpansion: widget.clipExpansion,
+      captureImage: widget.captureImage,
+      captureOriginInScreenSpace: widget.captureOriginInScreenSpace,
+      selfScaled: widget.selfScaled,
+      child: widget.child,
+    );
+  }
+}
+
 class _RawShapes extends SingleChildRenderObjectWidget {
   const _RawShapes({
     required this.renderShader,
@@ -269,6 +386,7 @@ class _RawShapes extends SingleChildRenderObjectWidget {
     required this.shadows,
     required Widget super.child,
     required this.link,
+    super.key,
     this.clipExpansion = EdgeInsets.zero,
     this.captureImage,
     this.captureOriginInScreenSpace = Offset.zero,
@@ -615,7 +733,7 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
     }
     // BackdropFilter path (default): live compositor read via BackdropFilterLayer.
     final shaderLayer = (_shaderHandle.layer ??= BackdropFilterLayer())
-      ..filter = ImageFilter.shader(renderShader);
+      ..filter = ImageFilter.shader(renderShader!);
 
     _clipRectLayerHandle.layer = context.pushClipRect(
       needsCompositing,

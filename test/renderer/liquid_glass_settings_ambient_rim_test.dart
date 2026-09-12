@@ -3,7 +3,7 @@
 // preservation through copyWithPinch.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_glass_widgets/src/renderer/liquid_glass_settings.dart';
+import 'package:liquid_glass_widgets/src/engine/liquid_glass_settings.dart';
 
 void main() {
   group('LiquidGlassSettings.ambientRim', () {

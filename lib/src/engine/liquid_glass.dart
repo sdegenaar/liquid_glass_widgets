@@ -1,3 +1,11 @@
+// Copyright 2024-2025 Tim Lehmann for whynotmake.it
+//
+// SPDX-License-Identifier: MIT
+//
+// Originally from liquid_glass_renderer (whynotmake.it).
+// Maintained and evolved in-tree for liquid_glass_widgets.
+// See lib/src/engine/ATTRIBUTION.md for provenance and modification history.
+
 // ignore_for_file: avoid_setters_without_getters, public_member_api_docs
 
 import 'dart:ui';
@@ -5,10 +13,12 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter/rendering.dart';
-import 'liquid_glass_renderer.dart';
-import 'internal/glass_materialize_scope.dart';
+import '../renderer/glass_materialize_scope.dart';
 import 'internal/transform_tracking_repaint_boundary_mixin.dart';
 import 'liquid_glass_blend_group.dart';
+import 'liquid_glass_layer.dart';
+import 'liquid_glass_settings.dart';
+import 'liquid_shape.dart';
 
 /// A liquid glass shape.
 ///

@@ -22,6 +22,7 @@ import 'package:liquid_glass_widgets_example/demos/rtl_layout_demo.dart';
 import 'package:liquid_glass_widgets_example/demos/meniscus_and_blur_demo.dart';
 import 'package:liquid_glass_widgets_example/demos/materialize_demo.dart';
 import 'package:liquid_glass_widgets_example/demos/scroll_edge_style_demo.dart';
+import 'package:liquid_glass_widgets_example/demos/touch_specular_and_vibrancy_demo.dart';
 
 import 'package:liquid_glass_widgets_example/demos/google_maps_demo.dart'
     show PlatformViewDemo;
@@ -938,6 +939,20 @@ class _ExamplesTab extends StatelessWidget {
                       Color(0xFF0072FF),
                     ],
                     destination: const MeniscusAndBlurDemoPage(),
+                  ),
+                  SizedBox(height: 14),
+
+                  _LargeDemoCard(
+                    title: 'Touch & Vibrancy',
+                    subtitle:
+                        'Shader contact specular highlight, nested vibrancy fill & menu tracking',
+                    icon: CupertinoIcons.sparkles,
+                    gradient: const [
+                      Color(0xFF0F2027),
+                      Color(0xFF203A43),
+                      Color(0xFF2C5364),
+                    ],
+                    destination: const TouchSpecularAndVibrancyDemo(),
                   ),
                   SizedBox(height: 14),
 

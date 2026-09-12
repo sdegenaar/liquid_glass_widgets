@@ -102,8 +102,17 @@ uniform float uPlatformViewMode;
 // See GlassBodyMode. In clear mode, luminance normalization is bypassed for direct alpha compositing.
 uniform float uBodyMode;
 
-// uThickness directly and is already DPR-independent).
-// uniform float uRefractScale; // Removed in favor of scaling uThickness
+// Slots 34-35: uTouchPosition — touch point in physical pixels (layer-local).
+// Dart side multiplies logical-px touch coordinates by DPR before setting this
+// uniform so the coordinate space matches fragCoord (physical pixels).
+// Set to vec2(0.0) at rest — only meaningful when uTouchIntensity > 0.
+uniform vec2 uTouchPosition;
+
+// Slot 36: uTouchIntensity — spring-animated touch presence [0.0 at rest, 1.0 while pressed].
+// Driven by GlassGlowLayerState._alphaController.value via ValueNotifier.
+// When 0.0, the touch-specular block is skipped entirely (uniform coherence;
+// effectively free on all GPU architectures).
+uniform float uTouchIntensity;
 
 uniform sampler2D uBackgroundTexture;
 uniform sampler2D uGeometryTexture;
@@ -518,6 +527,67 @@ void main() {
 
         vec3 highlightColor = getHighlightColor(refractColor.rgb, 1.0);
         finalColor.rgb = mix(finalColor.rgb, highlightColor, brightness);
+
+        // Touch-driven specular highlight (Shader-Level Touch Specular, 1.5.0)
+        //
+        // When a touch is active (uTouchIntensity > 0), calculate an isotropic
+        // touch-specular highlight focused on the glass rim nearest the touch.
+        // This makes the rim of the glass glint dynamically as the finger
+        // interacts with it, matching the Apple iOS 26 Liquid Glass optical model.
+        //
+        // 1. Isotropic coordinates: fragCoord and uTouchPosition are both in
+        //    physical pixels (Dart multiplies logical touch coords by DPR).
+        //    Calculating (fragCoord - uTouchPosition) directly in physical pixels
+        //    ensures circular, non-distorted distance and direction across all
+        //    aspect ratios (e.g. wide pills, app bars, buttons).
+        //
+        // 2. Contact distance falloff: The specular highlight attenuates
+        //    smoothly away from the contact point using smoothstep with an
+        //    adaptive touch radius, preventing distant rims from erroneously lighting.
+        //
+        // 3. Rim alignment: Light radiating outward through the glass from
+        //    the touch point reaches the outer rim in the direction:
+        //    touchDir = toFragPx / touchDist.
+        //    The outward rim normal (anisoN) aligns with this direction on the
+        //    side closest to the touch: dot(anisoN, touchDir) > 0.
+        //
+        // 4. Tight specular lobe: pow(rimTouchDot, 6.0) produces the crisp,
+        //    clean glint characteristic of Apple's glass materials.
+        //
+        // Cost at rest: uTouchIntensity == 0.0 — the GPU's uniform
+        // coherence mechanism culls the entire block before fragment work.
+        if (uTouchIntensity > 0.001) {
+            vec2 toFragPx = fragCoord - uTouchPosition;
+            float touchDist = length(toFragPx);
+
+            // Isotropic touch influence radius in physical pixels.
+            // Scaled by DPR (uEdgeConfig.z contains dpr / 3.0).
+            float dpr = max(1.0, uEdgeConfig.z * 3.0);
+            float touchRadius = max(70.0 * dpr, uSize.y * 1.5);
+            float distFactor = smoothstep(touchRadius, 0.0, touchDist);
+
+            if (distFactor > 0.001 && touchDist > 1.0) {
+                vec2 touchDir = toFragPx / touchDist;
+
+                // Outward rim normal (anisoN) dotted with outward ray from touch (touchDir).
+                // Rim fragments facing the contact point align with touchDir (dot > 0).
+                float rimTouchDot = max(0.0, dot(anisoN, touchDir));
+
+                // Tight specular glint curve (x⁶) scaled by touch distance falloff.
+                // (x²)³ = x⁶ — two multiplies, zero transcendentals (pow() compiles
+                // as exp2(6·log2(x)) on Mali/Adreno/Apple GPU).
+                float rtd2 = rimTouchDot * rimTouchDot;
+                float tSpec = rtd2 * rtd2 * rtd2 * distFactor;
+
+                // Scale by touch intensity, light intensity, and Reinhard compress.
+                float tBrightnessRaw = tSpec * uTouchIntensity * uLightIntensity * 2.5;
+                float tBrightness    = tBrightnessRaw / (1.0 + tBrightnessRaw);
+
+                // Blend toward highlightColor, gated by edgeFactor so it stays on the curved rim.
+                finalColor.rgb = mix(finalColor.rgb, highlightColor,
+                                     tBrightness * edgeFactor);
+            }
+        }
     }
 
     // VQ2: Fresnel edge luminosity ramp.

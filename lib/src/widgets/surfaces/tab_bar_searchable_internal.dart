@@ -129,6 +129,7 @@ class SearchableTabIndicator extends StatefulWidget {
     this.indicatorExpansion =
         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     this.interactionGlowColor,
+    this.nativePressHighlight = false,
     this.interactionGlowRadius = 1.5,
     this.interactionGlowBlurRadius = 0,
     this.interactionGlowSpreadRadius = 0,
@@ -184,6 +185,7 @@ class SearchableTabIndicator extends StatefulWidget {
   final EdgeInsetsGeometry indicatorExpansion;
 
   final Color? interactionGlowColor;
+  final bool nativePressHighlight;
   final double interactionGlowRadius;
   final double interactionGlowBlurRadius;
   final double interactionGlowSpreadRadius;
@@ -245,13 +247,33 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
               (constraints.maxWidth - constraints.maxHeight).abs() < 2;
           final currentShape = isSquare ? const LiquidOval() : _barShape;
 
+          final nativePress = _pressesNatively(
+              widget.enableBackgroundAnimation, widget.backgroundPressScale);
+          final content = widget.collapsedLogoBuilder != null
+              ? AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  transitionBuilder: (c, a) =>
+                      FadeTransition(opacity: a, child: c),
+                  child: SizedBox.expand(
+                    key: const ValueKey('logo'),
+                    child: widget.collapsedLogoBuilder!(context),
+                  ),
+                )
+              : const SizedBox.shrink(key: ValueKey('empty'));
+
           return LiquidStretch(
-            // A null pressScale means native pills; the bar surface itself
-            // keeps its subtle default factor.
             interactionScale: widget.enableBackgroundAnimation
-                ? (widget.backgroundPressScale ?? 1.04)
+                ? (widget.backgroundPressScale ?? 1.0)
                 : 1.0,
-            stretch: 0.5,
+            // The collapsed circle presses like a native button (#272):
+            // a null pressScale resolves to the ~17 pt growth with the
+            // tremor stretch on top; a number stays a fixed factor, as
+            // on GlassButton.
+            pressGrowth: nativePress ? LiquidStretch.nativePressGrowth : null,
+            anchorStretchSettings: nativePress
+                ? AnchorStretchSettings.nativeTremor
+                : const AnchorStretchSettings(),
+            stretch: widget.platformViewBackdrop ? 0.0 : 0.5,
             resistance: 0.01,
             anchorStretch: true,
             child: GestureDetector(
@@ -261,19 +283,9 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                 quality: widget.backgroundQuality ?? widget.quality,
                 platformViewBackdrop: widget.platformViewBackdrop,
                 shape: currentShape,
-                child: _wrapWithGlow(
-                  child: widget.collapsedLogoBuilder != null
-                      ? AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 220),
-                          transitionBuilder: (c, a) =>
-                              FadeTransition(opacity: a, child: c),
-                          child: SizedBox.expand(
-                            key: const ValueKey('logo'),
-                            child: widget.collapsedLogoBuilder!(context),
-                          ),
-                        )
-                      : const SizedBox.shrink(key: ValueKey('empty')),
-                ),
+                child: (nativePress && widget.nativePressHighlight)
+                    ? PressAmbientLift(child: content)
+                    : _wrapWithGlow(child: content),
               ),
             ),
           );

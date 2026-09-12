@@ -1,6 +1,6 @@
 import 'dart:ui';
 import '../../src/renderer/liquid_glass_renderer.dart';
-import '../../src/renderer/internal/interaction_notification.dart';
+import '../../types/interaction_notification.dart';
 
 import '../../types/glass_quality.dart';
 import '../shared/adaptive_glass.dart';

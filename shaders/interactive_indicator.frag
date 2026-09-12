@@ -57,7 +57,7 @@ uniform float uDpr;
 
 // 33: Meniscus rim darkening — Beer-Lambert absorption at the pill boundary.
 // Applied before specular highlights (physical ordering: light is absorbed
-// first, then reflected). Same formula as liquid_glass_final_render.frag.
+// first, then reflected). Same formula as liquid_glass_render.frag.
 // Range: 0.0 (flat, no absorption) → 1.0 (fully dark rim).
 // iOS 26 reference calibrated at ~0.15.
 uniform float uEdgeAbsorption;

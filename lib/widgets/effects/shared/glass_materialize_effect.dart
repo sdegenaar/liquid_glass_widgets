@@ -9,7 +9,6 @@ library;
 
 import 'package:flutter/widgets.dart';
 
-import '../../../src/renderer/internal/glass_materialize_scope.dart';
 import '../../../src/renderer/liquid_glass_renderer.dart';
 import '../../shared/glass_accessibility_scope.dart';
 
