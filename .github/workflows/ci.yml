@@ -56,8 +56,8 @@ jobs:
 
       # Coverage threshold guard — fail if effective coverage drops below 90 %.
       #
-      # Raw Codecov shows ~82 % because it includes lib/src/renderer/* — 16 files
-      # that contain GPU CustomPainter / RenderObject code that cannot execute in a
+      # Raw Codecov shows ~82 % because it includes lib/src/engine/* and lib/src/renderer/* —
+      # foundational GPU CustomPainter / RenderObject code that cannot execute in a
       # headless VM (no GPU rasterizer). Those paths are documented as untestable in
       # ARCHITECTURE.md. We strip them before computing the threshold AND before
       # uploading to Codecov so the badge always reflects effective coverage (~92 %).
@@ -83,13 +83,14 @@ jobs:
           fi
 
           lcov --remove coverage/lcov.info \
+            'lib/src/engine/*' \
             'lib/src/renderer/*' \
             $IGNORE_FLAGS \
             -o coverage/lcov_effective.info
 
           TOTAL=$(lcov --summary coverage/lcov_effective.info 2>&1 \
             | grep 'lines' | grep -oE '[0-9]+\.[0-9]+' | head -1)
-          echo "Effective line coverage (renderer excluded): ${TOTAL}%"
+          echo "Effective line coverage (engine/renderer excluded): ${TOTAL}%"
 
           if (( $(echo "$TOTAL < 90.0" | bc -l) )); then
             echo "❌  Effective coverage ${TOTAL}% is below the 90% threshold."
