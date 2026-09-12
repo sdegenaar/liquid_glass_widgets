@@ -23,6 +23,14 @@
   a `UIVibrancyEffect` nested inside a `UIVisualEffectView` never issues a second backdrop read.
   `AdaptiveGlass.vibrancy()` static factory added as the public entry-point.
 
+- **Official AI Agent Skill for vibecoding & pair programming (#306):** Added a
+  comprehensive agent skill (`skills/liquid-glass-widgets/SKILL.md`) and onboarding guide
+  (`skills/README.md`) that teaches AI assistants (Antigravity, Cursor, Claude Code, GitHub Copilot)
+  the library's architecture, setup lifecycle (`LiquidGlassWidgets.initialize()`), `GlassScaffold`
+  layout, component substitution dictionary, and anti-hallucination checklists to prevent synthetic
+  `BackdropFilter` implementations or obsolete pre-1.0 APIs. Complemented by repository-level
+  `AGENTS.md` and `README.md` integration instructions.
+
 ## Bug Fixes
 
 - **Native press parity for collapsed search-active tab indicator:** When search is active on

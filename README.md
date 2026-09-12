@@ -133,6 +133,23 @@ runApp(LiquidGlassWidgets.wrap(
 Both parameters are optional — omit them and the library uses sensible defaults.
 
 
+## AI Coding & Vibecoding Support
+
+Building with **Cursor**, **Claude Code**, **Antigravity**, or **GitHub Copilot**?
+AI models frequently hallucinate obsolete APIs or write manual `BackdropFilter` stacks instead of using the official Liquid Glass component suite.
+
+Teach your AI agent the exact API patterns and architectural rules:
+
+- **Antigravity / Gemini CLI**: Install the official skill into your project:
+  ```bash
+  mkdir -p .agents/skills/liquid-glass-widgets
+  curl -sSL https://raw.githubusercontent.com/sdegenaar/liquid_glass_widgets/main/skills/liquid-glass-widgets/SKILL.md -o .agents/skills/liquid-glass-widgets/SKILL.md
+  ```
+- **Cursor**: Copy [`skills/liquid-glass-widgets/SKILL.md`](skills/liquid-glass-widgets/SKILL.md) to `.cursor/rules/liquid-glass.mdc` in your project.
+- **Claude Code**: Add to `.claude/skills/liquid-glass-widgets/SKILL.md` or copy rules into your project's `CLAUDE.md`.
+- **Details & Other IDEs**: See [`skills/README.md`](skills/README.md).
+
+
 ## Features
 
 - **Comprehensive glass widget library** — containers, interactive controls, inputs, feedback, overlays, and navigation surfaces (see [Widget Categories](#widget-categories))
@@ -997,6 +1014,8 @@ Focused, self-contained demos — one widget, one file, runnable standalone:
 
 ## Documentation
 
+- **[AI Coding Agent Skill](skills/liquid-glass-widgets/SKILL.md)** — Official guidelines and API reference for AI coding agents (Cursor, Claude Code, Antigravity, Copilot) to prevent hallucinations and obsolete APIs.
+- **[Repository Agent Guide (AGENTS.md)](AGENTS.md)** — Contributor workflows and coding agent instructions.
 - **[Migration Guide (0.x to 1.0.0)](docs/MIGRATION_0.x_TO_1.0.md)** — Step-by-step upgrade guide for 1.0.0 breaking changes.
 - **[Architecture & Guidelines](docs/ARCHITECTURE.md)** — Core design principles and internal architecture.
 - **[Platform Support](docs/PLATFORM_SUPPORT.md)** — Platform matrices and rendering pipeline compatibility.
@@ -1004,7 +1023,7 @@ Focused, self-contained demos — one widget, one file, runnable standalone:
 
 ## Contributing
 
-Contributions are welcome. For major changes, open an issue first to discuss your proposal.
+Contributions are welcome. Please review [AGENTS.md](AGENTS.md) for development workflows, testing commands, and code formatting conventions. For major changes, open an issue first to discuss your proposal.
 
 
 ## License

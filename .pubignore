@@ -11,6 +11,8 @@ coverage/
 doc/
 docs/
 .agent/
+AGENTS.md
+CLAUDE.md
 CHANGELOG_ARCHIVE.md
 
 # Test suite — consumers don't need these; tests are on GitHub
