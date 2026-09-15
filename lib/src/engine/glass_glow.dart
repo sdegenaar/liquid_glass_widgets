@@ -185,13 +185,26 @@ class _GlassGlowState extends State<GlassGlow> {
     final myBox = context.findRenderObject() as RenderBox?;
     final layerBox = layerState.context.findRenderObject() as RenderBox?;
 
-    final Offset pos;
+    Offset pos;
     if (myBox != null &&
         layerBox != null &&
         myBox.attached &&
         layerBox.attached) {
       // local-in-GlassGlow → global screen → local-in-GlassGlowLayer
       pos = layerBox.globalToLocal(myBox.localToGlobal(event.localPosition));
+      // Keep the glow inside the layer it belongs to. A pointer that has been
+      // captured keeps reporting moves after it leaves the widget, and the
+      // layer clips the glow to [GlassGlowLayer.clipper], so an unclamped
+      // centre slides the highlight out of the clip and the light fades to
+      // nothing while the finger is still down. On a wide bar that is very
+      // visible: drag off a GlassTabBar.bottom and the touch light vanishes
+      // while the selection indicator, which does clamp, keeps tracking the
+      // same finger. Clamping keeps the two agreeing, and matches the
+      // platform, where the highlight belongs to the element and stays on it.
+      pos = Offset(
+        pos.dx.clamp(0.0, layerBox.size.width),
+        pos.dy.clamp(0.0, layerBox.size.height),
+      );
     } else {
       // Fallback for tests or during layout (same-level case is also correct).
       pos = event.localPosition;
