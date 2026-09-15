@@ -12,6 +12,7 @@ import '../../effects/glass_materialize.dart';
 import '../../effects/shared/glass_materialize_effect.dart';
 import '../../interactive/glass_button.dart';
 import '../../overlays/glass_menu.dart';
+import '../../overlays/glass_modal_sheet.dart';
 import '../../shared/glass_accessibility_scope.dart';
 import '../../shared/glass_isolation_scope.dart';
 import '../glass_app_bar.dart';
@@ -255,6 +256,8 @@ class GlassNavPinnedState {
     this.popping = false,
     required this.topRoute,
     this.transition = GlassEffectTransition.materialize,
+    this.presenting,
+    this.holdForSheet,
   });
 
   /// Chrome of the route beneath the top one.
@@ -308,6 +311,22 @@ class GlassNavPinnedState {
   /// Set from [GlassNavigationShell.effectTransition]; the host downgrades
   /// it to [GlassEffectTransition.identity] under reduce motion.
   final GlassEffectTransition transition;
+
+  /// The [GlassBarItem.sheet] whose sheet is up out of the hoisted chrome, or
+  /// null.
+  ///
+  /// Set while a presentation has handed the rest of the chrome back to the
+  /// route: only the group holding this item is drawn, and the morph has
+  /// emptied its capsule. See [GlassNavigationShellState.holdForSheet].
+  final GlassBarSheetItem? presenting;
+
+  /// Keeps a tapped sheet item's capsule hoisted through its presentation.
+  ///
+  /// Called with the item and its group's anchor before the item presents.
+  /// Null leaves the tap to present without the hold, which hands the capsule
+  /// back with the rest of the chrome.
+  final void Function(GlassBarSheetItem item, GlassMorphAnchor anchor)?
+      holdForSheet;
 }
 
 /// Renders the pinned leading and trailing clusters above the [Navigator].
@@ -463,6 +482,12 @@ class GlassNavBarGroup {
   double get stretch => background == GlassBarItemBackground.shared
       ? GlassNavPinnedMetrics.capsuleStretch
       : GlassNavPinnedMetrics.buttonStretch;
+
+  /// Whether [item] is one of [items] — by identity, or by `id` where it has
+  /// one, as items are matched across routes.
+  bool contains(GlassBarActionItem item) => items.any((candidate) =>
+      identical(candidate, item) ||
+      (item.id != null && candidate.id == item.id));
 }
 
 /// Splits a cluster's items into the shells that will actually be drawn.
@@ -633,6 +658,13 @@ class _PinnedSide extends StatelessWidget {
     final ltr = Directionality.of(context) == TextDirection.ltr;
     final anchoredAtStart = (side == _BarSide.leading) == ltr;
 
+    // Under a presentation only the group the sheet came out of is still the
+    // shell's; the route has the rest. See [GlassNavPinnedState.presenting].
+    final presenting = state.presenting;
+    bool holdsPresenting(int i) =>
+        presenting == null ||
+        (i < toGroups.length && toGroups[i].contains(presenting));
+
     return Transform.scale(
       scale: coverageScale,
       alignment: side == _BarSide.leading
@@ -645,12 +677,13 @@ class _PinnedSide extends StatelessWidget {
           spacing: GlassNavPinnedMetrics.groupGap,
           children: [
             for (var i = 0; i < count; i++)
-              if (_groupShowsAt(
-                context,
-                state,
-                i < fromGroups.length ? fromGroups[i] : null,
-                i < toGroups.length ? toGroups[i] : null,
-              ))
+              if (holdsPresenting(i) &&
+                  _groupShowsAt(
+                    context,
+                    state,
+                    i < fromGroups.length ? fromGroups[i] : null,
+                    i < toGroups.length ? toGroups[i] : null,
+                  ))
                 _PinnedGroup(
                   // Keyed by position so a surviving shell keeps its element:
                   // a glass surface that remounts mid-morph pops its backdrop.
@@ -1290,6 +1323,25 @@ class _PinnedGroupState extends State<_PinnedGroup> {
   /// Drives the pull-down of whichever item is currently the menu trigger.
   final GlassMenuController _menu = GlassMenuController();
 
+  /// The morph anchor of this group's shell.
+  ///
+  /// Written as the trigger builds and read at tap time, never captured: the
+  /// anchor belongs to the trigger's element, and the cluster's items are
+  /// built before it is.
+  GlassMorphAnchor? _anchor;
+
+  /// Presents [item]'s sheet out of this group's shell.
+  ///
+  /// The shell is asked to keep the group first: a presentation hands the
+  /// chrome back to the route, and this capsule has to stay where the droplet
+  /// left it. The anchor is null only before the trigger has built, which a
+  /// tap cannot precede.
+  void _presentSheet(GlassBarSheetItem item) {
+    final anchor = _anchor;
+    if (anchor != null) widget.state.holdForSheet?.call(item, anchor);
+    item.onPresent(anchor);
+  }
+
   @override
   void didUpdateWidget(covariant _PinnedGroup oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -1550,7 +1602,7 @@ class _PinnedGroupState extends State<_PinnedGroup> {
                 slotWidth: toGroup.slotWidth,
                 tintColor: toItem.tintColor,
                 onMenuTap: identical(toItem, menuItem) ? _menu.open : null,
-                onSheetTap: state.to.presentSheet,
+                onSheetTap: _presentSheet,
               ),
             ));
           }
@@ -1572,7 +1624,7 @@ class _PinnedGroupState extends State<_PinnedGroup> {
               slotWidth: toGroup.slotWidth,
               tintColor: toItem.tintColor,
               onMenuTap: identical(toItem, menuItem) ? _menu.open : null,
-              onSheetTap: state.to.presentSheet,
+              onSheetTap: _presentSheet,
             ),
           ));
         }
@@ -1591,11 +1643,13 @@ class _PinnedGroupState extends State<_PinnedGroup> {
       children: children,
     );
 
-    // Both wrappers are unconditional, even at rest and even with no menu
-    // item: inserting or removing either would remount the group's element,
-    // and a glass shell that remounts mid-morph pops its backdrop. At a phase
-    // of 1.0 the effect is paint-neutral, and a closed GlassMenu adds only
-    // inert wrappers and mounts no overlay, so the resting case costs nothing.
+    // All three wrappers are unconditional, even at rest and even with no
+    // menu or sheet item: inserting or removing any of them would remount the
+    // group's element, and a glass shell that remounts mid-morph pops its
+    // backdrop. At a phase of 1.0 the effect is paint-neutral, a closed
+    // GlassMenu adds only inert wrappers and mounts no overlay, and a morph
+    // trigger at rest paints through a zero translation and a full opacity,
+    // so the resting case costs nothing.
     // The gel is real geometry — the cluster lays out at scale and the glass
     // re-renders its true shape — so all that remains is recentring: the
     // shell is anchored top-edge at its bar corner, and natively the swell
@@ -1615,29 +1669,41 @@ class _PinnedGroupState extends State<_PinnedGroup> {
       scaleFrom: GlassNavPinnedMetrics.materializeScaleFrom,
       child: FractionalTranslation(
         translation: Offset(widget.anchoredAtStart ? -f : f, -f),
-        child: GlassMenu(
-          controller: _menu,
-          items: menuItem?.menuItems ?? const <Widget>[],
-          menuAlignment: menuItem?.menuAlignment,
-          // The fallback is never read: with no menu item there is no trigger
-          // to open one. It matches GlassMenu's own default.
-          menuWidth: menuItem?.menuWidth ?? 200,
-          platformViewBackdrop: platformViewBackdrop,
-          triggerBuilder: (context, _) => toGroup.glass
-              ? _buildShell(
-                  cluster: cluster,
-                  stretch:
-                      lerpDouble(fromGroup.stretch, toGroup.stretch, clampedT)!,
-                  morphScale: morphScale,
-                  platformViewBackdrop: platformViewBackdrop,
-                  // Forward tintColor from a single-item separate group.
-                  // Multi-item shared groups never have tintColor (asserted in
-                  // groupGlassNavBarItems), so items.first is always the only item.
-                  tintColor: toGroup.items.length == 1
-                      ? toGroup.items.first.tintColor
-                      : null,
-                )
-              : cluster,
+        // The sheet morphs the whole shell, as the menu does — see
+        // [GlassBarItem.sheet] — so the trigger wraps the shell and not the
+        // tapped item's slot.
+        child: GlassMorphTrigger(
+          builder: (context, anchor) {
+            _anchor = anchor;
+            return GlassMenu(
+              controller: _menu,
+              items: menuItem?.menuItems ?? const <Widget>[],
+              menuAlignment: menuItem?.menuAlignment,
+              // The fallback is never read: with no menu item there is no
+              // trigger to open one. It matches GlassMenu's own default.
+              menuWidth: menuItem?.menuWidth ?? 200,
+              platformViewBackdrop: platformViewBackdrop,
+              triggerBuilder: (context, _) => toGroup.glass
+                  ? _buildShell(
+                      cluster: cluster,
+                      stretch: lerpDouble(
+                        fromGroup.stretch,
+                        toGroup.stretch,
+                        clampedT,
+                      )!,
+                      morphScale: morphScale,
+                      platformViewBackdrop: platformViewBackdrop,
+                      // Forward tintColor from a single-item separate group.
+                      // Multi-item shared groups never have tintColor
+                      // (asserted in groupGlassNavBarItems), so items.first is
+                      // always the only item.
+                      tintColor: toGroup.items.length == 1
+                          ? toGroup.items.first.tintColor
+                          : null,
+                    )
+                  : cluster,
+            );
+          },
         ),
       ),
     );
@@ -1752,9 +1818,8 @@ class _ClusterItem extends StatelessWidget {
   /// its way out.
   final VoidCallback? onMenuTap;
 
-  /// Presents a [GlassBarItem.sheet]'s sheet, through the route's own capsule
-  /// rather than this one. Supplied on the same terms as [onMenuTap]; a bar
-  /// that offers none leaves the item to present without a morph.
+  /// Presents a [GlassBarItem.sheet]'s sheet out of the shell this item sits
+  /// in. Supplied on the same terms as [onMenuTap].
   final void Function(GlassBarSheetItem item)? onSheetTap;
 
   @override
@@ -1799,9 +1864,7 @@ class _ClusterItem extends StatelessWidget {
       content = Opacity(opacity: 0.5, child: content);
     }
 
-    // A sheet item is presented by the bar that registered it, which owns a
-    // capsule the sheet can cover; this one is drawn above the Navigator,
-    // where no route reaches it.
+    // A sheet item morphs the whole shell, so the group presents it.
     final present = onSheetTap;
     final onTap = item is GlassBarSheetItem
         ? () => present == null ? item.onPresent(null) : present(item)

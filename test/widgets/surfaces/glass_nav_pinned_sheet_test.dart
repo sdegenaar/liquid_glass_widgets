@@ -31,39 +31,70 @@ void main() {
         matching: matching,
       );
 
-  /// What the route's own capsule is painted at. The screen declares one
-  /// group, so the bar owns exactly one trigger, and the first [Opacity] below
-  /// it is the one the trigger empties.
-  double barCapsuleOpacity(WidgetTester tester) => tester
-      .widget<Opacity>(
-        find
-            .descendant(
-              of: find.byType(GlassMorphTrigger),
-              matching: find.byType(Opacity),
-            )
-            .first,
+  /// What the capsule holding [icon] is painted at, on the side of the
+  /// hand-over [scope] selects: the first [Opacity] under the trigger there is
+  /// the one the trigger empties.
+  double capsuleOpacity(WidgetTester tester, Finder scope, IconData icon) {
+    final trigger = find.ancestor(
+      of: find.descendant(of: scope, matching: find.byIcon(icon)),
+      matching: find.byType(GlassMorphTrigger),
+    );
+    return tester
+        .widget<Opacity>(
+          find
+              .descendant(of: trigger.first, matching: find.byType(Opacity))
+              .first,
+        )
+        .opacity;
+  }
+
+  double hostCapsuleOpacity(WidgetTester tester, [IconData? icon]) =>
+      capsuleOpacity(
+        tester,
+        find.byType(GlassNavPinnedHost),
+        icon ?? CupertinoIcons.add,
+      );
+
+  double barCapsuleOpacity(WidgetTester tester, [IconData? icon]) =>
+      capsuleOpacity(
+        tester,
+        find.byType(GlassPinnedBarChrome),
+        icon ?? CupertinoIcons.add,
+      );
+
+  /// Whether the bar paints [icon] at all, as opposed to laying out its
+  /// unpainted placeholder for the shell's copy.
+  bool barPaints(WidgetTester tester, IconData icon) => !find
+      .ancestor(
+        of: find.descendant(
+          of: find.byType(GlassPinnedBarChrome),
+          matching: find.byIcon(icon),
+        ),
+        matching: find.byType(Opacity),
       )
-      .opacity;
+      .evaluate()
+      .any((e) => (e.widget as Opacity).opacity == 0.0);
 
   group('a sheet item in the pinned chrome', () {
-    testWidgets(
-        'presents through the route\'s own capsule, not the hoisted one',
+    testWidgets('presents out of the hoisted capsule, which the shell keeps',
         (tester) async {
       await tester.pumpWidget(shellApp(const _Screen()));
       await settle(tester);
       expect(inHost(find.byIcon(CupertinoIcons.add)), findsOneWidget);
-      expect(barCapsuleOpacity(tester), 1.0);
+      expect(hostCapsuleOpacity(tester), 1.0);
 
       await tester.tap(inHost(find.byIcon(CupertinoIcons.add)));
       await tester.pump();
       await tester.pump();
 
-      // The hoisted capsule is drawn above the Navigator, where the sheet
-      // cannot cover it; the one the bar owns is inside the route.
-      expect(barCapsuleOpacity(tester), 0.0);
+      // The morph empties the capsule it came out of, so keeping it hoisted
+      // draws nothing above the sheet — and handing it back would take the
+      // anchor out from under the droplet.
+      expect(find.byType(GlassNavPinnedHost), findsOneWidget);
+      expect(hostCapsuleOpacity(tester), 0.0);
     });
 
-    testWidgets('leaves the sheet free to cover the rest of the chrome',
+    testWidgets('hands the rest of the chrome back to the route',
         (tester) async {
       await tester.pumpWidget(shellApp(const _Screen()));
       await settle(tester);
@@ -71,16 +102,23 @@ void main() {
       final shell = tester.state<GlassNavigationShellState>(
         find.byType(GlassNavigationShell),
       );
+      expect(inHost(find.byIcon(CupertinoIcons.bookmark)), findsOneWidget);
 
       await tester.tap(inHost(find.byIcon(CupertinoIcons.add)));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // A presentation hands the chrome back, so it sits under the sheet with
-      // the rest of the page. Holding it hoisted for the morph would leave a
-      // back button painted over the sheet and live above its barrier.
+      // Every other capsule sits under the sheet with the rest of the page:
+      // the shell draws above the Navigator, where the sheet cannot cover it.
       expect(shell.isHoisting(route), isFalse);
-      expect(find.byType(GlassNavPinnedHost), findsNothing);
+      expect(shell.presentingSheetItem(route)?.id, 'add');
+      expect(inHost(find.byIcon(CupertinoIcons.bookmark)), findsNothing);
+      expect(inHost(find.byIcon(CupertinoIcons.add)), findsOneWidget);
+
+      // The bar draws the bookmark itself and leaves the emptied capsule's
+      // slot as the placeholder it already had.
+      expect(barPaints(tester, CupertinoIcons.bookmark), isTrue);
+      expect(barPaints(tester, CupertinoIcons.add), isFalse);
     });
 
     testWidgets('empties the capsule rather than the glyph it was tapped on',
@@ -94,14 +132,7 @@ void main() {
 
       // The neighbouring icon goes with it: on screen the cluster is one
       // control, and a droplet out of a hole in it reads as a second object.
-      final emptied = find.ancestor(
-        of: find.byIcon(CupertinoIcons.share),
-        matching: find.byType(Opacity),
-      );
-      expect(
-        emptied.evaluate().any((e) => (e.widget as Opacity).opacity == 0.0),
-        isTrue,
-      );
+      expect(hostCapsuleOpacity(tester, CupertinoIcons.share), 0.0);
     });
 
     testWidgets('is inert while a transition is running', (tester) async {
@@ -122,11 +153,11 @@ void main() {
       );
       await tester.pump();
 
-      expect(barCapsuleOpacity(tester), 1.0);
+      expect(hostCapsuleOpacity(tester), 1.0);
       await settle(tester);
     });
 
-    testWidgets('still presents when the bar offers no capsule of its own',
+    testWidgets('presents out of the hoisted capsule for a bar drawing its own',
         (tester) async {
       var presented = 0;
       GlassMorphAnchor? seen;
@@ -141,10 +172,34 @@ void main() {
       await tester.tap(inHost(find.byIcon(CupertinoIcons.add)));
       await tester.pump();
 
-      // A bar that renders the items itself has no anchor to offer. Losing the
-      // morph is the cost; losing the tap would be a bug.
+      // The hoisted capsule is the shell's, so a registrant that draws the
+      // items itself still gets a real anchor.
       expect(presented, 1);
-      expect(seen, isNull);
+      expect(seen, isNotNull);
+    });
+
+    testWidgets('lets go of a capsule no sheet claimed', (tester) async {
+      await tester.pumpWidget(shellApp(_OwnBarScreen(
+        onPresent: (anchor) => showCupertinoDialog<void>(
+          context: tester.element(find.text('body')),
+          builder: (_) => const SizedBox(),
+        ),
+      )));
+      await settle(tester);
+      final route = ModalRoute.of(tester.element(find.text('body')))!;
+      final shell = tester.state<GlassNavigationShellState>(
+        find.byType(GlassNavigationShell),
+      );
+
+      await tester.tap(inHost(find.byIcon(CupertinoIcons.add)));
+      await tester.pump();
+      await tester.pump();
+
+      // Nothing emptied the capsule by the end of the presentation's first
+      // frame, so it is an ordinary presentation and the chrome hands back.
+      expect(shell.isHoisting(route), isFalse);
+      expect(shell.presentingSheetItem(route), isNull);
+      expect(find.byType(GlassNavPinnedHost), findsNothing);
     });
 
     testWidgets(
@@ -161,36 +216,59 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(barCapsuleOpacity(tester), 0.0);
+      expect(hostCapsuleOpacity(tester), 0.0);
       expect(shell.isHoisting(route), isFalse);
 
       final navigator = tester.state<NavigatorState>(find.byType(Navigator));
       navigator.pop();
       await settle(tester);
 
-      expect(barCapsuleOpacity(tester), 1.0);
+      expect(hostCapsuleOpacity(tester), 1.0);
       expect(shell.isHoisting(route), isTrue);
-      expect(inHost(find.byIcon(CupertinoIcons.add)), findsOneWidget);
+      expect(shell.presentingSheetItem(route), isNull);
+      expect(inHost(find.byIcon(CupertinoIcons.bookmark)), findsOneWidget);
     });
 
-    testWidgets('presents through the leading capsule when declared in leading',
+    testWidgets('presents out of the leading capsule when declared in leading',
         (tester) async {
       await tester.pumpWidget(shellApp(const _LeadingScreen()));
       await settle(tester);
       expect(inHost(find.byIcon(CupertinoIcons.add)), findsOneWidget);
-      expect(barCapsuleOpacity(tester), 1.0);
+      expect(hostCapsuleOpacity(tester), 1.0);
 
       await tester.tap(inHost(find.byIcon(CupertinoIcons.add)));
       await tester.pump();
       await tester.pump();
 
-      expect(barCapsuleOpacity(tester), 0.0);
+      expect(hostCapsuleOpacity(tester), 0.0);
+    });
+
+    testWidgets('is reported to a bar that draws its own chrome',
+        (tester) async {
+      final seen = <GlassPinnedBarChromeData>[];
+      await tester.pumpWidget(shellApp(_ChromeScreen(onBuild: seen.add)));
+      await settle(tester);
+      expect(seen.last.hoisted, isTrue);
+      expect(seen.last.presenting, isNull);
+
+      await tester.tap(inHost(find.byIcon(CupertinoIcons.add)));
+      await tester.pump();
+      await tester.pump();
+
+      expect(seen.last.hoisted, isFalse);
+      expect(seen.last.presenting?.id, 'add');
+
+      final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+      navigator.pop();
+      await settle(tester);
+
+      expect(seen.last.hoisted, isTrue);
+      expect(seen.last.presenting, isNull);
     });
   });
 
   group('a sheet item drawn in-route', () {
-    testWidgets('presents through the same capsule it would hoisted',
-        (tester) async {
+    testWidgets('presents through its own capsule', (tester) async {
       await tester.pumpWidget(const CupertinoApp(home: _Screen()));
       await settle(tester);
       expect(find.byType(GlassNavPinnedHost), findsNothing);
@@ -205,7 +283,8 @@ void main() {
   });
 }
 
-/// A screen whose one trailing group presents a sheet out of its capsule.
+/// A screen whose first trailing group presents a sheet out of its capsule,
+/// followed by a group of its own.
 class _Screen extends StatelessWidget {
   const _Screen({this.title = 'Home'});
 
@@ -220,6 +299,7 @@ class _Screen extends StatelessWidget {
         actions: [
           GlassBarItem.sheet(
             icon: const Icon(CupertinoIcons.add),
+            id: 'add',
             onPresent: (anchor) => GlassModalSheet.show<void>(
               context: context,
               morphFrom: anchor,
@@ -228,6 +308,11 @@ class _Screen extends StatelessWidget {
           ),
           GlassBarItem.icon(
             icon: const Icon(CupertinoIcons.share),
+            onTap: () {},
+          ),
+          GlassBarItem.icon(
+            icon: const Icon(CupertinoIcons.bookmark),
+            background: GlassBarItemBackground.separate,
             onTap: () {},
           ),
         ],
@@ -304,6 +389,46 @@ class _LeadingScreen extends StatelessWidget {
         ],
       ),
       body: const Center(child: Text('body')),
+    );
+  }
+}
+
+/// A screen pinning through [GlassPinnedBarChrome], reporting each frame's
+/// chrome as a bar drawing its own would read it.
+class _ChromeScreen extends StatelessWidget {
+  const _ChromeScreen({required this.onBuild});
+
+  final void Function(GlassPinnedBarChromeData chrome) onBuild;
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoPageScaffold(
+      child: Column(
+        children: [
+          GlassPinnedBarChrome(
+            backButton: false,
+            actions: [
+              GlassBarItem.sheet(
+                icon: const Icon(CupertinoIcons.add),
+                id: 'add',
+                onPresent: (anchor) => GlassModalSheet.show<void>(
+                  context: context,
+                  morphFrom: anchor,
+                  builder: (_) => const SizedBox(height: 200),
+                ),
+              ),
+            ],
+            builder: (context, chrome) {
+              onBuild(chrome);
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: chrome.actions,
+              );
+            },
+          ),
+          const Expanded(child: Center(child: Text('body'))),
+        ],
+      ),
     );
   }
 }

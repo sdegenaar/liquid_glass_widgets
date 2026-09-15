@@ -26,11 +26,12 @@ part of '../glass_modal_sheet.dart';
 /// The widget a [GlassModalSheet] morphs out of, and the channel that empties
 /// it while the morph is in flight.
 ///
-/// An opaque token: it carries no members a caller can use. [GlassMorphTrigger]
-/// creates one, hands it to its builder, and disposes it; callers pass it
-/// straight to [GlassModalSheet.show] as `morphFrom` and never touch it
-/// otherwise. The constructor is private so one cannot be made by hand — an
-/// anchor with no trigger behind it has nothing to empty.
+/// Close to an opaque token: [GlassMorphTrigger] creates one, hands it to its
+/// builder, and disposes it; callers pass it straight to [GlassModalSheet.show]
+/// as `morphFrom` and never touch it otherwise. All it reports back is
+/// [isPresenting], for chrome that has to know whether the trigger it drew is
+/// currently standing in for a sheet. The constructor is private so one cannot
+/// be made by hand — an anchor with no trigger behind it has nothing to empty.
 ///
 /// ## Why a token rather than a bare [GlobalKey]
 ///
@@ -61,6 +62,20 @@ class GlassMorphAnchor {
   bool _emptied = false;
   _MorphHandback? _handback;
   bool _disposed = false;
+
+  /// Whether the trigger is currently emptied for a presented sheet.
+  ///
+  /// True from the frame the sheet's morph starts until the droplet is caught
+  /// on dismissal — or, if the route is torn down without the closing morph,
+  /// until the trigger is restored. What the pinned chrome reads to keep a
+  /// hoisted capsule through the sheet presented out of it.
+  bool get isPresenting => _emptied;
+
+  /// Notifies when [isPresenting] changes.
+  ///
+  /// Deferred past a build in progress exactly as the owning trigger is
+  /// notified, so a listener may rebuild from it.
+  Listenable get presentationChanges => _notifier;
 
   /// The trigger's rect in global coordinates, or null when it is not currently
   /// laid out.

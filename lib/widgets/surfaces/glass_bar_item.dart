@@ -144,12 +144,17 @@ sealed class GlassBarItem {
   /// control, and a droplet crawling out of a hole in it reads as a second
   /// object arriving.
   ///
-  /// The anchor is always the one the *route's* bar owns, never the hoisted
-  /// copy — a presentation hands the chrome back to its route, so that is the
-  /// capsule still on screen once the sheet is up, and it is inside the
-  /// [Navigator] where the sheet can cover it. It is the group's own box where
-  /// the group draws no glass ([GlassBarItemBackground.none] and
-  /// [GlassBarItemBackground.own]).
+  /// The anchor is the capsule actually on screen: the route's own where the
+  /// bar draws in-route, and the hoisted copy under a `GlassNavigationShell`.
+  /// A presentation hands the chrome back to its route, but the shell keeps
+  /// this capsule through the sheet — the morph has emptied it, so nothing of
+  /// it is drawn above the sheet, and the droplet has somewhere to come home
+  /// to. It is the group's own box where the group draws no glass
+  /// ([GlassBarItemBackground.none] and [GlassBarItemBackground.own]).
+  ///
+  /// Present synchronously from [onPresent]: the shell keeps the capsule on
+  /// the strength of the tap, and lets go if no sheet has claimed it by the
+  /// end of the next frame.
   ///
   /// Dismiss the sheet before navigating, as an open [GlassMenu] is dismissed
   /// for you.

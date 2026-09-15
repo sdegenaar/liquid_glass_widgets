@@ -2311,8 +2311,9 @@ class _PresentedSheetsDemo extends StatelessWidget {
 /// A trailing cluster whose first item morphs into a sheet.
 ///
 /// The counterpart to [_PresentedSheetsDemo]: presenting hands the chrome back
-/// to the route, and the morph comes out of the capsule that lands there —
-/// which is why nothing is drawn where it was until the droplet is caught.
+/// to the route, all but the capsule the droplet came out of — the shell
+/// keeps that one, emptied, which is why nothing is drawn where it was until
+/// the droplet is caught.
 /// Push into the second screen to see the same item morph across a route
 /// change as ordinary data.
 class _SheetItemDemo extends StatelessWidget {

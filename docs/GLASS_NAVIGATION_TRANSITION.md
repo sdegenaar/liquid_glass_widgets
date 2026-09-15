@@ -163,11 +163,13 @@ bar.
 - **`GlassBarItem.sheet` morphs the capsule into a `GlassModalSheet`.** Its
   tap is handed a `GlassMorphAnchor` for `GlassModalSheet.show(morphFrom:)`,
   and the whole capsule empties for it, for the same reason `menu` morphs the
-  whole capsule. The anchor is always the route's own capsule rather than the
-  hoisted copy: presenting hands the chrome back to the route, so that is the
-  one still on screen under the sheet — and the only one a sheet can cover,
-  since the hoisted chrome is drawn above the `Navigator`. A hoisted tap is
-  routed back to the bar that registered it.
+  whole capsule. The anchor is the capsule on screen — the hoisted copy under
+  a shell. Presenting hands the chrome back to the route, but the shell keeps
+  this one capsule through the sheet: the morph has emptied it, so nothing of
+  it is drawn above the sheet, and the droplet has somewhere to come home to.
+  The route's bar keeps that slot as a placeholder meanwhile. Present
+  synchronously from `onPresent`; a capsule no sheet has claimed by the end of
+  the next frame hands back with the rest.
 - **Participation is the constructor.** A `GlassAppBar.pinned` screen keeps
   the chrome pinned even with no actions; a plain `GlassAppBar` screen does
   not participate, and the pinned chrome retreats while it covers the bar.
@@ -215,6 +217,12 @@ Pass yours if the bar is aligned to something else — an app's page gutter,
 say. The chrome hands back to the route whenever a sheet or dialog is
 presented over it, and that hand-over is invisible only while both renderings
 land on the same guide; a bar that disagrees steps sideways at every one.
+
+`chrome.presenting` is the one exception to that hand-back: the
+`GlassBarItem.sheet` whose sheet is up out of the hoisted chrome. Its capsule
+stays the shell's, emptied by the morph, and its slot keeps the placeholder
+while every other slot holds the real buttons. A bar drawing its own chrome
+leaves that capsule unpainted likewise.
 
 `platformViewBackdrop` is for a bar floating over a native platform view — a
 map, a video. `buttonSettings` cannot cover this on its own: the shader reads a
