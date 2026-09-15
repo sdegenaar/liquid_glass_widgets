@@ -409,4 +409,63 @@ void main() {
       expect(innerState!.dragging, isFalse);
     });
   });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // The touch stays inside the layer it lights
+  // ──────────────────────────────────────────────────────────────────────────
+
+  group('GlassGlowLayer bounds', () {
+    testWidgets('clamps the touch to the layer when the pointer leaves it',
+        (tester) async {
+      // A captured pointer keeps reporting moves after it leaves the widget,
+      // and the layer clips the glow to its own shape — so an unclamped centre
+      // slides the highlight out of the clip and the light fades to nothing
+      // while the finger is still down. Most visible on a wide, short bar.
+      late BuildContext inner;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Center(
+            child: SizedBox(
+              width: 400,
+              height: 64,
+              child: GlassGlowLayer(
+                child: GlassGlow(
+                  child: Builder(
+                    builder: (context) {
+                      inner = context;
+                      return const SizedBox.expand();
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final notifier = GlassGlowLayer.touchSpecularNotifierOf(inner);
+      expect(notifier, isNotNull);
+
+      final centre = tester.getCenter(find.byType(GlassGlow));
+      final gesture = await tester.startGesture(centre);
+      await tester.pump();
+      expect(notifier!.value.position.dy, closeTo(32, 1));
+
+      // Straight up, well past the top edge.
+      await gesture.moveBy(const Offset(0, -300));
+      await tester.pump();
+      expect(notifier.value.position.dy, inInclusiveRange(0, 64));
+      expect(notifier.value.position.dx, closeTo(200, 1));
+
+      // And sideways, past the trailing edge: the glow parks at the corner
+      // rather than walking off the bar.
+      await gesture.moveBy(const Offset(500, 0));
+      await tester.pump();
+      expect(notifier.value.position.dx, inInclusiveRange(0, 400));
+      expect(notifier.value.position.dy, inInclusiveRange(0, 64));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+    });
+  });
 }
