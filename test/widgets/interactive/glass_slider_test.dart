@@ -7,6 +7,7 @@ import 'package:liquid_glass_widgets/widgets/shared/glass_focus_region.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 import 'package:liquid_glass_widgets/types/glass_quality.dart';
+import 'package:liquid_glass_widgets/widgets/shared/glass_effect.dart';
 
 import '../../shared/test_helpers.dart';
 
@@ -313,7 +314,7 @@ void main() {
       final containerFinder = find.byWidgetPredicate((widget) {
         if (widget is Container && widget.decoration is BoxDecoration) {
           final dec = widget.decoration as BoxDecoration;
-          return dec.boxShadow != null && dec.boxShadow!.isNotEmpty;
+          return dec.color == Colors.white;
         }
         return false;
       });
@@ -341,7 +342,7 @@ void main() {
       final containerFinder = find.byWidgetPredicate((widget) {
         if (widget is Container && widget.decoration is BoxDecoration) {
           final dec = widget.decoration as BoxDecoration;
-          return dec.boxShadow != null && dec.boxShadow!.isNotEmpty;
+          return dec.color == Colors.white;
         }
         return false;
       });
@@ -353,6 +354,77 @@ void main() {
       expect(dec.color!.a,
           equals(1.0)); // Solid white (Opacity controls visibility)
     });
+
+    for (final quality in [GlassQuality.standard, GlassQuality.premium]) {
+      for (final brightness in Brightness.values) {
+        testWidgets(
+            '$quality $brightness keeps the resting shadow outside glass',
+            (tester) async {
+          var value = 0.5;
+          await tester.pumpWidget(createTestApp(
+            theme: ThemeData(brightness: brightness),
+            child: Center(
+              child: SizedBox(
+                width: 300,
+                child: StatefulBuilder(builder: (context, setState) {
+                  return GlassSlider(
+                    value: value,
+                    quality: quality,
+                    onChanged: (next) => setState(() => value = next),
+                  );
+                }),
+              ),
+            ),
+          ));
+          await tester.pumpAndSettle();
+
+          final shadow = find.descendant(
+            of: find.byType(GlassSlider),
+            matching: find.byWidgetPredicate((widget) =>
+                widget is DecoratedBox &&
+                widget.decoration is BoxDecoration &&
+                (widget.decoration as BoxDecoration).boxShadow?.isNotEmpty ==
+                    true),
+          );
+          expect(shadow, findsOneWidget);
+          // GlassEffect clips its content to the thumb shape, so an internal
+          // BoxShadow loses the pixels that should extend outside the thumb.
+          expect(find.ancestor(of: shadow, matching: find.byType(GlassEffect)),
+              findsNothing);
+          double shadowOpacity() =>
+              (tester.widget<DecoratedBox>(shadow).decoration as BoxDecoration)
+                  .boxShadow!
+                  .single
+                  .color
+                  .a;
+          expect(shadowOpacity(), 0.25);
+          final restingCenter = tester.getCenter(shadow);
+
+          final gesture = await tester.startGesture(restingCenter);
+          await gesture.moveBy(const Offset(60, 0));
+          await tester.pumpAndSettle();
+          expect(value, greaterThan(0.5));
+          expect(shadowOpacity(), 0);
+
+          await gesture.up();
+          await tester.pumpAndSettle();
+          expect(shadowOpacity(), 0.25);
+          expect(tester.getCenter(shadow).dx, greaterThan(restingCenter.dx));
+          final material = find.byWidgetPredicate((widget) =>
+              widget is Container &&
+              widget.decoration is BoxDecoration &&
+              (widget.decoration as BoxDecoration).color == Colors.white);
+          expect(tester.getCenter(shadow), tester.getCenter(material));
+
+          final cancelled = await tester.startGesture(tester.getCenter(shadow));
+          await tester.pumpAndSettle();
+          expect(shadowOpacity(), 0);
+          await cancelled.cancel();
+          await tester.pumpAndSettle();
+          expect(shadowOpacity(), 0.25);
+        });
+      }
+    }
 
     group('keyboard focus & accessibility', () {
       testWidgets('exposes slider semantics', (tester) async {

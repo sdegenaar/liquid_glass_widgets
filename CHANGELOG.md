@@ -1,3 +1,11 @@
+# Unreleased
+
+## Bug Fixes
+
+- Keep the `GlassSlider` resting thumb shadow outside the clipped glass surface,
+  so the thumb remains visible on a white background. The shadow still fades
+  during interaction and returns on release or cancellation.
+
 # 1.6.0
 
 ## Features
