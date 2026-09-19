@@ -1,5 +1,17 @@
 # Unreleased
 
+## Bug Fixes
+
+- **A sheet presented some frames after the tap keeps its capsule hoisted:** The hold
+  `GlassNavigationShell` takes on a `GlassBarItem.sheet` tap (#325) was released at the end
+  of the next frame if nothing had emptied the anchor by then — so a presenter that does
+  anything asynchronous before `GlassModalSheet.show` (measuring the sheet's content
+  offscreen, awaiting a fetch) lost it, the chrome handed back wholesale when the sheet
+  landed, and the route's own capsule was painted under the barrier, exactly as before
+  #325. The hold is now inert until a route is presented over the item's, and is only
+  released once that presentation's first frame ends with the anchor still unemptied.
+  `GlassBarItem.sheet` no longer needs to present synchronously.
+
 ## Performance
 
 - **Geometry matte capped while a premium surface resizes (#330):** Every frame a

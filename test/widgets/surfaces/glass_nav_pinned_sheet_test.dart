@@ -194,12 +194,54 @@ void main() {
       await tester.tap(inHost(find.byIcon(CupertinoIcons.add)));
       await tester.pump();
       await tester.pump();
+      await tester.pump();
 
       // Nothing emptied the capsule by the end of the presentation's first
       // frame, so it is an ordinary presentation and the chrome hands back.
       expect(shell.isHoisting(route), isFalse);
       expect(shell.presentingSheetItem(route), isNull);
       expect(find.byType(GlassNavPinnedHost), findsNothing);
+    });
+
+    testWidgets('keeps the capsule through a sheet presented frames later',
+        (tester) async {
+      // A presenter that sizes its sheet to its content measures that
+      // content offscreen first, which costs frames between the tap and the
+      // push. The hold has to outlast that gap.
+      await tester.pumpWidget(shellApp(_OwnBarScreen(
+        onPresent: (anchor) async {
+          final binding = WidgetsBinding.instance;
+          await binding.endOfFrame;
+          await binding.endOfFrame;
+          final context = tester.element(find.text('body'));
+          if (!context.mounted) return;
+          await GlassModalSheet.show<void>(
+            context: context,
+            morphFrom: anchor,
+            builder: (_) => const SizedBox(height: 200),
+          );
+        },
+      )));
+      await settle(tester);
+      final route = ModalRoute.of(tester.element(find.text('body')))!;
+      final shell = tester.state<GlassNavigationShellState>(
+        find.byType(GlassNavigationShell),
+      );
+
+      await tester.tap(inHost(find.byIcon(CupertinoIcons.add)));
+      // Nothing is presented yet: the chrome stays hoisted as it was.
+      await tester.pump();
+      expect(shell.isHoisting(route), isTrue);
+      expect(find.byType(GlassNavPinnedHost), findsOneWidget);
+
+      // The sheet lands, and the capsule it morphs out of is still the
+      // shell's to keep.
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+      expect(shell.isHoisting(route), isFalse);
+      expect(shell.presentingSheetItem(route), isNotNull);
+      expect(find.byType(GlassNavPinnedHost), findsOneWidget);
     });
 
     testWidgets(

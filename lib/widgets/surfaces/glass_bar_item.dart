@@ -152,9 +152,10 @@ sealed class GlassBarItem {
   /// to. It is the group's own box where the group draws no glass
   /// ([GlassBarItemBackground.none] and [GlassBarItemBackground.own]).
   ///
-  /// Present synchronously from [onPresent]: the shell keeps the capsule on
-  /// the strength of the tap, and lets go if no sheet has claimed it by the
-  /// end of the next frame.
+  /// [onPresent] may take its time — measure the sheet's content, await a
+  /// fetch: the shell keeps the capsule on the strength of the tap until a
+  /// route is presented over this one, and lets go only if that presentation
+  /// arrives without the morph.
   ///
   /// Dismiss the sheet before navigating, as an open [GlassMenu] is dismissed
   /// for you.

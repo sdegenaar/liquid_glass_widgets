@@ -379,6 +379,7 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
   /// Removes [route] from the registry.
   void unregister(ModalRoute<dynamic> route) {
     if (_registry.remove(route) == null) return;
+    if (identical(_sheetHold?.route, route)) _dropSheetHold();
     _unlisten(route.animation);
     _unlisten(route.secondaryAnimation);
     final listener = _clockListeners.remove(route);
@@ -579,9 +580,14 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
   ///
   /// Called by the pinned host on the tap, before the item presents, so the
   /// hold is in place by the frame the sheet's route lands and the group is
-  /// never unmounted from under the droplet. A tap that presents nothing, or
-  /// presents without the morph, leaves the anchor unemptied; such a hold is
-  /// dropped at the end of the following frame and the chrome hands back as
+  /// never unmounted from under the droplet. The hold is inert until a route
+  /// is presented over [route] — the chrome stays hoisted exactly as it was —
+  /// so the presenter may take as long as it needs to get there: measuring
+  /// the sheet's content offscreen, awaiting a fetch. A tap that presents
+  /// nothing leaves a hold that the next tap, presentation or unregistration
+  /// of the route replaces. One whose presentation arrives with the anchor
+  /// unemptied — a dialog, a sheet shown without the morph — is dropped at
+  /// the end of that presentation's first frame, and the chrome hands back as
   /// for any other presentation. So is one whose presentation has gone.
   void holdForSheet(
     ModalRoute<dynamic> route,
@@ -589,19 +595,32 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
     GlassMorphAnchor anchor,
   ) {
     _dropSheetHold();
-    final hold = _SheetHold(route: route, item: item, anchor: anchor);
-    _sheetHold = hold;
+    _sheetHold = _SheetHold(route: route, item: item, anchor: anchor);
     anchor.presentationChanges.addListener(_onSheetPresentationChanged);
-    // The presenter empties the trigger during the sheet route's first build,
-    // which is the coming frame. Still full at the end of it means no morph
-    // is coming out of this capsule.
+  }
+
+  /// Whether [hold] keeps its capsule through the presentation now over its
+  /// route.
+  ///
+  /// True once the anchor has been emptied. Before that, the presenter empties
+  /// the trigger during the sheet route's first build, and this may resolve
+  /// earlier in the same frame — so the first presented-over resolve keeps
+  /// the capsule and asks again at the end of the frame: still full then
+  /// means no morph is coming out of it, and the hold is dropped.
+  bool _sheetHoldClaimed(_SheetHold hold) {
+    if (hold.anchor.isPresenting) return true;
+    if (hold.presented) return false;
+    hold.presented = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !identical(_sheetHold, hold) || anchor.isPresenting) {
+      if (!mounted ||
+          !identical(_sheetHold, hold) ||
+          hold.anchor.isPresenting) {
         return;
       }
       _dropSheetHold();
       _scheduleNotify();
     });
+    return true;
   }
 
   void _onSheetPresentationChanged() {
@@ -735,7 +754,11 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
     // out of, which stays up at rest on its own.
     if (_isPresentedOver(top.key)) {
       final hold = _sheetHold;
-      if (hold == null || !identical(hold.route, top.key)) return null;
+      if (hold == null ||
+          !identical(hold.route, top.key) ||
+          !_sheetHoldClaimed(hold)) {
+        return null;
+      }
       return GlassNavPinnedState(
         from: from,
         to: top.value,
@@ -749,8 +772,9 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
     }
     // A hold is for one presentation; with that gone, so is the hold. Dropped
     // here rather than on the route's pop so a trigger unmounted while the
-    // sheet was up cannot leave one behind.
-    _dropSheetHold();
+    // sheet was up cannot leave one behind. One still waiting for its
+    // presentation to arrive is left alone.
+    if (_sheetHold?.presented ?? false) _dropSheetHold();
 
     // Progress of the top route's own entrance: 1 at rest, 0 when it has just
     // been pushed, and scrubbed by the interactive back-swipe during a pop.
@@ -944,7 +968,7 @@ class _GlassNavigationShellScope extends InheritedWidget {
 
 /// A capsule kept hoisted through the sheet presented out of it.
 class _SheetHold {
-  const _SheetHold({
+  _SheetHold({
     required this.route,
     required this.item,
     required this.anchor,
@@ -959,6 +983,12 @@ class _SheetHold {
   /// The hoisted capsule's anchor, whose [GlassMorphAnchor.isPresenting] is
   /// the hold's lifetime.
   final GlassMorphAnchor anchor;
+
+  /// Whether a route has been presented over [route] since the tap.
+  ///
+  /// Until then the hold is waiting for the sheet to arrive and is not
+  /// dropped by a resolve that finds nothing presented over the route.
+  bool presented = false;
 }
 
 /// A [ChangeNotifier] whose notification is callable by its owner.
