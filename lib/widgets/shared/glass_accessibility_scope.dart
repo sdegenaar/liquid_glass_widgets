@@ -67,6 +67,11 @@ import '../../utils/accessibility_config.dart' as glass_config;
 // ```
 // ---------------------------------------------------------------------------
 
+bool _systemReduceMotion(BuildContext context) {
+  final features = View.of(context).platformDispatcher.accessibilityFeatures;
+  return MediaQuery.disableAnimationsOf(context) || features.reduceMotion;
+}
+
 /// Accessibility state for the liquid glass widget tree.
 ///
 /// Obtain with [GlassAccessibilityData.of] or [GlassAccessibilityData.maybeOf].
@@ -119,7 +124,7 @@ class GlassAccessibilityData {
 
     // 3. Read system flags so accessibility is respected with no dev setup.
     return GlassAccessibilityData(
-      reduceMotion: MediaQuery.disableAnimationsOf(context),
+      reduceMotion: _systemReduceMotion(context),
       reduceTransparency: MediaQuery.highContrastOf(context),
     );
   }
@@ -179,7 +184,7 @@ class GlassAccessibilityScope extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = GlassAccessibilityData(
-      reduceMotion: reduceMotion ?? MediaQuery.disableAnimationsOf(context),
+      reduceMotion: reduceMotion ?? _systemReduceMotion(context),
       reduceTransparency:
           reduceTransparency ?? MediaQuery.highContrastOf(context),
     );

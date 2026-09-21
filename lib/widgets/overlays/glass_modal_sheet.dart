@@ -19,6 +19,7 @@ import '../shared/adaptive_liquid_glass_layer.dart';
 import '../../types/interaction_notification.dart';
 import '../../src/widgets/overlays/glass_sheet_defaults.dart';
 import '../../constants/glass_defaults.dart';
+import '../shared/glass_accessibility_scope.dart';
 
 part 'shared/glass_modal_sheet_mechanics.dart';
 part 'shared/glass_modal_sheet_internal.dart';

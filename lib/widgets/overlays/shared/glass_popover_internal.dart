@@ -177,7 +177,7 @@ class _GlassPopoverState extends State<GlassPopover>
     super.didChangeDependencies();
     // Sync the reduced-motion accessibility flag to the morph controller.
     _morphController.setDisableAnimations(
-      MediaQuery.of(context).disableAnimations,
+      GlassAccessibilityData.of(context).reduceMotion,
     );
     _updateRouteListener();
   }

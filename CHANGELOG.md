@@ -2,6 +2,8 @@
 
 ## Bug Fixes
 
+- **iOS Reduce Motion is now respected (fixes #342):** Accessibility motion handling now combines Flutter's `disableAnimations` flag with iOS's separate `reduceMotion` feature, including popover, menu, and modal-sheet morph controllers.
+
 - **Prevent infinite `borderRadius` from collapsing clipping and shadows (#339):** Guards against `double.infinity` evaluating to `0.0` in Flutter's corner-scaling formula across clipping layers, drop shadows, and shader uniforms. Centralizes safe radius handling on `GlassDefaults` and `LiquidShape`.
 
   Thanks to [@iimrudy](https://github.com/iimrudy) for the fix (#339).

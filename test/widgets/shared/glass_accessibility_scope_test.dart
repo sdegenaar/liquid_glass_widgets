@@ -129,6 +129,32 @@ void main() {
   // GlassAccessibilityScope — explicit overrides
   // -------------------------------------------------------------------------
 
+  group('GlassAccessibilityScope — iOS Reduce Motion', () {
+    testWidgets('reads platform reduceMotion when disableAnimations is false', (
+      tester,
+    ) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(reduceMotion: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+
+      GlassAccessibilityData? captured;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              captured = GlassAccessibilityData.of(context);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      expect(captured?.reduceMotion, isTrue);
+    });
+  });
+
   group('GlassAccessibilityScope — explicit overrides', () {
     testWidgets('explicit reduceMotion=true overrides MediaQuery false',
         (tester) async {

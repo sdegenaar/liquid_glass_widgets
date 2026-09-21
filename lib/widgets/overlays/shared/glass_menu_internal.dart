@@ -148,7 +148,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     // This fires on first build and again whenever MediaQuery changes
     // (e.g. user toggles Reduce Motion in Settings while the app is running).
     _morphController.setDisableAnimations(
-      MediaQuery.of(context).disableAnimations,
+      GlassAccessibilityData.of(context).reduceMotion,
     );
     _updateRouteListener();
   }

@@ -1026,7 +1026,7 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
     // opens the moment it mounts, so the flag has to land BEFORE the spring
     // starts — otherwise the first presentation of every session animates at
     // full length with Reduce Motion on.
-    _morph.setDisableAnimations(MediaQuery.of(context).disableAnimations);
+    _morph.setDisableAnimations(GlassAccessibilityData.of(context).reduceMotion);
     // The sheet mounts as this presenter's child, so it has not attached to
     // the controller yet on the first pass — bind once the frame is up, and
     // re-check on morph ticks in case the sheet's state is ever rebuilt.
