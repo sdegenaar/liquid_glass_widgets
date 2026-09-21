@@ -23,6 +23,30 @@ void main() {
   ];
 
   group('GlassTabBar.bottom semantics', () {
+    testWidgets('bar-wide gesture detector is excluded from semantics', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassTabBar.bottom(
+            tabs: const [
+              GlassTab(icon: Icon(CupertinoIcons.home), label: 'Home'),
+              GlassTab(icon: Icon(CupertinoIcons.search), label: 'Search'),
+            ],
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            maskingQuality: MaskingQuality.off,
+          ),
+        ),
+      );
+
+      await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+
+      semantics.dispose();
+    });
+
     testWidgets('icon-only tabs announce their semanticLabel', (tester) async {
       final semantics = tester.ensureSemantics();
 
