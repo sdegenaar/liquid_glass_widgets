@@ -550,10 +550,6 @@ class TabIndicatorState extends State<TabIndicator>
   @override
   void notifyTabChanged(int index) => widget.onTabChanged(index);
 
-  // Cache fallback indicator color to avoid allocations
-  static const _fallbackIndicatorColor =
-      Color(0x1AFFFFFF); // white.withValues(alpha: 0.1)
-
   final GlobalKey _iconLayerKey = GlobalKey();
 
   // Cached shape to avoid recreation on every animation frame
@@ -573,10 +569,11 @@ class TabIndicatorState extends State<TabIndicator>
 
   @override
   Widget build(BuildContext context) {
-    final theme = CupertinoTheme.of(context);
+    final brightness = GlassTheme.brightnessOf(context);
     final indicatorColor = widget.indicatorColor ??
-        theme.textTheme.textStyle.color?.withValues(alpha: .1) ??
-        _fallbackIndicatorColor;
+        (brightness == Brightness.dark
+            ? CupertinoColors.white.withValues(alpha: .1)
+            : CupertinoColors.black.withValues(alpha: .1));
     final targetAlignment = computeTabAlignment(widget.tabIndex);
 
     // Nested-arc default: if the outer bar is a capsule sentinel (≥ 9999),

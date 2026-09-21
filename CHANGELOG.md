@@ -2,6 +2,8 @@
 
 ## Bug Fixes
 
+- **`GlassTabBar.bottom` default indicator follows the app brightness (fixes #341):** The selected pill now resolves its default black/white tint through the glass theme cascade instead of the device appearance, so app-level light and dark overrides remain visible.
+
 - **Prevent infinite `borderRadius` from collapsing clipping and shadows (#339):** Guards against `double.infinity` evaluating to `0.0` in Flutter's corner-scaling formula across clipping layers, drop shadows, and shader uniforms. Centralizes safe radius handling on `GlassDefaults` and `LiquidShape`.
 
   Thanks to [@iimrudy](https://github.com/iimrudy) for the fix (#339).

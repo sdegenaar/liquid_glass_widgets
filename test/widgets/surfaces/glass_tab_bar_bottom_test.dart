@@ -1239,6 +1239,50 @@ void main() {
     });
   });
 
+  group('GlassTabBar.bottom indicator brightness', () {
+    testWidgets('default indicator follows dark app theme on a light device',
+        (tester) async {
+      tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+      addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+      await tester.pumpWidget(createTestApp(
+        theme: ThemeData.dark(),
+        child: GlassTabBar.bottom(
+          tabs: const [
+            GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
+            GlassTab(label: 'B', icon: Icon(CupertinoIcons.search))
+          ],
+          selectedIndex: 0,
+          onTabSelected: (_) {},
+        ),
+      ));
+      final indicator = tester.widget<AnimatedGlassIndicator>(
+          find.byType(AnimatedGlassIndicator).first);
+      expect(indicator.indicatorColor,
+          CupertinoColors.white.withValues(alpha: .1));
+    });
+
+    testWidgets('default indicator follows light app theme on a dark device',
+        (tester) async {
+      tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+      addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+      await tester.pumpWidget(createTestApp(
+        theme: ThemeData.light(),
+        child: GlassTabBar.bottom(
+          tabs: const [
+            GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
+            GlassTab(label: 'B', icon: Icon(CupertinoIcons.search))
+          ],
+          selectedIndex: 0,
+          onTabSelected: (_) {},
+        ),
+      ));
+      final indicator = tester.widget<AnimatedGlassIndicator>(
+          find.byType(AnimatedGlassIndicator).first);
+      expect(indicator.indicatorColor,
+          CupertinoColors.black.withValues(alpha: .1));
+    });
+  });
+
   // ─────────────────────────────────────────────────────────────────────────
   // Indicator Radius Tiers
   // ─────────────────────────────────────────────────────────────────────────
