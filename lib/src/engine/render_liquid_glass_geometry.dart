@@ -474,7 +474,9 @@ extension on LiquidGlassSettings {
     // its own setter. If blend is ever pulled into LiquidGlassSettings, add it
     // to this check at that point.
     return effectiveThickness != other.effectiveThickness ||
-        refractiveIndex != other.refractiveIndex;
+        refractiveIndex != other.refractiveIndex ||
+        // A rim outline or a frost switches the matte's edge (uNativeEdge).
+        (rimShade > 0 || frost > 0) != (other.rimShade > 0 || other.frost > 0);
   }
 }
 

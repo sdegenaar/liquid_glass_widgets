@@ -49,6 +49,11 @@ class GlassThemeSettings {
     this.glassColor,
     this.thickness,
     this.blur,
+    this.frost,
+    this.frostOpacity,
+    this.frostClamp,
+    this.frostWeight,
+    this.blurWeight,
     this.chromaticAberration,
     this.lightAngle,
     this.lightIntensity,
@@ -58,6 +63,10 @@ class GlassThemeSettings {
     this.saturation,
     this.specularSharpness,
     this.edgeAbsorption,
+    this.rimShade,
+    this.rimShadeEnds,
+    this.rimLight,
+    this.lensModel,
   });
 
   /// See [LiquidGlassSettings.visibility].
@@ -71,6 +80,21 @@ class GlassThemeSettings {
 
   /// See [LiquidGlassSettings.blur].
   final double? blur;
+
+  /// See [LiquidGlassSettings.frost].
+  final double? frost;
+
+  /// See [LiquidGlassSettings.frostOpacity].
+  final double? frostOpacity;
+
+  /// See [LiquidGlassSettings.frostClamp].
+  final double? frostClamp;
+
+  /// See [LiquidGlassSettings.frostWeight].
+  final double? frostWeight;
+
+  /// See [LiquidGlassSettings.blurWeight].
+  final double? blurWeight;
 
   /// See [LiquidGlassSettings.chromaticAberration].
   final double? chromaticAberration;
@@ -99,6 +123,18 @@ class GlassThemeSettings {
   /// See [LiquidGlassSettings.edgeAbsorption].
   final double? edgeAbsorption;
 
+  /// See [LiquidGlassSettings.rimShade].
+  final double? rimShade;
+
+  /// See [LiquidGlassSettings.rimShadeEnds].
+  final double? rimShadeEnds;
+
+  /// See [LiquidGlassSettings.rimLight].
+  final double? rimLight;
+
+  /// See [LiquidGlassSettings.lensModel].
+  final GlassLensModel? lensModel;
+
   /// Returns a new [LiquidGlassSettings] by applying this override onto [base].
   ///
   /// Only non-null fields in this override replace the corresponding
@@ -109,6 +145,9 @@ class GlassThemeSettings {
       glassColor: glassColor ?? base.glassColor,
       thickness: thickness ?? base.thickness,
       blur: blur ?? base.blur,
+      frost: frost ?? base.frost,
+      frostOpacity: frostOpacity ?? base.frostOpacity,
+      frostClamp: frostClamp ?? base.frostClamp,
       chromaticAberration: chromaticAberration ?? base.chromaticAberration,
       lightAngle: lightAngle ?? base.lightAngle,
       lightIntensity: lightIntensity ?? base.lightIntensity,
@@ -125,6 +164,12 @@ class GlassThemeSettings {
       whitenStrength: base.whitenStrength,
       whitenGated: base.whitenGated,
       edgeAbsorption: edgeAbsorption ?? base.edgeAbsorption,
+      rimShade: rimShade ?? base.rimShade,
+      rimShadeEnds: rimShadeEnds ?? base.rimShadeEnds,
+      rimLight: rimLight ?? base.rimLight,
+      lensModel: lensModel ?? base.lensModel,
+      frostWeight: frostWeight ?? base.frostWeight,
+      blurWeight: blurWeight ?? base.blurWeight,
       backerColor: base.backerColor,
       platformViewFallbackColor: base.platformViewFallbackColor,
     );
@@ -142,7 +187,8 @@ class GlassThemeSettings {
   ///   midpoint (`t < 0.5` keeps [a]'s value, otherwise [b]'s). Interpolating
   ///   against an unknown widget default would produce a visible flash
   ///   through zero.
-  /// - [specularSharpness] is an enum and always switches at the midpoint.
+  /// - [specularSharpness] and [lensModel] are enums and always switch at the
+  ///   midpoint.
   ///
   /// Returns null when both [a] and [b] are null. Used by
   /// [GlassThemeVariant.lerp] to cross-fade between light and dark theme
@@ -159,6 +205,11 @@ class GlassThemeSettings {
       glassColor: _lerpColorField(a.glassColor, b.glassColor, t),
       thickness: _lerpDoubleField(a.thickness, b.thickness, t),
       blur: _lerpDoubleField(a.blur, b.blur, t),
+      frost: _lerpDoubleField(a.frost, b.frost, t),
+      frostOpacity: _lerpDoubleField(a.frostOpacity, b.frostOpacity, t),
+      frostClamp: _lerpDoubleField(a.frostClamp, b.frostClamp, t),
+      frostWeight: _lerpDoubleField(a.frostWeight, b.frostWeight, t),
+      blurWeight: _lerpDoubleField(a.blurWeight, b.blurWeight, t),
       chromaticAberration:
           _lerpDoubleField(a.chromaticAberration, b.chromaticAberration, t),
       lightAngle: _lerpDoubleField(a.lightAngle, b.lightAngle, t),
@@ -172,6 +223,10 @@ class GlassThemeSettings {
       saturation: _lerpDoubleField(a.saturation, b.saturation, t),
       specularSharpness: t < 0.5 ? a.specularSharpness : b.specularSharpness,
       edgeAbsorption: _lerpDoubleField(a.edgeAbsorption, b.edgeAbsorption, t),
+      rimShade: _lerpDoubleField(a.rimShade, b.rimShade, t),
+      rimShadeEnds: _lerpDoubleField(a.rimShadeEnds, b.rimShadeEnds, t),
+      rimLight: _lerpDoubleField(a.rimLight, b.rimLight, t),
+      lensModel: t < 0.5 ? a.lensModel : b.lensModel,
     );
   }
 
@@ -191,6 +246,11 @@ class GlassThemeSettings {
     Color? glassColor,
     double? thickness,
     double? blur,
+    double? frost,
+    double? frostOpacity,
+    double? frostClamp,
+    double? frostWeight,
+    double? blurWeight,
     double? chromaticAberration,
     double? lightAngle,
     double? lightIntensity,
@@ -200,12 +260,21 @@ class GlassThemeSettings {
     double? saturation,
     GlassSpecularSharpness? specularSharpness,
     double? edgeAbsorption,
+    double? rimShade,
+    double? rimShadeEnds,
+    double? rimLight,
+    GlassLensModel? lensModel,
   }) {
     return GlassThemeSettings(
       visibility: visibility ?? this.visibility,
       glassColor: glassColor ?? this.glassColor,
       thickness: thickness ?? this.thickness,
       blur: blur ?? this.blur,
+      frost: frost ?? this.frost,
+      frostOpacity: frostOpacity ?? this.frostOpacity,
+      frostClamp: frostClamp ?? this.frostClamp,
+      frostWeight: frostWeight ?? this.frostWeight,
+      blurWeight: blurWeight ?? this.blurWeight,
       chromaticAberration: chromaticAberration ?? this.chromaticAberration,
       lightAngle: lightAngle ?? this.lightAngle,
       lightIntensity: lightIntensity ?? this.lightIntensity,
@@ -215,6 +284,10 @@ class GlassThemeSettings {
       saturation: saturation ?? this.saturation,
       specularSharpness: specularSharpness ?? this.specularSharpness,
       edgeAbsorption: edgeAbsorption ?? this.edgeAbsorption,
+      rimShade: rimShade ?? this.rimShade,
+      rimShadeEnds: rimShadeEnds ?? this.rimShadeEnds,
+      rimLight: rimLight ?? this.rimLight,
+      lensModel: lensModel ?? this.lensModel,
     );
   }
 
@@ -227,6 +300,11 @@ class GlassThemeSettings {
           glassColor == other.glassColor &&
           thickness == other.thickness &&
           blur == other.blur &&
+          frost == other.frost &&
+          frostOpacity == other.frostOpacity &&
+          frostClamp == other.frostClamp &&
+          frostWeight == other.frostWeight &&
+          blurWeight == other.blurWeight &&
           chromaticAberration == other.chromaticAberration &&
           lightAngle == other.lightAngle &&
           lightIntensity == other.lightIntensity &&
@@ -235,14 +313,23 @@ class GlassThemeSettings {
           refractiveIndex == other.refractiveIndex &&
           saturation == other.saturation &&
           specularSharpness == other.specularSharpness &&
-          edgeAbsorption == other.edgeAbsorption;
+          edgeAbsorption == other.edgeAbsorption &&
+          rimShade == other.rimShade &&
+          rimShadeEnds == other.rimShadeEnds &&
+          rimLight == other.rimLight &&
+          lensModel == other.lensModel;
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
         visibility,
         glassColor,
         thickness,
         blur,
+        frost,
+        frostOpacity,
+        frostClamp,
+        frostWeight,
+        blurWeight,
         chromaticAberration,
         lightAngle,
         lightIntensity,
@@ -252,7 +339,11 @@ class GlassThemeSettings {
         saturation,
         specularSharpness,
         edgeAbsorption,
-      );
+        rimShade,
+        rimShadeEnds,
+        rimLight,
+        lensModel,
+      ]);
 
   @override
   String toString() => 'GlassThemeSettings('

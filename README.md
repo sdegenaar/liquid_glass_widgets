@@ -373,6 +373,8 @@ GlassCard(
 
 > **Use Premium only for static, non-scrolling surfaces** (hero sections, feature cards). It may not render correctly inside `ListView` or `CustomScrollView` on Impeller. `GlassScaffold` automatically promotes app bars and bottom bars to premium quality via `GlassIsolationScope`.
 
+> **iOS 27 material**: `settings: LiquidGlassSettings.ios27Light` (or `ios27Dark`) gives premium glass the native `glassEffect(.regular)` look — the frost, hairline outline, rim light and folded lens band.
+
 ### Minimal — Shader-Free
 
 Zero custom fragment shader cost on any device. Uses `BackdropFilter` blur + a Rec. 709 saturation matrix + a specular rim stroke. Visually equivalent to a high-quality frosted panel.

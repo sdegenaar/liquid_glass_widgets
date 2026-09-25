@@ -271,6 +271,13 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
         blend * devicePixelRatio,
       ]);
     });
+    // uNativeEdge, after the shape array.
+    geometryShader.setFloatUniforms(
+      initialIndex: 8 + LiquidGlassBlendGroup.maxShapesPerLayer * 7,
+      (value) => value.setFloat(
+        settings.rimShade > 0 || settings.frost > 0 ? 1.0 : 0.0,
+      ),
+    );
   }
 
   @override
@@ -352,7 +359,17 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
     }
 
     return (
-      (layerBounds ?? Rect.zero).inflate(blend * .25),
+      // With a rim outline or a frost the geometry pass draws the glass a
+      // physical pixel larger than the shape (uNativeEdge in
+      // liquid_glass_geometry_blended.frag): room for that plus a
+      // transparent border, since the matte's edge texels are what the
+      // shadow blurs and what the render pass clamps to outside the matte.
+      (layerBounds ?? Rect.zero).inflate(
+        blend * .25 +
+            (settings.rimShade > 0 || settings.frost > 0
+                ? 3 / devicePixelRatio
+                : 0),
+      ),
       shapes,
       anyShapeChangedInLayer,
     );

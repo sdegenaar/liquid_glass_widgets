@@ -10,6 +10,7 @@
 //   - Added Windows/SkSL SPIR-V compatibility (literal-only indexing).
 //   - Normal computed via dFdx/dFdy on the SDF field for accurate blend zones.
 //   - MAX_SHAPES reduced from 64 to 16 to fit Impeller uniform buffer limits.
+//   - Native iOS 27 edge (uNativeEdge) under a rim outline.
 //
 // Geometry precomputation shader for blended liquid glass shapes
 // This shader pre-computes the surface normal and encodes it into a texture.
@@ -34,6 +35,10 @@ layout(location = 0) uniform vec2 uSize;
 layout(location = 1) uniform vec4 uOpticalProps;
 layout(location = 2) uniform vec2 uShapeSettings; // x = numShapes, y = dpr
 layout(location = 3) uniform float uShapeData[MAX_SHAPES * 7];
+// 1 with a rim outline or a frost (LiquidGlassSettings.rimShade or frost
+// above 0): the native edge below. 0 leaves the geometry exactly as it was. Location 3 + MAX_SHAPES * 7,
+// each element of uShapeData taking one.
+layout(location = 115) uniform float uNativeEdge;
 
 // sdf.glsl functions access uShapeData as a global (no array-by-value parameters,
 // which are rejected by glslang on Windows/Vulkan SPIR-V compilation).
@@ -88,6 +93,17 @@ void main() {
     // This guarantees a pristine edge that survives the 4% bilinear scaling of press 
     // animations without stair-stepping, on every device density.
     float smoothing = 1.5 * max(1.0, uDpr);
+    if (uNativeEdge > 0.5) {
+        // iOS 27 glass ends in a single anti-aliased pixel, and the outline
+        // and the frost the render pass draws have to reach an opaque pixel
+        // at the edge:
+        // narrow the window to half a logical pixel (never under one
+        // physical pixel). The native silhouette also measures a third of a
+        // point larger than its frame, the outline sitting just outside it,
+        // so grow by a physical pixel at 3x; gatherShapeData makes room.
+        smoothing = max(1.0, 0.5 * uDpr);
+        sdN -= max(1.0, uDpr / 3.0);
+    }
     float foregroundAlpha = smoothstep(smoothing * 0.5, -smoothing * 0.5, sdN);
     if (foregroundAlpha < 0.01) {
         fragColor = vec4(0.0);
@@ -102,7 +118,7 @@ void main() {
     // normal, which is why storing the normal (not displacement) fixes lighting.
     vec3 normal = normalize(vec3(dx * n_cos, dy * n_cos, n_sin));
 
-    if (sd >= 0.0 || uThickness <= 0.0) {
+    if (sdN >= 0.0 || uThickness <= 0.0) {
         fragColor = vec4(0.0);
         return;
     }

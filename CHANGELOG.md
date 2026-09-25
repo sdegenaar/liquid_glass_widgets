@@ -1,3 +1,18 @@
+# Unreleased
+
+## Features
+
+- **iOS 27 material for `GlassQuality.premium`:** New `LiquidGlassSettings` terms, each
+  measured against a SwiftUI `glassEffect(.regular)` control on the same screen: `frost`,
+  `frostOpacity`, `frostClamp` and `frostWeight` for the cloud that a copy of the content
+  still shows through (`blurWeight` shapes that copy), `rimShade` and `rimShadeEnds` for the
+  half-point outline, `rimLight` for its highlight lobes, and `GlassLensModel.paraxial` for
+  the evenly folded rim band. `LiquidGlassSettings.ios27Light` and `ios27Dark` put them
+  together, and `GlassThemeSettings` carries each term so a theme can apply them app-wide.
+  All default to off, and existing settings render exactly as before. The frost
+  costs one blur pass, written to alternate pixel rows of the shape, plus a colour pass when
+  `frostWeight` is not 1.
+
 # 1.7.2
 
 ## Bug Fixes

@@ -13,6 +13,9 @@
 //   - Switched from mediump to highp to eliminate colour banding on mobile.
 //   - Expanded from ~62 lines to full multi-pass pipeline (~487 lines).
 //   - Uniform layout migrated to explicit layout(location) slots for Impeller.
+//   - Added the iOS 27 material: hairline outline and rim light (uRimConfig),
+//     paraxial lens (uLensModel) and the frost read from interleaved rows
+//     (uFrost).
 //
 // Final rendering pass for liquid glass with pre-computed geometry.
 // Reads surface normal data from the geometry texture (V1 encoding) and applies
@@ -114,6 +117,31 @@ uniform vec2 uTouchPosition;
 // effectively free on all GPU architectures).
 uniform float uTouchIntensity;
 
+// Slots 37-39: uRimConfig — x: rimShade, y: rimLight, z: rimShadeEnds.
+// rimShade and rimLight default to 0, at which the rim passes below are
+// skipped and this shader is bit for bit unchanged. See
+// LiquidGlassSettings.rimShade / rimLight for the iOS 27 hairline outline
+// and edge highlight they draw.
+uniform vec3 uRimConfig;
+
+// Slot 40: uLensModel — 0 = spherical (default, exact Snell refraction
+// through the hemispherical bevel), 1 = paraxial (small-angle deviation,
+// (n - 1) times the slope taken as sin^2 of the incidence). See
+// GlassLensModel.
+uniform float uLensModel;
+
+// Slots 41-44: uFrost — x: frostOpacity (0 = no frost), y: frostClamp,
+// z: ghost blur sigma in physical px, w: blurWeight (how many times a white
+// texel outweighs a black one in the ghost).
+// With a frost the layer runs one blur pass before this shader, clipped to
+// the shape and to alternate pixel rows (those with an odd pass-relative y),
+// so the backdrop this shader reads holds the frost's cloud on odd rows and
+// the sharp backdrop on even rows. The ghost, the clamp and the mix are all
+// done here from those two, in the one pass. See frostAt(). With a
+// frostWeight both carry a weight in their alpha, colour premultiplied by
+// it, which texelAt() takes back out.
+uniform vec4 uFrost;
+
 uniform sampler2D uBackgroundTexture;
 uniform sampler2D uGeometryTexture;
 
@@ -176,6 +204,73 @@ vec4 textureBilinear(vec2 uv, vec2 size, vec2 invSize) {
         bg.a += uBackgroundFallback.a * (1.0 - bg.a);
     }
     return bg;
+}
+
+// Nearest texel at pixel [p] (pass-relative, whole pixels) as straight RGB.
+vec3 texelAt(vec2 p, vec2 invSize) {
+    vec2 uv = (p + 0.5) * invSize;
+    #ifdef LGR_GLES_FLIP_SAMPLE_Y
+        uv.y = 1.0 - uv.y;
+    #endif
+    vec4 c = texture(uBackgroundTexture, uv);
+    return c.a > 0.001 ? c.rgb / c.a : c.rgb;
+}
+
+// The frost at [p], a pass-relative position in physical px, with the cloud
+// read at [q] (kept a few px inside the shape, where the cloud rows are).
+//
+// Ghost: a Gaussian of uFrost.z px over the sharp (even) rows around p,
+// each texel weighted by its luminance (uFrost.w, blurWeight).
+// Cloud: the two odd rows either side of q, which hold the blur pass's
+// output. The ghost is held within frostClamp of the cloud on one side, then
+// the cloud is laid over it at frostOpacity:
+//   frost = op * cloud + (1 - op) * max(ghost, cloud - clamp)   (clamp > 0)
+//   frost = op * cloud + (1 - op) * min(ghost, cloud - clamp)   (clamp < 0)
+vec3 frostAt(vec2 p, vec2 q, vec2 invSize) {
+    float sigma = max(uFrost.z, 0.3);
+    vec2 base = floor(p);
+    // Snap the centre row to the even (sharp) row at or above p.
+    float cy = base.y - mod(base.y, 2.0);
+    // Separable Gaussian weights over 9 columns at 1 px and 5 even rows at
+    // 2 px: +-4 px, which holds the widest sigma the layer leaves to this
+    // pass (2.4 px); a wider blur runs as its own pass first.
+    float inv2s2 = 1.0 / (2.0 * sigma * sigma);
+    float wx[9];
+    for (int i = 0; i < 9; i++) {
+        float dx = base.x + float(i - 4) + 0.5 - p.x;
+        wx[i] = exp(-dx * dx * inv2s2);
+    }
+    // Each texel also weighs by its luminance, white uFrost.w times as much
+    // as black: below 1 dark detail dominates the ghost.
+    float slope = uFrost.w - 1.0;
+    vec3 acc = vec3(0.0);
+    float wsum = 0.0;
+    for (int j = -2; j <= 2; j++) {
+        float y = cy + 2.0 * float(j);
+        float dy = y + 0.5 - p.y;
+        float wy = exp(-dy * dy * inv2s2);
+        for (int i = 0; i < 9; i++) {
+            float x = base.x + float(i - 4);
+            vec3 c = texelAt(vec2(x, y), invSize);
+            float w = wy * wx[i] * (1.0 + slope * dot(c, LUMA_WEIGHTS));
+            acc += w * c;
+            wsum += w;
+        }
+    }
+    vec3 ghost = acc / max(wsum, 1e-5);
+
+    vec2 qb = floor(q);
+    float ya = qb.y - mod(qb.y + 1.0, 2.0); // odd row at or above q
+    float t = clamp((q.y - (ya + 0.5)) * 0.5, 0.0, 1.0);
+    vec3 cloud = mix(texelAt(vec2(qb.x, ya), invSize),
+                     texelAt(vec2(qb.x, ya + 2.0), invSize), t);
+
+    // frostClamp 0 leaves both sides free.
+    float k = uFrost.y;
+    vec3 held = k > 0.0 ? max(ghost, cloud - k)
+              : k < 0.0 ? min(ghost, cloud - k)
+              : ghost;
+    return mix(held, cloud, clamp(uFrost.x, 0.0, 1.0));
 }
 
 void main() {
@@ -251,11 +346,29 @@ void main() {
     // approximated.  Height is still read from the B channel.
     float height = decodeHeight(geometryData, uThickness);
     float baseHeight = uThickness * 8.0;
-    vec3  incident   = vec3(0.0, 0.0, -1.0);
-    float invN       = 1.0 / max(uRefractiveIndex, 0.001);
-    vec3  baseRefract = refract(incident, normal, invN);
-    float refractLen  = (height + baseHeight) / max(0.001, abs(baseRefract.z));
-    vec2  displacement = baseRefract.xy * refractLen;
+    vec2  displacement;
+    if (uLensModel > 0.5) {
+        // Paraxial lens: the thin-prism law, deviation = (n - 1) * slope,
+        // with the slope taken as sin(incidence)^2. normalXY is
+        // sin(incidence) and falls off linearly across the bevel, so the
+        // displacement runs up quadratically from the bevel's inner edge and
+        // folds past the point where it outgrows the distance to the rim:
+        // the band shows a mirrored, compressed copy of the interior. That
+        // is the native rim, measured with line probes on a 56 pt circle:
+        // the lens starts 0.6 of the radius out, the fold at 0.76, and the
+        // outer band is an inverted 1.9:1 image of the backdrop from 0.27 to
+        // 0.72 of the radius — thickness 32 (3x px) and n = 1.24 here. The
+        // exact refraction below folds far harder toward the edge.
+        displacement = -normalXY * length(normalXY) * baseHeight
+                     * (uRefractiveIndex - 1.0);
+    } else {
+        vec3  incident    = vec3(0.0, 0.0, -1.0);
+        float invN        = 1.0 / max(uRefractiveIndex, 0.001);
+        vec3  baseRefract = refract(incident, normal, invN);
+        float refractLen  = (height + baseHeight)
+                          / max(0.001, abs(baseRefract.z));
+        displacement = baseRefract.xy * refractLen;
+    }
     // Scale displacement by uRefractScale (uOpticalProps.w) to ensure logical-pixel
     // identical refraction magnitude across all device pixel ratios.
     displacement *= uOpticalProps.w;
@@ -274,6 +387,36 @@ void main() {
     float reach = length(displacement);
     if (reach > maxReach) {
         displacement *= maxReach / reach;
+    }
+
+    // Distance from the rim, in the same physical-pixel units as uThickness:
+    // the bevel is a quarter circle of radius uThickness, so the encoded
+    // height gives it back exactly. Saturates at uThickness on the flat face.
+    float normalizedHeight = geometryData.b;
+    float cosTerm = sqrt(max(0.0, 1.0 - normalizedHeight * normalizedHeight));
+    float rimDist = uThickness * (1.0 - cosTerm);
+    float dprScale = max(0.1, uEdgeConfig.z);
+
+    // iOS 27 hairline (uRimConfig.x): a half-point line on the very edge of
+    // the glass. Measured against the native material it is the backdrop at
+    // its own position, unblurred and untinted, darkened by a constant that
+    // is strongest across the light axis and weakest at its ends. So within
+    // the line the lens and the body tint are switched off below, and the
+    // darkening is applied last.
+    vec2 lensDisplacement = displacement;
+    float hairline = 0.0;
+    if (uRimConfig.x > 0.001) {
+        hairline = 1.0 - smoothstep(0.75 * dprScale, 2.0 * dprScale, rimDist);
+        // rimDist saturates at uThickness on the flat face, which on thin
+        // glass is inside the line's width: keep the line off the face.
+        hairline *= 1.0 - step(0.999, normalizedHeight);
+        // Within the line, sample just outside the shape instead of under
+        // it: the backdrop there has not been through the frost, which is
+        // what the native line sits on (over text it reads page - 80, not
+        // cloud - 80).
+        vec2 outward = normalXY / max(length(normalXY), 1e-4)
+                     * (2.5 * dprScale);
+        displacement = mix(displacement, outward, hairline);
     }
     // On pre-3.46 OpenGL ES, screenUV.y is flipped to (1.0 - y) above to
     // compensate for the bottom-left texture-origin convention.  The
@@ -367,6 +510,16 @@ void main() {
     } else if (uChromaticAberration < 0.01) {
         vec2 refractedUV = screenUV + displacement * invTexSize;
         refractColor = textureBilinear(refractedUV, physTexSize, invTexSize);
+        if (hairline > 0.0) {
+            // The line runs along the edge, so average it along the edge:
+            // three taps 1.5 px apart keep it a line over a busy backdrop.
+            vec2 tangent = vec2(-normalXY.y, normalXY.x)
+                         / max(length(normalXY), 1e-4)
+                         * (1.5 * dprScale) * invTexSize;
+            vec4 side = textureBilinear(refractedUV + tangent, physTexSize, invTexSize)
+                      + textureBilinear(refractedUV - tangent, physTexSize, invTexSize);
+            refractColor = mix(refractColor, (refractColor + side) / 3.0, hairline);
+        }
     } else {
         float dispersionStrength = uChromaticAberration * 0.5;
         vec2 redOffset  = displacement * (1.0 + dispersionStrength);
@@ -393,7 +546,23 @@ void main() {
         refractColor.rgb /= refractColor.a;
     }
 
-    vec4 finalColor = applyGlassColor(refractColor, uGlassColor, uBodyMode);
+    if (uFrost.x > 0.0) {
+        // The frosted, lensed body; the hairline keeps the sharp sample just
+        // outside the shape that it was given above.
+        vec2 p = fragCoord + uCaptureOffset + lensDisplacement;
+        vec2 inward = normalXY / max(length(normalXY), 1e-4)
+                    * max(0.0, 4.0 * dprScale - rimDist);
+        vec2 q = fragCoord + uCaptureOffset - inward;
+        vec3 frost = frostAt(p, q, invTexSize);
+        refractColor.rgb = mix(frost, refractColor.rgb, hairline);
+        // A frostWeight leaves its weight in the backdrop's alpha; only
+        // whether a backdrop was captured at all matters below.
+        refractColor.a = step(0.001, refractColor.a);
+    }
+
+    vec4 bodyGlassColor = uGlassColor;
+    bodyGlassColor.a *= 1.0 - hairline;
+    vec4 finalColor = applyGlassColor(refractColor, bodyGlassColor, uBodyMode);
 
     // VQ4: Content-adaptive glass strength.
     //
@@ -421,7 +590,9 @@ void main() {
     // adaptiveStrength > 1.0 → more vivid (dark backdrop).
     // adaptiveStrength < 1.0 → more muted (bright/uniform backdrop).
     // uSaturation is the artist-set base; we only modulate it, never replace it.
-    finalColor.rgb = applySaturation(finalColor.rgb, uSaturation * adaptiveStrength);
+    // The hairline shows the backdrop as it is, so it takes no saturation.
+    finalColor.rgb = applySaturation(
+        finalColor.rgb, mix(uSaturation * adaptiveStrength, 1.0, hairline));
 
     // Modulate glass tint blend weight by adaptiveStrength.
     // On dark backgrounds the tint reads heavier (+20%); on bright backgrounds
@@ -432,7 +603,8 @@ void main() {
     // In clear mode (uBodyMode == 1.0), adaptive tint modulation is bypassed.
     finalColor.rgb = mix(finalColor.rgb,
                          uGlassColor.rgb,
-                         uGlassColor.a * 0.12 * (adaptiveStrength - 1.0) * (1.0 - uBodyMode));
+                         uGlassColor.a * 0.12 * (adaptiveStrength - 1.0) * (1.0 - uBodyMode)
+                         * (1.0 - hairline));
 
     // Whitening veil — applied here, right after the body tint and BEFORE the
     // rim/fresnel passes. Applying it before the edge lighting means the rim
@@ -463,10 +635,9 @@ void main() {
     // uWhitenGated 0 → gate = 1, uniform whiten (dark mode, even lift).
     float whitenGate =
         mix(1.0, smoothstep(WHITEN_LO, WHITEN_HI, whitenLuma), uWhitenGated);
-    finalColor.rgb =
-        mix(finalColor.rgb, vec3(1.0), clamp(uWhiten, 0.0, 1.0) * whitenGate);
+    finalColor.rgb = mix(finalColor.rgb, vec3(1.0),
+                         clamp(uWhiten, 0.0, 1.0) * whitenGate * (1.0 - hairline));
     // Edge lighting — uses the true normal.xy (V1; was normalize(displacement))
-    float normalizedHeight = geometryData.b;
     // The 40.0 constant was calibrated on a 3x Retina display.
     // We scale it by uEdgeConfig.z (which contains devicePixelRatio / 3.0) 
     // so the edge clamp ratio behaves identically on all pixel densities.
@@ -634,9 +805,6 @@ void main() {
     // At uEdgeConfig.x = 0 rendering is exactly stock.
     // At uEdgeConfig.x = 2 the rim is noticeably thicker.
     // At uEdgeConfig.x = 3 the rim is very prominent.
-    float cosTerm = sqrt(max(0.0, 1.0 - normalizedHeight * normalizedHeight));
-    float rimDist = uThickness * (1.0 - cosTerm);
-    
     // Scale the anti-aliasing window by the same DPR scale applied to the thickness,
     // so the edge remains perfectly sharp (and exactly the same logical width) across all screens.
     float ringWindow = 0.75 * max(0.1, uEdgeConfig.z);
@@ -645,6 +813,44 @@ void main() {
                   * step(0.001, uEdgeConfig.x);
     float fresnel = rimBase * 0.12 * uEdgeConfig.y + ring * 0.45;
     finalColor.rgb = clamp(finalColor.rgb + vec3(fresnel), 0.0, 1.0);
+
+    // iOS 27 rim light (uRimConfig.y): two lobes at the ends of the light
+    // axis, each a sharp core one pixel inside the hairline with a soft tail
+    // reaching a few points into the body. Measured on both the light and
+    // the dark native material the core adds 50/255 on black, easing to
+    // about 27/255 on a near-white body: 0.196 * (1 - luma)^0.3, added in
+    // sRGB. Widths are in physical pixels at 3x, hence the dprScale.
+    if (uRimConfig.y > 0.001 && rimDist < 30.0 * dprScale) {
+        // The lobe on the lit side is a little stronger: on a black page
+        // the light material reads +50 there and +32 opposite, the dark
+        // material about equal.
+        float along = dot(rimN, uLightDirection);
+        float lit  = max(along, 0.0);
+        float opp  = max(-along, 0.0);
+        float lobe = lit * lit * lit + 0.85 * opp * opp * opp;
+        float inset = max(0.0, rimDist - 2.25 * dprScale) / dprScale;
+        float core = exp(-inset / 1.5);
+        float tail = exp(-inset / 8.0);
+        float bodyLuma = clamp(dot(finalColor.rgb, LUMA_WEIGHTS), 0.0, 1.0);
+        float ease = pow(1.0 - bodyLuma, 0.3);
+        // The hairline itself stays dark; the highlight peaks just inside it.
+        float rimLight = uRimConfig.y * lobe * ease
+                       * (0.175 * core + 0.035 * tail) * (1.0 - hairline);
+        finalColor.rgb = clamp(finalColor.rgb + vec3(rimLight), 0.0, 1.0);
+    }
+
+    // iOS 27 hairline darkening: 0.31 across the light axis, uRimConfig.z
+    // of that at its ends (0.2 on the light material, 0 on the dark, where
+    // the line dissolves into the lobes), falling off as cos^3.5 of the
+    // angle from the axis' perpendicular. Subtracted (a linear burn) rather
+    // than blended, which is how the native line stays a fixed step below
+    // any backdrop colour.
+    if (hairline > 0.0) {
+        float across = 1.0 - dot(rimN, uLightDirection) * dot(rimN, uLightDirection);
+        across = pow(max(across, 0.0), 1.75);
+        float shade = uRimConfig.x * 0.314 * mix(uRimConfig.z, 1.0, across);
+        finalColor.rgb = max(finalColor.rgb - vec3(shade * hairline), 0.0);
+    }
 
     // sortd patch: PASSTHROUGH mode, for glass over a platform view.
     //
