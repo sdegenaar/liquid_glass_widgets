@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/engine/glass_glow.dart';
+import 'package:liquid_glass_widgets/src/engine/render_liquid_glass_geometry.dart';
+import 'package:liquid_glass_widgets/src/engine/rendering/liquid_glass_render_object.dart';
 
 void main() {
   // ──────────────────────────────────────────────────────────────────────────
@@ -468,4 +471,91 @@ void main() {
       await tester.pumpAndSettle();
     });
   });
+
+  testWidgets(
+      'glow color update does not read an unlaid-out fractional translation',
+      (tester) async {
+    final harnessKey = GlobalKey<_GlowTransitionHarnessState>();
+    await tester.pumpWidget(
+      MaterialApp(home: _GlowTransitionHarness(key: harnessKey)),
+    );
+    await tester.pumpAndSettle();
+
+    final gesture =
+        await tester.startGesture(tester.getCenter(find.byType(GlassGlow)));
+    await tester.pump(const Duration(milliseconds: 16));
+    harnessKey.currentState!.coverWithTranslation();
+    await tester.pump(const Duration(milliseconds: 16));
+    await gesture.up();
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+  });
+}
+
+class _GlowTransitionHarness extends StatefulWidget {
+  const _GlowTransitionHarness({super.key});
+
+  @override
+  State<_GlowTransitionHarness> createState() => _GlowTransitionHarnessState();
+}
+
+class _GlowTransitionHarnessState extends State<_GlowTransitionHarness> {
+  final _layerKey = GlobalKey();
+  var _covered = false;
+
+  void coverWithTranslation() {
+    setState(() => _covered = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = _AncestorLayer(
+      key: _layerKey,
+      child: const Center(
+        child: GlassGlow(child: SizedBox(width: 80, height: 80)),
+      ),
+    );
+    if (!_covered) return glass;
+    return FractionalTranslation(
+      translation: const Offset(0, 0.2),
+      child: glass,
+    );
+  }
+}
+
+class _AncestorLayer extends SingleChildRenderObjectWidget {
+  const _AncestorLayer({required super.child, super.key});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return _AncestorLayerBox();
+  }
+
+  @override
+  void updateRenderObject(
+      BuildContext context, _AncestorLayerBox renderObject) {}
+}
+
+class _AncestorLayerBox extends LiquidGlassRenderObject {
+  _AncestorLayerBox()
+      : super(
+          devicePixelRatio: 1,
+          link: GeometryRenderLink(),
+          settings: const LiquidGlassSettings(),
+        );
+
+  @override
+  Size get desiredMatteSize => const Size(100, 100);
+
+  @override
+  Matrix4 get matteTransform => Matrix4.identity();
+
+  @override
+  void paintLiquidGlass(
+    PaintingContext context,
+    Offset offset,
+    List<(RenderLiquidGlassGeometry, GeometryCache, Matrix4)> shapes,
+    Rect boundingBox,
+  ) {}
 }

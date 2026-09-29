@@ -664,19 +664,35 @@ class _RenderGlassGlowLayer extends RenderProxyBox {
   /// when [GlassGlow] is placed inside a glass surface (e.g. inside [GlassButton]).
   void _propagateToAncestorLiquidGlass() {
     if (!_propagateToAncestor) return;
-    RenderObject? p = parent;
-    while (p != null) {
-      if (p is LiquidGlassRenderObject) {
-        if (attached && p.attached && hasSize && p.hasSize) {
-          final layerPos = p.globalToLocal(localToGlobal(_glowOffset));
-          p.setTouchSpecular(layerPos, _glowColor.a);
+    RenderObject? ancestor = parent;
+    while (ancestor != null) {
+      if (ancestor is LiquidGlassRenderObject) {
+        // localToGlobal walks every box up to the root. A route transition
+        // inserts a RenderFractionalTranslation that has not been laid out
+        // yet while this setter runs from updateRenderObject.
+        if (attached &&
+            ancestor.attached &&
+            hasSize &&
+            ancestor.hasSize &&
+            _ancestorsAreLaidOut) {
+          final layerPos = ancestor.globalToLocal(localToGlobal(_glowOffset));
+          ancestor.setTouchSpecular(layerPos, _glowColor.a);
         } else {
-          p.setTouchSpecular(_glowOffset, _glowColor.a);
+          ancestor.setTouchSpecular(_glowOffset, _glowColor.a);
         }
-        break;
+        return;
       }
-      p = p.parent;
+      ancestor = ancestor.parent;
     }
+  }
+
+  bool get _ancestorsAreLaidOut {
+    RenderObject? node = this;
+    while (node != null) {
+      if (node is RenderBox && !node.hasSize) return false;
+      node = node.parent;
+    }
+    return true;
   }
 
   double _glowBlurRadius;
