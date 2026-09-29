@@ -1,3 +1,54 @@
+# Unreleased
+
+## Performance
+
+- **`GlassBackdropGroup` (#357):** New opt-in widget. On Impeller every `BackdropFilter` ends
+  the render pass and copies the whole screen, and premium glass has two of them per surface
+  (three with the iOS 27 frost and its weight). Inside a `GlassBackdropGroup` the blur and
+  frost passes of all surfaces share one backdrop read, and where their settings match the
+  engine runs the filter once for all of them; only the refraction pass stays per surface.
+  Same idea as SwiftUI's `GlassEffectContainer`. Measured on an iPhone Air (iOS 27, profile)
+  with `ios27Light` on an app bar with three buttons, a floating button and a tab bar: GPU
+  time p90 while scrolling 15.6 → 6.8 ms (back to 120 fps), opening a sheet 26.4 → 13.7 ms.
+  Glass in a group doesn't see other glass of the same group, so it's meant for glass side by
+  side over content (bars, toolbars), not for glass lying over glass.
+- **Cheaper iOS 27 material on premium (#357):** The render shader skips frost and light work
+  that has no visible effect: the 45-tap ghost under a fully opaque cloud (`frostOpacity: 1`),
+  the bilinear backdrop sample in the frosted body away from the hairline (1 texel instead of
+  4, or 12 with chromatic aberration), and the iOS 26 light block when `lightIntensity` and
+  `ambientStrength` are both 0, as in `ios27Light` and `ios27Dark`. A squircle with equal top
+  and bottom radii is evaluated once in the geometry pass. Rendering is unchanged.
+- **Baked light-mode shadow:** The shadow under premium glass was a `saveLayer`, a blurred draw
+  and a cutout on every frame, also while only the backdrop moved. Once the geometry holds
+  still it is drawn once into an image and reused; while the shape animates it stays live.
+- **Moving glass keeps its matte:** A blend group that moved on screen rebuilt the whole
+  geometry matte with `toImageSync` on every frame, e.g. glass cards scrolling in a list or a
+  sheet sliding in. The matte is now rebuilt only when a shape moves relative to its layer.
+- **Benchmark:** `example/integration_test/perf_glass_test.dart` measures raster and GPU frame
+  times for standard, iOS 26 premium and the iOS 27 presets with and without frost, in profile
+  mode on a device.
+
+## Features
+
+- **`GlassAdaptiveScope.frostStep`** (also on `GlassAdaptiveScopeConfig`): opt-in step through
+  premium without frost. The first step down from premium only switches the frost off,
+  standing a regular blur in for it, and keeps the premium lens, rim and highlight; the next
+  step goes to standard, and recovery takes the same steps back. `GlassAdaptiveScopeData`
+  gains `frostEnabled`. Default off.
+
+## Bug Fixes
+
+- **iOS 27 settings on the standard path:** The lightweight shader draws neither the frost nor
+  the rim light, and the presets turn the iOS 26 highlight off, so `ios27Light` and
+  `ios27Dark` came out flat and nearly clear on standard (and on web). The frost is now stood
+  in for by the regular blur and the rim light by the highlight at its default strength.
+- **`LiquidGlassWidgets.wrap()` passes the warm-up thresholds on:** `warmupPremiumThresholdMs`
+  and `warmupStandardThresholdMs` from `GlassAdaptiveScopeConfig` never reached the scope, and
+  the config's `==` and `hashCode` ignored them.
+- **Docs:** The adaptive scope degrades after 2 windows (not 3) and caps explicit `quality:`
+  parameters too; `docs/ARCHITECTURE.md` no longer claims resting premium glass skips live
+  backdrop passes.
+
 # 1.8.0
 
 ## Features

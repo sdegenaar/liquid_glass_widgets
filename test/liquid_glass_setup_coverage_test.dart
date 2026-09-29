@@ -44,6 +44,36 @@ void main() {
       expect(find.byType(GlassAdaptiveScope), findsOneWidget);
     });
 
+    testWidgets('passes the warm-up thresholds on to the scope',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: LiquidGlassWidgets.wrap(
+          child: const SizedBox.shrink(),
+          adaptiveQuality: true,
+          adaptiveConfig: const GlassAdaptiveScopeConfig(
+            warmupPremiumThresholdMs: 24.0,
+            warmupStandardThresholdMs: 32.0,
+            frostStep: true,
+          ),
+        ),
+      ));
+      final scope =
+          tester.widget<GlassAdaptiveScope>(find.byType(GlassAdaptiveScope));
+      expect(scope.warmupPremiumThresholdMs, 24.0);
+      expect(scope.warmupStandardThresholdMs, 32.0);
+      expect(scope.frostStep, isTrue);
+    });
+
+    test('config equality includes the warm-up thresholds', () {
+      const a = GlassAdaptiveScopeConfig(warmupPremiumThresholdMs: 24.0);
+      const b = GlassAdaptiveScopeConfig(warmupPremiumThresholdMs: 24.0);
+      const c = GlassAdaptiveScopeConfig(warmupStandardThresholdMs: 32.0);
+      expect(a, b);
+      expect(a.hashCode, b.hashCode);
+      expect(a == const GlassAdaptiveScopeConfig(), isFalse);
+      expect(c == const GlassAdaptiveScopeConfig(), isFalse);
+    });
+
     testWidgets('respectSystemAccessibility=false sets global flag',
         (tester) async {
       final wrapped = LiquidGlassWidgets.wrap(

@@ -113,14 +113,28 @@ class GlassQualityAdapter {
     this.warmupStandardThresholdMs = 28.0,
     void Function(GlassQuality settled, double p75Ms, int frames)?
         onWarmupComplete,
+    this.frostStep = false,
+    void Function(bool frostEnabled)? onFrostChanged,
   })  : _onQualityChanged = onQualityChanged,
         _onWarmupComplete = onWarmupComplete,
+        _onFrostChanged = onFrostChanged,
         _currentQuality = maxQuality;
 
   // ── Configuration ──────────────────────────────────────────────────────────
 
   /// The lowest quality tier the adapter may step down to.
   final GlassQuality minQuality;
+
+  /// Whether premium steps through premium without frost on its way to and
+  /// from standard.
+  ///
+  /// The iOS 27 frost ([LiquidGlassSettings.frost]) is the most expensive
+  /// part of premium glass. With this on, the first step down from premium
+  /// only switches the frost off ([frostEnabled] turns `false`) and keeps
+  /// the premium shader, rim and lens; the next one goes to standard. On the
+  /// way back up, standard steps to premium without frost first. Surfaces
+  /// without frost look the same in both premium steps.
+  final bool frostStep;
 
   /// The highest quality tier the adapter may step up to.
   final GlassQuality maxQuality;
@@ -330,6 +344,12 @@ class GlassQualityAdapter {
 
   /// The currently effective quality this adapter has decided on.
   GlassQuality get currentQuality => _currentQuality;
+
+  /// Whether premium glass may draw its frost. Only ever `false` with
+  /// [frostStep]; see there.
+  bool get frostEnabled => _frostEnabled;
+  bool _frostEnabled = true;
+  final void Function(bool frostEnabled)? _onFrostChanged;
 
   /// The current internal phase (probe → warmup → runtime).
   AdaptivePhase get phase => _phase;
@@ -632,6 +652,14 @@ class GlassQualityAdapter {
 
   void _tryStepDown() {
     if (!_canChange()) return;
+    if (frostStep && _currentQuality == GlassQuality.premium && _frostEnabled) {
+      _lastChangeReason = GlassQualityChangeReason.thermalDegradation;
+      _lastP75Ms = null;
+      _lastP95Ms = _lastComputedP95Ms;
+      _lastFramesMeasured = windowSize;
+      _setFrostEnabled(false);
+      return;
+    }
     final next = _stepDown(_currentQuality);
     if (next == _currentQuality) return; // already at minQuality
     _lastChangeReason = GlassQualityChangeReason.thermalDegradation;
@@ -643,13 +671,32 @@ class GlassQualityAdapter {
 
   void _tryStepUp() {
     if (!_canChange()) return;
+    if (frostStep &&
+        _currentQuality == GlassQuality.premium &&
+        !_frostEnabled) {
+      _lastChangeReason = GlassQualityChangeReason.thermalRecovery;
+      _lastP75Ms = null;
+      _lastP95Ms = _lastComputedP95Ms;
+      _lastFramesMeasured = windowSize;
+      _setFrostEnabled(true);
+      return;
+    }
     final next = _stepUp(_currentQuality);
     if (next == _currentQuality) return; // already at maxQuality
     _lastChangeReason = GlassQualityChangeReason.thermalRecovery;
     _lastP75Ms = null;
     _lastP95Ms = _lastComputedP95Ms;
     _lastFramesMeasured = windowSize;
+    // Back to premium without the frost first; it returns one step later.
+    if (frostStep && next == GlassQuality.premium) _frostEnabled = false;
     _applyQuality(next);
+  }
+
+  void _setFrostEnabled(bool enabled) {
+    if (_frostEnabled == enabled) return;
+    _frostEnabled = enabled;
+    _lastChangeAt = DateTime.now();
+    _onFrostChanged?.call(enabled);
   }
 
   bool _canChange() {

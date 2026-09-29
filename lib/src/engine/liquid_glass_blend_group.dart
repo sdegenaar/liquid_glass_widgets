@@ -250,7 +250,7 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
   @override
   void onTransformChanged() {
     markNeedsPaint();
-    renderLink?.notifyGeometryChanged(this);
+    renderLink?.notifyTransformChanged(this);
   }
 
   @override

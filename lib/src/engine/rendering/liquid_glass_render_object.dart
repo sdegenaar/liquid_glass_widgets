@@ -348,6 +348,12 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
   /// Whether the paint that settles a capped matte is already requested.
   bool _settleGeometryScheduled = false;
 
+  /// The shape transforms [_geometryImage] was rasterized with, relative to
+  /// this render object. A blend group that moved on screen only needs a new
+  /// matte if it moved relative to this layer, not when both moved together
+  /// (glass scrolling with its content, a sheet sliding in).
+  final List<Matrix4> _geometryImageTransforms = [];
+
   @override
   @mustCallSuper
   void attach(PipelineOwner owner) {
@@ -381,6 +387,18 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
   // Reusable list to avoid per-frame allocations during paint traversal.
   final _shapesWithGeometry =
       <(RenderLiquidGlassGeometry, GeometryCache, Matrix4)>[];
+
+  bool _sameTransformsAsMatte() {
+    if (_geometryImageTransforms.length != _shapesWithGeometry.length) {
+      return false;
+    }
+    for (var i = 0; i < _shapesWithGeometry.length; i++) {
+      if (_shapesWithGeometry[i].$3 != _geometryImageTransforms[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   // MARK: Painting
 
@@ -444,8 +462,11 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
       return;
     }
 
-    final rebuildGeometry =
-        needsGeometryUpdate || _geometryImage == null || link._dirty;
+    final rebuildGeometry = needsGeometryUpdate ||
+        _geometryImage == null ||
+        link._dirty ||
+        (link._transformDirty && !_sameTransformsAsMatte());
+    link._transformDirty = false;
     if (rebuildGeometry) {
       link.updateAllGeometries();
       link._dirty = false;
@@ -899,6 +920,9 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
   }) {
     final matteDevicePixelRatio =
         _matteDevicePixelRatio(bounds.size, capped: capped);
+    _geometryImageTransforms
+      ..clear()
+      ..addAll([for (final (_, _, transform) in geometries) transform]);
 
     // Record canvas commands synchronously — pure CPU work.
     final (picture, localBounds, imageSize) =
@@ -1046,6 +1070,10 @@ class GeometryRenderLink {
 
   bool _dirty = false;
 
+  /// Set when a geometry's transform changed; the layer rebuilds its matte
+  /// only if the transform relative to it changed too.
+  bool _transformDirty = false;
+
   void updateAllGeometries() {
     for (final renderObject in _shapeGeometries) {
       renderObject.maybeRebuildGeometry();
@@ -1063,6 +1091,13 @@ class GeometryRenderLink {
   /// layer should integrate the updated result on the next paint.
   void notifyGeometryChanged(RenderLiquidGlassGeometry renderObject) {
     _dirty = true;
+  }
+
+  /// Signals that a geometry object moved on screen. The render layer
+  /// rebuilds its matte on the next paint only if the geometry moved
+  /// relative to the layer.
+  void notifyTransformChanged(RenderLiquidGlassGeometry renderObject) {
+    _transformDirty = true;
   }
 
   void unregisterGeometry(RenderLiquidGlassGeometry renderObject) {

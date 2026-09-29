@@ -135,6 +135,11 @@ float sdfSquircle(in vec2 p, in vec2 b, in float r) {
 }
 
 float sdfSquircleAsym(in vec2 p, in vec2 b, in float rTop, in float rBottom) {
+    // Most shapes round all four corners alike, and then both halves below
+    // are the same squircle: evaluate it once.
+    if (rTop == rBottom) {
+        return sdfSquircle(p, b, rTop);
+    }
     float boxShort = min(b.x, b.y);
     rTop    = min(rTop,    boxShort);
     rBottom = min(rBottom, boxShort);

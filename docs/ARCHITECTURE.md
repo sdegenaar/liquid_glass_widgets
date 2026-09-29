@@ -47,7 +47,7 @@ Houses the core rendering engine originally developed by **Tim Lehmann** ([`whyn
   1. **Pure Flutter SDK**: Stripped external dependencies (`flutter_shaders`, `equatable`, `logging`) to ensure zero runtime supply-chain overhead.
   2. **Android Vulkan Compositing Guard**: Fixed race condition during cold boot where initial frames painted prior to compositing bits resolution (`markNeedsCompositingBitsUpdate`).
   3. **Android Warm-up Bounds Protection**: Added bounds validation guards preventing NaN/Infinity crashes on zero-size layout warm-ups.
-  4. **Impeller Picture Caching**: Replaced expensive live backdrop passes with hardware-cached `toImageSync` captures.
+  4. **Impeller Picture Caching**: The geometry matte is rasterized once with `toImageSync` and reused while the shape holds still; `GlassEffect` captures the backdrop with `toImageSync` during an interaction. Resting premium glass still reads the live backdrop through `BackdropFilterLayer`s.
   5. **Windows SkSL / SPIR-V Compatibility**: Validated via `glslangValidator`.
 
 ### Layer 2: First-Party Engine Scopes (`lib/src/renderer/`)

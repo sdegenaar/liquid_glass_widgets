@@ -77,6 +77,74 @@ void main() {
     expect(tester.binding.hasScheduledFrame, isFalse);
   });
 
+  group('a moved blend group', () {
+    Future<(_Layer, _Shape)> pumpMoved(
+      WidgetTester tester, {
+      required Offset outer,
+      required Offset inner,
+    }) async {
+      await tester.pumpWidget(Align(
+        alignment: Alignment.topLeft,
+        // Moves layer and shape together, like glass scrolling with its
+        // content.
+        child: Transform.translate(
+          offset: outer,
+          child: _LayerWidget(
+            link: link,
+            renderShader: renderShader,
+            // Moves the shape within the layer.
+            child: Transform.translate(
+              offset: inner,
+              child: _ShapeWidget(
+                link: link,
+                geometryShader: geometryShader,
+                child: const SizedBox(width: 120, height: 48),
+              ),
+            ),
+          ),
+        ),
+      ));
+      return (
+        tester.allRenderObjects.whereType<_Layer>().single,
+        tester.allRenderObjects.whereType<_Shape>().single,
+      );
+    }
+
+    testWidgets('keeps its matte when it moved together with its layer',
+        (tester) async {
+      var (layer, shape) =
+          await pumpMoved(tester, outer: Offset.zero, inner: Offset.zero);
+      final matte = layer.matte;
+
+      (layer, shape) = await pumpMoved(
+        tester,
+        outer: const Offset(0, -37.5),
+        inner: Offset.zero,
+      );
+      link.notifyTransformChanged(shape);
+      layer.markNeedsPaint();
+      await tester.pump();
+      expect(identical(layer.matte, matte), isTrue);
+    });
+
+    testWidgets('rebuilds its matte when it moved within its layer',
+        (tester) async {
+      var (layer, shape) =
+          await pumpMoved(tester, outer: Offset.zero, inner: Offset.zero);
+      final matte = layer.matte;
+
+      (layer, shape) = await pumpMoved(
+        tester,
+        outer: Offset.zero,
+        inner: const Offset(12, 0),
+      );
+      link.notifyTransformChanged(shape);
+      layer.markNeedsPaint();
+      await tester.pump();
+      expect(identical(layer.matte, matte), isFalse);
+    });
+  });
+
   testWidgets('a shape under the budget is never capped', (tester) async {
     final dpr = tester.view.devicePixelRatio;
     // Three consecutive rebuilds, as an animation would produce.

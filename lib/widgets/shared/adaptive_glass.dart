@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/cupertino.dart';
 import '../../constants/glass_defaults.dart';
+import '../../src/renderer/glass_frost_budget.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../theme/glass_theme.dart';
 import 'package:flutter/foundation.dart'
@@ -350,13 +351,14 @@ class AdaptiveGlass extends StatelessWidget {
       // Standard; if the caller already knows they're on Standard, their values
       // must be passed through unchanged so tuning sliders take full effect.
       final bool skipNormalization = quality == GlassQuality.standard;
+      final standardSettings = _withoutNativeMaterial(baseSettings);
 
       final LiquidGlassSettings normalizedSettings;
       if (skipNormalization) {
-        normalizedSettings = baseSettings.copyWith(
-          glassColor: baseSettings.glassColor.withValues(
-            alpha: (baseSettings.effectiveGlassColor.a *
-                    baseSettings.standardOpacityMultiplier)
+        normalizedSettings = standardSettings.copyWith(
+          glassColor: standardSettings.glassColor.withValues(
+            alpha: (standardSettings.effectiveGlassColor.a *
+                    standardSettings.standardOpacityMultiplier)
                 .clamp(0.0, 1.0),
           ),
         );
@@ -364,14 +366,14 @@ class AdaptiveGlass extends StatelessWidget {
         // Frosting normalization: adapts Premium settings for the 2D shader.
         // Thickness scaled down (2D inner shadows look much thicker than 3D bevels).
         // Light intensity scaled down (2D gradients look brighter than 3D speculars).
-        normalizedSettings = baseSettings.copyWith(
-          thickness: (baseSettings.effectiveThickness * 0.4)
+        normalizedSettings = standardSettings.copyWith(
+          thickness: (standardSettings.effectiveThickness * 0.4)
               .clamp(0.0, double.infinity),
           lightIntensity:
-              (baseSettings.effectiveLightIntensity * 0.6).clamp(0.0, 10.0),
-          glassColor: baseSettings.glassColor.withValues(
-            alpha: (baseSettings.effectiveGlassColor.a *
-                    baseSettings.standardOpacityMultiplier)
+              (standardSettings.effectiveLightIntensity * 0.6).clamp(0.0, 10.0),
+          glassColor: standardSettings.glassColor.withValues(
+            alpha: (standardSettings.effectiveGlassColor.a *
+                    standardSettings.standardOpacityMultiplier)
                 .clamp(0.0, 1.0),
           ),
         );
@@ -1254,4 +1256,29 @@ class _ShapeClip extends StatelessWidget {
       child: child,
     );
   }
+}
+
+/// [settings] for the lightweight shader, which draws neither the iOS 27 frost
+/// nor its rim light ([LiquidGlassSettings.frost],
+/// [LiquidGlassSettings.rimLight]).
+///
+/// The iOS 27 presets rely on those for their look and turn the iOS 26
+/// highlight off (`lightIntensity: 0`), so drawn as they are the surface
+/// comes out flat and nearly clear. Here the frost is stood in for by the
+/// regular blur, as [GlassFrostBudget] does for premium without frost, and the
+/// rim light by the iOS 26 highlight at its default strength. Settings
+/// without either term are returned unchanged.
+LiquidGlassSettings _withoutNativeMaterial(LiquidGlassSettings settings) {
+  if (settings.frost <= 0 && settings.rimLight <= 0) return settings;
+  return settings.copyWith(
+    blur: math.max(
+      settings.blur,
+      settings.frost * GlassFrostBudget.blurPerFrost,
+    ),
+    lightIntensity: math.max(
+      settings.lightIntensity,
+      const LiquidGlassSettings().lightIntensity *
+          settings.rimLight.clamp(0.0, 1.0),
+    ),
+  );
 }

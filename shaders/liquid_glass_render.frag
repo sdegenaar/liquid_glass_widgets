@@ -227,6 +227,18 @@ vec3 texelAt(vec2 p, vec2 invSize) {
 //   frost = op * cloud + (1 - op) * max(ghost, cloud - clamp)   (clamp > 0)
 //   frost = op * cloud + (1 - op) * min(ghost, cloud - clamp)   (clamp < 0)
 vec3 frostAt(vec2 p, vec2 q, vec2 invSize) {
+    vec2 qb = floor(q);
+    float ya = qb.y - mod(qb.y + 1.0, 2.0); // odd row at or above q
+    float t = clamp((q.y - (ya + 0.5)) * 0.5, 0.0, 1.0);
+    vec3 cloud = mix(texelAt(vec2(qb.x, ya), invSize),
+                     texelAt(vec2(qb.x, ya + 2.0), invSize), t);
+    // A fully opaque cloud hides the ghost: mix(held, cloud, 1.0) is cloud,
+    // so skip the 45 taps it would take. uFrost.x is uniform, so the whole
+    // draw takes the same branch.
+    if (uFrost.x >= 1.0) {
+        return cloud;
+    }
+
     float sigma = max(uFrost.z, 0.3);
     vec2 base = floor(p);
     // Snap the centre row to the even (sharp) row at or above p.
@@ -258,12 +270,6 @@ vec3 frostAt(vec2 p, vec2 q, vec2 invSize) {
         }
     }
     vec3 ghost = acc / max(wsum, 1e-5);
-
-    vec2 qb = floor(q);
-    float ya = qb.y - mod(qb.y + 1.0, 2.0); // odd row at or above q
-    float t = clamp((q.y - (ya + 0.5)) * 0.5, 0.0, 1.0);
-    vec3 cloud = mix(texelAt(vec2(qb.x, ya), invSize),
-                     texelAt(vec2(qb.x, ya + 2.0), invSize), t);
 
     // frostClamp 0 leaves both sides free.
     float k = uFrost.y;
@@ -504,7 +510,17 @@ void main() {
     // a normal tilted < 0.6° from vertical — visually indistinguishable from a
     // zero-displacement sample at any display resolution.
     vec4 refractColor;
-    if (dot(normalXY, normalXY) < 1e-4) {
+    if (uFrost.x > 0.0 && hairline <= 0.0) {
+        // Frosted body: the frost below replaces the colour, and only whether
+        // a backdrop was captured here is kept (its alpha, see below). One
+        // texel answers that; the bilinear sample would take 4 (12 with
+        // chromatic aberration).
+        float a = texture(uBackgroundTexture, screenUV).a;
+        if (uBackgroundFallback.a > 0.0) {
+            a += uBackgroundFallback.a * (1.0 - a);
+        }
+        refractColor = vec4(0.0, 0.0, 0.0, a);
+    } else if (dot(normalXY, normalXY) < 1e-4) {
         // Flat interior — zero displacement, sample directly.
         refractColor = textureBilinear(screenUV, physTexSize, invTexSize);
     } else if (uChromaticAberration < 0.01) {
@@ -689,7 +705,10 @@ void main() {
     float absorption = 1.0 - sqrt(rimThickness) * uEdgeConfig.w * dirScale;
     finalColor.rgb *= max(0.0, absorption);
 
-    if (edgeFactor > 0.01) {
+    // With no light and no ambient term the block below mixes by 0 (the touch
+    // glint also scales by uLightIntensity), so skip it: the iOS 27 presets
+    // set lightIntensity to 0.
+    if (edgeFactor > 0.01 && (uLightIntensity > 0.0 || uAmbientStrength > 0.0)) {
         // Re-normalize the bilinearly interpolated normal.
         // Interpolating normals across pixels shrinks their magnitude (the 'chord' effect).
         // If we don't re-normalize, this magnitude oscillation causes severe flickering

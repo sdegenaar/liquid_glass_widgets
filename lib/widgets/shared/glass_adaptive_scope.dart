@@ -22,10 +22,11 @@
 //   demote it after the warm-up benchmark concludes.
 //
 // Phase 3 — Runtime hysteresis (ongoing, very low overhead):
-//   Degrades quality when P95 > targetFrameMs × 1.5 for 3 consecutive windows.
+//   Degrades quality when P95 > targetFrameMs × 1.5 for 2 consecutive windows
+//   (GlassQualityAdapter.degradeWindowCount).
 //   Upgrades quality (if allowStepUp) when P95 < targetFrameMs × 0.6
 //   for 10 consecutive windows. Hard 8-second cooldown between any change.
-//   Degradation is 3× faster than recovery — jank is noticed immediately;
+//   Degradation is 5× faster than recovery — jank is noticed immediately;
 //   recovery should be invisible and stable.
 //
 // ## Key design constraint
@@ -40,10 +41,10 @@
 // GlassAdaptiveScopeData.maybeOf(context) after resolving the widget-level
 // and inherited qualities.
 //
-// Widgets with an **explicit** quality parameter are not affected — the
-// resolution chain handles this: the explicit param is resolved before the
-// adaptive cap is applied. (That is intentional — the developer's explicit
-// override wins.)
+// Widgets with an **explicit** quality parameter are capped too: an explicit
+// `quality: GlassQuality.premium` means "premium if the device can handle
+// it". To force a floor on a subtree regardless of the ceiling, wrap it in
+// `GlassAdaptiveScope(minQuality: GlassQuality.premium, child: ...)`.
 //
 // ## Debug / Profile builds
 //
@@ -81,6 +82,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
+import '../../src/renderer/glass_frost_budget.dart';
 import '../../types/glass_quality.dart';
 import '../../types/glass_quality_change_reason.dart';
 import '../../utils/glass_quality_adapter.dart';
@@ -98,7 +100,13 @@ class GlassAdaptiveScopeData {
   const GlassAdaptiveScopeData({
     required this.effectiveQuality,
     required this.phase,
+    this.frostEnabled = true,
   });
+
+  /// Whether premium glass may draw its frost; `false` while the scope has
+  /// stepped down to premium without frost (see
+  /// [GlassAdaptiveScope.frostStep]).
+  final bool frostEnabled;
 
   /// The current quality ceiling enforced by the scope.
   ///
@@ -144,14 +152,15 @@ class GlassAdaptiveScopeData {
       other is GlassAdaptiveScopeData &&
           runtimeType == other.runtimeType &&
           effectiveQuality == other.effectiveQuality &&
-          phase == other.phase;
+          phase == other.phase &&
+          frostEnabled == other.frostEnabled;
 
   @override
-  int get hashCode => Object.hash(effectiveQuality, phase);
+  int get hashCode => Object.hash(effectiveQuality, phase, frostEnabled);
 
   @override
-  String toString() =>
-      'GlassAdaptiveScopeData(quality: $effectiveQuality, phase: $phase)';
+  String toString() => 'GlassAdaptiveScopeData(quality: $effectiveQuality, '
+      'phase: $phase, frostEnabled: $frostEnabled)';
 }
 
 // ---------------------------------------------------------------------------
@@ -271,10 +280,22 @@ class GlassAdaptiveScopeConfig {
     this.allowStepUp = true,
     this.warmupPremiumThresholdMs = 20.0,
     this.warmupStandardThresholdMs = 28.0,
+    this.frostStep = false,
     this.onQualityChanged,
     this.onDiagnostic,
     this.debugLogDiagnostics = false,
   });
+
+  /// Whether premium steps through premium without frost on its way to and
+  /// from standard. Defaults to `false`.
+  ///
+  /// The iOS 27 frost ([LiquidGlassSettings.frost]) is the most expensive part
+  /// of premium glass. With this on, the first step down from premium only
+  /// switches the frost off, standing in a regular blur for it, and keeps the
+  /// premium lens, rim and highlight; the next step goes to standard.
+  /// Recovery takes the same two steps back. Glass without a frost looks the
+  /// same in both premium steps.
+  final bool frostStep;
 
   /// The lowest quality tier the scope will ever enforce.
   /// Defaults to [GlassQuality.minimal].
@@ -356,6 +377,9 @@ class GlassAdaptiveScopeConfig {
           initialQuality == other.initialQuality &&
           targetFrameMs == other.targetFrameMs &&
           allowStepUp == other.allowStepUp &&
+          warmupPremiumThresholdMs == other.warmupPremiumThresholdMs &&
+          warmupStandardThresholdMs == other.warmupStandardThresholdMs &&
+          frostStep == other.frostStep &&
           debugLogDiagnostics == other.debugLogDiagnostics;
 
   @override
@@ -365,6 +389,9 @@ class GlassAdaptiveScopeConfig {
         initialQuality,
         targetFrameMs,
         allowStepUp,
+        warmupPremiumThresholdMs,
+        warmupStandardThresholdMs,
+        frostStep,
         debugLogDiagnostics,
       );
 }
@@ -383,8 +410,8 @@ class GlassAdaptiveScopeConfig {
 /// - **Thermal throttling** ("fine at launch, janky after 10 minutes"):
 ///   detected and corrected by Phase 3 runtime hysteresis.
 ///
-/// The scope acts as a **quality ceiling** — it only caps inherited quality,
-/// never overrides explicit `quality:` widget parameters. See the file-level
+/// The scope acts as a **quality ceiling** — it caps inherited and explicit
+/// `quality:` widget parameters alike, and never raises them. See the file-level
 /// documentation for the complete architecture description.
 ///
 /// **Experimental** — available in 0.8.0 for community feedback. The Phase 2
@@ -413,11 +440,23 @@ class GlassAdaptiveScope extends StatefulWidget {
     this.allowStepUp = true,
     this.warmupPremiumThresholdMs = 20.0,
     this.warmupStandardThresholdMs = 28.0,
+    this.frostStep = false,
     this.onQualityChanged,
     this.onDiagnostic,
     this.debugLogDiagnostics = false,
     super.key,
   });
+
+  /// Whether premium steps through premium without frost on its way to and
+  /// from standard. Defaults to `false`.
+  ///
+  /// The iOS 27 frost ([LiquidGlassSettings.frost]) is the most expensive part
+  /// of premium glass. With this on, the first step down from premium only
+  /// switches the frost off, standing in a regular blur for it, and keeps the
+  /// premium lens, rim and highlight; the next step goes to standard.
+  /// Recovery takes the same two steps back. Glass without a frost looks the
+  /// same in both premium steps.
+  final bool frostStep;
 
   /// The widget subtree that will have its glass quality automatically managed.
   final Widget child;
@@ -550,6 +589,7 @@ class _GlassAdaptiveScopeState extends State<GlassAdaptiveScope>
     with WidgetsBindingObserver {
   late GlassQualityAdapter _adapter;
   late GlassQuality _effectiveQuality;
+  bool _frostEnabled = true;
 
   @override
   void initState() {
@@ -583,12 +623,14 @@ class _GlassAdaptiveScopeState extends State<GlassAdaptiveScope>
         oldWidget.allowStepUp != widget.allowStepUp ||
         oldWidget.warmupPremiumThresholdMs != widget.warmupPremiumThresholdMs ||
         oldWidget.warmupStandardThresholdMs !=
-            widget.warmupStandardThresholdMs) {
+            widget.warmupStandardThresholdMs ||
+        oldWidget.frostStep != widget.frostStep) {
       _adapter.stop();
       // Mirror the same seeding logic as initState to avoid a one-frame flash.
       _effectiveQuality = widget.initialQuality ??
           GlassQualityAdapter.sessionSettledQuality ??
           widget.maxQuality;
+      _frostEnabled = true;
       _createAdapter();
       _adapter.start();
     }
@@ -622,7 +664,24 @@ class _GlassAdaptiveScopeState extends State<GlassAdaptiveScope>
       warmupStandardThresholdMs: widget.warmupStandardThresholdMs,
       onQualityChanged: _onQualityChanged,
       onWarmupComplete: _onWarmupComplete,
+      frostStep: widget.frostStep,
+      onFrostChanged: _onFrostChanged,
     );
+  }
+
+  void _onFrostChanged(bool enabled) {
+    // Like _onQualityChanged: after the frame, not in the middle of it.
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() => _frostEnabled = enabled);
+      if (widget.debugLogDiagnostics && kDebugMode) {
+        debugPrint('GlassAdaptiveScope: frost ${enabled ? 'on' : 'off'} '
+            '(P95 ${_adapter.lastP95Ms?.toStringAsFixed(1) ?? '-'} ms)');
+      }
+    });
+    // The callback above needs a frame; on a screen that just went idle
+    // there may be none coming.
+    SchedulerBinding.instance.ensureVisualUpdate();
   }
 
   /// Called by the adapter whenever Phase 2 completes — even if quality
@@ -733,8 +792,12 @@ class _GlassAdaptiveScopeState extends State<GlassAdaptiveScope>
       data: GlassAdaptiveScopeData(
         effectiveQuality: _effectiveQuality,
         phase: _adapter.phase,
+        frostEnabled: _frostEnabled,
       ),
-      child: widget.child,
+      child: GlassFrostBudget(
+        frostEnabled: _frostEnabled,
+        child: widget.child,
+      ),
     );
   }
 
