@@ -291,6 +291,17 @@ class GlassMenu extends StatefulWidget {
   /// [GlassMenuItem.submenu]. Defaults to `'Back'`.
   final String submenuBackLabel;
 
+  /// Called with the submenu depth (0 = root list) and the body's resting
+  /// height whenever the visible list changes: when the menu opens and on
+  /// every [GlassMenuItem.submenu] push or Back pop, just before the in-place
+  /// morph animates.
+  ///
+  /// Lets an external owner that positions the menu itself (typically with
+  /// [autoAdjustToScreen] off) make room for a taller submenu — or give it
+  /// back for a shorter one — for example by moving the menu with
+  /// [GlassMenuController.setFollowOffset].
+  final void Function(int depth, double height)? onLevelChanged;
+
   /// Creates a liquid glass menu.
   const GlassMenu({
     super.key,
@@ -329,6 +340,7 @@ class GlassMenu extends StatefulWidget {
     this.enableContinuousSwipe = false,
     this.continuousSwipeSlop = 10.0,
     this.submenuBackLabel = 'Back',
+    this.onLevelChanged,
   }) : assert(trigger != null || triggerBuilder != null,
             'Either trigger or triggerBuilder must be provided');
 

@@ -368,4 +368,58 @@ void main() {
       expect(opacityOf(tester, 'Large'), 1.0);
     });
   });
+
+  group('onLevelChanged', () {
+    testWidgets('reports the body height on open and on every push and pop',
+        (tester) async {
+      final controller = GlassMenuController();
+      final levels = <(int, double)>[];
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: Stack(
+            children: [
+              Positioned(
+                left: 40,
+                top: 80,
+                child: GlassMenu(
+                  controller: controller,
+                  showDismissBarrier: false,
+                  menuAlignment: GlassMenuAlignment.topLeft,
+                  onLevelChanged: (depth, height) =>
+                      levels.add((depth, height)),
+                  trigger: const SizedBox(width: 8, height: 8),
+                  items: [
+                    GlassMenuItem(title: 'Copy', onTap: () {}),
+                    GlassMenuItem(
+                      title: 'AI',
+                      onTap: () {},
+                      submenu: [
+                        for (var i = 0; i < 4; i++)
+                          GlassMenuItem(title: 'ai $i', onTap: () {}),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ));
+
+      controller.open();
+      await tester.pumpAndSettle();
+      // Root: 2 rows × 44 + 24 padding + 1 gap × 2.
+      expect(levels, [(0, 2 * 44.0 + 24 + 2)]);
+
+      await tester.tap(find.text('AI'));
+      await tester.pumpAndSettle();
+      // Back + divider (12) + 4 rows: 5 × 44 + 12 + 24 + 5 gaps × 2.
+      expect(levels.last, (1, 5 * 44.0 + 12 + 24 + 5 * 2));
+
+      await tester.tap(find.text('Back'));
+      await tester.pumpAndSettle();
+      expect(levels.last, (0, 2 * 44.0 + 24 + 2));
+      expect(levels, hasLength(3));
+    });
+  });
 }

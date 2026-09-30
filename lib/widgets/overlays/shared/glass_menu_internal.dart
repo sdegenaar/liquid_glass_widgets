@@ -680,6 +680,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     // GlassMorphController.open() uses 0.0 velocity — spring starts from rest
     // for a clean, smooth teardrop expansion with no artificial kick.
     _morphController.open();
+    widget.onLevelChanged?.call(0, menuHeight);
   }
 
   /// Offsets that keep a menu of [menuHeight] inside the screen's safe area
@@ -796,6 +797,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     _contentMorph.duration =
         reduceMotion ? Duration.zero : _kSubmenuMorphDuration;
     _contentMorph.forward(from: 0.0);
+    widget.onLevelChanged?.call(_submenuStack.length, _targetMenuHeight());
   }
 
   void _onContentMorphTick() {
