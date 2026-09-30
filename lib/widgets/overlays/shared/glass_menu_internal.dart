@@ -549,9 +549,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
 
     if (_swipeArmed) {
       final indexToTap = _hoveredIndex;
-      if (indexToTap != null &&
-          indexToTap >= 0 &&
-          indexToTap < _items.length) {
+      if (indexToTap != null && indexToTap >= 0 && indexToTap < _items.length) {
         final item = _items[indexToTap];
         if (item is GlassMenuItem && item.enabled) {
           _activateItem(item);
@@ -1418,138 +1416,142 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                           AbsorbPointer(
                             absorbing: _contentMorph.isAnimating,
                             child: Listener(
-                            onPointerDown: (event) {
-                              _isDragging = true;
-                              _isDraggingNotifier.value = true;
-                              _hasStretched = false;
-                              _initialScrollOffset =
-                                  _scrollController.hasClients
-                                      ? _scrollController.offset
-                                      : 0.0;
-                              _updateHoveredIndex(event.localPosition);
-                            },
-                            onPointerMove: (event) {
-                              if (_isDragging) {
-                                _updateHoveredIndex(event.localPosition);
-                              }
-                            },
-                            onPointerUp: (event) {
-                              // The row's own tap recogniser fires later in
-                              // this same dispatch; it must not activate the
-                              // row a second time (see _buildWrappedItems).
-                              _bodyPointerUpHandled = true;
-                              scheduleMicrotask(
-                                () => _bodyPointerUpHandled = false,
-                              );
-                              if (_isDragging) {
-                                final currentOffset =
+                              onPointerDown: (event) {
+                                _isDragging = true;
+                                _isDraggingNotifier.value = true;
+                                _hasStretched = false;
+                                _initialScrollOffset =
                                     _scrollController.hasClients
                                         ? _scrollController.offset
                                         : 0.0;
-                                final scrollDisplacement =
-                                    (currentOffset - _initialScrollOffset)
-                                        .abs();
+                                _updateHoveredIndex(event.localPosition);
+                              },
+                              onPointerMove: (event) {
+                                if (_isDragging) {
+                                  _updateHoveredIndex(event.localPosition);
+                                }
+                              },
+                              onPointerUp: (event) {
+                                // The row's own tap recogniser fires later in
+                                // this same dispatch; it must not activate the
+                                // row a second time (see _buildWrappedItems).
+                                _bodyPointerUpHandled = true;
+                                scheduleMicrotask(
+                                  () => _bodyPointerUpHandled = false,
+                                );
+                                if (_isDragging) {
+                                  final currentOffset =
+                                      _scrollController.hasClients
+                                          ? _scrollController.offset
+                                          : 0.0;
+                                  final scrollDisplacement =
+                                      (currentOffset - _initialScrollOffset)
+                                          .abs();
 
-                                // Slide-to-select logic (for non-scrollable menus, tap or slide-and-release)
-                                if (scrollDisplacement < 10 && !_isScrollable) {
-                                  final indexToTap = _hoveredIndex ??
-                                      _calculateIndexFromPosition(
-                                          event.localPosition, context);
-                                  if (indexToTap != null) {
-                                    final item = _items[indexToTap];
-                                    if (item is GlassMenuItem && item.enabled) {
-                                      _activateItem(item);
+                                  // Slide-to-select logic (for non-scrollable menus, tap or slide-and-release)
+                                  if (scrollDisplacement < 10 &&
+                                      !_isScrollable) {
+                                    final indexToTap = _hoveredIndex ??
+                                        _calculateIndexFromPosition(
+                                            event.localPosition, context);
+                                    if (indexToTap != null) {
+                                      final item = _items[indexToTap];
+                                      if (item is GlassMenuItem &&
+                                          item.enabled) {
+                                        _activateItem(item);
+                                      }
                                     }
                                   }
+                                  _isDragging = false;
+                                  _isDraggingNotifier.value = false;
+                                  _hoveredIndex = null;
+                                  _hoveredIndexNotifier.value = null;
+                                  _hasStretched = false;
                                 }
+                              },
+                              onPointerCancel: (_) {
                                 _isDragging = false;
                                 _isDraggingNotifier.value = false;
                                 _hoveredIndex = null;
                                 _hoveredIndexNotifier.value = null;
-                                _hasStretched = false;
-                              }
-                            },
-                            onPointerCancel: (_) {
-                              _isDragging = false;
-                              _isDraggingNotifier.value = false;
-                              _hoveredIndex = null;
-                              _hoveredIndexNotifier.value = null;
-                            },
-                            child: SizedBox(
-                              key: _menuContentKey,
-                              width: widget.menuWidth,
-                              height: widget.menuHeight, // Apply fixed height
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 12),
-                                child: SingleChildScrollView(
-                                  controller: _scrollController,
-                                  physics: _isScrollable
-                                      ? const ClampingScrollPhysics() // iOS-style
-                                      : const NeverScrollableScrollPhysics(),
-                                  // Crossfades the rows when a submenu is
-                                  // pushed or popped while the body height
-                                  // morphs underneath (see _changeLevel).
-                                  child: AnimatedSwitcher(
-                                    duration: GlassAccessibilityData.of(context)
-                                            .reduceMotion
-                                        ? Duration.zero
-                                        : _kSubmenuMorphDuration,
-                                    // Sequential, never overlapping: the old
-                                    // rows fade out over the first half of
-                                    // the morph, the new rows fade in over
-                                    // the second (the outgoing curve runs
-                                    // on the reversed animation, 1 → 0).
-                                    switchInCurve: _kSubmenuFadeInCurve,
-                                    switchOutCurve: _kSubmenuFadeOutCurve,
-                                    layoutBuilder: _submenuSwitcherLayout,
-                                    child: Column(
-                                      key: ValueKey<int>(_submenuStack.length),
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: [
-                                        const SizedBox(height: 12), // Top padding
-                                        ..._buildWrappedItems()
-                                            .asMap()
-                                            .entries
-                                            .expand((entry) {
-                                          final itemOpacity =
-                                              _morphController.isClosing
-                                                  ? ((clampedValue - 0.85) / 0.15)
-                                                      .clamp(0.0, 1.0)
-                                                  : ((clampedValue - 0.25) / 0.45)
-                                                      .clamp(0.0, 1.0);
-                                          final itemScale = lerpDouble(
-                                            0.7,
-                                            1.0,
-                                            Curves.easeOut.transform(
-                                              ((clampedValue - 0.25) / 0.75)
-                                                  .clamp(0.0, 1.0),
-                                            ),
-                                          )!;
-                                          return [
-                                            Opacity(
-                                              opacity: itemOpacity,
-                                              child: Transform.scale(
-                                                scale: itemScale,
-                                                child: entry.value,
+                              },
+                              child: SizedBox(
+                                key: _menuContentKey,
+                                width: widget.menuWidth,
+                                height: widget.menuHeight, // Apply fixed height
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12),
+                                  child: SingleChildScrollView(
+                                    controller: _scrollController,
+                                    physics: _isScrollable
+                                        ? const ClampingScrollPhysics() // iOS-style
+                                        : const NeverScrollableScrollPhysics(),
+                                    // Crossfades the rows when a submenu is
+                                    // pushed or popped while the body height
+                                    // morphs underneath (see _changeLevel).
+                                    child: AnimatedSwitcher(
+                                      duration:
+                                          GlassAccessibilityData.of(context)
+                                                  .reduceMotion
+                                              ? Duration.zero
+                                              : _kSubmenuMorphDuration,
+                                      // Sequential, never overlapping: the old
+                                      // rows fade out over the first half of
+                                      // the morph, the new rows fade in over
+                                      // the second (the outgoing curve runs
+                                      // on the reversed animation, 1 → 0).
+                                      switchInCurve: _kSubmenuFadeInCurve,
+                                      switchOutCurve: _kSubmenuFadeOutCurve,
+                                      layoutBuilder: _submenuSwitcherLayout,
+                                      child: Column(
+                                        key:
+                                            ValueKey<int>(_submenuStack.length),
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          const SizedBox(
+                                              height: 12), // Top padding
+                                          ..._buildWrappedItems()
+                                              .asMap()
+                                              .entries
+                                              .expand((entry) {
+                                            final itemOpacity = _morphController
+                                                    .isClosing
+                                                ? ((clampedValue - 0.85) / 0.15)
+                                                    .clamp(0.0, 1.0)
+                                                : ((clampedValue - 0.25) / 0.45)
+                                                    .clamp(0.0, 1.0);
+                                            final itemScale = lerpDouble(
+                                              0.7,
+                                              1.0,
+                                              Curves.easeOut.transform(
+                                                ((clampedValue - 0.25) / 0.75)
+                                                    .clamp(0.0, 1.0),
                                               ),
-                                            ),
-                                            if (entry.key <
-                                                _items.length - 1)
-                                              const SizedBox(height: 2),
-                                          ];
-                                        }),
-                                        const SizedBox(
-                                            height: 12), // Bottom padding
-                                      ],
+                                            )!;
+                                            return [
+                                              Opacity(
+                                                opacity: itemOpacity,
+                                                child: Transform.scale(
+                                                  scale: itemScale,
+                                                  child: entry.value,
+                                                ),
+                                              ),
+                                              if (entry.key < _items.length - 1)
+                                                const SizedBox(height: 2),
+                                            ];
+                                          }),
+                                          const SizedBox(
+                                              height: 12), // Bottom padding
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
                           ),
                         ],
                       ),
@@ -1669,8 +1671,8 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   double _getItemOffset(int index, BuildContext context) {
     double offset = 12.0; // Top padding
     for (int i = 0; i < index; i++) {
-      offset += _getScaledItemHeight(_items[i], context) +
-          2.0; // height + 2px gap
+      offset +=
+          _getScaledItemHeight(_items[i], context) + 2.0; // height + 2px gap
     }
     return offset;
   }

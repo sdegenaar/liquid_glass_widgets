@@ -35,7 +35,8 @@ Future<void> _open(WidgetTester tester, GlassMenuController controller) async {
 
 void main() {
   group('GlassMenuController glide', () {
-    testWidgets('glideTo + endGlide activates exactly the item under the '
+    testWidgets(
+        'glideTo + endGlide activates exactly the item under the '
         'external pointer and closes the menu', (tester) async {
       final controller = GlassMenuController();
       final tapped = <String>[];
@@ -105,7 +106,8 @@ void main() {
       expect(tapped, isFalse);
     });
 
-    testWidgets('the gap between two rows belongs to a row (contiguous hit '
+    testWidgets(
+        'the gap between two rows belongs to a row (contiguous hit '
         'zones), so a release there is never silently dropped', (tester) async {
       final controller = GlassMenuController();
       final tapped = <String>[];
@@ -166,7 +168,8 @@ void main() {
           ),
         ];
 
-    testWidgets('tapping a submenu item morphs the same menu into its list '
+    testWidgets(
+        'tapping a submenu item morphs the same menu into its list '
         'headed by Back, without running or closing', (tester) async {
       final controller = GlassMenuController();
       final tapped = <String>[];
@@ -279,7 +282,8 @@ void main() {
       node.owner!.performAction(node.id, SemanticsAction.tap);
     }
 
-    testWidgets('a semantics tap activates rows on a non-scrollable menu, '
+    testWidgets(
+        'a semantics tap activates rows on a non-scrollable menu, '
         'including a submenu row and its Back row', (tester) async {
       final semantics = tester.ensureSemantics();
       final controller = GlassMenuController();
@@ -337,7 +341,8 @@ void main() {
       return fades.fold(1.0, (a, b) => a * b);
     }
 
-    testWidgets('the outgoing rows fade out before the incoming rows fade in '
+    testWidgets(
+        'the outgoing rows fade out before the incoming rows fade in '
         '(no overlapping text mid-morph)', (tester) async {
       final controller = GlassMenuController();
       await tester.pumpWidget(_host(controller, [
@@ -465,7 +470,8 @@ void main() {
       GlassMenuAlignment.topLeft,
       GlassMenuAlignment.bottomLeft,
     ]) {
-      testWidgets('${alignment.name}: outgoing and incoming rows never jump '
+      testWidgets(
+          '${alignment.name}: outgoing and incoming rows never jump '
           'while the body resizes', (tester) async {
         final controller = GlassMenuController();
         await tester.pumpWidget(anchoredHost(controller, alignment));
@@ -511,7 +517,9 @@ void main() {
       GlassMenuItem(
         title: 'More',
         onTap: () {},
-        submenu: [GlassMenuItem(title: 'Only', onTap: () => tapped.add('Only'))],
+        submenu: [
+          GlassMenuItem(title: 'Only', onTap: () => tapped.add('Only'))
+        ],
       ),
     ]));
     await _open(tester, controller);
