@@ -1,3 +1,14 @@
+# Unreleased
+
+## Features
+
+- **External glide for `GlassMenu`:** `GlassMenuController.glideTo`, `endGlide` and `cancelGlide` let an external gesture owner (for example a canvas whose long-press opened the menu) drive slide-to-select with a pointer the menu never hit-tested: the item under the finger highlights with a selection haptic, and releasing activates exactly that item. `glideTo` reports whether the position is over the menu body.
+- **In-place submenus:** `GlassMenuItem.submenu` morphs the same menu body into a child list instead of running the item. The anchored corner stays put while the height, screen clamping, and rows animate; every pushed list starts with a Back row (`GlassMenu.submenuBackLabel`) that morphs back to the parent. Submenu rows show a trailing chevron by default. `GlassMenuController.submenuDepth` reports the current level.
+
+## Bug Fixes
+
+- **Menu rows have contiguous hit zones:** the 2 px gap between rows now belongs to the adjacent rows, so releasing a slide-to-select between two rows activates the highlighted row instead of silently doing nothing.
+
 # 1.8.1
 
 ## Bug Fixes

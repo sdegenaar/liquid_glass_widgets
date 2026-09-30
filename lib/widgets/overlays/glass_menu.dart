@@ -286,6 +286,10 @@ class GlassMenu extends StatefulWidget {
   /// Defaults to 10.0.
   final double continuousSwipeSlop;
 
+  /// Label of the Back row that heads every submenu pushed by a
+  /// [GlassMenuItem.submenu]. Defaults to `'Back'`.
+  final String submenuBackLabel;
+
   /// Creates a liquid glass menu.
   const GlassMenu({
     super.key,
@@ -323,6 +327,7 @@ class GlassMenu extends StatefulWidget {
     this.morphSpeed = MorphSpeed.normal,
     this.enableContinuousSwipe = false,
     this.continuousSwipeSlop = 10.0,
+    this.submenuBackLabel = 'Back',
   }) : assert(trigger != null || triggerBuilder != null,
             'Either trigger or triggerBuilder must be provided');
 
@@ -365,4 +370,26 @@ class GlassMenuController {
   /// that move the anchor AFTER opening — e.g. a canvas tile trailing under a
   /// rubberband, where the menu should stay glued to the tile.
   void setFollowOffset(Offset offset) => _state?.setFollowOffset(offset);
+
+  /// Highlights the item under [globalPosition] for a pointer the menu never
+  /// hit-tested itself, e.g. the finger of the long-press that opened the menu,
+  /// which an external gesture owner keeps tracking.
+  ///
+  /// Fires a selection haptic whenever the highlight moves to a new item.
+  /// Returns whether [globalPosition] lies over the open menu body. A no-op
+  /// returning `false` while the menu is closed or closing.
+  bool glideTo(Offset globalPosition) =>
+      _state?._glideTo(globalPosition) ?? false;
+
+  /// Ends a glide started with [glideTo]: activates the highlighted item
+  /// exactly as a tap would (runs it and closes, or opens its
+  /// [GlassMenuItem.submenu]) and returns `true`. With nothing highlighted it
+  /// clears the glide, leaves the menu open, and returns `false`.
+  bool endGlide() => _state?._endGlide() ?? false;
+
+  /// Clears a glide's highlight without activating anything.
+  void cancelGlide() => _state?._cancelGlide();
+
+  /// How many submenus deep the open menu currently is (0 = root list).
+  int get submenuDepth => _state?._submenuStack.length ?? 0;
 }

@@ -42,6 +42,23 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   late final ValueNotifier<bool> _isDraggingNotifier;
   List<Widget>? _cachedWrappedItems;
 
+  // --- In-place submenus (GlassMenuItem.submenu) ---
+  // Each pushed entry is the full item list shown for that level: a Back row,
+  // a divider, then the parent item's submenu. Cleared on every open.
+  final List<List<Widget>> _submenuStack = [];
+
+  /// Drives the in-place height / clamp morph between a list and its submenu.
+  late final AnimationController _contentMorph;
+  double _contentMorphFromHeight = 0.0;
+  double _contentMorphFromHOffset = 0.0;
+  double _contentMorphFromVOffset = 0.0;
+  double _contentMorphToHOffset = 0.0;
+  double _contentMorphToVOffset = 0.0;
+
+  /// The list currently shown: the root items or the top pushed submenu.
+  List<Widget> get _items =>
+      _submenuStack.isEmpty ? widget.items : _submenuStack.last;
+
   @override
   void didUpdateWidget(GlassMenu oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -128,6 +145,11 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     _scrollController = ScrollController();
     _hoveredIndexNotifier = ValueNotifier(null);
     _isDraggingNotifier = ValueNotifier(false);
+    _contentMorph = AnimationController(
+      vsync: this,
+      duration: _kSubmenuMorphDuration,
+      value: 1.0,
+    )..addListener(_onContentMorphTick);
     widget.controller?._attach(this);
   }
 
@@ -139,6 +161,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     _routes = const [];
     widget.controller?._detach(this);
     _morphController.dispose();
+    _contentMorph.dispose();
     _scrollController.dispose();
     _hoveredIndexNotifier.dispose();
     _isDraggingNotifier.dispose();
@@ -252,6 +275,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     _swipePointerId = null;
     _swipeArmed = false;
     _openedOnPointerDown = false;
+    _resetSubmenus();
     if (!wasClosing) {
       widget.onClose?.call();
     }
@@ -522,10 +546,10 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
       final indexToTap = _hoveredIndex;
       if (indexToTap != null &&
           indexToTap >= 0 &&
-          indexToTap < widget.items.length) {
-        final item = widget.items[indexToTap];
+          indexToTap < _items.length) {
+        final item = _items[indexToTap];
         if (item is GlassMenuItem && item.enabled) {
-          _fireItemTap(item);
+          _activateItem(item);
         } else {
           _closeMenu();
         }
@@ -600,6 +624,8 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
         : _triggerGlobalPosition;
     // A fresh open must never inherit a previous open's live anchor nudge.
     _followOffset = Offset.zero;
+    // ...nor a previous open's submenu level.
+    _resetSubmenus();
     final position = _triggerGlobalPosition;
     final mediaQuery = MediaQuery.maybeOf(context);
     final screenWidth = mediaQuery?.size.width ?? double.infinity;
@@ -638,54 +664,225 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     }
 
     // 2. Clamping: calculate offsets to keep menu within screen bounds
-    double hOffset = 0.0;
-    double vOffset = 0.0;
-
-    if (widget.autoAdjustToScreen) {
-      final flutterView = View.of(context);
-      final mqPadding = EdgeInsets.fromViewPadding(
-          flutterView.padding, flutterView.devicePixelRatio);
-
-      final double safeTop = widget.menuPadding.top + mqPadding.top;
-      final double safeBottom = widget.menuPadding.bottom + mqPadding.bottom;
-      final double safeLeft = widget.menuPadding.left + mqPadding.left;
-      final double safeRight = widget.menuPadding.right + mqPadding.right;
-
-      // Calculate global menu position
-      final double targetX =
-          position.dx + (1 + _morphAlignment.x) * _triggerSize!.width / 2;
-      final double targetY =
-          position.dy + (1 + _morphAlignment.y) * _triggerSize!.height / 2;
-      final double menuLeft =
-          targetX - (1 + _morphAlignment.x) * widget.menuWidth / 2;
-      final double menuTop = targetY - (1 + _morphAlignment.y) * menuHeight / 2;
-
-      // Horizontal adjustment
-      if (menuLeft < safeLeft) {
-        hOffset = safeLeft - menuLeft;
-      } else if (screenWidth.isFinite &&
-          menuLeft + widget.menuWidth > screenWidth - safeRight) {
-        hOffset = (screenWidth - safeRight) - (menuLeft + widget.menuWidth);
-      }
-
-      // Vertical adjustment
-      if (menuTop < safeTop) {
-        vOffset = safeTop - menuTop;
-      } else if (screenHeight.isFinite &&
-          menuTop + menuHeight > screenHeight - safeBottom) {
-        vOffset = (screenHeight - safeBottom) - (menuTop + menuHeight);
-      }
-    }
+    final clamp = _computeClampOffsets(menuHeight);
 
     setState(() {
-      _horizontalOffset = hOffset;
-      _verticalOffset = vOffset;
+      _horizontalOffset = clamp.dx;
+      _verticalOffset = clamp.dy;
     });
 
     _overlayController.show();
     // GlassMorphController.open() uses 0.0 velocity — spring starts from rest
     // for a clean, smooth teardrop expansion with no artificial kick.
     _morphController.open();
+  }
+
+  /// Offsets that keep a menu of [menuHeight] inside the screen's safe area
+  /// (only when [GlassMenu.autoAdjustToScreen] is set), for the trigger
+  /// geometry and alignment captured by the last [_openMenu].
+  Offset _computeClampOffsets(double menuHeight) {
+    if (!widget.autoAdjustToScreen || _triggerSize == null) return Offset.zero;
+    final position = _triggerGlobalPosition;
+    final mediaQuery = MediaQuery.maybeOf(context);
+    final screenWidth = mediaQuery?.size.width ?? double.infinity;
+    final screenHeight = mediaQuery?.size.height ?? double.infinity;
+    final flutterView = View.of(context);
+    final mqPadding = EdgeInsets.fromViewPadding(
+      flutterView.padding,
+      flutterView.devicePixelRatio,
+    );
+
+    final double safeTop = widget.menuPadding.top + mqPadding.top;
+    final double safeBottom = widget.menuPadding.bottom + mqPadding.bottom;
+    final double safeLeft = widget.menuPadding.left + mqPadding.left;
+    final double safeRight = widget.menuPadding.right + mqPadding.right;
+
+    // Calculate global menu position
+    final double targetX =
+        position.dx + (1 + _morphAlignment.x) * _triggerSize!.width / 2;
+    final double targetY =
+        position.dy + (1 + _morphAlignment.y) * _triggerSize!.height / 2;
+    final double menuLeft =
+        targetX - (1 + _morphAlignment.x) * widget.menuWidth / 2;
+    final double menuTop = targetY - (1 + _morphAlignment.y) * menuHeight / 2;
+
+    double hOffset = 0.0;
+    double vOffset = 0.0;
+
+    // Horizontal adjustment
+    if (menuLeft < safeLeft) {
+      hOffset = safeLeft - menuLeft;
+    } else if (screenWidth.isFinite &&
+        menuLeft + widget.menuWidth > screenWidth - safeRight) {
+      hOffset = (screenWidth - safeRight) - (menuLeft + widget.menuWidth);
+    }
+
+    // Vertical adjustment
+    if (menuTop < safeTop) {
+      vOffset = safeTop - menuTop;
+    } else if (screenHeight.isFinite &&
+        menuTop + menuHeight > screenHeight - safeBottom) {
+      vOffset = (screenHeight - safeBottom) - (menuTop + menuHeight);
+    }
+    return Offset(hOffset, vOffset);
+  }
+
+  // ─── In-place submenus ──────────────────────────────────────────────────────
+
+  /// Activates [item] the way a tap does: a submenu item pushes its list, the
+  /// Back row pops one level, and any other item runs and closes the menu.
+  void _activateItem(GlassMenuItem item) {
+    if (item is _GlassMenuBackItem) {
+      _popSubmenu();
+    } else if (item.submenu != null) {
+      _pushSubmenu(item);
+    } else {
+      _fireItemTap(item);
+    }
+  }
+
+  void _pushSubmenu(GlassMenuItem parent) {
+    final back = _GlassMenuBackItem(
+      key: ValueKey<String>('glass-menu-back-${_submenuStack.length + 1}'),
+      title: widget.submenuBackLabel,
+      titleStyle: parent.titleStyle,
+      iconColor: parent.isDestructive ? null : parent.iconColor,
+      iconSize: parent.iconSize,
+      enablePressScale: parent.enablePressScale,
+    );
+    _changeLevel(
+      () => _submenuStack.add(<Widget>[
+        back,
+        const GlassMenuDivider(),
+        ...parent.submenu!,
+      ]),
+    );
+  }
+
+  void _popSubmenu() {
+    if (_submenuStack.isEmpty) return;
+    _changeLevel(_submenuStack.removeLast);
+  }
+
+  /// Swaps the visible list via [mutate] and morphs the body's height and
+  /// screen clamping from the old list to the new one, keeping the anchored
+  /// corner in place.
+  void _changeLevel(VoidCallback mutate) {
+    final fromHeight = _calculateMenuHeight();
+    final fromH = _horizontalOffset;
+    final fromV = _verticalOffset;
+    setState(() {
+      mutate();
+      _cachedWrappedItems = null;
+      _hoveredIndex = null;
+      _isDragging = false;
+      _hasStretched = false;
+    });
+    _hoveredIndexNotifier.value = null;
+    _isDraggingNotifier.value = false;
+    if (_scrollController.hasClients) _scrollController.jumpTo(0.0);
+    final to = _computeClampOffsets(_targetMenuHeight());
+    _contentMorphFromHeight = fromHeight;
+    _contentMorphFromHOffset = fromH;
+    _contentMorphFromVOffset = fromV;
+    _contentMorphToHOffset = to.dx;
+    _contentMorphToVOffset = to.dy;
+    final reduceMotion = GlassAccessibilityData.of(context).reduceMotion;
+    _contentMorph.duration =
+        reduceMotion ? Duration.zero : _kSubmenuMorphDuration;
+    _contentMorph.forward(from: 0.0);
+  }
+
+  void _onContentMorphTick() {
+    if (!mounted) return;
+    final t = _kSubmenuMorphCurve.transform(_contentMorph.value);
+    setState(() {
+      _horizontalOffset = lerpDouble(
+        _contentMorphFromHOffset,
+        _contentMorphToHOffset,
+        t,
+      )!;
+      _verticalOffset = lerpDouble(
+        _contentMorphFromVOffset,
+        _contentMorphToVOffset,
+        t,
+      )!;
+    });
+  }
+
+  void _resetSubmenus() {
+    _submenuStack.clear();
+    _cachedWrappedItems = null;
+    _contentMorph.value = 1.0;
+  }
+
+  // ─── External glide (GlassMenuController.glideTo / endGlide) ────────────────
+
+  bool _glideTo(Offset globalPosition) {
+    if (!_overlayController.isShowing || _morphController.isClosing) {
+      return false;
+    }
+    if (!_isDragging) {
+      _isDragging = true;
+      _isDraggingNotifier.value = true;
+    }
+    _updateHoverFromGlobalPosition(globalPosition);
+    return _restingMenuGlobalRect().contains(globalPosition);
+  }
+
+  bool _endGlide() {
+    if (!_overlayController.isShowing) return false;
+    final index = _hoveredIndex;
+    _clearGlide();
+    if (_morphController.isClosing) return false;
+    if (index != null && index >= 0 && index < _items.length) {
+      final item = _items[index];
+      if (item is GlassMenuItem && item.enabled) {
+        _activateItem(item);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void _cancelGlide() {
+    if (!_overlayController.isShowing) return;
+    _clearGlide();
+  }
+
+  void _clearGlide() {
+    if (widget.enableInteractionGlow) {
+      final glowLayerState = _menuContentKey.currentContext
+          ?.findAncestorStateOfType<GlassGlowLayerState>();
+      glowLayerState?.removeTouch();
+    }
+    _isDragging = false;
+    _isDraggingNotifier.value = false;
+    _hoveredIndex = null;
+    _hoveredIndexNotifier.value = null;
+    if (_hasStretched) setState(() => _hasStretched = false);
+  }
+
+  /// The open menu body's global rect at rest (full size), including the
+  /// screen clamping and the live follow offset.
+  Rect _restingMenuGlobalRect() {
+    final tw = _triggerSize?.width ?? 44.0;
+    final th = _triggerSize?.height ?? 44.0;
+    final menuWidth = widget.menuWidth.toDouble();
+    final menuHeight = _calculateMenuHeight();
+    final finalDx = -_morphAlignment.x * (menuWidth - tw) / 2.0;
+    final finalDy = -_morphAlignment.y * (menuHeight - th) / 2.0;
+    final centre = _triggerGlobalPosition +
+        _followOffset +
+        Offset(
+          tw / 2.0 + finalDx + _horizontalOffset,
+          th / 2.0 + finalDy + _verticalOffset,
+        );
+    return Rect.fromCenter(
+      center: centre,
+      width: menuWidth,
+      height: menuHeight,
+    );
   }
 
   void _closeMenu() {
@@ -977,7 +1174,18 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     );
   }
 
+  /// The body height used for layout this frame: the current list's height,
+  /// or — while a submenu push/pop morphs — the interpolation from the previous
+  /// list's height toward it.
   double _calculateMenuHeight() {
+    final target = _targetMenuHeight();
+    if (!_contentMorph.isAnimating) return target;
+    final t = _kSubmenuMorphCurve.transform(_contentMorph.value);
+    return lerpDouble(_contentMorphFromHeight, target, t)!;
+  }
+
+  /// The resting body height for the current list ([_items]).
+  double _targetMenuHeight() {
     if (widget.menuHeight != null) {
       return widget.menuHeight!;
     }
@@ -988,14 +1196,14 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     final mediaQuery = MediaQuery.maybeOf(context);
 
     // Sum all menu item heights, scaled by text scaler
-    final itemHeights = widget.items.fold<double>(
+    final itemHeights = _items.fold<double>(
       0.0,
       (sum, item) => sum + _getScaledItemHeight(item, context),
     );
 
     // Add vertical padding (12px top + 12px bottom = 24px total)
     // plus vertical gaps between items (2px each)
-    final gaps = (widget.items.length - 1) * 2.0;
+    final gaps = (_items.length - 1) * 2.0;
     final naturalHeight = itemHeights + 24.0 + gaps;
 
     if (widget.autoAdjustToScreen) {
@@ -1158,7 +1366,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                                         ? _scrollController.offset
                                         : 0.0),
                                 height: _getScaledItemHeight(
-                                    widget.items[hoveredIndex], context),
+                                    _items[hoveredIndex], context),
                                 child: Container(
                                   decoration: BoxDecoration(
                                     color: widget.selectionColor,
@@ -1208,9 +1416,9 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                                       _calculateIndexFromPosition(
                                           event.localPosition, context);
                                   if (indexToTap != null) {
-                                    final item = widget.items[indexToTap];
+                                    final item = _items[indexToTap];
                                     if (item is GlassMenuItem && item.enabled) {
-                                      _fireItemTap(item);
+                                      _activateItem(item);
                                     }
                                   }
                                 }
@@ -1239,46 +1447,59 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                                   physics: _isScrollable
                                       ? const ClampingScrollPhysics() // iOS-style
                                       : const NeverScrollableScrollPhysics(),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      const SizedBox(height: 12), // Top padding
-                                      ..._buildWrappedItems()
-                                          .asMap()
-                                          .entries
-                                          .expand((entry) {
-                                        final itemOpacity =
-                                            _morphController.isClosing
-                                                ? ((clampedValue - 0.85) / 0.15)
-                                                    .clamp(0.0, 1.0)
-                                                : ((clampedValue - 0.25) / 0.45)
-                                                    .clamp(0.0, 1.0);
-                                        final itemScale = lerpDouble(
-                                          0.7,
-                                          1.0,
-                                          Curves.easeOut.transform(
-                                            ((clampedValue - 0.25) / 0.75)
-                                                .clamp(0.0, 1.0),
-                                          ),
-                                        )!;
-                                        return [
-                                          Opacity(
-                                            opacity: itemOpacity,
-                                            child: Transform.scale(
-                                              scale: itemScale,
-                                              child: entry.value,
+                                  // Crossfades the rows when a submenu is
+                                  // pushed or popped while the body height
+                                  // morphs underneath (see _changeLevel).
+                                  child: AnimatedSwitcher(
+                                    duration: GlassAccessibilityData.of(context)
+                                            .reduceMotion
+                                        ? Duration.zero
+                                        : _kSubmenuMorphDuration,
+                                    switchInCurve: _kSubmenuMorphCurve,
+                                    switchOutCurve: Curves.easeOut,
+                                    layoutBuilder: _submenuSwitcherLayout,
+                                    child: Column(
+                                      key: ValueKey<int>(_submenuStack.length),
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        const SizedBox(height: 12), // Top padding
+                                        ..._buildWrappedItems()
+                                            .asMap()
+                                            .entries
+                                            .expand((entry) {
+                                          final itemOpacity =
+                                              _morphController.isClosing
+                                                  ? ((clampedValue - 0.85) / 0.15)
+                                                      .clamp(0.0, 1.0)
+                                                  : ((clampedValue - 0.25) / 0.45)
+                                                      .clamp(0.0, 1.0);
+                                          final itemScale = lerpDouble(
+                                            0.7,
+                                            1.0,
+                                            Curves.easeOut.transform(
+                                              ((clampedValue - 0.25) / 0.75)
+                                                  .clamp(0.0, 1.0),
                                             ),
-                                          ),
-                                          if (entry.key <
-                                              widget.items.length - 1)
-                                            const SizedBox(height: 2),
-                                        ];
-                                      }),
-                                      const SizedBox(
-                                          height: 12), // Bottom padding
-                                    ],
+                                          )!;
+                                          return [
+                                            Opacity(
+                                              opacity: itemOpacity,
+                                              child: Transform.scale(
+                                                scale: itemScale,
+                                                child: entry.value,
+                                              ),
+                                            ),
+                                            if (entry.key <
+                                                _items.length - 1)
+                                              const SizedBox(height: 2),
+                                          ];
+                                        }),
+                                        const SizedBox(
+                                            height: 12), // Bottom padding
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -1300,7 +1521,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   }
 
   List<Widget> _buildWrappedItems() {
-    return _cachedWrappedItems ??= widget.items.asMap().entries.map((entry) {
+    return _cachedWrappedItems ??= _items.asMap().entries.map((entry) {
       final item = entry.value;
 
       if (item is GlassMenuItem) {
@@ -1323,13 +1544,14 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
               iconColor: item.iconColor,
               iconSize: item.iconSize,
               maxLines: item.maxLines,
+              submenu: item.submenu,
               isSelected: isSelected,
               isPressed: isPressed,
               onTap: () {
                 // For scrollable menus, we delegate taps to the native GestureDetector
                 // so it can properly participate in the gesture arena with the ScrollView.
                 if (_isScrollable && item.enabled) {
-                  _fireItemTap(item);
+                  _activateItem(item);
                 }
               },
             );
@@ -1341,12 +1563,12 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   }
 
   bool get _isScrollable {
-    final visibleHeight = _calculateMenuHeight();
-    final itemHeights = widget.items.fold<double>(
+    final visibleHeight = _targetMenuHeight();
+    final itemHeights = _items.fold<double>(
       0.0,
       (sum, item) => sum + _getScaledItemHeight(item, context),
     );
-    final gaps = (widget.items.length - 1) * 2.0;
+    final gaps = (_items.length - 1) * 2.0;
     final naturalHeight = itemHeights + 24.0 + gaps;
     return widget.menuHeight != null || visibleHeight < naturalHeight - 1.0;
   }
@@ -1392,7 +1614,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   double _getItemOffset(int index, BuildContext context) {
     double offset = 12.0; // Top padding
     for (int i = 0; i < index; i++) {
-      offset += _getScaledItemHeight(widget.items[i], context) +
+      offset += _getScaledItemHeight(_items[i], context) +
           2.0; // height + 2px gap
     }
     return offset;
@@ -1413,11 +1635,14 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     if (!isWithinActiveZone) return null;
 
     double currentOffset = 12.0;
-    for (int i = 0; i < widget.items.length; i++) {
-      final item = widget.items[i];
+    for (int i = 0; i < _items.length; i++) {
+      final item = _items[i];
       final itemHeight = _getScaledItemHeight(item, context);
 
-      if (y >= currentOffset && y <= currentOffset + itemHeight) {
+      // Rows own half of each 2 px gap on either side, so the hit zones are
+      // contiguous: a release between two rows activates the nearer row
+      // instead of silently doing nothing.
+      if (y >= currentOffset - 1.0 && y < currentOffset + itemHeight + 1.0) {
         if (item is GlassMenuItem && item.enabled) {
           return i;
         }
@@ -1488,4 +1713,43 @@ class _SelectionItemWrapper extends StatelessWidget {
       },
     );
   }
+}
+
+/// Duration of the in-place submenu morph (height, clamp, and row crossfade).
+const Duration _kSubmenuMorphDuration = Duration(milliseconds: 320);
+
+/// Curve of the in-place submenu morph.
+const Curve _kSubmenuMorphCurve = Curves.easeOutCubic;
+
+/// Lays out the submenu crossfade so only the incoming list sizes the body;
+/// the outgoing list overlays it from the top, ignores pointers, and fades.
+Widget _submenuSwitcherLayout(Widget? current, List<Widget> previous) {
+  return Stack(
+    clipBehavior: Clip.none,
+    children: [
+      for (final child in previous)
+        Positioned(
+          left: 0,
+          right: 0,
+          top: 0,
+          child: IgnorePointer(child: child),
+        ),
+      if (current != null) current,
+    ],
+  );
+}
+
+/// The Back row that heads every pushed submenu. Activating it pops one level
+/// (handled by [_GlassMenuState._activateItem]); [onTap] is never called.
+class _GlassMenuBackItem extends GlassMenuItem {
+  const _GlassMenuBackItem({
+    super.key,
+    required super.title,
+    super.titleStyle,
+    super.iconColor,
+    super.iconSize,
+    super.enablePressScale,
+  }) : super(icon: const Icon(CupertinoIcons.chevron_left), onTap: _noop);
+
+  static void _noop() {}
 }
