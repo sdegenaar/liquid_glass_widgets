@@ -325,4 +325,47 @@ void main() {
       expect(tapped, ['Copy']);
     });
   });
+
+  group('submenu crossfade', () {
+    double opacityOf(WidgetTester tester, String text) {
+      final fades = tester
+          .widgetList<FadeTransition>(find.ancestor(
+            of: find.text(text),
+            matching: find.byType(FadeTransition),
+          ))
+          .map((f) => f.opacity.value);
+      return fades.fold(1.0, (a, b) => a * b);
+    }
+
+    testWidgets('the outgoing rows fade out before the incoming rows fade in '
+        '(no overlapping text mid-morph)', (tester) async {
+      final controller = GlassMenuController();
+      await tester.pumpWidget(_host(controller, [
+        GlassMenuItem(title: 'Copy', onTap: () {}),
+        GlassMenuItem(
+          title: 'Resize',
+          onTap: () {},
+          submenu: [GlassMenuItem(title: 'Large', onTap: () {})],
+        ),
+      ]));
+      await _open(tester, controller);
+
+      await tester.tap(find.text('Resize'));
+      await tester.pump(); // morph starts
+      await tester.pump(const Duration(milliseconds: 80)); // first quarter
+      expect(opacityOf(tester, 'Copy'), greaterThan(0.0));
+      expect(opacityOf(tester, 'Large'), 0.0,
+          reason: 'incoming rows stay hidden while the old rows fade out');
+
+      await tester.pump(const Duration(milliseconds: 160)); // third quarter
+      expect(find.text('Copy'), findsOneWidget); // still mounted, outgoing
+      expect(opacityOf(tester, 'Copy'), 0.0,
+          reason: 'outgoing rows are gone before the new rows show');
+      expect(opacityOf(tester, 'Large'), greaterThan(0.0));
+
+      await tester.pumpAndSettle();
+      expect(find.text('Copy'), findsNothing);
+      expect(opacityOf(tester, 'Large'), 1.0);
+    });
+  });
 }

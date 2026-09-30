@@ -1467,8 +1467,13 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                                             .reduceMotion
                                         ? Duration.zero
                                         : _kSubmenuMorphDuration,
-                                    switchInCurve: _kSubmenuMorphCurve,
-                                    switchOutCurve: Curves.easeOut,
+                                    // Sequential, never overlapping: the old
+                                    // rows fade out over the first half of
+                                    // the morph, the new rows fade in over
+                                    // the second (the outgoing curve runs
+                                    // on the reversed animation, 1 → 0).
+                                    switchInCurve: _kSubmenuFadeInCurve,
+                                    switchOutCurve: _kSubmenuFadeOutCurve,
                                     layoutBuilder: _submenuSwitcherLayout,
                                     child: Column(
                                       key: ValueKey<int>(_submenuStack.length),
@@ -1741,6 +1746,13 @@ const Duration _kSubmenuMorphDuration = Duration(milliseconds: 320);
 
 /// Curve of the in-place submenu morph.
 const Curve _kSubmenuMorphCurve = Curves.easeOutCubic;
+
+/// Incoming submenu rows: hidden for the first half, then fade in.
+const Curve _kSubmenuFadeInCurve = Interval(0.5, 1.0, curve: Curves.easeOut);
+
+/// Outgoing submenu rows, applied to the reversed animation: gone by the
+/// halfway point, so they never overlap the incoming rows.
+const Curve _kSubmenuFadeOutCurve = Interval(0.5, 1.0, curve: Curves.easeIn);
 
 /// Lays out the submenu crossfade so only the incoming list sizes the body;
 /// the outgoing list overlays it from the top, ignores pointers, and fades.
