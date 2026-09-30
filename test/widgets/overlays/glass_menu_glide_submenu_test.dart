@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SemanticsAction;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -267,6 +268,61 @@ void main() {
       await _open(tester, controller);
 
       expect(find.byIcon(CupertinoIcons.chevron_right), findsOneWidget);
+    });
+  });
+
+  group('assistive activation', () {
+    /// Performs the accessibility tap action on the row labelled [label], as
+    /// VoiceOver / TalkBack would (no pointer events).
+    void semanticTap(WidgetTester tester, String label) {
+      final node = tester.getSemantics(find.bySemanticsLabel(label).first);
+      node.owner!.performAction(node.id, SemanticsAction.tap);
+    }
+
+    testWidgets('a semantics tap activates rows on a non-scrollable menu, '
+        'including a submenu row and its Back row', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final controller = GlassMenuController();
+      final tapped = <String>[];
+      await tester.pumpWidget(_host(controller, [
+        GlassMenuItem(title: 'Copy', onTap: () => tapped.add('Copy')),
+        GlassMenuItem(
+          title: 'Resize',
+          onTap: () => tapped.add('Resize'),
+          submenu: [
+            GlassMenuItem(title: 'Large', onTap: () => tapped.add('Large')),
+          ],
+        ),
+      ]));
+      await _open(tester, controller);
+
+      semanticTap(tester, 'Resize');
+      await tester.pumpAndSettle();
+      expect(controller.submenuDepth, 1);
+
+      semanticTap(tester, 'Back');
+      await tester.pumpAndSettle();
+      expect(controller.submenuDepth, 0);
+
+      semanticTap(tester, 'Copy');
+      await tester.pumpAndSettle();
+      expect(tapped, ['Copy']);
+      expect(controller.isOpen, isFalse);
+      semantics.dispose();
+    });
+
+    testWidgets('a touch tap still activates a row exactly once',
+        (tester) async {
+      final controller = GlassMenuController();
+      final tapped = <String>[];
+      await tester.pumpWidget(_host(controller, [
+        GlassMenuItem(title: 'Copy', onTap: () => tapped.add('Copy')),
+      ]));
+      await _open(tester, controller);
+
+      await tester.tap(find.text('Copy'));
+      await tester.pumpAndSettle();
+      expect(tapped, ['Copy']);
     });
   });
 }

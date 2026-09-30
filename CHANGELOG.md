@@ -7,6 +7,7 @@
 
 ## Bug Fixes
 
+- **Keyboard and assistive activation of `GlassMenu` rows:** on non-scrollable menus, a row's keyboard activation and VoiceOver / TalkBack tap action were silently ignored (only touch slide-to-select activated rows). They now activate the row (including submenu and Back rows) while touch taps still activate exactly once.
 - **Menu rows have contiguous hit zones:** the 2 px gap between rows now belongs to the adjacent rows, so releasing a slide-to-select between two rows activates the highlighted row instead of silently doing nothing.
 
 # 1.8.1

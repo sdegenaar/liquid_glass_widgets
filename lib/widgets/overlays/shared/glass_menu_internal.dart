@@ -55,6 +55,11 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   double _contentMorphToHOffset = 0.0;
   double _contentMorphToVOffset = 0.0;
 
+  /// True while a pointer-up on the menu body is being dispatched, so a row's
+  /// tap recogniser can tell a touch (already handled by the body Listener)
+  /// from a keyboard / assistive-technology activation.
+  bool _bodyPointerUpHandled = false;
+
   /// The list currently shown: the root items or the top pushed submenu.
   List<Widget> get _items =>
       _submenuStack.isEmpty ? widget.items : _submenuStack.last;
@@ -1401,6 +1406,13 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                               }
                             },
                             onPointerUp: (event) {
+                              // The row's own tap recogniser fires later in
+                              // this same dispatch; it must not activate the
+                              // row a second time (see _buildWrappedItems).
+                              _bodyPointerUpHandled = true;
+                              scheduleMicrotask(
+                                () => _bodyPointerUpHandled = false,
+                              );
                               if (_isDragging) {
                                 final currentOffset =
                                     _scrollController.hasClients
@@ -1548,11 +1560,20 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
               isSelected: isSelected,
               isPressed: isPressed,
               onTap: () {
+                if (!item.enabled) return;
                 // For scrollable menus, we delegate taps to the native GestureDetector
                 // so it can properly participate in the gesture arena with the ScrollView.
-                if (_isScrollable && item.enabled) {
+                if (_isScrollable) {
                   _activateItem(item);
+                  return;
                 }
+                // Non-scrollable menus activate touches from the body
+                // Listener (slide-to-select), which runs first and marks the
+                // pointer event as handled. An onTap with no pointer behind
+                // it is a keyboard or assistive-technology activation
+                // (VoiceOver / TalkBack), which must still work.
+                if (_bodyPointerUpHandled) return;
+                _activateItem(item);
               },
             );
           },
