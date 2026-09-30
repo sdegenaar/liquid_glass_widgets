@@ -817,6 +817,26 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     });
   }
 
+  /// Lays out the submenu crossfade with the outgoing and incoming lists both
+  /// pinned to the menu's anchored edge — the top for a menu that grows down,
+  /// the bottom for one that grows up. The body then resizes from that edge
+  /// and no row moves while it fades: the lists' rows stay exactly where they
+  /// rest. (Pinning the outgoing list to the top made it jump by the height
+  /// difference on bottom-anchored menus.) The switcher is as tall as the
+  /// taller list during the morph, so neither list is clipped early by the
+  /// scroll viewport; the animated body clip does the revealing.
+  Widget _submenuSwitcherLayout(Widget? current, List<Widget> previous) {
+    return Stack(
+      clipBehavior: Clip.none,
+      fit: StackFit.passthrough,
+      alignment: Alignment(0.0, _morphAlignment.y),
+      children: [
+        for (final child in previous) IgnorePointer(child: child),
+        if (current != null) current,
+      ],
+    );
+  }
+
   void _resetSubmenus() {
     _submenuStack.clear();
     _cachedWrappedItems = null;
@@ -1391,7 +1411,13 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                               );
                             },
                           ),
-                          Listener(
+                          // Rows are re-laid out while a submenu morphs
+                          // (both lists pinned to the anchored edge), so a
+                          // touch mid-morph could land on the wrong row:
+                          // absorb it (never pass it to what's beneath).
+                          AbsorbPointer(
+                            absorbing: _contentMorph.isAnimating,
+                            child: Listener(
                             onPointerDown: (event) {
                               _isDragging = true;
                               _isDraggingNotifier.value = true;
@@ -1523,6 +1549,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                                 ),
                               ),
                             ),
+                          ),
                           ),
                         ],
                       ),
@@ -1755,24 +1782,6 @@ const Curve _kSubmenuFadeInCurve = Interval(0.5, 1.0, curve: Curves.easeOut);
 /// Outgoing submenu rows, applied to the reversed animation: gone by the
 /// halfway point, so they never overlap the incoming rows.
 const Curve _kSubmenuFadeOutCurve = Interval(0.5, 1.0, curve: Curves.easeIn);
-
-/// Lays out the submenu crossfade so only the incoming list sizes the body;
-/// the outgoing list overlays it from the top, ignores pointers, and fades.
-Widget _submenuSwitcherLayout(Widget? current, List<Widget> previous) {
-  return Stack(
-    clipBehavior: Clip.none,
-    children: [
-      for (final child in previous)
-        Positioned(
-          left: 0,
-          right: 0,
-          top: 0,
-          child: IgnorePointer(child: child),
-        ),
-      if (current != null) current,
-    ],
-  );
-}
 
 /// The Back row that heads every pushed submenu. Activating it pops one level
 /// (handled by [_GlassMenuState._activateItem]); [onTap] is never called.

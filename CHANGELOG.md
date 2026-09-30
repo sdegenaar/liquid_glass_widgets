@@ -9,6 +9,7 @@
 ## Bug Fixes
 
 - **Keyboard and assistive activation of `GlassMenu` rows:** on non-scrollable menus, a row's keyboard activation and VoiceOver / TalkBack tap action were silently ignored (only touch slide-to-select activated rows). They now activate the row (including submenu and Back rows) while touch taps still activate exactly once.
+- **Submenu morph keeps rows fixed on menus that grow upward:** the outgoing and incoming lists are pinned to the menu's anchored edge (top for menus that grow down, bottom for menus that grow up), so on bottom-anchored menus the outgoing rows no longer jump by the height difference mid-fade. Touches during the morph are absorbed instead of risking the wrong row.
 - **Submenu rows crossfade sequentially:** during an in-place submenu push or pop, the outgoing rows fade out over the first half of the morph and the incoming rows fade in over the second, so text never overlaps mid-morph.
 - **Menu rows have contiguous hit zones:** the 2 px gap between rows now belongs to the adjacent rows, so releasing a slide-to-select between two rows activates the highlighted row instead of silently doing nothing.
 

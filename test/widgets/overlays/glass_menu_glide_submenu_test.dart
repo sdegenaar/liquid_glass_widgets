@@ -422,4 +422,111 @@ void main() {
       expect(levels, hasLength(3));
     });
   });
+
+  group('submenu morph keeps rows fixed to the anchored edge', () {
+    /// A controller-driven menu anchored at [alignment]; the trigger sits so
+    /// the menu has room either way.
+    Widget anchoredHost(
+      GlassMenuController controller,
+      GlassMenuAlignment alignment,
+    ) {
+      return MaterialApp(
+        home: Scaffold(
+          body: Stack(
+            children: [
+              Positioned(
+                left: 40,
+                top: 300,
+                child: GlassMenu(
+                  controller: controller,
+                  showDismissBarrier: false,
+                  menuAlignment: alignment,
+                  trigger: const SizedBox(width: 8, height: 8),
+                  items: [
+                    GlassMenuItem(title: 'Copy', onTap: () {}),
+                    GlassMenuItem(
+                      title: 'AI',
+                      onTap: () {},
+                      submenu: [
+                        for (var i = 0; i < 5; i++)
+                          GlassMenuItem(title: 'ai $i', onTap: () {}),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    for (final alignment in [
+      GlassMenuAlignment.topLeft,
+      GlassMenuAlignment.bottomLeft,
+    ]) {
+      testWidgets('${alignment.name}: outgoing and incoming rows never jump '
+          'while the body resizes', (tester) async {
+        final controller = GlassMenuController();
+        await tester.pumpWidget(anchoredHost(controller, alignment));
+        controller.open();
+        await tester.pumpAndSettle();
+
+        // Push a taller submenu: the outgoing root rows stay put while they
+        // fade, and the incoming rows already sit where they will rest.
+        final copyBefore = tester.getTopLeft(find.text('Copy'));
+        await tester.tap(find.text('AI'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 80));
+        expect(tester.getTopLeft(find.text('Copy')),
+            offsetMoreOrLessEquals(copyBefore, epsilon: 0.5));
+        final lastMid = tester.getTopLeft(find.text('ai 4'));
+        await tester.pumpAndSettle();
+        expect(tester.getTopLeft(find.text('ai 4')),
+            offsetMoreOrLessEquals(lastMid, epsilon: 0.5));
+
+        // Pop back to the shorter root: same in reverse.
+        final backBefore = tester.getTopLeft(find.text('Back'));
+        await tester.tap(find.text('Back'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 80));
+        expect(tester.getTopLeft(find.text('Back')),
+            offsetMoreOrLessEquals(backBefore, epsilon: 0.5));
+        final copyMid = tester.getTopLeft(find.text('Copy'));
+        await tester.pumpAndSettle();
+        expect(tester.getTopLeft(find.text('Copy')),
+            offsetMoreOrLessEquals(copyMid, epsilon: 0.5));
+        expect(tester.getTopLeft(find.text('Copy')),
+            offsetMoreOrLessEquals(copyBefore, epsilon: 0.5));
+      });
+    }
+  });
+
+  testWidgets('a touch during the submenu morph activates nothing',
+      (tester) async {
+    final controller = GlassMenuController();
+    final tapped = <String>[];
+    await tester.pumpWidget(_host(controller, [
+      GlassMenuItem(title: 'Copy', onTap: () => tapped.add('Copy')),
+      GlassMenuItem(
+        title: 'More',
+        onTap: () {},
+        submenu: [GlassMenuItem(title: 'Only', onTap: () => tapped.add('Only'))],
+      ),
+    ]));
+    await _open(tester, controller);
+
+    await tester.tap(find.text('More'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80)); // mid-morph
+    await tester.tapAt(tester.getCenter(find.text('Only')));
+    await tester.pump();
+    expect(tapped, isEmpty);
+    expect(controller.isOpen, isTrue);
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Only'));
+    await tester.pumpAndSettle();
+    expect(tapped, ['Only']);
+  });
 }
