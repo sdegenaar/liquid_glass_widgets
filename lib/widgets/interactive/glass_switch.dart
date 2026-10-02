@@ -295,6 +295,21 @@ class _GlassSwitchState extends State<GlassSwitch>
           _thicknessController.value = 1.0;
         }
       }
+    } else if (!_isDragging) {
+      final target = widget.value ? 1.0 : 0.0;
+      if (_positionController.value != target) {
+        _isMovingForward = widget.value;
+        if (widget.value) {
+          unawaited(_positionController.forward());
+        } else {
+          unawaited(_positionController.reverse());
+        }
+      }
+      if (_thicknessController.value > 0.0 &&
+          !_thicknessController.isAnimating) {
+        unawaited(
+            _thicknessController.forward(from: _thicknessController.value));
+      }
     }
   }
 
@@ -360,8 +375,7 @@ class _GlassSwitchState extends State<GlassSwitch>
     if (!_isDragging) {
       // Fire haptic immediately — user feels the click the instant they lift.
       if (widget.enableHaptics) unawaited(HapticFeedback.lightImpact());
-      // Deflate the bloom — the tap animation in didUpdateWidget will
-      // re-trigger it correctly with the full directional stretch.
+      unawaited(_thicknessController.forward(from: _thicknessController.value));
       _handleTap();
     }
   }
@@ -449,8 +463,13 @@ class _GlassSwitchState extends State<GlassSwitch>
     setState(() => _isDragging = false);
     _justEndedDrag = true;
 
-    // Animate thumb to its resting position.
-    if (shouldBeOn) {
+    // Notify parent only when the value actually changed.
+    if (shouldBeOn != widget.value) {
+      widget.onChanged(shouldBeOn);
+    }
+
+    // Animate thumb to its resting position based on authoritative widget.value.
+    if (widget.value) {
       unawaited(_positionController.forward());
     } else {
       unawaited(_positionController.reverse());
@@ -468,11 +487,6 @@ class _GlassSwitchState extends State<GlassSwitch>
       unawaited(HapticFeedback.lightImpact());
     }
     _dragMidpointHapticFired = false;
-
-    // Notify parent only when the value actually changed.
-    if (shouldBeOn != widget.value) {
-      widget.onChanged(shouldBeOn);
-    }
   }
 
   @override
