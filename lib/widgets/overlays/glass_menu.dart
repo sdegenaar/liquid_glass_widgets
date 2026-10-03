@@ -367,4 +367,29 @@ class GlassMenuController {
   /// that move the anchor AFTER opening — e.g. a canvas tile trailing under a
   /// rubberband, where the menu should stay glued to the tile.
   void setFollowOffset(Offset offset) => _state?.setFollowOffset(offset);
+
+  /// Drives slide-to-select with a pointer the menu never receives itself.
+  ///
+  /// Use this when your own gesture code owns the finger, for example a
+  /// long-press recogniser that opened the menu with [open]. Call it with the
+  /// pointer's global position on every move: the item under that point
+  /// highlights, with a selection haptic each time the highlight moves to a
+  /// new item. As with touch slide-to-select, nothing highlights on a
+  /// scrollable menu.
+  ///
+  /// Returns whether [globalPosition] lies over the open menu. A no-op that
+  /// returns `false` while the menu is closed or closing.
+  bool glideTo(Offset globalPosition) =>
+      _state?._glideTo(globalPosition) ?? false;
+
+  /// Ends a glide started with [glideTo], typically when the finger lifts.
+  ///
+  /// Activates the highlighted item exactly as a tap would and returns
+  /// `true`. With nothing highlighted, it clears the glide, leaves the menu
+  /// open, and returns `false`.
+  bool endGlide() => _state?._endGlide() ?? false;
+
+  /// Clears a glide's highlight without activating anything, for example
+  /// when the gesture that owns the finger is cancelled.
+  void cancelGlide() => _state?._cancelGlide();
 }

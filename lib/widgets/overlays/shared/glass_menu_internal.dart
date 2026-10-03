@@ -453,32 +453,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     if (renderBox != null && renderBox.attached && renderBox.hasSize) {
       localPosition = renderBox.globalToLocal(globalPosition);
     } else {
-      final tw = _triggerSize?.width ?? 44.0;
-      final th = _triggerSize?.height ?? 44.0;
-      final menuWidth = widget.menuWidth.toDouble();
-      final menuHeight = _calculateMenuHeight();
-      final dxMag = (menuWidth - tw) / 2.0;
-      final dyMag = (menuHeight - th) / 2.0;
-      final finalDx = -_morphAlignment.x * dxMag;
-      final finalDy = -_morphAlignment.y * dyMag;
-
-      final menuGlobalLeft = _triggerGlobalPosition.dx +
-          _followOffset.dx +
-          tw / 2.0 +
-          finalDx +
-          _horizontalOffset -
-          menuWidth / 2.0;
-      final menuGlobalTop = _triggerGlobalPosition.dy +
-          _followOffset.dy +
-          th / 2.0 +
-          finalDy +
-          _verticalOffset -
-          menuHeight / 2.0;
-
-      localPosition = Offset(
-        globalPosition.dx - menuGlobalLeft,
-        globalPosition.dy - menuGlobalTop,
-      );
+      localPosition = globalPosition - _restingMenuGlobalRect().topLeft;
     }
 
     final previousIndex = _hoveredIndex;
@@ -574,6 +549,75 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     _swipePointerId = null;
     _swipeArmed = false;
     _openedOnPointerDown = false;
+  }
+
+  /// The open menu's global rect at its full, resting size, including the
+  /// screen clamping and the live follow offset.
+  Rect _restingMenuGlobalRect() {
+    final tw = _triggerSize?.width ?? 44.0;
+    final th = _triggerSize?.height ?? 44.0;
+    final menuWidth = widget.menuWidth.toDouble();
+    final menuHeight = _calculateMenuHeight();
+    final finalDx = -_morphAlignment.x * (menuWidth - tw) / 2.0;
+    final finalDy = -_morphAlignment.y * (menuHeight - th) / 2.0;
+    final centre = _triggerGlobalPosition +
+        _followOffset +
+        Offset(
+          tw / 2.0 + finalDx + _horizontalOffset,
+          th / 2.0 + finalDy + _verticalOffset,
+        );
+    return Rect.fromCenter(
+      center: centre,
+      width: menuWidth,
+      height: menuHeight,
+    );
+  }
+
+  // ─── External glide (GlassMenuController.glideTo / endGlide) ──────────────
+
+  bool _glideTo(Offset globalPosition) {
+    if (!_overlayController.isShowing || _morphController.isClosing) {
+      return false;
+    }
+    if (!_isDragging) {
+      _isDragging = true;
+      _isDraggingNotifier.value = true;
+    }
+    _updateHoverFromGlobalPosition(globalPosition);
+    return _restingMenuGlobalRect().contains(globalPosition);
+  }
+
+  bool _endGlide() {
+    if (!_overlayController.isShowing) return false;
+    final index = _hoveredIndex;
+    _clearGlide();
+    if (_morphController.isClosing) return false;
+    if (index != null && index >= 0 && index < widget.items.length) {
+      final item = widget.items[index];
+      if (item is GlassMenuItem && item.enabled) {
+        _fireItemTap(item);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void _cancelGlide() {
+    if (!_overlayController.isShowing) return;
+    _clearGlide();
+  }
+
+  void _clearGlide() {
+    if (widget.enableInteractionGlow) {
+      final glowLayerState = _menuContentKey.currentContext
+          ?.findAncestorStateOfType<GlassGlowLayerState>();
+      glowLayerState?.removeTouch();
+    }
+    _isDragging = false;
+    _isDraggingNotifier.value = false;
+    _hoveredIndex = null;
+    _hoveredIndexNotifier.value = null;
+    if (_hasStretched) setState(() => _hasStretched = false);
   }
 
   /// Nudges the OPEN menu by [offset] (screen px) on top of its captured trigger
