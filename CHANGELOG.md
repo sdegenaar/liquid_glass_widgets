@@ -26,6 +26,10 @@
 
   Thanks to [@JakeThomson](https://github.com/JakeThomson) for the contribution (#371).
 
+- **`GlassMenu` slide-to-select driven by your own gesture code (discussion #369):** `GlassMenuController.glideTo`, `endGlide` and `cancelGlide` let the code that owns a finger drive slide-to-select when the menu never receives that pointer itself, for example a long-press recogniser that opened the menu with `open()`. The item under the finger highlights with a selection haptic, and `endGlide` activates it as a tap would; with nothing highlighted, the menu stays open. Menus that don't call these methods are unchanged.
+
+- **Layered `GlassMenu` submenus:** `GlassMenuItem.submenu` opens a native iOS-style card over its parent. The parent recedes to 0.971× and dims its rows to 50%; the full-width card's bold header repeats the source row's icon and title with a downward chevron and sits on that row. Selecting the header, or tapping or gliding onto the exposed parent, collapses one level. Submenus nest, only the top card is interactive or exposed to semantics, and Reduce Motion makes transitions instant. The card's rows arrive with its material while the parent rows it covers cross-fade away, and closing reverses this; the fade drives the glass visibility channel, so the card keeps blurring its backdrop. `GlassMenu.onLevelChanged` reports the depth and the whole stack's extent so an owner can make room for a card that overhangs the parent, and `GlassMenu.maxStackHeight` constrains the stack, scrolling a card that would not otherwise fit. `GlassMenuController.submenuDepth` reports the current depth.
+
 ## Bug Fixes
 
 - **`GlassMenu` slide-to-select released between two rows (PR #375):** Releasing over the 2px gap between two rows activated nothing and left the menu open. Each row's hit zone now includes half of the gap on either side, so a release there activates the nearer row.
