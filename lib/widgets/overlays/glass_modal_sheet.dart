@@ -132,6 +132,12 @@ class GlassModalSheet extends StatefulWidget {
   /// Background color used when the sheet is fully expanded and opaque.
   final Color? expandedColor;
 
+  /// [expandedColor] while [GlassTheme.brightnessOf] is dark.
+  ///
+  /// Picked on every build, so an open sheet follows a light/dark switch.
+  /// Falls back to [expandedColor].
+  final Color? expandedDarkColor;
+
   /// Rendering quality (BackdropFilter vs Shader). Defaults to standard.
   final GlassQuality? quality;
 
@@ -279,6 +285,7 @@ class GlassModalSheet extends StatefulWidget {
     this.quality,
     this.platformViewBackdrop = false,
     this.expandedColor,
+    this.expandedDarkColor,
     this.controller,
     this.onStateChanged,
     this.mode = GlassSheetMode.dismissible,
@@ -376,6 +383,7 @@ class GlassModalSheet extends StatefulWidget {
     double fillThreshold = 0.60,
     LiquidGlassSettings? settings,
     Color? expandedColor,
+    Color? expandedDarkColor,
     ValueChanged<GlassSheetState>? onStateChanged,
     GlassSheetMode mode = GlassSheetMode.dismissible,
     double peekSize = 90.0,
@@ -520,6 +528,7 @@ class GlassModalSheet extends StatefulWidget {
           fillThreshold: fillThreshold,
           settings: settings,
           expandedColor: expandedColor,
+          expandedDarkColor: expandedDarkColor,
           mode: mode,
           peekSize: peekSize,
           quality: quality,
@@ -608,6 +617,7 @@ class GlassModalSheet extends StatefulWidget {
           halfSettings: halfSettings,
           fullSettings: fullSettings,
           expandedColor: expandedColor,
+          expandedDarkColor: expandedDarkColor,
           quality: quality,
           peekHorizontalMargin: peekHorizontalMargin,
           peekBottomMargin: peekBottomMargin,

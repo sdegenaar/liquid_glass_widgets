@@ -557,6 +557,47 @@ void main() {
       );
     });
 
+    testWidgets('switches to expandedDarkColor on a brightness switch',
+        (tester) async {
+      final controller = GlassModalSheetController();
+
+      Widget sheet(Brightness brightness) => createTestApp(
+            child: GlassTheme(
+              data: GlassThemeData(brightness: brightness),
+              child: Stack(
+                children: [
+                  GlassModalSheet(
+                    controller: controller,
+                    initialState: GlassSheetState.half,
+                    fillTransition: GlassFillTransition.instant,
+                    fillThreshold: 0.5,
+                    expandedColor: Colors.white,
+                    expandedDarkColor: Colors.black,
+                    child: const SizedBox.expand(),
+                  ),
+                ],
+              ),
+            ),
+          );
+
+      Color? fillColor() => (tester
+              .widget<DecoratedBox>(
+                  find.byKey(const Key('glass_modal_sheet_fill')))
+              .decoration as BoxDecoration)
+          .color
+          ?.withValues(alpha: 1.0);
+
+      await tester.pumpWidget(sheet(Brightness.light));
+      await tester.pumpAndSettle();
+      controller.value = 0.7;
+      await tester.pump();
+      expect(fillColor(), Colors.white.withValues(alpha: 1.0));
+
+      await tester.pumpWidget(sheet(Brightness.dark));
+      await tester.pump();
+      expect(fillColor(), Colors.black.withValues(alpha: 1.0));
+    });
+
     testWidgets('snaps to the nearest state correctly', (tester) async {
       final controller = GlassModalSheetController();
 

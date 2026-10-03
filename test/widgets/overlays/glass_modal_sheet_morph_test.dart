@@ -10,7 +10,7 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart'
-    show GlassQuality, MorphSpeed;
+    show GlassQuality, GlassTheme, GlassThemeData, MorphSpeed;
 import 'package:liquid_glass_widgets/widgets/shared/adaptive_glass.dart'
     show AdaptiveGlass;
 import 'package:liquid_glass_widgets/src/renderer/liquid_glass_renderer.dart';
@@ -1005,10 +1005,11 @@ void main() {
       GlassSheetState restingState = GlassSheetState.half,
       bool disableAnimations = false,
       GlassMorphAnchor? anchor,
+      Color? expandedColor,
+      Color? expandedDarkColor,
+      Brightness? brightness,
     }) {
-      return _app(
-        disableAnimations: disableAnimations,
-        GlassSheetMorphPresenter(
+      final presenter = GlassSheetMorphPresenter(
           routeAnimation: routeAnimation,
           triggerRect: const Rect.fromLTWH(172, 700, 56, 56),
           anchor: anchor,
@@ -1026,20 +1027,64 @@ void main() {
           peekSettings: null,
           halfSettings: null,
           fullSettings: null,
-          expandedColor: null,
+          expandedColor: expandedColor,
           quality: null,
           peekHorizontalMargin: null,
           peekBottomMargin: null,
           peekWidth: null,
           peekTopBorderRadius: null,
           platformViewBackdrop: false,
+          expandedDarkColor: expandedDarkColor,
           child: GlassModalSheetScaffold(
             body: SizedBox.shrink(),
             sheet: Text('Sheet body'),
           ),
-        ),
+        );
+      return _app(
+        disableAnimations: disableAnimations,
+        brightness == null
+            ? presenter
+            : GlassTheme(
+                data: GlassThemeData(brightness: brightness),
+                child: presenter,
+              ),
       );
     }
+
+    testWidgets('fills the droplet with expandedDarkColor in dark mode',
+        (tester) async {
+      final route = AnimationController(
+        vsync: tester,
+        duration: const Duration(milliseconds: 500),
+      )..forward();
+      addTearDown(route.dispose);
+
+      await tester.pumpWidget(buildPresenter(
+        routeAnimation: route,
+        // The full detent is opaque, so the droplet fills on its way there.
+        restingState: GlassSheetState.full,
+        expandedColor: Colors.white,
+        expandedDarkColor: Colors.black,
+        brightness: Brightness.dark,
+      ));
+
+      // The fill fades in while the droplet grows, so look across the morph.
+      final fills = <Color>{};
+      for (var frame = 0; frame < 30; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        fills.addAll(tester
+            .widgetList<ColoredBox>(find.descendant(
+              of: find.byType(AdaptiveGlass),
+              matching: find.byType(ColoredBox),
+            ))
+            .map((box) => box.color.withValues(alpha: 1.0)));
+      }
+
+      expect(fills, contains(Colors.black.withValues(alpha: 1.0)));
+      expect(fills, isNot(contains(Colors.white.withValues(alpha: 1.0))));
+
+      await tester.pumpAndSettle();
+    });
 
     testWidgets('renders the droplet before it lands, then the real sheet',
         (tester) async {

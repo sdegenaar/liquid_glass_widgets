@@ -855,6 +855,7 @@ class GlassSheetMorphPresenter extends StatefulWidget {
     required this.peekTopBorderRadius,
     required this.platformViewBackdrop,
     required this.child,
+    this.expandedDarkColor,
     this.barrierColor,
     this.placement = GlassSheetPlacement.automatic,
   });
@@ -925,6 +926,9 @@ class GlassSheetMorphPresenter extends StatefulWidget {
 
   /// See [GlassModalSheet.expandedColor].
   final Color? expandedColor;
+
+  /// See [GlassModalSheet.expandedDarkColor].
+  final Color? expandedDarkColor;
 
   /// See [GlassModalSheet.quality].
   final GlassQuality? quality;
@@ -1701,7 +1705,8 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
     );
 
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
-    final fillColor = widget.expandedColor ??
+    final fillColor = (isDark ? widget.expandedDarkColor : null) ??
+        widget.expandedColor ??
         (isDark ? const Color(0xFF1C1C1E) : CupertinoColors.white);
 
     // Radii the droplet resolves to: the sheet's own resting corners.
