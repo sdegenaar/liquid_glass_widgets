@@ -349,6 +349,70 @@ void main() {
       expect(seen?.top, 214);
     });
 
+    testDuo('publishes the fold UIKit reports, and dialogs avoid it',
+        (tester) async {
+      setScreen(
+        tester,
+        size: const Size(951, 669),
+        padding: const EdgeInsets.fromLTRB(0, 0, 84, 34),
+      );
+      const channel = MethodChannel('liquid_glass_widgets/reserved_regions');
+      final messenger = tester.binding.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        if (call.method == 'verticalBarEdge') return null;
+        // Half folded: the cluster, and the fold the division's margins
+        // reach to.
+        return [
+          [867.0, 0.0, 951.0, 120.0, 0.0],
+          [475.0, 0.0, 475.0, 669.0, 1.0],
+        ];
+      });
+      addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+
+      await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
+      await tester.pump();
+      final fold = MediaQuery.displayFeaturesOf(
+              tester.element(find.text('Root body')))
+          .singleWhere((feature) => feature.type == DisplayFeatureType.hinge);
+      expect(fold.bounds, const Rect.fromLTRB(475, 0, 475, 669));
+      expect(fold.state, DisplayFeatureState.postureHalfOpened);
+
+      GlassDialog.show<void>(
+        context: tester.element(find.text('Root body')),
+        title: 'Delete message?',
+        actions: [GlassDialogAction(label: 'Delete', onPressed: () {})],
+      );
+      await settle(tester);
+      expect(
+        tester.getCenter(find.byType(GlassDialog)).dx,
+        closeTo(475 / 2, 0.05),
+      );
+    });
+
+    testDuo('insets the content for a strip UIKit leaves to the app',
+        (tester) async {
+      // The left-hand app in Split View: no lateral inset, only the edge.
+      setScreen(
+        tester,
+        size: const Size(469, 669),
+        padding: const EdgeInsets.only(bottom: 34),
+      );
+      const channel = MethodChannel('liquid_glass_widgets/reserved_regions');
+      final messenger = tester.binding.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(
+        channel,
+        (call) async => call.method == 'verticalBarEdge' ? 'leading' : [],
+      );
+      addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+
+      await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
+      await tester.pump();
+      final context = tester.element(find.text('Root body'));
+      expect(MediaQuery.paddingOf(context).left, 84);
+      expect(MediaQuery.viewPaddingOf(context).left, 84);
+      expect(MediaQuery.paddingOf(context).right, 0);
+    });
+
     testDuo('publishes nothing when disabled', (tester) async {
       setScreen(tester);
       GlassVerticalBarEdge? seen = GlassVerticalBarEdge.leading;
@@ -1138,8 +1202,12 @@ void main() {
       WidgetTester tester, {
       GlassSheetPlacement placement = GlassSheetPlacement.automatic,
       bool medium = false,
+      TextDirection textDirection = TextDirection.ltr,
     }) async {
-      await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
+      await tester.pumpWidget(shellApp(
+        const _Screen(title: 'Root'),
+        textDirection: textDirection,
+      ));
       await settle(tester);
       GlassModalSheet.show<void>(
         context: tester.element(find.text('Root body')),
@@ -1311,6 +1379,55 @@ void main() {
       expect(frame.left, closeTo(0, 0.05));
       expect(frame.right, closeTo(402, 0.05));
       expect(frame.top, closeTo(90, 0.01));
+    });
+
+    testDuo('is a card in one side of a half-folded display', (tester) async {
+      setScreen(tester, size: innerLandscape, padding: innerLandscapePadding);
+      tester.view.displayFeatures = [
+        const DisplayFeature(
+          bounds: Rect.fromLTRB(475, 0, 475, 669),
+          type: DisplayFeatureType.hinge,
+          state: DisplayFeatureState.postureHalfOpened,
+        ),
+      ];
+      await present(tester);
+
+      // Natively the card keeps its margins in the left side, 8pt from the
+      // top, with its bar across it.
+      final frame = sheet(tester);
+      expect(frame.left, closeTo(8, 0.05));
+      expect(frame.right, closeTo(475 - 8, 0.05));
+      expect(frame.top, closeTo(8, 0.01));
+      final close = tester.getCenter(find.byIcon(CupertinoIcons.xmark));
+      final done = tester.getCenter(find.byIcon(CupertinoIcons.checkmark));
+      expect(close.dy, closeTo(done.dy, 0.05));
+      expect(
+        GlassModalSheet.restingWidthOf(tester.element(find.text('Root body'))),
+        closeTo(frame.width, 0.05),
+      );
+
+      // It keeps to its side as the keyboard rises.
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300 * 3.0);
+      await settle(tester);
+      expect(sheet(tester).left, closeTo(8, 0.05));
+      expect(sheet(tester).right, closeTo(475 - 8, 0.05));
+    });
+
+    testDuo('takes the side nearest the leading corner right to left',
+        (tester) async {
+      setScreen(tester, size: innerLandscape, padding: innerLandscapePadding);
+      tester.view.displayFeatures = [
+        const DisplayFeature(
+          bounds: Rect.fromLTRB(475, 0, 475, 669),
+          type: DisplayFeatureType.hinge,
+          state: DisplayFeatureState.postureHalfOpened,
+        ),
+      ];
+      await present(tester, textDirection: TextDirection.rtl);
+
+      final frame = sheet(tester);
+      expect(frame.left, closeTo(475 + 8, 0.05));
+      expect(frame.right, closeTo(951 - 8, 0.05));
     });
   });
 

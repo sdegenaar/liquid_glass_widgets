@@ -330,13 +330,14 @@ class GlassModalSheet extends StatefulWidget {
   /// [GlassSheetState.full] the whole width. In iPhone Duo's vertical bar strip
   /// layout the sheet keeps its margins at every detent, and in a window
   /// 800pt wide or more it is a card no wider than the display's shorter side.
+  /// On a half-folded display it is measured in the side it is presented into.
   static double restingWidthOf(
     BuildContext context, {
     GlassSheetState state = GlassSheetState.half,
     GlassSheetPlacement placement = GlassSheetPlacement.automatic,
     double horizontalMargin = 8.0,
   }) {
-    final size = MediaQuery.sizeOf(context);
+    final size = _subScreenFor(context)?.size ?? MediaQuery.sizeOf(context);
     if (GlassVerticalBar.maybeOf(context) == null) {
       return state == GlassSheetState.full
           ? size.width
@@ -526,8 +527,14 @@ class GlassModalSheet extends StatefulWidget {
         ? _morphRouteDuration(morphSpeed)
         : const Duration(milliseconds: 500);
 
+    // On a half-folded display the route presents into one side of the fold,
+    // as [DisplayFeatureSubScreen] does for any dialog. The sheet is laid out
+    // in that side rather than across the screen.
+    final subScreen = _subScreenFor(context);
+
     return showGeneralDialog<T>(
       context: context,
+      anchorPoint: subScreen?.center,
       barrierDismissible: isDismissible,
       barrierLabel: 'Dismiss',
       barrierColor: morphing
@@ -554,7 +561,8 @@ class GlassModalSheet extends StatefulWidget {
           child: child,
         );
       },
-      pageBuilder: (context, animation, secondaryAnimation) {
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          _inSubScreen(context, subScreen, () {
         final scaffold = GlassModalSheetScaffold(
           controller: effectiveController,
           halfSize: halfSize,
@@ -665,7 +673,7 @@ class GlassModalSheet extends StatefulWidget {
           placement: placement,
           child: scaffold,
         );
-      },
+      }),
     );
   }
 
@@ -771,6 +779,75 @@ class GlassModalSheet extends StatefulWidget {
     }
   }
 
+  /// The side of a half-folded display a sheet presented from [context]
+  /// goes to, or null where nothing divides the screen.
+  ///
+  /// Picked as [DisplayFeatureSubScreen] picks it for a dialog: the side
+  /// nearest the top-leading corner.
+  static Rect? _subScreenFor(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final screen = Offset.zero & mediaQuery.size;
+    final sides = DisplayFeatureSubScreen.subScreensInBounds(
+      screen,
+      DisplayFeatureSubScreen.avoidBounds(mediaQuery),
+    ).toList();
+    if (sides.length < 2) return null;
+    final corner = Directionality.of(context) == TextDirection.rtl
+        ? screen.topRight
+        : screen.topLeft;
+    double distance(Rect side) => (Offset(
+                corner.dx.clamp(side.left, side.right),
+                corner.dy.clamp(side.top, side.bottom)) -
+            corner)
+        .distance;
+    return sides.reduce((a, b) => distance(b) < distance(a) ? b : a);
+  }
+
+  /// [build]'s sheet, laid out in [subScreen] where the screen is divided.
+  ///
+  /// The side's [MediaQueryData] keeps only the insets that reach it, and its
+  /// size is the side's, which the sheet sizes its detents and margins from.
+  /// The sheet keeps the strip layout, and moves its bar into the strip only
+  /// where it reaches it, measured from where the side sits on the screen.
+  static Widget _inSubScreen(
+    BuildContext context,
+    Rect? subScreen,
+    Widget Function() build,
+  ) {
+    if (subScreen == null) return build();
+    final mediaQuery = MediaQuery.of(context);
+    return MediaQuery(
+      data: mediaQuery
+          .removeDisplayFeatures(subScreen)
+          .copyWith(size: subScreen.size),
+      child: _SheetSubScreen(
+        rect: subScreen,
+        screenSize: mediaQuery.size,
+        child: Builder(builder: (_) => build()),
+      ),
+    );
+  }
+
   @override
   State<GlassModalSheet> createState() => _GlassModalSheetState();
+}
+
+/// The side of a half-folded display a sheet is presented into, and the
+/// screen it is a side of.
+class _SheetSubScreen extends InheritedWidget {
+  const _SheetSubScreen({
+    required this.rect,
+    required this.screenSize,
+    required super.child,
+  });
+
+  final Rect rect;
+  final Size screenSize;
+
+  static _SheetSubScreen? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_SheetSubScreen>();
+
+  @override
+  bool updateShouldNotify(_SheetSubScreen oldWidget) =>
+      rect != oldWidget.rect || screenSize != oldWidget.screenSize;
 }

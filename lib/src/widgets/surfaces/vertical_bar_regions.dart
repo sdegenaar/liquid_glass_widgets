@@ -7,13 +7,15 @@ import 'package:flutter/widgets.dart';
 import '../../../widgets/surfaces/glass_vertical_bar.dart'
     show GlassVerticalBarEdge;
 
-/// The parts of the view UIKit reserves for system elements — on iPhone Duo,
-/// the status cluster and the camera at the ends of the vertical bar strip —
-/// as [DisplayFeatureType.cutout]s in logical pixels.
+/// The parts of the view UIKit reserves for system elements, as
+/// [DisplayFeature]s in logical pixels: on iPhone Duo, the status cluster and
+/// the camera as [DisplayFeatureType.cutout]s, and the fold of a half-folded
+/// display as a [DisplayFeatureType.hinge].
 ///
-/// UIKit reports them as the view's occlusion regions,
-/// `UIView.reservedRegions(kind: .occlusion)`, and they move: the status
-/// cluster grows with live activities and goes with the status bar. Android
+/// UIKit reports them as the view's reserved regions: occlusion regions,
+/// `UIView.reservedRegions(kind: .occlusion)`, which move — the status
+/// cluster grows with live activities and goes with the status bar — and the
+/// division region, `.division`, while the display is half folded. Android
 /// cutouts reach [MediaQueryData.displayFeatures], but Flutter sends none on
 /// iOS yet (flutter/flutter#193025), so the package's iOS plugin reads the
 /// regions and this publishes them in the same shape. Once Flutter reports
@@ -91,8 +93,13 @@ class VerticalBarRegions extends ValueNotifier<List<DisplayFeature>> {
               (region[2]! as num).toDouble(),
               (region[3]! as num).toDouble(),
             ),
-            type: DisplayFeatureType.cutout,
-            state: DisplayFeatureState.unknown,
+            // The division is only reported while the display is half folded.
+            type: region.length > 4 && region[4] == 1
+                ? DisplayFeatureType.hinge
+                : DisplayFeatureType.cutout,
+            state: region.length > 4 && region[4] == 1
+                ? DisplayFeatureState.postureHalfOpened
+                : DisplayFeatureState.unknown,
           ),
       ];
 }

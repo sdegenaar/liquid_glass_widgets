@@ -3,10 +3,10 @@ import UIKit
 
 /// Reports the regions of the Flutter view that UIKit reserves for system
 /// elements: on iPhone Duo, the status cluster and the camera at the ends of
-/// the vertical bar strip.
+/// the vertical bar strip, and the fold when the display is half folded.
 ///
-/// They are the view's `reservedRegions(kind: .occlusion)`, added in the
-/// iOS 27.1 SDK. Flutter does not pass them to Dart yet
+/// They are the view's `reservedRegions(kind:)`, `.occlusion` and `.division`,
+/// added in the iOS 27.1 SDK. Flutter does not pass them to Dart yet
 /// (flutter/flutter#193025), so the package reads them here.
 ///
 /// It also reports the trait collection's `verticalBarEdge`, the side the
@@ -42,7 +42,7 @@ public final class LiquidGlassWidgetsPlugin: NSObject, FlutterPlugin {
     }
   }
 
-  /// Starts reporting the Flutter view's occlusion regions, and returns them.
+  /// Starts reporting the Flutter view's reserved regions, and returns them.
   private func observe() -> [[Double]] {
     guard let view = registrar?.viewController?.view else { return [] }
     if let observer, observer.superview === view { return observer.regions }
@@ -60,8 +60,8 @@ public final class LiquidGlassWidgetsPlugin: NSObject, FlutterPlugin {
   }
 }
 
-/// A hidden view that reports its superview's occlusion regions, as
-/// `[left, top, right, bottom]` in points, and the vertical bar edge, as
+/// A hidden view that reports its superview's reserved regions, as
+/// `[left, top, right, bottom, kind]` in points, and the vertical bar edge, as
 /// `"leading"`, `"trailing"` or nil, whenever they change.
 private final class OcclusionObserver: UIView {
   private let onChange: ([[Double]]) -> Void
@@ -145,10 +145,17 @@ private final class OcclusionObserver: UIView {
     // still has to build against older SDKs.
     #if canImport(UIKit, _version: 9127.0.85)
     if #available(iOS 27.1, *), let superview {
-      return superview.reservedRegions(kind: .occlusion).map { region in
-        let frame = region.frame
-        return [frame.minX, frame.minY, frame.maxX, frame.maxY].map(Double.init)
+      // `[left, top, right, bottom, kind]`: 0 for an occlusion region, 1 for
+      // the division a half-folded display asks content to split around. The
+      // division's margins reach to the fold, where native content measures
+      // each side to, so it is sent without them, as Android sends a fold.
+      func rects(_ kind: UIView.ReservedRegion.Kind, _ code: Double) -> [[Double]] {
+        superview.reservedRegions(kind: kind).map { region in
+          let frame = kind == .division ? region.frame.inset(by: region.margins) : region.frame
+          return [frame.minX, frame.minY, frame.maxX, frame.maxY].map(Double.init) + [code]
+        }
       }
+      return rects(.occlusion, 0) + rects(.division, 1)
     }
     #endif
     return []

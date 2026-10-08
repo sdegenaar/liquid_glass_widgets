@@ -1055,29 +1055,47 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
     return bar;
   }
 
-  /// [child] with the strip's width added to the insets on its side, for a
-  /// strip UIKit leaves to the app: the content keeps clear of it as it does
-  /// of a strip the system insets for.
-  Widget _insetForStrip(
+  /// [child] under the media query the app should see.
+  ///
+  /// The regions UIKit reserves join [MediaQueryData.displayFeatures], which
+  /// is where Flutter will report them once it does on iOS
+  /// (flutter/flutter#193025): the status cluster and the camera as cutouts,
+  /// and the fold of a half-folded display as a hinge, which
+  /// [DisplayFeatureSubScreen] keeps dialogs and sheets to one side of. And
+  /// for a strip UIKit leaves to the app, its width joins the insets on its
+  /// side, so the content keeps clear of it as it does of a strip the system
+  /// insets for.
+  Widget _mediaQueryFor(
     BuildContext context,
-    GlassVerticalBarData bar,
+    GlassVerticalBarData? bar,
     Widget child,
   ) {
-    final ltr = (Directionality.maybeOf(context) ?? TextDirection.ltr) ==
-        TextDirection.ltr;
-    final onLeft = (bar.edge == GlassVerticalBarEdge.leading) == ltr;
-    EdgeInsets add(EdgeInsets insets) => insets.copyWith(
-          left: onLeft ? insets.left + bar.width : insets.left,
-          right: onLeft ? insets.right : insets.right + bar.width,
-        );
-    final data = MediaQuery.of(context);
-    return MediaQuery(
-      data: data.copyWith(
+    final regions = VerticalBarRegions.instance.value;
+    final insetsStrip = bar != null && !bar.systemInset;
+    if (regions.isEmpty && !insetsStrip) return child;
+    var data = MediaQuery.of(context);
+    if (regions.isNotEmpty) {
+      final reported = {for (final f in data.displayFeatures) f.bounds};
+      data = data.copyWith(displayFeatures: [
+        ...data.displayFeatures,
+        for (final region in regions)
+          if (!reported.contains(region.bounds)) region,
+      ]);
+    }
+    if (insetsStrip) {
+      final ltr = (Directionality.maybeOf(context) ?? TextDirection.ltr) ==
+          TextDirection.ltr;
+      final onLeft = (bar.edge == GlassVerticalBarEdge.leading) == ltr;
+      EdgeInsets add(EdgeInsets insets) => insets.copyWith(
+            left: onLeft ? insets.left + bar.width : insets.left,
+            right: onLeft ? insets.right : insets.right + bar.width,
+          );
+      data = data.copyWith(
         padding: add(data.padding),
         viewPadding: add(data.viewPadding),
-      ),
-      child: child,
-    );
+      );
+    }
+    return MediaQuery(data: data, child: child);
   }
 
   @override
@@ -1089,9 +1107,7 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
         children: [
           GlassVerticalBar(
             data: verticalBar,
-            child: verticalBar == null || verticalBar.systemInset
-                ? widget.child
-                : _insetForStrip(context, verticalBar, widget.child),
+            child: _mediaQueryFor(context, verticalBar, widget.child),
           ),
           // The chrome gets an Overlay of its own because it deliberately sits
           // above the app's Navigator, and therefore outside the Navigator's
