@@ -1,5 +1,4 @@
-// Regression tests for MultiShaderBuilder's key handling, from the review of
-// flutter/packages#13162.
+// Regression tests for MultiShaderBuilder's key handling and shader caching.
 //
 // The stale-load guard in _loadShaders has no test here: on the native engine
 // FragmentProgram.fromAsset finishes on the next microtask, before keys can

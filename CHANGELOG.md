@@ -2,14 +2,10 @@
 
 ## Bug Fixes
 
-- **Engine lifecycle hardening (from the review of flutter/packages#13162):**
-  - A premium-quality blend group no longer stays subscribed to its group link after its render object is disposed. A later shape change could reach the disposed render object. The link's transform callback is only cleared if it is still the group's own, so a replacement render object keeps working.
-  - A blend group now follows a change of its enclosing `LiquidGlassLayer` instead of staying registered with the old one.
-  - Changing a geometry's render link while it is detached no longer registers it twice on the next attach, which would paint its matte twice and keep the entry after detach. Registration is now also idempotent.
-  - Removing one of several geometries from a layer now rebuilds the layer's matte on its next paint. Previously the old matte could be reused and still draw the removed shape.
-  - `UnrenderedGeometryCache.renderAsync` releases its recorded `Picture` once rasterised, as `render` already did, instead of leaving it to the finalizer.
-  - `MultiShaderBuilder` no longer reloads on every rebuild. `ShaderBuilder` passes a new key list each build, which the old identity comparison treated as a change, so every rebuild of a glass layer or blend group created a new `FragmentShader`.
-  - `MultiShaderBuilder` ignores a shader that finishes loading after `assetKeys` changed, and builds only once every requested shader is loaded. No code in the package changes its keys, so this is hardening.
+- **Engine lifecycle and GPU resource hardening (PR #410):**
+  - **Shader caching & rebuild performance:** Cached fragment shaders across widget rebuilds using content equality, eliminating redundant GPU shader re-allocations on parent widget updates.
+  - **Dynamic shape unmounting:** Unregistering a shape from a multi-glass layer now marks the matte dirty, preventing visual ghost artifacts when elements are removed.
+  - **Resource disposal & lifecycle safety:** Fixed an issue where unmounted blend groups could remain subscribed to their group link across route transitions, prevented duplicate registrations on detached render objects, and ensured native image recording buffers in asynchronous geometry caches are eagerly released.
 
 # 1.11.0
 

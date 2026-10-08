@@ -1,5 +1,5 @@
 // Lifecycle regression tests for the geometry render link, blend group, and
-// geometry cache, from the review of flutter/packages#13162.
+// geometry cache.
 //
 // These drive the render objects directly: headless runs report
 // ImageFilter.isShaderFilterSupported == false, so LiquidGlassBlendGroup never
