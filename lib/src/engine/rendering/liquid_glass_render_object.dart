@@ -1051,6 +1051,10 @@ class GeometryRenderLink {
     RenderLiquidGlassGeometry renderObject,
   ) {
     _dirty = true;
+    // Idempotent: the layer paints one matte per entry, and [unregisterGeometry]
+    // removes a single entry, so a duplicate would be painted twice and
+    // outlive its detach.
+    if (_shapeGeometries.contains(renderObject)) return;
     _shapeGeometries.add(renderObject);
   }
 
@@ -1068,7 +1072,9 @@ class GeometryRenderLink {
   }
 
   void unregisterGeometry(RenderLiquidGlassGeometry renderObject) {
-    _shapeGeometries.remove(renderObject);
+    if (_shapeGeometries.remove(renderObject)) {
+      _dirty = true;
+    }
   }
 
   void dispose() {

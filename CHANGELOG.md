@@ -1,3 +1,12 @@
+# Unreleased
+
+## Bug Fixes
+
+- **Engine lifecycle and GPU resource hardening (PR #410):**
+  - **Shader caching & rebuild performance:** Cached fragment shaders across widget rebuilds using content equality, eliminating redundant GPU shader re-allocations on parent widget updates.
+  - **Dynamic shape unmounting:** Unregistering a shape from a multi-glass layer now marks the matte dirty, preventing visual ghost artifacts when elements are removed.
+  - **Resource disposal & lifecycle safety:** Fixed an issue where unmounted blend groups could remain subscribed to their group link across route transitions, prevented duplicate registrations on detached render objects, and ensured native image recording buffers in asynchronous geometry caches are eagerly released.
+
 # 1.11.0
 
 ## Features
