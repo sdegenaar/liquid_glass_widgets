@@ -2,6 +2,8 @@
 
 ## Bug Fixes
 
+- **Edge fades absorb pointer events:** Gestures starting in the top or bottom fade no longer reach the scrollable body.
+
 - **Engine lifecycle and GPU resource hardening (PR #410):**
   - **Shader caching & rebuild performance:** Cached fragment shaders across widget rebuilds using content equality, eliminating redundant GPU shader re-allocations on parent widget updates.
   - **Dynamic shape unmounting:** Unregistering a shape from a multi-glass layer now marks the matte dirty, preventing visual ghost artifacts when elements are removed.

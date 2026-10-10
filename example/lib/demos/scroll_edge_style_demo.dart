@@ -131,7 +131,7 @@ class _ScrollEdgeStyleDemoState extends State<ScrollEdgeStyleDemo> {
     (
       '🚀',
       '120 FPS ProMotion Ready',
-      'Zero per-frame allocations during scrolling. Overlays are non-interactive via IgnorePointer.',
+      'Zero per-frame allocations during scrolling. Overlays are non-interactive via AbsorbPointer.',
       Color(0xFFFF453A),
     ),
     (

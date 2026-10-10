@@ -387,7 +387,7 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
         left: 0,
         right: 0,
         height: height,
-        child: IgnorePointer(
+        child: AbsorbPointer(
           child: ProgressiveBlur(
             maxSigma: widget.maxSigma,
             // ease-in quadratic falloff: keeps sigma near-zero for the first
@@ -410,7 +410,7 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
       left: 0,
       right: 0,
       height: height,
-      child: IgnorePointer(
+      child: AbsorbPointer(
         child: hasTexture
             ? CustomPaint(
                 size: Size(screenSize.width, height),
