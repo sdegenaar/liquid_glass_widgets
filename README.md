@@ -26,7 +26,7 @@ Bring Apple's Liquid Glass to your Flutter app — from the iOS 26 original to t
 
 ```yaml
 dependencies:
-  liquid_glass_widgets: ^1.11.0
+  liquid_glass_widgets: ^1.11.1
 ```
 
 ```bash
@@ -668,9 +668,10 @@ Glass in a group doesn't see other glass of the same group: a surface lying
 over another one shows the content behind both in its frost. Keep overlapping
 glass out of the group with `GlassBackdropGroup(enabled: false, ...)`. Glass
 under an `Opacity`, `FadeTransition` or `AnimatedOpacity` (at any value) or
-inside another glass surface stays out of the group on its own. Wrap a
-screen's bars rather than a `Navigator` or tab stack, since glass kept alive
-offstage still counts as a member. On an
+inside another glass surface stays out of the group on its own, and so does a
+surface with a visible `LiquidGlassSettings.backerColor`, whose blur has to read
+its own backer pad. Wrap a screen's bars rather than a `Navigator` or tab
+stack, since glass kept alive offstage still counts as a member. On an
 iPhone Air with `ios27Light`, opening a sheet under an app bar with three
 buttons and a tab bar went from 23.6 ms to 9.3 ms average GPU time per frame.
 

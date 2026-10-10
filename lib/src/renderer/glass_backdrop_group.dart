@@ -38,7 +38,9 @@ import 'glass_backdrop_group_boundary.dart';
 ///   `Opacity`, `FadeTransition` or `AnimatedOpacity` (at any value, fully
 ///   opaque included), a shader mask or a save-layer clip, stays out of the
 ///   group on its own, since it is or may be drawn into a render pass of its
-///   own.
+///   own. So does a surface with a visible `LiquidGlassSettings.backerColor`:
+///   its blur reads back the backer pad painted beneath it, which a read shared
+///   with other surfaces, taken before that pad exists, would miss.
 /// - **The frost doesn't see what the glass paints inside itself.** The
 ///   frost's cloud is blurred from the shared read, so content a glass
 ///   surface draws into its own glass layer isn't part of it. The sharp

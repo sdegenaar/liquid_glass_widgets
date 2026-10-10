@@ -1,11 +1,12 @@
-# Unreleased
+# 1.11.1
 
 ## Bug Fixes
 
-- **Engine lifecycle and GPU resource hardening (PR #410):**
-  - **Shader caching & rebuild performance:** Cached fragment shaders across widget rebuilds using content equality, eliminating redundant GPU shader re-allocations on parent widget updates.
-  - **Dynamic shape unmounting:** Unregistering a shape from a multi-glass layer now marks the matte dirty, preventing visual ghost artifacts when elements are removed.
-  - **Resource disposal & lifecycle safety:** Fixed an issue where unmounted blend groups could remain subscribed to their group link across route transitions, prevented duplicate registrations on detached render objects, and ensured native image recording buffers in asynchronous geometry caches are eagerly released.
+- **`GlassBackdropGroup` dropped `backerColor` on members after the first (fixes #412):** Surfaces with a visible `backerColor` now take an isolated backdrop read so their dimming pad is preserved, while members without a backer continue sharing the group's backdrop read.
+
+- **Engine lifecycle hardening (PR #410):** Fragment shaders are no longer reloaded on every rebuild. Blend groups release their group link on dispose and follow `renderLink` changes when reparented. Removing a glass shape from a layer repaints its matte, so no ghost of it remains. Duplicate shape registrations on detached render objects are prevented, and the native picture recorded for an asynchronous geometry cache is released as soon as it is rendered.
+
+- **Fragment shaders are now disposed:** `MultiShaderBuilder` disposes the shaders it creates when it unmounts, and the ones it replaces when its keys change (after the frame that last used them), instead of leaving them to the garbage collector.
 
 # 1.11.0
 

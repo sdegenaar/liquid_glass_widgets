@@ -58,4 +58,65 @@ void main() {
     expect(seen, hasLength(2));
     expect(identical(seen[0], seen[1]), isFalse);
   });
+
+  group('shader disposal', () {
+    testWidgets('unmounting disposes the shaders it created', (tester) async {
+      final key = ShaderKeys.blendedGeometry;
+      await tester.runAsync(() => MultiShaderBuilder.precacheShader(key));
+
+      final seen = <ui.FragmentShader>[];
+      await tester.pumpWidget(MultiShaderBuilder(
+        (context, shaders, child) {
+          seen.add(shaders.single);
+          return const SizedBox(key: _built);
+        },
+        assetKeys: [key],
+      ));
+      expect(seen.single.debugDisposed, isFalse);
+
+      await tester.pumpWidget(const SizedBox());
+      expect(seen.single.debugDisposed, isTrue);
+    });
+
+    testWidgets('rebuilding with equal keys disposes nothing', (tester) async {
+      final key = ShaderKeys.blendedGeometry;
+      await tester.runAsync(() => MultiShaderBuilder.precacheShader(key));
+
+      final seen = <ui.FragmentShader>[];
+      Widget build() => MultiShaderBuilder(
+            (context, shaders, child) {
+              seen.add(shaders.single);
+              return const SizedBox(key: _built);
+            },
+            assetKeys: [key],
+          );
+      await tester.pumpWidget(build());
+      await tester.pumpWidget(build());
+      expect(seen.last.debugDisposed, isFalse);
+    });
+
+    testWidgets(
+        'a real key change disposes the replaced shader after the frame',
+        (tester) async {
+      final first = ShaderKeys.blendedGeometry;
+      final second = ShaderKeys.liquidGlassRender;
+      await tester.runAsync(
+        () => MultiShaderBuilder.precacheShaders([first, second]),
+      );
+
+      final seen = <ui.FragmentShader>[];
+      Widget build(String key) => MultiShaderBuilder(
+            (context, shaders, child) {
+              seen.add(shaders.single);
+              return const SizedBox(key: _built);
+            },
+            assetKeys: [key],
+          );
+      await tester.pumpWidget(build(first));
+      await tester.pumpWidget(build(second));
+
+      expect(seen.first.debugDisposed, isTrue);
+      expect(seen.last.debugDisposed, isFalse);
+    });
+  });
 }
