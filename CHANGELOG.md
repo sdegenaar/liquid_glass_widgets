@@ -8,6 +8,8 @@
 
 - **Fragment shaders are now disposed:** `MultiShaderBuilder` disposes the shaders it creates when it unmounts, and the ones it replaces when its keys change (after the frame that last used them), instead of leaving them to the garbage collector.
 
+- **Premium-quality rounded edges stair-stepped instead of anti-aliasing:** The geometry matte's coverage fade stopped at the silhouette instead of running to transparent, leaving a hard step that showed on a `GlassTabBar`'s indicator pill at rest and, because the pill's matte is resampled under its drag transform, more obviously while it was being dragged. The fade now covers the full band, and a shape's matte drawn under a transform (a `LiquidStretch` inside a shared layer, for example) is filtered bilinearly rather than per-pixel.
+
 # 1.11.0
 
 ## Features

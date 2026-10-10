@@ -1019,7 +1019,16 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
         case UnrenderedGeometryCache(matte: final picture):
           canvas.drawPicture(picture);
         case RenderedGeometryCache(matte: final image):
-          canvas.drawImage(image, Offset.zero, Paint());
+          // The geometry-local transform above can scale this matte (shapes
+          // under a Transform/LiquidStretch inside a shared layer). Paint()
+          // defaults to FilterQuality.none — nearest — which stair-steps
+          // the edge under any non-1:1 mapping; medium restores bilinear
+          // resampling.
+          canvas.drawImage(
+            image,
+            Offset.zero,
+            Paint()..filterQuality = FilterQuality.medium,
+          );
       }
 
       canvas.restore();
