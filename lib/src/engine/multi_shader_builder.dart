@@ -176,7 +176,30 @@ class _MultiShaderBuilderState extends State<MultiShaderBuilder> {
     }
   }
 
+  @override
+  void dispose() {
+    // Render objects built from these shaders are unmounted before this state
+    // is, so nothing is still drawing with them.
+    for (final shader in _shaders.values) {
+      shader.dispose();
+    }
+    _shaders.clear();
+    _programs.clear();
+    super.dispose();
+  }
+
   void _loadShaders(List<String> assetKeys) {
+    // The shaders this state created for the previous keys. Disposed after the
+    // frame rather than now: consumers still hold them until they rebuild with
+    // the new ones, and this frame may yet paint with them.
+    final replaced = _shaders.values.toList();
+    if (replaced.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        for (final shader in replaced) {
+          shader.dispose();
+        }
+      });
+    }
     _programs.clear();
     _shaders.clear();
 
@@ -201,7 +224,11 @@ class _MultiShaderBuilderState extends State<MultiShaderBuilder> {
       ui.FragmentProgram.fromAsset(assetKey).then(
         (ui.FragmentProgram program) {
           _shaderCache[assetKey] = program;
-          if (!mounted || !widget.assetKeys.contains(assetKey)) {
+          // A load that overlapped another for the same key (the keys changed
+          // and changed back) must not replace a shader already handed out.
+          if (!mounted ||
+              !widget.assetKeys.contains(assetKey) ||
+              _shaders.containsKey(assetKey)) {
             return;
           }
           setState(() {
