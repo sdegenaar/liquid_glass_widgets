@@ -1,3 +1,9 @@
+# Unreleased
+
+## Performance
+
+- **Morph springs stop once nothing visibly moves:** `GlassMorphController` ran its springs with Flutter's default `Tolerance`, which only counts a spring as done below 0.001 units a second. The normal open kept ticking for about 1.2 s and the close for 0.92 s, although the motion is over at 0.70 s and 0.53 s, and every one of those ticks rebuilt and repainted the morph. Springs now settle within 0.001 of their target and below 0.05 a second, under a pixel either way, and land exactly on the target. `GlassMenu`, `GlassPopover` and the modal sheet morph all use the controller; a `GlassMenu` open and close now draws a third fewer frames, with the same motion.
+
 # 1.11.1
 
 ## Bug Fixes
