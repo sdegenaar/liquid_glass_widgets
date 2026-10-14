@@ -330,7 +330,7 @@ class _TouchSpecularAndVibrancyDemoState
                 const SizedBox(height: 16),
 
                 // Nested Card (Uses _VibrancyFill under the hood)
-                GlassCard(
+                GlassContainer.card(
                   settings: settings,
                   shape: const LiquidRoundedSuperellipse(borderRadius: 16),
                   child: Padding(

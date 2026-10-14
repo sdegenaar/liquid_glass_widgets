@@ -3,6 +3,7 @@ import 'package:liquid_glass_widgets_example/constants/glass_settings.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import 'package:liquid_glass_widgets_example/apple_contacts/apple_contacts_demo.dart';
 import 'package:liquid_glass_widgets_example/apple_mail/apple_mail_demo.dart';
 import 'package:liquid_glass_widgets_example/apple_messages/apple_messages_demo.dart';
 import 'package:liquid_glass_widgets_example/apple_music/apple_music_demo.dart';
@@ -33,6 +34,8 @@ import 'package:liquid_glass_widgets_example/demos/color_fidelity_demo.dart'
     show ColorFidelityDemoPage;
 import 'package:liquid_glass_widgets_example/demos/tab_bar_menu_demo.dart'
     show TabBarMenuDemoPage;
+import 'package:liquid_glass_widgets_example/demos/swipe_and_disclosure_demo.dart'
+    show SwipeAndDisclosureDemoPage;
 import 'package:liquid_glass_widgets_example/pages/containers_page.dart';
 import 'package:liquid_glass_widgets_example/pages/feedback_page.dart';
 import 'package:liquid_glass_widgets_example/pages/input_page.dart';
@@ -607,6 +610,19 @@ class _DemosTab extends StatelessWidget {
 
                   // Large featured cards
                   _LargeDemoCard(
+                    title: 'Apple Contacts',
+                    subtitle:
+                        'iOS 26/27 parity benchmark · swipe actions, reorderable list, context menus, date picker & modal sheets',
+                    icon: CupertinoIcons.person_2_fill,
+                    gradient: const [
+                      Color(0xFF3A1C71),
+                      Color(0xFFD76D77),
+                    ],
+                    destination: const ContactsListView(),
+                  ),
+                  SizedBox(height: 14),
+
+                  _LargeDemoCard(
                     title: 'Apple Mail',
                     subtitle:
                         'iOS 27 glass demo · pinned nav, gel morph & compose · compare iOS 26 in Inbox ··· menu',
@@ -750,6 +766,20 @@ class _ExamplesTab extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                  SizedBox(height: 14),
+
+                  // Large card: Swipe & Disclosure
+                  _LargeDemoCard(
+                    title: 'Swipe & Disclosure',
+                    subtitle:
+                        'iOS 26/27 swipeActions, full-swipe dismiss & DisclosureGroup accordions',
+                    icon: CupertinoIcons.hand_draw_fill,
+                    gradient: const [
+                      Color(0xFF0D253F),
+                      Color(0xFF1D4E89),
+                    ],
+                    destination: const SwipeAndDisclosureDemoPage(),
                   ),
                   SizedBox(height: 14),
 

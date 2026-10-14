@@ -252,7 +252,7 @@ void main() {
   );
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 4. AdaptiveGlass / GlassCard — light mode
+  // 4. AdaptiveGlass / GlassContainer.card — light mode
   //
   // Exercises:
   //   - AdaptiveGlass._wrapWithLightModeShadow (dark mode: returns widget unchanged)
@@ -273,7 +273,7 @@ void main() {
           child: buildWithLightBackground(
             AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
-              child: const GlassCard(
+              child: const GlassContainer.card(
                 child: Padding(
                   padding: EdgeInsets.all(16),
                   child: Column(

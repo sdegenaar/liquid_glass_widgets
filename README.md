@@ -90,7 +90,7 @@ GlassScaffold(
   background: Image.asset('assets/wallpaper.jpg', fit: BoxFit.cover),
   statusBarStyle: GlassStatusBarStyle.auto,
   appBar: GlassAppBar(title: const Text('My App')),
-  body: Center(child: GlassCard(child: Text('Hello, Glass!'))),
+  body: Center(child: GlassContainer.card(child: Text('Hello, Glass!'))),
 )
 ```
 
@@ -108,10 +108,10 @@ The package is centred around **navigation chrome** — `GlassScaffold` with `Gl
 |---|---|
 | Screen with app bar and/or tab bar | **`GlassScaffold`** — the primary pattern |
 | Custom layout without standard scaffold structure | **`GlassPage`** — lower-level building block |
-| Standalone glass card or panel in an existing layout | **`GlassCard` / `GlassContainer`** — opt-in, not the core pattern |
+| Standalone glass card or panel in an existing layout | **`GlassContainer.card` / `GlassContainer`** — opt-in, not the core pattern |
 | Localised group of glass elements in an existing layout | **`AdaptiveLiquidGlassLayer`** — scope a layer to a region; grouped cards share its settings |
 
-> `GlassContainer` / `GlassCard` are fully supported for localised glass UI (floating panels, settings cards, etc.) but most screens should start with `GlassScaffold`.
+> `GlassContainer` / `GlassContainer.card` are fully supported for localised glass UI (floating panels, settings cards, etc.) but most screens should start with `GlassScaffold`.
 
 ### Optional: quality & theming
 
@@ -204,10 +204,10 @@ Use `GlassGroupedSection` when you want glass-styled grouped rows.
 
 ### Glass Composition Rule: Glass is a Platter, Not a Wrapper
 
-`GlassCard`, `GlassContainer`, and `GlassGroupedSection` are **base surfaces** — they sit
+`GlassContainer.card`, `GlassContainer`, and `GlassGroupedSection` are **base surfaces** — they sit
 beneath your content. They are not generic styling wrappers for other glass controls.
 
-| ✅ Place inside GlassCard / GlassContainer | ❌ Do not place inside GlassCard / GlassContainer |
+| ✅ Place inside GlassContainer.card / GlassContainer | ❌ Do not place inside GlassContainer.card / GlassContainer |
 |---|---|
 | `Text`, `Icon`, `ListTile`, `CupertinoListTile` | `GlassSegmentedControl`, `GlassSlider`, `GlassSwitch` |
 | `GlassListTile`, `GlassDivider` | `GlassButton`, `GlassChip`, `GlassIconButton` |
@@ -221,14 +221,27 @@ from interactive indicators (segmented control pill, slider thumb) during animat
 Interactive glass controls already provide their own surface appearance via `backgroundColor`
 and `indicatorColor` — no outer container is needed for the track or background.
 
+**Cards in scrolling lists:** iOS renders inset-grouped list cards as flat, opaque surfaces.
+`GlassContainer.card`, `GlassGroupedSection`, `GlassReorderableList.grouped` and the date
+pickers take `surfaceStyle: GlassSurfaceStyle.solid` for a flat white / `#1C1C1E` card with
+26pt corners (no blur, rim or shadow). `glass` is the default in 1.x; the default becomes
+`solid` in 2.0.0.
+
+```dart
+GlassGroupedSection(
+  surfaceStyle: GlassSurfaceStyle.solid,
+  children: [GlassListTile(title: Text('Wi-Fi'))],
+)
+```
+
 
 ## Widget Categories
 
 ### Containers
-`GlassCard` · `GlassContainer`\* · `GlassDivider` · `GlassGroupedSection` · `GlassListTile` · `GlassStepper`
+`GlassContainer.card` · `GlassContainer`\* · `GlassDivider` · `GlassGroupedSection` · `GlassListTile` · `GlassStepper`
 
 \* `GlassContainer` is a low-level building block for custom glass surfaces.
-Most apps should use `GlassCard` or `GlassGroupedSection` instead.
+Most apps should use `GlassContainer.card` or `GlassGroupedSection` instead.
 
 ### Interactive
 `GlassButton` · `GlassIconButton` · `GlassChip` · `GlassSwitch` · `GlassSlider` · `GlassSegmentedControl` · `GlassPullDownButton` · `GlassButtonGroup` · `GlassBadge` · `GlassPageControl`
@@ -368,7 +381,7 @@ GlassContainer(
 Enables the full Impeller shader pipeline with texture capture and chromatic aberration. On Skia/Web, automatically falls back to Standard.
 
 ```dart
-GlassCard(
+GlassContainer.card(
   quality: GlassQuality.premium,
   child: const Text('Static hero section'),
 )
@@ -383,7 +396,7 @@ GlassCard(
 Zero custom fragment shader cost on any device. Uses `BackdropFilter` blur + a Rec. 709 saturation matrix + a specular rim stroke. Visually equivalent to a high-quality frosted panel.
 
 ```dart
-GlassCard(
+GlassContainer.card(
   quality: GlassQuality.minimal,
   child: const Text('No shader overhead'),
 )
@@ -617,7 +630,7 @@ GlassPage(
 Control the tightness of the specular highlight on any glass surface via `LiquidGlassSettings.specularSharpness`:
 
 ```dart
-GlassCard(
+GlassContainer.card(
   settings: LiquidGlassSettings(
     specularSharpness: GlassSpecularSharpness.sharp, // tight, mirror-like
   ),

@@ -587,7 +587,7 @@ void main() {
       expect(find.text('Section Footer'), findsOneWidget);
     });
 
-    testWidgets('wraps children in a GlassCard', (tester) async {
+    testWidgets('wraps children in a GlassContainer.card', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -599,7 +599,7 @@ void main() {
           ),
         ),
       );
-      expect(find.byType(GlassCard), findsOneWidget);
+      expect(find.byType(GlassContainer), findsOneWidget);
     });
 
     testWidgets('handles non-GlassListTile children gracefully',

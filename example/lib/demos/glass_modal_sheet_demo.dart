@@ -351,7 +351,7 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
           if (_selectedTab == 1) ...[
             _buildScenarioTile(
               title: 'Glass Card',
-              description: 'Standalone GlassCard component demo',
+              description: 'Standalone GlassContainer.card component demo',
               icon: CupertinoIcons.macwindow,
               onTap: () => _showGlassCard(context),
               color: CupertinoColors.activeGreen,
@@ -749,7 +749,7 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
         children: [
           Padding(
             padding: EdgeInsets.all(24),
-            child: GlassCard(
+            child: GlassContainer.card(
               useOwnLayer: true,
               padding: EdgeInsets.all(24),
               child: SizedBox(
@@ -768,7 +768,7 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
             ),
           ),
           Text(
-            'Standalone GlassCard component demo.',
+            'Standalone GlassContainer.card component demo.',
             style:
                 TextStyle(color: CupertinoColors.white.withValues(alpha: 0.54)),
           ),
@@ -1125,7 +1125,7 @@ class _BaseScenarioState extends State<BaseScenario> {
 
         return Padding(
           padding: EdgeInsets.only(bottom: 12),
-          child: GlassCard(
+          child: GlassContainer.card(
             useOwnLayer: false,
             padding: EdgeInsets.all(16),
             child: Row(

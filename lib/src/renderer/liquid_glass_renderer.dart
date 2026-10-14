@@ -13,6 +13,8 @@ export '../engine/glass_glow.dart'
 export '../engine/liquid_glass.dart' show LiquidGlass;
 export '../engine/liquid_glass_blend_group.dart' show LiquidGlassBlendGroup;
 export '../engine/liquid_glass_layer.dart' show LiquidGlassLayer;
+export '../engine/rendering/liquid_glass_render_object.dart'
+    show InheritedGeometryRenderLink;
 export '../engine/liquid_glass_settings.dart'
     show
         GlassBodyMode,

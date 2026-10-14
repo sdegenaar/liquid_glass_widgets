@@ -333,7 +333,7 @@ class RecommendedGlassSettings {
 
   /// Settings for overlay page layers, cards, and buttons.
   ///
-  /// Use this for [AdaptiveLiquidGlassLayer] and [GlassCard]/[GlassButton]
+  /// Use this for [AdaptiveLiquidGlassLayer] and [GlassContainer.card]/[GlassButton]
   /// within an overlays page context.
   ///
   /// - refractiveIndex: 0.7 = thin delicate rim (iOS 26 aesthetic for small widgets)

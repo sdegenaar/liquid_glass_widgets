@@ -2,7 +2,7 @@
 ///
 /// Minimal recommended usage with [GlassScaffold]:
 /// [LiquidGlassWidgets.initialize], [LiquidGlassWidgets.wrap],
-/// [GlassScaffold], [GlassAppBar], [GlassTabBar], [GlassCard], [GlassButton].
+/// [GlassScaffold], [GlassAppBar], [GlassTabBar], [GlassContainer.card], [GlassButton].
 ///
 ///   cd example && flutter run -t example.dart
 
@@ -112,7 +112,7 @@ class _HomePageState extends State<_HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            GlassCard(
+            GlassContainer.card(
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,7 +151,7 @@ class _HomePageState extends State<_HomePage> {
               (
                 CupertinoIcons.square_grid_2x2_fill,
                 'Containers',
-                'GlassCard · GlassContainer · GlassListTile'
+                'GlassContainer.card · GlassContainer · GlassListTile'
               ),
               (
                 CupertinoIcons.hand_point_left,
@@ -176,7 +176,7 @@ class _HomePageState extends State<_HomePage> {
             ])
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: GlassCard(
+                child: GlassContainer.card(
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [

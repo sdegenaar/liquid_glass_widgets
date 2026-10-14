@@ -1,6 +1,6 @@
 /// Quality Comparison Demo — Premium vs Standard side-by-side
 ///
-/// Renders GlassButton, GlassSegmentedControl, GlassCard, and GlassTabBar
+/// Renders GlassButton, GlassSegmentedControl, GlassContainer.card, and GlassTabBar
 /// with IDENTICAL [LiquidGlassSettings] at both quality levels so you can
 /// directly compare how the thickness/light normalization affects each widget
 /// on the Standard (2D lightweight shader) path.
@@ -166,7 +166,7 @@ const _kBtnDefault = _Preset(
   stdOpacityMultiplier: 1.0,
 );
 const _kCardDefault = _Preset(
-  // GlassCard + tab bar surface — tuned for ~88% visual parity
+  // GlassContainer.card + tab bar surface — tuned for ~88% visual parity
   thickness: 19, ambient: 0.26, glow: 0.0, light: 0.90,
   blur: 3.0,
   stdOpacityMultiplier: 1.0,
@@ -754,10 +754,10 @@ class GlassQualityComparisonDemoState
 
           SizedBox(height: 20),
 
-          // ── GlassCard ───────────────────────────────────────────────────
+          // ── GlassContainer.card ───────────────────────────────────────────────────
           _ComparisonRow(
-            label: 'GlassCard',
-            premium: GlassCard(
+            label: 'GlassContainer.card',
+            premium: GlassContainer.card(
               useOwnLayer: true,
               settings: _kGlass,
               quality: GlassQuality.premium,
@@ -787,7 +787,7 @@ class GlassQualityComparisonDemoState
                 ),
               ),
             ),
-            standard: GlassCard(
+            standard: GlassContainer.card(
               useOwnLayer: true,
               settings: _kGlassCard,
               quality: GlassQuality.standard,

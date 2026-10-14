@@ -15,15 +15,15 @@ Follow this guide strictly when writing, refactoring, or reviewing UI code to en
 
 ### Rule 1: Glass is a Platter, Not a Wrapper
 Glass in the iOS 26 design system is reserved for the **navigation and control layer** — floating chrome that sits above content.
-- **DO use glass for:** Navigation bars (`GlassAppBar`), tab bars (`GlassTabBar`), floating buttons (`GlassButton`, `GlassIconButton`), toolbars, modal sheets (`GlassModalSheet`), dialogs (`GlassDialog`), and standalone floating cards (`GlassCard`).
-- **DO NOT use glass for:** Full-screen backgrounds, dense list view items, video players, image galleries, or text article bodies. Backgrounds should be rich wallpapers or gradients; content cards should be clean and readable.
+- **DO use glass for:** Navigation bars (`GlassAppBar`), tab bars (`GlassTabBar`), floating buttons (`GlassButton`, `GlassIconButton`), toolbars, modal sheets (`GlassModalSheet`), dialogs (`GlassDialog`), and standalone floating cards (`GlassContainer.card`).
+- **DO NOT use glass for:** Full-screen backgrounds, dense list view items, video players, image galleries, or text article bodies. Backgrounds should be rich wallpapers or gradients; content cards should be clean and readable. Cards inside scrolling lists should use `surfaceStyle: GlassSurfaceStyle.solid` (on `GlassContainer.card`, `GlassGroupedSection`, `GlassReorderableList.grouped`, `GlassDatePicker` or `GlassMultiDatePicker`): a flat opaque card matching native iOS inset-grouped lists. `glass` is the 1.x default; `solid` becomes the default in 2.0.0.
 
 ### Rule 2: NEVER Nest Refractive Glass inside Refractive Glass
 Placing refractive glass widgets inside another refractive glass container is an optical and performance anti-pattern.
-- **CRITICAL ANTI-PATTERN:** Placing `GlassButton`, `GlassIconButton`, `GlassSegmentedControl`, `GlassSlider`, or `GlassSwitch` inside a `GlassCard`, `GlassGroupedSection`, or `GlassContainer`.
+- **CRITICAL ANTI-PATTERN:** Placing `GlassButton`, `GlassIconButton`, `GlassSegmentedControl`, `GlassSlider`, or `GlassSwitch` inside a `GlassContainer.card`, `GlassGroupedSection`, or `GlassContainer`.
 - **Why?** Interactive glass controls provide their own refractive surface. Nesting creates severe double-refraction distortion, clips spring jelly animations, and wastes GPU fill-rate.
 - **Correct Pattern:**
-  - In a `GlassCard` or `GlassGroupedSection`: Use standard text, icons, and non-refractive controls (or `GlassListTile` which is specifically designed without an internal glass layer).
+  - In a `GlassContainer.card` or `GlassGroupedSection`: Use standard text, icons, and non-refractive controls (or `GlassListTile` which is specifically designed without an internal glass layer).
   - Outside the card / on the page platter: Use `GlassSegmentedControl`, `GlassButton`, `GlassSlider`, or standalone `GlassSwitch(useOwnLayer: true)`.
 
 ### Rule 3: Single Public Import
@@ -136,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         children: [
-          // Content cards stay opaque or use GlassCard for grouping
+          // Content cards stay opaque or use GlassContainer.card for grouping
           GlassGroupedSection(
             header: const Text('ACCOUNT'),
             children: [
@@ -176,10 +176,10 @@ When generating Flutter UI, replace standard Flutter widgets with their native l
 | `ElevatedButton` / `CupertinoButton` | `GlassButton` | Refractive button with squeeze & stretch physics and touch glow. |
 | `IconButton` | `GlassIconButton` | Refractive circular/squircle button with `onPressed`. |
 | `PopupMenuButton` / Context Menu | `GlassPullDownButton` | Combined trigger button and `GlassMenu`. |
-| `CupertinoSegmentedControl` | `GlassSegmentedControl<T>` | Fluid animated glass indicator with jelly physics. Do NOT wrap in `GlassCard`. |
+| `CupertinoSegmentedControl` | `GlassSegmentedControl<T>` | Fluid animated glass indicator with jelly physics. Do NOT wrap in `GlassContainer.card`. |
 | `Switch` / `CupertinoSwitch` | `GlassSwitch` | Fluid spring jump animation. Use `useOwnLayer: true` when standalone. |
 | `Slider` / `CupertinoSlider` | `GlassSlider` | Glass track with draggable jelly thumb and haptic snaps. |
-| `Card` | `GlassCard` | Glass container for grouping content. Content inside stays opaque. |
+| `Card` | `GlassContainer.card` | Container for grouping content (`surfaceStyle: GlassSurfaceStyle.solid` for flat list cards). Content inside stays opaque. |
 | Grouped `ListView` | `GlassGroupedSection` | Inset grouped list container with automatic dividers between `GlassListTile`s. |
 | `ListTile` | `GlassListTile` | Grouped row item. Shares parent glass layer inside `GlassGroupedSection`. |
 | `Divider` | `GlassDivider` | Refractive subtle separator line. |
@@ -335,7 +335,7 @@ GlassAppBar.pinned(
 - [ ] **Did you call `await LiquidGlassWidgets.initialize()` in `main()`?** Shaders must be pre-warmed.
 - [ ] **Did you wrap your app in `LiquidGlassWidgets.wrap()`?** Required for theme and accessibility scaling.
 - [ ] **Are you using `GlassScaffold` instead of `Scaffold`?** Prevents z-index glitches with glass nav bars.
-- [ ] **Did you avoid nesting glass in glass?** Never put `GlassButton`, `GlassSlider`, or `GlassSwitch` directly inside `GlassCard` or `GlassGroupedSection`.
+- [ ] **Did you avoid nesting glass in glass?** Never put `GlassButton`, `GlassSlider`, or `GlassSwitch` directly inside `GlassContainer.card` or `GlassGroupedSection`.
 - [ ] **Did you use `GlassTabBar.bottom` instead of `GlassBottomBar`?** `GlassBottomBar` is deleted.
 - [ ] **`GlassButton` uses `onTap`, not `onPressed`.** (`GlassButton(onTap: () {})`) — the opposite of `ElevatedButton`.
 - [ ] **`GlassIconButton` uses `onPressed`, not `onTap`.** (`GlassIconButton(onPressed: () {})`).

@@ -1487,7 +1487,7 @@ class _CenteringCase extends StatelessWidget {
         const SizedBox(height: 12),
 
         // Inline bar preview clipped inside a glass card.
-        GlassCard(
+        GlassContainer.card(
           settings: RecommendedGlassSettings.overlay,
           padding: EdgeInsets.zero,
           child: ClipRRect(

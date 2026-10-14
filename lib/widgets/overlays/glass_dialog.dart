@@ -3,7 +3,7 @@ import 'package:flutter/cupertino.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
-import '../containers/glass_card.dart';
+import '../containers/glass_container.dart';
 import '../interactive/glass_button.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
 import '../../theme/glass_theme_helpers.dart';
@@ -11,12 +11,12 @@ import '../../theme/glass_theme_helpers.dart';
 /// A glass morphism alert dialog following Apple's iOS design patterns.
 ///
 /// [GlassDialog] provides a modal dialog with liquid glass effect,
-/// composing [GlassCard] and [GlassButton] as building blocks.
+/// composing [GlassContainer.card] and [GlassButton] as building blocks.
 ///
 /// ## Key Features
 ///
 /// - Liquid glass backdrop with blur effect
-/// - Composable design using GlassCard + GlassButton
+/// - Composable design using GlassContainer.card + GlassButton
 /// - iOS-style alert layout
 /// - 1-3 action buttons with smart layout
 /// - Customizable glass settings
@@ -294,7 +294,7 @@ class GlassDialog extends StatelessWidget {
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
-        child: GlassCard(
+        child: GlassContainer.card(
           useOwnLayer: true,
           settings: settings,
           quality: effectiveQuality,

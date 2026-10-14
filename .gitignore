@@ -3,6 +3,7 @@
 .packages
 .pub/
 build/
+tool/**/build/
 pubspec.lock
 .flutter-plugins
 .flutter-plugins-dependencies

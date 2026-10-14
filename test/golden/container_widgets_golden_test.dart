@@ -1,4 +1,3 @@
-import 'package:liquid_glass_widgets/widgets/containers/glass_card.dart';
 import 'package:liquid_glass_widgets/widgets/containers/glass_container.dart';
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
@@ -54,7 +53,7 @@ void main() {
   );
 
   goldenTest(
-    'GlassCard renders correctly',
+    'GlassContainer.card renders correctly',
     fileName: 'glass_card',
     pumpBeforeTest: pumpOnce,
     builder: () => GoldenTestGroup(
@@ -65,7 +64,7 @@ void main() {
           child: buildWithGradientBackground(
             AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
-              child: const GlassCard(
+              child: const GlassContainer.card(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -93,7 +92,7 @@ void main() {
           child: buildWithGradientBackground(
             AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
-              child: const GlassCard(
+              child: const GlassContainer.card(
                 padding: EdgeInsets.zero,
                 width: 200,
                 height: 150,

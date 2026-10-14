@@ -6,6 +6,10 @@ import 'glass_container.dart';
 
 /// A glass card widget following Apple's card design patterns.
 ///
+/// > **Deprecated:** use [GlassContainer.card] instead. It has identical
+/// > defaults and adds a `surfaceStyle` (glass or solid). `GlassCard` will be
+/// > removed in 2.0.0.
+///
 /// [GlassCard] builds upon [GlassContainer] with opinionated defaults for
 /// card-like content containers, matching iOS design guidelines.
 ///
@@ -92,7 +96,7 @@ import 'glass_container.dart';
 /// Do not place interactive glass controls (`GlassSegmentedControl`,
 /// `GlassSlider`, `GlassSwitch`, `GlassButton`) inside a [GlassCard] — see
 /// [GlassContainer] for the full explanation and correct alternatives.
-
+@Deprecated('Use GlassContainer.card instead. Will be removed in 2.0.0.')
 class GlassCard extends StatelessWidget {
   /// Creates a glass card.
   const GlassCard({
@@ -216,8 +220,8 @@ class GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Build upon GlassContainer with card-specific defaults
-    return GlassContainer(
+    // Forward to GlassContainer.card, which carries the same defaults.
+    return GlassContainer.card(
       width: width,
       height: height,
       padding: padding,

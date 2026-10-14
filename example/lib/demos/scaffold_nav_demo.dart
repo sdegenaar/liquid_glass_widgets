@@ -90,7 +90,7 @@ class _ScreenAState extends State<ScreenA> {
         itemCount: 20,
         itemBuilder: (context, i) => Padding(
           padding: EdgeInsets.only(bottom: 12),
-          child: GlassCard(
+          child: GlassContainer.card(
             child: Padding(
               padding: EdgeInsets.all(16),
               child: Text(
@@ -132,7 +132,7 @@ class ScreenB extends StatelessWidget {
         itemCount: 10,
         itemBuilder: (context, i) => Padding(
           padding: EdgeInsets.only(bottom: 12),
-          child: GlassCard(
+          child: GlassContainer.card(
             child: Padding(
               padding: EdgeInsets.all(16),
               child: Text(

@@ -253,7 +253,7 @@ class GlassPage extends StatefulWidget {
 
   /// Glass effect settings applied to the page's internal rendering layer.
   ///
-  /// All grouped glass widgets ([GlassCard], [GlassContainer], etc.) within
+  /// All grouped glass widgets ([GlassContainer.card], [GlassContainer], etc.) within
   /// this page will inherit these settings automatically — no need to set
   /// `useOwnLayer: true` or pass `settings:` to each widget individually.
   ///
@@ -437,7 +437,7 @@ class _GlassPageState extends State<GlassPage> {
             // its own backgroundColor as the developer set it.
             //
             // The AdaptiveLiquidGlassLayer provides the LiquidGlassRenderScope
-            // that all glass widgets (GlassAppBar, GlassButton, GlassCard, etc.)
+            // that all glass widgets (GlassAppBar, GlassButton, GlassContainer.card, etc.)
             // need to render. Without it, using any glass widget inside a
             // Scaffold's appBar slot would crash with "No liquid glass renderer
             // found in context". Settings and quality resolve from GlassTheme

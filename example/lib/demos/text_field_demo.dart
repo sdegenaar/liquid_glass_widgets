@@ -220,7 +220,7 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
                         constraints: BoxConstraints(
                           maxWidth: MediaQuery.of(context).size.width * 0.75,
                         ),
-                        child: GlassCard(
+                        child: GlassContainer.card(
                           useOwnLayer: true,
                           quality: GlassQuality.premium,
                           shape: const LiquidRoundedSuperellipse(

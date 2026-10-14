@@ -39,7 +39,7 @@ class _Scene extends StatelessWidget {
           top: 180,
           width: 240,
           height: 150,
-          child: GlassCard(
+          child: GlassContainer.card(
             useOwnLayer: true,
             quality: GlassQuality.premium,
             settings: cardSettings,
@@ -63,7 +63,7 @@ class _Scene extends StatelessWidget {
           right: 60,
           bottom: 70,
           height: 90,
-          child: GlassCard(
+          child: GlassContainer.card(
             useOwnLayer: true,
             quality: GlassQuality.premium,
             settings: cardSettings,

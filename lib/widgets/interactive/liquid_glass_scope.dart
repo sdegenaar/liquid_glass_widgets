@@ -78,7 +78,7 @@ class _LiquidGlassScopeState extends State<LiquidGlassScope> {
 /// Marks a widget as the texture capture source for the nearest [LiquidGlassScope].
 ///
 /// Wraps [child] in a [RepaintBoundary] tagged with the scope's [GlobalKey].
-/// Descendant [GlassEffect] widgets (e.g. [GlassCard], [GlassSegmentedControl])
+/// Descendant [GlassEffect] widgets (e.g. [GlassContainer.card], [GlassSegmentedControl])
 /// will sample this boundary every frame to produce real background colour absorption
 /// on Skia and Web paths, simulating true physical glass.
 ///

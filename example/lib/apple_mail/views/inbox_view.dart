@@ -897,7 +897,7 @@ class _BatchActionsBar extends StatelessWidget {
         16,
         bottomPad > 32 ? bottomPad - 8 : 32,
       ),
-      child: GlassCard(
+      child: GlassContainer.card(
         useOwnLayer: true,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         shape: const LiquidRoundedRectangle(borderRadius: 28),

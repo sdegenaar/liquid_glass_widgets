@@ -408,7 +408,7 @@ class _UvFreezeHarnessState extends State<UvFreezeHarness>
           child: SizedBox(
             width: 290,
             height: 130,
-            child: GlassCard(
+            child: GlassContainer.card(
               quality: _quality,
               padding: const EdgeInsets.all(14),
               child: Column(
@@ -531,7 +531,7 @@ class _ContentSampleCard extends StatelessWidget {
       const [Color(0xFFF59E0B), Color(0xFFEF4444)],
     ][(index - 1) % 4];
 
-    return GlassCard(
+    return GlassContainer.card(
       quality: quality,
       padding: const EdgeInsets.all(14),
       child: Row(

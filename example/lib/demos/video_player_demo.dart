@@ -146,7 +146,7 @@ class _VideoGlassDemoPageState extends State<VideoGlassDemoPage> {
                     SizedBox(height: 8),
 
                     // Title card
-                    GlassCard(
+                    GlassContainer.card(
                       useOwnLayer: true,
                       padding: EdgeInsets.all(16),
                       child: Column(
@@ -227,7 +227,7 @@ class _VideoGlassDemoPageState extends State<VideoGlassDemoPage> {
 
                     // Progress indicator card
                     if (_controller.value.isInitialized)
-                      GlassCard(
+                      GlassContainer.card(
                         useOwnLayer: true,
                         padding: EdgeInsets.symmetric(
                           horizontal: 16,

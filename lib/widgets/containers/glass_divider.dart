@@ -11,7 +11,7 @@ import '../../theme/glass_theme.dart';
 ///
 /// ### Horizontal divider (default):
 /// ```dart
-/// GlassCard(
+/// GlassContainer.card(
 ///   child: Column(
 ///     children: [
 ///       Text('Section A'),

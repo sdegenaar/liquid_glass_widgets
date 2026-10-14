@@ -222,7 +222,7 @@ class _ConciergePageState extends State<ConciergePage> {
   Widget _buildPromptChip(String prompt) {
     return GestureDetector(
       onTap: () => _onPromptTap(prompt),
-      child: GlassCard(
+      child: GlassContainer.card(
         padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         shape: const LiquidRoundedSuperellipse(borderRadius: 16),
         settings: ShowcaseGlassTheme.promptChips,
@@ -251,7 +251,7 @@ class _ConciergePageState extends State<ConciergePage> {
   Widget _buildInputArea() {
     return Padding(
       padding: EdgeInsets.all(20.0),
-      child: GlassCard(
+      child: GlassContainer.card(
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         shape: const LiquidRoundedSuperellipse(borderRadius: 24),
         settings: ShowcaseGlassTheme.chatInput,

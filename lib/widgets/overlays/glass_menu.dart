@@ -75,7 +75,7 @@ enum GlassMenuAlignment {
 /// - **Seamless crossfade**: Button only appears at final 5% to preserve morph illusion
 /// - **Dimension interpolation**: Width, height, and border radius morph smoothly
 /// - **Position aware**: Menu expands from button position
-/// - **Settings inheritance**: Inherits parent layer settings like GlassCard (thin rim by default)
+/// - **Settings inheritance**: Inherits parent layer settings like GlassContainer.card (thin rim by default)
 /// - **No button animation**: Trigger button remains static, only shape morphs
 class GlassMenu extends StatefulWidget {
   /// The widget that triggers the menu.

@@ -1,11 +1,15 @@
 import 'package:flutter/cupertino.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../types/glass_quality.dart';
-import 'glass_card.dart';
+import '../../types/glass_surface_style.dart';
+import 'glass_container.dart';
+import 'glass_disclosure_group.dart';
 import 'glass_divider.dart';
 import 'glass_list_tile.dart';
+import '../shared/glass_solid_surface.dart';
 
-/// A convenience wrapper that groups [GlassListTile]s inside a [GlassCard].
+/// A convenience wrapper that groups [GlassListTile]s inside a card
+/// ([GlassContainer.card]).
 ///
 /// [GlassGroupedSection] automatically injects [GlassDivider]s between tiles,
 /// with smart leading-indent detection — 56px when the preceding tile has a
@@ -51,6 +55,19 @@ import 'glass_list_tile.dart';
 /// as direct children — this is a glass-in-glass anti-pattern that degrades
 /// refraction and can clip indicator animations. See [GlassContainer] for
 /// the full explanation.
+///
+/// ## Surface style
+///
+/// [surfaceStyle] defaults to [GlassSurfaceStyle.glass] in 1.x. iOS renders
+/// inset-grouped cards as flat, opaque surfaces, so use
+/// [GlassSurfaceStyle.solid] for sections in a scrolling page to match:
+///
+/// ```dart
+/// GlassGroupedSection(
+///   surfaceStyle: GlassSurfaceStyle.solid,
+///   children: [...],
+/// )
+/// ```
 
 class GlassGroupedSection extends StatelessWidget {
   /// Creates a grouped section of glass list tiles.
@@ -64,6 +81,9 @@ class GlassGroupedSection extends StatelessWidget {
     this.settings,
     this.useOwnLayer = false,
     this.quality,
+    this.dividerIndent,
+    this.surfaceStyle = GlassSurfaceStyle.glass,
+    this.clipBehavior,
   });
 
   /// The list tiles to display inside the section.
@@ -91,23 +111,51 @@ class GlassGroupedSection extends StatelessWidget {
   /// iOS grouped table section insets.
   final EdgeInsetsGeometry? margin;
 
-  /// Shape of the glass card.
+  /// Shape of the card.
   ///
-  /// If null, uses [GlassCard]'s default shape.
+  /// If null, uses [GlassContainer.card]'s default shape: a 12px superellipse
+  /// for [GlassSurfaceStyle.glass], 26px for [GlassSurfaceStyle.solid].
   final LiquidShape? shape;
 
   /// Glass effect settings.
   ///
-  /// If null, inherits from the parent layer or theme.
+  /// If null, inherits from the parent layer or theme. Ignored when
+  /// [surfaceStyle] is [GlassSurfaceStyle.solid].
   final LiquidGlassSettings? settings;
 
   /// Whether to create its own glass layer.
   ///
-  /// Defaults to false (grouped mode).
+  /// Defaults to false (grouped mode). Ignored when [surfaceStyle] is
+  /// [GlassSurfaceStyle.solid].
   final bool useOwnLayer;
 
-  /// Rendering quality.
+  /// Rendering quality. Ignored when [surfaceStyle] is
+  /// [GlassSurfaceStyle.solid].
   final GlassQuality? quality;
+
+  /// How the section card is painted.
+  ///
+  /// [GlassSurfaceStyle.glass] (default in 1.x) renders a glass card.
+  /// [GlassSurfaceStyle.solid] renders a flat opaque card matching native iOS
+  /// inset-grouped lists, and clips the rows to the card's corners.
+  final GlassSurfaceStyle surfaceStyle;
+
+  /// How the section card clips its children.
+  ///
+  /// Defaults to [Clip.antiAlias] when [surfaceStyle] is
+  /// [GlassSurfaceStyle.solid] (to clip row press highlights and swipe actions
+  /// to the card's rounded corners), and [Clip.none] when [surfaceStyle] is
+  /// [GlassSurfaceStyle.glass].
+  final Clip? clipBehavior;
+
+  /// Start inset of the automatically inserted dividers that follow a tile
+  /// with a leading widget.
+  ///
+  /// Defaults to 56 (a 32pt leading slot + 12pt gap + 12pt inset). Set this to
+  /// the text-start offset when using a larger leading widget, e.g. 72 for a
+  /// 44pt avatar row. Dividers following tiles without a leading widget always
+  /// use 16.
+  final double? dividerIndent;
 
   Widget _buildHeader(BuildContext context) {
     if (header == null) return const SizedBox.shrink();
@@ -167,23 +215,34 @@ class GlassGroupedSection extends StatelessWidget {
 
         // Compute indent based on whether the current tile has a leading widget.
         final double indent =
-            (currentChild is GlassListTile && currentChild.leading != null)
-                ? 56.0
+            ((currentChild is GlassListTile && currentChild.leading != null) ||
+                    (currentChild is GlassDisclosureGroup &&
+                        currentChild.leading != null))
+                ? (dividerIndent ?? 56.0)
                 : 16.0;
         processedChildren.add(GlassDivider(indent: indent));
       }
     }
 
-    final card = GlassCard(
+    final effectiveClipBehavior = clipBehavior ??
+        (surfaceStyle == GlassSurfaceStyle.solid ? Clip.antiAlias : Clip.none);
+
+    final card = GlassContainer.card(
       padding: EdgeInsets.zero,
       margin: EdgeInsets.zero,
-      shape: shape ?? const LiquidRoundedSuperellipse(borderRadius: 12),
+      shape: shape,
       settings: settings,
       useOwnLayer: useOwnLayer,
       quality: quality,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: processedChildren,
+      surfaceStyle: surfaceStyle,
+      clipBehavior: effectiveClipBehavior,
+      child: InheritedGlassSurfaceStyle(
+        surfaceStyle: surfaceStyle,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: processedChildren,
+        ),
       ),
     );
 

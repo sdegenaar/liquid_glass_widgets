@@ -31,7 +31,7 @@ class InheritedLiquidGlass extends InheritedWidget {
   final bool isBlurProvidedByAncestor;
 
   /// Whether children should avoid high-fidelity refraction.
-  /// Set to true by containers like GlassCard to prevent refraction artifacts
+  /// Set to true by containers like GlassContainer.card to prevent refraction artifacts
   /// when glass is nested within glass.
   final bool avoidsRefraction;
 

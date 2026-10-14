@@ -130,10 +130,10 @@ class ContainersPage extends StatelessWidget {
 
                         SizedBox(height: 40),
 
-                        // ── GlassCard ──────────────────────────────────────
-                        const _SectionTitle(title: 'GlassCard'),
+                        // ── GlassContainer.card ──────────────────────────────────────
+                        const _SectionTitle(title: 'GlassContainer.card'),
                         SizedBox(height: 16),
-                        GlassCard(
+                        GlassContainer.card(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -205,7 +205,7 @@ class ContainersPage extends StatelessWidget {
                         // ── GlassDivider ───────────────────────────────────
                         const _SectionTitle(title: 'GlassDivider'),
                         SizedBox(height: 16),
-                        GlassCard(
+                        GlassContainer.card(
                           padding: EdgeInsets.symmetric(
                               horizontal: 16, vertical: 12),
                           child: SizedBox(
@@ -237,7 +237,7 @@ class ContainersPage extends StatelessWidget {
                         // ── GlassListTile ──────────────────────────────────
                         const _SectionTitle(title: 'GlassListTile'),
                         SizedBox(height: 16),
-                        GlassCard(
+                        GlassContainer.card(
                           padding: EdgeInsets.zero,
                           child: Column(
                             children: [
@@ -435,7 +435,7 @@ class _MiniCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: GlassCard(
+      child: GlassContainer.card(
         padding: EdgeInsets.all(12),
         child: Column(
           children: [
@@ -473,7 +473,7 @@ class _StepperDemoState extends State<_StepperDemo> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        GlassCard(
+        GlassContainer.card(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -505,7 +505,7 @@ class _StepperDemoState extends State<_StepperDemo> {
           ),
         ),
         SizedBox(height: 12),
-        GlassCard(
+        GlassContainer.card(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -537,7 +537,7 @@ class _StepperDemoState extends State<_StepperDemo> {
           ),
         ),
         SizedBox(height: 12),
-        GlassCard(
+        GlassContainer.card(
           child: Column(
             children: [
               Row(

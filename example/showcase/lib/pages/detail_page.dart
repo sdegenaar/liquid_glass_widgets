@@ -222,7 +222,7 @@ class _DetailPageState extends State<DetailPage>
               child: SafeArea(
                 child: Padding(
                   padding: EdgeInsets.all(20.0),
-                  child: GlassCard(
+                  child: GlassContainer.card(
                     padding: EdgeInsets.all(16),
                     shape: const LiquidRoundedSuperellipse(borderRadius: 20),
                     settings: ShowcaseGlassTheme.bookingCard,

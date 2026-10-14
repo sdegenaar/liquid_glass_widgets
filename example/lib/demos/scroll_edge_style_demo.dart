@@ -423,7 +423,7 @@ class _ScrollEdgeStyleDemoState extends State<ScrollEdgeStyleDemo> {
             ),
           ),
 
-          // ── Solid Content Cards (No GlassCard anti-pattern) ─────────────
+          // ── Solid Content Cards (No GlassContainer.card anti-pattern) ─────────────
           SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, index) {
@@ -486,7 +486,7 @@ class _SectionHeader extends StatelessWidget {
 
 /// Solid, crisp content card.
 ///
-/// We intentionally do NOT use [GlassCard] inside the scroll list:
+/// We intentionally do NOT use [GlassContainer.card] inside the scroll list:
 /// 1. Conforms to Apple HIG (reserve glass for navigation chrome).
 /// 2. Solid, high-contrast borders and fills make edge fades/blurs starkly obvious.
 class _SolidContentCard extends StatelessWidget {

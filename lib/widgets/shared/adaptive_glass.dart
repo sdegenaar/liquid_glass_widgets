@@ -465,8 +465,15 @@ class AdaptiveGlass extends StatelessWidget {
     // De-isolate children of the own-layer so nested glass (e.g. tab
     // items inside a bottom bar) groups with this layer rather than
     // creating additional own-layers (which would cause double-glass).
-    final effectiveUseOwnLayer =
-        useOwnLayer || GlassIsolationScope.isIsolated(context);
+    // If no ancestor LiquidGlassLayer (or AdaptiveLiquidGlassLayer) exists,
+    // grouped rendering is physically impossible (renderLink would be null,
+    // triggering an assertion failure). In that case, automatically fall back
+    // to provisioning its own layer (effectiveUseOwnLayer = true) so the widget
+    // renders safely and seamlessly in premium quality.
+    final hasAncestorLayer = InheritedGeometryRenderLink.of(context) != null;
+    final effectiveUseOwnLayer = useOwnLayer ||
+        GlassIsolationScope.isIsolated(context) ||
+        !hasAncestorLayer;
 
     if (effectiveUseOwnLayer) {
       // Resolve shadows for the GPU cutout method

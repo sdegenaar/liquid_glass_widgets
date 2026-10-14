@@ -235,3 +235,64 @@ NotificationListener<UserScrollNotification>(
 ```
 
 If you need a **persistent action button on a static, non-collapsing bar**, `GlassTabBarExtraButton` remains available on `GlassTabBar.bottom` without any `collapseConfig`.
+
+---
+
+## Preparing for 2.0: `GlassCard` → `GlassContainer.card`, and `surfaceStyle`
+
+These changes ship in 1.x and are **non-breaking**. They are listed here so you can
+move early and see no deprecation warnings.
+
+### `GlassCard` is deprecated
+
+`GlassCard` is `@Deprecated` and will be removed in 2.0.0. It now forwards to
+`GlassContainer.card`, which has identical defaults (16pt padding, 12pt superellipse)
+and the same parameters, so migration is a rename.
+
+#### Before:
+```dart
+GlassCard(
+  padding: EdgeInsets.all(20),
+  child: Text('Hello'),
+)
+```
+
+#### After:
+```dart
+GlassContainer.card(
+  padding: EdgeInsets.all(20),
+  child: Text('Hello'),
+)
+```
+
+### New `surfaceStyle` (glass or solid)
+
+`GlassContainer.card`, `GlassGroupedSection`, `GlassReorderableList.grouped`,
+`GlassDatePicker`, `GlassMultiDatePicker` and `showGlassDatePicker` accept
+`surfaceStyle: GlassSurfaceStyle.glass | GlassSurfaceStyle.solid`.
+
+- `glass` (default in 1.x): unchanged glass surface.
+- `solid`: a flat opaque card (white in light mode, `#1C1C1E` in dark mode, 26pt corners
+  by default) with no blur, rim light or shadow, like native iOS inset-grouped lists.
+  It is a plain filled shape, not a shader, so `settings`, `quality` and `useOwnLayer`
+  are ignored. Grouped sections and reorderable lists also clip their rows to the card's
+  rounded corners. The brightness follows `GlassTheme` / your app theme like every other
+  widget in the package. Dark `solid` is always `#1C1C1E`; the lighter elevated grey iOS
+  uses inside sheets is not implemented.
+
+iOS renders inset-grouped list cards flat, so opt in to match:
+
+```dart
+GlassGroupedSection(
+  surfaceStyle: GlassSurfaceStyle.solid,
+  children: [/* GlassListTile ... */],
+)
+```
+
+### 2.0.0 default flip
+
+In 2.0.0 the default `surfaceStyle` changes from `glass` to `solid` for
+`GlassGroupedSection`, `GlassReorderableList.grouped`, `GlassDatePicker`,
+`GlassMultiDatePicker` and `GlassContainer.card`
+(`GlassContainer` itself stays glass-first). To keep today's look after upgrading,
+pass `surfaceStyle: GlassSurfaceStyle.glass` explicitly.

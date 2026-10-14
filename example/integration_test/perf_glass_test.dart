@@ -195,7 +195,7 @@ class _BenchScreen extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: cards
-                ? GlassCard(
+                ? GlassContainer.card(
                     useOwnLayer: true,
                     padding: const EdgeInsets.all(10),
                     child: row,

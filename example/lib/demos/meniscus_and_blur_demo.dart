@@ -6,7 +6,7 @@
 ///
 /// Demonstrates [LiquidGlassSettings.edgeAbsorption] across every interactive
 /// component that uses [AnimatedGlassIndicator]:
-///   • GlassCard (static glass surface)
+///   • GlassContainer.card (static glass surface)
 ///   • GlassSegmentedControl (animated pill)
 ///   • GlassSlider (thumb indicator)
 ///   • GlassSwitch (thumb indicator)
@@ -188,7 +188,7 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
               // ── 2. Parameter Tuner ───────────────────────────────────────
               _sectionHeader('LIVE PARAMETER TUNER'),
               const SizedBox(height: 8),
-              GlassCard(
+              GlassContainer.card(
                 useOwnLayer: true,
                 padding: const EdgeInsets.all(20),
                 shape: const LiquidRoundedSuperellipse(borderRadius: 22),
@@ -542,7 +542,7 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
     required Color accent,
     bool active = false,
   }) {
-    return GlassCard(
+    return GlassContainer.card(
       useOwnLayer: true,
       padding: const EdgeInsets.all(16),
       shape: const LiquidRoundedSuperellipse(borderRadius: 18),

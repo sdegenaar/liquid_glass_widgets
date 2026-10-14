@@ -1734,7 +1734,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     // via the items list length).  Each item is offset by 20ms relative to
     // the previous one so they cascade in smoothly from top-to-bottom.
 
-    // Inherit settings from context (like GlassCard/GlassContainer)
+    // Inherit settings from context (like GlassContainer.card/GlassContainer)
     // If user provides custom settings, use those. Otherwise, check for inherited
     // settings from parent layer. If none, use subtle overlay defaults.
     // This matches the pattern used by all other glass widgets.

@@ -36,6 +36,7 @@ export 'theme/glass_theme_settings.dart';
 
 // Types
 export 'types/glass_quality.dart';
+export 'types/glass_surface_style.dart'; // GlassSurfaceStyle enum
 export 'types/glass_quality_change_reason.dart'; // GlassQualityChangeReason enum
 export 'src/types/glass_interaction_behavior.dart'; // GlassInteractionBehavior enum
 
@@ -50,7 +51,10 @@ export 'widgets/shared/glass_content_aware_scope.dart'; // GlassContentAwareScop
 export 'widgets/shared/glass_page.dart' show GlassPage, GlassStatusBarStyle;
 export 'widgets/shared/glass_motion_scope.dart';
 export 'widgets/shared/glass_scroll_edge_effect.dart';
+export 'widgets/shared/glass_swipe_action_scope.dart';
+export 'widgets/shared/glass_edit_scope.dart';
 export 'widgets/shared/inherited_liquid_glass.dart';
+export 'widgets/shared/glass_solid_surface.dart';
 export 'widgets/shared/lightweight_liquid_glass.dart';
 
 // Utils — for advanced / custom widget authors
@@ -69,10 +73,14 @@ export 'utils/glass_performance_monitor.dart'
 export 'widgets/containers/glass_card.dart';
 export 'widgets/containers/glass_container.dart';
 export 'widgets/containers/glass_divider.dart';
+export 'widgets/containers/glass_disclosure_group.dart';
 export 'widgets/containers/glass_grouped_section.dart';
 export 'widgets/containers/glass_list_tile.dart';
+export 'widgets/containers/glass_reorderable_list.dart';
 export 'widgets/containers/glass_stepper.dart';
+export 'widgets/containers/glass_swipe_actions.dart';
 // Widgets - Input
+export 'widgets/input/glass_date_picker.dart';
 export 'widgets/input/glass_form_field.dart';
 export 'widgets/input/glass_password_field.dart';
 export 'widgets/input/glass_picker.dart';
@@ -83,6 +91,7 @@ export 'widgets/input/glass_text_field.dart';
 export 'widgets/interactive/glass_badge.dart';
 export 'widgets/interactive/glass_button.dart';
 export 'widgets/interactive/glass_chip.dart';
+export 'widgets/interactive/glass_edit_button.dart';
 export 'widgets/interactive/glass_icon_button.dart';
 export 'widgets/interactive/glass_page_control.dart';
 export 'widgets/interactive/glass_segmented_control.dart';
@@ -97,7 +106,9 @@ export 'types/glass_button_style.dart';
 export 'widgets/feedback/glass_progress_indicator.dart';
 // Widgets - Overlays
 export 'widgets/overlays/glass_action_sheet.dart';
+export 'widgets/overlays/glass_context_menu.dart';
 export 'widgets/overlays/glass_dialog.dart';
+export 'widgets/overlays/glass_full_screen_cover.dart';
 export 'widgets/overlays/glass_menu.dart';
 export 'widgets/overlays/glass_menu_item.dart';
 export 'widgets/overlays/glass_sheet.dart';
@@ -129,6 +140,7 @@ export 'widgets/surfaces/glass_navigation_shell.dart'
         GlassNavigationShell,
         GlassNavigationShellState,
         GlassNavBarRegistration;
+export 'widgets/surfaces/glass_navigation_stack.dart';
 // Geometry a bar that is not a GlassAppBar aligns its in-route chrome to.
 export 'widgets/surfaces/shared/glass_nav_pinned_host.dart'
     show GlassNavPinnedMetrics;

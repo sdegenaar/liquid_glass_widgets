@@ -32,9 +32,9 @@ import '../../src/widgets/interactive/segmented_control_internal.dart';
 /// - **Flexible Sizing**: Automatically sizes segments evenly
 /// - **Customizable Appearance**: Full control over colors, sizes, and effects
 ///
-/// ## ⚠️ Do Not Wrap in GlassContainer or GlassCard
+/// ## ⚠️ Do Not Wrap in GlassContainer or GlassContainer.card
 ///
-/// Placing this widget inside a [GlassContainer] or [GlassCard] is an
+/// Placing this widget inside a [GlassContainer] or [GlassContainer.card] is an
 /// anti-pattern that causes two problems:
 ///
 /// 1. **Visual degradation** — the container sets `avoidsRefraction: true`

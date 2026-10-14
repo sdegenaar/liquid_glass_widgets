@@ -661,7 +661,7 @@ class _DemoLauncher extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: GlassCard(
+      child: GlassContainer.card(
         padding: EdgeInsets.all(20),
         child: Row(
           children: [

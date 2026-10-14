@@ -134,12 +134,12 @@ void main() {
     });
 
     testWidgets(
-        'GlassCard inside GlassContainer routes to vibrancy fill without nested BackdropFilter',
+        'GlassContainer.card inside GlassContainer routes to vibrancy fill without nested BackdropFilter',
         (tester) async {
       await tester.pumpWidget(
         createTestApp(
           child: const GlassContainer(
-            child: GlassCard(
+            child: GlassContainer.card(
               child: Text('Nested Card Content'),
             ),
           ),

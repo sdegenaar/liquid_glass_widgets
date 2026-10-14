@@ -6,7 +6,7 @@ This example app demonstrates all the widgets available in the `liquid_glass_wid
 
 ### Containers
 - **GlassContainer**: Foundational glass container widget
-- **GlassCard**: Card-style containers with default 16px padding
+- **GlassContainer.card**: Card-style containers with default 16px padding
 - **GlassPanel**: Larger surface areas with 24px padding
 
 ### Interactive
@@ -106,7 +106,7 @@ AdaptiveLiquidGlassLayer(
   child: Column(
     children: [
       GlassButton(...),
-      GlassCard(...),
+      GlassContainer.card(...),
     ],
   ),
 )
