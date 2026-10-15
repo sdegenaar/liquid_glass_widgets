@@ -6,6 +6,7 @@ import 'package:flutter/physics.dart';
 import 'package:flutter/rendering.dart';
 
 import '../../../src/renderer/liquid_glass_renderer.dart';
+import '../../../src/widgets/surfaces/status_bar_row.dart';
 import '../../../src/widgets/surfaces/vertical_bar_title_row.dart';
 import '../../../theme/glass_theme_helpers.dart';
 import '../../../types/glass_quality.dart';
@@ -437,6 +438,24 @@ class GlassNavPinnedHost extends StatelessWidget {
     final inset = state.flowTo.horizontalInset ??
         state.flowFrom.horizontalInset ??
         GlassNavPinnedMetrics.horizontalPadding;
+
+    // On iPhone Duo's inner display held upright the chrome shares the status
+    // bar's row, centred in it, as the route's own bar lays its row out.
+    final statusRow = StatusBarRow.of(context);
+    if (statusRow != null) {
+      return Positioned(
+        top: statusRow.top +
+            (statusRow.height - GlassNavPinnedMetrics.toolbarHeight) / 2,
+        left: statusRow.left,
+        right: statusRow.right,
+        height: GlassNavPinnedMetrics.toolbarHeight,
+        child: GlassIsolationScope(
+          isolated: true,
+          defaultQuality: GlassQuality.premium,
+          child: chrome,
+        ),
+      );
+    }
 
     return Positioned(
       top: topPad,

@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 
 import '../../src/renderer/glass_backdrop_group.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
+import '../../src/widgets/surfaces/status_bar_row.dart';
 import '../../src/widgets/surfaces/vertical_bar_title_row.dart';
 import '../../types/glass_quality.dart';
 import '../interactive/glass_button.dart';
@@ -351,30 +352,39 @@ class GlassAppBar extends StatelessWidget
     // owns, and the shell is this bar's container.
     final verticalBar =
         chrome == null ? null : GlassVerticalBar.maybeOf(context);
+    // On iPhone Duo's inner display held upright it moves up into the status
+    // bar's row instead, beside the status cluster, the title leading.
+    final statusRow = chrome == null ? null : StatusBarRow.of(context);
+    final inRow = verticalBar != null || statusRow != null;
 
     Widget toolbarRow = SafeArea(
+      top: statusRow == null,
       bottom: false,
       child: Padding(
-        padding: verticalBar == null
-            ? padding
-            : verticalBar.edge == GlassVerticalBarEdge.trailing
-                ? EdgeInsetsDirectional.only(
-                    start: verticalBar.titleInset,
-                    end: GlassVerticalBarMetrics.rowInset,
-                    top: verticalBar.rowTop,
-                  )
-                : EdgeInsetsDirectional.only(
-                    start: GlassVerticalBarMetrics.rowInset,
-                    end: verticalBar.titleInset,
-                    top: verticalBar.rowTop,
-                  ),
+        padding: statusRow != null
+            ? EdgeInsets.only(
+                left: statusRow.left,
+                right: statusRow.right,
+                top: statusRow.top,
+              )
+            : verticalBar == null
+                ? padding
+                : verticalBar.edge == GlassVerticalBarEdge.trailing
+                    ? EdgeInsetsDirectional.only(
+                        start: verticalBar.titleInset,
+                        end: GlassVerticalBarMetrics.rowInset,
+                        top: verticalBar.rowTop,
+                      )
+                    : EdgeInsetsDirectional.only(
+                        start: GlassVerticalBarMetrics.rowInset,
+                        end: verticalBar.titleInset,
+                        top: verticalBar.rowTop,
+                      ),
         child: SizedBox(
-          height: verticalBar == null
-              ? toolbarHeight
-              : GlassVerticalBarMetrics.rowHeight,
+          height: inRow ? GlassVerticalBarMetrics.rowHeight : toolbarHeight,
           child: CustomMultiChildLayout(
             delegate: _ToolbarLayout(
-              centerTitle: centerTitle && verticalBar == null,
+              centerTitle: centerTitle && !inRow,
               textDirection: Directionality.of(context),
             ),
             children: [

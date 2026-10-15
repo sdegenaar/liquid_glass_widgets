@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/services.dart';
@@ -6,6 +8,7 @@ import '../../theme/glass_theme.dart';
 
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/widgets/surfaces/dynamic_preferred_size.dart';
+import '../../src/widgets/surfaces/status_bar_row.dart';
 import '../../src/widgets/surfaces/vertical_bar_background.dart';
 import '../../src/widgets/surfaces/vertical_bar_title_row.dart';
 import '../../types/glass_quality.dart';
@@ -449,6 +452,11 @@ class GlassScaffold extends StatelessWidget {
     final bar = appBar;
     final appBarInStrip =
         verticalBar != null && bar is GlassAppBar && bar.pinnedActions != null;
+    // On iPhone Duo's inner display held upright it shares the status bar's
+    // row, and the content starts under the status bar, as natively.
+    final statusRow = bar is GlassAppBar && bar.pinnedActions != null
+        ? StatusBarRow.of(context)
+        : null;
     final bottom = bottomBar;
     final bottomBarInStrip = verticalBar != null &&
         (bottom is GlassToolbar ||
@@ -459,9 +467,11 @@ class GlassScaffold extends StatelessWidget {
     // otherwise fall back to the explicit appBarHeight parameter.
     final effectiveAppBarHeight = appBarInStrip
         ? verticalBar.rowTop + GlassVerticalBarMetrics.rowHeight
-        : appBar is PreferredSizeWidget
-            ? (appBar! as PreferredSizeWidget).preferredSize.height
-            : appBarHeight;
+        : statusRow != null
+            ? math.max(0.0, statusRow.bottom - topPad)
+            : appBar is PreferredSizeWidget
+                ? (appBar! as PreferredSizeWidget).preferredSize.height
+                : appBarHeight;
     final effectiveBottomBarHeight = bottomBarInStrip
         ? 0.0
         : bottomBar is PreferredSizeWidget

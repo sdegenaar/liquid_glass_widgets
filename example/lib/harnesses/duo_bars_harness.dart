@@ -56,6 +56,7 @@
 library;
 
 import 'dart:io' show Directory, File;
+import 'dart:ui' show DisplayFeatureType;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
@@ -217,17 +218,37 @@ class _Rows extends StatelessWidget {
   Widget build(BuildContext context) {
     final padding = MediaQuery.paddingOf(context);
     // Natively the content starts 82pt down in the strip layout, below the
-    // title row, and under the navigation bar otherwise. DemoList pads it by
-    // another 16pt, less the row's own 6pt.
-    final top = GlassVerticalBar.maybeOf(context) == null
-        ? padding.top + barTop
-        : stripTop + 10;
+    // title row, under the inset where the bar shares the status bar's row,
+    // and under the navigation bar otherwise. DemoList pads it by another
+    // 16pt, less the row's own 6pt.
+    final top = GlassVerticalBar.maybeOf(context) != null
+        ? stripTop + 10
+        : _barInStatusRow(context)
+            ? padding.top + 10
+            : padding.top + barTop;
     return ListView.builder(
       padding: EdgeInsets.only(top: top, bottom: 120),
       itemCount: count,
       itemBuilder: (context, i) => _Row(title: title, index: i),
     );
   }
+}
+
+/// Whether the bar shares the status bar's row, as natively on the inner
+/// display held upright: beside a status cluster in a top corner, as tall as
+/// the top inset. The content then starts right under the inset.
+bool _barInStatusRow(BuildContext context) {
+  final padding = MediaQuery.viewPaddingOf(context);
+  final width = MediaQuery.sizeOf(context).width;
+  return GlassVerticalBar.maybeOf(context) == null &&
+      padding.top > 0 &&
+      MediaQuery.displayFeaturesOf(context).any((feature) {
+        final bounds = feature.bounds;
+        return feature.type == DisplayFeatureType.cutout &&
+            bounds.top <= 0 &&
+            (bounds.bottom - padding.top).abs() <= 1 &&
+            (bounds.left <= 1) != (bounds.right >= width - 1);
+      });
 }
 
 /// One coloured row.
@@ -917,10 +938,15 @@ class _LargeTitleRowsState extends State<_LargeTitleRows> {
       child: CustomScrollView(
         controller: widget.controller.scrollController,
         slivers: [
-          // Clears a horizontal navigation bar. The strip's title row is the
-          // large title's own to place.
+          // Clears a horizontal navigation bar, which in the status bar's row
+          // takes no room below the inset. The strip's title row is the large
+          // title's own to place.
           if (!vertical)
-            SliverToBoxAdapter(child: SizedBox(height: padding.top + 44)),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: padding.top + (_barInStatusRow(context) ? 0 : 44),
+              ),
+            ),
           GlassLargeTitle(
             text: widget.title,
             controller: widget.controller,

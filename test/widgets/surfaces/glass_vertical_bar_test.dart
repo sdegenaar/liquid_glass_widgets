@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets/src/widgets/surfaces/status_bar_row.dart';
 import 'package:liquid_glass_widgets/src/widgets/surfaces/tab_bar_vertical_layout.dart';
 import 'package:liquid_glass_widgets/src/widgets/surfaces/vertical_bar_background.dart';
 import 'package:liquid_glass_widgets/src/widgets/surfaces/vertical_bar_regions.dart';
@@ -13,6 +14,11 @@ import 'package:liquid_glass_widgets/widgets/surfaces/shared/glass_nav_pinned_ho
 /// it: a zero top inset, the status bar and the 84pt strip on the right.
 const _outerPortrait = Size(466, 678);
 const _outerPortraitPadding = EdgeInsets.fromLTRB(0, 0, 84, 34);
+
+/// iPhone Duo's inner display held upright: an 82pt top inset beside the
+/// status cluster, and no strip.
+const _innerPortrait = Size(669, 951);
+const _innerPortraitPadding = EdgeInsets.fromLTRB(0, 82, 0, 34);
 
 /// An occlusion region UIKit reports, as Flutter would surface it.
 DisplayFeature _cutout(double left, double top, double right, double bottom) =>
@@ -1157,6 +1163,123 @@ void main() {
 
       expect(find.text('Mailboxes'), findsNWidgets(2));
       expect(find.byType(GlassSearchBar), findsOneWidget);
+    });
+  });
+
+  group('the status bar row in inner portrait', () {
+    /// The status cluster in the top-right corner, from the 27.1 simulator.
+    final cluster = _cutout(535, 0, 669, 82);
+
+    StatusBarRow? resolve({
+      Size size = _innerPortrait,
+      EdgeInsets viewPadding = _innerPortraitPadding,
+      List<DisplayFeature>? displayFeatures,
+      TargetPlatform platform = TargetPlatform.iOS,
+    }) =>
+        StatusBarRow.resolve(
+          size: size,
+          viewPadding: viewPadding,
+          displayFeatures: displayFeatures ?? [cluster],
+          platform: platform,
+        );
+
+    test('runs from the title inset to just short of the cluster', () {
+      final row = resolve()!;
+      expect(row.left, 20);
+      expect(row.right, 669 - 535 + 2);
+      expect(row.top, 24);
+      expect(row.bottom, 72);
+    });
+
+    test('mirrors for a cluster in the top-left corner', () {
+      final row = resolve(displayFeatures: [_cutout(0, 0, 134, 82)])!;
+      expect(row.left, 134 + 2);
+      expect(row.right, 20);
+    });
+
+    test('is null without a cluster as tall as the top inset', () {
+      expect(resolve(displayFeatures: const []), isNull);
+      // A Dynamic Island stops short of the inset and of both sides.
+      expect(
+        resolve(
+          size: const Size(402, 874),
+          viewPadding: const EdgeInsets.fromLTRB(0, 62, 0, 34),
+          displayFeatures: [_cutout(138, 11, 264, 48)],
+        ),
+        isNull,
+      );
+      // The strip's own cluster leaves no top inset.
+      expect(
+        resolve(
+          size: _outerPortrait,
+          viewPadding: _outerPortraitPadding,
+          displayFeatures: _outerPortraitRegions,
+        ),
+        isNull,
+      );
+    });
+
+    test('is null off iOS', () {
+      expect(resolve(platform: TargetPlatform.android), isNull);
+    });
+
+    testDuo('lays the pinned chrome and the title out beside the cluster',
+        (tester) async {
+      setScreen(
+        tester,
+        size: _innerPortrait,
+        padding: _innerPortraitPadding,
+      );
+      // As on the device: the cluster comes from the package's own reading of
+      // UIKit's regions, not from Flutter.
+      VerticalBarRegions.instance.value = [cluster];
+      await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
+      await settle(tester);
+      _push(
+        tester,
+        _Screen(title: 'Detail', actions: [
+          GlassBarItem.icon(
+            icon: const Icon(CupertinoIcons.share),
+            onTap: () {},
+          ),
+        ]),
+      );
+      await settle(tester);
+
+      // The 44pt back circle starts 20pt in, centred in the row at y 24–72.
+      final back = pinned(tester, CupertinoIcons.back);
+      expect(back.dx, closeTo(20 + 22, 0.01));
+      expect(back.dy, closeTo(48, 0.01));
+      // The action ends 2pt short of the cluster at x 535.
+      final share = tester.getRect(find.descendant(
+        of: find.byType(GlassNavPinnedHost),
+        matching: find.byIcon(CupertinoIcons.share),
+      ));
+      // A capsule is 46pt in the bar's 44pt band, as in any bar.
+      expect(share.center.dy, closeTo(48, 1));
+      expect(share.right, lessThanOrEqualTo(533));
+      // The title leads, beside the back button, in the same row.
+      final title = tester.getRect(find.text('Detail'));
+      expect(title.center.dy, closeTo(48, 0.5));
+      expect(title.left, greaterThan(back.dx + 22));
+      expect(title.center.dx, lessThan(669 / 2));
+    });
+
+    testDuo('starts the content under the status bar', (tester) async {
+      setScreen(
+        tester,
+        size: _innerPortrait,
+        padding: _innerPortraitPadding,
+      );
+      tester.view.displayFeatures = [cluster];
+      await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
+      await settle(tester);
+
+      // The row sits inside the 82pt inset, so the bar adds nothing below it.
+      final effect = tester.widget<GlassScrollEdgeEffect>(
+        find.byType(GlassScrollEdgeEffect),
+      );
+      expect(effect.topFadeHeight, 82 + 20);
     });
   });
 
