@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- **A modal sheet shown with `isDismissible: false` closed on an outside tap:** `GlassModalSheetScaffold` catches taps outside the sheet itself, above the route's barrier, and always dismissed on them. It now takes `barrierDismissible`, and `GlassModalSheet.show` passes `isDismissible` to it.
+
 # 1.13.0
 
 ## Features

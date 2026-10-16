@@ -197,6 +197,36 @@ void main() {
       });
     }
 
+    for (final isDismissible in [true, false]) {
+      testWidgets('show() with isDismissible: $isDismissible on an outside tap',
+          (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => GlassModalSheet.show(
+                    context: context,
+                    isDismissible: isDismissible,
+                    builder: (context) => const Text('Modal Content'),
+                  ),
+                  child: const Text('Show'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Show'));
+        await tester.pumpAndSettle();
+        await tester.tapAt(const Offset(20, 40));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Modal Content'),
+            isDismissible ? findsNothing : findsOneWidget);
+      });
+    }
+
     testWidgets('show() falls back when initialState is not an offered detent',
         (tester) async {
       // A caller can ask to open on a detent the sheet doesn't offer — most
@@ -1171,6 +1201,33 @@ void main() {
       await tester.pumpAndSettle();
       expect(controller.currentState, GlassSheetState.full);
     });
+
+    for (final barrierDismissible in [true, false]) {
+      testWidgets(
+          'barrierDismissible: $barrierDismissible on a tap on the body',
+          (tester) async {
+        final controller = GlassModalSheetController();
+
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassModalSheetScaffold(
+              controller: controller,
+              initialState: GlassSheetState.half,
+              barrierDismissible: barrierDismissible,
+              body: const SizedBox.expand(),
+              sheet: const SizedBox.expand(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tapAt(const Offset(20, 40));
+        await tester.pumpAndSettle();
+
+        expect(controller.currentState,
+            barrierDismissible ? GlassSheetState.hidden : GlassSheetState.half);
+      });
+    }
 
     testWidgets('onStateChanged fires when state changes', (tester) async {
       final controller = GlassModalSheetController();

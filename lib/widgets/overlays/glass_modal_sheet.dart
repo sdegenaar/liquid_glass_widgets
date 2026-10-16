@@ -614,6 +614,7 @@ class GlassModalSheet extends StatefulWidget {
           fullStateContentSettings: fullStateContentSettings,
           detents: detents,
           dismissible: dismissible,
+          barrierDismissible: isDismissible,
           peekHorizontalMargin: peekHorizontalMargin,
           peekBottomMargin: peekBottomMargin,
           peekWidth: peekWidth,
