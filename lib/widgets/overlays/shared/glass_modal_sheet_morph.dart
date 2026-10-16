@@ -960,8 +960,7 @@ class GlassSheetMorphPresenter extends StatefulWidget {
   /// [GlassMenu] has no independently-animating route barrier.
   ///
   /// Callers should pass [Colors.transparent] as `barrierColor` to their
-  /// [showGeneralDialog] call and route the actual barrier colour through here
-  /// instead.
+  /// dialog route and route the actual barrier colour through here instead.
   final Color? barrierColor;
 
   @override

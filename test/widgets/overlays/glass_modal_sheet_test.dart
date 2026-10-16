@@ -197,6 +197,62 @@ void main() {
       });
     }
 
+    /// Shows a sheet from a bare page and hands back its route once settled.
+    Future<TransitionRoute<void>> showSheet(
+      WidgetTester tester, {
+      AnimationStyle? sheetAnimationStyle,
+      Rect? morphFromRect,
+    }) async {
+      await tester.pumpWidget(createTestApp(child: const Placeholder()));
+      GlassModalSheet.show<void>(
+        context: tester.element(find.byType(Placeholder)),
+        sheetAnimationStyle: sheetAnimationStyle,
+        morphFromRect: morphFromRect,
+        builder: (context) => const Text('Modal Content'),
+      );
+      await tester.pumpAndSettle();
+      return ModalRoute.of(tester.element(find.text('Modal Content')))!
+          as TransitionRoute<void>;
+    }
+
+    const ms300 = Duration(milliseconds: 300);
+    const ms500 = Duration(milliseconds: 500);
+    const ms600 = Duration(milliseconds: 600);
+    const split = AnimationStyle(duration: ms300, reverseDuration: ms600);
+    for (final (label, style, forward, reverse) in [
+      ('defaults to 500 ms each way', null, ms500, ms500),
+      (
+        'takes duration both ways',
+        const AnimationStyle(duration: ms300),
+        ms300,
+        ms300
+      ),
+      ('takes reverseDuration on the way out', split, ms300, ms600),
+    ]) {
+      testWidgets('show() slide $label', (tester) async {
+        final route = await showSheet(tester, sheetAnimationStyle: style);
+
+        expect(route.transitionDuration, forward);
+        expect(route.reverseTransitionDuration, reverse);
+      });
+    }
+
+    testWidgets('show() morph ignores sheetAnimationStyle', (tester) async {
+      GlassModalSheet.debugMorphSupportsBlending = true;
+      addTearDown(() => GlassModalSheet.debugMorphSupportsBlending = null);
+
+      final route = await showSheet(
+        tester,
+        sheetAnimationStyle: split,
+        morphFromRect: const Rect.fromLTWH(372, 500, 56, 56),
+      );
+
+      // MorphSpeed.normal's route duration, both ways.
+      const morphDuration = Duration(milliseconds: 380);
+      expect(route.transitionDuration, morphDuration);
+      expect(route.reverseTransitionDuration, morphDuration);
+    });
+
     testWidgets('show() falls back when initialState is not an offered detent',
         (tester) async {
       // A caller can ask to open on a detent the sheet doesn't offer — most

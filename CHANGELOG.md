@@ -1,3 +1,9 @@
+# Unreleased
+
+## Features
+
+- **Modal sheet animation style:** `GlassModalSheet.show` accepts optional `sheetAnimationStyle`, as `showModalBottomSheet` does, to set the slide's duration and curve in each direction. The morph keeps its own spring.
+
 # 1.13.0
 
 ## Features
