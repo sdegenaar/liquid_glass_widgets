@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- **Menu rows showed no hover under a mouse:** A `GlassMenuItem` lit up under the pointer with a white wash at 10 percent. On dark glass that reads; on light glass it is white on white, so a mouse moving down a menu on the web or the desktop got no feedback at all. The selection pill, which already follows a press-and-slide in `selectionColor`, now follows a resting mouse as well and leaves when the pointer leaves the menu.
+
 # 1.13.0
 
 ## Features

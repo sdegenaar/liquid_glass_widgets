@@ -1985,69 +1985,87 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                 );
               },
             ),
-            Listener(
-              onPointerDown: (event) {
-                if (!mounted) return;
-                _isDragging = true;
-                _isDraggingNotifier.value = true;
-                _hasStretched = false;
-                _initialScrollOffset = _scrollController.hasClients
-                    ? _scrollController.offset
-                    : 0.0;
-                _updateHoveredIndex(event.localPosition);
+            MouseRegion(
+              // A mouse resting on a row moves the selection pill there, the
+              // same highlight a press-and-slide shows. The rows' own hover
+              // fill is a white wash meant for dark glass and disappears on
+              // light glass, so without this a pointer gets no hover at all.
+              onExit: (_) {
+                if (!mounted || _isDragging) return;
+                _hoveredIndex = null;
+                _hoveredIndexNotifier.value = null;
               },
-              onPointerMove: (event) {
-                if (!mounted) return;
-                if (_isDragging) {
-                  _updateHoveredIndex(event.localPosition);
-                }
-              },
-              onPointerUp: (event) {
-                if (!mounted) return;
-                // The row's own tap recogniser fires later in this same dispatch;
-                // it must not activate the row a second time (see
-                // _buildWrappedItems).
-                _bodyPointerUpHandled = true;
-                scheduleMicrotask(() => _bodyPointerUpHandled = false);
-                if (_isDragging) {
-                  final currentOffset = _scrollController.hasClients
+              child: Listener(
+                onPointerHover: (event) {
+                  if (!mounted || _isDragging) return;
+                  final index =
+                      _calculateIndexFromPosition(event.localPosition, context);
+                  _hoveredIndex = index;
+                  _hoveredIndexNotifier.value = index;
+                },
+                onPointerDown: (event) {
+                  if (!mounted) return;
+                  _isDragging = true;
+                  _isDraggingNotifier.value = true;
+                  _hasStretched = false;
+                  _initialScrollOffset = _scrollController.hasClients
                       ? _scrollController.offset
                       : 0.0;
-                  final scrollDisplacement =
-                      (currentOffset - _initialScrollOffset).abs();
+                  _updateHoveredIndex(event.localPosition);
+                },
+                onPointerMove: (event) {
+                  if (!mounted) return;
+                  if (_isDragging) {
+                    _updateHoveredIndex(event.localPosition);
+                  }
+                },
+                onPointerUp: (event) {
+                  if (!mounted) return;
+                  // The row's own tap recogniser fires later in this same dispatch;
+                  // it must not activate the row a second time (see
+                  // _buildWrappedItems).
+                  _bodyPointerUpHandled = true;
+                  scheduleMicrotask(() => _bodyPointerUpHandled = false);
+                  if (_isDragging) {
+                    final currentOffset = _scrollController.hasClients
+                        ? _scrollController.offset
+                        : 0.0;
+                    final scrollDisplacement =
+                        (currentOffset - _initialScrollOffset).abs();
 
-                  // Slide-to-select logic (for non-scrollable menus, tap or
-                  // slide-and-release).
-                  if (scrollDisplacement < 10 && !_isScrollable) {
-                    final indexToTap = _hoveredIndex ??
-                        _calculateIndexFromPosition(
-                            event.localPosition, context);
-                    if (indexToTap != null) {
-                      final item = _items[indexToTap];
-                      if (item is GlassMenuItem && item.enabled) {
-                        _activateItem(item);
+                    // Slide-to-select logic (for non-scrollable menus, tap or
+                    // slide-and-release).
+                    if (scrollDisplacement < 10 && !_isScrollable) {
+                      final indexToTap = _hoveredIndex ??
+                          _calculateIndexFromPosition(
+                              event.localPosition, context);
+                      if (indexToTap != null) {
+                        final item = _items[indexToTap];
+                        if (item is GlassMenuItem && item.enabled) {
+                          _activateItem(item);
+                        }
                       }
                     }
+                    _isDragging = false;
+                    _isDraggingNotifier.value = false;
+                    _hoveredIndex = null;
+                    _hoveredIndexNotifier.value = null;
+                    _hasStretched = false;
                   }
+                },
+                onPointerCancel: (_) {
+                  if (!mounted) return;
                   _isDragging = false;
                   _isDraggingNotifier.value = false;
                   _hoveredIndex = null;
                   _hoveredIndexNotifier.value = null;
-                  _hasStretched = false;
-                }
-              },
-              onPointerCancel: (_) {
-                if (!mounted) return;
-                _isDragging = false;
-                _isDraggingNotifier.value = false;
-                _hoveredIndex = null;
-                _hoveredIndexNotifier.value = null;
-              },
-              child: SizedBox(
-                key: interactive ? _menuContentKey : null,
-                width: widget.menuWidth,
-                height: viewportHeight,
-                child: listBody.child!,
+                },
+                child: SizedBox(
+                  key: interactive ? _menuContentKey : null,
+                  width: widget.menuWidth,
+                  height: viewportHeight,
+                  child: listBody.child!,
+                ),
               ),
             ),
           ],
