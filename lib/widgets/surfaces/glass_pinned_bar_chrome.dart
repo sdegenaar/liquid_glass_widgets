@@ -285,6 +285,10 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
   /// the page and below anything presented over it.
   final OverlayPortalController _strip = OverlayPortalController()..show();
 
+  /// Whether the route was onstage at the last dependency change. The strip
+  /// follows it after the frame.
+  bool _onstage = true;
+
   GlassNavigationShellState? _shell;
   ModalRoute<dynamic>? _route;
   bool _handedOver = false;
@@ -311,6 +315,22 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // The strip leaves the overlay while the route is offstage, under an
+    // opaque route: an overlay child layout builder there still lays out every
+    // frame, against the overlay's size from before any resize since, and
+    // asserts (flutter/flutter#192030). A muted ticker alone is not offstage —
+    // an inactive tab's route is muted but still laid out — so the route must
+    // also not be the current one. A portal can't be shown or hidden during
+    // build, so after the frame.
+    final onstage = TickerMode.valuesOf(context).enabled ||
+        (ModalRoute.isCurrentOf(context) ?? true);
+    if (onstage != _onstage) {
+      _onstage = onstage;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _onstage == _strip.isShowing) return;
+        _onstage ? _strip.show() : _strip.hide();
+      });
+    }
     _sync();
   }
 
@@ -334,12 +354,12 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
       _follow();
     }
 
-    // Deliberately no offstage or TickerMode guard here. Flutter builds a newly
-    // pushed route offstage once before the transition starts, and neither
-    // `offstage` nor a muted ticker notifies dependents when it flips back — so
-    // skipping those builds would strand the route unregistered for the whole
-    // transition. Which route is on top is decided by the shell's ordering
-    // instead. (Inactive branches of a nested navigator are a known gap.)
+    // Deliberately no offstage guard here. Flutter builds a newly pushed route
+    // offstage once before the transition starts, and `offstage` does not
+    // notify dependents when it flips back — so skipping those builds would
+    // strand the route unregistered for the whole transition. Which route is
+    // on top is decided by the shell's ordering instead. (Inactive branches of
+    // a nested navigator are a known gap.)
     // A bar in a presented route — a modal sheet's — is inside the
     // presentation, which comes up over the stack the shell pins across: the
     // presentation is its container, and the bar draws its own chrome.

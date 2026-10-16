@@ -664,6 +664,40 @@ void main() {
       );
     });
 
+    testDuo('redraws the strip for a screen that changed while it was covered',
+        (tester) async {
+      setScreen(tester);
+      await tester.pumpWidget(shellApp(GlassPinnedBarChrome(
+        enabled: false,
+        actions: [
+          GlassBarItem.icon(
+            icon: const Icon(CupertinoIcons.share),
+            onTap: () {},
+          ),
+        ],
+        builder: (context, chrome) => const SizedBox.expand(),
+      )));
+      await settle(tester);
+      _push(tester, const _Screen(title: 'Covering'));
+      await settle(tester);
+
+      // Unfolded to the inner display under the covering route: drawn where
+      // it is for a screen that started out that size.
+      setScreen(
+        tester,
+        size: const Size(1040, 720),
+        padding: const EdgeInsets.fromLTRB(0, 0, 84, 20),
+      );
+      await settle(tester);
+      tester.state<NavigatorState>(find.byType(Navigator)).pop();
+      await settle(tester);
+
+      expect(
+        tester.getCenter(find.byIcon(CupertinoIcons.share)).dx,
+        closeTo(992, 0.01),
+      );
+    });
+
     testDuo('puts the horizontal row where the bar says its header is',
         (tester) async {
       setScreen(tester);

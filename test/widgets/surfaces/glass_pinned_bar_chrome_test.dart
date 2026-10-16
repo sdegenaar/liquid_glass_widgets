@@ -444,6 +444,31 @@ void main() {
       expect(find.byIcon(CupertinoIcons.back), findsNothing);
     });
 
+    testWidgets('survives the screen resizing under an opaque route',
+        (tester) async {
+      // flutter/flutter#192030: the bar's portal child, laid out against the
+      // overlay's size from before the resize, asserted.
+      await tester.pumpWidget(shellApp(
+        shell: false,
+        const Scaffold(
+          appBar: GlassAppBar.pinned(title: Text('Inbox')),
+        ),
+      ));
+      final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+      navigator.push(MaterialPageRoute<void>(
+        builder: (_) => const SizedBox.expand(),
+      ));
+      await settle(tester);
+
+      tester.view.physicalSize = tester.view.physicalSize.flipped;
+      addTearDown(tester.view.resetPhysicalSize);
+      await settle(tester);
+      navigator.pop();
+      await settle(tester);
+
+      expect(find.text('Inbox'), findsOneWidget);
+    });
+
     testWidgets('the in-route capsule matches the one the shell draws',
         (tester) async {
       // Larger than the default icon, which happened to fit the padded slot.
