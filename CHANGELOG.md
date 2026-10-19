@@ -18,6 +18,8 @@
 
 ## Bug Fixes
 
+- **Minimizable and searchable tab bars mirror under RTL (fixes #435):** Under `TextDirection.rtl`, `GlassTabBar.minimizable` and `GlassTabBar.searchable` reversed the order of the tabs but kept every surface where it sits in LTR: the tab pill on the left, the search pill or `trailingButton` on the right, and with them the minimized circles, the extra button, the dismiss pill and the slots the inline accessory leaves for them. A native iOS 26 tab bar mirrors the whole arrangement. The layout now places these surfaces from the leading edge with `PositionedDirectional`, so under RTL the tab pill sits on the right and the trailing pill on the left. LTR layouts are unchanged, and so is `GlassTabBar.bottom`, whose `GlassExtraButtonPlacement` is physical.
+
 - **`GlassMenu` mouse hover pill (PR #430):** The `selectionColor` highlight pill now follows a resting mouse pointer across menu rows and clears when the pointer exits, giving visible hover feedback on light glass where the white item wash was invisible.
 
   Thanks to [@Ahmadre](https://github.com/Ahmadre) for the fix (#430).

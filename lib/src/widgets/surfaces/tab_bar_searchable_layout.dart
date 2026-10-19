@@ -531,6 +531,13 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
     // RTL: correct ordering (the first tab sits on the trailing/right edge)
     // with the pill and hit-testing aligned to it. In LTR everything is a
     // no-op.
+    //
+    // The bar's own surfaces mirror as a whole, as a native tab bar's do: the
+    // layout below computes every horizontal offset from the leading edge and
+    // places it with [PositionedDirectional], so under RTL the tab pill sits
+    // on the right, the search or trailing pill on the left, and the extra
+    // button, the dismiss pill and the inline accessory's reserved slots
+    // follow them.
     final isRtl = Directionality.of(context) == TextDirection.rtl;
     final tabs = isRtl ? widget.tabs.reversed.toList() : widget.tabs;
     final selectedIndex = isRtl
@@ -831,8 +838,8 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                             }
                           }
 
-                          return Positioned(
-                            left: curSearchLeft,
+                          return PositionedDirectional(
+                            start: curSearchLeft,
                             bottom: floatY,
                             width: math.max(0.01, curSearchW),
                             height: animH,
@@ -864,12 +871,12 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                                     ? _searchLeftCtrl.value
                                     : targetSearchLeft)
                                 .clamp(0.0, totalW);
-                            return Positioned(
-                              left: extraPos ==
+                            return PositionedDirectional(
+                              start: extraPos ==
                                       GlassExtraButtonPosition.beforeSearch
                                   ? curSearchLeft - extraWLeft
                                   : null,
-                              right: extraPos ==
+                              end: extraPos ==
                                       GlassExtraButtonPosition.afterSearch
                                   ? (dismissVisible
                                       ? targetDismissReserve
@@ -937,8 +944,8 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                           final curTabLeft = centeredTab
                               ? ((maxTabW - curTabW) / 2).clamp(0.0, maxTabW)
                               : 0.0;
-                          return Positioned(
-                            left: curTabLeft,
+                          return PositionedDirectional(
+                            start: curTabLeft,
                             bottom: 0,
                             width: math.max(0.01, curTabW),
                             height: animH,
@@ -1031,8 +1038,8 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                       if (hasDismiss &&
                           dismissVisible &&
                           widget.searchConfig != null)
-                        Positioned(
-                          right: 0,
+                        PositionedDirectional(
+                          end: 0,
                           bottom: floatY,
                           width: animH,
                           height: animH,
@@ -1077,7 +1084,8 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
       //   Stack: the glass pill animates to searchBarHeight (handled by
       //   TweenAnimationBuilder inside barContent). The accessory slides from
       //   above-the-pill to beside-the-pill at the same vertical level, filling
-      //   the horizontal space to the right of the collapsed search capsule.
+      //   the horizontal space between the collapsed tab circle and the
+      //   collapsed search capsule (mirrored under RTL).
       //   This exactly mirrors Apple's "tabViewBottomAccessory(.inline)" behaviour.
       //
       // Inline positions are derived from widget constants (horizontalPadding,
@@ -1091,15 +1099,15 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
       final collapsedPillH =
           widget.searchBarHeight + widget.verticalPadding * 2;
 
-      // When inline, the accessory sits exactly between the collapsed tab pill (left)
-      // and the collapsed search capsule (right).
+      // When inline, the accessory sits exactly between the collapsed tab pill
+      // (leading) and the collapsed search capsule (trailing).
       final collapsedTabW =
           widget.searchConfig?.collapsedTabWidth ?? widget.searchBarHeight;
-      final inlineAccessoryLeft = widget.horizontalPadding +
+      final inlineAccessoryStart = widget.horizontalPadding +
           collapsedTabW +
           widget.bottomAccessorySpacing;
       // Only reserve the trailing capsule's slot when there is one to reserve.
-      final inlineAccessoryRight = _pillShown
+      final inlineAccessoryEnd = _pillShown
           ? widget.horizontalPadding +
               widget.searchBarHeight +
               widget.bottomAccessorySpacing
@@ -1132,7 +1140,7 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
         // Two independent TweenAnimationBuilders drive two independent axes:
         //
         //   accessoryT (outer): drives the CONTAINER height, accessory
-        //     left/right width, and coarse vertical position. Controlled by
+        //     start/end insets, and coarse vertical position. Controlled by
         //     `accessoryInline` — 0.0 means expanded above the pill, 1.0 means
         //     inline beside the pill.
         //
@@ -1148,15 +1156,15 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
             final height =
                 ui.lerpDouble(expandedH, collapsedPillH, accessoryT)!;
 
-            // Accessory left/right: constant when expanded, narrows when inline.
-            final accessoryLeft = ui.lerpDouble(
+            // Accessory start/end: constant when expanded, narrows when inline.
+            final accessoryStart = ui.lerpDouble(
               widget.horizontalPadding,
-              inlineAccessoryLeft,
+              inlineAccessoryStart,
               accessoryT,
             )!;
-            final accessoryRight = ui.lerpDouble(
+            final accessoryEnd = ui.lerpDouble(
               widget.horizontalPadding,
-              inlineAccessoryRight,
+              inlineAccessoryEnd,
               accessoryT,
             )!;
 
@@ -1180,9 +1188,9 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                         searchT,
                       )!;
 
-                      return Positioned(
-                        left: accessoryLeft,
-                        right: accessoryRight,
+                      return PositionedDirectional(
+                        start: accessoryStart,
+                        end: accessoryEnd,
                         bottom: ui.lerpDouble(
                           expandedBottom,
                           (collapsedPillH - accessoryH) / 2,

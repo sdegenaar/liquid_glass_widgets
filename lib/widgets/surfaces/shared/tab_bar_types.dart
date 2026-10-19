@@ -47,8 +47,8 @@ enum MaskingQuality {
 /// This only affects the tab pill's position. The search pill position is
 /// always computed from the trailing edge.
 enum GlassTabPillAnchor {
-  /// The tab pill is pinned to the **leading (left) edge** — the right edge
-  /// retracts as the pill collapses. This is the default and matches the
+  /// The tab pill is pinned to the **leading edge** (left in LTR, right in
+  /// RTL) — the trailing edge retracts as the pill collapses. This is the default and matches the
   /// classic iOS News / Safari behaviour.
   start,
 
