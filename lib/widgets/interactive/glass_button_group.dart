@@ -72,7 +72,8 @@ class GlassButtonGroupItem {
         menuItems = null,
         menuAlignment = null,
         menuWidth = 200,
-        menuHeight = null;
+        menuHeight = null,
+        menuSettings = null;
 
   /// Creates a group item that opens a [GlassMenu] pull-down when tapped.
   ///
@@ -89,12 +90,16 @@ class GlassButtonGroupItem {
   /// [menuWidth] is the width of the expanded menu panel. Defaults to 200.
   ///
   /// [menuHeight] is an optional fixed height for the expanded menu panel.
+  ///
+  /// [menuSettings] is the glass of the menu panel. When null, the menu takes
+  /// the glass of the pill it morphs out of.
   const GlassButtonGroupItem.menu({
     required this.icon,
     required List<Widget> this.menuItems,
     this.menuAlignment,
     this.menuWidth = 200,
     this.menuHeight,
+    this.menuSettings,
     this.label,
   })  : onTap = _noOp,
         enabled = true;
@@ -148,6 +153,12 @@ class GlassButtonGroupItem {
 
   /// Optional fixed height for the expanded menu panel in logical pixels.
   final double? menuHeight;
+
+  /// Glass settings of the menu panel.
+  ///
+  /// Defaults to the glass of the pill the menu morphs out of. Set via
+  /// [GlassButtonGroupItem.menu].
+  final LiquidGlassSettings? menuSettings;
 }
 
 // =============================================================================
@@ -359,6 +370,7 @@ class GlassButtonGroup extends StatelessWidget {
           menuAlignment: menuItem.menuAlignment,
           menuWidth: menuItem.menuWidth,
           menuHeight: menuItem.menuHeight,
+          settings: menuItem.menuSettings,
           autoAdjustToScreen: true,
           items: menuItem.menuItems!,
           triggerBuilder: (context, toggleMenu) =>

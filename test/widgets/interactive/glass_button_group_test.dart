@@ -299,6 +299,30 @@ void main() {
       await tester.pump();
       expect(find.byType(GlassMenu), findsOneWidget);
     });
+
+    testWidgets('menuSettings is the glass of the GlassMenu', (tester) async {
+      const settings = LiquidGlassSettings(blur: 20, saturation: 1.8);
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: Center(
+            child: GlassButtonGroup.icons(
+              items: [
+                GlassButtonGroupItem.menu(
+                  icon: const Icon(CupertinoIcons.ellipsis),
+                  menuItems: [GlassMenuItem(title: 'Share', onTap: () {})],
+                  menuSettings: settings,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(
+        tester.widget<GlassMenu>(find.byType(GlassMenu)).settings,
+        settings,
+      );
+    });
   });
 
   // ---------------------------------------------------------------------------

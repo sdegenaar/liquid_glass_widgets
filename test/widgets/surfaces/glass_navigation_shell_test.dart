@@ -1269,6 +1269,30 @@ void main() {
       expect(find.text('Copy'), findsOneWidget);
     });
 
+    testWidgets('menuSettings is the glass of the pinned capsule menu',
+        (tester) async {
+      const settings = LiquidGlassSettings(blur: 20, saturation: 1.8);
+      await tester.pumpWidget(shellApp(_Screen(
+        title: 'Root',
+        actions: [
+          GlassBarItem.menu(
+            icon: const Icon(CupertinoIcons.ellipsis),
+            id: 'more',
+            label: 'More',
+            menuItems: [GlassMenuItem(title: 'Copy', onTap: () {})],
+            menuSettings: settings,
+          ),
+        ],
+      )));
+      await settle(tester);
+
+      final menu = tester.widget<GlassMenu>(find.descendant(
+        of: find.byType(GlassNavPinnedHost),
+        matching: find.byType(GlassMenu),
+      ));
+      expect(menu.settings, settings);
+    });
+
     testWidgets('a menu cannot be opened mid-transition', (tester) async {
       await tester.pumpWidget(shellApp(_Screen(
         title: 'Root',

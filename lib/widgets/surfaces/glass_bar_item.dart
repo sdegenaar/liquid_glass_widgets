@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../../src/renderer/liquid_glass_renderer.dart';
 import '../overlays/glass_menu.dart';
 import '../overlays/glass_modal_sheet.dart';
 import 'glass_navigation_shell.dart';
@@ -157,12 +158,16 @@ sealed class GlassBarItem {
   /// [menuItems] takes [GlassMenuItem] and [GlassMenuDivider] widgets — the
   /// same contract as [GlassMenu.items]. An open menu is dismissed if
   /// navigation starts underneath it.
+  ///
+  /// [menuSettings] is the glass of the menu panel. When null, the menu takes
+  /// the glass of the capsule it morphs out of.
   const factory GlassBarItem.menu({
     required Widget icon,
     required List<Widget> menuItems,
     GlassMenuAlignment? menuAlignment,
     double menuWidth,
     double? menuHeight,
+    LiquidGlassSettings? menuSettings,
     Object? id,
     String? label,
     GlassBarItemBackground background,
@@ -368,6 +373,7 @@ final class GlassBarMenuItem extends GlassBarActionItem {
     this.menuAlignment,
     this.menuWidth = 200,
     this.menuHeight,
+    this.menuSettings,
     super.id,
     super.label,
     super.background,
@@ -393,6 +399,11 @@ final class GlassBarMenuItem extends GlassBarActionItem {
 
   /// Optional fixed height for the menu panel, in logical pixels.
   final double? menuHeight;
+
+  /// Glass settings of the menu panel.
+  ///
+  /// Defaults to the glass of the capsule the menu morphs out of.
+  final LiquidGlassSettings? menuSettings;
 
   @override
   Widget get content => icon;

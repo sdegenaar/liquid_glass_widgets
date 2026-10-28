@@ -682,6 +682,30 @@ void main() {
     expect(find.byType(GlassButtonGroup), findsNWidgets(2));
   });
 
+  testWidgets('menuSettings is the glass of the in-route capsule menu',
+      (tester) async {
+    const settings = LiquidGlassSettings(blur: 20, saturation: 1.8);
+    await tester.pumpWidget(shellApp(
+      GlassPinnedBarChrome(
+        actions: [
+          GlassBarItem.menu(
+            icon: const Icon(CupertinoIcons.ellipsis),
+            menuItems: [GlassMenuItem(title: 'Copy', onTap: () {})],
+            menuSettings: settings,
+          ),
+        ],
+        builder: (context, chrome) => Row(children: chrome.actions),
+      ),
+      shell: false,
+    ));
+    await settle(tester);
+
+    expect(
+      tester.widget<GlassMenu>(find.byType(GlassMenu)).settings,
+      settings,
+    );
+  });
+
   testWidgets(
       'buttonSize sizes both hoisted and in-route chrome identically (#425)',
       (tester) async {
