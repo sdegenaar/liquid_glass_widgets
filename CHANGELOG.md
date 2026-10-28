@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- **Swipe actions with a long label no longer render shrunk (`GlassSwipeActions`, `GlassSwipeAction`):** A label wider than the button circle used to scale the whole button down, icon and label alike, to fit the circle width, leaving a tiny button with unreadable text. A button now stretches from a circle into a capsule so that its `Text` label fits on one line below it at full size, as in native iOS 26/27. The open actions take at most 75% of the row width (unless `actionWidth` is set); beyond it, the longest labels are truncated with an ellipsis to the same width. When the open actions are wider than `fullSwipeThreshold`, a full swipe now takes pulling the row a short distance past their open width.
+
 # 1.16.0
 
 ## Features
