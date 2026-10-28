@@ -3,6 +3,7 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/widgets.dart';
 
+import '../constants/glass_defaults.dart';
 import '../src/engine/liquid_glass_settings.dart';
 import '../types/glass_specular_sharpness.dart';
 
@@ -73,6 +74,46 @@ class GlassThemeSettings {
     this.shadow,
   });
 
+  /// iOS 26 surface preset in the light appearance, matching
+  /// [LiquidGlassSettings.ios26Light].
+  static const GlassThemeSettings ios26Light = GlassThemeSettings(
+    thickness: 12.0,
+    blur: 5.0,
+    glassColor: Color.fromRGBO(210, 220, 240, 0.12),
+    lightAngle: 2.356,
+    lightIntensity: 0.85,
+    ambientStrength: 0.15,
+    refractiveIndex: 1.2,
+    saturation: 1.2,
+    chromaticAberration: 0.02,
+  );
+
+  /// iOS 26 surface preset in the dark appearance, matching
+  /// [LiquidGlassSettings.ios26Dark].
+  static const GlassThemeSettings ios26Dark = GlassThemeSettings(
+    thickness: 10.0,
+    blur: 4.0,
+    glassColor: Color.fromRGBO(255, 255, 255, 0.08),
+    lightAngle: 2.356,
+    lightIntensity: 0.7,
+    ambientStrength: 0.0,
+    refractiveIndex: 1.2,
+    saturation: 1.2,
+    chromaticAberration: 0.01,
+  );
+
+  /// iOS 26 interactive indicator lens preset, matching
+  /// [LiquidGlassSettings.ios26Indicator].
+  static const GlassThemeSettings ios26Indicator = GlassThemeSettings(
+    glassColor: Color.from(alpha: 0.0, red: 1, green: 1, blue: 1),
+    thickness: 20,
+    refractiveIndex: 1.10,
+    lightIntensity: GlassDefaults.lightIntensity,
+    chromaticAberration: 0.0,
+    lightAngle: GlassDefaults.lightAngle,
+    blur: 0,
+  );
+
   /// iOS 27 `glassEffect(.regular)` in the light appearance, matching
   /// [LiquidGlassSettings.ios27Light].
   static const GlassThemeSettings ios27Light = GlassThemeSettings(
@@ -89,14 +130,17 @@ class GlassThemeSettings {
     lensModel: GlassLensModel.paraxial,
     lightAngle: 1.5707963267948966,
     lightIntensity: 0,
-    ambientStrength: 0,
     fresnelStrength: 0,
     chromaticAberration: 0,
     edgeAbsorption: 0.035,
     rimShade: 1,
     rimLight: 1,
     shadow: [
-      BoxShadow(color: Color(0x0A000000), blurRadius: 10, offset: Offset(0, 7)),
+      BoxShadow(
+        color: Color(0x0A000000),
+        blurRadius: 10,
+        offset: Offset(0, 7),
+      ),
     ],
   );
 
@@ -116,7 +160,6 @@ class GlassThemeSettings {
     lensModel: GlassLensModel.paraxial,
     lightAngle: -1.5707963267948966,
     lightIntensity: 0,
-    ambientStrength: 0,
     fresnelStrength: 0,
     chromaticAberration: 0,
     edgeAbsorption: 0.035,
@@ -125,6 +168,25 @@ class GlassThemeSettings {
     rimLight: 1.15,
     bodyShade: 0.28,
     shadowElevation: 0,
+  );
+
+  /// iOS 27 interactive indicator lens preset, matching
+  /// [LiquidGlassSettings.ios27Indicator].
+  static const GlassThemeSettings ios27Indicator = GlassThemeSettings(
+    glassColor: Color.from(alpha: 0.0, red: 1, green: 1, blue: 1),
+    thickness: 28,
+    refractiveIndex: 1.17,
+    lensModel: GlassLensModel.paraxial,
+    lightIntensity: 0.0,
+    ambientStrength: 0.0,
+    fresnelStrength: 0.0,
+    saturation: 1.0,
+    chromaticAberration: 0.0,
+    lightAngle: 1.5707963267948966,
+    rimShade: 1.0,
+    rimShadeEnds: 0.56,
+    rimLight: 1.0,
+    blur: 0,
   );
 
   /// See [LiquidGlassSettings.visibility].
@@ -240,6 +302,61 @@ class GlassThemeSettings {
       blurWeight: blurWeight ?? base.blurWeight,
       backerColor: base.backerColor,
       platformViewFallbackColor: base.platformViewFallbackColor,
+    );
+  }
+
+  /// Applies this partial override onto [base], ignoring fields that are
+  /// unchanged from [baseline] when this instance is derived from [baseline]
+  /// (such as [GlassThemeData] default variants or [GlassThemeData.simple]).
+  ///
+  /// When any of the 9 baseline surface fields is `null` on `this`, the caller
+  /// constructed a fresh partial [GlassThemeSettings] from scratch, so every
+  /// non-null field on `this` is applied via [applyTo].
+  LiquidGlassSettings applyDeltaTo(
+    LiquidGlassSettings base,
+    GlassThemeSettings baseline,
+  ) {
+    final isDerivedFromBaseline = thickness != null &&
+        blur != null &&
+        glassColor != null &&
+        lightAngle != null &&
+        lightIntensity != null &&
+        ambientStrength != null &&
+        refractiveIndex != null &&
+        saturation != null &&
+        chromaticAberration != null;
+    if (!isDerivedFromBaseline) {
+      return applyTo(base);
+    }
+    T? pick<T>(T? value, T? baseDefault) =>
+        (value != null && value != baseDefault) ? value : null;
+    return base.copyWith(
+      visibility: pick(visibility, baseline.visibility),
+      glassColor: pick(glassColor, baseline.glassColor),
+      thickness: pick(thickness, baseline.thickness),
+      blur: pick(blur, baseline.blur),
+      frost: pick(frost, baseline.frost),
+      frostOpacity: pick(frostOpacity, baseline.frostOpacity),
+      frostClamp: pick(frostClamp, baseline.frostClamp),
+      frostWeight: pick(frostWeight, baseline.frostWeight),
+      blurWeight: pick(blurWeight, baseline.blurWeight),
+      chromaticAberration:
+          pick(chromaticAberration, baseline.chromaticAberration),
+      lightAngle: pick(lightAngle, baseline.lightAngle),
+      lightIntensity: pick(lightIntensity, baseline.lightIntensity),
+      ambientStrength: pick(ambientStrength, baseline.ambientStrength),
+      fresnelStrength: pick(fresnelStrength, baseline.fresnelStrength),
+      refractiveIndex: pick(refractiveIndex, baseline.refractiveIndex),
+      saturation: pick(saturation, baseline.saturation),
+      specularSharpness: pick(specularSharpness, baseline.specularSharpness),
+      edgeAbsorption: pick(edgeAbsorption, baseline.edgeAbsorption),
+      rimShade: pick(rimShade, baseline.rimShade),
+      rimShadeEnds: pick(rimShadeEnds, baseline.rimShadeEnds),
+      rimLight: pick(rimLight, baseline.rimLight),
+      bodyShade: pick(bodyShade, baseline.bodyShade),
+      lensModel: pick(lensModel, baseline.lensModel),
+      shadowElevation: pick(shadowElevation, baseline.shadowElevation),
+      shadow: listEquals(shadow, baseline.shadow) ? null : shadow,
     );
   }
 

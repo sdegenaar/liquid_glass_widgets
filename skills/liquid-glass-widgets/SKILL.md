@@ -69,7 +69,9 @@ void main() async {
 
       // GlassThemeData.simple is the recommended constructor — applies the same settings to
       // both light and dark, overlaid on the library's built-in per-mode defaults.
-      // Use GlassThemeData(light: ..., dark: ...) only for fine-grained per-mode control.
+      // Use const GlassThemeData.ios27() or const GlassThemeData.ios26() to switch
+      // the entire app between iOS 27 and classic iOS 26 glass eras, or pass
+      // LiquidGlassSettings.ios27(context) / LiquidGlassSettings.ios26(context) per widget.
       theme: GlassThemeData.simple(
         blur: 12,
         thickness: 25,

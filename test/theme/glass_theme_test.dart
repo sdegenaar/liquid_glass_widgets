@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets/widgets/shared/glass_effect.dart';
 
 void main() {
   group('GlassTheme', () {
@@ -718,6 +719,235 @@ void main() {
 
       expect(resolved, equals(customGlow));
       expect(find.byType(GlassTabBar), findsOneWidget);
+    });
+  });
+
+  group('GlassStyle and era presets (ios26 / ios27)', () {
+    final tabs = [
+      const GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+      const GlassTab(label: 'Search', icon: Icon(CupertinoIcons.search)),
+    ];
+
+    testWidgets(
+        'default GlassThemeData() does not clobber iOS 27 tab bar platter',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData.light(),
+          home: GlassTheme(
+            data: const GlassThemeData(),
+            child: Scaffold(
+              bottomNavigationBar: GlassTabBar.bottom(
+                tabs: tabs,
+                selectedIndex: 0,
+                onTabSelected: (_) {},
+                maskingQuality: MaskingQuality.off,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final layer = tester.widget<AdaptiveLiquidGlassLayer>(
+        find.byType(AdaptiveLiquidGlassLayer).first,
+      );
+      expect(layer.settings, equals(LiquidGlassSettings.ios27Light));
+    });
+
+    testWidgets(
+        'GlassThemeData.simple(blur: 10) overrides only blur on iOS 27 tab bar platter without clobbering other fields',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData.light(),
+          home: GlassTheme(
+            data: GlassThemeData.simple(blur: 10),
+            child: Scaffold(
+              bottomNavigationBar: GlassTabBar.bottom(
+                tabs: tabs,
+                selectedIndex: 0,
+                onTabSelected: (_) {},
+                maskingQuality: MaskingQuality.off,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final layer = tester.widget<AdaptiveLiquidGlassLayer>(
+        find.byType(AdaptiveLiquidGlassLayer).first,
+      );
+      expect(
+        layer.settings,
+        equals(LiquidGlassSettings.ios27Light.copyWith(blur: 10)),
+      );
+    });
+
+    testWidgets(
+        'GlassThemeData.ios27() resolves iOS 27 light and dark tab bar platters and indicator lens',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GlassTheme(
+            data: const GlassThemeData.ios27(brightness: Brightness.dark),
+            child: Scaffold(
+              bottomNavigationBar: GlassTabBar.bottom(
+                tabs: tabs,
+                selectedIndex: 0,
+                onTabSelected: (_) {},
+                maskingQuality: MaskingQuality.off,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final layer = tester.widget<AdaptiveLiquidGlassLayer>(
+        find.byType(AdaptiveLiquidGlassLayer).first,
+      );
+      expect(layer.settings, equals(LiquidGlassSettings.ios27Dark));
+    });
+
+    testWidgets(
+        'theme indicatorSettings and per-widget indicatorSettings compose cleanly',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData.light(),
+          home: GlassTheme(
+            data: const GlassThemeData(
+              light: GlassThemeVariant(
+                indicatorSettings: GlassThemeSettings(thickness: 34),
+              ),
+            ),
+            child: Scaffold(
+              bottomNavigationBar: GlassTabBar.bottom(
+                tabs: tabs,
+                selectedIndex: 0,
+                onTabSelected: (_) {},
+                maskingQuality: MaskingQuality.off,
+                indicatorSettings: const LiquidGlassSettings(
+                  refractiveIndex: 1.22,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final gesture =
+          await tester.startGesture(tester.getCenter(find.text('Home').first));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final indicatorGlass = tester.widget<GlassEffect>(
+        find.byType(GlassEffect).first,
+      );
+      // Theme override (thickness: 34) + widget override (refractiveIndex: 1.22)
+      // merged onto ios27Indicator
+      expect(indicatorGlass.settings.thickness, equals(34.0));
+      expect(indicatorGlass.settings.refractiveIndex, equals(1.22));
+      expect(
+        indicatorGlass.settings.lensModel,
+        equals(GlassLensModel.paraxial),
+      );
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+        'GlassThemeData.ios26() switches tab bar platter and indicator lens to iOS 26 presets',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData.light(),
+          home: GlassTheme(
+            data: const GlassThemeData.ios26(),
+            child: Scaffold(
+              bottomNavigationBar: GlassTabBar.bottom(
+                tabs: tabs,
+                selectedIndex: 0,
+                onTabSelected: (_) {},
+                maskingQuality: MaskingQuality.off,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final layer = tester.widget<AdaptiveLiquidGlassLayer>(
+        find.byType(AdaptiveLiquidGlassLayer).first,
+      );
+      // iOS 26 bottom bar platter uses thickness: 30, blur: 3, spherical lens
+      expect(layer.settings?.thickness, equals(30.0));
+      expect(layer.settings?.blur, equals(3.0));
+      expect(
+        layer.settings?.lensModel,
+        equals(GlassLensModel.spherical),
+      );
+
+      // Press down to activate indicator lens
+      final gesture =
+          await tester.startGesture(tester.getCenter(find.text('Home').first));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final indicatorGlass = tester.widget<GlassEffect>(
+        find.byType(GlassEffect).first,
+      );
+      expect(
+        indicatorGlass.settings.lensModel,
+        equals(GlassLensModel.spherical),
+      );
+      expect(indicatorGlass.settings.rimShade, equals(0.0));
+      expect(indicatorGlass.settings.refractiveIndex, equals(1.10));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+        'LiquidGlassSettings.ios26(context) and ios27(context) resolve by brightness and allow per-widget override',
+        (tester) async {
+      LiquidGlassSettings? lightIos26;
+      LiquidGlassSettings? lightIos27;
+      LiquidGlassSettings? darkIos26;
+      LiquidGlassSettings? darkIos27;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Column(
+            children: [
+              GlassTheme(
+                data: const GlassThemeData(brightness: Brightness.light),
+                child: Builder(
+                  builder: (context) {
+                    lightIos26 = LiquidGlassSettings.ios26(context);
+                    lightIos27 = LiquidGlassSettings.ios27(context);
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ),
+              GlassTheme(
+                data: const GlassThemeData(brightness: Brightness.dark),
+                child: Builder(
+                  builder: (context) {
+                    darkIos26 = LiquidGlassSettings.ios26(context);
+                    darkIos27 = LiquidGlassSettings.ios27(context);
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(lightIos26, equals(LiquidGlassSettings.ios26Light));
+      expect(lightIos27, equals(LiquidGlassSettings.ios27Light));
+      expect(darkIos26, equals(LiquidGlassSettings.ios26Dark));
+      expect(darkIos27, equals(LiquidGlassSettings.ios27Dark));
     });
   });
 }

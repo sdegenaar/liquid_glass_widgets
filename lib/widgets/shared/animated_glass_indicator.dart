@@ -9,6 +9,7 @@ import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../constants/glass_defaults.dart';
 import '../../theme/glass_theme.dart';
 import '../../types/glass_quality.dart';
+import '../../types/glass_style.dart';
 import '../../utils/draggable_indicator_physics.dart';
 import 'glass_effect.dart';
 
@@ -167,9 +168,10 @@ class AnimatedGlassIndicator extends StatelessWidget {
 
   /// The iOS 27-calibrated default glass settings for all indicator pills.
   ///
-  /// Used as the merge base when the caller provides [settings]. Fields the
-  /// caller leaves at [LiquidGlassSettings()] defaults are filled in from
-  /// here unless the caller explicitly overrides them.
+  /// Alias for [LiquidGlassSettings.ios27Indicator]. Used as the merge base
+  /// when the caller provides [settings] and no [GlassStyle.ios26] theme is
+  /// active. Fields the caller leaves at [LiquidGlassSettings()] defaults are
+  /// filled in from here unless the caller explicitly overrides them.
   ///
   /// Note: `blur` is always zero for indicator pills (see [settings]). This
   /// constant reflects that: `blur: 0` is non-negotiable for a refractive lens.
@@ -180,48 +182,17 @@ class AnimatedGlassIndicator extends StatelessWidget {
   /// indicatorSettings: AnimatedGlassIndicator.baseIndicatorSettings
   ///     .copyWith(refractiveIndex: 1.25)
   /// ```
-  static const baseIndicatorSettings = LiquidGlassSettings(
-    glassColor: Color.from(
-      alpha: 0.0,
-      red: 1,
-      green: 1,
-      blue: 1,
-    ),
-    // Calibrated against iOS 27 _UILiquidLensView: clear paraxial lens with
-    // top rimShade outline (rimShadeEnds: 0.56) and inner specular rimLight.
-    //
-    // In liquid_glass_render.frag, pinchShift (+10.9pt outward at the rim,
-    // matching native spec.liftedDisplacement = 9) and paraxial bevel
-    // displacement (-normalXY * |normalXY| * 8 * thickness * (n - 1)) have
-    // opposite signs. At n = 1.06 the bevel displacement (-10.9pt) cancelled
-    // pinchShift to ~0 net refraction. At n = 1.17 the bevel reaches ~-28.5pt,
-    // yielding a net ~-17.5pt bevel fold at the rim that matches native
-    // spec.contentWrapperDisplacement = -17.5 while preserving the inward
-    // platter pinch inside the lens body.
-    thickness: 28,
-    refractiveIndex: 1.17,
-    lensModel: GlassLensModel.paraxial,
-    lightIntensity: 0.0,
-    ambientStrength: 0.0,
-    fresnelStrength: 0.0,
-    saturation: 1.0,
-    chromaticAberration: 0.0,
-    lightAngle: 1.5707963267948966, // pi / 2: lit from the top
-    rimShade: 1.0,
-    rimShadeEnds: 0.56,
-    rimLight: 1.0,
-    blur: 0,
-  );
+  static const baseIndicatorSettings = LiquidGlassSettings.ios27Indicator;
 
   // Sentinel representing the LiquidGlassSettings() constructor defaults, used
   // by _mergeWithBase to detect which fields the caller explicitly changed.
   static const _settingsDefaults = LiquidGlassSettings();
 
-  /// Merges [override] on top of [baseIndicatorSettings].
+  /// Merges [override] on top of [base] (defaults to [baseIndicatorSettings]).
   ///
   /// Only fields that differ from [LiquidGlassSettings()] defaults are
   /// treated as intentional overrides. Fields the caller left at the
-  /// constructor default are filled from [baseIndicatorSettings] instead.
+  /// constructor default are filled from [base] instead.
   ///
   /// Edge-case: if a caller explicitly wants a field value that happens to
   /// equal the [LiquidGlassSettings()] default (e.g. `chromaticAberration:
@@ -234,8 +205,11 @@ class AnimatedGlassIndicator extends StatelessWidget {
   /// rim, specular highlights, and lens-refraction effect. Callers who
   /// accidentally pass a surface-settings object (e.g. `indicatorSettings:
   /// myGlass`) get correct visual output rather than an opaque blur blob.
-  static LiquidGlassSettings _mergeWithBase(LiquidGlassSettings override) {
-    return baseIndicatorSettings.copyWith(
+  static LiquidGlassSettings _mergeWithBase(
+    LiquidGlassSettings override, [
+    LiquidGlassSettings base = baseIndicatorSettings,
+  ]) {
+    return base.copyWith(
       glassColor: override.glassColor != _settingsDefaults.glassColor
           ? override.glassColor
           : null,
@@ -395,18 +369,36 @@ class AnimatedGlassIndicator extends StatelessWidget {
     // can pass a smaller borderRadius explicitly.
     final shape = LiquidRoundedRectangle(borderRadius: borderRadius);
 
+    // Resolve indicator lens settings cascade:
+    // 1. Style preset (LiquidGlassSettings.ios26Indicator vs ios27Indicator)
+    // 2. Ambient GlassThemeVariant.indicatorSettings partial override
+    // 3. Explicit widget [settings] partial override
+    final theme = GlassTheme.maybeOf(context)?.data;
+    final style = theme?.style ?? GlassStyle.ios27;
+    final eraBase = (style == GlassStyle.ios26)
+        ? LiquidGlassSettings.ios26Indicator
+        : baseIndicatorSettings;
+    final themedBase =
+        theme?.indicatorSettingsFor(context)?.applyTo(eraBase) ?? eraBase;
+    final base =
+        settings != null ? _mergeWithBase(settings!, themedBase) : themedBase;
+    final useIos27PillMaterials = settings != null
+        ? base.lensModel == GlassLensModel.paraxial
+        : style == GlassStyle.ios27;
+
     // 1. Background Indicator (Resting state)
     // Fade out as the drag spring thickness increases toward 0.15.
-    // When using the default tab selection color, render the iOS 27
-    // _UITabSelectionView color-matrix equivalent (2-pass colorBurn + srcOver)
-    // directly into the bar's canvas without an offscreen Opacity layer.
+    // When using the default tab selection color with iOS 27 indicator optics
+    // (rimShade > 0), render the iOS 27 _UITabSelectionView color-matrix
+    // equivalent (2-pass colorBurn + srcOver) directly into the bar's canvas
+    // without an offscreen Opacity layer.
     final backgroundOpacity = (1.0 - (thickness / 0.15)).clamp(0.0, 1.0);
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     final isDefaultTabSelection =
         indicatorColor == CupertinoColors.white.withValues(alpha: .1) ||
             indicatorColor == CupertinoColors.black.withValues(alpha: .1);
     final backgroundIndicator = IgnorePointer(
-      child: isDefaultTabSelection
+      child: (isDefaultTabSelection && useIos27PillMaterials)
           ? DecoratedBox(
               decoration: ShapeDecoration(
                 shape: shape,
@@ -438,8 +430,6 @@ class AnimatedGlassIndicator extends StatelessWidget {
     // We fade the glass in/out by setting `visibility` on the settings rather
     // than wrapping the widget in `Opacity`.
     final fade = thickness.clamp(0.0, 1.0);
-    final base =
-        settings != null ? _mergeWithBase(settings!) : baseIndicatorSettings;
 
     // Stabilise the pinch UV shift against jelly spring micro-oscillation.
     //
@@ -480,8 +470,7 @@ class AnimatedGlassIndicator extends StatelessWidget {
       //            would otherwise have a sub-pixel invisible rim.
       //   cap    : 1.5 → prevents extreme thickness values producing thick rings.
       rimThickness: isStdPath
-          ? ((settings?.effectiveThickness ?? 30.0) * (0.5 / 30.0))
-              .clamp(0.35, 1.5)
+          ? (base.effectiveThickness * (0.5 / 30.0)).clamp(0.35, 1.5)
           : (settings?.effectiveThickness ?? 0.8).clamp(0.8, 8.0),
       // iOS 26 Standard glass matching GlassSwitch/Slider pattern.
       // settings.ambientRim (default 0) overrides the hardcoded floor — the
@@ -552,7 +541,7 @@ class AnimatedGlassIndicator extends StatelessWidget {
         if (paintGlass && fade > 0.05) interactiveIndicator,
         // Native `_UILiquidLensView` inner shadow, painted over the lens so it
         // reads as the soft darkening along the top of the glass.
-        if (paintGlass && !isStdPath && fade > 0.05)
+        if (paintGlass && !isStdPath && fade > 0.05 && useIos27PillMaterials)
           IgnorePointer(
             child: CustomPaint(
               painter: _LensInnerShadowPainter(

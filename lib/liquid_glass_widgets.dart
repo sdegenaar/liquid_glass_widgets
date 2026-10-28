@@ -36,6 +36,7 @@ export 'theme/glass_theme_settings.dart';
 
 // Types
 export 'types/glass_quality.dart';
+export 'types/glass_style.dart'; // GlassStyle enum
 export 'types/glass_surface_style.dart'; // GlassSurfaceStyle enum
 export 'types/glass_quality_change_reason.dart'; // GlassQualityChangeReason enum
 export 'src/types/glass_interaction_behavior.dart'; // GlassInteractionBehavior enum
