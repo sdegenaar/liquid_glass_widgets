@@ -809,6 +809,150 @@ void main() {
     });
 
     testWidgets(
+        'GlassThemeData.simple(blur: 10) in dark mode overrides only blur on the iOS 27 dark platter',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GlassTheme(
+            data: GlassThemeData.simple(
+              blur: 10,
+              brightness: Brightness.dark,
+            ),
+            child: Scaffold(
+              bottomNavigationBar: GlassTabBar.bottom(
+                tabs: tabs,
+                selectedIndex: 0,
+                onTabSelected: (_) {},
+                maskingQuality: MaskingQuality.off,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final layer = tester.widget<AdaptiveLiquidGlassLayer>(
+        find.byType(AdaptiveLiquidGlassLayer).first,
+      );
+      expect(
+        layer.settings,
+        equals(LiquidGlassSettings.ios27Dark.copyWith(blur: 10)),
+      );
+    });
+
+    testWidgets(
+        'GlassThemeData.simple(style: ios26) resolves the classic iOS 26 tab bar platter with the override applied',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData.light(),
+          home: GlassTheme(
+            data: GlassThemeData.simple(blur: 10, style: GlassStyle.ios26),
+            child: Scaffold(
+              bottomNavigationBar: GlassTabBar.bottom(
+                tabs: tabs,
+                selectedIndex: 0,
+                onTabSelected: (_) {},
+                maskingQuality: MaskingQuality.off,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final layer = tester.widget<AdaptiveLiquidGlassLayer>(
+        find.byType(AdaptiveLiquidGlassLayer).first,
+      );
+      expect(
+        layer.settings,
+        equals(LiquidGlassSettings.ios26TabBar.copyWith(blur: 10)),
+      );
+    });
+
+    test(
+        'applyDeltaTo ignores fields equal to the baseline and applies the rest',
+        () {
+      final override = GlassThemeSettings.ios26Light.copyWith(
+        blur: 10,
+        saturation: 1.5,
+      );
+      final result = override.applyDeltaTo(
+        LiquidGlassSettings.ios27Light,
+        GlassThemeSettings.ios26Light,
+      );
+      expect(
+        result,
+        equals(LiquidGlassSettings.ios27Light.copyWith(
+          blur: 10,
+          saturation: 1.5,
+        )),
+      );
+    });
+
+    test('applyDeltaTo with the untouched baseline returns the base unchanged',
+        () {
+      final result = GlassThemeSettings.ios26Light.applyDeltaTo(
+        LiquidGlassSettings.ios27Light,
+        GlassThemeSettings.ios26Light,
+      );
+      expect(result, equals(LiquidGlassSettings.ios27Light));
+    });
+
+    test('applyDeltaTo applies a sparse override like applyTo', () {
+      const override = GlassThemeSettings(thickness: 50);
+      final result = override.applyDeltaTo(
+        LiquidGlassSettings.ios27Light,
+        GlassThemeSettings.ios26Light,
+      );
+      expect(
+        result,
+        equals(LiquidGlassSettings.ios27Light.copyWith(thickness: 50)),
+      );
+    });
+
+    testWidgets(
+        'indicator inner shadow follows the resolved lens: painted for iOS 27, absent for iOS 26',
+        (tester) async {
+      int lensShadowPainters() => find
+          .byWidgetPredicate((w) =>
+              w is CustomPaint &&
+              w.painter.runtimeType.toString() == '_LensInnerShadowPainter')
+          .evaluate()
+          .length;
+
+      Future<int> pressedShadowCount(GlassThemeData data) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData.light(),
+            home: GlassTheme(
+              data: data,
+              child: Scaffold(
+                bottomNavigationBar: GlassTabBar.bottom(
+                  tabs: tabs,
+                  selectedIndex: 0,
+                  onTabSelected: (_) {},
+                  maskingQuality: MaskingQuality.off,
+                  quality: GlassQuality.premium,
+                ),
+              ),
+            ),
+          ),
+        );
+        final gesture = await tester
+            .startGesture(tester.getCenter(find.text('Home').first));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        final count = lensShadowPainters();
+        await gesture.up();
+        await tester.pumpAndSettle();
+        return count;
+      }
+
+      expect(await pressedShadowCount(const GlassThemeData.ios27()),
+          greaterThan(0));
+      expect(await pressedShadowCount(const GlassThemeData.ios26()), 0);
+    });
+
+    testWidgets(
         'theme indicatorSettings and per-widget indicatorSettings compose cleanly',
         (tester) async {
       await tester.pumpWidget(

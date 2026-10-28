@@ -305,31 +305,26 @@ class GlassThemeSettings {
     );
   }
 
-  /// Applies this partial override onto [base], ignoring fields that are
-  /// unchanged from [baseline] when this instance is derived from [baseline]
-  /// (such as [GlassThemeData] default variants or [GlassThemeData.simple]).
+  /// Applies only the fields of this override that differ from [baseline] onto
+  /// [base].
   ///
-  /// When any of the 9 baseline surface fields is `null` on `this`, the caller
-  /// constructed a fresh partial [GlassThemeSettings] from scratch, so every
-  /// non-null field on `this` is applied via [applyTo].
+  /// [baseline] is the legacy default surface the override was derived from
+  /// (for example [GlassThemeSettings.ios26Light] for the built-in
+  /// [GlassThemeVariant.light], which is also what [GlassThemeData.simple]
+  /// copies and tweaks). A field that still equals [baseline] is treated as
+  /// "not set by the app" and left to [base], so a dedicated preset such as
+  /// [LiquidGlassSettings.ios27Light] is not overwritten by general surface
+  /// defaults it was never meant to inherit.
+  ///
+  /// Fields that differ from [baseline] are applied exactly as [applyTo]
+  /// would. Consequently an override cannot express "set this field to the
+  /// baseline value" — pass explicit `settings` to the widget for that.
   LiquidGlassSettings applyDeltaTo(
     LiquidGlassSettings base,
     GlassThemeSettings baseline,
   ) {
-    final isDerivedFromBaseline = thickness != null &&
-        blur != null &&
-        glassColor != null &&
-        lightAngle != null &&
-        lightIntensity != null &&
-        ambientStrength != null &&
-        refractiveIndex != null &&
-        saturation != null &&
-        chromaticAberration != null;
-    if (!isDerivedFromBaseline) {
-      return applyTo(base);
-    }
-    T? pick<T>(T? value, T? baseDefault) =>
-        (value != null && value != baseDefault) ? value : null;
+    T? pick<T>(T? value, T? baselineValue) =>
+        (value != null && value != baselineValue) ? value : null;
     return base.copyWith(
       visibility: pick(visibility, baseline.visibility),
       glassColor: pick(glassColor, baseline.glassColor),

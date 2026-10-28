@@ -382,9 +382,12 @@ class AnimatedGlassIndicator extends StatelessWidget {
         theme?.indicatorSettingsFor(context)?.applyTo(eraBase) ?? eraBase;
     final base =
         settings != null ? _mergeWithBase(settings!, themedBase) : themedBase;
-    final useIos27PillMaterials = settings != null
-        ? base.lensModel == GlassLensModel.paraxial
-        : style == GlassStyle.ios27;
+    // The paraxial lens is the defining optic of the iOS 27 lens
+    // (`_UILiquidLensView`); the classic iOS 26 indicator is spherical. The
+    // resting pill and top inner shadow follow whichever lens the fully
+    // resolved settings describe, so style presets, theme overrides and
+    // per-widget overrides all agree.
+    final useIos27PillMaterials = base.lensModel == GlassLensModel.paraxial;
 
     // 1. Background Indicator (Resting state)
     // Fade out as the drag spring thickness increases toward 0.15.
