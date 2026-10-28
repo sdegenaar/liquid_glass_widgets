@@ -1,3 +1,18 @@
+# Unreleased
+
+## Features
+
+- **Centralized `GlassStyle` era presets (`GlassStyle.ios26`, `GlassStyle.ios27`) and iOS 27 tab bar parity:**
+  - Added `enum GlassStyle { ios26, ios27 }` (defaulting to `GlassStyle.ios27` on `GlassThemeData`) and `const GlassThemeData.ios26()` alongside `const GlassThemeData.ios27()`.
+  - Added coordinated presets on `LiquidGlassSettings` (`ios26Light`, `ios26Dark`, `ios26TabBar`, `ios26Indicator`, `ios27Light`, `ios27Dark`, `ios27Indicator`) and context-aware helpers `LiquidGlassSettings.ios26(context)` and `LiquidGlassSettings.ios27(context)`.
+  - Added `indicatorSettings` on `GlassThemeVariant` (and `GlassThemeData.indicatorSettingsFor(context)`) so frosted surface settings never bleed into clear refractive indicator lenses.
+  - Calibrated `GlassTabBar.bottom` / `GlassTabBar.searchable` outer platter drop shadow (`Color(0x0A000000)`, `blurRadius: 10`, `offset: Offset(0, 7)`), resting `_UITabSelectionView` `colorBurn` selection pill, and lifted `AnimatedGlassIndicator` paraxial lens (`refractiveIndex: 1.17`, `thickness: 28`, with split horizontal/vertical paraxial bevel displacement in `liquid_glass_render.frag` so top/bottom bevel normals do not cancel the inward platter pinch).
+
+## Bug Fixes
+
+- **`GlassThemeData()` and `GlassThemeData.simple()` no longer clobber the iOS 27 tab bar platter:** `resolveBarGlassSettings` now applies only the field delta from the default surface variant (`GlassThemeSettings.applyDeltaTo`), preventing unmodified default surface fields (`thickness: 12`, `blur: 5`, `lightAngle: 2.356`) from overwriting the calibrated iOS 27 tab bar platter (`LiquidGlassSettings.ios27Light` / `ios27Dark`). **Visible change:** apps wrapping their tree in a `GlassTheme` previously rendered `GlassTabBar.bottom` / `.searchable` with those general surface defaults; they now render the iOS 27 platter. Apps that want the classic iOS 26 tab bar platter can pass `const GlassThemeData.ios26()` or `settings: LiquidGlassSettings.ios26TabBar`.
+- **`AnimatedGlassIndicator` Standard-path rim thickness now honors theme/style indicator settings** instead of only the widget's explicit `settings`.
+
 # 1.16.1
 
 ## Features
@@ -16,12 +31,6 @@
 
 ## Features
 
-- **Centralized `GlassStyle` era presets (`GlassStyle.ios26`, `GlassStyle.ios27`) and iOS 27 tab bar parity:**
-  - Added `enum GlassStyle { ios26, ios27 }` (defaulting to `GlassStyle.ios27` on `GlassThemeData`) and `const GlassThemeData.ios26()` alongside `const GlassThemeData.ios27()`.
-  - Added coordinated presets on `LiquidGlassSettings` (`ios26Light`, `ios26Dark`, `ios26TabBar`, `ios26Indicator`, `ios27Light`, `ios27Dark`, `ios27Indicator`) and context-aware helpers `LiquidGlassSettings.ios26(context)` and `LiquidGlassSettings.ios27(context)`.
-  - Added `indicatorSettings` on `GlassThemeVariant` (and `GlassThemeData.indicatorSettingsFor(context)`) so frosted surface settings never bleed into clear refractive indicator lenses.
-  - Calibrated `GlassTabBar.bottom` / `GlassTabBar.searchable` outer platter drop shadow (`Color(0x0A000000)`, `blurRadius: 10`, `offset: Offset(0, 7)`), resting `_UITabSelectionView` `colorBurn` selection pill, and lifted `AnimatedGlassIndicator` paraxial lens (`refractiveIndex: 1.17`, `thickness: 28`, with split horizontal/vertical paraxial bevel displacement in `liquid_glass_render.frag` so top/bottom bevel normals do not cancel the inward platter pinch).
-
 - **Solid surface style for inputs, pickers, and standalone disclosure groups (`GlassTextField`, `GlassSearchBar`, `GlassTextArea`, `GlassPasswordField`, `GlassPicker`, `GlassDisclosureGroup.standalone`):**
   - `GlassTextField` (and `GlassTextField.search`), `GlassSearchBar`, `GlassTextArea`, `GlassPasswordField`, and `GlassPicker` now accept `surfaceStyle` (`GlassSurfaceStyle?`) and `color` (`Color?`). When `surfaceStyle` is `null`, they automatically inherit `InheritedGlassSurfaceStyle` from an enclosing `GlassContainer.card` or `GlassGroupedSection` (falling back to `GlassSurfaceStyle.glass`).
   - In `GlassSurfaceStyle.solid` mode, inputs and pickers render a flat, shader-free iOS `tertiarySystemFill` well (`kGlassSolidWellLight` `#1E767680` in light mode, `kGlassSolidWellDark` `#3D767680` in dark mode, via `resolveGlassSolidWellColor`) using a `DecoratedBox` with zero `AdaptiveGlass`, `BackdropFilter`, `GlassGlow`, or `pressScale` overhead, and use native `CupertinoColors.label` / `CupertinoColors.placeholderText` / `CupertinoColors.secondaryLabel` typography contrast (`GlassSurfaceStyle.glass` colors remain unchanged).
@@ -29,7 +38,6 @@
 
 ## Bug Fixes
 
-- **`GlassThemeData()` and `GlassThemeData.simple()` no longer clobber the iOS 27 tab bar platter:** `resolveBarGlassSettings` now applies only the field delta from the default surface variant (`GlassThemeSettings.applyDeltaTo`), preventing unmodified default surface fields (`thickness: 12`, `blur: 5`, `lightAngle: 2.356`) from overwriting the calibrated iOS 27 tab bar platter (`LiquidGlassSettings.ios27Light` / `ios27Dark`). Apps that want the classic iOS 26 tab bar platter can pass `const GlassThemeData.ios26()` or `settings: LiquidGlassSettings.ios26TabBar`.
 - **Controls inside solid `GlassContainer.card` / `GlassGroupedSection` retain full visual quality (`avoidsRefraction: false`):** `GlassContainer._buildSolid` now sets `avoidsRefraction: false` on its `InheritedLiquidGlass` scope so `GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl` inside a solid card keep their full glass thumb/pill shader instead of degrading to a static vibrancy box.
 - **`GlassPicker` grouped-mode `settings` warning:** `GlassPicker` with `useOwnLayer: false` now resolves ambient/theme settings via `GlassThemeHelpers.resolveSettings` (with `LiquidGlassSettings(blur: 8)` as the standalone fallback) and logs a debug warning if explicit `settings` are passed while `useOwnLayer: false`.
 
