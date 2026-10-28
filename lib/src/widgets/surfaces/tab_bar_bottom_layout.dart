@@ -26,7 +26,7 @@ import 'tab_bar_bottom_internal.dart'
         BottomBarExtraBtn,
         BottomBarTabItem,
         TabIndicator,
-        kBottomBarGlassDefaults,
+        resolveBarGlassSettings,
         resolveBarLabelColor;
 import '../../../widgets/surfaces/shared/tab_bar_accessory_placement.dart';
 import 'tab_bar_layout_utils.dart';
@@ -160,9 +160,6 @@ class TabBarBottomLayout extends StatefulWidget {
 
 class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
     with TickerProviderStateMixin {
-  // Delegate to the shared const — single source of truth in tab_bar_bottom_internal.dart.
-  // Both bars reference kBottomBarGlassDefaults so their glass is guaranteed identical.
-  static const _defaultGlassSettings = kBottomBarGlassDefaults;
   static const _kGestureRegionKey = ValueKey<String>(
     'glass_tab_bar_gesture_region',
   );
@@ -253,7 +250,7 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
     final effectiveGlowSpreadRadius = resolvedGlowColors.glowSpreadRadius;
     final effectiveGlowOpacity = resolvedGlowColors.glowOpacity;
 
-    final effectiveSettings = widget.settings ?? _defaultGlassSettings;
+    final effectiveSettings = resolveBarGlassSettings(context, widget.settings);
 
     // RTL support.
     //

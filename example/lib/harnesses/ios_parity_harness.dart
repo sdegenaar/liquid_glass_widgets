@@ -49,21 +49,6 @@ const _kDarkPillGlassSettings = LiquidGlassSettings(
   fresnelStrength: 0.0,
 );
 
-/// Dark-mode bottom tab bar glass settings matching the Apple Music example.
-const _kDarkBarGlassSettings = LiquidGlassSettings(
-  glassColor: Color(0xAA1C1C1E),
-  thickness: 30,
-  blur: 2,
-  chromaticAberration: 0.01,
-  lightAngle: GlassDefaults.lightAngle,
-  lightIntensity: 0.2,
-  ambientStrength: 0,
-  refractiveIndex: 1.2,
-  fresnelStrength: 0.0,
-  saturation: 1.2,
-  specularSharpness: GlassSpecularSharpness.medium,
-);
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
@@ -102,6 +87,7 @@ class _ParityHost extends StatefulWidget {
 
 class _ParityHostState extends State<_ParityHost> {
   int _tab = 0;
+  String _bgMode = 'default';
   Timer? _poll;
   String? _lastCmd;
   Offset _lastPtr = Offset.zero;
@@ -252,6 +238,9 @@ class _ParityHostState extends State<_ParityHost> {
         binding.handlePointerEvent(event);
       case 'dark':
         _dark.value = a[1] == 'on';
+        setState(() {});
+      case 'bg':
+        _bgMode = a.length > 1 ? a[1] : 'default';
         setState(() {});
       case 'pop':
         if (_tab == 4 && _navPath.isNotEmpty) {
@@ -521,43 +510,92 @@ class _ParityHostState extends State<_ParityHost> {
     final pageSettings =
         isDark ? _kDarkPillGlassSettings : LiquidGlassSettings.ios27Light;
 
+    Widget? customBg;
+    if (_bgMode == 'mid') {
+      customBg = const ColoredBox(
+        color: Color(0xFF808080),
+        child: SizedBox.expand(),
+      );
+    } else if (_bgMode == 'vivid') {
+      customBg = Column(
+        children: [
+          const Expanded(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color.fromRGBO(38, 115, 242, 1),
+                    Color.fromRGBO(140, 64, 230, 1),
+                    Color.fromRGBO(242, 77, 115, 1),
+                  ],
+                ),
+              ),
+              child: SizedBox.expand(),
+            ),
+          ),
+          SizedBox(
+            height: 140,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: const [
+                Expanded(
+                    child: ColoredBox(color: Color.fromRGBO(255, 59, 48, 1))),
+                Expanded(
+                    child: ColoredBox(color: Color.fromRGBO(255, 148, 0, 1))),
+                Expanded(
+                    child: ColoredBox(color: Color.fromRGBO(51, 199, 89, 1))),
+                Expanded(
+                    child: ColoredBox(color: Color.fromRGBO(0, 122, 255, 1))),
+                Expanded(
+                    child: ColoredBox(color: Color.fromRGBO(176, 82, 222, 1))),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
     return GlassScaffold(
+      background: customBg,
       backgroundColor:
           isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7),
       settings: pageSettings,
-      bottomEdgeFade: !(_tab == 4 && _navPath.isNotEmpty),
+      bottomEdgeFade:
+          _bgMode == 'default' && !(_tab == 4 && _navPath.isNotEmpty),
       bottomBar: GlassTabBar.bottom(
         selectedIndex: _tab,
         onTabSelected: (idx) => setState(() => _tab = idx),
         quality: GlassQuality.premium,
         backgroundQuality: GlassQuality.premium,
-        settings: isDark ? _kDarkBarGlassSettings : null,
-        indicatorColor: isDark
-            ? CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.20)
-            : null,
-        unselectedIconColor: isDark
-            ? CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.9)
-            : null,
+        barHeight: 62,
+        horizontalPadding: 21,
+        verticalPadding: 21,
+        iconSize: 27,
+        iconLabelSpacing: 2,
+        labelFontSize: 10,
+        selectedIconColor: CupertinoColors.systemBlue.resolveFrom(context),
         tabs: const [
           GlassTab(
-            icon: Icon(CupertinoIcons.hand_draw),
-            label: 'Swipe',
+            icon: Icon(CupertinoIcons.hand_draw_fill),
+            label: 'Swipe & Menu',
           ),
           GlassTab(
-            icon: Icon(CupertinoIcons.chevron_down_circle),
+            icon: Icon(CupertinoIcons.chevron_down_circle_fill),
             label: 'Disclosure',
           ),
           GlassTab(
-            icon: Icon(CupertinoIcons.pencil_circle),
-            label: 'Edit',
+            icon: Icon(CupertinoIcons.pencil_circle_fill),
+            label: 'Edit Mode',
           ),
           GlassTab(
-            icon: Icon(CupertinoIcons.calendar),
+            icon: Icon(CupertinoIcons.calendar_circle_fill),
             label: 'Pickers',
           ),
           GlassTab(
-            icon: Icon(CupertinoIcons.arrow_up_right_square),
-            label: 'Modals',
+            icon: Icon(CupertinoIcons.arrow_up_right_square_fill),
+            label: 'Modals & Nav',
           ),
         ],
       ),

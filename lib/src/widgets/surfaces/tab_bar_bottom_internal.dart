@@ -56,6 +56,27 @@ const kBottomBarGlassDefaults = LiquidGlassSettings(
   glassColor: Color(0x3DFFFFFF),
 );
 
+/// Resolves the default [LiquidGlassSettings] for [GlassTabBar.bottom] and
+/// [GlassTabBar.searchable].
+///
+/// Follows the merge cascade:
+/// 1. Explicit widget [settings] (highest priority)
+/// 2. Ambient [GlassTheme] partial override applied onto the iOS 27
+///    light/dark tab-bar platter preset
+/// 3. Built-in iOS 27 light/dark tab-bar platter preset
+LiquidGlassSettings resolveBarGlassSettings(
+  BuildContext context,
+  LiquidGlassSettings? explicit,
+) {
+  if (explicit != null) return explicit;
+  final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
+  final base =
+      isDark ? LiquidGlassSettings.ios27Dark : LiquidGlassSettings.ios27Light;
+  final theme = context.dependOnInheritedWidgetOfExactType<GlassTheme>();
+  final themeOverride = theme?.data.settingsFor(context);
+  return themeOverride != null ? themeOverride.applyTo(base) : base;
+}
+
 // =============================================================================
 // resolveBarLabelColor — shared icon/label color resolution
 // =============================================================================

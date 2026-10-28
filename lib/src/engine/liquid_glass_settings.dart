@@ -260,7 +260,7 @@ class LiquidGlassSettings {
     rimShade: 1,
     rimLight: 1,
     shadow: [
-      BoxShadow(color: Color(0x04000000), blurRadius: 10, offset: Offset(0, 7)),
+      BoxShadow(color: Color(0x0A000000), blurRadius: 10, offset: Offset(0, 7)),
     ],
   );
 

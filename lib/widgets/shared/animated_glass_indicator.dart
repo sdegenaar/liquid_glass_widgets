@@ -165,7 +165,7 @@ class AnimatedGlassIndicator extends StatelessWidget {
     this.direction = Axis.horizontal,
   });
 
-  /// The iOS 26-calibrated default glass settings for all indicator pills.
+  /// The iOS 27-calibrated default glass settings for all indicator pills.
   ///
   /// Used as the merge base when the caller provides [settings]. Fields the
   /// caller leaves at [LiquidGlassSettings()] defaults are filled in from
@@ -175,7 +175,7 @@ class AnimatedGlassIndicator extends StatelessWidget {
   /// constant reflects that: `blur: 0` is non-negotiable for a refractive lens.
   ///
   /// Pass this as a starting point when you need partial overrides while
-  /// keeping iOS 26 parity:
+  /// keeping iOS 27 parity:
   /// ```dart
   /// indicatorSettings: AnimatedGlassIndicator.baseIndicatorSettings
   ///     .copyWith(refractiveIndex: 1.25)
@@ -187,17 +187,29 @@ class AnimatedGlassIndicator extends StatelessWidget {
       green: 1,
       blue: 1,
     ),
-    // Calibrated against iOS 26 reference: a shallower curve (22) with a
-    // slightly lower refractive index (1.08) produces a subtle lens warp
-    // on the icons without the balloon-bubble edge of the default (30 / 1.15).
-    thickness: 20,
-    refractiveIndex: 1.10,
-    lightIntensity: GlassDefaults.lightIntensity,
-    // Chromatic aberration is zeroed to eliminate rainbow fringing on the pill
-    // rim. The full icon-refraction lens effect from the glass surface normals
-    // is preserved — only the colour dispersion artefact is removed.
+    // Calibrated against iOS 27 _UILiquidLensView: clear paraxial lens with
+    // top rimShade outline (rimShadeEnds: 0.56) and inner specular rimLight.
+    //
+    // In liquid_glass_render.frag, pinchShift (+10.9pt outward at the rim,
+    // matching native spec.liftedDisplacement = 9) and paraxial bevel
+    // displacement (-normalXY * |normalXY| * 8 * thickness * (n - 1)) have
+    // opposite signs. At n = 1.06 the bevel displacement (-10.9pt) cancelled
+    // pinchShift to ~0 net refraction. At n = 1.17 the bevel reaches ~-28.5pt,
+    // yielding a net ~-17.5pt bevel fold at the rim that matches native
+    // spec.contentWrapperDisplacement = -17.5 while preserving the inward
+    // platter pinch inside the lens body.
+    thickness: 28,
+    refractiveIndex: 1.17,
+    lensModel: GlassLensModel.paraxial,
+    lightIntensity: 0.0,
+    ambientStrength: 0.0,
+    fresnelStrength: 0.0,
+    saturation: 1.0,
     chromaticAberration: 0.0,
-    lightAngle: GlassDefaults.lightAngle,
+    lightAngle: 1.5707963267948966, // pi / 2: lit from the top
+    rimShade: 1.0,
+    rimShadeEnds: 0.56,
+    rimLight: 1.0,
     blur: 0,
   );
 
@@ -283,6 +295,21 @@ class AnimatedGlassIndicator extends StatelessWidget {
           override.edgeAbsorption != _settingsDefaults.edgeAbsorption
               ? override.edgeAbsorption
               : null,
+      rimShade: override.rimShade != _settingsDefaults.rimShade
+          ? override.rimShade
+          : null,
+      rimShadeEnds: override.rimShadeEnds != _settingsDefaults.rimShadeEnds
+          ? override.rimShadeEnds
+          : null,
+      rimLight: override.rimLight != _settingsDefaults.rimLight
+          ? override.rimLight
+          : null,
+      bodyShade: override.bodyShade != _settingsDefaults.bodyShade
+          ? override.bodyShade
+          : null,
+      lensModel: override.lensModel != _settingsDefaults.lensModel
+          ? override.lensModel
+          : null,
       fresnelStrength:
           override.fresnelStrength != _settingsDefaults.fresnelStrength
               ? override.fresnelStrength
@@ -370,19 +397,41 @@ class AnimatedGlassIndicator extends StatelessWidget {
 
     // 1. Background Indicator (Resting state)
     // Fade out as the drag spring thickness increases toward 0.15.
+    // When using the default tab selection color, render the iOS 27
+    // _UITabSelectionView color-matrix equivalent (2-pass colorBurn + srcOver)
+    // directly into the bar's canvas without an offscreen Opacity layer.
     final backgroundOpacity = (1.0 - (thickness / 0.15)).clamp(0.0, 1.0);
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
+    final isDefaultTabSelection =
+        indicatorColor == CupertinoColors.white.withValues(alpha: .1) ||
+            indicatorColor == CupertinoColors.black.withValues(alpha: .1);
     final backgroundIndicator = IgnorePointer(
-      child: Opacity(
-        opacity: backgroundOpacity,
-        child: DecoratedBox(
-          decoration: ShapeDecoration(
-            color: indicatorColor,
-            shape: shape,
-            shadows: shadows,
-          ),
-          child: const SizedBox.expand(),
-        ),
-      ),
+      child: isDefaultTabSelection
+          ? DecoratedBox(
+              decoration: ShapeDecoration(
+                shape: shape,
+                shadows: shadows,
+              ),
+              child: CustomPaint(
+                painter: _RestingSelectionPillPainter(
+                  isDark: isDark,
+                  opacity: backgroundOpacity,
+                  borderRadius: borderRadius,
+                ),
+                child: const SizedBox.expand(),
+              ),
+            )
+          : Opacity(
+              opacity: backgroundOpacity,
+              child: DecoratedBox(
+                decoration: ShapeDecoration(
+                  color: indicatorColor,
+                  shape: shape,
+                  shadows: shadows,
+                ),
+                child: const SizedBox.expand(),
+              ),
+            ),
     );
 
     // 2. Glass Indicator (Active/Dragging state)
@@ -501,6 +550,18 @@ class AnimatedGlassIndicator extends StatelessWidget {
         if (paintBackground && isStdPath && backgroundOpacity > 0)
           backgroundIndicator,
         if (paintGlass && fade > 0.05) interactiveIndicator,
+        // Native `_UILiquidLensView` inner shadow, painted over the lens so it
+        // reads as the soft darkening along the top of the glass.
+        if (paintGlass && !isStdPath && fade > 0.05)
+          IgnorePointer(
+            child: CustomPaint(
+              painter: _LensInnerShadowPainter(
+                borderRadius: borderRadius,
+                opacity: fade,
+              ),
+              child: const SizedBox.expand(),
+            ),
+          ),
       ],
     );
 
@@ -658,4 +719,124 @@ class _OuterShadowPainter extends CustomPainter {
       oldDelegate.borderRadius != borderRadius ||
       oldDelegate.opacity != opacity ||
       !listEquals(oldDelegate.shadows, shadows);
+}
+
+/// Paints the iOS 27 lens inner shadow (`_UILiquidLensView` spec).
+///
+/// The native lens spec carries `innerShadowOffsetY = 7`,
+/// `innerShadowRadius = 3` and `innerShadowOpacity = 0.06`: the shadow of the
+/// lens' own silhouette, pushed 7pt down and clipped to the lens, so it
+/// darkens the inside of the top edge (and the upper curves of the capsule)
+/// by about 6% of black.
+class _LensInnerShadowPainter extends CustomPainter {
+  const _LensInnerShadowPainter({
+    required this.borderRadius,
+    required this.opacity,
+  });
+
+  /// `innerShadowOffsetY` of the native lens spec, in logical points.
+  static const double offsetY = 7.0;
+
+  /// `innerShadowRadius` of the native lens spec. A Core Animation shadow
+  /// radius is twice the Gaussian sigma.
+  static const double radius = 3.0;
+
+  /// `innerShadowOpacity` of the native lens spec.
+  static const double shadowOpacity = 0.06;
+
+  final double borderRadius;
+  final double opacity;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      GlassDefaults.safeCircularRadius(borderRadius),
+    );
+    final hole = Path()
+      ..fillType = PathFillType.evenOdd
+      ..addRect((Offset.zero & size).inflate(radius * 6 + offsetY))
+      ..addRRect(rrect.shift(const Offset(0, offsetY)));
+    canvas.save();
+    canvas.clipRRect(rrect);
+    canvas.drawPath(
+      hole,
+      Paint()
+        ..color = Color.from(
+          alpha: shadowOpacity * opacity,
+          red: 0,
+          green: 0,
+          blue: 0,
+        )
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, radius * 1.5),
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_LensInnerShadowPainter oldDelegate) =>
+      oldDelegate.borderRadius != borderRadius ||
+      oldDelegate.opacity != opacity;
+}
+
+/// Paints the resting tab selection pill (`_UITabSelectionView` on iOS 27).
+///
+/// Native `_UITabSelectionView` applies a `CAColorMatrix` with linear slope
+/// and negative constant bias (`v_out = 1.13 * v_in - 0.20` in light mode,
+/// `v_out = 0.87 * v_in - 0.07` in dark mode) so the selected pill darkens
+/// on both bright and mid-tone bars without muddying saturated backdrops.
+///
+/// Because `colorBurn(s, dst) = dst / s - (1 - s) / s`, a 2-pass canvas draw
+/// (`BlendMode.colorBurn` followed by `BlendMode.srcOver` black) reproduces
+/// the exact linear slope + negative bias with zero `BackdropFilter` passes.
+class _RestingSelectionPillPainter extends CustomPainter {
+  const _RestingSelectionPillPainter({
+    required this.isDark,
+    required this.opacity,
+    required this.borderRadius,
+  });
+
+  final bool isDark;
+  final double opacity;
+  final double borderRadius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (opacity <= 0.0) return;
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      GlassDefaults.safeCircularRadius(borderRadius),
+    );
+    if (isDark) {
+      // Dark mode: single colorBurn pass (C_s = 0.70, alpha = 0.70) matches
+      // native _UITabSelectionView across black (32 -> 10), mid-gray
+      // (134 -> 98), and saturated vivid backdrops (255 -> 250).
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..color = const Color(0xFFB3B3B3).withValues(alpha: 0.70 * opacity)
+          ..blendMode = BlendMode.colorBurn,
+      );
+      return;
+    }
+    // Light mode: m = 1.13, b = 0.20 -> burn gray 0xD2D2D2 + 0.07 black srcOver
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = const Color(0xFFD2D2D2).withValues(alpha: opacity)
+        ..blendMode = BlendMode.colorBurn,
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = Color.from(alpha: 0.07 * opacity, red: 0, green: 0, blue: 0)
+        ..blendMode = BlendMode.srcOver,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_RestingSelectionPillPainter oldDelegate) =>
+      oldDelegate.isDark != isDark ||
+      oldDelegate.opacity != opacity ||
+      oldDelegate.borderRadius != borderRadius;
 }

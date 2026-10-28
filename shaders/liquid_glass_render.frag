@@ -391,8 +391,19 @@ void main() {
         // outer band is an inverted 1.9:1 image of the backdrop from 0.27 to
         // 0.72 of the radius — thickness 32 (3x px) and n = 1.24 here. The
         // exact refraction below folds far harder toward the edge.
-        displacement = -normalXY * length(normalXY) * baseHeight
-                     * (uRefractiveIndex - 1.0);
+        //
+        // When concave platter pinch is active (uPinchStrength > 0.001),
+        // vertical bevel displacement (-normalXY.y) opposes the inward top/
+        // bottom platter pinch (+centered.y). Cap the vertical bevel (n - 1)
+        // at 0.02 so the top/bottom bar edges keep the full 0.025 pinch depth
+        // while horizontal refraction (displacement.x) uses the full
+        // uRefractiveIndex across tab icons and labels.
+        float nxScale = uRefractiveIndex - 1.0;
+        float nyScale = (uPinchStrength > 0.001)
+                      ? min(nxScale, 0.02)
+                      : nxScale;
+        displacement = -vec2(normalXY.x * nxScale, normalXY.y * nyScale)
+                     * length(normalXY) * baseHeight;
     } else {
         vec3  incident    = vec3(0.0, 0.0, -1.0);
         float invN        = 1.0 / max(uRefractiveIndex, 0.001);
@@ -516,7 +527,9 @@ void main() {
         // Multiplying by geometryData.a (which is 0 at the boundary and 1 by 2 px
         // inside) ramps the shift smoothly from 0 → full pinch over the same AA
         // zone as the pill alpha, eliminating the hard UV seam.
-        pinchShift *= geometryData.a;
+        // Also gate off within the iOS 27 hairline so the outer rim samples the
+        // true unshifted backdrop immediately outside the lens.
+        pinchShift *= geometryData.a * (1.0 - hairline);
 
         screenUV += pinchShift;
         

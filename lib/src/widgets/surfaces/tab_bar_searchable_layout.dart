@@ -30,7 +30,7 @@ import 'tab_bar_bottom_internal.dart'
     show
         BottomBarExtraBtn,
         BottomBarTabItem,
-        kBottomBarGlassDefaults,
+        resolveBarGlassSettings,
         resolveBarLabelColor;
 import '../../../widgets/surfaces/shared/glass_search_bar_config.dart';
 import '../../../widgets/surfaces/shared/tab_bar_searchable_controller.dart';
@@ -226,8 +226,6 @@ class TabBarSearchableLayout extends StatefulWidget {
 
 class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
     with TickerProviderStateMixin {
-  static const _defaultGlassSettings = kBottomBarGlassDefaults;
-
   late SearchableBottomBarController _controller;
   bool _ownsController = false;
 
@@ -510,8 +508,10 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
     final effectiveGlowOpacity = resolvedGlowColors.glowOpacity;
 
     final bool isLight = GlassTheme.brightnessOf(context) == Brightness.light;
-    final effectiveSettings =
-        _applyWhiten(widget.settings ?? _defaultGlassSettings, isLight);
+    final effectiveSettings = _applyWhiten(
+      resolveBarGlassSettings(context, widget.settings),
+      isLight,
+    );
     final searching = widget.isSearchActive;
 
     // RTL support.

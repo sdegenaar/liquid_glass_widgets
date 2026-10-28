@@ -89,13 +89,14 @@ class GlassThemeSettings {
     lensModel: GlassLensModel.paraxial,
     lightAngle: 1.5707963267948966,
     lightIntensity: 0,
+    ambientStrength: 0,
     fresnelStrength: 0,
     chromaticAberration: 0,
     edgeAbsorption: 0.035,
     rimShade: 1,
     rimLight: 1,
     shadow: [
-      BoxShadow(color: Color(0x04000000), blurRadius: 10, offset: Offset(0, 7)),
+      BoxShadow(color: Color(0x0A000000), blurRadius: 10, offset: Offset(0, 7)),
     ],
   );
 
@@ -115,6 +116,7 @@ class GlassThemeSettings {
     lensModel: GlassLensModel.paraxial,
     lightAngle: -1.5707963267948966,
     lightIntensity: 0,
+    ambientStrength: 0,
     fresnelStrength: 0,
     chromaticAberration: 0,
     edgeAbsorption: 0.035,
