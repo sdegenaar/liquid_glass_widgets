@@ -1,11 +1,16 @@
-# Unreleased
+# 1.16.1
 
 ## Features
 
-- **Menu glass for bar and button group menus (`GlassBarItem.menu`, `GlassButtonGroupItem.menu`):** Both now accept `menuSettings` (`LiquidGlassSettings?`), the glass of the menu panel, honored in the `GlassNavigationShell` pinned capsule, the in-route `GlassPinnedBarChrome` capsule, and `GlassButtonGroup`. These menus used to always take the glass of the button they morph out of; native iOS 26/27 menus turn into a thicker, more opaque material as they grow out of a toolbar button, which keeps their items readable over busy content. When `null` (the default), the menu keeps the glass of the button, so nothing changes unless you opt in.
+- **Custom menu glass for bar and button-group menus (`GlassBarItem.menu`, `GlassButtonGroupItem.menu`) (PR #450):** Both now accept `menuSettings` (`LiquidGlassSettings?`), forwarded to the `GlassMenu` panel across `GlassNavigationShell`, `GlassPinnedBarChrome`, and `GlassButtonGroup` so menus can use a thicker, more readable material than the button they morph out of. Defaults to `null` (inherits the button's glass).
+
+  Thanks to [@veloce](https://github.com/veloce) for the contribution (#450).
+
 ## Bug Fixes
 
-- **Swipe actions with a long label no longer render shrunk (`GlassSwipeActions`, `GlassSwipeAction`):** A label wider than the button circle used to scale the whole button down, icon and label alike, to fit the circle width, leaving a tiny button with unreadable text. A button now stretches from a circle into a capsule so that its `Text` label fits on one line below it at full size, as in native iOS 26/27. The open actions take at most 75% of the row width (unless `actionWidth` is set); beyond it, the longest labels are truncated with an ellipsis to the same width. When the open actions are wider than `fullSwipeThreshold`, a full swipe now takes pulling the row a short distance past their open width.
+- **Swipe actions with long labels no longer shrink (`GlassSwipeActions`, `GlassSwipeAction`) (PR #449):** Action buttons with labels wider than `buttonDiameter` now stretch into capsules to fit their single-line `Text` label at full size instead of scaling down via `FittedBox`. Open actions are capped at 75% of the row width (truncating the longest labels equally with an ellipsis), and when open actions exceed `fullSwipeThreshold`, full-swipe triggers after pulling slightly past their open width.
+
+  Thanks to [@veloce](https://github.com/veloce) for the fix (#449).
 
 # 1.16.0
 
