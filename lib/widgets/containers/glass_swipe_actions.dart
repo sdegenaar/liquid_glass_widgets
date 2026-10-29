@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
@@ -234,6 +235,9 @@ class GlassSwipeActions extends StatefulWidget {
 
   /// Proportion of the row's total width required to prime full-swipe execution.
   ///
+  /// When the open actions are wider than this (long labels), a full swipe
+  /// instead takes pulling the row a short distance past their open width.
+  ///
   /// Defaults to `0.65` (65%).
   final double fullSwipeThreshold;
 
@@ -379,6 +383,12 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
 
   GlassSwipeActionScopeState? _scope;
 
+  /// The row width of the last layout, which sets how wide the buttons can be.
+  double? _rowWidth;
+
+  /// The row height of the last layout, which sets the button diameter.
+  double? _rowHeight;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -467,20 +477,98 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
     }
   }
 
-  double _totalStandardWidth(int actionCount) {
-    if (actionCount == 0) return 0.0;
+  double _totalStandardWidth(List<GlassSwipeAction> actions) {
+    if (actions.isEmpty) return 0.0;
     if (widget.actionWidth != null) {
-      return actionCount * widget.actionWidth!;
+      return actions.length * widget.actionWidth!;
     }
+    return _totalButtonsWidth(_buttonWidths(
+        actions,
+        _circleDiameter(_rowHeight ?? double.infinity),
+        _rowWidth ?? MediaQuery.sizeOf(context).width));
+  }
+
+  /// The diameter of the button circles in a row of [availableHeight].
+  double _circleDiameter(double availableHeight) =>
+      widget.actionWidth ??
+      (availableHeight - 8.0).clamp(24.0, widget.buttonDiameter);
+
+  /// How far the row must be pulled to prime a full swipe: past
+  /// [GlassSwipeActions.fullSwipeThreshold], or [_fullSwipeExtraDistance] past
+  /// the open width of the actions when they are wider than that.
+  double _fullSwipeDistance(double totalStandardWidth, double rowWidth) {
+    final threshold = widget.fullSwipeThreshold * rowWidth;
+    return totalStandardWidth < threshold
+        ? threshold
+        : totalStandardWidth + _fullSwipeExtraDistance;
+  }
+
+  double _totalButtonsWidth(List<double> widths) {
     return 2 * widget.horizontalPadding +
-        actionCount * widget.buttonDiameter +
-        (actionCount - 1) * widget.buttonSpacing;
+        widths.fold(0.0, (sum, width) => sum + width) +
+        (widths.length - 1) * widget.buttonSpacing;
+  }
+
+  /// The resting width of each button: its circle, stretched into a capsule
+  /// as wide as its [Text] label, within the share of the row allowed by
+  /// [_maxActionsWidthFraction].
+  List<double> _buttonWidths(
+      List<GlassSwipeAction> actions, double circleDiameter, double rowWidth) {
+    final labelStyle = _swipeActionLabelStyle(circleDiameter);
+    final natural = [
+      for (final action in actions)
+        math.max(_labelWidth(action.label, labelStyle), circleDiameter),
+    ];
+
+    final budget = rowWidth * _maxActionsWidthFraction -
+        2 * widget.horizontalPadding -
+        (actions.length - 1) * widget.buttonSpacing;
+    if (natural.fold(0.0, (sum, width) => sum + width) <= budget) {
+      return natural;
+    }
+
+    // Cap the widest buttons to the same width, so that all of them fit the
+    // budget: the narrower ones keep their natural width.
+    final ascending = [...natural]..sort();
+    var remaining = budget;
+    var cap = circleDiameter;
+    for (var i = 0; i < ascending.length; i++) {
+      final share = remaining / (ascending.length - i);
+      if (ascending[i] >= share) {
+        cap = math.max(share, circleDiameter);
+        break;
+      }
+      remaining -= ascending[i];
+    }
+    return [for (final width in natural) math.min(width, cap)];
+  }
+
+  /// The width of [label] on one line, laid out as [Text] lays it out below
+  /// its button, or `0.0` when it is not a plain [Text].
+  double _labelWidth(Widget? label, TextStyle labelStyle) {
+    if (label is! Text || label.data == null) return 0.0;
+    var style = labelStyle.merge(label.style);
+    if (MediaQuery.boldTextOf(context)) {
+      style = style.merge(const TextStyle(fontWeight: FontWeight.bold));
+    }
+    final painter = TextPainter(
+      text: TextSpan(text: label.data, style: style),
+      textDirection: Directionality.of(context),
+      textScaler: label.textScaler ?? MediaQuery.textScalerOf(context),
+      maxLines: 1,
+      locale: label.locale ?? Localizations.maybeLocaleOf(context),
+      strutStyle: label.strutStyle,
+      textWidthBasis: label.textWidthBasis ?? TextWidthBasis.parent,
+    )..layout();
+    final width = painter.width.ceilToDouble();
+    painter.dispose();
+    return width;
   }
 
   /// Programmatically opens the trailing actions.
   void openTrailing({bool animated = true}) {
     if (!mounted || widget.trailingActions.isEmpty) return;
-    final totalWidth = _totalStandardWidth(widget.trailingActions.length);
+    final totalWidth = _totalStandardWidth(widget.trailingActions);
     final isRtl = Directionality.of(context) == TextDirection.rtl;
     final target = isRtl ? totalWidth : -totalWidth;
     _scope?.registerOpenRow(this);
@@ -490,7 +578,7 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
   /// Programmatically opens the leading actions.
   void openLeading({bool animated = true}) {
     if (!mounted || widget.leadingActions.isEmpty) return;
-    final totalWidth = _totalStandardWidth(widget.leadingActions.length);
+    final totalWidth = _totalStandardWidth(widget.leadingActions);
     final isRtl = Directionality.of(context) == TextDirection.rtl;
     final target = isRtl ? -totalWidth : totalWidth;
     _scope?.registerOpenRow(this);
@@ -638,14 +726,14 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
     // Apply rubber-band damping if full swipe is disabled
     if (!widget.allowsFullSwipe) {
       if (directionalOffset > 0) {
-        final maxLeading = _totalStandardWidth(widget.leadingActions.length);
+        final maxLeading = _totalStandardWidth(widget.leadingActions);
         if (directionalOffset > maxLeading) {
           final excess = directionalOffset - maxLeading;
           directionalOffset = maxLeading + excess * 0.25;
           newOffset = isRtl ? -directionalOffset : directionalOffset;
         }
       } else if (directionalOffset < 0) {
-        final maxTrailing = _totalStandardWidth(widget.trailingActions.length);
+        final maxTrailing = _totalStandardWidth(widget.trailingActions);
         if (directionalOffset.abs() > maxTrailing) {
           final excess = directionalOffset.abs() - maxTrailing;
           directionalOffset = -(maxTrailing + excess * 0.25);
@@ -655,7 +743,11 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
     }
 
     final revealDistance = directionalOffset.abs();
-    final thresholdDistance = widget.fullSwipeThreshold * rowWidth;
+    final thresholdDistance = _fullSwipeDistance(
+        _totalStandardWidth(directionalOffset > 0
+            ? widget.leadingActions
+            : widget.trailingActions),
+        rowWidth);
 
     if (widget.allowsFullSwipe && revealDistance >= thresholdDistance) {
       if (!_hasFiredHaptic && widget.enableHaptics) {
@@ -685,7 +777,11 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
     final directionalVelocity = isRtl ? -velocity : velocity;
     final directionalOffset = isRtl ? -_offset : _offset;
     final revealDistance = directionalOffset.abs();
-    final thresholdDistance = widget.fullSwipeThreshold * rowWidth;
+    final thresholdDistance = _fullSwipeDistance(
+        _totalStandardWidth(directionalOffset > 0
+            ? widget.leadingActions
+            : widget.trailingActions),
+        rowWidth);
 
     if (widget.allowsFullSwipe && revealDistance >= thresholdDistance) {
       if (_isDismissing) return;
@@ -731,7 +827,7 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
 
     // Determine resting settle target
     if (directionalOffset > 0 && widget.leadingActions.isNotEmpty) {
-      final totalLeading = _totalStandardWidth(widget.leadingActions.length);
+      final totalLeading = _totalStandardWidth(widget.leadingActions);
       final isClosingFlick = directionalVelocity < -250;
       final shouldOpen = !isClosingFlick &&
           (_dragStartSide == 1
@@ -746,7 +842,7 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
         _closeWithVelocity(velocity);
       }
     } else if (directionalOffset < 0 && widget.trailingActions.isNotEmpty) {
-      final totalTrailing = _totalStandardWidth(widget.trailingActions.length);
+      final totalTrailing = _totalStandardWidth(widget.trailingActions);
       final isClosingFlick = directionalVelocity > 250;
       final shouldOpen = !isClosingFlick &&
           (_dragStartSide == -1
@@ -783,6 +879,7 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
         final rowWidth = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
+        _rowWidth = rowWidth;
 
         final isLeading = directionalOffset > 0;
         final isTrailing = directionalOffset < 0;
@@ -790,6 +887,7 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
 
         final availableHeight =
             constraints.maxHeight.isFinite ? constraints.maxHeight : 70.0;
+        _rowHeight = availableHeight;
         final isVisuallyOpen = _offset.abs() >= 0.5;
         final greyProgress = (_offset.abs() / 24.0).clamp(0.0, 1.0);
         final inSolidSurface = InheritedGlassSurfaceStyle.maybeOf(context) ==
@@ -934,17 +1032,20 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
     Color pageColor,
   ) {
     final actions = widget.leadingActions;
-    final totalStandardWidth = _totalStandardWidth(actions.length);
-    final isFullSwipe = widget.allowsFullSwipe &&
-        revealWidth >= widget.fullSwipeThreshold * rowWidth;
-    final excess =
-        (revealWidth - totalStandardWidth).clamp(0.0, double.infinity);
-
-    final maxPossible =
-        (availableHeight - 8.0).clamp(24.0, widget.buttonDiameter);
-    final circleDiameter = widget.actionWidth ?? maxPossible;
+    final circleDiameter = _circleDiameter(availableHeight);
     final spacing = widget.buttonSpacing;
     final padding = widget.horizontalPadding;
+    final widths = widget.actionWidth != null
+        ? [for (final _ in actions) circleDiameter]
+        : _buttonWidths(actions, circleDiameter, rowWidth);
+
+    final totalStandardWidth = widget.actionWidth != null
+        ? _totalStandardWidth(actions)
+        : _totalButtonsWidth(widths);
+    final excess =
+        (revealWidth - totalStandardWidth).clamp(0.0, double.infinity);
+    final isFullSwipe = widget.allowsFullSwipe &&
+        revealWidth >= _fullSwipeDistance(totalStandardWidth, rowWidth);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -965,19 +1066,17 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
               final double buttonWidth;
               final double startOffset;
               if (isOutermost) {
-                buttonWidth = circleDiameter + excess;
+                buttonWidth = widths[0] + excess;
                 startOffset = padding;
               } else {
-                buttonWidth = circleDiameter;
+                buttonWidth = widths[i];
                 startOffset = padding +
-                    circleDiameter +
                     excess +
-                    (i - 1) * (circleDiameter + spacing) +
-                    spacing;
+                    widths.take(i).fold(0.0, (sum, w) => sum + w + spacing);
               }
 
               final revealProgress = _computeActionRevealProgress(
-                  i, actions.length, revealWidth, circleDiameter, spacing);
+                  i, totalStandardWidth, revealWidth, widths, spacing);
 
               return Positioned.directional(
                 textDirection: Directionality.of(context),
@@ -988,6 +1087,7 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
                 child: _GlassSwipeActionButton(
                   action: actions[i],
                   circleDiameter: circleDiameter,
+                  restingWidth: widths[i],
                   width: buttonWidth,
                   isOutermost: isOutermost,
                   isFullSwipe: isFullSwipe && isOutermost,
@@ -1018,17 +1118,20 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
     Color pageColor,
   ) {
     final actions = widget.trailingActions;
-    final totalStandardWidth = _totalStandardWidth(actions.length);
-    final isFullSwipe = widget.allowsFullSwipe &&
-        revealWidth >= widget.fullSwipeThreshold * rowWidth;
-    final excess =
-        (revealWidth - totalStandardWidth).clamp(0.0, double.infinity);
-
-    final maxPossible =
-        (availableHeight - 8.0).clamp(24.0, widget.buttonDiameter);
-    final circleDiameter = widget.actionWidth ?? maxPossible;
+    final circleDiameter = _circleDiameter(availableHeight);
     final spacing = widget.buttonSpacing;
     final padding = widget.horizontalPadding;
+    final widths = widget.actionWidth != null
+        ? [for (final _ in actions) circleDiameter]
+        : _buttonWidths(actions, circleDiameter, rowWidth);
+
+    final totalStandardWidth = widget.actionWidth != null
+        ? _totalStandardWidth(actions)
+        : _totalButtonsWidth(widths);
+    final excess =
+        (revealWidth - totalStandardWidth).clamp(0.0, double.infinity);
+    final isFullSwipe = widget.allowsFullSwipe &&
+        revealWidth >= _fullSwipeDistance(totalStandardWidth, rowWidth);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -1049,19 +1152,17 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
               final double buttonWidth;
               final double endOffset;
               if (isOutermost) {
-                buttonWidth = circleDiameter + excess;
+                buttonWidth = widths[0] + excess;
                 endOffset = padding;
               } else {
-                buttonWidth = circleDiameter;
+                buttonWidth = widths[i];
                 endOffset = padding +
-                    circleDiameter +
                     excess +
-                    (i - 1) * (circleDiameter + spacing) +
-                    spacing;
+                    widths.take(i).fold(0.0, (sum, w) => sum + w + spacing);
               }
 
               final revealProgress = _computeActionRevealProgress(
-                  i, actions.length, revealWidth, circleDiameter, spacing);
+                  i, totalStandardWidth, revealWidth, widths, spacing);
 
               return Positioned.directional(
                 textDirection: Directionality.of(context),
@@ -1072,6 +1173,7 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
                 child: _GlassSwipeActionButton(
                   action: actions[i],
                   circleDiameter: circleDiameter,
+                  restingWidth: widths[i],
                   width: buttonWidth,
                   isOutermost: isOutermost,
                   isFullSwipe: isFullSwipe && isOutermost,
@@ -1093,17 +1195,17 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
     );
   }
 
-  double _computeActionRevealProgress(int index, int count, double revealWidth,
-      double circleDiameter, double spacing) {
+  double _computeActionRevealProgress(int index, double totalStandardWidth,
+      double revealWidth, List<double> widths, double spacing) {
     if (revealWidth <= 0.0) return 0.0;
-    final totalStandardWidth = _totalStandardWidth(count);
     if (revealWidth >= totalStandardWidth) return 1.0;
 
-    final step = circleDiameter + spacing;
     // Slower, progressive reveal: outermost button (index 0) starts early,
     // subsequent buttons reveal sequentially as row is pulled open.
-    final start = index == 0 ? 6.0 : (6.0 + index * (step * 0.7));
-    final end = (start + step * 0.9).clamp(start + 1.0, totalStandardWidth);
+    final before = widths.take(index).fold(0.0, (sum, w) => sum + w + spacing);
+    final start = 6.0 + before * 0.7;
+    final end = (start + (widths[index] + spacing) * 0.9)
+        .clamp(start + 1.0, totalStandardWidth);
     if (revealWidth <= start) return 0.0;
     return ((revealWidth - start) / (end - start)).clamp(0.0, 1.0);
   }
@@ -1114,6 +1216,7 @@ class _GlassSwipeActionButton extends StatefulWidget {
     required this.action,
     required this.circleDiameter,
     required this.onPressed,
+    this.restingWidth,
     this.width,
     this.isOutermost = false,
     this.isFullSwipe = false,
@@ -1124,6 +1227,10 @@ class _GlassSwipeActionButton extends StatefulWidget {
 
   final GlassSwipeAction action;
   final double circleDiameter;
+
+  /// The width of the button when its row rests open: [circleDiameter], or
+  /// wider to fit its label.
+  final double? restingWidth;
   final double? width;
   final VoidCallback onPressed;
   final bool isOutermost;
@@ -1158,6 +1265,7 @@ class _GlassSwipeActionButtonState extends State<_GlassSwipeActionButton> {
     final double circleDiameter = widget.circleDiameter;
     final double buttonHeight = circleDiameter;
     final double buttonWidth = widget.width ?? circleDiameter;
+    final double restingWidth = widget.restingWidth ?? circleDiameter;
     final borderRadius = BorderRadius.circular(buttonHeight / 2);
 
     final Color tint;
@@ -1204,13 +1312,12 @@ class _GlassSwipeActionButtonState extends State<_GlassSwipeActionButton> {
     final double effectiveOpacity = (progress * 1.05).clamp(0.0, 1.0);
 
     final iconSize = (circleDiameter * 0.40).clamp(16.0, 22.0);
-    final labelFontSize = (circleDiameter * 0.22).clamp(10.0, 12.0);
 
     // In native iOS, as the outermost action stretches into a capsule and primes
     // full swipe, its text label fades away and the icon flicks toward the inner
     // edge (leading for trailing swipe, trailing for leading swipe).
     final bool hideLabel = widget.isFullSwipe ||
-        (widget.isOutermost && buttonWidth > circleDiameter + 8.0);
+        (widget.isOutermost && buttonWidth > restingWidth + 8.0);
     final double labelOpacity = hideLabel ? 0.0 : effectiveOpacity;
 
     final targetAlignment = (widget.isFullSwipe && widget.isOutermost)
@@ -1275,21 +1382,26 @@ class _GlassSwipeActionButtonState extends State<_GlassSwipeActionButton> {
                       ),
                       if (widget.action.label != null) ...[
                         const SizedBox(height: 3.0),
+                        // Laid out at the resting button width, so that the
+                        // FittedBox never scales the button down for a label
+                        // truncated to fit [_maxActionsWidthFraction].
                         AnimatedOpacity(
                           duration: const Duration(milliseconds: 150),
                           curve: Curves.easeOut,
                           opacity: labelOpacity,
-                          child: DefaultTextStyle(
-                            style: TextStyle(
-                              color: CupertinoColors.secondaryLabel
-                                  .resolveFrom(context),
-                              fontSize: labelFontSize,
-                              fontWeight: FontWeight.normal,
-                              letterSpacing: -0.2,
+                          child: SizedBox(
+                            width: restingWidth,
+                            child: DefaultTextStyle(
+                              style: _swipeActionLabelStyle(circleDiameter)
+                                  .copyWith(
+                                color: CupertinoColors.secondaryLabel
+                                    .resolveFrom(context),
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              child: widget.action.label!,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            child: widget.action.label!,
                           ),
                         ),
                       ],
@@ -1304,3 +1416,22 @@ class _GlassSwipeActionButtonState extends State<_GlassSwipeActionButton> {
     );
   }
 }
+
+/// Maximum fraction of the row width taken by the open actions, including
+/// their padding and spacing, when [GlassSwipeActions.actionWidth] is not set.
+///
+/// When the labels do not all fit, the longest ones are truncated with an
+/// ellipsis, to the same width.
+const double _maxActionsWidthFraction = 0.75;
+
+/// How far past the open width of actions wider than
+/// [GlassSwipeActions.fullSwipeThreshold] the row must be pulled to prime a
+/// full swipe.
+const double _fullSwipeExtraDistance = 25.0;
+
+/// The text style of a swipe action label below a button of [circleDiameter].
+TextStyle _swipeActionLabelStyle(double circleDiameter) => TextStyle(
+      fontSize: (circleDiameter * 0.22).clamp(10.0, 12.0),
+      fontWeight: FontWeight.normal,
+      letterSpacing: -0.2,
+    );

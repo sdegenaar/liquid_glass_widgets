@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -203,6 +204,58 @@ void main() {
       expect(find.text('Delete'), findsNothing); // returns closed
     });
 
+    testWidgets('full swipe stays past the open width of long labels',
+        (tester) async {
+      final controller = GlassSwipeController();
+      var removeTriggered = false;
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: SizedBox(
+            width: 300,
+            child: GlassSwipeActions(
+              controller: controller,
+              trailingActions: [
+                GlassSwipeAction(
+                  icon: const Icon(CupertinoIcons.trash),
+                  label: const Text('Remove this download'),
+                  onTap: () => removeTriggered = true,
+                ),
+              ],
+              child: const SizedBox(
+                height: 50,
+                width: 300,
+                child: Text('Row Item'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      controller.openTrailing(animated: false);
+      await tester.pumpAndSettle();
+      final openWidth = -controller.offset;
+      // The long label opens the actions past the 65% full swipe threshold.
+      expect(openWidth, greaterThan(0.65 * 300));
+
+      controller.close();
+      await tester.pumpAndSettle();
+
+      await tester.drag(find.text('Row Item'), Offset(-openWidth, 0));
+      await tester.pumpAndSettle();
+
+      expect(removeTriggered, isFalse);
+      expect(controller.swipeState, GlassSwipeState.openTrailing);
+
+      controller.close();
+      await tester.pumpAndSettle();
+
+      await tester.drag(find.text('Row Item'), const Offset(-300, 0));
+      await tester.pumpAndSettle();
+
+      expect(removeTriggered, isTrue);
+    });
+
     testWidgets('allowsFullSwipe: false disables auto-execution',
         (tester) async {
       var deleteTriggered = false;
@@ -363,6 +416,84 @@ void main() {
 
       expect(find.text('Delete'), findsOneWidget);
       expect(state, GlassSwipeState.openTrailing);
+    });
+
+    testWidgets('a button with a long label is not shrunk', (tester) async {
+      final controller = GlassSwipeController();
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassSwipeActions(
+            controller: controller,
+            trailingActions: const [
+              GlassSwipeAction(
+                icon: Icon(CupertinoIcons.trash),
+                label: Text('Delete'),
+                onTap: _noop,
+              ),
+              GlassSwipeAction(
+                icon: Icon(CupertinoIcons.flag),
+                label: Text('Flag'),
+                onTap: _noop,
+              ),
+            ],
+            child: const SizedBox(height: 80, child: Text('Capsule Row')),
+          ),
+        ),
+      );
+
+      controller.openTrailing(animated: false);
+      await tester.pumpAndSettle();
+
+      _expectButtonsNotShrunk(tester);
+      expect(_isTruncated(tester, 'Delete'), isFalse);
+      expect(_isTruncated(tester, 'Flag'), isFalse);
+    });
+
+    testWidgets(
+        'labels too long for the row are truncated to the same width, without shrinking their buttons',
+        (tester) async {
+      final controller = GlassSwipeController();
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: SizedBox(
+            width: 300,
+            child: GlassSwipeActions(
+              controller: controller,
+              trailingActions: const [
+                GlassSwipeAction(
+                  icon: Icon(CupertinoIcons.flag),
+                  label: Text('Flag'),
+                  onTap: _noop,
+                ),
+                GlassSwipeAction(
+                  icon: Icon(CupertinoIcons.bookmark),
+                  label: Text('Add this game to bookmarks'),
+                  onTap: _noop,
+                ),
+                GlassSwipeAction(
+                  icon: Icon(CupertinoIcons.trash),
+                  label: Text('Remove this download'),
+                  onTap: _noop,
+                ),
+              ],
+              child: const SizedBox(height: 80, child: Text('Long Label Row')),
+            ),
+          ),
+        ),
+      );
+
+      controller.openTrailing(animated: false);
+      await tester.pumpAndSettle();
+
+      _expectButtonsNotShrunk(tester);
+      expect(-controller.offset, lessThan(300));
+      expect(_isTruncated(tester, 'Flag'), isFalse);
+      expect(_isTruncated(tester, 'Add this game to bookmarks'), isTrue);
+      expect(_isTruncated(tester, 'Remove this download'), isTrue);
+      expect(tester.getSize(find.text('Add this game to bookmarks')).width,
+          tester.getSize(find.text('Remove this download')).width);
     });
   });
 
@@ -1083,7 +1214,8 @@ void main() {
             trailingActions: const [
               GlassSwipeAction(
                 icon: Icon(CupertinoIcons.trash),
-                label: Text('Delete'),
+                // Fits the circle.
+                label: Text('Bin'),
                 onTap: _noop,
               ),
               GlassSwipeAction(
@@ -1130,7 +1262,8 @@ void main() {
             trailingActions: const [
               GlassSwipeAction(
                 icon: Icon(CupertinoIcons.trash),
-                label: Text('Delete'),
+                // Fits the circle.
+                label: Text('Bin'),
                 onTap: _noop,
               ),
               GlassSwipeAction(
@@ -1151,15 +1284,15 @@ void main() {
       // Partial drag to reveal Delete (offset -80)
       controller.animateToOffset(-80.0, animated: false);
       await tester.pump();
-      expect(find.text('Delete'), findsOneWidget);
-      final deletePosAt80 = tester.getTopLeft(find.text('Delete')).dx;
+      expect(find.text('Bin'), findsOneWidget);
+      final deletePosAt80 = tester.getTopLeft(find.text('Bin')).dx;
 
       // Drag further open to resting width (offset -136)
       controller.animateToOffset(-136.0, animated: false);
       await tester.pump();
-      expect(find.text('Delete'), findsOneWidget);
+      expect(find.text('Bin'), findsOneWidget);
       expect(find.text('Flag'), findsOneWidget);
-      final deletePosAt136 = tester.getTopLeft(find.text('Delete')).dx;
+      final deletePosAt136 = tester.getTopLeft(find.text('Bin')).dx;
       final flagPosAt136 = tester.getTopLeft(find.text('Flag')).dx;
 
       // Delete position must NOT move sideways during reveal (from 80 to 136)!
@@ -1238,9 +1371,9 @@ void main() {
             swipeActionHorizontalPadding: 10.0,
             title: const Text('Forwarding Tile'),
             trailingSwipeActions: const [
+              // No label: a label wider than the circle stretches the button.
               GlassSwipeAction(
                 icon: Icon(CupertinoIcons.trash),
-                label: Text('Delete'),
                 onTap: _noop,
               ),
             ],
@@ -1679,3 +1812,17 @@ void main() {
 }
 
 void _noop() {}
+
+/// Expects that no swipe action button is scaled down to fit its slot.
+void _expectButtonsNotShrunk(WidgetTester tester) {
+  final fittedBoxes = tester.renderObjectList<RenderProxyBox>(find.descendant(
+      of: find.byType(GlassSwipeActions), matching: find.byType(FittedBox)));
+  expect(fittedBoxes, isNotEmpty);
+  for (final fitted in fittedBoxes) {
+    expect(fitted.child!.size, fitted.size);
+  }
+}
+
+/// Whether the swipe action label [text] is truncated with an ellipsis.
+bool _isTruncated(WidgetTester tester, String text) =>
+    tester.renderObject<RenderParagraph>(find.text(text)).didExceedMaxLines;
