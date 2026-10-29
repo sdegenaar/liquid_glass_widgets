@@ -453,6 +453,55 @@ class _ListsPickersAndNavDemoPageState
               ),
           ],
         ),
+        GlassGroupedSection(
+          surfaceStyle: GlassSurfaceStyle.solid,
+          margin: EdgeInsets.zero,
+          header: _sectionHeader('Long labels'),
+          children: [
+            // A capsule stretches to fit its label on one line.
+            GlassListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+              title: const Text('One long action'),
+              subtitle: const Text('Swipe left'),
+              trailingSwipeActions: [
+                GlassSwipeAction(
+                  icon: const Icon(CupertinoIcons.trash),
+                  label: const Text('Supprimer le téléchargement'),
+                  isDestructive: true,
+                  onTap: () {},
+                ),
+              ],
+            ),
+            // The longest labels share what is left of 80% of the row width.
+            GlassListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+              title: const Text('Three actions'),
+              subtitle: const Text('Swipe left'),
+              trailingSwipeActions: [
+                GlassSwipeAction(
+                  icon: const Icon(CupertinoIcons.trash),
+                  label: const Text('Supprimer le téléchargement'),
+                  isDestructive: true,
+                  onTap: () {},
+                ),
+                GlassSwipeAction(
+                  icon: const Icon(CupertinoIcons.bookmark),
+                  label: const Text('Ajouter aux favoris'),
+                  backgroundColor: CupertinoColors.systemOrange,
+                  onTap: () {},
+                ),
+                GlassSwipeAction(
+                  icon: const Icon(CupertinoIcons.flag_fill),
+                  label: const Text('Reporter'),
+                  backgroundColor: CupertinoColors.systemBlue,
+                  onTap: () {},
+                ),
+              ],
+            ),
+          ],
+        ),
       ],
       isDark: isDark,
       onExitDemo: onExitDemo,
