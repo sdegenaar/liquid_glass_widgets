@@ -2692,6 +2692,7 @@ class _PinnedGroupState extends State<_PinnedGroup> {
               // trigger to open one. It matches GlassMenu's own default.
               menuWidth: menuItem?.menuWidth ?? 200,
               menuHeight: menuItem?.menuHeight,
+              settings: menuItem?.menuSettings,
               autoAdjustToScreen: true,
               platformViewBackdrop: platformViewBackdrop,
               triggerBuilder: (context, _) => toGroup.glass
