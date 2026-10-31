@@ -915,7 +915,9 @@ void main() {
       int lensShadowPainters() => find
           .byWidgetPredicate((w) =>
               w is CustomPaint &&
-              w.painter.runtimeType.toString() == '_LensInnerShadowPainter')
+              w.painter.runtimeType
+                  .toString()
+                  .contains('LensInnerShadowPainter'))
           .evaluate()
           .length;
 
@@ -1092,6 +1094,70 @@ void main() {
       expect(lightIos27, equals(LiquidGlassSettings.ios27Light));
       expect(darkIos26, equals(LiquidGlassSettings.ios26Dark));
       expect(darkIos27, equals(LiquidGlassSettings.ios27Dark));
+    });
+
+    testWidgets(
+        'GlassSwitch and GlassSlider resolve iOS 27 paraxial lens by default and spherical lens under GlassThemeData.ios26()',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GlassTheme(
+            data: const GlassThemeData.ios27(),
+            child: Scaffold(
+              body: Column(
+                children: [
+                  GlassSwitch(value: false, onChanged: (_) {}),
+                  GlassSlider(value: 0.5, onChanged: (_) {}),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final ios27Effects =
+          tester.widgetList<GlassEffect>(find.byType(GlassEffect)).toList();
+      expect(ios27Effects.length, 2);
+      expect(
+        ios27Effects[0].settings.lensModel,
+        equals(GlassLensModel.paraxial),
+      );
+      expect(ios27Effects[0].settings.rimShade, equals(1.0));
+      expect(
+        ios27Effects[1].settings.lensModel,
+        equals(GlassLensModel.paraxial),
+      );
+      expect(ios27Effects[1].settings.rimShade, equals(1.0));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GlassTheme(
+            data: const GlassThemeData.ios26(),
+            child: Scaffold(
+              body: Column(
+                children: [
+                  GlassSwitch(value: false, onChanged: (_) {}),
+                  GlassSlider(value: 0.5, onChanged: (_) {}),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final ios26Effects =
+          tester.widgetList<GlassEffect>(find.byType(GlassEffect)).toList();
+      expect(ios26Effects.length, 2);
+      expect(
+        ios26Effects[0].settings.lensModel,
+        equals(GlassLensModel.spherical),
+      );
+      expect(ios26Effects[0].settings.rimShade, equals(0.0));
+      expect(
+        ios26Effects[1].settings.lensModel,
+        equals(GlassLensModel.spherical),
+      );
+      expect(ios26Effects[1].settings.rimShade, equals(0.0));
     });
   });
 }

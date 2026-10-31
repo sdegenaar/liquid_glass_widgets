@@ -5,8 +5,10 @@ import 'package:flutter/services.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../constants/glass_defaults.dart';
+import '../../src/widgets/shared/lens_inner_shadow_painter.dart';
 import '../../theme/glass_theme.dart';
 import '../../types/glass_quality.dart';
+import '../../types/glass_style.dart';
 import '../shared/glass_effect.dart';
 import '../shared/glass_focus_region.dart';
 import '../shared/glass_accessibility_scope.dart';
@@ -75,6 +77,7 @@ class GlassSwitch extends StatefulWidget {
     this.activeColor,
     this.inactiveColor,
     this.thumbColor = CupertinoColors.white,
+    this.thumbShadow,
     this.width = 58.0,
     this.height = 26.0,
     this.settings,
@@ -110,6 +113,15 @@ class GlassSwitch extends StatefulWidget {
   ///
   /// Defaults to white.
   final Color thumbColor;
+
+  /// Shadows cast by the resting thumb, painted outside the glass clip.
+  ///
+  /// When null, uses a soft black shadow at 15% opacity with an 8 logical-pixel
+  /// blur and a 2 logical-pixel downward offset (matching [GlassSlider]). An
+  /// empty list disables it. Each shadow's color alpha is multiplied by the
+  /// interaction/material fade so the shadow dissolves as the thumb lifts into
+  /// a liquid glass lens.
+  final List<BoxShadow>? thumbShadow;
 
   // ===========================================================================
   // Sizing Properties
@@ -168,9 +180,13 @@ class GlassSwitch extends StatefulWidget {
 
 class _GlassSwitchState extends State<GlassSwitch>
     with TickerProviderStateMixin {
-  // Cache default shadow color to avoid allocations
-  // Shadow color for the thumb material
-  static const _defaultThumbShadowColor = Color(0x33000000);
+  static const _defaultThumbShadow = [
+    BoxShadow(
+      color: Color.from(alpha: 0.15, red: 0, green: 0, blue: 0),
+      blurRadius: 8,
+      offset: Offset(0, 2),
+    ),
+  ];
 
   late AnimationController _positionController;
   late AnimationController _thicknessController;
@@ -662,91 +678,137 @@ class _GlassSwitchState extends State<GlassSwitch>
     final isStdPath =
         (effectiveQuality ?? GlassQuality.standard) == GlassQuality.standard;
 
+    final materialOpacity = (1.0 - transition * 1.2).clamp(0.0, 1.0);
+    final thumbShadow = widget.thumbShadow ?? _defaultThumbShadow;
+    final shadowOpacity = (1.0 - transition) * materialOpacity;
     final materialContent = Opacity(
-      opacity: (1.0 - transition * 1.2).clamp(0.0, 1.0),
+      opacity: materialOpacity,
       child: Container(
         width: thumbWidth,
         height: thumbHeight,
         decoration: BoxDecoration(
           color: widget.thumbColor.withValues(alpha: 1.0),
           borderRadius: BorderRadius.circular(thumbHeight / 2),
-          boxShadow: [
-            BoxShadow(
-              color: _defaultThumbShadowColor.withValues(
-                  alpha: 0.2 * (1.0 - transition)),
-              blurRadius: 0,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
       ),
     );
 
+    final theme = GlassTheme.maybeOf(context)?.data;
+    final style = theme?.style ?? GlassStyle.ios27;
+    final thumbTint = isDark
+        ? const Color.from(alpha: 0.08, red: 1, green: 1, blue: 1)
+        : const Color.from(alpha: 0.12, red: 0.88, green: 0.88, blue: 0.90);
+    final eraBase = (style == GlassStyle.ios26)
+        ? LiquidGlassSettings(
+            glassColor: thumbTint,
+            refractiveIndex: isDark ? 1.12 : 1.22,
+            thickness: isDark ? 10 : 14,
+            lightIntensity: isStdPath ? 0.0 : 2.0,
+            blur: 0,
+            lightAngle: GlassDefaults.lightAngle,
+          )
+        : LiquidGlassSettings.ios27Indicator.copyWith(
+            glassColor: thumbTint,
+            refractiveIndex: isDark ? 1.12 : 1.22,
+            thickness: isDark ? 14 : 18,
+          );
+    final themedThumbSettings =
+        theme?.indicatorSettingsFor(context)?.applyTo(eraBase) ?? eraBase;
+    final resolvedThumbSettings =
+        (widget.settings ?? themedThumbSettings).copyWith(blur: 0, frost: 0);
+    final useIos27Lens =
+        resolvedThumbSettings.lensModel == GlassLensModel.paraxial;
+
     return SizedBox(
       width: totalWidth,
       height: totalHeight,
-      child: GlassEffect(
-        shape: thumbShape,
-        // Standard: same rim/light math as AnimatedGlassIndicator pill.
-        //   rimThickness×0.35, lightIntensity×0.6 dampeners applied in GlassEffect.build().
-        // Premium: original values preserved exactly — no change to Premium rendering.
-        // Light mode: clear refractive glass with thicker body — visibility comes
-        //   from optical distortion and edge highlights, not body fill colour.
-        settings: LiquidGlassSettings(
-          glassColor: isDark
-              ? const Color.from(alpha: 0.08, red: 1, green: 1, blue: 1)
-              : const Color.from(
-                  alpha: 0.12, red: 0.88, green: 0.88, blue: 0.90),
-          refractiveIndex: isDark ? 1.12 : 1.22,
-          thickness: isDark ? 10 : 14,
-          lightIntensity: isStdPath
-              ? 0.0
-              : 2.0, // no specular on synthetic path (clamped by synthBase); premium unchanged
-          blur: 0,
-          lightAngle: GlassDefaults.lightAngle,
-        ),
-        rimThickness: isStdPath
-            ? (isDark ? 0.5 : 0.7)
-            : 0.5, // slightly thicker rim in light mode
-        ambientRim: isStdPath
-            ? (isDark ? 0.08 : 0.15)
-            : 0.1, // stronger ambient ring in light mode
-        baseAlphaMultiplier: isStdPath
-            ? (isDark ? 0.0 : 0.04)
-            : 0.2, // near-clear body — refraction provides visibility
-        edgeAlphaMultiplier: isStdPath
-            ? (isDark ? 0.15 : 0.28)
-            : 0.4, // stronger edge contrast in light mode
-        quality: effectiveQuality ?? GlassQuality.standard,
-        interactionIntensity: transition,
-        child: Stack(
-          alignment: Alignment.center,
-          clipBehavior: Clip.none,
-          children: [
-            // Glass shell footprint
-            Positioned.fill(child: Container(color: const Color(0x00000000))),
-
-            // Physical thumb position based on anchor
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Paint outside GlassEffect's shape clip so the resting shadow is
+          // never clipped to the thumb silhouette.
+          if (thumbShadow.isNotEmpty)
             Positioned(
               left: anchorOffset,
-              child: materialContent,
-            ),
-
-            if (transition > 0.05)
-              Positioned(
-                left: anchorOffset,
-                child: Opacity(
-                  opacity: transition,
-                  child: GlassGlow(
-                    child: SizedBox(
-                      width: thumbWidth,
-                      height: thumbHeight,
-                    ),
+              top: vExpand,
+              child: SizedBox(
+                width: thumbWidth,
+                height: thumbHeight,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(thumbHeight / 2),
+                    boxShadow: [
+                      for (final shadow in thumbShadow)
+                        shadow.copyWith(
+                          color: shadow.color.withValues(
+                            alpha: shadow.color.a * shadowOpacity,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
-          ],
-        ),
+            ),
+          GlassEffect(
+            shape: thumbShape,
+            settings: resolvedThumbSettings,
+            rimThickness: isStdPath
+                ? (isDark ? 0.5 : 0.7)
+                : 0.5, // slightly thicker rim in light mode
+            ambientRim: isStdPath
+                ? (isDark ? 0.08 : 0.15)
+                : 0.1, // stronger ambient ring in light mode
+            baseAlphaMultiplier: isStdPath
+                ? (isDark ? 0.0 : 0.04)
+                : 0.2, // near-clear body — refraction provides visibility
+            edgeAlphaMultiplier: isStdPath
+                ? (isDark ? 0.15 : 0.28)
+                : 0.4, // stronger edge contrast in light mode
+            quality: effectiveQuality ?? GlassQuality.standard,
+            interactionIntensity: transition,
+            child: Stack(
+              alignment: Alignment.center,
+              clipBehavior: Clip.none,
+              children: [
+                // Glass shell footprint
+                Positioned.fill(
+                    child: Container(color: const Color(0x00000000))),
+
+                // Physical thumb position based on anchor
+                Positioned(
+                  left: anchorOffset,
+                  child: materialContent,
+                ),
+
+                if (transition > 0.05)
+                  Positioned(
+                    left: anchorOffset,
+                    child: Opacity(
+                      opacity: transition,
+                      child: GlassGlow(
+                        child: SizedBox(
+                          width: thumbWidth,
+                          height: thumbHeight,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                if (!isStdPath && transition > 0.05 && useIos27Lens)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: LensInnerShadowPainter(
+                          borderRadius: totalHeight / 2,
+                          opacity: transition,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -315,26 +315,15 @@ class GlassThemeVariant {
     glowColors: GlassGlowColors.fallback,
   );
 
-  /// iOS 26 light theme variant, coordinating surface and indicator presets.
-  static const GlassThemeVariant ios26Light = GlassThemeVariant(
-    settings: GlassThemeSettings.ios26Light,
-    indicatorSettings: GlassThemeSettings.ios26Indicator,
-    quality: null,
-    glowColors: GlassGlowColors.fallback,
-  );
+  /// iOS 26 light theme variant (alias for [light]).
+  static const GlassThemeVariant ios26Light = light;
 
-  /// iOS 26 dark theme variant, coordinating surface and indicator presets.
-  static const GlassThemeVariant ios26Dark = GlassThemeVariant(
-    settings: GlassThemeSettings.ios26Dark,
-    indicatorSettings: GlassThemeSettings.ios26Indicator,
-    quality: null,
-    glowColors: GlassGlowColors.fallback,
-  );
+  /// iOS 26 dark theme variant (alias for [dark]).
+  static const GlassThemeVariant ios26Dark = dark;
 
   /// iOS 27 `glassEffect(.regular)` light theme variant.
   static const GlassThemeVariant ios27Light = GlassThemeVariant(
     settings: GlassThemeSettings.ios27Light,
-    indicatorSettings: GlassThemeSettings.ios27Indicator,
     quality: GlassQuality.premium,
     glowColors: GlassGlowColors.fallback,
   );
@@ -342,7 +331,6 @@ class GlassThemeVariant {
   /// iOS 27 `glassEffect(.regular)` dark theme variant.
   static const GlassThemeVariant ios27Dark = GlassThemeVariant(
     settings: GlassThemeSettings.ios27Dark,
-    indicatorSettings: GlassThemeSettings.ios27Indicator,
     quality: GlassQuality.premium,
     glowColors: GlassGlowColors.fallback,
   );

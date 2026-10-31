@@ -256,10 +256,8 @@ void main() {
       final pairs = <(LiquidGlassSettings, GlassThemeSettings)>[
         (LiquidGlassSettings.ios26Light, GlassThemeSettings.ios26Light),
         (LiquidGlassSettings.ios26Dark, GlassThemeSettings.ios26Dark),
-        (LiquidGlassSettings.ios26Indicator, GlassThemeSettings.ios26Indicator),
         (LiquidGlassSettings.ios27Light, GlassThemeSettings.ios27Light),
         (LiquidGlassSettings.ios27Dark, GlassThemeSettings.ios27Dark),
-        (LiquidGlassSettings.ios27Indicator, GlassThemeSettings.ios27Indicator),
       ];
       for (final (liquidPreset, themePreset) in pairs) {
         expect(themePreset.applyTo(defaults), equals(liquidPreset));

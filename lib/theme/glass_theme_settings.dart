@@ -3,7 +3,6 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/widgets.dart';
 
-import '../constants/glass_defaults.dart';
 import '../src/engine/liquid_glass_settings.dart';
 import '../types/glass_specular_sharpness.dart';
 
@@ -102,18 +101,6 @@ class GlassThemeSettings {
     chromaticAberration: 0.01,
   );
 
-  /// iOS 26 interactive indicator lens preset, matching
-  /// [LiquidGlassSettings.ios26Indicator].
-  static const GlassThemeSettings ios26Indicator = GlassThemeSettings(
-    glassColor: Color.from(alpha: 0.0, red: 1, green: 1, blue: 1),
-    thickness: 20,
-    refractiveIndex: 1.10,
-    lightIntensity: GlassDefaults.lightIntensity,
-    chromaticAberration: 0.0,
-    lightAngle: GlassDefaults.lightAngle,
-    blur: 0,
-  );
-
   /// iOS 27 `glassEffect(.regular)` in the light appearance, matching
   /// [LiquidGlassSettings.ios27Light].
   static const GlassThemeSettings ios27Light = GlassThemeSettings(
@@ -168,25 +155,6 @@ class GlassThemeSettings {
     rimLight: 1.15,
     bodyShade: 0.28,
     shadowElevation: 0,
-  );
-
-  /// iOS 27 interactive indicator lens preset, matching
-  /// [LiquidGlassSettings.ios27Indicator].
-  static const GlassThemeSettings ios27Indicator = GlassThemeSettings(
-    glassColor: Color.from(alpha: 0.0, red: 1, green: 1, blue: 1),
-    thickness: 28,
-    refractiveIndex: 1.17,
-    lensModel: GlassLensModel.paraxial,
-    lightIntensity: 0.0,
-    ambientStrength: 0.0,
-    fresnelStrength: 0.0,
-    saturation: 1.0,
-    chromaticAberration: 0.0,
-    lightAngle: 1.5707963267948966,
-    rimShade: 1.0,
-    rimShadeEnds: 0.56,
-    rimLight: 1.0,
-    blur: 0,
   );
 
   /// See [LiquidGlassSettings.visibility].

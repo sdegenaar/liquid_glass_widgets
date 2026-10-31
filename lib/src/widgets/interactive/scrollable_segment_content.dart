@@ -9,6 +9,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart' show RenderPositionedBox;
 import '../../../constants/glass_defaults.dart';
 import '../../renderer/liquid_glass_renderer.dart';
+import '../../../theme/glass_theme.dart';
 import '../../../types/glass_quality.dart';
 import '../../../utils/draggable_indicator_physics.dart';
 import '../../../utils/glass_spring.dart';
@@ -905,7 +906,10 @@ class ScrollableSegmentContentState extends State<ScrollableSegmentContent>
 
   @override
   Widget build(BuildContext context) {
-    final indicatorColor = widget.indicatorColor ?? _defaultIndicatorColor;
+    final indicatorColor = widget.indicatorColor ??
+        (GlassTheme.brightnessOf(context) == Brightness.light
+            ? CupertinoColors.black.withValues(alpha: 0.08)
+            : _defaultIndicatorColor);
 
     // Resolve label and icon colors from CupertinoTheme — brightness-aware.
     // Matches the pattern used by GlassTabBar.bottom (tab_bar_bottom_layout.dart).

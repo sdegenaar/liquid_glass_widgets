@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
+import 'package:liquid_glass_widgets/widgets/shared/glass_effect.dart';
 
 import '../../shared/test_helpers.dart';
 
@@ -834,6 +835,56 @@ void main() {
           handle.dispose();
         }
       });
+    });
+
+    testWidgets(
+        'renders resting thumbShadow outside GlassEffect clip and supports custom thumbShadow',
+        (tester) async {
+      List<BoxShadow>? shadows;
+      late StateSetter update;
+      await tester.pumpWidget(
+        createTestApp(
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              update = setState;
+              return GlassSwitch(
+                value: false,
+                thumbShadow: shadows,
+                onChanged: (_) {},
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final shadowFinder = find.descendant(
+        of: find.byType(GlassSwitch),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is DecoratedBox &&
+              widget.decoration is BoxDecoration &&
+              (widget.decoration as BoxDecoration).boxShadow?.isNotEmpty ==
+                  true,
+        ),
+      );
+      expect(shadowFinder, findsOneWidget);
+      expect(
+        find.ancestor(of: shadowFinder, matching: find.byType(GlassEffect)),
+        findsNothing,
+      );
+      final defaultShadow = (tester
+              .widget<DecoratedBox>(shadowFinder)
+              .decoration as BoxDecoration)
+          .boxShadow!
+          .single;
+      expect(defaultShadow.color.a, 0.15);
+      expect(defaultShadow.blurRadius, 8);
+      expect(defaultShadow.offset, const Offset(0, 2));
+
+      update(() => shadows = const []);
+      await tester.pumpAndSettle();
+      expect(shadowFinder, findsNothing);
     });
   });
 }

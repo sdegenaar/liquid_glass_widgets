@@ -597,15 +597,18 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
       widgetQuality: widget.quality,
     );
 
-    final effectiveSettings = widget.settings ??
-        const LiquidGlassSettings(
-          thickness: GlassDefaults.thickness,
-          blur: GlassDefaults.blur,
-          chromaticAberration: GlassDefaults.chromaticAberration,
-          lightIntensity: GlassDefaults.lightIntensity,
-          refractiveIndex: GlassDefaults.refractiveIndex,
-          lightAngle: GlassDefaults.lightAngle,
-        );
+    final effectiveSettings = GlassThemeHelpers.resolveSettings(
+      context,
+      explicit: widget.settings,
+      fallback: const LiquidGlassSettings(
+        thickness: GlassDefaults.thickness,
+        blur: GlassDefaults.blur,
+        chromaticAberration: GlassDefaults.chromaticAberration,
+        lightIntensity: GlassDefaults.lightIntensity,
+        refractiveIndex: GlassDefaults.refractiveIndex,
+        lightAngle: GlassDefaults.lightAngle,
+      ),
+    );
 
     // ── Scrollable mode: 100% mirrors GlassTabBar(isScrollable: true) ────────
     if (widget.isScrollable) {

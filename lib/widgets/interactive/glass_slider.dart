@@ -5,7 +5,9 @@ import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../constants/glass_defaults.dart';
 import '../../src/types/glass_interaction_behavior.dart';
+import '../../src/widgets/shared/lens_inner_shadow_painter.dart';
 import '../../types/glass_quality.dart';
+import '../../types/glass_style.dart';
 import '../../utils/draggable_indicator_physics.dart';
 import '../../utils/glass_spring.dart';
 import '../shared/glass_effect.dart';
@@ -702,6 +704,34 @@ class _GlassSliderState extends State<GlassSlider>
       borderRadius: totalHeight / 2,
     );
 
+    final theme = GlassTheme.maybeOf(context)?.data;
+    final style = theme?.style ?? GlassStyle.ios27;
+    final thumbTint = isDark
+        ? const Color.from(alpha: 0.08, red: 1, green: 1, blue: 1)
+        : const Color.from(alpha: 0.12, red: 0.88, green: 0.88, blue: 0.90);
+    final eraBase = (style == GlassStyle.ios26)
+        ? LiquidGlassSettings(
+            glassColor: thumbTint,
+            refractiveIndex: isDark ? 1.3 : 1.4,
+            thickness: isDark ? 13 : 17,
+            lightIntensity: isStdPath
+                ? 0.0
+                : 1.8, // no specular on synthetic path; premium unchanged
+            blur: 0,
+            lightAngle: GlassDefaults.lightAngle,
+          )
+        : LiquidGlassSettings.ios27Indicator.copyWith(
+            glassColor: thumbTint,
+            refractiveIndex: isDark ? 1.3 : 1.4,
+            thickness: isDark ? 16 : 20,
+          );
+    final themedThumbSettings =
+        theme?.indicatorSettingsFor(context)?.applyTo(eraBase) ?? eraBase;
+    final resolvedThumbSettings =
+        (widget.settings ?? themedThumbSettings).copyWith(blur: 0, frost: 0);
+    final useIos27Lens =
+        resolvedThumbSettings.lensModel == GlassLensModel.paraxial;
+
     // CRITICAL: Outer SizedBox with dynamic size ensures proper premium rendering
     return SizedBox(
       width: totalWidth,
@@ -736,21 +766,7 @@ class _GlassSliderState extends State<GlassSlider>
             ),
           GlassEffect(
             shape: thumbShape,
-            // Light mode: clear refractive glass with thicker body — visibility comes
-            // from optical distortion and edge highlights.
-            settings: LiquidGlassSettings(
-              glassColor: isDark
-                  ? const Color.from(alpha: 0.08, red: 1, green: 1, blue: 1)
-                  : const Color.from(
-                      alpha: 0.12, red: 0.88, green: 0.88, blue: 0.90),
-              refractiveIndex: isDark ? 1.3 : 1.4,
-              thickness: isDark ? 13 : 17,
-              lightIntensity: isStdPath
-                  ? 0.0
-                  : 1.8, // no specular on synthetic path; premium unchanged
-              blur: 0,
-              lightAngle: GlassDefaults.lightAngle,
-            ),
+            settings: resolvedThumbSettings,
             rimThickness: isStdPath
                 ? (isDark ? 0.5 : 0.7)
                 : 0.5, // slightly thicker rim in light mode
@@ -790,6 +806,18 @@ class _GlassSliderState extends State<GlassSlider>
                         child: SizedBox(
                           width: thumbWidth,
                           height: thumbHeight,
+                        ),
+                      ),
+                    ),
+
+                  if (!isStdPath && transition > 0.05 && useIos27Lens)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: CustomPaint(
+                          painter: LensInnerShadowPainter(
+                            borderRadius: totalHeight / 2,
+                            opacity: transition,
+                          ),
                         ),
                       ),
                     ),
