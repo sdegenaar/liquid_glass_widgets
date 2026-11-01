@@ -73,9 +73,9 @@ class GlassThemeSettings {
     this.shadow,
   });
 
-  /// iOS 26 surface preset in the light appearance, matching
-  /// [LiquidGlassSettings.ios26Light].
-  static const GlassThemeSettings ios26Light = GlassThemeSettings(
+  /// Classic `v1.x` surface preset in the light appearance, matching
+  /// [LiquidGlassSettings.classicLight].
+  static const GlassThemeSettings classicLight = GlassThemeSettings(
     thickness: 12.0,
     blur: 5.0,
     glassColor: Color.fromRGBO(210, 220, 240, 0.12),
@@ -87,9 +87,9 @@ class GlassThemeSettings {
     chromaticAberration: 0.02,
   );
 
-  /// iOS 26 surface preset in the dark appearance, matching
-  /// [LiquidGlassSettings.ios26Dark].
-  static const GlassThemeSettings ios26Dark = GlassThemeSettings(
+  /// Classic `v1.x` surface preset in the dark appearance, matching
+  /// [LiquidGlassSettings.classicDark].
+  static const GlassThemeSettings classicDark = GlassThemeSettings(
     thickness: 10.0,
     blur: 4.0,
     glassColor: Color.fromRGBO(255, 255, 255, 0.08),
@@ -276,12 +276,13 @@ class GlassThemeSettings {
   /// Applies only the fields of this override that differ from [baseline] onto
   /// [base].
   ///
-  /// [baseline] is the legacy default surface the override was derived from
-  /// (for example [GlassThemeSettings.ios26Light] for the built-in
-  /// [GlassThemeVariant.light], which is also what [GlassThemeData.simple]
-  /// copies and tweaks). A field that still equals [baseline] is treated as
-  /// "not set by the app" and left to [base], so a dedicated preset such as
-  /// [LiquidGlassSettings.ios27Light] is not overwritten by general surface
+  /// [baseline] is the default surface the override was derived from
+  /// (for example [GlassThemeSettings.ios27Light] or
+  /// [GlassThemeSettings.classicLight], which is also what
+  /// [GlassThemeData.simple] copies and tweaks). A field that still equals
+  /// [baseline] is treated as "not set by the app" and left to [base], so a
+  /// dedicated preset such as [LiquidGlassSettings.ios27Light] or
+  /// [LiquidGlassSettings.classicTabBar] is not overwritten by general surface
   /// defaults it was never meant to inherit.
   ///
   /// Fields that differ from [baseline] are applied exactly as [applyTo]

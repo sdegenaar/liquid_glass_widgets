@@ -118,9 +118,16 @@ class ScrollableSegmentContent extends StatefulWidget {
 @visibleForTesting
 class ScrollableSegmentContentState extends State<ScrollableSegmentContent>
     with TickerProviderStateMixin {
-  // Cache default indicator color to avoid allocations
+  // Cache default indicator color and resting shadow to avoid allocations
   static const _defaultIndicatorColor =
-      Color(0x33FFFFFF); // white.withValues(alpha: 0.2)
+      Color(0x4DEBEBF5); // rgba(235, 235, 245, 0.30) in dark mode
+  static const _defaultLightIndicatorShadow = [
+    BoxShadow(
+      color: Color(0x1F000000),
+      blurRadius: 4,
+      offset: Offset(0, 1),
+    ),
+  ];
 
   bool _isDown = false;
   bool _isDragging = false;
@@ -211,12 +218,6 @@ class ScrollableSegmentContentState extends State<ScrollableSegmentContent>
 
   /// The list currently RENDERED — the merged morph list while morphing.
   List<GlassSegment> get _renderTabs => _morphTabs ?? widget.tabs;
-
-  /// Shadows are suppressed while the indicator is being dragged so they
-  /// do not interact with the live BackdropFilter blur, then restored
-  /// when the pill is idle.
-  List<BoxShadow>? get _effectiveShadow =>
-      _isDraggingIndicator ? null : widget.indicatorShadow;
 
   // Scrollable-overlay indicator position, animated in content space.
   // Decoupled from the _xAlign spring so scroll never causes drift.
@@ -906,10 +907,15 @@ class ScrollableSegmentContentState extends State<ScrollableSegmentContent>
 
   @override
   Widget build(BuildContext context) {
+    final isLight = GlassTheme.brightnessOf(context) == Brightness.light;
     final indicatorColor = widget.indicatorColor ??
-        (GlassTheme.brightnessOf(context) == Brightness.light
-            ? CupertinoColors.black.withValues(alpha: 0.08)
-            : _defaultIndicatorColor);
+        (isLight ? CupertinoColors.white : _defaultIndicatorColor);
+    final effectiveShadow = _isDraggingIndicator
+        ? null
+        : (widget.indicatorShadow ??
+            (isLight && widget.indicatorColor == null
+                ? _defaultLightIndicatorShadow
+                : null));
 
     // Resolve label and icon colors from CupertinoTheme — brightness-aware.
     // Matches the pattern used by GlassTabBar.bottom (tab_bar_bottom_layout.dart).
@@ -1047,7 +1053,7 @@ class ScrollableSegmentContentState extends State<ScrollableSegmentContent>
                           : widget.indicatorExpansion,
                       paintBackground: paintBackground,
                       paintGlass: paintGlass,
-                      shadows: paintBackground ? _effectiveShadow : null,
+                      shadows: paintBackground ? effectiveShadow : null,
                       exactWidth:
                           widget.isScrollable ? _indWidthSpring.value : null,
                       exactOffset: widget.isScrollable ? screenLeft : null,

@@ -34,22 +34,22 @@ import '../../../widgets/surfaces/glass_tab_bar.dart' show GlassTab;
 // kBottomBarGlassDefaults — shared glass preset
 // =============================================================================
 
-/// Default iOS 26 [LiquidGlassSettings] for both [GlassTabBar.bottom] and
-/// [GlassTabBar.searchable].
+/// Classic `v1.x` default [LiquidGlassSettings] for both [GlassTabBar.bottom]
+/// and [GlassTabBar.searchable].
 ///
-/// Alias for [LiquidGlassSettings.ios26TabBar].
-const kBottomBarGlassDefaults = LiquidGlassSettings.ios26TabBar;
+/// Alias for [LiquidGlassSettings.classicTabBar].
+const kBottomBarGlassDefaults = LiquidGlassSettings.classicTabBar;
 
 /// Resolves the default [LiquidGlassSettings] for [GlassTabBar.bottom] and
 /// [GlassTabBar.searchable].
 ///
 /// Follows the merge cascade:
 /// 1. Explicit widget [settings] (highest priority)
-/// 2. Ambient [GlassTheme] partial override (field delta from the default
-///    surface variant) applied onto the active [GlassStyle] tab-bar platter
-///    preset ([LiquidGlassSettings.ios26TabBar] for [GlassStyle.ios26];
-///    [LiquidGlassSettings.ios27Light] / [LiquidGlassSettings.ios27Dark] for
-///    [GlassStyle.ios27])
+/// 2. Ambient [GlassTheme] partial override (field delta from the active
+///    [GlassStyle]'s surface variant) applied onto the active [GlassStyle]
+///    tab-bar platter preset ([LiquidGlassSettings.classicTabBar] for
+///    [GlassStyle.classic]; [LiquidGlassSettings.ios27Light] /
+///    [LiquidGlassSettings.ios27Dark] for [GlassStyle.ios27])
 /// 3. Built-in tab-bar platter preset for the active [GlassStyle]
 LiquidGlassSettings resolveBarGlassSettings(
   BuildContext context,
@@ -59,15 +59,18 @@ LiquidGlassSettings resolveBarGlassSettings(
   final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
   final theme = GlassTheme.maybeOf(context)?.data;
   final style = theme?.style ?? GlassStyle.ios27;
-  final base = style == GlassStyle.ios26
+  final base = style == GlassStyle.classic
       ? kBottomBarGlassDefaults
       : (isDark
           ? LiquidGlassSettings.ios27Dark
           : LiquidGlassSettings.ios27Light);
   final themeOverride = theme?.settingsFor(context);
   if (themeOverride == null) return base;
-  final surfaceBaseline =
-      isDark ? GlassThemeSettings.ios26Dark : GlassThemeSettings.ios26Light;
+  final surfaceBaseline = style == GlassStyle.classic
+      ? (isDark
+          ? GlassThemeSettings.classicDark
+          : GlassThemeSettings.classicLight)
+      : (isDark ? GlassThemeSettings.ios27Dark : GlassThemeSettings.ios27Light);
   return themeOverride.applyDeltaTo(base, surfaceBaseline);
 }
 

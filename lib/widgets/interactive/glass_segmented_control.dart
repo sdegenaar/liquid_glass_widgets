@@ -586,9 +586,11 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
     super.dispose();
   }
 
-  // Default background colors — match GlassTabBar._buildInline() exactly.
-  static const _defaultLightBg = Color(0x1F000000); // black12
-  static const _defaultDarkBg = Color(0x1FFFFFFF); // white12
+  // Default track background colors — match native UISegmentedControl on
+  // iOS 26 and iOS 27 (CupertinoColors.tertiarySystemFill: rgba(120,120,128,0.12)
+  // in light mode, rgba(120,120,128,0.24) in dark mode).
+  static const _defaultLightBg = Color(0x1F787880);
+  static const _defaultDarkBg = Color(0x3D787880);
 
   @override
   Widget build(BuildContext context) {
@@ -665,8 +667,8 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
     // ── Fixed mode: equal-width SegmentedControlContent ───────────────────────
     final backgroundColor = widget.backgroundColor ??
         (GlassTheme.brightnessOf(context) == Brightness.light
-            ? CupertinoColors.black.withValues(alpha: 0.08)
-            : CupertinoColors.white.withValues(alpha: 0.12));
+            ? _defaultLightBg
+            : _defaultDarkBg);
 
     // SizedBox sets the height without clipping. DecoratedBox paints the
     // background without enforcing a clip — jelly expansion can overflow freely.

@@ -521,12 +521,12 @@ class _GlassSwitchState extends State<GlassSwitch>
 
     // Performance: Cache color calculations as const to avoid allocation
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
-    // Light mode: solid opaque grey matching native iOS switch track groove.
-    // Dark mode: semi-transparent white overlay for glass aesthetic.
+    // Matches native UISwitchModernVisualElement off-track fill on iOS 26 & 27:
+    // rgba(60, 60, 67, 0.30) in light mode, rgba(235, 235, 245, 0.30) in dark mode.
     final inactiveTrackColor = widget.inactiveColor ??
-        // Whitelisted: iOS-exact inactive track colours.
-        (isDark ? const Color(0x33FFFFFF) : const Color(0xFFC5C5C6));
-    final activeTrackColor = widget.activeColor ?? CupertinoColors.systemGreen;
+        (isDark ? const Color(0x4DEBEBF5) : const Color(0x4D3C3C43));
+    final activeTrackColor =
+        widget.activeColor ?? CupertinoColors.systemGreen.resolveFrom(context);
 
     return GlassFocusRegion(
         enabled: true,
@@ -577,38 +577,13 @@ class _GlassSwitchState extends State<GlassSwitch>
                 // We lerp smoothly using `position` as the blend factor.
                 final blendedColor =
                     Color.lerp(inactiveTrackColor, activeTrackColor, position)!;
-                final specularTop =
-                    Color.lerp(activeTrackColor, CupertinoColors.white, 0.25)!;
 
                 final track = Container(
                   width: trackWidth,
                   height: widget.height,
                   decoration: BoxDecoration(
-                    // Gradient blends in as position → 1: starts as a flat lerped
-                    // colour, gains the specular highlight progressively.
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Color.lerp(blendedColor, specularTop, position)!,
-                        blendedColor,
-                      ],
-                    ),
+                    color: blendedColor,
                     borderRadius: BorderRadius.circular(widget.height / 2),
-                    // Glow fades in smoothly from 0 → max alpha over full travel.
-                    // Kept subtle (0.35 max, 6dp blur) to avoid over-illumination.
-                    boxShadow: position > 0.01
-                        ? [
-                            BoxShadow(
-                              color: activeTrackColor.withValues(
-                                alpha: 0.35 * position,
-                              ),
-                              blurRadius: 6,
-                              spreadRadius: 0,
-                              offset: const Offset(0, 1),
-                            ),
-                          ]
-                        : null,
                   ),
                 );
 
@@ -698,7 +673,7 @@ class _GlassSwitchState extends State<GlassSwitch>
     final thumbTint = isDark
         ? const Color.from(alpha: 0.08, red: 1, green: 1, blue: 1)
         : const Color.from(alpha: 0.12, red: 0.88, green: 0.88, blue: 0.90);
-    final eraBase = (style == GlassStyle.ios26)
+    final eraBase = (style == GlassStyle.classic)
         ? LiquidGlassSettings(
             glassColor: thumbTint,
             refractiveIndex: isDark ? 1.12 : 1.22,
@@ -794,13 +769,16 @@ class _GlassSwitchState extends State<GlassSwitch>
                     ),
                   ),
 
-                if (!isStdPath && transition > 0.05 && useIos27Lens)
+                if (!isStdPath && transition > 0.05)
                   Positioned.fill(
                     child: IgnorePointer(
                       child: CustomPaint(
                         painter: LensInnerShadowPainter(
                           borderRadius: totalHeight / 2,
                           opacity: transition,
+                          shadowOpacity: useIos27Lens
+                              ? LensInnerShadowPainter.defaultShadowOpacity
+                              : LensInnerShadowPainter.classicShadowOpacity,
                         ),
                       ),
                     ),

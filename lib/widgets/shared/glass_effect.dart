@@ -521,11 +521,15 @@ class _GlassEffectState extends State<GlassEffect>
       // An indicator lies over the glass it moves on, so it stays out of a
       // GlassBackdropGroup the bar may be in: glass in a group can't see
       // the glass of the same group below it.
+      final activeIntensity = widget.interactionIntensity.clamp(0.0, 1.0);
       return GlassBackdropGroup(
         enabled: false,
         child: LiquidGlass.withOwnLayer(
           shape: widget.shape,
-          settings: widget.settings,
+          settings: widget.settings.copyWith(
+            rimShade: widget.settings.rimShade * activeIntensity,
+            rimLight: widget.settings.rimLight * activeIntensity,
+          ),
           clipExpansion: widget.clipExpansion,
           captureImage: _backgroundImage,
           captureOriginInScreenSpace: _lastCapturePosition ?? Offset.zero,

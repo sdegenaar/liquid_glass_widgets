@@ -472,14 +472,12 @@ class _GlassSliderState extends State<GlassSlider>
     // Performance: Cache color calculations - these allocate on every build
     final brightness = GlassTheme.brightnessOf(context);
     final isDark = brightness == Brightness.dark;
-    final activeColor = widget.activeColor ??
-        (brightness == Brightness.light
-            ? CupertinoColors.black.withValues(alpha: 0.8)
-            : CupertinoColors.white.withValues(alpha: 0.8));
+    final activeColor =
+        widget.activeColor ?? CupertinoColors.systemBlue.resolveFrom(context);
     final inactiveColor = widget.inactiveColor ??
         (brightness == Brightness.light
-            ? CupertinoColors.black.withValues(alpha: 0.2)
-            : CupertinoColors.white.withValues(alpha: 0.2));
+            ? CupertinoColors.black.withValues(alpha: 0.10)
+            : CupertinoColors.white.withValues(alpha: 0.10));
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -709,7 +707,7 @@ class _GlassSliderState extends State<GlassSlider>
     final thumbTint = isDark
         ? const Color.from(alpha: 0.08, red: 1, green: 1, blue: 1)
         : const Color.from(alpha: 0.12, red: 0.88, green: 0.88, blue: 0.90);
-    final eraBase = (style == GlassStyle.ios26)
+    final eraBase = (style == GlassStyle.classic)
         ? LiquidGlassSettings(
             glassColor: thumbTint,
             refractiveIndex: isDark ? 1.3 : 1.4,
@@ -810,13 +808,16 @@ class _GlassSliderState extends State<GlassSlider>
                       ),
                     ),
 
-                  if (!isStdPath && transition > 0.05 && useIos27Lens)
+                  if (!isStdPath && transition > 0.05)
                     Positioned.fill(
                       child: IgnorePointer(
                         child: CustomPaint(
                           painter: LensInnerShadowPainter(
                             borderRadius: totalHeight / 2,
                             opacity: transition,
+                            shadowOpacity: useIos27Lens
+                                ? LensInnerShadowPainter.defaultShadowOpacity
+                                : LensInnerShadowPainter.classicShadowOpacity,
                           ),
                         ),
                       ),

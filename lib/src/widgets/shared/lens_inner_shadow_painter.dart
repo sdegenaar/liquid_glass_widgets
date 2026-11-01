@@ -8,17 +8,19 @@ import 'package:flutter/widgets.dart';
 
 import '../../../constants/glass_defaults.dart';
 
-/// Paints the iOS 27 lens inner shadow (`_UILiquidLensView` spec).
+/// Paints the `_UILiquidLensView` top inner shadow for iOS 26 and iOS 27.
 ///
-/// The native lens spec carries `innerShadowOffsetY = 7`,
-/// `innerShadowRadius = 3` and `innerShadowOpacity = 0.06`: the shadow of the
+/// The native lens spec carries `innerShadowOffsetY = 7` and
+/// `innerShadowRadius = 3` across both OS versions, with
+/// `innerShadowOpacity = 0.12` on iOS 26 (`23A343`) and
+/// `innerShadowOpacity = 0.06` on iOS 27 (`24A434`): the shadow of the
 /// lens' own silhouette, pushed 7pt down and clipped to the lens, so it
-/// darkens the inside of the top edge (and the upper curves of the capsule)
-/// by about 6% of black.
+/// darkens the inside of the top edge (and the upper curves of the capsule).
 class LensInnerShadowPainter extends CustomPainter {
   const LensInnerShadowPainter({
     required this.borderRadius,
     required this.opacity,
+    this.shadowOpacity = defaultShadowOpacity,
   });
 
   /// `innerShadowOffsetY` of the native lens spec, in logical points.
@@ -28,11 +30,15 @@ class LensInnerShadowPainter extends CustomPainter {
   /// radius is twice the Gaussian sigma.
   static const double radius = 3.0;
 
-  /// `innerShadowOpacity` of the native lens spec.
-  static const double shadowOpacity = 0.06;
+  /// `innerShadowOpacity` of the native iOS 27 lens spec (`0.06`).
+  static const double defaultShadowOpacity = 0.06;
+
+  /// `innerShadowOpacity` of the classic spherical lens (`0.12`).
+  static const double classicShadowOpacity = 0.12;
 
   final double borderRadius;
   final double opacity;
+  final double shadowOpacity;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -63,5 +69,6 @@ class LensInnerShadowPainter extends CustomPainter {
   @override
   bool shouldRepaint(LensInnerShadowPainter oldDelegate) =>
       oldDelegate.borderRadius != borderRadius ||
-      oldDelegate.opacity != opacity;
+      oldDelegate.opacity != opacity ||
+      oldDelegate.shadowOpacity != shadowOpacity;
 }

@@ -313,10 +313,10 @@ void main() {
       await _settleSample(tester, scopeState);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
-      // Mid-fade: thickness sits strictly between dark (10) and light (12).
-      final midThickness = innerTheme!.light.settings!.thickness!;
-      expect(midThickness, lessThan(12.0));
-      expect(midThickness, greaterThan(10.0));
+      // Mid-fade: saturation sits strictly between dark (1.4) and light (2.1).
+      final midSaturation = innerTheme!.light.settings!.saturation!;
+      expect(midSaturation, lessThan(2.1));
+      expect(midSaturation, greaterThan(1.4));
 
       await tester.pump(const Duration(milliseconds: 150));
       expect(innerTheme!.light, GlassThemeVariant.dark);

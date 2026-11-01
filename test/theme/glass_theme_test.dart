@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets/src/widgets/shared/lens_inner_shadow_painter.dart';
 import 'package:liquid_glass_widgets/widgets/shared/glass_effect.dart';
 
 void main() {
@@ -722,27 +723,35 @@ void main() {
     });
   });
 
-  group('GlassStyle and era presets (ios26 / ios27)', () {
+  group('GlassStyle and style presets (classic / ios27)', () {
     final tabs = [
       const GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
       const GlassTab(label: 'Search', icon: Icon(CupertinoIcons.search)),
     ];
 
     testWidgets(
-        'default GlassThemeData() does not clobber iOS 27 tab bar platter',
+        'default GlassThemeData() resolves calibrated iOS 27 surface and tab bar platters',
         (tester) async {
+      LiquidGlassSettings? surfaceResolved;
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData.light(),
           home: GlassTheme(
             data: const GlassThemeData(),
-            child: Scaffold(
-              bottomNavigationBar: GlassTabBar.bottom(
-                tabs: tabs,
-                selectedIndex: 0,
-                onTabSelected: (_) {},
-                maskingQuality: MaskingQuality.off,
-              ),
+            child: Builder(
+              builder: (context) {
+                surfaceResolved = GlassThemeData.of(context)
+                    .settingsFor(context)
+                    ?.applyTo(const LiquidGlassSettings());
+                return Scaffold(
+                  bottomNavigationBar: GlassTabBar.bottom(
+                    tabs: tabs,
+                    selectedIndex: 0,
+                    onTabSelected: (_) {},
+                    maskingQuality: MaskingQuality.off,
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -752,6 +761,42 @@ void main() {
         find.byType(AdaptiveLiquidGlassLayer).first,
       );
       expect(layer.settings, equals(LiquidGlassSettings.ios27Light));
+      expect(surfaceResolved, equals(LiquidGlassSettings.ios27Light));
+    });
+
+    testWidgets(
+        'single GlassThemeData(style: GlassStyle.classic) setting switches surface, tab bar, and indicator lens to classic',
+        (tester) async {
+      LiquidGlassSettings? surfaceResolved;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData.light(),
+          home: GlassTheme(
+            data: const GlassThemeData(style: GlassStyle.classic),
+            child: Builder(
+              builder: (context) {
+                surfaceResolved = GlassThemeData.of(context)
+                    .settingsFor(context)
+                    ?.applyTo(const LiquidGlassSettings());
+                return Scaffold(
+                  bottomNavigationBar: GlassTabBar.bottom(
+                    tabs: tabs,
+                    selectedIndex: 0,
+                    onTabSelected: (_) {},
+                    maskingQuality: MaskingQuality.off,
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      final layer = tester.widget<AdaptiveLiquidGlassLayer>(
+        find.byType(AdaptiveLiquidGlassLayer).first,
+      );
+      expect(layer.settings, equals(LiquidGlassSettings.classicTabBar));
+      expect(surfaceResolved, equals(LiquidGlassSettings.classicLight));
     });
 
     testWidgets(
@@ -840,13 +885,13 @@ void main() {
     });
 
     testWidgets(
-        'GlassThemeData.simple(style: ios26) resolves the classic iOS 26 tab bar platter with the override applied',
+        'GlassThemeData.simple(style: classic) resolves the classic tab bar platter with the override applied',
         (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData.light(),
           home: GlassTheme(
-            data: GlassThemeData.simple(blur: 10, style: GlassStyle.ios26),
+            data: GlassThemeData.simple(blur: 10, style: GlassStyle.classic),
             child: Scaffold(
               bottomNavigationBar: GlassTabBar.bottom(
                 tabs: tabs,
@@ -864,20 +909,20 @@ void main() {
       );
       expect(
         layer.settings,
-        equals(LiquidGlassSettings.ios26TabBar.copyWith(blur: 10)),
+        equals(LiquidGlassSettings.classicTabBar.copyWith(blur: 10)),
       );
     });
 
     test(
         'applyDeltaTo ignores fields equal to the baseline and applies the rest',
         () {
-      final override = GlassThemeSettings.ios26Light.copyWith(
+      final override = GlassThemeSettings.classicLight.copyWith(
         blur: 10,
         saturation: 1.5,
       );
       final result = override.applyDeltaTo(
         LiquidGlassSettings.ios27Light,
-        GlassThemeSettings.ios26Light,
+        GlassThemeSettings.classicLight,
       );
       expect(
         result,
@@ -890,9 +935,9 @@ void main() {
 
     test('applyDeltaTo with the untouched baseline returns the base unchanged',
         () {
-      final result = GlassThemeSettings.ios26Light.applyDeltaTo(
+      final result = GlassThemeSettings.classicLight.applyDeltaTo(
         LiquidGlassSettings.ios27Light,
-        GlassThemeSettings.ios26Light,
+        GlassThemeSettings.classicLight,
       );
       expect(result, equals(LiquidGlassSettings.ios27Light));
     });
@@ -901,7 +946,7 @@ void main() {
       const override = GlassThemeSettings(thickness: 50);
       final result = override.applyDeltaTo(
         LiquidGlassSettings.ios27Light,
-        GlassThemeSettings.ios26Light,
+        GlassThemeSettings.classicLight,
       );
       expect(
         result,
@@ -910,18 +955,18 @@ void main() {
     });
 
     testWidgets(
-        'indicator inner shadow follows the resolved lens: painted for iOS 27, absent for iOS 26',
+        'indicator inner shadow follows the resolved lens: 0.06 for iOS 27, 0.12 for classic',
         (tester) async {
-      int lensShadowPainters() => find
-          .byWidgetPredicate((w) =>
-              w is CustomPaint &&
-              w.painter.runtimeType
-                  .toString()
-                  .contains('LensInnerShadowPainter'))
+      List<LensInnerShadowPainter> lensShadowPainters() => find
+          .byWidgetPredicate(
+              (w) => w is CustomPaint && w.painter is LensInnerShadowPainter)
           .evaluate()
-          .length;
+          .map((e) =>
+              (e.widget as CustomPaint).painter! as LensInnerShadowPainter)
+          .toList();
 
-      Future<int> pressedShadowCount(GlassThemeData data) async {
+      Future<List<LensInnerShadowPainter>> pressedShadows(
+          GlassThemeData data) async {
         await tester.pumpWidget(
           MaterialApp(
             theme: ThemeData.light(),
@@ -943,15 +988,26 @@ void main() {
             .startGesture(tester.getCenter(find.text('Home').first));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
-        final count = lensShadowPainters();
+        final painters = lensShadowPainters();
         await gesture.up();
         await tester.pumpAndSettle();
-        return count;
+        return painters;
       }
 
-      expect(await pressedShadowCount(const GlassThemeData.ios27()),
-          greaterThan(0));
-      expect(await pressedShadowCount(const GlassThemeData.ios26()), 0);
+      final ios27Painters = await pressedShadows(const GlassThemeData.ios27());
+      expect(ios27Painters, isNotEmpty);
+      expect(
+        ios27Painters.first.shadowOpacity,
+        equals(LensInnerShadowPainter.defaultShadowOpacity),
+      );
+
+      final classicPainters =
+          await pressedShadows(const GlassThemeData.classic());
+      expect(classicPainters, isNotEmpty);
+      expect(
+        classicPainters.first.shadowOpacity,
+        equals(LensInnerShadowPainter.classicShadowOpacity),
+      );
     });
 
     testWidgets(
@@ -1003,13 +1059,13 @@ void main() {
     });
 
     testWidgets(
-        'GlassThemeData.ios26() switches tab bar platter and indicator lens to iOS 26 presets',
+        'GlassThemeData.classic() switches tab bar platter and indicator lens to classic presets',
         (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData.light(),
           home: GlassTheme(
-            data: const GlassThemeData.ios26(),
+            data: const GlassThemeData.classic(),
             child: Scaffold(
               bottomNavigationBar: GlassTabBar.bottom(
                 tabs: tabs,
@@ -1025,7 +1081,7 @@ void main() {
       final layer = tester.widget<AdaptiveLiquidGlassLayer>(
         find.byType(AdaptiveLiquidGlassLayer).first,
       );
-      // iOS 26 bottom bar platter uses thickness: 30, blur: 3, spherical lens
+      // Classic bottom bar platter uses thickness: 30, blur: 3, spherical lens
       expect(layer.settings?.thickness, equals(30.0));
       expect(layer.settings?.blur, equals(3.0));
       expect(
@@ -1054,11 +1110,11 @@ void main() {
     });
 
     testWidgets(
-        'LiquidGlassSettings.ios26(context) and ios27(context) resolve by brightness and allow per-widget override',
+        'LiquidGlassSettings.classic(context) and ios27(context) resolve by brightness and allow per-widget override',
         (tester) async {
-      LiquidGlassSettings? lightIos26;
+      LiquidGlassSettings? lightClassic;
       LiquidGlassSettings? lightIos27;
-      LiquidGlassSettings? darkIos26;
+      LiquidGlassSettings? darkClassic;
       LiquidGlassSettings? darkIos27;
 
       await tester.pumpWidget(
@@ -1069,7 +1125,7 @@ void main() {
                 data: const GlassThemeData(brightness: Brightness.light),
                 child: Builder(
                   builder: (context) {
-                    lightIos26 = LiquidGlassSettings.ios26(context);
+                    lightClassic = LiquidGlassSettings.classic(context);
                     lightIos27 = LiquidGlassSettings.ios27(context);
                     return const SizedBox.shrink();
                   },
@@ -1079,7 +1135,7 @@ void main() {
                 data: const GlassThemeData(brightness: Brightness.dark),
                 child: Builder(
                   builder: (context) {
-                    darkIos26 = LiquidGlassSettings.ios26(context);
+                    darkClassic = LiquidGlassSettings.classic(context);
                     darkIos27 = LiquidGlassSettings.ios27(context);
                     return const SizedBox.shrink();
                   },
@@ -1090,14 +1146,14 @@ void main() {
         ),
       );
 
-      expect(lightIos26, equals(LiquidGlassSettings.ios26Light));
+      expect(lightClassic, equals(LiquidGlassSettings.classicLight));
       expect(lightIos27, equals(LiquidGlassSettings.ios27Light));
-      expect(darkIos26, equals(LiquidGlassSettings.ios26Dark));
+      expect(darkClassic, equals(LiquidGlassSettings.classicDark));
       expect(darkIos27, equals(LiquidGlassSettings.ios27Dark));
     });
 
     testWidgets(
-        'GlassSwitch and GlassSlider resolve iOS 27 paraxial lens by default and spherical lens under GlassThemeData.ios26()',
+        'GlassSwitch and GlassSlider resolve iOS 27 paraxial lens by default and spherical lens under GlassThemeData.classic()',
         (tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -1132,7 +1188,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: GlassTheme(
-            data: const GlassThemeData.ios26(),
+            data: const GlassThemeData.classic(),
             child: Scaffold(
               body: Column(
                 children: [
@@ -1145,19 +1201,19 @@ void main() {
         ),
       );
 
-      final ios26Effects =
+      final classicEffects =
           tester.widgetList<GlassEffect>(find.byType(GlassEffect)).toList();
-      expect(ios26Effects.length, 2);
+      expect(classicEffects.length, 2);
       expect(
-        ios26Effects[0].settings.lensModel,
+        classicEffects[0].settings.lensModel,
         equals(GlassLensModel.spherical),
       );
-      expect(ios26Effects[0].settings.rimShade, equals(0.0));
+      expect(classicEffects[0].settings.rimShade, equals(0.0));
       expect(
-        ios26Effects[1].settings.lensModel,
+        classicEffects[1].settings.lensModel,
         equals(GlassLensModel.spherical),
       );
-      expect(ios26Effects[1].settings.rimShade, equals(0.0));
+      expect(classicEffects[1].settings.rimShade, equals(0.0));
     });
   });
 }

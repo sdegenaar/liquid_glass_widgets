@@ -170,7 +170,7 @@ class AnimatedGlassIndicator extends StatelessWidget {
   /// The iOS 27-calibrated default glass settings for all indicator pills.
   ///
   /// Alias for [LiquidGlassSettings.ios27Indicator]. Used as the merge base
-  /// when the caller provides [settings] and no [GlassStyle.ios26] theme is
+  /// when the caller provides [settings] and no [GlassStyle.classic] theme is
   /// active. Fields the caller leaves at [LiquidGlassSettings()] defaults are
   /// filled in from here unless the caller explicitly overrides them.
   ///
@@ -371,13 +371,13 @@ class AnimatedGlassIndicator extends StatelessWidget {
     final shape = LiquidRoundedRectangle(borderRadius: borderRadius);
 
     // Resolve indicator lens settings cascade:
-    // 1. Style preset (LiquidGlassSettings.ios26Indicator vs ios27Indicator)
+    // 1. Style preset (LiquidGlassSettings.classicIndicator vs ios27Indicator)
     // 2. Ambient GlassThemeVariant.indicatorSettings partial override
     // 3. Explicit widget [settings] partial override
     final theme = GlassTheme.maybeOf(context)?.data;
     final style = theme?.style ?? GlassStyle.ios27;
-    final eraBase = (style == GlassStyle.ios26)
-        ? LiquidGlassSettings.ios26Indicator
+    final eraBase = (style == GlassStyle.classic)
+        ? LiquidGlassSettings.classicIndicator
         : baseIndicatorSettings;
     final themedBase =
         theme?.indicatorSettingsFor(context)?.applyTo(eraBase) ?? eraBase;
@@ -543,14 +543,19 @@ class AnimatedGlassIndicator extends StatelessWidget {
         if (paintBackground && isStdPath && backgroundOpacity > 0)
           backgroundIndicator,
         if (paintGlass && fade > 0.05) interactiveIndicator,
-        // Native `_UILiquidLensView` inner shadow, painted over the lens so it
-        // reads as the soft darkening along the top of the glass.
-        if (paintGlass && !isStdPath && fade > 0.05 && useIos27PillMaterials)
+        // Native `_UILiquidLensView` inner shadow (`spec.innerShadowOpacity`:
+        // 0.06 on iOS 27 paraxial lens, 0.12 on iOS 26 spherical lens),
+        // painted over the lens so it reads as the soft darkening along the
+        // top of the glass.
+        if (paintGlass && !isStdPath && fade > 0.05)
           IgnorePointer(
             child: CustomPaint(
               painter: LensInnerShadowPainter(
                 borderRadius: borderRadius,
                 opacity: fade,
+                shadowOpacity: useIos27PillMaterials
+                    ? LensInnerShadowPainter.defaultShadowOpacity
+                    : LensInnerShadowPainter.classicShadowOpacity,
               ),
               child: const SizedBox.expand(),
             ),

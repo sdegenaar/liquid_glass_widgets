@@ -291,35 +291,43 @@ class GlassThemeVariant {
     );
   }
 
-  /// Default light theme variant.
+  /// Default light theme variant (calibrated iOS 27 surface settings).
   ///
   /// [quality] is intentionally `null` here so that each widget's own
   /// documented default quality is respected (e.g. [GlassTabBar.bottom] defaults
   /// to [GlassQuality.premium]). Set quality explicitly in your
   /// [GlassThemeVariant] to override all widgets globally.
   static const GlassThemeVariant light = GlassThemeVariant(
-    settings: GlassThemeSettings.ios26Light,
+    settings: GlassThemeSettings.ios27Light,
     quality: null,
     glowColors: GlassGlowColors.fallback,
   );
 
-  /// Default dark theme variant.
+  /// Default dark theme variant (calibrated iOS 27 surface settings).
   ///
   /// [quality] is intentionally `null` here so that each widget's own
   /// documented default quality is respected (e.g. [GlassTabBar.bottom] defaults
   /// to [GlassQuality.premium]). Set quality explicitly in your
   /// [GlassThemeVariant] to override all widgets globally.
   static const GlassThemeVariant dark = GlassThemeVariant(
-    settings: GlassThemeSettings.ios26Dark,
+    settings: GlassThemeSettings.ios27Dark,
     quality: null,
     glowColors: GlassGlowColors.fallback,
   );
 
-  /// iOS 26 light theme variant (alias for [light]).
-  static const GlassThemeVariant ios26Light = light;
+  /// Classic `v1.x` light theme variant.
+  static const GlassThemeVariant classicLight = GlassThemeVariant(
+    settings: GlassThemeSettings.classicLight,
+    quality: null,
+    glowColors: GlassGlowColors.fallback,
+  );
 
-  /// iOS 26 dark theme variant (alias for [dark]).
-  static const GlassThemeVariant ios26Dark = dark;
+  /// Classic `v1.x` dark theme variant.
+  static const GlassThemeVariant classicDark = GlassThemeVariant(
+    settings: GlassThemeSettings.classicDark,
+    quality: null,
+    glowColors: GlassGlowColors.fallback,
+  );
 
   /// iOS 27 `glassEffect(.regular)` light theme variant.
   static const GlassThemeVariant ios27Light = GlassThemeVariant(
@@ -438,14 +446,14 @@ class GlassThemeData {
     this.brightness,
   });
 
-  /// Creates glass theme data configured with classic iOS 26 Liquid Glass
-  /// optics ([GlassThemeVariant.ios26Light] and [GlassThemeVariant.ios26Dark]).
-  const GlassThemeData.ios26({
+  /// Creates glass theme data configured with classic `v1.x` Liquid Glass
+  /// optics ([GlassThemeVariant.classicLight] and [GlassThemeVariant.classicDark]).
+  const GlassThemeData.classic({
     this.interaction = const GlassInteractionSettings(),
     this.brightness,
-  })  : style = GlassStyle.ios26,
-        light = GlassThemeVariant.ios26Light,
-        dark = GlassThemeVariant.ios26Dark;
+  })  : style = GlassStyle.classic,
+        light = GlassThemeVariant.classicLight,
+        dark = GlassThemeVariant.classicDark;
 
   /// Creates glass theme data configured with authentic iOS 27
   /// `glassEffect(.regular)` optics ([GlassThemeVariant.ios27Light] and
@@ -505,10 +513,17 @@ class GlassThemeData {
       saturation: saturation,
     );
 
+    final baseLight = style == GlassStyle.classic
+        ? GlassThemeVariant.classicLight
+        : GlassThemeVariant.light;
+    final baseDark = style == GlassStyle.classic
+        ? GlassThemeVariant.classicDark
+        : GlassThemeVariant.dark;
+
     return GlassThemeData(
       style: style,
-      light: GlassThemeVariant.light.copyWith(
-        settings: GlassThemeVariant.light.settings?.copyWith(
+      light: baseLight.copyWith(
+        settings: baseLight.settings?.copyWith(
               blur: blur,
               thickness: thickness,
               chromaticAberration: chromaticAberration,
@@ -521,8 +536,8 @@ class GlassThemeData {
         quality: quality,
         borderRadius: borderRadius,
       ),
-      dark: GlassThemeVariant.dark.copyWith(
-        settings: GlassThemeVariant.dark.settings?.copyWith(
+      dark: baseDark.copyWith(
+        settings: baseDark.settings?.copyWith(
               blur: blur,
               thickness: thickness,
               chromaticAberration: chromaticAberration,
@@ -605,8 +620,30 @@ class GlassThemeData {
   /// Returns a [GlassThemeSettings] rather than a full
   /// [LiquidGlassSettings] — callers should merge this on top of their own
   /// defaults via [GlassThemeSettings.applyTo].
+  ///
+  /// When the variant's [GlassThemeVariant.settings] is still one of the
+  /// unmodified built-in surface presets, this automatically aligns with
+  /// [style] so setting `GlassThemeData(style: GlassStyle.classic)` or
+  /// `GlassThemeData(style: GlassStyle.ios27)` switches all surfaces, tab bars,
+  /// and indicator lenses from a single property.
   GlassThemeSettings? settingsFor(BuildContext context) {
-    return variantFor(context).settings;
+    final s = variantFor(context).settings;
+    if (style == GlassStyle.classic) {
+      if (identical(s, GlassThemeSettings.ios27Light)) {
+        return GlassThemeSettings.classicLight;
+      }
+      if (identical(s, GlassThemeSettings.ios27Dark)) {
+        return GlassThemeSettings.classicDark;
+      }
+    } else {
+      if (identical(s, GlassThemeSettings.classicLight)) {
+        return GlassThemeSettings.ios27Light;
+      }
+      if (identical(s, GlassThemeSettings.classicDark)) {
+        return GlassThemeSettings.ios27Dark;
+      }
+    }
+    return s;
   }
 
   /// Gets the partial indicator lens settings override for the current

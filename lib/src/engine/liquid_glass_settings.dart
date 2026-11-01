@@ -221,8 +221,8 @@ class LiquidGlassSettings {
           // shadowElevation and shadow use their defaults (1.0 / null)
         );
 
-  /// iOS 26 surface preset in the light appearance.
-  static const LiquidGlassSettings ios26Light = LiquidGlassSettings(
+  /// Classic `v1.x` surface preset in the light appearance.
+  static const LiquidGlassSettings classicLight = LiquidGlassSettings(
     thickness: 12.0,
     blur: 5.0,
     glassColor: Color.fromRGBO(210, 220, 240, 0.12),
@@ -234,8 +234,8 @@ class LiquidGlassSettings {
     chromaticAberration: 0.02,
   );
 
-  /// iOS 26 surface preset in the dark appearance.
-  static const LiquidGlassSettings ios26Dark = LiquidGlassSettings(
+  /// Classic `v1.x` surface preset in the dark appearance.
+  static const LiquidGlassSettings classicDark = LiquidGlassSettings(
     thickness: 10.0,
     blur: 4.0,
     glassColor: Color.fromRGBO(255, 255, 255, 0.08),
@@ -247,8 +247,8 @@ class LiquidGlassSettings {
     chromaticAberration: 0.01,
   );
 
-  /// iOS 26 interactive indicator lens preset (`AnimatedGlassIndicator`).
-  static const LiquidGlassSettings ios26Indicator = LiquidGlassSettings(
+  /// Classic `v1.x` interactive indicator lens preset (`AnimatedGlassIndicator`).
+  static const LiquidGlassSettings classicIndicator = LiquidGlassSettings(
     glassColor: Color.from(alpha: 0.0, red: 1, green: 1, blue: 1),
     thickness: 20,
     refractiveIndex: 1.10,
@@ -258,12 +258,12 @@ class LiquidGlassSettings {
     blur: 0,
   );
 
-  /// iOS 26 tab bar platter preset ([GlassTabBar.bottom] and
+  /// Classic `v1.x` tab bar platter preset ([GlassTabBar.bottom] and
   /// [GlassTabBar.searchable]).
   ///
-  /// Tuned to the iOS 26 Apple News / Safari tab bar aesthetic (`thickness: 30`,
+  /// Uses the package's original pre-calibration tab bar aesthetic (`thickness: 30`,
   /// `blur: 3`, `refractiveIndex: 1.59`, `lightAngle: 0.75 * pi`).
-  static const LiquidGlassSettings ios26TabBar = LiquidGlassSettings(
+  static const LiquidGlassSettings classicTabBar = LiquidGlassSettings(
     thickness: 30,
     blur: 3,
     chromaticAberration: 0.3,
@@ -275,12 +275,12 @@ class LiquidGlassSettings {
     glassColor: Color(0x3DFFFFFF),
   );
 
-  /// Resolves [ios26Light] or [ios26Dark] for the ambient [GlassTheme]
+  /// Resolves [classicLight] or [classicDark] for the ambient [GlassTheme]
   /// brightness in [context].
-  static LiquidGlassSettings ios26(BuildContext context) =>
+  static LiquidGlassSettings classic(BuildContext context) =>
       GlassTheme.brightnessOf(context) == Brightness.dark
-          ? ios26Dark
-          : ios26Light;
+          ? classicDark
+          : classicLight;
 
   /// iOS 27 `glassEffect(.regular)` in the light appearance.
   ///

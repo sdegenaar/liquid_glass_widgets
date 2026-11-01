@@ -2,17 +2,18 @@
 
 ## Features
 
-- **`GlassStyle` era presets (`GlassStyle.ios26`, `GlassStyle.ios27`) and iOS 27 control parity:**
-  - Added `enum GlassStyle { ios26, ios27 }` (defaulting to `GlassStyle.ios27` on `GlassThemeData`), `const GlassThemeData.ios26()`, presets on `LiquidGlassSettings` (`ios26Light`, `ios26Dark`, `ios26TabBar`, `ios26Indicator`, `ios27Indicator`), and brightness-aware helpers `LiquidGlassSettings.ios26(context)` / `ios27(context)`.
+- **`GlassStyle` presets (`GlassStyle.ios27`, `GlassStyle.classic`) and full iOS 27 parity by default:**
+  - Added `enum GlassStyle { classic, ios27 }` (defaulting to `GlassStyle.ios27` on `GlassThemeData`), `const GlassThemeData.classic()`, presets on `LiquidGlassSettings` (`classicLight`, `classicDark`, `classicTabBar`, `classicIndicator`, `ios27Indicator`), and brightness-aware helpers `LiquidGlassSettings.classic(context)` / `ios27(context)`.
+  - **Behavior change:** `GlassThemeData()` now defaults all surfaces, tab bars, and interactive lenses to simulator-calibrated `GlassStyle.ios27` (`LiquidGlassSettings.ios27Light` / `ios27Dark` and `ios27Indicator`). Setting `GlassThemeData(style: GlassStyle.classic)` or `const GlassThemeData.classic()` switches all surfaces, tab bars, and lenses back to the classic `v1.x` look from a single setting.
   - Added `indicatorSettings` on `GlassThemeVariant` (and `GlassThemeData.indicatorSettingsFor(context)`) to customize interactive indicator lenses independently of frosted surface platters.
-  - Calibrated `GlassTabBar.bottom`, `GlassTabBar.searchable`, `AnimatedGlassIndicator`, `GlassSwitch`, and `GlassSlider` to match native iOS 27 platters, resting selection pills, and paraxial liquid lenses (while preserving classic iOS 26 optics under `GlassStyle.ios26`).
+  - Calibrated `GlassTabBar.bottom`, `GlassTabBar.searchable`, `GlassSegmentedControl`, `AnimatedGlassIndicator`, `GlassSwitch`, and `GlassSlider` to match native UIKit platters, resting wells/pills, and interactive liquid lenses (`LensInnerShadowPainter` `0.06` on `ios27` vs `0.12` on `classic`).
   - Added `thumbShadow` to `GlassSwitch` (matching `GlassSlider.thumbShadow`).
 
 ## Bug Fixes
 
-- **`GlassThemeData()` and `GlassThemeData.simple()` no longer clobber the iOS 27 tab bar platter:** Unmodified default surface fields on `GlassTheme` no longer overwrite the iOS 27 tab bar platter (`LiquidGlassSettings.ios27Light` / `ios27Dark`). Pass `const GlassThemeData.ios26()` or `settings: LiquidGlassSettings.ios26TabBar` for the classic iOS 26 tab bar platter.
-- **`GlassSwitch` resting thumb shadow is no longer clipped:** Moved the resting thumb shadow outside `GlassEffect`'s shape clip so the drop shadow renders cleanly at rest and fades out during the toggle jump.
-- **`GlassSegmentedControl` theme & light-mode indicator fixes:** `GlassSegmentedControl(useOwnLayer: true)` now resolves ambient `GlassThemeData` settings, and `GlassSegmentedControl.scrollable` uses a brightness-aware resting indicator color in light mode.
+- **`GlassThemeData()` and `GlassThemeData.simple()` no longer clobber the tab bar platter:** Unmodified default surface fields on `GlassTheme` no longer overwrite the active `GlassStyle` tab bar platter (`LiquidGlassSettings.ios27Light` / `ios27Dark` or `LiquidGlassSettings.classicTabBar`).
+- **`GlassSwitch` and `GlassSlider` resting thumb shadow & rim parity:** Moved `GlassSwitch`'s resting thumb shadow outside `GlassEffect`'s shape clip and scaled `GlassEffect` `rimShade`/`rimLight` by `interactionIntensity` so resting solid thumbs render cleanly without a dark perimeter hairline.
+- **`GlassSegmentedControl` theme & native resting track/pill parity:** `GlassSegmentedControl(useOwnLayer: true)` now resolves ambient `GlassThemeData` settings, and both standard and `.scrollable` variants use native `UISegmentedControl` resting wells (`#1F787880` light / `#3D787880` dark) and resting indicator pills.
 
 # 1.16.1
 
