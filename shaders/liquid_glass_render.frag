@@ -391,18 +391,7 @@ void main() {
         // outer band is an inverted 1.9:1 image of the backdrop from 0.27 to
         // 0.72 of the radius — thickness 32 (3x px) and n = 1.24 here. The
         // exact refraction below folds far harder toward the edge.
-        //
-        // When concave platter pinch is active (uPinchStrength > 0.001),
-        // vertical bevel displacement (-normalXY.y) opposes the inward top/
-        // bottom platter pinch (+centered.y). Cap the vertical bevel (n - 1)
-        // at 0.02 so the top/bottom bar edges keep the full 0.025 pinch depth
-        // while horizontal refraction (displacement.x) uses the full
-        // uRefractiveIndex across tab icons and labels.
-        float nxScale = uRefractiveIndex - 1.0;
-        float nyScale = (uPinchStrength > 0.001)
-                      ? min(nxScale, 0.02)
-                      : nxScale;
-        displacement = -vec2(normalXY.x * nxScale, normalXY.y * nyScale)
+        displacement = -normalXY * (uRefractiveIndex - 1.0)
                      * length(normalXY) * baseHeight;
     } else {
         vec3  incident    = vec3(0.0, 0.0, -1.0);
@@ -439,6 +428,73 @@ void main() {
     float cosTerm = sqrt(max(0.0, 1.0 - normalizedHeight * normalizedHeight));
     float rimDist = uThickness * (1.0 - cosTerm);
     float dprScale = max(0.1, uEdgeConfig.z);
+    // dprScale is (devicePixelRatio / 3.0), so 1 logical point = 3.0 * dprScale
+    // physical pixels. Convert rimDist to logical points (rimPt):
+    float pxPerPt = 3.0 * dprScale;
+    float rimPt = rimDist / pxPerPt;
+
+    // When concave platter pinch is active on the iOS 27 paraxial lens
+    // (uLensModel > 0.5 && uPinchStrength > 0.001), drive the outer 0.6..1.6 pt
+    // meniscus band inward along -normalXY by ~4.8 pt so it catches the track
+    // edge (at 5.33 pt inside the 38.33 pt lens) to form the native 0.7 pt
+    // BackdropView meniscus ring and left/right nose flare without invading the
+    // 8 pt white moat.
+    float isBarIndicator = step(48.0 * pxPerPt, uGeometrySize.y);
+    float flatEndX = clamp(1.0 - uGeometrySize.y / max(uGeometrySize.x, 1.0), 0.15, 0.75);
+    vec2 barCaDisp = vec2(0.0);
+    float barIconGate = 0.0;
+    if (uLensModel > 0.5 && uPinchStrength > 0.001) {
+        if (isBarIndicator < 0.5) {
+            float meniscusBand = smoothstep(0.35, 0.75, rimPt)
+                               * (1.0 - smoothstep(1.15, 1.75, rimPt));
+            vec2 inwardUnit = -normalXY / max(length(normalXY), 1e-4);
+            vec2 meniscusDisp = inwardUnit * (4.8 * pxPerPt) * meniscusBand;
+            displacement = mix(displacement, meniscusDisp, clamp(uPinchStrength, 0.0, 1.0));
+        } else {
+            // On tall bar indicator lenses (GlassTabBar):
+            // 1. Outer meniscus ring (rimPt = 0.22..1.35 pt) reaches ~3.9 pt
+            //    inward all around the capsule so the 1 pt outer rim catches
+            //    the concentric 4.0 pt platter overhang at the ends and top/bottom
+            //    without magnifying the bar when dragged past the end (> 5 pt).
+            // 2. Cap outward pinch (rimPt = 1.35..7.60 pt) displaces the platter
+            //    outward (+normalXY) around the left/right semicircle so overhanging
+            //    ends show the native 6 pt concentric dark moat (and never magnify
+            //    the bar when run off the end), while barCaDisp (matching Apple's
+            //    contentWrapper inputAmount = -17.5, height = 11.2) magnifies and
+            //    fans foreground tab icons/labels outward across the bevel.
+            float barLift = clamp(uPinchStrength / 0.35, 0.0, 1.0);
+            vec2 barCentered = geometryUV - vec2(0.5);
+            vec2 barAbs = abs(barCentered) * 2.0;
+            float iconBandY = 1.0 - smoothstep(0.66, 0.79, barAbs.y);
+            float endCapX = smoothstep(0.32, 0.70, barAbs.x);
+            barIconGate = iconBandY * endCapX * barLift;
+
+            float meniscusBand = smoothstep(0.22, 0.55, rimPt)
+                               * (1.0 - smoothstep(0.95, 1.35, rimPt));
+            vec2 inwardUnit = -normalXY / max(length(normalXY), 1e-4);
+            vec2 meniscusReach = vec2(3.9 + 1.2 * endCapX, 3.9) * pxPerPt;
+            vec2 meniscusDisp = inwardUnit * meniscusReach * meniscusBand;
+
+            float capPinchBand = smoothstep(1.35, 2.15, rimPt)
+                               * (1.0 - smoothstep(5.40, 7.80, rimPt));
+            vec2 outwardUnit = -inwardUnit;
+            vec2 capOutwardDisp = vec2(outwardUnit.x, outwardUnit.y * 0.35)
+                                * (4.6 * pxPerPt) * capPinchBand * endCapX;
+
+            float iconBevelX = smoothstep(0.45, 1.15, rimPt)
+                             * (1.0 - smoothstep(2.60, 9.40, rimPt));
+            float iconBevelY = smoothstep(0.45, 1.25, rimPt)
+                             * (1.0 - smoothstep(2.20, 9.00, rimPt));
+            float signX = barCentered.x >= 0.0 ? 1.0 : -1.0;
+            barCaDisp = vec2(
+                -signX * (5.6 * pxPerPt) * iconBevelX,
+                -barCentered.y * 2.0 * (5.2 * pxPerPt) * iconBevelY
+            ) * barIconGate;
+
+            vec2 barDisp = meniscusDisp + capOutwardDisp;
+            displacement = mix(displacement, barDisp, barLift);
+        }
+    }
 
     // iOS 27 hairline (uRimConfig.x): a half-point line on the very edge of
     // the glass. Measured against the native material it is the backdrop at
@@ -486,6 +542,8 @@ void main() {
     // 0.015 UV on a 390pt screen ≈ 6pt logical pixels — subtle but visible.
     //
     // ── iOS 26 Concave Lens Pinch ─────────────────────────────────────────────
+    vec2 baseScreenUV = screenUV;
+    vec2 activePinchShift = vec2(0.0);
     if (uPinchStrength > 0.001) {
         // We cannot use normalXY because it is 0.0 in the flat interior of the pill,
         // which prevents the background from being pinched at all.
@@ -513,24 +571,46 @@ void main() {
         // Map the squircle distance to a 0..1 smooth curve.
         float pinchRamp = smoothstep(0.0, 1.0, squircleDist);
 
-        // Vector pointing outwards from the pill centre, scaled by the ramp.
-        // uPinchStrength interpolates the effect during spring animations.
-        // 0.025 is the baseline UV shift magnitude (subtle but visible).
-        vec2 pinchShift = centered * pinchRamp * uPinchStrength * 0.025;
+        vec2 pinchShift;
+        if (uLensModel > 0.5 && isBarIndicator > 0.5) {
+            // iOS 27 GlassTabBar indicator platter pinch:
+            // 1. Horizontally stays flat across the straight middle section of
+            //    the capsule (absCentered.x <= 0.48) and tapers smoothly around
+            //    the semicircular shoulders (0.48..0.84) where capOutwardDisp
+            //    continues the concentric 6 pt dark moat around the ends.
+            // 2. Vertically confined to the top/bottom platter rim band
+            //    (absCentered.y > 0.42) and starts at rimPt = 1.35 pt (strictly
+            //    after the 0.22..1.35 pt outer meniscus ring) so the central
+            //    icon/label are never vertically compressed and the outer
+            //    meniscus ring is never double-crossed.
+            float barPinchHoriz = 1.0 - smoothstep(0.48, 0.84, absCentered.x);
+            float barPinchVert = smoothstep(0.42, 0.74, absCentered.y)
+                               * smoothstep(1.35, 5.2, rimPt);
+            float barPinchPx = 0.245 * uGeometrySize.y;
+            pinchShift = vec2(
+                0.0,
+                centered.y * barPinchHoriz * barPinchVert * uPinchStrength * (barPinchPx * invTexSize.y)
+            );
+            pinchShift *= (1.0 - hairline);
+        } else {
+            float pinchRimGate = (uLensModel > 0.5)
+                ? smoothstep(1.8, 5.2, rimPt)
+                : 1.0;
+            float pinchPx = (uLensModel > 0.5)
+                ? (15.5 * pxPerPt)
+                : (max(physTexSize.x, physTexSize.y) * 0.025);
+            // On iOS 27 compact thumb lenses (GlassSwitch), gently taper the
+            // vertical pinch near the left/right capsule ends so the U-shaped
+            // moat ends in a smooth rounded crescent.
+            float endYScale = (uLensModel > 0.5)
+                ? (1.0 - 0.32 * smoothstep(0.55, 0.92, absCentered.x))
+                : 1.0;
+            vec2 pinchDir = vec2(centered.x, centered.y * endYScale);
+            pinchShift = pinchDir * pinchRamp * pinchRimGate * uPinchStrength * (pinchPx * invTexSize);
+            pinchShift *= geometryData.a * (1.0 - hairline);
+        }
 
-        // Feather the pinch shift to zero at the pill's SDF boundary.
-        // Without this, there is a hard UV discontinuity at the pill edge:
-        // the background content inside the pill is sampled from a shifted UV
-        // while the content immediately outside is at the natural UV — this
-        // mismatch produces the "stepped/aliased" edge visible through the lens,
-        // especially where the bar's own clip edge is refracted inward.
-        // Multiplying by geometryData.a (which is 0 at the boundary and 1 by 2 px
-        // inside) ramps the shift smoothly from 0 → full pinch over the same AA
-        // zone as the pill alpha, eliminating the hard UV seam.
-        // Also gate off within the iOS 27 hairline so the outer rim samples the
-        // true unshifted backdrop immediately outside the lens.
-        pinchShift *= geometryData.a * (1.0 - hairline);
-
+        activePinchShift = pinchShift;
         screenUV += pinchShift;
         
         // Guarantee we never sample outside the valid backdrop capture bounds,
@@ -548,6 +628,10 @@ void main() {
     // Threshold chosen conservatively: 1e-4 in squared magnitude corresponds to
     // a normal tilted < 0.6° from vertical — visually indistinguishable from a
     // zero-displacement sample at any display resolution.
+    float effectiveCA = max(
+        uChromaticAberration,
+        (uLensModel > 0.5) ? isBarIndicator * clamp(uPinchStrength * 0.9, 0.0, 0.36) : 0.0
+    );
     vec4 refractColor;
     if (uFrost.x > 0.0 && hairline <= 0.0) {
         // Frosted body: the frost below replaces the colour, and only whether
@@ -559,10 +643,10 @@ void main() {
             a += uBackgroundFallback.a * (1.0 - a);
         }
         refractColor = vec4(0.0, 0.0, 0.0, a);
-    } else if (dot(normalXY, normalXY) < 1e-4) {
+    } else if (dot(normalXY, normalXY) < 1e-4 && dot(displacement, displacement) < 1e-4) {
         // Flat interior — zero displacement, sample directly.
         refractColor = textureBilinear(screenUV, physTexSize, invTexSize);
-    } else if (uChromaticAberration < 0.01) {
+    } else if (effectiveCA < 0.01) {
         vec2 refractedUV = screenUV + displacement * invTexSize;
         refractColor = textureBilinear(refractedUV, physTexSize, invTexSize);
         if (hairline > 0.0) {
@@ -575,18 +659,59 @@ void main() {
                       + textureBilinear(refractedUV - tangent, physTexSize, invTexSize);
             refractColor = mix(refractColor, (refractColor + side) / 3.0, hairline);
         }
+    } else if (isBarIndicator > 0.5 && uLensModel > 0.5 && uPinchStrength > 0.001) {
+        // iOS 27 GlassTabBar two-layer optical model (_UILiquidLensView):
+        // 1. Platter backdrop (BackdropView, inputAmount = +9): pinched inward
+        //    around all 4 sides with zero chromatic dispersion so the outer edge
+        //    never shows a red band, the overhanging ends show the native 6 pt
+        //    concentric dark moat, and dragging past the end never magnifies
+        //    the bar (where platterSample is outside the bar, isInsidePlatter = 0).
+        // 2. Foreground icon/label portal (contentWrapper, inputAmount = -17.5,
+        //    height = 11.2): wherever platterSample is inside the bar
+        //    (isInsidePlatter = 1), the left/right bevel samples continuously
+        //    from un-pinched baseScreenUV + barCaDisp, applying R/G/B prismatic
+        //    dispersion on bright icon/label strokes.
+        vec2 platterUV = screenUV + displacement * invTexSize;
+        vec4 platterSample = textureBilinear(platterUV, physTexSize, invTexSize);
+        vec2 refUV = (uGeometryOffset + vec2(0.5, 0.18) * uGeometrySize + uCaptureOffset) * invTexSize;
+        #ifdef LGR_GLES_FLIP_SAMPLE_Y
+            refUV.y = 1.0 - refUV.y;
+        #endif
+        vec3 refPlatter = texture(uBackgroundTexture, clamp(refUV, vec2(0.001), vec2(0.999))).rgb;
+        float isDarkPlatter = 1.0 - step(0.35, dot(refPlatter, LUMA_WEIGHTS));
+        float platterLuma = dot(platterSample.rgb, LUMA_WEIGHTS);
+        float isInsidePlatter = mix(1.0, smoothstep(0.03, 0.09, platterLuma), isDarkPlatter);
+
+        #ifdef LGR_GLES_FLIP_SAMPLE_Y
+            barCaDisp.y = -barCaDisp.y;
+        #endif
+        vec2 iconGreenUV = clamp(baseScreenUV + barCaDisp * invTexSize, vec2(0.001), vec2(0.999));
+        vec4 iconG = textureBilinear(iconGreenUV, physTexSize, invTexSize);
+        float iconPeakG = max(iconG.r, max(iconG.g, iconG.b));
+        float iconChromaG = iconPeakG - min(iconG.r, min(iconG.g, iconG.b));
+        float iconCaGate = max(smoothstep(0.15, 0.28, iconPeakG), smoothstep(0.05, 0.14, iconChromaG));
+        float iconDispersion = effectiveCA * 0.72 * iconCaGate;
+
+        vec2 iconRedUV  = clamp(baseScreenUV + barCaDisp * (1.0 + iconDispersion) * invTexSize, vec2(0.001), vec2(0.999));
+        vec2 iconBlueUV = clamp(baseScreenUV + barCaDisp * (1.0 - iconDispersion) * invTexSize, vec2(0.001), vec2(0.999));
+        vec4 iconR = textureBilinear(iconRedUV,  physTexSize, invTexSize);
+        vec4 iconB = textureBilinear(iconBlueUV, physTexSize, invTexSize);
+        vec3 iconRGB = vec3(iconR.r, iconG.g, iconB.b);
+
+        float bevelBlend = isInsidePlatter * barIconGate * smoothstep(0.45, 1.15, rimPt) * (1.0 - hairline);
+        refractColor = vec4(mix(platterSample.rgb, iconRGB, bevelBlend), platterSample.a);
     } else {
-        float dispersionStrength = uChromaticAberration * 0.5;
-        vec2 redOffset  = displacement * (1.0 + dispersionStrength);
-        vec2 blueOffset = displacement * (1.0 - dispersionStrength);
-
-        vec2 redUV   = screenUV + redOffset   * invTexSize;
         vec2 greenUV = screenUV + displacement * invTexSize;
-        vec2 blueUV  = screenUV + blueOffset  * invTexSize;
+        vec4 greenSample = textureBilinear(greenUV, physTexSize, invTexSize);
+        float dispersionStrength = effectiveCA * 0.5;
+        vec2 redOffset  = displacement + displacement * dispersionStrength;
+        vec2 blueOffset = displacement - displacement * dispersionStrength;
 
-        float red         = textureBilinear(redUV, physTexSize, invTexSize).r;
-        vec4  greenSample = textureBilinear(greenUV, physTexSize, invTexSize);
-        float blue        = textureBilinear(blueUV, physTexSize, invTexSize).b;
+        vec2 redUV  = screenUV + redOffset  * invTexSize;
+        vec2 blueUV = screenUV + blueOffset * invTexSize;
+
+        float red  = textureBilinear(redUV, physTexSize, invTexSize).r;
+        float blue = textureBilinear(blueUV, physTexSize, invTexSize).b;
 
         refractColor = vec4(red, greenSample.g, blue, greenSample.a);
     }
@@ -648,6 +773,27 @@ void main() {
     // The hairline shows the backdrop as it is, so it takes no saturation.
     finalColor.rgb = applySaturation(
         finalColor.rgb, mix(uSaturation * adaptiveStrength, 1.0, hairline));
+
+    // Native iOS 27 _UILiquidLensView (ClearGlassView CASDFKeyFillHighlightEffect
+    // + vibrantColorMatrix +0.1471 offset) adds an equal RGB diffuse lift
+    // proportional to (1 - backdropLuma) on compact thumb lenses, lifting dark
+    // card #1C1C1E (28,28,30) -> (52,52,54), dark off-track (90,90,94) ->
+    // (106,106,110), and green on-track (48,209,88) -> (57,218,97) while
+    // leaving pure white (255,255,255) and frosted bar platters unchanged.
+    if (uLensModel > 0.5 && uFrost.x <= 0.0) {
+        float topTrough = smoothstep(0.04, 0.16, geometryUV.y)
+                        * (1.0 - smoothstep(0.22, 0.52, geometryUV.y))
+                        * smoothstep(1.5, 3.5, rimPt);
+        if (uGeometrySize.y < 48.0 * pxPerPt) {
+            float lensLift = 0.105 * (1.0 - 0.45 * topTrough)
+                           * clamp(uRimConfig.y, 0.0, 1.0)
+                           * (1.0 - clamp(backdropLuma, 0.0, 1.0))
+                           * (1.0 - hairline);
+            finalColor.rgb = clamp(finalColor.rgb + vec3(lensLift), 0.0, 1.0);
+        }
+        float keyShade = 0.025 * topTrough * clamp(backdropLuma, 0.0, 1.0) * (1.0 - hairline);
+        finalColor.rgb = max(finalColor.rgb - vec3(keyShade), 0.0);
+    }
 
     // Modulate glass tint blend weight by adaptiveStrength.
     // On dark backgrounds the tint reads heavier (+20%); on bright backgrounds
@@ -894,15 +1040,20 @@ void main() {
         float along = dot(rimN, uLightDirection);
         float lit  = max(along, 0.0);
         float opp  = max(-along, 0.0);
-        float lobe = lit * lit * lit + 0.85 * opp * opp * opp;
+        bool isClearIndicator = (uLensModel > 0.5 && uFrost.x <= 0.0);
+        float litWeight = isClearIndicator ? 0.84 : 1.0;
+        float oppWeight = isClearIndicator ? 1.02 : 0.85;
+        float lobe = litWeight * lit * lit * lit + oppWeight * opp * opp * opp;
         float inset = max(0.0, rimDist - 2.25 * dprScale) / dprScale;
         float core = exp(-inset / 1.5);
         float tail = exp(-inset / 8.0);
         float bodyLuma = clamp(dot(finalColor.rgb, LUMA_WEIGHTS), 0.0, 1.0);
         float ease = pow(1.0 - bodyLuma, 0.3);
+        float indicatorRimBoost = isClearIndicator ? 1.32 : 1.0;
+        float tailWeight = isClearIndicator ? 0.055 : 0.035;
         // The hairline itself stays dark; the highlight peaks just inside it.
-        float rimLight = uRimConfig.y * lobe * ease
-                       * (0.175 * core + 0.035 * tail) * (1.0 - hairline);
+        float rimLight = uRimConfig.y * indicatorRimBoost * lobe * ease
+                       * (0.175 * core + tailWeight * tail) * (1.0 - hairline);
         finalColor.rgb = clamp(finalColor.rgb + vec3(rimLight), 0.0, 1.0);
     }
 

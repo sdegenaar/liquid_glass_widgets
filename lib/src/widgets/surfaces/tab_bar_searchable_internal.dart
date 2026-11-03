@@ -13,6 +13,7 @@ import 'package:flutter/cupertino.dart';
 import '../../../constants/glass_defaults.dart';
 import '../../renderer/liquid_glass_renderer.dart';
 import '../../../types/glass_quality.dart';
+import '../../../types/glass_style.dart';
 import '../../../utils/draggable_indicator_physics.dart';
 import '../../utils/glass_localizations.dart';
 import '../../../utils/glass_spring.dart';
@@ -347,7 +348,12 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
           offset: Offset(swayValue, 0),
           child: LiquidStretch(
             interactionScale: widget.enableBackgroundAnimation
-                ? (widget.backgroundPressScale ?? 1.04)
+                ? (widget.backgroundPressScale ??
+                    ((GlassTheme.maybeOf(context)?.data.style ??
+                                GlassStyle.ios27) ==
+                            GlassStyle.classic
+                        ? 1.04
+                        : 1.0))
                 : 1.0,
             stretch:
                 0.0, // stretch disabled on platformViewBackdrop to prevent BackdropFilter pixel-snap jitter

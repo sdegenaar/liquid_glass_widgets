@@ -38,7 +38,8 @@ class ControlsParityHarnessApp extends StatefulWidget {
 }
 
 class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
-  bool _isDark = false;
+  bool _isDark = const bool.fromEnvironment('DARK');
+  bool _lensesLifted = const bool.fromEnvironment('LIFT_LENSES');
   GlassStyle _style = GlassStyle.ios27;
   String _bgMode = 'solid'; // 'solid' | 'vivid' | 'stripes'
   int _selectedTab = 0;
@@ -48,6 +49,103 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
   bool _switchOff = false;
   double _sliderContinuous = 0.50;
   double _sliderDiscrete = 0.75;
+
+  final GlobalKey _segKey = GlobalKey();
+  final GlobalKey _switchOnKey = GlobalKey();
+  final GlobalKey _switchOffKey = GlobalKey();
+  final GlobalKey _sliderContKey = GlobalKey();
+  final GlobalKey _sliderDiscKey = GlobalKey();
+  final GlobalKey _tabBarKey = GlobalKey();
+  final List<int> _activePointers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // AUTO_TAB=N: select tab N programmatically after AUTO_TAB_DELAY_MS
+    // (default 3000) so the indicator animation can be recorded without
+    // synthetic touch input. Counterpart of native `-autoTab N`.
+    const autoTab = int.fromEnvironment('AUTO_TAB', defaultValue: -1);
+    if (autoTab >= 0) {
+      const delayMs =
+          int.fromEnvironment('AUTO_TAB_DELAY_MS', defaultValue: 3000);
+      Future<void>.delayed(const Duration(milliseconds: delayMs), () {
+        if (mounted) setState(() => _selectedTab = autoTab);
+      });
+    }
+    if (_lensesLifted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future<void>.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) _setLensesLifted(true);
+        });
+      });
+    }
+  }
+
+  void _setLensesLifted(bool lifted) {
+    final binding = WidgetsBinding.instance;
+    for (final p in _activePointers) {
+      binding.handlePointerEvent(PointerCancelEvent(pointer: p));
+    }
+    _activePointers.clear();
+    if (!lifted) return;
+
+    void pressAt(GlobalKey key, Offset localOffset, int pointer) {
+      final box = key.currentContext?.findRenderObject() as RenderBox?;
+      if (box == null || !box.hasSize) return;
+      final global = box.localToGlobal(localOffset);
+      _activePointers.add(pointer);
+      binding.handlePointerEvent(
+        PointerDownEvent(pointer: pointer, position: global),
+      );
+    }
+
+    pressAt(_segKey, const Offset(56, 16), 901);
+    pressAt(_switchOnKey, const Offset(42.5, 14), 902);
+    pressAt(_switchOffKey, const Offset(20.5, 14), 903);
+    final contBox =
+        _sliderContKey.currentContext?.findRenderObject() as RenderBox?;
+    if (contBox != null && contBox.hasSize) {
+      pressAt(
+        _sliderContKey,
+        Offset(contBox.size.width * 0.5, contBox.size.height * 0.5),
+        904,
+      );
+    }
+    final discBox =
+        _sliderDiscKey.currentContext?.findRenderObject() as RenderBox?;
+    if (discBox != null && discBox.hasSize) {
+      pressAt(
+        _sliderDiscKey,
+        Offset(discBox.size.width * 0.75, discBox.size.height * 0.5),
+        905,
+      );
+    }
+    pressAt(_tabBarKey, const Offset(45, 31), 906);
+
+    // DRAG_TAB: slide the pressed tab-bar pointer to the right so the lifted
+    // indicator can be captured mid-motion (jelly stretch + animated pinch).
+    if (const bool.fromEnvironment('DRAG_TAB')) {
+      final box = _tabBarKey.currentContext?.findRenderObject() as RenderBox?;
+      if (box != null && box.hasSize) {
+        final start = box.localToGlobal(const Offset(45, 31));
+        const steps = 29;
+        const stepDx = 2.0;
+        for (var i = 1; i <= steps; i++) {
+          Future<void>.delayed(Duration(milliseconds: 1100 + 16 * i), () {
+            if (!mounted) return;
+            final next = Offset(start.dx + i * stepDx, start.dy);
+            binding.handlePointerEvent(
+              PointerMoveEvent(
+                pointer: 906,
+                position: next,
+                delta: const Offset(stepDx, 0),
+              ),
+            );
+          });
+        }
+      }
+    }
+  }
 
   static const _segments = [
     GlassSegment(label: 'Day'),
@@ -161,6 +259,21 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
               ),
             ),
             actions: [
+              GlassIconButton(
+                icon: Icon(
+                  _lensesLifted ? CupertinoIcons.eye_fill : CupertinoIcons.eye,
+                  color: labelColor,
+                  size: 16,
+                ),
+                size: 36,
+                useOwnLayer: true,
+                quality: GlassQuality.premium,
+                onPressed: () {
+                  setState(() => _lensesLifted = !_lensesLifted);
+                  _setLensesLifted(_lensesLifted);
+                },
+              ),
+              const SizedBox(width: 8),
               GlassButton.custom(
                 width: 72,
                 height: 36,
@@ -196,11 +309,11 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
             ],
           ),
           bottomBar: GlassTabBar.bottom(
+            key: _tabBarKey,
             selectedIndex: _selectedTab,
             onTabSelected: (i) => setState(() => _selectedTab = i),
             selectedIconColor: CupertinoColors.systemBlue.resolveFrom(context),
             selectedLabelStyle: TextStyle(
-              fontSize: 10,
               fontWeight: FontWeight.w600,
               color: CupertinoColors.systemBlue.resolveFrom(context),
             ),
@@ -217,219 +330,234 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                 label: 'Lenses',
                 icon: Icon(CupertinoIcons.sparkles),
               ),
+              GlassTab(
+                label: 'Settings',
+                icon: Icon(CupertinoIcons.gear_alt_fill),
+              ),
             ],
           ),
-          body: SafeArea(
-            top: false,
-            bottom: false,
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 110, 16, 120),
-              children: [
-                GlassSearchBar(
-                  placeholder: 'Search controls',
-                  surfaceStyle: surfaceStyle,
-                ),
-                const SizedBox(height: 18),
-                GlassGroupedSection(
-                  header: const Text('SEGMENTED CONTROL'),
-                  surfaceStyle: surfaceStyle,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
+          body: Listener(
+            behavior: HitTestBehavior.translucent,
+            onPointerDown: (event) {
+              if (event.pointer < 900 && _lensesLifted) {
+                setState(() => _lensesLifted = false);
+                _setLensesLifted(false);
+              }
+            },
+            child: SafeArea(
+              top: false,
+              bottom: false,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 108, 16, 120),
+                children: [
+                  GlassSearchBar(
+                    placeholder: 'Search controls',
+                    surfaceStyle: surfaceStyle,
+                  ),
+                  const SizedBox(height: 24),
+                  GlassGroupedSection(
+                    header: const Text('SEGMENTED CONTROL'),
+                    surfaceStyle: surfaceStyle,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        child: GlassSegmentedControl(
+                          key: _segKey,
+                          segments: _segments,
+                          selectedIndex: _segmentIndex,
+                          onSegmentSelected: (i) =>
+                              setState(() => _segmentIndex = i),
+                          quality: GlassQuality.premium,
+                        ),
                       ),
-                      child: GlassSegmentedControl(
-                        segments: _segments,
-                        selectedIndex: _segmentIndex,
-                        onSegmentSelected: (i) =>
-                            setState(() => _segmentIndex = i),
-                        quality: GlassQuality.premium,
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  GlassGroupedSection(
+                    header: const Text('SWITCHES (UISWITCH)'),
+                    surfaceStyle: surfaceStyle,
+                    children: [
+                      GlassListTile(
+                        title: const Text('Notifications (On)'),
+                        trailing: GlassSwitch(
+                          key: _switchOnKey,
+                          value: _switchOn,
+                          width: 63,
+                          height: 28,
+                          quality: GlassQuality.premium,
+                          onChanged: (v) => setState(() => _switchOn = v),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                GlassGroupedSection(
-                  header: const Text('SWITCHES (UISWITCH)'),
-                  surfaceStyle: surfaceStyle,
-                  children: [
-                    GlassListTile(
-                      title: const Text('Notifications (On)'),
-                      trailing: GlassSwitch(
-                        value: _switchOn,
-                        width: 63,
-                        height: 28,
-                        quality: GlassQuality.premium,
-                        onChanged: (v) => setState(() => _switchOn = v),
+                      GlassListTile(
+                        title: const Text('Low Power Mode (Off)'),
+                        trailing: GlassSwitch(
+                          key: _switchOffKey,
+                          value: _switchOff,
+                          width: 63,
+                          height: 28,
+                          quality: GlassQuality.premium,
+                          onChanged: (v) => setState(() => _switchOff = v),
+                        ),
                       ),
-                    ),
-                    GlassListTile(
-                      title: const Text('Low Power Mode (Off)'),
-                      trailing: GlassSwitch(
-                        value: _switchOff,
-                        width: 63,
-                        height: 28,
-                        quality: GlassQuality.premium,
-                        onChanged: (v) => setState(() => _switchOff = v),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  GlassGroupedSection(
+                    header: const Text('SLIDERS (UISLIDER)'),
+                    surfaceStyle: surfaceStyle,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Continuous',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: labelColor,
+                                  ),
+                                ),
+                                Text(
+                                  '${(_sliderContinuous * 100).round()}%',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: secondaryColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            GlassSlider(
+                              key: _sliderContKey,
+                              value: _sliderContinuous,
+                              trackHeight: 6,
+                              quality: GlassQuality.premium,
+                              onChanged: (v) =>
+                                  setState(() => _sliderContinuous = v),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                GlassGroupedSection(
-                  header: const Text('SLIDERS (UISLIDER)'),
-                  surfaceStyle: surfaceStyle,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Continuous',
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Stepped (25%)',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: labelColor,
+                                  ),
+                                ),
+                                Text(
+                                  '${(_sliderDiscrete * 100).round()}%',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: secondaryColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            GlassSlider(
+                              key: _sliderDiscKey,
+                              value: _sliderDiscrete,
+                              divisions: 4,
+                              trackHeight: 6,
+                              quality: GlassQuality.premium,
+                              onChanged: (v) =>
+                                  setState(() => _sliderDiscrete = v),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  GlassGroupedSection(
+                    header: const Text('GLASS BUTTONS'),
+                    surfaceStyle: surfaceStyle,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+                        child: Row(
+                          children: [
+                            GlassButton.custom(
+                              width: 124,
+                              height: 36,
+                              shape: const LiquidRoundedSuperellipse(
+                                borderRadius: 18,
+                              ),
+                              useOwnLayer: true,
+                              quality: GlassQuality.premium,
+                              onTap: () {},
+                              child: Text(
+                                'Regular Glass',
                                 style: TextStyle(
                                   fontSize: 15,
+                                  fontWeight: FontWeight.w500,
                                   color: labelColor,
                                 ),
                               ),
-                              Text(
-                                '${(_sliderContinuous * 100).round()}%',
+                            ),
+                            const SizedBox(width: 12),
+                            GlassIconButton(
+                              icon: const Icon(
+                                CupertinoIcons.heart_fill,
+                                size: 17,
+                              ),
+                              size: 36,
+                              useOwnLayer: true,
+                              quality: GlassQuality.premium,
+                              onPressed: () {},
+                            ),
+                            const SizedBox(width: 12),
+                            GlassButton.custom(
+                              width: 104,
+                              height: 36,
+                              shape: const LiquidRoundedSuperellipse(
+                                borderRadius: 18,
+                              ),
+                              useOwnLayer: true,
+                              settings: (themeData.settingsFor(context) ??
+                                      const GlassThemeSettings())
+                                  .applyTo(const LiquidGlassSettings())
+                                  .copyWith(
+                                    bodyMode: GlassBodyMode.clear,
+                                    frost: 0,
+                                    saturation: 1.0,
+                                    glassColor: CupertinoColors.systemBlue
+                                        .resolveFrom(context),
+                                  ),
+                              quality: GlassQuality.premium,
+                              onTap: () {},
+                              child: const Text(
+                                'Prominent',
                                 style: TextStyle(
                                   fontSize: 15,
-                                  color: secondaryColor,
+                                  fontWeight: FontWeight.w600,
+                                  color: CupertinoColors.white,
                                 ),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          GlassSlider(
-                            value: _sliderContinuous,
-                            trackHeight: 6,
-                            quality: GlassQuality.premium,
-                            onChanged: (v) =>
-                                setState(() => _sliderContinuous = v),
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Stepped (25%)',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: labelColor,
-                                ),
-                              ),
-                              Text(
-                                '${(_sliderDiscrete * 100).round()}%',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: secondaryColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          GlassSlider(
-                            value: _sliderDiscrete,
-                            divisions: 4,
-                            trackHeight: 6,
-                            quality: GlassQuality.premium,
-                            onChanged: (v) =>
-                                setState(() => _sliderDiscrete = v),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                GlassGroupedSection(
-                  header: const Text('GLASS BUTTONS'),
-                  surfaceStyle: surfaceStyle,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        children: [
-                          GlassButton.custom(
-                            width: 124,
-                            height: 40,
-                            shape: const LiquidRoundedSuperellipse(
-                              borderRadius: 20,
-                            ),
-                            useOwnLayer: true,
-                            quality: GlassQuality.premium,
-                            onTap: () {},
-                            child: Text(
-                              'Regular Glass',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: labelColor,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          GlassIconButton(
-                            icon: const Icon(
-                              CupertinoIcons.heart_fill,
-                              size: 18,
-                            ),
-                            size: 40,
-                            useOwnLayer: true,
-                            quality: GlassQuality.premium,
-                            onPressed: () {},
-                          ),
-                          const SizedBox(width: 12),
-                          GlassButton.custom(
-                            width: 104,
-                            height: 40,
-                            shape: const LiquidRoundedSuperellipse(
-                              borderRadius: 20,
-                            ),
-                            useOwnLayer: true,
-                            settings: (themeData.settingsFor(context) ??
-                                    const GlassThemeSettings())
-                                .applyTo(const LiquidGlassSettings())
-                                .copyWith(
-                                  bodyMode: GlassBodyMode.clear,
-                                  frost: 0,
-                                  saturation: 1.0,
-                                  glassColor: CupertinoColors.systemBlue
-                                      .resolveFrom(context),
-                                ),
-                            quality: GlassQuality.premium,
-                            onTap: () {},
-                            child: const Text(
-                              'Prominent',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: CupertinoColors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

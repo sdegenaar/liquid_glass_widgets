@@ -1244,6 +1244,9 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
       final currentTabFloat = ((alignment.x + 1) / 2) * tabs.length;
       final aStart = (currentTabFloat - 1).floor().clamp(0, tabs.length - 1);
       final aEnd = (currentTabFloat + 1).ceil().clamp(0, tabs.length - 1);
+      final pillTabIndex = tabs.length <= 1
+          ? 0.0
+          : ((alignment.x + 1.0) * 0.5) * (tabs.length - 1);
 
       return ExcludeSemantics(
         child: _ltrTabRow(
@@ -1251,27 +1254,37 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
             for (var i = 0; i < tabs.length; i++)
               Expanded(
                 child: (i >= aStart && i <= aEnd)
-                    ? Transform.scale(
-                        scale: scale,
-                        child: BottomBarTabItem(
-                          tab: tabs[i],
-                          selected: true,
-                          selectedIconColor: resolvedSelectedIconColor,
-                          unselectedIconColor: resolvedUnselectedIconColor,
-                          selectedLabelColor: widget.selectedLabelColor,
-                          unselectedLabelColor: widget.unselectedLabelColor,
-                          selectedLabelStyle: widget.selectedLabelStyle,
-                          unselectedLabelStyle: widget.unselectedLabelStyle,
-                          iconSize: widget.iconSize,
-                          labelFontSize: widget.labelFontSize,
-                          textStyle: widget.textStyle,
-                          iconLabelSpacing: widget.iconLabelSpacing,
-                          glowDuration: widget.glowDuration,
-                          glowBlurRadius: widget.glowBlurRadius,
-                          glowSpreadRadius: widget.glowSpreadRadius,
-                          glowOpacity: widget.glowOpacity,
-                          onTap: null,
-                        ),
+                    ? Builder(
+                        builder: (context) {
+                          final dist = (pillTabIndex - i).abs();
+                          final t =
+                              1.0 - ((dist - 0.52) / 0.36).clamp(0.0, 1.0);
+                          final proximity = t * t * (3.0 - 2.0 * t);
+                          final tabScale =
+                              ui.lerpDouble(1.0, scale, proximity) ?? 1.0;
+                          return Transform.scale(
+                            scale: tabScale,
+                            child: BottomBarTabItem(
+                              tab: tabs[i],
+                              selected: true,
+                              selectedIconColor: resolvedSelectedIconColor,
+                              unselectedIconColor: resolvedUnselectedIconColor,
+                              selectedLabelColor: widget.selectedLabelColor,
+                              unselectedLabelColor: widget.unselectedLabelColor,
+                              selectedLabelStyle: widget.selectedLabelStyle,
+                              unselectedLabelStyle: widget.unselectedLabelStyle,
+                              iconSize: widget.iconSize,
+                              labelFontSize: widget.labelFontSize,
+                              textStyle: widget.textStyle,
+                              iconLabelSpacing: widget.iconLabelSpacing,
+                              glowDuration: widget.glowDuration,
+                              glowBlurRadius: widget.glowBlurRadius,
+                              glowSpreadRadius: widget.glowSpreadRadius,
+                              glowOpacity: widget.glowOpacity,
+                              onTap: null,
+                            ),
+                          );
+                        },
                       )
                     : const SizedBox.shrink(),
               ),

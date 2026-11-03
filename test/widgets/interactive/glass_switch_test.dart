@@ -886,5 +886,62 @@ void main() {
       await tester.pumpAndSettle();
       expect(shadowFinder, findsNothing);
     });
+
+    testWidgets(
+        'lifted thumb achieves symmetric base overhang and rubber-band over-drag overhang',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: GlassSwitch(
+              value: false,
+              width: 63.0,
+              height: 28.0,
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final switchFinder = find.byType(GlassSwitch);
+      final switchRect = tester.getRect(switchFinder);
+      final thumbEffectFinder = find.descendant(
+        of: switchFinder,
+        matching: find.byType(GlassEffect),
+      );
+
+      // Press down on the OFF switch: pump past kPressTimeout (100ms) so
+      // onTapDown fires, then pump 150ms so the 120ms bloom reaches peak.
+      // At 63×28, native iOS 27 pressed OFF lens frame is (-8.67, -5.33, 58.0, 38.33).
+      final gesture = await tester.startGesture(switchRect.center);
+      await tester.pump(const Duration(milliseconds: 110));
+      await tester.pump(const Duration(milliseconds: 150));
+
+      final pressedLeftOverhang =
+          switchRect.left - tester.getRect(thumbEffectFinder).left;
+      expect(pressedLeftOverhang, closeTo(8.67, 0.2));
+
+      // Drag left past OFF (-30 px) and verify native rubber-band left overhang (~15.6 px).
+      await gesture.moveBy(const Offset(-5, 0)); // clear 3px touchSlop
+      await tester.pump();
+      await gesture.moveBy(const Offset(-30, 0));
+      await tester.pump(const Duration(milliseconds: 100));
+      final overDraggedLeftOverhang =
+          switchRect.left - tester.getRect(thumbEffectFinder).left;
+      expect(overDraggedLeftOverhang, greaterThan(15.0));
+
+      // Drag right across the runway and 30 px past ON, verifying symmetric
+      // right rubber-band overhang (~15.6 px).
+      await gesture.moveBy(const Offset(82, 0));
+      await tester.pump(const Duration(milliseconds: 100));
+      final overDraggedRightOverhang =
+          tester.getRect(thumbEffectFinder).right - switchRect.right;
+      expect(overDraggedRightOverhang, closeTo(overDraggedLeftOverhang, 0.5));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+    });
   });
 }

@@ -369,6 +369,9 @@ class LiquidGlassSettings {
     rimShadeEnds: 0.56,
     rimLight: 1.0,
     blur: 0,
+    shadow: [
+      BoxShadow(color: Color(0x0F000000), blurRadius: 6, offset: Offset(0, 7)),
+    ],
   );
 
   /// Resolves [ios27Light] or [ios27Dark] for the ambient [GlassTheme]

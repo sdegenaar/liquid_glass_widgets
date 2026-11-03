@@ -8,6 +8,8 @@
   - Added `indicatorSettings` on `GlassThemeVariant` (and `GlassThemeData.indicatorSettingsFor(context)`) to customize interactive indicator lenses independently of frosted surface platters.
   - Calibrated `GlassTabBar.bottom`, `GlassTabBar.searchable`, `GlassSegmentedControl`, `AnimatedGlassIndicator`, `GlassSwitch`, and `GlassSlider` to match native UIKit platters, resting wells/pills, and interactive liquid lenses (`LensInnerShadowPainter` `0.06` on `ios27` vs `0.12` on `classic`).
   - Added `thumbShadow` to `GlassSwitch` (matching `GlassSlider.thumbShadow`).
+  - `GlassTabBar.iconSize` (on `.bottom`, `.searchable`, and `.minimizable`) and `GlassTabBar.magnification` are now `double?`: when omitted they follow the active style — `iconSize: 27.5` (with `2.0` pt icon-label spacing) and `magnification: 1.25` on `GlassStyle.ios27` (measured on native iOS 27 `UITabBar` and `_UILiquidLensView`), and `iconSize: 24.0` (with `4.0` pt spacing) and `magnification: 1.15` on `GlassStyle.classic`. Passing explicit values behaves as before.
+  - Calibrated `GlassTabBar` lifted indicator lens bevel refraction, RGB chromatic dispersion, proximity-weighted tab magnification, and monotonic $C^1$-smooth platter pinch (eliminating double-banding along the top/bottom platter border), as well as lifted lens key-fill shading (`topTrough`), balanced top/bottom specular rim lobes, and exterior drop shadow across `GlassSwitch`, `GlassSlider`, and `GlassTabBar`.
 
 ## Bug Fixes
 

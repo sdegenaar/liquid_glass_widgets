@@ -46,23 +46,37 @@ class LensInnerShadowPainter extends CustomPainter {
       Offset.zero & size,
       GlassDefaults.safeCircularRadius(borderRadius),
     );
+    final shadowPaint = Paint()
+      ..color = Color.from(
+        alpha: shadowOpacity * opacity,
+        red: 0,
+        green: 0,
+        blue: 0,
+      )
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, radius * 1.5);
+
+    // Outer drop shadow of the lifted lens (`shadowOffsetY = 7`, `radius = 3`,
+    // `opacity = 0.06`), clipped to the exterior of the lens silhouette so the
+    // clear interior is never darkened.
+    final outerClip = Path()
+      ..fillType = PathFillType.evenOdd
+      ..addRect((Offset.zero & size).inflate(radius * 6 + offsetY))
+      ..addRRect(rrect);
+    canvas.save();
+    canvas.clipPath(outerClip);
+    canvas.drawRRect(rrect.shift(const Offset(0, offsetY)), shadowPaint);
+    canvas.restore();
+
+    // Inner top shadow (`innerShadowOffsetY = 7`, `innerShadowRadius = 3`),
+    // inset by 1.25 pt so the 0..1.25 pt top inner specular rim highlight
+    // stays crisp.
     final hole = Path()
       ..fillType = PathFillType.evenOdd
       ..addRect((Offset.zero & size).inflate(radius * 6 + offsetY))
       ..addRRect(rrect.shift(const Offset(0, offsetY)));
     canvas.save();
-    canvas.clipRRect(rrect);
-    canvas.drawPath(
-      hole,
-      Paint()
-        ..color = Color.from(
-          alpha: shadowOpacity * opacity,
-          red: 0,
-          green: 0,
-          blue: 0,
-        )
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, radius * 1.5),
-    );
+    canvas.clipRRect(rrect.deflate(1.25));
+    canvas.drawPath(hole, shadowPaint);
     canvas.restore();
   }
 
