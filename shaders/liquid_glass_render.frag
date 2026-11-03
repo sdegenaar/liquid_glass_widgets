@@ -592,21 +592,19 @@ void main() {
                 centered.y * barPinchHoriz * barPinchVert * uPinchStrength * (barPinchPx * invTexSize.y)
             );
             pinchShift *= (1.0 - hairline);
-        } else {
-            float pinchRimGate = (uLensModel > 0.5)
-                ? smoothstep(1.8, 5.2, rimPt)
-                : 1.0;
-            float pinchPx = (uLensModel > 0.5)
-                ? (15.5 * pxPerPt)
-                : (max(physTexSize.x, physTexSize.y) * 0.025);
+        } else if (uLensModel > 0.5) {
+            float pinchRimGate = smoothstep(1.8, 5.2, rimPt);
+            float pinchPx = 15.5 * pxPerPt;
             // On iOS 27 compact thumb lenses (GlassSwitch), gently taper the
             // vertical pinch near the left/right capsule ends so the U-shaped
             // moat ends in a smooth rounded crescent.
-            float endYScale = (uLensModel > 0.5)
-                ? (1.0 - 0.32 * smoothstep(0.55, 0.92, absCentered.x))
-                : 1.0;
+            float endYScale = 1.0 - 0.32 * smoothstep(0.55, 0.92, absCentered.x);
             vec2 pinchDir = vec2(centered.x, centered.y * endYScale);
             pinchShift = pinchDir * pinchRamp * pinchRimGate * uPinchStrength * (pinchPx * invTexSize);
+            pinchShift *= geometryData.a * (1.0 - hairline);
+        } else {
+            vec2 classicSpan = vec2(physTexSize.x, min(physTexSize.y, uGeometrySize.y * 1.5));
+            pinchShift = centered * pinchRamp * uPinchStrength * (0.025 * classicSpan * invTexSize);
             pinchShift *= geometryData.a * (1.0 - hairline);
         }
 
@@ -680,16 +678,18 @@ void main() {
         vec3 refPlatter = texture(uBackgroundTexture, clamp(refUV, vec2(0.001), vec2(0.999))).rgb;
         float isDarkPlatter = 1.0 - step(0.35, dot(refPlatter, LUMA_WEIGHTS));
         float platterLuma = dot(platterSample.rgb, LUMA_WEIGHTS);
-        float isInsidePlatter = mix(1.0, smoothstep(0.03, 0.09, platterLuma), isDarkPlatter);
 
         #ifdef LGR_GLES_FLIP_SAMPLE_Y
             barCaDisp.y = -barCaDisp.y;
         #endif
         vec2 iconGreenUV = clamp(baseScreenUV + barCaDisp * invTexSize, vec2(0.001), vec2(0.999));
         vec4 iconG = textureBilinear(iconGreenUV, physTexSize, invTexSize);
+        float iconDiffG = length(iconG.rgb - refPlatter);
         float iconPeakG = max(iconG.r, max(iconG.g, iconG.b));
         float iconChromaG = iconPeakG - min(iconG.r, min(iconG.g, iconG.b));
-        float iconCaGate = max(smoothstep(0.15, 0.28, iconPeakG), smoothstep(0.05, 0.14, iconChromaG));
+        float lightIconMask = max(smoothstep(0.24, 0.42, iconDiffG), smoothstep(0.08, 0.18, iconChromaG));
+        float isInsidePlatter = mix(lightIconMask, smoothstep(0.03, 0.09, platterLuma), isDarkPlatter);
+        float iconCaGate = max(smoothstep(0.22, 0.40, iconDiffG), smoothstep(0.05, 0.14, iconChromaG));
         float iconDispersion = effectiveCA * 0.72 * iconCaGate;
 
         vec2 iconRedUV  = clamp(baseScreenUV + barCaDisp * (1.0 + iconDispersion) * invTexSize, vec2(0.001), vec2(0.999));

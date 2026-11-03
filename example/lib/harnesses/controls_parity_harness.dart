@@ -40,7 +40,9 @@ class ControlsParityHarnessApp extends StatefulWidget {
 class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
   bool _isDark = const bool.fromEnvironment('DARK');
   bool _lensesLifted = const bool.fromEnvironment('LIFT_LENSES');
-  GlassStyle _style = GlassStyle.ios27;
+  GlassStyle _style = const String.fromEnvironment('STYLE') == 'classic'
+      ? GlassStyle.classic
+      : GlassStyle.ios27;
   String _bgMode = 'solid'; // 'solid' | 'vivid' | 'stripes'
   int _selectedTab = 0;
 
