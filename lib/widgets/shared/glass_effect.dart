@@ -526,13 +526,6 @@ class _GlassEffectState extends State<GlassEffect>
         enabled: false,
         child: LiquidGlass.withOwnLayer(
           shape: widget.shape,
-          shadows: [
-            if (widget.settings.shadow != null && activeIntensity > 0.01)
-              for (final s in widget.settings.shadow!)
-                s.copyWith(
-                  color: s.color.withValues(alpha: s.color.a * activeIntensity),
-                ),
-          ],
           settings: widget.settings.copyWith(
             thickness: widget.settings.thickness * activeIntensity,
             refractiveIndex:

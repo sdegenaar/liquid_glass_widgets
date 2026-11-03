@@ -440,7 +440,6 @@ void main() {
     // BackdropView meniscus ring and left/right nose flare without invading the
     // 8 pt white moat.
     float isBarIndicator = step(48.0 * pxPerPt, uGeometrySize.y);
-    float flatEndX = clamp(1.0 - uGeometrySize.y / max(uGeometrySize.x, 1.0), 0.15, 0.75);
     vec2 barCaDisp = vec2(0.0);
     float barIconGate = 0.0;
     if (uLensModel > 0.5 && uPinchStrength > 0.001) {
@@ -543,7 +542,6 @@ void main() {
     //
     // ── iOS 26 Concave Lens Pinch ─────────────────────────────────────────────
     vec2 baseScreenUV = screenUV;
-    vec2 activePinchShift = vec2(0.0);
     if (uPinchStrength > 0.001) {
         // We cannot use normalXY because it is 0.0 in the flat interior of the pill,
         // which prevents the background from being pinched at all.
@@ -608,7 +606,6 @@ void main() {
             pinchShift *= geometryData.a * (1.0 - hairline);
         }
 
-        activePinchShift = pinchShift;
         screenUV += pinchShift;
         
         // Guarantee we never sample outside the valid backdrop capture bounds,
@@ -671,35 +668,42 @@ void main() {
         //    dispersion on bright icon/label strokes.
         vec2 platterUV = screenUV + displacement * invTexSize;
         vec4 platterSample = textureBilinear(platterUV, physTexSize, invTexSize);
-        vec2 refUV = (uGeometryOffset + vec2(0.5, 0.18) * uGeometrySize + uCaptureOffset) * invTexSize;
-        #ifdef LGR_GLES_FLIP_SAMPLE_Y
-            refUV.y = 1.0 - refUV.y;
-        #endif
-        vec3 refPlatter = texture(uBackgroundTexture, clamp(refUV, vec2(0.001), vec2(0.999))).rgb;
-        float isDarkPlatter = 1.0 - step(0.35, dot(refPlatter, LUMA_WEIGHTS));
-        float platterLuma = dot(platterSample.rgb, LUMA_WEIGHTS);
+        float bevelGate = barIconGate * smoothstep(0.45, 1.15, rimPt) * (1.0 - hairline);
+        if (bevelGate > 0.001) {
+            vec2 refUV = (uGeometryOffset + vec2(0.5, 0.18) * uGeometrySize + uCaptureOffset) * invTexSize;
+            #ifdef LGR_GLES_FLIP_SAMPLE_Y
+                refUV.y = 1.0 - refUV.y;
+            #endif
+            vec3 refPlatter = texture(uBackgroundTexture, clamp(refUV, vec2(0.001), vec2(0.999))).rgb;
+            float isDarkPlatter = 1.0 - step(0.35, dot(refPlatter, LUMA_WEIGHTS));
+            float platterLuma = dot(platterSample.rgb, LUMA_WEIGHTS);
 
-        #ifdef LGR_GLES_FLIP_SAMPLE_Y
-            barCaDisp.y = -barCaDisp.y;
-        #endif
-        vec2 iconGreenUV = clamp(baseScreenUV + barCaDisp * invTexSize, vec2(0.001), vec2(0.999));
-        vec4 iconG = textureBilinear(iconGreenUV, physTexSize, invTexSize);
-        float iconDiffG = length(iconG.rgb - refPlatter);
-        float iconPeakG = max(iconG.r, max(iconG.g, iconG.b));
-        float iconChromaG = iconPeakG - min(iconG.r, min(iconG.g, iconG.b));
-        float lightIconMask = max(smoothstep(0.24, 0.42, iconDiffG), smoothstep(0.08, 0.18, iconChromaG));
-        float isInsidePlatter = mix(lightIconMask, smoothstep(0.03, 0.09, platterLuma), isDarkPlatter);
-        float iconCaGate = max(smoothstep(0.22, 0.40, iconDiffG), smoothstep(0.05, 0.14, iconChromaG));
-        float iconDispersion = effectiveCA * 0.72 * iconCaGate;
+            #ifdef LGR_GLES_FLIP_SAMPLE_Y
+                barCaDisp.y = -barCaDisp.y;
+            #endif
+            vec2 iconGreenUV = clamp(baseScreenUV + barCaDisp * invTexSize, vec2(0.001), vec2(0.999));
+            vec4 iconG = textureBilinear(iconGreenUV, physTexSize, invTexSize);
+            float iconDiffG = length(iconG.rgb - refPlatter);
+            float iconPeakG = max(iconG.r, max(iconG.g, iconG.b));
+            float iconChromaG = iconPeakG - min(iconG.r, min(iconG.g, iconG.b));
+            float lightIconMask = max(smoothstep(0.24, 0.42, iconDiffG), smoothstep(0.08, 0.18, iconChromaG));
+            float isInsidePlatter = mix(lightIconMask, smoothstep(0.03, 0.09, platterLuma), isDarkPlatter);
+            float iconCaGate = max(smoothstep(0.22, 0.40, iconDiffG), smoothstep(0.05, 0.14, iconChromaG));
+            float iconDispersion = effectiveCA * 0.72 * iconCaGate;
 
-        vec2 iconRedUV  = clamp(baseScreenUV + barCaDisp * (1.0 + iconDispersion) * invTexSize, vec2(0.001), vec2(0.999));
-        vec2 iconBlueUV = clamp(baseScreenUV + barCaDisp * (1.0 - iconDispersion) * invTexSize, vec2(0.001), vec2(0.999));
-        vec4 iconR = textureBilinear(iconRedUV,  physTexSize, invTexSize);
-        vec4 iconB = textureBilinear(iconBlueUV, physTexSize, invTexSize);
-        vec3 iconRGB = vec3(iconR.r, iconG.g, iconB.b);
+            vec3 iconRGB = iconG.rgb;
+            if (iconDispersion > 0.002) {
+                vec2 iconRedUV  = clamp(baseScreenUV + barCaDisp * (1.0 + iconDispersion) * invTexSize, vec2(0.001), vec2(0.999));
+                vec2 iconBlueUV = clamp(baseScreenUV + barCaDisp * (1.0 - iconDispersion) * invTexSize, vec2(0.001), vec2(0.999));
+                iconRGB.r = textureBilinear(iconRedUV,  physTexSize, invTexSize).r;
+                iconRGB.b = textureBilinear(iconBlueUV, physTexSize, invTexSize).b;
+            }
 
-        float bevelBlend = isInsidePlatter * barIconGate * smoothstep(0.45, 1.15, rimPt) * (1.0 - hairline);
-        refractColor = vec4(mix(platterSample.rgb, iconRGB, bevelBlend), platterSample.a);
+            float bevelBlend = isInsidePlatter * bevelGate;
+            refractColor = vec4(mix(platterSample.rgb, iconRGB, bevelBlend), platterSample.a);
+        } else {
+            refractColor = platterSample;
+        }
     } else {
         vec2 greenUV = screenUV + displacement * invTexSize;
         vec4 greenSample = textureBilinear(greenUV, physTexSize, invTexSize);
