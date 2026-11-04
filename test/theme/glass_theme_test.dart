@@ -1113,8 +1113,10 @@ void main() {
         'LiquidGlassSettings.classic(context) and ios27(context) resolve by brightness and allow per-widget override',
         (tester) async {
       LiquidGlassSettings? lightClassic;
+      LiquidGlassSettings? lightIos26;
       LiquidGlassSettings? lightIos27;
       LiquidGlassSettings? darkClassic;
+      LiquidGlassSettings? darkIos26;
       LiquidGlassSettings? darkIos27;
 
       await tester.pumpWidget(
@@ -1126,6 +1128,7 @@ void main() {
                 child: Builder(
                   builder: (context) {
                     lightClassic = LiquidGlassSettings.classic(context);
+                    lightIos26 = LiquidGlassSettings.ios26(context);
                     lightIos27 = LiquidGlassSettings.ios27(context);
                     return const SizedBox.shrink();
                   },
@@ -1136,6 +1139,7 @@ void main() {
                 child: Builder(
                   builder: (context) {
                     darkClassic = LiquidGlassSettings.classic(context);
+                    darkIos26 = LiquidGlassSettings.ios26(context);
                     darkIos27 = LiquidGlassSettings.ios27(context);
                     return const SizedBox.shrink();
                   },
@@ -1147,8 +1151,10 @@ void main() {
       );
 
       expect(lightClassic, equals(LiquidGlassSettings.classicLight));
+      expect(lightIos26, equals(LiquidGlassSettings.ios26Light));
       expect(lightIos27, equals(LiquidGlassSettings.ios27Light));
       expect(darkClassic, equals(LiquidGlassSettings.classicDark));
+      expect(darkIos26, equals(LiquidGlassSettings.ios26Dark));
       expect(darkIos27, equals(LiquidGlassSettings.ios27Dark));
     });
 
@@ -1214,6 +1220,38 @@ void main() {
         equals(GlassLensModel.spherical),
       );
       expect(classicEffects[1].settings.rimShade, equals(0.0));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GlassTheme(
+            data: const GlassThemeData.ios26(),
+            child: Scaffold(
+              body: Column(
+                children: [
+                  GlassSwitch(value: false, onChanged: (_) {}),
+                  GlassSlider(value: 0.5, onChanged: (_) {}),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final ios26Effects =
+          tester.widgetList<GlassEffect>(find.byType(GlassEffect)).toList();
+      expect(ios26Effects.length, 2);
+      expect(
+        ios26Effects[0].settings.lensModel,
+        equals(GlassLensModel.paraxial),
+      );
+      expect(ios26Effects[0].settings.rimShade, equals(1.0));
+      expect(ios26Effects[0].settings.rimLight, equals(1.0));
+      expect(
+        ios26Effects[1].settings.lensModel,
+        equals(GlassLensModel.paraxial),
+      );
+      expect(ios26Effects[1].settings.rimShade, equals(1.0));
+      expect(ios26Effects[1].settings.rimLight, equals(1.0));
     });
   });
 }

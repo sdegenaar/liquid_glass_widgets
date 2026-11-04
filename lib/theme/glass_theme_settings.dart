@@ -3,6 +3,7 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/widgets.dart';
 
+import '../constants/glass_defaults.dart';
 import '../src/engine/liquid_glass_settings.dart';
 import '../types/glass_specular_sharpness.dart';
 
@@ -99,6 +100,63 @@ class GlassThemeSettings {
     refractiveIndex: 1.2,
     saturation: 1.2,
     chromaticAberration: 0.01,
+  );
+
+  /// iOS 26.0 `glassEffect(.regular)` in the light appearance, matching
+  /// [LiquidGlassSettings.ios26Light].
+  static const GlassThemeSettings ios26Light = GlassThemeSettings(
+    glassColor: Color(0x9EFBFBFF),
+    saturation: 2.1,
+    blur: 0.6,
+    blurWeight: 0.8,
+    frost: 14,
+    frostOpacity: 0.82,
+    frostClamp: 0.44,
+    frostWeight: 2.0,
+    thickness: 32,
+    refractiveIndex: 1.24,
+    lensModel: GlassLensModel.paraxial,
+    lightAngle: 1.5707963267948966,
+    lightIntensity: 0,
+    fresnelStrength: 0,
+    chromaticAberration: 0,
+    edgeAbsorption: 0.02,
+    rimShade: 0,
+    rimLight: 1.0,
+    shadow: [
+      BoxShadow(
+        color: Color(0x0F000000),
+        blurRadius: 12,
+        offset: Offset(0, 6),
+      ),
+    ],
+  );
+
+  /// iOS 26.0 `glassEffect(.regular)` in the dark appearance, matching
+  /// [LiquidGlassSettings.ios26Dark].
+  static const GlassThemeSettings ios26Dark = GlassThemeSettings(
+    glassColor: Color(0x19FFFFFF),
+    saturation: 1.4,
+    blur: 0.6,
+    blurWeight: 2.5,
+    frost: 14,
+    frostOpacity: 0.85,
+    frostClamp: -0.49,
+    frostWeight: 0.5,
+    thickness: 32,
+    refractiveIndex: 1.24,
+    lensModel: GlassLensModel.paraxial,
+    lightAngle: GlassDefaults.lightAngle,
+    lightIntensity: 0.18,
+    ambientStrength: 0.05,
+    fresnelStrength: 0.30,
+    chromaticAberration: 0,
+    edgeAbsorption: 0.035,
+    rimShade: 0,
+    rimShadeEnds: 0,
+    rimLight: 0.22,
+    bodyShade: 0.0,
+    shadowElevation: 0,
   );
 
   /// iOS 27 `glassEffect(.regular)` in the light appearance, matching

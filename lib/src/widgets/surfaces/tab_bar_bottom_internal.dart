@@ -59,18 +59,23 @@ LiquidGlassSettings resolveBarGlassSettings(
   final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
   final theme = GlassTheme.maybeOf(context)?.data;
   final style = theme?.style ?? GlassStyle.ios27;
-  final base = style == GlassStyle.classic
-      ? kBottomBarGlassDefaults
-      : (isDark
-          ? LiquidGlassSettings.ios27Dark
-          : LiquidGlassSettings.ios27Light);
+  final base = switch (style) {
+    GlassStyle.classic => kBottomBarGlassDefaults,
+    GlassStyle.ios26 =>
+      isDark ? LiquidGlassSettings.ios26Dark : LiquidGlassSettings.ios26Light,
+    GlassStyle.ios27 =>
+      isDark ? LiquidGlassSettings.ios27Dark : LiquidGlassSettings.ios27Light,
+  };
   final themeOverride = theme?.settingsFor(context);
   if (themeOverride == null) return base;
-  final surfaceBaseline = style == GlassStyle.classic
-      ? (isDark
-          ? GlassThemeSettings.classicDark
-          : GlassThemeSettings.classicLight)
-      : (isDark ? GlassThemeSettings.ios27Dark : GlassThemeSettings.ios27Light);
+  final surfaceBaseline = switch (style) {
+    GlassStyle.classic =>
+      isDark ? GlassThemeSettings.classicDark : GlassThemeSettings.classicLight,
+    GlassStyle.ios26 =>
+      isDark ? GlassThemeSettings.ios26Dark : GlassThemeSettings.ios26Light,
+    GlassStyle.ios27 =>
+      isDark ? GlassThemeSettings.ios27Dark : GlassThemeSettings.ios27Light,
+  };
   return themeOverride.applyDeltaTo(base, surfaceBaseline);
 }
 

@@ -329,6 +329,20 @@ class GlassThemeVariant {
     glowColors: GlassGlowColors.fallback,
   );
 
+  /// iOS 26.0 `glassEffect(.regular)` light theme variant.
+  static const GlassThemeVariant ios26Light = GlassThemeVariant(
+    settings: GlassThemeSettings.ios26Light,
+    quality: GlassQuality.premium,
+    glowColors: GlassGlowColors.fallback,
+  );
+
+  /// iOS 26.0 `glassEffect(.regular)` dark theme variant.
+  static const GlassThemeVariant ios26Dark = GlassThemeVariant(
+    settings: GlassThemeSettings.ios26Dark,
+    quality: GlassQuality.premium,
+    glowColors: GlassGlowColors.fallback,
+  );
+
   /// iOS 27 `glassEffect(.regular)` light theme variant.
   static const GlassThemeVariant ios27Light = GlassThemeVariant(
     settings: GlassThemeSettings.ios27Light,
@@ -455,6 +469,16 @@ class GlassThemeData {
         light = GlassThemeVariant.classicLight,
         dark = GlassThemeVariant.classicDark;
 
+  /// Creates glass theme data configured with simulator-calibrated iOS 26.0
+  /// `glassEffect(.regular)` optics ([GlassThemeVariant.ios26Light] and
+  /// [GlassThemeVariant.ios26Dark]).
+  const GlassThemeData.ios26({
+    this.interaction = const GlassInteractionSettings(),
+    this.brightness,
+  })  : style = GlassStyle.ios26,
+        light = GlassThemeVariant.ios26Light,
+        dark = GlassThemeVariant.ios26Dark;
+
   /// Creates glass theme data configured with authentic iOS 27
   /// `glassEffect(.regular)` optics ([GlassThemeVariant.ios27Light] and
   /// [GlassThemeVariant.ios27Dark]).
@@ -513,12 +537,16 @@ class GlassThemeData {
       saturation: saturation,
     );
 
-    final baseLight = style == GlassStyle.classic
-        ? GlassThemeVariant.classicLight
-        : GlassThemeVariant.light;
-    final baseDark = style == GlassStyle.classic
-        ? GlassThemeVariant.classicDark
-        : GlassThemeVariant.dark;
+    final baseLight = switch (style) {
+      GlassStyle.classic => GlassThemeVariant.classicLight,
+      GlassStyle.ios26 => GlassThemeVariant.ios26Light,
+      GlassStyle.ios27 => GlassThemeVariant.light,
+    };
+    final baseDark = switch (style) {
+      GlassStyle.classic => GlassThemeVariant.classicDark,
+      GlassStyle.ios26 => GlassThemeVariant.ios26Dark,
+      GlassStyle.ios27 => GlassThemeVariant.dark,
+    };
 
     return GlassThemeData(
       style: style,
@@ -628,20 +656,26 @@ class GlassThemeData {
   /// and indicator lenses from a single property.
   GlassThemeSettings? settingsFor(BuildContext context) {
     final s = variantFor(context).settings;
-    if (style == GlassStyle.classic) {
-      if (identical(s, GlassThemeSettings.ios27Light)) {
-        return GlassThemeSettings.classicLight;
-      }
-      if (identical(s, GlassThemeSettings.ios27Dark)) {
-        return GlassThemeSettings.classicDark;
-      }
-    } else {
-      if (identical(s, GlassThemeSettings.classicLight)) {
-        return GlassThemeSettings.ios27Light;
-      }
-      if (identical(s, GlassThemeSettings.classicDark)) {
-        return GlassThemeSettings.ios27Dark;
-      }
+    final isBuiltInLight = identical(s, GlassThemeSettings.ios27Light) ||
+        identical(s, GlassThemeSettings.ios26Light) ||
+        identical(s, GlassThemeSettings.classicLight);
+    final isBuiltInDark = identical(s, GlassThemeSettings.ios27Dark) ||
+        identical(s, GlassThemeSettings.ios26Dark) ||
+        identical(s, GlassThemeSettings.classicDark);
+
+    if (isBuiltInLight) {
+      return switch (style) {
+        GlassStyle.classic => GlassThemeSettings.classicLight,
+        GlassStyle.ios26 => GlassThemeSettings.ios26Light,
+        GlassStyle.ios27 => GlassThemeSettings.ios27Light,
+      };
+    }
+    if (isBuiltInDark) {
+      return switch (style) {
+        GlassStyle.classic => GlassThemeSettings.classicDark,
+        GlassStyle.ios26 => GlassThemeSettings.ios26Dark,
+        GlassStyle.ios27 => GlassThemeSettings.ios27Dark,
+      };
     }
     return s;
   }

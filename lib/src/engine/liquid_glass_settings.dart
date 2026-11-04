@@ -282,6 +282,97 @@ class LiquidGlassSettings {
           ? classicDark
           : classicLight;
 
+  /// iOS 26.0 `glassEffect(.regular)` in the light appearance.
+  ///
+  /// Calibrated against the native iOS 26.0 simulator (`iPhone 17 Pro, iOS 26.0`):
+  /// brighter white frosted surface (`rgb(250, 250, 255)`) with a bright white
+  /// specular rim (`rimLight: 1.0`) and **no dark hairline border** (`rimShade: 0.0`).
+  static const LiquidGlassSettings ios26Light = LiquidGlassSettings(
+    glassColor: Color(0x9EFBFBFF),
+    saturation: 2.1,
+    blur: 0.6,
+    blurWeight: 0.8,
+    frost: 14,
+    frostOpacity: 0.82,
+    frostClamp: 0.44,
+    frostWeight: 2.0,
+    thickness: 32,
+    refractiveIndex: 1.24,
+    lensModel: GlassLensModel.paraxial,
+    lightAngle: 1.5707963267948966, // pi / 2: lit from the top
+    lightIntensity: 0,
+    fresnelStrength: 0,
+    chromaticAberration: 0,
+    edgeAbsorption: 0.02,
+    rimShade: 0,
+    rimLight: 1.0,
+    shadow: [
+      BoxShadow(color: Color(0x0F000000), blurRadius: 12, offset: Offset(0, 6)),
+    ],
+  );
+
+  /// iOS 26.0 `glassEffect(.regular)` in the dark appearance.
+  ///
+  /// Calibrated against the native iOS 26.0 simulator (`iPhone 17 Pro, iOS 26.0`):
+  /// deeper uniform dark platter (`rgb(25, 25, 26)`), `bodyShade: 0.0`, and
+  /// crisp 135° directional + Fresnel specular rim (`lightIntensity: 0.18`,
+  /// `ambientStrength: 0.05`, `fresnelStrength: 0.30`, `rimLight: 0.22`,
+  /// `rimShade: 0.0`).
+  static const LiquidGlassSettings ios26Dark = LiquidGlassSettings(
+    glassColor: Color(0x19FFFFFF),
+    saturation: 1.4,
+    blur: 0.6,
+    blurWeight: 2.5,
+    frost: 14,
+    frostOpacity: 0.85,
+    frostClamp: -0.49,
+    frostWeight: 0.5,
+    thickness: 32,
+    refractiveIndex: 1.24,
+    lensModel: GlassLensModel.paraxial,
+    lightAngle: GlassDefaults.lightAngle,
+    lightIntensity: 0.18,
+    ambientStrength: 0.05,
+    fresnelStrength: 0.30,
+    chromaticAberration: 0,
+    edgeAbsorption: 0.035,
+    rimShade: 0,
+    rimShadeEnds: 0,
+    rimLight: 0.22,
+    bodyShade: 0.0,
+    shadowElevation: 0,
+  );
+
+  /// iOS 26.0 interactive indicator lens preset (`_UILiquidLensView` on iOS 26.0).
+  ///
+  /// Clear paraxial lens (`blur: 0, frost: 0`) with 135° directional + Fresnel
+  /// specular rim (`lightIntensity: 0.22`, `ambientStrength: 0.08`,
+  /// `fresnelStrength: 0.55`, `rimLight: 0.65`) and no dark `rimShade` outline
+  /// (`rimShade: 0.0`).
+  static const LiquidGlassSettings ios26Indicator = LiquidGlassSettings(
+    glassColor: Color.from(alpha: 0.0, red: 1, green: 1, blue: 1),
+    thickness: 28,
+    refractiveIndex: 1.17,
+    lensModel: GlassLensModel.paraxial,
+    lightIntensity: 0.22,
+    ambientStrength: 0.08,
+    fresnelStrength: 0.55,
+    saturation: 1.0,
+    chromaticAberration: 0.0,
+    lightAngle: GlassDefaults.lightAngle,
+    rimShade: 0.0,
+    rimShadeEnds: 0.0,
+    rimLight: 0.65,
+    blur: 0,
+  );
+
+  /// Resolves [ios26Light] or [ios26Dark] for the ambient [GlassTheme]
+  /// brightness in [context].
+  static LiquidGlassSettings ios26(BuildContext context) =>
+      GlassTheme.brightnessOf(context) == Brightness.dark
+          ? ios26Dark
+          : ios26Light;
+
   /// iOS 27 `glassEffect(.regular)` in the light appearance.
   ///
   /// Measured against the native control on the same screen: the body tint

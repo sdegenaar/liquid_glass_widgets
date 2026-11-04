@@ -711,20 +711,27 @@ class _GlassSliderState extends State<GlassSlider>
     final thumbTint = isDark
         ? const Color.from(alpha: 0.08, red: 1, green: 1, blue: 1)
         : const Color.from(alpha: 0.12, red: 0.88, green: 0.88, blue: 0.90);
-    final eraBase = (style == GlassStyle.classic)
-        ? LiquidGlassSettings(
-            glassColor: thumbTint,
-            refractiveIndex: isDark ? 1.3 : 1.4,
-            thickness: isDark ? 13 : 17,
-            lightIntensity: isStdPath
-                ? 0.0
-                : 1.8, // no specular on synthetic path; premium unchanged
-            blur: 0,
-            lightAngle: GlassDefaults.lightAngle,
-          )
-        : LiquidGlassSettings.ios27Indicator.copyWith(
-            refractiveIndex: 1.07,
-          );
+    final eraBase = switch (style) {
+      GlassStyle.classic => LiquidGlassSettings(
+          glassColor: thumbTint,
+          refractiveIndex: isDark ? 1.3 : 1.4,
+          thickness: isDark ? 13 : 17,
+          lightIntensity: isStdPath
+              ? 0.0
+              : 1.8, // no specular on synthetic path; premium unchanged
+          blur: 0,
+          lightAngle: GlassDefaults.lightAngle,
+        ),
+      GlassStyle.ios26 => LiquidGlassSettings.ios26Indicator.copyWith(
+          refractiveIndex: 1.07,
+          rimShade: 1.0,
+          rimShadeEnds: 0.56,
+          rimLight: 1.0,
+        ),
+      GlassStyle.ios27 => LiquidGlassSettings.ios27Indicator.copyWith(
+          refractiveIndex: 1.07,
+        ),
+    };
     final themedThumbSettings =
         theme?.indicatorSettingsFor(context)?.applyTo(eraBase) ?? eraBase;
     final resolvedThumbSettings =
@@ -822,7 +829,7 @@ class _GlassSliderState extends State<GlassSlider>
                   painter: LensInnerShadowPainter(
                     borderRadius: totalHeight / 2,
                     opacity: transition,
-                    shadowOpacity: useIos27Lens
+                    shadowOpacity: resolvedThumbSettings.rimShade > 0.0
                         ? LensInnerShadowPainter.defaultShadowOpacity
                         : LensInnerShadowPainter.classicShadowOpacity,
                   ),

@@ -22,11 +22,11 @@ const double kNativeTabBarGlowRadius = 1.6;
 /// fallback is 4, which at this radius draws a disc with a visible edge.
 const double kNativeTabBarGlowBlurRadius = 16.0;
 
-/// The native sheen, dark mode: white at ~7%.
-const Color kNativeTabBarGlowColorDark = Color(0x12FFFFFF);
+/// The native sheen, dark mode: white at ~12%.
+const Color kNativeTabBarGlowColorDark = Color(0x1FFFFFFF);
 
-/// The native sheen, light mode: white at ~10%.
-const Color kNativeTabBarGlowColorLight = Color(0x1AFFFFFF);
+/// The native sheen, light mode: white at ~15%.
+const Color kNativeTabBarGlowColorLight = Color(0x26FFFFFF);
 
 /// Resolves a bar's interaction glow from what the caller asked for and what
 /// the theme offers.

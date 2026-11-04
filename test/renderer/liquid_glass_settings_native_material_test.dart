@@ -256,6 +256,8 @@ void main() {
       final pairs = <(LiquidGlassSettings, GlassThemeSettings)>[
         (LiquidGlassSettings.classicLight, GlassThemeSettings.classicLight),
         (LiquidGlassSettings.classicDark, GlassThemeSettings.classicDark),
+        (LiquidGlassSettings.ios26Light, GlassThemeSettings.ios26Light),
+        (LiquidGlassSettings.ios26Dark, GlassThemeSettings.ios26Dark),
         (LiquidGlassSettings.ios27Light, GlassThemeSettings.ios27Light),
         (LiquidGlassSettings.ios27Dark, GlassThemeSettings.ios27Dark),
       ];

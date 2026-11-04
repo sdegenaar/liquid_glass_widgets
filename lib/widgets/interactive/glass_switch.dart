@@ -787,27 +787,35 @@ class _GlassSwitchState extends State<GlassSwitch>
     final thumbTint = isDark
         ? const Color.from(alpha: 0.08, red: 1, green: 1, blue: 1)
         : const Color.from(alpha: 0.12, red: 0.88, green: 0.88, blue: 0.90);
-    final eraBase = (style == GlassStyle.classic)
-        ? LiquidGlassSettings(
-            glassColor: thumbTint,
-            refractiveIndex: isDark ? 1.12 : 1.22,
-            thickness: isDark ? 10 : 14,
-            lightIntensity: isStdPath ? 0.0 : 2.0,
-            blur: 0,
-            lightAngle: GlassDefaults.lightAngle,
-          )
-        : LiquidGlassSettings.ios27Indicator.copyWith(
-            refractiveIndex: 1.38,
-          );
+    final eraBase = switch (style) {
+      GlassStyle.classic => LiquidGlassSettings(
+          glassColor: thumbTint,
+          refractiveIndex: isDark ? 1.12 : 1.22,
+          thickness: isDark ? 10 : 14,
+          lightIntensity: isStdPath ? 0.0 : 2.0,
+          blur: 0,
+          lightAngle: GlassDefaults.lightAngle,
+        ),
+      GlassStyle.ios26 => LiquidGlassSettings.ios26Indicator.copyWith(
+          refractiveIndex: 1.38,
+          rimShade: 1.0,
+          rimShadeEnds: 0.56,
+          rimLight: 1.0,
+        ),
+      GlassStyle.ios27 => LiquidGlassSettings.ios27Indicator.copyWith(
+          refractiveIndex: 1.38,
+        ),
+    };
     final themedThumbSettings =
         theme?.indicatorSettingsFor(context)?.applyTo(eraBase) ?? eraBase;
     final fade = transition.clamp(0.0, 1.0);
     final stablePinchFade = 1.0 - (1.0 - fade) * (1.0 - fade);
-    final resolvedThumbSettings = (widget.settings ?? themedThumbSettings)
-        .copyWith(blur: 0, frost: 0)
-        .copyWithPinch(stablePinchFade);
-    final useIos27Lens =
-        resolvedThumbSettings.lensModel == GlassLensModel.paraxial;
+    final baseThumbSettings =
+        (widget.settings ?? themedThumbSettings).copyWith(blur: 0, frost: 0);
+    final useIos27Lens = baseThumbSettings.lensModel == GlassLensModel.paraxial;
+    final resolvedThumbSettings = useIos27Lens
+        ? baseThumbSettings.copyWithPinch(stablePinchFade)
+        : baseThumbSettings;
 
     return SizedBox(
       width: totalWidth,
@@ -895,7 +903,7 @@ class _GlassSwitchState extends State<GlassSwitch>
                   painter: LensInnerShadowPainter(
                     borderRadius: totalHeight / 2,
                     opacity: transition,
-                    shadowOpacity: useIos27Lens
+                    shadowOpacity: resolvedThumbSettings.rimShade > 0.0
                         ? LensInnerShadowPainter.defaultShadowOpacity
                         : LensInnerShadowPainter.classicShadowOpacity,
                   ),

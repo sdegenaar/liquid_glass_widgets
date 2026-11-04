@@ -1,5 +1,5 @@
 // =============================================================================
-// Dedicated Controls Parity Harness (iOS 27 vs Classic)
+// Dedicated Controls Parity Harness (iOS 27 vs iOS 26 vs Classic)
 // =============================================================================
 //
 // Flutter counterpart to `tools/parity/ios_reference/ControlsParityApp.swift`.
@@ -7,8 +7,8 @@
 //   cd example && flutter run -t lib/harnesses/controls_parity_harness.dart
 //
 // Features:
-// - Live top-bar toggle between `GlassStyle.ios27` and `GlassStyle.classic`
-//   via a single `GlassThemeData(style: _style)` setting!
+// - Live top-bar toggle between `GlassStyle.ios27`, `GlassStyle.ios26`, and
+//   `GlassStyle.classic` via a single `GlassThemeData(style: _style)` setting!
 // - Live background switcher (`Solid` / `Vivid` / `Stripes`)
 // - Live Light / Dark appearance toggle
 // - Side-by-side calibration layout for:
@@ -40,9 +40,11 @@ class ControlsParityHarnessApp extends StatefulWidget {
 class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
   bool _isDark = const bool.fromEnvironment('DARK');
   bool _lensesLifted = const bool.fromEnvironment('LIFT_LENSES');
-  GlassStyle _style = const String.fromEnvironment('STYLE') == 'classic'
-      ? GlassStyle.classic
-      : GlassStyle.ios27;
+  GlassStyle _style = switch (const String.fromEnvironment('STYLE')) {
+    'classic' => GlassStyle.classic,
+    'ios26' => GlassStyle.ios26,
+    _ => GlassStyle.ios27,
+  };
   String _bgMode = 'solid'; // 'solid' | 'vivid' | 'stripes'
   int _selectedTab = 0;
 
@@ -59,6 +61,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
   final GlobalKey _sliderDiscKey = GlobalKey();
   final GlobalKey _tabBarKey = GlobalKey();
   final List<int> _activePointers = [];
+  int _ptrEpoch = 900;
 
   @override
   void initState() {
@@ -90,6 +93,8 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
     }
     _activePointers.clear();
     if (!lifted) return;
+    _ptrEpoch += 10;
+    final basePtr = _ptrEpoch;
 
     void pressAt(GlobalKey key, Offset localOffset, int pointer) {
       final box = key.currentContext?.findRenderObject() as RenderBox?;
@@ -101,16 +106,16 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
       );
     }
 
-    pressAt(_segKey, const Offset(56, 16), 901);
-    pressAt(_switchOnKey, const Offset(42.5, 14), 902);
-    pressAt(_switchOffKey, const Offset(20.5, 14), 903);
+    pressAt(_segKey, const Offset(56, 16), basePtr + 1);
+    pressAt(_switchOnKey, const Offset(42.5, 14), basePtr + 2);
+    pressAt(_switchOffKey, const Offset(20.5, 14), basePtr + 3);
     final contBox =
         _sliderContKey.currentContext?.findRenderObject() as RenderBox?;
     if (contBox != null && contBox.hasSize) {
       pressAt(
         _sliderContKey,
         Offset(contBox.size.width * 0.5, contBox.size.height * 0.5),
-        904,
+        basePtr + 4,
       );
     }
     final discBox =
@@ -119,10 +124,10 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
       pressAt(
         _sliderDiscKey,
         Offset(discBox.size.width * 0.75, discBox.size.height * 0.5),
-        905,
+        basePtr + 5,
       );
     }
-    pressAt(_tabBarKey, const Offset(45, 31), 906);
+    pressAt(_tabBarKey, const Offset(45, 31), basePtr + 6);
 
     // DRAG_TAB: slide the pressed tab-bar pointer to the right so the lifted
     // indicator can be captured mid-motion (jelly stretch + animated pinch).
@@ -133,12 +138,12 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
         const steps = 29;
         const stepDx = 2.0;
         for (var i = 1; i <= steps; i++) {
-          Future<void>.delayed(Duration(milliseconds: 1100 + 16 * i), () {
+          Future<void>.delayed(Duration(milliseconds: 200 + 16 * i), () {
             if (!mounted) return;
             final next = Offset(start.dx + i * stepDx, start.dy);
             binding.handlePointerEvent(
               PointerMoveEvent(
-                pointer: 906,
+                pointer: basePtr + 6,
                 position: next,
                 delta: const Offset(stepDx, 0),
               ),
@@ -246,13 +251,19 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
               quality: GlassQuality.premium,
               onTap: () {
                 setState(() {
-                  _style = _style == GlassStyle.ios27
-                      ? GlassStyle.classic
-                      : GlassStyle.ios27;
+                  _style = switch (_style) {
+                    GlassStyle.ios27 => GlassStyle.ios26,
+                    GlassStyle.ios26 => GlassStyle.classic,
+                    GlassStyle.classic => GlassStyle.ios27,
+                  };
                 });
               },
               child: Text(
-                _style == GlassStyle.ios27 ? 'iOS 27' : 'Classic',
+                switch (_style) {
+                  GlassStyle.ios27 => 'iOS 27',
+                  GlassStyle.ios26 => 'iOS 26',
+                  GlassStyle.classic => 'Classic',
+                },
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,

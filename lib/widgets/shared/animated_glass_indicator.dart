@@ -371,14 +371,16 @@ class AnimatedGlassIndicator extends StatelessWidget {
     final shape = LiquidRoundedRectangle(borderRadius: borderRadius);
 
     // Resolve indicator lens settings cascade:
-    // 1. Style preset (LiquidGlassSettings.classicIndicator vs ios27Indicator)
+    // 1. Style preset (classicIndicator vs ios26Indicator vs ios27Indicator)
     // 2. Ambient GlassThemeVariant.indicatorSettings partial override
     // 3. Explicit widget [settings] partial override
     final theme = GlassTheme.maybeOf(context)?.data;
     final style = theme?.style ?? GlassStyle.ios27;
-    final eraBase = (style == GlassStyle.classic)
-        ? LiquidGlassSettings.classicIndicator
-        : baseIndicatorSettings;
+    final eraBase = switch (style) {
+      GlassStyle.classic => LiquidGlassSettings.classicIndicator,
+      GlassStyle.ios26 => LiquidGlassSettings.ios26Indicator,
+      GlassStyle.ios27 => baseIndicatorSettings,
+    };
     final themedBase =
         theme?.indicatorSettingsFor(context)?.applyTo(eraBase) ?? eraBase;
     final base =
@@ -411,6 +413,7 @@ class AnimatedGlassIndicator extends StatelessWidget {
               child: CustomPaint(
                 painter: _RestingSelectionPillPainter(
                   isDark: isDark,
+                  isIos26: style == GlassStyle.ios26,
                   opacity: backgroundOpacity,
                   borderRadius: borderRadius,
                 ),
@@ -612,16 +615,18 @@ class AnimatedGlassIndicator extends StatelessWidget {
         //   full 0.8 distortion naturally via optical pinch.
         Positioned.fromRelativeRect(
           rect: rect!,
-          child: Transform(
-            alignment: Alignment.center,
-            transform: DraggableIndicatorPhysics.buildJellyTransform(
-              velocity: direction == Axis.horizontal
-                  ? Offset(velocity, 0)
-                  : Offset(0, velocity),
-              maxDistortion: isStdPath ? 0.35 : 0.8,
-              velocityScale: 10,
+          child: IgnorePointer(
+            child: Transform(
+              alignment: Alignment.center,
+              transform: DraggableIndicatorPhysics.buildJellyTransform(
+                velocity: direction == Axis.horizontal
+                    ? Offset(velocity, 0)
+                    : Offset(0, velocity),
+                maxDistortion: isStdPath ? 0.35 : 0.8,
+                velocityScale: 10,
+              ),
+              child: glassChild,
             ),
-            child: glassChild,
           ),
         ),
       ],
@@ -734,9 +739,11 @@ class _RestingSelectionPillPainter extends CustomPainter {
     required this.isDark,
     required this.opacity,
     required this.borderRadius,
+    this.isIos26 = false,
   });
 
   final bool isDark;
+  final bool isIos26;
   final double opacity;
   final double borderRadius;
 
@@ -748,7 +755,19 @@ class _RestingSelectionPillPainter extends CustomPainter {
       GlassDefaults.safeCircularRadius(borderRadius),
     );
     if (isDark) {
-      // Dark mode: single colorBurn pass (C_s = 0.70, alpha = 0.70) matches
+      if (isIos26) {
+        // iOS 26.0 dark mode: native _UITabSelectionView uses `plusL`
+        // lifting the resting selection pill from rgb(25) to rgb(58).
+        canvas.drawRRect(
+          rrect,
+          Paint()
+            ..color =
+                Color.from(alpha: 0.13 * opacity, red: 1, green: 1, blue: 1)
+            ..blendMode = BlendMode.plus,
+        );
+        return;
+      }
+      // iOS 27.0 dark mode: single colorBurn pass (C_s = 0.70, alpha = 0.70) matches
       // native _UITabSelectionView across black (32 -> 10), mid-gray
       // (134 -> 98), and saturated vivid backdrops (255 -> 250).
       canvas.drawRRect(
@@ -777,6 +796,7 @@ class _RestingSelectionPillPainter extends CustomPainter {
   @override
   bool shouldRepaint(_RestingSelectionPillPainter oldDelegate) =>
       oldDelegate.isDark != isDark ||
+      oldDelegate.isIos26 != isIos26 ||
       oldDelegate.opacity != opacity ||
       oldDelegate.borderRadius != borderRadius;
 }
