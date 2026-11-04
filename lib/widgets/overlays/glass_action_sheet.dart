@@ -4,7 +4,10 @@ import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../theme/glass_theme_data.dart';
 import '../../theme/glass_theme.dart';
+import '../../theme/glass_theme_helpers.dart';
 import '../../types/glass_quality.dart';
+import '../../types/glass_style.dart';
+import '../shared/adaptive_glass.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
 import '../shared/glass_focus_region.dart';
 import '../shared/glass_interaction_state_mixin.dart';
@@ -149,21 +152,49 @@ Future<T?> showGlassActionSheet<T>({
   LiquidGlassSettings? settings,
   GlassQuality? quality,
 }) {
+  final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
+  final capturedCupertinoTheme = CupertinoTheme.of(context);
+  final style = GlassThemeHelpers.resolveStyle(context);
+  final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
+  final effectiveBarrierColor = style == GlassStyle.classic
+      ? GlassDefaults.barrierColor
+      : (isDark ? const Color(0x66000000) : const Color(0x47000000));
+
   return showCupertinoModalPopup<T>(
     context: context,
     barrierDismissible: barrierDismissible,
-    barrierColor: GlassDefaults.barrierColor,
-    builder: (context) => _GlassActionSheetContent(
-      title: title,
-      message: message,
-      actions: actions,
-      cancelLabel: cancelLabel,
-      showCancelButton: showCancelButton,
-      settings: settings,
-      quality: quality,
-    ),
+    barrierColor: effectiveBarrierColor,
+    builder: (modalContext) {
+      Widget sheet = _GlassActionSheetContent(
+        title: title,
+        message: message,
+        actions: actions,
+        cancelLabel: cancelLabel,
+        showCancelButton: showCancelButton,
+        settings: settings,
+        quality: quality,
+      );
+      sheet = CupertinoTheme(
+        data: capturedCupertinoTheme,
+        child: sheet,
+      );
+      if (capturedGlassTheme != null) {
+        sheet = GlassTheme(
+          data: capturedGlassTheme,
+          child: sheet,
+        );
+      }
+      return sheet;
+    },
   );
 }
+
+const _kDefaultActionSheetSettings = LiquidGlassSettings(
+  thickness: 30.0,
+  blur: 5.0,
+  refractiveIndex: 1.15,
+  saturation: 1.2,
+);
 
 /// Internal widget for action sheet content.
 class _GlassActionSheetContent extends StatelessWidget {
@@ -213,50 +244,62 @@ class _GlassActionSheetContent extends StatelessWidget {
     final themeData = GlassThemeData.of(context);
     final glowColors = themeData.glowColorsFor(context);
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
-    final cardColor = isDark
-        ? CupertinoColors.black.withValues(alpha: 0.65)
-        : CupertinoColors.white.withValues(alpha: 0.65);
+    final cardColor = themeData.style == GlassStyle.classic
+        ? (isDark
+            ? CupertinoColors.black.withValues(alpha: 0.65)
+            : CupertinoColors.white.withValues(alpha: 0.65))
+        : null;
     final dividerColor = isDark
         ? CupertinoColors.white.withValues(alpha: 0.2)
         : CupertinoColors.black.withValues(alpha: 0.1);
+    final effectiveSettings = GlassThemeHelpers.resolveSettings(
+      context,
+      explicit: settings,
+      fallback: _kDefaultActionSheetSettings,
+      isOverlayPlatter: true,
+    );
+    final effectiveQuality = GlassThemeHelpers.resolveQuality(
+      context,
+      widgetQuality: quality,
+    );
 
     return AdaptiveLiquidGlassLayer(
-      settings: settings ??
-          const LiquidGlassSettings(
-            thickness: 30.0,
-            blur: 5.0,
-            refractiveIndex: 1.15,
-            saturation: 1.2,
+      settings: effectiveSettings,
+      quality: effectiveQuality,
+      child: AdaptiveGlass(
+        shape: const LiquidRoundedSuperellipse(borderRadius: 14),
+        settings: effectiveSettings,
+        quality: effectiveQuality,
+        useOwnLayer: false,
+        child: Container(
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(14),
           ),
-      quality: quality,
-      child: Container(
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Title and message
-              if (title != null || message != null) _buildHeader(context),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Title and message
+                if (title != null || message != null) _buildHeader(context),
 
-              // Actions list
-              for (int i = 0; i < actions.length; i++) ...[
-                if (i > 0 || (title != null || message != null))
-                  // Replaces Material Divider — identical pixel output.
-                  SizedBox(
-                    height: 1,
-                    child: Center(
-                        child: Container(height: 0.5, color: dividerColor)),
+                // Actions list
+                for (int i = 0; i < actions.length; i++) ...[
+                  if (i > 0 || (title != null || message != null))
+                    // Replaces Material Divider — identical pixel output.
+                    SizedBox(
+                      height: 1,
+                      child: Center(
+                          child: Container(height: 0.5, color: dividerColor)),
+                    ),
+                  _ActionSheetButton(
+                    action: actions[i],
+                    glowColors: glowColors,
                   ),
-                _ActionSheetButton(
-                  action: actions[i],
-                  glowColors: glowColors,
-                ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -295,34 +338,47 @@ class _GlassActionSheetContent extends StatelessWidget {
   }
 
   Widget _buildCancelButton(BuildContext context) {
+    final themeData = GlassThemeData.of(context);
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
-    final cardColor = isDark
-        ? CupertinoColors.black.withValues(alpha: 0.65)
-        : CupertinoColors.white.withValues(alpha: 0.65);
+    final cardColor = themeData.style == GlassStyle.classic
+        ? (isDark
+            ? CupertinoColors.black.withValues(alpha: 0.65)
+            : CupertinoColors.white.withValues(alpha: 0.65))
+        : null;
+    final effectiveSettings = GlassThemeHelpers.resolveSettings(
+      context,
+      explicit: settings,
+      fallback: _kDefaultActionSheetSettings,
+      isOverlayPlatter: true,
+    );
+    final effectiveQuality = GlassThemeHelpers.resolveQuality(
+      context,
+      widgetQuality: quality,
+    );
 
     return AdaptiveLiquidGlassLayer(
-      settings: settings ??
-          const LiquidGlassSettings(
-            thickness: 30.0,
-            blur: 5.0,
-            refractiveIndex: 1.15,
-            saturation: 1.2,
+      settings: effectiveSettings,
+      quality: effectiveQuality,
+      child: AdaptiveGlass(
+        shape: const LiquidRoundedSuperellipse(borderRadius: 14),
+        settings: effectiveSettings,
+        quality: effectiveQuality,
+        useOwnLayer: false,
+        child: Container(
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(14),
           ),
-      quality: quality,
-      child: Container(
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: _ActionSheetButton(
-            action: GlassActionSheetAction(
-              label: cancelLabel,
-              style: GlassActionSheetStyle.cancel,
-              onPressed: () => Navigator.of(context).pop(),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: _ActionSheetButton(
+              action: GlassActionSheetAction(
+                label: cancelLabel,
+                style: GlassActionSheetStyle.cancel,
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              glowColors: null,
             ),
-            glowColors: null,
           ),
         ),
       ),

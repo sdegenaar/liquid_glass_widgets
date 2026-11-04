@@ -774,20 +774,12 @@ class _GlassPopoverState extends State<GlassPopover>
 
     // InheritedWidget lookups — traverses the element tree; must NOT be inside
     // the AnimatedBuilder's builder closure.
-    final inheritedSettings = InheritedLiquidGlass.of(context);
-    final effectiveSettings = widget.settings ??
-        inheritedSettings ??
-        const LiquidGlassSettings(
-          blur: 10,
-          thickness: 10,
-          glassColor: Color.fromRGBO(255, 255, 255, 0.12),
-          lightAngle: GlassDefaults.lightAngle,
-          lightIntensity: 0.7,
-          ambientStrength: 0.4,
-          saturation: 1.2,
-          refractiveIndex: 0.7,
-          chromaticAberration: 0.0,
-        );
+    final effectiveSettings = GlassThemeHelpers.resolveSettings(
+      context,
+      explicit: widget.settings,
+      fallback: _kDefaultPopoverSettings,
+      isOverlayPlatter: true,
+    );
 
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
@@ -820,6 +812,7 @@ class _GlassPopoverState extends State<GlassPopover>
             ? effectiveSettings
             : effectiveSettings.copyWith(
                 blur: effectiveSettings.blur * blurFactor,
+                frost: effectiveSettings.frost * blurFactor,
               );
 
         // Physics delegated to GlassMorphController — pure arithmetic, no
@@ -1131,3 +1124,15 @@ class _GlassPopoverState extends State<GlassPopover>
     );
   }
 }
+
+const LiquidGlassSettings _kDefaultPopoverSettings = LiquidGlassSettings(
+  blur: 10,
+  thickness: 10,
+  glassColor: Color.fromRGBO(255, 255, 255, 0.12),
+  lightAngle: GlassDefaults.lightAngle,
+  lightIntensity: 0.7,
+  ambientStrength: 0.4,
+  saturation: 1.2,
+  refractiveIndex: 0.7,
+  chromaticAberration: 0.0,
+);

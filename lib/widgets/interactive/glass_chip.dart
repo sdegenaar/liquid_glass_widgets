@@ -380,7 +380,7 @@ class GlassChip extends StatelessWidget {
           shape: _chipShape,
           settings: settings,
           useOwnLayer: useOwnLayer,
-          quality: quality ?? GlassQuality.standard,
+          quality: quality,
           platformViewBackdrop: platformViewBackdrop,
           interactionScale: effectiveInteractionScale,
           stretch: effectiveStretch,

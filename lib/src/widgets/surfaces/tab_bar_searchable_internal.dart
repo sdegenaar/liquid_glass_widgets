@@ -18,6 +18,7 @@ import '../../../utils/draggable_indicator_physics.dart';
 import '../../utils/glass_localizations.dart';
 import '../../../utils/glass_spring.dart';
 import '../../../theme/glass_theme.dart';
+import '../../../theme/glass_theme_helpers.dart';
 import '../../../widgets/interactive/glass_button.dart';
 import '../../../widgets/shared/adaptive_glass.dart';
 import '../../../widgets/shared/animated_glass_indicator.dart';
@@ -86,7 +87,8 @@ class DismissPill extends StatelessWidget {
       settings:
           settings?.copyWith(glassColor: safeColor ?? settings?.glassColor) ??
               (safeColor != null
-                  ? LiquidGlassSettings(glassColor: safeColor)
+                  ? GlassThemeHelpers.resolveSettings(context)
+                      .copyWith(glassColor: safeColor)
                   : null),
       shape: LiquidRoundedRectangle(borderRadius: barBorderRadius),
       icon: cancelIcon ??

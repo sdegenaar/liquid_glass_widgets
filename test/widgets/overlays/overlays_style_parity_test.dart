@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/widgets/overlays/glass_sheet_defaults.dart';
+import 'package:liquid_glass_widgets/src/widgets/surfaces/tab_bar_searchable_internal.dart'
+    show DismissPill;
 import 'package:liquid_glass_widgets/theme/glass_theme_helpers.dart';
 import 'package:liquid_glass_widgets/widgets/overlays/glass_modal_sheet.dart'
     show SheetMorphGeometry;
@@ -571,6 +573,666 @@ void main() {
             )
             .toList();
         expect(allLayers.last.settings?.refractiveIndex, 0.7);
+      });
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 5. GlassDialog, GlassActionSheet, GlassPopover, GlassToast, FullScreenCover
+    // ─────────────────────────────────────────────────────────────────────────
+    group('GlassDialog, GlassActionSheet, GlassPopover, GlassToast & Cover',
+        () {
+      for (final style in GlassStyle.values) {
+        for (final brightness in [Brightness.light, Brightness.dark]) {
+          testWidgets(
+              'GlassDialog.show() inherits GlassTheme ($style) and CupertinoTheme ($brightness)',
+              (tester) async {
+            GlassStyle? capturedStyle;
+            Brightness? capturedBrightness;
+
+            await tester.pumpWidget(
+              CupertinoApp(
+                theme: CupertinoThemeData(brightness: brightness),
+                home: GlassTheme(
+                  data: GlassThemeData(style: style, brightness: brightness),
+                  child: CupertinoPageScaffold(
+                    child: Builder(
+                      builder: (context) => CupertinoButton(
+                        onPressed: () {
+                          GlassDialog.show<void>(
+                            context: context,
+                            title: 'Alert',
+                            content: Builder(
+                              builder: (dialogContext) {
+                                capturedStyle = GlassThemeHelpers.resolveStyle(
+                                    dialogContext);
+                                capturedBrightness =
+                                    GlassTheme.brightnessOf(dialogContext);
+                                return const Text('Body');
+                              },
+                            ),
+                            actions: [
+                              GlassDialogAction(
+                                label: 'OK',
+                                isPrimary: true,
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                            ],
+                          );
+                        },
+                        child: const Text('Show Dialog'),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+
+            await tester.tap(find.text('Show Dialog'));
+            await tester.pumpAndSettle();
+
+            expect(capturedStyle, style);
+            expect(capturedBrightness, brightness);
+
+            // Outer platter card resolves with isOverlayPlatter: true
+            final dialogGlasses = tester
+                .widgetList<AdaptiveGlass>(
+                  find.descendant(
+                    of: find.byType(GlassDialog),
+                    matching: find.byType(AdaptiveGlass),
+                  ),
+                )
+                .toList();
+            expect(dialogGlasses, isNotEmpty);
+            final platterSettings = dialogGlasses.first.settings;
+            switch (style) {
+              case GlassStyle.ios27:
+                expect(platterSettings.lensModel, GlassLensModel.paraxial);
+                expect(platterSettings.frost, 14.0);
+                expect(platterSettings.frostOpacity, 1.0);
+                expect(platterSettings.rimShade, 1.0);
+                break;
+              case GlassStyle.ios26:
+                expect(platterSettings.lensModel, GlassLensModel.paraxial);
+                expect(platterSettings.frost, 14.0);
+                expect(platterSettings.frostOpacity, 1.0);
+                expect(platterSettings.rimShade, 0.0);
+                break;
+              case GlassStyle.classic:
+                expect(platterSettings.lensModel, GlassLensModel.spherical);
+                expect(
+                  platterSettings.thickness,
+                  brightness == Brightness.dark ? 10.0 : 12.0,
+                );
+                break;
+            }
+          });
+
+          testWidgets(
+              'showGlassActionSheet() inherits GlassTheme ($style) and CupertinoTheme ($brightness)',
+              (tester) async {
+            await tester.pumpWidget(
+              CupertinoApp(
+                theme: CupertinoThemeData(brightness: brightness),
+                home: GlassTheme(
+                  data: GlassThemeData(style: style, brightness: brightness),
+                  child: CupertinoPageScaffold(
+                    child: Builder(
+                      builder: (context) => CupertinoButton(
+                        onPressed: () {
+                          showGlassActionSheet<void>(
+                            context: context,
+                            title: 'Actions',
+                            actions: [
+                              GlassActionSheetAction(
+                                label: 'Share',
+                                onPressed: () {},
+                              ),
+                            ],
+                          );
+                        },
+                        child: const Text('Show Action Sheet'),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+
+            await tester.tap(find.text('Show Action Sheet'));
+            await tester.pumpAndSettle();
+
+            final actionGlasses = tester
+                .widgetList<AdaptiveGlass>(
+                  find.ancestor(
+                    of: find.text('Share'),
+                    matching: find.byType(AdaptiveGlass),
+                  ),
+                )
+                .toList();
+            expect(actionGlasses, isNotEmpty);
+            final sheetSettings = actionGlasses.first.settings;
+
+            switch (style) {
+              case GlassStyle.ios27:
+                expect(sheetSettings.lensModel, GlassLensModel.paraxial);
+                expect(sheetSettings.frost, 14.0);
+                expect(sheetSettings.frostOpacity, 1.0);
+                expect(sheetSettings.rimShade, 1.0);
+                break;
+              case GlassStyle.ios26:
+                expect(sheetSettings.lensModel, GlassLensModel.paraxial);
+                expect(sheetSettings.frost, 14.0);
+                expect(sheetSettings.frostOpacity, 1.0);
+                expect(sheetSettings.rimShade, 0.0);
+                break;
+              case GlassStyle.classic:
+                expect(sheetSettings.lensModel, GlassLensModel.spherical);
+                expect(sheetSettings.thickness, 30.0);
+                expect(sheetSettings.blur, 5.0);
+                expect(sheetSettings.refractiveIndex, 1.15);
+                break;
+            }
+          });
+
+          testWidgets(
+              'GlassPopover resolves $style ($brightness) settings on open',
+              (tester) async {
+            await tester.pumpWidget(
+              CupertinoApp(
+                theme: CupertinoThemeData(brightness: brightness),
+                home: GlassTheme(
+                  data: GlassThemeData(style: style, brightness: brightness),
+                  child: AdaptiveLiquidGlassLayer(
+                    child: CupertinoPageScaffold(
+                      child: Center(
+                        child: GlassPopover(
+                          triggerBuilder: (context, open) => CupertinoButton(
+                            onPressed: open,
+                            child: const Text('Open Popover'),
+                          ),
+                          contentBuilder: (context, close) =>
+                              const SizedBox(height: 80, child: Text('Pop')),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+
+            await tester.tap(find.text('Open Popover'));
+            await tester.pumpAndSettle();
+
+            final popGlasses = tester
+                .widgetList<AdaptiveGlass>(
+                  find.ancestor(
+                    of: find.text('Pop'),
+                    matching: find.byType(AdaptiveGlass),
+                  ),
+                )
+                .toList();
+            expect(popGlasses, isNotEmpty);
+            final popSettings = popGlasses.first.settings;
+
+            switch (style) {
+              case GlassStyle.ios27:
+                expect(popSettings.lensModel, GlassLensModel.paraxial);
+                expect(popSettings.frost, 14.0);
+                expect(popSettings.frostOpacity, 1.0);
+                expect(popSettings.rimShade, 1.0);
+                break;
+              case GlassStyle.ios26:
+                expect(popSettings.lensModel, GlassLensModel.paraxial);
+                expect(popSettings.frost, 14.0);
+                expect(popSettings.frostOpacity, 1.0);
+                expect(popSettings.rimShade, 0.0);
+                break;
+              case GlassStyle.classic:
+                expect(popSettings.lensModel, GlassLensModel.spherical);
+                expect(popSettings.blur, 10.0);
+                expect(popSettings.refractiveIndex, 0.7);
+                break;
+            }
+          });
+
+          testWidgets(
+              'GlassToast.show() inherits GlassTheme ($style) and CupertinoTheme ($brightness)',
+              (tester) async {
+            late VoidCallback dismiss;
+            await tester.pumpWidget(
+              CupertinoApp(
+                theme: CupertinoThemeData(brightness: brightness),
+                home: GlassTheme(
+                  data: GlassThemeData(style: style, brightness: brightness),
+                  child: CupertinoPageScaffold(
+                    child: Builder(
+                      builder: (context) => CupertinoButton(
+                        onPressed: () {
+                          dismiss = GlassToast.show(
+                            context,
+                            message: 'Toast Message',
+                            duration: Duration.zero,
+                          );
+                        },
+                        child: const Text('Show Toast'),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+
+            await tester.tap(find.text('Show Toast'));
+            await tester.pumpAndSettle();
+
+            final toastGlasses = tester
+                .widgetList<AdaptiveGlass>(
+                  find.descendant(
+                    of: find.byType(GlassToast),
+                    matching: find.byType(AdaptiveGlass),
+                  ),
+                )
+                .toList();
+            expect(toastGlasses, isNotEmpty);
+            final toastSettings = toastGlasses.first.settings;
+
+            switch (style) {
+              case GlassStyle.ios27:
+                expect(toastSettings.lensModel, GlassLensModel.paraxial);
+                expect(toastSettings.frost, 14.0);
+                expect(toastSettings.frostOpacity, 1.0);
+                expect(toastSettings.rimShade, 1.0);
+                break;
+              case GlassStyle.ios26:
+                expect(toastSettings.lensModel, GlassLensModel.paraxial);
+                expect(toastSettings.frost, 14.0);
+                expect(toastSettings.frostOpacity, 1.0);
+                expect(toastSettings.rimShade, 0.0);
+                break;
+              case GlassStyle.classic:
+                expect(toastSettings.lensModel, GlassLensModel.spherical);
+                expect(toastSettings.thickness, 25.0);
+                expect(toastSettings.blur, 6.0);
+                expect(toastSettings.refractiveIndex, 1.15);
+                break;
+            }
+
+            dismiss();
+            await tester.pumpAndSettle();
+          });
+
+          testWidgets(
+              'showGlassFullScreenCover() inherits GlassTheme ($style) and CupertinoTheme ($brightness)',
+              (tester) async {
+            GlassStyle? capturedStyle;
+            Brightness? capturedBrightness;
+
+            await tester.pumpWidget(
+              CupertinoApp(
+                theme: CupertinoThemeData(brightness: brightness),
+                home: GlassTheme(
+                  data: GlassThemeData(style: style, brightness: brightness),
+                  child: CupertinoPageScaffold(
+                    child: Builder(
+                      builder: (context) => CupertinoButton(
+                        onPressed: () {
+                          showGlassFullScreenCover<void>(
+                            context: context,
+                            builder: (coverContext) => GlassFullScreenCover(
+                              title: const Text('Cover'),
+                              child: Builder(
+                                builder: (innerContext) {
+                                  capturedStyle =
+                                      GlassThemeHelpers.resolveStyle(
+                                          innerContext);
+                                  capturedBrightness =
+                                      GlassTheme.brightnessOf(innerContext);
+                                  return const Text('Cover Body');
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                        child: const Text('Open Cover'),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+
+            await tester.tap(find.text('Open Cover'));
+            await tester.pumpAndSettle();
+
+            expect(capturedStyle, style);
+            expect(capturedBrightness, brightness);
+          });
+        }
+      }
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 6. Remaining Surfaces, Interactive, Input, Feedback & Container Controls
+    // ─────────────────────────────────────────────────────────────────────────
+    group('Surfaces, Interactive, Input, Feedback & Container Parity', () {
+      for (final style in GlassStyle.values) {
+        testWidgets(
+            'GlassToolbar, GlassBadge, GlassPicker, GlassStepper, and GlassProgressIndicator resolve $style',
+            (tester) async {
+          await tester.pumpWidget(
+            CupertinoApp(
+              theme: const CupertinoThemeData(brightness: Brightness.light),
+              home: GlassTheme(
+                data: GlassThemeData(
+                  style: style,
+                  brightness: Brightness.light,
+                ),
+                child: CupertinoPageScaffold(
+                  child: Column(
+                    children: [
+                      const GlassToolbar(
+                        children: [Text('Tool')],
+                      ),
+                      const GlassBadge(
+                        count: 5,
+                        child: SizedBox(width: 24, height: 24),
+                      ),
+                      GlassPicker(
+                        value: 'One',
+                        useOwnLayer: true,
+                        onTap: () {},
+                      ),
+                      GlassStepper(
+                        value: 1,
+                        onChanged: (_) {},
+                      ),
+                      const GlassProgressIndicator.circular(
+                        useOwnLayer: true,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          final toolbarLayer = tester.widget<AdaptiveLiquidGlassLayer>(
+            find.descendant(
+              of: find.byType(GlassToolbar),
+              matching: find.byType(AdaptiveLiquidGlassLayer),
+            ),
+          );
+          final badgeLayer = tester.widget<AdaptiveLiquidGlassLayer>(
+            find.descendant(
+              of: find.byType(GlassBadge),
+              matching: find.byType(AdaptiveLiquidGlassLayer),
+            ),
+          );
+          final pickerGlass = tester.widget<AdaptiveGlass>(
+            find.descendant(
+              of: find.byType(GlassPicker),
+              matching: find.byType(AdaptiveGlass),
+            ),
+          );
+          final stepperGlass = tester.widget<AdaptiveGlass>(
+            find.descendant(
+              of: find.byType(GlassStepper),
+              matching: find.byType(AdaptiveGlass),
+            ),
+          );
+          final progressLayer = tester.widget<AdaptiveLiquidGlassLayer>(
+            find.descendant(
+              of: find.byType(GlassProgressIndicator),
+              matching: find.byType(AdaptiveLiquidGlassLayer),
+            ),
+          );
+
+          switch (style) {
+            case GlassStyle.ios27:
+              expect(toolbarLayer.settings!.lensModel, GlassLensModel.paraxial);
+              expect(toolbarLayer.settings!.rimShade, 1.0);
+              expect(badgeLayer.settings!.lensModel, GlassLensModel.paraxial);
+              expect(pickerGlass.settings.lensModel, GlassLensModel.paraxial);
+              expect(stepperGlass.settings.lensModel, GlassLensModel.paraxial);
+              expect(
+                  progressLayer.settings!.lensModel, GlassLensModel.paraxial);
+              break;
+            case GlassStyle.ios26:
+              expect(toolbarLayer.settings!.lensModel, GlassLensModel.paraxial);
+              expect(toolbarLayer.settings!.rimShade, 0.0);
+              expect(badgeLayer.settings!.lensModel, GlassLensModel.paraxial);
+              expect(pickerGlass.settings.lensModel, GlassLensModel.paraxial);
+              expect(stepperGlass.settings.lensModel, GlassLensModel.paraxial);
+              expect(
+                  progressLayer.settings!.lensModel, GlassLensModel.paraxial);
+              break;
+            case GlassStyle.classic:
+              expect(
+                  toolbarLayer.settings!.lensModel, GlassLensModel.spherical);
+              expect(toolbarLayer.settings!.blur, 20.0);
+              expect(badgeLayer.settings!.thickness, 20.0);
+              expect(pickerGlass.settings.thickness, 12.0);
+              expect(pickerGlass.settings.glassColor.a, greaterThan(0.0));
+              expect(stepperGlass.settings.thickness, 12.0);
+              expect(progressLayer.settings!.thickness, 12.0);
+              break;
+          }
+        });
+      }
+
+      testWidgets(
+          'GlassChip and GlassPasswordField inherit quality from GlassTheme when widget quality is omitted',
+          (tester) async {
+        await tester.pumpWidget(
+          CupertinoApp(
+            home: GlassTheme(
+              data: const GlassThemeData(
+                style: GlassStyle.ios27,
+                light: GlassThemeVariant(quality: GlassQuality.minimal),
+              ),
+              child: AdaptiveLiquidGlassLayer(
+                quality: GlassQuality.minimal,
+                child: CupertinoPageScaffold(
+                  child: Column(
+                    children: [
+                      GlassChip(label: 'Tag', onTap: () {}),
+                      const GlassPasswordField(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final chipButton = tester.widget<GlassButton>(
+          find.descendant(
+            of: find.byType(GlassChip),
+            matching: find.byType(GlassButton),
+          ),
+        );
+        expect(chipButton.quality, isNull);
+
+        final textField = tester.widget<GlassTextField>(
+          find.descendant(
+            of: find.byType(GlassPasswordField),
+            matching: find.byType(GlassTextField),
+          ),
+        );
+        expect(textField.quality, isNull);
+      });
+
+      testWidgets(
+          'GlassPicker.showSheet() and showGlassDatePicker() inherit GlassTheme and CupertinoTheme',
+          (tester) async {
+        GlassStyle? sheetStyle;
+        Brightness? sheetBrightness;
+        GlassStyle? dateStyle;
+        Brightness? dateBrightness;
+
+        await tester.pumpWidget(
+          CupertinoApp(
+            theme: const CupertinoThemeData(brightness: Brightness.dark),
+            home: GlassTheme(
+              data: const GlassThemeData(
+                style: GlassStyle.ios26,
+                brightness: Brightness.dark,
+              ),
+              child: CupertinoPageScaffold(
+                child: Builder(
+                  builder: (context) => Column(
+                    children: [
+                      CupertinoButton(
+                        onPressed: () => GlassPicker.showSheet<String>(
+                          context: context,
+                          items: const ['One'],
+                          itemBuilder: (item) => Builder(
+                            builder: (itemContext) {
+                              sheetStyle =
+                                  GlassThemeHelpers.resolveStyle(itemContext);
+                              sheetBrightness =
+                                  GlassTheme.brightnessOf(itemContext);
+                              return Text(item);
+                            },
+                          ),
+                        ),
+                        child: const Text('Open Picker'),
+                      ),
+                      CupertinoButton(
+                        onPressed: () => showGlassDatePicker(context: context),
+                        child: const Text('Open Date'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open Picker'));
+        await tester.pumpAndSettle();
+        expect(sheetStyle, GlassStyle.ios26);
+        expect(sheetBrightness, Brightness.dark);
+
+        // Dismiss the picker sheet via its barrier.
+        await tester.tapAt(const Offset(5, 5));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Open Date'));
+        await tester.pumpAndSettle();
+        final pickerContext = tester.element(find.byType(GlassDatePicker));
+        dateStyle = GlassThemeHelpers.resolveStyle(pickerContext);
+        dateBrightness = GlassTheme.brightnessOf(pickerContext);
+        expect(dateStyle, GlassStyle.ios26);
+        expect(dateBrightness, Brightness.dark);
+      });
+
+      for (final style in GlassStyle.values) {
+        testWidgets(
+            'GlassTabBar.searchable DismissPill resolves $style optics under an indicatorColor',
+            (tester) async {
+          const tint = Color(0xFFFF9500);
+          await tester.pumpWidget(
+            CupertinoApp(
+              home: GlassTheme(
+                data: GlassThemeData(
+                  style: style,
+                  brightness: Brightness.light,
+                ),
+                child: CupertinoPageScaffold(
+                  child: Center(
+                    child: DismissPill(
+                      onTap: () {},
+                      pillSize: 50,
+                      barBorderRadius: 25,
+                      quality: GlassQuality.standard,
+                      indicatorColor: tint,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          final button = tester.widget<GlassButton>(find.byType(GlassButton));
+          final settings = button.settings!;
+          expect(settings.glassColor, tint);
+          expect(settings.thickness, greaterThan(0.0));
+          expect(
+            settings.lensModel,
+            style == GlassStyle.classic
+                ? GlassLensModel.spherical
+                : GlassLensModel.paraxial,
+          );
+        });
+      }
+
+      testWidgets(
+          'GlassListTile.standalone owns a layer only when settings are given',
+          (tester) async {
+        await tester.pumpWidget(
+          const CupertinoApp(
+            home: CupertinoPageScaffold(
+              child: Column(
+                children: [
+                  GlassListTile.standalone(title: Text('Default Tile')),
+                  GlassListTile.standalone(
+                    title: Text('Custom Tile'),
+                    settings: LiquidGlassSettings(blur: 3),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        final containers = tester
+            .widgetList<GlassContainer>(find.byType(GlassContainer))
+            .toList();
+        expect(containers, hasLength(2));
+        expect(containers[0].useOwnLayer, isFalse);
+        expect(containers[1].useOwnLayer, isTrue);
+      });
+
+      testWidgets(
+          'GlassDialog.show() inherits ambient quality and honours barrierColor',
+          (tester) async {
+        await tester.pumpWidget(
+          CupertinoApp(
+            home: GlassTheme(
+              data: const GlassThemeData(
+                light: GlassThemeVariant(quality: GlassQuality.minimal),
+              ),
+              child: CupertinoPageScaffold(
+                child: Builder(
+                  builder: (context) => CupertinoButton(
+                    onPressed: () => GlassDialog.show<void>(
+                      context: context,
+                      title: 'Alert',
+                      barrierColor: const Color(0x80FF0000),
+                      actions: [
+                        GlassDialogAction(label: 'OK', onPressed: () {}),
+                      ],
+                    ),
+                    child: const Text('Show'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Show'));
+        await tester.pumpAndSettle();
+
+        final dialog = tester.widget<GlassDialog>(find.byType(GlassDialog));
+        expect(dialog.quality, isNull);
+
+        final barrier = tester.widget<AnimatedModalBarrier>(
+          find.byType(AnimatedModalBarrier).last,
+        );
+        expect(barrier.color.value, const Color(0x80FF0000));
       });
     });
   });

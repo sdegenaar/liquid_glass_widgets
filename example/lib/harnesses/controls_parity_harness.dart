@@ -69,6 +69,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
   final GlobalKey _pullDownKey = GlobalKey();
   final GlobalKey _contextMenuBtnKey = GlobalKey();
   GlassMorphAnchor? _morphSheetAnchor;
+  VoidCallback? _toastDismiss;
   Timer? _cmdTimer;
   String? _lastCmd;
   final List<int> _activePointers = [];
@@ -140,6 +141,8 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
       case 'tab':
         setState(() => _selectedTab = int.parse(args[1]));
       case 'pop':
+        _toastDismiss?.call();
+        _toastDismiss = null;
         if (innerCtx != null) {
           final nav = Navigator.of(innerCtx, rootNavigator: true);
           if (nav.canPop()) {
@@ -190,7 +193,59 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
         }
       case 'glass_sheet':
         if (innerCtx != null) _presentGlassSheet(innerCtx);
+      case 'dialog':
+        if (innerCtx != null) _presentDialog(innerCtx);
+      case 'action_sheet':
+        if (innerCtx != null) _presentActionSheet(innerCtx);
+      case 'toast':
+        if (innerCtx != null) {
+          _toastDismiss?.call();
+          _toastDismiss = GlassToast.show(
+            innerCtx,
+            message: 'Settings saved',
+            type: GlassToastType.success,
+            duration: Duration.zero,
+          );
+        }
+      case 'date_picker':
+        if (innerCtx != null) showGlassDatePicker(context: innerCtx);
     }
+  }
+
+  void _presentDialog(BuildContext innerCtx) {
+    GlassDialog.show<void>(
+      context: innerCtx,
+      title: 'Delete Photo?',
+      message: 'This photo will be removed from all of your devices.',
+      actions: [
+        GlassDialogAction(
+          label: 'Cancel',
+          onPressed: () => Navigator.of(innerCtx, rootNavigator: true).pop(),
+        ),
+        GlassDialogAction(
+          label: 'Delete',
+          isPrimary: true,
+          isDestructive: true,
+          onPressed: () => Navigator.of(innerCtx, rootNavigator: true).pop(),
+        ),
+      ],
+    );
+  }
+
+  void _presentActionSheet(BuildContext innerCtx) {
+    showGlassActionSheet<void>(
+      context: innerCtx,
+      title: 'Choose Action',
+      message: 'Pick what to do with this item',
+      actions: [
+        GlassActionSheetAction(label: 'Share', onPressed: () {}),
+        GlassActionSheetAction(
+          label: 'Delete',
+          style: GlassActionSheetStyle.destructive,
+          onPressed: () {},
+        ),
+      ],
+    );
   }
 
   void _presentContextMenu(BuildContext innerCtx) {

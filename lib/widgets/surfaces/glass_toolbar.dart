@@ -134,7 +134,11 @@ class GlassToolbar extends StatelessWidget {
     );
 
     // Standard iOS toolbar glass settings with high blur
-    final effectiveSettings = settings ?? _defaultSettings;
+    final effectiveSettings = GlassThemeHelpers.resolveSettings(
+      context,
+      explicit: settings,
+      fallback: _defaultSettings,
+    );
 
     // Background color blending
     // iOS toolbars often have a very subtle tint
@@ -161,10 +165,12 @@ class GlassToolbar extends StatelessWidget {
           children: [
             // Glass Background Layer
             Positioned.fill(
-              child: AdaptiveGlass.grouped(
+              child: AdaptiveGlass(
                 // Toolbar is typically a full-width rectangle
                 shape: const LiquidRoundedRectangle(borderRadius: 0),
+                settings: effectiveSettings,
                 quality: effectiveQuality,
+                useOwnLayer: false,
                 child: Container(color: effectiveBackgroundColor),
               ),
             ),

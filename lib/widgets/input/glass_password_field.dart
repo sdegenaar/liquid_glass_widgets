@@ -32,7 +32,7 @@ class GlassPasswordField extends StatefulWidget {
     // Glass properties
     this.settings,
     this.useOwnLayer = false,
-    this.quality = GlassQuality.standard,
+    this.quality,
     this.surfaceStyle,
     this.color,
     this.shape = const LiquidRoundedRectangle(borderRadius: 10),
@@ -95,7 +95,7 @@ class GlassPasswordField extends StatefulWidget {
   final bool useOwnLayer;
 
   /// Rendering quality.
-  final GlassQuality quality;
+  final GlassQuality? quality;
 
   /// How the field's surface is painted. Mirrors [GlassTextField.surfaceStyle].
   final GlassSurfaceStyle? surfaceStyle;

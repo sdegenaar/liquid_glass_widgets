@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../theme/glass_theme_data.dart';
+import '../../theme/glass_theme_helpers.dart';
 import '../../types/glass_quality.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
 
@@ -284,6 +285,20 @@ class GlassBadge extends StatelessWidget {
     );
   }
 
+  static const _kDefaultCountBadgeSettings = LiquidGlassSettings(
+    thickness: 20.0,
+    blur: 4.0,
+    refractiveIndex: 1.1,
+    saturation: 1.2,
+  );
+
+  static const _kDefaultDotBadgeSettings = LiquidGlassSettings(
+    thickness: 15.0,
+    blur: 3.0,
+    refractiveIndex: 1.1,
+    saturation: 1.2,
+  );
+
   Widget _buildCountBadge(BuildContext context) {
     final themeData = GlassThemeData.of(context);
     final glowColors = themeData.glowColorsFor(context);
@@ -300,16 +315,19 @@ class GlassBadge extends StatelessWidget {
     final bool isWide = count > 9 || count > maxCount;
     final double minWidth = isWide ? 20.0 : 18.0;
     final double horizontalPadding = isWide ? 6.0 : 0.0;
+    final effectiveSettings = GlassThemeHelpers.resolveSettings(
+      context,
+      explicit: settings,
+      fallback: _kDefaultCountBadgeSettings,
+    );
+    final effectiveQuality = GlassThemeHelpers.resolveQuality(
+      context,
+      widgetQuality: quality,
+    );
 
     return AdaptiveLiquidGlassLayer(
-      settings: settings ??
-          const LiquidGlassSettings(
-            thickness: 20.0,
-            blur: 4.0,
-            refractiveIndex: 1.1,
-            saturation: 1.2,
-          ),
-      quality: quality,
+      settings: effectiveSettings,
+      quality: effectiveQuality,
       child: Container(
         constraints: BoxConstraints(
           minWidth: minWidth,
@@ -351,16 +369,19 @@ class GlassBadge extends StatelessWidget {
 
   Widget _buildDotBadge(BuildContext context) {
     final color = dotColor ?? CupertinoColors.systemGreen;
+    final effectiveSettings = GlassThemeHelpers.resolveSettings(
+      context,
+      explicit: settings,
+      fallback: _kDefaultDotBadgeSettings,
+    );
+    final effectiveQuality = GlassThemeHelpers.resolveQuality(
+      context,
+      widgetQuality: quality,
+    );
 
     return AdaptiveLiquidGlassLayer(
-      settings: settings ??
-          const LiquidGlassSettings(
-            thickness: 15.0,
-            blur: 3.0,
-            refractiveIndex: 1.1,
-            saturation: 1.2,
-          ),
-      quality: quality,
+      settings: effectiveSettings,
+      quality: effectiveQuality,
       child: Container(
         width: 12,
         height: 12,

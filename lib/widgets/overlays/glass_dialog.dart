@@ -6,6 +6,7 @@ import '../../types/glass_quality.dart';
 import '../containers/glass_container.dart';
 import '../interactive/glass_button.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
+import '../../theme/glass_theme.dart';
 import '../../theme/glass_theme_helpers.dart';
 
 /// A glass morphism alert dialog following Apple's iOS design patterns.
@@ -233,9 +234,11 @@ class GlassDialog extends StatelessWidget {
   /// - [content]: Custom content widget (optional)
   /// - [actions]: Action buttons (required, 1-3 actions)
   /// - [settings]: Glass effect settings (null uses defaults)
-  /// - [quality]: Rendering quality (defaults to standard)
+  /// - [quality]: Rendering quality (null inherits from the ambient layer or
+  ///   [GlassTheme], falling back to standard)
   /// - [barrierDismissible]: Whether tapping outside dismisses (default: false)
-  /// - [barrierColor]: Color of the modal barrier (defaults to black54)
+  /// - [barrierColor]: Color of the modal barrier (defaults to the Cupertino
+  ///   modal barrier color)
   /// - [maxWidth]: Maximum width of dialog (default: 280)
   ///
   /// Example:
@@ -263,23 +266,39 @@ class GlassDialog extends StatelessWidget {
     String? message,
     Widget? content,
     LiquidGlassSettings? settings,
-    GlassQuality quality = GlassQuality.standard,
+    GlassQuality? quality,
     bool barrierDismissible = false,
     Color? barrierColor,
     double maxWidth = 280,
   }) {
+    final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
+    final capturedCupertinoTheme = CupertinoTheme.of(context);
     return showCupertinoDialog<T>(
       context: context,
       barrierDismissible: barrierDismissible,
-      builder: (context) => GlassDialog(
-        title: title,
-        message: message,
-        content: content,
-        actions: actions,
-        settings: settings,
-        quality: quality,
-        maxWidth: maxWidth,
-      ),
+      barrierColor: barrierColor ?? kCupertinoModalBarrierColor,
+      builder: (dialogContext) {
+        Widget dialog = GlassDialog(
+          title: title,
+          message: message,
+          content: content,
+          actions: actions,
+          settings: settings,
+          quality: quality,
+          maxWidth: maxWidth,
+        );
+        dialog = CupertinoTheme(
+          data: capturedCupertinoTheme,
+          child: dialog,
+        );
+        if (capturedGlassTheme != null) {
+          dialog = GlassTheme(
+            data: capturedGlassTheme,
+            child: dialog,
+          );
+        }
+        return dialog;
+      },
     );
   }
 
@@ -290,17 +309,28 @@ class GlassDialog extends StatelessWidget {
       context,
       widgetQuality: quality,
     );
+    final platterSettings = GlassThemeHelpers.resolveSettings(
+      context,
+      explicit: settings,
+      isOverlayPlatter: true,
+    );
+    // The action buttons sit flat on the platter: native alert buttons carry
+    // no drop shadow, so they resolve the ambient surface optics minus the
+    // surface's exterior shadow.
+    final buttonSettings = settings ??
+        GlassThemeHelpers.resolveSettings(context)
+            .copyWith(shadow: const [], shadowElevation: 0);
 
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
         child: GlassContainer.card(
           useOwnLayer: true,
-          settings: settings,
+          settings: platterSettings,
           quality: effectiveQuality,
           padding: const EdgeInsets.all(20),
           child: AdaptiveLiquidGlassLayer(
-            settings: settings ?? const LiquidGlassSettings(),
+            settings: buttonSettings,
             quality: effectiveQuality,
             child: Column(
               mainAxisSize: MainAxisSize.min,

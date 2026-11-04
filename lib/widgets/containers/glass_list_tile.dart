@@ -487,6 +487,7 @@ class _GlassListTileState extends State<GlassListTile>
         shape: const LiquidRoundedSuperellipse(borderRadius: 12),
         settings: widget._settings,
         quality: widget._quality,
+        useOwnLayer: widget._settings != null,
         padding: EdgeInsets.zero,
         child: content,
       );
