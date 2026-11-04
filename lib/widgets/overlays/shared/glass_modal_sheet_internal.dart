@@ -138,18 +138,21 @@ class _SheetLayout extends StatelessWidget {
           child: _applyTopFade(contentZone),
           builder: (context, child) {
             final pulseT = saturationAnimation.value;
-            final pulsedSettings = fadedSettings.copyWith(
-              lightIntensity: lerpDouble(
-                fadedSettings.lightIntensity,
-                0.8 * glassOpacity,
-                pulseT,
-              )!,
-              saturation: lerpDouble(
-                fadedSettings.saturation,
-                2.2 * glassOpacity + (1.0 - glassOpacity),
-                pulseT,
-              )!,
-            );
+            final style = GlassThemeHelpers.resolveStyle(context);
+            final pulsedSettings = style == GlassStyle.classic
+                ? fadedSettings.copyWith(
+                    lightIntensity: lerpDouble(
+                      fadedSettings.lightIntensity,
+                      0.8 * glassOpacity,
+                      pulseT,
+                    )!,
+                    saturation: lerpDouble(
+                      fadedSettings.saturation,
+                      2.2 * glassOpacity + (1.0 - glassOpacity),
+                      pulseT,
+                    )!,
+                  )
+                : fadedSettings;
 
             final currentTopRadius = topRadius;
             final currentBottomRadius = bottomRadius;
@@ -159,12 +162,15 @@ class _SheetLayout extends StatelessWidget {
             final contentSettings =
                 (maintainContentGlass && expandProgressValue > 0.9)
                     ? (fullStateContentSettings ??
-                        pulsedSettings.copyWith(
-                          lightIntensity:
-                              pulsedSettings.lightIntensity.clamp(0.4, 1.0),
-                          saturation: pulsedSettings.saturation.clamp(1.5, 3.0),
-                          blur: pulsedSettings.blur.clamp(15.0, 40.0),
-                        ))
+                        (style == GlassStyle.classic
+                            ? pulsedSettings.copyWith(
+                                lightIntensity: pulsedSettings.lightIntensity
+                                    .clamp(0.4, 1.0),
+                                saturation:
+                                    pulsedSettings.saturation.clamp(1.5, 3.0),
+                                blur: pulsedSettings.blur.clamp(15.0, 40.0),
+                              )
+                            : pulsedSettings))
                     : pulsedSettings;
 
             // Compute dynamic glass visibility for current expansion state.
@@ -186,6 +192,9 @@ class _SheetLayout extends StatelessWidget {
               blur: contentSettings.blur * glassVisibility,
               frost: contentSettings.frost * glassVisibility,
               thickness: contentSettings.thickness * glassVisibility,
+              rimLight: contentSettings.rimLight * glassVisibility,
+              rimShade: contentSettings.rimShade * glassVisibility,
+              bodyShade: contentSettings.bodyShade * glassVisibility,
             );
             final surfaceSettings = inMorph
                 ? SheetMorphGeometry.dormantSurface(currentSettings)
@@ -322,6 +331,12 @@ class _SheetLayout extends StatelessWidget {
                                             child: InheritedLiquidGlass(
                                               settings: childSettings,
                                               quality: effectiveQuality,
+                                              hasExplicitSettings:
+                                                  maintainContentGlass &&
+                                                      expandProgressValue >
+                                                          0.9 &&
+                                                      fullStateContentSettings !=
+                                                          null,
                                               child: GlassIsolationScope(
                                                 isolated: true,
                                                 defaultQuality:
@@ -932,9 +947,9 @@ class GlassModalSheetScaffold extends StatelessWidget {
     this.halfSize = 0.45,
     this.fullSize,
     this.initialState = GlassSheetState.half,
-    this.topBorderRadius,
+    this.topBorderRadius = 38,
     this.bottomBorderRadius,
-    this.fullTopBorderRadius,
+    this.fullTopBorderRadius = 38,
     this.fullBottomBorderRadius,
     this.horizontalMargin = 8.0,
     this.bottomMargin = 8.0,
@@ -946,7 +961,7 @@ class GlassModalSheetScaffold extends StatelessWidget {
     this.onStateChanged,
     this.mode = GlassSheetMode.dismissible,
     this.peekSize = 90.0,
-    this.quality = GlassQuality.standard,
+    this.quality,
     this.platformViewBackdrop = false,
     this.interactionScale = 1.01,
     this.enableInteractionGlow = true,
@@ -962,8 +977,8 @@ class GlassModalSheetScaffold extends StatelessWidget {
     this.showDragIndicator = true,
     this.dragIndicatorColor,
     this.dragIndicatorWidth = 36,
-    this.dragIndicatorHeight = 4,
-    this.dragIndicatorTopPadding = 8,
+    this.dragIndicatorHeight = 5,
+    this.dragIndicatorTopPadding = 5,
     this.glowColor,
     this.glowRadius = 1.5,
     this.suppressInteractionOnChildren = false,

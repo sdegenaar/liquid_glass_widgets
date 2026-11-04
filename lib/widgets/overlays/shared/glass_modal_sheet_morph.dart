@@ -861,6 +861,8 @@ class SheetMorphGeometry {
     final sHalf = halfSettings ?? baseSettings;
     final sFull = fullSettings ?? baseSettings;
 
+    bool isSolid(LiquidGlassSettings s) => s.blur == 0 && s.frost == 0;
+
     switch (state) {
       case GlassSheetState.full:
         // t == 1: the crossfade is complete whichever route got us here, so
@@ -870,13 +872,13 @@ class SheetMorphGeometry {
       case GlassSheetState.half:
         // t == 0: the half→full crossfade hasn't started. Without explicit
         // full settings the sheet is opaque only when its own surface has no
-        // blur to show through.
+        // blur or frost to show through.
         if (fullSettings == null) {
-          return (sHalf.blur == 0 || baseSettings.blur == 0) ? 1.0 : 0.0;
+          return (isSolid(sHalf) || isSolid(baseSettings)) ? 1.0 : 0.0;
         }
         return _fillFor(from: sHalf, to: sFull, t: 0.0);
       case GlassSheetState.peek:
-        if (!enablePeek) return sHalf.blur == 0 ? 1.0 : 0.0;
+        if (!enablePeek) return isSolid(sHalf) ? 1.0 : 0.0;
         return _fillFor(from: sPeek, to: sHalf, t: 0.0);
       case GlassSheetState.hidden:
         return 0.0;
@@ -885,16 +887,18 @@ class SheetMorphGeometry {
 
   /// Resolves the fill opacity for a crossfade between two surfaces at [t].
   ///
-  /// A surface with `blur == 0` is a solid colour, so the fill is whichever
-  /// side of the crossfade is currently solid.
+  /// A surface with `blur == 0 && frost == 0` is a solid colour, so the fill is
+  /// whichever side of the crossfade is currently solid.
   static double _fillFor({
     required LiquidGlassSettings from,
     required LiquidGlassSettings to,
     required double t,
   }) {
-    if (from.blur > 0 && to.blur == 0) return t;
-    if (from.blur == 0 && to.blur > 0) return 1.0 - t;
-    if (from.blur == 0 && to.blur == 0) return 1.0;
+    final fromSolid = from.blur == 0 && from.frost == 0;
+    final toSolid = to.blur == 0 && to.frost == 0;
+    if (!fromSolid && toSolid) return t;
+    if (fromSolid && !toSolid) return 1.0 - t;
+    if (fromSolid && toSolid) return 1.0;
     return 0.0;
   }
 
@@ -1882,6 +1886,7 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
       context,
       explicit: widget.settings,
       fallback: kDefaultSheetSettings,
+      isOverlayPlatter: true,
     );
     final dropletSettings = SheetMorphGeometry.restingSettings(
       state: widget.restingState,
@@ -1908,9 +1913,14 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
     );
 
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
+    final style = GlassThemeHelpers.resolveStyle(context);
     final fillColor = (isDark ? widget.expandedDarkColor : null) ??
         widget.expandedColor ??
-        (isDark ? const Color(0xFF1C1C1E) : CupertinoColors.white);
+        (isDark
+            ? const Color(0xFF1C1C1E)
+            : (style == GlassStyle.classic
+                ? CupertinoColors.white
+                : const Color(0xFFF2F2F7)));
 
     // Blob A — the trigger ghost. Shrinks to nothing over the first 40 % of the
     // opening so the liquid bridge snaps, and grows back on close so the real

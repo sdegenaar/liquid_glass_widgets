@@ -20,8 +20,13 @@
 //   6. `GlassTabBar.bottom`
 // =============================================================================
 
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+
+const _controlsCmdFile = '/tmp/lgw_controls_cmd.txt';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -60,12 +65,28 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
   final GlobalKey _sliderContKey = GlobalKey();
   final GlobalKey _sliderDiscKey = GlobalKey();
   final GlobalKey _tabBarKey = GlobalKey();
+  final GlobalKey _bodyKey = GlobalKey();
+  final GlobalKey _pullDownKey = GlobalKey();
+  final GlobalKey _contextMenuBtnKey = GlobalKey();
+  GlassMorphAnchor? _morphSheetAnchor;
+  Timer? _cmdTimer;
+  String? _lastCmd;
   final List<int> _activePointers = [];
   int _ptrEpoch = 900;
 
   @override
   void initState() {
     super.initState();
+    final cmdFile = File(_controlsCmdFile);
+    if (cmdFile.existsSync()) {
+      try {
+        cmdFile.deleteSync();
+      } catch (_) {}
+    }
+    _cmdTimer = Timer.periodic(
+      const Duration(milliseconds: 24),
+      (_) => _pollCmd(),
+    );
     // AUTO_TAB=N: select tab N programmatically after AUTO_TAB_DELAY_MS
     // (default 3000) so the indicator animation can be recorded without
     // synthetic touch input. Counterpart of native `-autoTab N`.
@@ -84,6 +105,179 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
         });
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _cmdTimer?.cancel();
+    super.dispose();
+  }
+
+  void _pollCmd() {
+    final f = File(_controlsCmdFile);
+    if (!f.existsSync()) return;
+    final cmd = f.readAsStringSync().trim();
+    if (cmd.isEmpty || cmd == _lastCmd) return;
+    _lastCmd = cmd;
+    _runCmd(cmd.split(RegExp(r'\s+')));
+  }
+
+  void _runCmd(List<String> args) {
+    final innerCtx = _bodyKey.currentContext;
+    switch (args[0]) {
+      case 'style':
+        setState(() {
+          _style = switch (args.length > 1 ? args[1] : 'ios27') {
+            'classic' => GlassStyle.classic,
+            'ios26' => GlassStyle.ios26,
+            _ => GlassStyle.ios27,
+          };
+        });
+      case 'dark':
+        setState(() => _isDark = args.length > 1 && args[1] == 'on');
+      case 'bg':
+        setState(() => _bgMode = args.length > 1 ? args[1] : 'solid');
+      case 'tab':
+        setState(() => _selectedTab = int.parse(args[1]));
+      case 'pop':
+        if (innerCtx != null) {
+          final nav = Navigator.of(innerCtx, rootNavigator: true);
+          if (nav.canPop()) {
+            nav.pop();
+          } else {
+            // Dismiss any open OverlayPortal-based GlassMenu by tapping
+            // outside the platter.
+            final binding = WidgetsBinding.instance;
+            _ptrEpoch += 1;
+            final p = _ptrEpoch;
+            const pos = Offset(10, 100);
+            binding.handlePointerEvent(
+              PointerDownEvent(pointer: p, position: pos),
+            );
+            Future<void>.delayed(const Duration(milliseconds: 40), () {
+              binding.handlePointerEvent(
+                PointerUpEvent(pointer: p, position: pos),
+              );
+            });
+          }
+        }
+      case 'pulldown':
+        final box =
+            _pullDownKey.currentContext?.findRenderObject() as RenderBox?;
+        if (box != null && box.hasSize) {
+          final pos = box.localToGlobal(
+            Offset(box.size.width * 0.5, box.size.height * 0.5),
+          );
+          final binding = WidgetsBinding.instance;
+          _ptrEpoch += 1;
+          final p = _ptrEpoch;
+          binding
+              .handlePointerEvent(PointerDownEvent(pointer: p, position: pos));
+          Future<void>.delayed(const Duration(milliseconds: 40), () {
+            binding
+                .handlePointerEvent(PointerUpEvent(pointer: p, position: pos));
+          });
+        }
+      case 'context_menu':
+        if (innerCtx != null) _presentContextMenu(innerCtx);
+      case 'half_sheet':
+        if (innerCtx != null) _presentModalSheet(innerCtx, full: false);
+      case 'full_sheet':
+        if (innerCtx != null) _presentModalSheet(innerCtx, full: true);
+      case 'morph_sheet':
+        if (innerCtx != null) {
+          _presentModalSheet(innerCtx, full: false, morph: true);
+        }
+      case 'glass_sheet':
+        if (innerCtx != null) _presentGlassSheet(innerCtx);
+    }
+  }
+
+  void _presentContextMenu(BuildContext innerCtx) {
+    final box =
+        _contextMenuBtnKey.currentContext?.findRenderObject() as RenderBox?;
+    final rect = box != null && box.hasSize
+        ? (box.localToGlobal(Offset.zero) & box.size)
+        : const Rect.fromLTWH(160, 260, 132, 36);
+    showGlassContextMenu<void>(
+      context: innerCtx,
+      targetRect: rect,
+      actions: [
+        GlassContextMenuAction(
+          icon: const Icon(CupertinoIcons.star_fill),
+          iconPosition: GlassContextMenuIconPosition.leading,
+          onPressed: () {},
+          child: const Text('Favorite'),
+        ),
+        GlassContextMenuAction(
+          icon: const Icon(CupertinoIcons.doc_on_doc),
+          iconPosition: GlassContextMenuIconPosition.leading,
+          onPressed: () {},
+          child: const Text('Copy Link'),
+        ),
+        GlassContextMenuAction(
+          icon: const Icon(CupertinoIcons.trash),
+          iconPosition: GlassContextMenuIconPosition.leading,
+          isDestructive: true,
+          onPressed: () {},
+          child: const Text('Delete'),
+        ),
+      ],
+    );
+  }
+
+  void _presentModalSheet(
+    BuildContext innerCtx, {
+    required bool full,
+    bool morph = false,
+  }) {
+    GlassModalSheet.show<void>(
+      context: innerCtx,
+      morphFrom: morph ? _morphSheetAnchor : null,
+      initialState: full ? GlassSheetState.full : GlassSheetState.half,
+      detents: const {GlassSheetDetent.medium, GlassSheetDetent.large},
+      halfSize: 0.48,
+      builder: (sheetCtx) => _OverlaysSheetContent(
+        title: morph
+            ? 'Morph Sheet'
+            : (full ? 'Expanded Sheet' : 'Floating Glass Sheet'),
+        isFull: full,
+        onClose: () => Navigator.of(sheetCtx).maybePop(),
+      ),
+    );
+  }
+
+  void _presentGlassSheet(BuildContext innerCtx) {
+    GlassSheet.show<void>(
+      context: innerCtx,
+      builder: (sheetCtx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'GlassSheet Overlay',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                color: CupertinoColors.label.resolveFrom(sheetCtx),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Resolves active GlassStyle preset (ios27, ios26, or classic) '
+              'from the ambient GlassTheme across the modal route boundary.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: CupertinoColors.secondaryLabel.resolveFrom(sheetCtx),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _setLensesLifted(bool lifted) {
@@ -224,8 +418,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
       brightness: _isDark ? Brightness.dark : Brightness.light,
     );
 
-    final surfaceStyle =
-        _bgMode == 'solid' ? GlassSurfaceStyle.solid : GlassSurfaceStyle.glass;
+    const surfaceStyle = GlassSurfaceStyle.solid;
 
     final labelColor = _isDark ? CupertinoColors.white : CupertinoColors.black;
     final secondaryColor =
@@ -361,6 +554,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
               top: false,
               bottom: false,
               child: ListView(
+                key: _bodyKey,
                 padding: const EdgeInsets.fromLTRB(16, 108, 16, 120),
                 children: [
                   GlassSearchBar(
@@ -368,6 +562,14 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                     surfaceStyle: surfaceStyle,
                   ),
                   const SizedBox(height: 24),
+                  if (_selectedTab == 1) ...[
+                    _buildOverlaysSections(
+                      surfaceStyle: surfaceStyle,
+                      labelColor: labelColor,
+                      secondaryColor: secondaryColor,
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                   GlassGroupedSection(
                     header: const Text('SEGMENTED CONTROL'),
                     surfaceStyle: surfaceStyle,
@@ -569,11 +771,275 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                       ),
                     ],
                   ),
+                  if (_selectedTab != 1) ...[
+                    const SizedBox(height: 24),
+                    _buildOverlaysSections(
+                      surfaceStyle: surfaceStyle,
+                      labelColor: labelColor,
+                      secondaryColor: secondaryColor,
+                    ),
+                  ],
                 ],
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildOverlaysSections({
+    required GlassSurfaceStyle surfaceStyle,
+    required Color labelColor,
+    required Color secondaryColor,
+  }) {
+    return Builder(
+      builder: (innerCtx) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          GlassGroupedSection(
+            header: const Text('MENUS (UIMENU & .CONTEXTMENU)'),
+            surfaceStyle: surfaceStyle,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+                child: Row(
+                  children: [
+                    GlassPullDownButton(
+                      key: _pullDownKey,
+                      label: 'Pull-Down',
+                      buttonWidth: 132,
+                      buttonHeight: 36,
+                      menuWidth: 220,
+                      quality: GlassQuality.premium,
+                      items: [
+                        GlassMenuLabel(
+                          child: Text(
+                            'Sort By',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.08,
+                              color: secondaryColor,
+                            ),
+                          ),
+                        ),
+                        GlassMenuItem(
+                          title: 'Name',
+                          icon: const Icon(CupertinoIcons.textformat),
+                          onTap: () {},
+                        ),
+                        GlassMenuItem(
+                          title: 'Date Modified',
+                          icon: const Icon(CupertinoIcons.calendar),
+                          onTap: () {},
+                        ),
+                        const GlassMenuDivider(),
+                        GlassMenuItem(
+                          title: 'Delete All',
+                          icon: const Icon(CupertinoIcons.trash),
+                          isDestructive: true,
+                          onTap: () {},
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 12),
+                    GlassButton.custom(
+                      key: _contextMenuBtnKey,
+                      width: 132,
+                      height: 36,
+                      shape: const LiquidRoundedSuperellipse(
+                        borderRadius: 18,
+                      ),
+                      useOwnLayer: true,
+                      quality: GlassQuality.premium,
+                      onTap: () => _presentContextMenu(innerCtx),
+                      child: Text(
+                        'Context Menu',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: labelColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          GlassGroupedSection(
+            header: const Text('MODAL SHEETS (.SHEET)'),
+            surfaceStyle: surfaceStyle,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GlassButton.custom(
+                        height: 36,
+                        shape: const LiquidRoundedSuperellipse(
+                          borderRadius: 18,
+                        ),
+                        useOwnLayer: true,
+                        quality: GlassQuality.premium,
+                        onTap: () => _presentModalSheet(innerCtx, full: false),
+                        child: Text(
+                          'Half Sheet',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: labelColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: GlassButton.custom(
+                        height: 36,
+                        shape: const LiquidRoundedSuperellipse(
+                          borderRadius: 18,
+                        ),
+                        useOwnLayer: true,
+                        quality: GlassQuality.premium,
+                        onTap: () => _presentModalSheet(innerCtx, full: true),
+                        child: Text(
+                          'Full Sheet',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: labelColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: GlassMorphTrigger(
+                        builder: (ctx, anchor) {
+                          _morphSheetAnchor = anchor;
+                          return GlassButton.custom(
+                            height: 36,
+                            shape: const LiquidRoundedSuperellipse(
+                              borderRadius: 18,
+                            ),
+                            useOwnLayer: true,
+                            quality: GlassQuality.premium,
+                            onTap: () => _presentModalSheet(
+                              innerCtx,
+                              full: false,
+                              morph: true,
+                            ),
+                            child: Text(
+                              'Morph Sheet',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: labelColor,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OverlaysSheetContent extends StatelessWidget {
+  const _OverlaysSheetContent({
+    required this.title,
+    required this.onClose,
+    this.isFull = false,
+  });
+
+  final String title;
+  final VoidCallback onClose;
+  final bool isFull;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
+    final style = GlassThemeData.of(context).style;
+    final labelColor = CupertinoColors.label.resolveFrom(context);
+    final secondaryColor = CupertinoColors.secondaryLabel.resolveFrom(context);
+    final cardColor = isFull
+        ? (isDark ? const Color(0xFF2C2C2E) : CupertinoColors.white)
+        : (isDark ? const Color(0x1FFFFFFF) : const Color(0x0F000000));
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              GlassIconButton(
+                size: 40,
+                useOwnLayer: true,
+                quality: GlassQuality.premium,
+                icon: Icon(CupertinoIcons.xmark, size: 18, color: labelColor),
+                onPressed: onClose,
+              ),
+              Expanded(
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    color: labelColor,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 40),
+            ],
+          ),
+          const SizedBox(height: 20),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(26),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Active GlassStyle: ${style.name}',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: labelColor,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Half detent renders with Liquid Glass paraxial lensing, '
+                    'frost, and rim lighting; expanding to Full crossfades '
+                    'smoothly to the system solid background.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      height: 1.3,
+                      color: secondaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -609,6 +609,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     required double topRadiusFull,
     required double bottomRadiusFull,
     required double fullPos,
+    required GlassStyle style,
   }) {
     // Without a peek detent, dismissal translates the lowest enabled frame.
     // Do not interpolate through disabled half/peek geometry on the way out:
@@ -664,11 +665,13 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     final sHalf = widget.halfSettings ?? baseSettings;
     final sFull = widget.fullSettings ?? baseSettings;
 
+    bool isSolid(LiquidGlassSettings s) => s.blur == 0 && s.frost == 0;
+
     // Determine target expanded colors for each state
-    // If blur is 0, the state itself provides the solid color
-    final cPeek = sPeek.blur == 0 ? sPeek.glassColor : effectiveExpandedColor;
-    final cHalf = sHalf.blur == 0 ? sHalf.glassColor : effectiveExpandedColor;
-    final cFull = sFull.blur == 0 ? sFull.glassColor : effectiveExpandedColor;
+    // If blur and frost are 0, the state itself provides the solid color
+    final cPeek = isSolid(sPeek) ? sPeek.glassColor : effectiveExpandedColor;
+    final cHalf = isSolid(sHalf) ? sHalf.glassColor : effectiveExpandedColor;
+    final cFull = isSolid(sFull) ? sFull.glassColor : effectiveExpandedColor;
 
     Color currentExpandedColor;
 
@@ -685,16 +688,16 @@ class _GlassModalSheetState extends State<GlassModalSheet>
         // exist. Solid glass stays glass; a solid-fill half stays filled.
         effectiveSettings = sHalf;
         currentExpandedColor = cHalf;
-        colorOpacity = sHalf.blur == 0 ? 1.0 : 0.0;
+        colorOpacity = isSolid(sHalf) ? 1.0 : 0.0;
       } else {
         effectiveSettings = LiquidGlassSettings.lerp(sPeek, sHalf, tProgress);
         currentExpandedColor = Color.lerp(cPeek, cHalf, tProgress)!;
 
-        if (sPeek.blur > 0 && sHalf.blur == 0) {
+        if (!isSolid(sPeek) && isSolid(sHalf)) {
           colorOpacity = tProgress;
-        } else if (sPeek.blur == 0 && sHalf.blur > 0) {
+        } else if (isSolid(sPeek) && !isSolid(sHalf)) {
           colorOpacity = 1.0 - tProgress;
-        } else if (sPeek.blur == 0 && sHalf.blur == 0) {
+        } else if (isSolid(sPeek) && isSolid(sHalf)) {
           colorOpacity = 1.0;
         } else {
           colorOpacity = 0.0;
@@ -711,20 +714,20 @@ class _GlassModalSheetState extends State<GlassModalSheet>
 
       if (widget.fullSettings != null) {
         // Use explicit state settings for opacity transition
-        if (sHalf.blur > 0 && sFull.blur == 0) {
+        if (!isSolid(sHalf) && isSolid(sFull)) {
           colorOpacity = tProgress;
-        } else if (sHalf.blur == 0 && sFull.blur > 0) {
+        } else if (isSolid(sHalf) && !isSolid(sFull)) {
           colorOpacity = 1.0 - tProgress;
-        } else if (sHalf.blur == 0 && sFull.blur == 0) {
+        } else if (isSolid(sHalf) && isSolid(sFull)) {
           colorOpacity = 1.0;
         } else {
           colorOpacity = 0.0;
         }
       } else {
         // Fallback to classic threshold logic OR maintain solid if half was solid
-        if (sHalf.blur == 0) {
+        if (isSolid(sHalf)) {
           colorOpacity = 1.0;
-        } else if (baseSettings.blur == 0) {
+        } else if (isSolid(baseSettings)) {
           colorOpacity = 1.0;
         } else {
           final fadeRange = (1.0 - widget.fillThreshold).clamp(0.01, 1.0);
@@ -745,8 +748,11 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       glassOpacity = 1.0 - colorOpacity;
     }
 
-    // Apply saturation glow pulse if enabled
-    if (widget.enableSaturationGlow && _saturationAnimation.value > 0) {
+    // Apply saturation glow pulse if enabled (classic style only; ios26/ios27
+    // keep calibrated refraction and neutral rim without directional light injection)
+    if (widget.enableSaturationGlow &&
+        _saturationAnimation.value > 0 &&
+        style == GlassStyle.classic) {
       effectiveSettings = effectiveSettings.copyWith(
         saturation: effectiveSettings.saturation *
             (1.0 + _saturationAnimation.value * 0.25),
@@ -926,11 +932,14 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   @override
   Widget build(BuildContext context) {
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
+    final style = GlassThemeHelpers.resolveStyle(context);
     final effectiveExpandedColor = (isDark ? widget.expandedDarkColor : null) ??
         widget.expandedColor ??
         (isDark
             ? const Color(0xFF1C1C1E)
-            : CupertinoColors.white); // 0xFF1C1C1E is systemGray6 in dark mode
+            : (style == GlassStyle.classic
+                ? CupertinoColors.white
+                : const Color(0xFFF2F2F7)));
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
@@ -955,6 +964,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       context,
       explicit: widget.settings,
       fallback: kDefaultSheetSettings,
+      isOverlayPlatter: true,
     );
 
     // Focus listener that snaps the sheet to full whenever a focusable
@@ -1015,6 +1025,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
           topRadiusFull: topRadiusFull,
           bottomRadiusFull: bottomRadiusFull,
           fullPos: fullPos,
+          style: style,
         );
 
         _currentEffectiveHeight = metrics.effectiveHeight;
@@ -1082,10 +1093,14 @@ class _GlassModalSheetState extends State<GlassModalSheet>
               alpha: metrics.effectiveSettings.glassColor.a *
                   metrics.glassOpacity),
           blur: metrics.effectiveSettings.blur * metrics.glassOpacity,
+          frost: metrics.effectiveSettings.frost * metrics.glassOpacity,
           lightIntensity:
               metrics.effectiveSettings.lightIntensity * metrics.glassOpacity,
           ambientStrength:
               metrics.effectiveSettings.ambientStrength * metrics.glassOpacity,
+          rimLight: metrics.effectiveSettings.rimLight * metrics.glassOpacity,
+          rimShade: metrics.effectiveSettings.rimShade * metrics.glassOpacity,
+          bodyShade: metrics.effectiveSettings.bodyShade * metrics.glassOpacity,
         );
 
         Widget result = _SheetLayout(

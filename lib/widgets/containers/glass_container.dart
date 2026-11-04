@@ -406,6 +406,8 @@ class GlassContainer extends StatelessWidget {
           quality: effectiveQuality,
           avoidsRefraction:
               true, // Containers block children from refracting background
+          hasExplicitSettings: settings != null ||
+              InheritedLiquidGlass.hasExplicitSettingsOf(context),
           child: content,
         ),
       ),
@@ -452,6 +454,8 @@ class GlassContainer extends StatelessWidget {
         settings: effectiveSettings,
         quality: effectiveQuality,
         avoidsRefraction: false,
+        hasExplicitSettings: settings != null ||
+            InheritedLiquidGlass.hasExplicitSettingsOf(context),
         child: content,
       ),
     );
