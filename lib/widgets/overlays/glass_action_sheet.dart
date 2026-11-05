@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import '../../constants/glass_defaults.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
+import '../../src/widgets/overlays/glass_alert_platter.dart';
 
 import '../../theme/glass_theme_data.dart';
 import '../../theme/glass_theme.dart';
@@ -125,7 +126,16 @@ class GlassActionSheetAction {
 /// );
 /// ```
 ///
-/// ## iOS 26 Design Principles
+/// ## iOS 26 / iOS 27 vs classic presentation
+///
+/// - **`GlassStyle.ios26` / `GlassStyle.ios27`** (default): matches the native
+///   `UIAlertController` action sheet on iOS 26/27 — the same 320 pt platter as
+///   [GlassDialog], centred on screen, with a leading-aligned header, stacked
+///   filled capsule actions and Cancel inside the same platter.
+/// - **`GlassStyle.classic`**: the original bottom-anchored sheet with a
+///   separate Cancel card.
+///
+/// ## Design principles (classic)
 ///
 /// - **Bottom-anchored**: Always slides up from bottom
 /// - **Grouped layout**: Actions in one card, cancel button separated
@@ -156,16 +166,69 @@ Future<T?> showGlassActionSheet<T>({
   final capturedCupertinoTheme = CupertinoTheme.of(context);
   final style = GlassThemeHelpers.resolveStyle(context);
   final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
-  final effectiveBarrierColor = style == GlassStyle.classic
-      ? GlassDefaults.barrierColor
-      : (isDark ? const Color(0x66000000) : const Color(0x47000000));
+
+  Widget withAmbientThemes(Widget sheet) {
+    sheet = CupertinoTheme(
+      data: capturedCupertinoTheme,
+      child: sheet,
+    );
+    if (capturedGlassTheme != null) {
+      sheet = GlassTheme(
+        data: capturedGlassTheme,
+        child: sheet,
+      );
+    }
+    return sheet;
+  }
+
+  if (style != GlassStyle.classic) {
+    // ios26 / ios27: the native action sheet is the alert platter with
+    // stacked actions (Cancel included), centred on screen.
+    return showCupertinoDialog<T>(
+      context: context,
+      barrierDismissible: barrierDismissible,
+      barrierColor: glassAlertBarrierColor(isDark: isDark),
+      builder: (modalContext) {
+        void dismiss() => Navigator.of(modalContext).pop();
+        return withAmbientThemes(
+          GlassAlertPlatter(
+            title: title,
+            message: message,
+            settings: settings,
+            quality: quality,
+            forceStacked: true,
+            actions: [
+              for (final action in actions)
+                GlassAlertPlatterAction(
+                  label: action.label,
+                  icon: action.icon,
+                  isDestructive:
+                      action.style == GlassActionSheetStyle.destructive,
+                  onPressed: () {
+                    action.onPressed();
+                    if (action.style != GlassActionSheetStyle.cancel) {
+                      dismiss();
+                    }
+                  },
+                ),
+              if (showCancelButton)
+                GlassAlertPlatterAction(
+                  label: cancelLabel,
+                  onPressed: dismiss,
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   return showCupertinoModalPopup<T>(
     context: context,
     barrierDismissible: barrierDismissible,
-    barrierColor: effectiveBarrierColor,
-    builder: (modalContext) {
-      Widget sheet = _GlassActionSheetContent(
+    barrierColor: GlassDefaults.barrierColor,
+    builder: (modalContext) => withAmbientThemes(
+      _GlassActionSheetContent(
         title: title,
         message: message,
         actions: actions,
@@ -173,19 +236,8 @@ Future<T?> showGlassActionSheet<T>({
         showCancelButton: showCancelButton,
         settings: settings,
         quality: quality,
-      );
-      sheet = CupertinoTheme(
-        data: capturedCupertinoTheme,
-        child: sheet,
-      );
-      if (capturedGlassTheme != null) {
-        sheet = GlassTheme(
-          data: capturedGlassTheme,
-          child: sheet,
-        );
-      }
-      return sheet;
-    },
+      ),
+    ),
   );
 }
 
@@ -261,6 +313,7 @@ class _GlassActionSheetContent extends StatelessWidget {
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: quality,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
     );
 
     return AdaptiveLiquidGlassLayer(
@@ -354,6 +407,7 @@ class _GlassActionSheetContent extends StatelessWidget {
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: quality,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
     );
 
     return AdaptiveLiquidGlassLayer(

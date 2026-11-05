@@ -1,0 +1,323 @@
+// ignore_for_file: public_member_api_docs
+// Internal: the native iOS 26 / iOS 27 alert platter shared by [GlassDialog]
+// and [showGlassActionSheet].
+//
+// Measured from `UIAlertController` (`_UIAlertControllerPhoneTVMacView`) on the
+// iOS 26.0 and iOS 27.0 simulators, which are identical:
+//
+// - platter: 320 pt wide, 34 pt continuous corner radius;
+// - header: title SF Semibold 17 at (30, 22), message SF Regular 15 secondary
+//   7.33 pt below it, both leading-aligned, 4.33 pt below the message;
+// - actions: 48 pt tall filled capsules inset 16 pt on every side, 8 pt apart,
+//   SF Medium 17 (Semibold for the preferred action); two actions share a row
+//   when their labels fit, otherwise they stack;
+// - a UIKit action sheet shown without a source view is this same platter with
+//   stacked actions (Cancel included), centred on screen.
+
+import 'package:flutter/cupertino.dart';
+
+import '../../../src/renderer/liquid_glass_renderer.dart';
+import '../../../theme/glass_theme.dart';
+import '../../../theme/glass_theme_helpers.dart';
+import '../../../types/glass_quality.dart';
+import '../../../types/glass_style.dart';
+import '../../../widgets/containers/glass_container.dart';
+import '../../../widgets/shared/glass_focus_region.dart';
+
+/// Native alert platter width on iOS 26 / iOS 27.
+const double kGlassAlertPlatterWidth = 320;
+
+/// The modal barrier behind a native alert / action sheet on iOS 26 / iOS 27.
+///
+/// Derived from the same screen point with and without a native alert on both
+/// runtimes: white → `#CACACA` in light mode (≈ 0.21 black) and `#1C1C1E` →
+/// `#0F0F10` in dark mode (≈ 0.47 black).
+Color glassAlertBarrierColor({required bool isDark}) =>
+    isDark ? const Color(0x77000000) : const Color(0x35000000);
+
+/// One action row of a [GlassAlertPlatter].
+class GlassAlertPlatterAction {
+  const GlassAlertPlatterAction({
+    required this.label,
+    required this.onPressed,
+    this.isPrimary = false,
+    this.isDestructive = false,
+    this.icon,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+  final bool isPrimary;
+  final bool isDestructive;
+  final Widget? icon;
+}
+
+/// The `ios26` / `ios27` alert platter.
+class GlassAlertPlatter extends StatelessWidget {
+  const GlassAlertPlatter({
+    required this.actions,
+    super.key,
+    this.title,
+    this.message,
+    this.content,
+    this.settings,
+    this.quality,
+    this.maxWidth,
+    this.forceStacked = false,
+  });
+
+  final List<GlassAlertPlatterAction> actions;
+  final String? title;
+  final String? message;
+  final Widget? content;
+  final LiquidGlassSettings? settings;
+  final GlassQuality? quality;
+  final double? maxWidth;
+
+  /// Stack the actions even when they would fit side by side (action sheets).
+  final bool forceStacked;
+
+  /// The platter's glass settings.
+  ///
+  /// The shared overlay-platter preset is calibrated on menus and sheets. The
+  /// native iOS 26 dark alert is a much thinner tint than that preset (≈ +4
+  /// levels over its backdrop against ≈ +26), so when the app has not changed
+  /// the preset's tint, the alert uses the measured one. Measured on the
+  /// iOS 26 simulator at both `standard` and `premium` quality: premium's frost
+  /// does not remove the preset's tint.
+  LiquidGlassSettings _platterSettings(BuildContext context) {
+    final resolved = GlassThemeHelpers.resolveSettings(
+      context,
+      explicit: settings,
+      isOverlayPlatter: true,
+    );
+    if (settings == null &&
+        GlassThemeHelpers.resolveStyle(context) == GlassStyle.ios26 &&
+        GlassTheme.brightnessOf(context) == Brightness.dark &&
+        resolved.glassColor == LiquidGlassSettings.ios26Dark.glassColor) {
+      return resolved.copyWith(glassColor: const Color(0x05FFFFFF));
+    }
+    return resolved;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveQuality = GlassThemeHelpers.resolveQuality(
+      context,
+      widgetQuality: quality,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
+    );
+    final platterSettings = _platterSettings(context);
+    final hasHeader = title != null || message != null || content != null;
+
+    // Native centres the platter in the safe area (its centre sits at
+    // (safeTop + height - safeBottom) / 2, i.e. y = 451 on a 874 pt iPhone).
+    return SafeArea(
+      child: Center(
+        child: ConstrainedBox(
+          constraints:
+              BoxConstraints(maxWidth: maxWidth ?? kGlassAlertPlatterWidth),
+          child: GlassContainer.card(
+            useOwnLayer: true,
+            settings: platterSettings,
+            quality: effectiveQuality,
+            shape: const LiquidRoundedSuperellipse(borderRadius: 34),
+            padding: EdgeInsets.zero,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (hasHeader)
+                  Padding(
+                    padding:
+                        const EdgeInsetsDirectional.fromSTEB(30, 22, 30, 4.33),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (title != null)
+                          SizedBox(
+                            width: double.infinity,
+                            child: Text(
+                              title!,
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w600,
+                                color:
+                                    CupertinoColors.label.resolveFrom(context),
+                              ),
+                            ),
+                          ),
+                        if (title != null && message != null)
+                          const SizedBox(height: 7.33),
+                        if (message != null)
+                          SizedBox(
+                            width: double.infinity,
+                            child: Text(
+                              message!,
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: CupertinoColors.secondaryLabel
+                                    .resolveFrom(context),
+                              ),
+                            ),
+                          ),
+                        if (content != null) ...[
+                          if (title != null || message != null)
+                            const SizedBox(height: 8),
+                          content!,
+                        ],
+                      ],
+                    ),
+                  ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16, hasHeader ? 16 : 22, 16, 16),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) =>
+                        _buildActions(context, constraints.maxWidth),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActions(BuildContext context, double width) {
+    if (!forceStacked &&
+        actions.length <= 2 &&
+        _labelsFitSideBySide(context, width)) {
+      return Row(
+        children: [
+          for (var i = 0; i < actions.length; i++) ...[
+            if (i > 0) const SizedBox(width: 8),
+            Expanded(child: _GlassAlertPlatterButton(action: actions[i])),
+          ],
+        ],
+      );
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < actions.length; i++)
+          Padding(
+            padding: EdgeInsets.only(top: i > 0 ? 8 : 0),
+            child: _GlassAlertPlatterButton(action: actions[i]),
+          ),
+      ],
+    );
+  }
+
+  /// Whether every label fits on one line in half the platter's width.
+  bool _labelsFitSideBySide(BuildContext context, double width) {
+    if (actions.length < 2) return true;
+    // Two buttons and the 8 pt gap between them; the label keeps clear of the
+    // capsule's rounded ends on both sides.
+    final labelWidth = (width - 8) / 2 - 2 * 16;
+    final baseStyle = DefaultTextStyle.of(context).style;
+    for (final action in actions) {
+      final painter = TextPainter(
+        text: TextSpan(
+          text: action.label,
+          style: baseStyle.merge(_labelStyle(action)),
+        ),
+        maxLines: 1,
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+      )..layout();
+      final fits = painter.width <= labelWidth;
+      painter.dispose();
+      if (!fits) return false;
+    }
+    return true;
+  }
+}
+
+TextStyle _labelStyle(GlassAlertPlatterAction action) => TextStyle(
+      fontSize: 17,
+      fontWeight: action.isPrimary ? FontWeight.w600 : FontWeight.w500,
+    );
+
+/// A flat, filled capsule action (`_UIAlertControllerFilledBackgroundView`):
+/// 48 pt tall, fully rounded, filled with a translucent wash that darkens the
+/// platter in light mode and lightens it in dark mode.
+class _GlassAlertPlatterButton extends StatefulWidget {
+  const _GlassAlertPlatterButton({required this.action});
+
+  final GlassAlertPlatterAction action;
+
+  @override
+  State<_GlassAlertPlatterButton> createState() =>
+      _GlassAlertPlatterButtonState();
+}
+
+class _GlassAlertPlatterButtonState extends State<_GlassAlertPlatterButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
+    // The filled capsule wash differs between the two runtimes (measured):
+    // iOS 27 darkens the light platter by ≈ 0.15 and lightens the dark one by
+    // ≈ 0.115; iOS 26 is lighter in light mode (≈ 0.10) and stronger in dark
+    // mode (≈ 0.13).
+    final isIos26 = GlassThemeHelpers.resolveStyle(context) == GlassStyle.ios26;
+    final restLight = isIos26 ? 0.10 : 0.15;
+    final restDark = isIos26 ? 0.13 : 0.115;
+    final fill = isDark
+        ? CupertinoColors.white
+            .withValues(alpha: _pressed ? restDark + 0.085 : restDark)
+        : CupertinoColors.black
+            .withValues(alpha: _pressed ? restLight + 0.10 : restLight);
+    final action = widget.action;
+    final textColor = action.isDestructive
+        ? CupertinoColors.systemRed.resolveFrom(context)
+        : CupertinoColors.label.resolveFrom(context);
+    final label = Text(
+      action.label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: _labelStyle(action).copyWith(color: textColor),
+    );
+
+    return GlassFocusRegion(
+      enabled: true,
+      isButton: true,
+      semanticLabel: action.label,
+      shape: const StadiumBorder(),
+      onKeyboardActivate: action.onPressed,
+      semanticOnTap: action.onPressed,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        excludeFromSemantics: true,
+        onTap: action.onPressed,
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTapCancel: () => setState(() => _pressed = false),
+        child: Container(
+          height: 48,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration:
+              ShapeDecoration(color: fill, shape: const StadiumBorder()),
+          child: action.icon == null
+              ? label
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconTheme(
+                      data: IconThemeData(color: textColor, size: 20),
+                      child: action.icon!,
+                    ),
+                    const SizedBox(width: 12),
+                    Flexible(child: label),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+}

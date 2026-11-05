@@ -312,6 +312,7 @@ class _GlassToastState extends State<GlassToast> {
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
     );
 
     return AdaptiveLiquidGlassLayer(

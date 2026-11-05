@@ -29,6 +29,20 @@ class GlassThemeHelpers {
   /// ancestor, defaulting to [GlassThemeData.fallback]'s style.
   static GlassStyle resolveStyle(BuildContext context) => of(context).style;
 
+  /// The widget-class default quality for hero surfaces (transient overlays and
+  /// interactive lifted lenses): [GlassQuality.premium] on the native
+  /// [GlassStyle.ios27] / [GlassStyle.ios26] styles, whose paraxial lens, frost
+  /// and rim light only exist in the full shader, and [GlassQuality.standard]
+  /// on [GlassStyle.classic], which keeps its v1.x rendering.
+  ///
+  /// Pass it as the `fallback` of [resolveQuality]. Every explicit quality
+  /// (widget, ambient layer, theme) and the [GlassAdaptiveScope] ceiling still
+  /// take precedence.
+  static GlassQuality nativeStyleQuality(BuildContext context) =>
+      resolveStyle(context) == GlassStyle.classic
+          ? GlassQuality.standard
+          : GlassQuality.premium;
+
   /// Resolves the effective [GlassQuality] for a widget.
   ///
   /// Every glass widget calls this once per build to determine its actual
@@ -131,14 +145,13 @@ class GlassThemeHelpers {
   ///
   /// | Widget class | Default quality | Rationale |
   /// |---|---|---|
-  /// | [GlassTabBar.bottom] | `premium` | Static footer — full quality expected |
-  /// | [GlassToolbar] | `premium` | Static surface |
-  /// | [GlassTabBar] | `standard` | May be in a scrollable context |
-  /// | [GlassButton] | `standard` | Interactive, potentially many on screen |
-  /// | [GlassTextField] | `standard` | Interactive |
-  /// | [GlassSlider] | `standard` | Animated during interaction |
-  /// | [GlassDialog] | `standard` | Overlay |
-  /// | [GlassSheet] | `standard` | Overlay |
+  /// | [GlassTabBar] / [GlassToolbar] | `premium` | Navigation & toolbar chrome |
+  /// | [GlassSheet] / [GlassModalSheet] | `premium` | Modal sheet platter |
+  /// | [GlassDialog] / [showGlassActionSheet] | `premium` | Alert & action sheet platter |
+  /// | [GlassMenu] / [GlassContextMenu] / [GlassPopover] / [GlassToast] | `premium` | Transient floating overlay |
+  /// | [GlassSwitch] / [GlassSlider] / [GlassSegmentedControl] | `premium` | Hero lifted liquid lens (lazy-mounted on interaction) |
+  /// | [GlassButton] | `standard` (`premium` in bars / `bodyOverlays`) | Interactive, potentially many in scroll views |
+  /// | [GlassTextField] | `standard` | Interactive form input |
   /// | [GlassContainer] | `standard` | General purpose container |
   ///
   /// Widgets pass their own default as the [fallback] parameter when calling
@@ -201,7 +214,10 @@ class GlassThemeHelpers {
     if (!GlassIsolationScope.isIsolated(context) && scopeDefault == null) {
       final inherited =
           context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
-      if (inherited != null) resolved = inherited.quality;
+      if (inherited != null &&
+          (inherited.hasExplicitQuality || fallback == GlassQuality.standard)) {
+        resolved = inherited.quality;
+      }
     }
 
     // Step 3: cap inherited quality by adaptive ceiling.

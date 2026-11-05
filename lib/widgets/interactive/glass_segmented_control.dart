@@ -466,7 +466,10 @@ class GlassSegmentedControl extends StatefulWidget {
 
   /// Rendering quality for the glass effect.
   ///
-  /// Defaults to [GlassQuality.standard] (backdrop filter).
+  /// Defaults to [GlassQuality.premium] on [GlassStyle.ios27] / [GlassStyle.ios26]
+  /// ([GlassStyle.classic] keeps [GlassQuality.standard]), which renders the
+  /// calibrated 3D paraxial liquid lens while the indicator is pressed or
+  /// dragged (and mounts zero shader layers at rest).
   final GlassQuality? quality;
 
   /// Optional background key for Skia/Web refraction.
@@ -597,6 +600,7 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
     );
 
     final effectiveSettings = GlassThemeHelpers.resolveSettings(

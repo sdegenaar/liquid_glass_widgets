@@ -66,12 +66,12 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
   final GlobalKey _sliderDiscKey = GlobalKey();
   final GlobalKey _tabBarKey = GlobalKey();
   final GlobalKey _bodyKey = GlobalKey();
+  final ScrollController _bodyScroll = ScrollController();
   final GlobalKey _pullDownKey = GlobalKey();
   final GlobalKey _contextMenuBtnKey = GlobalKey();
   GlassMorphAnchor? _morphSheetAnchor;
   VoidCallback? _toastDismiss;
   Timer? _cmdTimer;
-  String? _lastCmd;
   final List<int> _activePointers = [];
   int _ptrEpoch = 900;
 
@@ -111,6 +111,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
   @override
   void dispose() {
     _cmdTimer?.cancel();
+    _bodyScroll.dispose();
     super.dispose();
   }
 
@@ -118,8 +119,11 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
     final f = File(_controlsCmdFile);
     if (!f.existsSync()) return;
     final cmd = f.readAsStringSync().trim();
-    if (cmd.isEmpty || cmd == _lastCmd) return;
-    _lastCmd = cmd;
+    // Consume the command so the same one can be issued again.
+    try {
+      f.deleteSync();
+    } catch (_) {}
+    if (cmd.isEmpty) return;
     _runCmd(cmd.split(RegExp(r'\s+')));
   }
 
@@ -140,6 +144,15 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
         setState(() => _bgMode = args.length > 1 ? args[1] : 'solid');
       case 'tab':
         setState(() => _selectedTab = int.parse(args[1]));
+      case 'lift':
+        // `lift on` presses every hero control (switch, sliders, segmented
+        // control, tab bar) so the lifted lens can be captured; `lift off`
+        // releases them.
+        setState(() => _lensesLifted = args.length > 1 && args[1] == 'on');
+        _setLensesLifted(_lensesLifted);
+      case 'scroll':
+        // `scroll <offset>` jumps the body list to an exact offset.
+        if (_bodyScroll.hasClients) _bodyScroll.jumpTo(double.parse(args[1]));
       case 'pop':
         _toastDismiss?.call();
         _toastDismiss = null;
@@ -153,7 +166,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
             final binding = WidgetsBinding.instance;
             _ptrEpoch += 1;
             final p = _ptrEpoch;
-            const pos = Offset(10, 100);
+            const pos = Offset(200, 24); // status-bar strip: hits no control
             binding.handlePointerEvent(
               PointerDownEvent(pointer: p, position: pos),
             );
@@ -195,6 +208,8 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
         if (innerCtx != null) _presentGlassSheet(innerCtx);
       case 'dialog':
         if (innerCtx != null) _presentDialog(innerCtx);
+      case 'dialog3':
+        if (innerCtx != null) _presentDialog(innerCtx, threeActions: true);
       case 'action_sheet':
         if (innerCtx != null) _presentActionSheet(innerCtx);
       case 'toast':
@@ -212,21 +227,35 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
     }
   }
 
-  void _presentDialog(BuildContext innerCtx) {
+  void _presentDialog(BuildContext innerCtx, {bool threeActions = false}) {
+    void close() => Navigator.of(innerCtx, rootNavigator: true).pop();
+    if (threeActions) {
+      GlassDialog.show<void>(
+        context: innerCtx,
+        title: 'Save Changes?',
+        message: 'Your edits will be lost if you do not save them.',
+        actions: [
+          GlassDialogAction(label: 'Save', onPressed: close),
+          GlassDialogAction(
+            label: "Don't Save",
+            isDestructive: true,
+            onPressed: close,
+          ),
+          GlassDialogAction(label: 'Cancel', onPressed: close),
+        ],
+      );
+      return;
+    }
     GlassDialog.show<void>(
       context: innerCtx,
       title: 'Delete Photo?',
       message: 'This photo will be removed from all of your devices.',
       actions: [
-        GlassDialogAction(
-          label: 'Cancel',
-          onPressed: () => Navigator.of(innerCtx, rootNavigator: true).pop(),
-        ),
+        GlassDialogAction(label: 'Cancel', onPressed: close),
         GlassDialogAction(
           label: 'Delete',
-          isPrimary: true,
           isDestructive: true,
-          onPressed: () => Navigator.of(innerCtx, rootNavigator: true).pop(),
+          onPressed: close,
         ),
       ],
     );
@@ -610,6 +639,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
               bottom: false,
               child: ListView(
                 key: _bodyKey,
+                controller: _bodyScroll,
                 padding: const EdgeInsets.fromLTRB(16, 108, 16, 120),
                 children: [
                   GlassSearchBar(
@@ -640,7 +670,6 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                           selectedIndex: _segmentIndex,
                           onSegmentSelected: (i) =>
                               setState(() => _segmentIndex = i),
-                          quality: GlassQuality.premium,
                         ),
                       ),
                     ],
@@ -657,7 +686,6 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                           value: _switchOn,
                           width: 63,
                           height: 28,
-                          quality: GlassQuality.premium,
                           onChanged: (v) => setState(() => _switchOn = v),
                         ),
                       ),
@@ -668,7 +696,6 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                           value: _switchOff,
                           width: 63,
                           height: 28,
-                          quality: GlassQuality.premium,
                           onChanged: (v) => setState(() => _switchOff = v),
                         ),
                       ),
@@ -708,7 +735,6 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                               key: _sliderContKey,
                               value: _sliderContinuous,
                               trackHeight: 6,
-                              quality: GlassQuality.premium,
                               onChanged: (v) =>
                                   setState(() => _sliderContinuous = v),
                             ),
@@ -745,7 +771,6 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                               value: _sliderDiscrete,
                               divisions: 4,
                               trackHeight: 6,
-                              quality: GlassQuality.premium,
                               onChanged: (v) =>
                                   setState(() => _sliderDiscrete = v),
                             ),

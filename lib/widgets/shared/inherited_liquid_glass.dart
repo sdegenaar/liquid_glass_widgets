@@ -17,6 +17,7 @@ class InheritedLiquidGlass extends InheritedWidget {
     this.isBlurProvidedByAncestor = false,
     this.avoidsRefraction = false,
     this.hasExplicitSettings = true,
+    this.hasExplicitQuality = true,
     required super.child,
     super.key,
   });
@@ -39,6 +40,10 @@ class InheritedLiquidGlass extends InheritedWidget {
   /// Whether [settings] was explicitly supplied to the ancestor layer rather
   /// than synthesized from the ambient [GlassTheme].
   final bool hasExplicitSettings;
+
+  /// Whether [quality] was explicitly supplied to the ancestor layer rather
+  /// than synthesized from the ambient [GlassTheme] fallback.
+  final bool hasExplicitQuality;
 
   /// Returns `true` when the nearest [InheritedLiquidGlass] (or renderer layer)
   /// carries explicitly supplied [LiquidGlassSettings].
@@ -92,6 +97,7 @@ class InheritedLiquidGlass extends InheritedWidget {
         quality != oldWidget.quality ||
         isBlurProvidedByAncestor != oldWidget.isBlurProvidedByAncestor ||
         avoidsRefraction != oldWidget.avoidsRefraction ||
-        hasExplicitSettings != oldWidget.hasExplicitSettings;
+        hasExplicitSettings != oldWidget.hasExplicitSettings ||
+        hasExplicitQuality != oldWidget.hasExplicitQuality;
   }
 }

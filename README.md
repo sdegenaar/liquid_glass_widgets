@@ -392,7 +392,7 @@ GlassContainer.card(
 )
 ```
 
-> **Use Premium only for static, non-scrolling surfaces** (hero sections, feature cards). It may not render correctly inside `ListView` or `CustomScrollView` on Impeller. `GlassScaffold` automatically promotes app bars and bottom bars to premium quality via `GlassIsolationScope`.
+> **Use Premium for floating chrome, overlays, and hero sections.** `GlassScaffold` automatically promotes `appBar`, `bottomBar`, and `bodyOverlays` to premium quality via `GlassIsolationScope`, and transient overlays (`GlassDialog`, `showGlassActionSheet`, `GlassSheet`, `GlassModalSheet`, `GlassMenu`, `GlassContextMenu`, `GlassPopover`, `GlassToast`) plus interactive lifted lenses (`GlassSwitch`, `GlassSlider`, `GlassSegmentedControl`, which lazy-mount their lens shader only during active press/drag) default to `premium` on `GlassStyle.ios27` / `GlassStyle.ios26` (`GlassStyle.classic` keeps `standard`). For dense, repeatable cards or buttons inside a `ListView` or `CustomScrollView`, keep the default `GlassQuality.standard` (or `GlassSurfaceStyle.solid`).
 
 > **iOS 27 material**: `settings: LiquidGlassSettings.ios27Light` (or `ios27Dark`) gives glass the native `glassEffect(.regular)` look. Premium draws the full material — the frost, hairline outline, rim light and folded lens band. Standard and web approximate it with the regular blur and specular highlight.
 

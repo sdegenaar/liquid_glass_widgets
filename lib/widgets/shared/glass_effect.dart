@@ -522,6 +522,12 @@ class _GlassEffectState extends State<GlassEffect>
       // GlassBackdropGroup the bar may be in: glass in a group can't see
       // the glass of the same group below it.
       final activeIntensity = widget.interactionIntensity.clamp(0.0, 1.0);
+      // At rest (activeIntensity == 0), skip mounting LiquidGlass.withOwnLayer
+      // so resting controls (e.g. a settings list of switches/sliders) pay zero
+      // Impeller backdrop-filter layer cost until touched.
+      if (activeIntensity <= 0.001) {
+        return widget.child;
+      }
       return GlassBackdropGroup(
         enabled: false,
         child: LiquidGlass.withOwnLayer(

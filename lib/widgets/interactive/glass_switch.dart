@@ -148,10 +148,13 @@ class GlassSwitch extends StatefulWidget {
   /// Whether to create its own layer or use grouped glass.
   final bool useOwnLayer;
 
-  /// Defaults to [GlassQuality.standard], which uses backdrop filter rendering.
-  /// This works reliably in all contexts, including scrollable lists.
+  /// Rendering quality for the lifted liquid lens during press and drag.
   ///
-  /// Use [GlassQuality.premium] for shader-based glass in static layouts only.
+  /// Defaults to [GlassQuality.premium] on [GlassStyle.ios27] / [GlassStyle.ios26]
+  /// ([GlassStyle.classic] keeps [GlassQuality.standard]), which renders the
+  /// calibrated 3D paraxial liquid lens when the thumb is pressed or dragged and
+  /// mounts zero shader layers at rest. Falls back to [GlassQuality.standard]
+  /// automatically on Skia/Web or when capped by [GlassAdaptiveScope].
   final GlassQuality? quality;
 
   /// Whether to emit haptic feedback on toggle.
@@ -587,6 +590,7 @@ class _GlassSwitchState extends State<GlassSwitch>
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
     );
 
     final thumbSize = widget.height - 4.0;

@@ -1421,6 +1421,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
     );
 
     final bool useBlendGroup = effectiveQuality != GlassQuality.minimal &&
@@ -1724,6 +1725,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
     );
 
     // ─── True Metaball Morphing ──────────────────────────────────────────────

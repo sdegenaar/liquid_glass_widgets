@@ -233,14 +233,13 @@ class GlassSlider extends StatefulWidget {
   /// Defaults to false (grouped mode).
   final bool useOwnLayer;
 
-  /// Rendering quality for the glass effect.
+  /// Rendering quality for the lifted liquid lens during press and drag.
   ///
-  /// Defaults to [GlassQuality.standard], which uses the lightweight fragment
-  /// shader. This works reliably in all contexts, including scrollable lists.
-  ///
-  /// Use [GlassQuality.premium] for full-pipeline shader with texture capture
-  /// and chromatic aberration (Impeller only) in static layouts.
-  /// Defaults to [GlassQuality.standard].
+  /// Defaults to [GlassQuality.premium] on [GlassStyle.ios27] / [GlassStyle.ios26]
+  /// ([GlassStyle.classic] keeps [GlassQuality.standard]), which renders the
+  /// calibrated 3D paraxial liquid lens when the thumb is pressed or dragged and
+  /// mounts zero shader layers at rest. Falls back to [GlassQuality.standard]
+  /// automatically on Skia/Web or when capped by [GlassAdaptiveScope].
   final GlassQuality? quality;
 
   // ── iOS 26 interaction ────────────────────────────────────────────────────
@@ -464,6 +463,7 @@ class _GlassSliderState extends State<GlassSlider>
     _effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
     );
 
     final effectiveValue = _dragValue ?? widget.value;
