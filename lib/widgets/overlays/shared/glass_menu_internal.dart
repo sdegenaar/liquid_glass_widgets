@@ -2102,6 +2102,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
             return GlassMenuItem(
               key: item.key ?? ValueKey(item.title),
               title: item.title,
+              semanticLabel: item.semanticLabel,
               subtitle: item.subtitle,
               icon: item.icon,
               isDestructive: item.isDestructive,
