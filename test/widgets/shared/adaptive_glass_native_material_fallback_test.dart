@@ -72,6 +72,37 @@ void main() {
     });
   }
 
+  testWidgets(
+      'ios27Dark translates bodyShade into ambientStrength on standard path',
+      (tester) async {
+    final s = await _lightweightSettings(
+      tester,
+      LiquidGlassSettings.ios27Dark,
+      GlassQuality.standard,
+    );
+    expect(s.ambientStrength,
+        closeTo(LiquidGlassSettings.ios27Dark.bodyShade, 0.001));
+    expect(s.lightIntensity, closeTo(0.5, 0.001));
+  });
+
+  testWidgets(
+      'ios26Dark combines directional lightIntensity and rimLight on standard path',
+      (tester) async {
+    final s = await _lightweightSettings(
+      tester,
+      LiquidGlassSettings.ios26Dark,
+      GlassQuality.standard,
+    );
+    expect(
+      s.lightIntensity,
+      closeTo(
+        LiquidGlassSettings.ios26Dark.lightIntensity +
+            0.5 * LiquidGlassSettings.ios26Dark.rimLight,
+        0.001,
+      ),
+    );
+  });
+
   testWidgets('settings without the iOS 27 terms pass through', (tester) async {
     const plain = LiquidGlassSettings(blur: 5, lightIntensity: 0.4);
     final s = await _lightweightSettings(tester, plain, GlassQuality.standard);
@@ -81,23 +112,28 @@ void main() {
 
   for (final quality in [GlassQuality.standard, GlassQuality.premium]) {
     testWidgets(
-        'GlassEffect translates ios27Indicator rimLight into lightIntensity on 2D indicator path (${quality.name})',
+        'GlassEffect translates ios27Indicator and ios26Indicator rimLight into lightIntensity on 2D indicator path (${quality.name})',
         (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: LiquidGlassWidgets.wrap(
-            child: GlassEffect(
-              shape: const LiquidRoundedSuperellipse(borderRadius: 16),
-              settings: LiquidGlassSettings.ios27Indicator,
-              interactionIntensity: 0.5,
-              quality: quality,
-              child: const SizedBox(width: 80, height: 40),
+      for (final preset in [
+        LiquidGlassSettings.ios27Indicator,
+        LiquidGlassSettings.ios26Indicator,
+      ]) {
+        await tester.pumpWidget(MaterialApp(
+          home: Scaffold(
+            body: LiquidGlassWidgets.wrap(
+              child: GlassEffect(
+                shape: const LiquidRoundedSuperellipse(borderRadius: 16),
+                settings: preset,
+                interactionIntensity: 0.5,
+                quality: quality,
+                child: const SizedBox(width: 80, height: 40),
+              ),
             ),
           ),
-        ),
-      ));
-      await tester.pump();
-      expect(find.byType(GlassEffect), findsOneWidget);
+        ));
+        await tester.pump();
+        expect(find.byType(GlassEffect), findsOneWidget);
+      }
     });
   }
 }

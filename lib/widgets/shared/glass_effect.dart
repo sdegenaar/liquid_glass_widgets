@@ -586,12 +586,11 @@ class _GlassEffectState extends State<GlassEffect>
     //   standardBaseAlpha = baseAlphaMultiplier × interactionIntensity
     // inside the shader — normalising alpha here would double-count it.
     final base = widget.settings;
-    final double fallbackLightIntensity = math.max(
-      base.effectiveLightIntensity,
-      const LiquidGlassSettings().lightIntensity *
-          base.rimLight.clamp(0.0, 1.0) *
-          base.visibility,
-    );
+    final double fallbackLightIntensity = (base.effectiveLightIntensity +
+            const LiquidGlassSettings().lightIntensity *
+                base.rimLight.clamp(0.0, 1.0) *
+                base.visibility)
+        .clamp(0.0, 10.0);
     final LiquidGlassSettings effectiveSettings;
     if (widget.quality == GlassQuality.standard) {
       effectiveSettings = base.copyWith(
