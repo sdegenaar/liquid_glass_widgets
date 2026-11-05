@@ -1,5 +1,6 @@
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show SemanticsAction;
+import 'package:flutter/rendering.dart' show SemanticsAction, SemanticsNode;
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -1668,5 +1669,129 @@ void main() {
 
     expect(tapped, hasLength(1));
     expect(controller.isOpen, isFalse);
+  });
+
+  group('GlassMenuItem.semanticsSelected', () {
+    Future<void> openPicker(WidgetTester tester) async {
+      final controller = GlassMenuController();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Stack(
+              children: [
+                Positioned(
+                  left: 40,
+                  top: 80,
+                  child: GlassMenu(
+                    controller: controller,
+                    menuAlignment: GlassMenuAlignment.topLeft,
+                    trigger: const SizedBox(width: 8, height: 8),
+                    items: [
+                      GlassMenuItem(
+                        title: 'Alpha',
+                        onTap: () {},
+                        semanticsSelected: false,
+                      ),
+                      GlassMenuItem(
+                        title: 'Beta',
+                        onTap: () {},
+                        trailing: const Icon(Icons.check),
+                        semanticsSelected: true,
+                      ),
+                      GlassMenuItem(title: 'Gamma', onTap: () {}),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      controller.open();
+      await tester.pumpAndSettle();
+    }
+
+    SemanticsNode row(WidgetTester tester, String title) =>
+        tester.getSemantics(find.bySemanticsLabel(title).first);
+
+    testWidgets('true reports the row as selected', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await openPicker(tester);
+
+      expect(
+        row(tester, 'Beta'),
+        isSemantics(
+          label: 'Beta',
+          isButton: true,
+          hasSelectedState: true,
+          isSelected: true,
+        ),
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('false reports a selectable row that is not selected',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await openPicker(tester);
+
+      expect(
+        row(tester, 'Alpha'),
+        isSemantics(
+          label: 'Alpha',
+          isButton: true,
+          hasSelectedState: true,
+          isSelected: false,
+        ),
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('null (the default) reports no selected state', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await openPicker(tester);
+
+      expect(
+        row(tester, 'Gamma'),
+        isSemantics(
+          label: 'Gamma',
+          isButton: true,
+          hasSelectedState: false,
+          isSelected: false,
+        ),
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('the hover pill does not change the semantic state',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await openPicker(tester);
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+
+      // The pill (the visual isSelected) moves onto each row in turn; the
+      // reported state stays the semantic choice.
+      await mouse.moveTo(tester.getCenter(find.text('Gamma')));
+      await tester.pumpAndSettle();
+      expect(
+        row(tester, 'Gamma'),
+        isSemantics(hasSelectedState: false, isSelected: false),
+      );
+
+      await mouse.moveTo(tester.getCenter(find.text('Alpha')));
+      await tester.pumpAndSettle();
+      expect(
+        row(tester, 'Alpha'),
+        isSemantics(hasSelectedState: true, isSelected: false),
+      );
+      expect(
+        row(tester, 'Beta'),
+        isSemantics(hasSelectedState: true, isSelected: true),
+      );
+      semantics.dispose();
+    });
   });
 }

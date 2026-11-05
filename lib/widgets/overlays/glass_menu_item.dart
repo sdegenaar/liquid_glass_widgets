@@ -22,6 +22,7 @@ class GlassMenuItem extends StatefulWidget {
     this.subtitle,
     this.isPressed,
     this.isSelected = false,
+    this.semanticsSelected,
     this.enabled = true,
     this.titleStyle,
     this.subtitleStyle,
@@ -63,6 +64,14 @@ class GlassMenuItem extends StatefulWidget {
 
   /// Whether the item is currently selected (e.g. by a sliding pill).
   final bool isSelected;
+
+  /// Whether this row is the menu's current choice, for assistive
+  /// technologies only; it does not change how the row is drawn.
+  ///
+  /// `true` or `false` report a selectable row in that state (give every row
+  /// of a single-selection menu a value); `null` (the default) reports no
+  /// selected state, as before.
+  final bool? semanticsSelected;
 
   /// Whether the item should handle its own interactions.
   final bool enabled;
@@ -442,6 +451,10 @@ class _GlassMenuItemState extends State<GlassMenuItem>
       // The title label replaces the row's own text, so carry the subtitle
       // as the value: announced after the title, on the same node.
       semanticValue: widget.subtitle,
+      // Only the semantic choice is reported. The visual [isSelected] follows
+      // the glide pill, and announcing it would mark whichever row is hovered.
+      tracksSelection: widget.semanticsSelected != null,
+      isSelected: widget.semanticsSelected ?? false,
       isFocusedNotifier: isFocused,
       isHoveredNotifier: isHovered,
       onKeyboardActivate: _handleKeyboardActivate,
