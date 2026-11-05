@@ -46,12 +46,23 @@ class AppleMailDemoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MailGlassScope(
-      child: CupertinoApp(
-        title: 'Apple Mail',
-        theme: const CupertinoThemeData(brightness: Brightness.dark),
-        builder: (context, child) => GlassNavigationShell(child: child!),
-        home: const AppleMailHomeScreen(),
-        debugShowCheckedModeBanner: false,
+      child: Builder(
+        builder: (context) {
+          final isIos27 = MailGlassScope.isIos27(context);
+          return GlassTheme(
+            data: GlassThemeData(
+              style: isIos27 ? GlassStyle.ios27 : GlassStyle.ios26,
+              brightness: Brightness.dark,
+            ),
+            child: CupertinoApp(
+              title: 'Apple Mail',
+              theme: const CupertinoThemeData(brightness: Brightness.dark),
+              builder: (context, child) => GlassNavigationShell(child: child!),
+              home: const AppleMailHomeScreen(),
+              debugShowCheckedModeBanner: false,
+            ),
+          );
+        },
       ),
     );
   }

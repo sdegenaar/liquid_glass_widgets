@@ -64,6 +64,25 @@ class _AppleLiquidGlassShowcaseAppState
   /// Global glass style preset — shared via [_BrightnessScope] and [GlassTheme].
   GlassStyle _style = GlassStyle.ios27;
 
+  @override
+  void initState() {
+    super.initState();
+    kMailUseIos27.addListener(_onMailStyleChanged);
+  }
+
+  @override
+  void dispose() {
+    kMailUseIos27.removeListener(_onMailStyleChanged);
+    super.dispose();
+  }
+
+  void _onMailStyleChanged() {
+    final target = kMailUseIos27.value ? GlassStyle.ios27 : GlassStyle.ios26;
+    if (_style != target) {
+      setState(() => _style = target);
+    }
+  }
+
   void _toggleBrightness() {
     setState(() {
       _brightness =
@@ -75,12 +94,12 @@ class _AppleLiquidGlassShowcaseAppState
     if (_style == style) return;
     setState(() {
       _style = style;
-      if (style == GlassStyle.ios27) {
-        kMailUseIos27.value = true;
-      } else if (style == GlassStyle.ios26) {
-        kMailUseIos27.value = false;
-      }
     });
+    if (style == GlassStyle.ios27 && !kMailUseIos27.value) {
+      kMailUseIos27.value = true;
+    } else if (style == GlassStyle.ios26 && kMailUseIos27.value) {
+      kMailUseIos27.value = false;
+    }
   }
 
   @override
