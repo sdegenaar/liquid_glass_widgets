@@ -58,7 +58,7 @@ First-party rendering extensions developed specifically for `liquid_glass_widget
 * **`interaction_notification.dart`** (`lib/types/`): Implements "Smart Silence", allowing nested interactive children to inform parent sheets/surfaces to suppress surface-level scale or specular effects.
 
 ### Layer 3: Theming, Accessibility & Quality Pipeline (`lib/theme/`, `lib/types/`, `lib/utils/`)
-* **`GlassThemeData` & `GlassThemeSettings`**: App-wide, cascade-inherited styling system for thickness, blur, specular highlights, tint, and shapes.
+* **`GlassThemeData`, `GlassThemeSettings` & `GlassStyle`**: App-wide, cascade-inherited styling system supporting three design-era presets (`GlassStyle.ios27` default, `GlassStyle.ios26`, and `GlassStyle.classic`) for surface platters, interactive indicator lenses, inner shadows, and resting selection pills across light and dark modes.
 * **Adaptive Quality Engine (`GlassQuality`)**:
   - `GlassQuality.premium`: Full Impeller multi-pass refraction, chromatic aberration, and dynamic specular glints.
   - `GlassQuality.standard`: Balanced single-pass refraction and blur.

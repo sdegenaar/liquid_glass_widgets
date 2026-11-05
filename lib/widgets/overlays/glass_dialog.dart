@@ -221,7 +221,9 @@ class GlassDialog extends StatelessWidget {
 
   /// Rendering quality for the glass effect.
   ///
-  /// Defaults to [GlassQuality.standard], which uses backdrop filter rendering.
+  /// Defaults to [GlassQuality.premium] on [GlassStyle.ios27] and
+  /// [GlassStyle.ios26] ([GlassStyle.classic] defaults to
+  /// [GlassQuality.standard]).
   final GlassQuality? quality;
 
   // ===========================================================================

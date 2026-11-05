@@ -38,9 +38,13 @@ Placing refractive glass widgets inside another refractive glass container is an
 - **ALWAYS USE**: `GlassTabBar.bottom(...)` or `GlassTabBar.searchable(...)`.
 
 ### Rule 5: Honor Quality Tiers
-- **`GlassQuality.standard`**: Default for 95% of controls, cards, and input fields. Uses a highly optimized single-pass fragment shader.
-- **`GlassQuality.premium`**: Multi-pass Impeller shader with chromatic dispersion, realistic refraction, and dynamic specular highlights. Reserved for persistent navigation bars (`GlassAppBar`, `GlassTabBar`) and hero surfaces. `GlassScaffold` automatically promotes its bars to premium.
+- **`GlassQuality.premium`**: Multi-pass Impeller shader with chromatic dispersion, realistic refraction, and dynamic specular highlights. Default under `GlassStyle.ios27` (default) and `GlassStyle.ios26` for:
+  - Persistent navigation chrome (`GlassAppBar`, `GlassTabBar`, `GlassToolbar`, `GlassScaffold.bodyOverlays` — automatically wrapped in `GlassIsolationScope(defaultQuality: GlassQuality.premium)`).
+  - Transient overlays (`GlassDialog`, `showGlassActionSheet`, `GlassMenu`, `GlassPopover`, `GlassToast`).
+  - Hero interactive lenses (`GlassSwitch`, `GlassSlider`, `GlassSegmentedControl` — where `GlassSwitch` and `GlassSlider` lazy-mount `LiquidGlass.withOwnLayer` only while pressed/dragged so resting list rows mount zero shader layers).
+- **`GlassQuality.standard`**: Highly optimized single-pass fragment shader. Default for cards, containers, standalone body buttons, input fields, and all widgets when `GlassThemeData(style: GlassStyle.classic)` is active.
 - **`GlassQuality.minimal`**: Lightweight shader-free fallback (`BackdropFilter` only). Use for ultra-dense scrolling lists or low-power modes.
+- **Avoid setting `quality: GlassQuality.standard` globally on `GlassThemeData`** unless you intentionally want to downgrade navigation bars, overlays, and hero lenses across the app.
 
 ---
 
@@ -67,16 +71,12 @@ void main() async {
       // CRITICAL FOR MATERIAL APPS: Bridges Material ThemeMode without importing flutter/material in the engine
       brightnessResolver: Theme.maybeBrightnessOf,
 
-      // GlassThemeData.simple is the recommended constructor — applies the same settings to
-      // both light and dark, overlaid on the library's built-in per-mode defaults.
-      // Use const GlassThemeData.ios27() or const GlassThemeData.ios26() to switch
-      // the entire app between iOS 27 and classic iOS 26 glass eras, or pass
-      // LiquidGlassSettings.ios27(context) / LiquidGlassSettings.ios26(context) per widget.
-      theme: GlassThemeData.simple(
-        blur: 12,
-        thickness: 25,
-        quality: GlassQuality.standard,
-      ),
+      // Choose one of three built-in design-era presets:
+      // - const GlassThemeData() or const GlassThemeData.ios27() (default iOS 27 optics)
+      // - const GlassThemeData.ios26() (iOS 26.0 optics)
+      // - const GlassThemeData.classic() (v1.x classic look & GlassQuality.standard defaults)
+      // Or customize via GlassThemeData.simple(style: GlassStyle.ios27, ...):
+      theme: const GlassThemeData(),
       child: const MyApp(),
     ),
   );
@@ -196,7 +196,8 @@ When generating Flutter UI, replace standard Flutter widgets with their native l
 | `Navigator.push` rows / SwiftUI `NavigationStack` | `GlassNavigationStack` + `GlassNavigationLink` | Typed `value` routing via `destinations`, or a `destination` builder. |
 | `TextField` / `CupertinoTextField` | `GlassTextField` / `GlassSearchBar` / `GlassTextArea` / `GlassPasswordField` / `GlassPicker` | Refractive glass input with press glow/scale (`glass`), or shader-free iOS `tertiarySystemFill` well (`surfaceStyle: GlassSurfaceStyle.solid` or auto-inherited inside a solid card). |
 | `showModalBottomSheet` | `GlassModalSheet.show` | Multi-detent fluid sheet (peek, half, full) with spring physics. |
-| `showDialog` / `CupertinoAlertDialog` | `GlassDialog.show` | Liquid glass modal alert with `GlassDialogAction` buttons. |
+| `showDialog` / `CupertinoAlertDialog` | `GlassDialog.show` | Centered 320 pt iOS 26/27 alert platter with 48 pt capsule `GlassDialogAction` buttons (280 pt on `GlassStyle.classic`). |
+| `showCupertinoModalPopup` / `CupertinoActionSheet` | `showGlassActionSheet` | Centered 320 pt iOS 26/27 action sheet platter with stacked capsule `GlassActionSheetAction` buttons (bottom-docked sheet on `GlassStyle.classic`). |
 | `SnackBar` / Banner | `GlassToast` | Floating glass HUD banner. |
 
 ---
