@@ -19,7 +19,6 @@ class _OverlaysPageState extends State<OverlaysPage> {
   void _showBasicSheet() {
     GlassSheet.show(
       context: context,
-      settings: RecommendedGlassSettings.sheet,
       builder: (context) => Padding(
         padding: EdgeInsets.all(24),
         child: Column(
@@ -63,7 +62,6 @@ class _OverlaysPageState extends State<OverlaysPage> {
     ];
     GlassSheet.show(
       context: context,
-      settings: RecommendedGlassSettings.sheet,
       builder: (context) => SizedBox(
         height: MediaQuery.of(context).size.height * 0.7,
         child: Column(
@@ -235,7 +233,6 @@ class _OverlaysPageState extends State<OverlaysPage> {
   void _showModalSheet() {
     GlassModalSheet.show(
       context: context,
-      settings: RecommendedGlassSettings.sheet,
       builder: (context) => Padding(
         padding: EdgeInsets.all(24),
         child: Column(
@@ -267,7 +264,6 @@ class _OverlaysPageState extends State<OverlaysPage> {
               width: double.infinity,
               height: 48,
               useOwnLayer: true,
-              settings: RecommendedGlassSettings.overlay,
               shape: const LiquidRoundedSuperellipse(borderRadius: 12),
               child: Text(
                 'Dismiss',
@@ -289,7 +285,6 @@ class _OverlaysPageState extends State<OverlaysPage> {
   Widget build(BuildContext context) {
     return GlassPage(
       background: const ShowcaseBackground(),
-      settings: RecommendedGlassSettings.standard,
       statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark
           ? GlassStatusBarStyle.light
           : GlassStatusBarStyle.dark,
@@ -806,7 +801,6 @@ class _SheetButton extends StatelessWidget {
       width: double.infinity,
       height: 48,
       useOwnLayer: true,
-      settings: RecommendedGlassSettings.overlay,
       shape: const LiquidRoundedSuperellipse(borderRadius: 12),
       child: Text(
         label,

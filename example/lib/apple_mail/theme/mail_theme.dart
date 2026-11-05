@@ -68,12 +68,6 @@ class MailGlassScope extends InheritedNotifier<ValueNotifier<bool>> {
 
 LiquidGlassSettings _resolveMailGlass(BuildContext context) {
   final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
-  final theme = GlassThemeData.of(context);
-  if (theme.style == GlassStyle.classic) {
-    return isDark
-        ? LiquidGlassSettings.classicDark
-        : LiquidGlassSettings.classicLight;
-  }
   if (MailGlassScope.isIos27(context)) {
     return isDark
         ? LiquidGlassSettings.ios27Dark

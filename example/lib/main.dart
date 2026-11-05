@@ -175,13 +175,12 @@ class _GlassStyleSelector extends StatelessWidget {
   static const _styles = [
     GlassStyle.ios27,
     GlassStyle.ios26,
-    GlassStyle.classic,
   ];
 
   @override
   Widget build(BuildContext context) {
     final scope = _BrightnessScope.of(context);
-    final selectedIndex = _styles.indexOf(scope.style).clamp(0, 2);
+    final selectedIndex = scope.style == GlassStyle.ios26 ? 1 : 0;
 
     return GlassSegmentedControl(
       useOwnLayer: true,
@@ -190,7 +189,6 @@ class _GlassStyleSelector extends StatelessWidget {
       segments: const [
         GlassSegment(label: 'iOS 27'),
         GlassSegment(label: 'iOS 26'),
-        GlassSegment(label: 'Classic'),
       ],
     );
   }
@@ -1089,8 +1087,6 @@ class _StaggeredCatalogCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
-
     Widget button = GlassButton.custom(
       onTap: () => _openDemo(context, destination),
       width: double.infinity,
@@ -1099,17 +1095,6 @@ class _StaggeredCatalogCard extends StatelessWidget {
       interactionScale: 0.98,
       stretch: 0.06,
       alignment: Alignment.topLeft,
-      settings: LiquidGlassSettings(
-        thickness: 18,
-        blur: 16,
-        fresnelStrength: 0.40,
-        edgeAbsorption: 0.10,
-        lightIntensity: 0.45,
-        ambientStrength: 0.07,
-        glassColor: isDark
-            ? const Color.fromARGB(28, 255, 255, 255)
-            : const Color.fromARGB(40, 255, 255, 255),
-      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
