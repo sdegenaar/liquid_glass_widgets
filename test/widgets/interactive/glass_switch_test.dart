@@ -836,4 +836,169 @@ void main() {
       });
     });
   });
+
+  group('GlassSwitch On/Off Labels', () {
+    Finder marks() => find.byWidgetPredicate((widget) =>
+        widget is CustomPaint &&
+        widget.painter.runtimeType.toString() == '_OnOffLabelsPainter');
+
+    Widget build({
+      required bool value,
+      bool onOffSwitchLabels = true,
+      TextDirection textDirection = TextDirection.ltr,
+      ValueChanged<bool>? onChanged,
+      Color? onLabelColor,
+      Color? offLabelColor,
+    }) =>
+        createTestApp(
+          child: Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(onOffSwitchLabels: onOffSwitchLabels),
+              child: Directionality(
+                textDirection: textDirection,
+                child: Center(
+                  child: AdaptiveLiquidGlassLayer(
+                    settings: defaultTestGlassSettings,
+                    child: GlassSwitch(
+                      value: value,
+                      onChanged: onChanged ?? (_) {},
+                      onLabelColor: onLabelColor,
+                      offLabelColor: offLabelColor,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+    // Default 58x26 track: the pill thumb is 22 * 1.6 = 35.2 wide, so the
+    // gap beside the resting thumb is 58 - 2 - 35.2 = 20.8, centered at 10.4.
+    // Marks scale by 26 / 31.
+    const scale = 26 / 31;
+    const onInset = 10.4 + 0.25 * scale;
+    const offInset = 10.4 + 1.25 * scale;
+    const width = 58.0;
+    const centerY = 13.0;
+
+    bool near(double a, double b) => (a - b).abs() < 1e-6;
+
+    // The O ring: a 1pt stroke of radius 5 * scale centered at (x, centerY).
+    PaintPattern ringAt(double x) => paints
+      ..something((method, args) {
+        if (method != #drawCircle) return false;
+        final center = args[0] as Offset;
+        final paint = args[2] as Paint;
+        return near(center.dx, x) &&
+            near(center.dy, centerY) &&
+            near(args[1] as double, 5 * scale) &&
+            paint.style == PaintingStyle.stroke &&
+            paint.strokeWidth == 1;
+      });
+
+    // The I bar: 1 x (10 * scale), centered at (x, centerY).
+    PaintPattern barAt(double x) => paints
+      ..something((method, args) {
+        if (method != #drawRect) return false;
+        final rect = args[0] as Rect;
+        return near(rect.center.dx, x) &&
+            near(rect.center.dy, centerY) &&
+            near(rect.width, 1) &&
+            near(rect.height, 10 * scale);
+      });
+
+    testWidgets('draws nothing when the setting is off', (tester) async {
+      await tester.pumpWidget(build(value: true, onOffSwitchLabels: false));
+      expect(marks(), findsNothing);
+      await tester.pumpWidget(build(value: false, onOffSwitchLabels: false));
+      expect(marks(), findsNothing);
+    });
+
+    testWidgets('off: the O ring at the end the thumb left', (tester) async {
+      await tester.pumpWidget(build(value: false));
+      expect(marks(), findsOneWidget);
+      expect(tester.renderObject(marks()), ringAt(width - offInset));
+      expect(tester.renderObject(marks()), isNot(paints..rect()));
+    });
+
+    testWidgets('on: the I bar at the end the thumb left', (tester) async {
+      await tester.pumpWidget(build(value: true));
+      expect(tester.renderObject(marks()), barAt(onInset));
+      expect(tester.renderObject(marks()), paints..rect(color: Colors.white));
+      expect(tester.renderObject(marks()), isNot(paints..circle()));
+    });
+
+    testWidgets('the marks are painted under the thumb', (tester) async {
+      await tester.pumpWidget(build(value: true));
+      final stack = find.ancestor(of: marks(), matching: find.byType(Stack));
+      final children = tester.widget<Stack>(stack.first).children;
+      expect(children, hasLength(3));
+      expect(children[1], isA<Positioned>());
+      expect((children[1] as Positioned).child, isA<CustomPaint>());
+    });
+
+    testWidgets('label colors can be set', (tester) async {
+      const on = Color(0xFF112233);
+      const off = Color(0xFF445566);
+      await tester
+          .pumpWidget(build(value: true, onLabelColor: on, offLabelColor: off));
+      expect(tester.renderObject(marks()), paints..rect(color: on));
+      await tester.pumpWidget(
+          build(value: false, onLabelColor: on, offLabelColor: off));
+      await tester.pumpAndSettle();
+      expect(tester.renderObject(marks()), paints..circle(color: off));
+    });
+
+    group('in RTL', () {
+      testWidgets('the marks are mirrored', (tester) async {
+        await tester
+            .pumpWidget(build(value: false, textDirection: TextDirection.rtl));
+        expect(tester.renderObject(marks()), ringAt(offInset));
+
+        await tester
+            .pumpWidget(build(value: true, textDirection: TextDirection.rtl));
+        await tester.pumpAndSettle();
+        expect(tester.renderObject(marks()), barAt(width - onInset));
+      });
+
+      Rect thumbRect(WidgetTester tester) {
+        final stack = find.ancestor(of: marks(), matching: find.byType(Stack));
+        final switchBox = tester.getRect(stack.first);
+        final thumb = find.descendant(
+          of: stack.first,
+          matching: find.byType(Positioned),
+        );
+        // The last top-level Positioned in the switch's Stack is the thumb.
+        final rect = tester.getRect(thumb.last);
+        return rect.shift(-switchBox.topLeft);
+      }
+
+      testWidgets('the thumb rests on the left when on', (tester) async {
+        await tester
+            .pumpWidget(build(value: true, textDirection: TextDirection.rtl));
+        expect(thumbRect(tester).center.dx, lessThan(width / 2));
+
+        await tester.pumpWidget(build(value: true));
+        await tester.pumpAndSettle();
+        expect(thumbRect(tester).center.dx, greaterThan(width / 2));
+      });
+
+      testWidgets('dragging left turns it on', (tester) async {
+        var value = false;
+        await tester.pumpWidget(build(
+          value: value,
+          textDirection: TextDirection.rtl,
+          onChanged: (v) => value = v,
+        ));
+        await tester.timedDrag(
+          find.byType(GlassSwitch),
+          const Offset(-40, 0),
+          const Duration(milliseconds: 600),
+        );
+        await tester.pumpAndSettle();
+        expect(value, isTrue);
+      });
+    });
+  });
 }

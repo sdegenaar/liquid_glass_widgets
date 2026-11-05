@@ -12,6 +12,30 @@ import '../shared/glass_focus_region.dart';
 import '../shared/glass_accessibility_scope.dart';
 import '../../theme/glass_theme_helpers.dart';
 
+// The On/Off Labels marks, after CupertinoSwitch (cupertino/switch.dart).
+// Its 51x31 track leaves a 21.5pt gap beside the resting 28pt thumb; it
+// centers the on bar 11pt in from its edge and the off ring 12pt, i.e. 0.25pt
+// and 1.25pt past the middle of that gap, with a 1x10 bar and an r=5 ring.
+// GlassSwitch's thumb is a pill of (height - 4) * 1.6 inset by 2, so the gap
+// is (width - 2 - thumbWidth): 20.8pt at the default 58x26, 22.6pt at 63x28.
+// The marks sit at the same place in that gap and scale with height / 31;
+// the strokes stay 1pt wide.
+const double _kCupertinoTrackHeight = 31.0;
+const double _kOnLabelPastGapCenter = 0.25;
+const double _kOffLabelPastGapCenter = 1.25;
+const double _kOnLabelWidth = 1.0;
+const double _kOnLabelHeight = 10.0;
+const double _kOffLabelStrokeWidth = 1.0;
+const double _kOffLabelRadius = 5.0;
+// CupertinoSwitch's off label color (cupertino/switch.dart).
+const CupertinoDynamicColor _kOffLabelColor =
+    CupertinoDynamicColor.withBrightnessAndContrast(
+  color: Color.fromARGB(255, 179, 179, 179),
+  darkColor: Color.fromARGB(255, 179, 179, 179),
+  highContrastColor: Color.fromARGB(255, 255, 255, 255),
+  darkHighContrastColor: Color.fromARGB(255, 255, 255, 255),
+);
+
 /// A glass toggle switch with Apple's signature jump animation.
 ///
 /// [GlassSwitch] provides a toggle switch with glass morphism effect and
@@ -84,6 +108,8 @@ class GlassSwitch extends StatefulWidget {
     this.focusNode,
     this.autofocus = false,
     this.semanticLabel,
+    this.onLabelColor,
+    this.offLabelColor,
   });
 
   // ===========================================================================
@@ -161,6 +187,23 @@ class GlassSwitch extends StatefulWidget {
 
   /// The semantic label for screen readers.
   final String? semanticLabel;
+
+  /// The color of the on mark (the `I`) drawn on the track when the user
+  /// turned on iOS's On/Off Labels setting
+  /// ([MediaQueryData.onOffSwitchLabels]).
+  ///
+  /// Defaults to white, like [CupertinoSwitch.onLabelColor]. A
+  /// [CupertinoDynamicColor] is resolved against the context.
+  final Color? onLabelColor;
+
+  /// The color of the off mark (the `O`) drawn on the track when the user
+  /// turned on iOS's On/Off Labels setting
+  /// ([MediaQueryData.onOffSwitchLabels]).
+  ///
+  /// Defaults to [CupertinoSwitch]'s off label grey, which turns white under
+  /// Increase Contrast. A [CupertinoDynamicColor] is resolved against the
+  /// context.
+  final Color? offLabelColor;
 
   @override
   State<GlassSwitch> createState() => _GlassSwitchState();
@@ -342,6 +385,10 @@ class _GlassSwitchState extends State<GlassSwitch>
     widget.onChanged(!widget.value);
   }
 
+  /// Whether the switch is mirrored: in a right-to-left context the thumb
+  /// rests on the left when on, as with UISwitch and [CupertinoSwitch].
+  bool get _isRtl => Directionality.maybeOf(context) == TextDirection.rtl;
+
   // ---------------------------------------------------------------------------
   // Drag-to-toggle handlers
   // ---------------------------------------------------------------------------
@@ -429,7 +476,8 @@ class _GlassSwitchState extends State<GlassSwitch>
     // Map finger position → track position (0.0 – 1.0) and push it directly
     // into the controller so the AnimatedBuilder redraws this frame.
     final travel = _thumbTravelDistance;
-    final dragDelta = details.localPosition.dx - _dragStartX;
+    final dx = details.localPosition.dx - _dragStartX;
+    final dragDelta = _isRtl ? -dx : dx;
     _positionController.value =
         (_dragStartPosition + dragDelta / travel).clamp(0.0, 1.0);
 
@@ -456,8 +504,9 @@ class _GlassSwitchState extends State<GlassSwitch>
     final velocity = details.primaryVelocity ?? 0.0;
 
     // A fast flick (> 200 px/s) wins over position; otherwise snap at 50 %.
-    final bool shouldBeOn =
-        velocity.abs() > 200.0 ? velocity > 0 : position >= 0.5;
+    final bool shouldBeOn = velocity.abs() > 200.0
+        ? (_isRtl ? velocity < 0 : velocity > 0)
+        : position >= 0.5;
 
     _isMovingForward = shouldBeOn;
     setState(() => _isDragging = false);
@@ -511,6 +560,17 @@ class _GlassSwitchState extends State<GlassSwitch>
         // Whitelisted: iOS-exact inactive track colours.
         (isDark ? const Color(0x33FFFFFF) : const Color(0xFFC5C5C6));
     final activeTrackColor = widget.activeColor ?? CupertinoColors.systemGreen;
+    final isRtl = _isRtl;
+
+    // iOS Settings > Accessibility > Display & Text Size > On/Off Labels.
+    final onOffLabelColors = MediaQuery.onOffSwitchLabelsOf(context)
+        ? (
+            CupertinoDynamicColor.resolve(
+                widget.onLabelColor ?? CupertinoColors.white, context),
+            CupertinoDynamicColor.resolve(
+                widget.offLabelColor ?? _kOffLabelColor, context),
+          )
+        : null;
 
     return GlassFocusRegion(
         enabled: true,
@@ -600,14 +660,18 @@ class _GlassSwitchState extends State<GlassSwitch>
                 final vExpand = thickness * 10.0;
                 final leadStretch = thickness * 16.0;
 
-                final thumbOffset = 2.0 + (thumbTravelDistance * position);
+                // Mirrored in RTL: on is the left end of the track.
+                final visualPosition = isRtl ? 1.0 - position : position;
+                final thumbOffset =
+                    2.0 + (thumbTravelDistance * visualPosition);
 
                 // Anchor logic:
                 // Dragging -> Symmetric stretch (anchor center)
                 // Jumping  -> Directional stretch (anchor left or right based on direction)
+                final movingRight = _isMovingForward != isRtl;
                 final double anchorOffset = _isDragging
                     ? (leadStretch / 2.0)
-                    : (_isMovingForward ? 0.0 : leadStretch);
+                    : (movingRight ? 0.0 : leadStretch);
 
                 final thumbLeft = thumbOffset - anchorOffset;
 
@@ -629,6 +693,22 @@ class _GlassSwitchState extends State<GlassSwitch>
                     clipBehavior: Clip.none,
                     children: [
                       track,
+                      // Painted over the track and under the thumb, so the
+                      // thumb covers the mark on its side.
+                      if (onOffLabelColors != null)
+                        Positioned.fill(
+                          child: CustomPaint(
+                            painter: _OnOffLabelsPainter(
+                              onColor: onOffLabelColors.$1,
+                              offColor: onOffLabelColors.$2,
+                              position: position,
+                              reaction: thickness,
+                              thumbWidth: thumbWidth,
+                              textDirection:
+                                  isRtl ? TextDirection.rtl : TextDirection.ltr,
+                            ),
+                          ),
+                        ),
                       thumb,
                     ],
                   ),
@@ -750,4 +830,74 @@ class _GlassSwitchState extends State<GlassSwitch>
       ),
     );
   }
+}
+
+/// Paints iOS's On/Off Labels marks on the track: an `I` on the side the
+/// thumb leaves when on, an `O` on the side it leaves when off. Each fades
+/// with the thumb's position and while the thumb blooms under a press, like
+/// [CupertinoSwitch]'s.
+class _OnOffLabelsPainter extends CustomPainter {
+  _OnOffLabelsPainter({
+    required this.onColor,
+    required this.offColor,
+    required this.position,
+    required this.reaction,
+    required this.thumbWidth,
+    required this.textDirection,
+  });
+
+  final Color onColor;
+  final Color offColor;
+  final double position;
+  final double reaction;
+  final double thumbWidth;
+  final TextDirection textDirection;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final scale = size.height / _kCupertinoTrackHeight;
+    final gapCenter = (size.width - 2.0 - thumbWidth) / 2.0;
+    final onInset = gapCenter + _kOnLabelPastGapCenter * scale;
+    final offInset = gapCenter + _kOffLabelPastGapCenter * scale;
+    final centerY = size.height / 2.0;
+    final ltr = textDirection == TextDirection.ltr;
+
+    final visible = (1.0 - reaction).clamp(0.0, 1.0);
+    final onOpacity = (position * visible).clamp(0.0, 1.0);
+    final offOpacity = ((1.0 - position) * visible).clamp(0.0, 1.0);
+
+    // Each mark sits at the end of the track the thumb leaves for its state.
+    final onCenter = Offset(ltr ? onInset : size.width - onInset, centerY);
+    final offCenter = Offset(ltr ? size.width - offInset : offInset, centerY);
+
+    if (onOpacity > 0.0) {
+      canvas.drawRect(
+        Rect.fromCenter(
+          center: onCenter,
+          width: _kOnLabelWidth,
+          height: _kOnLabelHeight * scale,
+        ),
+        Paint()..color = onColor.withValues(alpha: onColor.a * onOpacity),
+      );
+    }
+    if (offOpacity > 0.0) {
+      canvas.drawCircle(
+        offCenter,
+        _kOffLabelRadius * scale,
+        Paint()
+          ..color = offColor.withValues(alpha: offColor.a * offOpacity)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = _kOffLabelStrokeWidth,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_OnOffLabelsPainter oldDelegate) =>
+      oldDelegate.onColor != onColor ||
+      oldDelegate.offColor != offColor ||
+      oldDelegate.position != position ||
+      oldDelegate.reaction != reaction ||
+      oldDelegate.thumbWidth != thumbWidth ||
+      oldDelegate.textDirection != textDirection;
 }
