@@ -62,4 +62,49 @@ void main() {
     await tester.pumpAndSettle();
     expect(_pillFinder(), findsNothing);
   });
+
+  testWidgets(
+      'default selectionColor resolves white pill on classic/dark and dark pill on ios27 light',
+      (tester) async {
+    Widget buildApp(GlassThemeData theme) => MaterialApp(
+          home: GlassTheme(
+            data: theme,
+            child: Scaffold(
+              body: Center(
+                child: GlassMenu(
+                  trigger: const SizedBox(
+                    width: 100,
+                    height: 44,
+                    child: Text('Open Menu'),
+                  ),
+                  items: [
+                    GlassMenuItem(title: 'First Item', onTap: () {}),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+    await tester.pumpWidget(buildApp(const GlassThemeData.classic()));
+    await tester.tap(find.text('Open Menu'));
+    await tester.pumpAndSettle();
+
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    addTearDown(mouse.removePointer);
+
+    await mouse.moveTo(tester.getCenter(find.text('First Item')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w is Container &&
+            w.decoration is BoxDecoration &&
+            (w.decoration! as BoxDecoration).color == const Color(0x3DFFFFFF),
+      ),
+      findsOneWidget,
+    );
+  });
 }

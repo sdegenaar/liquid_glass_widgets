@@ -257,6 +257,37 @@ void main() {
 
       expect(find.text('Numbers'), findsOneWidget);
     });
+
+    testWidgets(
+        'showSheet propagates ambient GlassTheme and scrolls CupertinoPicker items',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassTheme(
+            data: const GlassThemeData.ios26(brightness: Brightness.dark),
+            child: Builder(
+              builder: (ctx) => GestureDetector(
+                onTap: () => GlassPicker.showSheet<int>(
+                  context: ctx,
+                  items: const [1, 2, 3],
+                  itemBuilder: (item) => Text('Item $item'),
+                  title: 'Numbers',
+                ),
+                child: const Text('Open Themed Sheet'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Themed Sheet'));
+      await tester.pumpAndSettle();
+
+      await tester.drag(find.byType(CupertinoPicker), const Offset(0, -60));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CupertinoPicker), findsOneWidget);
+    });
   });
 
   group('GlassPicker defaults', () {

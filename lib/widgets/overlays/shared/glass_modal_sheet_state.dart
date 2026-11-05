@@ -680,29 +680,12 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       final tProgress =
           range > 0.0001 ? ((pos - peekPos) / range).clamp(0.0, 1.0) : 1.0;
 
-      if (!_geometry.enablePeek) {
-        // Peek-less: below half is the dismiss slide, not a peek morph. Hold
-        // the half state's own surface so the sheet slides away solid (Apple
-        // keeps the surface opaque and just translates it off — only the
-        // background dim fades) rather than fading toward a peek that doesn't
-        // exist. Solid glass stays glass; a solid-fill half stays filled.
-        effectiveSettings = sHalf;
-        currentExpandedColor = cHalf;
-        colorOpacity = isSolid(sHalf) ? 1.0 : 0.0;
-      } else {
-        effectiveSettings = LiquidGlassSettings.lerp(sPeek, sHalf, tProgress);
-        currentExpandedColor = Color.lerp(cPeek, cHalf, tProgress)!;
+      effectiveSettings = LiquidGlassSettings.lerp(sPeek, sHalf, tProgress);
+      currentExpandedColor = Color.lerp(cPeek, cHalf, tProgress)!;
 
-        if (!isSolid(sPeek) && isSolid(sHalf)) {
-          colorOpacity = tProgress;
-        } else if (isSolid(sPeek) && !isSolid(sHalf)) {
-          colorOpacity = 1.0 - tProgress;
-        } else if (isSolid(sPeek) && isSolid(sHalf)) {
-          colorOpacity = 1.0;
-        } else {
-          colorOpacity = 0.0;
-        }
-      }
+      final peekSolid = isSolid(sPeek) ? 1.0 : 0.0;
+      final halfSolid = isSolid(sHalf) ? 1.0 : 0.0;
+      colorOpacity = peekSolid + (halfSolid - peekSolid) * tProgress;
       glassOpacity = 1.0 - colorOpacity;
     } else {
       final range = fullPos - halfPos;

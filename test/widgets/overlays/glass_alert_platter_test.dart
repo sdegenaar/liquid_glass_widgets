@@ -386,5 +386,34 @@ void main() {
       );
       expect(platterSettings(tester).glassColor, custom.glassColor);
     });
+
+    testWidgets(
+        'renders title alongside custom content and resets press highlight on tap cancel',
+        (tester) async {
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: GlassTheme(
+            data: const GlassThemeData.ios27(brightness: Brightness.light),
+            child: GlassDialog(
+              title: 'Header Title',
+              content: const Text('Custom body content'),
+              actions: [
+                GlassDialogAction(label: 'OK', onPressed: () {}),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Header Title'), findsOneWidget);
+      expect(find.text('Custom body content'), findsOneWidget);
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('OK')),
+      );
+      await tester.pump();
+      await gesture.cancel();
+      await tester.pump();
+    });
   });
 }

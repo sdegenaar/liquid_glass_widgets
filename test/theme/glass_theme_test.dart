@@ -1253,5 +1253,19 @@ void main() {
       expect(ios26Effects[1].settings.rimShade, equals(1.0));
       expect(ios26Effects[1].settings.rimLight, equals(1.0));
     });
+
+    test('non-const preset constructors record runtime constructor coverage',
+        () {
+      // ignore: prefer_const_constructors
+      final classic = GlassThemeData.classic(brightness: Brightness.dark);
+      // ignore: prefer_const_constructors
+      final ios26 = GlassThemeData.ios26(brightness: Brightness.light);
+      // ignore: prefer_const_constructors
+      final ios27 = GlassThemeData.ios27(brightness: Brightness.dark);
+
+      expect(classic.style, GlassStyle.classic);
+      expect(ios26.style, GlassStyle.ios26);
+      expect(ios27.style, GlassStyle.ios27);
+    });
   });
 }

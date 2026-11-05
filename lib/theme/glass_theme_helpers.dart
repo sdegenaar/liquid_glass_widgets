@@ -333,15 +333,13 @@ class GlassThemeHelpers {
     if (isOverlayPlatter &&
         themeData.style != GlassStyle.classic &&
         resolved.frost > 0) {
-      final surfaceBaseline = switch (themeData.style) {
-        GlassStyle.ios27 =>
-          isDark ? GlassThemeSettings.ios27Dark : GlassThemeSettings.ios27Light,
-        GlassStyle.ios26 =>
-          isDark ? GlassThemeSettings.ios26Dark : GlassThemeSettings.ios26Light,
-        GlassStyle.classic => isDark
-            ? GlassThemeSettings.classicDark
-            : GlassThemeSettings.classicLight,
-      };
+      final surfaceBaseline = themeData.style == GlassStyle.ios27
+          ? (isDark
+              ? GlassThemeSettings.ios27Dark
+              : GlassThemeSettings.ios27Light)
+          : (isDark
+              ? GlassThemeSettings.ios26Dark
+              : GlassThemeSettings.ios26Light);
       // Native iOS 26 / iOS 27 floating overlay platters (_UIContextMenuPlatterView
       // and _UISheetPresentationController) use the full 14pt frosted cloud
       // (`frostOpacity: 1.0`) so sharp background text does not ghost through

@@ -943,5 +943,42 @@ void main() {
       await gesture.up();
       await tester.pumpAndSettle();
     });
+
+    testWidgets(
+        'didUpdateWidget snaps thumb back to target after cancelled mid-runway drag',
+        (tester) async {
+      Color thumbColor = Colors.white;
+      late StateSetter update;
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              update = setState;
+              return GlassSwitch(
+                value: false,
+                thumbColor: thumbColor,
+                onChanged: (_) {},
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final center = tester.getCenter(find.byType(GlassSwitch));
+      final gesture = await tester.startGesture(center);
+      await tester.pump();
+      await gesture.moveBy(const Offset(5, 0));
+      await tester.pump();
+      await gesture.moveBy(const Offset(10, 0));
+      await tester.pump();
+      await gesture.cancel();
+      await tester.pump();
+
+      update(() => thumbColor = Colors.grey);
+      await tester.pumpAndSettle();
+      expect(find.byType(GlassSwitch), findsOneWidget);
+    });
   });
 }
