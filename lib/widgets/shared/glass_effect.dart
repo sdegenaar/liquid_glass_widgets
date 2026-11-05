@@ -577,21 +577,31 @@ class _GlassEffectState extends State<GlassEffect>
     // Ratios are identical to AdaptiveGlass (thickness × 0.4, lightIntensity × 0.6)
     // so the visual language stays consistent between static and interactive surfaces.
     //
+    // When an iOS 27 indicator preset (lightIntensity: 0, rimLight: 1.0) drops
+    // to the 2D indicator shader (which has no uRimLight uniform), stand
+    // rimLight in for lightIntensity so key/kick rim highlights remain visible.
+    //
     // NOTE: glassColor.alpha is intentionally NOT normalised here (unlike AdaptiveGlass).
     // Interactive thumb body opacity is already governed by
     //   standardBaseAlpha = baseAlphaMultiplier × interactionIntensity
     // inside the shader — normalising alpha here would double-count it.
+    final base = widget.settings;
+    final double fallbackLightIntensity = math.max(
+      base.effectiveLightIntensity,
+      const LiquidGlassSettings().lightIntensity *
+          base.rimLight.clamp(0.0, 1.0) *
+          base.visibility,
+    );
     final LiquidGlassSettings effectiveSettings;
     if (widget.quality == GlassQuality.standard) {
-      final base = widget.settings;
       effectiveSettings = base.copyWith(
         thickness: (base.effectiveThickness * 0.4).clamp(0.0, double.infinity),
-        lightIntensity: (base.effectiveLightIntensity * 0.6).clamp(0.0, 10.0),
+        lightIntensity: (fallbackLightIntensity * 0.6).clamp(0.0, 10.0),
         ambientStrength: (base.effectiveAmbientStrength * 0.25).clamp(0.0, 1.0),
         glowIntensity: (base.glowIntensity * 0.50).clamp(0.0, 5.0),
       );
     } else {
-      effectiveSettings = widget.settings;
+      effectiveSettings = base.copyWith(lightIntensity: fallbackLightIntensity);
     }
 
     // Path B: High-Fidelity Refraction Shader (Custom GLSL)

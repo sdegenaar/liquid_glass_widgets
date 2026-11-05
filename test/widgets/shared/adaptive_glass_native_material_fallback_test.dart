@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/renderer/glass_frost_budget.dart';
+import 'package:liquid_glass_widgets/widgets/shared/glass_effect.dart';
 
 // The lightweight shader draws neither the iOS 27 frost nor its rim light, and
 // the iOS 27 presets turn the iOS 26 highlight off, so on the standard path
@@ -53,6 +54,22 @@ void main() {
       );
       expect(s.lightIntensity, greaterThan(0));
     });
+
+    testWidgets('ios26Light keeps a blur and a highlight (${quality.name})',
+        (tester) async {
+      final s = await _lightweightSettings(
+        tester,
+        LiquidGlassSettings.ios26Light,
+        quality,
+      );
+      expect(
+        s.blur,
+        greaterThanOrEqualTo(
+          LiquidGlassSettings.ios26Light.frost * GlassFrostBudget.blurPerFrost,
+        ),
+      );
+      expect(s.lightIntensity, greaterThan(0));
+    });
   }
 
   testWidgets('settings without the iOS 27 terms pass through', (tester) async {
@@ -61,4 +78,26 @@ void main() {
     expect(s.blur, 5);
     expect(s.lightIntensity, 0.4);
   });
+
+  for (final quality in [GlassQuality.standard, GlassQuality.premium]) {
+    testWidgets(
+        'GlassEffect translates ios27Indicator rimLight into lightIntensity on 2D indicator path (${quality.name})',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: LiquidGlassWidgets.wrap(
+            child: GlassEffect(
+              shape: const LiquidRoundedSuperellipse(borderRadius: 16),
+              settings: LiquidGlassSettings.ios27Indicator,
+              interactionIntensity: 0.5,
+              quality: quality,
+              child: const SizedBox(width: 80, height: 40),
+            ),
+          ),
+        ),
+      ));
+      await tester.pump();
+      expect(find.byType(GlassEffect), findsOneWidget);
+    });
+  }
 }
