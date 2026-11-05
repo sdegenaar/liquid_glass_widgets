@@ -273,11 +273,11 @@ void main() {
   });
 
   // ===========================================================================
-  // GlassMenu trigger Stack clip test
+  // GlassMenu trigger clip test
   // ===========================================================================
 
-  group('GlassMenu — trigger Stack clipBehavior', () {
-    testWidgets('trigger Stack uses Clip.none for shadow overflow',
+  group('GlassMenu — trigger clipping', () {
+    testWidgets('nothing clips the trigger, so shadows can overflow',
         (tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -299,26 +299,22 @@ void main() {
       );
       await tester.pump();
 
-      // The GlassMenu wraps trigger + OverlayPortal in a Stack.
-      // Find Stack widgets that are descendants of GlassMenu.
-      final menuStacks = find.descendant(
-        of: find.byType(GlassMenu),
-        matching: find.byType(Stack),
+      // The trigger sits in the OverlayPortal's child. Nothing between the
+      // GlassMenu and the trigger may clip, or button shadows are cut off.
+      final between = find.ancestor(
+        of: find.text('Menu'),
+        matching: find.descendant(
+          of: find.byType(GlassMenu),
+          matching: find.byWidgetPredicate((widget) =>
+              widget is ClipRect ||
+              widget is ClipRRect ||
+              widget is ClipPath ||
+              (widget is Stack && widget.clipBehavior != Clip.none)),
+        ),
       );
-
-      // At least one Stack should exist with Clip.none.
-      bool foundClipNone = false;
-      for (final element in menuStacks.evaluate()) {
-        final stack = element.widget as Stack;
-        if (stack.clipBehavior == Clip.none) {
-          foundClipNone = true;
-          break;
-        }
-      }
-      expect(foundClipNone, isTrue,
-          reason:
-              'GlassMenu trigger Stack must use Clip.none so button shadows '
-              'are not clipped at the Stack boundary');
+      expect(between, findsNothing,
+          reason: 'Nothing around the GlassMenu trigger may clip, so button '
+              'shadows are not cut off at its boundary');
     });
   });
 

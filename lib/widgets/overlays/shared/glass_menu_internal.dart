@@ -383,53 +383,52 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
         // this wrapper and never saw its fade.
         final outer = GlassMaterializeScope.maybeOf(context);
 
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // Trigger — physically bounces and absorbs impact when slammed by the closing menu!
-            Transform.translate(
-              offset: Offset(pushDx, pushDy),
-              child: Transform.scale(
-                scale: impactScale,
-                child: Listener(
-                  behavior: HitTestBehavior.translucent,
-                  onPointerDown: _handleTriggerPointerDown,
-                  onPointerMove: _handleTriggerPointerMove,
-                  onPointerUp: _handleTriggerPointerUp,
-                  onPointerCancel: _handleTriggerPointerCancel,
-                  child: Opacity(
-                    opacity: triggerOpacity,
-                    child: GlassMaterializeScope(
-                      glassProgress:
-                          triggerOpacity * (outer?.glassProgress ?? 1.0),
-                      contentOpacity:
-                          triggerOpacity * (outer?.contentOpacity ?? 1.0),
-                      contentSigma: outer?.contentSigma ?? 0.0,
-                      child: IgnorePointer(
-                        ignoring: isMenuBlocking,
-                        child: triggerChild,
-                      ),
+        // Overlay portal for morphing animation.
+        // The overlay contents fade out during the handoff so the real button shows instead.
+        //
+        // Target the NEAREST overlay so the menu stays confined to the page/route
+        // where it was opened (#274). When a new route is pushed onto this or an
+        // ancestor Navigator, the destination route renders above this overlay,
+        // so the closing animation naturally remains on the outgoing page behind
+        // the transition. The trigger position is mapped into the nearest overlay's
+        // coordinate space in _openMenu to avoid drift in nested embeddings.
+        //
+        // The trigger is the portal's child. OverlayPortal wraps its child in
+        // the semantics node the open menu's nodes are traversed from; with
+        // no child that node is 0x0, and the menu drops out of the semantics
+        // tree.
+        return OverlayPortal(
+          controller: _overlayController,
+          overlayChildBuilder: _buildMorphingOverlay,
+          overlayLocation: OverlayChildLocation.nearestOverlay,
+          // Trigger — physically bounces and absorbs impact when slammed by the closing menu!
+          child: Transform.translate(
+            offset: Offset(pushDx, pushDy),
+            child: Transform.scale(
+              scale: impactScale,
+              child: Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerDown: _handleTriggerPointerDown,
+                onPointerMove: _handleTriggerPointerMove,
+                onPointerUp: _handleTriggerPointerUp,
+                onPointerCancel: _handleTriggerPointerCancel,
+                child: Opacity(
+                  opacity: triggerOpacity,
+                  child: GlassMaterializeScope(
+                    glassProgress:
+                        triggerOpacity * (outer?.glassProgress ?? 1.0),
+                    contentOpacity:
+                        triggerOpacity * (outer?.contentOpacity ?? 1.0),
+                    contentSigma: outer?.contentSigma ?? 0.0,
+                    child: IgnorePointer(
+                      ignoring: isMenuBlocking,
+                      child: triggerChild,
                     ),
                   ),
                 ),
               ),
             ),
-
-            // Overlay portal for morphing animation.
-            // The overlay contents fade out during the handoff so the real button shows instead.
-            //
-            // Target the NEAREST overlay so the menu stays confined to the page/route
-            // where it was opened (#274). When a new route is pushed onto this or an
-            // ancestor Navigator, the destination route renders above this overlay,
-            // so the closing animation naturally remains on the outgoing page behind
-            // the transition. The trigger position is mapped into the nearest overlay's
-            // coordinate space in _openMenu to avoid drift in nested embeddings.
-            OverlayPortal(
-              controller: _overlayController,
-              overlayChildBuilder: _buildMorphingOverlay,
-              overlayLocation: OverlayChildLocation.nearestOverlay,
-            ),
-          ],
+          ),
         );
       },
     );
@@ -1798,10 +1797,20 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     ); // LiquidStretch (glassContent)
 
     // The blob is always fully opaque — shape morph is the only animation.
-    return Transform.scale(
-      scale: lerpDouble(1.0, _kRecedeScale, _bodyRecede)!,
-      alignment: Alignment(0, _growsDown ? -1 : 1),
-      child: glassContent,
+    //
+    // The panel is a named route scope for screen readers, like a Cupertino
+    // dialog: VoiceOver and TalkBack announce its name when it opens and keep
+    // its rows together. explicitChildNodes keeps each row its own node.
+    return Semantics(
+      scopesRoute: true,
+      namesRoute: true,
+      explicitChildNodes: true,
+      label: widget.menuSemanticLabel ?? 'Menu',
+      child: Transform.scale(
+        scale: lerpDouble(1.0, _kRecedeScale, _bodyRecede)!,
+        alignment: Alignment(0, _growsDown ? -1 : 1),
+        child: glassContent,
+      ),
     );
   }
 

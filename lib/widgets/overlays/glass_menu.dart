@@ -95,6 +95,13 @@ class GlassMenu extends StatefulWidget {
   /// widget carries its own semantics.
   final String? semanticLabel;
 
+  /// What screen readers call the open menu panel.
+  ///
+  /// The open panel is a named route scope, like a Cupertino dialog: screen
+  /// readers announce this name when the menu opens. Pass a localized string;
+  /// the default is the English "Menu".
+  final String? menuSemanticLabel;
+
   /// A builder for the trigger widget that provides access to the menu toggle callback.
   ///
   /// Use this when your trigger widget handles its own interactions (e.g., a [GlassButton]
@@ -363,6 +370,7 @@ class GlassMenu extends StatefulWidget {
     this.enableContinuousSwipe = false,
     this.continuousSwipeSlop = 10.0,
     this.semanticLabel,
+    this.menuSemanticLabel,
     this.onLevelChanged,
   })  : assert(maxStackHeight == null || maxStackHeight > 0),
         assert(trigger != null || triggerBuilder != null,
