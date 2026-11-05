@@ -165,6 +165,7 @@ class GlassButton extends StatefulWidget {
     this.anchorStretchSettings,
     this.alignment = Alignment.center,
     this.ambientBaseLight,
+    this.pressLightColor,
     this.platformViewBackdrop = false,
     this.canRequestFocus = true,
     this.excludeFromSemantics = false,
@@ -227,6 +228,7 @@ class GlassButton extends StatefulWidget {
     this.anchorStretchSettings,
     this.alignment = Alignment.center,
     this.ambientBaseLight,
+    this.pressLightColor,
     this.platformViewBackdrop = false,
     this.canRequestFocus = true,
     this.excludeFromSemantics = false,
@@ -559,6 +561,22 @@ class GlassButton extends StatefulWidget {
   /// An explicit value is honoured unchanged in both brightness modes.
   final double? ambientBaseLight;
 
+  /// The colour of the light this button gains while pressed, hovered or
+  /// focused: the ambient base light, whose strength is [ambientBaseLight],
+  /// and, while [glowRadius] is null, the native specular sheen at its usual
+  /// soft strength.
+  ///
+  /// - null (default): the theme's [GlassGlowColors.pressLight] for the
+  ///   current brightness, then white
+  ///
+  /// White is the iOS 26 lift over the system's neutral backgrounds. Over a
+  /// tinted or coloured page it washes the pressed surface toward white, so
+  /// the press reads as a white flash rather than a brighter piece of the
+  /// same glass; a colour taken from the page keeps it in tone. The colour's
+  /// own alpha scales both lights. An explicit [glowColor] still sets the
+  /// sheen.
+  final Color? pressLightColor;
+
   /// When true (typically for iOS PlatformViews), forces the BackdropFilter
   /// fallback render path instead of the Impeller-native shader. Forwarded to
   /// the underlying [AdaptiveGlass].
@@ -740,13 +758,25 @@ class _GlassButtonState extends State<GlassButton>
 
     final resolvedGlowColors =
         GlassThemeData.of(context).glowColorsFor(context);
+    // The press light's colour: explicit widget param > the theme's colour
+    // for this brightness > white.
+    final Color? pressLightColor =
+        widget.pressLightColor ?? resolvedGlowColors.pressLight;
+    final Color effectiveAmbientBaseLightColor =
+        pressLightColor ?? CupertinoColors.white;
     final isNativeGlow = widget.glowRadius == null;
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     // Native specular sheen is subtle (~10% alpha in light mode, ~7% in dark mode)
     // to provide a delicate specular highlight on top of ambientBaseLight
-    // without creating a dense, opaque white fog circle.
-    final nativeGlowColor =
-        isDark ? const Color(0x12FFFFFF) : const Color(0x1AFFFFFF);
+    // without creating a dense, opaque white fog circle. A press light colour
+    // tints it too, at the same strength: left white, its additive glow alone
+    // still washes a pressed button on a tinted page toward white.
+    final double nativeGlowAlpha = isDark ? 0x12 / 0xFF : 0x1A / 0xFF;
+    final nativeGlowColor = pressLightColor == null
+        ? (isDark ? const Color(0x12FFFFFF) : const Color(0x1AFFFFFF))
+        : effectiveAmbientBaseLightColor.withValues(
+            alpha: effectiveAmbientBaseLightColor.a * nativeGlowAlpha,
+          );
 
     final effectiveGlowColor = widget.glowColor ??
         (isNativeGlow ? nativeGlowColor : resolvedGlowColors.primary) ??
@@ -817,8 +847,10 @@ class _GlassButtonState extends State<GlassButton>
             child: ClipPath(
               clipper: ShapeBorderClipper(shape: widget.shape),
               child: ColoredBox(
-                color: CupertinoColors.white
-                    .withValues(alpha: opacity.clamp(0.0, 1.0)),
+                color: effectiveAmbientBaseLightColor.withValues(
+                  alpha: (effectiveAmbientBaseLightColor.a * opacity)
+                      .clamp(0.0, 1.0),
+                ),
               ),
             ),
           ),

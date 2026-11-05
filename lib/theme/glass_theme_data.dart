@@ -23,6 +23,7 @@ class GlassGlowColors {
     this.warning,
     this.danger,
     this.info,
+    this.pressLight,
     this.glowBlurRadius = 4.0,
     this.glowSpreadRadius = 0,
     this.glowOpacity = 1,
@@ -45,6 +46,19 @@ class GlassGlowColors {
 
   /// Informational color (typically blue)
   final Color? info;
+
+  /// The colour of the light a pressed glass button gains: its even ambient
+  /// base light and its native specular sheen. Their strengths don't change.
+  ///
+  /// When null (the default), the light is white: the iOS 26 lift over the
+  /// system's neutral backgrounds. Over a tinted or coloured page white
+  /// washes a pressed button toward white, so it reads as a white flash
+  /// rather than a brighter piece of the same glass. A colour taken from the
+  /// page keeps the press in tone; set one on each of the light and dark
+  /// variants when the page colour differs between them.
+  ///
+  /// [GlassButton.pressLightColor] overrides it for one button.
+  final Color? pressLight;
 
   /// Gaussian blur sigma applied to the glow halo.
   ///
@@ -84,6 +98,7 @@ class GlassGlowColors {
     Color? warning,
     Color? danger,
     Color? info,
+    Color? pressLight,
     double? glowBlurRadius,
     double? glowSpreadRadius,
     double? glowOpacity,
@@ -95,6 +110,7 @@ class GlassGlowColors {
       warning: warning ?? this.warning,
       danger: danger ?? this.danger,
       info: info ?? this.info,
+      pressLight: pressLight ?? this.pressLight,
       glowBlurRadius: glowBlurRadius ?? this.glowBlurRadius,
       glowSpreadRadius: glowSpreadRadius ?? this.glowSpreadRadius,
       glowOpacity: glowOpacity ?? this.glowOpacity,
@@ -128,6 +144,7 @@ class GlassGlowColors {
       warning: _lerpColorField(a.warning, b.warning, t),
       danger: _lerpColorField(a.danger, b.danger, t),
       info: _lerpColorField(a.info, b.info, t),
+      pressLight: _lerpColorField(a.pressLight, b.pressLight, t),
       glowBlurRadius: lerpDouble(a.glowBlurRadius, b.glowBlurRadius, t)!,
       glowSpreadRadius: lerpDouble(a.glowSpreadRadius, b.glowSpreadRadius, t)!,
       glowOpacity: lerpDouble(a.glowOpacity, b.glowOpacity, t)!,
@@ -171,6 +188,7 @@ class GlassGlowColors {
           warning == other.warning &&
           danger == other.danger &&
           info == other.info &&
+          pressLight == other.pressLight &&
           glowBlurRadius == other.glowBlurRadius &&
           glowSpreadRadius == other.glowSpreadRadius &&
           glowOpacity == other.glowOpacity;
@@ -183,6 +201,7 @@ class GlassGlowColors {
         warning,
         danger,
         info,
+        pressLight,
         glowBlurRadius,
         glowSpreadRadius,
         glowOpacity,

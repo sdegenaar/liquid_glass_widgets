@@ -1234,4 +1234,52 @@ void main() {
       expect(indicator.indicatorColor, customColor);
     });
   });
+
+  group('PressAmbientLift', () {
+    Finder lift(int rgb) => find.descendant(
+          of: find.byType(PressAmbientLift),
+          matching: find.byWidgetPredicate(
+            (w) => w is ColoredBox && w.color.toARGB32() & 0x00FFFFFF == rgb,
+          ),
+        );
+
+    Widget themed({Color? pressLight}) => _wrap(
+          GlassTheme(
+            data: GlassThemeData(
+              brightness: Brightness.light,
+              light: GlassThemeVariant(
+                glowColors: GlassGlowColors(pressLight: pressLight),
+              ),
+            ),
+            child: const PressAmbientLift(child: SizedBox.expand()),
+          ),
+        );
+
+    testWidgets('lights white by default', (tester) async {
+      await tester.pumpWidget(themed());
+      expect(lift(0xFFFFFF), findsOneWidget);
+    });
+
+    testWidgets("takes the theme's press light, like GlassButton",
+        (tester) async {
+      await tester.pumpWidget(themed(pressLight: const Color(0xFFF2CB48)));
+      expect(lift(0xF2CB48), findsOneWidget);
+      expect(lift(0xFFFFFF), findsNothing);
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(PressAmbientLift)),
+      );
+      await tester.pumpAndSettle();
+      final fade = tester.widget<FadeTransition>(
+        find.descendant(
+          of: find.byType(PressAmbientLift),
+          matching: find.byType(FadeTransition),
+        ),
+      );
+      expect(
+          fade.opacity.value, closeTo(GlassDefaults.ambientBaseLight, 0.005));
+      await gesture.up();
+      await tester.pumpAndSettle();
+    });
+  });
 }

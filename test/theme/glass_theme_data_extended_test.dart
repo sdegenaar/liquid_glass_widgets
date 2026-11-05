@@ -58,6 +58,22 @@ void main() {
         expect(copy.primary, Colors.red);
       });
 
+      test('copyWith pressLight', () {
+        final copy = original.copyWith(pressLight: const Color(0xFFF2CB48));
+        expect(copy.pressLight, const Color(0xFFF2CB48));
+        expect(copy.primary, Colors.red);
+        expect(copy, isNot(equals(original)));
+        expect(
+          copy,
+          equals(original.copyWith(pressLight: const Color(0xFFF2CB48))),
+        );
+        expect(
+          copy.hashCode,
+          equals(
+              original.copyWith(pressLight: const Color(0xFFF2CB48)).hashCode),
+        );
+      });
+
       test('copy with no changes equals original', () {
         expect(original.copyWith(), equals(original));
         expect(original.copyWith().hashCode, equals(original.hashCode));
