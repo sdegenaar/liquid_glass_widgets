@@ -36,11 +36,6 @@ void main() async {
 
   runApp(LiquidGlassWidgets.wrap(
     adaptiveQuality: true,
-    theme: GlassThemeData.simple(
-      blur: 1.8,
-      thickness: 20,
-      quality: GlassQuality.premium,
-    ),
     child: const AppleMailDemoApp(),
   ));
 }

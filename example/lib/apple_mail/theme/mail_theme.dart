@@ -66,74 +66,32 @@ class MailGlassScope extends InheritedNotifier<ValueNotifier<bool>> {
   }
 }
 
-/// Glass shared by action triggers (matching Messages edit pill aesthetic).
-LiquidGlassSettings kMailTriggerGlass(BuildContext context) {
+LiquidGlassSettings _resolveMailGlass(BuildContext context) {
   final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+  final theme = GlassThemeData.of(context);
+  if (theme.style == GlassStyle.classic) {
+    return isDark
+        ? LiquidGlassSettings.classicDark
+        : LiquidGlassSettings.classicLight;
+  }
   if (MailGlassScope.isIos27(context)) {
     return isDark
         ? LiquidGlassSettings.ios27Dark
         : LiquidGlassSettings.ios27Light;
   }
-  return LiquidGlassSettings(
-    glassColor: isDark
-        ? const Color(0xA6262626)
-        : CupertinoColors.white.withValues(alpha: 0.15),
-    thickness: 18.0,
-    blur: isDark ? 1.8 : 8.0,
-    lightIntensity: isDark ? 0.18 : 0.45,
-    ambientStrength: isDark ? 0.0 : 0.12,
-    fresnelStrength: isDark ? 0.0 : 1.0,
-    chromaticAberration: 0.01,
-    refractiveIndex: 1.2,
-    saturation: 1.0,
-    shadowElevation: isDark ? 0.0 : 0.8,
-  );
+  return isDark
+      ? LiquidGlassSettings.ios26Dark
+      : LiquidGlassSettings.ios26Light;
 }
+
+/// Glass shared by action triggers (matching Messages edit pill aesthetic).
+LiquidGlassSettings kMailTriggerGlass(BuildContext context) =>
+    _resolveMailGlass(context);
 
 /// Glass for floating utility bars and compose morph triggers.
-LiquidGlassSettings kMailSearchGlass(BuildContext context) {
-  final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
-  if (MailGlassScope.isIos27(context)) {
-    return isDark
-        ? LiquidGlassSettings.ios27Dark
-        : LiquidGlassSettings.ios27Light;
-  }
-  return LiquidGlassSettings(
-    glassColor: isDark
-        ? const Color(0xA6262626)
-        : CupertinoColors.white.withValues(alpha: 0.15),
-    thickness: isDark ? 25.0 : 18.0,
-    blur: isDark ? 1.8 : 8.0,
-    lightIntensity: isDark ? 0.18 : 0.45,
-    ambientStrength: isDark ? 0.0 : 0.12,
-    fresnelStrength: isDark ? 0.0 : 1.0,
-    chromaticAberration: 0.01,
-    refractiveIndex: 1.2,
-    saturation: 1.0,
-    shadowElevation: isDark ? 0.0 : 1.5,
-  );
-}
+LiquidGlassSettings kMailSearchGlass(BuildContext context) =>
+    _resolveMailGlass(context);
 
 /// Glass settings for dropdown popover menus.
-LiquidGlassSettings kMailMenuGlass(BuildContext context) {
-  final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
-  if (MailGlassScope.isIos27(context)) {
-    return isDark
-        ? LiquidGlassSettings.ios27Dark
-        : LiquidGlassSettings.ios27Light;
-  }
-  return LiquidGlassSettings(
-    glassColor: isDark
-        ? const Color(0xB31E1E1E)
-        : CupertinoColors.white.withValues(alpha: 0.85),
-    thickness: isDark ? 30.0 : 20.0,
-    blur: isDark ? 3.0 : 16.0,
-    lightIntensity: isDark ? 0.22 : 0.55,
-    ambientStrength: isDark ? 0.05 : 0.18,
-    fresnelStrength: isDark ? 0.0 : 0.8,
-    chromaticAberration: 0.015,
-    refractiveIndex: 1.25,
-    saturation: 1.1,
-    shadowElevation: isDark ? 2.0 : 3.0,
-  );
-}
+LiquidGlassSettings kMailMenuGlass(BuildContext context) =>
+    _resolveMailGlass(context);

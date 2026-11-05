@@ -37,71 +37,6 @@ const _kAvatarBg = CupertinoDynamicColor.withBrightness(
     darkColor: Color(0xFF3A3A50)); // muted indigo — iOS default avatar bg
 const _kBlue = CupertinoColors.systemBlue; // iOS 26 blue
 
-// Glass shared by both menu triggers — matches the "Edit" pill aesthetic
-LiquidGlassSettings _kTriggerGlass(BuildContext context) {
-  final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
-  return LiquidGlassSettings(
-    // Dark mode: shallow bevel (thickness: 8) matched against iOS 26 nav button
-    // appearance — deep enough to give subtle glass depth without concentrating
-    // tint into a bright edge border. fresnelStrength + ambientStrength are zeroed
-    // to match the flat UIVisualEffectView material iOS 26 uses. lightIntensity: 0.2
-    // gives a soft, realistic press specular rather than an over-bright flash.
-    // Light mode: full bevel (18) + Fresnel for premium 3D pressed feel.
-    glassColor: isDark
-        ? const Color(0xA6262626)
-        : CupertinoColors.white.withValues(alpha: 0.15),
-    thickness: 18.0,
-    blur: isDark ? 1.8 : 8.0, // Slightly more blur dims/softens text underneath
-    lightIntensity: isDark ? 0.18 : 0.45,
-    ambientStrength: isDark ? 0.0 : 0.12,
-    fresnelStrength: isDark ? 0.0 : 1.0,
-    chromaticAberration: 0.01,
-    refractiveIndex: 1.2,
-    saturation: 1.0,
-    shadowElevation: isDark ? 0.0 : 0.8,
-  );
-}
-
-// Glass for the search+compose bar (blended group — premium needed for merging)
-LiquidGlassSettings _kSearchGlass(BuildContext context) {
-  final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
-  return LiquidGlassSettings(
-    glassColor: isDark
-        ? const Color(0xA6262626)
-        : CupertinoColors.white.withValues(alpha: 0.15),
-    thickness: isDark ? 25.0 : 18.0,
-    blur: isDark ? 1.8 : 8.0, // Slightly more blur dims/softens text underneath
-    lightIntensity: isDark ? 0.18 : 0.45,
-    ambientStrength: isDark ? 0.0 : 0.12,
-    fresnelStrength: isDark ? 0.0 : 1.0,
-    chromaticAberration: 0.01,
-    refractiveIndex: 1.2,
-    saturation: 1.0,
-    shadowElevation: isDark ? 0.0 : 1.5,
-  );
-}
-
-// Glass for the menus themselves
-LiquidGlassSettings _kMenuGlass(BuildContext context) {
-  final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
-  return LiquidGlassSettings(
-    glassColor: isDark
-        ? const Color(0xFF262626).withValues(
-            alpha:
-                0.5) // Standard Figma approximation for systemThinMaterialDark
-        : CupertinoColors.white.withValues(alpha: 0.15),
-    thickness: isDark ? 25.0 : 18.0,
-    blur: isDark ? 8 : 8.0, // Slightly more blur dims/softens text underneath
-    lightIntensity: isDark ? 0.18 : 0.45,
-    ambientStrength: isDark ? 0.0 : 0.12,
-    fresnelStrength: isDark ? 0.0 : 1.0,
-    chromaticAberration: 0.01,
-    refractiveIndex: 1.2,
-    saturation: 1.0,
-    shadowElevation: isDark ? 0.0 : 1.5,
-  );
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // DATA
 // ─────────────────────────────────────────────────────────────────────────────
@@ -289,7 +224,6 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
     return GlassScaffold(
       background: ColoredBox(color: _kBg.resolveFrom(context)),
-      settings: _kTriggerGlass(context),
       statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark
           ? GlassStatusBarStyle.light
           : GlassStatusBarStyle.dark,
@@ -388,7 +322,6 @@ class _EditMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassMenu(
       menuWidth: 260,
-      settings: _kMenuGlass(context),
       menuBorderRadius: 32,
       quality: GlassQuality.premium,
       triggerBuilder: (context, toggleMenu) {
@@ -397,7 +330,6 @@ class _EditMenu extends StatelessWidget {
           onTap: toggleMenu,
           width: 68,
           height: 44,
-          settings: _kTriggerGlass(context),
           shape: const LiquidRoundedRectangle(borderRadius: 22),
           quality: GlassQuality.premium,
           useOwnLayer: true,
@@ -455,7 +387,6 @@ class _FilterMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassMenu(
       menuWidth: 240,
-      settings: _kMenuGlass(context),
       menuBorderRadius: 32,
       quality: GlassQuality.premium,
       triggerBuilder: (context, toggleMenu) {
@@ -464,7 +395,6 @@ class _FilterMenu extends StatelessWidget {
           onTap: toggleMenu,
           width: 44,
           height: 44,
-          settings: _kTriggerGlass(context),
           shape: const LiquidOval(), // 44×44 = perfect circle
           quality: GlassQuality.premium,
           useOwnLayer: true,
@@ -728,7 +658,6 @@ class _SearchBarState extends State<_SearchBar> {
           padding: EdgeInsets.fromLTRB(
               12, 8, 12, widget.bottomPad > 32 ? widget.bottomPad - 8 : 32),
           child: AdaptiveLiquidGlassLayer(
-            settings: _kSearchGlass(context),
             quality: GlassQuality.premium,
             blendAmount: 20,
             child: LiquidGlassBlendGroup(
@@ -743,7 +672,6 @@ class _SearchBarState extends State<_SearchBar> {
                       placeholder: 'Search',
                       useOwnLayer:
                           isLight, // joins blend group in dark, separates in light to show shadow
-                      settings: _kSearchGlass(context),
                       quality: GlassQuality.premium,
                       showsCancelButton: true,
                       height: 48,
@@ -767,7 +695,6 @@ class _SearchBarState extends State<_SearchBar> {
                                 width: 48,
                                 height: 48,
                                 shape: const LiquidOval(),
-                                settings: _kSearchGlass(context),
                                 quality: GlassQuality.premium,
                                 useOwnLayer: isLight,
                                 stretch: 0.25,

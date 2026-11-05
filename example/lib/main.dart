@@ -61,6 +61,9 @@ class _AppleLiquidGlassShowcaseAppState
   /// Global brightness toggle — shared via [_BrightnessScope].
   Brightness _brightness = Brightness.dark;
 
+  /// Global glass style preset — shared via [_BrightnessScope] and [GlassTheme].
+  GlassStyle _style = GlassStyle.ios27;
+
   void _toggleBrightness() {
     setState(() {
       _brightness =
@@ -68,51 +71,75 @@ class _AppleLiquidGlassShowcaseAppState
     });
   }
 
+  void _setStyle(GlassStyle style) {
+    if (_style == style) return;
+    setState(() {
+      _style = style;
+      if (style == GlassStyle.ios27) {
+        kMailUseIos27.value = true;
+      } else if (style == GlassStyle.ios26) {
+        kMailUseIos27.value = false;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = _brightness == Brightness.dark;
 
-    return _BrightnessScope(
-      brightness: _brightness,
-      toggleBrightness: _toggleBrightness,
-      child: CupertinoApp(
-        title: 'Liquid Glass Widgets',
-        theme: CupertinoThemeData(
-          brightness: _brightness,
+    return GlassTheme(
+      data: GlassThemeData(
+        style: _style,
+        brightness: _brightness,
+      ),
+      child: _BrightnessScope(
+        brightness: _brightness,
+        toggleBrightness: _toggleBrightness,
+        style: _style,
+        setStyle: _setStyle,
+        child: CupertinoApp(
+          title: 'Liquid Glass Widgets',
+          theme: CupertinoThemeData(
+            brightness: _brightness,
+          ),
+          // Demo pages use Material widgets (Scaffold, showModalBottomSheet)
+          // that require these localizations. Not needed for glass widgets.
+          localizationsDelegates: const [
+            DefaultMaterialLocalizations.delegate,
+            DefaultWidgetsLocalizations.delegate,
+          ],
+          // Provide a matching Material Theme for any Scaffold widgets in demo pages.
+          builder: (context, child) => Theme(
+            data: isDark
+                ? ThemeData.dark(useMaterial3: true)
+                : ThemeData.light(useMaterial3: true),
+            // Hosts pinned nav-bar chrome (back button + actions) above the
+            // Navigator so it stays put while pages slide during push/pop.
+            child: GlassNavigationShell(child: child!),
+          ),
+          home: const ShowcaseHomePage(),
+          debugShowCheckedModeBanner: false,
         ),
-        // Demo pages use Material widgets (Scaffold, showModalBottomSheet)
-        // that require these localizations. Not needed for glass widgets.
-        localizationsDelegates: const [
-          DefaultMaterialLocalizations.delegate,
-          DefaultWidgetsLocalizations.delegate,
-        ],
-        // Provide a matching Material Theme for any Scaffold widgets in demo pages.
-        builder: (context, child) => Theme(
-          data: isDark
-              ? ThemeData.dark(useMaterial3: true)
-              : ThemeData.light(useMaterial3: true),
-          // Hosts pinned nav-bar chrome (back button + actions) above the
-          // Navigator so it stays put while pages slide during push/pop.
-          child: GlassNavigationShell(child: child!),
-        ),
-        home: const ShowcaseHomePage(),
-        debugShowCheckedModeBanner: false,
       ),
     );
   }
 }
 
-/// Inherited widget exposing the current [Brightness] and a toggle callback
-/// to any descendant widget in the example app.
+/// Inherited widget exposing the current [Brightness], [GlassStyle], and
+/// callbacks to any descendant widget in the example app.
 class _BrightnessScope extends InheritedWidget {
   const _BrightnessScope({
     required this.brightness,
     required this.toggleBrightness,
+    required this.style,
+    required this.setStyle,
     required super.child,
   });
 
   final Brightness brightness;
   final VoidCallback toggleBrightness;
+  final GlassStyle style;
+  final ValueChanged<GlassStyle> setStyle;
 
   static _BrightnessScope of(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<_BrightnessScope>()!;
@@ -120,7 +147,34 @@ class _BrightnessScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(_BrightnessScope oldWidget) =>
-      brightness != oldWidget.brightness;
+      brightness != oldWidget.brightness || style != oldWidget.style;
+}
+
+class _GlassStyleSelector extends StatelessWidget {
+  const _GlassStyleSelector();
+
+  static const _styles = [
+    GlassStyle.ios27,
+    GlassStyle.ios26,
+    GlassStyle.classic,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = _BrightnessScope.of(context);
+    final selectedIndex = _styles.indexOf(scope.style).clamp(0, 2);
+
+    return GlassSegmentedControl(
+      useOwnLayer: true,
+      selectedIndex: selectedIndex,
+      onSegmentSelected: (index) => scope.setStyle(_styles[index]),
+      segments: const [
+        GlassSegment(label: 'iOS 27'),
+        GlassSegment(label: 'iOS 26'),
+        GlassSegment(label: 'Classic'),
+      ],
+    );
+  }
 }
 
 // =============================================================================
@@ -169,7 +223,6 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage> {
       background: const ShowcaseBackground(),
       statusBarStyle:
           isDark ? GlassStatusBarStyle.light : GlassStatusBarStyle.dark,
-      settings: RecommendedGlassSettings.standard,
       topEdgeFade: true,
       bottomBar: GlassTabBar.bottom(
         selectedIndex: _selectedTab,
@@ -179,18 +232,6 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage> {
         iconSize: 28,
         labelFontSize: 10,
         iconLabelSpacing: 0,
-        settings: const LiquidGlassSettings(
-          glassColor: Color.fromRGBO(255, 255, 255, 0.08),
-          thickness: 30,
-          blur: 3,
-          chromaticAberration: .01,
-          lightAngle: GlassDefaults.lightAngle,
-          lightIntensity: .5,
-          ambientStrength: 0,
-          refractiveIndex: 1.2,
-          saturation: 1.2,
-          specularSharpness: GlassSpecularSharpness.medium,
-        ),
         extraButton: GlassTabBarExtraButton(
           icon: Icon(isDark ? CupertinoIcons.sun_max : CupertinoIcons.moon),
           label: isDark ? 'Light mode' : 'Dark mode',
@@ -241,7 +282,7 @@ class _ExploreTab extends StatelessWidget {
                   ),
                   SizedBox(height: 10),
                   Text(
-                    'iOS 26 Flutter Widget Toolkit',
+                    'iOS 26 & 27 Flutter Widget Toolkit',
                     style: TextStyle(
                       fontSize: 17,
                       color:
@@ -249,7 +290,9 @@ class _ExploreTab extends StatelessWidget {
                       letterSpacing: -0.2,
                     ),
                   ),
-                  SizedBox(height: 32),
+                  SizedBox(height: 18),
+                  const _GlassStyleSelector(),
+                  SizedBox(height: 24),
 
                   // ── Featured demo — large card ────────────────────
                   GestureDetector(
@@ -598,13 +641,15 @@ class _DemosTab extends StatelessWidget {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'Polished Apple app reproductions.',
+                    'Polished Apple app reproductions using the active glass style.',
                     style: TextStyle(
                       fontSize: 15,
                       color:
                           CupertinoColors.secondaryLabel.resolveFrom(context),
                     ),
                   ),
+                  SizedBox(height: 16),
+                  const _GlassStyleSelector(),
                   SizedBox(height: 24),
 
                   // Large featured cards
