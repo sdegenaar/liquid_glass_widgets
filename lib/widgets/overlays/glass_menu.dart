@@ -201,6 +201,23 @@ class GlassMenu extends StatefulWidget {
   /// Custom color for the menu selection background.
   final Color selectionColor;
 
+  /// A flat fill for the menu panel and its submenu cards, drawn instead of
+  /// glass when set.
+  ///
+  /// Meant for Reduce Transparency: pass an opaque color (for example the
+  /// app's menu background) while the setting is on, and `null` otherwise.
+  /// The package's own Reduce Transparency fallback frosts the glass but
+  /// keeps it partly see-through, so a menu over busy content can stay hard
+  /// to read. The open/close morph and the trigger ghost stay glass.
+  final Color? opaqueColor;
+
+  /// An outline drawn along the inside edge of the menu panel and its
+  /// submenu cards, over glass or [opaqueColor].
+  ///
+  /// Meant for Increase Contrast, where iOS outlines menus: pass a side while
+  /// the setting is on, and `null` (the default, no outline) otherwise.
+  final BorderSide? border;
+
   /// Optional fixed height for the menu.
   ///
   /// If null, the menu will size itself to fit its items.
@@ -349,6 +366,8 @@ class GlassMenu extends StatefulWidget {
     this.maxStackHeight,
     this.menuPadding = EdgeInsets.zero,
     this.selectionColor = const Color(0x3DFFFFFF),
+    this.opaqueColor,
+    this.border,
     this.enableInteractionGlow = true,
     this.glowOnTapOnly = false,
     this.glowColor,
