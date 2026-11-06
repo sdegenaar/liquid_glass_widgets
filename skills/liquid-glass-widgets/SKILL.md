@@ -175,12 +175,12 @@ When generating Flutter UI, replace standard Flutter widgets with their native l
 | :--- | :--- | :--- |
 | `Scaffold` | `GlassScaffold` | Handles z-order, edge fading, content-aware brightness. |
 | `AppBar` / `CupertinoNavigationBar` | `GlassAppBar` | Transparent iOS 26 style by default. Supports `.pinned` for gel morph. |
-| `BottomNavigationBar` / `CupertinoTabBar` | `GlassTabBar.bottom` | Unified glass navigation pill. `GlassBottomBar` is deleted. |
+| `BottomNavigationBar` / `CupertinoTabBar` | `GlassTabBar.bottom` | Unified glass navigation pill (`GlassBottomBar` is deleted). `settings:` styles the bar platter; `indicatorSettings:` (e.g. `LiquidGlassSettings.classicIndicator`) styles the animated pill. |
 | Bottom nav that collapses to selected tab on scroll | `GlassTabBar.minimizable` | Minimizes to a single pill on scroll; supports an optional trailing action button. |
 | `ElevatedButton` / `CupertinoButton` | `GlassButton` | Refractive button with squeeze & stretch physics and touch glow. |
 | `IconButton` | `GlassIconButton` | Refractive circular/squircle button with `onPressed`. |
 | `PopupMenuButton` / Pull-Down Menu | `GlassPullDownButton` | Combined trigger button and `GlassMenu`. |
-| `CupertinoSegmentedControl` | `GlassSegmentedControl<T>` | Fluid animated glass indicator with jelly physics. Fine inside `solid` cards; on a `glass` card place it outside. |
+| `CupertinoSegmentedControl` | `GlassSegmentedControl<T>` | Fluid animated glass indicator with jelly physics (`settings:` for track, `indicatorSettings:` for pill). Fine inside `solid` cards; on a `glass` card place it outside. |
 | `Switch` / `CupertinoSwitch` | `GlassSwitch` | Fluid spring jump animation. Use `useOwnLayer: true` when standalone. |
 | `Slider` / `CupertinoSlider` | `GlassSlider` | Glass track with draggable jelly thumb and haptic snaps. |
 | `Card` | `GlassContainer.card` | Container for grouping content (`surfaceStyle: GlassSurfaceStyle.solid` for flat list cards). Content inside stays opaque. |

@@ -214,7 +214,7 @@ The following symbols and patterns are scheduled for removal or consolidation in
 - `GlassChip` — redundant; capsule-style `GlassButton` fulfills this use case.
 - `GlassContainer` / `GlassCard` consolidation — **decision: `GlassCard` becomes `GlassContainer.card(...)` named constructor** (opinionated preset with standard corner radius, shadow, and padding), mirroring how `GlassTabBar.bottom()` / `.inline()` / `.searchable()` work. The standalone `GlassCard` class is deprecated; `GlassContainer` is the single surface primitive. *Status: `GlassContainer.card` (with `surfaceStyle`) shipped and `GlassCard` is `@Deprecated` in 1.x; 2.0.0 removes `GlassCard`.*
 - `GlassSheet` — merged into `GlassModalSheet` for unified sheet mechanics.
-- `GlassStyle.classic`, `GlassThemeData.classic()`, `GlassThemeVariant.classicLight` / `classicDark`, `GlassThemeSettings.classicLight` / `classicDark`, and `LiquidGlassSettings.classic*` — introduced in 1.17.0 as a 1-line migration bridge for the pre-calibration `1.x` look when `GlassThemeData()` flipped to simulator-calibrated `GlassStyle.ios27` by default. Scheduled for deprecation and removal in 2.0.0 so `GlassStyle` only represents calibrated Apple OS eras (`ios27`, `ios28`, etc.).
+- `GlassStyle.classic`, `GlassThemeData.classic()`, `GlassThemeVariant.classicLight` / `classicDark`, `GlassThemeSettings.classicLight` / `classicDark`, and `LiquidGlassSettings.classic*` — introduced in 1.17.0 as a 1-line migration bridge for the pre-calibration `1.x` look when `GlassThemeData()` flipped to `GlassStyle.ios27` by default. Scheduled for deprecation and removal in 2.0.0 so `GlassStyle` only represents Apple OS eras (`ios27`, `ios28`, etc.).
 
 Behaviour changes scheduled for 2.0.0:
 

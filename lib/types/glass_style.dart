@@ -11,16 +11,16 @@ enum GlassStyle {
   /// - Classic refractive indicator lens
   classic,
 
-  /// Simulator-calibrated native Apple iOS 26.0 Liquid Glass
-  /// (`glassEffect(.regular)` & `_UILiquidLensView` on iOS 26.0):
+  /// Modeled on Apple's iOS 26.0 Liquid Glass (`glassEffect(.regular)` &
+  /// `_UILiquidLensView`, tuned against iOS 26.0 simulator references):
   /// - Paraxial thin-prism bevel refraction ([GlassLensModel.paraxial])
   /// - Dual-pass frosted cloud (`frost: 14`) with bright white specular rims
   ///   (`rimShade: 0`) in light mode and deep uniform dark platters (`rgb(25,25,26)`)
   /// - Clear refractive indicator lens with bright white specular rim (`rimShade: 0`)
   ios26,
 
-  /// Simulator-calibrated native Apple iOS 27.0 Liquid Glass (`glassEffect(.regular)` &
-  /// `_UILiquidLensView` on iOS 27.0):
+  /// Modeled on Apple's iOS 27.0 Liquid Glass (`glassEffect(.regular)` &
+  /// `_UILiquidLensView`, tuned against iOS 27.0 simulator references):
   /// - Paraxial thin-prism bevel refraction ([GlassLensModel.paraxial])
   /// - Dual-pass frosted cloud (`frost: 14`) with luminance clamping
   /// - Top/bottom hairline `rimShade` and dual-lobe `rimLight`

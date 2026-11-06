@@ -3,8 +3,8 @@
 ## Breaking & Behavior Changes (Upgrading from ≤ 1.16.x)
 
 - **Default style is now `GlassStyle.ios27` (with or without a `GlassTheme`):**
-  - All surfaces, tab bars, overlays, and interactive lenses now default to simulator-calibrated **`GlassStyle.ios27`** (`LiquidGlassSettings.ios27Light` / `ios27Dark` and `LiquidGlassSettings.ios27Indicator`) even when no `GlassTheme` is mounted in the widget tree.
-  - **To keep the classic `v1.x` look globally**, wrap your app in `GlassTheme(data: const GlassThemeData.classic(), child: ...)` (or use `const GlassThemeData.ios26()` for the native iOS 26.0 calibration).
+  - All surfaces, tab bars, overlays, and interactive lenses now default to **`GlassStyle.ios27`** (`LiquidGlassSettings.ios27Light` / `ios27Dark` and `LiquidGlassSettings.ios27Indicator`, tuned against iOS 27 references) even when no `GlassTheme` is mounted in the widget tree.
+  - **To keep the classic `v1.x` look globally**, wrap your app in `GlassTheme(data: const GlassThemeData.classic(), child: ...)` (or use `const GlassThemeData.ios26()` for the iOS 26.0 preset).
 - **`AnimatedGlassIndicator` (`GlassTabBar` & `GlassSegmentedControl` indicator pill) defaults to `ios27Indicator` when `indicatorSettings` is omitted:**
   - `GlassTabBar` and `GlassSegmentedControl` configure their bar/track platter via `settings:` and their animated selection pill via `indicatorSettings:` (`AnimatedGlassIndicator.settings`).
   - If you pass custom `settings:` to `GlassTabBar` or `GlassSegmentedControl` **without** wrapping your app in `GlassThemeData.classic()` and leave `indicatorSettings: null`, the animated indicator pill will still default to `LiquidGlassSettings.ios27Indicator` (`AnimatedGlassIndicator.baseIndicatorSettings`).
@@ -20,9 +20,9 @@
 
 ## Features
 
-- **`GlassStyle` presets (`GlassStyle.ios27`, `GlassStyle.ios26`, `GlassStyle.classic`) and full iOS 27 / iOS 26 parity:**
+- **`GlassStyle` presets (`GlassStyle.ios27`, `GlassStyle.ios26`, `GlassStyle.classic`) and foundational iOS 27 / iOS 26 material & control alignment:**
   - Added `enum GlassStyle { classic, ios26, ios27 }` (defaulting to `GlassStyle.ios27` on `GlassThemeData`), `const GlassThemeData.ios27()`, `const GlassThemeData.ios26()`, `const GlassThemeData.classic()`, presets on `LiquidGlassSettings` (`classicLight`, `classicDark`, `classicTabBar`, `classicIndicator`, `ios26Light`, `ios26Dark`, `ios26Indicator`, `ios27Light`, `ios27Dark`, `ios27Indicator`), and brightness-aware helpers `LiquidGlassSettings.classic(context)` / `ios26(context)` / `ios27(context)`.
-  - **Behavior change:** `GlassThemeData()` now defaults all surfaces, tab bars, and interactive lenses to simulator-calibrated `GlassStyle.ios27` (`LiquidGlassSettings.ios27Light` / `ios27Dark` and `ios27Indicator`). Setting `GlassThemeData(style: GlassStyle.ios26)` (`const GlassThemeData.ios26()`) switches all surfaces, tab bars, and lenses to the native iOS 26.0 calibration, and `GlassThemeData(style: GlassStyle.classic)` (`const GlassThemeData.classic()`) switches back to the classic `v1.x` look from a single setting.
+  - **Behavior change:** `GlassThemeData()` now defaults all surfaces, tab bars, and interactive lenses to `GlassStyle.ios27` (`LiquidGlassSettings.ios27Light` / `ios27Dark` and `ios27Indicator`). Setting `GlassThemeData(style: GlassStyle.ios26)` (`const GlassThemeData.ios26()`) switches all surfaces, tab bars, and lenses to the iOS 26.0 preset, and `GlassThemeData(style: GlassStyle.classic)` (`const GlassThemeData.classic()`) switches back to the classic `v1.x` look from a single setting.
   - Added `indicatorSettings` on `GlassThemeVariant` (and `GlassThemeData.indicatorSettingsFor(context)`) to customize interactive indicator lenses independently of frosted surface platters.
   - Calibrated `GlassTabBar.bottom`, `GlassTabBar.searchable`, `GlassSegmentedControl`, `AnimatedGlassIndicator`, `GlassSwitch`, and `GlassSlider` to match native UIKit platters, resting wells/pills, and interactive liquid lenses (`LensInnerShadowPainter` `0.06` on `ios27` vs `0.12` on `classic`).
   - Added `thumbShadow` to `GlassSwitch` (matching `GlassSlider.thumbShadow`).
