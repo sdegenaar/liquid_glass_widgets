@@ -1136,6 +1136,8 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   }) {
     final opaqueColor = widget.opaqueColor;
     final border = widget.border;
+    final hasBorder = border != null && border.style != BorderStyle.none;
+    if (opaqueColor == null && !hasBorder) return glass(child);
     final outline = shape.toOutlinedBorder();
     final Widget surface = opaqueColor == null
         ? glass(child)
@@ -1154,14 +1156,14 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-                ClipPath(
-                  clipper: ShapeBorderClipper(shape: outline),
+                ClipRRect(
+                  borderRadius: shape.toBorderRadius() ?? BorderRadius.zero,
                   child: child,
                 ),
               ],
             ),
           );
-    if (border == null || border.style == BorderStyle.none) return surface;
+    if (!hasBorder) return surface;
     return Stack(
       children: [
         surface,

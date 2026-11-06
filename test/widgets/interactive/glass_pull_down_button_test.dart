@@ -310,6 +310,30 @@ void main() {
     expect(items.map((item) => item.semanticsSelected), [true, false, null]);
   });
 
+  testWidgets('GlassPullDownButton forwards menuSemanticLabel to GlassMenu',
+      (tester) async {
+    await tester.pumpWidget(
+      const CupertinoApp(
+        home: CupertinoPageScaffold(
+          child: AdaptiveLiquidGlassLayer(
+            child: Center(
+              child: GlassPullDownButton(
+                menuSemanticLabel: 'Sort options',
+                items: [
+                  GlassMenuItem(title: 'Name', onTap: _noop),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final menu = tester.widget<GlassMenu>(find.byType(GlassMenu));
+    expect(menu.menuSemanticLabel, 'Sort options');
+  });
+
   testWidgets('GlassPullDownButton long menu stops at screen edge and scrolls',
       (tester) async {
     var chosen = false;

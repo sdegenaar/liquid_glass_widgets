@@ -177,11 +177,11 @@ When generating Flutter UI, replace standard Flutter widgets with their native l
 | `AppBar` / `CupertinoNavigationBar` | `GlassAppBar` | Transparent iOS 26 style by default. Supports `.pinned` for gel morph. |
 | `BottomNavigationBar` / `CupertinoTabBar` | `GlassTabBar.bottom` | Unified glass navigation pill (`GlassBottomBar` is deleted). `settings:` styles the bar platter; `indicatorSettings:` (e.g. `LiquidGlassSettings.classicIndicator`) styles the animated pill. |
 | Bottom nav that collapses to selected tab on scroll | `GlassTabBar.minimizable` | Minimizes to a single pill on scroll; supports an optional trailing action button. |
-| `ElevatedButton` / `CupertinoButton` | `GlassButton` | Refractive button with squeeze & stretch physics and touch glow. |
+| `ElevatedButton` / `CupertinoButton` | `GlassButton` | Refractive button with squeeze & stretch physics, touch glow, and optional `pressLightColor` (or `GlassGlowColors.pressLight` on `GlassThemeData`). |
 | `IconButton` | `GlassIconButton` | Refractive circular/squircle button with `onPressed`. |
-| `PopupMenuButton` / Pull-Down Menu | `GlassPullDownButton` | Combined trigger button and `GlassMenu`. |
+| `PopupMenuButton` / Pull-Down Menu | `GlassPullDownButton` | Combined trigger button and `GlassMenu` (`menuSemanticLabel` names the open panel; `GlassMenu` also supports `opaqueColor` and `border`). |
 | `CupertinoSegmentedControl` | `GlassSegmentedControl<T>` | Fluid animated glass indicator with jelly physics (`settings:` for track, `indicatorSettings:` for pill). Fine inside `solid` cards; on a `glass` card place it outside. |
-| `Switch` / `CupertinoSwitch` | `GlassSwitch` | Fluid spring jump animation. Use `useOwnLayer: true` when standalone. |
+| `Switch` / `CupertinoSwitch` | `GlassSwitch` | Fluid spring jump animation, RTL-aware, honours `MediaQuery.onOffSwitchLabelsOf` (`onLabelColor` / `offLabelColor`). Use `useOwnLayer: true` when standalone. |
 | `Slider` / `CupertinoSlider` | `GlassSlider` | Glass track with draggable jelly thumb and haptic snaps. |
 | `Card` | `GlassContainer.card` | Container for grouping content (`surfaceStyle: GlassSurfaceStyle.solid` for flat list cards). Content inside stays opaque. |
 | Grouped `ListView` | `GlassGroupedSection` | Inset grouped list container with automatic dividers between `GlassListTile`s. |
@@ -278,6 +278,7 @@ GlassPullDownButton(
 
 - A submenu row shows a chevron automatically unless you pass `trailing`.
 - Do **not** build nested menus by opening a second `GlassMenu` from an item's `onTap`; use `submenu`.
+- Use `GlassMenuItem.semanticsSelected: true` (alongside a checkmark `trailing`) to announce the active choice to VoiceOver/TalkBack without keeping the hover highlight visible, and `semanticLabel` when `trailing` adds visual-only text like keyboard shortcuts.
 
 ### GlassMaterialize
 For widgets appearing or disappearing dynamically, use `GlassMaterialize` to match iOS 26's progressive defogging transition:

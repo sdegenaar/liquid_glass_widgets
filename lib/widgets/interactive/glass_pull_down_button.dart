@@ -20,6 +20,7 @@ class GlassPullDownButton extends StatelessWidget {
     Widget? icon,
     this.label,
     this.semanticLabel,
+    this.menuSemanticLabel,
     super.key,
     this.buttonWidth = 44,
     this.buttonHeight = 44,
@@ -59,6 +60,11 @@ class GlassPullDownButton extends StatelessWidget {
   /// )
   /// ```
   final String? semanticLabel;
+
+  /// What screen readers call the open menu panel.
+  ///
+  /// Forwarded to [GlassMenu.menuSemanticLabel]. Defaults to `"Menu"`.
+  final String? menuSemanticLabel;
 
   /// The list of items to display in the menu.
   ///
@@ -129,6 +135,7 @@ class GlassPullDownButton extends StatelessWidget {
     return GlassMenu(
       menuWidth: menuWidth,
       menuAlignment: menuAlignment,
+      menuSemanticLabel: menuSemanticLabel,
       autoAdjustToScreen: true,
       settings: settings,
       quality: effectiveQuality,
