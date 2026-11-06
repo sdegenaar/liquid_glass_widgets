@@ -1078,20 +1078,28 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
       child: Transform.scale(
         scale: lerpDouble(1.0, _kRecedeScale, _coverProgress(levelIndex + 1))!,
         alignment: Alignment(0, _growsDown ? -1 : 1),
-        child: GlassContainer(
-          // A card samples the backdrop on its own (it sits OVER the menu body,
-          // outside the body's blend group) — never a shared layer.
-          useOwnLayer: true,
-          settings: settings,
-          quality: quality,
-          platformViewBackdrop: widget.platformViewBackdrop,
+        child: _panelSurface(
+          shape: shape,
           width: widget.menuWidth.toDouble(),
           height: _cardFlightRect(levelIndex).height,
-          shape: shape,
-          clipBehavior: Clip.antiAlias,
-          glowIntensity: widget.glowIntensity,
-          // Same material as the root. Any apparent brightening comes from
-          // compositing over the parent, not a separate white/black tint veil.
+          // An opaque card fades in and out with the glass it replaces.
+          surfaceOpacity: fade.glass,
+          glass: (child) => GlassContainer(
+            // A card samples the backdrop on its own (it sits OVER the menu body,
+            // outside the body's blend group) — never a shared layer.
+            useOwnLayer: true,
+            settings: settings,
+            quality: quality,
+            platformViewBackdrop: widget.platformViewBackdrop,
+            width: widget.menuWidth.toDouble(),
+            height: _cardFlightRect(levelIndex).height,
+            shape: shape,
+            clipBehavior: Clip.antiAlias,
+            glowIntensity: widget.glowIntensity,
+            // Same material as the root. Any apparent brightening comes from
+            // compositing over the parent, not a separate white/black tint veil.
+            child: child,
+          ),
           child: GlassGlow(
             enabled: widget.enableInteractionGlow && isTop,
             glowOnTapOnly: widget.glowOnTapOnly,
@@ -1108,6 +1116,68 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
           ),
         ),
       ),
+    );
+  }
+
+  /// The surface of the menu body or a submenu card: [glass] around [child],
+  /// or, when [GlassMenu.opaqueColor] is set, a flat fill of that color in
+  /// the same [shape] instead. [GlassMenu.border] is drawn over either.
+  ///
+  /// [surfaceOpacity] fades the opaque fill and the border the way the glass
+  /// material fades (a submenu card arriving or leaving); the glass handles
+  /// its own fade.
+  Widget _panelSurface({
+    required LiquidShape shape,
+    required double width,
+    required double height,
+    required Widget Function(Widget child) glass,
+    required Widget child,
+    double surfaceOpacity = 1.0,
+  }) {
+    final opaqueColor = widget.opaqueColor;
+    final border = widget.border;
+    final outline = shape.toOutlinedBorder();
+    final Widget surface = opaqueColor == null
+        ? glass(child)
+        : SizedBox(
+            width: width,
+            height: height,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Opacity(
+                  opacity: surfaceOpacity,
+                  child: DecoratedBox(
+                    decoration: ShapeDecoration(
+                      color: opaqueColor,
+                      shape: outline,
+                    ),
+                  ),
+                ),
+                ClipPath(
+                  clipper: ShapeBorderClipper(shape: outline),
+                  child: child,
+                ),
+              ],
+            ),
+          );
+    if (border == null || border.style == BorderStyle.none) return surface;
+    return Stack(
+      children: [
+        surface,
+        Positioned.fill(
+          child: IgnorePointer(
+            child: Opacity(
+              opacity: surfaceOpacity,
+              child: DecoratedBox(
+                decoration: ShapeDecoration(
+                  shape: outline.copyWith(side: border),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1773,19 +1843,25 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
       allowNegativeX: widget.allowNegativeX ?? (_morphAlignment.x > 0),
       allowPositiveY: widget.allowPositiveY ?? (_morphAlignment.y < 0),
       allowNegativeY: widget.allowNegativeY ?? (_morphAlignment.y > 0),
-      child: GlassContainer(
-        useOwnLayer: false, // blends with the trigger ghost
-        settings: effectiveSettings,
-        quality: effectiveQuality,
-        platformViewBackdrop: widget.platformViewBackdrop,
-        allowElevation:
-            false, // Menu is overlay - don't darken when outside parent
-        width: currentWidth,
-        height: currentHeight, // Constrained during morph, natural when open
+      child: _panelSurface(
         shape: teardropShape,
-        clipBehavior:
-            Clip.antiAlias, // Clip items at the edges for edge-to-edge feel
-        glowIntensity: widget.glowIntensity,
+        width: currentWidth,
+        height: currentHeight,
+        glass: (child) => GlassContainer(
+          useOwnLayer: false, // blends with the trigger ghost
+          settings: effectiveSettings,
+          quality: effectiveQuality,
+          platformViewBackdrop: widget.platformViewBackdrop,
+          allowElevation:
+              false, // Menu is overlay - don't darken when outside parent
+          width: currentWidth,
+          height: currentHeight, // Constrained during morph, natural when open
+          shape: teardropShape,
+          clipBehavior:
+              Clip.antiAlias, // Clip items at the edges for edge-to-edge feel
+          glowIntensity: widget.glowIntensity,
+          child: child,
+        ), // GlassContainer
         child: _buildBodyContent(
           effectiveSettings,
           effectiveQuality,
@@ -1793,7 +1869,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
           teardropShape,
           containerScale,
         ),
-      ), // GlassContainer
+      ),
     ); // LiquidStretch (glassContent)
 
     // The blob is always fully opaque — shape morph is the only animation.
