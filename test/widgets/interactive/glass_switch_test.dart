@@ -994,6 +994,8 @@ void main() {
       ValueChanged<bool>? onChanged,
       Color? onLabelColor,
       Color? offLabelColor,
+      double? width,
+      double? height,
     }) =>
         createTestApp(
           child: Builder(
@@ -1010,6 +1012,8 @@ void main() {
                       onChanged: onChanged ?? (_) {},
                       onLabelColor: onLabelColor,
                       offLabelColor: offLabelColor,
+                      width: width ?? 58,
+                      height: height ?? 26,
                     ),
                   ),
                 ),
@@ -1018,18 +1022,20 @@ void main() {
           ),
         );
 
-    // Default 58x26 track: the pill thumb is 22 * 1.6 = 35.2 wide, so the
-    // gap beside the resting thumb is 58 - 2 - 35.2 = 20.8, centered at 10.4.
-    // Marks scale by 26 / 31.
-    const scale = 26 / 31;
-    const onInset = 10.4 + 0.25 * scale;
-    const offInset = 10.4 + 1.25 * scale;
+    // Default 58x26 track: the knob is 22 * 37 / 24 wide, so the gap beside
+    // the resting thumb is 58 - 2 - 22 * 37 / 24, centered at half that.
+    // Marks scale by 26 / 28, from the 63x28 UISwitch.
+    const scale = 26 / 28;
+    const gapCenter = (58 - 2 - 22 * 37 / 24) / 2;
+    const onInset = gapCenter + 2.5 * scale;
+    const offInset = gapCenter + 3.0 * scale;
     const width = 58.0;
     const centerY = 13.0;
 
     bool near(double a, double b) => (a - b).abs() < 1e-6;
 
-    // The O ring: a 1pt stroke of radius 5 * scale centered at (x, centerY).
+    // The O ring: a 1pt stroke of radius 4.5 * scale centered at
+    // (x, centerY).
     PaintPattern ringAt(double x) => paints
       ..something((method, args) {
         if (method != #drawCircle) return false;
@@ -1037,7 +1043,7 @@ void main() {
         final paint = args[2] as Paint;
         return near(center.dx, x) &&
             near(center.dy, centerY) &&
-            near(args[1] as double, 5 * scale) &&
+            near(args[1] as double, 4.5 * scale) &&
             paint.style == PaintingStyle.stroke &&
             paint.strokeWidth == 1;
       });
@@ -1072,6 +1078,103 @@ void main() {
       expect(tester.renderObject(marks()), barAt(onInset));
       expect(tester.renderObject(marks()), paints..rect(color: Colors.white));
       expect(tester.renderObject(marks()), isNot(paints..circle()));
+    });
+
+    testWidgets('at 63x28 the marks land where a UISwitch draws them',
+        (tester) async {
+      // Measured on the iOS 27.2 simulator from 3x screenshots, from the
+      // track's top-left corner: the I spans x 14-15 and y 9-19; the O is
+      // 10pt across its outside with a 1pt stroke, centered at x 48, y 14.
+      bool close(double a, double b) => (a - b).abs() < 1e-9;
+      await tester.pumpWidget(build(value: true, width: 63, height: 28));
+      expect(
+        tester.renderObject(marks()),
+        paints
+          ..something((method, args) {
+            if (method != #drawRect) return false;
+            final rect = args[0] as Rect;
+            return close(rect.left, 14) &&
+                close(rect.right, 15) &&
+                close(rect.top, 9) &&
+                close(rect.bottom, 19);
+          }),
+      );
+
+      await tester.pumpWidget(build(value: false, width: 63, height: 28));
+      await tester.pumpAndSettle();
+      expect(
+        tester.renderObject(marks()),
+        paints
+          ..something((method, args) {
+            if (method != #drawCircle) return false;
+            final center = args[0] as Offset;
+            final radius = args[1] as double;
+            final paint = args[2] as Paint;
+            final outer = 2 * radius + paint.strokeWidth;
+            final inner = 2 * radius - paint.strokeWidth;
+            return close(center.dx, 48) &&
+                close(center.dy, 14) &&
+                close(outer, 10) &&
+                close(inner, 8) &&
+                // UIKit's light grey ring, as CupertinoSwitch draws it.
+                paint.color.toARGB32() == 0xFFB3B3B3;
+          }),
+      );
+
+      // Right to left, mirrored about the middle of the track.
+      await tester.pumpWidget(build(
+          value: false,
+          width: 63,
+          height: 28,
+          textDirection: TextDirection.rtl));
+      await tester.pumpAndSettle();
+      expect(
+        tester.renderObject(marks()),
+        paints
+          ..something((method, args) =>
+              method == #drawCircle && close((args[0] as Offset).dx, 15)),
+      );
+    });
+
+    testWidgets('the marks stay clear of the resting thumb', (tester) async {
+      for (final (width, height) in [
+        (58.0, 26.0),
+        (63.0, 28.0),
+        (72.0, 32.0)
+      ]) {
+        final thumbWidth = (height - 4) * 37 / 24;
+        await tester
+            .pumpWidget(build(value: false, width: width, height: height));
+        await tester.pumpAndSettle();
+        expect(
+          tester.renderObject(marks()),
+          paints
+            ..something((method, args) {
+              if (method != #drawCircle) return false;
+              final center = args[0] as Offset;
+              final paint = args[2] as Paint;
+              final left =
+                  center.dx - (args[1] as double) - paint.strokeWidth / 2;
+              final right =
+                  center.dx + (args[1] as double) + paint.strokeWidth / 2;
+              return left > 2 + thumbWidth && right < width;
+            }),
+          reason: '${width}x$height off',
+        );
+        await tester
+            .pumpWidget(build(value: true, width: width, height: height));
+        await tester.pumpAndSettle();
+        expect(
+          tester.renderObject(marks()),
+          paints
+            ..something((method, args) {
+              if (method != #drawRect) return false;
+              final rect = args[0] as Rect;
+              return rect.left > 0 && rect.right < width - 2 - thumbWidth;
+            }),
+          reason: '${width}x$height on',
+        );
+      }
     });
 
     testWidgets('the marks are painted under the thumb', (tester) async {

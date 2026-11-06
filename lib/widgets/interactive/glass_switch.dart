@@ -15,22 +15,26 @@ import '../shared/glass_focus_region.dart';
 import '../shared/glass_accessibility_scope.dart';
 import '../../theme/glass_theme_helpers.dart';
 
-// The On/Off Labels marks, after CupertinoSwitch (cupertino/switch.dart).
-// Its 51x31 track leaves a 21.5pt gap beside the resting 28pt thumb; it
-// centers the on bar 11pt in from its edge and the off ring 12pt, i.e. 0.25pt
-// and 1.25pt past the middle of that gap, with a 1x10 bar and an r=5 ring.
-// GlassSwitch's thumb is a pill of (height - 4) * 1.6 inset by 2, so the gap
-// is (width - 2 - thumbWidth): 20.8pt at the default 58x26, 22.6pt at 63x28.
-// The marks sit at the same place in that gap and scale with height / 31;
-// the strokes stay 1pt wide.
-const double _kCupertinoTrackHeight = 31.0;
-const double _kOnLabelPastGapCenter = 0.25;
-const double _kOffLabelPastGapCenter = 1.25;
+// The On/Off Labels marks, measured on a 63x28 UISwitch (iOS 27.2
+// simulator, 3x screenshots, from the track's top-left corner): a 1x10 `I`
+// centered at x 14.5 and an `O` ring of 10pt outer diameter and a 1pt
+// stroke centered 15pt in from the other end, both centered vertically.
+// GlassSwitch's thumb is UIKit's (height - 4) * 37 / 24 knob inset by 2,
+// so the gap beside the resting thumb is (width - 2 - thumbWidth): 24pt at
+// 63x28, centered 12pt in from the end. The `I` sits 2.5pt and the `O` 3pt
+// past that center, toward the thumb, which lands them on UIKit's at
+// 63x28. They keep that place in the gap at other sizes and scale with
+// height / 28; the strokes stay 1pt wide.
+const double _kUISwitchTrackHeight = 28.0;
+const double _kOnLabelPastGapCenter = 2.5;
+const double _kOffLabelPastGapCenter = 3.0;
 const double _kOnLabelWidth = 1.0;
 const double _kOnLabelHeight = 10.0;
 const double _kOffLabelStrokeWidth = 1.0;
-const double _kOffLabelRadius = 5.0;
-// CupertinoSwitch's off label color (cupertino/switch.dart).
+// The radius to the middle of the stroke: 10pt outer, 8pt inner diameter.
+const double _kOffLabelRadius = 4.5;
+// CupertinoSwitch's off label color (cupertino/switch.dart): the light grey
+// ring a UISwitch draws, rgb(179,179,179) on its rgb(197,197,197) track.
 const CupertinoDynamicColor _kOffLabelColor =
     CupertinoDynamicColor.withBrightnessAndContrast(
   color: Color.fromARGB(255, 179, 179, 179),
@@ -1026,7 +1030,7 @@ class _OnOffLabelsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final scale = size.height / _kCupertinoTrackHeight;
+    final scale = size.height / _kUISwitchTrackHeight;
     final gapCenter = (size.width - 2.0 - thumbWidth) / 2.0;
     final onInset = gapCenter + _kOnLabelPastGapCenter * scale;
     final offInset = gapCenter + _kOffLabelPastGapCenter * scale;
