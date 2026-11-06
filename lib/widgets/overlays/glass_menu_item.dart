@@ -28,6 +28,7 @@ class GlassMenuItem extends StatefulWidget {
     this.subtitleStyle,
     this.iconColor,
     this.iconSize = 20.0,
+    this.semanticsChecked,
     this.maxLines = 1,
     this.enablePressScale = true,
     this.closeDelay,
@@ -102,6 +103,20 @@ class GlassMenuItem extends StatefulWidget {
   ///
   /// Defaults to 1. Set to 2 for longer labels like "Set Up Name & Photo".
   final int maxLines;
+
+  /// Whether this row is the menu's checked choice, reported as a radio
+  /// button that is checked or not, in place of the button role; for
+  /// assistive technologies only.
+  ///
+  /// macOS reports no selected state for any role (the bridge never answers
+  /// `isAccessibilitySelected`), so a selected flag on the row does not reach
+  /// VoiceOver there; a radio's checked state does, as `AXValue` 1 or 0.
+  /// iOS reads a checked node as a switch, so set this where the platform
+  /// reads it as a radio. `null` (the default) keeps the button.
+  ///
+  /// A radio's value is its checked state, so the [subtitle] is not
+  /// announced as the value; fold it into the [title] if it matters.
+  final bool? semanticsChecked;
 
   /// Whether to apply the subtle scale-down animation on press.
   ///
@@ -469,6 +484,8 @@ class _GlassMenuItemState extends State<GlassMenuItem>
       isHoveredNotifier: isHovered,
       onKeyboardActivate: _handleKeyboardActivate,
       semanticOnTap: widget.enabled ? widget.onTap : null,
+      // A non-null checked state reads as a radio in place of the button.
+      checked: widget.semanticsChecked,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: GestureDetector(
         onTapDown: widget.enabled ? (_) => isPressed.value = true : null,

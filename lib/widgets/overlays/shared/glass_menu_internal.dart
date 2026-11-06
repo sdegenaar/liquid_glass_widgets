@@ -2199,6 +2199,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
               titleStyle: item.titleStyle,
               subtitleStyle: item.subtitleStyle,
               iconColor: item.iconColor,
+              semanticsChecked: item.semanticsChecked,
               iconSize: item.iconSize,
               maxLines: item.maxLines,
               closeDelay: item.closeDelay,
