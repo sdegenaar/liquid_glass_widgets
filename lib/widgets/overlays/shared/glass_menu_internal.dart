@@ -2118,6 +2118,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
               submenu: item.submenu,
               isSelected: isSelected,
               isPressed: isPressed,
+              semanticsSelected: item.semanticsSelected,
               onTap: () {
                 if (!item.enabled) return;
                 // For scrollable menus, we delegate taps to the native GestureDetector
