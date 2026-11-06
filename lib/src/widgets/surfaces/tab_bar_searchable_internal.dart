@@ -18,6 +18,7 @@ import '../../../utils/draggable_indicator_physics.dart';
 import '../../utils/glass_localizations.dart';
 import '../../../utils/glass_spring.dart';
 import '../../../theme/glass_theme.dart';
+import '../../../theme/glass_theme_data.dart';
 import '../../../theme/glass_theme_helpers.dart';
 import '../../../widgets/interactive/glass_button.dart';
 import '../../../widgets/shared/adaptive_glass.dart';
@@ -1467,6 +1468,11 @@ class _PressAmbientLiftState extends State<PressAmbientLift>
     final target = GlassTheme.brightnessOf(context) == Brightness.dark
         ? GlassDefaults.ambientBaseLightDark
         : GlassDefaults.ambientBaseLight;
+    // ...in the same colour GlassButton would light, so the search pill and
+    // the buttons beside it press alike on a tinted page.
+    final color =
+        GlassThemeData.of(context).glowColorsFor(context).pressLight ??
+            const Color(0xFFFFFFFF);
     return Listener(
       behavior: HitTestBehavior.translucent,
       onPointerDown: (_) => _controller.forward(),
@@ -1477,8 +1483,8 @@ class _PressAmbientLiftState extends State<PressAmbientLift>
         children: [
           FadeTransition(
             opacity: _controller.drive(Tween(begin: 0.0, end: target)),
-            child: const IgnorePointer(
-              child: ColoredBox(color: Color(0xFFFFFFFF)),
+            child: IgnorePointer(
+              child: ColoredBox(color: color),
             ),
           ),
           widget.child,

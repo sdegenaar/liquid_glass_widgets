@@ -101,6 +101,17 @@ void main() {
   });
 
   group('GlassGlowColors.lerp', () {
+    test('pressLight lerps like the other colour fields', () {
+      const a = GlassGlowColors(pressLight: Color(0xFF000000));
+      const b = GlassGlowColors(pressLight: Color(0xFFFFFFFF));
+      final mid = GlassGlowColors.lerp(a, b, 0.5)!;
+      expect(mid.pressLight, Color.lerp(a.pressLight, b.pressLight, 0.5));
+      // Null on one side means "white at runtime": it switches at the middle.
+      const unset = GlassGlowColors();
+      expect(GlassGlowColors.lerp(unset, b, 0.4)!.pressLight, isNull);
+      expect(GlassGlowColors.lerp(unset, b, 0.6)!.pressLight, b.pressLight);
+    });
+
     test('identical instances short-circuit', () {
       const a = GlassGlowColors.fallback;
       expect(GlassGlowColors.lerp(a, a, 0.4), same(a));

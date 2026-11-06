@@ -1,3 +1,4 @@
+import 'package:liquid_glass_widgets/constants/glass_defaults.dart';
 import 'package:liquid_glass_widgets/src/renderer/liquid_glass_renderer.dart';
 import 'package:liquid_glass_widgets/theme/glass_interaction_settings.dart';
 import 'package:liquid_glass_widgets/theme/glass_theme.dart';
@@ -933,6 +934,188 @@ void main() {
 
       await gesture.up();
       await tester.pumpAndSettle();
+    });
+
+    // The pressed light, found by its RGB: the shape-clipped ColoredBox the
+    // button paints under its content while the finger is down.
+    Finder pressLight(int rgb) => find.descendant(
+          of: find.byType(GlassButton),
+          matching: find.byWidgetPredicate(
+            (w) =>
+                w is ColoredBox &&
+                w.color.toARGB32() & 0x00FFFFFF == rgb &&
+                w.color.a > 0,
+          ),
+        );
+
+    Color sheenOf(WidgetTester tester) => tester
+        .widget<GlassGlow>(
+          find.descendant(
+            of: find.byType(GlassButton),
+            matching: find.byType(GlassGlow),
+          ),
+        )
+        .glowColor;
+
+    /// Presses the button, waits for the light to ramp fully, and leaves the
+    /// finger down.
+    Future<TestGesture> pressAndHold(WidgetTester tester) async {
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(GlassButton)),
+      );
+      await tester.pumpAndSettle();
+      return gesture;
+    }
+
+    /// A button under a glass theme pinned to [brightness], with optional
+    /// press light colours on the light and dark variants.
+    Widget host(
+      Widget button, {
+      required Brightness brightness,
+      Color? lightPressLight,
+      Color? darkPressLight,
+    }) =>
+        createTestApp(
+          child: GlassTheme(
+            data: GlassThemeData(
+              brightness: brightness,
+              light: GlassThemeVariant(
+                glowColors: GlassGlowColors(pressLight: lightPressLight),
+              ),
+              dark: GlassThemeVariant(
+                glowColors: GlassGlowColors(pressLight: darkPressLight),
+              ),
+            ),
+            child: AdaptiveLiquidGlassLayer(
+              settings: const LiquidGlassSettings(blur: 0),
+              child: button,
+            ),
+          ),
+        );
+
+    GlassButton star({Color? pressLightColor, Color? glowColor}) => GlassButton(
+          icon: const Icon(Icons.star),
+          onTap: () {},
+          pressLightColor: pressLightColor,
+          glowColor: glowColor,
+        );
+
+    const page = Color(0xFFF2CB48);
+    const darkPage = Color(0xFF5E4A10);
+
+    for (final (brightness, strength, sheen) in [
+      (
+        Brightness.light,
+        GlassDefaults.ambientBaseLight,
+        const Color(0x1AFFFFFF)
+      ),
+      (
+        Brightness.dark,
+        GlassDefaults.ambientBaseLightDark,
+        const Color(0x12FFFFFF)
+      ),
+    ]) {
+      testWidgets('${brightness.name}: white at the native strength by default',
+          (tester) async {
+        await tester.pumpWidget(host(star(), brightness: brightness));
+
+        expect(sheenOf(tester), sheen);
+        final gesture = await pressAndHold(tester);
+        final light = tester.widget<ColoredBox>(pressLight(0xFFFFFF));
+        expect(light.color.a, closeTo(strength, 0.005));
+        await gesture.up();
+        await tester.pumpAndSettle();
+      });
+    }
+
+    testWidgets("the theme's colour for the brightness lights the press",
+        (tester) async {
+      for (final (brightness, colour) in [
+        (Brightness.light, page),
+        (Brightness.dark, darkPage),
+      ]) {
+        await tester.pumpWidget(
+          host(
+            star(),
+            brightness: brightness,
+            lightPressLight: page,
+            darkPressLight: darkPage,
+          ),
+        );
+
+        final gesture = await pressAndHold(tester);
+        final rgb = colour.toARGB32() & 0x00FFFFFF;
+        expect(pressLight(0xFFFFFF), findsNothing, reason: brightness.name);
+        final light = tester.widget<ColoredBox>(pressLight(rgb));
+        // The colour changes, the strength doesn't.
+        expect(
+          light.color.a,
+          closeTo(
+            brightness == Brightness.dark
+                ? GlassDefaults.ambientBaseLightDark
+                : GlassDefaults.ambientBaseLight,
+            0.005,
+          ),
+        );
+        final sheen = sheenOf(tester);
+        expect(sheen.toARGB32() & 0x00FFFFFF, rgb);
+        expect(
+          sheen.a,
+          closeTo(
+            brightness == Brightness.dark ? 0x12 / 0xFF : 0x1A / 0xFF,
+            0.002,
+          ),
+        );
+        await gesture.up();
+        await tester.pumpAndSettle();
+      }
+    });
+
+    testWidgets('pressLightColor wins over the theme', (tester) async {
+      await tester.pumpWidget(
+        host(
+          star(pressLightColor: const Color(0xFF34C759)),
+          brightness: Brightness.light,
+          lightPressLight: page,
+        ),
+      );
+
+      final gesture = await pressAndHold(tester);
+      expect(pressLight(0x34C759), findsOneWidget);
+      expect(pressLight(0xF2CB48), findsNothing);
+      expect(sheenOf(tester).toARGB32() & 0x00FFFFFF, 0x34C759);
+      await gesture.up();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets("the colour's alpha scales both lights", (tester) async {
+      await tester.pumpWidget(
+        host(
+          star(pressLightColor: const Color(0x80F2CB48)),
+          brightness: Brightness.light,
+        ),
+      );
+
+      final half = 0x80 / 0xFF;
+      expect(sheenOf(tester).a, closeTo(half * 0x1A / 0xFF, 0.002));
+      final gesture = await pressAndHold(tester);
+      final light = tester.widget<ColoredBox>(pressLight(0xF2CB48));
+      expect(
+          light.color.a, closeTo(half * GlassDefaults.ambientBaseLight, 0.005));
+      await gesture.up();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('an explicit glowColor still sets the sheen', (tester) async {
+      await tester.pumpWidget(
+        host(
+          star(glowColor: const Color(0x3334C759)),
+          brightness: Brightness.light,
+          lightPressLight: page,
+        ),
+      );
+
+      expect(sheenOf(tester), const Color(0x3334C759));
     });
   });
 }
