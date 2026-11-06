@@ -383,8 +383,22 @@ class AnimatedGlassIndicator extends StatelessWidget {
     };
     final themedBase =
         theme?.indicatorSettingsFor(context)?.applyTo(eraBase) ?? eraBase;
-    final base =
-        settings != null ? _mergeWithBase(settings!, themedBase) : themedBase;
+    final LiquidGlassSettings base;
+    if (settings == null) {
+      base = themedBase;
+    } else {
+      final s = settings!;
+      final presetBase = (s.blur == 0.0 && s.rimShadeEnds == 0.0)
+          ? (s.lensModel == GlassLensModel.spherical
+              ? LiquidGlassSettings.classicIndicator
+              : LiquidGlassSettings.ios26Indicator)
+          : (s.blur == 0.0 &&
+                  s.rimShadeEnds == 0.56 &&
+                  s.lensModel == GlassLensModel.paraxial)
+              ? LiquidGlassSettings.ios27Indicator
+              : themedBase;
+      base = _mergeWithBase(s, presetBase);
+    }
     // The paraxial lens is the defining optic of the iOS 27 lens
     // (`_UILiquidLensView`); the classic iOS 26 indicator is spherical. The
     // resting pill and top inner shadow follow whichever lens the fully
@@ -413,7 +427,7 @@ class AnimatedGlassIndicator extends StatelessWidget {
               child: CustomPaint(
                 painter: _RestingSelectionPillPainter(
                   isDark: isDark,
-                  isIos26: style == GlassStyle.ios26,
+                  isIos26: style == GlassStyle.ios26 || base.rimShade == 0.0,
                   opacity: backgroundOpacity,
                   borderRadius: borderRadius,
                 ),

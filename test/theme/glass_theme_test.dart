@@ -1267,5 +1267,113 @@ void main() {
       expect(ios26.style, GlassStyle.ios26);
       expect(ios27.style, GlassStyle.ios27);
     });
+
+    testWidgets(
+        'AnimatedGlassIndicator honours explicit classicIndicator, ios26Indicator, and ios27Indicator presets regardless of ambient GlassStyle',
+        (tester) async {
+      // 1. Default (ios27) ambient style with explicit classicIndicator
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 200,
+              height: 60,
+              child: Stack(
+                children: [
+                  AnimatedGlassIndicator(
+                    velocity: 0,
+                    itemCount: 3,
+                    alignment: Alignment.centerLeft,
+                    thickness: 1.0,
+                    quality: GlassQuality.standard,
+                    indicatorColor: const Color(0x1AFFFFFF),
+                    isBackgroundIndicator: false,
+                    settings: LiquidGlassSettings.classicIndicator,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final classicEffect =
+          tester.widget<GlassEffect>(find.byType(GlassEffect));
+      expect(
+        classicEffect.settings.lensModel,
+        equals(GlassLensModel.spherical),
+      );
+      expect(classicEffect.settings.rimShade, equals(0.0));
+      expect(classicEffect.settings.rimLight, equals(0.0));
+      expect(
+        classicEffect.settings.lightIntensity,
+        equals(GlassDefaults.lightIntensity),
+      );
+
+      // 2. Default (ios27) ambient style with explicit ios26Indicator
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 200,
+              height: 60,
+              child: Stack(
+                children: [
+                  AnimatedGlassIndicator(
+                    velocity: 0,
+                    itemCount: 3,
+                    alignment: Alignment.centerLeft,
+                    thickness: 1.0,
+                    quality: GlassQuality.standard,
+                    indicatorColor: const Color(0x1AFFFFFF),
+                    isBackgroundIndicator: false,
+                    settings: LiquidGlassSettings.ios26Indicator,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final ios26Effect = tester.widget<GlassEffect>(find.byType(GlassEffect));
+      expect(ios26Effect.settings.lensModel, equals(GlassLensModel.paraxial));
+      expect(ios26Effect.settings.rimShade, equals(0.0));
+      expect(ios26Effect.settings.rimLight, equals(0.65));
+
+      // 3. Classic ambient style with explicit ios27Indicator
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GlassTheme(
+            data: const GlassThemeData.classic(),
+            child: Scaffold(
+              body: SizedBox(
+                width: 200,
+                height: 60,
+                child: Stack(
+                  children: [
+                    AnimatedGlassIndicator(
+                      velocity: 0,
+                      itemCount: 3,
+                      alignment: Alignment.centerLeft,
+                      thickness: 1.0,
+                      quality: GlassQuality.standard,
+                      indicatorColor: const Color(0x1AFFFFFF),
+                      isBackgroundIndicator: false,
+                      settings: LiquidGlassSettings.ios27Indicator,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final ios27Effect = tester.widget<GlassEffect>(find.byType(GlassEffect));
+      expect(ios27Effect.settings.lensModel, equals(GlassLensModel.paraxial));
+      expect(ios27Effect.settings.rimShade, equals(1.0));
+      expect(ios27Effect.settings.rimLight, equals(1.0));
+    });
   });
 }

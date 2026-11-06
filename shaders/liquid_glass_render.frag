@@ -464,8 +464,10 @@ void main() {
             float barLift = clamp(uPinchStrength / 0.35, 0.0, 1.0);
             vec2 barCentered = geometryUV - vec2(0.5);
             vec2 barAbs = abs(barCentered) * 2.0;
+            float tipDistPx = (0.5 - abs(barCentered.x)) * uGeometrySize.x;
+            float capAbsX = clamp(1.0 - tipDistPx / max(uGeometrySize.y * 0.6514, 1.0), 0.0, 1.0);
             float iconBandY = 1.0 - smoothstep(0.66, 0.79, barAbs.y);
-            float endCapX = smoothstep(0.32, 0.70, barAbs.x);
+            float endCapX = smoothstep(0.32, 0.70, capAbsX);
             barIconGate = iconBandY * endCapX * barLift;
 
             float meniscusBand = smoothstep(0.22, 0.55, rimPt)
@@ -474,11 +476,11 @@ void main() {
             vec2 meniscusReach = vec2(3.9 + 1.2 * endCapX, 3.9) * pxPerPt;
             vec2 meniscusDisp = inwardUnit * meniscusReach * meniscusBand;
 
-            float capPinchBand = smoothstep(1.35, 2.15, rimPt)
+            float capPinchBand = smoothstep(1.35, 4.40, rimPt)
                                * (1.0 - smoothstep(5.40, 7.80, rimPt));
             vec2 outwardUnit = -inwardUnit;
             vec2 capOutwardDisp = vec2(outwardUnit.x, outwardUnit.y * 0.35)
-                                * (4.6 * pxPerPt) * capPinchBand * endCapX;
+                                * (2.6 * pxPerPt) * capPinchBand * endCapX;
 
             float iconBevelX = smoothstep(0.45, 1.15, rimPt)
                              * (1.0 - smoothstep(2.60, 9.40, rimPt));
@@ -581,7 +583,9 @@ void main() {
             //    after the 0.22..1.35 pt outer meniscus ring) so the central
             //    icon/label are never vertically compressed and the outer
             //    meniscus ring is never double-crossed.
-            float barPinchHoriz = 1.0 - smoothstep(0.48, 0.84, absCentered.x);
+            float tipDistPx = (0.5 - abs(centered.x)) * uGeometrySize.x;
+            float capAbsX = clamp(1.0 - tipDistPx / max(uGeometrySize.y * 0.6514, 1.0), 0.0, 1.0);
+            float barPinchHoriz = 1.0 - smoothstep(0.48, 0.84, capAbsX);
             float barPinchVert = smoothstep(0.42, 0.74, absCentered.y)
                                * smoothstep(1.35, 5.2, rimPt);
             float barPinchPx = 0.245 * uGeometrySize.y;
@@ -686,16 +690,32 @@ void main() {
             float iconPeakG = max(iconG.r, max(iconG.g, iconG.b));
             float iconChromaG = iconPeakG - min(iconG.r, min(iconG.g, iconG.b));
             float lightIconMask = max(smoothstep(0.24, 0.42, iconDiffG), smoothstep(0.08, 0.18, iconChromaG));
-            float isInsidePlatter = mix(lightIconMask, smoothstep(0.03, 0.09, platterLuma), isDarkPlatter);
-            float iconCaGate = max(smoothstep(0.22, 0.40, iconDiffG), smoothstep(0.05, 0.14, iconChromaG));
+            float darkIconMask = max(smoothstep(0.38, 0.55, iconPeakG), smoothstep(0.08, 0.18, iconChromaG));
+            float isInsidePlatter = mix(
+                lightIconMask,
+                darkIconMask * smoothstep(0.05, 0.12, platterLuma),
+                isDarkPlatter
+            );
+            float iconCaGate = mix(
+                max(smoothstep(0.22, 0.40, iconDiffG), smoothstep(0.05, 0.14, iconChromaG)),
+                darkIconMask,
+                isDarkPlatter
+            );
             float iconDispersion = effectiveCA * 0.72 * iconCaGate;
 
             vec3 iconRGB = iconG.rgb;
             if (iconDispersion > 0.002) {
                 vec2 iconRedUV  = clamp(baseScreenUV + barCaDisp * (1.0 + iconDispersion) * invTexSize, vec2(0.001), vec2(0.999));
                 vec2 iconBlueUV = clamp(baseScreenUV + barCaDisp * (1.0 - iconDispersion) * invTexSize, vec2(0.001), vec2(0.999));
-                iconRGB.r = textureBilinear(iconRedUV,  physTexSize, invTexSize).r;
-                iconRGB.b = textureBilinear(iconBlueUV, physTexSize, invTexSize).b;
+                vec3 iconR = textureBilinear(iconRedUV,  physTexSize, invTexSize).rgb;
+                vec3 iconB = textureBilinear(iconBlueUV, physTexSize, invTexSize).rgb;
+                float rbValid = mix(
+                    1.0,
+                    smoothstep(0.04, 0.12, min(dot(iconR, LUMA_WEIGHTS), dot(iconB, LUMA_WEIGHTS))),
+                    isDarkPlatter
+                );
+                iconRGB.r = mix(iconG.r, iconR.r, rbValid);
+                iconRGB.b = mix(iconG.b, iconB.b, rbValid);
             }
 
             float bevelBlend = isInsidePlatter * bevelGate;

@@ -1,5 +1,23 @@
 # Unreleased
 
+## Breaking & Behavior Changes (Upgrading from ≤ 1.16.x)
+
+- **Default style is now `GlassStyle.ios27` (with or without a `GlassTheme`):**
+  - All surfaces, tab bars, overlays, and interactive lenses now default to simulator-calibrated **`GlassStyle.ios27`** (`LiquidGlassSettings.ios27Light` / `ios27Dark` and `LiquidGlassSettings.ios27Indicator`) even when no `GlassTheme` is mounted in the widget tree.
+  - **To keep the classic `v1.x` look globally**, wrap your app in `GlassTheme(data: const GlassThemeData.classic(), child: ...)` (or use `const GlassThemeData.ios26()` for the native iOS 26.0 calibration).
+- **`AnimatedGlassIndicator` (`GlassTabBar` & `GlassSegmentedControl` indicator pill) defaults to `ios27Indicator` when `indicatorSettings` is omitted:**
+  - `GlassTabBar` and `GlassSegmentedControl` configure their bar/track platter via `settings:` and their animated selection pill via `indicatorSettings:` (`AnimatedGlassIndicator.settings`).
+  - If you pass custom `settings:` to `GlassTabBar` or `GlassSegmentedControl` **without** wrapping your app in `GlassThemeData.classic()` and leave `indicatorSettings: null`, the animated indicator pill will still default to `LiquidGlassSettings.ios27Indicator` (`AnimatedGlassIndicator.baseIndicatorSettings`).
+  - **To use the classic spherical indicator pill on a single widget** without a global `GlassThemeData.classic()`, pass `indicatorSettings: LiquidGlassSettings.classicIndicator` (or `LiquidGlassSettings.classicIndicator.copyWith(...)`).
+- **`GlassDialog` and `showGlassActionSheet` use the native 320 pt centered floating alert platter in `ios27` / `ios26`:**
+  - In `GlassStyle.ios27` and `GlassStyle.ios26`, both `GlassDialog` and `showGlassActionSheet` render a **320 pt centered floating platter** with `34 pt` continuous corners, leading-aligned title/message, and `48 pt` capsule action buttons (matching native iOS 26/27 `UIAlertController`). `GlassStyle.classic` preserves the 280 pt centered dialog and bottom-anchored action sheet.
+- **`GlassQuality.premium` defaults on `ios27` / `ios26` and `GlassPage` quality inheritance:**
+  - Transient overlays (`GlassDialog`, `showGlassActionSheet`, `GlassMenu`, `GlassPopover`, `GlassToast`), `GlassScaffold.bodyOverlays`, and hero controls (`GlassSwitch`, `GlassSlider`, `GlassSegmentedControl`) now default to `GlassQuality.premium` in `ios27`/`ios26` (`GlassStyle.classic` keeps `GlassQuality.standard`).
+  - An ambient `AdaptiveLiquidGlassLayer` or `GlassPage` that omits `quality:` no longer forces `GlassQuality.standard` onto descendant widgets that default to `GlassQuality.premium`. Pass `quality: GlassQuality.standard` explicitly if you want to force standard quality across a subtree.
+- **`GlassTabBar` sizing and `GlassModalSheet` / `GlassSheet` defaults follow active `GlassStyle`:**
+  - `GlassTabBar.iconSize` and `GlassTabBar.magnification` are now `double?` (resolving to `27.5` pt and `1.25` in `ios27`/`ios26`, vs `24.0` pt and `1.15` in `classic` when omitted).
+  - `GlassModalSheet` and `GlassSheet` default to `38.0` pt top corners (was `32.0`), `8.0` pt floating margins, `#24000000` modal barrier dimming in `ios27`/`ios26` (vs `#8A000000` in `classic`), and `#F2F2F7` light-mode full-detent fill in `ios27`/`ios26`.
+
 ## Features
 
 - **`GlassStyle` presets (`GlassStyle.ios27`, `GlassStyle.ios26`, `GlassStyle.classic`) and full iOS 27 / iOS 26 parity:**
@@ -9,7 +27,7 @@
   - Calibrated `GlassTabBar.bottom`, `GlassTabBar.searchable`, `GlassSegmentedControl`, `AnimatedGlassIndicator`, `GlassSwitch`, and `GlassSlider` to match native UIKit platters, resting wells/pills, and interactive liquid lenses (`LensInnerShadowPainter` `0.06` on `ios27` vs `0.12` on `classic`).
   - Added `thumbShadow` to `GlassSwitch` (matching `GlassSlider.thumbShadow`).
   - `GlassTabBar.iconSize` (on `.bottom`, `.searchable`, and `.minimizable`) and `GlassTabBar.magnification` are now `double?`: when omitted they follow the active style — `iconSize: 27.5` (with `2.0` pt icon-label spacing) and `magnification: 1.25` on `GlassStyle.ios27` (measured on native iOS 27 `UITabBar` and `_UILiquidLensView`), and `iconSize: 24.0` (with `4.0` pt spacing) and `magnification: 1.15` on `GlassStyle.classic`. Passing explicit values behaves as before.
-  - Calibrated `GlassTabBar` lifted indicator lens bevel refraction, RGB chromatic dispersion, proximity-weighted tab magnification, and monotonic $C^1$-smooth platter pinch (eliminating double-banding along the top/bottom platter border), as well as lifted lens key-fill shading (`topTrough`), balanced top/bottom specular rim lobes, and exterior drop shadow across `GlassSwitch`, `GlassSlider`, and `GlassTabBar`.
+  - Calibrated `GlassTabBar` lifted indicator lens bevel refraction, RGB chromatic dispersion, proximity-weighted tab magnification, aspect-ratio-independent end-cap geometry (matching 3-tab and 4-tab bars, including `GlassTabBar.searchable` adjacent to the search pill), dark-mode foreground-icon bevel gating (`darkIconMask`, preventing `GlassGlow`-brightened platters from bleeding into the dark moat), and monotonic C¹-smooth platter pinch (eliminating double-banding along the top/bottom platter border), as well as lifted lens key-fill shading (`topTrough`), balanced top/bottom specular rim lobes, and exterior drop shadow across `GlassSwitch`, `GlassSlider`, and `GlassTabBar`.
   - Calibrated `GlassMenu`, `GlassMenuItem`, `GlassMenuDivider`, `GlassMenuLabel`, `GlassPullDownButton`, and `GlassContextMenu` across `GlassStyle.ios27`, `GlassStyle.ios26`, and `GlassStyle.classic` in Light and Dark appearances:
     - Floating overlay platters (`isOverlayPlatter: true` in `GlassThemeHelpers.resolveSettings`) resolve `frostOpacity: 1.0` in `ios26`/`ios27` (matching native `_UIContextMenuPlatterView` `uFrost.x = 1.0`) while preserving `GlassStyle.classic` blur and fill.
     - Menu selection pills, standalone item press/hover highlights, and dividers (`GlassMenuDivider`) adapt to Light (`#14000000` / `#0D000000` washes, `0.14` black divider) and Dark (`#3DFFFFFF` / `#26FFFFFF` washes, `0.18` white divider) appearances in `ios26`/`ios27`.
@@ -26,6 +44,7 @@
     - `GlassScaffold.bodyOverlays` now wraps each overlay in `GlassIsolationScope(isolated: true, defaultQuality: GlassQuality.premium)` (matching `appBar` and `bottomBar`; the wrapper carries the overlay's `key`) so floating action pills and buttons render with their own premium glass layer out of the box.
     - Hero interactive controls (`GlassSwitch`, `GlassSlider`, `GlassSegmentedControl`) now default to `GlassQuality.premium`, and `GlassEffect` lazy-mounts `LiquidGlass.withOwnLayer` only while `interactionIntensity > 0.001` (during active press or drag) so resting switches and sliders in scrollable lists mount zero shader layers at rest.
     - Added `hasExplicitQuality` to `InheritedLiquidGlass` so an ambient `AdaptiveLiquidGlassLayer` without an explicit `quality:` (such as `GlassPage`) does not override widget-class `GlassQuality.premium` defaults inside `GlassScaffold.body`.
+  - **Example showcase app (`example/`):** Added a live `iOS 27` / `iOS 26` style switcher to the Explore, Widgets, Demos, and Examples tabs (bidirectional with Apple Mail's style toggle) and updated catalog pages, cards, and Apple app demos (`Mail`, `Messages`, `Music`, `News`, `Podcasts`, `Lock Screen`) to inherit the active `GlassTheme` preset.
 
 ## Bug Fixes
 

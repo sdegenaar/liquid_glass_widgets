@@ -255,6 +255,10 @@ class LiquidGlassSettings {
     lightIntensity: GlassDefaults.lightIntensity,
     chromaticAberration: 0.0,
     lightAngle: GlassDefaults.lightAngle,
+    rimShade: 0.0,
+    rimShadeEnds: 0.0,
+    rimLight: 0.0,
+    lensModel: GlassLensModel.spherical,
     blur: 0,
   );
 
