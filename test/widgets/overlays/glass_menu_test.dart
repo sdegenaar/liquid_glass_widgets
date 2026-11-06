@@ -1794,4 +1794,113 @@ void main() {
       semantics.dispose();
     });
   });
+
+  group('GlassMenu panel semantics', () {
+    // A trigger next to other page content, the layout in which the open
+    // menu used to drop out of the semantics tree.
+    Future<GlassMenuController> openMenu(
+      WidgetTester tester, {
+      String? menuSemanticLabel,
+      bool useTriggerBuilder = false,
+    }) async {
+      final controller = GlassMenuController();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Page text'),
+                  GlassMenu(
+                    controller: controller,
+                    menuSemanticLabel: menuSemanticLabel,
+                    trigger: useTriggerBuilder
+                        ? null
+                        : const SizedBox(
+                            width: 44, height: 44, child: Text('Open')),
+                    triggerBuilder: useTriggerBuilder
+                        ? (context, toggle) => GlassButton(
+                              onTap: toggle,
+                              label: 'More',
+                              icon: const Icon(Icons.more_horiz),
+                            )
+                        : null,
+                    items: [
+                      GlassMenuItem(title: 'Copy', onTap: () {}),
+                      GlassMenuItem(title: 'Cut', onTap: () {}),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      controller.open();
+      await tester.pumpAndSettle();
+      return controller;
+    }
+
+    for (final useTriggerBuilder in [false, true]) {
+      testWidgets(
+          'the open rows are in the semantics tree '
+          '(${useTriggerBuilder ? 'triggerBuilder' : 'trigger'})',
+          (tester) async {
+        final semantics = tester.ensureSemantics();
+        await openMenu(tester, useTriggerBuilder: useTriggerBuilder);
+
+        expect(find.semantics.byLabel('Copy'), findsOne);
+        expect(find.semantics.byLabel('Cut'), findsOne);
+        expect(find.semantics.byLabel('Dismiss menu'), findsOne);
+        semantics.dispose();
+      });
+    }
+
+    testWidgets('the panel is a named route scope holding the rows',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await openMenu(tester);
+
+      final panel = find.semantics.byLabel('Menu');
+      expect(panel, findsOne);
+      final node = panel.evaluate().single;
+      expect(node.flagsCollection.scopesRoute, isTrue);
+      expect(node.flagsCollection.namesRoute, isTrue);
+      for (final row in ['Copy', 'Cut']) {
+        expect(
+          find.semantics.descendant(
+            of: panel,
+            matching: find.semantics.byLabel(row),
+          ),
+          findsOne,
+        );
+      }
+      // explicitChildNodes keeps each row a node of its own instead of
+      // merging the rows into the panel's label.
+      expect(node.label, 'Menu');
+      semantics.dispose();
+    });
+
+    testWidgets('menuSemanticLabel names the panel', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await openMenu(tester, menuSemanticLabel: 'Sort by');
+
+      expect(find.semantics.byLabel('Sort by'), findsOne);
+      expect(find.semantics.byLabel('Menu'), findsNothing);
+      semantics.dispose();
+    });
+
+    testWidgets('a closed menu adds no panel to the tree', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final controller = await openMenu(tester);
+      controller.close();
+      await tester.pumpAndSettle();
+
+      expect(find.semantics.byLabel('Menu'), findsNothing);
+      expect(find.semantics.byLabel('Copy'), findsNothing);
+      expect(find.semantics.byLabel('Open'), findsOne);
+      semantics.dispose();
+    });
+  });
 }
