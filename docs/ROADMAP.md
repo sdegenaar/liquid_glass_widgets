@@ -1,6 +1,6 @@
 # Roadmap: 1.x → 2.0
 
-> Last updated: 2026-10-08 (v1.11.0 stable; Active v1.12.0: SwiftUI & Apple HIG Parity Gaps)
+> Last updated: 2026-11-06 (v1.16.1 stable; Active v1.17.0: `GlassStyle` Presets & Foundational iOS 26 / iOS 27 Alignment)
 
 This document tracks planned and future work for `liquid_glass_widgets` post-1.0.
 The guiding principle remains: **fewer, better widgets that map 1:1 to real iOS components**.
@@ -9,13 +9,13 @@ For historical version notes, see [`CHANGELOG.md`](../CHANGELOG.md).
 
 ---
 
-## Current Status (1.11.0 — `main`)
+## Current Status (1.17.0 — `feat/native-liquid-glass-parity`)
 
 | Criterion | Status | Notes |
 |---|---|---|
 | No known P0/P1 bugs | ✅ Clear | No open crash reports |
 | Dartdoc complete on all public API | ✅ Done | `public_member_api_docs` enforced permanently |
-| Test coverage ≥ 90% | ✅ Done | ~92% line coverage (3,000+ tests) |
+| Test coverage ≥ 90% | ✅ Done | ~92% line coverage (3,960+ tests) |
 | No `Icons.*` (Material) in `lib/` | ✅ Done | Zero hits — fully `CupertinoIcons` |
 | No hardcoded `Colors.*` in `lib/` | ✅ Done | All replaced with `CupertinoColors` or explicit hex `Color` literals |
 | `material.dart` imports in `lib/` | ✅ Done | Zero files |
@@ -36,46 +36,13 @@ For historical version notes, see [`CHANGELOG.md`](../CHANGELOG.md).
 | Impeller shared backdrops | ✅ Done (1.9.0) | `GlassBackdropGroup` (shared backdrop reads, cutting GPU time 23.6 → 9.3ms) |
 | iPhone Duo vertical bar strip | ✅ Done (1.9.0/1.11.0) | `GlassVerticalBar`, display occlusion cutouts, lens tracking, and popovers |
 | Layered submenus | ✅ Done (1.11.0) | `GlassMenuItem.submenu` with native card recession and liquid droplet morph |
+| `GlassStepper` & popover blur ramp | ✅ Done (1.13.0) | Native two-button stepper capsule and `GlassPopover.blurRamp` |
+| Liquid droplet morph & `GlassMaterialize` | ✅ Done (1.14.0) | `morphFrom` / `morphFromRect` on sheets, dialogs, action sheets & popovers; blur-to-sharp materialize |
+| Contacts app HIG benchmark | ✅ Done (1.15.0) | `GlassSwipeActions`, `GlassDisclosureGroup`, `GlassEditScope` / `GlassReorderableList`, `GlassContextMenu`, `GlassFullScreenCover`, `GlassDatePicker`, `GlassNavigationStack` |
+| `GlassSurfaceStyle.solid` cards & wells | ✅ Done (1.15.0/1.16.0) | Shader-free inset-grouped cards (`GlassContainer.card`, `GlassGroupedSection`) and `tertiarySystemFill` input/picker wells |
+| `GlassStyle` presets & iOS 26/27 alignment | ✅ Done (1.17.0) | `GlassStyle.ios27` (default), `GlassStyle.ios26`, and `GlassStyle.classic` across platters, tab bars, interactive lenses, menus, sheets, and 320 pt alerts |
 | Upstream migration PRs | ✅ Done | PR #1 ([#13162](https://github.com/flutter/packages/pull/13162)) and PR #2 ([#13163](https://github.com/flutter/packages/pull/13163)) staged in `flutter/packages` |
 | `reduceTransparency` native detection | ⏳ Upstream | Awaiting [Flutter #190318](https://github.com/flutter/flutter/issues/190318); currently approximated via `highContrast` |
-
----
-
-## Active: 1.12.0 (`feat/swipe-actions` branch)
-
-Addressing the **High-Priority SwiftUI / Apple HIG feature gaps** from Google's upstream gap analysis (Tong Mu / `@dkwingsmt`, benchmarked against the stock iOS Contacts app):
-
-### GlassSwipeActions (`.swipeActions()`) ✅ Complete
-
-Swipe gestures on list tiles and containers with authentic iOS spring physics, revealed platter, and full-swipe execution.
-- **Data Model:** `GlassSwipeAction` with icon, optional label, callback, background tint, destructive style, and flex.
-- **Container Widget:** `GlassSwipeActions` wrapping any tile/child with horizontal pan gesture recognition (velocity-based, disambiguated with vertical scrolling via `dx.abs() > dy.abs() * 1.5`).
-- **Platter Aesthetic:** `GlassSwipeActionStyle.tintedGlass` (iOS 26/27 liquid glass with specular rim and surface gradient) & `GlassSwipeActionStyle.solidVibrancy`.
-- **Mechanics:** Underdamped spring return, rubber-band damping beyond action width, full-swipe threshold at 65% with haptic tick and automatic execution on release.
-- **Mutual Exclusivity:** `GlassSwipeActionScope` ensuring only one row can be open at a time; auto-closes on scroll.
-- **First-Class Integration:** `GlassListTile(leadingSwipeActions: [...], trailingSwipeActions: [...], onDismissed: ...)`.
-
-### GlassDisclosureGroup (`DisclosureGroup`) ✅ Complete
-
-Collapsible accordion / disclosure section within `GlassGroupedSection` and standalone containers.
-- Spring-animated expansion/collapse of child rows with `SizeTransition(curve: Curves.easeInOutCubic)`.
-- Smooth rotating chevron ($\frac{\pi}{2}$ radians) matching native iOS timing.
-- Composable directly within `GlassGroupedSection` with smart divider indentation (56px with leading, 16px without).
-- Programmatic control via `isExpanded` prop or `GlobalKey<GlassDisclosureGroupState>`.
-- Standalone mode with `GlassDisclosureGroup.standalone`.
-
-### GlassEditScope & GlassReorderableList (`EditMode` / `EditButton` / `ForEach`) ✅ Complete
-
-Comprehensive list editing, item deletion, selection, and reordering parity.
-- **Ambient State:** `GlassEditScope` with `GlassEditMode` (`inactive`, `active`, `transient`) and `GlassEditController` (`isEditing`, `toggle()`, `startEditing()`, `stopEditing()`).
-- **Interactive Control:** `GlassEditButton` and `GlassEditButton.explicit` with animated crossfade between "Edit" and bold "Done", selection haptics, and ambient controller coordination.
-- **Reorderable List:** `GlassReorderableList` and `GlassReorderableList.grouped` with authentic iOS lift elevation proxy (1.025x scale, elevated specular shadow, selection haptic tick). Modern `onReorderItem` and legacy `onReorder` compatibility.
-- **Row-Level Editing:** `GlassListTile` editing features:
-  - Circular red minus delete badge (`CupertinoIcons.minus_circle_fill`) with 90° rotation into an inline slide-in "Delete" confirmation pill.
-  - Circular green plus insertion badge (`CupertinoIcons.plus_circle_fill`).
-  - Selection checkmark state (`canSelect`, `isSelected`, `onSelectedChanged`).
-  - 3-bar reorder drag handle (`CupertinoIcons.bars`) with immediate touch drag initiation via `ReorderableDragStartListener`.
-  - Automatic suppression of swipe gestures during active edit mode to prevent gesture conflicts.
 
 ---
 
@@ -89,13 +56,13 @@ Features appearing in standard iOS system flows (e.g. stock Contacts app) priori
 
 | SwiftUI Feature | Proposed Liquid Glass API | Status | Description |
 |---|---|---|---|
-| `.swipeActions()` | `GlassSwipeActions` / `GlassListTile.swipeActions` | ✅ Complete | Swipe-to-delete, call, message actions on list items and grouped rows (1.12.0). |
-| `DisclosureGroup` | `GlassDisclosureGroup` / `GlassCollapsibleSection` | ✅ Complete | Collapsible accordion / disclosure section within `GlassGroupedSection` (1.12.0). |
-| `EditButton` + `ForEach` | `GlassEditScope` / `GlassEditButton` / `GlassReorderableList` / `GlassListTile.editing` | ✅ Complete | Full edit mode with ambient scope, delete confirmation badges, reorder handles, and grouped lists (1.12.0). |
-| `.contextMenu()` | `GlassContextMenu` / `GlassContextMenuAction` | ✅ Complete | Long-press / secondary click with 0.96× compression, haptic surface lift, progressive backdrop blur, elevated specular platter, glide selection, and preview builder (1.12.0). |
-| `.fullScreenCover()` | `showGlassFullScreenCover` / `GlassFullScreenCover` | ✅ Complete | Full-viewport modal presentation with spring slide-up, interactive swipe-to-dismiss, elastic resistance, and liquid glass navigation bar (1.12.0). |
-| `DatePicker` / `MultiDatePicker` | `GlassDatePicker` / `GlassMultiDatePicker` | ✅ Complete | Liquid glass date/time picker with compact pill, inline graphical month calendar, 3D wheel, multi-date selection, and modal sheet (1.12.0). |
-| `NavigationStack` + `Link` + `Title` | `GlassNavigationStack` / `GlassNavigationLink` | ✅ Complete | Declarative typed-route navigation stack with `GlassNavigationPath`, typed destination mapping, chevron link rows, and `.navigationTitle` semantics (1.12.0). |
+| `.swipeActions()` | `GlassSwipeActions` / `GlassListTile.swipeActions` | ✅ Complete (1.15.0) | Swipe-to-delete, call, message actions on list items and grouped rows. |
+| `DisclosureGroup` | `GlassDisclosureGroup` | ✅ Complete (1.15.0) | Collapsible accordion / disclosure section within `GlassGroupedSection` and `.standalone`. |
+| `EditButton` + `ForEach` | `GlassEditScope` / `GlassEditButton` / `GlassReorderableList` / `GlassListTile.editing` | ✅ Complete (1.15.0) | Full edit mode with ambient scope, delete confirmation badges, reorder handles, and grouped lists. |
+| `.contextMenu()` | `GlassContextMenu` / `GlassContextMenuAction` | ✅ Complete (1.15.0) | Long-press / secondary click with row lift, progressive backdrop blur, elevated platter, glide selection, and preview builder. |
+| `.fullScreenCover()` | `showGlassFullScreenCover` / `GlassFullScreenCover` | ✅ Complete (1.15.0) | Full-viewport modal presentation with spring slide-up, interactive swipe-to-dismiss, elastic resistance, and `GlassFullScreenCoverBar`. |
+| `DatePicker` / `MultiDatePicker` | `GlassDatePicker` / `GlassMultiDatePicker` | ✅ Complete (1.15.0) | Liquid glass date/time picker with compact pill, inline graphical month calendar, 3D wheel, multi-date selection, and modal sheet. |
+| `NavigationStack` + `Link` + `Title` | `GlassNavigationStack` / `GlassNavigationLink` | ✅ Complete (1.15.0) | Declarative typed-route navigation stack with `GlassNavigationPath`, typed destination mapping, chevron link rows, and `.navigationTitle` semantics. |
 
 ### Medium-Priority Gaps (Standard iOS HIG)
 
@@ -130,6 +97,7 @@ Ideas under consideration. None committed.
 
 ### Enhancements
 
+- [ ] **Continued iOS 26 / iOS 27 optical & interaction refinement** — iterative tuning passes building on the `1.17.0` foundational `GlassStyle.ios27` / `GlassStyle.ios26` alignment across dynamic transitions, edge-case backdrops, and remaining interactive controls.
 - [ ] **Scroll-driven glass materialisation** — app bar surface transitions from
   transparent to frosted on scroll. Closely related to the scroll edge fidelity
   fix above; the two may ship together when `GlassScrollEdgeStyle.blur` lands.
