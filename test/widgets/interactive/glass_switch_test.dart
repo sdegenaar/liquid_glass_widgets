@@ -981,4 +981,272 @@ void main() {
       expect(find.byType(GlassSwitch), findsOneWidget);
     });
   });
+
+  group('GlassSwitch On/Off Labels', () {
+    Finder marks() => find.byWidgetPredicate((widget) =>
+        widget is CustomPaint &&
+        widget.painter.runtimeType.toString() == '_OnOffLabelsPainter');
+
+    Widget build({
+      required bool value,
+      bool onOffSwitchLabels = true,
+      TextDirection textDirection = TextDirection.ltr,
+      ValueChanged<bool>? onChanged,
+      Color? onLabelColor,
+      Color? offLabelColor,
+      double? width,
+      double? height,
+    }) =>
+        createTestApp(
+          child: Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(onOffSwitchLabels: onOffSwitchLabels),
+              child: Directionality(
+                textDirection: textDirection,
+                child: Center(
+                  child: AdaptiveLiquidGlassLayer(
+                    settings: defaultTestGlassSettings,
+                    child: GlassSwitch(
+                      value: value,
+                      onChanged: onChanged ?? (_) {},
+                      onLabelColor: onLabelColor,
+                      offLabelColor: offLabelColor,
+                      width: width ?? 58,
+                      height: height ?? 26,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+    // Default 58x26 track: the pill thumb is 22 * (37 / 24) wide, so the
+    // gap beside the resting thumb is 58 - 2 - thumbWidth, centered at
+    // (56 - 22 * 37 / 24) / 2. Marks scale by 26 / 28, from the 63x28 UISwitch.
+    const scale = 26 / 28;
+    const gapCenter = (58.0 - 2.0 - 22.0 * (37.0 / 24.0)) / 2.0;
+    const onInset = gapCenter + 2.5 * scale;
+    const offInset = gapCenter + 3.0 * scale;
+    const width = 58.0;
+    const centerY = 13.0;
+
+    bool near(double a, double b) => (a - b).abs() < 1e-6;
+
+    // The O ring: a 1pt stroke of radius 4.5 * scale centered at
+    // (x, centerY).
+    PaintPattern ringAt(double x) => paints
+      ..something((method, args) {
+        if (method != #drawCircle) return false;
+        final center = args[0] as Offset;
+        final paint = args[2] as Paint;
+        return near(center.dx, x) &&
+            near(center.dy, centerY) &&
+            near(args[1] as double, 4.5 * scale) &&
+            paint.style == PaintingStyle.stroke &&
+            paint.strokeWidth == 1;
+      });
+
+    // The I bar: 1 x (10 * scale), centered at (x, centerY).
+    PaintPattern barAt(double x) => paints
+      ..something((method, args) {
+        if (method != #drawRect) return false;
+        final rect = args[0] as Rect;
+        return near(rect.center.dx, x) &&
+            near(rect.center.dy, centerY) &&
+            near(rect.width, 1) &&
+            near(rect.height, 10 * scale);
+      });
+
+    testWidgets('draws nothing when the setting is off', (tester) async {
+      await tester.pumpWidget(build(value: true, onOffSwitchLabels: false));
+      expect(marks(), findsNothing);
+      await tester.pumpWidget(build(value: false, onOffSwitchLabels: false));
+      expect(marks(), findsNothing);
+    });
+
+    testWidgets('off: the O ring at the end the thumb left', (tester) async {
+      await tester.pumpWidget(build(value: false));
+      expect(marks(), findsOneWidget);
+      expect(tester.renderObject(marks()), ringAt(width - offInset));
+      expect(tester.renderObject(marks()), isNot(paints..rect()));
+    });
+
+    testWidgets('on: the I bar at the end the thumb left', (tester) async {
+      await tester.pumpWidget(build(value: true));
+      expect(tester.renderObject(marks()), barAt(onInset));
+      expect(tester.renderObject(marks()), paints..rect(color: Colors.white));
+      expect(tester.renderObject(marks()), isNot(paints..circle()));
+    });
+
+    testWidgets('at 63x28 the marks land where a UISwitch draws them',
+        (tester) async {
+      // Measured on the iOS 27.2 simulator from 3x screenshots, from the
+      // track's top-left corner: the I spans x 14-15 and y 9-19; the O is
+      // 10pt across its outside with a 1pt stroke, centered at x 48, y 14.
+      bool close(double a, double b) => (a - b).abs() < 1e-9;
+      await tester.pumpWidget(build(value: true, width: 63, height: 28));
+      expect(
+        tester.renderObject(marks()),
+        paints
+          ..something((method, args) {
+            if (method != #drawRect) return false;
+            final rect = args[0] as Rect;
+            return close(rect.left, 14) &&
+                close(rect.right, 15) &&
+                close(rect.top, 9) &&
+                close(rect.bottom, 19);
+          }),
+      );
+
+      await tester.pumpWidget(build(value: false, width: 63, height: 28));
+      await tester.pumpAndSettle();
+      expect(
+        tester.renderObject(marks()),
+        paints
+          ..something((method, args) {
+            if (method != #drawCircle) return false;
+            final center = args[0] as Offset;
+            final radius = args[1] as double;
+            final paint = args[2] as Paint;
+            final outer = 2 * radius + paint.strokeWidth;
+            final inner = 2 * radius - paint.strokeWidth;
+            return close(center.dx, 48) &&
+                close(center.dy, 14) &&
+                close(outer, 10) &&
+                close(inner, 8) &&
+                // UIKit's light grey ring, as CupertinoSwitch draws it.
+                paint.color.toARGB32() == 0xFFB3B3B3;
+          }),
+      );
+
+      // Right to left, mirrored about the middle of the track.
+      await tester.pumpWidget(build(
+          value: false,
+          width: 63,
+          height: 28,
+          textDirection: TextDirection.rtl));
+      await tester.pumpAndSettle();
+      expect(
+        tester.renderObject(marks()),
+        paints
+          ..something((method, args) =>
+              method == #drawCircle && close((args[0] as Offset).dx, 15)),
+      );
+    });
+
+    testWidgets('the marks stay clear of the resting thumb', (tester) async {
+      for (final (width, height) in [
+        (58.0, 26.0),
+        (63.0, 28.0),
+        (72.0, 32.0)
+      ]) {
+        final thumbWidth = (height - 4) * (37.0 / 24.0);
+        await tester
+            .pumpWidget(build(value: false, width: width, height: height));
+        await tester.pumpAndSettle();
+        expect(
+          tester.renderObject(marks()),
+          paints
+            ..something((method, args) {
+              if (method != #drawCircle) return false;
+              final center = args[0] as Offset;
+              final paint = args[2] as Paint;
+              final left =
+                  center.dx - (args[1] as double) - paint.strokeWidth / 2;
+              final right =
+                  center.dx + (args[1] as double) + paint.strokeWidth / 2;
+              return left > 2 + thumbWidth && right < width;
+            }),
+          reason: '${width}x$height off',
+        );
+        await tester
+            .pumpWidget(build(value: true, width: width, height: height));
+        await tester.pumpAndSettle();
+        expect(
+          tester.renderObject(marks()),
+          paints
+            ..something((method, args) {
+              if (method != #drawRect) return false;
+              final rect = args[0] as Rect;
+              return rect.left > 0 && rect.right < width - 2 - thumbWidth;
+            }),
+          reason: '${width}x$height on',
+        );
+      }
+    });
+
+    testWidgets('the marks are painted under the thumb', (tester) async {
+      await tester.pumpWidget(build(value: true));
+      final stack = find.ancestor(of: marks(), matching: find.byType(Stack));
+      final children = tester.widget<Stack>(stack.first).children;
+      expect(children, hasLength(3));
+      expect(children[1], isA<Positioned>());
+      expect((children[1] as Positioned).child, isA<CustomPaint>());
+    });
+
+    testWidgets('label colors can be set', (tester) async {
+      const on = Color(0xFF112233);
+      const off = Color(0xFF445566);
+      await tester
+          .pumpWidget(build(value: true, onLabelColor: on, offLabelColor: off));
+      expect(tester.renderObject(marks()), paints..rect(color: on));
+      await tester.pumpWidget(
+          build(value: false, onLabelColor: on, offLabelColor: off));
+      await tester.pumpAndSettle();
+      expect(tester.renderObject(marks()), paints..circle(color: off));
+    });
+
+    group('in RTL', () {
+      testWidgets('the marks are mirrored', (tester) async {
+        await tester
+            .pumpWidget(build(value: false, textDirection: TextDirection.rtl));
+        expect(tester.renderObject(marks()), ringAt(offInset));
+
+        await tester
+            .pumpWidget(build(value: true, textDirection: TextDirection.rtl));
+        await tester.pumpAndSettle();
+        expect(tester.renderObject(marks()), barAt(width - onInset));
+      });
+
+      Rect thumbRect(WidgetTester tester) {
+        final stack = find.ancestor(of: marks(), matching: find.byType(Stack));
+        final switchBox = tester.getRect(stack.first);
+        final thumb = find.descendant(
+          of: stack.first,
+          matching: find.byType(Positioned),
+        );
+        // The last top-level Positioned in the switch's Stack is the thumb.
+        final rect = tester.getRect(thumb.last);
+        return rect.shift(-switchBox.topLeft);
+      }
+
+      testWidgets('the thumb rests on the left when on', (tester) async {
+        await tester
+            .pumpWidget(build(value: true, textDirection: TextDirection.rtl));
+        expect(thumbRect(tester).center.dx, lessThan(width / 2));
+
+        await tester.pumpWidget(build(value: true));
+        await tester.pumpAndSettle();
+        expect(thumbRect(tester).center.dx, greaterThan(width / 2));
+      });
+
+      testWidgets('dragging left turns it on', (tester) async {
+        var value = false;
+        await tester.pumpWidget(build(
+          value: value,
+          textDirection: TextDirection.rtl,
+          onChanged: (v) => value = v,
+        ));
+        await tester.timedDrag(
+          find.byType(GlassSwitch),
+          const Offset(-40, 0),
+          const Duration(milliseconds: 600),
+        );
+        await tester.pumpAndSettle();
+        expect(value, isTrue);
+      });
+    });
+  });
 }
