@@ -4,7 +4,10 @@ import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../theme/glass_theme_data.dart';
 import '../../theme/glass_theme.dart';
+import '../../theme/glass_theme_helpers.dart';
 import '../../types/glass_quality.dart';
+import '../../types/glass_style.dart';
+import '../shared/adaptive_glass.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
 import '../shared/glass_accessibility_scope.dart';
 
@@ -209,6 +212,8 @@ class GlassToast extends StatefulWidget {
     GlassQuality? quality,
   }) {
     final overlayState = Overlay.of(context);
+    final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
+    final capturedCupertinoTheme = CupertinoTheme.of(context);
     late OverlayEntry overlayEntry;
 
     void removeEntry() {
@@ -216,18 +221,31 @@ class GlassToast extends StatefulWidget {
     }
 
     overlayEntry = OverlayEntry(
-      builder: (context) => _GlassToastOverlay(
-        message: message,
-        icon: icon,
-        type: type,
-        position: position,
-        duration: duration,
-        action: action,
-        dismissible: dismissible,
-        settings: settings,
-        quality: quality,
-        onDismissed: removeEntry,
-      ),
+      builder: (overlayContext) {
+        Widget toast = _GlassToastOverlay(
+          message: message,
+          icon: icon,
+          type: type,
+          position: position,
+          duration: duration,
+          action: action,
+          dismissible: dismissible,
+          settings: settings,
+          quality: quality,
+          onDismissed: removeEntry,
+        );
+        toast = CupertinoTheme(
+          data: capturedCupertinoTheme,
+          child: toast,
+        );
+        if (capturedGlassTheme != null) {
+          toast = GlassTheme(
+            data: capturedGlassTheme,
+            child: toast,
+          );
+        }
+        return toast;
+      },
     );
 
     overlayState.insert(overlayEntry);
@@ -238,6 +256,13 @@ class GlassToast extends StatefulWidget {
   @override
   State<GlassToast> createState() => _GlassToastState();
 }
+
+const _kDefaultToastSettings = LiquidGlassSettings(
+  thickness: 25.0,
+  blur: 6.0,
+  refractiveIndex: 1.15,
+  saturation: 1.3,
+);
 
 class _GlassToastState extends State<GlassToast> {
   @override
@@ -270,94 +295,113 @@ class _GlassToastState extends State<GlassToast> {
   Widget _buildToastContent(
       BuildContext context, Color semanticColor, Widget displayIcon) {
     final hasAction = widget.action != null;
+    final themeData = GlassThemeData.of(context);
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
-    final bgColor = isDark
-        ? CupertinoColors.black.withValues(alpha: 0.7)
-        : CupertinoColors.white.withValues(alpha: 0.7);
+    final bgColor = themeData.style == GlassStyle.classic
+        ? (isDark
+            ? CupertinoColors.black.withValues(alpha: 0.7)
+            : CupertinoColors.white.withValues(alpha: 0.7))
+        : null;
     final textColor = CupertinoColors.label.resolveFrom(context);
+    final effectiveSettings = GlassThemeHelpers.resolveSettings(
+      context,
+      explicit: widget.settings,
+      fallback: _kDefaultToastSettings,
+      isOverlayPlatter: true,
+    );
+    final effectiveQuality = GlassThemeHelpers.resolveQuality(
+      context,
+      widgetQuality: widget.quality,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
+    );
 
     return AdaptiveLiquidGlassLayer(
-      settings: widget.settings ??
-          const LiquidGlassSettings(
-            thickness: 25.0,
-            blur: 6.0,
-            refractiveIndex: 1.15,
-            saturation: 1.3,
+      settings: effectiveSettings,
+      quality: effectiveQuality,
+      child: AdaptiveGlass(
+        shape: const LiquidRoundedSuperellipse(borderRadius: 24),
+        settings: effectiveSettings,
+        quality: effectiveQuality,
+        useOwnLayer: false,
+        child: Container(
+          constraints: const BoxConstraints(
+            minHeight: 48,
+            maxWidth: 400,
           ),
-      quality: widget.quality,
-      child: Container(
-        constraints: const BoxConstraints(
-          minHeight: 48,
-          maxWidth: 400,
-        ),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: semanticColor.withValues(alpha: 0.2),
-            width: 1,
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: semanticColor.withValues(alpha: 0.2),
+              width: 1,
+            ),
+            // The semantic glow is only drawn over `classic`'s opaque fill. On
+            // the glass styles the fill is transparent, so a box shadow would
+            // paint through the pill's interior and tint the whole surface.
+            boxShadow: themeData.style == GlassStyle.classic
+                ? [
+                    BoxShadow(
+                      color: semanticColor.withValues(alpha: 0.15),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                    ),
+                  ]
+                : null,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: semanticColor.withValues(alpha: 0.15),
-              blurRadius: 20,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        padding: EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: hasAction ? 8 : 12,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Icon
-            IconTheme(
-              data: IconThemeData(color: semanticColor, size: 20),
-              child: displayIcon,
-            ),
-            const SizedBox(width: 12),
-
-            // Message. Already the label of the live region above, so the
-            // text is kept out of semantics to be read once, not twice.
-            Flexible(
-              child: ExcludeSemantics(
-                child: Text(
-                  widget.message,
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: -0.2,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+          padding: EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: hasAction ? 8 : 12,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icon
+              IconTheme(
+                data: IconThemeData(color: semanticColor, size: 20),
+                child: displayIcon,
               ),
-            ),
-
-            // Action button
-            if (hasAction) ...[
               const SizedBox(width: 12),
-              CupertinoButton(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                onPressed: widget.action!.onPressed,
-                minimumSize: Size(32, 32),
-                child: Text(
-                  widget.action!.label,
-                  style: TextStyle(
-                    color: semanticColor,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+
+              // Message. Already the label of the live region above, so the
+              // text is kept out of semantics to be read once, not twice.
+              Flexible(
+                child: ExcludeSemantics(
+                  child: Text(
+                    widget.message,
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: -0.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
+
+              // Action button
+              if (hasAction) ...[
+                const SizedBox(width: 12),
+                CupertinoButton(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  onPressed: widget.action!.onPressed,
+                  minimumSize: Size(32, 32),
+                  child: Text(
+                    widget.action!.label,
+                    style: TextStyle(
+                      color: semanticColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

@@ -429,6 +429,7 @@ class AdaptiveGlass extends StatelessWidget {
             settings: effectiveSettings,
             quality: quality,
             isBlurProvidedByAncestor: true,
+            hasExplicitSettings: inherited?.hasExplicitSettings ?? false,
             child: content,
           ),
         );
@@ -1265,27 +1266,35 @@ class _ShapeClip extends StatelessWidget {
   }
 }
 
-/// [settings] for the lightweight shader, which draws neither the iOS 27 frost
-/// nor its rim light ([LiquidGlassSettings.frost],
-/// [LiquidGlassSettings.rimLight]).
+/// [settings] for the lightweight shader, which draws neither the iOS 27 frost,
+/// its rim light, nor its body shade ([LiquidGlassSettings.frost],
+/// [LiquidGlassSettings.rimLight], [LiquidGlassSettings.bodyShade]).
 ///
-/// The iOS 27 presets rely on those for their look and turn the iOS 26
-/// highlight off (`lightIntensity: 0`), so drawn as they are the surface
-/// comes out flat and nearly clear. Here the frost is stood in for by the
-/// regular blur, as [GlassFrostBudget] does for premium without frost, and the
-/// rim light by the iOS 26 highlight at its default strength. Settings
-/// without either term are returned unchanged.
+/// The iOS 27 and iOS 26 presets rely on those for their look and turn the
+/// classic directional highlight down or off (`lightIntensity: 0`), so drawn
+/// as they are the surface comes out flat and nearly clear. Here the frost is
+/// stood in for by the regular blur (as [GlassFrostBudget] does for premium
+/// without frost), the rim light is added to the directional highlight at its
+/// default strength, and the dark-mode body shade is added to
+/// [LiquidGlassSettings.ambientStrength]. Settings without those terms are
+/// returned unchanged.
 LiquidGlassSettings _withoutNativeMaterial(LiquidGlassSettings settings) {
-  if (settings.frost <= 0 && settings.rimLight <= 0) return settings;
+  if (settings.frost <= 0 &&
+      settings.rimLight <= 0 &&
+      settings.bodyShade <= 0) {
+    return settings;
+  }
   return settings.copyWith(
     blur: math.max(
       settings.blur,
       settings.frost * GlassFrostBudget.blurPerFrost,
     ),
-    lightIntensity: math.max(
-      settings.lightIntensity,
-      const LiquidGlassSettings().lightIntensity *
-          settings.rimLight.clamp(0.0, 1.0),
-    ),
+    lightIntensity: (settings.lightIntensity +
+            const LiquidGlassSettings().lightIntensity *
+                settings.rimLight.clamp(0.0, 1.0))
+        .clamp(0.0, 10.0),
+    ambientStrength:
+        (settings.ambientStrength + settings.bodyShade.clamp(0.0, 1.0))
+            .clamp(0.0, 1.0),
   );
 }

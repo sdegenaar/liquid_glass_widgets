@@ -256,12 +256,25 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
 
   // ── Build ─────────────────────────────────────────────────────────────────
 
+  static const _defaultDarkIndicatorColor =
+      Color(0x4DEBEBF5); // rgba(235, 235, 245, 0.30)
+  static const _defaultLightIndicatorShadow = [
+    BoxShadow(
+      color: Color(0x1F000000),
+      blurRadius: 4,
+      offset: Offset(0, 1),
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
+    final isLight = GlassTheme.brightnessOf(context) == Brightness.light;
     final indicatorColor = widget.indicatorColor ??
-        (GlassTheme.brightnessOf(context) == Brightness.light
-            ? CupertinoColors.black.withValues(alpha: 0.08)
-            : CupertinoColors.white.withValues(alpha: 0.2));
+        (isLight ? CupertinoColors.white : _defaultDarkIndicatorColor);
+    final restingShadows =
+        (isLight && widget.indicatorColor == null && !_isDragging && !_isDown)
+            ? _defaultLightIndicatorShadow
+            : null;
     final targetAlignment = _computeAlignmentForSegment(widget.selectedIndex);
 
     // Indicator is slightly less rounded than the container to account for
@@ -360,6 +373,7 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
                       borderRadius: indicatorRadius,
                       paintBackground: true,
                       paintGlass: !isPremiumQuality,
+                      shadows: restingShadows,
                       settings: widget.indicatorSettings,
                       pinchStrength: widget.indicatorPinchStrength,
                       expansion: widget.indicatorExpansion,

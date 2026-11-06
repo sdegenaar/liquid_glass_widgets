@@ -680,13 +680,20 @@ void main() {
       expect(color.b, lessThan(0.1));
     });
 
-    testWidgets('toast background is dark-tinted in dark mode', (tester) async {
+    testWidgets('classic toast background is dark-tinted in dark mode',
+        (tester) async {
       await tester.pumpWidget(
         _buildApp(
           brightness: Brightness.dark,
-          child: const GlassToast(
-            message: 'Info',
-            type: GlassToastType.info,
+          child: const GlassTheme(
+            data: GlassThemeData(
+              style: GlassStyle.classic,
+              brightness: Brightness.dark,
+            ),
+            child: GlassToast(
+              message: 'Info',
+              type: GlassToastType.info,
+            ),
           ),
         ),
       );
@@ -711,14 +718,20 @@ void main() {
       expect(bgColor.b, lessThan(0.1));
     });
 
-    testWidgets('toast background is light-tinted in light mode',
+    testWidgets('classic toast background is light-tinted in light mode',
         (tester) async {
       await tester.pumpWidget(
         _buildApp(
           brightness: Brightness.light,
-          child: const GlassToast(
-            message: 'Info',
-            type: GlassToastType.info,
+          child: const GlassTheme(
+            data: GlassThemeData(
+              style: GlassStyle.classic,
+              brightness: Brightness.light,
+            ),
+            child: GlassToast(
+              message: 'Info',
+              type: GlassToastType.info,
+            ),
           ),
         ),
       );
@@ -741,6 +754,45 @@ void main() {
       expect(bgColor.r, greaterThan(0.9));
       expect(bgColor.g, greaterThan(0.9));
       expect(bgColor.b, greaterThan(0.9));
+    });
+
+    testWidgets('ios27 toast is pure glass with no extra background tint',
+        (tester) async {
+      await tester.pumpWidget(
+        _buildApp(
+          brightness: Brightness.light,
+          child: const GlassToast(
+            message: 'Info',
+            type: GlassToastType.info,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final tinted = find.descendant(
+        of: find.byType(GlassToast),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Container &&
+              widget.decoration is BoxDecoration &&
+              (widget.decoration as BoxDecoration).color != null,
+        ),
+      );
+      expect(tinted, findsNothing);
+
+      // A box shadow would paint through the transparent interior and tint the
+      // whole glass pill, so the glass styles must not draw one.
+      final shadowed = find.descendant(
+        of: find.byType(GlassToast),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is Container &&
+              widget.decoration is BoxDecoration &&
+              ((widget.decoration as BoxDecoration).boxShadow?.isNotEmpty ??
+                  false),
+        ),
+      );
+      expect(shadowed, findsNothing);
     });
   });
 

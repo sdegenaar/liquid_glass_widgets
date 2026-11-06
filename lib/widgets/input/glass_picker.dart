@@ -5,6 +5,7 @@ import '../../types/glass_surface_style.dart';
 import '../shared/adaptive_glass.dart';
 import '../shared/glass_solid_surface.dart';
 import '../shared/inherited_liquid_glass.dart';
+import '../../theme/glass_theme.dart';
 import '../../theme/glass_theme_helpers.dart';
 
 /// A glass picker widget following iOS design patterns.
@@ -191,7 +192,6 @@ class GlassPicker extends StatelessWidget {
       final effectiveSettings = GlassThemeHelpers.resolveSettings(
         context,
         explicit: settings,
-        fallback: const LiquidGlassSettings(blur: 8),
       );
 
       surfaceWidget = AdaptiveGlass(
@@ -230,40 +230,55 @@ class GlassPicker extends StatelessWidget {
     required Widget Function(T item) itemBuilder,
     String? title,
   }) {
+    final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
+    final capturedCupertinoTheme = CupertinoTheme.of(context);
     return showCupertinoModalPopup<T>(
       context: context,
-      builder: (context) => Container(
-        height: 300,
-        decoration: BoxDecoration(
-          color: CupertinoColors.systemBackground.resolveFrom(context),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            if (title != null)
-              Container(
-                // Minimum, not fixed, so a scaled-up title is not clipped.
-                constraints: const BoxConstraints(minHeight: 50),
-                alignment: Alignment.center,
-                child: Text(title,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
+      builder: (modalContext) {
+        Widget sheet = Container(
+          height: 300,
+          decoration: BoxDecoration(
+            color: CupertinoColors.systemBackground.resolveFrom(modalContext),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              if (title != null)
+                Container(
+                  // Minimum, not fixed, so a scaled-up title is not clipped.
+                  constraints: const BoxConstraints(minHeight: 50),
+                  alignment: Alignment.center,
+                  child: Text(title,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              Expanded(
+                child: CupertinoPicker.builder(
+                  itemExtent: 40,
+                  onSelectedItemChanged: (index) {
+                    // Handle live update if needed
+                  },
+                  itemBuilder: (context, index) {
+                    if (index < 0 || index >= items.length) return null;
+                    return itemBuilder(items[index]);
+                  },
+                  childCount: items.length,
+                ),
               ),
-            Expanded(
-              child: CupertinoPicker.builder(
-                itemExtent: 40,
-                onSelectedItemChanged: (index) {
-                  // Handle live update if needed
-                },
-                itemBuilder: (context, index) {
-                  if (index < 0 || index >= items.length) return null;
-                  return itemBuilder(items[index]);
-                },
-                childCount: items.length,
-              ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+        sheet = CupertinoTheme(
+          data: capturedCupertinoTheme,
+          child: sheet,
+        );
+        if (capturedGlassTheme != null) {
+          sheet = GlassTheme(
+            data: capturedGlassTheme,
+            child: sheet,
+          );
+        }
+        return sheet;
+      },
     );
   }
 }

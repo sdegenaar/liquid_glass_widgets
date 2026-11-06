@@ -9,6 +9,7 @@ import '../../theme/glass_theme.dart';
 import '../../theme/glass_theme_data.dart';
 import '../../theme/glass_theme_helpers.dart';
 import '../../types/glass_quality.dart';
+import '../../types/glass_style.dart';
 import '../containers/glass_container.dart';
 import '../shared/glass_focus_region.dart';
 import '../shared/glass_interaction_state_mixin.dart';
@@ -910,25 +911,33 @@ class _GlassContextMenuRouteStaticState
     final padding = mediaQuery.padding;
 
     final bool isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
+    final GlassStyle style =
+        GlassTheme.maybeOf(context)?.data.style ?? GlassStyle.ios27;
     final Color scrim = widget.scrimColor ??
         (isDark ? const Color(0x40000000) : const Color(0x32000000));
 
-    final LiquidGlassSettings platterSettings = widget.settings ??
-        (isDark
-            ? const LiquidGlassSettings(
-                glassColor: Color(0xCC252528),
-                thickness: 16,
-                blur: 22,
-                saturation: 1.2,
-                lightIntensity: 0.28,
-              )
-            : const LiquidGlassSettings(
-                glassColor: Color(0xCCF5F5F7),
-                thickness: 16,
-                blur: 22,
-                saturation: 1.2,
-                lightIntensity: 0.35,
-              ));
+    final LiquidGlassSettings classicFallback = isDark
+        ? const LiquidGlassSettings(
+            glassColor: Color(0xCC252528),
+            thickness: 16,
+            blur: 22,
+            saturation: 1.2,
+            lightIntensity: 0.28,
+          )
+        : const LiquidGlassSettings(
+            glassColor: Color(0xCCF5F5F7),
+            thickness: 16,
+            blur: 22,
+            saturation: 1.2,
+            lightIntensity: 0.35,
+          );
+    final LiquidGlassSettings platterSettings =
+        GlassThemeHelpers.resolveSettings(
+      context,
+      explicit: widget.settings,
+      fallback: classicFallback,
+      isOverlayPlatter: true,
+    );
 
     final bool hasCustomPreview = widget.previewBuilder != null;
     final Widget previewWidget = hasCustomPreview
@@ -942,14 +951,18 @@ class _GlassContextMenuRouteStaticState
     final BorderRadius previewRadii =
         BorderRadius.circular(effectivePreviewBorderRadius);
 
-    final Color platterBorder =
-        isDark ? const Color(0x33FFFFFF) : const Color(0x4D000000);
-
     final effectivePlatterQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
       fallback: GlassQuality.premium,
     );
+
+    final bool shaderDrawsRim = style != GlassStyle.classic &&
+        effectivePlatterQuality == GlassQuality.premium &&
+        ImageFilter.isShaderFilterSupported;
+    final Color platterBorder = shaderDrawsRim
+        ? const Color(0x00000000)
+        : (isDark ? const Color(0x33FFFFFF) : const Color(0x4D000000));
 
     Widget buildPlatter({bool isMeasurement = false}) {
       return DecoratedBox(
@@ -1001,8 +1014,11 @@ class _GlassContextMenuRouteStaticState
                                             .isDestructive
                                     ? CupertinoColors.destructiveRed
                                         .withValues(alpha: 0.16)
-                                    : CupertinoColors.activeBlue
-                                        .withValues(alpha: 0.12))
+                                    : (isDark
+                                            ? CupertinoColors.white
+                                            : CupertinoColors.black)
+                                        .withValues(
+                                            alpha: isDark ? 0.12 : 0.08))
                                 : const Color(0x00000000),
                           ),
                           child: widget.actions[i],

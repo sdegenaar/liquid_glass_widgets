@@ -342,7 +342,10 @@ class GlassScaffold extends StatelessWidget {
   ///
   /// Use this for floating elements that should render above the body content
   /// but below the app bar and bottom bar. Each widget is typically wrapped
-  /// in an [AnimatedPositioned] or [Positioned].
+  /// in an [AnimatedPositioned] or [Positioned]. Like [appBar] and [bottomBar],
+  /// each overlay is wrapped in a [GlassIsolationScope] with
+  /// `defaultQuality: GlassQuality.premium` so floating pills and action
+  /// buttons render with their own premium glass layer out of the box.
   ///
   /// Example: Apple Music's floating play bar pill:
   /// ```dart
@@ -560,7 +563,16 @@ class GlassScaffold extends StatelessWidget {
         ),
 
       // 2. Body overlays (between body and bars — e.g. floating play pill).
-      if (bodyOverlays != null) ...bodyOverlays!,
+      if (bodyOverlays != null)
+        for (final overlay in bodyOverlays!)
+          GlassIsolationScope(
+            // Carry the overlay's key onto the wrapper so the Stack still
+            // matches an overlay by key when the list reorders or changes.
+            key: overlay.key == null ? null : ValueKey<Key>(overlay.key!),
+            isolated: true,
+            defaultQuality: GlassQuality.premium,
+            child: overlay,
+          ),
 
       // 2a. Under Reduce Transparency, the strip and the title row turn
       // opaque behind the bars in iPhone Duo's vertical bar strip.

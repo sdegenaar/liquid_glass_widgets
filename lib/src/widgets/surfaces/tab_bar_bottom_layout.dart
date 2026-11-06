@@ -26,7 +26,7 @@ import 'tab_bar_bottom_internal.dart'
         BottomBarExtraBtn,
         BottomBarTabItem,
         TabIndicator,
-        kBottomBarGlassDefaults,
+        resolveBarGlassSettings,
         resolveBarLabelColor;
 import '../../../widgets/surfaces/shared/tab_bar_accessory_placement.dart';
 import 'tab_bar_layout_utils.dart';
@@ -160,9 +160,6 @@ class TabBarBottomLayout extends StatefulWidget {
 
 class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
     with TickerProviderStateMixin {
-  // Delegate to the shared const — single source of truth in tab_bar_bottom_internal.dart.
-  // Both bars reference kBottomBarGlassDefaults so their glass is guaranteed identical.
-  static const _defaultGlassSettings = kBottomBarGlassDefaults;
   static const _kGestureRegionKey = ValueKey<String>(
     'glass_tab_bar_gesture_region',
   );
@@ -253,7 +250,7 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
     final effectiveGlowSpreadRadius = resolvedGlowColors.glowSpreadRadius;
     final effectiveGlowOpacity = resolvedGlowColors.glowOpacity;
 
-    final effectiveSettings = widget.settings ?? _defaultGlassSettings;
+    final effectiveSettings = resolveBarGlassSettings(context, widget.settings);
 
     // RTL support.
     //
@@ -482,6 +479,13 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
     );
   }
 
+  static double _tabProximityScale(double pillTabIndex, int i, double scale) {
+    final dist = (pillTabIndex - i).abs();
+    final t = 1.0 - ((dist - 0.52) / 0.36).clamp(0.0, 1.0);
+    final proximity = t * t * (3.0 - 2.0 * t);
+    return ui.lerpDouble(1.0, scale, proximity) ?? 1.0;
+  }
+
   Widget _buildSelectedTabs(
       double intensity,
       Alignment alignment,
@@ -494,6 +498,9 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
     final affectedStart =
         (currentTabFloat - 1).floor().clamp(0, tabs.length - 1);
     final affectedEnd = (currentTabFloat + 1).ceil().clamp(0, tabs.length - 1);
+    final pillTabIndex = tabs.length <= 1
+        ? 0.0
+        : ((alignment.x + 1.0) * 0.5) * (tabs.length - 1);
 
     return ExcludeSemantics(
       child: _ltrTabRow(
@@ -502,7 +509,7 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
             Expanded(
               child: (i >= affectedStart && i <= affectedEnd)
                   ? Transform.scale(
-                      scale: scale,
+                      scale: _tabProximityScale(pillTabIndex, i, scale),
                       child: BottomBarTabItem(
                         tab: tabs[i],
                         selected: true,

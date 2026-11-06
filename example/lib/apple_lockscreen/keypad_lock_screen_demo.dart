@@ -130,71 +130,69 @@ class _KeypadLockScreenDemoState extends State<KeypadLockScreenDemo>
     final mediaQuery = MediaQuery.of(context);
     final screenHeight = mediaQuery.size.height;
 
-    return GlassPage(
-      background: Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/bulldog.jpeg'),
-            fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(
-              CupertinoColors.black
-                  .withValues(alpha: 0.3), // Adjust opacity for darkness
-              BlendMode.darken, // Or BlendMode.srcOver for a solid overlay
+    return CupertinoTheme(
+      data: const CupertinoThemeData(brightness: Brightness.dark),
+      child: GlassTheme(
+        data: GlassThemeData.of(context).copyWith(brightness: Brightness.dark),
+        child: GlassPage(
+          background: Container(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/bulldog.jpeg'),
+                fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(
+                  CupertinoColors.black
+                      .withValues(alpha: 0.3), // Adjust opacity for darkness
+                  BlendMode.darken, // Or BlendMode.srcOver for a solid overlay
+                ),
+                alignment: Alignment(0, 0),
+              ),
             ),
-            alignment: Alignment(0, 0),
           ),
-        ),
-      ),
-      child: GlassScaffold(
-        backgroundColor: const Color(0x00000000),
-        body: SafeArea(
-          child: Column(
-            children: [
-              SizedBox(height: screenHeight * 0.02),
+          child: GlassScaffold(
+            backgroundColor: const Color(0x00000000),
+            body: SafeArea(
+              child: Column(
+                children: [
+                  SizedBox(height: screenHeight * 0.02),
 
-              // Lock icon + Face ID bar
-              _buildStatusBar(),
+                  // Lock icon + Face ID bar
+                  _buildStatusBar(),
 
-              SizedBox(height: screenHeight * 0.03),
+                  SizedBox(height: screenHeight * 0.03),
 
-              // "Swipe up for Face ID or Enter Passcode"
-              _buildPromptText(),
+                  // "Swipe up for Face ID or Enter Passcode"
+                  _buildPromptText(),
 
-              SizedBox(height: screenHeight * 0.02),
+                  SizedBox(height: screenHeight * 0.02),
 
-              // Passcode dots
-              AnimatedBuilder(
-                animation: _shakeAnimation,
-                builder: (context, child) => Transform.translate(
-                  offset: Offset(_shakeAnimation.value, 0),
-                  child: child,
-                ),
-                child: _buildPasscodeDots(),
-              ),
-
-              SizedBox(height: screenHeight * 0.03),
-
-              // Number pad
-              Expanded(
-                child: AdaptiveLiquidGlassLayer(
-                  settings: const LiquidGlassSettings(
-                    glassColor:
-                        Color.from(alpha: 0.08, red: 1, green: 1, blue: 1),
-                    blur: 3,
-                    thickness: 30,
-                    lightIntensity: 1.2,
-                    saturation: 1.2,
+                  // Passcode dots
+                  AnimatedBuilder(
+                    animation: _shakeAnimation,
+                    builder: (context, child) => Transform.translate(
+                      offset: Offset(_shakeAnimation.value, 0),
+                      child: child,
+                    ),
+                    child: _buildPasscodeDots(),
                   ),
-                  quality: GlassQuality.premium,
-                  child: _buildNumberPad(),
-                ),
+
+                  SizedBox(height: screenHeight * 0.03),
+
+                  // Number pad
+                  Expanded(
+                    child: AdaptiveLiquidGlassLayer(
+                      quality: GlassQuality.premium,
+                      child: _buildNumberPad(),
+                    ),
+                  ),
+
+                  // Emergency / Cancel row
+                  _buildBottomActions(),
+
+                  SizedBox(height: screenHeight * 0.02),
+                ],
               ),
-
-              // Emergency / Cancel row
-              _buildBottomActions(),
-
-              SizedBox(height: screenHeight * 0.02),
-            ],
+            ),
           ),
         ),
       ),

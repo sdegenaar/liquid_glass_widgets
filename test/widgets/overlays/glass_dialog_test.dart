@@ -135,7 +135,8 @@ void main() {
         actions: testActions,
       );
 
-      expect(dialog.maxWidth, equals(280));
+      expect(dialog.maxWidth, isNull,
+          reason: 'null follows the active style: 320 native, 280 classic');
       expect(dialog.quality, isNull);
     });
 

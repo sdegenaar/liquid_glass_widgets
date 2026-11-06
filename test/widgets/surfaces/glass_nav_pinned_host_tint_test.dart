@@ -156,6 +156,63 @@ void main() {
       final shellButton = glassButtons.first;
       expect(shellButton.settings, isNull);
     });
+
+    for (final style in GlassStyle.values) {
+      testWidgets(
+          'tinted shell without buttonSettings keeps $style theme optics under its tint',
+          (tester) async {
+        const tint = Color(0xFF34C759);
+
+        await tester.pumpWidget(
+          CupertinoApp(
+            builder: (context, child) => GlassTheme(
+              data: GlassThemeData(
+                style: style,
+                brightness: Brightness.light,
+              ),
+              child: GlassNavigationShell(child: child!),
+            ),
+            home: _Screen(
+              title: 'Tinted Screen',
+              actions: [
+                GlassBarItem.icon(
+                  icon: const Icon(CupertinoIcons.checkmark),
+                  onTap: () {},
+                  background: GlassBarItemBackground.separate,
+                  tintColor: tint,
+                ),
+              ],
+            ),
+          ),
+        );
+        await settle(tester);
+
+        final shellButton = tester
+            .widgetList<GlassButton>(
+              find.descendant(
+                of: find.byType(GlassNavPinnedHost),
+                matching: find.byType(GlassButton),
+              ),
+            )
+            .firstWhere((b) => b.settings?.glassColor == tint);
+        final settings = shellButton.settings!;
+
+        expect(settings.bodyMode, GlassBodyMode.clear);
+        // Never the zeroed `LiquidGlassSettings()` that the old fallback gave.
+        expect(settings.thickness, greaterThan(0.0));
+        switch (style) {
+          case GlassStyle.ios27:
+          case GlassStyle.ios26:
+            expect(settings.lensModel, GlassLensModel.paraxial);
+            expect(settings.frost, 14.0);
+            break;
+          case GlassStyle.classic:
+            expect(settings.lensModel, GlassLensModel.spherical);
+            expect(settings.thickness, 12.0);
+            break;
+        }
+      });
+    }
   });
 
   group('GlassNavPinnedHost foreground luminance flip', () {

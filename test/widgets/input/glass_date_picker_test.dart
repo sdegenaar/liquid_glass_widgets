@@ -1044,5 +1044,49 @@ void main() {
       await tester.tap(find.text('October 2026'));
       await tester.pumpAndSettle();
     });
+
+    testWidgets(
+        'compact date popover and showGlassDatePicker propagate ambient GlassTheme across modal routes',
+        (tester) async {
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: GlassTheme(
+            data: const GlassThemeData.ios26(brightness: Brightness.dark),
+            child: CupertinoPageScaffold(
+              child: Builder(
+                builder: (context) => Column(
+                  children: [
+                    GlassDatePicker.compact(
+                      initialDateTime: DateTime(2026, 6, 15),
+                    ),
+                    CupertinoButton(
+                      onPressed: () {
+                        showGlassDatePicker(
+                          context: context,
+                          initialDateTime: DateTime(2026, 6, 15),
+                        );
+                      },
+                      child: const Text('Open Modal Date Picker'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // 1. Open compact date popover -> covers L736
+      await tester.tap(find.text('Jun 15, 2026'));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      // 2. Open showGlassDatePicker -> covers L1755
+      await tester.tap(find.text('Open Modal Date Picker'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+    });
   });
 }

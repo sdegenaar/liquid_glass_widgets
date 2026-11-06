@@ -38,6 +38,9 @@ const _workspaceCmdFile =
 /// Driven by command rather than the OS so captures are deterministic.
 final _dark = ValueNotifier<bool>(false);
 
+/// Active glass style preset (`style ios27|ios26|classic` command).
+final _style = ValueNotifier<GlassStyle>(GlassStyle.ios27);
+
 /// Dark-mode pill / button glass settings matching the Apple Music example.
 const _kDarkPillGlassSettings = LiquidGlassSettings(
   glassColor: Color(0xCC1C1C1E),
@@ -47,21 +50,6 @@ const _kDarkPillGlassSettings = LiquidGlassSettings(
   chromaticAberration: 0.01,
   saturation: 1.2,
   fresnelStrength: 0.0,
-);
-
-/// Dark-mode bottom tab bar glass settings matching the Apple Music example.
-const _kDarkBarGlassSettings = LiquidGlassSettings(
-  glassColor: Color(0xAA1C1C1E),
-  thickness: 30,
-  blur: 2,
-  chromaticAberration: 0.01,
-  lightAngle: GlassDefaults.lightAngle,
-  lightIntensity: 0.2,
-  ambientStrength: 0,
-  refractiveIndex: 1.2,
-  fresnelStrength: 0.0,
-  saturation: 1.2,
-  specularSharpness: GlassSpecularSharpness.medium,
 );
 
 void main() async {
@@ -76,14 +64,20 @@ class _App extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ValueListenableBuilder<bool>(
         valueListenable: _dark,
-        builder: (context, dark, _) => GlassTheme(
-          data: const GlassThemeData.ios27(),
-          child: CupertinoApp(
-            debugShowCheckedModeBanner: false,
-            title: 'iOS Parity',
-            theme: CupertinoThemeData(
-                brightness: dark ? Brightness.dark : Brightness.light),
-            home: const _ParityHost(),
+        builder: (context, dark, _) => ValueListenableBuilder<GlassStyle>(
+          valueListenable: _style,
+          builder: (context, style, _) => GlassTheme(
+            data: GlassThemeData(
+              style: style,
+              brightness: dark ? Brightness.dark : Brightness.light,
+            ),
+            child: CupertinoApp(
+              debugShowCheckedModeBanner: false,
+              title: 'iOS Parity',
+              theme: CupertinoThemeData(
+                  brightness: dark ? Brightness.dark : Brightness.light),
+              home: const _ParityHost(),
+            ),
           ),
         ),
       );
@@ -102,6 +96,7 @@ class _ParityHost extends StatefulWidget {
 
 class _ParityHostState extends State<_ParityHost> {
   int _tab = 0;
+  String _bgMode = 'default';
   Timer? _poll;
   String? _lastCmd;
   Offset _lastPtr = Offset.zero;
@@ -142,6 +137,7 @@ class _ParityHostState extends State<_ParityHost> {
       }
     }
     _dark.addListener(_onDarkChanged);
+    _style.addListener(_onDarkChanged);
     _navPath.addListener(_onNavPathChanged);
     _poll = Timer.periodic(const Duration(milliseconds: 16), (_) => _check());
   }
@@ -175,6 +171,7 @@ class _ParityHostState extends State<_ParityHost> {
   @override
   void dispose() {
     _dark.removeListener(_onDarkChanged);
+    _style.removeListener(_onDarkChanged);
     _navPath.removeListener(_onNavPathChanged);
     _poll?.cancel();
     super.dispose();
@@ -252,6 +249,16 @@ class _ParityHostState extends State<_ParityHost> {
         binding.handlePointerEvent(event);
       case 'dark':
         _dark.value = a[1] == 'on';
+        setState(() {});
+      case 'style':
+        _style.value = switch (a.length > 1 ? a[1] : 'ios27') {
+          'classic' => GlassStyle.classic,
+          'ios26' => GlassStyle.ios26,
+          _ => GlassStyle.ios27,
+        };
+        setState(() {});
+      case 'bg':
+        _bgMode = a.length > 1 ? a[1] : 'default';
         setState(() {});
       case 'pop':
         if (_tab == 4 && _navPath.isNotEmpty) {
@@ -402,11 +409,7 @@ class _ParityHostState extends State<_ParityHost> {
   }
 
   void _presentMorphSheet({required bool full}) {
-    final isDark = _dark.value;
     final anchor = full ? _morphFullAnchor : _morphHalfAnchor;
-    final sheetGlass =
-        (isDark ? _kDarkPillGlassSettings : LiquidGlassSettings.ios27Light)
-            .copyWith(blur: 10);
     GlassModalSheet.show<void>(
       context: context,
       morphFrom: anchor,
@@ -417,13 +420,10 @@ class _ParityHostState extends State<_ParityHost> {
       horizontalMargin: 8.0,
       bottomMargin: 7.33,
       barrierColor: const Color(0x33000000),
-      settings: sheetGlass,
       initialState: full ? GlassSheetState.full : GlassSheetState.half,
       detents: full
           ? const {GlassSheetDetent.large}
           : const {GlassSheetDetent.medium, GlassSheetDetent.large},
-      expandedColor: const Color(0xFFF2F2F7),
-      expandedDarkColor: const Color(0xFF1C1C1E),
       showDragIndicator: !full,
       dragIndicatorTopPadding: 6.0,
       dragIndicatorHeight: 4.5,
@@ -518,46 +518,92 @@ class _ParityHostState extends State<_ParityHost> {
         : pages[_tab];
 
     final isDark = _dark.value;
-    final pageSettings =
-        isDark ? _kDarkPillGlassSettings : LiquidGlassSettings.ios27Light;
+
+    Widget? customBg;
+    if (_bgMode == 'mid') {
+      customBg = const ColoredBox(
+        color: Color(0xFF808080),
+        child: SizedBox.expand(),
+      );
+    } else if (_bgMode == 'vivid') {
+      customBg = Column(
+        children: [
+          const Expanded(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color.fromRGBO(38, 115, 242, 1),
+                    Color.fromRGBO(140, 64, 230, 1),
+                    Color.fromRGBO(242, 77, 115, 1),
+                  ],
+                ),
+              ),
+              child: SizedBox.expand(),
+            ),
+          ),
+          SizedBox(
+            height: 140,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: const [
+                Expanded(
+                    child: ColoredBox(color: Color.fromRGBO(255, 59, 48, 1))),
+                Expanded(
+                    child: ColoredBox(color: Color.fromRGBO(255, 148, 0, 1))),
+                Expanded(
+                    child: ColoredBox(color: Color.fromRGBO(51, 199, 89, 1))),
+                Expanded(
+                    child: ColoredBox(color: Color.fromRGBO(0, 122, 255, 1))),
+                Expanded(
+                    child: ColoredBox(color: Color.fromRGBO(176, 82, 222, 1))),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
 
     return GlassScaffold(
+      background: customBg,
       backgroundColor:
           isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7),
-      settings: pageSettings,
-      bottomEdgeFade: !(_tab == 4 && _navPath.isNotEmpty),
+      bottomEdgeFade:
+          _bgMode == 'default' && !(_tab == 4 && _navPath.isNotEmpty),
       bottomBar: GlassTabBar.bottom(
         selectedIndex: _tab,
         onTabSelected: (idx) => setState(() => _tab = idx),
         quality: GlassQuality.premium,
         backgroundQuality: GlassQuality.premium,
-        settings: isDark ? _kDarkBarGlassSettings : null,
-        indicatorColor: isDark
-            ? CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.20)
-            : null,
-        unselectedIconColor: isDark
-            ? CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.9)
-            : null,
+        barHeight: 62,
+        horizontalPadding: 21,
+        verticalPadding: 21,
+        iconSize: 27,
+        iconLabelSpacing: 2,
+        labelFontSize: 10,
+        selectedIconColor: CupertinoColors.systemBlue.resolveFrom(context),
         tabs: const [
           GlassTab(
-            icon: Icon(CupertinoIcons.hand_draw),
-            label: 'Swipe',
+            icon: Icon(CupertinoIcons.hand_draw_fill),
+            label: 'Swipe & Menu',
           ),
           GlassTab(
-            icon: Icon(CupertinoIcons.chevron_down_circle),
+            icon: Icon(CupertinoIcons.chevron_down_circle_fill),
             label: 'Disclosure',
           ),
           GlassTab(
-            icon: Icon(CupertinoIcons.pencil_circle),
-            label: 'Edit',
+            icon: Icon(CupertinoIcons.pencil_circle_fill),
+            label: 'Edit Mode',
           ),
           GlassTab(
-            icon: Icon(CupertinoIcons.calendar),
+            icon: Icon(CupertinoIcons.calendar_circle_fill),
             label: 'Pickers',
           ),
           GlassTab(
-            icon: Icon(CupertinoIcons.arrow_up_right_square),
-            label: 'Modals',
+            icon: Icon(CupertinoIcons.arrow_up_right_square_fill),
+            label: 'Modals & Nav',
           ),
         ],
       ),
@@ -1348,9 +1394,8 @@ class _MorphComposeSheetBody extends StatelessWidget {
             children: [
               GlassIconButton(
                 size: 44,
-                settings: isDark
-                    ? LiquidGlassSettings.ios27Dark
-                    : LiquidGlassSettings.ios27Light,
+                useOwnLayer: true,
+                quality: GlassQuality.premium,
                 // Native `xmark` measures 16.7pt wide (3x capture); the
                 // Cupertino glyph is 0.65x its font size.
                 icon: Icon(CupertinoIcons.xmark, size: 25.5, color: labelColor),
@@ -1372,9 +1417,8 @@ class _MorphComposeSheetBody extends StatelessWidget {
                 // Native sizes this button to its 30.6pt filled disc: a
                 // 48.9pt glass ring (the X button stays 44.8pt).
                 size: 49,
-                settings: isDark
-                    ? LiquidGlassSettings.ios27Dark
-                    : LiquidGlassSettings.ios27Light,
+                useOwnLayer: true,
+                quality: GlassQuality.premium,
                 icon: Icon(
                   CupertinoIcons.arrow_up_circle_fill,
                   size: 36,

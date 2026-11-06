@@ -1,12 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../constants/glass_defaults.dart';
+import '../../src/widgets/shared/lens_inner_shadow_painter.dart';
 import '../../theme/glass_theme.dart';
 import '../../types/glass_quality.dart';
+import '../../types/glass_style.dart';
 import '../shared/glass_effect.dart';
 import '../shared/glass_focus_region.dart';
 import '../shared/glass_accessibility_scope.dart';
@@ -75,6 +78,7 @@ class GlassSwitch extends StatefulWidget {
     this.activeColor,
     this.inactiveColor,
     this.thumbColor = CupertinoColors.white,
+    this.thumbShadow,
     this.width = 58.0,
     this.height = 26.0,
     this.settings,
@@ -111,6 +115,15 @@ class GlassSwitch extends StatefulWidget {
   /// Defaults to white.
   final Color thumbColor;
 
+  /// Shadows cast by the resting thumb, painted outside the glass clip.
+  ///
+  /// When null, uses a soft black shadow at 15% opacity with an 8 logical-pixel
+  /// blur and a 2 logical-pixel downward offset (matching [GlassSlider]). An
+  /// empty list disables it. Each shadow's color alpha is multiplied by the
+  /// interaction/material fade so the shadow dissolves as the thumb lifts into
+  /// a liquid glass lens.
+  final List<BoxShadow>? thumbShadow;
+
   // ===========================================================================
   // Sizing Properties
   // ===========================================================================
@@ -135,10 +148,13 @@ class GlassSwitch extends StatefulWidget {
   /// Whether to create its own layer or use grouped glass.
   final bool useOwnLayer;
 
-  /// Defaults to [GlassQuality.standard], which uses backdrop filter rendering.
-  /// This works reliably in all contexts, including scrollable lists.
+  /// Rendering quality for the lifted liquid lens during press and drag.
   ///
-  /// Use [GlassQuality.premium] for shader-based glass in static layouts only.
+  /// Defaults to [GlassQuality.premium] on [GlassStyle.ios27] / [GlassStyle.ios26]
+  /// ([GlassStyle.classic] keeps [GlassQuality.standard]), which renders the
+  /// calibrated 3D paraxial liquid lens when the thumb is pressed or dragged and
+  /// mounts zero shader layers at rest. Falls back to [GlassQuality.standard]
+  /// automatically on Skia/Web or when capped by [GlassAdaptiveScope].
   final GlassQuality? quality;
 
   /// Whether to emit haptic feedback on toggle.
@@ -168,25 +184,29 @@ class GlassSwitch extends StatefulWidget {
 
 class _GlassSwitchState extends State<GlassSwitch>
     with TickerProviderStateMixin {
-  // Cache default shadow color to avoid allocations
-  // Shadow color for the thumb material
-  static const _defaultThumbShadowColor = Color(0x33000000);
+  static const _defaultThumbShadow = [
+    BoxShadow(
+      color: Color.from(alpha: 0.15, red: 0, green: 0, blue: 0),
+      blurRadius: 8,
+      offset: Offset(0, 2),
+    ),
+  ];
 
   late AnimationController _positionController;
   late AnimationController _thicknessController;
-  late CurvedAnimation _positionCurve;
-  late Animation<double> _positionAnimation;
+  late AnimationController _overshootController;
   late Animation<double> _thicknessAnimation;
-  late bool _isMovingForward; // Track direction of animation
 
   // ---------------------------------------------------------------------------
   // Gesture state
   // ---------------------------------------------------------------------------
   bool _isDragging = false;
-  double _dragStartX = 0.0;
-  double _dragStartPosition = 0.0;
   bool _dragAbandonedExternally = false;
   bool _justEndedDrag = false;
+  double _dragVirtualPx = 0.0;
+  double _dragTotalDistancePx = 0.0;
+  double _dragOvershootPx = 0.0;
+  double _releaseOvershootStartPx = 0.0;
 
   // ---------------------------------------------------------------------------
   // Haptic state
@@ -210,16 +230,8 @@ class _GlassSwitchState extends State<GlassSwitch>
         duration: const Duration(milliseconds: 380), vsync: this);
     _thicknessController = AnimationController(
         duration: const Duration(milliseconds: 380), vsync: this);
-
-    _positionCurve = CurvedAnimation(
-      parent: _positionController,
-      curve: Curves.easeInOutCubic, // Match the growth momentum
-      reverseCurve: Curves.easeInOutCubic,
-    );
-    _positionAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(_positionCurve);
+    _overshootController = AnimationController(
+        duration: const Duration(milliseconds: 220), vsync: this);
 
     // Pulse animation (0 -> 1 -> 0)
     // Synchronized to grow and settle as the toggle jumps
@@ -237,7 +249,6 @@ class _GlassSwitchState extends State<GlassSwitch>
     ]).animate(_thicknessController);
 
     // Set initial state
-    _isMovingForward = widget.value;
     if (widget.value) {
       _positionController.value = 1.0;
     }
@@ -252,58 +263,56 @@ class _GlassSwitchState extends State<GlassSwitch>
       if (_isDragging) {
         _isDragging = false;
         _dragAbandonedExternally = true;
+        _settleOvershoot();
       }
 
-      // Track direction: true = moving forward (left to right)
-      _isMovingForward = widget.value;
-
-      // Animate position
-      if (widget.value) {
-        unawaited(_positionController.forward());
-      } else {
-        unawaited(_positionController.reverse());
-      }
-
-      // Trigger the liquid pulse bloom (Grow up and then down)
+      // Consume the drag-end flag before animating position so drag releases
+      // keep their responsive ease-out settle curve instead of being
+      // overwritten by the 380ms tap jump curve.
       final bool justEndedDrag = _justEndedDrag;
       _justEndedDrag = false;
 
+      // Animate position
+      _animatePositionTo(
+        widget.value ? 1.0 : 0.0,
+        fromDrag: justEndedDrag,
+      );
+
+      // Trigger the liquid pulse bloom (Grow up and then down)
       if (!justEndedDrag) {
         if (_thicknessController.value >= 0.99) {
           _thicknessController.value = 0.0;
         }
 
-        // Sync the jump duration exactly to the remaining travel time so that
-        // if the user held the switch (full bloom), it stays bloomed and deflates
-        // cleanly across the entire horizontal movement.
         final double posDist = widget.value
             ? (1.0 - _positionController.value)
             : _positionController.value;
-        final int ms = (380 * posDist).round();
 
-        if (ms > 0) {
+        if (_thicknessController.value >= 0.45) {
+          // User held the switch until full bloom before releasing: smoothly
+          // deflate across the remaining horizontal travel.
+          final int ms = (280 * posDist).round().clamp(140, 280);
           unawaited(_thicknessController.animateTo(
             1.0,
             duration: Duration(milliseconds: ms),
-            // Use an ease-in curve so that if the thumb is fully bloomed (held down),
-            // it maintains its stretched shape for the majority of the travel,
-            // and only deflates back to a circle as it lands on the other side.
-            // This prevents the "jerky" deflation mid-flight.
-            curve: Curves.easeIn,
+            curve: Curves.linear,
           ));
         } else {
-          _thicknessController.value = 1.0;
+          // Quick tap or programmatic toggle: advance linearly through the
+          // TweenSequence so the pill reaches peak bloom mid-flight (~45% of
+          // travel) and smoothly settles as it lands on the destination side.
+          final int ms = (320 * posDist).round().clamp(180, 320);
+          unawaited(_thicknessController.animateTo(
+            1.0,
+            duration: Duration(milliseconds: ms),
+            curve: Curves.linear,
+          ));
         }
       }
     } else if (!_isDragging) {
       final target = widget.value ? 1.0 : 0.0;
       if (_positionController.value != target) {
-        _isMovingForward = widget.value;
-        if (widget.value) {
-          unawaited(_positionController.forward());
-        } else {
-          unawaited(_positionController.reverse());
-        }
+        _animatePositionTo(target);
       }
       if (_thicknessController.value > 0.0 &&
           !_thicknessController.isAnimating) {
@@ -311,6 +320,43 @@ class _GlassSwitchState extends State<GlassSwitch>
             _thicknessController.forward(from: _thicknessController.value));
       }
     }
+  }
+
+  void _animatePositionTo(double target, {bool fromDrag = false}) {
+    final distance = (target - _positionController.value).abs();
+    if (distance <= 0.001) {
+      _positionController.value = target;
+      return;
+    }
+    final durationMs = fromDrag
+        ? (240 * distance).round().clamp(120, 240)
+        : (300 * distance).round().clamp(180, 300);
+    unawaited(_positionController.animateTo(
+      target,
+      duration: Duration(milliseconds: durationMs),
+      curve: fromDrag ? Curves.easeOutCubic : Curves.ease,
+    ));
+  }
+
+  double get _currentOvershootPx {
+    if (_isDragging) return _dragOvershootPx;
+    if (_overshootController.isAnimating) {
+      final t = Curves.easeOutCubic.transform(_overshootController.value);
+      return _releaseOvershootStartPx * (1.0 - t);
+    }
+    return 0.0;
+  }
+
+  void _settleOvershoot() {
+    if (_dragOvershootPx.abs() <= 0.01) {
+      _dragOvershootPx = 0.0;
+      _releaseOvershootStartPx = 0.0;
+      _overshootController.value = 0.0;
+      return;
+    }
+    _releaseOvershootStartPx = _dragOvershootPx;
+    _dragOvershootPx = 0.0;
+    unawaited(_overshootController.forward(from: 0.0));
   }
 
   void _activateFromKeyboard() {
@@ -330,9 +376,9 @@ class _GlassSwitchState extends State<GlassSwitch>
 
   @override
   void dispose() {
-    _positionCurve.dispose();
     _positionController.dispose();
     _thicknessController.dispose();
+    _overshootController.dispose();
     _isHovered.dispose();
     _isFocused.dispose();
     super.dispose();
@@ -346,10 +392,22 @@ class _GlassSwitchState extends State<GlassSwitch>
   // Drag-to-toggle handlers
   // ---------------------------------------------------------------------------
 
+  /// Resting knob width ratio matching native iOS 26 & 27 `UISwitchModernVisualElement`
+  /// (`37.0 × 24.0 pt` knob inside `63.0 × 28.0 pt` track).
+  static const double _kNativeKnobAspect = 37.0 / 24.0;
+
+  /// Lifted liquid lens horizontal expansion ratio (`+21.0 pt` across both sides
+  /// at `24.0 pt` knob height -> `58.0 pt` lifted lens width).
+  static const double _kNativeLiftedWidthExpandRatio = 21.0 / 24.0;
+
+  /// Lifted liquid lens vertical expansion ratio per side (`+7.1667 pt` top & bottom
+  /// at `24.0 pt` knob height -> `38.33 pt` lifted lens height).
+  static const double _kNativeLiftedVerticalExpandRatio = 7.1667 / 24.0;
+
   /// Pixel travel distance from the left edge to right edge of the thumb runway.
   double get _thumbTravelDistance {
     final thumbSize = widget.height - 4.0;
-    final thumbWidth = thumbSize * 1.6;
+    final thumbWidth = thumbSize * _kNativeKnobAspect;
     return widget.width - thumbWidth - 4.0;
   }
 
@@ -357,17 +415,27 @@ class _GlassSwitchState extends State<GlassSwitch>
   // Gesture handlers
   // ---------------------------------------------------------------------------
 
-  void _onTapDown(TapDownDetails details) {
-    // Finger is down: start the bloom immediately for instant feedback.
+  void _startPressBloom() {
     if (_thicknessController.value >= 0.99) {
       _thicknessController.value = 0.0;
     }
     _dragAbandonedExternally = false;
+    _justEndedDrag = false;
     unawaited(_thicknessController.animateTo(
       0.45,
       duration: const Duration(milliseconds: 120),
       curve: Curves.easeOut,
     ));
+  }
+
+  void _onDragDown(DragDownDetails details) {
+    // Fires on frame 0 (without waiting for kPressTimeout) so the thumb blooms
+    // the instant the finger touches the switch.
+    _startPressBloom();
+  }
+
+  void _onTapDown(TapDownDetails details) {
+    _startPressBloom();
   }
 
   void _onTapUp(TapUpDetails details) {
@@ -381,21 +449,23 @@ class _GlassSwitchState extends State<GlassSwitch>
   }
 
   void _onTapCancel() {
-    // Finger moved away without a tap or drag completing.
-    if (!_isDragging) {
-      unawaited(_thicknessController.forward(from: _thicknessController.value));
-    }
+    // Do not deflate here if the finger is transitioning into a horizontal drag;
+    // _onDragCancel or _onDragEnd will handle deflation when the pointer lifts.
   }
 
   void _onDragStart(DragStartDetails details) {
     // Flutter has confirmed horizontal movement — commit to drag mode.
     _positionController.stop();
-    _dragStartX = details.localPosition.dx;
-    _dragStartPosition = _positionController.value;
+    final currentOvershoot = _currentOvershootPx;
+    _overshootController.stop();
+    _dragOvershootPx = currentOvershoot;
+    _dragVirtualPx =
+        (_positionController.value * _thumbTravelDistance) + _dragOvershootPx;
+    _dragTotalDistancePx = 0.0;
     _dragAbandonedExternally = false;
     setState(() => _isDragging = true);
 
-    // Stop any deflation that onTapCancel might have started
+    // Stop any deflation that might have started
     _thicknessController.stop();
 
     // Ensure bloom is at peak.
@@ -403,7 +473,7 @@ class _GlassSwitchState extends State<GlassSwitch>
       _thicknessController.value = 0.0;
     }
 
-    // If we're not at perfect plump (e.g., started deflating), animate back to 0.45
+    // If we're not at perfect plump (e.g., still inflating), animate to 0.45
     if ((_thicknessController.value - 0.45).abs() > 0.01) {
       unawaited(_thicknessController.animateTo(
         0.45,
@@ -420,18 +490,30 @@ class _GlassSwitchState extends State<GlassSwitch>
 
   void _onDragCancel() {
     setState(() => _isDragging = false);
+    _settleOvershoot();
     // Deflate bloom smoothly.
     unawaited(_thicknessController.forward(from: _thicknessController.value));
   }
 
   void _onDragUpdate(DragUpdateDetails details) {
     if (!_isDragging) return;
-    // Map finger position → track position (0.0 – 1.0) and push it directly
-    // into the controller so the AnimatedBuilder redraws this frame.
+    // Apply incremental frame delta linearly (1:1 finger tracking across the
+    // runway, plus native ±12 pt asymptotic rubber-band overhang past 0.0 and 1.0).
     final travel = _thumbTravelDistance;
-    final dragDelta = details.localPosition.dx - _dragStartX;
-    _positionController.value =
-        (_dragStartPosition + dragDelta / travel).clamp(0.0, 1.0);
+    final delta = details.primaryDelta ?? 0.0;
+    _dragTotalDistancePx += delta.abs();
+    _dragVirtualPx = (_dragVirtualPx + delta).clamp(-36.0, travel + 36.0);
+
+    if (_dragVirtualPx < 0.0) {
+      _positionController.value = 0.0;
+      _dragOvershootPx = _dragVirtualPx;
+    } else if (_dragVirtualPx > travel) {
+      _positionController.value = 1.0;
+      _dragOvershootPx = _dragVirtualPx - travel;
+    } else {
+      _positionController.value = _dragVirtualPx / travel;
+      _dragOvershootPx = 0.0;
+    }
 
     // Detect midpoint crossing and fire a single haptic tick.
     // iOS fires at the 50 % mark regardless of drag direction.
@@ -455,24 +537,39 @@ class _GlassSwitchState extends State<GlassSwitch>
     final position = _positionController.value;
     final velocity = details.primaryVelocity ?? 0.0;
 
+    // If the pointer barely moved after clearing the 3 px touchSlop (e.g. a tap
+    // with minor finger micro-movement), treat it as a tap toggle so taps never
+    // get swallowed by HorizontalDragGestureRecognizer.
+    if (_dragTotalDistancePx < 5.0 && velocity.abs() <= 200.0) {
+      setState(() => _isDragging = false);
+      _justEndedDrag = false;
+      _settleOvershoot();
+      if (widget.enableHaptics) unawaited(HapticFeedback.lightImpact());
+      unawaited(_thicknessController.forward(from: _thicknessController.value));
+      _handleTap();
+      _dragMidpointHapticFired = false;
+      return;
+    }
+
     // A fast flick (> 200 px/s) wins over position; otherwise snap at 50 %.
     final bool shouldBeOn =
         velocity.abs() > 200.0 ? velocity > 0 : position >= 0.5;
 
-    _isMovingForward = shouldBeOn;
     setState(() => _isDragging = false);
-    _justEndedDrag = true;
+    final bool valueChanging = shouldBeOn != widget.value;
+    // Only set _justEndedDrag when widget.onChanged will actually fire and
+    // trigger didUpdateWidget; otherwise a drag that snaps back to the starting
+    // side would leave _justEndedDrag stuck at true and suppress the liquid
+    // bloom on the next tap!
+    _justEndedDrag = valueChanging;
+    _settleOvershoot();
+
+    // Smoothly settle thumb toward the target state from the exact release point.
+    _animatePositionTo(shouldBeOn ? 1.0 : 0.0, fromDrag: true);
 
     // Notify parent only when the value actually changed.
-    if (shouldBeOn != widget.value) {
+    if (valueChanging) {
       widget.onChanged(shouldBeOn);
-    }
-
-    // Animate thumb to its resting position based on authoritative widget.value.
-    if (widget.value) {
-      unawaited(_positionController.forward());
-    } else {
-      unawaited(_positionController.reverse());
     }
 
     // Continue the settle bloom down to 0 so the landing feels weighty.
@@ -481,9 +578,7 @@ class _GlassSwitchState extends State<GlassSwitch>
     // Haptic on snap — only if the state is changing AND the midpoint
     // crossing haptic didn't already fire (avoids a double-tap feel on
     // slow deliberate drags that naturally crossed the midpoint).
-    if (widget.enableHaptics &&
-        !_dragMidpointHapticFired &&
-        shouldBeOn != widget.value) {
+    if (widget.enableHaptics && !_dragMidpointHapticFired && valueChanging) {
       unawaited(HapticFeedback.lightImpact());
     }
     _dragMidpointHapticFired = false;
@@ -495,22 +590,24 @@ class _GlassSwitchState extends State<GlassSwitch>
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
     );
 
     final thumbSize = widget.height - 4.0;
-    final thumbWidth = thumbSize * 1.6; // Match _buildThumb ratio
+    final thumbWidth = thumbSize * _kNativeKnobAspect;
     final trackWidth = widget.width;
-    // Fix: Use actual thumb width for travel distance calculation
-    final thumbTravelDistance = trackWidth - thumbWidth - 4.0;
 
     // Performance: Cache color calculations as const to avoid allocation
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
-    // Light mode: solid opaque grey matching native iOS switch track groove.
-    // Dark mode: semi-transparent white overlay for glass aesthetic.
+    // Matches native UISwitchModernVisualElement off-track fill on iOS 26 & 27:
+    // rgba(60, 60, 67, 0.30) in light mode, rgba(235, 235, 245, 0.30) in dark mode.
     final inactiveTrackColor = widget.inactiveColor ??
-        // Whitelisted: iOS-exact inactive track colours.
-        (isDark ? const Color(0x33FFFFFF) : const Color(0xFFC5C5C6));
-    final activeTrackColor = widget.activeColor ?? CupertinoColors.systemGreen;
+        (isDark ? const Color(0x4DEBEBF5) : const Color(0x4D3C3C43));
+    final activeTrackColor =
+        widget.activeColor ?? CupertinoColors.systemGreen.resolveFrom(context);
+
+    final baseMediaQuery =
+        MediaQuery.maybeOf(context) ?? const MediaQueryData();
 
     return GlassFocusRegion(
         enabled: true,
@@ -524,116 +621,126 @@ class _GlassSwitchState extends State<GlassSwitch>
         isFocusedNotifier: _isFocused,
         isHoveredNotifier: _isHovered,
         onKeyboardActivate: _activateFromKeyboard,
-        child: GestureDetector(
-          excludeFromSemantics: true,
-          // NOTE: We do NOT use onTap here. Having both onTap and onHorizontalDrag*
-          // on the same GestureDetector creates a gesture arena conflict — Flutter
-          // must choose one winner per touch, leading to missed interactions.
-          // Instead, we detect taps manually: onTapDown starts the bloom, onTapUp
-          // fires the toggle if no horizontal drag was confirmed.
-          onTapDown: _onTapDown,
-          onTapUp: _onTapUp,
-          onTapCancel: _onTapCancel,
-          onHorizontalDragCancel: _onDragCancel,
-          onHorizontalDragStart: _onDragStart,
-          onHorizontalDragUpdate: _onDragUpdate,
-          onHorizontalDragEnd: _onDragEnd,
-          // Performance: RepaintBoundary isolates switch animation from parent
-          child: RepaintBoundary(
-            child: AnimatedBuilder(
-              animation:
-                  Listenable.merge([_positionController, _thicknessController]),
-              builder: (context, child) {
-                final position = _positionAnimation.value;
-                final thickness = _thicknessAnimation.value;
-                // Tie squash directly to thickness so it doesn't fluctuate during drag
-                final scale = 1.0 - (thickness * 0.08);
+        child: MediaQuery(
+          // Use a responsive 3 px horizontal drag slop (instead of Flutter's
+          // default 18 px kTouchSlop, which is ~90% of the switch's 20 px
+          // runway!) so horizontal drags engage immediately like native UISwitch.
+          data: baseMediaQuery.copyWith(
+            gestureSettings: const DeviceGestureSettings(touchSlop: 3.0),
+          ),
+          child: GestureDetector(
+            excludeFromSemantics: true,
+            // NOTE: We do NOT use onTap here. Having both onTap and onHorizontalDrag*
+            // on the same GestureDetector creates a gesture arena conflict — Flutter
+            // must choose one winner per touch, leading to missed interactions.
+            // Instead, we detect taps manually: onTapDown starts the bloom, onTapUp
+            // fires the toggle if no horizontal drag was confirmed.
+            onTapDown: _onTapDown,
+            onTapUp: _onTapUp,
+            onTapCancel: _onTapCancel,
+            onHorizontalDragDown: _onDragDown,
+            onHorizontalDragCancel: _onDragCancel,
+            onHorizontalDragStart: _onDragStart,
+            onHorizontalDragUpdate: _onDragUpdate,
+            onHorizontalDragEnd: _onDragEnd,
+            // Performance: RepaintBoundary isolates switch animation from parent
+            child: RepaintBoundary(
+              child: AnimatedBuilder(
+                animation: Listenable.merge([
+                  _positionController,
+                  _thicknessController,
+                  _overshootController,
+                ]),
+                builder: (context, child) {
+                  final position = _positionController.value;
+                  final thickness = _thicknessAnimation.value;
 
-                // Build the track — plain Container driven entirely by `position`
-                // from the single AnimatedBuilder above. Using AnimatedContainer
-                // here previously caused a 200ms *second* animation to start after
-                // the rebuild, making the track go green late. Now everything is
-                // frame-locked to _positionAnimation.
-                //
-                // Color strategy:
-                //   0.0 = fully inactive (inactiveTrackColor, no glow)
-                //   1.0 = fully active   (activeTrackColor gradient, glow)
-                // We lerp smoothly using `position` as the blend factor.
-                final blendedColor =
-                    Color.lerp(inactiveTrackColor, activeTrackColor, position)!;
-                final specularTop =
-                    Color.lerp(activeTrackColor, CupertinoColors.white, 0.25)!;
+                  final blendedColor = Color.lerp(
+                      inactiveTrackColor, activeTrackColor, position)!;
 
-                final track = Container(
-                  width: trackWidth,
-                  height: widget.height,
-                  decoration: BoxDecoration(
-                    // Gradient blends in as position → 1: starts as a flat lerped
-                    // colour, gains the specular highlight progressively.
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Color.lerp(blendedColor, specularTop, position)!,
-                        blendedColor,
+                  final track = Container(
+                    width: trackWidth,
+                    height: widget.height,
+                    decoration: BoxDecoration(
+                      color: blendedColor,
+                      borderRadius: BorderRadius.circular(widget.height / 2),
+                    ),
+                  );
+
+                  // Calibrated iOS 27 UISwitchModernVisualElement lifted lens
+                  // geometry:
+                  // - Resting knob (63×28): (2.00, 2.00, 37.00, 24.00) -> ON (24.00, 2.00, 37.00, 24.00)
+                  // - Lifted lens (63×28): (-8.67, -5.33, 58.00, 38.33) -> ON (13.67, -5.33, 58.00, 38.33)
+                  final vExpand = thickness *
+                      (thumbSize * _kNativeLiftedVerticalExpandRatio);
+                  final leadStretch =
+                      thickness * (thumbSize * _kNativeLiftedWidthExpandRatio);
+
+                  // Native pressed inset shifts outward by 0.1667 pt on each side
+                  // when lifted (2.0 -> 1.8333 pt).
+                  final pressedInset = 2.0 - (0.1667 * thickness);
+                  final effectiveTravel =
+                      trackWidth - thumbWidth - (pressedInset * 2.0);
+                  final thumbOffset =
+                      pressedInset + (effectiveTravel * position);
+
+                  // Symmetric expansion around the knob center ensures true 1:1
+                  // finger tracking across the runway (no speed multiplication)
+                  // while delivering -8.67 pt left overhang at OFF and +8.67 pt
+                  // right overhang at ON.
+                  final double anchorOffset = leadStretch / 2.0;
+
+                  // Native UISwitchModernVisualElement ±12.0 pt asymptotic
+                  // rubber-band overhang when dragging past 0.0 (left) or 1.0 (right),
+                  // reaching ±15.6 pt total overhang at 30 pt over-drag.
+                  final double overshootPx = _currentOvershootPx;
+                  const double maxRubberBand = 12.0;
+                  final double rubberBandOffset = overshootPx == 0.0
+                      ? 0.0
+                      : overshootPx.sign *
+                          maxRubberBand *
+                          (1.0 -
+                              1.0 /
+                                  (1.0 +
+                                      0.55 *
+                                          (overshootPx.abs() / maxRubberBand)));
+
+                  // Native _UIFlexInteraction subtle horizontal stretch &
+                  // vertical squash during over-drag.
+                  final double flexStretch =
+                      (rubberBandOffset.abs() / maxRubberBand) *
+                          0.03 *
+                          thickness;
+                  final double flexScaleX = 1.0 + flexStretch;
+                  final double flexScaleY = 1.0 - flexStretch;
+
+                  final thumbLeft =
+                      thumbOffset - anchorOffset + rubberBandOffset;
+
+                  final thumb = Positioned(
+                    left: thumbLeft,
+                    top: pressedInset - vExpand,
+                    child: Transform.scale(
+                      scaleX: flexScaleX,
+                      scaleY: flexScaleY,
+                      child: _buildThumb(thumbSize, thickness, vExpand,
+                          leadStretch, anchorOffset, effectiveQuality, isDark),
+                    ),
+                  );
+
+                  return SizedBox(
+                    width: trackWidth,
+                    height: widget.height,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        track,
+                        thumb,
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(widget.height / 2),
-                    // Glow fades in smoothly from 0 → max alpha over full travel.
-                    // Kept subtle (0.35 max, 6dp blur) to avoid over-illumination.
-                    boxShadow: position > 0.01
-                        ? [
-                            BoxShadow(
-                              color: activeTrackColor.withValues(
-                                alpha: 0.35 * position,
-                              ),
-                              blurRadius: 6,
-                              spreadRadius: 0,
-                              offset: const Offset(0, 1),
-                            ),
-                          ]
-                        : null,
-                  ),
-                );
-
-                // Growth/Expansion offsets
-                final vExpand = thickness * 10.0;
-                final leadStretch = thickness * 16.0;
-
-                final thumbOffset = 2.0 + (thumbTravelDistance * position);
-
-                // Anchor logic:
-                // Dragging -> Symmetric stretch (anchor center)
-                // Jumping  -> Directional stretch (anchor left or right based on direction)
-                final double anchorOffset = _isDragging
-                    ? (leadStretch / 2.0)
-                    : (_isMovingForward ? 0.0 : leadStretch);
-
-                final thumbLeft = thumbOffset - anchorOffset;
-
-                final thumb = Positioned(
-                  left: thumbLeft,
-                  top: 2.0 - vExpand,
-                  child: Transform.scale(
-                    // Combined scale: Squash for jump + slight Grow for the liquid bloom
-                    scale: scale * (1.0 + thickness * 0.1),
-                    child: _buildThumb(thumbSize, thickness, scale, vExpand,
-                        leadStretch, anchorOffset, effectiveQuality, isDark),
-                  ),
-                );
-
-                return SizedBox(
-                  width: trackWidth,
-                  height: widget.height,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      track,
-                      thumb,
-                    ],
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
         ));
@@ -642,14 +749,12 @@ class _GlassSwitchState extends State<GlassSwitch>
   Widget _buildThumb(
       double size,
       double transition,
-      double scale,
       double vExpand,
       double leadStretch,
       double anchorOffset,
       GlassQuality? effectiveQuality,
       bool isDark) {
-    // iOS 26: Unified Material Melt with Directional Anchoring
-    final thumbWidth = size * 1.6;
+    final thumbWidth = size * _kNativeKnobAspect;
     final thumbHeight = size;
     final totalWidth = thumbWidth + leadStretch;
     final totalHeight = thumbHeight + vExpand * 2;
@@ -662,91 +767,154 @@ class _GlassSwitchState extends State<GlassSwitch>
     final isStdPath =
         (effectiveQuality ?? GlassQuality.standard) == GlassQuality.standard;
 
+    final materialOpacity = (1.0 - transition * 1.4).clamp(0.0, 1.0);
+    final thumbShadow = widget.thumbShadow ?? _defaultThumbShadow;
+    final shadowOpacity = (1.0 - transition) * materialOpacity;
+    // Matches native _UILiquidLensView's autoresize=W+H white fill layer
+    // (CALayer bg=UIExtendedGrayColorSpace 1 1), which spans the full morphing
+    // capsule bounds rather than leaving a small 37×24 pill floating inside the
+    // expanding 58×38.33 glass lens.
     final materialContent = Opacity(
-      opacity: (1.0 - transition * 1.2).clamp(0.0, 1.0),
+      opacity: materialOpacity,
       child: Container(
-        width: thumbWidth,
-        height: thumbHeight,
+        width: totalWidth,
+        height: totalHeight,
         decoration: BoxDecoration(
           color: widget.thumbColor.withValues(alpha: 1.0),
-          borderRadius: BorderRadius.circular(thumbHeight / 2),
-          boxShadow: [
-            BoxShadow(
-              color: _defaultThumbShadowColor.withValues(
-                  alpha: 0.2 * (1.0 - transition)),
-              blurRadius: 0,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(totalHeight / 2),
         ),
       ),
     );
 
-    return SizedBox(
-      width: totalWidth,
-      height: totalHeight,
-      child: GlassEffect(
-        shape: thumbShape,
-        // Standard: same rim/light math as AnimatedGlassIndicator pill.
-        //   rimThickness×0.35, lightIntensity×0.6 dampeners applied in GlassEffect.build().
-        // Premium: original values preserved exactly — no change to Premium rendering.
-        // Light mode: clear refractive glass with thicker body — visibility comes
-        //   from optical distortion and edge highlights, not body fill colour.
-        settings: LiquidGlassSettings(
-          glassColor: isDark
-              ? const Color.from(alpha: 0.08, red: 1, green: 1, blue: 1)
-              : const Color.from(
-                  alpha: 0.12, red: 0.88, green: 0.88, blue: 0.90),
+    final theme = GlassTheme.maybeOf(context)?.data;
+    final style = theme?.style ?? GlassStyle.ios27;
+    final thumbTint = isDark
+        ? const Color.from(alpha: 0.08, red: 1, green: 1, blue: 1)
+        : const Color.from(alpha: 0.12, red: 0.88, green: 0.88, blue: 0.90);
+    final eraBase = switch (style) {
+      GlassStyle.classic => LiquidGlassSettings(
+          glassColor: thumbTint,
           refractiveIndex: isDark ? 1.12 : 1.22,
           thickness: isDark ? 10 : 14,
-          lightIntensity: isStdPath
-              ? 0.0
-              : 2.0, // no specular on synthetic path (clamped by synthBase); premium unchanged
+          lightIntensity: isStdPath ? 0.0 : 2.0,
           blur: 0,
           lightAngle: GlassDefaults.lightAngle,
         ),
-        rimThickness: isStdPath
-            ? (isDark ? 0.5 : 0.7)
-            : 0.5, // slightly thicker rim in light mode
-        ambientRim: isStdPath
-            ? (isDark ? 0.08 : 0.15)
-            : 0.1, // stronger ambient ring in light mode
-        baseAlphaMultiplier: isStdPath
-            ? (isDark ? 0.0 : 0.04)
-            : 0.2, // near-clear body — refraction provides visibility
-        edgeAlphaMultiplier: isStdPath
-            ? (isDark ? 0.15 : 0.28)
-            : 0.4, // stronger edge contrast in light mode
-        quality: effectiveQuality ?? GlassQuality.standard,
-        interactionIntensity: transition,
-        child: Stack(
-          alignment: Alignment.center,
-          clipBehavior: Clip.none,
-          children: [
-            // Glass shell footprint
-            Positioned.fill(child: Container(color: const Color(0x00000000))),
+      GlassStyle.ios26 => LiquidGlassSettings.ios26Indicator.copyWith(
+          refractiveIndex: 1.38,
+          rimShade: 1.0,
+          rimShadeEnds: 0.56,
+          rimLight: 1.0,
+        ),
+      GlassStyle.ios27 => LiquidGlassSettings.ios27Indicator.copyWith(
+          refractiveIndex: 1.38,
+        ),
+    };
+    final themedThumbSettings =
+        theme?.indicatorSettingsFor(context)?.applyTo(eraBase) ?? eraBase;
+    final fade = transition.clamp(0.0, 1.0);
+    final stablePinchFade = 1.0 - (1.0 - fade) * (1.0 - fade);
+    final baseThumbSettings =
+        (widget.settings ?? themedThumbSettings).copyWith(blur: 0, frost: 0);
+    final useIos27Lens = baseThumbSettings.lensModel == GlassLensModel.paraxial;
+    final resolvedThumbSettings = useIos27Lens
+        ? baseThumbSettings.copyWithPinch(stablePinchFade)
+        : baseThumbSettings;
 
-            // Physical thumb position based on anchor
+    return SizedBox(
+      width: totalWidth,
+      height: totalHeight,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Paint outside GlassEffect's shape clip so the resting shadow is
+          // never clipped to the thumb silhouette.
+          if (thumbShadow.isNotEmpty)
             Positioned(
               left: anchorOffset,
-              child: materialContent,
-            ),
-
-            if (transition > 0.05)
-              Positioned(
-                left: anchorOffset,
-                child: Opacity(
-                  opacity: transition,
-                  child: GlassGlow(
-                    child: SizedBox(
-                      width: thumbWidth,
-                      height: thumbHeight,
-                    ),
+              top: vExpand,
+              child: SizedBox(
+                width: thumbWidth,
+                height: thumbHeight,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(thumbHeight / 2),
+                    boxShadow: [
+                      for (final shadow in thumbShadow)
+                        shadow.copyWith(
+                          color: shadow.color.withValues(
+                            alpha: shadow.color.a * shadowOpacity,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
-          ],
-        ),
+            ),
+          GlassEffect(
+            shape: thumbShape,
+            settings: resolvedThumbSettings,
+            rimThickness: isStdPath
+                ? (isDark ? 0.5 : 0.7)
+                : 0.5, // slightly thicker rim in light mode
+            ambientRim: isStdPath
+                ? (isDark ? 0.08 : 0.15)
+                : 0.1, // stronger ambient ring in light mode
+            baseAlphaMultiplier: isStdPath
+                ? (isDark ? 0.0 : 0.04)
+                : 0.2, // near-clear body — refraction provides visibility
+            edgeAlphaMultiplier: isStdPath
+                ? (isDark ? 0.15 : 0.28)
+                : 0.4, // stronger edge contrast in light mode
+            quality: effectiveQuality ?? GlassQuality.standard,
+            interactionIntensity: transition,
+            child: Stack(
+              alignment: Alignment.center,
+              clipBehavior: Clip.none,
+              children: [
+                // Glass shell footprint
+                Positioned.fill(
+                    child: Container(color: const Color(0x00000000))),
+
+                // Full-capsule morphing white fill (fades out as lens lifts)
+                Positioned.fill(
+                  child: materialContent,
+                ),
+
+                if (transition > 0.05)
+                  Positioned(
+                    left: anchorOffset,
+                    child: Opacity(
+                      opacity: transition,
+                      child: GlassGlow(
+                        glowColor: useIos27Lens
+                            ? const Color(0x00000000)
+                            : const Color(0x3DFFFFFF),
+                        child: SizedBox(
+                          width: thumbWidth,
+                          height: thumbHeight,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (!isStdPath && transition > 0.05)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: LensInnerShadowPainter(
+                    borderRadius: totalHeight / 2,
+                    opacity: transition,
+                    shadowOpacity: resolvedThumbSettings.rimShade > 0.0
+                        ? LensInnerShadowPainter.defaultShadowOpacity
+                        : LensInnerShadowPainter.classicShadowOpacity,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -13,7 +13,9 @@ import '../../../widgets/shared/glass_focus_region.dart';
 import '../../../constants/glass_defaults.dart';
 import '../../renderer/liquid_glass_renderer.dart';
 import '../../../theme/glass_theme.dart';
+import '../../../theme/glass_theme_settings.dart';
 import '../../../types/glass_quality.dart';
+import '../../../types/glass_style.dart';
 import '../../../utils/draggable_indicator_physics.dart';
 import 'tab_bar_drag_gesture_mixin.dart';
 import '../../../utils/glass_spring.dart';
@@ -32,29 +34,50 @@ import '../../../widgets/surfaces/glass_tab_bar.dart' show GlassTab;
 // kBottomBarGlassDefaults — shared glass preset
 // =============================================================================
 
-/// Default [LiquidGlassSettings] for both [GlassTabBar.bottom] and
+/// Classic `v1.x` default [LiquidGlassSettings] for both [GlassTabBar.bottom]
+/// and [GlassTabBar.searchable].
+///
+/// Alias for [LiquidGlassSettings.classicTabBar].
+const kBottomBarGlassDefaults = LiquidGlassSettings.classicTabBar;
+
+/// Resolves the default [LiquidGlassSettings] for [GlassTabBar.bottom] and
 /// [GlassTabBar.searchable].
 ///
-/// Centralised here so that both bars are guaranteed to produce visually
-/// identical glass when placed on the same screen — there is no risk of
-/// the two copies drifting apart during maintenance.
-///
-/// Values are tuned to the iOS 26 Apple News / Safari tab bar aesthetic:
-/// - `thickness: 30` — deep refraction without over-distorting icons.
-/// - `blur: 3` — subtle frosted back-blur.
-/// - `refractiveIndex: 1.59` — polycarbonate-grade refraction.
-/// - `lightAngle: 0.75π` (135°) — Apple standard upper-left key light.
-const kBottomBarGlassDefaults = LiquidGlassSettings(
-  thickness: 30,
-  blur: 3,
-  chromaticAberration: 0.3,
-  lightIntensity: 0.6,
-  refractiveIndex: 1.59,
-  saturation: 0.7,
-  ambientStrength: 1,
-  lightAngle: 0.75 * math.pi,
-  glassColor: Color(0x3DFFFFFF),
-);
+/// Follows the merge cascade:
+/// 1. Explicit widget [settings] (highest priority)
+/// 2. Ambient [GlassTheme] partial override (field delta from the active
+///    [GlassStyle]'s surface variant) applied onto the active [GlassStyle]
+///    tab-bar platter preset ([LiquidGlassSettings.classicTabBar] for
+///    [GlassStyle.classic]; [LiquidGlassSettings.ios27Light] /
+///    [LiquidGlassSettings.ios27Dark] for [GlassStyle.ios27])
+/// 3. Built-in tab-bar platter preset for the active [GlassStyle]
+LiquidGlassSettings resolveBarGlassSettings(
+  BuildContext context,
+  LiquidGlassSettings? explicit,
+) {
+  if (explicit != null) return explicit;
+  final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
+  final theme = GlassTheme.maybeOf(context)?.data;
+  final style = theme?.style ?? GlassStyle.ios27;
+  final base = switch (style) {
+    GlassStyle.classic => kBottomBarGlassDefaults,
+    GlassStyle.ios26 =>
+      isDark ? LiquidGlassSettings.ios26Dark : LiquidGlassSettings.ios26Light,
+    GlassStyle.ios27 =>
+      isDark ? LiquidGlassSettings.ios27Dark : LiquidGlassSettings.ios27Light,
+  };
+  final themeOverride = theme?.settingsFor(context);
+  if (themeOverride == null) return base;
+  final surfaceBaseline = switch (style) {
+    GlassStyle.classic =>
+      isDark ? GlassThemeSettings.classicDark : GlassThemeSettings.classicLight,
+    GlassStyle.ios26 =>
+      isDark ? GlassThemeSettings.ios26Dark : GlassThemeSettings.ios26Light,
+    GlassStyle.ios27 =>
+      isDark ? GlassThemeSettings.ios27Dark : GlassThemeSettings.ios27Light,
+  };
+  return themeOverride.applyDeltaTo(base, surfaceBaseline);
+}
 
 // =============================================================================
 // resolveBarLabelColor — shared icon/label color resolution

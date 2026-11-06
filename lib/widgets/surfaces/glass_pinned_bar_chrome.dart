@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/widgets/surfaces/vertical_bar_title_row.dart';
+import '../../theme/glass_theme_helpers.dart';
 import '../interactive/glass_button.dart';
 import '../interactive/glass_button_group.dart';
 import '../overlays/glass_modal_sheet.dart';
@@ -590,9 +591,10 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
           final tintColor =
               group.items.length == 1 ? group.items.first.tintColor : null;
           final groupSettings = tintColor != null
-              ? (DefaultButtonSettings.of(context) ??
-                      const LiquidGlassSettings())
-                  .copyWith(
+              ? GlassThemeHelpers.resolveSettings(
+                  context,
+                  explicit: DefaultButtonSettings.of(context),
+                ).copyWith(
                   glassColor: tintColor,
                   bodyMode: GlassBodyMode.clear,
                 )

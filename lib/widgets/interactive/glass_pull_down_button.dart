@@ -4,7 +4,9 @@ import '../../types/glass_quality.dart';
 import '../overlays/glass_menu.dart';
 import '../overlays/glass_menu_item.dart';
 import 'glass_button.dart';
+import '../../theme/glass_theme.dart';
 import '../../theme/glass_theme_helpers.dart';
+import '../../src/engine/liquid_glass_settings.dart';
 import '../../src/engine/liquid_shape.dart';
 
 /// A toolbar button that opens a liquid glass pull-down menu.
@@ -24,6 +26,7 @@ class GlassPullDownButton extends StatelessWidget {
     this.buttonShape,
     this.menuWidth = 200,
     this.menuAlignment,
+    this.settings,
     this.quality,
     this.onSelected,
     this.enableContinuousSwipe = true,
@@ -79,6 +82,9 @@ class GlassPullDownButton extends StatelessWidget {
   /// alignment based on the trigger's position on screen.
   final GlassMenuAlignment? menuAlignment;
 
+  /// Glass material settings for the trigger button and menu platter.
+  final LiquidGlassSettings? settings;
+
   /// Quality of the glass effect.
   final GlassQuality? quality;
 
@@ -113,24 +119,37 @@ class GlassPullDownButton extends StatelessWidget {
       widgetQuality: quality,
     );
 
-    final effectiveTextColor =
-        CupertinoTheme.of(context).textTheme.textStyle.color ??
-            CupertinoColors.label;
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
+    final effectiveTextColor = CupertinoDynamicColor.resolve(
+      CupertinoTheme.of(context).textTheme.textStyle.color ??
+          (isDark ? CupertinoColors.white : CupertinoColors.black),
+      context,
+    );
 
     return GlassMenu(
       menuWidth: menuWidth,
       menuAlignment: menuAlignment,
       autoAdjustToScreen: true,
+      settings: settings,
       quality: effectiveQuality,
       enableContinuousSwipe: enableContinuousSwipe,
       continuousSwipeSlop: continuousSwipeSlop,
       triggerBuilder: (context, toggleMenu) {
         if (label != null && label!.isNotEmpty) {
+          final defaultShape = buttonWidth == buttonHeight
+              ? const LiquidOval()
+              : LiquidRoundedSuperellipse(
+                  borderRadius: (buttonWidth < buttonHeight
+                          ? buttonWidth
+                          : buttonHeight) /
+                      2,
+                );
           return GlassButton.custom(
             onTap: toggleMenu,
             width: buttonWidth,
             height: buttonHeight,
-            shape: buttonShape ?? const LiquidOval(),
+            shape: buttonShape ?? defaultShape,
+            settings: settings,
             quality: effectiveQuality,
             useOwnLayer: effectiveQuality == GlassQuality.premium,
             child: Row(
@@ -162,6 +181,7 @@ class GlassPullDownButton extends StatelessWidget {
           width: buttonWidth,
           height: buttonHeight,
           shape: buttonShape ?? const LiquidOval(),
+          settings: settings,
           quality: effectiveQuality,
           useOwnLayer: effectiveQuality == GlassQuality.premium,
         );

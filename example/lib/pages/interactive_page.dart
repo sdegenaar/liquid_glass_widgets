@@ -36,7 +36,6 @@ class _InteractivePageState extends State<InteractivePage> {
   Widget build(BuildContext context) {
     return GlassPage(
       background: const ShowcaseBackground(),
-      settings: RecommendedGlassSettings.standard,
       statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark
           ? GlassStatusBarStyle.light
           : GlassStatusBarStyle.dark,
@@ -322,6 +321,7 @@ class _InteractivePageState extends State<InteractivePage> {
                         ],
                         selectedIndex: _segment1,
                         onSegmentSelected: (i) => setState(() => _segment1 = i),
+                        quality: GlassQuality.standard,
                       ),
                       SizedBox(height: 24),
                       GlassSegmentedControl(
@@ -465,6 +465,7 @@ class _InteractivePageState extends State<InteractivePage> {
                       GlassSlider(
                         value: _slider1,
                         onChanged: (v) => setState(() => _slider1 = v),
+                        quality: GlassQuality.standard,
                       ),
                       SizedBox(height: 24),
                       GlassSlider(
@@ -1101,6 +1102,7 @@ class _SwitchComparisonRow extends StatelessWidget {
         GlassSwitch(
           value: value,
           onChanged: onChanged,
+          quality: GlassQuality.standard,
         ),
       ],
     );

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../theme/glass_theme.dart';
+import '../../theme/glass_theme_helpers.dart';
 import '../../types/glass_quality.dart';
 import '../shared/adaptive_glass.dart';
 import '../shared/glass_focus_region.dart';
@@ -251,8 +252,14 @@ class _GlassStepperState extends State<GlassStepper> {
           shape: LiquidRoundedRectangle(
             borderRadius: widget.height / 2,
           ),
-          settings: widget.settings ?? const LiquidGlassSettings(),
-          quality: widget.quality ?? GlassQuality.standard,
+          settings: GlassThemeHelpers.resolveSettings(
+            context,
+            explicit: widget.settings,
+          ),
+          quality: GlassThemeHelpers.resolveQuality(
+            context,
+            widgetQuality: widget.quality,
+          ),
           child: ClipRRect(
             borderRadius: borderRadius,
             child: Row(

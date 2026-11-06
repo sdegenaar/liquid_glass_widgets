@@ -30,7 +30,7 @@ import 'tab_bar_bottom_internal.dart'
     show
         BottomBarExtraBtn,
         BottomBarTabItem,
-        kBottomBarGlassDefaults,
+        resolveBarGlassSettings,
         resolveBarLabelColor;
 import '../../../widgets/surfaces/shared/glass_search_bar_config.dart';
 import '../../../widgets/surfaces/shared/tab_bar_searchable_controller.dart';
@@ -226,8 +226,6 @@ class TabBarSearchableLayout extends StatefulWidget {
 
 class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
     with TickerProviderStateMixin {
-  static const _defaultGlassSettings = kBottomBarGlassDefaults;
-
   late SearchableBottomBarController _controller;
   bool _ownsController = false;
 
@@ -510,8 +508,10 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
     final effectiveGlowOpacity = resolvedGlowColors.glowOpacity;
 
     final bool isLight = GlassTheme.brightnessOf(context) == Brightness.light;
-    final effectiveSettings =
-        _applyWhiten(widget.settings ?? _defaultGlassSettings, isLight);
+    final effectiveSettings = _applyWhiten(
+      resolveBarGlassSettings(context, widget.settings),
+      isLight,
+    );
     final searching = widget.isSearchActive;
 
     // RTL support.
@@ -1229,6 +1229,13 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
     );
   }
 
+  static double _tabProximityScale(double pillTabIndex, int i, double scale) {
+    final dist = (pillTabIndex - i).abs();
+    final t = 1.0 - ((dist - 0.52) / 0.36).clamp(0.0, 1.0);
+    final proximity = t * t * (3.0 - 2.0 * t);
+    return ui.lerpDouble(1.0, scale, proximity) ?? 1.0;
+  }
+
   Widget _buildTabRow({
     required List<GlassTab> tabs,
     required int selectedIndex,
@@ -1244,6 +1251,9 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
       final currentTabFloat = ((alignment.x + 1) / 2) * tabs.length;
       final aStart = (currentTabFloat - 1).floor().clamp(0, tabs.length - 1);
       final aEnd = (currentTabFloat + 1).ceil().clamp(0, tabs.length - 1);
+      final pillTabIndex = tabs.length <= 1
+          ? 0.0
+          : ((alignment.x + 1.0) * 0.5) * (tabs.length - 1);
 
       return ExcludeSemantics(
         child: _ltrTabRow(
@@ -1252,7 +1262,7 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
               Expanded(
                 child: (i >= aStart && i <= aEnd)
                     ? Transform.scale(
-                        scale: scale,
+                        scale: _tabProximityScale(pillTabIndex, i, scale),
                         child: BottomBarTabItem(
                           tab: tabs[i],
                           selected: true,

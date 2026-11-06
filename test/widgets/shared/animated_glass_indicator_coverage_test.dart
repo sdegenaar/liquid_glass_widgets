@@ -12,6 +12,7 @@
 //   - exactWidth + exactOffset pixel-precise positioning.
 //   - baseIndicatorSettings public constant inspection.
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -535,6 +536,117 @@ void main() {
       await tester.pump();
       final glass = tester.widget<GlassEffect>(find.byType(GlassEffect).first);
       expect(glass.settings.effectiveBlur, 0.0);
+    });
+
+    testWidgets(
+        'paraxial lens fields in settings override base and vertical direction jelly works',
+        (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const AnimatedGlassIndicator(
+            velocity: 180.0,
+            itemCount: 3,
+            alignment: Alignment.center,
+            thickness: 0.6,
+            quality: GlassQuality.standard,
+            indicatorColor: Colors.blue,
+            isBackgroundIndicator: false,
+            borderRadius: 20.0,
+            direction: Axis.vertical,
+            settings: LiquidGlassSettings(
+              rimShade: 0.4,
+              rimShadeEnds: 0.3,
+              rimLight: 0.9,
+              bodyShade: 0.1,
+              lensModel: GlassLensModel.paraxial,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      final glass = tester.widget<GlassEffect>(find.byType(GlassEffect).first);
+      expect(glass.settings.rimShade, 0.4);
+      expect(glass.settings.rimShadeEnds, 0.3);
+      expect(glass.settings.rimLight, 0.9);
+      expect(glass.settings.bodyShade, 0.1);
+      expect(glass.settings.lensModel, GlassLensModel.paraxial);
+    });
+
+    testWidgets(
+        'resting selection pill painter covers ios26 dark plusL and shouldRepaint branches',
+        (tester) async {
+      Widget buildPill({
+        required GlassThemeData theme,
+        required double borderRadius,
+        required double thickness,
+      }) {
+        return createTestApp(
+          child: GlassTheme(
+            data: theme,
+            child: SizedBox(
+              width: 400,
+              height: 80,
+              child: Stack(
+                children: [
+                  AnimatedGlassIndicator(
+                    velocity: 0.0,
+                    itemCount: 3,
+                    alignment: Alignment.center,
+                    thickness: thickness,
+                    quality: GlassQuality.standard,
+                    indicatorColor: CupertinoColors.white.withValues(alpha: .1),
+                    isBackgroundIndicator: true,
+                    borderRadius: borderRadius,
+                    paintBackground: true,
+                    paintGlass: false,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+
+      // 1. iOS 26 dark mode -> exercises isDark && isIos26 (plusL) branch.
+      await tester.pumpWidget(buildPill(
+        theme: const GlassThemeData.ios26(brightness: Brightness.dark),
+        borderRadius: 20.0,
+        thickness: 0.0,
+      ));
+      await tester.pump();
+
+      // 2. Change borderRadius -> exercises shouldRepaint borderRadius branch.
+      await tester.pumpWidget(buildPill(
+        theme: const GlassThemeData.ios26(brightness: Brightness.dark),
+        borderRadius: 24.0,
+        thickness: 0.0,
+      ));
+      await tester.pump();
+
+      // 3. Change thickness -> exercises shouldRepaint opacity branch.
+      await tester.pumpWidget(buildPill(
+        theme: const GlassThemeData.ios26(brightness: Brightness.dark),
+        borderRadius: 24.0,
+        thickness: 0.05,
+      ));
+      await tester.pump();
+
+      // 4. Switch to iOS 27 dark -> exercises shouldRepaint isIos26 branch.
+      await tester.pumpWidget(buildPill(
+        theme: const GlassThemeData.ios27(brightness: Brightness.dark),
+        borderRadius: 24.0,
+        thickness: 0.05,
+      ));
+      await tester.pump();
+
+      // 5. Switch to iOS 27 light -> exercises shouldRepaint isDark branch.
+      await tester.pumpWidget(buildPill(
+        theme: const GlassThemeData.ios27(brightness: Brightness.light),
+        borderRadius: 24.0,
+        thickness: 0.05,
+      ));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
     });
   });
 }

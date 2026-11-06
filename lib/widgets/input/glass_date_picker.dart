@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
 import '../../src/renderer/liquid_glass_renderer.dart';
+import '../../theme/glass_theme.dart';
 import '../../types/glass_quality.dart';
 import '../../types/glass_surface_style.dart';
 import '../containers/glass_container.dart';
@@ -527,6 +528,9 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
     PageController popoverPageController = PageController(
       initialPage: _monthToPage(_displayedMonth),
     );
+    final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
+    final capturedCupertinoTheme = CupertinoTheme.of(context);
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
 
     showGeneralDialog<void>(
       context: context,
@@ -547,8 +551,6 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
         );
       },
       pageBuilder: (modalContext, _, __) {
-        final isDark =
-            CupertinoTheme.brightnessOf(modalContext) == Brightness.dark;
         final platterColor =
             isDark ? const Color(0xE0252528) : const Color(0xECF9F9FB);
         final platterCapColor =
@@ -556,7 +558,7 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
         final borderColor =
             isDark ? const Color(0x2EFFFFFF) : const Color(0x18000000);
 
-        return _OnDispose(
+        Widget popover = _OnDispose(
           onDispose: () => popoverPageController.dispose(),
           child: Stack(
             children: [
@@ -726,6 +728,17 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
             ],
           ),
         );
+        popover = CupertinoTheme(
+          data: capturedCupertinoTheme,
+          child: popover,
+        );
+        if (capturedGlassTheme != null) {
+          popover = GlassTheme(
+            data: capturedGlassTheme,
+            child: popover,
+          );
+        }
+        return popover;
       },
     ).whenComplete(() {
       if (mounted) {
@@ -1153,7 +1166,7 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
     required VoidCallback onIncrement,
     required VoidCallback onDecrement,
   }) {
-    final isDark = CupertinoTheme.brightnessOf(context) == Brightness.dark;
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     final pillBg = isDark
         ? CupertinoColors.systemGrey6.darkColor.withValues(alpha: 0.8)
         : CupertinoColors.systemGrey5.color.withValues(alpha: 0.8);
@@ -1662,11 +1675,13 @@ Future<DateTime?> showGlassDatePicker({
   GlassSurfaceStyle surfaceStyle = GlassSurfaceStyle.glass,
 }) async {
   DateTime selected = initialDateTime ?? DateTime.now();
+  final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
+  final capturedCupertinoTheme = CupertinoTheme.of(context);
 
   final result = await showCupertinoModalPopup<DateTime>(
     context: context,
     builder: (modalContext) {
-      return Container(
+      Widget sheet = Container(
         padding: const EdgeInsets.all(16),
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
         decoration: BoxDecoration(
@@ -1732,6 +1747,17 @@ Future<DateTime?> showGlassDatePicker({
           ],
         ),
       );
+      sheet = CupertinoTheme(
+        data: capturedCupertinoTheme,
+        child: sheet,
+      );
+      if (capturedGlassTheme != null) {
+        sheet = GlassTheme(
+          data: capturedGlassTheme,
+          child: sheet,
+        );
+      }
+      return sheet;
     },
   );
 

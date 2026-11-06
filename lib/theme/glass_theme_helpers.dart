@@ -4,11 +4,13 @@ import 'package:flutter/widgets.dart';
 import '../liquid_glass_setup.dart';
 import '../src/renderer/liquid_glass_renderer.dart';
 import '../types/glass_quality.dart';
+import '../types/glass_style.dart';
 import '../widgets/shared/glass_adaptive_scope.dart';
 import '../widgets/shared/glass_isolation_scope.dart';
 import '../widgets/shared/inherited_liquid_glass.dart';
 import 'glass_theme.dart';
 import 'glass_theme_data.dart';
+import 'glass_theme_settings.dart';
 
 /// Helper functions for working with Glass Theme.
 class GlassThemeHelpers {
@@ -22,6 +24,24 @@ class GlassThemeHelpers {
     final theme = context.dependOnInheritedWidgetOfExactType<GlassTheme>();
     return theme?.data ?? GlassThemeData.fallback();
   }
+
+  /// Resolves the active [GlassStyle] preset from the nearest [GlassTheme]
+  /// ancestor, defaulting to [GlassThemeData.fallback]'s style.
+  static GlassStyle resolveStyle(BuildContext context) => of(context).style;
+
+  /// The widget-class default quality for hero surfaces (transient overlays and
+  /// interactive lifted lenses): [GlassQuality.premium] on the native
+  /// [GlassStyle.ios27] / [GlassStyle.ios26] styles, whose paraxial lens, frost
+  /// and rim light only exist in the full shader, and [GlassQuality.standard]
+  /// on [GlassStyle.classic], which keeps its v1.x rendering.
+  ///
+  /// Pass it as the `fallback` of [resolveQuality]. Every explicit quality
+  /// (widget, ambient layer, theme) and the [GlassAdaptiveScope] ceiling still
+  /// take precedence.
+  static GlassQuality nativeStyleQuality(BuildContext context) =>
+      resolveStyle(context) == GlassStyle.classic
+          ? GlassQuality.standard
+          : GlassQuality.premium;
 
   /// Resolves the effective [GlassQuality] for a widget.
   ///
@@ -125,14 +145,13 @@ class GlassThemeHelpers {
   ///
   /// | Widget class | Default quality | Rationale |
   /// |---|---|---|
-  /// | [GlassTabBar.bottom] | `premium` | Static footer — full quality expected |
-  /// | [GlassToolbar] | `premium` | Static surface |
-  /// | [GlassTabBar] | `standard` | May be in a scrollable context |
-  /// | [GlassButton] | `standard` | Interactive, potentially many on screen |
-  /// | [GlassTextField] | `standard` | Interactive |
-  /// | [GlassSlider] | `standard` | Animated during interaction |
-  /// | [GlassDialog] | `standard` | Overlay |
-  /// | [GlassSheet] | `standard` | Overlay |
+  /// | [GlassTabBar] / [GlassToolbar] | `premium` | Navigation & toolbar chrome |
+  /// | [GlassSheet] / [GlassModalSheet] | `premium` | Modal sheet platter |
+  /// | [GlassDialog] / [showGlassActionSheet] | `premium` | Alert & action sheet platter |
+  /// | [GlassMenu] / [GlassContextMenu] / [GlassPopover] / [GlassToast] | `premium` | Transient floating overlay |
+  /// | [GlassSwitch] / [GlassSlider] / [GlassSegmentedControl] | `premium` | Hero lifted liquid lens (lazy-mounted on interaction) |
+  /// | [GlassButton] | `standard` (`premium` in bars / `bodyOverlays`) | Interactive, potentially many in scroll views |
+  /// | [GlassTextField] | `standard` | Interactive form input |
   /// | [GlassContainer] | `standard` | General purpose container |
   ///
   /// Widgets pass their own default as the [fallback] parameter when calling
@@ -195,7 +214,10 @@ class GlassThemeHelpers {
     if (!GlassIsolationScope.isIsolated(context) && scopeDefault == null) {
       final inherited =
           context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
-      if (inherited != null) resolved = inherited.quality;
+      if (inherited != null &&
+          (inherited.hasExplicitQuality || fallback == GlassQuality.standard)) {
+        resolved = inherited.quality;
+      }
     }
 
     // Step 3: cap inherited quality by adaptive ceiling.
@@ -265,13 +287,22 @@ class GlassThemeHelpers {
     BuildContext context, {
     LiquidGlassSettings? explicit,
     LiquidGlassSettings fallback = const LiquidGlassSettings(),
+    bool isOverlayPlatter = false,
   }) {
     // 1. Widget-level explicit setting wins unconditionally.
     if (explicit != null) return explicit;
 
     // 2. Inherited settings from the nearest AdaptiveLiquidGlassLayer.
+    //    When the ancestor layer had no explicit `settings:` of its own and
+    //    only synthesized default theme settings, let widgets with a dedicated
+    //    per-widget fallback (e.g. GlassMenu, GlassSheet) resolve via Step 4
+    //    so their per-widget classic optics are preserved inside GlassScaffold.
     final inherited = InheritedLiquidGlass.of(context);
-    if (inherited != null) return inherited;
+    if (inherited != null &&
+        (InheritedLiquidGlass.hasExplicitSettingsOf(context) ||
+            (fallback == const LiquidGlassSettings() && !isOverlayPlatter))) {
+      return inherited;
+    }
 
     // 3. App-level global override (set via LiquidGlassWidgets.globalSettings).
     if (LiquidGlassWidgets.globalSettings != null) {
@@ -282,8 +313,43 @@ class GlassThemeHelpers {
     //    provided anywhere.  Mirrors the logic in AdaptiveLiquidGlassLayer:
     //    start from the zero-alpha default, then overlay any non-null fields
     //    from the theme's brightness-appropriate variant.
-    final themeOverride = GlassThemeData.of(context).settingsFor(context);
-    return themeOverride?.applyTo(fallback) ?? fallback;
+    //    When [GlassStyle.classic] is active and the caller supplies a
+    //    dedicated widget fallback (e.g. [kDefaultSheetSettings] or
+    //    `kDefaultMenuSettings`), apply only custom theme deltas from the
+    //    classic surface baseline so widget-specific classic optics (such as
+    //    sheet `refractiveIndex: 0.15`) are preserved.
+    final themeData = GlassThemeData.of(context);
+    final themeOverride = themeData.settingsFor(context);
+    if (themeOverride == null) return fallback;
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
+    if (themeData.style == GlassStyle.classic &&
+        fallback != const LiquidGlassSettings()) {
+      final classicBaseline = isDark
+          ? GlassThemeSettings.classicDark
+          : GlassThemeSettings.classicLight;
+      return themeOverride.applyDeltaTo(fallback, classicBaseline);
+    }
+    final resolved = themeOverride.applyTo(fallback);
+    if (isOverlayPlatter &&
+        themeData.style != GlassStyle.classic &&
+        resolved.frost > 0) {
+      final surfaceBaseline = themeData.style == GlassStyle.ios27
+          ? (isDark
+              ? GlassThemeSettings.ios27Dark
+              : GlassThemeSettings.ios27Light)
+          : (isDark
+              ? GlassThemeSettings.ios26Dark
+              : GlassThemeSettings.ios26Light);
+      // Native iOS 26 / iOS 27 floating overlay platters (_UIContextMenuPlatterView
+      // and _UISheetPresentationController) use the full 14pt frosted cloud
+      // (`frostOpacity: 1.0`) so sharp background text does not ghost through
+      // behind dense menu or sheet text. Preserve any custom frostOpacity set
+      // by the user on the active GlassThemeVariant.
+      if (themeOverride.frostOpacity == surfaceBaseline.frostOpacity) {
+        return resolved.copyWith(frostOpacity: 1.0);
+      }
+    }
+    return resolved;
   }
 
   /// Resolves an adaptive border radius based on the device's physical geometry.
@@ -313,11 +379,11 @@ class GlassThemeHelpers {
     if (bottom == 0) return 0.0;
 
     if (isIOS) {
-      // 2. iPhone Pro Max / Plus with Dynamic Island (e.g. 15 Pro Max: height 932)
-      // Height is the most reliable indicator; top padding can fluctuate.
-      if (height >= 900) return 54.0;
+      // 2. iPhone 16/17/18 Pro (height 874) and Pro Max / Plus (height >= 900)
+      // have 62pt display bezel corners → 54pt concentric sheet bottom radius.
+      if (height >= 870) return 54.0;
 
-      // 3. iPhone Pro / Base with Dynamic Island (e.g. 15 Pro: height 852)
+      // 3. iPhone 14/15 Pro / Base with Dynamic Island (height 852)
       if (height >= 800 || top >= 54) return 46.0;
 
       // 4. iPhone with Notch (typically top padding between 44 and 50)

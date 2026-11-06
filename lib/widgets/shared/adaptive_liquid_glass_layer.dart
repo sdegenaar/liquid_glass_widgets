@@ -153,6 +153,8 @@ class _AdaptiveLiquidGlassLayerState extends State<AdaptiveLiquidGlassLayer> {
           settings: effectiveSettings,
           quality: effectiveQuality,
           isBlurProvidedByAncestor: false,
+          hasExplicitSettings: widget.settings != null,
+          hasExplicitQuality: widget.quality != null,
           child: KeyedSubtree(key: _contentKey, child: widget.child),
         ),
       );
@@ -185,6 +187,8 @@ class _AdaptiveLiquidGlassLayerState extends State<AdaptiveLiquidGlassLayer> {
             quality: effectiveQuality,
             isBlurProvidedByAncestor:
                 false, // Root never provides the blur; containers do.
+            hasExplicitSettings: widget.settings != null,
+            hasExplicitQuality: widget.quality != null,
             child: useFullRenderer
                 ? LiquidGlassBlendGroup(
                     blend: widget.blendAmount,

@@ -466,7 +466,10 @@ class GlassSegmentedControl extends StatefulWidget {
 
   /// Rendering quality for the glass effect.
   ///
-  /// Defaults to [GlassQuality.standard] (backdrop filter).
+  /// Defaults to [GlassQuality.premium] on [GlassStyle.ios27] / [GlassStyle.ios26]
+  /// ([GlassStyle.classic] keeps [GlassQuality.standard]), which renders the
+  /// calibrated 3D paraxial liquid lens while the indicator is pressed or
+  /// dragged (and mounts zero shader layers at rest).
   final GlassQuality? quality;
 
   /// Optional background key for Skia/Web refraction.
@@ -586,26 +589,32 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
     super.dispose();
   }
 
-  // Default background colors — match GlassTabBar._buildInline() exactly.
-  static const _defaultLightBg = Color(0x1F000000); // black12
-  static const _defaultDarkBg = Color(0x1FFFFFFF); // white12
+  // Default track background colors — match native UISegmentedControl on
+  // iOS 26 and iOS 27 (CupertinoColors.tertiarySystemFill: rgba(120,120,128,0.12)
+  // in light mode, rgba(120,120,128,0.24) in dark mode).
+  static const _defaultLightBg = Color(0x1F787880);
+  static const _defaultDarkBg = Color(0x3D787880);
 
   @override
   Widget build(BuildContext context) {
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
     );
 
-    final effectiveSettings = widget.settings ??
-        const LiquidGlassSettings(
-          thickness: GlassDefaults.thickness,
-          blur: GlassDefaults.blur,
-          chromaticAberration: GlassDefaults.chromaticAberration,
-          lightIntensity: GlassDefaults.lightIntensity,
-          refractiveIndex: GlassDefaults.refractiveIndex,
-          lightAngle: GlassDefaults.lightAngle,
-        );
+    final effectiveSettings = GlassThemeHelpers.resolveSettings(
+      context,
+      explicit: widget.settings,
+      fallback: const LiquidGlassSettings(
+        thickness: GlassDefaults.thickness,
+        blur: GlassDefaults.blur,
+        chromaticAberration: GlassDefaults.chromaticAberration,
+        lightIntensity: GlassDefaults.lightIntensity,
+        refractiveIndex: GlassDefaults.refractiveIndex,
+        lightAngle: GlassDefaults.lightAngle,
+      ),
+    );
 
     // ── Scrollable mode: 100% mirrors GlassTabBar(isScrollable: true) ────────
     if (widget.isScrollable) {
@@ -662,8 +671,8 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
     // ── Fixed mode: equal-width SegmentedControlContent ───────────────────────
     final backgroundColor = widget.backgroundColor ??
         (GlassTheme.brightnessOf(context) == Brightness.light
-            ? CupertinoColors.black.withValues(alpha: 0.08)
-            : CupertinoColors.white.withValues(alpha: 0.12));
+            ? _defaultLightBg
+            : _defaultDarkBg);
 
     // SizedBox sets the height without clipping. DecoratedBox paints the
     // background without enforcing a clip — jelly expansion can overflow freely.

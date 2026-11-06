@@ -203,8 +203,9 @@ void main() {
     test('lerping the built-in light and dark variants is well-formed', () {
       final mid = GlassThemeVariant.lerp(
           GlassThemeVariant.light, GlassThemeVariant.dark, 0.5);
-      expect(mid.settings!.thickness, closeTo(11.0, 1e-9));
-      expect(mid.settings!.blur, closeTo(4.5, 1e-9));
+      expect(mid.settings!.thickness, closeTo(32.0, 1e-9));
+      expect(mid.settings!.blur, closeTo(0.6, 1e-9));
+      expect(mid.settings!.saturation, closeTo(1.75, 1e-9));
       expect(mid.quality, isNull);
       expect(mid.glowColors, isNotNull);
       // Endpoints reproduce the variants' settings exactly.

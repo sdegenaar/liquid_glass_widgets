@@ -2750,8 +2750,10 @@ class _PinnedGroupState extends State<_PinnedGroup> {
     // The tint replaces the body colour only: it starts from the bar's button
     // settings, so the capsule keeps the outline and rim its neighbours get.
     final settings = tintColor != null
-        ? (DefaultButtonSettings.of(context) ?? const LiquidGlassSettings())
-            .copyWith(glassColor: tintColor, bodyMode: GlassBodyMode.clear)
+        ? GlassThemeHelpers.resolveSettings(
+            context,
+            explicit: DefaultButtonSettings.of(context),
+          ).copyWith(glassColor: tintColor, bodyMode: GlassBodyMode.clear)
         : null;
     return GlassButton.custom(
       onTap: () {},

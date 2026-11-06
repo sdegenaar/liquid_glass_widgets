@@ -3,6 +3,7 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/widgets.dart';
 
+import '../constants/glass_defaults.dart';
 import '../src/engine/liquid_glass_settings.dart';
 import '../types/glass_specular_sharpness.dart';
 
@@ -73,6 +74,93 @@ class GlassThemeSettings {
     this.shadow,
   });
 
+  /// Classic `v1.x` surface preset in the light appearance, matching
+  /// [LiquidGlassSettings.classicLight].
+  static const GlassThemeSettings classicLight = GlassThemeSettings(
+    thickness: 12.0,
+    blur: 5.0,
+    glassColor: Color.fromRGBO(210, 220, 240, 0.12),
+    lightAngle: 2.356,
+    lightIntensity: 0.85,
+    ambientStrength: 0.15,
+    refractiveIndex: 1.2,
+    saturation: 1.2,
+    chromaticAberration: 0.02,
+  );
+
+  /// Classic `v1.x` surface preset in the dark appearance, matching
+  /// [LiquidGlassSettings.classicDark].
+  static const GlassThemeSettings classicDark = GlassThemeSettings(
+    thickness: 10.0,
+    blur: 4.0,
+    glassColor: Color.fromRGBO(255, 255, 255, 0.08),
+    lightAngle: 2.356,
+    lightIntensity: 0.7,
+    ambientStrength: 0.0,
+    refractiveIndex: 1.2,
+    saturation: 1.2,
+    chromaticAberration: 0.01,
+  );
+
+  /// iOS 26.0 `glassEffect(.regular)` in the light appearance, matching
+  /// [LiquidGlassSettings.ios26Light].
+  static const GlassThemeSettings ios26Light = GlassThemeSettings(
+    glassColor: Color(0x9EFBFBFF),
+    saturation: 2.1,
+    blur: 0.6,
+    blurWeight: 0.8,
+    frost: 14,
+    frostOpacity: 0.82,
+    frostClamp: 0.44,
+    frostWeight: 2.0,
+    thickness: 32,
+    refractiveIndex: 1.24,
+    lensModel: GlassLensModel.paraxial,
+    lightAngle: 1.5707963267948966,
+    lightIntensity: 0,
+    ambientStrength: 0,
+    fresnelStrength: 0,
+    chromaticAberration: 0,
+    edgeAbsorption: 0.02,
+    rimShade: 0,
+    rimLight: 1.0,
+    bodyShade: 0,
+    shadow: [
+      BoxShadow(
+        color: Color(0x0F000000),
+        blurRadius: 12,
+        offset: Offset(0, 6),
+      ),
+    ],
+  );
+
+  /// iOS 26.0 `glassEffect(.regular)` in the dark appearance, matching
+  /// [LiquidGlassSettings.ios26Dark].
+  static const GlassThemeSettings ios26Dark = GlassThemeSettings(
+    glassColor: Color(0x19FFFFFF),
+    saturation: 1.4,
+    blur: 0.6,
+    blurWeight: 2.5,
+    frost: 14,
+    frostOpacity: 0.85,
+    frostClamp: -0.49,
+    frostWeight: 0.5,
+    thickness: 32,
+    refractiveIndex: 1.24,
+    lensModel: GlassLensModel.paraxial,
+    lightAngle: GlassDefaults.lightAngle,
+    lightIntensity: 0.18,
+    ambientStrength: 0.05,
+    fresnelStrength: 0.30,
+    chromaticAberration: 0,
+    edgeAbsorption: 0.035,
+    rimShade: 0,
+    rimShadeEnds: 0,
+    rimLight: 0.22,
+    bodyShade: 0.0,
+    shadowElevation: 0,
+  );
+
   /// iOS 27 `glassEffect(.regular)` in the light appearance, matching
   /// [LiquidGlassSettings.ios27Light].
   static const GlassThemeSettings ios27Light = GlassThemeSettings(
@@ -89,13 +177,19 @@ class GlassThemeSettings {
     lensModel: GlassLensModel.paraxial,
     lightAngle: 1.5707963267948966,
     lightIntensity: 0,
+    ambientStrength: 0,
     fresnelStrength: 0,
     chromaticAberration: 0,
     edgeAbsorption: 0.035,
     rimShade: 1,
     rimLight: 1,
+    bodyShade: 0,
     shadow: [
-      BoxShadow(color: Color(0x04000000), blurRadius: 10, offset: Offset(0, 7)),
+      BoxShadow(
+        color: Color(0x0A000000),
+        blurRadius: 10,
+        offset: Offset(0, 7),
+      ),
     ],
   );
 
@@ -115,6 +209,7 @@ class GlassThemeSettings {
     lensModel: GlassLensModel.paraxial,
     lightAngle: -1.5707963267948966,
     lightIntensity: 0,
+    ambientStrength: 0,
     fresnelStrength: 0,
     chromaticAberration: 0,
     edgeAbsorption: 0.035,
@@ -238,6 +333,57 @@ class GlassThemeSettings {
       blurWeight: blurWeight ?? base.blurWeight,
       backerColor: base.backerColor,
       platformViewFallbackColor: base.platformViewFallbackColor,
+    );
+  }
+
+  /// Applies only the fields of this override that differ from [baseline] onto
+  /// [base].
+  ///
+  /// [baseline] is the default surface the override was derived from
+  /// (for example [GlassThemeSettings.ios27Light] or
+  /// [GlassThemeSettings.classicLight], which is also what
+  /// [GlassThemeData.simple] copies and tweaks). A field that still equals
+  /// [baseline] is treated as "not set by the app" and left to [base], so a
+  /// dedicated preset such as [LiquidGlassSettings.ios27Light] or
+  /// [LiquidGlassSettings.classicTabBar] is not overwritten by general surface
+  /// defaults it was never meant to inherit.
+  ///
+  /// Fields that differ from [baseline] are applied exactly as [applyTo]
+  /// would. Consequently an override cannot express "set this field to the
+  /// baseline value" — pass explicit `settings` to the widget for that.
+  LiquidGlassSettings applyDeltaTo(
+    LiquidGlassSettings base,
+    GlassThemeSettings baseline,
+  ) {
+    T? pick<T>(T? value, T? baselineValue) =>
+        (value != null && value != baselineValue) ? value : null;
+    return base.copyWith(
+      visibility: pick(visibility, baseline.visibility),
+      glassColor: pick(glassColor, baseline.glassColor),
+      thickness: pick(thickness, baseline.thickness),
+      blur: pick(blur, baseline.blur),
+      frost: pick(frost, baseline.frost),
+      frostOpacity: pick(frostOpacity, baseline.frostOpacity),
+      frostClamp: pick(frostClamp, baseline.frostClamp),
+      frostWeight: pick(frostWeight, baseline.frostWeight),
+      blurWeight: pick(blurWeight, baseline.blurWeight),
+      chromaticAberration:
+          pick(chromaticAberration, baseline.chromaticAberration),
+      lightAngle: pick(lightAngle, baseline.lightAngle),
+      lightIntensity: pick(lightIntensity, baseline.lightIntensity),
+      ambientStrength: pick(ambientStrength, baseline.ambientStrength),
+      fresnelStrength: pick(fresnelStrength, baseline.fresnelStrength),
+      refractiveIndex: pick(refractiveIndex, baseline.refractiveIndex),
+      saturation: pick(saturation, baseline.saturation),
+      specularSharpness: pick(specularSharpness, baseline.specularSharpness),
+      edgeAbsorption: pick(edgeAbsorption, baseline.edgeAbsorption),
+      rimShade: pick(rimShade, baseline.rimShade),
+      rimShadeEnds: pick(rimShadeEnds, baseline.rimShadeEnds),
+      rimLight: pick(rimLight, baseline.rimLight),
+      bodyShade: pick(bodyShade, baseline.bodyShade),
+      lensModel: pick(lensModel, baseline.lensModel),
+      shadowElevation: pick(shadowElevation, baseline.shadowElevation),
+      shadow: listEquals(shadow, baseline.shadow) ? null : shadow,
     );
   }
 

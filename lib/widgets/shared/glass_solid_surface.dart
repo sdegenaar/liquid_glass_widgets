@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 
 import '../../theme/glass_theme.dart';
+import '../../types/glass_style.dart';
 import '../../types/glass_surface_style.dart';
 
 /// Fill of a `GlassSurfaceStyle.solid` card in light mode (`#FFFFFF`).
@@ -47,9 +48,14 @@ Color resolveGlassSolidSurfaceColor(BuildContext context) {
 /// both inside a solid card (`#FFFFFF` / `#1C1C1E`) and directly on a grouped
 /// page background. Brightness comes from [GlassTheme.brightnessOf].
 Color resolveGlassSolidWellColor(BuildContext context) {
-  return GlassTheme.brightnessOf(context) == Brightness.dark
-      ? kGlassSolidWellDark
-      : kGlassSolidWellLight;
+  if (GlassTheme.brightnessOf(context) == Brightness.dark) {
+    return kGlassSolidWellDark;
+  }
+  final style = GlassTheme.maybeOf(context)?.data.style ?? GlassStyle.ios27;
+  if (style == GlassStyle.ios26) {
+    return const Color(0x66FFFFFF);
+  }
+  return kGlassSolidWellLight;
 }
 
 /// An inherited widget that exposes the active [GlassSurfaceStyle] to

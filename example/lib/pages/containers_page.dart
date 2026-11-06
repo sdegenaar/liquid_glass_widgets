@@ -11,7 +11,6 @@ class ContainersPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassPage(
       background: const ShowcaseBackground(),
-      settings: RecommendedGlassSettings.standard,
       statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark
           ? GlassStatusBarStyle.light
           : GlassStatusBarStyle.dark,

@@ -213,7 +213,7 @@ void main() {
 
       expect(slider.min, equals(0.0));
       expect(slider.max, equals(1.0));
-      expect(slider.trackHeight, equals(4.0));
+      expect(slider.trackHeight, equals(6.0));
       expect(slider.thumbRadius, equals(15.0));
       expect(slider.useOwnLayer, isFalse);
       expect(slider.quality, isNull);
@@ -596,6 +596,45 @@ void main() {
 
         expect(value, equals(0.5));
       });
+    });
+
+    testWidgets(
+        'lifted thumb expands symmetrically to 1.55x (57.35 x 37.2 pt) matching native UISlider',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: Center(
+            child: SizedBox(
+              width: 338,
+              child: GlassSlider(
+                value: 0.5,
+                onChanged: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final thumbEffectFinder = find.descendant(
+        of: find.byType(GlassSlider),
+        matching: find.byType(GlassEffect),
+      );
+      final restingRect = tester.getRect(thumbEffectFinder);
+      expect(restingRect.width, closeTo(37.0, 0.1));
+      expect(restingRect.height, closeTo(24.0, 0.1));
+
+      final gesture = await tester.startGesture(restingRect.center);
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pumpAndSettle();
+
+      final liftedRect = tester.getRect(thumbEffectFinder);
+      expect(liftedRect.width, closeTo(57.35, 0.2));
+      expect(liftedRect.height, closeTo(37.20, 0.2));
+      expect(liftedRect.center.dx, closeTo(restingRect.center.dx, 0.2));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
     });
   });
 }

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../theme/glass_theme.dart';
+import '../../theme/glass_theme_data.dart';
 import '../../types/glass_quality.dart';
 import '../interactive/glass_button.dart';
 
@@ -526,9 +527,13 @@ class _GlassFullScreenCoverRoute<T> extends PageRoute<T> {
     this.barrierDismissible = false,
     this.transitionDuration = const Duration(milliseconds: 380),
     this.reverseTransitionDuration = const Duration(milliseconds: 320),
+    this.capturedGlassTheme,
+    this.capturedCupertinoTheme,
   });
 
   final WidgetBuilder builder;
+  final GlassThemeData? capturedGlassTheme;
+  final CupertinoThemeData? capturedCupertinoTheme;
 
   @override
   final Color barrierColor;
@@ -557,7 +562,20 @@ class _GlassFullScreenCoverRoute<T> extends PageRoute<T> {
     Animation<double> animation,
     Animation<double> secondaryAnimation,
   ) {
-    return builder(context);
+    Widget page = builder(context);
+    if (capturedCupertinoTheme != null) {
+      page = CupertinoTheme(
+        data: capturedCupertinoTheme!,
+        child: page,
+      );
+    }
+    if (capturedGlassTheme != null) {
+      page = GlassTheme(
+        data: capturedGlassTheme!,
+        child: page,
+      );
+    }
+    return page;
   }
 
   @override
@@ -606,12 +624,16 @@ Future<T?> showGlassFullScreenCover<T>({
   bool useRootNavigator = true,
   RouteSettings? routeSettings,
 }) {
+  final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
+  final capturedCupertinoTheme = CupertinoTheme.of(context);
   return Navigator.of(context, rootNavigator: useRootNavigator).push<T>(
     _GlassFullScreenCoverRoute<T>(
       builder: builder,
       settings: routeSettings,
       barrierColor: barrierColor,
       barrierDismissible: barrierDismissible,
+      capturedGlassTheme: capturedGlassTheme,
+      capturedCupertinoTheme: capturedCupertinoTheme,
     ),
   );
 }
@@ -667,7 +689,11 @@ class _GlassFullScreenCoverHostState extends State<_GlassFullScreenCoverHost> {
   void _present() {
     if (!mounted || _activeRoute != null) return;
 
+    final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
+    final capturedCupertinoTheme = CupertinoTheme.of(context);
     final route = _GlassFullScreenCoverRoute<void>(
+      capturedGlassTheme: capturedGlassTheme,
+      capturedCupertinoTheme: capturedCupertinoTheme,
       builder: (context) {
         final contentWidget = widget.content(context);
         if (contentWidget is GlassFullScreenCover) {

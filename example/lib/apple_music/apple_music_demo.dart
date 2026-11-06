@@ -41,29 +41,6 @@ const _kPaddingH = 20.0;
 const _kPaddingV = 16.0;
 const _kSpacing = 8.0;
 
-/// Glass shared by every pill (play bar, home icon, search icon).
-LiquidGlassSettings _kPillGlass(BuildContext context) => LiquidGlassSettings(
-    glassColor: CupertinoTheme.of(context).brightness == Brightness.dark
-        ? const Color(0xCC1C1C1E)
-        : const Color(0xCCF2F2F7),
-    thickness: 30,
-    blur: 2,
-    lightIntensity: 0.18,
-    chromaticAberration: .01,
-    saturation: 1.2,
-    fresnelStrength: 0.0);
-
-//  thickness: 30,
-//     blur: 2,
-//     chromaticAberration: .01,
-//     lightAngle: GlassDefaults.lightAngle,
-//     lightIntensity: 0.15,
-//     ambientStrength: 0,
-//     refractiveIndex: 1.2,
-//     fresnelStrength: 1.0,
-//     saturation: 1.2,
-//     specularSharpness: GlassSpecularSharpness.medium,
-
 // ─────────────────────────────────────────────────────────────────────────────
 // APP
 // ─────────────────────────────────────────────────────────────────────────────
@@ -179,22 +156,6 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
     super.dispose();
   }
 
-  LiquidGlassSettings get _barGlassSettings => LiquidGlassSettings(
-        glassColor: CupertinoTheme.of(context).brightness == Brightness.dark
-            ? const Color(0xAA1C1C1E)
-            : const Color(0xAAF2F2F7),
-        thickness: 30,
-        blur: 2,
-        chromaticAberration: .01,
-        lightAngle: GlassDefaults.lightAngle,
-        lightIntensity: 0.2,
-        ambientStrength: 0,
-        refractiveIndex: 1.2,
-        fresnelStrength: 0.0,
-        saturation: 1.2,
-        specularSharpness: GlassSpecularSharpness.medium,
-      );
-
   // ── Public actions ────────────────────────────────────────────────────────
 
   /// Called when user taps the collapsed home-tab pill in mini mode.
@@ -237,7 +198,6 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
 
     return GlassScaffold(
       background: ColoredBox(color: _kBackground.resolveFrom(context)),
-      settings: _kPillGlass(context),
       statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark
           ? GlassStatusBarStyle.light
           : GlassStatusBarStyle.dark,
@@ -320,14 +280,11 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
         selectedIconColor: _kMusicRed,
         unselectedIconColor:
             CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.9),
-        indicatorColor:
-            CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.20),
         labelFontSize: 10,
         iconSize: 28,
         iconLabelSpacing: 0,
         quality: GlassQuality.premium,
         interactionBehavior: GlassInteractionBehavior.full,
-        settings: _barGlassSettings,
         searchConfig: GlassSearchBarConfig(
           focusNode: _searchFocusNode,
           autoFocusOnExpand: false,
@@ -784,7 +741,6 @@ class _PlayBarPill extends StatelessWidget {
       width: double.infinity,
       height: _kBarH,
       shape: const LiquidRoundedRectangle(borderRadius: _kBarH / 2),
-      settings: _kPillGlass(context),
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 20),
         child: Row(

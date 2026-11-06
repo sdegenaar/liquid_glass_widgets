@@ -1577,6 +1577,69 @@ void main() {
       expect(notifyCount, 2,
           reason: 'Second silence tap should produce a second notification');
     });
+
+    testWidgets(
+        'solid halfSettings/fullSettings opacity branches and classic saturation glow',
+        (tester) async {
+      final controller = GlassModalSheetController();
+
+      // 1. enablePeek: false with solid halfSettings at pos <= halfPos (L691)
+      //    and solid halfSettings -> glass fullSettings at pos > halfPos (L719)
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassTheme(
+            data: const GlassThemeData.classic(),
+            child: Stack(
+              children: [
+                GlassModalSheet(
+                  controller: controller,
+                  mode: GlassSheetMode.dismissible,
+                  initialState: GlassSheetState.half,
+                  enableSaturationGlow: true,
+                  halfSettings: const LiquidGlassSettings(blur: 0, frost: 0),
+                  fullSettings: const LiquidGlassSettings(blur: 12),
+                  child: const SizedBox.expand(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      controller.value = 0.2;
+      await tester.pump();
+
+      controller.value = 0.7;
+      await tester.pump();
+
+      // Trigger pointer down on sheet under GlassStyle.classic to exercise L756-760
+      final sheetCenter = tester.getCenter(find.byType(GlassModalSheet));
+      final gesture = await tester.startGesture(sheetCenter);
+      await tester.pump(const Duration(milliseconds: 50));
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      // 2. solid halfSettings -> solid fullSettings at pos > halfPos (L721)
+      await tester.pumpWidget(
+        createTestApp(
+          child: Stack(
+            children: [
+              GlassModalSheet(
+                controller: controller,
+                initialState: GlassSheetState.half,
+                halfSettings: const LiquidGlassSettings(blur: 0, frost: 0),
+                fullSettings: const LiquidGlassSettings(blur: 0, frost: 0),
+                child: const SizedBox.expand(),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      controller.value = 0.7;
+      await tester.pump();
+    });
   });
 }
 

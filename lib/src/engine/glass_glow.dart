@@ -469,6 +469,7 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
           glowColor: _baseColor.withValues(
             alpha: animatedAlpha * _baseOpacity,
           ),
+          touchIntensity: _baseColor.a > 0 ? _alphaController.value : 0.0,
           glowOffset: _offsetController.value,
           glowBlurRadius: _baseBlurRadius,
           glowSpreadRadius: _baseSpreadRadius,
@@ -487,6 +488,7 @@ class _RenderGlassGlowLayerWidget extends SingleChildRenderObjectWidget {
     required this.pulse,
     required this.glowRadius,
     required this.glowColor,
+    this.touchIntensity = 0.0,
     required this.glowOffset,
     required this.glowBlurRadius,
     required this.glowSpreadRadius,
@@ -498,6 +500,7 @@ class _RenderGlassGlowLayerWidget extends SingleChildRenderObjectWidget {
   final double pulse;
   final double glowRadius;
   final Color glowColor;
+  final double touchIntensity;
   final Offset glowOffset;
   final double glowBlurRadius;
   final double glowSpreadRadius;
@@ -510,6 +513,7 @@ class _RenderGlassGlowLayerWidget extends SingleChildRenderObjectWidget {
       pulse: pulse,
       glowRadius: glowRadius,
       glowColor: glowColor,
+      touchIntensity: touchIntensity,
       glowOffset: glowOffset,
       glowBlurRadius: glowBlurRadius,
       glowSpreadRadius: glowSpreadRadius,
@@ -527,6 +531,7 @@ class _RenderGlassGlowLayerWidget extends SingleChildRenderObjectWidget {
       ..pulse = pulse
       ..glowRadius = glowRadius
       ..glowColor = glowColor
+      ..touchIntensity = touchIntensity
       ..glowOffset = glowOffset
       ..glowBlurRadius = glowBlurRadius
       ..glowSpreadRadius = glowSpreadRadius
@@ -538,6 +543,7 @@ class _RenderGlassGlowLayer extends RenderProxyBox {
   _RenderGlassGlowLayer({
     required double glowRadius,
     required Color glowColor,
+    double touchIntensity = 0.0,
     required Offset glowOffset,
     required double glowBlurRadius,
     required double glowSpreadRadius,
@@ -546,6 +552,7 @@ class _RenderGlassGlowLayer extends RenderProxyBox {
     CustomClipper<Path>? clipper,
   })  : _glowRadius = glowRadius,
         _glowColor = glowColor,
+        _touchIntensity = touchIntensity,
         _glowOffset = glowOffset,
         _glowBlurRadius = glowBlurRadius,
         _glowSpreadRadius = glowSpreadRadius,
@@ -641,6 +648,14 @@ class _RenderGlassGlowLayer extends RenderProxyBox {
     markNeedsPaint();
   }
 
+  double _touchIntensity;
+  double get touchIntensity => _touchIntensity;
+  set touchIntensity(double value) {
+    if (_touchIntensity == value) return;
+    _touchIntensity = value;
+    _propagateToAncestorLiquidGlass();
+  }
+
   Offset _glowOffset;
   Offset get glowOffset => _glowOffset;
   set glowOffset(Offset value) {
@@ -702,9 +717,9 @@ class _RenderGlassGlowLayer extends RenderProxyBox {
         if (_canTransformToAncestor(p)) {
           _needsAncestorPropagation = false;
           final layerPos = localToGlobal(_glowOffset, ancestor: p);
-          p.setTouchSpecular(layerPos, _glowColor.a);
+          p.setTouchSpecular(layerPos, _touchIntensity);
         } else {
-          p.setTouchSpecular(_glowOffset, _glowColor.a);
+          p.setTouchSpecular(_glowOffset, _touchIntensity);
           if (!_needsAncestorPropagation && attached) {
             _needsAncestorPropagation = true;
             WidgetsBinding.instance.addPostFrameCallback((_) {

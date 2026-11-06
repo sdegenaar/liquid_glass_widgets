@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../theme/glass_theme_data.dart';
+import '../../theme/glass_theme_helpers.dart';
 import '../../types/glass_quality.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
 
@@ -297,9 +298,17 @@ class _GlassProgressIndicatorState extends State<GlassProgressIndicator>
 
     // Wrap in glass layer if standalone
     if (widget.useOwnLayer) {
+      final effectiveSettings = GlassThemeHelpers.resolveSettings(
+        context,
+        explicit: widget.settings,
+      );
+      final effectiveQuality = GlassThemeHelpers.resolveQuality(
+        context,
+        widgetQuality: widget.quality,
+      );
       return AdaptiveLiquidGlassLayer(
-        settings: widget.settings ?? const LiquidGlassSettings(),
-        quality: widget.quality,
+        settings: effectiveSettings,
+        quality: effectiveQuality,
         child: semanticWidget,
       );
     }

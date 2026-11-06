@@ -1411,24 +1411,17 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
         : lerpDouble(sizeStartW, widget.menuWidth, state.sizeT)!
             .clamp(0.0, double.infinity);
 
-    final inheritedSettings = InheritedLiquidGlass.of(context);
-    final effectiveSettings = widget.settings ??
-        inheritedSettings ??
-        const LiquidGlassSettings(
-          blur: 10,
-          thickness: 10,
-          glassColor: Color.fromRGBO(255, 255, 255, 0.12),
-          lightAngle: GlassDefaults.lightAngle,
-          lightIntensity: 0.7,
-          ambientStrength: 0.4,
-          saturation: 1.2,
-          refractiveIndex: 0.7,
-          chromaticAberration: 0.0,
-        );
+    final effectiveSettings = GlassThemeHelpers.resolveSettings(
+      context,
+      explicit: widget.settings,
+      fallback: _kDefaultMenuSettings,
+      isOverlayPlatter: true,
+    );
 
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
     );
 
     final bool useBlendGroup = effectiveQuality != GlassQuality.minimal &&
@@ -1732,6 +1725,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
     );
 
     // ─── True Metaball Morphing ──────────────────────────────────────────────
@@ -1758,22 +1752,14 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
 
     // Inherit settings from context (like GlassContainer.card/GlassContainer)
     // If user provides custom settings, use those. Otherwise, check for inherited
-    // settings from parent layer. If none, use subtle overlay defaults.
-    // This matches the pattern used by all other glass widgets.
-    final inheritedSettings = InheritedLiquidGlass.of(context);
-    final effectiveSettings = widget.settings ??
-        inheritedSettings ??
-        const LiquidGlassSettings(
-          blur: 10,
-          thickness: 10,
-          glassColor: Color.fromRGBO(255, 255, 255, 0.12),
-          lightAngle: GlassDefaults.lightAngle, // Apple iOS 26 standard
-          lightIntensity: 0.7,
-          ambientStrength: 0.4,
-          saturation: 1.2,
-          refractiveIndex: 0.7, // Thin rim - iOS 26 delicate aesthetic
-          chromaticAberration: 0.0,
-        );
+    // settings from parent layer or active GlassTheme preset, falling back to
+    // classic menu defaults.
+    final effectiveSettings = GlassThemeHelpers.resolveSettings(
+      context,
+      explicit: widget.settings,
+      fallback: _kDefaultMenuSettings,
+      isOverlayPlatter: true,
+    );
 
     final glassContent = LiquidStretch(
       stretch: widget.stretch,
@@ -1980,6 +1966,16 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                 if (hoveredIndex == null) {
                   return const SizedBox.shrink();
                 }
+                final isDark =
+                    GlassTheme.brightnessOf(context) == Brightness.dark;
+                final style =
+                    GlassTheme.maybeOf(context)?.data.style ?? GlassStyle.ios27;
+                final effectiveSelectionColor =
+                    widget.selectionColor != const Color(0x3DFFFFFF)
+                        ? widget.selectionColor
+                        : (style == GlassStyle.classic || isDark)
+                            ? widget.selectionColor
+                            : const Color(0x14000000);
                 return AnimatedPositioned(
                   duration: const Duration(milliseconds: 150),
                   curve: Curves.easeOutCubic,
@@ -1992,14 +1988,13 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                   height: _getScaledItemHeight(items[hoveredIndex], context),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: widget.selectionColor,
+                      color: effectiveSelectionColor,
                       borderRadius:
                           BorderRadius.circular(widget.itemBorderRadius),
                       border: Border.all(
-                        color:
-                            GlassTheme.brightnessOf(context) == Brightness.dark
-                                ? const Color(0x0DFFFFFF)
-                                : const Color(0x0D000000),
+                        color: isDark
+                            ? const Color(0x0DFFFFFF)
+                            : const Color(0x0D000000),
                         width: 0.5,
                       ),
                     ),
@@ -2309,6 +2304,18 @@ const Duration _kSubmenuMorphDuration = Duration(milliseconds: 320);
 const Curve _kSubmenuMorphCurve = Curves.easeOutCubic;
 const double _kBodyVerticalPadding = 12.0;
 const double _kRowGap = 2.0;
+
+const LiquidGlassSettings _kDefaultMenuSettings = LiquidGlassSettings(
+  blur: 10,
+  thickness: 10,
+  glassColor: Color.fromRGBO(255, 255, 255, 0.12),
+  lightAngle: GlassDefaults.lightAngle,
+  lightIntensity: 0.7,
+  ambientStrength: 0.4,
+  saturation: 1.2,
+  refractiveIndex: 0.7,
+  chromaticAberration: 0.0,
+);
 
 /// Geometry is captured before switching the active scroll viewport. Titles
 /// are not identifiers: two rows may have the same label.

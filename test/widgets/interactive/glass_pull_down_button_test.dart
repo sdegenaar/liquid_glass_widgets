@@ -361,6 +361,28 @@ void main() {
     await tester.pumpAndSettle();
     expect(chosen, isTrue);
   });
+
+  testWidgets(
+      'GlassPullDownButton with label and buttonWidth < buttonHeight uses buttonWidth for capsule radius',
+      (tester) async {
+    await tester.pumpWidget(
+      CupertinoApp(
+        home: CupertinoPageScaffold(
+          child: Center(
+            child: GlassPullDownButton(
+              label: 'A',
+              buttonWidth: 80,
+              buttonHeight: 100,
+              items: [
+                GlassMenuItem(title: 'Item', onTap: _noop),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('A'), findsOneWidget);
+  });
 }
 
 void _noop() {}

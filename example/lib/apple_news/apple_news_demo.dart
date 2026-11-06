@@ -299,27 +299,8 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
           magnification: 1.15,
           iconLabelSpacing: 0,
           spacing: 8,
-          indicatorColor:
-              CupertinoTheme.of(context).brightness == Brightness.dark
-                  ? CupertinoColors.white.withValues(alpha: 0.14)
-                  : CupertinoColors.black.withValues(alpha: 0.10),
           quality: GlassQuality.premium,
           interactionBehavior: GlassInteractionBehavior.full,
-          settings: LiquidGlassSettings(
-            glassColor: CupertinoTheme.of(context).brightness == Brightness.dark
-                ? const Color(0xAA1C1C1E)
-                : const Color(0xCCFFFFFF),
-            thickness: 30,
-            blur: 2,
-            chromaticAberration:
-                0.15, // iOS 26 has subtle iridescent rainbow fringing
-            lightAngle: GlassDefaults.lightAngle,
-            lightIntensity: .3,
-            ambientStrength: 0,
-            refractiveIndex: 1.2,
-            saturation: 1.2,
-            specularSharpness: GlassSpecularSharpness.medium,
-          ),
           searchConfig: GlassSearchBarConfig(
             hintText: 'Apple News',
             onSearchToggle: (active) => setState(() {

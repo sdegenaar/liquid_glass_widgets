@@ -12,6 +12,7 @@ import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../theme/glass_theme_helpers.dart';
 import '../../theme/glass_theme.dart';
 import '../../types/glass_quality.dart';
+import '../../types/glass_style.dart';
 import '../../utils/glass_morph_controller.dart';
 import '../../utils/liquid_morph_physics.dart';
 import '../shared/adaptive_glass.dart';
@@ -266,12 +267,12 @@ class GlassModalSheet extends StatefulWidget {
     this.halfSize = 0.45,
     this.fullSize,
     this.initialState = GlassSheetState.half,
-    this.topBorderRadius = 56,
+    this.topBorderRadius = 38,
     this.bottomBorderRadius,
-    this.fullTopBorderRadius = 46,
+    this.fullTopBorderRadius = 38,
     this.fullBottomBorderRadius,
-    this.horizontalMargin = 5.0,
-    this.bottomMargin = 6.0,
+    this.horizontalMargin = 8.0,
+    this.bottomMargin = 8.0,
     this.fillThreshold = 0.60,
     this.interactionScale = 1.01,
     this.enableInteractionGlow = true,
@@ -296,8 +297,8 @@ class GlassModalSheet extends StatefulWidget {
     this.showDragIndicator = true,
     this.dragIndicatorColor,
     this.dragIndicatorWidth = 36,
-    this.dragIndicatorHeight = 4,
-    this.dragIndicatorTopPadding = 8,
+    this.dragIndicatorHeight = 5,
+    this.dragIndicatorTopPadding = 5,
     this.glowColor,
     this.glowRadius = 1.5,
     this.suppressInteractionOnChildren = false,
@@ -436,7 +437,7 @@ class GlassModalSheet extends StatefulWidget {
     double peekSize = 90.0,
     GlassQuality? quality,
     bool platformViewBackdrop = false,
-    Color barrierColor = GlassDefaults.barrierColor,
+    Color? barrierColor,
     bool isDismissible = true,
     bool useRootNavigator = false,
     RouteSettings? routeSettings,
@@ -452,11 +453,11 @@ class GlassModalSheet extends StatefulWidget {
     bool showDragIndicator = true,
     Color? dragIndicatorColor,
     double dragIndicatorWidth = 36,
-    double dragIndicatorHeight = 4,
-    double dragIndicatorTopPadding = 8,
-    double? topBorderRadius = 56,
+    double dragIndicatorHeight = 5,
+    double dragIndicatorTopPadding = 5,
+    double? topBorderRadius = 38,
     double? bottomBorderRadius,
-    double? fullTopBorderRadius = 46,
+    double? fullTopBorderRadius = 38,
     double? fullBottomBorderRadius,
     double horizontalMargin = 8.0,
     double bottomMargin = 8.0,
@@ -551,6 +552,17 @@ class GlassModalSheet extends StatefulWidget {
     // in that side rather than across the screen.
     final subScreen = _subScreenFor(context);
 
+    // Capture the caller's ambient GlassTheme and CupertinoTheme so a route
+    // pushed above the subtree (or onto the root navigator) preserves the
+    // active GlassStyle and brightness.
+    final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
+    final capturedCupertinoTheme = CupertinoTheme.of(context);
+    final capturedStyle = GlassThemeHelpers.resolveStyle(context);
+    final effectiveBarrierColor = barrierColor ??
+        (capturedStyle == GlassStyle.classic
+            ? GlassDefaults.barrierColor
+            : const Color(0x24000000));
+
     return Navigator.of(context, rootNavigator: useRootNavigator)
         .push<T>(_GlassModalSheetRoute<T>(
       anchorPoint: subScreen?.center,
@@ -564,7 +576,7 @@ class GlassModalSheet extends StatefulWidget {
           // barrier at all. Pass transparent here so the route's built-in
           // linear fade does not run alongside the spring-driven scrim.
           ? const Color(0x00000000)
-          : barrierColor,
+          : effectiveBarrierColor,
       settings: routeSettings,
       transitionDuration: transitionDuration,
       reverseTransitionDuration: reverseTransitionDuration,
@@ -587,6 +599,20 @@ class GlassModalSheet extends StatefulWidget {
       },
       pageBuilder: (context, animation, secondaryAnimation) =>
           _inSubScreen(context, subScreen, () {
+        Widget wrapThemes(Widget child) {
+          Widget wrapped = CupertinoTheme(
+            data: capturedCupertinoTheme,
+            child: child,
+          );
+          if (capturedGlassTheme != null) {
+            wrapped = GlassTheme(
+              data: capturedGlassTheme,
+              child: wrapped,
+            );
+          }
+          return wrapped;
+        }
+
         final scaffold = GlassModalSheetScaffold(
           controller: effectiveController,
           halfSize: halfSize,
@@ -647,56 +673,58 @@ class GlassModalSheet extends StatefulWidget {
             }
           },
           body: const SizedBox.shrink(),
-          sheet: builder(context),
+          sheet: Builder(builder: builder),
         );
 
-        if (!morphing) return scaffold;
+        if (!morphing) return wrapThemes(scaffold);
 
-        return GlassSheetMorphPresenter(
-          routeAnimation: animation,
-          triggerRect: morphTriggerRect,
-          anchor: morphFrom,
-          speed: morphSpeed,
-          restingState: resolvedInitialState,
-          controller: effectiveController,
-          // Built from the same inputs as the sheet's own _buildGeometry, so
-          // the droplet aims at the detent the sheet will actually rest at.
-          geometry: SheetGeometry(
-            mode: mode,
-            halfSize: halfSize,
-            fullSize: fullSize ?? _stripFullSize(context),
-            peekSize: peekSize,
-            enablePeek: SheetGeometry.resolvePeek(
-              detents: detents,
+        return wrapThemes(
+          GlassSheetMorphPresenter(
+            routeAnimation: animation,
+            triggerRect: morphTriggerRect,
+            anchor: morphFrom,
+            speed: morphSpeed,
+            restingState: resolvedInitialState,
+            controller: effectiveController,
+            // Built from the same inputs as the sheet's own _buildGeometry, so
+            // the droplet aims at the detent the sheet will actually rest at.
+            geometry: SheetGeometry(
               mode: mode,
+              halfSize: halfSize,
+              fullSize: fullSize ?? _stripFullSize(context),
+              peekSize: peekSize,
+              enablePeek: SheetGeometry.resolvePeek(
+                detents: detents,
+                mode: mode,
+              ),
+              enableHalf: detents.contains(GlassSheetDetent.medium),
+              enableFull: detents.contains(GlassSheetDetent.large),
+              dismissible: dismissible,
             ),
-            enableHalf: detents.contains(GlassSheetDetent.medium),
-            enableFull: detents.contains(GlassSheetDetent.large),
-            dismissible: dismissible,
+            horizontalMargin: horizontalMargin,
+            bottomMargin: bottomMargin,
+            topBorderRadius: topBorderRadius,
+            fullTopBorderRadius: fullTopBorderRadius,
+            bottomBorderRadius: bottomBorderRadius,
+            fullBottomBorderRadius: fullBottomBorderRadius,
+            settings: settings,
+            peekSettings: peekSettings,
+            halfSettings: halfSettings,
+            fullSettings: fullSettings,
+            expandedColor: expandedColor,
+            expandedDarkColor: expandedDarkColor,
+            quality: quality,
+            peekHorizontalMargin: peekHorizontalMargin,
+            peekBottomMargin: peekBottomMargin,
+            peekWidth: peekWidth,
+            peekTopBorderRadius: peekTopBorderRadius,
+            platformViewBackdrop: platformViewBackdrop,
+            // The route-level barrier is transparent above; the presenter drives
+            // the scrim itself via the liquid spring for single-unified-motion.
+            barrierColor: effectiveBarrierColor,
+            placement: placement,
+            child: scaffold,
           ),
-          horizontalMargin: horizontalMargin,
-          bottomMargin: bottomMargin,
-          topBorderRadius: topBorderRadius,
-          fullTopBorderRadius: fullTopBorderRadius,
-          bottomBorderRadius: bottomBorderRadius,
-          fullBottomBorderRadius: fullBottomBorderRadius,
-          settings: settings,
-          peekSettings: peekSettings,
-          halfSettings: halfSettings,
-          fullSettings: fullSettings,
-          expandedColor: expandedColor,
-          expandedDarkColor: expandedDarkColor,
-          quality: quality,
-          peekHorizontalMargin: peekHorizontalMargin,
-          peekBottomMargin: peekBottomMargin,
-          peekWidth: peekWidth,
-          peekTopBorderRadius: peekTopBorderRadius,
-          platformViewBackdrop: platformViewBackdrop,
-          // The route-level barrier is transparent above; the presenter drives
-          // the scrim itself via the liquid spring for single-unified-motion.
-          barrierColor: barrierColor,
-          placement: placement,
-          child: scaffold,
         );
       }),
     ));

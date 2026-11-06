@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets/widgets/shared/glass_effect.dart';
 
 import '../../shared/test_helpers.dart';
 
@@ -391,6 +392,152 @@ void main() {
       expect(find.text('Overlay 2'), findsOneWidget);
       expect(find.text('Overlay 3'), findsOneWidget);
     });
+
+    testWidgets(
+        'promotes GlassButton in bodyOverlays to premium while body GlassButton stays standard and hero controls default to premium',
+        (tester) async {
+      final bodyButtonKey = UniqueKey();
+      final overlayButtonKey = UniqueKey();
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassScaffold(
+            body: Column(
+              children: [
+                GlassButton(
+                  key: bodyButtonKey,
+                  icon: const Icon(CupertinoIcons.add),
+                  onTap: () {},
+                ),
+                GlassSwitch(value: true, onChanged: (_) {}),
+                GlassSlider(value: 0.5, onChanged: (_) {}),
+                GlassSegmentedControl(
+                  segments: const [
+                    GlassSegment(label: 'A'),
+                    GlassSegment(label: 'B'),
+                  ],
+                  selectedIndex: 0,
+                  onSegmentSelected: (_) {},
+                ),
+              ],
+            ),
+            bodyOverlays: [
+              Positioned(
+                bottom: 24,
+                right: 24,
+                child: GlassButton(
+                  key: overlayButtonKey,
+                  icon: const Icon(CupertinoIcons.play_fill),
+                  onTap: () {},
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      final bodyButtonGlass = tester.widget<AdaptiveGlass>(
+        find.descendant(
+          of: find.byKey(bodyButtonKey),
+          matching: find.byType(AdaptiveGlass),
+        ),
+      );
+      final overlayButtonGlass = tester.widget<AdaptiveGlass>(
+        find.descendant(
+          of: find.byKey(overlayButtonKey),
+          matching: find.byType(AdaptiveGlass),
+        ),
+      );
+      expect(bodyButtonGlass.quality, GlassQuality.standard);
+      expect(overlayButtonGlass.quality, GlassQuality.premium);
+
+      final switchEffect = tester.widget<GlassEffect>(
+        find.descendant(
+          of: find.byType(GlassSwitch),
+          matching: find.byType(GlassEffect),
+        ),
+      );
+      final sliderEffect = tester.widget<GlassEffect>(
+        find.descendant(
+          of: find.byType(GlassSlider),
+          matching: find.byType(GlassEffect),
+        ),
+      );
+      final segIndicator = tester.widget<AnimatedGlassIndicator>(
+        find
+            .descendant(
+              of: find.byType(GlassSegmentedControl),
+              matching: find.byType(AnimatedGlassIndicator),
+            )
+            .first,
+      );
+      expect(switchEffect.quality, GlassQuality.premium);
+      expect(sliderEffect.quality, GlassQuality.premium);
+      expect(segIndicator.quality, GlassQuality.premium);
+    });
+
+    testWidgets('GlassStyle.classic keeps hero controls on standard quality',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassTheme(
+            data: const GlassThemeData.classic(),
+            child: GlassScaffold(
+              body: Column(
+                children: [
+                  GlassSwitch(value: true, onChanged: (_) {}),
+                  GlassSlider(value: 0.5, onChanged: (_) {}),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      for (final type in [GlassSwitch, GlassSlider]) {
+        final effect = tester.widget<GlassEffect>(
+          find.descendant(
+            of: find.byType(type),
+            matching: find.byType(GlassEffect),
+          ),
+        );
+        expect(effect.quality, GlassQuality.standard, reason: '$type');
+      }
+    });
+
+    testWidgets('keyed bodyOverlays keep their state when the list reorders',
+        (tester) async {
+      const a = ValueKey<String>('overlay-a');
+      const b = ValueKey<String>('overlay-b');
+
+      Widget scaffold(List<Key> order) => createTestApp(
+            child: GlassScaffold(
+              body: const SizedBox.expand(),
+              bodyOverlays: [
+                for (final key in order)
+                  Positioned(
+                    key: key,
+                    top: key == a ? 0 : 100,
+                    left: 0,
+                    child:
+                        _OverlayCounter(label: (key as ValueKey<String>).value),
+                  ),
+              ],
+            ),
+          );
+
+      await tester.pumpWidget(scaffold(const [a, b]));
+      // Bump only overlay A's state.
+      await tester.tap(find.byKey(const ValueKey('counter-overlay-a')));
+      await tester.pump();
+      expect(find.text('overlay-a:1'), findsOneWidget);
+      expect(find.text('overlay-b:0'), findsOneWidget);
+
+      await tester.pumpWidget(scaffold(const [b, a]));
+      // State follows the key, not the position.
+      expect(find.text('overlay-a:1'), findsOneWidget);
+      expect(find.text('overlay-b:0'), findsOneWidget);
+    });
   });
 
   // ── ValueKey stability ──────────────────────────────────────────────────
@@ -635,4 +782,27 @@ void main() {
       expect(scaffold.backgroundColor, isNull);
     });
   });
+}
+
+/// A tappable counter used to prove overlay state follows the overlay's key.
+class _OverlayCounter extends StatefulWidget {
+  const _OverlayCounter({required this.label});
+
+  final String label;
+
+  @override
+  State<_OverlayCounter> createState() => _OverlayCounterState();
+}
+
+class _OverlayCounterState extends State<_OverlayCounter> {
+  int _count = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      key: ValueKey('counter-${widget.label}'),
+      onTap: () => setState(() => _count++),
+      child: Text('${widget.label}:$_count'),
+    );
+  }
 }

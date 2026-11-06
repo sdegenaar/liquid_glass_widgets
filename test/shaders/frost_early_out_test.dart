@@ -67,11 +67,11 @@ void main() {
         '(uLightIntensity > 0.0 || uAmbientStrength > 0.0))',
       ),
     );
-    // The touch glint inside scales by uLightIntensity, so skipping the block
-    // at zero light loses nothing.
+    // The touch glint inside scales by effectiveTouchLight, so skipping the
+    // directional light block at zero light loses nothing.
     expect(
       render,
-      contains('tSpec * uTouchIntensity * uLightIntensity * 2.5'),
+      contains('tSpec * uTouchIntensity * effectiveTouchLight * 2.5'),
     );
   });
 
