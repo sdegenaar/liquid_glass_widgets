@@ -32,10 +32,20 @@ class GlassMenuItem extends StatefulWidget {
     this.enablePressScale = true,
     this.closeDelay,
     this.submenu,
+    this.semanticLabel,
   });
 
   /// The primary text of the item.
   final String title;
+
+  /// What screen readers announce for the row, in place of [title].
+  ///
+  /// The row is a single semantics node named by [title], and its children,
+  /// [trailing] included, are not read. Set this when the row shows more than
+  /// its title, for example a keyboard shortcut in [trailing]:
+  /// `semanticLabel: 'Save, Command S'`. [subtitle] is still announced as the
+  /// value. Null (the default) uses [title].
+  final String? semanticLabel;
 
   /// The icon widget displayed before the title.
   final Widget? icon;
@@ -447,7 +457,7 @@ class _GlassMenuItemState extends State<GlassMenuItem>
     return GlassFocusRegion(
       enabled: widget.enabled,
       isButton: true,
-      semanticLabel: widget.title,
+      semanticLabel: widget.semanticLabel ?? widget.title,
       // The title label replaces the row's own text, so carry the subtitle
       // as the value: announced after the title, on the same node.
       semanticValue: widget.subtitle,
