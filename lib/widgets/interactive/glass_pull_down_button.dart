@@ -214,6 +214,7 @@ class GlassPullDownButton extends StatelessWidget {
             iconSize: item.iconSize,
             maxLines: item.maxLines,
             enablePressScale: item.enablePressScale,
+            semanticsChecked: item.semanticsChecked,
             closeDelay: item.closeDelay,
             submenu: item.submenu,
             trailing: item.trailing,

@@ -50,6 +50,7 @@ class GlassFocusRegion extends StatefulWidget {
     this.tracksSelection = false,
     this.isSelected = false,
     this.toggled,
+    this.checked,
     this.onKeyboardActivate,
     this.semanticOnTap,
     this.semanticOnLongPress,
@@ -88,6 +89,7 @@ class GlassFocusRegion extends StatefulWidget {
         tracksSelection = false,
         isSelected = false,
         toggled = null,
+        checked = null,
         onKeyboardActivate = null,
         semanticOnTap = null,
         semanticOnLongPress = null,
@@ -163,6 +165,13 @@ class GlassFocusRegion extends StatefulWidget {
 
   /// The toggled state (for switches). If null, this semantic is not applied.
   final bool? toggled;
+
+  /// The checked state of a radio button: when non-null the region reads as
+  /// a checked or unchecked item of a mutually exclusive group, in place of
+  /// the button role, which takes precedence over a checked state on macOS
+  /// (the bridge gives `button` its role first). If null, this semantic is
+  /// not applied.
+  final bool? checked;
 
   /// Callback fired when the user presses Space or Enter while focused.
   final VoidCallback? onKeyboardActivate;
@@ -404,8 +413,13 @@ class _GlassFocusRegionState extends State<GlassFocusRegion> {
       // label and tap action stay on this node and are not merged into an
       // ancestor container (which would concatenate the label with unrelated
       // text, e.g. an app-bar title, and put the tap on a different node).
-      container: widget.isButton || widget.isSlider || hasSemanticLabel,
-      button: widget.isButton,
+      container: widget.isButton ||
+          widget.isSlider ||
+          widget.checked != null ||
+          hasSemanticLabel,
+      button: widget.isButton && widget.checked == null,
+      checked: widget.checked,
+      inMutuallyExclusiveGroup: widget.checked != null ? true : null,
       slider: widget.isSlider,
       // Only set `selected` when this region tracks selection state.
       // Passing `selected: false` unconditionally emits `hasSelectedState`
