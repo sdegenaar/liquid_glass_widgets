@@ -281,15 +281,16 @@ void main() {
       expect(LiquidMorphPhysics.openSpring.damping, equals(16.0));
     });
 
-    test('closeSpring has snappy profile (higher stiffness for fast dismiss)',
+    test(
+        'closeSpring matches iOS 27 dismissal profile (stiffness 120, damping 16)',
         () {
-      expect(LiquidMorphPhysics.closeSpring.stiffness, equals(200.0));
-      expect(LiquidMorphPhysics.closeSpring.damping, equals(21.0));
+      expect(LiquidMorphPhysics.closeSpring.stiffness, equals(120.0));
+      expect(LiquidMorphPhysics.closeSpring.damping, equals(16.0));
     });
 
-    test('closeVelocityHint is negative (drives spring toward 0 with momentum)',
+    test('closeVelocityHint is -2.5 (drives spring toward 0 with momentum)',
         () {
-      expect(LiquidMorphPhysics.closeVelocityHint, lessThan(0.0));
+      expect(LiquidMorphPhysics.closeVelocityHint, equals(-2.5));
     });
   });
 
@@ -607,12 +608,13 @@ void main() {
     });
   });
 
-  // ── Closing blend proximity ramp ─────────────────────────────────────────
+  // ── Closing blend bell-curve (separation-driven) ──────────────────────────
   //
-  // Verifies the new _closeProximityThreshold-based blend that makes the SDF
-  // metaball bridge re-form as the droplet returns to the trigger on close.
+  // Verifies that closing blend is driven by |pathT - sizeT| separation,
+  // peaking in mid-flight and converging cleanly to 0.0 at both endpoints
+  // (1.0 and 0.0) so there is zero SDF inflation at handoff.
 
-  group('LiquidMorphPhysics — closing blend proximity ramp', () {
+  group('LiquidMorphPhysics — closing blend separation curve', () {
     LiquidMorphState closeCompute(double raw) => LiquidMorphPhysics.compute(
           rawValue: raw,
           finalDx: _finalDx,
@@ -621,37 +623,23 @@ void main() {
         );
 
     test('blend is 0.0 at start of close (clampedValue = 1.0)', () {
-      // At the very top of the closing arc the droplet is far from the
-      // trigger; no bridge should be visible.
       expect(closeCompute(1.0).blend, equals(0.0));
     });
 
-    test('blend is 0.0 while clampedValue >= closeProximityThreshold (0.6)',
-        () {
-      // Bridge must not appear while the droplet is still in mid-travel.
-      for (final v in [1.0, 0.9, 0.8, 0.7, 0.6]) {
-        expect(
-          closeCompute(v).blend,
-          equals(0.0),
-          reason:
-              'Expected blend=0 at clampedValue=$v (above proximity threshold)',
-        );
-      }
+    test('blend peaks in mid-close and returns to 0.0 at handoff (0.0)', () {
+      final blendAtMid = closeCompute(0.40).blend;
+      final blendAtEnd = closeCompute(0.0).blend;
+      expect(blendAtMid, greaterThan(10.0),
+          reason: 'Expected visible SDF bridge in mid-close');
+      expect(blendAtEnd, equals(0.0),
+          reason: 'Expected zero SDF inflation at handoff (clampedValue = 0)');
     });
 
-    test('blend grows as clampedValue falls below 0.6 on close', () {
-      // easeOut: bridge snaps on quickly once inside the threshold.
-      final blendAt55 = closeCompute(0.55).blend;
-      final blendAt30 = closeCompute(0.30).blend;
-      expect(blendAt55, greaterThan(0.0),
-          reason: 'Expected blend > 0 at clampedValue=0.55');
-      expect(blendAt30, greaterThan(blendAt55),
-          reason: 'Expected blend to grow as clampedValue decreases toward 0');
-    });
-
-    test('blend reaches maximum (28.0) near clampedValue = 0.0 on close', () {
-      // At landing the bridge should be at full strength.
-      expect(closeCompute(0.0).blend, closeTo(28.0, 0.5));
+    test('anchorScale on close ramps 0.0 → 1.0 over 0.40 → 0.0', () {
+      expect(closeCompute(0.80).anchorScale, equals(0.0));
+      expect(closeCompute(0.40).anchorScale, closeTo(0.0, 1e-6));
+      expect(closeCompute(0.20).anchorScale, closeTo(0.5, 1e-6));
+      expect(closeCompute(0.0).anchorScale, equals(1.0));
     });
 
     test('blend is always clamped to [0, 28] on entire close trajectory', () {
@@ -666,8 +654,6 @@ void main() {
     });
 
     test('blend is non-negative during close undershoot (rawValue < 0)', () {
-      // The close undershoot (spring bounces past 0) must never produce
-      // a negative blend value.
       for (final v in [-0.05, -0.1, -0.15, -0.2]) {
         expect(
           closeCompute(v).blend,

@@ -1903,4 +1903,123 @@ void main() {
       semantics.dispose();
     });
   });
+
+  group('Issue #453 — GlassQuality.premium liquid morph parity', () {
+    testWidgets(
+        'GlassMenu on premium quality hides static trigger on frame 1 of open so shrinking Blob A is visible',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: GlassMenu(
+                quality: GlassQuality.premium,
+                triggerBuilder: (context, toggle) => GlassIconButton(
+                  size: 46,
+                  icon: const Icon(Icons.more_horiz),
+                  onPressed: toggle,
+                ),
+                items: [
+                  GlassMenuItem(title: 'One', onTap: () {}),
+                  GlassMenuItem(title: 'Two', onTap: () {}),
+                  GlassMenuItem(title: 'Three', onTap: () {}),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(GlassIconButton));
+      // Pump 16ms into open (early in the first 20% where standard cross-fades)
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+
+      // The static trigger Opacity must be 0.0 immediately so it does not cover
+      // the shrinking Blob A inside the overlay.
+      final triggerOpacity = tester.widget<Opacity>(find.byType(Opacity).first);
+      expect(triggerOpacity.opacity, equals(0.0));
+
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+        'GlassMenu on standard quality still cross-fades trigger over first 20% of open',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: GlassMenu(
+                quality: GlassQuality.standard,
+                trigger: const SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: Text('StdBtn'),
+                ),
+                items: [
+                  GlassMenuItem(title: 'One', onTap: () {}),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('StdBtn'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 8));
+
+      final triggerOpacity = tester.widget<Opacity>(find.byType(Opacity).first);
+      expect(triggerOpacity.opacity, greaterThan(0.0));
+      expect(triggerOpacity.opacity, lessThan(1.0));
+
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+        'GlassMenu items fade smoothly while sizeT > 0.50 and hide before shrinking into button',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: GlassMenu(
+                quality: GlassQuality.premium,
+                trigger: const SizedBox(
+                  width: 46,
+                  height: 46,
+                  child: Text('OpenMenu'),
+                ),
+                items: [
+                  GlassMenuItem(title: 'One', onTap: () {}),
+                  GlassMenuItem(title: 'Two', onTap: () {}),
+                  GlassMenuItem(title: 'Three', onTap: () {}),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('OpenMenu'));
+      await tester.pumpAndSettle();
+      expect(find.text('One'), findsOneWidget);
+
+      // Tap item to close
+      await tester.tap(find.text('One'));
+      await tester.pump();
+      // At 45ms into close (morphSizeT ≈ 0.78 > 0.50), items are still visible and fading smoothly.
+      await tester.pump(const Duration(milliseconds: 45));
+      expect(find.text('One'), findsOneWidget);
+
+      // By 110ms into close (morphSizeT ≈ 0.35 < 0.50), items are completely hidden so content
+      // is never visible inside the shrinking button.
+      await tester.pump(const Duration(milliseconds: 65));
+      expect(find.text('One'), findsNothing);
+
+      await tester.pumpAndSettle();
+      expect(find.text('One'), findsNothing);
+    });
+  });
 }

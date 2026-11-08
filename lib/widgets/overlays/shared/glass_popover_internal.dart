@@ -360,27 +360,37 @@ class _GlassPopoverState extends State<GlassPopover>
         final isHandoff =
             _morphController.isClosing && _morphController.hasHandedOff;
 
+        final effectiveQuality = GlassThemeHelpers.resolveQuality(
+          context,
+          widgetQuality: widget.quality,
+          fallback: GlassThemeHelpers.nativeStyleQuality(context),
+        );
+        final isPremiumQuality = effectiveQuality == GlassQuality.premium;
+
         // Tactile detach and re-merge trigger opacity.
         //
-        // On open: The trigger smoothly dissolves (1.0 -> 0.0) over the first
-        // 20% of travel as the droplet pulls away. Once detached, the trigger
-        // is cleanly hidden (no ghosting artifacts while reading items).
+        // On open (premium): The real trigger hides immediately on frame 1 so
+        // its shrinking ghost (Blob A inside the overlay, anchorScale 1.0 -> 0.0
+        // over 0..40%) is visible and reads as being absorbed into the droplet.
+        // On open (standard/minimal): The trigger smoothly dissolves (1.0 -> 0.0)
+        // over the first 20% of travel as the droplet pulls away.
         //
-        // On close: As the droplet approaches home (clampedValue < 0.20),
-        // the trigger smoothly cross-dissolves back in (0.0 -> 1.0) while the
-        // overlay fades out, eliminating any 1-frame pop at handoff.
-        // Once handoff fires, the trigger is fully opaque to absorb the bounce.
+        // On close: While closing, the real trigger stays hidden while Blob A
+        // inside the overlay represents the trigger and fuses with the returning
+        // droplet. When handoff fires at rawValue <= 0.0, triggerOpacity becomes
+        // 1.0 to absorb the bounce.
         final double triggerOpacity;
         final clampedValue = rawValue.clamp(0.0, 1.0);
         if (!_overlayController.isShowing || isHandoff) {
           triggerOpacity = 1.0;
         } else if (!_morphController.isClosing) {
-          final detachT = (clampedValue / 0.20).clamp(0.0, 1.0);
-          triggerOpacity = 1.0 - detachT;
+          if (isPremiumQuality) {
+            triggerOpacity = 0.0;
+          } else {
+            final detachT = (clampedValue / 0.20).clamp(0.0, 1.0);
+            triggerOpacity = 1.0 - detachT;
+          }
         } else {
-          // While closing, the real trigger stays hidden. Blob A inside the
-          // overlay represents the trigger and fuses with the returning droplet.
-          // When handoff fires at rawValue <= 0.0, triggerOpacity becomes 1.0.
           triggerOpacity = 0.0;
         }
 
@@ -825,19 +835,22 @@ class _GlassPopoverState extends State<GlassPopover>
           verticalOffset: _verticalOffset,
         );
 
-        final currentHeight = lerpDouble(th, popoverHeight, state.sizeT)!;
-        final currentWidth = lerpDouble(tw, popoverWidth, state.sizeT)!;
+        final bool isPremiumQuality = effectiveQuality == GlassQuality.premium;
+        final double morphSizeT =
+            (_morphController.isClosing && isPremiumQuality)
+                ? (state.pathT + state.sizeT) * 0.5
+                : state.sizeT;
+
+        final currentHeight = lerpDouble(th, popoverHeight, morphSizeT)!
+            .clamp(0.0, double.infinity);
+        final currentWidth = lerpDouble(tw, popoverWidth, morphSizeT)!
+            .clamp(0.0, double.infinity);
 
         final double effectiveDx;
         final double effectiveDy;
         if (_morphController.isClosing) {
-          if (isPremium) {
-            effectiveDx = finalDx * state.pathT;
-            effectiveDy = finalDy * state.pathT;
-          } else {
-            effectiveDx = finalDx * state.sizeT;
-            effectiveDy = finalDy * state.sizeT;
-          }
+          effectiveDx = finalDx * morphSizeT;
+          effectiveDy = finalDy * morphSizeT;
         } else {
           effectiveDx = state.currentDx;
           effectiveDy = state.currentDy;
@@ -983,18 +996,20 @@ class _GlassPopoverState extends State<GlassPopover>
   ) {
     // Morph border radius from pill → target corner radius.
     final maxRadius = math.min(currentWidth, currentHeight) / 2.0;
+    final bool isPremiumQuality = effectiveQuality == GlassQuality.premium;
+    final double morphSizeT = (_morphController.isClosing && isPremiumQuality)
+        ? (state.pathT + state.sizeT) * 0.5
+        : state.sizeT;
     final double radiusT =
-        Curves.easeInExpo.transform(state.sizeT.clamp(0.0, 1.0));
-    final bool isPremium = effectiveQuality == GlassQuality.premium &&
-        ImageFilter.isShaderFilterSupported;
-    final currentRadius = _morphController.isClosing
-        ? (isPremium
-            ? maxRadius
-            : lerpDouble(
-                _triggerBorderRadius ?? (_triggerSize!.shortestSide / 2.0),
-                widget.popoverBorderRadius,
-                radiusT,
-              )!)
+        Curves.easeInExpo.transform(morphSizeT.clamp(0.0, 1.0));
+    final bool isPremium =
+        isPremiumQuality && ImageFilter.isShaderFilterSupported;
+    final currentRadius = (_morphController.isClosing && !isPremium)
+        ? lerpDouble(
+            _triggerBorderRadius ?? (_triggerSize!.shortestSide / 2.0),
+            widget.popoverBorderRadius,
+            radiusT,
+          )!
         : lerpDouble(maxRadius, widget.popoverBorderRadius, radiusT)!;
 
     final teardropShape = LiquidRoundedRectangle(
@@ -1041,12 +1056,14 @@ class _GlassPopoverState extends State<GlassPopover>
               alignment: _morphAlignment,
               clipBehavior: Clip.none,
               children: [
-                // Content enters at 30 % morph progress and scales 0.5 → 1.0.
-                // On close the reverse plays, matching GlassMenu behaviour.
-                if (_morphController.isClosing
-                    ? clampedValue > 0.85
-                    : clampedValue > 0.3)
-                  _buildContentWithMeasurement(clampedValue, targetHeight),
+                // Content enters and exits at 50 % container size progress,
+                // matching GlassMenu behaviour so content is never visible
+                // inside the shrinking button on close.
+                if (morphSizeT > 0.50)
+                  _buildContentWithMeasurement(
+                    morphSizeT.clamp(0.0, 1.0),
+                    targetHeight,
+                  ),
               ],
             ),
           ),
@@ -1056,20 +1073,12 @@ class _GlassPopoverState extends State<GlassPopover>
   }
 
   Widget _buildContentWithMeasurement(
-      double clampedValue, double targetHeight) {
-    // Fade in smoothly: fully opaque by 70 % morph progress.
-    final contentOpacity = _morphController.isClosing
-        ? ((clampedValue - 0.85) / 0.15).clamp(0.0, 1.0)
-        : ((clampedValue - 0.3) / 0.4).clamp(0.0, 1.0);
+      double sizeProgress, double targetHeight) {
+    // Fade in/out smoothly in lockstep with the container size.
+    final contentOpacity = ((sizeProgress - 0.50) / 0.45).clamp(0.0, 1.0);
 
-    // Scale 0.5 → 1.0 with easeOut, in sync with the expanding container.
-    final contentScale = lerpDouble(
-      0.5,
-      1.0,
-      Curves.easeOut.transform(
-        ((clampedValue - 0.3) / 0.7).clamp(0.0, 1.0),
-      ),
-    )!;
+    // Scale in sync with the expanding/contracting container.
+    final contentScale = sizeProgress;
 
     // _cachedContent was set in _openPopover (or refreshed in didUpdateWidget).
     // The null-coalesce is a last-resort safety net only.
