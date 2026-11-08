@@ -64,6 +64,14 @@ class GlassDefaults {
   /// Large border radius for prominent elements (20.0)
   static const double borderRadiusLarge = 20.0;
 
+  /// Default continuous corner radius applied to page surfaces during
+  /// route push/pop transitions and interactive swipe-back gestures (55.0).
+  ///
+  /// Matches the native iOS `_UIParallaxTransitionCardView` continuous
+  /// corner configuration (`UIScreen._displayCornerRadius` on modern
+  /// rounded-bezel iPhones).
+  static const double pageTransitionCornerRadius = 55.0;
+
   /// Sentinel radius that produces a perfect capsule (stadium) shape at any
   /// widget height.
   ///

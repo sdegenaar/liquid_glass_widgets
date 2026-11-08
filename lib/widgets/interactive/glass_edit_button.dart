@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../shared/glass_edit_scope.dart';
 import 'glass_button.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
+import '../../theme/glass_theme_helpers.dart';
 
 /// A button that toggles edit mode, directly matching SwiftUI's `EditButton()`.
 ///
@@ -79,11 +80,16 @@ class GlassEditButton extends StatelessWidget {
         _isExplicit ? _explicitIsEditing : (controller?.isEditing ?? false);
 
     final effectiveColor = color ?? CupertinoColors.label.resolveFrom(context);
+    final effectiveQuality = GlassThemeHelpers.resolveQuality(
+      context,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
+    );
 
     return GlassButton.custom(
       label: isEditing ? doneLabel : editLabel,
       height: 44,
       useOwnLayer: true,
+      quality: effectiveQuality,
       shape: const LiquidRoundedSuperellipse(borderRadius: 22),
       stretch: 0.15,
       onTap: () {

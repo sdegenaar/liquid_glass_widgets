@@ -50,10 +50,9 @@ class AppleMailDemoApp extends StatelessWidget {
         builder: (context) {
           final isIos27 = MailGlassScope.isIos27(context);
           return GlassTheme(
-            data: GlassThemeData(
-              style: isIos27 ? GlassStyle.ios27 : GlassStyle.ios26,
-              brightness: Brightness.dark,
-            ),
+            data: isIos27
+                ? const GlassThemeData.ios27(brightness: Brightness.dark)
+                : const GlassThemeData.ios26(brightness: Brightness.dark),
             child: CupertinoApp(
               title: 'Apple Mail',
               theme: const CupertinoThemeData(brightness: Brightness.dark),

@@ -173,7 +173,7 @@ When generating Flutter UI, replace standard Flutter widgets with their native l
 
 | Flutter Standard Widget | Liquid Glass Replacement | Key Usage Notes |
 | :--- | :--- | :--- |
-| `Scaffold` | `GlassScaffold` | Handles z-order, edge fading, content-aware brightness. |
+| `Scaffold` | `GlassScaffold` | Handles z-order, edge fading, content-aware brightness, and native rounded page clipping during route transitions (`transitionCornerRadius`). |
 | `AppBar` / `CupertinoNavigationBar` | `GlassAppBar` | Transparent iOS 26 style by default. Supports `.pinned` for gel morph. |
 | `BottomNavigationBar` / `CupertinoTabBar` | `GlassTabBar.bottom` | Unified glass navigation pill (`GlassBottomBar` is deleted). `settings:` styles the bar platter; `indicatorSettings:` (e.g. `LiquidGlassSettings.classicIndicator`) styles the animated pill. |
 | Bottom nav that collapses to selected tab on scroll | `GlassTabBar.minimizable` | Minimizes to a single pill on scroll; supports an optional trailing action button. |
@@ -193,7 +193,7 @@ When generating Flutter UI, replace standard Flutter widgets with their native l
 | Long-press context menu / SwiftUI `.contextMenu` | `GlassContextMenu` (or `.glassContextMenu()`, `GlassListTile.contextMenuActions`) | Row-lift menu with optional `previewBuilder`. Use `GlassPullDownButton` for tap-triggered menus. |
 | Full-screen `showDialog` / `.fullScreenCover` | `showGlassFullScreenCover` + `GlassFullScreenCover` | Edge-to-edge slide-up cover with swipe-down dismiss. |
 | `showDatePicker` / `CupertinoDatePicker` | `GlassDatePicker` (`.compact`, `.graphical`, `.wheel`), `GlassMultiDatePicker` | `showGlassDatePicker(...)` returns `DateTime?`. |
-| `Navigator.push` rows / SwiftUI `NavigationStack` | `GlassNavigationStack` + `GlassNavigationLink` | Typed `value` routing via `destinations`, or a `destination` builder. |
+| `Navigator.push` rows / SwiftUI `NavigationStack` | `GlassNavigationStack` + `GlassNavigationLink` + `GlassPageRoute` | Typed `value` routing via `destinations`, or a `destination` builder. Automatically clips pages with rounded superellipse corners during push/pop and swipe-back (`transitionCornerRadius`; use `GlassPageTransitionsBuilder` in `MaterialApp.theme.pageTransitionsTheme`). |
 | `TextField` / `CupertinoTextField` | `GlassTextField` / `GlassSearchBar` / `GlassTextArea` / `GlassPasswordField` / `GlassPicker` | Refractive glass input with press glow/scale (`glass`), or shader-free iOS `tertiarySystemFill` well (`surfaceStyle: GlassSurfaceStyle.solid` or auto-inherited inside a solid card). |
 | `showModalBottomSheet` | `GlassModalSheet.show` | Multi-detent fluid sheet (peek, half, full) with spring physics. |
 | `showDialog` / `CupertinoAlertDialog` | `GlassDialog.show` | Centered 320 pt iOS 26/27 alert platter with 48 pt capsule `GlassDialogAction` buttons (280 pt on `GlassStyle.classic`). |
@@ -278,7 +278,7 @@ GlassPullDownButton(
 
 - A submenu row shows a chevron automatically unless you pass `trailing`.
 - Do **not** build nested menus by opening a second `GlassMenu` from an item's `onTap`; use `submenu`.
-- Use `GlassMenuItem.semanticsSelected: true` (alongside a checkmark `trailing`) to announce the active choice to VoiceOver/TalkBack without keeping the hover highlight visible, and `semanticLabel` when `trailing` adds visual-only text like keyboard shortcuts.
+- Use `GlassMenuItem.semanticsSelected: true` (alongside a checkmark `trailing`) to announce the active choice to VoiceOver/TalkBack (`semanticsChecked` on macOS where VoiceOver expects radio checked state) without keeping the hover highlight visible, and `semanticLabel` when `trailing` adds visual-only text like keyboard shortcuts.
 
 ### GlassMaterialize
 For widgets appearing or disappearing dynamically, use `GlassMaterialize` to match iOS 26's progressive defogging transition:
