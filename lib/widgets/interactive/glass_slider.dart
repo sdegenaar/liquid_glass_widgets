@@ -463,7 +463,7 @@ class _GlassSliderState extends State<GlassSlider>
     _effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
-      fallback: GlassThemeHelpers.nativeStyleQuality(context),
+      fallback: GlassQuality.premium,
     );
 
     final effectiveValue = _dragValue ?? widget.value;
@@ -734,8 +734,13 @@ class _GlassSliderState extends State<GlassSlider>
     };
     final themedThumbSettings =
         theme?.indicatorSettingsFor(context)?.applyTo(eraBase) ?? eraBase;
-    final resolvedThumbSettings =
-        (widget.settings ?? themedThumbSettings).copyWith(blur: 0, frost: 0);
+    final rawThumbSettings = widget.settings ?? themedThumbSettings;
+    final resolvedThumbSettings = rawThumbSettings.copyWith(
+      blur: 0,
+      frost: 0,
+      glassColor:
+          isStdPath && rawThumbSettings.glassColor.a == 0 ? thumbTint : null,
+    );
     final useIos27Lens =
         resolvedThumbSettings.lensModel == GlassLensModel.paraxial;
 
@@ -822,7 +827,7 @@ class _GlassSliderState extends State<GlassSlider>
               ),
             ),
           ),
-          if (!isStdPath && transition > 0.05)
+          if (transition > 0.05)
             Positioned.fill(
               child: IgnorePointer(
                 child: CustomPaint(

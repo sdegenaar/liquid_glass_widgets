@@ -577,9 +577,11 @@ class _GlassEffectState extends State<GlassEffect>
     // Ratios are identical to AdaptiveGlass (thickness × 0.4, lightIntensity × 0.6)
     // so the visual language stays consistent between static and interactive surfaces.
     //
-    // When an iOS 27 indicator preset (lightIntensity: 0, rimLight: 1.0) drops
-    // to the 2D indicator shader (which has no uRimLight uniform), stand
-    // rimLight in for lightIntensity so key/kick rim highlights remain visible.
+    // When an iOS 27 indicator preset (lightIntensity: 0, rimLight: 1.0,
+    // rimShade: 1.0) drops to the 2D indicator shader (which has no uRimLight
+    // or uRimShade uniforms), stand rimLight in for lightIntensity and
+    // rimShade in for edgeAbsorption so key/kick rim highlights and meniscus
+    // rim contrast remain visible on light surfaces.
     //
     // NOTE: glassColor.alpha is intentionally NOT normalised here (unlike AdaptiveGlass).
     // Interactive thumb body opacity is already governed by
@@ -591,6 +593,10 @@ class _GlassEffectState extends State<GlassEffect>
                 base.rimLight.clamp(0.0, 1.0) *
                 base.visibility)
         .clamp(0.0, 10.0);
+    final double fallbackEdgeAbsorption = math.max(
+      base.edgeAbsorption,
+      base.rimShade.clamp(0.0, 1.0) * 0.22 * base.visibility,
+    );
     final LiquidGlassSettings effectiveSettings;
     if (widget.quality == GlassQuality.standard) {
       effectiveSettings = base.copyWith(
@@ -598,9 +604,13 @@ class _GlassEffectState extends State<GlassEffect>
         lightIntensity: (fallbackLightIntensity * 0.6).clamp(0.0, 10.0),
         ambientStrength: (base.effectiveAmbientStrength * 0.25).clamp(0.0, 1.0),
         glowIntensity: (base.glowIntensity * 0.50).clamp(0.0, 5.0),
+        edgeAbsorption: fallbackEdgeAbsorption,
       );
     } else {
-      effectiveSettings = base.copyWith(lightIntensity: fallbackLightIntensity);
+      effectiveSettings = base.copyWith(
+        lightIntensity: fallbackLightIntensity,
+        edgeAbsorption: fallbackEdgeAbsorption,
+      );
     }
 
     // Path B: High-Fidelity Refraction Shader (Custom GLSL)

@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- **`GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl` lifted lens inside `GlassGroupedSection` / `GlassContainer`:** Fixed `GlassContainer` and `AdaptiveGlass` marking their default `GlassQuality.standard` fallback as an explicit `InheritedLiquidGlass.hasExplicitQuality` override, which coerced hero interactive lenses inside `GlassGroupedSection` down to `GlassQuality.standard`; restored `GlassQuality.premium` default across all `GlassStyle` presets for `GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl` (zero shader layers mounted at rest), and hardened the 2D `GlassQuality.standard` fallback (`rimShade` to `edgeAbsorption`, `thumbTint`, and `LensInnerShadowPainter`) so lifted thumbs remain visible on white cards.
+
 # 1.17.0
 
 ## Breaking & Behavior Changes (Upgrading from ≤ 1.16.x)

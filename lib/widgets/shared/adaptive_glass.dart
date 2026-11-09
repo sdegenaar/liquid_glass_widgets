@@ -430,6 +430,7 @@ class AdaptiveGlass extends StatelessWidget {
             quality: quality,
             isBlurProvidedByAncestor: true,
             hasExplicitSettings: inherited?.hasExplicitSettings ?? false,
+            hasExplicitQuality: inherited?.hasExplicitQuality ?? false,
             child: content,
           ),
         );
