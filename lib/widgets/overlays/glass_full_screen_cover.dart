@@ -2,11 +2,14 @@ import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
+import '../../src/renderer/glass_backdrop_group.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../theme/glass_theme.dart';
 import '../../theme/glass_theme_data.dart';
+import '../../theme/glass_theme_helpers.dart';
 import '../../types/glass_quality.dart';
 import '../interactive/glass_button.dart';
+import '../shared/glass_isolation_scope.dart';
 
 /// Alignment position for the standard close button in [GlassFullScreenCoverBar].
 enum GlassFullScreenCoverClosePosition {
@@ -81,6 +84,11 @@ class GlassFullScreenCoverBar extends StatelessWidget {
 
   Widget _buildCloseButton(BuildContext context) {
     final effectiveOnClose = onClose ?? () => Navigator.of(context).maybePop();
+    final effectiveQuality = GlassThemeHelpers.resolveQuality(
+      context,
+      widgetQuality: quality,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
+    );
 
     if (closeButtonLabel != null) {
       return GlassFullScreenCoverBarButton(
@@ -88,7 +96,7 @@ class GlassFullScreenCoverBar extends StatelessWidget {
         isPrimary: true,
         onPressed: effectiveOnClose,
         settings: settings,
-        quality: quality,
+        quality: effectiveQuality,
       );
     }
 
@@ -100,7 +108,7 @@ class GlassFullScreenCoverBar extends StatelessWidget {
       label: 'Close full-screen cover',
       useOwnLayer: true,
       settings: settings,
-      quality: quality,
+      quality: effectiveQuality,
       stretch: 0.15,
       onTap: effectiveOnClose,
     );
@@ -124,55 +132,62 @@ class GlassFullScreenCoverBar extends StatelessWidget {
 
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
 
-    // iOS 26: the navigation bar background is transparent — only the toolbar
+    // iOS 26/27: the navigation bar background is transparent — only the toolbar
     // buttons are glass. [backgroundColor] remains available as an opt-in.
-    return Container(
-      padding: EdgeInsets.only(top: topPadding, left: 16, right: 16),
-      height: height + topPadding,
-      color: backgroundColor,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          if (showDragHandle)
-            Positioned(
-              top: 6,
-              child: Container(
-                width: 36,
-                height: 5,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(2.5),
-                  color: isDark
-                      ? CupertinoColors.white.withValues(alpha: 0.22)
-                      : CupertinoColors.black.withValues(alpha: 0.18),
-                ),
-              ),
-            ),
-          if (title != null)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 100),
-                child: DefaultTextStyle(
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.4,
-                    color: CupertinoColors.label.resolveFrom(context),
+    return GlassIsolationScope(
+      isolated: true,
+      defaultQuality: GlassThemeHelpers.nativeStyleQuality(context),
+      child: GlassBackdropGroup(
+        joinEnclosing: true,
+        child: Container(
+          padding: EdgeInsets.only(top: topPadding, left: 16, right: 16),
+          height: height + topPadding,
+          color: backgroundColor,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              if (showDragHandle)
+                Positioned(
+                  top: 6,
+                  child: Container(
+                    width: 36,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(2.5),
+                      color: isDark
+                          ? CupertinoColors.white.withValues(alpha: 0.22)
+                          : CupertinoColors.black.withValues(alpha: 0.18),
+                    ),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  child: title!,
                 ),
+              if (title != null)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 100),
+                    child: DefaultTextStyle(
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.4,
+                        color: CupertinoColors.label.resolveFrom(context),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      child: title!,
+                    ),
+                  ),
+                ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: effectiveLeading ?? const SizedBox.shrink(),
               ),
-            ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: effectiveLeading ?? const SizedBox.shrink(),
+              Align(
+                alignment: Alignment.centerRight,
+                child: effectiveTrailing ?? const SizedBox.shrink(),
+              ),
+            ],
           ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: effectiveTrailing ?? const SizedBox.shrink(),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -181,7 +196,7 @@ class GlassFullScreenCoverBar extends StatelessWidget {
 /// A native-style liquid glass capsule toolbar button for
 /// [GlassFullScreenCoverBar] ("Cancel" / "Done").
 ///
-/// Mirrors SwiftUI's glass `ToolbarItem` text buttons on iOS 26: a 44pt tall
+/// Mirrors SwiftUI's glass `ToolbarItem` text buttons on iOS 26/27: a 44pt tall
 /// capsule with a black label. Set [isPrimary] for the bold "Done" style.
 class GlassFullScreenCoverBarButton extends StatelessWidget {
   /// Creates a [GlassFullScreenCoverBarButton].
@@ -211,13 +226,18 @@ class GlassFullScreenCoverBarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveQuality = GlassThemeHelpers.resolveQuality(
+      context,
+      widgetQuality: quality,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
+    );
     return GlassButton.custom(
       label: label,
       height: 44,
       useOwnLayer: true,
       shape: const LiquidRoundedSuperellipse(borderRadius: 22),
       settings: settings,
-      quality: quality,
+      quality: effectiveQuality,
       stretch: 0.15,
       onTap: onPressed,
       child: Padding(

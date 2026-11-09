@@ -107,10 +107,11 @@ class _AppleLiquidGlassShowcaseAppState
     final isDark = _brightness == Brightness.dark;
 
     return GlassTheme(
-      data: GlassThemeData(
-        style: _style,
-        brightness: _brightness,
-      ),
+      data: switch (_style) {
+        GlassStyle.ios27 => GlassThemeData.ios27(brightness: _brightness),
+        GlassStyle.ios26 => GlassThemeData.ios26(brightness: _brightness),
+        GlassStyle.classic => GlassThemeData.classic(brightness: _brightness),
+      },
       child: _BrightnessScope(
         brightness: _brightness,
         toggleBrightness: _toggleBrightness,
