@@ -2021,5 +2021,47 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('One'), findsNothing);
     });
+
+    testWidgets(
+        'GlassMenu trigger smoothly re-materializes during final 42% of close before handoff',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: GlassMenu(
+                quality: GlassQuality.premium,
+                trigger: const SizedBox(
+                  width: 120,
+                  height: 36,
+                  child: Text('Pull-Down'),
+                ),
+                items: [
+                  GlassMenuItem(title: 'One', onTap: () {}),
+                  GlassMenuItem(title: 'Two', onTap: () {}),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Pull-Down'));
+      await tester.pumpAndSettle();
+
+      // Tap item to close
+      await tester.tap(find.text('One'));
+      await tester.pump();
+      // At 180ms into close (clampedValue ≈ 0.25, before handoff at ~285ms),
+      // triggerOpacity is already ramping back in (0 < opacity < 1).
+      await tester.pump(const Duration(milliseconds: 180));
+      final triggerOpacity = tester.widget<Opacity>(find.byType(Opacity).first);
+      expect(triggerOpacity.opacity, greaterThan(0.0));
+      expect(triggerOpacity.opacity, lessThan(1.0));
+
+      await tester.pumpAndSettle();
+      final settledOpacity = tester.widget<Opacity>(find.byType(Opacity).first);
+      expect(settledOpacity.opacity, equals(1.0));
+    });
   });
 }
