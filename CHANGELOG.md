@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- **`GlassMenu`, `GlassPullDownButton`, and `GlassPopover` liquid morph parity (#453):** Restored native iOS 26/27 open and close morph physics for `GlassQuality.premium` — immediate trigger handoff and full J-curve overshoot on open, symmetric ~350 ms close spring, and smooth trigger-anchored contraction and item fade on close. Thanks to [@denweeLabs](https://github.com/denweeLabs) for reporting (#453).
+
 # 1.17.0
 
 ## Breaking & Behavior Changes (Upgrading from ≤ 1.16.x)
@@ -28,7 +34,6 @@
 - **Theme & modal inheritance:** `GlassThemeData()` and `GlassThemeData.simple()` no longer overwrite the active `GlassStyle` tab bar platter when unmodified; ambient `AdaptiveLiquidGlassLayer` scopes without explicit `settings` no longer mask `GlassThemeData` for nested overlays; and all modal/overlay presenters (`GlassModalSheet.show`, `GlassSheet.show`, `GlassDialog.show`, `showGlassActionSheet`, `GlassToast.show`, `showGlassFullScreenCover`, `GlassPicker.showSheet`, `GlassDatePicker`) preserve the caller's ambient `GlassTheme` and `CupertinoTheme`.
 - **Consistent 3-tier `GlassStyle` & `GlassQuality` resolution:** `GlassDialog` (`quality` now `GlassQuality?`, forwarding `barrierColor`), `GlassActionSheet`, `GlassPopover`, `GlassToast`, `GlassToolbar`, `GlassBadge`, `GlassPicker`, `GlassProgressIndicator`, `GlassStepper`, `GlassChip`, `GlassPasswordField` (`quality` now `GlassQuality?`), `GlassListTile.standalone` (honouring `settings`), and tinted `GlassBarItem` capsules now resolve settings and quality from the active `GlassTheme` and translate `ios26`/`ios27` frost parameters onto `GlassQuality.standard` shaders.
 - **Visual & transition fixes:** Fixed `GlassSwitch` and `GlassSlider` resting thumb shadow clipping and perimeter rim hairline, `GlassSegmentedControl(useOwnLayer: true)` theme resolution, `GlassModalSheet` half-to-full frost/rim interpolation, and `CupertinoDynamicColor` resolution in `GlassMenuItem`, `GlassMenuDivider`, and `GlassMenuLabel`.
-- **`GlassMenu`, `GlassPullDownButton`, and `GlassPopover` liquid morph parity (#453):** Restored native iOS 26/27 open and close morph physics for `GlassQuality.premium` — immediate trigger handoff and full J-curve overshoot on open, symmetric ~350 ms close spring, and smooth trigger-anchored contraction and item fade on close. Thanks to [@denweeLabs](https://github.com/denweeLabs) for reporting (#453).
 
 # 1.16.1
 
