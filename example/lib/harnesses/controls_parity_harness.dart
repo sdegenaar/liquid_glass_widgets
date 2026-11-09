@@ -888,7 +888,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                     GlassPullDownButton(
                       key: _pullDownKey,
                       label: 'Pull-Down',
-                      buttonWidth: 132,
+                      buttonWidth: 120,
                       buttonHeight: 36,
                       menuWidth: 220,
                       quality: GlassQuality.premium,
@@ -923,10 +923,10 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                         ),
                       ],
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     GlassButton.custom(
                       key: _contextMenuBtnKey,
-                      width: 132,
+                      width: 120,
                       height: 36,
                       shape: const LiquidRoundedSuperellipse(
                         borderRadius: 18,
@@ -942,6 +942,52 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                           color: labelColor,
                         ),
                       ),
+                    ),
+                    const SizedBox(width: 10),
+                    GlassMenu(
+                      menuWidth: 220,
+                      quality: GlassQuality.premium,
+                      triggerBuilder: (context, toggle) => GlassIconButton(
+                        size: 36,
+                        useOwnLayer: true,
+                        quality: GlassQuality.premium,
+                        icon: Icon(
+                          CupertinoIcons.ellipsis,
+                          size: 17,
+                          color: labelColor,
+                        ),
+                        onPressed: toggle,
+                      ),
+                      items: [
+                        GlassMenuLabel(
+                          child: Text(
+                            'Sort By',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.08,
+                              color: secondaryColor,
+                            ),
+                          ),
+                        ),
+                        GlassMenuItem(
+                          title: 'Name',
+                          icon: const Icon(CupertinoIcons.textformat),
+                          onTap: () {},
+                        ),
+                        GlassMenuItem(
+                          title: 'Date Modified',
+                          icon: const Icon(CupertinoIcons.calendar),
+                          onTap: () {},
+                        ),
+                        const GlassMenuDivider(),
+                        GlassMenuItem(
+                          title: 'Delete All',
+                          icon: const Icon(CupertinoIcons.trash),
+                          isDestructive: true,
+                          onTap: () {},
+                        ),
+                      ],
                     ),
                   ],
                 ),

@@ -197,24 +197,24 @@ class LiquidMorphPhysics {
     damping: 16.0,
   );
 
-  /// Spring profile for the iOS 26 liquid morph **closing** animation.
+  /// Spring profile for the iOS 26/27 liquid morph **closing** animation.
   ///
-  /// Tuned for Apple iOS 26 "snappy" exit physics: higher natural frequency
-  /// (stiffness: 200.0, damping: 21.0, ω₀ ≈ 14.1 rad/s) for a fast, responsive
-  /// dismissal (~240 ms) while preserving the signature 0.74 underdamped ratio
-  /// for the rubber-band catch on the trigger button.
+  /// Matches the native iOS 27 `_UIContextMenuView` / `_UIMagicMorphView`
+  /// dismissal response (`response ≈ 0.35s`, ω₀ ≈ 11.0 rad/s, ζ ≈ 0.73),
+  /// paired with [closeVelocityHint] (`-2.5`) to drive the spring smoothly
+  /// home with an underdamped rubber-band catch on the trigger button.
   static const SpringDescription closeSpring = SpringDescription(
     mass: 1.0,
-    stiffness: 200.0,
-    damping: 21.0,
+    stiffness: 120.0,
+    damping: 16.0,
   );
 
   /// Initial velocity hint injected when the close animation starts.
   ///
   /// A negative value immediately drives the spring toward zero with
-  /// momentum, creating a snappy initial pull and maximising the visible
-  /// rubber-band bounce amplitude.
-  static const double closeVelocityHint = -3.2;
+  /// momentum, creating a responsive initial pull and a subtle underdamped
+  /// rubber-band catch on the trigger without slamming shut prematurely.
+  static const double closeVelocityHint = -2.5;
 
   // ─── Tuning constants (intentionally not public) ───────────────────────────
   //
@@ -249,18 +249,6 @@ class LiquidMorphPhysics {
 
   /// Maximum SDF blend value to prevent excessive merging on small movements.
   static const double _maxBlend = 28.0;
-
-  /// Closing-animation threshold below which the proximity blend re-merge ramp begins.
-  ///
-  /// When [compute] is called with [isClosing] = `true` and [clampedValue] falls
-  /// below this threshold, the SDF blend grows from `0.0` up to [_maxBlend],
-  /// simulating the returning droplet re-fusing with the trigger blob — the
-  /// iOS 26 metaball absorption effect.
-  ///
-  /// A wider threshold (0.6) gives the bridge ~150 ms of visibility at the
-  /// normal close-spring speed, which is enough to read as a liquid neck
-  /// rather than a sub-perceptual flash.
-  static const double _closeProximityThreshold = 0.6;
 
   /// Maximum travel distance (logical pixels) for the full close push.
   ///
@@ -394,16 +382,16 @@ class LiquidMorphPhysics {
     }
 
     // ── Size ─────────────────────────────────────────────────────────────────
-    // On close: smoothly tracks the spring contraction.
+    // On close: ease-in via inverted linearToEaseOut so the surface visibly
+    // shrinks while returning toward the anchor, opening |pathT - sizeT| in
+    // mid-flight to drive the SDF metaball bridge.
     // On open:
     //   Small morphs: linearToEaseOut — starts fast, decelerates to the target.
     //   Large morphs (scaleDelta > 3): smootherstep — keeps early peel controlled
     //     through detach/travel, then blossoms into destination bounds.
     final double rawSizeT;
     if (isClosing) {
-      // Ease-in contraction: the droplet contracts rapidly early in the return flight,
-      // forming a compact liquid bead rather than shrinking linearly with position.
-      rawSizeT = math.pow(clampedValue, 1.4).toDouble();
+      rawSizeT = 1.0 - Curves.linearToEaseOut.transform(1.0 - clampedValue);
     } else if (adaptive && scaleDelta > 3.0) {
       rawSizeT = _smootherStep(clampedValue);
     } else {
@@ -442,51 +430,21 @@ class LiquidMorphPhysics {
     final currentDy = finalDy * pathT;
 
     // ── Anchor Scale ─────────────────────────────────────────────────────────
-    // On open: Shrinks the ghost trigger (Blob A) to 0 over the first 40% of
-    // the animation so the droplet cleanly detaches.
-    // On close: Blob A forms early (0.85 -> 0.45) so the trigger shape is fully
-    // present and receptive at the destination, allowing the incoming droplet
-    // to form an authentic SDF metaball bridge as it approaches.
-    final double anchorScale;
-    if (isClosing) {
-      anchorScale = (1.0 - (clampedValue - 0.45) / 0.40).clamp(0.0, 1.0);
-    } else {
-      anchorScale =
-          (1.0 - (clampedValue / _anchorEaseDuration)).clamp(0.0, 1.0);
-    }
+    // Shrinks the ghost trigger (Blob A) to 0 over the first 40% of the open
+    // animation so the droplet cleanly detaches, and grows it back from 0 to 1
+    // over the final 40% of the close animation as the droplet re-merges.
+    final anchorScale =
+        (1.0 - (clampedValue / _anchorEaseDuration)).clamp(0.0, 1.0);
 
     // ── Metaball Blend ────────────────────────────────────────────────────────
+    // Separation between pathT (position) and sizeT (size) drives the SDF
+    // smooth-union radius on both open and close, peaking in mid-flight and
+    // converging to 0.0 at rest (0.0) and settled (1.0) so there is zero
+    // artificial SDF inflation at handoff.
     final blendAttenuation = computeBlendAttenuation(scaleDelta);
-    final double blend;
-    if (isClosing) {
-      // Proximity re-merge: as the droplet re-enters the trigger's proximity
-      // zone (clampedValue < _closeProximityThreshold), ramp the SDF bridge up
-      // from 0 → _maxBlend using an easeOut curve.
-      //
-      // easeOut (fast-at-start) is intentional: the bridge snaps onto screen
-      // early as Blob A grows back, holds near peak for most of the window,
-      // then the droplet simply "lands" into the trigger shape.  This matches
-      // the native iOS surface-tension spike that fires as the two shapes first
-      // touch, not as they fully absorb.
-      //
-      // Using easeIn (slow-at-start) caused the bridge to be a sub-perceptual
-      // flash that maxed out only in the last few frames before handoff.
-      //
-      // NOTE: this value is non-zero only when a LiquidGlassBlendGroup is
-      // present (GlassQuality.premium + Impeller).  On standard / minimal
-      // quality the blend field is computed but the SDF layer never reads it.
-      final proximityT =
-          (1.0 - clampedValue / _closeProximityThreshold).clamp(0.0, 1.0);
-      final eased = Curves.easeOut.transform(proximityT);
-      blend = (eased * _maxBlend * blendAttenuation).clamp(0.0, _maxBlend);
-    } else {
-      // Open: separation between pathT (position) and sizeT (size) represents
-      // how far Blob B has pulled away from its anchor.  Blend naturally scales
-      // with this, attenuated for large-scale morphs.
-      final separation = (pathT - sizeT).abs();
-      blend = (separation * _blendMultiplier * blendAttenuation)
-          .clamp(0.0, _maxBlend);
-    }
+    final separation = (pathT - sizeT).abs();
+    final blend = (separation * _blendMultiplier * blendAttenuation)
+        .clamp(0.0, _maxBlend);
 
     // ── Container Scale Pulse ─────────────────────────────────────────────────
     // Subtle squeeze/swell during spring overshoot phases.
