@@ -41,17 +41,6 @@ final _dark = ValueNotifier<bool>(false);
 /// Active glass style preset (`style ios27|ios26|classic` command).
 final _style = ValueNotifier<GlassStyle>(GlassStyle.ios27);
 
-/// Dark-mode pill / button glass settings matching the Apple Music example.
-const _kDarkPillGlassSettings = LiquidGlassSettings(
-  glassColor: Color(0xCC1C1C1E),
-  thickness: 30,
-  blur: 2,
-  lightIntensity: 0.18,
-  chromaticAberration: 0.01,
-  saturation: 1.2,
-  fresnelStrength: 0.0,
-);
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
@@ -66,19 +55,27 @@ class _App extends StatelessWidget {
         valueListenable: _dark,
         builder: (context, dark, _) => ValueListenableBuilder<GlassStyle>(
           valueListenable: _style,
-          builder: (context, style, _) => GlassTheme(
-            data: GlassThemeData(
-              style: style,
-              brightness: dark ? Brightness.dark : Brightness.light,
-            ),
-            child: CupertinoApp(
-              debugShowCheckedModeBanner: false,
-              title: 'iOS Parity',
-              theme: CupertinoThemeData(
-                  brightness: dark ? Brightness.dark : Brightness.light),
-              home: const _ParityHost(),
-            ),
-          ),
+          builder: (context, style, _) {
+            final brightness = dark ? Brightness.dark : Brightness.light;
+            return GlassTheme(
+              data: switch (style) {
+                GlassStyle.ios27 =>
+                  GlassThemeData.ios27(brightness: brightness),
+                GlassStyle.ios26 =>
+                  GlassThemeData.ios26(brightness: brightness),
+                GlassStyle.classic =>
+                  GlassThemeData.classic(brightness: brightness),
+              },
+              child: CupertinoApp(
+                debugShowCheckedModeBanner: false,
+                title: 'iOS Parity',
+                theme: CupertinoThemeData(brightness: brightness),
+                builder: (context, child) =>
+                    GlassNavigationShell(child: child!),
+                home: const _ParityHost(),
+              ),
+            );
+          },
         ),
       );
 }
@@ -389,16 +386,12 @@ class _ParityHostState extends State<_ParityHost> {
   }
 
   void _presentCover() {
-    final isDark = _dark.value;
-    final buttonSettings = isDark ? _kDarkPillGlassSettings : null;
     showGlassFullScreenCover<void>(
       context: context,
       builder: (ctx) => GlassFullScreenCover(
         title: const Text('Modal Cover'),
-        settings: buttonSettings,
         leading: GlassFullScreenCoverBarButton(
           label: 'Cancel',
-          settings: buttonSettings,
           onPressed: () => Navigator.of(ctx).maybePop(),
         ),
         closeButtonLabel: 'Done',

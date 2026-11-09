@@ -136,6 +136,7 @@ class GlassScaffold extends StatelessWidget {
     this.edgeToEdge = false,
     this.themeOverride,
     this.enableBackgroundSampling,
+    this.transitionCornerRadius,
     this.edgeFade = true,
     this.topEdgeFade,
     this.bottomEdgeFade,
@@ -235,6 +236,11 @@ class GlassScaffold extends StatelessWidget {
   /// Whether to capture the background as a GPU texture for glass colour
   /// absorption. See [GlassPage.enableBackgroundSampling].
   final bool? enableBackgroundSampling;
+
+  /// Continuous superellipse corner radius applied to clip the page surface
+  /// during route push/pop transitions and interactive swipe-back gestures.
+  /// See [GlassPage.transitionCornerRadius].
+  final double? transitionCornerRadius;
 
   // ===========================================================================
   // Edge fading
@@ -766,6 +772,7 @@ class GlassScaffold extends StatelessWidget {
       edgeToEdge: edgeToEdge,
       themeOverride: themeOverride,
       enableBackgroundSampling: enableBackgroundSampling,
+      transitionCornerRadius: transitionCornerRadius,
       child: scaffold,
     );
   }

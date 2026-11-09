@@ -311,26 +311,18 @@ class GlassMorphController extends ChangeNotifier {
     }
     switch (_speed) {
       case MorphSpeed.slow:
-        // ω₀ ≈ 7.7 rad/s open, ω₀ ≈ 10.0 rad/s close
-        return _isClosing
-            ? const SpringDescription(
-                mass: 1.0, stiffness: 100.0, damping: 14.6)
-            : const SpringDescription(
-                mass: 1.0, stiffness: 60.0, damping: 11.3);
+        // ω₀ ≈ 7.7 rad/s, ζ ≈ 0.73 — relaxed, fluid motion (~500 ms)
+        return const SpringDescription(
+            mass: 1.0, stiffness: 60.0, damping: 11.3);
       case MorphSpeed.normal:
-        // iOS 26 native asymmetric springs:
-        // Open: ω₀ ≈ 11.0 rad/s, ζ ≈ 0.73 — buoyant, lush fluid expansion (~350 ms)
-        // Close: ω₀ ≈ 14.1 rad/s, ζ ≈ 0.74 — snappy, crisp magnetic retraction (~240 ms)
+        // ω₀ ≈ 11.0 rad/s, ζ ≈ 0.73 — iOS 26/27 native standard (~350 ms)
         return _isClosing
             ? LiquidMorphPhysics.closeSpring
             : LiquidMorphPhysics.openSpring;
       case MorphSpeed.fast:
-        // ω₀ ≈ 14.1 rad/s open, ω₀ ≈ 17.3 rad/s close
-        return _isClosing
-            ? const SpringDescription(
-                mass: 1.0, stiffness: 300.0, damping: 25.1)
-            : const SpringDescription(
-                mass: 1.0, stiffness: 200.0, damping: 20.5);
+        // ω₀ ≈ 14.1 rad/s, ζ ≈ 0.73 — snappy, responsive (~250 ms)
+        return const SpringDescription(
+            mass: 1.0, stiffness: 200.0, damping: 20.5);
       case MorphSpeed.instant:
         // ω₀ ≈ 22 rad/s, ζ ≈ 0.73 — very stiff, near-instant
         return const SpringDescription(

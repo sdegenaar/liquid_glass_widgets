@@ -314,28 +314,42 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
         final isHandoff =
             _morphController.isClosing && _morphController.hasHandedOff;
 
+        final effectiveQuality = GlassThemeHelpers.resolveQuality(
+          context,
+          widgetQuality: widget.quality,
+          fallback: GlassThemeHelpers.nativeStyleQuality(context),
+        );
+        final isPremiumQuality = effectiveQuality == GlassQuality.premium &&
+            !widget.platformViewBackdrop;
+
         // Tactile detach and re-merge trigger opacity.
         //
-        // On open: The trigger smoothly dissolves (1.0 -> 0.0) over the first
-        // 20% of travel as the droplet pulls away. Once detached, the trigger
-        // is cleanly hidden (no ghosting artifacts while reading items).
+        // On open (premium): The real trigger hides immediately on frame 1 so
+        // its shrinking ghost (Blob A inside the overlay, anchorScale 1.0 -> 0.0
+        // over 0..40%) is visible and reads as being absorbed into the droplet
+        // (matching native iOS 27 _UIReparentingView + MagicMorphView #2).
+        // On open (standard/minimal or morphFromZero): The trigger smoothly
+        // dissolves (1.0 -> 0.0) over the first 20% of travel as the droplet
+        // pulls away.
         //
-        // On close: As the droplet approaches home (clampedValue < 0.20),
-        // the trigger smoothly cross-dissolves back in (0.0 -> 1.0) while the
-        // overlay fades out, eliminating any 1-frame pop at handoff.
-        // Once handoff fires, the trigger is fully opaque to absorb the bounce.
+        // On close: While the menu contracts down to the trigger footprint, the
+        // real trigger stays hidden until the final 28% of travel (after all menu
+        // items have vanished at morphSizeT <= 0.50), then smoothly re-materializes
+        // inside the contracting pill so there is no blank-pill gap or sudden pop
+        // at handoff (matching native iOS 27 _UIReparentingView).
         final double triggerOpacity;
         final clampedValue = rawValue.clamp(0.0, 1.0);
         if (!_overlayController.isShowing || isHandoff) {
           triggerOpacity = 1.0;
         } else if (!_morphController.isClosing) {
-          final detachT = (clampedValue / 0.20).clamp(0.0, 1.0);
-          triggerOpacity = 1.0 - detachT;
+          if (isPremiumQuality && !widget.morphFromZero) {
+            triggerOpacity = 0.0;
+          } else {
+            final detachT = (clampedValue / 0.20).clamp(0.0, 1.0);
+            triggerOpacity = 1.0 - detachT;
+          }
         } else {
-          // While closing, the real trigger stays hidden. Blob A inside the
-          // overlay represents the trigger and fuses with the returning droplet.
-          // When handoff fires at rawValue <= 0.0, triggerOpacity becomes 1.0.
-          triggerOpacity = 0.0;
+          triggerOpacity = ((0.42 - clampedValue) / 0.35).clamp(0.0, 1.0);
         }
 
         // Calculate the momentum push vector based on the exact same logic as Blob B
@@ -417,8 +431,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                   child: GlassMaterializeScope(
                     glassProgress:
                         triggerOpacity * (outer?.glassProgress ?? 1.0),
-                    contentOpacity:
-                        triggerOpacity * (outer?.contentOpacity ?? 1.0),
+                    contentOpacity: outer?.contentOpacity ?? 1.0,
                     contentSigma: outer?.contentSigma ?? 0.0,
                     child: IgnorePointer(
                       ignoring: isMenuBlocking,
@@ -1469,19 +1482,6 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     final double sizeStartW = widget.morphFromZero ? 0.0 : tw;
     final double sizeStartH = widget.morphFromZero ? 0.0 : th;
 
-    // During close undershoot (sizeT < 0), squeeze relative to trigger size.
-    // NEVER lerp against the distant targetHeight — for a tall menu (e.g. 340 px),
-    // a negative lerp would subtract 45+ px from a 44 px trigger and collapse
-    // the container to 0 px, causing a visible flash on the close bounce.
-    final currentHeight = state.sizeT < 0.0
-        ? (sizeStartH * (1.0 + state.sizeT * 0.25)).clamp(1.0, double.infinity)
-        : lerpDouble(sizeStartH, targetHeight, state.sizeT)!
-            .clamp(0.0, double.infinity);
-    final currentWidth = state.sizeT < 0.0
-        ? (sizeStartW * (1.0 + state.sizeT * 0.25)).clamp(1.0, double.infinity)
-        : lerpDouble(sizeStartW, widget.menuWidth, state.sizeT)!
-            .clamp(0.0, double.infinity);
-
     final effectiveSettings = GlassThemeHelpers.resolveSettings(
       context,
       explicit: widget.settings,
@@ -1498,74 +1498,123 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     final bool useBlendGroup = effectiveQuality != GlassQuality.minimal &&
         !widget.platformViewBackdrop;
 
-    final bool isPremium = effectiveQuality == GlassQuality.premium &&
-        ImageFilter.isShaderFilterSupported &&
+    final bool isPremiumQuality = effectiveQuality == GlassQuality.premium &&
         !widget.platformViewBackdrop;
+    final bool isPremium =
+        isPremiumQuality && ImageFilter.isShaderFilterSupported;
+
+    // On premium close, blend state.pathT and state.sizeT (0.5 * (pathT + sizeT)),
+    // which matches the native iOS 26/27 CADisplayLink _UIContextMenuView
+    // contraction curve across the entire close while state.blend (|pathT - sizeT|)
+    // drives the SDF metaball neck.
+    final double morphSizeT = (_morphController.isClosing && isPremiumQuality)
+        ? (state.pathT + state.sizeT) * 0.5
+        : state.sizeT;
+
+    // On premium open from a wide pill trigger (tw > th), contract the starting
+    // width toward a circular droplet (th) over the first 16% of travel before
+    // blossoming to menuWidth, matching native iOS 27's MagicMorphView droplet.
+    final double effectiveStartW = (!_morphController.isClosing &&
+            isPremium &&
+            !widget.morphFromZero &&
+            tw > th)
+        ? lerpDouble(
+            th,
+            tw,
+            (1.0 - (clampedValue / 0.16)).clamp(0.0, 1.0),
+          )!
+        : sizeStartW;
+
+    // During close undershoot (morphSizeT < 0), squeeze relative to trigger size.
+    // NEVER lerp against the distant targetHeight — for a tall menu (e.g. 340 px),
+    // a negative lerp would subtract 45+ px from a 44 px trigger and collapse
+    // the container to 0 px, causing a visible flash on the close bounce.
+    final currentHeight = morphSizeT < 0.0
+        ? (sizeStartH * (1.0 + morphSizeT * 0.25)).clamp(1.0, double.infinity)
+        : lerpDouble(sizeStartH, targetHeight, morphSizeT)!
+            .clamp(0.0, double.infinity);
+    final currentWidth = morphSizeT < 0.0
+        ? (sizeStartW * (1.0 + morphSizeT * 0.25)).clamp(1.0, double.infinity)
+        : lerpDouble(effectiveStartW, widget.menuWidth, morphSizeT)!
+            .clamp(0.0, double.infinity);
 
     final maxRadius = math.min(currentWidth, currentHeight) / 2.0;
     final double radiusT =
-        Curves.easeInExpo.transform(state.sizeT.clamp(0.0, 1.0));
-    final currentRadius = _morphController.isClosing
-        ? (isPremium
-            ? maxRadius
-            : lerpDouble(
-                _triggerBorderRadius ?? (_triggerSize!.shortestSide / 2.0),
-                widget.menuBorderRadius,
-                radiusT,
-              )!)
+        Curves.easeInExpo.transform(morphSizeT.clamp(0.0, 1.0));
+    final currentRadius = (_morphController.isClosing && !isPremium)
+        ? lerpDouble(
+            _triggerBorderRadius ?? (_triggerSize!.shortestSide / 2.0),
+            widget.menuBorderRadius,
+            radiusT,
+          )!
         : lerpDouble(maxRadius, widget.menuBorderRadius, radiusT)!;
 
-    final double effectiveDx;
-    final double effectiveDy;
+    final double anchorAlignX = (1.0 + _morphAlignment.x) / 2.0;
+    final double anchorAlignY = (1.0 + _morphAlignment.y) / 2.0;
+    final double pinnedLeft = anchorAlignX * (tw - currentWidth);
+    final double pinnedTop = anchorAlignY * (th - currentHeight);
+
+    final double anchorDriftX;
+    final double anchorDriftY;
     if (_morphController.isClosing) {
-      if (isPremium) {
-        // On close (premium): the droplet separates from the open bounds and travels along
-        // the centroid trajectory directly to the trigger center, creating a visible
-        // in-flight gap that allows the SDF metaball bridge to form on approach.
-        effectiveDx = finalDx * state.pathT;
-        effectiveDy = finalDy * state.pathT;
-      } else {
-        // On close (standard/minimal): single-blob geometric collapse directly
-        // into the trigger button bounds with no ghost button underneath.
-        effectiveDx = finalDx * state.sizeT;
-        effectiveDy = finalDy * state.sizeT;
-      }
+      // On close: contract toward the trigger with zero anchor drift so the
+      // trigger-facing edge stays anchored at the trigger.
+      anchorDriftX = 0.0;
+      anchorDriftY = 0.0;
+    } else if (isPremiumQuality) {
+      // On open (premium): smoothly release the J-curve drift as Blob A
+      // detaches so Blob A stays tucked inside Blob B's rounded launch corner
+      // (forming a smooth egg/teardrop taper without a protruding horn), while
+      // delivering the full J-curve overshoot once detached.
+      final double detachRelease = 1.0 - state.anchorScale * 0.65;
+      anchorDriftX = finalDx * (state.pathT - state.sizeT) * detachRelease;
+      anchorDriftY = finalDy * (state.pathT - state.sizeT) * detachRelease;
     } else {
-      // On open: for large menus, clamp the anchor edge displacement so the menu's
-      // pinned corner never drifts more than 8 px from the trigger button during flight.
-      // Small menus have <= 5 px natural displacement and are completely unaffected.
+      // On open (standard/minimal): clamp the anchor edge displacement so the
+      // menu's pinned corner never drifts more than 8 px from the trigger
+      // button during flight without an SDF metaball bridge.
       const double maxAnchorDrift = 8.0;
       final double rawAnchorDriftX = finalDx * (state.pathT - state.sizeT);
-      final double anchorDriftX =
-          rawAnchorDriftX.clamp(-maxAnchorDrift, maxAnchorDrift);
-      effectiveDx = finalDx * state.sizeT + anchorDriftX;
+      anchorDriftX = rawAnchorDriftX.clamp(-maxAnchorDrift, maxAnchorDrift);
 
       final double rawAnchorDriftY = finalDy * (state.pathT - state.sizeT);
-      final double anchorDriftY =
-          rawAnchorDriftY.clamp(-maxAnchorDrift, maxAnchorDrift);
-      effectiveDy = finalDy * state.sizeT + anchorDriftY;
+      anchorDriftY = rawAnchorDriftY.clamp(-maxAnchorDrift, maxAnchorDrift);
     }
 
     final blobBLeft = _triggerOverlayPosition.dx +
         _followOffset.dx +
-        tw / 2.0 +
-        effectiveDx -
-        currentWidth / 2.0 +
+        pinnedLeft +
+        anchorDriftX +
         (_horizontalOffset * clampedValue);
 
     final blobBTop = _triggerOverlayPosition.dy +
         _followOffset.dy +
-        th / 2.0 +
-        effectiveDy -
-        currentHeight / 2.0 +
+        pinnedTop +
+        anchorDriftY +
         (_verticalOffset * clampedValue);
 
     // Solid overlay during flight and metaball fusion.
-    // Handoff to the real trigger button occurs cleanly when hasHandedOff fires (rawValue <= 0.0).
+    // Over the final 22% of close (once the pill has contracted onto the trigger
+    // and triggerOpacity has ramped up), smoothly cross-fade into the real trigger
+    // before hasHandedOff fires at rawValue <= 0.0.
     final double overlayOpacity =
         (_morphController.isClosing && _morphController.hasHandedOff)
             ? 0.0
-            : 1.0;
+            : _morphController.isClosing
+                ? (clampedValue / 0.22).clamp(0.0, 1.0)
+                : 1.0;
+
+    final double minTriggerSide = math.min(tw, th);
+    final double blobAWidth = lerpDouble(
+      minTriggerSide,
+      tw,
+      state.anchorScale * state.anchorScale,
+    )!;
+    final double blobAHeight = lerpDouble(
+      minTriggerSide,
+      th,
+      state.anchorScale * state.anchorScale,
+    )!;
 
     return Stack(
       children: [
@@ -1615,13 +1664,18 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                       // For standard/minimal quality, Blob A is suppressed during close so only
                       // the single collapsing menu container is visible (preventing double-button overlap).
                       if (!widget.morphFromZero &&
+                          state.anchorScale > 0.25 &&
                           (!_morphController.isClosing || isPremium))
                         Positioned(
                           left: _triggerOverlayPosition.dx +
                               _followOffset.dx +
+                              anchorAlignX * (tw - blobAWidth) +
+                              anchorDriftX * (1.0 - state.anchorScale) * 0.85 +
                               state.pushDx,
                           top: _triggerOverlayPosition.dy +
                               _followOffset.dy +
+                              anchorAlignY * (th - blobAHeight) +
+                              anchorDriftY * (1.0 - state.anchorScale) * 0.85 +
                               state.pushDy,
                           child: Transform.scale(
                             scale: state.anchorScale,
@@ -1630,8 +1684,8 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                               settings: effectiveSettings,
                               quality: effectiveQuality,
                               platformViewBackdrop: widget.platformViewBackdrop,
-                              width: tw,
-                              height: th,
+                              width: blobAWidth,
+                              height: blobAHeight,
                               shape: LiquidRoundedRectangle(
                                 borderRadius: _triggerBorderRadius ??
                                     _triggerSize!.shortestSide / 2.0,
@@ -1678,10 +1732,11 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                   // Each open level draws a second glass card OVER the menu
                   // body, outside the blend group so it never fuses with the
                   // body's metaball shape: the body recedes and dims below it
-                  // (native iOS context menus). They fade out over the first
-                  // part of a root close so the droplet collapses cleanly.
+                  // (native iOS context menus). They fade out smoothly during
+                  // a root close alongside the menu body items.
+                  final sizeProgress = morphSizeT.clamp(0.0, 1.0);
                   final cardsOpacity = _morphController.isClosing
-                      ? ((clampedValue - 0.85) / 0.15).clamp(0.0, 1.0)
+                      ? ((sizeProgress - 0.50) / 0.45).clamp(0.0, 1.0)
                       : 1.0;
                   return Stack(
                     clipBehavior: Clip.none,
@@ -1798,6 +1853,11 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
       widgetQuality: widget.quality,
       fallback: GlassThemeHelpers.nativeStyleQuality(context),
     );
+    final bool isPremiumQuality = effectiveQuality == GlassQuality.premium &&
+        !widget.platformViewBackdrop;
+    final double morphSizeT = (_morphController.isClosing && isPremiumQuality)
+        ? (state.pathT + state.sizeT) * 0.5
+        : state.sizeT;
 
     // ─── True Metaball Morphing ──────────────────────────────────────────────
     //
@@ -1867,7 +1927,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
         child: _buildBodyContent(
           effectiveSettings,
           effectiveQuality,
-          clampedValue,
+          morphSizeT.clamp(0.0, 1.0),
           teardropShape,
           containerScale,
         ),
@@ -1898,7 +1958,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   Widget _buildBodyContent(
     LiquidGlassSettings settings,
     GlassQuality quality,
-    double clampedValue,
+    double sizeProgress,
     LiquidRoundedRectangle teardropShape,
     double containerScale,
   ) {
@@ -1923,29 +1983,32 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
           alignment: _morphAlignment,
           clipBehavior: Clip.none,
           children: [
-            // Menu content scales up with the container morph — items
-            // enter the tree at 25% on open, and flush immediately on close
-            // so the droplet is clean liquid glass throughout its flight.
-            if (_morphController.isClosing
-                ? clampedValue > 0.85
-                : clampedValue > 0.25)
+            // Menu content scales around _morphAlignment with the container size.
+            // On open, items begin materializing once the droplet reaches 25% size;
+            // on close, items fade out completely before reaching 50% size so content
+            // is never visible or clipped inside the shrinking button.
+            if (sizeProgress > (_morphController.isClosing ? 0.50 : 0.25))
               OverflowBox(
                 alignment: _morphAlignment,
                 minWidth: widget.menuWidth,
                 maxWidth: widget.menuWidth,
                 minHeight: 0.0,
                 maxHeight: double.infinity,
-                child: _buildListContent(
-                  widget.items,
-                  interactive: interactive,
-                  dimmed: !interactive,
-                  coveredDepth: interactive ? null : 0,
-                  coverProgress: _bodyRecede,
-                  viewportHeight: _targetBodyHeight(),
-                  morphValue: clampedValue,
-                  passiveScrollOffset: interactive
-                      ? 0.0
-                      : _submenuStack.first.sourceScrollOffset,
+                child: Transform.scale(
+                  scale: sizeProgress,
+                  alignment: _morphAlignment,
+                  child: _buildListContent(
+                    widget.items,
+                    interactive: interactive,
+                    dimmed: !interactive,
+                    coveredDepth: interactive ? null : 0,
+                    coverProgress: _bodyRecede,
+                    viewportHeight: _targetBodyHeight(),
+                    morphValue: sizeProgress,
+                    passiveScrollOffset: interactive
+                        ? 0.0
+                        : _submenuStack.first.sourceScrollOffset,
+                  ),
                 ),
               ),
           ],
@@ -1974,13 +2037,8 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     final coveredOpacity =
         coveredDepth == null ? 1.0 : _coveredRowOpacity(coveredDepth);
     final itemOpacity = _morphController.isClosing
-        ? ((morphValue - 0.85) / 0.15).clamp(0.0, 1.0)
-        : ((morphValue - 0.25) / 0.45).clamp(0.0, 1.0);
-    final itemScale = lerpDouble(
-        0.7,
-        1.0,
-        Curves.easeOut
-            .transform(((morphValue - 0.25) / 0.75).clamp(0.0, 1.0)))!;
+        ? ((morphValue - 0.50) / 0.45).clamp(0.0, 1.0)
+        : ((morphValue - 0.25) / 0.55).clamp(0.0, 1.0);
     final rows = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1992,10 +2050,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                 coveredDepth != null && _isCoveredRow(coveredDepth, i, items)
                     ? itemOpacity * coveredOpacity
                     : itemOpacity,
-            child: Transform.scale(
-              scale: itemScale,
-              child: interactive ? _buildWrappedItems()[i] : items[i],
-            ),
+            child: interactive ? _buildWrappedItems()[i] : items[i],
           ),
           if (i < items.length - 1) const SizedBox(height: _kRowGap),
         ],
