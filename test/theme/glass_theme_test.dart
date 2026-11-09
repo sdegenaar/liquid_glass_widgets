@@ -1375,5 +1375,122 @@ void main() {
       expect(ios27Effect.settings.rimShade, equals(1.0));
       expect(ios27Effect.settings.rimLight, equals(1.0));
     });
+
+    testWidgets(
+        'GlassSwitch, GlassSlider, and GlassSegmentedControl inside GlassGroupedSection retain GlassQuality.premium across all GlassStyles',
+        (tester) async {
+      for (final style in GlassStyle.values) {
+        for (final surfaceStyle in GlassSurfaceStyle.values) {
+          await tester.pumpWidget(
+            CupertinoApp(
+              home: GlassTheme(
+                data: GlassThemeData(style: style),
+                child: GlassGroupedSection(
+                  surfaceStyle: surfaceStyle,
+                  children: [
+                    GlassListTile(
+                      title: const Text('Switch'),
+                      trailing: GlassSwitch(
+                        value: true,
+                        onChanged: (_) {},
+                      ),
+                    ),
+                    GlassSlider(
+                      value: 0.5,
+                      onChanged: (_) {},
+                    ),
+                    GlassSegmentedControl(
+                      segments: const [
+                        GlassSegment(label: 'A'),
+                        GlassSegment(label: 'B'),
+                      ],
+                      selectedIndex: 0,
+                      onSegmentSelected: (_) {},
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+
+          final effects =
+              tester.widgetList<GlassEffect>(find.byType(GlassEffect)).toList();
+          expect(effects, isNotEmpty);
+          for (final effect in effects) {
+            expect(
+              effect.quality,
+              equals(GlassQuality.premium),
+              reason:
+                  'Expected GlassQuality.premium for style=$style, surfaceStyle=$surfaceStyle',
+            );
+          }
+        }
+      }
+
+      // Explicit quality on GlassGroupedSection is still inherited by children.
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: GlassGroupedSection(
+            quality: GlassQuality.minimal,
+            children: [
+              GlassListTile(
+                title: const Text('Switch'),
+                trailing: GlassSwitch(
+                  value: true,
+                  onChanged: (_) {},
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+      final minimalEffect =
+          tester.widget<GlassEffect>(find.byType(GlassEffect));
+      expect(minimalEffect.quality, equals(GlassQuality.minimal));
+    });
+
+    testWidgets(
+        'GlassSwitch and GlassSlider on GlassQuality.standard keep thumbTint and LensInnerShadowPainter when pressed',
+        (tester) async {
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: Column(
+            children: [
+              GlassSwitch(
+                value: true,
+                quality: GlassQuality.standard,
+                onChanged: (_) {},
+              ),
+              GlassSlider(
+                value: 0.5,
+                quality: GlassQuality.standard,
+                onChanged: (_) {},
+              ),
+            ],
+          ),
+        ),
+      );
+
+      final effects =
+          tester.widgetList<GlassEffect>(find.byType(GlassEffect)).toList();
+      expect(effects, hasLength(2));
+      for (final effect in effects) {
+        expect(effect.settings.glassColor.a, greaterThan(0.0));
+      }
+
+      final switchGesture =
+          await tester.startGesture(tester.getCenter(find.byType(GlassSwitch)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final innerShadows = find
+          .byWidgetPredicate(
+              (w) => w is CustomPaint && w.painter is LensInnerShadowPainter)
+          .evaluate();
+      expect(innerShadows, isNotEmpty);
+
+      await switchGesture.up();
+      await tester.pumpAndSettle();
+    });
   });
 }

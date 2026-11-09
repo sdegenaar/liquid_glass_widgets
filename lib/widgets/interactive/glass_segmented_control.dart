@@ -600,7 +600,7 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
-      fallback: GlassThemeHelpers.nativeStyleQuality(context),
+      fallback: GlassQuality.premium,
     );
 
     final effectiveSettings = GlassThemeHelpers.resolveSettings(

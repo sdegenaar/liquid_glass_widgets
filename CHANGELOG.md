@@ -7,6 +7,7 @@
 
 ## Bug Fixes
 
+- **`GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl` lifted lens inside `GlassGroupedSection` / `GlassContainer`:** Fixed `GlassContainer` and `AdaptiveGlass` marking their default `GlassQuality.standard` fallback as an explicit `InheritedLiquidGlass.hasExplicitQuality` override, which coerced hero interactive lenses inside `GlassGroupedSection` down to `GlassQuality.standard`; restored `GlassQuality.premium` default across all `GlassStyle` presets for `GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl` (zero shader layers mounted at rest), and hardened the 2D `GlassQuality.standard` fallback (`rimShade` to `edgeAbsorption`, `thumbTint`, and `LensInnerShadowPainter`) so lifted thumbs remain visible on white cards.
 - **`GlassMenu`, `GlassPullDownButton`, and `GlassPopover` liquid morph parity (#453):** Restored native iOS 26/27 open and close morph physics for `GlassQuality.premium` — immediate trigger handoff, pill-to-droplet open contour, full J-curve overshoot on open, symmetric ~350 ms close spring, and smooth trigger-anchored contraction and trigger re-materialization on close. Thanks to [@denweeLabs](https://github.com/denweeLabs) for reporting (#453).
 - **`GlassFullScreenCoverBar`, `GlassFullScreenCoverBarButton`, and `GlassEditButton` default quality:** Default to `GlassQuality.premium` in `GlassStyle.ios27` and `GlassStyle.ios26` so full-screen cover and edit toolbar buttons preserve native material optics.
 

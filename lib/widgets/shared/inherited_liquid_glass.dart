@@ -61,6 +61,14 @@ class InheritedLiquidGlass extends InheritedWidget {
     }
   }
 
+  /// Returns `true` when the nearest [InheritedLiquidGlass] carries an
+  /// explicitly supplied [GlassQuality] override.
+  static bool hasExplicitQualityOf(BuildContext context) {
+    final inherited =
+        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    return inherited?.hasExplicitQuality ?? false;
+  }
+
   /// Retrieves the nearest [LiquidGlassSettings] from the ancestor tree.
   ///
   /// This checks for [InheritedLiquidGlass] first. If not found, it attempts

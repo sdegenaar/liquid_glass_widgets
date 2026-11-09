@@ -643,7 +643,7 @@ class _GlassSwitchState extends State<GlassSwitch>
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
-      fallback: GlassThemeHelpers.nativeStyleQuality(context),
+      fallback: GlassQuality.premium,
     );
 
     final thumbSize = widget.height - 4.0;
@@ -899,8 +899,13 @@ class _GlassSwitchState extends State<GlassSwitch>
         theme?.indicatorSettingsFor(context)?.applyTo(eraBase) ?? eraBase;
     final fade = transition.clamp(0.0, 1.0);
     final stablePinchFade = 1.0 - (1.0 - fade) * (1.0 - fade);
-    final baseThumbSettings =
-        (widget.settings ?? themedThumbSettings).copyWith(blur: 0, frost: 0);
+    final rawThumbSettings = widget.settings ?? themedThumbSettings;
+    final baseThumbSettings = rawThumbSettings.copyWith(
+      blur: 0,
+      frost: 0,
+      glassColor:
+          isStdPath && rawThumbSettings.glassColor.a == 0 ? thumbTint : null,
+    );
     final useIos27Lens = baseThumbSettings.lensModel == GlassLensModel.paraxial;
     final resolvedThumbSettings = useIos27Lens
         ? baseThumbSettings.copyWithPinch(stablePinchFade)
@@ -985,7 +990,7 @@ class _GlassSwitchState extends State<GlassSwitch>
               ],
             ),
           ),
-          if (!isStdPath && transition > 0.05)
+          if (transition > 0.05)
             Positioned.fill(
               child: IgnorePointer(
                 child: CustomPaint(
