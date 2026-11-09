@@ -13,32 +13,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Theme, ThemeData;
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
-/// Dark-mode pill / button glass settings matching the Apple Music example.
-const _kDarkPillGlassSettings = LiquidGlassSettings(
-  glassColor: Color(0xCC1C1C1E),
-  thickness: 30,
-  blur: 2,
-  lightIntensity: 0.18,
-  chromaticAberration: 0.01,
-  saturation: 1.2,
-  fresnelStrength: 0.0,
-);
-
-/// Dark-mode bottom tab bar glass settings matching the Apple Music example.
-const _kDarkBarGlassSettings = LiquidGlassSettings(
-  glassColor: Color(0xAA1C1C1E),
-  thickness: 30,
-  blur: 2,
-  chromaticAberration: 0.01,
-  lightAngle: GlassDefaults.lightAngle,
-  lightIntensity: 0.2,
-  ambientStrength: 0,
-  refractiveIndex: 1.2,
-  fresnelStrength: 0.0,
-  saturation: 1.2,
-  specularSharpness: GlassSpecularSharpness.medium,
-);
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
@@ -135,21 +109,20 @@ class _ListsPickersAndNavDemoPageState
 
   void _presentCover(BuildContext context) {
     final isDark = _resolveIsDark(context);
-    final buttonSettings = isDark ? _kDarkPillGlassSettings : null;
     showGlassFullScreenCover<void>(
       context: context,
       builder: (ctx) => GlassTheme(
-        data: const GlassThemeData.ios27(),
+        data: GlassThemeData.ios27(
+          brightness: isDark ? Brightness.dark : Brightness.light,
+        ),
         child: CupertinoTheme(
           data: CupertinoThemeData(
             brightness: isDark ? Brightness.dark : Brightness.light,
           ),
           child: GlassFullScreenCover(
             title: const Text('Modal Cover'),
-            settings: buttonSettings,
             leading: GlassFullScreenCoverBarButton(
               label: 'Cancel',
-              settings: buttonSettings,
               onPressed: () => Navigator.of(ctx).maybePop(),
             ),
             closeButtonLabel: 'Done',
@@ -192,11 +165,10 @@ class _ListsPickersAndNavDemoPageState
     final VoidCallback? onExitDemo =
         canPopOuter ? () => Navigator.of(context).maybePop() : null;
 
-    final pageSettings =
-        isDark ? _kDarkPillGlassSettings : LiquidGlassSettings.ios27Light;
-
     return GlassTheme(
-      data: const GlassThemeData.ios27(),
+      data: GlassThemeData.ios27(
+        brightness: isDark ? Brightness.dark : Brightness.light,
+      ),
       child: CupertinoTheme(
         data: CupertinoThemeData(
           brightness: isDark ? Brightness.dark : Brightness.light,
@@ -221,14 +193,12 @@ class _ListsPickersAndNavDemoPageState
               return GlassScaffold(
                 backgroundColor:
                     isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7),
-                settings: pageSettings,
                 bottomEdgeFade: !(_tab == 4 && _navPath.isNotEmpty),
                 bottomBar: GlassTabBar.bottom(
                   selectedIndex: _tab,
                   onTabSelected: (idx) => setState(() => _tab = idx),
                   quality: GlassQuality.premium,
                   backgroundQuality: GlassQuality.premium,
-                  settings: isDark ? _kDarkBarGlassSettings : null,
                   indicatorColor: isDark
                       ? CupertinoColors.label
                           .resolveFrom(themedContext)

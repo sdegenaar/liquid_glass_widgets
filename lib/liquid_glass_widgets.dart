@@ -49,7 +49,13 @@ export 'widgets/shared/animated_glass_indicator.dart'
 export 'widgets/shared/glass_accessibility_scope.dart'; // GlassAccessibilityScope + GlassAccessibilityData
 export 'widgets/shared/glass_adaptive_scope.dart'; // GlassAdaptiveScope + GlassAdaptiveScopeData + GlassAdaptiveDiagnostic
 export 'widgets/shared/glass_content_aware_scope.dart'; // GlassContentAwareScope + GlassContentAwareContent + GlassContentAwareBrightness
-export 'widgets/shared/glass_page.dart' show GlassPage, GlassStatusBarStyle;
+export 'widgets/shared/glass_page.dart'
+    show
+        GlassPage,
+        GlassStatusBarStyle,
+        GlassPageTransitionClip,
+        GlassPageRoute,
+        GlassPageTransitionsBuilder;
 export 'widgets/shared/glass_motion_scope.dart';
 export 'widgets/shared/glass_scroll_edge_effect.dart';
 export 'widgets/shared/glass_swipe_action_scope.dart';

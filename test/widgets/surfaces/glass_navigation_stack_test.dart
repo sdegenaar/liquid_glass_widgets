@@ -783,5 +783,114 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Fallback initial'), findsOneWidget);
     });
+
+    testWidgets(
+        'GlassNavigationStack and GlassScaffold coordinate transitionCornerRadius without double clipping',
+        (tester) async {
+      final path = GlassNavigationPath();
+
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: GlassNavigationStack(
+            path: path,
+            transitionCornerRadius: 48.0,
+            destinations: {
+              String: (context, value) => GlassScaffold(
+                    transitionCornerRadius: value == 'custom' ? 24.0 : null,
+                    appBar: const GlassAppBar.pinned(title: Text('Detail')),
+                    body: Center(child: Text('Detail: $value')),
+                  ),
+            },
+            root: const GlassScaffold(
+              appBar: GlassAppBar.pinned(title: Text('Root')),
+              body: Center(child: Text('Root Body')),
+            ),
+          ),
+        ),
+      );
+
+      List<ClipRSuperellipse> activePageClips() => tester
+          .widgetList<ClipRSuperellipse>(
+            find.descendant(
+              of: find.byType(GlassPageTransitionClip, skipOffstage: false),
+              matching: find.byType(ClipRSuperellipse, skipOffstage: false),
+              skipOffstage: false,
+            ),
+          )
+          .where((c) => c.clipBehavior != Clip.none)
+          .toList();
+
+      // At rest: zero active page transition clips
+      expect(activePageClips(), isEmpty);
+
+      // Push 'default': inherits 48.0 from stack, only ONE active clip (no double clipping)
+      path.append('default');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 120));
+
+      var midClips = activePageClips();
+      expect(midClips.length, 1);
+      expect(midClips.single.borderRadius, BorderRadius.circular(48.0));
+
+      await tester.pumpAndSettle();
+      expect(activePageClips(), isEmpty);
+
+      // Push 'custom': overrides stack's 48.0 with 24.0, only ONE active clip
+      path.append('custom');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 120));
+
+      midClips = activePageClips();
+      expect(midClips.length, 1);
+      expect(midClips.single.borderRadius, BorderRadius.circular(24.0));
+
+      await tester.pumpAndSettle();
+      expect(activePageClips(), isEmpty);
+
+      // Pop back: mid-pop clips the popping route, then unclips at rest
+      path.pop();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 120));
+      expect(activePageClips().length, 1);
+
+      await tester.pumpAndSettle();
+      expect(activePageClips(), isEmpty);
+    });
+
+    testWidgets(
+        'GlassNavigationLink forwards transitionCornerRadius outside GlassNavigationStack',
+        (tester) async {
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: CupertinoPageScaffold(
+            child: Center(
+              child: GlassNavigationLink(
+                title: const Text('Push Custom Radius'),
+                transitionCornerRadius: 30.0,
+                destination: (_) => const CupertinoPageScaffold(
+                  child: Center(child: Text('Destination')),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Push Custom Radius'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final activeClips = tester
+          .widgetList<ClipRSuperellipse>(
+            find.byType(ClipRSuperellipse, skipOffstage: false),
+          )
+          .where((c) => c.clipBehavior != Clip.none)
+          .toList();
+
+      expect(activeClips, isNotEmpty);
+      expect(activeClips.first.borderRadius, BorderRadius.circular(30.0));
+
+      await tester.pumpAndSettle();
+    });
   });
 }

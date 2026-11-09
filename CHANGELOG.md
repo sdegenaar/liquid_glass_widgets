@@ -1,3 +1,14 @@
+# Unreleased
+
+## Features
+
+- **`GlassMenuItem` checked radio semantics (`GlassMenuItem.semanticsChecked`) (PR #462):** Reports a menu row as a checked or unchecked item of a mutually exclusive group (`AXRadioButton` on macOS VoiceOver) without changing visuals. Thanks to [@imariman](https://github.com/imariman) for the contribution (#462).
+- **Rounded page clipping during navigation transitions (`GlassPage`, `GlassScaffold`, `GlassNavigationStack`, `GlassPageRoute`, `GlassPageTransitionsBuilder`, `GlassPageTransitionClip`) (#451):** Clips transitioning pages with a continuous superellipse corner radius (adaptive to the active iPhone display bezel radius by default, or configurable via `transitionCornerRadius`) and card-edge shadow during push, pop, and interactive swipe-back gestures. Thanks to [@Vincen-dev](https://github.com/Vincen-dev) for suggesting the feature (#451).
+
+## Bug Fixes
+
+- **`GlassFullScreenCoverBar`, `GlassFullScreenCoverBarButton`, and `GlassEditButton` default quality:** Default to `GlassQuality.premium` in `GlassStyle.ios27` and `GlassStyle.ios26` so full-screen cover and edit toolbar buttons preserve native material optics.
+
 # 1.17.0
 
 ## Breaking & Behavior Changes (Upgrading from ≤ 1.16.x)

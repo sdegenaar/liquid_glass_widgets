@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 
 import '../effects/glass_materialize.dart';
+import '../shared/glass_page.dart' show GlassPageRoute;
 import 'glass_navigation_shell.dart';
 import '../containers/glass_list_tile.dart';
 
@@ -87,6 +88,7 @@ class GlassNavigationStack extends StatefulWidget {
     this.destinations = const {},
     this.enabled = true,
     this.effectTransition = GlassEffectTransition.materialize,
+    this.transitionCornerRadius,
     this.navigatorKey,
     this.observers = const <NavigatorObserver>[],
   });
@@ -105,6 +107,15 @@ class GlassNavigationStack extends StatefulWidget {
 
   /// Transition effect for pinned navigation chrome across route changes.
   final GlassEffectTransition effectTransition;
+
+  /// Continuous superellipse corner radius applied to page surfaces while
+  /// routes in this stack are pushing, popping, or interactively swiping back.
+  ///
+  /// When `null` (the default), uses `GlassDefaults.pageTransitionCornerRadius`
+  /// (55.0), unless overridden by a descendant `GlassPage` or `GlassScaffold`.
+  ///
+  /// Set to `0.0` to disable rounded page clipping across this stack.
+  final double? transitionCornerRadius;
 
   /// Optional global key for the internal [Navigator].
   final GlobalKey<NavigatorState>? navigatorKey;
@@ -252,7 +263,8 @@ class GlassNavigationStackState extends State<GlassNavigationStack> {
     if (builder == null) return false;
 
     final resolvedBuilder = builder;
-    final route = CupertinoPageRoute<void>(
+    final route = GlassPageRoute<void>(
+      transitionCornerRadius: widget.transitionCornerRadius,
       builder: (context) => GlassNavigationTitleScope(
         child: resolvedBuilder(context, value),
       ),
@@ -277,11 +289,13 @@ class GlassNavigationStackState extends State<GlassNavigationStack> {
   }
 
   /// Pushes a destination widget directly onto the stack.
-  Future<T?> push<T>(Widget destination) {
+  Future<T?> push<T>(Widget destination, {double? transitionCornerRadius}) {
     final nav = _navigatorKey.currentState;
     if (nav == null) return Future.value(null);
     return nav.push<T>(
-      CupertinoPageRoute<T>(
+      GlassPageRoute<T>(
+        transitionCornerRadius:
+            transitionCornerRadius ?? widget.transitionCornerRadius,
         builder: (context) => GlassNavigationTitleScope(child: destination),
       ),
     );
@@ -307,8 +321,9 @@ class GlassNavigationStackState extends State<GlassNavigationStack> {
           key: _navigatorKey,
           observers: widget.observers,
           onGenerateRoute: (settings) {
-            return CupertinoPageRoute<void>(
+            return GlassPageRoute<void>(
               settings: settings,
+              transitionCornerRadius: widget.transitionCornerRadius,
               builder: (context) {
                 context.dependOnInheritedWidgetOfExactType<
                     _GlassNavigationStackScope>();
@@ -361,6 +376,7 @@ class GlassNavigationLink<T> extends StatelessWidget {
     this.child,
     this.onTap,
     this.enabled = true,
+    this.transitionCornerRadius,
   }) : assert(
           destination != null || value != null,
           'Either destination or value must be provided.',
@@ -399,6 +415,12 @@ class GlassNavigationLink<T> extends StatelessWidget {
   /// Whether this link is interactable.
   final bool enabled;
 
+  /// Continuous superellipse corner radius applied to the pushed route's page
+  /// surface while transitioning.
+  ///
+  /// See [GlassPageRoute.transitionCornerRadius].
+  final double? transitionCornerRadius;
+
   void _handleTap(BuildContext context) {
     if (!enabled) return;
 
@@ -417,10 +439,16 @@ class GlassNavigationLink<T> extends StatelessWidget {
     if (destination != null) {
       final stack = GlassNavigationStack.maybeOf(context);
       if (stack != null) {
-        stack.push(destination!(context));
+        stack.push(
+          destination!(context),
+          transitionCornerRadius: transitionCornerRadius,
+        );
       } else {
         Navigator.of(context).push(
-          CupertinoPageRoute<void>(builder: destination!),
+          GlassPageRoute<void>(
+            transitionCornerRadius: transitionCornerRadius,
+            builder: destination!,
+          ),
         );
       }
     }
