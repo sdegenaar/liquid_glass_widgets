@@ -17,7 +17,8 @@
 ///  12. Header actions morph — trailing capsule bounces and blurs between
 ///      clusters across pushes
 ///  13. Presented sheets — a dialog, action sheet, modal sheet or fullscreen
-///      dialog covering the pinned chrome the way it covers the page (#259)
+///      dialog covering the pinned chrome the way it covers the page (#259),
+///      and a fullscreen dialog with a pinned bar of its own
 ///  14. Tinted bar items — GlassBarItem.tintColor floods the capsule with a
 ///      design-token colour (iOS 26 prominent action pattern, issue #312)
 ///
@@ -2226,6 +2227,15 @@ class _PresentedSheetsDemo extends StatelessWidget {
     );
   }
 
+  void _showPinnedFullscreenDialog(BuildContext context) {
+    Navigator.of(context).push(
+      CupertinoPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (_) => const _PinnedComposeScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final topPad = MediaQuery.paddingOf(context).top;
@@ -2305,6 +2315,14 @@ class _PresentedSheetsDemo extends StatelessWidget {
                   icon: CupertinoIcons.square_arrow_up,
                   onTap: () => _showFullscreenDialog(context),
                 ),
+                const SizedBox(height: 16),
+                _PatternTile(
+                  title: 'Pinned Fullscreen Dialog',
+                  subtitle: 'Its own pinned bar replaces the one behind it',
+                  icon: CupertinoIcons.square_arrow_up_on_square,
+                  onTap: () => _showPinnedFullscreenDialog(context),
+                ),
+                const SizedBox(height: 16),
               ],
             ),
           ),
@@ -2498,6 +2516,67 @@ class _ComposeScreen extends StatelessWidget {
             'A fullscreen dialog covers the page completely — the pinned back '
             'button and capsule from the screen behind included, with nothing '
             'left showing through.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              height: 1.4,
+              color: CupertinoColors.secondaryLabel.resolveFrom(context),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The destination behind [_PresentedSheetsDemo]'s pinned fullscreen dialog.
+///
+/// Unlike [_ComposeScreen], its bar is pinned by the shell. Nothing transitions
+/// the screen behind a fullscreen dialog, so the shell must take this route's
+/// chrome from the route itself: its close button and Send capsule replace the
+/// back button and the Share / More capsule of the screen behind.
+class _PinnedComposeScreen extends StatelessWidget {
+  const _PinnedComposeScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassScaffold(
+      background: const ShowcaseBackground(),
+      settings: RecommendedGlassSettings.standard,
+      statusBarStyle: GlassStatusBarStyle.auto,
+      appBar: GlassAppBar.pinned(
+        title: Text(
+          'New Message',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: CupertinoColors.label.resolveFrom(context),
+          ),
+        ),
+        leading: [
+          GlassBarItem.icon(
+            icon: const Icon(CupertinoIcons.xmark),
+            label: 'Close',
+            onTap: () => Navigator.of(context).maybePop(),
+          ),
+        ],
+        actions: [
+          GlassBarItem.icon(
+            icon: const Icon(CupertinoIcons.arrow_up),
+            label: 'Send',
+            background: GlassBarItemBackground.separate,
+            tintColor: CupertinoColors.activeBlue,
+            onTap: () => Navigator.of(context).maybePop(),
+          ),
+        ],
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Text(
+            'A fullscreen dialog with a pinned bar of its own. Its close button '
+            'and Send capsule replace the back button and the Share / More '
+            'capsule of the screen behind, and close the dialog.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16,
