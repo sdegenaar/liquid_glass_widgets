@@ -386,6 +386,8 @@ class AdaptiveGlass extends StatelessWidget {
                     standardSettings.standardOpacityMultiplier)
                 .clamp(0.0, 1.0),
           ),
+          rimShade: 0.0,
+          rimLight: 0.0,
         );
       }
 
@@ -414,6 +416,9 @@ class AdaptiveGlass extends StatelessWidget {
               whitenStrength: normalizedSettings.whitenStrength,
               whitenGated: normalizedSettings.whitenGated,
               bodyMode: normalizedSettings.bodyMode,
+              rimShade: normalizedSettings.rimShade,
+              rimShadeEnds: normalizedSettings.rimShadeEnds,
+              rimLight: normalizedSettings.rimLight,
             )
           : normalizedSettings;
 

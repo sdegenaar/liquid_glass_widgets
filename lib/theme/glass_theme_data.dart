@@ -349,30 +349,42 @@ class GlassThemeVariant {
   );
 
   /// iOS 26.0 `glassEffect(.regular)` light theme variant.
+  ///
+  /// [quality] is intentionally `null` so each widget's own documented default
+  /// quality is respected.
   static const GlassThemeVariant ios26Light = GlassThemeVariant(
     settings: GlassThemeSettings.ios26Light,
-    quality: GlassQuality.premium,
+    quality: null,
     glowColors: GlassGlowColors.fallback,
   );
 
   /// iOS 26.0 `glassEffect(.regular)` dark theme variant.
+  ///
+  /// [quality] is intentionally `null` so each widget's own documented default
+  /// quality is respected.
   static const GlassThemeVariant ios26Dark = GlassThemeVariant(
     settings: GlassThemeSettings.ios26Dark,
-    quality: GlassQuality.premium,
+    quality: null,
     glowColors: GlassGlowColors.fallback,
   );
 
   /// iOS 27 `glassEffect(.regular)` light theme variant.
+  ///
+  /// [quality] is intentionally `null` so each widget's own documented default
+  /// quality is respected.
   static const GlassThemeVariant ios27Light = GlassThemeVariant(
     settings: GlassThemeSettings.ios27Light,
-    quality: GlassQuality.premium,
+    quality: null,
     glowColors: GlassGlowColors.fallback,
   );
 
   /// iOS 27 `glassEffect(.regular)` dark theme variant.
+  ///
+  /// [quality] is intentionally `null` so each widget's own documented default
+  /// quality is respected.
   static const GlassThemeVariant ios27Dark = GlassThemeVariant(
     settings: GlassThemeSettings.ios27Dark,
-    quality: GlassQuality.premium,
+    quality: null,
     glowColors: GlassGlowColors.fallback,
   );
 

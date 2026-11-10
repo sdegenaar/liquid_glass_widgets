@@ -73,7 +73,7 @@ void main() {
   }
 
   testWidgets(
-      'ios27Dark translates bodyShade into ambientStrength on standard path',
+      'ios27Dark translates bodyShade into ambientStrength and preserves native rim terms on standard path',
       (tester) async {
     final s = await _lightweightSettings(
       tester,
@@ -83,6 +83,42 @@ void main() {
     expect(s.ambientStrength,
         closeTo(LiquidGlassSettings.ios27Dark.bodyShade, 0.001));
     expect(s.lightIntensity, closeTo(0.5, 0.001));
+    expect(s.rimShade, closeTo(LiquidGlassSettings.ios27Dark.rimShade, 0.001));
+    expect(s.rimLight, closeTo(LiquidGlassSettings.ios27Dark.rimLight, 0.001));
+  });
+
+  testWidgets(
+      'ios27Light preserves rimShade, rimLight, and rimShadeEnds when elevated inside a container on standard path',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: LiquidGlassWidgets.wrap(
+          child: InheritedLiquidGlass(
+            settings: LiquidGlassSettings.ios27Light,
+            quality: GlassQuality.standard,
+            isBlurProvidedByAncestor: true,
+            child: SizedBox(
+              width: 120,
+              height: 48,
+              child: AdaptiveGlass.grouped(
+                shape: const LiquidRoundedSuperellipse(borderRadius: 16),
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ));
+
+    final w = tester
+        .widget<LightweightLiquidGlass>(find.byType(LightweightLiquidGlass));
+    expect(w.densityFactor, 1.0);
+    expect(w.settings!.rimShade,
+        closeTo(LiquidGlassSettings.ios27Light.rimShade, 0.001));
+    expect(w.settings!.rimLight,
+        closeTo(LiquidGlassSettings.ios27Light.rimLight, 0.001));
+    expect(w.settings!.rimShadeEnds,
+        closeTo(LiquidGlassSettings.ios27Light.rimShadeEnds, 0.001));
   });
 
   testWidgets(

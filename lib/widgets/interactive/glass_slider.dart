@@ -463,7 +463,7 @@ class _GlassSliderState extends State<GlassSlider>
     _effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
-      fallback: GlassQuality.premium,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
     );
 
     final effectiveValue = _dragValue ?? widget.value;

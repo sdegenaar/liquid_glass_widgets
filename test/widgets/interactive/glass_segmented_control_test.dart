@@ -1,5 +1,6 @@
 // ignore: unnecessary_import
 import 'dart:ui';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -805,6 +806,314 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(GlassSegmentedControl), findsOneWidget);
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Active-lens foreground contrast (inverted resting pill & activeSelectedColor)
+  // ──────────────────────────────────────────────────────────────────────────
+
+  group('GlassSegmentedControl active-lens foreground contrast', () {
+    Color resolvedTextColor(WidgetTester tester, String label) {
+      final textFinder = find.text(label).first;
+      final textWidget = tester.widget<Text>(textFinder);
+      if (textWidget.style?.color != null) {
+        return textWidget.style!.color!;
+      }
+      final element = tester.element(textFinder);
+      return DefaultTextStyle.of(element).style.color!;
+    }
+
+    testWidgets(
+        'Light Mode inverted dark pill automatically transitions selected text from white to dark during press and restores at rest',
+        (tester) async {
+      await tester.pumpWidget(
+        CupertinoApp(
+          theme: const CupertinoThemeData(brightness: Brightness.light),
+          home: GlassTheme(
+            data: const GlassThemeData.ios27(),
+            child: Center(
+              child: SizedBox(
+                width: 300,
+                child: GlassSegmentedControl(
+                  height: 56,
+                  segments: const [
+                    GlassSegment(
+                      label: 'Day',
+                      icon: Icon(CupertinoIcons.sun_max),
+                    ),
+                    GlassSegment(
+                      label: 'Week',
+                      icon: Icon(CupertinoIcons.calendar),
+                    ),
+                  ],
+                  selectedIndex: 0,
+                  onSegmentSelected: (_) {},
+                  indicatorColor: const Color(0xFF121316),
+                  selectedTextStyle: const TextStyle(
+                    color: CupertinoColors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 1. At rest (thickness == 0): white text and icon on dark resting pill.
+      expect(
+        resolvedTextColor(tester, 'Day'),
+        equals(CupertinoColors.white),
+      );
+      final iconElement = tester.element(find.byIcon(CupertinoIcons.sun_max));
+      expect(
+        IconTheme.of(iconElement).color,
+        equals(CupertinoColors.white),
+      );
+
+      // 2. Press down to lift the glass lens past thickness >= 0.15.
+      final gesture =
+          await tester.startGesture(tester.getCenter(find.text('Day')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 120));
+
+      final pressedColor = resolvedTextColor(tester, 'Day');
+      expect(
+        pressedColor.computeLuminance(),
+        lessThan(0.1),
+        reason:
+            'Active glass lens over light background must transition selected text to dark label color',
+      );
+      expect(
+        IconTheme.of(tester.element(find.byIcon(CupertinoIcons.sun_max)))
+            .color!
+            .computeLuminance(),
+        lessThan(0.1),
+        reason:
+            'Active glass lens over light background must transition selected icon to dark label color',
+      );
+
+      // 3. Release and settle back to rest.
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(
+        resolvedTextColor(tester, 'Day'),
+        equals(CupertinoColors.white),
+      );
+      expect(
+        IconTheme.of(tester.element(find.byIcon(CupertinoIcons.sun_max))).color,
+        equals(CupertinoColors.white),
+      );
+    });
+
+    testWidgets(
+        'tapping a new segment keeps target label dark during transit and fades to white only as pill settles',
+        (tester) async {
+      var selectedIndex = 0;
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) => CupertinoApp(
+            theme: const CupertinoThemeData(brightness: Brightness.light),
+            home: GlassTheme(
+              data: const GlassThemeData.ios27(),
+              child: Center(
+                child: SizedBox(
+                  width: 300,
+                  child: GlassSegmentedControl(
+                    segments: const [
+                      GlassSegment(label: 'Day'),
+                      GlassSegment(label: 'Week'),
+                    ],
+                    selectedIndex: selectedIndex,
+                    onSegmentSelected: (i) => setState(() => selectedIndex = i),
+                    indicatorColor: const Color(0xFF121316),
+                    selectedTextStyle: const TextStyle(
+                      color: CupertinoColors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap 'Week' (index 1).
+      await tester.tap(find.text('Week'));
+      await tester.pump(); // Frame 0 after tap: pill is still at 'Day'
+
+      expect(
+        resolvedTextColor(tester, 'Week').computeLuminance(),
+        lessThan(0.1),
+        reason:
+            'Newly tapped segment must not flash white on frame 0 while the dark pill is still at the old segment',
+      );
+
+      // Once settled at 'Week', the dark pill is opaque under 'Week' -> white text.
+      await tester.pumpAndSettle();
+      expect(
+        resolvedTextColor(tester, 'Week'),
+        equals(CupertinoColors.white),
+      );
+    });
+
+    testWidgets(
+        'Dark Mode inverted white pill automatically transitions selected text from dark to white during press and restores at rest',
+        (tester) async {
+      const darkPillText = Color(0xFF121316);
+      await tester.pumpWidget(
+        CupertinoApp(
+          theme: const CupertinoThemeData(brightness: Brightness.dark),
+          home: GlassTheme(
+            data: const GlassThemeData.ios27(),
+            child: Center(
+              child: SizedBox(
+                width: 300,
+                child: GlassSegmentedControl(
+                  segments: const [
+                    GlassSegment(label: 'Day'),
+                    GlassSegment(label: 'Week'),
+                  ],
+                  selectedIndex: 0,
+                  onSegmentSelected: (_) {},
+                  indicatorColor: CupertinoColors.white,
+                  selectedTextStyle: const TextStyle(color: darkPillText),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(resolvedTextColor(tester, 'Day'), equals(darkPillText));
+
+      final gesture =
+          await tester.startGesture(tester.getCenter(find.text('Day')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 120));
+
+      final pressedColor = resolvedTextColor(tester, 'Day');
+      expect(
+        pressedColor.computeLuminance(),
+        greaterThan(0.9),
+        reason:
+            'Active glass lens over dark background must transition selected text to light label color',
+      );
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(resolvedTextColor(tester, 'Day'), equals(darkPillText));
+    });
+
+    testWidgets(
+        'explicit activeSelectedColor overrides automatic contrast in fixed and scrollable modes',
+        (tester) async {
+      const customLensColor = Color(0xFF007AFF);
+
+      // Fixed mode
+      await tester.pumpWidget(
+        CupertinoApp(
+          theme: const CupertinoThemeData(brightness: Brightness.light),
+          home: GlassTheme(
+            data: const GlassThemeData.ios27(),
+            child: Center(
+              child: SizedBox(
+                width: 300,
+                child: GlassSegmentedControl(
+                  segments: const [
+                    GlassSegment(label: 'Fixed A'),
+                    GlassSegment(label: 'Fixed B'),
+                  ],
+                  selectedIndex: 0,
+                  onSegmentSelected: (_) {},
+                  indicatorColor: const Color(0xFF121316),
+                  selectedTextStyle: const TextStyle(
+                    color: CupertinoColors.white,
+                  ),
+                  activeSelectedColor: customLensColor,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        resolvedTextColor(tester, 'Fixed A'),
+        equals(CupertinoColors.white),
+      );
+
+      var gesture =
+          await tester.startGesture(tester.getCenter(find.text('Fixed A')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 120));
+
+      expect(resolvedTextColor(tester, 'Fixed A'), equals(customLensColor));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(
+        resolvedTextColor(tester, 'Fixed A'),
+        equals(CupertinoColors.white),
+      );
+
+      // Scrollable mode
+      await tester.pumpWidget(
+        CupertinoApp(
+          theme: const CupertinoThemeData(brightness: Brightness.light),
+          home: GlassTheme(
+            data: const GlassThemeData.ios27(),
+            child: Center(
+              child: SizedBox(
+                width: 300,
+                child: GlassSegmentedControl.scrollable(
+                  segments: const [
+                    GlassSegment(label: 'Scroll A'),
+                    GlassSegment(label: 'Scroll B'),
+                    GlassSegment(label: 'Scroll C'),
+                  ],
+                  selectedIndex: 0,
+                  onSegmentSelected: (_) {},
+                  indicatorColor: const Color(0xFF121316),
+                  selectedTextStyle: const TextStyle(
+                    color: CupertinoColors.white,
+                  ),
+                  activeSelectedColor: customLensColor,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pumpAndSettle();
+
+      expect(
+        resolvedTextColor(tester, 'Scroll A'),
+        equals(CupertinoColors.white),
+      );
+
+      gesture =
+          await tester.startGesture(tester.getCenter(find.text('Scroll A')));
+      await gesture.moveBy(const Offset(10, 0));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 120));
+
+      expect(resolvedTextColor(tester, 'Scroll A'), equals(customLensColor));
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(
+        resolvedTextColor(tester, 'Scroll A'),
+        equals(CupertinoColors.white),
+      );
     });
   });
 }

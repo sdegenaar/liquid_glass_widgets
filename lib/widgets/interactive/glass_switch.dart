@@ -643,7 +643,7 @@ class _GlassSwitchState extends State<GlassSwitch>
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
-      fallback: GlassQuality.premium,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
     );
 
     final thumbSize = widget.height - 4.0;

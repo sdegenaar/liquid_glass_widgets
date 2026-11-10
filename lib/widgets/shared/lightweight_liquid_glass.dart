@@ -483,14 +483,13 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
       child: widget.child,
     );
 
-    // ClipRRect/ClipRSuperellipse are preferred over ClipPath because Flutter
-    // PR #177551 (3.41+) forwards these clip types to the iOS PlatformView
-    // mutator stack, letting BackdropFilter clip correctly over PlatformViews.
+    // ClipRRect matches lightweight_glass.frag's circular-arc RRect SDF
+    // boundary identically (eliminating the corner-shoulder clip/shader
+    // mismatch that occurs when a superellipse clip slices into a circular-arc
+    // SDF rim), and Flutter PR #177551 (3.41+) forwards ClipRRect to the iOS
+    // PlatformView mutator stack so BackdropFilter clips over PlatformViews.
     final shapeRadius = widget.shape.toBorderRadius();
     if (shapeRadius != null) {
-      if (widget.shape.isSuperellipse) {
-        return ClipRSuperellipse(borderRadius: shapeRadius, child: effect);
-      }
       return ClipRRect(borderRadius: shapeRadius, child: effect);
     }
     return ClipPath(
@@ -1040,5 +1039,11 @@ class _RenderLightweightGlass extends RenderProxyBox
     // 34: uBodyMode — 0.0 = adaptive, 1.0 = clear.
     shader.setFloat(
         index++, _settings.bodyMode == GlassBodyMode.clear ? 1.0 : 0.0);
+
+    // 35..38 (uRimConfig): (rimShade, rimLight, rimShadeEnds, reserved)
+    shader.setFloat(index++, _settings.rimShade.clamp(0.0, 4.0));
+    shader.setFloat(index++, _settings.rimLight.clamp(0.0, 4.0));
+    shader.setFloat(index++, _settings.rimShadeEnds.clamp(0.0, 1.0));
+    shader.setFloat(index++, 0.0);
   }
 }

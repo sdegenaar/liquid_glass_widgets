@@ -1,4 +1,4 @@
-# Unreleased
+# 1.17.1
 
 ## Features
 
@@ -7,9 +7,12 @@
 
 ## Bug Fixes
 
-- **`GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl` lifted lens inside `GlassGroupedSection` / `GlassContainer`:** Fixed `GlassContainer` and `AdaptiveGlass` marking their default `GlassQuality.standard` fallback as an explicit `InheritedLiquidGlass.hasExplicitQuality` override, which coerced hero interactive lenses inside `GlassGroupedSection` down to `GlassQuality.standard`; restored `GlassQuality.premium` default across all `GlassStyle` presets for `GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl` (zero shader layers mounted at rest), and hardened the 2D `GlassQuality.standard` fallback (`rimShade` to `edgeAbsorption`, `thumbTint`, and `LensInnerShadowPainter`) so lifted thumbs remain visible on white cards.
+- **`GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl` lifted lens & theme quality defaults:** Kept theme-level `GlassThemeVariant.quality` at `null` so body widgets (`GlassButton`, `GlassCard`, `GlassPage`) default to `GlassQuality.standard` without hitting the 16-shape layer limit, while `GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl` default to `GlassQuality.premium` in `ios27`/`ios26` (`standard` in `classic`) even inside `GlassGroupedSection` / `GlassContainer`.
+- **`GlassTabBar` and `AnimatedGlassIndicator` pill rendering:** Fixed right-edge frost bleed on `GlassTabBar.searchable` when the search bar is collapsed and eliminated stair-stepped edge pixelation inside lifted indicator pills while preserving the concave lens pinch.
+- **iOS 27 `GlassQuality.standard` rim and corner outlines:** Added native iOS 27 rim light and light-mode rim shade to the lightweight shader and aligned the widget clip with the shader's rounded-rect SDF for smooth, continuous corner outlines.
 - **`GlassMenu`, `GlassPullDownButton`, and `GlassPopover` liquid morph parity (#453):** Restored native iOS 26/27 open and close morph physics for `GlassQuality.premium` — immediate trigger handoff, pill-to-droplet open contour, full J-curve overshoot on open, symmetric ~350 ms close spring, and smooth trigger-anchored contraction and trigger re-materialization on close. Thanks to [@denweeLabs](https://github.com/denweeLabs) for reporting (#453).
 - **`GlassFullScreenCoverBar`, `GlassFullScreenCoverBarButton`, and `GlassEditButton` default quality:** Default to `GlassQuality.premium` in `GlassStyle.ios27` and `GlassStyle.ios26` so full-screen cover and edit toolbar buttons preserve native material optics.
+- **`GlassSegmentedControl` active-lens text and icon contrast (`activeSelectedColor`):** Phase-locked the selected segment's text and icon color to the indicator's glass-bloom phase (`thickness: 0.0 → 0.15`) across fixed and `.scrollable` modes so high-contrast inverted resting pills (e.g. a dark pill in Light Mode or a white pill in Dark Mode) smoothly transition to the ambient label color (or an explicit `activeSelectedColor`) while the solid pill dissolves into the clear glass lens.
 
 # 1.17.0
 

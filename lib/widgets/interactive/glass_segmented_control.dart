@@ -194,6 +194,7 @@ class GlassSegmentedControl extends StatefulWidget {
     this.padding = const EdgeInsets.all(2),
     this.selectedTextStyle,
     this.unselectedTextStyle,
+    this.activeSelectedColor,
     this.backgroundColor,
     this.indicatorColor,
     this.indicatorSettings,
@@ -267,6 +268,7 @@ class GlassSegmentedControl extends StatefulWidget {
     this.padding = const EdgeInsets.all(2),
     this.selectedTextStyle,
     this.unselectedTextStyle,
+    this.activeSelectedColor,
     this.backgroundColor,
     this.indicatorColor,
     this.indicatorSettings,
@@ -399,6 +401,23 @@ class GlassSegmentedControl extends StatefulWidget {
   /// If null, uses default style with fontSize 13, fontWeight w500,
   /// and white color at 60% opacity.
   final TextStyle? unselectedTextStyle;
+
+  /// Optional foreground color (text and icon) for the selected segment while
+  /// the active liquid-glass lens is lifted (pressed or dragged).
+  ///
+  /// Because the solid resting [indicatorColor] pill fades out to 0% opacity as
+  /// the interactive glass lens blooms (`thickness: 0.0 → 0.15`), a
+  /// high-contrast inverted resting pill (e.g. a dark pill in Light Mode with
+  /// white selected text, or a white pill in Dark Mode with dark selected text)
+  /// would otherwise leave its resting foreground color over the clear glass
+  /// lens.
+  ///
+  /// When `null` (default), [GlassSegmentedControl] automatically interpolates
+  /// the active segment's text and icon color to the theme's primary label
+  /// color whenever [indicatorColor] has inverted luminance relative to the
+  /// ambient [GlassTheme] brightness (and keeps the resting color unchanged
+  /// when [indicatorColor] is not inverted).
+  final Color? activeSelectedColor;
 
   /// Background color of the segmented control.
   ///
@@ -600,7 +619,7 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
-      fallback: GlassQuality.premium,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
     );
 
     final effectiveSettings = GlassThemeHelpers.resolveSettings(
@@ -641,6 +660,7 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
           indicatorColor: widget.indicatorColor,
           selectedLabelStyle: widget.selectedTextStyle,
           unselectedLabelStyle: widget.unselectedTextStyle,
+          activeSelectedColor: widget.activeSelectedColor,
           selectedIconColor: widget.selectedIconColor,
           unselectedIconColor: widget.unselectedIconColor,
           iconSize: widget.iconSize,
@@ -696,6 +716,9 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
             onSegmentSelected: widget.onSegmentSelected,
             selectedTextStyle: widget.selectedTextStyle,
             unselectedTextStyle: widget.unselectedTextStyle,
+            activeSelectedColor: widget.activeSelectedColor,
+            selectedIconColor: widget.selectedIconColor,
+            unselectedIconColor: widget.unselectedIconColor,
             indicatorColor: widget.indicatorColor,
             indicatorSettings: widget.indicatorSettings,
             indicatorPinchStrength: widget.indicatorPinchStrength,

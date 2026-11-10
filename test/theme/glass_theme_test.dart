@@ -1377,9 +1377,12 @@ void main() {
     });
 
     testWidgets(
-        'GlassSwitch, GlassSlider, and GlassSegmentedControl inside GlassGroupedSection retain GlassQuality.premium across all GlassStyles',
+        'GlassSwitch, GlassSlider, and GlassSegmentedControl inside GlassGroupedSection retain style default quality',
         (tester) async {
       for (final style in GlassStyle.values) {
+        final expectedQuality = style == GlassStyle.classic
+            ? GlassQuality.standard
+            : GlassQuality.premium;
         for (final surfaceStyle in GlassSurfaceStyle.values) {
           await tester.pumpWidget(
             CupertinoApp(
@@ -1419,9 +1422,9 @@ void main() {
           for (final effect in effects) {
             expect(
               effect.quality,
-              equals(GlassQuality.premium),
+              equals(expectedQuality),
               reason:
-                  'Expected GlassQuality.premium for style=$style, surfaceStyle=$surfaceStyle',
+                  'Expected $expectedQuality for style=$style, surfaceStyle=$surfaceStyle',
             );
           }
         }
@@ -1491,6 +1494,50 @@ void main() {
 
       await switchGesture.up();
       await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+        'built-in theme variants leave quality null so body widgets stay standard while hero widgets stay premium',
+        (tester) async {
+      expect(GlassThemeVariant.ios27Light.quality, isNull);
+      expect(GlassThemeVariant.ios27Dark.quality, isNull);
+      expect(GlassThemeVariant.ios26Light.quality, isNull);
+      expect(GlassThemeVariant.ios26Dark.quality, isNull);
+      expect(GlassThemeVariant.classicLight.quality, isNull);
+      expect(GlassThemeVariant.classicDark.quality, isNull);
+
+      for (final themeData in [
+        GlassThemeData.ios27(),
+        GlassThemeData.ios26(),
+      ]) {
+        await tester.pumpWidget(
+          CupertinoApp(
+            home: GlassTheme(
+              data: themeData,
+              child: Column(
+                children: [
+                  GlassButton(
+                    icon: const Icon(CupertinoIcons.add),
+                    onTap: () {},
+                  ),
+                  GlassSwitch(
+                    value: true,
+                    onChanged: (_) {},
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        final adaptiveGlass =
+            tester.widget<AdaptiveGlass>(find.byType(AdaptiveGlass));
+        final glassEffect =
+            tester.widget<GlassEffect>(find.byType(GlassEffect));
+
+        expect(adaptiveGlass.quality, equals(GlassQuality.standard));
+        expect(glassEffect.quality, equals(GlassQuality.premium));
+      }
     });
   });
 }

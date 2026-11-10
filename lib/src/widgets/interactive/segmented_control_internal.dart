@@ -47,6 +47,9 @@ class SegmentedControlContent extends StatefulWidget {
     required this.unselectedTextStyle,
     required this.indicatorColor,
     required this.borderRadius,
+    this.activeSelectedColor,
+    this.selectedIconColor,
+    this.unselectedIconColor,
     this.indicatorBorderRadius,
     required this.quality,
     this.direction = Axis.horizontal,
@@ -68,6 +71,9 @@ class SegmentedControlContent extends StatefulWidget {
   final ValueChanged<int> onSegmentSelected;
   final TextStyle? selectedTextStyle;
   final TextStyle? unselectedTextStyle;
+  final Color? activeSelectedColor;
+  final Color? selectedIconColor;
+  final Color? unselectedIconColor;
   final Color? indicatorColor;
   final LiquidGlassSettings? indicatorSettings;
 
@@ -269,8 +275,10 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
   @override
   Widget build(BuildContext context) {
     final isLight = GlassTheme.brightnessOf(context) == Brightness.light;
-    final indicatorColor = widget.indicatorColor ??
+    final rawIndicatorColor = widget.indicatorColor ??
         (isLight ? CupertinoColors.white : _defaultDarkIndicatorColor);
+    final indicatorColor =
+        CupertinoDynamicColor.resolve(rawIndicatorColor, context);
     final restingShadows =
         (isLight && widget.indicatorColor == null && !_isDragging && !_isDown)
             ? _defaultLightIndicatorShadow
@@ -287,21 +295,73 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
             : (widget.borderRadius - 2.0)
                 .clamp(0.0, GlassDefaults.capsuleRadius));
 
-    final dynamicLabelColor =
-        CupertinoTheme.of(context).textTheme.textStyle.color ??
-            CupertinoColors.label;
+    final dynamicLabelColor = CupertinoDynamicColor.resolve(
+      CupertinoTheme.of(context).textTheme.textStyle.color ??
+          CupertinoColors.label,
+      context,
+    );
 
-    final selectedTextStyle = TextStyle(
+    final baseSelectedTextStyle = TextStyle(
       fontSize: 13,
       fontWeight: FontWeight.w600,
       color: dynamicLabelColor,
     ).merge(widget.selectedTextStyle);
+    final restingSelectedTextColor = CupertinoDynamicColor.resolve(
+      baseSelectedTextStyle.color ?? dynamicLabelColor,
+      context,
+    );
+    final selectedTextStyle =
+        baseSelectedTextStyle.copyWith(color: restingSelectedTextColor);
 
     final unselectedTextStyle = TextStyle(
       fontSize: 13,
       fontWeight: FontWeight.w500,
       color: dynamicLabelColor.withValues(alpha: 0.6),
     ).merge(widget.unselectedTextStyle);
+    final restingUnselectedTextColor = CupertinoDynamicColor.resolve(
+      unselectedTextStyle.color ?? dynamicLabelColor.withValues(alpha: 0.6),
+      context,
+    );
+
+    final restingSelectedIconColor = CupertinoDynamicColor.resolve(
+      widget.selectedIconColor ?? restingSelectedTextColor,
+      context,
+    );
+    final unselectedIconColor = CupertinoDynamicColor.resolve(
+      widget.unselectedIconColor ?? restingUnselectedTextColor,
+      context,
+    );
+
+    // Active-lens foreground contrast: as the solid resting pill dissolves into
+    // the clear refractive glass lens (thickness: 0.0 → 0.15), an opaque
+    // luminance-inverted pill (dark pill in Light Mode or light pill in Dark
+    // Mode) automatically interpolates the selected text/icon color to
+    // dynamicLabelColor unless overridden via activeSelectedColor.
+    final isIndicatorInverted = widget.indicatorColor != null &&
+        indicatorColor.a >= 0.5 &&
+        (isLight
+            ? indicatorColor.computeLuminance() < 0.5
+            : indicatorColor.computeLuminance() > 0.5);
+    final isTextColorInverted = isLight
+        ? restingSelectedTextColor.computeLuminance() > 0.5
+        : restingSelectedTextColor.computeLuminance() < 0.5;
+    final isIconColorInverted = isLight
+        ? restingSelectedIconColor.computeLuminance() > 0.5
+        : restingSelectedIconColor.computeLuminance() < 0.5;
+    final resolvedActiveSelectedColor = widget.activeSelectedColor != null
+        ? CupertinoDynamicColor.resolve(widget.activeSelectedColor!, context)
+        : null;
+    final lensSelectedTextColor = resolvedActiveSelectedColor ??
+        (isIndicatorInverted && isTextColorInverted
+            ? dynamicLabelColor
+            : restingSelectedTextColor);
+    final lensSelectedIconColor = resolvedActiveSelectedColor ??
+        (isIndicatorInverted && isIconColorInverted
+            ? dynamicLabelColor
+            : restingSelectedIconColor);
+    final needsLensColorShift =
+        lensSelectedTextColor != restingSelectedTextColor ||
+            lensSelectedIconColor != restingSelectedIconColor;
 
     return Listener(
       // Raw pointer events fire BEFORE gesture recognizers and never compete
@@ -339,11 +399,12 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
             duration: const Duration(milliseconds: 350),
           ),
           active: _isDragging,
-          builder: (context, value, velocity, child) {
+          builder: (context, value, velocity, _) {
             final alignment = widget.direction == Axis.horizontal
                 ? AlignmentDirectional(value, 0)
                 : Alignment(0, value);
             final alignmentDelta = value - targetAlignment;
+            final isMoving = alignmentDelta.abs() > 0.05;
 
             return SpringBuilder(
               spring: GlassSpring.snappy(
@@ -352,9 +413,35 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
               // Show glass bloom when: pressed, dragging, OR indicator is still
               // settling toward its target. Threshold 0.05 matches
               // tab_bar_internal.dart for consistent cross-component behaviour.
-              value: _isDown || alignmentDelta.abs() > 0.05 ? 1.0 : 0.0,
+              value: _isDown || isMoving ? 1.0 : 0.0,
               builder: (context, thickness, child) {
                 final isPremiumQuality = widget.quality == GlassQuality.premium;
+                // While the indicator is in transit to a newly selected segment
+                // (isMoving), the resting pill is not underneath selectedIndex
+                // yet even on the first frame before thickness ramps to 0.15.
+                final glassPhase =
+                    isMoving ? 1.0 : (thickness / 0.15).clamp(0.0, 1.0);
+                final effectiveSegmentsChild =
+                    (needsLensColorShift && glassPhase > 0.0)
+                        ? _buildSegmentsFlex(
+                            selectedStyle: selectedTextStyle.copyWith(
+                              color: Color.lerp(
+                                restingSelectedTextColor,
+                                lensSelectedTextColor,
+                                glassPhase,
+                              ),
+                            ),
+                            unselectedStyle: unselectedTextStyle,
+                            selectedIconColor: Color.lerp(
+                              restingSelectedIconColor,
+                              lensSelectedIconColor,
+                              glassPhase,
+                            )!,
+                            unselectedIconColor: unselectedIconColor,
+                            animateSelectedTextStyle: false,
+                          )
+                        : child!;
+
                 return Stack(
                   clipBehavior: Clip.none,
                   children: [
@@ -381,7 +468,7 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
                     ),
                     // Segment labels paint between the two indicator passes so
                     // the premium glass layer above can refract them.
-                    child!,
+                    effectiveSegmentsChild,
                     // Pass 2 (premium only) — glass-only pass rendered ABOVE
                     // the labels so the shader samples and refracts them,
                     // matching the iOS 26 refraction seen in GlassTabBar.
@@ -406,71 +493,15 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
                   ],
                 );
               },
-              child: Flex(
-                direction: widget.direction,
-                children: [
-                  for (var i = 0; i < widget.segments.length; i++)
-                    Expanded(
-                      child: RepaintBoundary(
-                        child: GestureDetector(
-                          excludeFromSemantics: true,
-                          onTap: () => _onSegmentTap(i),
-                          onTapDown: (_) {
-                            if (!widget.segments[i].enabled) return;
-                            if (i != widget.selectedIndex) {
-                              widget.onSegmentSelected(i);
-                            }
-                          },
-                          behavior: HitTestBehavior.opaque,
-                          child: GlassFocusRegion(
-                            enabled: widget.segments[i].enabled,
-                            isButton: true,
-                            tracksSelection: true,
-                            isSelected: widget.selectedIndex == i,
-                            semanticLabel: widget.segments[i].semanticLabel ??
-                                widget.segments[i].label,
-                            onKeyboardActivate: () => _onSegmentTap(i),
-                            semanticOnTap: () => _onSegmentTap(i),
-                            isFocusedNotifier: _focusNotifiers[i],
-                            isHoveredNotifier: _hoverNotifiers[i],
-                            shape:
-                                const LiquidRoundedRectangle(borderRadius: 8.0),
-                            child: Center(
-                              child: IgnorePointer(
-                                ignoring: !widget.segments[i].enabled,
-                                child: Opacity(
-                                  opacity:
-                                      widget.segments[i].enabled ? 1.0 : 0.38,
-                                  child: _buildSegmentContent(
-                                    widget.segments[i],
-                                    isSelected: widget.selectedIndex == i,
-                                    selectedStyle: selectedTextStyle,
-                                    unselectedStyle: unselectedTextStyle,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+              child: _buildSegmentsFlex(
+                selectedStyle: selectedTextStyle,
+                unselectedStyle: unselectedTextStyle,
+                selectedIconColor: restingSelectedIconColor,
+                unselectedIconColor: unselectedIconColor,
+                animateSelectedTextStyle: true,
               ),
             );
           },
-          child: Flex(
-            direction: widget.direction,
-            children: [
-              for (var i = 0; i < widget.segments.length; i++)
-                Expanded(
-                  child: Center(
-                    child: widget.segments[i].label != null
-                        ? Text(widget.segments[i].label!)
-                        : (widget.segments[i].icon ?? const SizedBox.shrink()),
-                  ),
-                ),
-            ],
-          ),
         ),
       ),
     );
@@ -478,14 +509,81 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
 
   // ── Segment content builder ───────────────────────────────────────────────
 
+  Widget _buildSegmentsFlex({
+    required TextStyle selectedStyle,
+    required TextStyle unselectedStyle,
+    required Color selectedIconColor,
+    required Color unselectedIconColor,
+    required bool animateSelectedTextStyle,
+  }) {
+    return Flex(
+      direction: widget.direction,
+      children: [
+        for (var i = 0; i < widget.segments.length; i++)
+          Expanded(
+            child: RepaintBoundary(
+              child: GestureDetector(
+                excludeFromSemantics: true,
+                onTap: () => _onSegmentTap(i),
+                onTapDown: (_) {
+                  if (!widget.segments[i].enabled) return;
+                  if (i != widget.selectedIndex) {
+                    widget.onSegmentSelected(i);
+                  }
+                },
+                behavior: HitTestBehavior.opaque,
+                child: GlassFocusRegion(
+                  enabled: widget.segments[i].enabled,
+                  isButton: true,
+                  tracksSelection: true,
+                  isSelected: widget.selectedIndex == i,
+                  semanticLabel: widget.segments[i].semanticLabel ??
+                      widget.segments[i].label,
+                  onKeyboardActivate: () => _onSegmentTap(i),
+                  semanticOnTap: () => _onSegmentTap(i),
+                  isFocusedNotifier: _focusNotifiers[i],
+                  isHoveredNotifier: _hoverNotifiers[i],
+                  shape: const LiquidRoundedRectangle(borderRadius: 8.0),
+                  child: Center(
+                    child: IgnorePointer(
+                      ignoring: !widget.segments[i].enabled,
+                      child: Opacity(
+                        opacity: widget.segments[i].enabled ? 1.0 : 0.38,
+                        child: _buildSegmentContent(
+                          widget.segments[i],
+                          isSelected: widget.selectedIndex == i,
+                          selectedStyle: selectedStyle,
+                          unselectedStyle: unselectedStyle,
+                          selectedIconColor: selectedIconColor,
+                          unselectedIconColor: unselectedIconColor,
+                          animateStyle: !(widget.selectedIndex == i &&
+                              !animateSelectedTextStyle),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   /// Builds the content for a single segment — label only, icon only, or both.
   Widget _buildSegmentContent(
     GlassSegment tab, {
     required bool isSelected,
     required TextStyle selectedStyle,
     required TextStyle unselectedStyle,
+    required Color selectedIconColor,
+    required Color unselectedIconColor,
+    required bool animateStyle,
   }) {
     final style = isSelected ? selectedStyle : unselectedStyle;
+    final iconColor = isSelected ? selectedIconColor : unselectedIconColor;
+    final styleDuration =
+        animateStyle ? const Duration(milliseconds: 200) : Duration.zero;
     final hasLabel = tab.label != null && tab.label!.isNotEmpty;
     final hasIcon = tab.icon != null;
 
@@ -495,14 +593,14 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
         children: [
           IconTheme(
             data: IconThemeData(
-              color: style.color,
+              color: iconColor,
               size: 16,
             ),
             child: tab.icon!,
           ),
           const SizedBox(height: 2),
           AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 200),
+            duration: styleDuration,
             style: style,
             child: Text(
               tab.label!,
@@ -516,13 +614,13 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
 
     if (hasIcon) {
       return IconTheme(
-        data: IconThemeData(color: style.color, size: 20),
+        data: IconThemeData(color: iconColor, size: 20),
         child: tab.icon!,
       );
     }
 
     return AnimatedDefaultTextStyle(
-      duration: const Duration(milliseconds: 200),
+      duration: styleDuration,
       style: style,
       child: Text(
         tab.label ?? '',

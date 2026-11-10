@@ -607,10 +607,7 @@ class _GlassEffectState extends State<GlassEffect>
         edgeAbsorption: fallbackEdgeAbsorption,
       );
     } else {
-      effectiveSettings = base.copyWith(
-        lightIntensity: fallbackLightIntensity,
-        edgeAbsorption: fallbackEdgeAbsorption,
-      );
+      effectiveSettings = base.copyWith(lightIntensity: fallbackLightIntensity);
     }
 
     // Path B: High-Fidelity Refraction Shader (Custom GLSL)

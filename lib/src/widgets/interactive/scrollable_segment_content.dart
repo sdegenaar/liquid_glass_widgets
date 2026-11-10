@@ -50,6 +50,7 @@ class ScrollableSegmentContent extends StatefulWidget {
     required this.iconSize,
     required this.labelPadding,
     required this.quality,
+    this.activeSelectedColor,
     this.indicatorBorderRadius,
     this.indicatorSettings,
     this.indicatorPinchStrength = 0.4,
@@ -74,6 +75,7 @@ class ScrollableSegmentContent extends StatefulWidget {
   final Color? indicatorColor;
   final TextStyle? selectedLabelStyle;
   final TextStyle? unselectedLabelStyle;
+  final Color? activeSelectedColor;
   final Color? selectedIconColor;
   final Color? unselectedIconColor;
   final double iconSize;
@@ -908,8 +910,10 @@ class ScrollableSegmentContentState extends State<ScrollableSegmentContent>
   @override
   Widget build(BuildContext context) {
     final isLight = GlassTheme.brightnessOf(context) == Brightness.light;
-    final indicatorColor = widget.indicatorColor ??
+    final rawIndicatorColor = widget.indicatorColor ??
         (isLight ? CupertinoColors.white : _defaultIndicatorColor);
+    final indicatorColor =
+        CupertinoDynamicColor.resolve(rawIndicatorColor, context);
     final effectiveShadow = _isDraggingIndicator
         ? null
         : (widget.indicatorShadow ??
@@ -919,17 +923,25 @@ class ScrollableSegmentContentState extends State<ScrollableSegmentContent>
 
     // Resolve label and icon colors from CupertinoTheme — brightness-aware.
     // Matches the pattern used by GlassTabBar.bottom (tab_bar_bottom_layout.dart).
-    final dynamicLabelColor =
-        CupertinoTheme.of(context).textTheme.textStyle.color ??
-            CupertinoColors.label.resolveFrom(context);
+    final dynamicLabelColor = CupertinoDynamicColor.resolve(
+      CupertinoTheme.of(context).textTheme.textStyle.color ??
+          CupertinoColors.label,
+      context,
+    );
     final dynamicSecondaryColor =
         CupertinoColors.secondaryLabel.resolveFrom(context);
 
-    final selectedLabelStyle = TextStyle(
+    final baseSelectedLabelStyle = TextStyle(
       fontSize: 14,
       fontWeight: FontWeight.w600,
       color: dynamicLabelColor,
     ).merge(widget.selectedLabelStyle);
+    final restingSelectedTextColor = CupertinoDynamicColor.resolve(
+      baseSelectedLabelStyle.color ?? dynamicLabelColor,
+      context,
+    );
+    final selectedLabelStyle =
+        baseSelectedLabelStyle.copyWith(color: restingSelectedTextColor);
 
     final unselectedLabelStyle = TextStyle(
       fontSize: 14,
@@ -937,14 +949,45 @@ class ScrollableSegmentContentState extends State<ScrollableSegmentContent>
       color: dynamicSecondaryColor,
     ).merge(widget.unselectedLabelStyle);
 
-    final selectedIconColor = widget.selectedIconColor ?? dynamicLabelColor;
-    final unselectedIconColor =
-        widget.unselectedIconColor ?? dynamicSecondaryColor;
+    final restingSelectedIconColor = CupertinoDynamicColor.resolve(
+      widget.selectedIconColor ?? restingSelectedTextColor,
+      context,
+    );
+    final unselectedIconColor = CupertinoDynamicColor.resolve(
+      widget.unselectedIconColor ?? dynamicSecondaryColor,
+      context,
+    );
+
+    final isIndicatorInverted = widget.indicatorColor != null &&
+        indicatorColor.a >= 0.5 &&
+        (isLight
+            ? indicatorColor.computeLuminance() < 0.5
+            : indicatorColor.computeLuminance() > 0.5);
+    final isTextColorInverted = isLight
+        ? restingSelectedTextColor.computeLuminance() > 0.5
+        : restingSelectedTextColor.computeLuminance() < 0.5;
+    final isIconColorInverted = isLight
+        ? restingSelectedIconColor.computeLuminance() > 0.5
+        : restingSelectedIconColor.computeLuminance() < 0.5;
+    final resolvedActiveSelectedColor = widget.activeSelectedColor != null
+        ? CupertinoDynamicColor.resolve(widget.activeSelectedColor!, context)
+        : null;
+    final lensSelectedTextColor = resolvedActiveSelectedColor ??
+        (isIndicatorInverted && isTextColorInverted
+            ? dynamicLabelColor
+            : restingSelectedTextColor);
+    final lensSelectedIconColor = resolvedActiveSelectedColor ??
+        (isIndicatorInverted && isIconColorInverted
+            ? dynamicLabelColor
+            : restingSelectedIconColor);
+    final needsLensColorShift =
+        lensSelectedTextColor != restingSelectedTextColor ||
+            lensSelectedIconColor != restingSelectedIconColor;
 
     final Widget tabLabels = _buildTabLabels(
       selectedLabelStyle,
       unselectedLabelStyle,
-      selectedIconColor,
+      restingSelectedIconColor,
       unselectedIconColor,
     );
 
@@ -1033,6 +1076,28 @@ class ScrollableSegmentContentState extends State<ScrollableSegmentContent>
                 ),
                 value: _isDown || isMoving ? 1.0 : 0.0,
                 builder: (context, thickness, _) {
+                  final glassPhase =
+                      isMoving ? 1.0 : (thickness / 0.15).clamp(0.0, 1.0);
+                  final effectiveTabLabels =
+                      (needsLensColorShift && glassPhase > 0.0)
+                          ? _buildTabLabels(
+                              selectedLabelStyle.copyWith(
+                                color: Color.lerp(
+                                  restingSelectedTextColor,
+                                  lensSelectedTextColor,
+                                  glassPhase,
+                                ),
+                              ),
+                              unselectedLabelStyle,
+                              Color.lerp(
+                                restingSelectedIconColor,
+                                lensSelectedIconColor,
+                                glassPhase,
+                              )!,
+                              unselectedIconColor,
+                            )
+                          : safeTabLabels;
+
                   // Helper to prevent indicator parameter duplication
                   Widget buildIndicator(
                       {required bool paintBackground,
@@ -1113,7 +1178,7 @@ class ScrollableSegmentContentState extends State<ScrollableSegmentContent>
                                   controller: widget.scrollController,
                                   scrollDirection: Axis.horizontal,
                                   physics: physics,
-                                  child: safeTabLabels,
+                                  child: effectiveTabLabels,
                                 ),
                               ),
                             ],
@@ -1143,7 +1208,7 @@ class ScrollableSegmentContentState extends State<ScrollableSegmentContent>
                           buildIndicator(
                               paintBackground: true,
                               paintGlass: !isPremiumQuality),
-                        safeTabLabels,
+                        effectiveTabLabels,
                         if (canShowIndicator && isPremiumQuality)
                           buildIndicator(
                               paintBackground: false, paintGlass: true),
