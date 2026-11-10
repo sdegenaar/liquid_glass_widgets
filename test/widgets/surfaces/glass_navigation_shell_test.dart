@@ -1123,6 +1123,56 @@ void main() {
       expect(pinnedBack(), findsNothing);
     });
 
+    for (final overSheet in [false, true]) {
+      testWidgets(
+          'a pinned fullscreen dialog shows its own chrome'
+          '${overSheet ? ' when pushed over a sheet' : ''}', (tester) async {
+        // Neither covers the pinned route below it: a fullscreen dialog
+        // drives no exit transition, and a route pushed over a sheet is not
+        // the next route of the screen under the sheet.
+        Finder pinned(IconData icon) => find.descendant(
+              of: find.byType(GlassNavPinnedHost),
+              matching: find.byIcon(icon),
+            );
+        await tester.pumpWidget(
+          shellApp(const _Screen(title: 'Root', actions: [])),
+        );
+        await settle(tester);
+        await _push(
+          tester,
+          _Screen(title: 'Detail', actions: [
+            GlassBarItem.icon(
+              icon: const Icon(CupertinoIcons.settings),
+              onTap: () {},
+            ),
+          ]),
+        );
+        await settle(tester);
+        if (overSheet) {
+          showCupertinoModalPopup<void>(
+            context: tester.element(find.text('Detail body')),
+            builder: (_) => const SizedBox(height: 400),
+          );
+          await settle(tester);
+        }
+
+        final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+        navigator.push(CupertinoPageRoute<void>(
+          fullscreenDialog: true,
+          builder: (_) => _Screen(title: 'Compose', actions: [
+            GlassBarItem.icon(
+              icon: const Icon(CupertinoIcons.add),
+              onTap: () {},
+            ),
+          ]),
+        ));
+        await settle(tester);
+
+        expect(pinned(CupertinoIcons.settings), findsNothing);
+        expect(pinned(CupertinoIcons.add).hitTestable(), findsOneWidget);
+      });
+    }
+
     testWidgets('the chrome is pinned again once the presentation is gone',
         (tester) async {
       await tester.pumpWidget(

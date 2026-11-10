@@ -871,22 +871,19 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
         ? 1.0
         : top.key.animation?.value ?? 1.0;
 
-    // A route's `animation` is a ProxyAnimation that reports itself complete
-    // at 1.0 until the navigator attaches the real controller in `didPush`,
-    // which lands *after* the route's first build — and that build is when its
-    // bar registers. Taken at face value it says a route that has not begun to
-    // move is fully entered, so the incoming chrome paints solid for one frame
-    // before dropping back to 0 and materializing: a visible flash.
+    // A pushed route's first build is Flutter's offstage one (the hero
+    // controller measures it there), and that build is when its bar
+    // registers. While offstage, a route's `animation` reports itself
+    // complete at 1.0, before its entrance has begun. Taken at face value it
+    // says a route that has not begun to move is fully entered, so the
+    // incoming chrome paints solid for one frame before dropping back to 0
+    // and materializing: a visible flash.
     //
-    // The route underneath is the witness. It is covered in lockstep with the
-    // top route's entrance, so at rest the two agree (1.0 and fully covered),
-    // and during a real transition they agree at every scrubbed value. Only
-    // the frame before the controller is attached has the top route claiming
-    // to be fully in while nothing below it has been covered at all.
-    if (below != null &&
-        progress == 1.0 &&
-        _coverageOf(below.key) == 0.0 &&
-        status == AnimationStatus.completed) {
+    // The route's own `offstage` flag is what says so. The route underneath
+    // can't: it is only covered by a route that transitions it (not by a
+    // fullscreen dialog, nor by a route pushed over a sheet), so a route
+    // that is never covered would hold the chrome at 0 for good.
+    if (top.key.offstage && status == AnimationStatus.completed) {
       progress = 0.0;
     }
 

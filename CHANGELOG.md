@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- **`GlassNavigationShell` showed the previous route's pinned chrome over a fullscreen dialog:** A pinned route whose push does not cover the route below it (a `fullscreenDialog` route, or a route pushed over a modal sheet) kept its chrome at the start of its entrance for good, so the shell drew the previous route's items instead of its own, and their taps acted on the previous route. The guard against the incoming chrome flashing solid for one frame now reads the route's own `offstage` flag instead of whether the route below is covered.
+
 # 1.17.1
 
 ## Features
