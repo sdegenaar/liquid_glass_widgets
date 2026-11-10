@@ -359,11 +359,14 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
         blend * devicePixelRatio,
       ]);
     });
-    // uNativeEdge, after the shape array.
+    // uNativeEdge, after the shape array:
+    //   0.0 = classic smooth edge (1.5 * uDpr ramp)
+    //   1.0 = frosted native platter edge
+    //   2.0 = clear native lens edge (wider AA ramp for jelly-scaled indicators)
     geometryShader.setFloatUniforms(
       initialIndex: 8 + LiquidGlassBlendGroup.maxShapesPerLayer * 7,
       (value) => value.setFloat(
-        settings.rimShade > 0 || settings.frost > 0 ? 1.0 : 0.0,
+        settings.frost > 0 ? 1.0 : (settings.rimShade > 0 ? 2.0 : 0.0),
       ),
     );
   }

@@ -93,25 +93,31 @@ void main() {
     // This guarantees a pristine edge that survives the 4% bilinear scaling of press 
     // animations without stair-stepping, on every device density.
     float smoothing = 1.5 * max(1.0, uDpr);
-    if (uNativeEdge > 0.5) {
-        // iOS 27 glass ends in a single anti-aliased pixel, and the outline
-        // and the frost the render pass draws have to reach an opaque pixel
-        // at the edge:
-        // narrow the window to half a logical pixel (never under one
-        // physical pixel). The native silhouette also measures a third of a
-        // point larger than its frame, the outline sitting just outside it,
-        // so grow by a physical pixel at 3x; gatherShapeData makes room.
-        smoothing = max(1.0, 0.5 * uDpr);
+    if (uNativeEdge > 1.5) {
+        // Clear interactive lens (e.g. ios27Indicator): keep a ~1.25 logical-pixel
+        // AA ramp so the curved shoulders survive jelly Transform scaling without
+        // stair-stepping, while still expanding by 1 physical pixel at 3x for the
+        // native hairline outline.
+        smoothing = max(1.5, 1.25 * uDpr);
+        sdN -= max(1.0, uDpr / 3.0);
+    } else if (uNativeEdge > 0.5) {
+        // Frosted native platter: ends in a crisp anti-aliased edge while
+        // keeping enough ramp width to avoid diagonal/shoulder stair-stepping.
+        smoothing = max(1.5, 0.85 * uDpr);
         sdN -= max(1.0, uDpr / 3.0);
     }
+    vec2 gradUnit = (gradMag > 1e-4) ? vec2(dx, dy) / gradMag : vec2(0.0);
     float foregroundAlpha = smoothstep(smoothing * 0.5, -smoothing * 0.5, sdN);
     if (foregroundAlpha < 0.01) {
-        fragColor = vec4(0.0);
+        // Store the continuous outward normal in RG even when alpha == 0 so
+        // hardware bilinear filtering (FilterQuality.medium) across the outer
+        // edge never blends valid normals with RG=(0,0) (which decodes to (-1,-1)).
+        fragColor = encodeGeometryData(gradUnit, 0.0, uThickness, 0.0);
         return;
     }
 
     if (uThickness <= 0.0) {
-        fragColor = vec4(0.0);
+        fragColor = encodeGeometryData(gradUnit, 0.0, 1.0, 0.0);
         return;
     }
 
@@ -125,7 +131,7 @@ void main() {
 
     // Fragments just outside the silhouette (0 <= sdN < smoothing * 0.5)
     // still carry the outer half of the smoothstep's AA coverage. The dome
-    // meets the ground plane there — height is 0 and the surface normal is
+    // meets the ground plane there — rimDist is 0 and the surface normal is
     // horizontal along the gradient (the n_sin == 0 limit of the same
     // profile), so the texel stays continuous with the rim while alpha
     // ramps to 0. Clearing alpha at the SDF edge instead truncates the band
@@ -133,18 +139,17 @@ void main() {
     // silhouette, most visibly when the matte is resampled under the
     // indicator's drag/stretch transform.
     if (sdN >= 0.0) {
-        vec2 edgeNormal = length(normal.xy) > 1e-4 ? normal.xy : vec2(0.0);
+        vec2 edgeNormal = length(normal.xy) > 1e-4 ? normal.xy : gradUnit;
         fragColor =
             encodeGeometryData(edgeNormal, 0.0, uThickness, foregroundAlpha);
         return;
     }
 
-    float x = uThickness + sdN;
-    float sqrtTerm = sqrt(max(0.0, uThickness * uThickness - x * x));
-    float height = mix(sqrtTerm, uThickness, float(sdN < -uThickness));
+    float rimDist = clamp(-sdN, 0.0, uThickness);
 
-    // Encode normal.xy + height + alpha.
+    // Encode normal.xy + linear rimDist progression + alpha.
     // The render pass recomputes displacement = refract(incident, normal, 1/n)
-    // so there is no information loss compared to storing displacement directly.
-    fragColor = encodeGeometryData(normal.xy, height, uThickness, foregroundAlpha);
+    // and circular-arc height from linear rimDist/uThickness with zero 8-bit
+    // sqrt() quantization stepping near the rim.
+    fragColor = encodeGeometryData(normal.xy, rimDist, uThickness, foregroundAlpha);
 }

@@ -557,7 +557,11 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
           settings: effectiveSettings,
           quality: effectiveQuality,
           platformViewBackdrop: widget.platformViewBackdrop,
-          blendAmount: widget.enableBlend ? widget.blendAmount : 0,
+          blendAmount: widget.enableBlend
+              ? (widget.spacing > 0
+                  ? math.min(widget.blendAmount, widget.spacing * 0.9)
+                  : widget.blendAmount)
+              : 0,
           child: Padding(
             padding: EdgeInsets.symmetric(
               horizontal: widget.horizontalPadding,

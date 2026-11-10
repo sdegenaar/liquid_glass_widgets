@@ -495,7 +495,8 @@ extension on LiquidGlassSettings {
     return effectiveThickness != other.effectiveThickness ||
         refractiveIndex != other.refractiveIndex ||
         // A rim outline or a frost switches the matte's edge (uNativeEdge).
-        (rimShade > 0 || frost > 0) != (other.rimShade > 0 || other.frost > 0);
+        (frost > 0) != (other.frost > 0) ||
+        (rimShade > 0) != (other.rimShade > 0);
   }
 }
 

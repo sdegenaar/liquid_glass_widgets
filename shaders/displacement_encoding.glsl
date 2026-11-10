@@ -20,17 +20,17 @@
 //   B: height    normalized to [0, 1] by dividing by thickness
 //   A: alpha     for SDF anti-aliasing at the glass boundary
 
-// Encode the surface normal XY, height, and alpha into RGBA channels.
+// Encode the surface normal XY, linear rim distance progression, and alpha into RGBA channels.
 // normal.xy is the true SDF surface normal (from dFdx/dFdy in the geometry pass).
-// Storing the genuine normal instead of the refraction displacement vector fixes
-// lighting in blend-group neck zones, where normalize(displacement) diverges from
-// the actual surface orientation.
-vec4 encodeGeometryData(vec2 normalXY, float height, float thickness, float alpha) {
+// B stores linear rim progression clamp(rimDist / thickness, 0.0, 1.0) so 8-bit
+// texture storage preserves uniform sub-pixel precision right at the rim without
+// sqrt() quantization contour stepping.
+vec4 encodeGeometryData(vec2 normalXY, float rimDist, float thickness, float alpha) {
     // Map normal.xy from [-1, 1] to [0, 1] for texture storage.
     // normal components are already unit-length so clamping is just a guard.
     vec2 encodedNormal = clamp(normalXY * 0.5 + 0.5, 0.0, 1.0);
-    float normalizedHeight = thickness > 0.0 ? clamp(height / thickness, 0.0, 1.0) : 0.0;
-    return vec4(encodedNormal.x, encodedNormal.y, normalizedHeight, alpha);
+    float rimProgress = thickness > 0.0 ? clamp(rimDist / thickness, 0.0, 1.0) : 0.0;
+    return vec4(encodedNormal.x, encodedNormal.y, rimProgress, alpha);
 }
 
 // Decode surface normal XY from RG channels.
@@ -40,7 +40,8 @@ vec2 decodeNormalXY(vec4 encoded) {
     return encoded.rg * 2.0 - 1.0;
 }
 
-// Decode height from B channel.
+// Decode circular-arc height from B channel (linear rim progression t = rimDist / thickness).
 float decodeHeight(vec4 encoded, float thickness) {
-    return encoded.b * thickness;
+    float t = encoded.b;
+    return sqrt(max(0.0, t * (2.0 - t))) * thickness;
 }
