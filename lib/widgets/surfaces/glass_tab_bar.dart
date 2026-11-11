@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show ValueListenable;
 import '../../constants/glass_defaults.dart';
 import '../../src/renderer/glass_backdrop_group.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
+import '../../theme/glass_theme_helpers.dart';
 
 import '../../src/types/glass_interaction_behavior.dart';
 import '../../types/glass_quality.dart';
@@ -1364,25 +1365,47 @@ class _GlassTabBarState extends State<GlassTabBar> {
     return style == GlassStyle.classic ? 4.0 : 2.0;
   }
 
+  static const double _kPremiumVerticalExpansion = 8.0;
+  static const double _kStandardVerticalExpansion = 10.5;
+  static const double _kClassicHorizontalExpansion = 12.0;
+  static const double _kNativeHorizontalExpansion = 11.0;
+
   /// Lifted indicator expansion beyond the resting selection pill.
   ///
   /// When [indicatorExpansion] is left at its default
-  /// `EdgeInsets.symmetric(horizontal: 12, vertical: 8)`, iOS 27 mode uses
-  /// `EdgeInsets.symmetric(horizontal: 8, vertical: 8)` — matching native
-  /// iOS 27 `_UILiquidLensView` (`frame = (-4, -4, W + 16, H + 16)` on a
-  /// 4 pt-inset resting pill, so the lifted 35 pt-radius semicircle is
-  /// concentric with the 31 pt-radius bar platter and 27 pt-radius resting
-  /// pill, overhanging by 4 pt uniformly on top, bottom, left, and right).
+  /// `EdgeInsets.symmetric(horizontal: 12, vertical: 8)`, iOS 27 / iOS 26 mode
+  /// uses `EdgeInsets.symmetric(horizontal: 11, vertical: 8)` on
+  /// [GlassQuality.premium] — matching native `_UILiquidLensView` overhanging
+  /// the 4 pt-padded bar platter by 4 pt on top and bottom. On
+  /// [GlassQuality.standard] and [GlassQuality.minimal] (which do not apply
+  /// background texture vertical pinch), vertical expansion is `10.5` pt
+  /// (`6.5` pt net overhang) so the lifted capsule clearly crowns above and
+  /// below the bar border.
   EdgeInsetsGeometry _resolveIndicatorExpansion(BuildContext context) {
     if (widget._placement == _GlassTabBarPlacement.inline ||
         widget.indicatorExpansion !=
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 8)) {
+            const EdgeInsets.symmetric(
+              horizontal: _kClassicHorizontalExpansion,
+              vertical: _kPremiumVerticalExpansion,
+            )) {
       return widget.indicatorExpansion;
     }
     final style = GlassTheme.maybeOf(context)?.data.style ?? GlassStyle.ios27;
-    return style == GlassStyle.classic
-        ? widget.indicatorExpansion
-        : const EdgeInsets.symmetric(horizontal: 11, vertical: 8);
+    final effectiveQuality = GlassThemeHelpers.resolveQuality(
+      context,
+      widgetQuality: widget.quality,
+      fallback: GlassQuality.premium,
+    );
+    final isStdPath = effectiveQuality == GlassQuality.standard ||
+        effectiveQuality == GlassQuality.minimal;
+    final verticalExpansion =
+        isStdPath ? _kStandardVerticalExpansion : _kPremiumVerticalExpansion;
+    return EdgeInsets.symmetric(
+      horizontal: style == GlassStyle.classic
+          ? _kClassicHorizontalExpansion
+          : _kNativeHorizontalExpansion,
+      vertical: verticalExpansion,
+    );
   }
 
   /// Bar platter press scale factor for [GlassTabBar.bottom].

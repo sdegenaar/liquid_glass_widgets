@@ -342,9 +342,9 @@ void main() {
   float bevelGradient = -surfaceNormal.y * kBevelStrength;
   // Blend the gradient in only where the border mask is visible to avoid
   // affecting the body of the pill.
-  // Clamp to 0.0: gradient dims the bottom rim to neutral, never to negative
-  // (negative values subtract from finalColor and cause dark jagged artefacts).
-  float modifiedRimBrightness = max(0.0, rimBrightness + bevelGradient * borderMask);
+  // Retain at least 65% of rimBrightness at the bottom edge so the bottom
+  // capsule arc never disappears against dark backdrops.
+  float modifiedRimBrightness = max(rimBrightness * 0.65, rimBrightness + bevelGradient * borderMask);
 
   // Scale rim brightness with ambientRim parameter
   vec3 rimColor = vec3(1.0) * modifiedRimBrightness * (uAmbientRim * 10.0);
@@ -352,31 +352,39 @@ void main() {
   // Native iOS 26 / iOS 27 indicator rim light (soft cos³ lobe at ends of
   // light axis with inset core + tail) and iOS 27 rim shade (directional dark
   // hairline across light axis), calibrated to match liquid_glass_render.frag.
+  // Scaled by activeLens (uInteractionIntensity) so resting switch/slider knobs
+  // stay pure white at rest (matching Premium's activeIntensity gate).
+  float activeLens = clamp(uInteractionIntensity, 0.0, 1.0);
   float nativeRimLight = 0.0;
   float nativeRimShade = 0.0;
   float hairline = 1.0 - smoothstep(0.25, 1.10, distFromEdge);
-  if ((uRimLight > 0.001 || uRimShade > 0.001) && distFromEdge < 12.0) {
+  if ((uRimLight > 0.001 || uRimShade > 0.001) && activeLens > 0.001 && distFromEdge < 12.0) {
     float along = dot(surfaceNormal, uLightDirection);
     float lit   = max(along, 0.0);
     float opp   = max(-along, 0.0);
     // Indicator lens weights from liquid_glass_render.frag (isClearIndicator=1):
-    // litWeight = 0.84, oppWeight = 1.02, indicatorRimBoost = 1.32
+    // litWeight = 0.84, oppWeight = 1.02, indicatorRimBoost = 1.32.
+    // On diagonal light angles (e.g. iOS 26 at 135°), cos³(45°) drops to 0.35
+    // on the flat top and bottom edges; vertArch ensures the top and bottom
+    // horizontal capsule arcs maintain a continuous specular rim.
     float lobe  = 0.84 * lit * lit * lit + 1.02 * opp * opp * opp;
+    float vertArch = surfaceNormal.y * surfaceNormal.y;
+    float effectiveLobe = max(lobe, vertArch * mix(0.82, 0.54, step(0.5, uBackdropLuma)));
     if (uRimLight > 0.001) {
       float inset = max(distFromEdge - 0.75, 0.0);
       float core  = exp(-inset / 1.5);
       float tail  = exp(-inset / 5.5);
-      float ease  = mix(0.92, 0.68, step(0.5, uBackdropLuma));
-      float hairlineGate = 1.0 - hairline * step(0.001, uRimShade);
+      float ease  = mix(0.96, 0.68, step(0.5, uBackdropLuma));
+      float hairlineGate = 1.0 - hairline * step(0.001, uRimShade) * mix(0.35, 1.0, step(0.5, uBackdropLuma));
       nativeRimLight = clamp(
-          uRimLight * 1.32 * lobe * ease * (0.165 * core + 0.042 * tail) * hairlineGate,
+          uRimLight * 1.32 * effectiveLobe * ease * (0.165 * core + 0.042 * tail) * hairlineGate * activeLens,
           0.0,
           1.0);
     }
     if (uRimShade > 0.001 && distFromEdge < 2.2) {
       float across = fastPowInd(max(0.0, 1.0 - along * along), 1.75);
       nativeRimShade = clamp(
-          uRimShade * 0.314 * mix(uRimShadeEnds, 1.0, across) * hairline,
+          uRimShade * 0.314 * mix(uRimShadeEnds, 1.0, across) * hairline * activeLens,
           0.0,
           1.0);
     }
@@ -428,7 +436,11 @@ void main() {
     // edge, while specular highlights and cos³ rimLight lobes shine with
     // independent specular alpha over a crystal-clear center.
     float hasNativeRimF = step(0.001, uRimLight + uRimShade);
-    float bodyAlpha = mix(standardBaseAlpha, standardEdgeAlpha, edgeInfluence * (1.0 - hasNativeRimF));
+    float isDarkBackdrop = 1.0 - step(0.5, uBackdropLuma);
+    float darkLensFloor = 0.045 * isDarkBackdrop * activeLens;
+    float bodyAlpha = max(
+        darkLensFloor,
+        mix(standardBaseAlpha, standardEdgeAlpha, edgeInfluence * (1.0 - hasNativeRimF)));
     vec3 bodyColor  = (uGlassColor.a > 0.001) ? uGlassColor.rgb : vec3(1.0);
     float effectiveBodyA = max(bodyAlpha, uGlassColor.a * mix(0.6, 1.0, uInteractionIntensity));
     vec3 pmRgb = bodyColor * effectiveBodyA;
@@ -438,7 +450,6 @@ void main() {
     float bevelZone = min(edgeZone, max(4.5, min(uSize.x, uSize.y) * 0.24));
     float bevelNorm = clamp(distFromEdge / bevelZone, 0.0, 1.0);
     float bevelBand = (1.0 - bevelNorm) * (1.0 - bevelNorm);
-    float activeLens = clamp(uInteractionIntensity, 0.0, 1.0);
     float normY = (p - uOrigin).y / max(uSize.y, 1.0);
     float topTrough = smoothstep(0.04, 0.16, normY)
                     * (1.0 - smoothstep(0.22, 0.52, normY))
@@ -456,12 +467,13 @@ void main() {
         modifiedRimBrightness * (0.85 + uAmbientRim * 3.5) * borderMask,
         0.0,
         0.85);
-    float nativePerimeterSpec = borderMask * 0.08 * (1.0 - step(0.001, uRimShade));
-    float ringSpec = mix(classicRingSpec, nativePerimeterSpec, hasNativeRimF);
+    float nativePerimeterSpec = borderMask * mix(0.16, 0.08, step(0.5, uBackdropLuma))
+                              * (1.0 - step(0.001, uRimShade) * step(0.5, uBackdropLuma));
+    float ringSpec = mix(classicRingSpec, max(nativePerimeterSpec, classicRingSpec * 0.55) * activeLens, hasNativeRimF);
     float fresnelSpec = clamp(
         fresnel * (uGlowIntensity * 0.5 + 0.16 * uFresnelStrength) * edgeInfluence * activeLens,
         0.0,
-        0.45) * (1.0 - hasNativeRimF);
+        0.45);
     float totalSpec = clamp(ringSpec + fresnelSpec + uAmbientStrength * activeLens, 0.0, 0.90);
     pmRgb = pmRgb * (1.0 - totalSpec) + vec3(totalSpec);
     pmA   = pmA + totalSpec * (1.0 - pmA);

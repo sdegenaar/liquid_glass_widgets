@@ -1661,5 +1661,95 @@ void main() {
         equals(LensInnerShadowPainter.classicShadowOpacity),
       );
     });
+
+    testWidgets(
+        'GlassTabBar resolves indicatorExpansion vertical overhang by quality (10.5 on standard, 8.0 on premium) while respecting explicit overrides and inline placement',
+        (tester) async {
+      Future<EdgeInsetsGeometry> pumpTabBarExpansion({
+        required GlassThemeData themeData,
+        GlassQuality? quality,
+        EdgeInsetsGeometry? indicatorExpansion,
+        bool inline = false,
+      }) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData.dark(),
+            home: GlassTheme(
+              data: themeData,
+              child: Scaffold(
+                bottomNavigationBar: inline
+                    ? GlassTabBar.inline(
+                        tabs: tabs,
+                        selectedIndex: 0,
+                        onTabSelected: (_) {},
+                        quality: quality,
+                      )
+                    : GlassTabBar.bottom(
+                        tabs: tabs,
+                        selectedIndex: 0,
+                        onTabSelected: (_) {},
+                        quality: quality,
+                        indicatorExpansion: indicatorExpansion ??
+                            const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                      ),
+              ),
+            ),
+          ),
+        );
+        final indicator = tester.widget<AnimatedGlassIndicator>(
+          find.byType(AnimatedGlassIndicator).first,
+        );
+        return indicator.expansion;
+      }
+
+      // Standard quality gets 10.5 vertical expansion to compensate for no pinch
+      expect(
+        await pumpTabBarExpansion(
+          themeData: const GlassThemeData.ios27(),
+          quality: GlassQuality.standard,
+        ),
+        equals(const EdgeInsets.symmetric(horizontal: 11.0, vertical: 10.5)),
+      );
+      expect(
+        await pumpTabBarExpansion(
+          themeData: const GlassThemeData.classic(),
+          quality: GlassQuality.standard,
+        ),
+        equals(const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.5)),
+      );
+
+      // Premium quality keeps 8.0 vertical expansion
+      expect(
+        await pumpTabBarExpansion(
+          themeData: const GlassThemeData.ios27(),
+          quality: GlassQuality.premium,
+        ),
+        equals(const EdgeInsets.symmetric(horizontal: 11.0, vertical: 8.0)),
+      );
+
+      // Explicit indicatorExpansion override wins regardless of quality
+      const customExpansion = EdgeInsets.symmetric(horizontal: 6, vertical: 4);
+      expect(
+        await pumpTabBarExpansion(
+          themeData: const GlassThemeData.ios27(),
+          quality: GlassQuality.standard,
+          indicatorExpansion: customExpansion,
+        ),
+        equals(customExpansion),
+      );
+
+      // Inline placement preserves its own default 12×10 expansion
+      expect(
+        await pumpTabBarExpansion(
+          themeData: const GlassThemeData.ios27(),
+          quality: GlassQuality.standard,
+          inline: true,
+        ),
+        equals(const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0)),
+      );
+    });
   });
 }
