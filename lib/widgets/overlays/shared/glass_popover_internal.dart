@@ -809,7 +809,7 @@ class _GlassPopoverState extends State<GlassPopover>
     // ── Per-frame AnimatedBuilder ────────────────────────────────────────────
     // Listens to BOTH the morph spring and the blur ramp so the backdrop blur
     // repaints as it eases in, independently of where the morph spring is.
-    return AnimatedBuilder(
+    final overlay = AnimatedBuilder(
       animation: Listenable.merge([_morphController.animation, _blurRamp]),
       builder: (context, child) {
         final rawValue = _morphController.value;
@@ -900,26 +900,35 @@ class _GlassPopoverState extends State<GlassPopover>
             if (clampedValue > 0.3 && widget.barrierDismissible)
               Positioned.fill(
                 // Named like Flutter's ModalBarrier so a screen reader can
-                // close the popover as well as a pointer can.
-                child: Semantics(
-                  container: true,
-                  label: glassCupertinoLocalizationsOf(context)
-                      .modalBarrierDismissLabel,
-                  onDismiss: _closePopover,
-                  onTap: _closePopover,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    excludeFromSemantics: true,
+                // close the popover as well as a pointer can. BlockSemantics
+                // hides the page behind the open popover, as ModalBarrier
+                // does.
+                child: BlockSemantics(
+                  child: Semantics(
+                    container: true,
+                    label: glassCupertinoLocalizationsOf(context)
+                        .modalBarrierDismissLabel,
+                    onDismiss: _closePopover,
                     onTap: _closePopover,
-                    child: const ColoredBox(color: Color(0x00000000)),
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      excludeFromSemantics: true,
+                      onTap: _closePopover,
+                      child: const ColoredBox(color: Color(0x00000000)),
+                    ),
                   ),
                 ),
               ),
 
             // ── Non-dismissible barrier (absorbs taps without closing) ───────
+            // Blocks the page's semantics too, like a non-dismissible
+            // ModalBarrier: a pointer can't reach the page, so a screen
+            // reader shouldn't either.
             if (clampedValue > 0.3 && !widget.barrierDismissible)
               const Positioned.fill(
-                child: AbsorbPointer(),
+                child: BlockSemantics(
+                  child: AbsorbPointer(),
+                ),
               ),
 
             // ── Two-blob metaball morphing ───────────────────────────────────
@@ -984,17 +993,26 @@ class _GlassPopoverState extends State<GlassPopover>
                                   pinnedTop +
                                   anchorDriftY +
                                   (_verticalOffset * clampedValue),
-                              child: IgnorePointer(
-                                ignoring: clampedValue < 0.8,
-                                child: _buildPopoverContainer(
-                                  state,
-                                  clampedValue,
-                                  currentWidth,
-                                  currentHeight,
-                                  rampedSettings,
-                                  effectiveQuality,
-                                  isDark,
-                                  popoverHeight,
+                              // Its own node, so the content keeps the body's
+                              // bounds and its own nodes, as on a page, rather
+                              // than merging into the full-screen
+                              // Semantics(textDirection:) wrapper below
+                              // OverlaySemanticsHost.
+                              child: Semantics(
+                                container: true,
+                                explicitChildNodes: true,
+                                child: IgnorePointer(
+                                  ignoring: clampedValue < 0.8,
+                                  child: _buildPopoverContainer(
+                                    state,
+                                    clampedValue,
+                                    currentWidth,
+                                    currentHeight,
+                                    rampedSettings,
+                                    effectiveQuality,
+                                    isDark,
+                                    popoverHeight,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1021,6 +1039,23 @@ class _GlassPopoverState extends State<GlassPopover>
           ],
         );
       },
+    );
+
+    // OverlaySemanticsHost attaches the overlay's nodes to the Overlay rather
+    // than to the node OverlayPortal traverses them from. That node wraps
+    // OverlayPortal.child, which is null here (the trigger is the portal's
+    // sibling), so it is 0x0 and used to drop the open popover from the
+    // semantics tree; it is also in the page the barriers block. Both
+    // barriers block the page whenever they are up, so the host is always
+    // enabled. The non-boundary Semantics(textDirection:) wrapper is
+    // load-bearing: it gives the host's delegate a mergeable config to put in
+    // the sibling merge group (the barrier and the body are semantic
+    // boundaries whose own configToMergeUp is null).
+    return OverlaySemanticsHost(
+      child: Semantics(
+        textDirection: Directionality.maybeOf(context) ?? TextDirection.ltr,
+        child: overlay,
+      ),
     );
   }
 
