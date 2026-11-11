@@ -223,7 +223,21 @@ class GlassPicker extends StatelessWidget {
     );
   }
 
-  /// Helper to show a bottom sheet picker.
+  /// Shows [items] on a wheel in a modal bottom sheet and completes with the
+  /// item the user picks.
+  ///
+  /// The sheet follows `showGlassDatePicker`: a header with a **Cancel**
+  /// button, the optional [title], and a **Done** button above a
+  /// [CupertinoPicker] that builds each item with [itemBuilder].
+  ///
+  /// - **Done** completes the returned future with the item under the
+  ///   selection band. If the user has not scrolled, that is the first item.
+  ///   If [items] is empty, Done completes with `null`.
+  /// - **Cancel**, a tap on the barrier, the system back gesture, and a
+  ///   screen reader's dismiss action all complete it with `null`.
+  ///
+  /// Screen readers read the wheel as one adjustable element, named by
+  /// [title] when it is given, with the selected item as its value.
   static Future<T?> showSheet<T>({
     required BuildContext context,
     required List<T> items,
@@ -234,38 +248,14 @@ class GlassPicker extends StatelessWidget {
     final capturedCupertinoTheme = CupertinoTheme.of(context);
     return showCupertinoModalPopup<T>(
       context: context,
+      // Exposes the barrier's "Dismiss" action to screen readers, like the
+      // package's other sheets and popovers.
+      semanticsDismissible: true,
       builder: (modalContext) {
-        Widget sheet = Container(
-          height: 300,
-          decoration: BoxDecoration(
-            color: CupertinoColors.systemBackground.resolveFrom(modalContext),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              if (title != null)
-                Container(
-                  // Minimum, not fixed, so a scaled-up title is not clipped.
-                  constraints: const BoxConstraints(minHeight: 50),
-                  alignment: Alignment.center,
-                  child: Text(title,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              Expanded(
-                child: CupertinoPicker.builder(
-                  itemExtent: 40,
-                  onSelectedItemChanged: (index) {
-                    // Handle live update if needed
-                  },
-                  itemBuilder: (context, index) {
-                    if (index < 0 || index >= items.length) return null;
-                    return itemBuilder(items[index]);
-                  },
-                  childCount: items.length,
-                ),
-              ),
-            ],
-          ),
+        Widget sheet = _GlassPickerSheet<T>(
+          items: items,
+          itemBuilder: itemBuilder,
+          title: title,
         );
         sheet = CupertinoTheme(
           data: capturedCupertinoTheme,
@@ -279,6 +269,120 @@ class GlassPicker extends StatelessWidget {
         }
         return sheet;
       },
+    );
+  }
+}
+
+/// The sheet [GlassPicker.showSheet] presents: a Cancel / title / Done header
+/// above a [CupertinoPicker], styled like `showGlassDatePicker`'s sheet.
+class _GlassPickerSheet<T> extends StatefulWidget {
+  const _GlassPickerSheet({
+    required this.items,
+    required this.itemBuilder,
+    this.title,
+    super.key,
+  });
+
+  final List<T> items;
+  final Widget Function(T item) itemBuilder;
+  final String? title;
+
+  @override
+  State<_GlassPickerSheet<T>> createState() => _GlassPickerSheetState<T>();
+}
+
+class _GlassPickerSheetState<T> extends State<_GlassPickerSheet<T>> {
+  /// The wheel starts on the first item, so Done without scrolling picks it.
+  int _selectedIndex = 0;
+
+  void _done() {
+    final items = widget.items;
+    Navigator.of(context).pop<T>(
+      items.isEmpty ? null : items[_selectedIndex.clamp(0, items.length - 1)],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final items = widget.items;
+    final title = widget.title;
+
+    Widget picker = CupertinoPicker.builder(
+      itemExtent: 40,
+      onSelectedItemChanged: (index) => _selectedIndex = index,
+      itemBuilder: (context, index) {
+        if (index < 0 || index >= items.length) return null;
+        return widget.itemBuilder(items[index]);
+      },
+      childCount: items.length,
+    );
+    if (title != null) {
+      // CupertinoPicker is one adjustable node (the selected item as its
+      // value, with increase and decrease) but takes no label, and a plain
+      // Semantics label around it would be a separate parent node. Merging
+      // reads them as one element: the title, then the selected item.
+      picker = MergeSemantics(
+        child: Semantics(label: title, child: picker),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        border: Border.all(
+          color: CupertinoColors.white.withValues(alpha: 0.15),
+          width: 0.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: CupertinoColors.black.withValues(alpha: 0.35),
+            blurRadius: 36,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                child: const Text('Cancel'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              if (title != null)
+                // Flexible so a long or scaled-up title wraps between the
+                // buttons instead of overflowing the row.
+                Flexible(
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: _done,
+                child: const Text(
+                  'Done',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // The standard iOS wheel height, as in GlassDatePicker's wheel style.
+          SizedBox(height: 216, child: picker),
+        ],
+      ),
     );
   }
 }

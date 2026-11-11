@@ -290,6 +290,343 @@ void main() {
     });
   });
 
+  group('GlassPicker.showSheet result', () {
+    const fruits = ['Apple', 'Banana', 'Cherry'];
+
+    /// Opens the sheet and returns the future [GlassPicker.showSheet] gave.
+    Future<Future<String?>> openSheet(
+      WidgetTester tester, {
+      List<String> items = fruits,
+      String? title = 'Fruit',
+      TextDirection textDirection = TextDirection.ltr,
+    }) async {
+      late Future<String?> result;
+      await tester.pumpWidget(
+        CupertinoApp(
+          builder: (context, child) =>
+              Directionality(textDirection: textDirection, child: child!),
+          home: Builder(
+            builder: (context) => CupertinoButton(
+              onPressed: () => result = GlassPicker.showSheet<String>(
+                context: context,
+                items: items,
+                itemBuilder: Text.new,
+                title: title,
+              ),
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      return result;
+    }
+
+    testWidgets('Done without scrolling returns the first item',
+        (tester) async {
+      final result = await openSheet(tester);
+
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      expect(await result, 'Apple');
+      expect(find.byType(CupertinoPicker), findsNothing);
+    });
+
+    testWidgets('Done returns the scrolled-to item', (tester) async {
+      final result = await openSheet(tester);
+
+      // itemExtent is 40, so two extents up lands on the third item.
+      await tester.drag(find.byType(CupertinoPicker), const Offset(0, -80));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      expect(await result, 'Cherry');
+    });
+
+    testWidgets('Cancel returns null', (tester) async {
+      final result = await openSheet(tester);
+
+      await tester.drag(find.byType(CupertinoPicker), const Offset(0, -40));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(await result, isNull);
+      expect(find.byType(CupertinoPicker), findsNothing);
+    });
+
+    testWidgets('a barrier tap returns null', (tester) async {
+      final result = await openSheet(tester);
+
+      await tester.drag(find.byType(CupertinoPicker), const Offset(0, -40));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+
+      expect(await result, isNull);
+      expect(find.byType(CupertinoPicker), findsNothing);
+    });
+
+    testWidgets('header shows Cancel and Done without a title', (tester) async {
+      final result = await openSheet(tester, title: null);
+
+      expect(find.text('Cancel'), findsOneWidget);
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      expect(await result, 'Apple');
+    });
+
+    testWidgets('empty items open without error and Done returns null',
+        (tester) async {
+      final result = await openSheet(tester, items: const []);
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(CupertinoPicker), findsOneWidget);
+
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      expect(await result, isNull);
+      expect(find.byType(CupertinoPicker), findsNothing);
+    });
+  });
+
+  group('GlassPicker.showSheet semantics', () {
+    const fruits = ['Apple', 'Banana', 'Cherry'];
+
+    Future<Future<String?>> openSheet(
+      WidgetTester tester, {
+      List<String> items = fruits,
+      String? title = 'Fruit',
+    }) async {
+      late Future<String?> result;
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: Builder(
+            builder: (context) => CupertinoButton(
+              onPressed: () => result = GlassPicker.showSheet<String>(
+                context: context,
+                items: items,
+                itemBuilder: Text.new,
+                title: title,
+              ),
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      return result;
+    }
+
+    testWidgets('the picker is one adjustable node labelled with the title',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await openSheet(tester);
+
+      expect(
+        tester.getSemantics(find.byType(CupertinoPicker)),
+        isSemantics(
+          label: 'Fruit',
+          value: 'Apple',
+          increasedValue: 'Banana',
+          hasIncreaseAction: true,
+          textDirection: TextDirection.ltr,
+        ),
+      );
+      // The value is not repeated in a separate unlabelled node.
+      expect(find.semantics.byValue('Apple'), findsOne);
+
+      handle.dispose();
+    });
+
+    testWidgets('the label follows the selection as the wheel scrolls',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await openSheet(tester);
+
+      await tester.drag(find.byType(CupertinoPicker), const Offset(0, -40));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(find.byType(CupertinoPicker)),
+        isSemantics(
+          label: 'Fruit',
+          value: 'Banana',
+          increasedValue: 'Cherry',
+          decreasedValue: 'Apple',
+          hasIncreaseAction: true,
+          hasDecreaseAction: true,
+          textDirection: TextDirection.ltr,
+        ),
+      );
+
+      handle.dispose();
+    });
+
+    testWidgets('increase and decrease move the wheel and Done returns it',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      final result = await openSheet(tester);
+
+      tester.semantics.increase(find.semantics.byValue('Apple'));
+      await tester.pumpAndSettle();
+      tester.semantics.increase(find.semantics.byValue('Banana'));
+      await tester.pumpAndSettle();
+
+      // The last item has nothing to increase to.
+      expect(
+        tester.getSemantics(find.byType(CupertinoPicker)),
+        isSemantics(
+          label: 'Fruit',
+          value: 'Cherry',
+          decreasedValue: 'Banana',
+          hasDecreaseAction: true,
+          hasIncreaseAction: false,
+          textDirection: TextDirection.ltr,
+        ),
+      );
+
+      tester.semantics.decrease(find.semantics.byValue('Cherry'));
+      await tester.pumpAndSettle();
+      tester.semantics.tap(find.semantics.byLabel('Done'));
+      await tester.pumpAndSettle();
+
+      expect(await result, 'Banana');
+      handle.dispose();
+    });
+
+    testWidgets('Done and Cancel are buttons; Cancel returns null',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      final result = await openSheet(tester);
+
+      for (final label in ['Done', 'Cancel']) {
+        expect(
+          find.semantics.byLabel(label),
+          isSemantics(
+            isButton: true,
+            hasTapAction: true,
+          ),
+        );
+      }
+
+      tester.semantics.tap(find.semantics.byLabel('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(await result, isNull);
+      expect(find.byType(CupertinoPicker), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets(
+      'the barrier exposes a Dismiss action that returns null',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        final result = await openSheet(tester);
+
+        expect(
+          find.semantics.byLabel('Dismiss'),
+          isSemantics(hasDismissAction: true),
+        );
+
+        tester.semantics.dismiss(find.semantics.byLabel('Dismiss'));
+        await tester.pumpAndSettle();
+
+        expect(await result, isNull);
+        expect(find.byType(CupertinoPicker), findsNothing);
+        handle.dispose();
+      },
+      // ModalBarrier only exposes its dismiss action on Apple platforms;
+      // elsewhere the system back action closes the sheet.
+      variant: const TargetPlatformVariant(
+        {TargetPlatform.iOS, TargetPlatform.macOS},
+      ),
+    );
+
+    testWidgets('without a title the picker node keeps no label',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await openSheet(tester, title: null);
+
+      expect(
+        find.semantics.byValue('Apple'),
+        isSemantics(
+          label: '',
+          value: 'Apple',
+          increasedValue: 'Banana',
+          hasIncreaseAction: true,
+          textDirection: TextDirection.ltr,
+        ),
+      );
+
+      handle.dispose();
+    });
+
+    testWidgets('empty items keep the title label without a value',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await openSheet(tester, items: const []);
+
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getSemantics(find.byType(CupertinoPicker)),
+        matchesSemantics(label: 'Fruit', textDirection: TextDirection.ltr),
+      );
+
+      handle.dispose();
+    });
+
+    testWidgets('the picker node follows a text direction change',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      final direction = ValueNotifier(TextDirection.ltr);
+      addTearDown(direction.dispose);
+
+      await tester.pumpWidget(
+        CupertinoApp(
+          builder: (context, child) => ValueListenableBuilder<TextDirection>(
+            valueListenable: direction,
+            builder: (context, value, _) =>
+                Directionality(textDirection: value, child: child!),
+          ),
+          home: Builder(
+            builder: (context) => CupertinoButton(
+              onPressed: () => GlassPicker.showSheet<String>(
+                context: context,
+                items: fruits,
+                itemBuilder: Text.new,
+                title: 'Fruit',
+              ),
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      direction.value = TextDirection.rtl;
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(find.byType(CupertinoPicker)),
+        isSemantics(
+          label: 'Fruit',
+          value: 'Apple',
+          textDirection: TextDirection.rtl,
+        ),
+      );
+
+      handle.dispose();
+    });
+  });
+
   group('GlassPicker defaults', () {
     test('default values are correct', () {
       const picker = GlassPicker(value: null);
