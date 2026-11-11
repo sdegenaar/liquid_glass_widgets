@@ -25,4 +25,23 @@ void main() {
     shader.setFloat(45, 1);
     expect(() => shader.setFloat(46, 0), throwsA(anything));
   });
+
+  test('uRimConfig ends the lightweight glass shader float uniforms at slot 38',
+      () async {
+    final shader =
+        (await ui.FragmentProgram.fromAsset('shaders/lightweight_glass.frag'))
+            .fragmentShader();
+    shader.setFloat(38, 1);
+    expect(() => shader.setFloat(39, 0), throwsA(anything));
+  });
+
+  test(
+      'uFresnelStrength ends the interactive indicator shader float uniforms at slot 38',
+      () async {
+    final shader = (await ui.FragmentProgram.fromAsset(
+            'shaders/interactive_indicator.frag'))
+        .fragmentShader();
+    shader.setFloat(38, 1);
+    expect(() => shader.setFloat(39, 0), throwsA(anything));
+  });
 }

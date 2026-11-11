@@ -735,11 +735,16 @@ class _GlassSliderState extends State<GlassSlider>
     final themedThumbSettings =
         theme?.indicatorSettingsFor(context)?.applyTo(eraBase) ?? eraBase;
     final rawThumbSettings = widget.settings ?? themedThumbSettings;
+    final hasNativeRim =
+        rawThumbSettings.rimLight > 0 || rawThumbSettings.rimShade > 0;
     final resolvedThumbSettings = rawThumbSettings.copyWith(
       blur: 0,
       frost: 0,
-      glassColor:
-          isStdPath && rawThumbSettings.glassColor.a == 0 ? thumbTint : null,
+      glassColor: isStdPath &&
+              rawThumbSettings.glassColor.a == 0 &&
+              (isDark || !hasNativeRim)
+          ? thumbTint
+          : null,
     );
     final useIos27Lens =
         resolvedThumbSettings.lensModel == GlassLensModel.paraxial;
@@ -786,7 +791,7 @@ class _GlassSliderState extends State<GlassSlider>
                 ? (isDark ? 0.08 : 0.15)
                 : 0.1, // stronger ambient ring in light mode
             baseAlphaMultiplier: isStdPath
-                ? (isDark ? 0.08 : 0.12)
+                ? (isDark ? 0.0 : 0.04)
                 : 0.08, // near-clear body — refraction provides visibility
             edgeAlphaMultiplier: isStdPath
                 ? (isDark ? 0.15 : 0.28)
