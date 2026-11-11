@@ -1616,23 +1616,28 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
       state.anchorScale * state.anchorScale,
     )!;
 
-    return Stack(
+    final overlay = Stack(
       children: [
         // Invisible full-screen tap-to-close barrier
         if (clampedValue > 0.3 && widget.showDismissBarrier)
           Positioned.fill(
             // Named like Flutter's own menu barrier so a screen reader can
-            // close the menu as well as a pointer can.
-            child: Semantics(
-              container: true,
-              label: glassCupertinoLocalizationsOf(context).menuDismissLabel,
-              onDismiss: _closeMenu,
-              onTap: _closeMenu,
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                excludeFromSemantics: true,
+            // close the menu as well as a pointer can. BlockSemantics hides
+            // the page behind the open menu while _OverlaySemanticsHost keeps
+            // the overlay's own nodes attached to the Overlay rather than the
+            // blocked trigger's traversal parent.
+            child: BlockSemantics(
+              child: Semantics(
+                container: true,
+                label: glassCupertinoLocalizationsOf(context).menuDismissLabel,
+                onDismiss: _closeMenu,
                 onTap: _closeMenu,
-                child: Container(color: const Color(0x00000000)),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  excludeFromSemantics: true,
+                  onTap: _closeMenu,
+                  child: Container(color: const Color(0x00000000)),
+                ),
               ),
             ),
           ),
@@ -1768,6 +1773,18 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
           ),
         ),
       ],
+    );
+
+    // The non-boundary Semantics(textDirection:) wrapper is load-bearing: it
+    // gives _OverlaySemanticsHost's delegate a mergeable config to put in the
+    // sibling merge group (the barrier and menu panel are semantic boundaries
+    // whose own configToMergeUp is null).
+    return _OverlaySemanticsHost(
+      enabled: widget.showDismissBarrier,
+      child: Semantics(
+        textDirection: Directionality.maybeOf(context) ?? TextDirection.ltr,
+        child: overlay,
+      ),
     );
   }
 
@@ -2507,4 +2524,73 @@ class _GlassMenuHeaderItem extends GlassMenuItem {
             onTap: _noop);
 
   static void _noop() {}
+}
+
+/// When [enabled] is true, emits the overlay's semantics subtree as a sibling
+/// node in the route [Overlay] rather than inside [OverlayPortal]'s
+/// deferred-layout traversal child.
+///
+/// [OverlayPortal] grafts its overlay child's semantics onto a
+/// `traversalParentIdentifier` node wrapping [OverlayPortal.child] (the
+/// trigger inside the page). When the open menu's dismiss barrier applies
+/// [BlockSemantics], the page's [OverlayEntry] — including that traversal
+/// parent — is blocked, which would otherwise orphan the overlay's traversal
+/// child and drop the open menu from the semantics tree. Marking the overlay's
+/// child configurations as a sibling merge group attaches them directly to the
+/// [Overlay] without `traversalChildIdentifier`, while [BlockSemantics] still
+/// propagates up through the deferred layout box to block the page behind it.
+///
+/// Gated by [enabled] on the render object (rather than conditionally wrapping
+/// the widget) so toggling [GlassMenu.showDismissBarrier] does not rebuild the
+/// overlay subtree, and when [GlassMenu.showDismissBarrier] is false the menu
+/// stays in its normal traversal position next to the trigger.
+class _OverlaySemanticsHost extends SingleChildRenderObjectWidget {
+  const _OverlaySemanticsHost({
+    required this.enabled,
+    required super.child,
+  });
+
+  final bool enabled;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderOverlaySemanticsHost(enabled: enabled);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    covariant _RenderOverlaySemanticsHost renderObject,
+  ) {
+    renderObject.enabled = enabled;
+  }
+}
+
+class _RenderOverlaySemanticsHost extends RenderProxyBox {
+  _RenderOverlaySemanticsHost({required bool enabled}) : _enabled = enabled;
+
+  bool _enabled;
+  bool get enabled => _enabled;
+  set enabled(bool value) {
+    if (_enabled == value) return;
+    _enabled = value;
+    markNeedsSemanticsUpdate();
+  }
+
+  static ChildSemanticsConfigurationsResult _delegate(
+    List<SemanticsConfiguration> childConfigs,
+  ) {
+    final builder = ChildSemanticsConfigurationsResultBuilder();
+    if (childConfigs.isNotEmpty) {
+      builder.markAsSiblingMergeGroup(childConfigs);
+    }
+    return builder.build();
+  }
+
+  @override
+  void describeSemanticsConfiguration(SemanticsConfiguration config) {
+    super.describeSemanticsConfiguration(config);
+    if (_enabled) {
+      config.childConfigurationsDelegate = _delegate;
+    }
+  }
 }

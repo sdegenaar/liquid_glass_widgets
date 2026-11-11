@@ -1844,18 +1844,70 @@ void main() {
 
     for (final useTriggerBuilder in [false, true]) {
       testWidgets(
-          'the open rows are in the semantics tree '
+          'the open rows are in the semantics tree and page is blocked '
           '(${useTriggerBuilder ? 'triggerBuilder' : 'trigger'})',
           (tester) async {
         final semantics = tester.ensureSemantics();
-        await openMenu(tester, useTriggerBuilder: useTriggerBuilder);
+        final controller =
+            await openMenu(tester, useTriggerBuilder: useTriggerBuilder);
 
         expect(find.semantics.byLabel('Copy'), findsOne);
         expect(find.semantics.byLabel('Cut'), findsOne);
         expect(find.semantics.byLabel('Dismiss menu'), findsOne);
+        expect(find.semantics.byLabel('Page text'), findsNothing);
+
+        controller.close();
+        await tester.pumpAndSettle();
+
+        expect(find.semantics.byLabel('Page text'), findsOne);
         semantics.dispose();
       });
     }
+
+    testWidgets(
+        'does not block page semantics or reorder traversal when '
+        'showDismissBarrier is false', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final controller = GlassMenuController();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Before'),
+                  GlassMenu(
+                    controller: controller,
+                    showDismissBarrier: false,
+                    trigger: const SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: Text('Open'),
+                    ),
+                    items: [
+                      GlassMenuItem(title: 'Copy', onTap: () {}),
+                    ],
+                  ),
+                  const Text('After'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      controller.open();
+      await tester.pumpAndSettle();
+
+      expect(find.semantics.byLabel('Dismiss menu'), findsNothing);
+      final labels = find.semantics
+          .byLabel(RegExp(r'^(Before|Copy|After)$'))
+          .evaluate()
+          .map((node) => node.label)
+          .toList();
+      expect(labels, ['Before', 'Copy', 'After']);
+      semantics.dispose();
+    });
 
     testWidgets('the panel is a named route scope holding the rows',
         (tester) async {
