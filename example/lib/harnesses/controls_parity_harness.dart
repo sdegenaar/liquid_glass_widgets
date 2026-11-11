@@ -583,112 +583,137 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
         child: GlassScaffold(
           background: _buildBackdrop(),
           appBar: GlassAppBar(
-            title: const Text('Controls Parity'),
-            leading: GlassButton.custom(
-              width: 72,
-              height: 36,
-              shape: const LiquidRoundedSuperellipse(borderRadius: 18),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            leading: GlassIconButton(
+              icon: Icon(
+                _lensesLifted ? CupertinoIcons.eye_fill : CupertinoIcons.eye,
+                color: labelColor,
+                size: 20,
+              ),
+              size: 44,
               useOwnLayer: true,
               quality: effectiveButtonQuality,
-              onTap: () {
-                setState(() {
-                  _style = switch (_style) {
-                    GlassStyle.ios27 => GlassStyle.ios26,
-                    GlassStyle.ios26 => GlassStyle.classic,
-                    GlassStyle.classic => GlassStyle.ios27,
-                  };
-                });
-                _refreshLiftedIfNeeded();
+              onPressed: () {
+                setState(() => _lensesLifted = !_lensesLifted);
+                _setLensesLifted(_lensesLifted);
               },
-              child: Text(
-                switch (_style) {
-                  GlassStyle.ios27 => 'iOS 27',
-                  GlassStyle.ios26 => 'iOS 26',
-                  GlassStyle.classic => 'Classic',
-                },
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: labelColor,
+            ),
+            title: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GlassButton.custom(
+                  width: 68,
+                  height: 36,
+                  shape: const LiquidRoundedSuperellipse(borderRadius: 18),
+                  useOwnLayer: true,
+                  quality: effectiveButtonQuality,
+                  onTap: () {
+                    setState(() {
+                      _style = switch (_style) {
+                        GlassStyle.ios27 => GlassStyle.ios26,
+                        GlassStyle.ios26 => GlassStyle.classic,
+                        GlassStyle.classic => GlassStyle.ios27,
+                      };
+                    });
+                    _refreshLiftedIfNeeded();
+                  },
+                  child: Text(
+                    switch (_style) {
+                      GlassStyle.ios27 => 'iOS 27',
+                      GlassStyle.ios26 => 'iOS 26',
+                      GlassStyle.classic => 'Classic',
+                    },
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: labelColor,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                GlassButton.custom(
+                  width: 54,
+                  height: 36,
+                  shape: const LiquidRoundedSuperellipse(borderRadius: 18),
+                  useOwnLayer: true,
+                  quality: effectiveButtonQuality,
+                  onTap: () {
+                    setState(() {
+                      _quality = _quality == GlassQuality.standard
+                          ? GlassQuality.premium
+                          : GlassQuality.standard;
+                    });
+                    _refreshLiftedIfNeeded();
+                  },
+                  child: Text(
+                    _quality == GlassQuality.standard ? 'Std' : 'Prem',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _quality == GlassQuality.standard
+                          ? CupertinoColors.systemOrange.resolveFrom(context)
+                          : labelColor,
+                    ),
+                  ),
+                ),
+              ],
             ),
             actions: [
-              GlassButton.custom(
-                width: 52,
-                height: 36,
-                shape: const LiquidRoundedSuperellipse(borderRadius: 18),
+              GlassContainer(
+                width: 108,
+                height: 44,
+                shape: const LiquidRoundedSuperellipse(borderRadius: 22),
                 useOwnLayer: true,
                 quality: effectiveButtonQuality,
-                onTap: () {
-                  setState(() {
-                    _quality = _quality == GlassQuality.standard
-                        ? GlassQuality.premium
-                        : GlassQuality.standard;
-                  });
-                  _refreshLiftedIfNeeded();
-                },
-                child: Text(
-                  _quality == GlassQuality.standard ? 'Std' : 'Prem',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: _quality == GlassQuality.standard
-                        ? CupertinoColors.systemOrange.resolveFrom(context)
-                        : labelColor,
-                  ),
+                padding: EdgeInsets.zero,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: _cycleBgMode,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 6),
+                            child: Text(
+                              _bgMode[0].toUpperCase() + _bgMode.substring(1),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: labelColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          setState(() => _isDark = !_isDark);
+                          _refreshLiftedIfNeeded();
+                        },
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: Icon(
+                              _isDark
+                                  ? CupertinoIcons.sun_max_fill
+                                  : CupertinoIcons.moon_fill,
+                              color: _isDark
+                                  ? CupertinoColors.systemYellow
+                                  : CupertinoColors.systemIndigo,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 6),
-              GlassIconButton(
-                icon: Icon(
-                  _lensesLifted ? CupertinoIcons.eye_fill : CupertinoIcons.eye,
-                  color: labelColor,
-                  size: 16,
-                ),
-                size: 36,
-                useOwnLayer: true,
-                quality: effectiveButtonQuality,
-                onPressed: () {
-                  setState(() => _lensesLifted = !_lensesLifted);
-                  _setLensesLifted(_lensesLifted);
-                },
-              ),
-              const SizedBox(width: 6),
-              GlassButton.custom(
-                width: 64,
-                height: 36,
-                shape: const LiquidRoundedSuperellipse(borderRadius: 18),
-                useOwnLayer: true,
-                quality: effectiveButtonQuality,
-                onTap: _cycleBgMode,
-                child: Text(
-                  _bgMode[0].toUpperCase() + _bgMode.substring(1),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: labelColor,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              GlassIconButton(
-                icon: Icon(
-                  _isDark
-                      ? CupertinoIcons.sun_max_fill
-                      : CupertinoIcons.moon_fill,
-                  color: _isDark
-                      ? CupertinoColors.systemYellow
-                      : CupertinoColors.systemIndigo,
-                  size: 18,
-                ),
-                size: 36,
-                useOwnLayer: true,
-                quality: effectiveButtonQuality,
-                onPressed: () {
-                  setState(() => _isDark = !_isDark);
-                  _refreshLiftedIfNeeded();
-                },
               ),
             ],
           ),
@@ -735,14 +760,26 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
               child: ListView(
                 key: _bodyKey,
                 controller: _bodyScroll,
-                padding: const EdgeInsets.fromLTRB(16, 108, 16, 120),
+                padding: const EdgeInsets.fromLTRB(16, 114, 16, 120),
                 children: [
                   GlassSearchBar(
                     placeholder: 'Search controls',
                     surfaceStyle: surfaceStyle,
                     quality: _quality,
+                    height: 42,
+                    searchIconColor: labelColor,
+                    textStyle: TextStyle(
+                      fontSize: 17,
+                      letterSpacing: -0.41,
+                      color: labelColor,
+                    ),
+                    placeholderStyle: TextStyle(
+                      fontSize: 17,
+                      letterSpacing: -0.41,
+                      color: secondaryColor,
+                    ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 22),
                   if (_selectedTab == 1) ...[
                     _buildOverlaysSections(
                       surfaceStyle: surfaceStyle,
@@ -750,17 +787,21 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                       secondaryColor: secondaryColor,
                       buttonQuality: effectiveButtonQuality,
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 28),
                   ],
                   GlassGroupedSection(
-                    header: const Text('SEGMENTED CONTROL'),
+                    header: _buildSectionHeader(
+                      'SEGMENTED CONTROL',
+                      secondaryColor,
+                    ),
+                    margin: EdgeInsets.zero,
                     surfaceStyle: surfaceStyle,
                     quality: _quality,
                     children: [
                       Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 10,
+                          vertical: 19,
                         ),
                         child: GlassSegmentedControl(
                           key: _segKey,
@@ -773,14 +814,24 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
                   GlassGroupedSection(
-                    header: const Text('SWITCHES (UISWITCH)'),
+                    header: _buildSectionHeader(
+                      'SWITCHES (UISWITCH)',
+                      secondaryColor,
+                    ),
+                    margin: EdgeInsets.zero,
                     surfaceStyle: surfaceStyle,
                     quality: _quality,
                     children: [
                       GlassListTile(
                         title: const Text('Notifications (On)'),
+                        titleStyle: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: -0.41,
+                          color: labelColor,
+                        ),
                         trailing: GlassSwitch(
                           key: _switchOnKey,
                           quality: _quality,
@@ -792,6 +843,12 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                       ),
                       GlassListTile(
                         title: const Text('Low Power Mode (Off)'),
+                        titleStyle: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: -0.41,
+                          color: labelColor,
+                        ),
                         trailing: GlassSwitch(
                           key: _switchOffKey,
                           quality: _quality,
@@ -803,14 +860,18 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
                   GlassGroupedSection(
-                    header: const Text('SLIDERS (UISLIDER)'),
+                    header: _buildSectionHeader(
+                      'SLIDERS (UISLIDER)',
+                      secondaryColor,
+                    ),
+                    margin: EdgeInsets.zero,
                     surfaceStyle: surfaceStyle,
                     quality: _quality,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -821,6 +882,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                                   'Continuous',
                                   style: TextStyle(
                                     fontSize: 15,
+                                    letterSpacing: -0.24,
                                     color: labelColor,
                                   ),
                                 ),
@@ -828,25 +890,35 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                                   '${(_sliderContinuous * 100).round()}%',
                                   style: TextStyle(
                                     fontSize: 15,
+                                    letterSpacing: -0.24,
                                     color: secondaryColor,
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 6),
-                            GlassSlider(
-                              key: _sliderContKey,
-                              quality: _quality,
-                              value: _sliderContinuous,
-                              trackHeight: 6,
-                              onChanged: (v) =>
-                                  setState(() => _sliderContinuous = v),
+                            SizedBox(
+                              height: 31,
+                              child: Center(
+                                child: OverflowBox(
+                                  minHeight: 46,
+                                  maxHeight: 46,
+                                  child: GlassSlider(
+                                    key: _sliderContKey,
+                                    quality: _quality,
+                                    value: _sliderContinuous,
+                                    trackHeight: 6,
+                                    onChanged: (v) =>
+                                        setState(() => _sliderContinuous = v),
+                                  ),
+                                ),
+                              ),
                             ),
                           ],
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -857,6 +929,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                                   'Stepped (25%)',
                                   style: TextStyle(
                                     fontSize: 15,
+                                    letterSpacing: -0.24,
                                     color: labelColor,
                                   ),
                                 ),
@@ -864,39 +937,53 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                                   '${(_sliderDiscrete * 100).round()}%',
                                   style: TextStyle(
                                     fontSize: 15,
+                                    letterSpacing: -0.24,
                                     color: secondaryColor,
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 6),
-                            GlassSlider(
-                              key: _sliderDiscKey,
-                              quality: _quality,
-                              value: _sliderDiscrete,
-                              divisions: 4,
-                              trackHeight: 6,
-                              onChanged: (v) =>
-                                  setState(() => _sliderDiscrete = v),
+                            SizedBox(
+                              height: 31,
+                              child: Center(
+                                child: OverflowBox(
+                                  minHeight: 46,
+                                  maxHeight: 46,
+                                  child: GlassSlider(
+                                    key: _sliderDiscKey,
+                                    quality: _quality,
+                                    value: _sliderDiscrete,
+                                    divisions: 4,
+                                    trackHeight: 6,
+                                    onChanged: (v) =>
+                                        setState(() => _sliderDiscrete = v),
+                                  ),
+                                ),
+                              ),
                             ),
                           ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
                   GlassGroupedSection(
-                    header: const Text('GLASS BUTTONS'),
+                    header: _buildSectionHeader(
+                      'GLASS BUTTONS',
+                      secondaryColor,
+                    ),
+                    margin: EdgeInsets.zero,
                     surfaceStyle: surfaceStyle,
                     quality: _quality,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+                        padding: const EdgeInsets.fromLTRB(16, 19, 16, 19),
                         child: Row(
                           children: [
                             GlassButton.custom(
-                              width: 124,
-                              height: 36,
+                              width: 128,
+                              height: 34.5,
                               shape: const LiquidRoundedSuperellipse(
                                 borderRadius: 18,
                               ),
@@ -906,27 +993,33 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                               child: Text(
                                 'Regular Glass',
                                 style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w400,
+                                  letterSpacing: -0.41,
                                   color: labelColor,
                                 ),
                               ),
                             ),
                             const SizedBox(width: 12),
-                            GlassIconButton(
-                              icon: const Icon(
-                                CupertinoIcons.heart_fill,
-                                size: 17,
+                            GlassButton.custom(
+                              width: 45,
+                              height: 32,
+                              shape: const LiquidRoundedSuperellipse(
+                                borderRadius: 16,
                               ),
-                              size: 36,
                               useOwnLayer: true,
                               quality: effectiveButtonQuality,
-                              onPressed: () {},
+                              onTap: () {},
+                              child: Icon(
+                                CupertinoIcons.heart_fill,
+                                size: 17,
+                                color: labelColor,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             GlassButton.custom(
-                              width: 104,
-                              height: 36,
+                              width: 102,
+                              height: 34.5,
                               shape: const LiquidRoundedSuperellipse(
                                 borderRadius: 18,
                               ),
@@ -938,17 +1031,29 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                                     bodyMode: GlassBodyMode.clear,
                                     frost: 0,
                                     saturation: 1.0,
-                                    glassColor: CupertinoColors.systemBlue
-                                        .resolveFrom(context),
+                                    ambientStrength: 0.0,
+                                    lightIntensity: 0.25,
+                                    glassColor: const Color(0xFF0088FF),
                                   ),
                               quality: effectiveButtonQuality,
                               onTap: () {},
-                              child: const Text(
-                                'Prominent',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  color: CupertinoColors.white,
+                              child: DecoratedBox(
+                                decoration: const ShapeDecoration(
+                                  color: Color(0xFF0088FF),
+                                  shape: LiquidRoundedSuperellipse(
+                                    borderRadius: 18,
+                                  ),
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    'Prominent',
+                                    style: TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w400,
+                                      letterSpacing: -0.41,
+                                      color: CupertinoColors.white,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -958,7 +1063,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                     ],
                   ),
                   if (_selectedTab != 1) ...[
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 28),
                     _buildOverlaysSections(
                       surfaceStyle: surfaceStyle,
                       labelColor: labelColor,
@@ -975,6 +1080,21 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
     );
   }
 
+  Widget _buildSectionHeader(String text, Color secondaryColor) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w500,
+          letterSpacing: -0.24,
+          color: secondaryColor,
+        ),
+      ),
+    );
+  }
+
   Widget _buildOverlaysSections({
     required GlassSurfaceStyle surfaceStyle,
     required Color labelColor,
@@ -986,19 +1106,23 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           GlassGroupedSection(
-            header: const Text('MENUS (UIMENU & .CONTEXTMENU)'),
+            header: _buildSectionHeader(
+              'MENUS (UIMENU & .CONTEXTMENU)',
+              secondaryColor,
+            ),
+            margin: EdgeInsets.zero,
             surfaceStyle: surfaceStyle,
             quality: _quality,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                 child: Row(
                   children: [
                     GlassPullDownButton(
                       key: _pullDownKey,
                       label: 'Pull-Down',
-                      buttonWidth: 120,
-                      buttonHeight: 36,
+                      buttonWidth: 122,
+                      buttonHeight: 34.5,
                       menuWidth: 220,
                       quality: buttonQuality,
                       items: [
@@ -1032,27 +1156,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                         ),
                       ],
                     ),
-                    const SizedBox(width: 10),
-                    GlassButton.custom(
-                      key: _contextMenuBtnKey,
-                      width: 120,
-                      height: 36,
-                      shape: const LiquidRoundedSuperellipse(
-                        borderRadius: 18,
-                      ),
-                      useOwnLayer: true,
-                      quality: buttonQuality,
-                      onTap: () => _presentContextMenu(innerCtx),
-                      child: Text(
-                        'Context Menu',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: labelColor,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
                     GlassMenu(
                       menuWidth: 220,
                       quality: buttonQuality,
@@ -1098,6 +1202,27 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                         ),
                       ],
                     ),
+                    const SizedBox(width: 12),
+                    GlassButton.custom(
+                      key: _contextMenuBtnKey,
+                      width: 131,
+                      height: 34.5,
+                      shape: const LiquidRoundedSuperellipse(
+                        borderRadius: 18,
+                      ),
+                      useOwnLayer: true,
+                      quality: buttonQuality,
+                      onTap: () => _presentContextMenu(innerCtx),
+                      child: Text(
+                        'Context Menu',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: -0.41,
+                          color: labelColor,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1105,17 +1230,21 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
           ),
           const SizedBox(height: 24),
           GlassGroupedSection(
-            header: const Text('MODAL SHEETS (.SHEET)'),
+            header: _buildSectionHeader(
+              'MODAL SHEETS (.SHEET)',
+              secondaryColor,
+            ),
+            margin: EdgeInsets.zero,
             surfaceStyle: surfaceStyle,
             quality: _quality,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                 child: Row(
                   children: [
                     Expanded(
                       child: GlassButton.custom(
-                        height: 36,
+                        height: 34.5,
                         shape: const LiquidRoundedSuperellipse(
                           borderRadius: 18,
                         ),
@@ -1125,17 +1254,18 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                         child: Text(
                           'Half Sheet',
                           style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: -0.32,
                             color: labelColor,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: GlassButton.custom(
-                        height: 36,
+                        height: 34.5,
                         shape: const LiquidRoundedSuperellipse(
                           borderRadius: 18,
                         ),
@@ -1145,20 +1275,21 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                         child: Text(
                           'Full Sheet',
                           style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: -0.32,
                             color: labelColor,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: GlassMorphTrigger(
                         builder: (ctx, anchor) {
                           _morphSheetAnchor = anchor;
                           return GlassButton.custom(
-                            height: 36,
+                            height: 34.5,
                             shape: const LiquidRoundedSuperellipse(
                               borderRadius: 18,
                             ),
@@ -1172,8 +1303,9 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                             child: Text(
                               'Morph Sheet',
                               style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w400,
+                                letterSpacing: -0.32,
                                 color: labelColor,
                               ),
                             ),

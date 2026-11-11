@@ -1,8 +1,13 @@
 # 1.17.2
 
+## Features
+
+- **`GlassChip` solid surface support (`GlassChip.surfaceStyle`, `GlassChip.color`):** `GlassChip` now accepts `surfaceStyle` (`GlassSurfaceStyle?`) and `color` (`Color?`), inheriting `InheritedGlassSurfaceStyle` from enclosing `solid` cards/sections by default and rendering a zero-shader pill well (`resolveGlassSolidWellColor` when unselected, `selectedColor` when selected) with keyboard focus and single-line ellipsis clamping in constrained layouts.
+
 ## Bug Fixes
 
 - **Improved `GlassQuality.standard` visual parity across `classic`, `ios26`, and `ios27` (`AnimatedGlassIndicator`, `GlassTabBar`, `GlassEffect`, `GlassSwitch`, `GlassSlider`, `AdaptiveGlass`, `LightweightLiquidGlass`):** Refined the lightweight fragment shaders (`interactive_indicator.frag` and `lightweight_glass.frag`) to better approximate `GlassQuality.premium` on Skia, Web, and standard-tier surfaces without adding extra compositor or texture capture passes — adding premultiplied `srcOver` meniscus rim darkening, iOS 27 `topTrough` `keyShade`, `core + tail` $\cos^3$ `rimLight` lobes (`ios26` and `ios27`), directional `rimShade` contours (`ios27`), and `LensInnerShadowPainter` on active `AnimatedGlassIndicator` pills; tuned default `GlassTabBar` lifted indicator vertical expansion on `Standard` (`10.5` pt vs `8.0` pt on `Premium`); preserved native material fields on elevated `AdaptiveGlass` surfaces; and prevented `GlassSwitch` press-hold bloom from deflating across parent rebuilds.
+- **`GlassSegmentedControl` `GlassStyle.ios27` resting track and label parity:** Calibrated the default Light Mode track fill (`Color(0x21767680)` / `#EEEEEF`), removed the resting Light Mode indicator drop shadow so it no longer bleeds across the `2` pt track border, and aligned default unselected segment labels with native `UISegmentLabel` (`FontWeight.w400` and full-opacity `CupertinoColors.label`).
 
 # 1.17.1
 

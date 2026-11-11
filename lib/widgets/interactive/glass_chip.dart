@@ -4,6 +4,9 @@ import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../theme/glass_theme.dart';
 import '../../theme/glass_theme_data.dart';
 import '../../types/glass_quality.dart';
+import '../../types/glass_surface_style.dart';
+import '../shared/glass_focus_region.dart';
+import '../shared/glass_solid_surface.dart';
 import 'glass_button.dart';
 
 /// A glass morphism chip following Apple's iOS 26 design patterns.
@@ -107,6 +110,8 @@ class GlassChip extends StatelessWidget {
     this.settings,
     this.useOwnLayer = false,
     this.quality,
+    this.surfaceStyle,
+    this.color,
     this.platformViewBackdrop = false,
     // GlassButton properties
     this.interactionScale = 1.03,
@@ -224,12 +229,39 @@ class GlassChip extends StatelessWidget {
 
   /// Rendering quality for the glass effect.
   ///
-  /// If null, inherits from parent [InheritedLiquidGlass] or defaults to
+  /// If null, inherits from parent `InheritedLiquidGlass` or defaults to
   /// [GlassQuality.standard], which uses backdrop filter rendering.
   /// This works reliably in all contexts, including scrollable lists.
   ///
   /// Use [GlassQuality.premium] for shader-based glass in static layouts only.
   final GlassQuality? quality;
+
+  /// How the chip's surface is painted.
+  ///
+  /// If null (the default), inherits from the nearest ancestor
+  /// [InheritedGlassSurfaceStyle] (such as a `solid` `GlassContainer.card` or
+  /// `GlassGroupedSection`), falling back to [GlassSurfaceStyle.glass].
+  ///
+  /// - [GlassSurfaceStyle.glass]: Renders the chip with [GlassButton] glass,
+  ///   directional [GlassGlow], and press-stretch feedback.
+  /// - [GlassSurfaceStyle.solid]: Renders a flat pill well
+  ///   ([resolveGlassSolidWellColor] by default, [color] when unselected, or
+  ///   [selectedColor] when [selected] is true) with zero shader or
+  ///   backdrop-filter overhead. [settings], [useOwnLayer], [quality],
+  ///   [platformViewBackdrop], [interactionScale], [stretch], [glowRadius],
+  ///   [anchorStretch], and [anchorStretchSettings] are ignored.
+  final GlassSurfaceStyle? surfaceStyle;
+
+  /// Explicit unselected fill color override for [GlassSurfaceStyle.solid]
+  /// chips.
+  ///
+  /// If null, an unselected solid chip uses [resolveGlassSolidWellColor]
+  /// (`#1E767680` in light mode, `#3D767680` in dark mode — matching iOS
+  /// `tertiarySystemFill`). When [selected] is true, [selectedColor] takes
+  /// precedence. Ignored when the resolved surface style is
+  /// [GlassSurfaceStyle.glass] (use [LiquidGlassSettings.glassColor] in
+  /// [settings] to tint glass).
+  final Color? color;
 
   /// Render the backdrop through a live [BackdropFilter] instead of the
   /// shader's captured backdrop.
@@ -276,20 +308,31 @@ class GlassChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
+    final effectiveSurfaceStyle = surfaceStyle ??
+        InheritedGlassSurfaceStyle.maybeOf(context) ??
+        GlassSurfaceStyle.glass;
+    final isSolid = effectiveSurfaceStyle == GlassSurfaceStyle.solid;
+
     final baseColor = isDark ? CupertinoColors.white : CupertinoColors.black;
-    final defaultContentColor = baseColor.withValues(alpha: 0.9);
+    final defaultContentColor = isSolid
+        ? (isDark
+            ? CupertinoColors.label.darkColor
+            : CupertinoColors.label.color)
+        : baseColor.withValues(alpha: 0.9);
     final defaultSelectedColor =
         baseColor.withValues(alpha: isDark ? 0.3 : 0.1);
     final defaultGlowUnselected =
         baseColor.withValues(alpha: isDark ? 0.2 : 0.05);
 
+    final defaultLabelStyle = TextStyle(
+      fontSize: 14,
+      color: defaultContentColor,
+      fontWeight: FontWeight.w500,
+    );
     final effectiveIconColor = iconColor ?? defaultContentColor;
-    final effectiveLabelStyle = labelStyle ??
-        TextStyle(
-          fontSize: 14,
-          color: defaultContentColor,
-          fontWeight: FontWeight.w500,
-        );
+    final effectiveLabelStyle = labelStyle != null
+        ? defaultLabelStyle.merge(labelStyle)
+        : defaultLabelStyle;
 
     // Build chip content
     final chipContent = Padding(
@@ -312,10 +355,14 @@ class GlassChip extends StatelessWidget {
           // Label. The chip is named here rather than through
           // GlassButton.label: an explicit button label replaces ALL of its
           // content's semantics, which would also hide the delete button.
-          Text(
-            label,
-            semanticsLabel: semanticLabel ?? label,
-            style: effectiveLabelStyle,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              semanticsLabel: semanticLabel ?? label,
+              style: effectiveLabelStyle,
+            ),
           ),
 
           // Delete button
@@ -345,6 +392,54 @@ class GlassChip extends StatelessWidget {
 
     // Determine if chip should be interactive
     final isInteractive = onTap != null || onDeleted != null;
+
+    if (isSolid) {
+      assert(() {
+        if (settings != null || quality != null) {
+          debugPrint(
+            'GlassChip: `settings` / `quality` have no effect when '
+            '`surfaceStyle` is GlassSurfaceStyle.solid (a solid chip is a '
+            'flat pill well and does not use the glass shader).',
+          );
+        }
+        return true;
+      }());
+
+      final solidSelectedColor = selectedColor ??
+          (isDark
+              ? CupertinoColors.white.withValues(alpha: 0.24)
+              : CupertinoColors.black.withValues(alpha: 0.14));
+      final fillColor = selected
+          ? solidSelectedColor
+          : (color ?? resolveGlassSolidWellColor(context));
+
+      final solidPill = DecoratedBox(
+        decoration: ShapeDecoration(
+          color: fillColor,
+          shape: _chipShape,
+        ),
+        child: chipContent,
+      );
+
+      final effectiveTap = onTap ?? (onDeleted != null ? () {} : null);
+
+      return GestureDetector(
+        onTap: isInteractive ? onTap : null,
+        behavior: HitTestBehavior.opaque,
+        excludeFromSemantics: true,
+        child: GlassFocusRegion(
+          enabled: isInteractive,
+          focusNode: focusNode,
+          autofocus: autofocus,
+          isButton: isInteractive,
+          isSelected: selected,
+          semanticOnTap: isInteractive ? effectiveTap : null,
+          shape: _chipShape,
+          onKeyboardActivate: isInteractive ? onTap : null,
+          child: solidPill,
+        ),
+      );
+    }
 
     // Apply selected state color overlay
     final contentWithSelection = selected
