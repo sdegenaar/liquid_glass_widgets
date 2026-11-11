@@ -1636,7 +1636,11 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                   behavior: HitTestBehavior.translucent,
                   excludeFromSemantics: true,
                   onTap: _closeMenu,
-                  child: Container(color: const Color(0x00000000)),
+                  // Extends the barrier over a GlassNavigationShell's pinned
+                  // chrome, which is painted above this route.
+                  child: ShellChromeBarrier(
+                    child: Container(color: const Color(0x00000000)),
+                  ),
                 ),
               ),
             ),
