@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- **Interactive back-swipe parallax:** Keeps the previous route's delegated transition linear with the gesture while preserving the Cupertino curve for non-interactive transitions.
+
 # 1.17.1
 
 ## Features

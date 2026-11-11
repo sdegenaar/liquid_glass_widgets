@@ -887,6 +887,38 @@ class GlassPageRoute<T> extends CupertinoPageRoute<T> {
   final double? transitionCornerRadius;
 
   @override
+  DelegatedTransitionBuilder? get delegatedTransition =>
+      _buildDelegatedTransition;
+
+  static Widget? _buildDelegatedTransition(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    bool allowSnapshotting,
+    Widget? child,
+  ) {
+    if (ModalRoute.of(context)?.navigator?.userGestureInProgress ?? false) {
+      return SlideTransition(
+        position: Tween<Offset>(
+          begin: Offset.zero,
+          end: Offset(-1.0 / 3.0, 0.0),
+        ).animate(secondaryAnimation),
+        textDirection: Directionality.of(context),
+        transformHitTests: false,
+        child: child,
+      );
+    }
+
+    return CupertinoPageTransition.delegatedTransition(
+      context,
+      animation,
+      secondaryAnimation,
+      allowSnapshotting,
+      child,
+    );
+  }
+
+  @override
   Widget buildTransitions(
     BuildContext context,
     Animation<double> animation,
