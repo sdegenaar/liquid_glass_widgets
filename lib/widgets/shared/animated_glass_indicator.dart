@@ -501,8 +501,9 @@ class AnimatedGlassIndicator extends StatelessWidget {
       ambientRim: (effectiveSettings.ambientRim > 0)
           ? effectiveSettings.ambientRim
           : (isStdPath ? 0.08 : 0.1),
-      baseAlphaMultiplier:
-          isStdPath ? 0.08 : 0.2, // Match GlassSlider (near clear center)
+      baseAlphaMultiplier: isStdPath
+          ? (isDark ? 0.0 : 0.06)
+          : 0.2, // Match GlassSlider/Switch (clear in dark mode, subtle lift in light)
       edgeAlphaMultiplier:
           isStdPath ? 0.15 : 0.4, // Match GlassSlider/Switch (subtle rim)
       child: const GlassGlow(
@@ -561,16 +562,16 @@ class AnimatedGlassIndicator extends StatelessWidget {
           backgroundIndicator,
         if (paintGlass && fade > 0.05) interactiveIndicator,
         // Native `_UILiquidLensView` inner shadow (`spec.innerShadowOpacity`:
-        // 0.06 on iOS 27 paraxial lens, 0.12 on iOS 26 spherical lens),
-        // painted over the lens so it reads as the soft darkening along the
-        // top of the glass.
-        if (paintGlass && !isStdPath && fade > 0.05)
+        // 0.06 on iOS 27 paraxial lens, 0.12 on iOS 26 / classic lens),
+        // painted over the lens in both Standard and Premium modes so it reads
+        // as the soft darkening along the top of the glass and lifted drop shadow.
+        if (paintGlass && quality != GlassQuality.minimal && fade > 0.05)
           IgnorePointer(
             child: CustomPaint(
               painter: LensInnerShadowPainter(
                 borderRadius: borderRadius,
                 opacity: fade,
-                shadowOpacity: useIos27PillMaterials
+                shadowOpacity: base.rimShade > 0.0
                     ? LensInnerShadowPainter.defaultShadowOpacity
                     : LensInnerShadowPainter.classicShadowOpacity,
               ),

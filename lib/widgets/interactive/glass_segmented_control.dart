@@ -6,6 +6,7 @@ import '../../src/types/glass_interaction_behavior.dart';
 import '../../theme/glass_theme.dart';
 import '../../theme/glass_theme_helpers.dart';
 import '../../types/glass_quality.dart';
+import '../../types/glass_style.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
 import '../surfaces/shared/tab_bar_types.dart' show MaskingQuality;
 import '../surfaces/glass_tab_bar.dart'
@@ -610,12 +611,17 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
 
   // Default track background colors — match native UISegmentedControl on
   // iOS 26 and iOS 27 (CupertinoColors.tertiarySystemFill: rgba(120,120,128,0.12)
-  // in light mode, rgba(120,120,128,0.24) in dark mode).
+  // in light mode, rgba(120,120,128,0.24) in dark mode; #EEEEEF under explicit
+  // GlassStyle.ios27 theme).
   static const _defaultLightBg = Color(0x1F787880);
+  static const _ios27LightBg = Color(0x21767680);
   static const _defaultDarkBg = Color(0x3D787880);
 
   @override
   Widget build(BuildContext context) {
+    final isIos27Theme =
+        GlassTheme.maybeOf(context)?.data.style == GlassStyle.ios27;
+    final lightBg = isIos27Theme ? _ios27LightBg : _defaultLightBg;
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
@@ -638,8 +644,7 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
     // ── Scrollable mode: 100% mirrors GlassTabBar(isScrollable: true) ────────
     if (widget.isScrollable) {
       final isLight = GlassTheme.brightnessOf(context) == Brightness.light;
-      final bg = widget.backgroundColor ??
-          (isLight ? _defaultLightBg : _defaultDarkBg);
+      final bg = widget.backgroundColor ?? (isLight ? lightBg : _defaultDarkBg);
       final borderRadius = GlassDefaults.safeBorderRadius(widget.borderRadius);
 
       final content = Container(
@@ -691,7 +696,7 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
     // ── Fixed mode: equal-width SegmentedControlContent ───────────────────────
     final backgroundColor = widget.backgroundColor ??
         (GlassTheme.brightnessOf(context) == Brightness.light
-            ? _defaultLightBg
+            ? lightBg
             : _defaultDarkBg);
 
     // SizedBox sets the height without clipping. DecoratedBox paints the

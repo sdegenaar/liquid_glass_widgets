@@ -551,63 +551,38 @@ class _GlassEffectState extends State<GlassEffect>
     // 4. Resolve if we can use the high-fidelity refraction shader
     final bool canUseRefraction = effectiveKey != null && !avoidsRefraction;
 
-    // Standard-path structural normalization for interactive_indicator.frag.
-    // The Premium Impeller path renders a real 3D bevel with natural gradient
-    // falloff. The 2D indicator shader draws a flat rim that reads as heavier
-    // at the same parameter values. Scaling these structural params down brings
-    // the pill's visual weight in line with the Premium bevel.
-    //
-    // NOTE: This mirrors the AdaptiveGlass normalization for lightweight_glass.frag
-    // (cards/buttons). Both are intentional Standard-path normalization sites —
-    // each scoped to its own shader's parameter space.
-    // Premium exits above via LiquidGlass.withOwnLayer; this block never runs there.
+    // Callers (AnimatedGlassIndicator, GlassSwitch, GlassSlider) already supply
+    // Standard-calibrated values for rimThickness (~0.47–0.7), ambientRim, and
+    // edgeAlphaMultiplier; clamp rimThickness only if a caller passes a raw
+    // 3D depth value.
     final double effectiveRimThickness = widget.quality == GlassQuality.standard
-        ? widget.rimThickness * 0.35
+        ? widget.rimThickness.clamp(0.35, 1.5)
         : widget.rimThickness;
-    final double effectiveAmbientRim = widget.quality == GlassQuality.standard
-        ? widget.ambientRim * 0.7
-        : widget.ambientRim;
-    final double effectiveEdgeAlpha = widget.quality == GlassQuality.standard
-        ? widget.edgeAlphaMultiplier * 0.7
-        : widget.edgeAlphaMultiplier;
+    final double effectiveAmbientRim = widget.ambientRim;
+    final double effectiveEdgeAlpha = widget.edgeAlphaMultiplier;
 
-    // Normalise LiquidGlassSettings for the Standard path.
-    // The 2D interactive_indicator.frag renders thickness and specular highlights
-    // heavier than the Impeller 3D path at equal parameter values.
-    // Ratios are identical to AdaptiveGlass (thickness × 0.4, lightIntensity × 0.6)
-    // so the visual language stays consistent between static and interactive surfaces.
-    //
-    // When an iOS 27 indicator preset (lightIntensity: 0, rimLight: 1.0,
-    // rimShade: 1.0) drops to the 2D indicator shader (which has no uRimLight
-    // or uRimShade uniforms), stand rimLight in for lightIntensity and
-    // rimShade in for edgeAbsorption so key/kick rim highlights and meniscus
-    // rim contrast remain visible on light surfaces.
-    //
-    // NOTE: glassColor.alpha is intentionally NOT normalised here (unlike AdaptiveGlass).
-    // Interactive thumb body opacity is already governed by
-    //   standardBaseAlpha = baseAlphaMultiplier × interactionIntensity
-    // inside the shader — normalising alpha here would double-count it.
+    // Normalise LiquidGlassSettings for the Standard / 2D indicator shader path.
+    // interactive_indicator.frag natively renders uRimLight (cos³ core + tail),
+    // uRimShade (directional contour hairline), uEdgeAbsorption (Beer-Lambert
+    // meniscus bevel), and uLightIntensity (classic directional specular).
     final base = widget.settings;
-    final double fallbackLightIntensity = (base.effectiveLightIntensity +
-            const LiquidGlassSettings().lightIntensity *
-                base.rimLight.clamp(0.0, 1.0) *
-                base.visibility)
-        .clamp(0.0, 10.0);
-    final double fallbackEdgeAbsorption = math.max(
-      base.edgeAbsorption,
-      base.rimShade.clamp(0.0, 1.0) * 0.22 * base.visibility,
-    );
+    final activeIntensity = widget.interactionIntensity.clamp(0.0, 1.0);
     final LiquidGlassSettings effectiveSettings;
     if (widget.quality == GlassQuality.standard) {
       effectiveSettings = base.copyWith(
         thickness: (base.effectiveThickness * 0.4).clamp(0.0, double.infinity),
-        lightIntensity: (fallbackLightIntensity * 0.6).clamp(0.0, 10.0),
+        lightIntensity: (base.effectiveLightIntensity * 0.65).clamp(0.0, 10.0),
         ambientStrength: (base.effectiveAmbientStrength * 0.25).clamp(0.0, 1.0),
         glowIntensity: (base.glowIntensity * 0.50).clamp(0.0, 5.0),
-        edgeAbsorption: fallbackEdgeAbsorption,
+        edgeAbsorption: base.edgeAbsorption,
+        rimShade: base.rimShade * activeIntensity,
+        rimLight: base.rimLight * activeIntensity,
       );
     } else {
-      effectiveSettings = base.copyWith(lightIntensity: fallbackLightIntensity);
+      effectiveSettings = base.copyWith(
+        rimShade: base.rimShade * activeIntensity,
+        rimLight: base.rimLight * activeIntensity,
+      );
     }
 
     // Path B: High-Fidelity Refraction Shader (Custom GLSL)
@@ -1186,5 +1161,20 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
     // Slot 33: edgeAbsorption — Beer-Lambert meniscus rim darkening [0..1].
     // Passed directly — what the caller sets is what the shader gets.
     _shader.setFloat(index++, _edgeAbsorption.clamp(0.0, 1.0));
+
+    // Slots 34..37: uRimConfig — (rimShade, rimLight, rimShadeEnds, backdropLuma)
+    _shader.setFloat(
+      index++,
+      (_settings.rimShade * _settings.visibility).clamp(0.0, 2.0),
+    );
+    _shader.setFloat(
+      index++,
+      (_settings.rimLight * _settings.visibility).clamp(0.0, 2.0),
+    );
+    _shader.setFloat(index++, _settings.rimShadeEnds.clamp(0.0, 1.0));
+    _shader.setFloat(index++, _backdropLuma.clamp(0.0, 1.0));
+
+    // Slot 38: uFresnelStrength — grazing-angle Fresnel rim strength [0..∞].
+    _shader.setFloat(index++, _settings.fresnelStrength.clamp(0.0, 10.0));
   }
 }

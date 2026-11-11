@@ -386,39 +386,23 @@ class AdaptiveGlass extends StatelessWidget {
                     standardSettings.standardOpacityMultiplier)
                 .clamp(0.0, 1.0),
           ),
-          rimShade: 0.0,
-          rimLight: 0.0,
         );
       }
 
-      // Apply subtle elevation boost to settings (preserves saturation!)
+      // Apply subtle elevation boost to settings (preserves saturation and all
+      // native material fields such as fresnelStrength, edgeAbsorption, and rim).
       final color = normalizedSettings.effectiveGlassColor;
       final effectiveSettings = shouldElevate
-          ? LiquidGlassSettings(
-              glassColor:
-                  color, // Removed flat +0.2 alpha boost for predictability
-              refractiveIndex: normalizedSettings.refractiveIndex,
+          ? normalizedSettings.copyWith(
+              glassColor: color,
               thickness: normalizedSettings.effectiveThickness,
-              lightAngle: normalizedSettings.lightAngle,
               lightIntensity: (normalizedSettings.effectiveLightIntensity * 1.2)
                   .clamp(0.0, 10.0),
-              chromaticAberration: normalizedSettings.chromaticAberration,
               blur: normalizedSettings.effectiveBlur,
-              visibility: normalizedSettings.visibility,
               saturation: normalizedSettings.effectiveSaturation,
               ambientStrength:
                   (normalizedSettings.effectiveAmbientStrength * 0.4)
                       .clamp(0.0, 1.0),
-              glowIntensity: normalizedSettings.glowIntensity,
-              // Preserve whiten through the elevation rebuild; otherwise the
-              // whitening would silently drop to 0 for grouped/elevated
-              // surfaces such as bars.
-              whitenStrength: normalizedSettings.whitenStrength,
-              whitenGated: normalizedSettings.whitenGated,
-              bodyMode: normalizedSettings.bodyMode,
-              rimShade: normalizedSettings.rimShade,
-              rimShadeEnds: normalizedSettings.rimShadeEnds,
-              rimLight: normalizedSettings.rimLight,
             )
           : normalizedSettings;
 

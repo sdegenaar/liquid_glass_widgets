@@ -1,9 +1,15 @@
-# Unreleased
+# 1.17.2
+
+## Features
+
+- **`GlassChip` solid surface support (`GlassChip.surfaceStyle`, `GlassChip.color`):** `GlassChip` now accepts `surfaceStyle` and `color`, automatically inheriting `GlassSurfaceStyle.solid` inside solid cards/sections to render a zero-shader pill well with keyboard focus and single-line ellipsis clamping.
 
 ## Bug Fixes
 
-- **Interactive back-swipe parallax:** Keeps the previous route's delegated transition linear with the gesture while preserving the Cupertino curve for non-interactive transitions.
-- **`GlassNavigationShell` showed the previous route's pinned chrome over a fullscreen dialog:** A pinned route whose push does not cover the route below it (a `fullscreenDialog` route, or a route pushed over a modal sheet) kept its chrome at the start of its entrance for good, so the shell drew the previous route's items instead of its own, and their taps acted on the previous route. The guard against the incoming chrome flashing solid for one frame now reads the route's own `offstage` flag instead of whether the route below is covered.
+- **Improved `GlassQuality.standard` visual parity (`GlassTabBar`, `GlassSegmentedControl`, `GlassSwitch`, `GlassSlider`, `AdaptiveGlass`):** Upgraded standard-tier surfaces and lifted indicator pills across `classic`, `ios26`, and `ios27` (Skia, Web, and standard quality) with meniscus rim shading, directional specular highlights, and inner lens depth; tuned `GlassTabBar` lifted pill height on `standard`; and fixed `GlassSwitch` press-hold bloom deflating across parent rebuilds.
+- **`GlassSegmentedControl` `GlassStyle.ios27` resting appearance:** Calibrated the Light Mode track fill, removed resting Light Mode indicator shadow bleed across the track border, and aligned default unselected label weight and contrast with native iOS 27.
+- **`GlassNavigationShell` pinned chrome over fullscreen dialogs and sheets (PR #466):** Fixed newly pushed `fullscreenDialog` routes (and routes pushed over modal sheets) keeping the previous route's pinned bar items instead of showing their own. Thanks to [@veloce](https://github.com/veloce) for the fix (#466).
+- **Linear interactive back-swipe parallax (`GlassPageRoute`, `GlassPageTransitionsBuilder`) (PR #468):** Keeps the underlying route's delegated parallax linear with the finger during interactive swipe-back while preserving the Cupertino curve for non-interactive transitions, and aligns `GlassPageTransitionsBuilder` with the `500 ms` Cupertino duration. Thanks to [@yohom](https://github.com/yohom) for the fix (#468).
 
 # 1.17.1
 

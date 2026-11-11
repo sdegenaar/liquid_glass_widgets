@@ -886,9 +886,14 @@ class GlassPageRoute<T> extends CupertinoPageRoute<T> {
   /// Set to `0.0` to disable rounded page clipping for this route.
   final double? transitionCornerRadius;
 
+  static final Animatable<Offset> _kMiddleLeftTween = Tween<Offset>(
+    begin: Offset.zero,
+    end: const Offset(-1.0 / 3.0, 0.0),
+  );
+
   @override
   DelegatedTransitionBuilder? get delegatedTransition =>
-      _buildDelegatedTransition;
+      fullscreenDialog ? null : _buildDelegatedTransition;
 
   static Widget? _buildDelegatedTransition(
     BuildContext context,
@@ -897,12 +902,9 @@ class GlassPageRoute<T> extends CupertinoPageRoute<T> {
     bool allowSnapshotting,
     Widget? child,
   ) {
-    if (ModalRoute.of(context)?.navigator?.userGestureInProgress ?? false) {
+    if (Navigator.maybeOf(context)?.userGestureInProgress ?? false) {
       return SlideTransition(
-        position: Tween<Offset>(
-          begin: Offset.zero,
-          end: Offset(-1.0 / 3.0, 0.0),
-        ).animate(secondaryAnimation),
+        position: secondaryAnimation.drive(_kMiddleLeftTween),
         textDirection: Directionality.of(context),
         transformHitTests: false,
         child: child,
@@ -976,6 +978,14 @@ class GlassPageTransitionsBuilder extends PageTransitionsBuilder {
   ///
   /// Set to `0.0` to disable rounded page clipping.
   final double? transitionCornerRadius;
+
+  @override
+  Duration get transitionDuration =>
+      CupertinoRouteTransitionMixin.kTransitionDuration;
+
+  @override
+  DelegatedTransitionBuilder? get delegatedTransition =>
+      GlassPageRoute._buildDelegatedTransition;
 
   @override
   Widget buildTransitions<T>(

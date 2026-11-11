@@ -17,6 +17,8 @@
 //   cover                present the full-screen cover
 //   expand <0-2> on|off  expand / collapse a disclosure group
 //   dark on|off          switch the harness to dark / light appearance
+//   style ios27|ios26|classic  switch active GlassStyle era
+//   quality standard|premium|auto  switch active GlassQuality tier
 //   ptr down|move|up x y inject a touch at logical (x, y) — works with the
 //                        simulator window in the background
 //
@@ -34,12 +36,24 @@ const _cmdFile = '/tmp/lgw_parity_cmd.txt';
 const _workspaceCmdFile =
     '/Users/sdegenaar/development/liquid_glass_widgets/tools/parity/captures/cmd.txt';
 
+const _initialQualityEnv = String.fromEnvironment('QUALITY');
+
 /// Whether the harness renders in dark appearance (`dark on|off` command).
 /// Driven by command rather than the OS so captures are deterministic.
 final _dark = ValueNotifier<bool>(false);
 
 /// Active glass style preset (`style ios27|ios26|classic` command).
 final _style = ValueNotifier<GlassStyle>(GlassStyle.ios27);
+
+/// Active glass quality override (`quality standard|premium|auto` command
+/// or `--dart-define=QUALITY=standard|premium`).
+final _quality = ValueNotifier<GlassQuality?>(
+  switch (Platform.environment['LGW_QUALITY'] ?? _initialQualityEnv) {
+    'standard' => GlassQuality.standard,
+    'premium' => GlassQuality.premium,
+    _ => null,
+  },
+);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,27 +69,37 @@ class _App extends StatelessWidget {
         valueListenable: _dark,
         builder: (context, dark, _) => ValueListenableBuilder<GlassStyle>(
           valueListenable: _style,
-          builder: (context, style, _) {
-            final brightness = dark ? Brightness.dark : Brightness.light;
-            return GlassTheme(
-              data: switch (style) {
+          builder: (context, style, _) => ValueListenableBuilder<GlassQuality?>(
+            valueListenable: _quality,
+            builder: (context, quality, _) {
+              final brightness = dark ? Brightness.dark : Brightness.light;
+              final base = switch (style) {
                 GlassStyle.ios27 =>
                   GlassThemeData.ios27(brightness: brightness),
                 GlassStyle.ios26 =>
                   GlassThemeData.ios26(brightness: brightness),
                 GlassStyle.classic =>
                   GlassThemeData.classic(brightness: brightness),
-              },
-              child: CupertinoApp(
-                debugShowCheckedModeBanner: false,
-                title: 'iOS Parity',
-                theme: CupertinoThemeData(brightness: brightness),
-                builder: (context, child) =>
-                    GlassNavigationShell(child: child!),
-                home: const _ParityHost(),
-              ),
-            );
-          },
+              };
+              final themeData = quality == null
+                  ? base
+                  : base.copyWith(
+                      light: base.light.copyWith(quality: quality),
+                      dark: base.dark.copyWith(quality: quality),
+                    );
+              return GlassTheme(
+                data: themeData,
+                child: CupertinoApp(
+                  debugShowCheckedModeBanner: false,
+                  title: 'iOS Parity',
+                  theme: CupertinoThemeData(brightness: brightness),
+                  builder: (context, child) =>
+                      GlassNavigationShell(child: child!),
+                  home: const _ParityHost(),
+                ),
+              );
+            },
+          ),
         ),
       );
 }
@@ -252,6 +276,13 @@ class _ParityHostState extends State<_ParityHost> {
           'classic' => GlassStyle.classic,
           'ios26' => GlassStyle.ios26,
           _ => GlassStyle.ios27,
+        };
+        setState(() {});
+      case 'quality':
+        _quality.value = switch (a.length > 1 ? a[1] : 'auto') {
+          'standard' => GlassQuality.standard,
+          'premium' => GlassQuality.premium,
+          _ => null,
         };
         setState(() {});
       case 'bg':
@@ -568,8 +599,8 @@ class _ParityHostState extends State<_ParityHost> {
       bottomBar: GlassTabBar.bottom(
         selectedIndex: _tab,
         onTabSelected: (idx) => setState(() => _tab = idx),
-        quality: GlassQuality.premium,
-        backgroundQuality: GlassQuality.premium,
+        quality: _quality.value ?? GlassQuality.premium,
+        backgroundQuality: _quality.value ?? GlassQuality.premium,
         barHeight: 62,
         horizontalPadding: 21,
         verticalPadding: 21,
@@ -789,7 +820,7 @@ class _ParityHostState extends State<_ParityHost> {
                           valueListenable: _emergencyContact,
                           builder: (context, val, _) => GlassSwitch(
                             value: val,
-                            quality: GlassQuality.premium,
+                            quality: _quality.value ?? GlassQuality.premium,
                             onChanged: (v) => _emergencyContact.value = v,
                           ),
                         )),
@@ -850,7 +881,7 @@ class _ParityHostState extends State<_ParityHost> {
                     trailing: ValueListenableBuilder<bool>(
                       valueListenable: _airDrop,
                       builder: (context, val, _) => GlassSwitch(
-                        quality: GlassQuality.premium,
+                        quality: _quality.value ?? GlassQuality.premium,
                         value: val,
                         onChanged: (v) => _airDrop.value = v,
                       ),
@@ -859,7 +890,7 @@ class _ParityHostState extends State<_ParityHost> {
                     trailing: ValueListenableBuilder<bool>(
                       valueListenable: _sharePhoto,
                       builder: (context, val, _) => GlassSwitch(
-                        quality: GlassQuality.premium,
+                        quality: _quality.value ?? GlassQuality.premium,
                         value: val,
                         onChanged: (v) => _sharePhoto.value = v,
                       ),
@@ -955,7 +986,7 @@ class _ParityHostState extends State<_ParityHost> {
                 valueListenable: _pushNotifications,
                 builder: (context, val, _) => GlassSwitch(
                   value: val,
-                  quality: GlassQuality.premium,
+                  quality: _quality.value ?? GlassQuality.premium,
                   onChanged: (v) => _pushNotifications.value = v,
                 ),
               ),
@@ -1388,7 +1419,7 @@ class _MorphComposeSheetBody extends StatelessWidget {
               GlassIconButton(
                 size: 44,
                 useOwnLayer: true,
-                quality: GlassQuality.premium,
+                quality: _quality.value ?? GlassQuality.premium,
                 // Native `xmark` measures 16.7pt wide (3x capture); the
                 // Cupertino glyph is 0.65x its font size.
                 icon: Icon(CupertinoIcons.xmark, size: 25.5, color: labelColor),
@@ -1411,7 +1442,7 @@ class _MorphComposeSheetBody extends StatelessWidget {
                 // 48.9pt glass ring (the X button stays 44.8pt).
                 size: 49,
                 useOwnLayer: true,
-                quality: GlassQuality.premium,
+                quality: _quality.value ?? GlassQuality.premium,
                 icon: Icon(
                   CupertinoIcons.arrow_up_circle_fill,
                   size: 36,

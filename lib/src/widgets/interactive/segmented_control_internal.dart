@@ -24,6 +24,7 @@ import '../../renderer/liquid_glass_renderer.dart';
 import '../../types/glass_interaction_behavior.dart';
 import '../../../theme/glass_theme.dart';
 import '../../../types/glass_quality.dart';
+import '../../../types/glass_style.dart';
 import '../../../utils/draggable_indicator_physics.dart';
 import '../../../utils/glass_spring.dart';
 import '../../../widgets/shared/animated_glass_indicator.dart';
@@ -275,14 +276,19 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
   @override
   Widget build(BuildContext context) {
     final isLight = GlassTheme.brightnessOf(context) == Brightness.light;
+    final isIos27Theme =
+        GlassTheme.maybeOf(context)?.data.style == GlassStyle.ios27;
     final rawIndicatorColor = widget.indicatorColor ??
         (isLight ? CupertinoColors.white : _defaultDarkIndicatorColor);
     final indicatorColor =
         CupertinoDynamicColor.resolve(rawIndicatorColor, context);
-    final restingShadows =
-        (isLight && widget.indicatorColor == null && !_isDragging && !_isDown)
-            ? _defaultLightIndicatorShadow
-            : null;
+    final restingShadows = (!isIos27Theme &&
+            isLight &&
+            widget.indicatorColor == null &&
+            !_isDragging &&
+            !_isDown)
+        ? _defaultLightIndicatorShadow
+        : null;
     final targetAlignment = _computeAlignmentForSegment(widget.selectedIndex);
 
     // Indicator is slightly less rounded than the container to account for
@@ -313,13 +319,16 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
     final selectedTextStyle =
         baseSelectedTextStyle.copyWith(color: restingSelectedTextColor);
 
+    final defaultUnselectedColor = isIos27Theme
+        ? dynamicLabelColor
+        : dynamicLabelColor.withValues(alpha: 0.6);
     final unselectedTextStyle = TextStyle(
       fontSize: 13,
-      fontWeight: FontWeight.w500,
-      color: dynamicLabelColor.withValues(alpha: 0.6),
+      fontWeight: isIos27Theme ? FontWeight.w400 : FontWeight.w500,
+      color: defaultUnselectedColor,
     ).merge(widget.unselectedTextStyle);
     final restingUnselectedTextColor = CupertinoDynamicColor.resolve(
-      unselectedTextStyle.color ?? dynamicLabelColor.withValues(alpha: 0.6),
+      unselectedTextStyle.color ?? defaultUnselectedColor,
       context,
     );
 

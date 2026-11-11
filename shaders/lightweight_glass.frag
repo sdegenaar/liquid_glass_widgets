@@ -173,7 +173,14 @@ void main() {
   float uRimShade           = uRimConfig.x;
   float uRimLight           = uRimConfig.y;
   float uRimShadeEnds       = uRimConfig.z;
-  bool isNativeIos27Rim     = uRimShade > 0.001;
+  bool hasNativeRim         = (uRimShade > 0.001) || (uRimLight > 0.001);
+  // AdaptiveGlass._withoutNativeMaterial folds +0.5*rimLight into lightIntensity
+  // as a no-shader stand-in. Recover the true directional lightIntensity when
+  // this shader renders uRimLight natively so ios26Light/ios27Light don't get a
+  // harsh n=16 specular spike while ios26Dark retains its 0.22 directional term.
+  float effectiveLightIntensity = (uRimLight > 0.001)
+      ? max(0.0, uLightIntensity - 0.5 * uRimLight)
+      : uLightIntensity;
 
   // ---- STAGE 0: COORDINATE SYNC ----
   vec2 pixelCoord = FlutterFragCoord().xy;
@@ -334,8 +341,8 @@ void main() {
     float kc16 = kc8 * kc8;
     kickSpecular = kc16 * kc16;
   }
-  keySpecular  *= uLightIntensity * densitySpecularBoost;
-  kickSpecular *= uLightIntensity * kKickIntensity * densitySpecularBoost;
+  keySpecular  *= effectiveLightIntensity * densitySpecularBoost;
+  kickSpecular *= effectiveLightIntensity * kKickIntensity * densitySpecularBoost;
   // ---- STAGE 5: GLASS ALPHA ----
   // glassColor.a IS the opacity. 
   float glassAlpha = clamp(uGlassColor.a, 0.0, 1.0);
@@ -343,7 +350,7 @@ void main() {
   // ---- STAGE 6: RIM & BEVEL LAYER ----
   float thicknessOffset = (uThickness - kThicknessReference) / kThicknessReference;
   float totalSpecular = keySpecular + kickSpecular;
-  float rimBaseWithIntensity = max(kMinRimVisibility, kRimBaseOpacity * uLightIntensity * kRimIntensityScale);
+  float rimBaseWithIntensity = max(kMinRimVisibility, kRimBaseOpacity * effectiveLightIntensity * kRimIntensityScale);
   float rimBrightness = rimBaseWithIntensity + thicknessOffset * 0.10 + (densityFactor * 0.05);
   vec3 rimColorBase = vec3(1.0) * (rimBrightness + totalSpecular * kRimSpecularMix);
 
@@ -362,29 +369,29 @@ void main() {
   //   light (luma=0.85) → smoothstep=1.0 → rimFade=0.08 (near-invisible rim)
   // Dark mode is completely unaffected.
   float rimFade = 1.0 - smoothstep(0.3, 0.5, uBackdropLuma) * 0.92;
-  float rimAlphaBase = kRimAlphaBase * rimFade + 0.15 * directionalInfluence * uLightIntensity;
+  float rimAlphaBase = kRimAlphaBase * rimFade + 0.15 * directionalInfluence * effectiveLightIntensity;
   rimAlphaBase *= uRefractiveIndex;
   rimAlphaBase += totalSpecular * kRimAlphaSpecular * rimFade;
   rimAlphaBase *= (1.0 + thicknessOffset * kThicknessRimBoost) * (1.0 + densityFactor * 0.1);
   rimAlphaBase *= borderMask;
 
-  // ---- STAGE 7: EXTRAS (fresnel & iOS 27 native rimLight / rimShade) ----
+  // ---- STAGE 7: EXTRAS (fresnel & iOS 26 / iOS 27 native rimLight / rimShade) ----
   // uFresnelStrength (slot 33) scales the grazing-angle rim. Default 1.0 = calibrated
   // iOS 26 baseline. 0.0 removes the rim highlight entirely.
   float adaptiveStrength = mix(1.2, 0.8, uBackdropLuma);
-  float effectiveFresnelStrength = isNativeIos27Rim
+  float effectiveFresnelStrength = hasNativeRim
       ? max(uFresnelStrength, 0.25)
       : uFresnelStrength;
   float fresnel = (1.0 - normalZ) * borderMask * 0.10 * adaptiveStrength * effectiveFresnelStrength;
 
-  // Native iOS 27 rim light (soft cos³ lobe at ends of light axis, inset with
-  // core + tail) and rim shade (dark hairline across light axis), matching
-  // liquid_glass_render.frag while maintaining a continuous perimeter rim in
-  // Standard mode.
+  // Native iOS 26 / iOS 27 rim light (soft cos³ lobe at ends of light axis, inset
+  // with core + tail) and iOS 27 rim shade (dark hairline across light axis),
+  // matching liquid_glass_render.frag while maintaining a continuous perimeter
+  // rim in Standard mode.
   float nativeRimLight = 0.0;
   float nativeRimShade = 0.0;
-  if (isNativeIos27Rim) {
-    if (distFromEdge < 8.0) {
+  if (hasNativeRim) {
+    if (distFromEdge < 10.0) {
       float along = dot(surfaceNormal, uLightDirection);
       float lit   = max(along, 0.0);
       float opp   = max(-along, 0.0);
@@ -392,24 +399,33 @@ void main() {
 
       // Replace the harsh n=16 vertical specular bar with a smooth perimeter rim
       // that stays continuous across the sides/corners and rises via cos³ at the
-      // top and bottom lobes.
-      float ios27RimBright = 0.34 + 0.18 * uRimLight * lobe
-                           + thicknessOffset * 0.08 + densityFactor * 0.05;
-      rimColorBase = vec3(clamp(ios27RimBright, 0.0, 1.0));
-      float ios27RimAlpha = (0.58 + 0.24 * uRimLight * lobe)
-                          * rimFade * (1.0 + densityFactor * 0.1) * borderMask;
-      rimAlphaBase = clamp(ios27RimAlpha, 0.0, 1.0);
+      // top and bottom lobes, plus any explicit directional specular (ios26Dark).
+      float hairline = 1.0 - smoothstep(0.30, 1.10, distFromEdge);
+      float hairlineGate = 1.0 - hairline * step(0.001, uRimShade);
+      float nativeRimBright = 0.28 + 0.14 * uRimLight * lobe
+                            + totalSpecular * kRimSpecularMix
+                            + thicknessOffset * 0.06 + densityFactor * 0.04;
+      rimColorBase = vec3(clamp(nativeRimBright, 0.0, 1.0));
+      float nativeRimFade = mix(0.32, 0.08, step(0.5, uBackdropLuma));
+      float nativeRimAlpha = (0.42 + 0.20 * uRimLight * lobe + totalSpecular * kRimAlphaSpecular)
+                           * nativeRimFade * (1.0 + densityFactor * 0.1) * borderMask * hairlineGate;
+      rimAlphaBase = clamp(nativeRimAlpha, 0.0, 1.0);
 
       if (uRimLight > 0.001) {
-        float ease = mix(0.95, 0.56, step(0.5, uBackdropLuma));
-        float tail = exp(-distFromEdge / 1.8) * (1.0 - borderMask * 0.4);
-        nativeRimLight = clamp(uRimLight * lobe * ease * 0.055 * tail, 0.0, 1.0);
+        float inset = max(distFromEdge - 0.75, 0.0);
+        float core  = exp(-inset / 1.5);
+        float tail  = exp(-inset / 5.5);
+        float ease  = mix(0.92, 0.58, step(0.5, uBackdropLuma));
+        nativeRimLight = clamp(
+            uRimLight * lobe * ease * (0.165 * core + 0.038 * tail) * hairlineGate,
+            0.0,
+            1.0);
       }
-      if (uBackdropLuma > 0.5 && distFromEdge < 1.5) {
+      if (uRimShade > 0.001 && distFromEdge < 2.0) {
         float across   = fastPowLW(max(0.0, 1.0 - along * along), 1.75);
-        float hairline = 1.0 - smoothstep(0.25, 0.70, distFromEdge);
+        float shadeWeight = mix(0.22, 0.28, step(0.5, uBackdropLuma));
         nativeRimShade = clamp(
-            uRimShade * 0.22 * mix(uRimShadeEnds, 1.0, across) * hairline,
+            uRimShade * shadeWeight * mix(uRimShadeEnds, 1.0, across) * hairline,
             0.0,
             1.0);
       }
@@ -465,6 +481,11 @@ void main() {
       float outA2 = rimAlphaBase + pmA2 * (1.0 - rimAlphaBase);
       vec3 outRgb2 = rimColorBase * rimAlphaBase + pmRgb2 * (1.0 - rimAlphaBase);
       pmRgb2 = outRgb2 + vec3(0.05) * uIndicatorWeight + vec3(fresnel);
+      // Meniscus rim darkening (PATH A fallback — no valid texture)
+      float absorbDarken2 = (1.0 - meniscusAbsorption(distFromEdge, edgeZone, surfaceNormal, uLightDirection, uEdgeAbsorption))
+                          * mix(0.55, 0.28, isLightFallback);
+      pmRgb2 *= (1.0 - absorbDarken2);
+      outA2   = outA2 + absorbDarken2 * (1.0 - outA2);
       if (nativeRimLight > 0.0) {
         pmRgb2 = pmRgb2 * (1.0 - nativeRimLight) + vec3(nativeRimLight);
         outA2  = outA2 + nativeRimLight * (1.0 - outA2);
@@ -473,8 +494,6 @@ void main() {
         pmRgb2 *= (1.0 - nativeRimShade);
         outA2   = outA2 + nativeRimShade * (1.0 - outA2);
       }
-      // Meniscus rim darkening (PATH A fallback — no valid texture)
-      pmRgb2 *= meniscusAbsorption(distFromEdge, edgeZone, surfaceNormal, uLightDirection, uEdgeAbsorption);
       fragColor = vec4(clamp(pmRgb2, 0.0, 1.0) * mask, outA2 * mask);
     } else {
       // Normal PATH A — background texture is valid.
@@ -577,9 +596,9 @@ void main() {
     // because rimAlphaBase is already near-zero via rimFade.
     vec3 pathBRimColor = rimColorBase;
 
-    // Minimum border floor: only active in dark mode (rimFade=1.0) on non-iOS-27 rims.
+    // Minimum border floor: only active in dark mode (rimFade=1.0) on non-native rims.
     // In light mode rimFade≈0.08, so this floor is effectively zero.
-    float minRimAlpha = (isNativeIos27Rim && uLightIntensity <= 0.001)
+    float minRimAlpha = (hasNativeRim && effectiveLightIntensity <= 0.001)
         ? 0.0
         : borderMask * 0.06 * rimFade;
     float effectiveRimAlpha = max(rimAlphaBase, minRimAlpha);
@@ -592,6 +611,14 @@ void main() {
 
     pmRgb += vec3(0.05) * uIndicatorWeight;
     pmRgb += vec3(fresnel);
+
+    // [1] Hemisphere + [2] light-modulated absorption (PATH B — no background texture)
+    // Uses premultiplied srcOver darkening before nativeRimLight so the inner
+    // meniscus shadow darkens the backdrop without dimming the top specular glint.
+    float absorbDarken = (1.0 - meniscusAbsorption(distFromEdge, edgeZone, surfaceNormal, uLightDirection, uEdgeAbsorption))
+                       * mix(0.55, 0.28, isLight) * (1.0 - isClear);
+    pmRgb *= (1.0 - absorbDarken);
+    pmA    = pmA + absorbDarken * (1.0 - pmA);
 
     if (nativeRimLight > 0.0) {
       pmRgb = pmRgb * (1.0 - nativeRimLight) + vec3(nativeRimLight);
@@ -606,9 +633,6 @@ void main() {
     float glowMask = step(0.01, uGlowIntensity);
     pmRgb += vec3(uGlowIntensity * 0.3 * glowMask);
     pmA = max(pmA, uGlowIntensity * 0.3 * glowMask);
-
-    // [1] Hemisphere + [2] light-modulated absorption (PATH B — no background texture)
-    pmRgb *= meniscusAbsorption(distFromEdge, edgeZone, surfaceNormal, uLightDirection, uEdgeAbsorption);
 
     fragColor = vec4(clamp(pmRgb, 0.0, 1.0) * mask, pmA * mask);
   }

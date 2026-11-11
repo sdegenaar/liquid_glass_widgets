@@ -1453,7 +1453,7 @@ void main() {
     });
 
     testWidgets(
-        'GlassSwitch and GlassSlider on GlassQuality.standard keep thumbTint and LensInnerShadowPainter when pressed',
+        'GlassSwitch and GlassSlider on GlassQuality.standard use clear body in light ios27, thumbTint in dark mode, and preserve press bloom across rebuilds',
         (tester) async {
       await tester.pumpWidget(
         CupertinoApp(
@@ -1474,23 +1474,83 @@ void main() {
         ),
       );
 
-      final effects =
+      final lightEffects =
           tester.widgetList<GlassEffect>(find.byType(GlassEffect)).toList();
-      expect(effects, hasLength(2));
-      for (final effect in effects) {
+      expect(lightEffects, hasLength(2));
+      for (final effect in lightEffects) {
+        expect(effect.settings.glassColor.a, equals(0.0));
+      }
+
+      // Dark mode uses thumbTint (alpha > 0) to match native lensLift.
+      await tester.pumpWidget(
+        CupertinoApp(
+          theme: const CupertinoThemeData(brightness: Brightness.dark),
+          home: GlassTheme(
+            data: const GlassThemeData.ios27(brightness: Brightness.dark),
+            child: Column(
+              children: [
+                GlassSwitch(
+                  value: true,
+                  quality: GlassQuality.standard,
+                  onChanged: (_) {},
+                ),
+                GlassSlider(
+                  value: 0.5,
+                  quality: GlassQuality.standard,
+                  onChanged: (_) {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final darkEffects =
+          tester.widgetList<GlassEffect>(find.byType(GlassEffect)).toList();
+      expect(darkEffects, hasLength(2));
+      for (final effect in darkEffects) {
         expect(effect.settings.glassColor.a, greaterThan(0.0));
       }
 
       final switchGesture =
           await tester.startGesture(tester.getCenter(find.byType(GlassSwitch)));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump(const Duration(milliseconds: 60));
 
       final innerShadows = find
           .byWidgetPredicate(
               (w) => w is CustomPaint && w.painter is LensInnerShadowPainter)
           .evaluate();
       expect(innerShadows, isNotEmpty);
+
+      // Rebuilding parent while pointer is held must not deflate the switch bloom.
+      await tester.pumpWidget(
+        CupertinoApp(
+          theme: const CupertinoThemeData(brightness: Brightness.dark),
+          home: GlassTheme(
+            data: const GlassThemeData.ios26(brightness: Brightness.dark),
+            child: Column(
+              children: [
+                GlassSwitch(
+                  value: true,
+                  quality: GlassQuality.standard,
+                  onChanged: (_) {},
+                ),
+                GlassSlider(
+                  value: 0.5,
+                  quality: GlassQuality.standard,
+                  onChanged: (_) {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 120));
+      final heldSwitchEffect =
+          tester.widgetList<GlassEffect>(find.byType(GlassEffect)).first;
+      expect(heldSwitchEffect.interactionIntensity, equals(1.0));
 
       await switchGesture.up();
       await tester.pumpAndSettle();
@@ -1538,6 +1598,158 @@ void main() {
         expect(adaptiveGlass.quality, equals(GlassQuality.standard));
         expect(glassEffect.quality, equals(GlassQuality.premium));
       }
+    });
+
+    testWidgets(
+        'AnimatedGlassIndicator on GlassQuality.standard paints LensInnerShadowPainter with era-appropriate shadowOpacity (0.06 ios27, 0.12 ios26 and classic)',
+        (tester) async {
+      Future<LensInnerShadowPainter> pumpStandardIndicator(
+          GlassThemeData data) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData.light(),
+            home: GlassTheme(
+              data: data,
+              child: const Scaffold(
+                body: SizedBox(
+                  width: 200,
+                  height: 60,
+                  child: Stack(
+                    children: [
+                      AnimatedGlassIndicator(
+                        velocity: 0,
+                        itemCount: 3,
+                        alignment: Alignment.centerLeft,
+                        thickness: 1.0,
+                        quality: GlassQuality.standard,
+                        indicatorColor: Color(0x1A000000),
+                        isBackgroundIndicator: false,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        final customPaint = tester.widget<CustomPaint>(
+          find.byWidgetPredicate(
+            (w) => w is CustomPaint && w.painter is LensInnerShadowPainter,
+          ),
+        );
+        return customPaint.painter! as LensInnerShadowPainter;
+      }
+
+      final ios27Painter =
+          await pumpStandardIndicator(const GlassThemeData.ios27());
+      expect(
+        ios27Painter.shadowOpacity,
+        equals(LensInnerShadowPainter.defaultShadowOpacity),
+      );
+
+      final ios26Painter =
+          await pumpStandardIndicator(const GlassThemeData.ios26());
+      expect(
+        ios26Painter.shadowOpacity,
+        equals(LensInnerShadowPainter.classicShadowOpacity),
+      );
+
+      final classicPainter =
+          await pumpStandardIndicator(const GlassThemeData.classic());
+      expect(
+        classicPainter.shadowOpacity,
+        equals(LensInnerShadowPainter.classicShadowOpacity),
+      );
+    });
+
+    testWidgets(
+        'GlassTabBar resolves indicatorExpansion vertical overhang by quality (10.5 on standard, 8.0 on premium) while respecting explicit overrides and inline placement',
+        (tester) async {
+      Future<EdgeInsetsGeometry> pumpTabBarExpansion({
+        required GlassThemeData themeData,
+        GlassQuality? quality,
+        EdgeInsetsGeometry? indicatorExpansion,
+        bool inline = false,
+      }) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData.dark(),
+            home: GlassTheme(
+              data: themeData,
+              child: Scaffold(
+                bottomNavigationBar: inline
+                    ? GlassTabBar.inline(
+                        tabs: tabs,
+                        selectedIndex: 0,
+                        onTabSelected: (_) {},
+                        quality: quality,
+                      )
+                    : GlassTabBar.bottom(
+                        tabs: tabs,
+                        selectedIndex: 0,
+                        onTabSelected: (_) {},
+                        quality: quality,
+                        indicatorExpansion: indicatorExpansion ??
+                            const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                      ),
+              ),
+            ),
+          ),
+        );
+        final indicator = tester.widget<AnimatedGlassIndicator>(
+          find.byType(AnimatedGlassIndicator).first,
+        );
+        return indicator.expansion;
+      }
+
+      // Standard quality gets 10.5 vertical expansion to compensate for no pinch
+      expect(
+        await pumpTabBarExpansion(
+          themeData: const GlassThemeData.ios27(),
+          quality: GlassQuality.standard,
+        ),
+        equals(const EdgeInsets.symmetric(horizontal: 11.0, vertical: 10.5)),
+      );
+      expect(
+        await pumpTabBarExpansion(
+          themeData: const GlassThemeData.classic(),
+          quality: GlassQuality.standard,
+        ),
+        equals(const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.5)),
+      );
+
+      // Premium quality keeps 8.0 vertical expansion
+      expect(
+        await pumpTabBarExpansion(
+          themeData: const GlassThemeData.ios27(),
+          quality: GlassQuality.premium,
+        ),
+        equals(const EdgeInsets.symmetric(horizontal: 11.0, vertical: 8.0)),
+      );
+
+      // Explicit indicatorExpansion override wins regardless of quality
+      const customExpansion = EdgeInsets.symmetric(horizontal: 6, vertical: 4);
+      expect(
+        await pumpTabBarExpansion(
+          themeData: const GlassThemeData.ios27(),
+          quality: GlassQuality.standard,
+          indicatorExpansion: customExpansion,
+        ),
+        equals(customExpansion),
+      );
+
+      // Inline placement preserves its own default 12×10 expansion
+      expect(
+        await pumpTabBarExpansion(
+          themeData: const GlassThemeData.ios27(),
+          quality: GlassQuality.standard,
+          inline: true,
+        ),
+        equals(const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0)),
+      );
     });
   });
 }

@@ -502,5 +502,146 @@ void main() {
         GlassDefaults.pageTransitionCornerRadius,
       );
     });
+
+    testWidgets(
+        'GlassPageRoute linearizes delegated parallax during interactive back swipe '
+        'and preserves Cupertino curve when non-interactive', (tester) async {
+      const homeKey = ValueKey('delegated-home');
+      const detailKey = ValueKey('delegated-detail');
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              key: homeKey,
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      GlassPageRoute<void>(
+                        builder: (_) => const Scaffold(
+                          key: detailKey,
+                          body: Center(child: Text('Detail')),
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text('Push Glass'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Non-interactive push uses CupertinoPageTransition.delegatedTransition
+      // (Curves.linearToEaseOut at t = 0.5 -> > 0.5 * (-800 / 3) = -133.33).
+      await tester.tap(find.text('Push Glass'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      final nonInteractiveMidDx = tester.getTopLeft(find.byKey(homeKey)).dx;
+      expect(nonInteractiveMidDx, lessThan(-150.0));
+
+      await tester.pumpAndSettle();
+      expect(find.byKey(detailKey), findsOneWidget);
+
+      // Interactive swipe-back from left edge (screen width = 800):
+      // Drag 400px -> secondaryAnimation.value == 0.5 -> linear -1/3 * 0.5 * 800 = -133.33
+      final gesture = await tester.startGesture(const Offset(2, 300));
+      await gesture.moveBy(const Offset(400, 0));
+      await tester.pump();
+      expect(
+        tester.getTopLeft(find.byKey(homeKey)).dx,
+        closeTo(-800.0 / 6.0, 0.5),
+      );
+
+      // Drag another 200px (600px total) -> secondaryAnimation.value == 0.25 -> -66.67
+      await gesture.moveBy(const Offset(200, 0));
+      await tester.pump();
+      expect(
+        tester.getTopLeft(find.byKey(homeKey)).dx,
+        closeTo(-800.0 / 12.0, 0.5),
+      );
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(find.byKey(homeKey)).dx, closeTo(0.0, 0.01));
+    });
+
+    testWidgets(
+        'GlassPageRoute fullscreenDialog suppresses delegatedTransition and '
+        'GlassPageTransitionsBuilder shares Cupertino duration and delegated parallax',
+        (tester) async {
+      final normalRoute = GlassPageRoute<void>(
+        builder: (_) => const SizedBox.shrink(),
+      );
+      final dialogRoute = GlassPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (_) => const SizedBox.shrink(),
+      );
+      const transitionsBuilder = GlassPageTransitionsBuilder();
+
+      expect(normalRoute.delegatedTransition, isNotNull);
+      expect(dialogRoute.delegatedTransition, isNull);
+      expect(
+        transitionsBuilder.transitionDuration,
+        CupertinoRouteTransitionMixin.kTransitionDuration,
+      );
+      expect(
+        transitionsBuilder.delegatedTransition,
+        equals(normalRoute.delegatedTransition),
+      );
+
+      const rootKey = ValueKey('root-custom-route');
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(
+            pageTransitionsTheme: const PageTransitionsTheme(
+              builders: {
+                TargetPlatform.android: GlassPageTransitionsBuilder(),
+                TargetPlatform.iOS: GlassPageTransitionsBuilder(),
+                TargetPlatform.macOS: GlassPageTransitionsBuilder(),
+              },
+            ),
+          ),
+          onGenerateRoute: (settings) {
+            return PageRouteBuilder<void>(
+              pageBuilder: (context, _, __) => Scaffold(
+                key: rootKey,
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const Scaffold(
+                            body: Center(child: Text('Second Material')),
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text('Push Material'),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Push Material'));
+      await tester.pumpAndSettle();
+
+      final gesture = await tester.startGesture(const Offset(2, 300));
+      await gesture.moveBy(const Offset(400, 0));
+      await tester.pump();
+      expect(
+        tester.getTopLeft(find.byKey(rootKey)).dx,
+        closeTo(-800.0 / 6.0, 0.5),
+      );
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(find.byKey(rootKey)).dx, closeTo(0.0, 0.01));
+    });
   });
 }

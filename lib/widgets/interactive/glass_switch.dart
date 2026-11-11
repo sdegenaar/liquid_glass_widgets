@@ -248,6 +248,7 @@ class _GlassSwitchState extends State<GlassSwitch>
   // Gesture state
   // ---------------------------------------------------------------------------
   bool _isDragging = false;
+  bool _isPressed = false;
   bool _dragAbandonedExternally = false;
   bool _justEndedDrag = false;
   double _dragVirtualPx = 0.0;
@@ -326,6 +327,7 @@ class _GlassSwitchState extends State<GlassSwitch>
       );
 
       // Trigger the liquid pulse bloom (Grow up and then down)
+      _isPressed = false;
       if (!justEndedDrag) {
         if (_thicknessController.value >= 0.99) {
           _thicknessController.value = 0.0;
@@ -361,7 +363,8 @@ class _GlassSwitchState extends State<GlassSwitch>
       if (_positionController.value != target) {
         _animatePositionTo(target);
       }
-      if (_thicknessController.value > 0.0 &&
+      if (!_isPressed &&
+          _thicknessController.value > 0.0 &&
           !_thicknessController.isAnimating) {
         unawaited(
             _thicknessController.forward(from: _thicknessController.value));
@@ -467,6 +470,8 @@ class _GlassSwitchState extends State<GlassSwitch>
   // ---------------------------------------------------------------------------
 
   void _startPressBloom() {
+    if (_isPressed) return;
+    _isPressed = true;
     if (_thicknessController.value >= 0.99) {
       _thicknessController.value = 0.0;
     }
@@ -490,6 +495,7 @@ class _GlassSwitchState extends State<GlassSwitch>
   }
 
   void _onTapUp(TapUpDetails details) {
+    _isPressed = false;
     // A tap is confirmed only when no horizontal drag was registered.
     if (!_isDragging) {
       // Fire haptic immediately — user feels the click the instant they lift.
@@ -500,11 +506,13 @@ class _GlassSwitchState extends State<GlassSwitch>
   }
 
   void _onTapCancel() {
+    _isPressed = false;
     // Do not deflate here if the finger is transitioning into a horizontal drag;
     // _onDragCancel or _onDragEnd will handle deflation when the pointer lifts.
   }
 
   void _onDragStart(DragStartDetails details) {
+    _isPressed = false;
     // Flutter has confirmed horizontal movement — commit to drag mode.
     _positionController.stop();
     final currentOvershoot = _currentOvershootPx;
@@ -540,6 +548,7 @@ class _GlassSwitchState extends State<GlassSwitch>
   }
 
   void _onDragCancel() {
+    _isPressed = false;
     setState(() => _isDragging = false);
     _settleOvershoot();
     // Deflate bloom smoothly.
@@ -580,6 +589,7 @@ class _GlassSwitchState extends State<GlassSwitch>
   }
 
   void _onDragEnd(DragEndDetails details) {
+    _isPressed = false;
     // No-op if an external value change has already taken ownership.
     if (_dragAbandonedExternally) {
       _dragAbandonedExternally = false;
@@ -900,11 +910,16 @@ class _GlassSwitchState extends State<GlassSwitch>
     final fade = transition.clamp(0.0, 1.0);
     final stablePinchFade = 1.0 - (1.0 - fade) * (1.0 - fade);
     final rawThumbSettings = widget.settings ?? themedThumbSettings;
+    final hasNativeRim =
+        rawThumbSettings.rimLight > 0 || rawThumbSettings.rimShade > 0;
     final baseThumbSettings = rawThumbSettings.copyWith(
       blur: 0,
       frost: 0,
-      glassColor:
-          isStdPath && rawThumbSettings.glassColor.a == 0 ? thumbTint : null,
+      glassColor: isStdPath &&
+              rawThumbSettings.glassColor.a == 0 &&
+              (isDark || !hasNativeRim)
+          ? thumbTint
+          : null,
     );
     final useIos27Lens = baseThumbSettings.lensModel == GlassLensModel.paraxial;
     final resolvedThumbSettings = useIos27Lens
