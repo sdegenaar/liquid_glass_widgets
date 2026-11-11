@@ -105,6 +105,7 @@ class GlassSwitch extends StatefulWidget {
     super.key,
     this.activeColor,
     this.inactiveColor,
+    this.trackColor,
     this.thumbColor = CupertinoColors.white,
     this.thumbShadow,
     this.width = 58.0,
@@ -133,12 +134,53 @@ class GlassSwitch extends StatefulWidget {
   /// The color of the track when the switch is on.
   ///
   /// If null, defaults to system green (`CupertinoColors.systemGreen`).
+  ///
+  /// A non-null color from [trackColor] takes precedence.
   final Color? activeColor;
 
   /// The color of the track when the switch is off.
   ///
   /// If null, defaults to a semi-transparent white.
+  ///
+  /// A non-null color from [trackColor] takes precedence.
   final Color? inactiveColor;
+
+  /// The color of the track, resolved for the switch's state, like
+  /// Material's `Switch.trackColor`.
+  ///
+  /// The on track is resolved with [WidgetState.selected] and the off track
+  /// without it, and the track blends from one to the other as the thumb
+  /// travels. Both also get, when the switch shows the highlight (as
+  /// Material's `Switch` does, in [FocusHighlightMode.traditional]: on
+  /// desktop, or after keyboard use):
+  ///
+  ///  * [WidgetState.hovered] while a mouse pointer is over the switch.
+  ///  * [WidgetState.focused] while the switch has keyboard focus and shows
+  ///    its focus ring.
+  ///
+  /// [GlassSwitch] has no disabled state, so [WidgetState.disabled] is
+  /// never resolved; a caller that disables the switch can add it in its
+  /// own property.
+  ///
+  /// Where it resolves to null, the on track falls back to [activeColor]
+  /// and the off track to [inactiveColor], then to their defaults.
+  ///
+  /// ```dart
+  /// GlassSwitch(
+  ///   value: isOn,
+  ///   onChanged: (value) {},
+  ///   // A darker off track under the mouse; activeColor and inactiveColor
+  ///   // for everything else.
+  ///   trackColor: WidgetStateProperty.resolveWith((states) {
+  ///     if (states.contains(WidgetState.selected)) return null;
+  ///     if (states.contains(WidgetState.hovered)) {
+  ///       return CupertinoColors.systemGrey;
+  ///     }
+  ///     return null;
+  ///   }),
+  /// )
+  /// ```
+  final WidgetStateProperty<Color?>? trackColor;
 
   /// The color of the thumb (circular knob).
   ///
@@ -668,6 +710,7 @@ class _GlassSwitchState extends State<GlassSwitch>
         (isDark ? const Color(0x4DEBEBF5) : const Color(0x4D3C3C43));
     final activeTrackColor =
         widget.activeColor ?? CupertinoColors.systemGreen.resolveFrom(context);
+    final trackColor = widget.trackColor;
     final isRtl = _isRtl;
 
     // iOS Settings > Accessibility > Display & Text Size > On/Off Labels.
@@ -724,13 +767,30 @@ class _GlassSwitchState extends State<GlassSwitch>
                   _positionController,
                   _thicknessController,
                   _overshootController,
+                  // Hover and focus only change the track through
+                  // trackColor.
+                  if (trackColor != null) ...[_isHovered, _isFocused],
                 ]),
                 builder: (context, child) {
                   final position = _positionController.value;
                   final thickness = _thicknessAnimation.value;
 
-                  final blendedColor = Color.lerp(
-                      inactiveTrackColor, activeTrackColor, position)!;
+                  var offTrackColor = inactiveTrackColor;
+                  var onTrackColor = activeTrackColor;
+                  if (trackColor != null) {
+                    final states = {
+                      if (_isHovered.value) WidgetState.hovered,
+                      if (_isFocused.value) WidgetState.focused,
+                    };
+                    offTrackColor =
+                        trackColor.resolve(states) ?? inactiveTrackColor;
+                    onTrackColor =
+                        trackColor.resolve({...states, WidgetState.selected}) ??
+                            activeTrackColor;
+                  }
+
+                  final blendedColor =
+                      Color.lerp(offTrackColor, onTrackColor, position)!;
 
                   final track = Container(
                     width: trackWidth,

@@ -1,4 +1,5 @@
 import 'package:liquid_glass_widgets/widgets/interactive/glass_switch.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -1247,6 +1248,181 @@ void main() {
         await tester.pumpAndSettle();
         expect(value, isTrue);
       });
+    });
+  });
+
+  group('GlassSwitch trackColor', () {
+    const offColor = Color(0xFF101010);
+    const offHovered = Color(0xFF202020);
+    const offFocused = Color(0xFF303030);
+    const onColor = Color(0xFF404040);
+    const onHovered = Color(0xFF505050);
+    const onFocused = Color(0xFF606060);
+    const fallbackOff = Color(0xFF707070);
+    const fallbackOn = Color(0xFF808080);
+
+    // Hovered wins over focused, so a test can tell which one was read.
+    final trackColor = WidgetStateProperty.resolveWith<Color?>((states) {
+      final selected = states.contains(WidgetState.selected);
+      if (states.contains(WidgetState.hovered)) {
+        return selected ? onHovered : offHovered;
+      }
+      if (states.contains(WidgetState.focused)) {
+        return selected ? onFocused : offFocused;
+      }
+      return selected ? onColor : offColor;
+    });
+
+    Widget build({
+      required bool value,
+      WidgetStateProperty<Color?>? trackColor,
+      Color? activeColor,
+      Color? inactiveColor,
+      FocusNode? focusNode,
+    }) =>
+        createTestApp(
+          child: Center(
+            child: GlassSwitch(
+              value: value,
+              onChanged: (_) {},
+              trackColor: trackColor,
+              activeColor: activeColor,
+              inactiveColor: inactiveColor,
+              focusNode: focusNode,
+            ),
+          ),
+        );
+
+    // The track is the switch-sized container under the thumb.
+    Color? track(WidgetTester tester) {
+      final container = tester.widget<Container>(
+        find.descendant(
+          of: find.byType(GlassSwitch),
+          matching: find.byWidgetPredicate((widget) =>
+              widget is Container &&
+              widget.constraints == BoxConstraints.tight(const Size(58, 26))),
+        ),
+      );
+      return (container.decoration! as BoxDecoration).color;
+    }
+
+    // Hover and focus highlights show in traditional highlight mode, as on
+    // desktop or after keyboard use, like Material's Switch.
+    void traditionalHighlights() {
+      FocusManager.instance.highlightStrategy =
+          FocusHighlightStrategy.alwaysTraditional;
+      addTearDown(() => FocusManager.instance.highlightStrategy =
+          FocusHighlightStrategy.automatic);
+    }
+
+    Future<TestGesture> hover(WidgetTester tester) async {
+      traditionalHighlights();
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await gesture.moveTo(tester.getCenter(find.byType(GlassSwitch)));
+      await tester.pumpAndSettle();
+      return gesture;
+    }
+
+    Future<void> focus(WidgetTester tester, FocusNode node) async {
+      traditionalHighlights();
+      node.requestFocus();
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('off and on take the unselected and selected colors',
+        (tester) async {
+      await tester.pumpWidget(build(value: false, trackColor: trackColor));
+      expect(track(tester), offColor);
+
+      await tester.pumpWidget(build(value: true, trackColor: trackColor));
+      await tester.pumpAndSettle();
+      expect(track(tester), onColor);
+    });
+
+    testWidgets('blends from the off to the on color as the thumb travels',
+        (tester) async {
+      await tester.pumpWidget(build(value: false, trackColor: trackColor));
+      await tester.pumpWidget(build(value: true, trackColor: trackColor));
+      await tester.pump(const Duration(milliseconds: 100));
+      final color = track(tester)!;
+      expect(color, isNot(offColor));
+      expect(color, isNot(onColor));
+      expect(color.r, inExclusiveRange(offColor.r, onColor.r));
+    });
+
+    for (final value in [false, true]) {
+      final label = value ? 'on' : 'off';
+
+      testWidgets('$label: resolves hovered under a mouse pointer',
+          (tester) async {
+        await tester.pumpWidget(build(value: value, trackColor: trackColor));
+        final gesture = await hover(tester);
+        expect(track(tester), value ? onHovered : offHovered);
+
+        await gesture.moveTo(Offset.zero);
+        await tester.pumpAndSettle();
+        expect(track(tester), value ? onColor : offColor);
+      });
+
+      testWidgets('$label: resolves focused with keyboard focus',
+          (tester) async {
+        final node = FocusNode();
+        addTearDown(node.dispose);
+        await tester.pumpWidget(
+            build(value: value, trackColor: trackColor, focusNode: node));
+        await focus(tester, node);
+        expect(track(tester), value ? onFocused : offFocused);
+
+        node.unfocus();
+        await tester.pumpAndSettle();
+        expect(track(tester), value ? onColor : offColor);
+      });
+    }
+
+    testWidgets(
+        'null from trackColor falls back to activeColor and '
+        'inactiveColor', (tester) async {
+      // Only the hovered off track is themed.
+      final hoveredOffOnly = WidgetStateProperty.resolveWith<Color?>(
+        (states) => states.contains(WidgetState.hovered) &&
+                !states.contains(WidgetState.selected)
+            ? offHovered
+            : null,
+      );
+      await tester.pumpWidget(build(
+        value: false,
+        trackColor: hoveredOffOnly,
+        activeColor: fallbackOn,
+        inactiveColor: fallbackOff,
+      ));
+      expect(track(tester), fallbackOff);
+      await hover(tester);
+      expect(track(tester), offHovered);
+
+      await tester.pumpWidget(build(
+        value: true,
+        trackColor: hoveredOffOnly,
+        activeColor: fallbackOn,
+        inactiveColor: fallbackOff,
+      ));
+      await tester.pumpAndSettle();
+      expect(track(tester), fallbackOn);
+    });
+
+    testWidgets('without trackColor, hover and focus leave the track alone',
+        (tester) async {
+      final node = FocusNode();
+      addTearDown(node.dispose);
+      await tester.pumpWidget(build(
+        value: false,
+        inactiveColor: fallbackOff,
+        focusNode: node,
+      ));
+      await hover(tester);
+      await focus(tester, node);
+      expect(track(tester), fallbackOff);
     });
   });
 }
