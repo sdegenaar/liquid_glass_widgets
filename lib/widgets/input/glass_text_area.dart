@@ -27,6 +27,7 @@ class GlassTextArea extends StatelessWidget {
     this.autofocus = false,
     this.textInputAction = TextInputAction.newline,
     this.inputFormatters,
+    this.textCapitalization = TextCapitalization.none,
     this.textStyle,
     this.placeholderStyle,
     this.padding = const EdgeInsets.all(16),
@@ -85,6 +86,12 @@ class GlassTextArea extends StatelessWidget {
 
   /// Input formatters.
   final List<TextInputFormatter>? inputFormatters;
+
+  /// Configures how the platform keyboard capitalizes text.
+  ///
+  /// Mirrors [GlassTextField.textCapitalization]. Defaults to
+  /// [TextCapitalization.none].
+  final TextCapitalization textCapitalization;
 
   /// Text style.
   final TextStyle? textStyle;
@@ -168,6 +175,7 @@ class GlassTextArea extends StatelessWidget {
       readOnly: readOnly,
       autofocus: autofocus,
       inputFormatters: inputFormatters,
+      textCapitalization: textCapitalization,
       textStyle: textStyle,
       placeholderStyle: placeholderStyle,
       padding: padding,

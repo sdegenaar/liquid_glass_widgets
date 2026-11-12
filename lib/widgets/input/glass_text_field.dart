@@ -90,6 +90,7 @@ class GlassTextField extends StatefulWidget {
     this.onSubmitted,
     this.onLineCountChanged,
     this.inputFormatters,
+    this.textCapitalization = TextCapitalization.none,
     this.textStyle,
     this.placeholderStyle,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -135,6 +136,7 @@ class GlassTextField extends StatefulWidget {
     this.onChanged,
     this.onSubmitted,
     this.inputFormatters,
+    this.textCapitalization = TextCapitalization.none,
     this.textStyle,
     this.placeholderStyle,
     this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -234,6 +236,12 @@ class GlassTextField extends StatefulWidget {
 
   /// Input formatters for the text field.
   final List<TextInputFormatter>? inputFormatters;
+
+  /// Configures how the platform keyboard capitalizes text.
+  ///
+  /// Forwarded to [CupertinoTextField.textCapitalization]. Defaults to
+  /// [TextCapitalization.none] to preserve existing behavior.
+  final TextCapitalization textCapitalization;
 
   /// Called when the user taps outside the text field.
   ///
@@ -701,6 +709,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
             onTapOutside: widget.onTapOutside ??
                 (event) => FocusManager.instance.primaryFocus?.unfocus(),
             inputFormatters: widget.inputFormatters,
+            textCapitalization: widget.textCapitalization,
             style: defaultTextStyle.merge(widget.textStyle),
             placeholder: widget.placeholder,
             placeholderStyle:

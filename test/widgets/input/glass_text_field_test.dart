@@ -286,6 +286,51 @@ void main() {
       expect(const GlassTextField().glowColor, isNull);
     });
 
+    test('textCapitalization defaults to none', () {
+      expect(
+        const GlassTextField().textCapitalization,
+        TextCapitalization.none,
+      );
+    });
+
+    testWidgets('forwards textCapitalization to CupertinoTextField',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: const GlassTextField(
+              textCapitalization: TextCapitalization.sentences,
+            ),
+          ),
+        ),
+      );
+
+      final field = tester.widget<CupertinoTextField>(
+        find.byType(CupertinoTextField),
+      );
+      expect(field.textCapitalization, TextCapitalization.sentences);
+    });
+
+    testWidgets('GlassTextArea forwards textCapitalization to GlassTextField',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: const GlassTextArea(
+              textCapitalization: TextCapitalization.words,
+            ),
+          ),
+        ),
+      );
+
+      final field = tester.widget<CupertinoTextField>(
+        find.byType(CupertinoTextField),
+      );
+      expect(field.textCapitalization, TextCapitalization.words);
+    });
+
     // ── Enum invariants (mirror glass_interaction_behavior_test) ─────────────
 
     test('GlassInteractionBehavior.none has neither glow nor scale', () {
