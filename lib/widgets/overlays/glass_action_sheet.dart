@@ -1,3 +1,5 @@
+import 'dart:ui' show SemanticsRole;
+
 import 'package:flutter/cupertino.dart';
 import '../../constants/glass_defaults.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
@@ -197,6 +199,7 @@ Future<T?> showGlassActionSheet<T>({
             settings: settings,
             quality: quality,
             forceStacked: true,
+            semanticsRole: SemanticsRole.dialog,
             actions: [
               for (final action in actions)
                 GlassAlertPlatterAction(
