@@ -112,6 +112,8 @@ class LiquidStretch extends StatelessWidget {
     this.suppressInteractionOnChildren = true,
     this.anchorStretch = true,
     this.anchorStretchSettings = const AnchorStretchSettings(),
+    this.pressSpring,
+    this.releaseSpring,
     super.key,
   });
 
@@ -224,6 +226,19 @@ class LiquidStretch extends StatelessWidget {
   /// See [AnchorStretchSettings] for details on each parameter.
   final AnchorStretchSettings anchorStretchSettings;
 
+  /// Optional spring override for press-down scale inflation.
+  ///
+  /// When null, uses the default critically damped 300 ms spring (or the
+  /// snappy 250 ms spring when [pressGrowth] is set).
+  final SpringDescription? pressSpring;
+
+  /// Optional spring override for release settle (both press scale and
+  /// stretch/drift offset).
+  ///
+  /// When non-null, active drag tracking uses a critically damped 150 ms
+  /// spring and release uses [releaseSpring] for both scale and offset.
+  final SpringDescription? releaseSpring;
+
   @override
   Widget build(BuildContext context) {
     // NOTE: Do NOT add a fast-path that returns `child` directly when
@@ -254,17 +269,25 @@ class LiquidStretch extends StatelessWidget {
         // its travel at ~150 ms and is still by ~250 ms on the pill, ~500 ms
         // on the circle — one clean undershoot, no second wobble. A fixed
         // factor keeps the critically damped spring it always had.
-        final pressSpring = pressGrowth == null
-            ? GlassSpring.smooth(duration: const Duration(milliseconds: 300))
-            : pressed
-                ? GlassSpring.snappy(
-                    duration: const Duration(milliseconds: 250),
-                    extraBounce: 0.1,
-                  )
-                : GlassSpring.bouncy(
-                    duration: const Duration(milliseconds: 280),
-                    extraBounce: 0.15,
-                  );
+        final effectivePressSpring = pressed
+            ? (pressSpring ??
+                (pressGrowth == null
+                    ? GlassSpring.smooth(
+                        duration: const Duration(milliseconds: 300),
+                      )
+                    : GlassSpring.snappy(
+                        duration: const Duration(milliseconds: 250),
+                        extraBounce: 0.1,
+                      )))
+            : (releaseSpring ??
+                (pressGrowth == null
+                    ? GlassSpring.smooth(
+                        duration: const Duration(milliseconds: 300),
+                      )
+                    : GlassSpring.bouncy(
+                        duration: const Duration(milliseconds: 280),
+                        extraBounce: 0.15,
+                      )));
         return OffsetSpringBuilder(
           value: () {
             if (value == null) return Offset.zero;
@@ -294,10 +317,12 @@ class LiquidStretch extends StatelessWidget {
             return o;
           }(),
           spring: value == null
-              ? GlassSpring.bouncy(
-                  extraBounce: anchorStretchSettings.bounciness,
-                )
-              : (anchorStretchSettings.bounciness == 0.0
+              ? (releaseSpring ??
+                  GlassSpring.bouncy(
+                    extraBounce: anchorStretchSettings.bounciness,
+                  ))
+              : (releaseSpring != null ||
+                      anchorStretchSettings.bounciness == 0.0
                   ? GlassSpring.smooth(
                       duration: const Duration(milliseconds: 150),
                     )
@@ -306,7 +331,7 @@ class LiquidStretch extends StatelessWidget {
                     )),
           builder: (context, offset, child) => SpringBuilder(
             value: pressTarget,
-            spring: pressSpring,
+            spring: effectivePressSpring,
             builder: (context, press, child) {
               final growth = pressGrowth;
               final stretched = RawLiquidStretch(

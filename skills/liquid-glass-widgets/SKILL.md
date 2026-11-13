@@ -140,8 +140,9 @@ class _HomeScreenState extends State<HomeScreen> {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         children: [
-          // Content cards stay opaque or use GlassContainer.card for grouping
+          // Content cards in scrolling lists use GlassSurfaceStyle.solid
           GlassGroupedSection(
+            surfaceStyle: GlassSurfaceStyle.solid,
             header: const Text('ACCOUNT'),
             children: [
               GlassListTile(
@@ -179,6 +180,7 @@ When generating Flutter UI, replace standard Flutter widgets with their native l
 | Bottom nav that collapses to selected tab on scroll | `GlassTabBar.minimizable` | Minimizes to a single pill on scroll; supports an optional trailing action button. |
 | `ElevatedButton` / `CupertinoButton` | `GlassButton` | Refractive button with squeeze & stretch physics, touch glow, and optional `pressLightColor` (or `GlassGlowColors.pressLight` on `GlassThemeData`). |
 | `IconButton` | `GlassIconButton` | Refractive circular/squircle button with `onPressed`. |
+| `Chip` / `FilterChip` / `ActionChip` | `GlassChip` | Refractive pill (`label` is `String`, not `Widget`) with optional `icon`, `selected`, `onDeleted`, or shader-free pill well (`surfaceStyle: GlassSurfaceStyle.solid` or auto-inherited inside a solid card). |
 | `PopupMenuButton` / Pull-Down Menu | `GlassPullDownButton` | Combined trigger button and `GlassMenu` (`menuSemanticLabel` names the open panel; `GlassMenu` also supports `opaqueColor` and `border`). |
 | `CupertinoSegmentedControl` | `GlassSegmentedControl<T>` | Fluid animated glass indicator with jelly physics (`settings:` for track, `indicatorSettings:` for pill). Fine inside `solid` cards; on a `glass` card place it outside. |
 | `Switch` / `CupertinoSwitch` | `GlassSwitch` | Fluid spring jump animation, RTL-aware, honours `MediaQuery.onOffSwitchLabelsOf` (`onLabelColor` / `offLabelColor`). Use `useOwnLayer: true` when standalone. |
@@ -298,7 +300,7 @@ GlassMaterialize(
 
 ## 6. Lists, Pickers & Declarative Navigation
 
-Use `surfaceStyle: GlassSurfaceStyle.solid` on list cards (`GlassGroupedSection`, `GlassReorderableList.grouped`, `GlassDisclosureGroup.standalone`, date pickers) and standalone scrolling inputs (`GlassTextField`, `GlassSearchBar`, `GlassTextArea`, `GlassPasswordField`, `GlassPicker`). Inputs placed inside a `solid` card or `GlassGroupedSection` inherit `GlassSurfaceStyle.solid` automatically via `InheritedGlassSurfaceStyle`. For an app-wide iOS 27 material pass `theme: const GlassThemeData.ios27()` to `LiquidGlassWidgets.wrap()` (or wrap a subtree in `GlassTheme(data: const GlassThemeData.ios27(), ...)`).
+Use `surfaceStyle: GlassSurfaceStyle.solid` on list cards (`GlassGroupedSection`, `GlassReorderableList.grouped`, `GlassDisclosureGroup.standalone`, date pickers) and standalone scrolling inputs/chips (`GlassTextField`, `GlassSearchBar`, `GlassTextArea`, `GlassPasswordField`, `GlassPicker`, `GlassChip`). Inputs, pickers, and chips placed inside a `solid` card or `GlassGroupedSection` inherit `GlassSurfaceStyle.solid` automatically via `InheritedGlassSurfaceStyle`. For an app-wide iOS 27 material pass `theme: const GlassThemeData.ios27()` to `LiquidGlassWidgets.wrap()` (or wrap a subtree in `GlassTheme(data: const GlassThemeData.ios27(), ...)`).
 
 ### Swipe actions, context menu, disclosure
 ```dart
@@ -454,7 +456,7 @@ GlassAppBar.pinned(
 - [ ] **Did you call `await LiquidGlassWidgets.initialize()` in `main()`?** Shaders must be pre-warmed.
 - [ ] **Did you wrap your app in `LiquidGlassWidgets.wrap()`?** Required for theme and accessibility scaling.
 - [ ] **Are you using `GlassScaffold` instead of `Scaffold`?** Prevents z-index glitches with glass nav bars.
-- [ ] **Did you avoid nesting glass in glass?** Never put `GlassButton`, `GlassIconButton` or `GlassChip` directly inside `GlassContainer.card` or `GlassGroupedSection`. `GlassSwitch`, `GlassSlider` and `GlassSegmentedControl` are fine inside `solid` cards (their glass is transient); on `glass` cards keep them outside.
+- [ ] **Did you avoid nesting glass in glass?** Never put `GlassButton`, `GlassIconButton`, or a glass-mode `GlassChip` inside a `glass`-mode `GlassContainer.card` or `GlassGroupedSection`. Inside a `solid` card/section (`surfaceStyle: GlassSurfaceStyle.solid`), `GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl` are safe (their glass is transient) and `GlassChip` / `GlassTextField` / `GlassPicker` auto-inherit `solid`.
 - [ ] **Did you use `GlassTabBar.bottom` instead of `GlassBottomBar`?** `GlassBottomBar` is deleted.
 - [ ] **`GlassButton` uses `onTap`, not `onPressed`.** (`GlassButton(onTap: () {})`) — the opposite of `ElevatedButton`.
 - [ ] **`GlassIconButton` uses `onPressed`, not `onTap`.** (`GlassIconButton(onPressed: () {})`).

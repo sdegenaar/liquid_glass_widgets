@@ -30,6 +30,7 @@ import 'tab_bar_bottom_internal.dart'
     show
         BottomBarExtraBtn,
         BottomBarTabItem,
+        resolveActiveLensTabColors,
         resolveBarGlassSettings,
         resolveBarLabelColor;
 import '../../../widgets/surfaces/shared/glass_search_bar_config.dart';
@@ -490,6 +491,7 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
     );
     final effectiveInteractionGlowColor = glow.color;
 
+    final bool isLight = GlassTheme.brightnessOf(context) == Brightness.light;
     final dynamicLabelColor = resolveBarLabelColor(context, darkAmount);
     final resolvedSelectedIconColor =
         widget.selectedIconColor ?? dynamicLabelColor;
@@ -497,8 +499,20 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
         widget.unselectedIconColor ?? dynamicLabelColor;
     // A minimized bar still shows its selected tab; a searching one shows the
     // tab search was opened from, which the search has since replaced.
+    // Because the collapsed circle renders pure frosted glass with no solid
+    // indicatorColor pill behind it, resolve active-lens contrast (intensity: 1.0)
+    // so an inverted resting selectedIconColor remains legible when minimized.
     final resolvedCollapsedIconColor = widget.isMinimizablePlacement
-        ? resolvedSelectedIconColor
+        ? resolveActiveLensTabColors(
+            context: context,
+            isLight: isLight,
+            intensity: 1.0,
+            indicatorColor: widget.indicatorColor,
+            indicatorSettings: widget.indicatorSettings,
+            restingIconColor: resolvedSelectedIconColor,
+            restingLabelColor: widget.selectedLabelColor,
+            dynamicLabelColor: dynamicLabelColor,
+          ).iconColor
         : resolvedUnselectedIconColor;
 
     // Native mode owns the blur: the radius and the falloff are one
@@ -507,7 +521,6 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
     final effectiveGlowSpreadRadius = resolvedGlowColors.glowSpreadRadius;
     final effectiveGlowOpacity = resolvedGlowColors.glowOpacity;
 
-    final bool isLight = GlassTheme.brightnessOf(context) == Brightness.light;
     final effectiveSettings = _applyWhiten(
       resolveBarGlassSettings(context, widget.settings),
       isLight,
@@ -925,6 +938,9 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                       ListenableBuilder(
                         listenable: _tabWCtrl,
                         child: _buildTabRow(
+                          context: context,
+                          isLight: isLight,
+                          dynamicLabelColor: dynamicLabelColor,
                           tabs: tabs,
                           selectedIndex: selectedIndex,
                           onTabSelected: onTabSelected,
@@ -1015,6 +1031,9 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                               childUnselected: child!,
                               selectedTabBuilder: (ctx, intensity, alignment) =>
                                   _buildTabRow(
+                                context: ctx,
+                                isLight: isLight,
+                                dynamicLabelColor: dynamicLabelColor,
                                 tabs: tabs,
                                 selectedIndex: selectedIndex,
                                 onTabSelected: onTabSelected,
@@ -1241,6 +1260,9 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
   }
 
   Widget _buildTabRow({
+    required BuildContext context,
+    required bool isLight,
+    required Color dynamicLabelColor,
     required List<GlassTab> tabs,
     required int selectedIndex,
     required ValueChanged<int> onTabSelected,
@@ -1258,6 +1280,17 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
       final pillTabIndex = tabs.length <= 1
           ? 0.0
           : ((alignment.x + 1.0) * 0.5) * (tabs.length - 1);
+      final activeColors = resolveActiveLensTabColors(
+        context: context,
+        isLight: isLight,
+        intensity: intensity,
+        indicatorColor: widget.indicatorColor,
+        indicatorSettings: widget.indicatorSettings,
+        restingIconColor: resolvedSelectedIconColor,
+        restingLabelColor: widget.selectedLabelColor,
+        dynamicLabelColor: dynamicLabelColor,
+        fallbackLabelColor: widget.textStyle?.color,
+      );
 
       return ExcludeSemantics(
         child: _ltrTabRow(
@@ -1270,9 +1303,9 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                         child: BottomBarTabItem(
                           tab: tabs[i],
                           selected: true,
-                          selectedIconColor: resolvedSelectedIconColor,
+                          selectedIconColor: activeColors.iconColor,
                           unselectedIconColor: resolvedUnselectedIconColor,
-                          selectedLabelColor: widget.selectedLabelColor,
+                          selectedLabelColor: activeColors.labelColor,
                           unselectedLabelColor: widget.unselectedLabelColor,
                           selectedLabelStyle: widget.selectedLabelStyle,
                           unselectedLabelStyle: widget.unselectedLabelStyle,

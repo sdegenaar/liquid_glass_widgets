@@ -496,7 +496,9 @@ extension on LiquidGlassSettings {
         refractiveIndex != other.refractiveIndex ||
         // A rim outline or a frost switches the matte's edge (uNativeEdge).
         (frost > 0) != (other.frost > 0) ||
-        (rimShade > 0) != (other.rimShade > 0);
+        (rimShade > 0) != (other.rimShade > 0) ||
+        (lensModel == GlassLensModel.paraxial && rimLight > 0) !=
+            (other.lensModel == GlassLensModel.paraxial && other.rimLight > 0);
   }
 }
 

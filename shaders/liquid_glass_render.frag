@@ -504,8 +504,9 @@ void main() {
     // the line the lens and the body tint are switched off below, and the
     // darkening is applied last.
     vec2 lensDisplacement = displacement;
+    bool isClearIndicator = (uLensModel > 0.5 && uFrost.x <= 0.0);
     float hairline = 0.0;
-    if (uRimConfig.x > 0.001) {
+    if (uRimConfig.x > 0.001 || (isClearIndicator && uRimConfig.y > 0.001)) {
         hairline = 1.0 - smoothstep(0.75 * dprScale, 2.0 * dprScale, rimDist);
         // rimDist saturates at uThickness on the flat face, which on thin
         // glass is inside the line's width: keep the line off the face.
@@ -578,21 +579,28 @@ void main() {
 
         vec2 pinchShift;
         if (uLensModel > 0.5 && isBarIndicator > 0.5) {
-            // iOS 27 GlassTabBar indicator platter pinch:
+            // iOS 27 GlassTabBar & GlassSegmentedControl indicator platter pinch:
             // 1. Horizontally stays flat across the straight middle section of
             //    the capsule (absCentered.x <= 0.48) and tapers smoothly around
             //    the semicircular shoulders (0.48..0.84) where capOutwardDisp
             //    continues the concentric 6 pt dark moat around the ends.
             // 2. Vertically confined to the top/bottom platter rim band
-            //    (absCentered.y > 0.42) and starts at rimPt = 1.35 pt so the
-            //    central icon/label are never vertically compressed and the
-            //    top/bottom bar edge is crossed monotonically once.
+            //    and starts at rimPt = 1.35 pt so the central icon/label are
+            //    never vertically compressed and the top/bottom bar edge is
+            //    crossed monotonically once. On 44 pt segmented-control lenses
+            //    (uGeometrySize.y < 56 pt, overhanging a 32 pt track by 6 pt),
+            //    reach slightly further inward so the top/bottom card moat
+            //    matches native UISegmentedControl.
+            float isSegmentLens = 1.0 - step(56.0 * pxPerPt, uGeometrySize.y);
             float tipDistPx = (0.5 - abs(centered.x)) * uGeometrySize.x;
             float capAbsX = clamp(1.0 - tipDistPx / max(uGeometrySize.y * 0.6514, 1.0), 0.0, 1.0);
             float barPinchHoriz = 1.0 - smoothstep(0.48, 0.84, capAbsX);
-            float barPinchVert = smoothstep(0.42, 0.74, absCentered.y)
+            float barPinchVert = smoothstep(
+                                     mix(0.42, 0.26, isSegmentLens),
+                                     mix(0.74, 0.66, isSegmentLens),
+                                     absCentered.y)
                                * smoothstep(1.35, 5.2, rimPt);
-            float barPinchPx = 0.245 * uGeometrySize.y;
+            float barPinchPx = mix(0.245, 0.38, isSegmentLens) * uGeometrySize.y;
             pinchShift = vec2(
                 0.0,
                 centered.y * barPinchHoriz * barPinchVert * uPinchStrength * (barPinchPx * invTexSize.y)
@@ -1048,10 +1056,13 @@ void main() {
         float along = dot(rimN, uLightDirection);
         float lit  = max(along, 0.0);
         float opp  = max(-along, 0.0);
-        bool isClearIndicator = (uLensModel > 0.5 && uFrost.x <= 0.0);
         float litWeight = isClearIndicator ? 0.84 : 1.0;
         float oppWeight = isClearIndicator ? 1.02 : 0.85;
         float lobe = litWeight * lit * lit * lit + oppWeight * opp * opp * opp;
+        if (isClearIndicator && abs(uLightDirection.x) > 0.2) {
+            float vertArch = rimN.y * rimN.y;
+            lobe = max(lobe, vertArch * mix(0.68, 0.52, step(0.5, backdropLuma)));
+        }
         float inset = max(0.0, rimDist - 2.25 * dprScale) / dprScale;
         float core = exp(-inset / 1.5);
         float tail = exp(-inset / 8.0);
@@ -1065,7 +1076,7 @@ void main() {
         finalColor.rgb = clamp(finalColor.rgb + vec3(rimLight), 0.0, 1.0);
     }
 
-    // iOS 27 hairline darkening: 0.31 across the light axis, uRimConfig.z
+    // iOS 27 / iOS 26 hairline darkening: 0.31 across the light axis, uRimConfig.z
     // of that at its ends (0.2 on the light material, 0 on the dark, where
     // the line dissolves into the lobes), falling off as cos^3.5 of the
     // angle from the axis' perpendicular. Subtracted (a linear burn) rather
@@ -1074,7 +1085,17 @@ void main() {
     if (hairline > 0.0) {
         float across = 1.0 - dot(rimN, uLightDirection) * dot(rimN, uLightDirection);
         across = pow(max(across, 0.0), 1.75);
-        float shade = uRimConfig.x * 0.314 * mix(uRimConfig.z, 1.0, across);
+        float brightBackdrop = smoothstep(0.35, 0.70, backdropLuma);
+        float effectiveRimShade = isClearIndicator
+            ? mix(
+                uRimConfig.x,
+                max(uRimConfig.x, uRimConfig.y * 1.15) * 1.12,
+                brightBackdrop)
+            : uRimConfig.x;
+        float effectiveShadeEnds = isClearIndicator
+            ? mix(uRimConfig.z * 0.35, max(uRimConfig.z, 0.68), brightBackdrop)
+            : uRimConfig.z;
+        float shade = effectiveRimShade * 0.314 * mix(effectiveShadeEnds, 1.0, across);
         finalColor.rgb = max(finalColor.rgb - vec3(shade * hairline), 0.0);
     }
 

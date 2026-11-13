@@ -78,7 +78,6 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
   GlassMorphAnchor? _morphSheetAnchor;
   VoidCallback? _toastDismiss;
   Timer? _cmdTimer;
-  DateTime? _lastCmdModified;
   final List<int> _activePointers = [];
   int _ptrEpoch = 900;
 
@@ -88,7 +87,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
     final cmdFile = File(_controlsCmdFile);
     if (cmdFile.existsSync()) {
       try {
-        _lastCmdModified = cmdFile.statSync().modified;
+        cmdFile.deleteSync();
       } catch (_) {}
     }
     _cmdTimer = Timer.periodic(
@@ -125,19 +124,13 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
   void _pollCmd() {
     final f = File(_controlsCmdFile);
     if (!f.existsSync()) return;
-    final DateTime modified;
     final String cmd;
     try {
-      modified = f.statSync().modified;
-      if (_lastCmdModified != null &&
-          modified.isAtSameMomentAs(_lastCmdModified!)) {
-        return;
-      }
       cmd = f.readAsStringSync().trim();
+      f.deleteSync();
     } catch (_) {
       return;
     }
-    _lastCmdModified = modified;
     if (cmd.isEmpty) return;
     for (final rawLine in cmd.split('\n')) {
       final line = rawLine.trim();
@@ -177,6 +170,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
         _refreshLiftedIfNeeded();
       case 'dark':
         setState(() => _isDark = args.length > 1 && args[1] == 'on');
+        _refreshLiftedIfNeeded();
       case 'bg':
         setState(() => _bgMode = args.length > 1 ? args[1] : 'solid');
       case 'tab':
@@ -187,6 +181,31 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
         // releases them.
         setState(() => _lensesLifted = args.length > 1 && args[1] == 'on');
         _setLensesLifted(_lensesLifted);
+      case 'drag_tab':
+        final box = _tabBarKey.currentContext?.findRenderObject() as RenderBox?;
+        if (box != null && box.hasSize) {
+          final binding = WidgetsBinding.instance;
+          final targetLocalX =
+              args.length > 1 ? double.parse(args[1]) : 45.0 + 58.0;
+          final start = box.localToGlobal(const Offset(45, 31));
+          final totalDx = targetLocalX - 45.0;
+          const steps = 24;
+          final stepDx = totalDx / steps;
+          final tabPtr = _ptrEpoch + 6;
+          for (var i = 1; i <= steps; i++) {
+            Future<void>.delayed(Duration(milliseconds: 14 * i), () {
+              if (!mounted) return;
+              final next = Offset(start.dx + i * stepDx, start.dy);
+              binding.handlePointerEvent(
+                PointerMoveEvent(
+                  pointer: tabPtr,
+                  position: next,
+                  delta: Offset(stepDx, 0),
+                ),
+              );
+            });
+          }
+        }
       case 'scroll':
         // `scroll <offset>` jumps the body list to an exact offset.
         if (_bodyScroll.hasClients) _bodyScroll.jumpTo(double.parse(args[1]));
@@ -458,7 +477,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
         basePtr + 5,
       );
     }
-    pressAt(_tabBarKey, const Offset(45, 31), basePtr + 6);
+    pressAt(_tabBarKey, Offset(45.0 + _selectedTab * 90.0, 31), basePtr + 6);
 
     // DRAG_TAB: slide the pressed tab-bar pointer to the right so the lifted
     // indicator can be captured mid-motion (jelly stretch + animated pinch).
@@ -583,6 +602,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
         child: GlassScaffold(
           background: _buildBackdrop(),
           appBar: GlassAppBar(
+            centerTitle: false,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             leading: GlassIconButton(
               icon: Icon(
@@ -598,65 +618,67 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                 _setLensesLifted(_lensesLifted);
               },
             ),
-            title: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                GlassButton.custom(
-                  width: 68,
-                  height: 36,
-                  shape: const LiquidRoundedSuperellipse(borderRadius: 18),
-                  useOwnLayer: true,
-                  quality: effectiveButtonQuality,
-                  onTap: () {
-                    setState(() {
-                      _style = switch (_style) {
-                        GlassStyle.ios27 => GlassStyle.ios26,
-                        GlassStyle.ios26 => GlassStyle.classic,
-                        GlassStyle.classic => GlassStyle.ios27,
-                      };
-                    });
-                    _refreshLiftedIfNeeded();
-                  },
-                  child: Text(
-                    switch (_style) {
-                      GlassStyle.ios27 => 'iOS 27',
-                      GlassStyle.ios26 => 'iOS 26',
-                      GlassStyle.classic => 'Classic',
+            title: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GlassButton.custom(
+                    width: 68,
+                    height: 36,
+                    shape: const LiquidRoundedSuperellipse(borderRadius: 18),
+                    useOwnLayer: true,
+                    quality: effectiveButtonQuality,
+                    onTap: () {
+                      setState(() {
+                        _style = switch (_style) {
+                          GlassStyle.ios27 => GlassStyle.ios26,
+                          GlassStyle.ios26 => GlassStyle.classic,
+                          GlassStyle.classic => GlassStyle.ios27,
+                        };
+                      });
+                      _refreshLiftedIfNeeded();
                     },
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: labelColor,
+                    child: Text(
+                      switch (_style) {
+                        GlassStyle.ios27 => 'iOS 27',
+                        GlassStyle.ios26 => 'iOS 26',
+                        GlassStyle.classic => 'Classic',
+                      },
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: labelColor,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                GlassButton.custom(
-                  width: 54,
-                  height: 36,
-                  shape: const LiquidRoundedSuperellipse(borderRadius: 18),
-                  useOwnLayer: true,
-                  quality: effectiveButtonQuality,
-                  onTap: () {
-                    setState(() {
-                      _quality = _quality == GlassQuality.standard
-                          ? GlassQuality.premium
-                          : GlassQuality.standard;
-                    });
-                    _refreshLiftedIfNeeded();
-                  },
-                  child: Text(
-                    _quality == GlassQuality.standard ? 'Std' : 'Prem',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: _quality == GlassQuality.standard
-                          ? CupertinoColors.systemOrange.resolveFrom(context)
-                          : labelColor,
+                  const SizedBox(width: 8),
+                  GlassButton.custom(
+                    width: 54,
+                    height: 36,
+                    shape: const LiquidRoundedSuperellipse(borderRadius: 18),
+                    useOwnLayer: true,
+                    quality: effectiveButtonQuality,
+                    onTap: () {
+                      setState(() {
+                        _quality = _quality == GlassQuality.standard
+                            ? GlassQuality.premium
+                            : GlassQuality.standard;
+                      });
+                      _refreshLiftedIfNeeded();
+                    },
+                    child: Text(
+                      _quality == GlassQuality.standard ? 'Std' : 'Prem',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: _quality == GlassQuality.standard
+                            ? CupertinoColors.systemOrange.resolveFrom(context)
+                            : labelColor,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             actions: [
               GlassContainer(

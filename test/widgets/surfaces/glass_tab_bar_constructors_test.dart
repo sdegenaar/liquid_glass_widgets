@@ -967,4 +967,185 @@ void main() {
       );
     });
   });
+
+  group('GlassTabBar.bottom() — style magnification resolution', () {
+    testWidgets('defaults to 1.15 across ios27, ios26, and classic',
+        (tester) async {
+      for (final (style, expected) in [
+        (GlassStyle.ios27, 1.15),
+        (GlassStyle.ios26, 1.15),
+        (GlassStyle.classic, 1.15),
+      ]) {
+        await tester.pumpWidget(_wrap(
+          GlassTheme(
+            data: switch (style) {
+              GlassStyle.ios27 => GlassThemeData.ios27(),
+              GlassStyle.ios26 => GlassThemeData.ios26(),
+              GlassStyle.classic => GlassThemeData.classic(),
+            },
+            child: _box(
+              GlassTabBar.bottom(
+                tabs: [_tab('Controls'), _tab('Surfaces')],
+                selectedIndex: 0,
+                onTabSelected: (_) {},
+              ),
+            ),
+          ),
+        ));
+        await tester.pump();
+
+        final layout = tester.widget<TabBarBottomLayout>(
+          find.byType(TabBarBottomLayout),
+        );
+        expect(layout.magnification, expected, reason: 'style=$style');
+      }
+    });
+
+    testWidgets('explicit magnification overrides active GlassStyle',
+        (tester) async {
+      await tester.pumpWidget(_wrap(
+        GlassTheme(
+          data: GlassThemeData.ios27(),
+          child: _box(
+            GlassTabBar.bottom(
+              tabs: [_tab('Controls'), _tab('Surfaces')],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              magnification: 1.3,
+            ),
+          ),
+        ),
+      ));
+      await tester.pump();
+
+      final layout = tester.widget<TabBarBottomLayout>(
+        find.byType(TabBarBottomLayout),
+      );
+      expect(layout.magnification, 1.3);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Active-lens foreground contrast for luminance-inverted resting pills
+  // -------------------------------------------------------------------------
+
+  group('GlassTabBar — active-lens foreground contrast', () {
+    const obsidian = Color(0xFF121316);
+
+    testWidgets(
+        'searchable bar cross-fades white glyphs on dark resting pill to dark ink while pressed/dragged',
+        (tester) async {
+      await tester.pumpWidget(_wrap(
+        GlassTheme(
+          data: GlassThemeData.ios27(),
+          child: SizedBox(
+            width: 520,
+            height: 150,
+            child: GlassTabBar.searchable(
+              tabs: const [
+                GlassTab(icon: Icon(Icons.dashboard), label: 'Dashboard'),
+                GlassTab(icon: Icon(Icons.check_circle), label: 'Tasks'),
+                GlassTab(icon: Icon(Icons.people), label: 'Contacts'),
+              ],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              indicatorColor: obsidian,
+              selectedIconColor: Colors.white,
+              selectedLabelColor: Colors.white,
+              unselectedIconColor: Color(0xFF4B5563),
+              unselectedLabelColor: Color(0xFF4B5563),
+              searchConfig: GlassSearchBarConfig(
+                hintText: 'Search...',
+                onSearchToggle: (_) {},
+              ),
+            ),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      Iterable<Text> dashboardTexts() => tester.widgetList<Text>(
+            find.text('Dashboard'),
+          );
+      expect(
+        dashboardTexts().any((t) => t.style?.color == Colors.white),
+        isTrue,
+      );
+
+      final tabCenter = tester.getCenter(find.text('Dashboard').first);
+      final gesture = await tester.startGesture(tabCenter);
+      await tester.pump();
+      await gesture.moveBy(const Offset(24, 0));
+      await tester.pump(const Duration(milliseconds: 150));
+
+      expect(
+        dashboardTexts().every(
+          (t) => (t.style?.color?.computeLuminance() ?? 1.0) < 0.25,
+        ),
+        isTrue,
+      );
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(
+        dashboardTexts().any((t) => t.style?.color == Colors.white),
+        isTrue,
+      );
+    });
+
+    testWidgets(
+        'bottom bar cross-fades dark glyphs on white resting pill to white ink in dark mode',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData.dark(),
+          home: Scaffold(
+            backgroundColor: Colors.black,
+            body: LiquidGlassWidgets.wrap(
+              child: GlassTheme(
+                data: const GlassThemeData.ios27(
+                  brightness: Brightness.dark,
+                ),
+                child: _box(
+                  GlassTabBar.bottom(
+                    tabs: const [
+                      GlassTab(icon: Icon(Icons.home), label: 'Home'),
+                      GlassTab(icon: Icon(Icons.person), label: 'Profile'),
+                    ],
+                    selectedIndex: 0,
+                    onTabSelected: (_) {},
+                    indicatorColor: Colors.white,
+                    selectedIconColor: obsidian,
+                    selectedLabelColor: obsidian,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      Iterable<Text> homeTexts() => tester.widgetList<Text>(find.text('Home'));
+      expect(homeTexts().any((t) => t.style?.color == obsidian), isTrue);
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('Home').first),
+      );
+      await tester.pump();
+      await gesture.moveBy(const Offset(20, 0));
+      await tester.pump(const Duration(milliseconds: 150));
+
+      expect(
+        homeTexts().every(
+          (t) => (t.style?.color?.computeLuminance() ?? 0.0) > 0.75,
+        ),
+        isTrue,
+      );
+
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(homeTexts().any((t) => t.style?.color == obsidian), isTrue);
+    });
+  });
 }

@@ -276,13 +276,14 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
   @override
   Widget build(BuildContext context) {
     final isLight = GlassTheme.brightnessOf(context) == Brightness.light;
-    final isIos27Theme =
-        GlassTheme.maybeOf(context)?.data.style == GlassStyle.ios27;
+    final themeStyle = GlassTheme.maybeOf(context)?.data.style;
+    final isNativeTheme =
+        themeStyle == GlassStyle.ios27 || themeStyle == GlassStyle.ios26;
     final rawIndicatorColor = widget.indicatorColor ??
         (isLight ? CupertinoColors.white : _defaultDarkIndicatorColor);
     final indicatorColor =
         CupertinoDynamicColor.resolve(rawIndicatorColor, context);
-    final restingShadows = (!isIos27Theme &&
+    final restingShadows = (!isNativeTheme &&
             isLight &&
             widget.indicatorColor == null &&
             !_isDragging &&
@@ -319,12 +320,12 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
     final selectedTextStyle =
         baseSelectedTextStyle.copyWith(color: restingSelectedTextColor);
 
-    final defaultUnselectedColor = isIos27Theme
+    final defaultUnselectedColor = isNativeTheme
         ? dynamicLabelColor
         : dynamicLabelColor.withValues(alpha: 0.6);
     final unselectedTextStyle = TextStyle(
       fontSize: 13,
-      fontWeight: isIos27Theme ? FontWeight.w400 : FontWeight.w500,
+      fontWeight: isNativeTheme ? FontWeight.w400 : FontWeight.w500,
       color: defaultUnselectedColor,
     ).merge(widget.unselectedTextStyle);
     final restingUnselectedTextColor = CupertinoDynamicColor.resolve(

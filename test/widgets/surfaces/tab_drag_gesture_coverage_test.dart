@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/widgets/surfaces/tab_bar_bottom_internal.dart';
+import 'package:liquid_glass_widgets/src/widgets/surfaces/tab_bar_drag_gesture_mixin.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
       home: Scaffold(body: LiquidGlassWidgets.wrap(child: child)),
@@ -414,8 +415,13 @@ void main() {
 
       final indicatorState =
           tester.state<TabIndicatorState>(find.byType(TabIndicator));
-      // barSwayOffset should never exceed _maxSwayPx (0.75)
-      expect(indicatorState.barSwayOffset.abs(), lessThanOrEqualTo(0.75));
+      // Edge overdrag past bar right bound engages rubber-banding and never
+      // exceeds TabDragGestureMixin.maxBarSwayPx (2.0).
+      expect(indicatorState.barSwayOffset, greaterThan(0.0));
+      expect(
+        indicatorState.barSwayOffset.abs(),
+        lessThanOrEqualTo(TabDragGestureMixin.maxBarSwayPx),
+      );
 
       await gesture.up();
       await tester.pumpAndSettle();

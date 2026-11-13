@@ -2,6 +2,14 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets/src/renderer/liquid_glass_renderer.dart'
+    show LiquidStretch;
+import 'package:liquid_glass_widgets/src/widgets/surfaces/tab_bar_bottom_internal.dart'
+    show TabIndicator;
+import 'package:liquid_glass_widgets/src/widgets/surfaces/tab_bar_drag_gesture_mixin.dart'
+    show TabDragGestureMixin;
+import 'package:liquid_glass_widgets/src/widgets/surfaces/tab_bar_searchable_internal.dart'
+    show SearchableTabIndicator;
 
 import '../../shared/test_helpers.dart';
 
@@ -784,5 +792,241 @@ void main() {
       const b = GlassInteractionBehavior.full;
       expect(b, isA<GlassInteractionBehavior>());
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Tab-bar platter lift & stretch parity (ios27 vs classic + explicit override)
+  // ---------------------------------------------------------------------------
+
+  group('GlassTabBar platter lift and stretch parity', () {
+    testWidgets(
+      'GlassTabBar.bottom defaults to 1.04x lift and iOS 27 position-damped stretch, and disables when glowOnly/none',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassTabBar.bottom(
+              tabs: _tabs,
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              maskingQuality: MaskingQuality.off,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        var stretch = tester.widget<LiquidStretch>(
+          find
+              .descendant(
+                of: find.byType(TabIndicator),
+                matching: find.byType(LiquidStretch),
+              )
+              .first,
+        );
+        expect(stretch.interactionScale, closeTo(1.04, 0.001));
+        expect(
+          stretch.stretch,
+          closeTo(TabDragGestureMixin.kPlatterStretch, 0.0001),
+        );
+        expect(
+          stretch.resistance,
+          closeTo(TabDragGestureMixin.kPlatterResistance, 0.0001),
+        );
+
+        for (final behavior in [
+          GlassInteractionBehavior.glowOnly,
+          GlassInteractionBehavior.none,
+        ]) {
+          await tester.pumpWidget(_buildBottomBar(behavior: behavior));
+          await tester.pump();
+
+          stretch = tester.widget<LiquidStretch>(
+            find
+                .descendant(
+                  of: find.byType(TabIndicator),
+                  matching: find.byType(LiquidStretch),
+                )
+                .first,
+          );
+          expect(stretch.interactionScale, 1.0);
+          expect(stretch.stretch, 0.0);
+        }
+      },
+    );
+
+    testWidgets(
+      'GlassTabBar.searchable defaults platter lift to 1.04x with iOS 27 position-damped stretch and disables when glowOnly/none',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassTabBar.searchable(
+              tabs: _tabs,
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              maskingQuality: MaskingQuality.off,
+              searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        var stretch = tester.widget<LiquidStretch>(
+          find
+              .descendant(
+                of: find.byType(SearchableTabIndicator),
+                matching: find.byType(LiquidStretch),
+              )
+              .first,
+        );
+        expect(stretch.interactionScale, closeTo(1.04, 0.001));
+        expect(
+          stretch.stretch,
+          closeTo(TabDragGestureMixin.kPlatterStretch, 0.0001),
+        );
+        expect(
+          stretch.resistance,
+          closeTo(TabDragGestureMixin.kPlatterResistance, 0.0001),
+        );
+
+        for (final behavior in [
+          GlassInteractionBehavior.glowOnly,
+          GlassInteractionBehavior.none,
+        ]) {
+          await tester.pumpWidget(_buildSearchableBar(behavior: behavior));
+          await tester.pump();
+
+          stretch = tester.widget<LiquidStretch>(
+            find
+                .descendant(
+                  of: find.byType(SearchableTabIndicator),
+                  matching: find.byType(LiquidStretch),
+                )
+                .first,
+          );
+          expect(stretch.interactionScale, 1.0);
+          expect(stretch.stretch, 0.0);
+        }
+      },
+    );
+
+    testWidgets(
+      'GlassTabBar.bottom shifts horizontally by ~1-3 pt while held across tabs, boosts on edge overdrag, and settles with 360ms release damping',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Align(
+                alignment: Alignment.bottomCenter,
+                child: SizedBox(
+                  width: 402,
+                  child: LiquidGlassWidgets.wrap(
+                    child: GlassTabBar.bottom(
+                      tabs: const [
+                        GlassTab(
+                          label: 'Home',
+                          icon: Icon(CupertinoIcons.home),
+                        ),
+                        GlassTab(
+                          label: 'Search',
+                          icon: Icon(CupertinoIcons.search),
+                        ),
+                        GlassTab(
+                          label: 'Saved',
+                          icon: Icon(CupertinoIcons.bookmark),
+                        ),
+                        GlassTab(
+                          label: 'Profile',
+                          icon: Icon(CupertinoIcons.person),
+                        ),
+                      ],
+                      selectedIndex: 0,
+                      onTabSelected: (_) {},
+                      maskingQuality: MaskingQuality.off,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final indicatorFinder = find.byType(TabIndicator);
+        // Inner Listener sits inside Transform.translate + LiquidStretch, so its
+        // global center reflects the exact rendered platter center & scale.
+        final innerBoxFinder = find
+            .descendant(
+              of: indicatorFinder,
+              matching: find.byType(GestureDetector),
+            )
+            .first;
+
+        double platterMidX() => tester.getCenter(innerBoxFinder).dx;
+        double platterWidth() {
+          final box = tester.renderObject<RenderBox>(innerBoxFinder);
+          final tl = box.localToGlobal(Offset.zero);
+          final tr = box.localToGlobal(Offset(box.size.width, 0));
+          return (tr - tl).distance;
+        }
+
+        final restMidX = platterMidX();
+        final restRect = tester.getRect(indicatorFinder);
+        final restWidth = restRect.width;
+
+        // Touch down on Tab 0 (~51.5 pt from left edge of 360 pt platter).
+        final startPos = Offset(restRect.left + 51.5, restRect.center.dy);
+        final gesture = await tester.startGesture(startPos);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // Press scale (~1.04x) inflates width, zero horizontal shift at Δx = 0.
+        expect(platterWidth() / restWidth, closeTo(1.04, 0.005));
+        expect(platterMidX() - restMidX, closeTo(0.0, 0.05));
+
+        // Drag 3 tabs right (+257 pt to Tab 3) and HOLD stationary for 350 ms.
+        for (int i = 0; i < 16; i++) {
+          await gesture.moveBy(const Offset(257.0 / 16.0, 0));
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+        await tester.pump(const Duration(milliseconds: 350));
+
+        // Matches real iOS 27 UITabBar (+2.63 pt at Δx = +257 pt), held steady!
+        final tab3Shift = platterMidX() - restMidX;
+        expect(tab3Shift, inInclusiveRange(2.3, 2.9));
+
+        // Drag +29 pt past right platter edge (total Δx = +337.5 pt) and hold.
+        for (int i = 0; i < 8; i++) {
+          await gesture.moveBy(const Offset(80.5 / 8.0, 0));
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+        await tester.pump(const Duration(milliseconds: 350));
+
+        // Matches real iOS 27 UITabBar (+4.35 pt at +29 pt right overdrag).
+        final overdragShift = platterMidX() - restMidX;
+        expect(overdragShift, inInclusiveRange(3.8, 4.7));
+
+        // Release finger and sample 360 ms bouncy release damping.
+        await gesture.up();
+        await tester.pump();
+
+        var minShift = double.infinity;
+        var minScale = double.infinity;
+        for (int ms = 0; ms < 500; ms += 15) {
+          await tester.pump(const Duration(milliseconds: 15));
+          final shift = platterMidX() - restMidX;
+          final scale = platterWidth() / restWidth;
+          if (shift < minShift) minShift = shift;
+          if (scale < minScale) minScale = scale;
+        }
+
+        // Single subtle undershoot past rest (~-9.5% of travel), then settled.
+        expect(minShift, lessThan(-0.15));
+        expect(minShift, greaterThan(-0.8));
+        expect(minScale, inInclusiveRange(0.992, 0.998));
+
+        await tester.pumpAndSettle();
+        expect(platterMidX() - restMidX, closeTo(0.0, 0.01));
+        expect(platterWidth() / restWidth, closeTo(1.0, 0.001));
+      },
+    );
   });
 }

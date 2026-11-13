@@ -11,6 +11,7 @@ import 'package:flutter/scheduler.dart' show SchedulerBinding, SchedulerPhase;
 import 'package:flutter/widgets.dart';
 
 import '../../../utils/draggable_indicator_physics.dart';
+import '../../../utils/glass_spring.dart';
 
 /// Shared drag gesture state and handlers for bottom bar indicators.
 ///
@@ -64,6 +65,48 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
   /// holding a tab shows the labels without switching to it.
   bool get selectsOnRelease => isPlatformViewBackdrop;
 
+  /// Whether the outer tab-bar platter participates in horizontal drag/overdrag
+  /// motion (`false` when interaction scaling is disabled, e.g. `glowOnly` or
+  /// `none`, or on vertical bars).
+  bool get enableBarPlatterMotion => false;
+
+  // ── Measured iOS 27 UITabBar (_UIFlexInteraction) Platter Physics ────────
+
+  /// In-bounds position-damped stretch factor for the outer tab-bar platter.
+  ///
+  /// Calibrated against 60 Hz `_UIFlexInteraction` traces on iOS 27 `UITabBar`
+  /// (`360 × 62 pt` platter): yields `~0.90 pt` shift at 1 tab (`Δx = 86 pt`),
+  /// `~1.78 pt` at 2 tabs (`Δx = 171 pt`), and `~2.60 pt` at 3 tabs
+  /// (`Δx = 257 pt`), held steady while the finger remains down.
+  static const double kPlatterStretch = 0.0108;
+
+  /// Distance resistance factor paired with [kPlatterStretch].
+  static const double kPlatterResistance = 0.0004;
+
+  /// Press-down inflation spring matching iOS 27 `UITabBar` (`320 ms`,
+  /// `bounce = 0.37` → reaches `1.04×` in `~149 ms`, `+7.8%` peak at `~200 ms`,
+  /// settles by `350 ms`).
+  static final SpringDescription kPlatterPressSpring = GlassSpring.snappy(
+    duration: const Duration(milliseconds: 320),
+    extraBounce: 0.22,
+  );
+
+  /// Release settle spring matching iOS 27 `UITabBar` (`360 ms`,
+  /// `bounce = 0.40` → crosses rest at `158 ms`, single `-9.5%` undershoot at
+  /// `225 ms`, settled by `380 ms`).
+  static final SpringDescription kPlatterReleaseSpring = GlassSpring.bouncy(
+    duration: const Duration(milliseconds: 360),
+    extraBounce: 0.10,
+  );
+
+  /// Critically damped `150 ms` tracking spring used while actively dragging.
+  static final SpringDescription kPlatterTrackingSpring = GlassSpring.smooth(
+    duration: const Duration(milliseconds: 150),
+  );
+
+  /// Maximum additional edge-overdrag offset in logical pixels past bar bounds.
+  static const double maxBarSwayPx = 2.0;
+
   // ── Shared state ──────────────────────────────────────────────────────────
 
   /// Stores the target tab index during a hybrid tap (platform view backdrop).
@@ -99,25 +142,50 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
   /// Current horizontal alignment of the indicator in the range [-1, 1].
   double tabXAlign = 0.0;
 
-  /// Lateral sway offset in logical pixels.
+  /// Additional edge-overdrag offset in logical pixels when the finger is
+  /// pulled past the leading (`< 0`) or trailing (`> width`) bar boundary.
   ///
-  /// Driven by horizontal drag velocity — gives the bar body a subtle
-  /// physical response when the interactive pill is dragged left/right,
-  /// mimicking iOS 26 bottom bar behaviour. Animated back to `0.0` via
-  /// a spring when the drag ends or is cancelled.
+  /// In-bounds horizontal drift (`~0.9–2.6 pt`) is driven continuously by
+  /// `LiquidStretch` (`kPlatterStretch`). When the pointer crosses outside the
+  /// bar bounds, iOS 27 `_UIFlexInteraction` applies a steeper rubber-band
+  /// slope (`~+1.0 to +1.2 pt` at `30 pt` past the edge, bringing total shift
+  /// to `~4.3 pt` on right overdrag and `~-1.8 pt` on left overdrag).
   ///
-  /// Maximum magnitude is clamped to [_maxSwayPx].
+  /// Animated back to `0.0` via [kPlatterReleaseSpring] when the drag ends or
+  /// is cancelled. Clamped to `±`[maxBarSwayPx].
   double barSwayOffset = 0.0;
 
-  /// Maximum lateral sway in logical pixels — keeps the effect subtle.
-  static const double _maxSwayPx = 0.75;
+  /// Rubber-band slope applied to pointer excursion beyond `[0, width]`.
+  static const double _overdragScale = 0.048;
 
-  /// Scale factor mapping instantaneous drag delta to sway offset.
-  static const double _swayScale = 0.08;
+  /// Non-linear resistance damping extreme excursions beyond `[0, width]`.
+  static const double _overdragResistance = 0.015;
 
-  /// Minimum drag delta magnitude (px/frame) required to trigger sway.
-  /// Below this threshold the bar stays still — only fast flicks cause sway.
-  static const double _swayVelocityThreshold = 4.0;
+  double _computeEdgeOverdrag(Offset globalPosition) {
+    if (!enableBarPlatterMotion) return 0.0;
+    final renderObject = tabTrackContext.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.hasSize) return 0.0;
+    final local = renderObject.globalToLocal(globalPosition);
+    final pos = tabAxis == Axis.horizontal ? local.dx : local.dy;
+    final extent = tabAxis == Axis.horizontal
+        ? renderObject.size.width
+        : renderObject.size.height;
+    if (extent <= 0) return 0.0;
+
+    final double overdrag;
+    if (pos < 0.0) {
+      overdrag = pos;
+    } else if (pos > extent) {
+      overdrag = pos - extent;
+    } else {
+      return 0.0;
+    }
+
+    final absOver = overdrag.abs();
+    final resisted = absOver / (1.0 + absOver * _overdragResistance);
+    return (overdrag.sign * resisted * _overdragScale)
+        .clamp(-maxBarSwayPx, maxBarSwayPx);
+  }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -282,7 +350,12 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
   /// dropped by a PlatformView arena race.
   void onBarPointerUp(Offset position) {
     if (!mounted) return;
-    if (!tabIsDragging) setState(() => tabIsDown = false);
+    if (!tabIsDragging) {
+      setState(() {
+        tabIsDown = false;
+        barSwayOffset = 0.0;
+      });
+    }
     recoverIfGestureStuck(position);
   }
 
@@ -292,7 +365,12 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
   /// parent widget takes ownership of the pointer stream.
   void onBarPointerCancel(Offset position) {
     if (!mounted) return;
-    if (!tabIsDragging) setState(() => tabIsDown = false);
+    if (!tabIsDragging) {
+      setState(() {
+        tabIsDown = false;
+        barSwayOffset = 0.0;
+      });
+    }
     recoverIfGestureStuck(position);
   }
 
@@ -309,29 +387,22 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
     setState(() {
       tabIsDragging = true;
       tabXAlign = alignmentFromGlobal(d.globalPosition);
+      barSwayOffset = _computeEdgeOverdrag(d.globalPosition);
     });
   }
 
   /// `onHorizontalDragUpdate` — track pointer during drag.
   ///
-  /// Also updates [barSwayOffset] based on instantaneous drag velocity,
-  /// giving the bar a subtle lateral sway when the interactive pill is
-  /// flicked quickly — mimicking iOS 26 bottom bar physics.
-  ///
-  /// Slow drags (below [_swayVelocityThreshold]) produce zero sway;
-  /// only fast flicks cause the bar to shift.
+  /// Updates [tabXAlign] for the indicator lens and [barSwayOffset] when the
+  /// pointer is pulled past the bar's leading or trailing edge (matching iOS 27
+  /// `_UIFlexInteraction` edge rubber-banding, while `LiquidStretch` drives
+  /// continuous in-bounds position drift).
   void onBarDragUpdate(DragUpdateDetails d) {
     if (!mounted) return;
     setState(() {
       tabIsDragging = true;
       tabXAlign = alignmentFromGlobal(d.globalPosition);
-      // Velocity-gated lateral sway: only fast flicks cause movement.
-      final delta = tabAxis == Axis.horizontal ? d.delta.dx : d.delta.dy;
-      if (delta.abs() > _swayVelocityThreshold) {
-        barSwayOffset = (delta * _swayScale).clamp(-_maxSwayPx, _maxSwayPx);
-      } else {
-        barSwayOffset = 0.0;
-      }
+      barSwayOffset = _computeEdgeOverdrag(d.globalPosition);
     });
   }
 

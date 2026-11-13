@@ -40,3 +40,44 @@ GlassAdaptiveScopeConfig(
 
 Please include your **device model**, **Flutter version**, and **observed P75 ms**
 in your discussion post. Thank you 🙏
+
+---
+
+## Persisting Settled Quality Across Cold Starts
+
+Within a single app process, `GlassAdaptiveScope` caches the settled quality automatically. Across cold starts, use `onQualityChanged` + `initialQuality` with `SharedPreferences` (or your preferred storage) to skip the 3-second warm-up window on repeat launches:
+
+```dart
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final prefs = await SharedPreferences.getInstance();
+  final saved = prefs.getString('glass_quality');
+  final initial = saved != null ? GlassQuality.values.byName(saved) : null;
+
+  await LiquidGlassWidgets.initialize();
+
+  runApp(LiquidGlassWidgets.wrap(
+    child: const MyApp(),
+    adaptiveQuality: true,
+    adaptiveConfig: GlassAdaptiveScopeConfig(
+      initialQuality: initial,
+      allowStepUp: true,
+      onQualityChanged: (_, to) => prefs.setString('glass_quality', to.name),
+    ),
+  ));
+}
+```
+
+## Pausing Measurement During Heavy App Work
+
+If your app performs heavy CPU/GPU work of its own (e.g., decoding a large file or loading an on-device model), pause frame measurement so the temporary slowdown is not mistaken for GPU pressure:
+
+```dart
+final hold = GlassAdaptiveScope.holdMeasurement();
+try {
+  await heavyWork();
+} finally {
+  hold.release();
+}
+```

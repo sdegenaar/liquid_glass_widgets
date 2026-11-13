@@ -13,7 +13,6 @@ import 'package:flutter/cupertino.dart';
 import '../../../constants/glass_defaults.dart';
 import '../../renderer/liquid_glass_renderer.dart';
 import '../../../types/glass_quality.dart';
-import '../../../types/glass_style.dart';
 import '../../../utils/draggable_indicator_physics.dart';
 import '../../utils/glass_localizations.dart';
 import '../../../utils/glass_spring.dart';
@@ -228,6 +227,11 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
   @override
   bool get isPlatformViewBackdrop => widget.platformViewBackdrop;
   @override
+  bool get enableBarPlatterMotion =>
+      !widget.isSearchActive &&
+      widget.enableBackgroundAnimation &&
+      (widget.backgroundPressScale ?? 1.04) != 1.0;
+  @override
   void notifyTabChanged(int index) => widget.onTabChanged(index);
 
   /// RepaintBoundary key for the merged icon layer, so the premium indicator can
@@ -338,30 +342,32 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                 GlassDefaults.capsuleRadius,
               ));
 
-    // Lateral sway: the bar body subtly follows the interactive pill during
-    // horizontal drags, mimicking iOS 26 bottom bar physics. The SpringBuilder
-    // animates the offset back to 0.0 when the drag ends.
+    final barPressScale = widget.enableBackgroundAnimation
+        ? (widget.backgroundPressScale ?? 1.04)
+        : 1.0;
+    final enablePlatterMotion = barPressScale != 1.0;
+
+    // Outer platter physics calibrated against iOS 27 UITabBar (_UIFlexInteraction):
+    // - Press scale (1.04×) with 320 ms snappy rise and 360 ms bouncy release.
+    // - Position-damped in-bounds horizontal drift (~0.9–2.6 pt) via LiquidStretch,
+    //   held steady while the finger stays down.
+    // - Rubber-band edge overdrag past [0, width] via barSwayOffset.
     return SpringBuilder(
-      spring: GlassSpring.smooth(
-        duration: const Duration(milliseconds: 250),
-      ),
+      spring: tabIsDragging
+          ? TabDragGestureMixin.kPlatterTrackingSpring
+          : TabDragGestureMixin.kPlatterReleaseSpring,
       value: barSwayOffset,
       builder: (context, swayValue, _) {
         return Transform.translate(
           offset: Offset(swayValue, 0),
           child: LiquidStretch(
-            interactionScale: widget.enableBackgroundAnimation
-                ? (widget.backgroundPressScale ??
-                    ((GlassTheme.maybeOf(context)?.data.style ??
-                                GlassStyle.ios27) ==
-                            GlassStyle.classic
-                        ? 1.04
-                        : 1.0))
-                : 1.0,
+            interactionScale: barPressScale,
             stretch:
-                0.0, // stretch disabled on platformViewBackdrop to prevent BackdropFilter pixel-snap jitter
-            resistance: 0.08,
-            anchorStretch: false, // Tab bars use jelly-follow, not anchored
+                enablePlatterMotion ? TabDragGestureMixin.kPlatterStretch : 0.0,
+            resistance: TabDragGestureMixin.kPlatterResistance,
+            anchorStretch: false,
+            pressSpring: TabDragGestureMixin.kPlatterPressSpring,
+            releaseSpring: TabDragGestureMixin.kPlatterReleaseSpring,
             child: Listener(
               onPointerDown: (e) => onBarPointerDown(e.position),
               onPointerUp: (e) => onBarPointerUp(e.position),

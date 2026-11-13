@@ -116,6 +116,78 @@ Color resolveBarLabelColor(BuildContext context, double? darkAmount) {
 }
 
 // =============================================================================
+// resolveActiveLensTabColors — active-lens foreground contrast for solid pills
+// =============================================================================
+
+/// Resolves the selected tab's foreground icon and label colors as the solid
+/// resting indicator dissolves into the clear refractive glass droplet
+/// (`intensity`: `0.0 → 0.15`).
+///
+/// Mirrors `GlassSegmentedControl`'s active-lens contrast behavior: when a
+/// consumer configures an opaque luminance-inverted resting pill (e.g. a dark
+/// `#121316` obsidian pill in Light Mode with white `#FFFFFF` selected glyphs,
+/// or a `#FFFFFF` white pill in Dark Mode with dark `#121316` selected glyphs)
+/// while keeping the active indicator lens clear (`indicatorSettings == null`
+/// or `indicatorSettings.glassColor.a < 0.5`), the selected glyphs smoothly
+/// cross-fade toward [dynamicLabelColor] over `glassPhase = (intensity / 0.15)`
+/// in exact lockstep with [AnimatedGlassIndicator]'s `backgroundOpacity` ramp.
+///
+/// Non-inverted brand/accent tint colors (or custom opaque `indicatorSettings`)
+/// pass through untouched.
+({Color iconColor, Color? labelColor}) resolveActiveLensTabColors({
+  required BuildContext context,
+  required bool isLight,
+  required double intensity,
+  required Color? indicatorColor,
+  required LiquidGlassSettings? indicatorSettings,
+  required Color restingIconColor,
+  required Color? restingLabelColor,
+  required Color dynamicLabelColor,
+  Color? fallbackLabelColor,
+}) {
+  if (intensity <= 0.0 ||
+      indicatorColor == null ||
+      (indicatorSettings != null && indicatorSettings.glassColor.a >= 0.5)) {
+    return (iconColor: restingIconColor, labelColor: restingLabelColor);
+  }
+  final resolvedIndicator =
+      CupertinoDynamicColor.resolve(indicatorColor, context);
+  if (resolvedIndicator.a < 0.5) {
+    return (iconColor: restingIconColor, labelColor: restingLabelColor);
+  }
+  final isIndicatorInverted = isLight
+      ? resolvedIndicator.computeLuminance() < 0.5
+      : resolvedIndicator.computeLuminance() > 0.5;
+  if (!isIndicatorInverted) {
+    return (iconColor: restingIconColor, labelColor: restingLabelColor);
+  }
+
+  final glassPhase = (intensity / 0.15).clamp(0.0, 1.0);
+  final resolvedIcon = CupertinoDynamicColor.resolve(restingIconColor, context);
+  final isIconInverted = isLight
+      ? resolvedIcon.computeLuminance() > 0.5
+      : resolvedIcon.computeLuminance() < 0.5;
+  final effectiveIconColor = isIconInverted
+      ? Color.lerp(resolvedIcon, dynamicLabelColor, glassPhase)!
+      : restingIconColor;
+
+  Color? effectiveLabelColor = restingLabelColor;
+  final candidateLabelColor = restingLabelColor ?? fallbackLabelColor;
+  if (candidateLabelColor != null) {
+    final resolvedLabel =
+        CupertinoDynamicColor.resolve(candidateLabelColor, context);
+    final isLabelInverted = isLight
+        ? resolvedLabel.computeLuminance() > 0.5
+        : resolvedLabel.computeLuminance() < 0.5;
+    if (isLabelInverted) {
+      effectiveLabelColor =
+          Color.lerp(resolvedLabel, dynamicLabelColor, glassPhase);
+    }
+  }
+  return (iconColor: effectiveIconColor, labelColor: effectiveLabelColor);
+}
+
+// =============================================================================
 // buildIconShadows — pure utility function (visibleForTesting for unit tests)
 // =============================================================================
 
@@ -572,6 +644,8 @@ class TabIndicatorState extends State<TabIndicator>
   @override
   bool get isPlatformViewBackdrop => widget.platformViewBackdrop;
   @override
+  bool get enableBarPlatterMotion => widget.interactionScale != 1.0;
+  @override
   void notifyTabChanged(int index) => widget.onTabChanged(index);
 
   final GlobalKey _iconLayerKey = GlobalKey();
@@ -616,13 +690,17 @@ class TabIndicatorState extends State<TabIndicator>
                 GlassDefaults.capsuleRadius,
               ));
 
-    // Lateral sway: the bar body subtly follows the interactive pill during
-    // horizontal drags, mimicking iOS 26 bottom bar physics. The SpringBuilder
-    // animates the offset back to 0.0 when the drag ends.
+    final enablePlatterMotion = enableBarPlatterMotion;
+
+    // Outer platter physics calibrated against iOS 27 UITabBar (_UIFlexInteraction):
+    // - Press scale (1.04×) with 320 ms snappy rise and 360 ms bouncy release.
+    // - Position-damped in-bounds horizontal drift (~0.9–2.6 pt) via LiquidStretch,
+    //   held steady while the finger stays down.
+    // - Rubber-band edge overdrag past [0, width] via barSwayOffset.
     return SpringBuilder(
-      spring: GlassSpring.smooth(
-        duration: const Duration(milliseconds: 250),
-      ),
+      spring: tabIsDragging
+          ? TabDragGestureMixin.kPlatterTrackingSpring
+          : TabDragGestureMixin.kPlatterReleaseSpring,
       value: barSwayOffset,
       builder: (context, swayValue, _) {
         return Transform.translate(
@@ -630,9 +708,11 @@ class TabIndicatorState extends State<TabIndicator>
           child: LiquidStretch(
             interactionScale: widget.interactionScale,
             stretch:
-                0.0, // stretch disabled on platformViewBackdrop to prevent BackdropFilter pixel-snap jitter
-            resistance: 0.08,
-            anchorStretch: false, // Tab bars use jelly-follow, not anchored
+                enablePlatterMotion ? TabDragGestureMixin.kPlatterStretch : 0.0,
+            resistance: TabDragGestureMixin.kPlatterResistance,
+            anchorStretch: false,
+            pressSpring: TabDragGestureMixin.kPlatterPressSpring,
+            releaseSpring: TabDragGestureMixin.kPlatterReleaseSpring,
             child: Listener(
               // Raw pointer events fire BEFORE gesture recognizers and never compete
               // in the gesture arena, so tabIsDown is always set on the very first event.

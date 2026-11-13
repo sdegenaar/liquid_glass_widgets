@@ -619,9 +619,10 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
 
   @override
   Widget build(BuildContext context) {
-    final isIos27Theme =
-        GlassTheme.maybeOf(context)?.data.style == GlassStyle.ios27;
-    final lightBg = isIos27Theme ? _ios27LightBg : _defaultLightBg;
+    final themeStyle = GlassTheme.maybeOf(context)?.data.style;
+    final isNativeTheme =
+        themeStyle == GlassStyle.ios27 || themeStyle == GlassStyle.ios26;
+    final lightBg = isNativeTheme ? _ios27LightBg : _defaultLightBg;
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
