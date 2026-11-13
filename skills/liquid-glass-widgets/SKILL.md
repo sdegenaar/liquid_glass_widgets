@@ -254,6 +254,8 @@ GlassDialog.show(
 );
 ```
 
+Pass `onPressed: null` on a `GlassDialogAction` to keep it in place as a disabled action (for example, while waiting on valid input).
+
 ### GlassMenu Submenus
 Give a `GlassMenuItem` a `submenu` list to open a native iOS-style card over the parent (the parent recedes and dims; tapping the card's header or the exposed parent collapses one level). Submenus nest. Works in `GlassMenu` and `GlassPullDownButton`:
 

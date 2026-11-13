@@ -1712,9 +1712,10 @@ Future<DateTime?> showGlassDatePicker({
                 ),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
+                    color: CupertinoColors.label.resolveFrom(modalContext),
                   ),
                 ),
                 CupertinoButton(
@@ -1747,9 +1748,12 @@ Future<DateTime?> showGlassDatePicker({
           ],
         ),
       );
-      sheet = CupertinoTheme(
-        data: capturedCupertinoTheme,
-        child: sheet,
+      sheet = DefaultTextStyle(
+        style: capturedCupertinoTheme.textTheme.textStyle,
+        child: CupertinoTheme(
+          data: capturedCupertinoTheme,
+          child: sheet,
+        ),
       );
       if (capturedGlassTheme != null) {
         sheet = GlassTheme(
