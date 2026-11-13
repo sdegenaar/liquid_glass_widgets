@@ -257,9 +257,12 @@ class GlassPicker extends StatelessWidget {
           itemBuilder: itemBuilder,
           title: title,
         );
-        sheet = CupertinoTheme(
-          data: capturedCupertinoTheme,
-          child: sheet,
+        sheet = DefaultTextStyle(
+          style: capturedCupertinoTheme.textTheme.textStyle,
+          child: CupertinoTheme(
+            data: capturedCupertinoTheme,
+            child: sheet,
+          ),
         );
         if (capturedGlassTheme != null) {
           sheet = GlassTheme(
@@ -362,9 +365,10 @@ class _GlassPickerSheetState<T> extends State<_GlassPickerSheet<T>> {
                   child: Text(
                     title,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
+                      color: CupertinoColors.label.resolveFrom(context),
                     ),
                   ),
                 ),

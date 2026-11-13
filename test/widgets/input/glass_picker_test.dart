@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -392,6 +393,33 @@ void main() {
 
       expect(await result, isNull);
       expect(find.byType(CupertinoPicker), findsNothing);
+    });
+
+    testWidgets(
+        'shown from a MaterialApp, title does not inherit error text style',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => CupertinoButton(
+              onPressed: () => GlassPicker.showSheet<String>(
+                context: context,
+                items: fruits,
+                itemBuilder: Text.new,
+                title: 'Fruit',
+              ),
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      final titleStyle =
+          tester.renderObject<RenderParagraph>(find.text('Fruit')).text.style!;
+      expect(titleStyle.decoration, isNot(TextDecoration.underline));
+      expect(titleStyle.fontFamily, isNot('monospace'));
     });
   });
 
