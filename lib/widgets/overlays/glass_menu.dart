@@ -18,6 +18,7 @@ import 'glass_menu_item.dart';
 import '../../theme/glass_theme_helpers.dart';
 import '../../theme/glass_theme.dart';
 import '../shared/glass_accessibility_scope.dart';
+import 'shared/overlay_semantics_host.dart';
 
 part 'shared/glass_menu_internal.dart';
 

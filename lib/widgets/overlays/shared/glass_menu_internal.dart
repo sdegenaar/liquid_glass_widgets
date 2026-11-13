@@ -1616,23 +1616,28 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
       state.anchorScale * state.anchorScale,
     )!;
 
-    return Stack(
+    final overlay = Stack(
       children: [
         // Invisible full-screen tap-to-close barrier
         if (clampedValue > 0.3 && widget.showDismissBarrier)
           Positioned.fill(
             // Named like Flutter's own menu barrier so a screen reader can
-            // close the menu as well as a pointer can.
-            child: Semantics(
-              container: true,
-              label: glassCupertinoLocalizationsOf(context).menuDismissLabel,
-              onDismiss: _closeMenu,
-              onTap: _closeMenu,
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                excludeFromSemantics: true,
+            // close the menu as well as a pointer can. BlockSemantics hides
+            // the page behind the open menu while OverlaySemanticsHost keeps
+            // the overlay's own nodes attached to the Overlay rather than the
+            // blocked trigger's traversal parent.
+            child: BlockSemantics(
+              child: Semantics(
+                container: true,
+                label: glassCupertinoLocalizationsOf(context).menuDismissLabel,
+                onDismiss: _closeMenu,
                 onTap: _closeMenu,
-                child: Container(color: const Color(0x00000000)),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  excludeFromSemantics: true,
+                  onTap: _closeMenu,
+                  child: Container(color: const Color(0x00000000)),
+                ),
               ),
             ),
           ),
@@ -1768,6 +1773,19 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
           ),
         ),
       ],
+    );
+
+    // The non-boundary Semantics(textDirection:) wrapper is load-bearing: it
+    // gives OverlaySemanticsHost's delegate a mergeable config to put in the
+    // sibling merge group (the barrier and menu panel are semantic boundaries
+    // whose own configToMergeUp is null). Without a dismiss barrier the host
+    // is off, so the menu stays next to its trigger in traversal order.
+    return OverlaySemanticsHost(
+      enabled: widget.showDismissBarrier,
+      child: Semantics(
+        textDirection: Directionality.maybeOf(context) ?? TextDirection.ltr,
+        child: overlay,
+      ),
     );
   }
 
