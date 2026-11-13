@@ -26,6 +26,7 @@ import 'tab_bar_bottom_internal.dart'
         BottomBarExtraBtn,
         BottomBarTabItem,
         TabIndicator,
+        resolveActiveLensTabColors,
         resolveBarGlassSettings,
         resolveBarLabelColor;
 import '../../../widgets/surfaces/shared/tab_bar_accessory_placement.dart';
@@ -235,6 +236,7 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
     );
     final effectiveInteractionGlowColor = glow.color;
 
+    final bool isLight = GlassTheme.brightnessOf(context) == Brightness.light;
     final dynamicLabelColor = resolveBarLabelColor(context, darkAmount);
     final resolvedSelectedIconColor =
         widget.selectedIconColor ?? dynamicLabelColor;
@@ -423,8 +425,11 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
                               ),
                           ],
                         ),
-                        selectedTabBuilder: (context, intensity, alignment) =>
+                        selectedTabBuilder: (ctx, intensity, alignment) =>
                             _buildSelectedTabs(
+                                ctx,
+                                isLight,
+                                dynamicLabelColor,
                                 intensity,
                                 alignment,
                                 tabs,
@@ -487,6 +492,9 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
   }
 
   Widget _buildSelectedTabs(
+      BuildContext context,
+      bool isLight,
+      Color dynamicLabelColor,
       double intensity,
       Alignment alignment,
       List<GlassTab> tabs,
@@ -501,6 +509,17 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
     final pillTabIndex = tabs.length <= 1
         ? 0.0
         : ((alignment.x + 1.0) * 0.5) * (tabs.length - 1);
+    final activeColors = resolveActiveLensTabColors(
+      context: context,
+      isLight: isLight,
+      intensity: intensity,
+      indicatorColor: widget.indicatorColor,
+      indicatorSettings: widget.indicatorSettings,
+      restingIconColor: resolvedSelectedIconColor,
+      restingLabelColor: widget.selectedLabelColor,
+      dynamicLabelColor: dynamicLabelColor,
+      fallbackLabelColor: widget.textStyle?.color,
+    );
 
     return ExcludeSemantics(
       child: _ltrTabRow(
@@ -513,9 +532,9 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
                       child: BottomBarTabItem(
                         tab: tabs[i],
                         selected: true,
-                        selectedIconColor: resolvedSelectedIconColor,
+                        selectedIconColor: activeColors.iconColor,
                         unselectedIconColor: resolvedUnselectedIconColor,
-                        selectedLabelColor: widget.selectedLabelColor,
+                        selectedLabelColor: activeColors.labelColor,
                         unselectedLabelColor: widget.unselectedLabelColor,
                         selectedLabelStyle: widget.selectedLabelStyle,
                         unselectedLabelStyle: widget.unselectedLabelStyle,

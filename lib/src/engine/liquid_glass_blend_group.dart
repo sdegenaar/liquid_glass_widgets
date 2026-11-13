@@ -366,7 +366,13 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
     geometryShader.setFloatUniforms(
       initialIndex: 8 + LiquidGlassBlendGroup.maxShapesPerLayer * 7,
       (value) => value.setFloat(
-        settings.frost > 0 ? 1.0 : (settings.rimShade > 0 ? 2.0 : 0.0),
+        settings.frost > 0
+            ? 1.0
+            : ((settings.rimShade > 0 ||
+                    (settings.lensModel == GlassLensModel.paraxial &&
+                        settings.rimLight > 0))
+                ? 2.0
+                : 0.0),
       ),
     );
   }

@@ -1,3 +1,12 @@
+# 1.17.3
+
+## Bug Fixes
+
+- **`GlassTabBar` lifted lens magnification & press-lift physics parity:** Tuned default lifted `magnification` on `GlassStyle.ios27` and `GlassStyle.ios26` from `1.25×` to `1.15×` across bottom and `.searchable` layouts, and calibrated tab-bar platter motion (`1.04×` press-lift, position-damped horizontal drift, edge overdrag rubber-banding, and `320 ms` / `360 ms` press/release spring damping) to match iOS 27 `UITabBar` when `interactionBehavior.hasScale` is active.
+- **Lifted indicator lens perimeter contours & dark-mode clarity (`GlassSegmentedControl`, `GlassSwitch`, `GlassSlider`, `GlassTabBar`):** Enabled the 1 px outer geometry hairline and backdrop-aware perimeter contour shading across `GlassStyle.ios27` and `GlassStyle.ios26` (`GlassQuality.premium` and `GlassQuality.standard`) on light cards, tuned vertical platter pinch on `44 pt` lifted `GlassSegmentedControl` lenses, fixed local `normY` trough coordinates in `interactive_indicator.frag`, and kept dark-mode indicator interiors clear with dissolved capsule ends.
+- **`GlassTabBar` active-lens foreground contrast for solid resting pills:** Cross-fades selected icon and label colors toward the bar's dynamic label color as opaque luminance-inverted `indicatorColor` pills dissolve into the clear glass droplet during press/drag (and when minimized), matching `GlassSegmentedControl`.
+- **`GlassSegmentedControl` `GlassStyle.ios26` resting parity:** Extended the calibrated Light Mode `#EEEEEF` track fill, shadowless Light Mode resting pill, and `FontWeight.w400` full-contrast unselected labels to `GlassStyle.ios26` alongside `GlassStyle.ios27`.
+
 # 1.17.2
 
 ## Features

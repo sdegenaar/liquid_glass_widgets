@@ -1056,8 +1056,8 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
 
   /// Selected-icon magnification inside the indicator (bottom/searchable).
   ///
-  /// When null, defaults to 1.25 for [GlassStyle.ios27] and 1.15 for
-  /// [GlassStyle.classic].
+  /// When null, defaults to 1.15 across [GlassStyle.ios27], [GlassStyle.ios26],
+  /// and [GlassStyle.classic].
   final double? magnification;
 
   /// Blur applied to content inside the indicator (bottom/searchable).
@@ -1095,9 +1095,10 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
 
   /// Peak scale applied at maximum press depth.
   ///
-  /// null (default): the search and trailing circles press like a native
-  /// button (~17 pt growth) and the bar surface keeps its subtle 1.04. A
-  /// number applies that fixed factor everywhere instead.
+  /// null (default on searchable/minimizable): the search and trailing circles
+  /// press like a native button (~17 pt growth) and the bar surface keeps its
+  /// subtle `1.04` press-lift across all styles. A number applies that fixed
+  /// factor everywhere instead.
   final double? pressScale;
 
   /// Directional glow color on press. Null = theme default.
@@ -1329,15 +1330,13 @@ class _GlassTabBarState extends State<GlassTabBar> {
 
   /// Selected-item magnification inside the lifted indicator.
   ///
-  /// An explicit [GlassTabBar.magnification] always wins. Otherwise the value
-  /// follows the active [GlassStyle]: native iOS 27 `_UILiquidLensView`
-  /// magnifies the selected icon and label by 1.25 (measured on iOS 27.0
-  /// `24A434`), while the classic iOS 26 calibration is 1.15.
+  /// An explicit [GlassTabBar.magnification] always wins. Otherwise defaults to
+  /// 1.15 across styles — pairing with the 27.5 pt base icon on
+  /// [GlassStyle.ios27] / [GlassStyle.ios26] and 24.0 pt on
+  /// [GlassStyle.classic] so lifted items get tactile zoom without ballooning
+  /// past the pill interior.
   double _resolveMagnification(BuildContext context) {
-    final explicit = widget.magnification;
-    if (explicit != null) return explicit;
-    final style = GlassTheme.maybeOf(context)?.data.style ?? GlassStyle.ios27;
-    return style == GlassStyle.classic ? 1.15 : 1.25;
+    return widget.magnification ?? 1.15;
   }
 
   /// Icon size for tab items.
@@ -1406,21 +1405,6 @@ class _GlassTabBarState extends State<GlassTabBar> {
           : _kNativeHorizontalExpansion,
       vertical: verticalExpansion,
     );
-  }
-
-  /// Bar platter press scale factor for [GlassTabBar.bottom].
-  ///
-  /// When [pressScale] is left at its default `1.04`, iOS 27 mode uses `1.0`
-  /// — native iOS 27 `UITabBar` keeps `_UITabBarItemPlatterView` at `1.0×`
-  /// scale and only lifts/expands `_UILiquidLensView`, whereas classic iOS 26
-  /// mode scales the platter by `1.04×`.
-  double _resolveBottomPressScale(BuildContext context) {
-    final explicit = widget.pressScale;
-    if (explicit != null && explicit != 1.04) {
-      return explicit;
-    }
-    final style = GlassTheme.maybeOf(context)?.data.style ?? GlassStyle.ios27;
-    return style == GlassStyle.classic ? (explicit ?? 1.04) : 1.0;
   }
 
   @override
@@ -1529,7 +1513,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
       interactionGlowColor: widget.interactionGlowColor,
       interactionGlowRadius: widget.interactionGlowRadius,
       interactionBehavior: widget.interactionBehavior,
-      pressScale: _resolveBottomPressScale(context),
+      pressScale: widget.pressScale ?? 1.04,
       platformViewBackdrop: widget.platformViewBackdrop,
       adaptiveBrightness: widget.adaptiveBrightness,
       onBrightnessChanged: widget.onBrightnessChanged,

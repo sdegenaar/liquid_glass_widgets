@@ -37,12 +37,7 @@ jobs:
         run: flutter pub get
 
       - name: Analyze (fatal warnings)
-        # flutter analyze also fails on infos unless told otherwise. Beta
-        # deprecates package:flutter/material.dart and cupertino.dart in
-        # favour of material_ui / cupertino_ui (3.47.0-0.0.pre), which the
-        # package keeps on purpose for now (#291), so every import is an info
-        # there. Stable keeps infos fatal.
-        run: flutter analyze --fatal-warnings ${{ matrix.flutter-channel == 'beta' && '--no-fatal-infos' || '' }}
+        run: flutter analyze --fatal-warnings
 
       - name: Run tests with coverage
         shell: bash

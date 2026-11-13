@@ -355,6 +355,15 @@ void main() {
   // Scaled by activeLens (uInteractionIntensity) so resting switch/slider knobs
   // stay pure white at rest (matching Premium's activeIntensity gate).
   float activeLens = clamp(uInteractionIntensity, 0.0, 1.0);
+  float isLightBackdrop = step(0.5, uBackdropLuma);
+  float effectiveRimShade = mix(
+      uRimShade,
+      max(uRimShade, uRimLight * 1.20) * 1.12,
+      isLightBackdrop);
+  float effectiveShadeEnds = mix(
+      uRimShadeEnds * 0.35,
+      max(uRimShadeEnds, 0.68),
+      isLightBackdrop);
   float nativeRimLight = 0.0;
   float nativeRimShade = 0.0;
   float hairline = 1.0 - smoothstep(0.25, 1.10, distFromEdge);
@@ -368,23 +377,23 @@ void main() {
     // on the flat top and bottom edges; vertArch ensures the top and bottom
     // horizontal capsule arcs maintain a continuous specular rim.
     float lobe  = 0.84 * lit * lit * lit + 1.02 * opp * opp * opp;
-    float vertArch = surfaceNormal.y * surfaceNormal.y;
-    float effectiveLobe = max(lobe, vertArch * mix(0.82, 0.54, step(0.5, uBackdropLuma)));
+    float vertArch = surfaceNormal.y * surfaceNormal.y * abs(uLightDirection.x);
+    float effectiveLobe = max(lobe, vertArch * mix(0.68, 0.54, isLightBackdrop));
     if (uRimLight > 0.001) {
       float inset = max(distFromEdge - 0.75, 0.0);
       float core  = exp(-inset / 1.5);
       float tail  = exp(-inset / 5.5);
-      float ease  = mix(0.96, 0.68, step(0.5, uBackdropLuma));
-      float hairlineGate = 1.0 - hairline * step(0.001, uRimShade) * mix(0.35, 1.0, step(0.5, uBackdropLuma));
+      float ease  = mix(0.56, 0.68, isLightBackdrop);
+      float hairlineGate = 1.0 - hairline * step(0.001, effectiveRimShade);
       nativeRimLight = clamp(
           uRimLight * 1.32 * effectiveLobe * ease * (0.165 * core + 0.042 * tail) * hairlineGate * activeLens,
           0.0,
           1.0);
     }
-    if (uRimShade > 0.001 && distFromEdge < 2.2) {
+    if (effectiveRimShade > 0.001 && distFromEdge < 2.2) {
       float across = fastPowInd(max(0.0, 1.0 - along * along), 1.75);
       nativeRimShade = clamp(
-          uRimShade * 0.314 * mix(uRimShadeEnds, 1.0, across) * hairline * activeLens,
+          effectiveRimShade * 0.314 * mix(effectiveShadeEnds, 1.0, across) * hairline * activeLens,
           0.0,
           1.0);
     }
@@ -436,11 +445,10 @@ void main() {
     // edge, while specular highlights and cos³ rimLight lobes shine with
     // independent specular alpha over a crystal-clear center.
     float hasNativeRimF = step(0.001, uRimLight + uRimShade);
-    float isDarkBackdrop = 1.0 - step(0.5, uBackdropLuma);
-    float darkLensFloor = 0.045 * isDarkBackdrop * activeLens;
-    float bodyAlpha = max(
-        darkLensFloor,
-        mix(standardBaseAlpha, standardEdgeAlpha, edgeInfluence * (1.0 - hasNativeRimF)));
+    float bodyAlpha = mix(
+        standardBaseAlpha,
+        standardEdgeAlpha,
+        edgeInfluence * (1.0 - hasNativeRimF));
     vec3 bodyColor  = (uGlassColor.a > 0.001) ? uGlassColor.rgb : vec3(1.0);
     float effectiveBodyA = max(bodyAlpha, uGlassColor.a * mix(0.6, 1.0, uInteractionIntensity));
     vec3 pmRgb = bodyColor * effectiveBodyA;
@@ -450,13 +458,14 @@ void main() {
     float bevelZone = min(edgeZone, max(4.5, min(uSize.x, uSize.y) * 0.24));
     float bevelNorm = clamp(distFromEdge / bevelZone, 0.0, 1.0);
     float bevelBand = (1.0 - bevelNorm) * (1.0 - bevelNorm);
-    float normY = (p - uOrigin).y / max(uSize.y, 1.0);
+    float normY = localLogical.y / max(uSize.y, 1.0);
     float topTrough = smoothstep(0.04, 0.16, normY)
                     * (1.0 - smoothstep(0.22, 0.52, normY))
                     * smoothstep(1.5, 3.5, distFromEdge);
-    float keyShade = 0.025 * topTrough * step(0.5, uBackdropLuma) * hasNativeRimF * (1.0 - hairline) * activeLens;
+    float keyShade = 0.025 * topTrough * isLightBackdrop * hasNativeRimF * (1.0 - hairline) * activeLens;
+    float effectiveAbsorption = max(modulatedAbsorption, 0.055 * isLightBackdrop * hasNativeRimF * dirScale);
     float absorbDarken = clamp(
-        bevelBand * modulatedAbsorption * mix(0.55, 0.78, step(0.5, uBackdropLuma)) * activeLens + keyShade,
+        bevelBand * effectiveAbsorption * mix(0.55, 0.78, isLightBackdrop) * activeLens + keyShade,
         0.0,
         0.42);
     pmRgb *= (1.0 - absorbDarken);
@@ -467,9 +476,11 @@ void main() {
         modifiedRimBrightness * (0.85 + uAmbientRim * 3.5) * borderMask,
         0.0,
         0.85);
-    float nativePerimeterSpec = borderMask * mix(0.16, 0.08, step(0.5, uBackdropLuma))
-                              * (1.0 - step(0.001, uRimShade) * step(0.5, uBackdropLuma));
-    float ringSpec = mix(classicRingSpec, max(nativePerimeterSpec, classicRingSpec * 0.55) * activeLens, hasNativeRimF);
+    float nativePerimeterSpec = borderMask * 0.08 * (1.0 - step(0.001, effectiveRimShade));
+    float ringSpec = mix(
+        classicRingSpec,
+        max(nativePerimeterSpec, classicRingSpec * mix(0.15, 0.55, isLightBackdrop)) * activeLens,
+        hasNativeRimF);
     float fresnelSpec = clamp(
         fresnel * (uGlowIntensity * 0.5 + 0.16 * uFresnelStrength) * edgeInfluence * activeLens,
         0.0,
