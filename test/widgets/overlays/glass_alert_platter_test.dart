@@ -557,8 +557,10 @@ void main() {
         expect(style.fontFamily, isNot('monospace'), reason: text);
       }
       // Plain text in custom content takes the message style.
-      final content =
-          tester.renderObject<RenderParagraph>(find.text('Content')).text.style!;
+      final content = tester
+          .renderObject<RenderParagraph>(find.text('Content'))
+          .text
+          .style!;
       expect(content.fontSize, 15);
     });
 
@@ -614,6 +616,142 @@ void main() {
           borderRadius: BorderRadius.all(Radius.circular(32)),
         ),
       );
+    });
+  });
+
+  // A disabled UIAlertAction (isEnabled = false) on the iOS 27.0 simulator
+  // keeps its capsule and weight and reports its title in tertiaryLabel.
+  group('disabled actions', () {
+    List<GlassDialogAction> cancelAndDisabledSave(void Function() onCancel) => [
+          GlassDialogAction(label: 'Cancel', onPressed: onCancel),
+          const GlassDialogAction(
+            label: 'Save',
+            onPressed: null,
+            isPrimary: true,
+          ),
+        ];
+    final saveRegion = find.ancestor(
+      of: find.text('Save'),
+      matching: find.byType(GlassFocusRegion),
+    );
+
+    for (final style in [GlassStyle.ios26, GlassStyle.ios27]) {
+      testWidgets('a null onPressed disables the action ($style)',
+          (tester) async {
+        var cancels = 0;
+        await tester.pumpWidget(app(
+          style,
+          GlassDialog(
+            title: 'Tea name',
+            actions: cancelAndDisabledSave(() => cancels++),
+          ),
+        ));
+
+        await tester.tap(find.text('Save'));
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+
+        final save = tester.widget<Text>(find.text('Save'));
+        final context = tester.element(find.text('Save'));
+        expect(
+          save.style!.color,
+          CupertinoColors.tertiaryLabel.resolveFrom(context),
+        );
+        // The preferred action stays semibold while disabled.
+        expect(save.style!.fontWeight, FontWeight.w600);
+        // Still a full 48pt capsule in its place in the row.
+        expect(tester.getSize(saveRegion), const Size(140, 48));
+
+        // Its enabled neighbour is unaffected.
+        await tester.tap(find.text('Cancel'));
+        expect(cancels, 1);
+      });
+    }
+
+    testWidgets('a disabled action is reported as disabled with no tap action',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(app(
+        GlassStyle.ios27,
+        GlassDialog(title: 'Tea name', actions: cancelAndDisabledSave(() {})),
+      ));
+
+      expect(
+        tester.getSemantics(saveRegion),
+        isSemantics(
+          label: 'Save',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: false,
+          hasTapAction: false,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('classic disables the GlassButton', (tester) async {
+      await tester.pumpWidget(app(
+        GlassStyle.classic,
+        GlassDialog(title: 'Tea name', actions: cancelAndDisabledSave(() {})),
+      ));
+
+      final save = tester.widget<GlassButton>(find.ancestor(
+        of: find.text('Save'),
+        matching: find.byType(GlassButton),
+      ));
+      expect(save.enabled, isFalse);
+    });
+
+    testWidgets(
+        'disabling an action while pressed clears the pressed capsule wash',
+        (tester) async {
+      Color capsuleColor() {
+        final container = tester.widget<Container>(
+          find.descendant(
+            of: saveRegion,
+            matching: find.byWidgetPredicate(
+              (w) => w is Container && w.decoration is ShapeDecoration,
+            ),
+          ),
+        );
+        return (container.decoration! as ShapeDecoration).color!;
+      }
+
+      await tester.pumpWidget(app(
+        GlassStyle.ios27,
+        GlassDialog(
+          title: 'Tea name',
+          actions: [
+            GlassDialogAction(label: 'Cancel', onPressed: () {}),
+            GlassDialogAction(
+              label: 'Save',
+              onPressed: () {},
+              isPrimary: true,
+            ),
+          ],
+        ),
+      ));
+
+      final restColor = capsuleColor();
+
+      // Press down on the enabled Save action and hold.
+      final gesture = await tester.startGesture(tester.getCenter(saveRegion));
+      await tester.pump();
+      expect(capsuleColor(), isNot(equals(restColor)));
+
+      // Rebuild with Save disabled while the pointer is still down.
+      await tester.pumpWidget(app(
+        GlassStyle.ios27,
+        GlassDialog(
+          title: 'Tea name',
+          actions: cancelAndDisabledSave(() {}),
+        ),
+      ));
+      expect(capsuleColor(), equals(restColor));
+
+      await gesture.up();
+      await tester.pump();
+      expect(capsuleColor(), equals(restColor));
     });
   });
 }

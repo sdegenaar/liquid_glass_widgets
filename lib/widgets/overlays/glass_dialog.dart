@@ -499,7 +499,8 @@ class GlassDialog extends StatelessWidget {
     }
 
     return GlassButton.custom(
-      onTap: action.onPressed,
+      onTap: action.onPressed ?? () {},
+      enabled: action.onPressed != null,
       height: 44,
       shape: _actionButtonShape,
       glowColor: glowColor,
@@ -531,7 +532,13 @@ class GlassDialogAction {
   final String label;
 
   /// Callback when the button is pressed.
-  final VoidCallback onPressed;
+  ///
+  /// If null, the action is disabled: it stays in place, ignores taps, and is
+  /// reported as disabled to assistive technology. On [GlassStyle.ios27] and
+  /// [GlassStyle.ios26] its title is drawn in [CupertinoColors.tertiaryLabel],
+  /// as a disabled `UIAlertAction` is; on [GlassStyle.classic] the button is
+  /// dimmed like any disabled [GlassButton].
+  final VoidCallback? onPressed;
 
   /// Whether this is the primary (recommended) action.
   ///

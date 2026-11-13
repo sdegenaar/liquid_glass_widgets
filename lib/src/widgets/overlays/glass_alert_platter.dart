@@ -64,7 +64,9 @@ class GlassAlertPlatterAction {
   });
 
   final String label;
-  final VoidCallback onPressed;
+
+  /// Null disables the action.
+  final VoidCallback? onPressed;
   final bool isPrimary;
   final bool isDestructive;
   final Widget? icon;
@@ -321,6 +323,32 @@ class _GlassAlertPlatterButtonState extends State<_GlassAlertPlatterButton> {
   bool _pressed = false;
 
   @override
+  void didUpdateWidget(covariant _GlassAlertPlatterButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.action.onPressed == null && _pressed) {
+      _pressed = false;
+    }
+  }
+
+  void _handleTapDown(TapDownDetails _) {
+    if (!_pressed) {
+      setState(() => _pressed = true);
+    }
+  }
+
+  void _handleTapUp(TapUpDetails _) {
+    if (_pressed && mounted) {
+      setState(() => _pressed = false);
+    }
+  }
+
+  void _handleTapCancel() {
+    if (_pressed && mounted) {
+      setState(() => _pressed = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     // The filled capsule wash differs between the two runtimes (measured):
@@ -330,15 +358,21 @@ class _GlassAlertPlatterButtonState extends State<_GlassAlertPlatterButton> {
     final isIos26 = GlassThemeHelpers.resolveStyle(context) == GlassStyle.ios26;
     final restLight = isIos26 ? 0.10 : 0.15;
     final restDark = isIos26 ? 0.13 : 0.115;
+    final action = widget.action;
+    final enabled = action.onPressed != null;
+    final isPressed = enabled && _pressed;
     final fill = isDark
         ? CupertinoColors.white
-            .withValues(alpha: _pressed ? restDark + 0.085 : restDark)
+            .withValues(alpha: isPressed ? restDark + 0.085 : restDark)
         : CupertinoColors.black
-            .withValues(alpha: _pressed ? restLight + 0.10 : restLight);
-    final action = widget.action;
-    final textColor = action.isDestructive
-        ? CupertinoColors.systemRed.resolveFrom(context)
-        : CupertinoColors.label.resolveFrom(context);
+            .withValues(alpha: isPressed ? restLight + 0.10 : restLight);
+    // A disabled action keeps its fill and weight and dims its title to
+    // tertiaryLabel, which UIKit reports for a disabled UIAlertAction.
+    final textColor = !enabled
+        ? CupertinoColors.tertiaryLabel.resolveFrom(context)
+        : action.isDestructive
+            ? CupertinoColors.systemRed.resolveFrom(context)
+            : CupertinoColors.label.resolveFrom(context);
     // One line, as native, except at accessibility sizes where native wraps the
     // title and grows the button rather than truncating it.
     final wraps = _isInAccessibilityMode(context);
@@ -359,7 +393,7 @@ class _GlassAlertPlatterButtonState extends State<_GlassAlertPlatterButton> {
         : const StadiumBorder();
 
     return GlassFocusRegion(
-      enabled: true,
+      enabled: enabled,
       isButton: true,
       semanticLabel: action.label,
       shape: shape,
@@ -369,9 +403,9 @@ class _GlassAlertPlatterButtonState extends State<_GlassAlertPlatterButton> {
         behavior: HitTestBehavior.opaque,
         excludeFromSemantics: true,
         onTap: action.onPressed,
-        onTapDown: (_) => setState(() => _pressed = true),
-        onTapUp: (_) => setState(() => _pressed = false),
-        onTapCancel: () => setState(() => _pressed = false),
+        onTapDown: enabled ? _handleTapDown : null,
+        onTapUp: enabled ? _handleTapUp : null,
+        onTapCancel: enabled ? _handleTapCancel : null,
         child: Container(
           // 48 pt at regular text sizes; taller only when a wrapped title
           // needs the room.
