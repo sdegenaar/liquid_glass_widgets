@@ -1,4 +1,6 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show MaterialApp;
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -1087,6 +1089,37 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+        'showGlassDatePicker shown from a MaterialApp does not inherit the error text style',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => CupertinoButton(
+              onPressed: () {
+                showGlassDatePicker(
+                  context: context,
+                  initialDateTime: DateTime(2026, 6, 15),
+                  title: 'Pick a Date',
+                );
+              },
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      final titleStyle = tester
+          .renderObject<RenderParagraph>(find.text('Pick a Date'))
+          .text
+          .style!;
+      expect(titleStyle.decoration, isNot(TextDecoration.underline));
+      expect(titleStyle.fontFamily, isNot('monospace'));
     });
   });
 }

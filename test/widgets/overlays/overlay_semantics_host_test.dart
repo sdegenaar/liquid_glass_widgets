@@ -1,7 +1,7 @@
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_glass_widgets/widgets/overlays/shared/overlay_semantics_host.dart';
+import 'package:liquid_glass_widgets/src/widgets/overlays/overlay_semantics_host.dart';
 
 void main() {
   group('OverlaySemanticsHost', () {
