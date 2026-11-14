@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- Preserve independent top and bottom corner radii for vertical rounded rectangles in the Standard glass renderer.
+
 # 1.17.3
 
 ## Features

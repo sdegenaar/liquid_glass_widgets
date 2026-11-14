@@ -958,7 +958,7 @@ class _RenderLightweightGlass extends RenderProxyBox
     shader.setFloat(index++, (_settings.chromaticAberration).clamp(0.0, 1.0));
 
     // 16: uCornerRadius (float) - Logical
-    // For LiquidVerticalRoundedSuperellipse: write -1.0 to signal asymmetric mode.
+    // For vertically asymmetric shapes, -1.0 selects per-corner radii.
     // Slots 24-27 (uData6) will carry the four per-corner radii in that case.
     double? cornerRadius;
     double topLeftR = 0.0;
@@ -967,16 +967,16 @@ class _RenderLightweightGlass extends RenderProxyBox
     double bottomLeftR = 0.0;
     bool isAsymmetric = false;
 
-    if (_shape is LiquidVerticalRoundedSuperellipse) {
-      // Asymmetric mode: each pair of corners has a different radius.
-      // topLeft == topRight == topRadius; bottomLeft == bottomRight == bottomRadius.
-      final s = _shape as LiquidVerticalRoundedSuperellipse;
-      final maxTop = math.min(size.width, size.height) / 2.0;
-      final maxBot = math.min(size.width, size.height) / 2.0;
-      topLeftR = s.topRadius.clamp(0.0, maxTop);
-      topRightR = s.topRadius.clamp(0.0, maxTop);
-      bottomRightR = s.bottomRadius.clamp(0.0, maxBot);
-      bottomLeftR = s.bottomRadius.clamp(0.0, maxBot);
+    if (_shape is LiquidVerticalRoundedRectangle ||
+        _shape is LiquidVerticalRoundedSuperellipse) {
+      // Match the clip for both circular and superellipse vertical shapes.
+      // Using effectiveRadius here would apply the larger radius to all corners.
+      final radii = _shape.toBorderRadius()!;
+      final maxRadius = math.min(size.width, size.height) / 2.0;
+      topLeftR = radii.topLeft.x.clamp(0.0, maxRadius);
+      topRightR = radii.topRight.x.clamp(0.0, maxRadius);
+      bottomRightR = radii.bottomRight.x.clamp(0.0, maxRadius);
+      bottomLeftR = radii.bottomLeft.x.clamp(0.0, maxRadius);
       isAsymmetric = true;
     } else {
       // effectiveRadius is obfuscation-safe: typed virtual dispatch on the
