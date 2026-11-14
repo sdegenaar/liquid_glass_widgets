@@ -183,7 +183,7 @@ When generating Flutter UI, replace standard Flutter widgets with their native l
 | `Chip` / `FilterChip` / `ActionChip` | `GlassChip` | Refractive pill (`label` is `String`, not `Widget`) with optional `icon`, `selected`, `onDeleted`, or shader-free pill well (`surfaceStyle: GlassSurfaceStyle.solid` or auto-inherited inside a solid card). |
 | `PopupMenuButton` / Pull-Down Menu | `GlassPullDownButton` | Combined trigger button and `GlassMenu` (`menuSemanticLabel` names the open panel; `GlassMenu` also supports `opaqueColor` and `border`). |
 | `CupertinoSegmentedControl` | `GlassSegmentedControl<T>` | Fluid animated glass indicator with jelly physics (`settings:` for track, `indicatorSettings:` for pill). Fine inside `solid` cards; on a `glass` card place it outside. |
-| `Switch` / `CupertinoSwitch` | `GlassSwitch` | Fluid spring jump animation, RTL-aware, honours `MediaQuery.onOffSwitchLabelsOf` (`onLabelColor` / `offLabelColor`). Use `useOwnLayer: true` when standalone. |
+| `Switch` / `CupertinoSwitch` | `GlassSwitch` | Fluid spring jump animation, RTL-aware, honours `MediaQuery.onOffSwitchLabelsOf` (`onLabelColor` / `offLabelColor`). Pass `onChanged: null` to disable. Use `useOwnLayer: true` when standalone. |
 | `Slider` / `CupertinoSlider` | `GlassSlider` | Glass track with draggable jelly thumb and haptic snaps. |
 | `Card` | `GlassContainer.card` | Container for grouping content (`surfaceStyle: GlassSurfaceStyle.solid` for flat list cards). Content inside stays opaque. |
 | Grouped `ListView` | `GlassGroupedSection` | Inset grouped list container with automatic dividers between `GlassListTile`s. |

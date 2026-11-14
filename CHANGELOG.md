@@ -1,3 +1,9 @@
+# Unreleased
+
+## Features
+
+- **`GlassSwitch` disabled state (`GlassSwitch.onChanged` is now `ValueChanged<bool>?`) (#485):** Passing `onChanged: null` disables the switch — rendering it at 50% group opacity (matching `UISwitch` and `CupertinoSwitch`), ignoring touch, drag, and keyboard input without lifting into a glass lens, reporting disabled state to assistive technology, and still sliding the thumb on programmatic `value` updates. Direct callers should update `switchWidget.onChanged(v)` to `switchWidget.onChanged?.call(v)`.
+
 # 1.17.3
 
 ## Features
