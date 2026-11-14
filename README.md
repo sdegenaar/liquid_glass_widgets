@@ -26,7 +26,7 @@ Bring Apple's Liquid Glass to your Flutter app — supporting both **iOS 27** an
 
 ```yaml
 dependencies:
-  liquid_glass_widgets: ^1.17.3
+  liquid_glass_widgets: ^1.17.4
 ```
 
 ```bash
@@ -63,6 +63,8 @@ void main() async {
 >   brightnessResolver: Theme.maybeBrightnessOf, // ← required for MaterialApp
 > ));
 > ```
+>
+> **Migrated to `package:cupertino_ui` on Flutter 3.50+?** Add Flutter's compatibility bridge to your `CupertinoApp` (`builder: (context, child) => CupertinoUiCompatibilityBridge(child: child!)`) so `CupertinoTheme` and localizations propagate into SDK-Cupertino packages.
 
 Then use `GlassScaffold` on each screen — it handles the background, status bar, z-ordering, bar isolation, and scroll edge fading automatically:
 
