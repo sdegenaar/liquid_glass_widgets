@@ -220,10 +220,11 @@ void main() {
   float smoothing = 1.0 / uScale.x;
   float mask = 1.0 - smoothstep(-smoothing, smoothing, dist);
 
+  // Skip shading outside the shape without an early return (multiple returns
+  // in main() alongside samplers can fail Windows HLSL/FXC; flutter#190809).
   if (mask <= 0.0) {
     fragColor = vec4(0.0);
-    return;
-  }
+  } else {
 
   // ---- STAGE 2: SURFACE NORMALS ----
   // Since gradient is analytically derived from maximum positive divergence,
@@ -636,5 +637,6 @@ void main() {
 
     fragColor = vec4(clamp(pmRgb, 0.0, 1.0) * mask, pmA * mask);
   }
+  } // end mask > 0.0
 }
 
