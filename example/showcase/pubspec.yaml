@@ -4,11 +4,13 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.13.0 <4.0.0'
+  flutter: '>=3.47.0'
 
 dependencies:
   flutter:
     sdk: flutter
+  cupertino_ui: ^1.1.6
 
   # Reference the local liquid_glass_widgets package
   liquid_glass_widgets:

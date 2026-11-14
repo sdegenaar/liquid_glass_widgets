@@ -9,7 +9,7 @@
 
 import 'dart:ui' as ui;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:liquid_glass_widgets/widgets/overlays/glass_modal_sheet.dart';
@@ -22,12 +22,14 @@ import 'package:liquid_glass_widgets_example/demos/glass_modal_sheet_demo.dart'
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('GlassModalSheet morphs from its trigger on a real renderer',
-      (tester) async {
+  testWidgets('GlassModalSheet morphs from its trigger on a real renderer', (
+    tester,
+  ) async {
     expect(
       ui.ImageFilter.isShaderFilterSupported,
       isTrue,
-      reason: 'This device reports no shader filter support, so the morph '
+      reason:
+          'This device reports no shader filter support, so the morph '
           'would correctly fall back to the slide. Run it on Impeller.',
     );
 
@@ -72,12 +74,14 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 500));
   });
 
-  testWidgets('a swipe shrinks the sheet and morphs it back from the release',
-      (tester) async {
+  testWidgets('a swipe shrinks the sheet and morphs it back from the release', (
+    tester,
+  ) async {
     expect(
       ui.ImageFilter.isShaderFilterSupported,
       isTrue,
-      reason: 'This device reports no shader filter support, so the morph '
+      reason:
+          'This device reports no shader filter support, so the morph '
           'would correctly fall back to the slide. Run it on Impeller.',
     );
 
@@ -109,8 +113,9 @@ void main() {
         .first;
     final cardFraction = tester.getRect(glassCard).height / screenHeight;
 
-    final gesture = await tester
-        .startGesture(tester.getCenter(find.bySemanticsLabel('Drag handle')));
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.bySemanticsLabel('Drag handle')),
+    );
 
     // Walked down in steps rather than one jump: it exercises the curve at
     // every intermediate position instead of a single point, and it makes a
@@ -132,7 +137,8 @@ void main() {
           ),
           0.02,
         ),
-        reason: 'the sheet shrinks on the measured iOS curve for the whole '
+        reason:
+            'the sheet shrinks on the measured iOS curve for the whole '
             'drag, not just at its end',
       );
       expect(
@@ -154,7 +160,8 @@ void main() {
     expect(
       movedBy,
       lessThan(60.0),
-      reason: 'but rubber-banded — the axis has friction, and it stiffens as '
+      reason:
+          'but rubber-banded — the axis has friction, and it stiffens as '
           'the card shrinks',
     );
 
@@ -170,8 +177,9 @@ void main() {
 
     // Now past the threshold, and let go mid-swipe. Long enough to be well
     // past the damping knee (0.48 of the card's height).
-    final dismiss = await tester
-        .startGesture(tester.getCenter(find.bySemanticsLabel('Drag handle')));
+    final dismiss = await tester.startGesture(
+      tester.getCenter(find.bySemanticsLabel('Drag handle')),
+    );
     const hardDrag = 400.0;
     for (var i = 0; i < steps * 2; i++) {
       await dismiss.moveBy(const Offset(0, hardDrag / (steps * 2)));
@@ -186,7 +194,8 @@ void main() {
     // top edge moves under the shrink as well as the fall, so it cannot
     // isolate either. The card should sit meaningfully above where an
     // undamped gain would leave it, and land on the damped curve.
-    final undamped = 1.0 -
+    final undamped =
+        1.0 -
         SheetMorphGeometry.dismissScaleGain *
             (hardDrag / (cardFraction * screenHeight));
     expect(
@@ -214,15 +223,18 @@ void main() {
     // back into the trigger rather than sliding away.
     expect(
       tester
-          .widget<Visibility>(find
-              .descendant(
-                of: find.byType(GlassSheetMorphPresenter),
-                matching: find.byType(Visibility),
-              )
-              .first)
+          .widget<Visibility>(
+            find
+                .descendant(
+                  of: find.byType(GlassSheetMorphPresenter),
+                  matching: find.byType(Visibility),
+                )
+                .first,
+          )
           .visible,
       isFalse,
-      reason: 'a swipe-dismissal hands off to the morph, like every other '
+      reason:
+          'a swipe-dismissal hands off to the morph, like every other '
           'dismissal does',
     );
 

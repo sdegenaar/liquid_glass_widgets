@@ -1,7 +1,9 @@
 import 'dart:async';
-import 'package:flutter/cupertino.dart';
+
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
+
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../constants/glass_defaults.dart';
@@ -319,10 +321,7 @@ class _GlassSliderState extends State<GlassSlider>
       curve: Curves.easeOutBack, // Slight overshoot for organic feel
       reverseCurve: Curves.easeInCubic,
     );
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.55,
-    ).animate(_scaleCurve);
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.55).animate(_scaleCurve);
 
     // Simple 0→1 hold: fades the white pill out on press-down and
     // keeps it clear for the entire drag. Reverses back on release.
@@ -346,9 +345,7 @@ class _GlassSliderState extends State<GlassSlider>
     // feeds buildJellyTransform for the squash/stretch matrix.
     _jellyController = SingleSpringController(
       vsync: this,
-      spring: GlassSpring.snappy(
-        duration: const Duration(milliseconds: 350),
-      ),
+      spring: GlassSpring.snappy(duration: const Duration(milliseconds: 350)),
       initialValue: 0.0,
     );
   }
@@ -387,7 +384,9 @@ class _GlassSliderState extends State<GlassSlider>
   }
 
   void _handleDragUpdate(
-      DragUpdateDetails details, BoxConstraints constraints) {
+    DragUpdateDetails details,
+    BoxConstraints constraints,
+  ) {
     final box = context.findRenderObject()! as RenderBox;
     final localPosition = box.globalToLocal(details.globalPosition);
 
@@ -468,15 +467,18 @@ class _GlassSliderState extends State<GlassSlider>
 
     final effectiveValue = _dragValue ?? widget.value;
     final normalizedValue =
-        ((effectiveValue - widget.min) / (widget.max - widget.min))
-            .clamp(0.0, 1.0);
+        ((effectiveValue - widget.min) / (widget.max - widget.min)).clamp(
+          0.0,
+          1.0,
+        );
 
     // Performance: Cache color calculations - these allocate on every build
     final brightness = GlassTheme.brightnessOf(context);
     final isDark = brightness == Brightness.dark;
     final activeColor =
         widget.activeColor ?? CupertinoColors.systemBlue.resolveFrom(context);
-    final inactiveColor = widget.inactiveColor ??
+    final inactiveColor =
+        widget.inactiveColor ??
         (brightness == Brightness.light
             ? CupertinoColors.black.withValues(alpha: 0.10)
             : CupertinoColors.white.withValues(alpha: 0.10));
@@ -485,21 +487,30 @@ class _GlassSliderState extends State<GlassSlider>
       builder: (context, constraints) {
         final isRtl = Directionality.of(context) == TextDirection.rtl;
         final trackWidth = constraints.maxWidth - (widget.thumbRadius * 2);
-        final thumbPosition = widget.thumbRadius +
+        final thumbPosition =
+            widget.thumbRadius +
             (trackWidth * (isRtl ? 1.0 - normalizedValue : normalizedValue));
 
         final step = (widget.max - widget.min) / (widget.divisions ?? 10);
-        final increasedValue =
-            (widget.value + step).clamp(widget.min, widget.max);
-        final decreasedValue =
-            (widget.value - step).clamp(widget.min, widget.max);
+        final increasedValue = (widget.value + step).clamp(
+          widget.min,
+          widget.max,
+        );
+        final decreasedValue = (widget.value - step).clamp(
+          widget.min,
+          widget.max,
+        );
 
         final normalizedIncreased =
-            ((increasedValue - widget.min) / (widget.max - widget.min))
-                .clamp(0.0, 1.0);
+            ((increasedValue - widget.min) / (widget.max - widget.min)).clamp(
+              0.0,
+              1.0,
+            );
         final normalizedDecreased =
-            ((decreasedValue - widget.min) / (widget.max - widget.min))
-                .clamp(0.0, 1.0);
+            ((decreasedValue - widget.min) / (widget.max - widget.min)).clamp(
+              0.0,
+              1.0,
+            );
 
         final thumbHeight = widget.thumbRadius * 1.6;
         final thumbWidth = thumbHeight * (37.0 / 24.0);
@@ -575,15 +586,15 @@ class _GlassSliderState extends State<GlassSlider>
                                   Positioned(
                                     left: isRtl
                                         ? (normalizedValue >= 1.0
-                                            ? 0.0
-                                            : thumbPosition)
+                                              ? 0.0
+                                              : thumbPosition)
                                         : 0.0,
                                     right: isRtl
                                         ? 0.0
                                         : (normalizedValue >= 1.0
-                                            ? 0.0
-                                            : (constraints.maxWidth -
-                                                thumbPosition)),
+                                              ? 0.0
+                                              : (constraints.maxWidth -
+                                                    thumbPosition)),
                                     top: 0,
                                     bottom: 0,
                                     child: Container(
@@ -616,7 +627,8 @@ class _GlassSliderState extends State<GlassSlider>
                           final scaledThumbHeight = thumbHeight * scale;
                           final leftPosition =
                               thumbPosition - (scaledThumbWidth / 2);
-                          final topPosition = (widget.thumbRadius * 2 +
+                          final topPosition =
+                              (widget.thumbRadius * 2 +
                                   16 -
                                   scaledThumbHeight) /
                               2;
@@ -627,14 +639,14 @@ class _GlassSliderState extends State<GlassSlider>
                           final jellyVelocity = _jellyController.velocity;
                           final jellyTransform =
                               DraggableIndicatorPhysics.buildJellyTransform(
-                            velocity: Offset(jellyVelocity, 0),
-                            maxDistortion: 0.6,
-                            // Slider spring tracks 0→1 normalised position,
-                            // producing velocities of ~1-3 units/sec (vs tab bar's
-                            // 10-20+). Scale down so these smaller velocities
-                            // produce visible squash/stretch.
-                            velocityScale: 2,
-                          );
+                                velocity: Offset(jellyVelocity, 0),
+                                maxDistortion: 0.6,
+                                // Slider spring tracks 0→1 normalised position,
+                                // producing velocities of ~1-3 units/sec (vs tab bar's
+                                // 10-20+). Scale down so these smaller velocities
+                                // produce visible squash/stretch.
+                                velocityScale: 2,
+                              );
 
                           return Positioned(
                             left: leftPosition,
@@ -644,9 +656,7 @@ class _GlassSliderState extends State<GlassSlider>
                               transform: jellyTransform,
                               child: Stack(
                                 clipBehavior: Clip.none,
-                                children: [
-                                  _buildThumbGlass(scale, isDark),
-                                ],
+                                children: [_buildThumbGlass(scale, isDark)],
                               ),
                             ),
                           );
@@ -702,9 +712,7 @@ class _GlassSliderState extends State<GlassSlider>
     );
 
     // Use exact stadium SDF for the thumb — eliminates squircle drift.
-    final thumbShape = LiquidRoundedRectangle(
-      borderRadius: totalHeight / 2,
-    );
+    final thumbShape = LiquidRoundedRectangle(borderRadius: totalHeight / 2);
 
     final theme = GlassTheme.maybeOf(context)?.data;
     final style = theme?.style ?? GlassStyle.ios27;
@@ -713,24 +721,24 @@ class _GlassSliderState extends State<GlassSlider>
         : const Color.from(alpha: 0.12, red: 0.88, green: 0.88, blue: 0.90);
     final eraBase = switch (style) {
       GlassStyle.classic => LiquidGlassSettings(
-          glassColor: thumbTint,
-          refractiveIndex: isDark ? 1.3 : 1.4,
-          thickness: isDark ? 13 : 17,
-          lightIntensity: isStdPath
-              ? 0.0
-              : 1.8, // no specular on synthetic path; premium unchanged
-          blur: 0,
-          lightAngle: GlassDefaults.lightAngle,
-        ),
+        glassColor: thumbTint,
+        refractiveIndex: isDark ? 1.3 : 1.4,
+        thickness: isDark ? 13 : 17,
+        lightIntensity: isStdPath
+            ? 0.0
+            : 1.8, // no specular on synthetic path; premium unchanged
+        blur: 0,
+        lightAngle: GlassDefaults.lightAngle,
+      ),
       GlassStyle.ios26 => LiquidGlassSettings.ios26Indicator.copyWith(
-          refractiveIndex: 1.07,
-          rimShade: 1.0,
-          rimShadeEnds: 0.56,
-          rimLight: 1.0,
-        ),
+        refractiveIndex: 1.07,
+        rimShade: 1.0,
+        rimShadeEnds: 0.56,
+        rimLight: 1.0,
+      ),
       GlassStyle.ios27 => LiquidGlassSettings.ios27Indicator.copyWith(
-          refractiveIndex: 1.07,
-        ),
+        refractiveIndex: 1.07,
+      ),
     };
     final themedThumbSettings =
         theme?.indicatorSettingsFor(context)?.applyTo(eraBase) ?? eraBase;
@@ -740,7 +748,8 @@ class _GlassSliderState extends State<GlassSlider>
     final resolvedThumbSettings = rawThumbSettings.copyWith(
       blur: 0,
       frost: 0,
-      glassColor: isStdPath &&
+      glassColor:
+          isStdPath &&
               rawThumbSettings.glassColor.a == 0 &&
               (isDark || !hasNativeRim)
           ? thumbTint
@@ -807,7 +816,8 @@ class _GlassSliderState extends State<GlassSlider>
                 children: [
                   // Glass shell footprint (crucial for proper shader rendering)
                   Positioned.fill(
-                      child: Container(color: const Color(0x00000000))),
+                    child: Container(color: const Color(0x00000000)),
+                  ),
 
                   // Physical material content (centered, original size)
                   materialContent,
@@ -817,15 +827,13 @@ class _GlassSliderState extends State<GlassSlider>
                     Opacity(
                       opacity: transition,
                       child: GlassGlow(
-                        glowColor: widget.glowColor ??
+                        glowColor:
+                            widget.glowColor ??
                             (useIos27Lens
                                 ? const Color(0x00000000)
                                 : const Color(0x1FFFFFFF)), // white ~12%
                         glowRadius: widget.glowRadius,
-                        child: SizedBox(
-                          width: thumbWidth,
-                          height: thumbHeight,
-                        ),
+                        child: SizedBox(width: thumbWidth, height: thumbHeight),
                       ),
                     ),
                 ],

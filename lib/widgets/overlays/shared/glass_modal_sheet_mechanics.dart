@@ -118,7 +118,8 @@ EdgeInsets _stripSheetInsets({
     GlassSheetPlacement.leading => 0.0,
     GlassSheetPlacement.trailing => 1.0,
   };
-  final left = spare *
+  final left =
+      spare *
       (textDirection == TextDirection.ltr ? leadingShare : 1.0 - leadingShare);
   return EdgeInsets.only(left: margin + left, right: margin + spare - left);
 }
@@ -154,7 +155,8 @@ GlassVerticalBarData? _sheetVerticalBar({
   required TextDirection textDirection,
 }) {
   if (bar == null) return null;
-  final stripOnRight = (bar.edge == GlassVerticalBarEdge.trailing) ==
+  final stripOnRight =
+      (bar.edge == GlassVerticalBarEdge.trailing) ==
       (textDirection == TextDirection.ltr);
   // The sheet's edge on the strip's side, as a distance from the strip's
   // inner edge.
@@ -222,23 +224,26 @@ class SheetSnapshot {
     double? position,
     double? velocity,
     Size? screenSize,
-  }) =>
-      SheetSnapshot(
-        state: state ?? this.state,
-        position: position ?? this.position,
-        velocity: velocity ?? this.velocity,
-        screenSize: screenSize ?? this.screenSize,
-      );
+  }) => SheetSnapshot(
+    state: state ?? this.state,
+    position: position ?? this.position,
+    velocity: velocity ?? this.velocity,
+    screenSize: screenSize ?? this.screenSize,
+  );
 
   /// Normalized progress between the half and full snap positions.
   ///
   /// Returns 0.0 when at or below the half detent, and 1.0 when at the full
   /// detent. Used to drive the glass-to-solid color crossfade.
   double get expandProgress {
-    final halfPos =
-        SheetGeometry.positionFor(GlassSheetState.half, screenSize.height);
-    final fullPos =
-        SheetGeometry.positionFor(GlassSheetState.full, screenSize.height);
+    final halfPos = SheetGeometry.positionFor(
+      GlassSheetState.half,
+      screenSize.height,
+    );
+    final fullPos = SheetGeometry.positionFor(
+      GlassSheetState.full,
+      screenSize.height,
+    );
     if (fullPos <= halfPos) return 0.0;
     return ((position - halfPos) / (fullPos - halfPos)).clamp(0.0, 1.0);
   }
@@ -367,14 +372,38 @@ class SheetGeometry {
   /// Like [positionFor] but applies cascade constraints so snap positions are
   /// always ordered: `hidden ≤ peek ≤ half ≤ full`.
   double positionForState(GlassSheetState state, double screenHeight) {
-    final hiddenPos = positionFor(GlassSheetState.hidden, screenHeight,
-        mode: mode, halfSize: halfSize, fullSize: fullSize, peekSize: peekSize);
-    final peekPos = positionFor(GlassSheetState.peek, screenHeight,
-        mode: mode, halfSize: halfSize, fullSize: fullSize, peekSize: peekSize);
-    final halfPos = positionFor(GlassSheetState.half, screenHeight,
-        mode: mode, halfSize: halfSize, fullSize: fullSize, peekSize: peekSize);
-    final fullPos = positionFor(GlassSheetState.full, screenHeight,
-        mode: mode, halfSize: halfSize, fullSize: fullSize, peekSize: peekSize);
+    final hiddenPos = positionFor(
+      GlassSheetState.hidden,
+      screenHeight,
+      mode: mode,
+      halfSize: halfSize,
+      fullSize: fullSize,
+      peekSize: peekSize,
+    );
+    final peekPos = positionFor(
+      GlassSheetState.peek,
+      screenHeight,
+      mode: mode,
+      halfSize: halfSize,
+      fullSize: fullSize,
+      peekSize: peekSize,
+    );
+    final halfPos = positionFor(
+      GlassSheetState.half,
+      screenHeight,
+      mode: mode,
+      halfSize: halfSize,
+      fullSize: fullSize,
+      peekSize: peekSize,
+    );
+    final fullPos = positionFor(
+      GlassSheetState.full,
+      screenHeight,
+      mode: mode,
+      halfSize: halfSize,
+      fullSize: fullSize,
+      peekSize: peekSize,
+    );
 
     // Cascade constraint: ensure order hidden <= peek <= half <= full
     final safePeek = peekPos.clamp(hiddenPos, 1.0);
@@ -527,8 +556,11 @@ class GlassModalSheetController {
   ///
   /// When [animate] is `false` the sheet jumps instantly. [velocity] seeds the
   /// spring simulation's initial velocity (pixels/second, upward positive).
-  void snapToState(GlassSheetState state,
-      {bool animate = true, double velocity = 0}) {
+  void snapToState(
+    GlassSheetState state, {
+    bool animate = true,
+    double velocity = 0,
+  }) {
     _state?._snapToState(state, animate: animate, velocity: velocity);
   }
 
@@ -618,8 +650,9 @@ class GestureArena {
   double lastMoveY = 0.0;
 
   /// Tracks pointer samples to compute a fling velocity at gesture end.
-  VelocityTracker velocityTracker =
-      VelocityTracker.withKind(PointerDeviceKind.touch);
+  VelocityTracker velocityTracker = VelocityTracker.withKind(
+    PointerDeviceKind.touch,
+  );
 
   /// Resets the arena to [GesturePhase.idle] between pointer sequences.
   void reset() {
@@ -638,7 +671,11 @@ class GestureArena {
 
   /// Called when a pointer-down event lands in the sheet's content area.
   void beginPointer(
-      double y, double x, double sheetPosition, PointerDeviceKind kind) {
+    double y,
+    double x,
+    double sheetPosition,
+    PointerDeviceKind kind,
+  ) {
     phase = GesturePhase.idle;
     dragStartY = y;
     lastMoveY = y;
@@ -793,10 +830,7 @@ class FrozenState {
   final double heightAtFreeze;
 
   /// Creates an immutable frozen state record.
-  const FrozenState({
-    required this.bottomScale,
-    required this.heightAtFreeze,
-  });
+  const FrozenState({required this.bottomScale, required this.heightAtFreeze});
 
   @override
   String toString() =>

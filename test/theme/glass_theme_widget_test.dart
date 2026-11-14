@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -51,10 +51,7 @@ void main() {
       await tester.pumpWidget(
         Builder(
           builder: (context) {
-            expect(
-              () => GlassTheme.of(context),
-              throwsAssertionError,
-            );
+            expect(() => GlassTheme.of(context), throwsAssertionError);
             return const SizedBox.shrink();
           },
         ),
@@ -80,8 +77,9 @@ void main() {
       expect(result.data, equals(data));
     });
 
-    testWidgets('updateShouldNotify is false when data unchanged',
-        (tester) async {
+    testWidgets('updateShouldNotify is false when data unchanged', (
+      tester,
+    ) async {
       final data = GlassThemeData.fallback();
       var notifyCount = 0;
 
@@ -164,10 +162,7 @@ void main() {
       final data = GlassThemeData.fallback();
 
       await tester.pumpWidget(
-        GlassTheme(
-          data: data,
-          child: const SizedBox.shrink(),
-        ),
+        GlassTheme(data: data, child: const SizedBox.shrink()),
       );
 
       final element = tester.element(find.byType(GlassTheme));
@@ -198,8 +193,9 @@ void main() {
       expect(result, equals(fallback));
     });
 
-    testWidgets('returns theme data when GlassTheme is present',
-        (tester) async {
+    testWidgets('returns theme data when GlassTheme is present', (
+      tester,
+    ) async {
       final data = GlassThemeData(
         light: GlassThemeVariant(
           settings: const GlassThemeSettings(thickness: 42),
@@ -299,8 +295,9 @@ void main() {
       });
     });
 
-    testWidgets('initialize() supports GlassWarmUpMode auto, always, never',
-        (tester) async {
+    testWidgets('initialize() supports GlassWarmUpMode auto, always, never', (
+      tester,
+    ) async {
       await tester.runAsync(() async {
         await expectLater(
           LiquidGlassWidgets.initialize(
@@ -339,36 +336,40 @@ void main() {
     });
 
     testWidgets(
-        'initialize() with enablePerformanceMonitor:true starts monitor',
-        (tester) async {
-      await tester.runAsync(() async {
-        await LiquidGlassWidgets.initialize(enablePerformanceMonitor: true);
-        GlassPerformanceMonitor.stop();
-        GlassPerformanceMonitor.reset();
-      });
-    });
+      'initialize() with enablePerformanceMonitor:true starts monitor',
+      (tester) async {
+        await tester.runAsync(() async {
+          await LiquidGlassWidgets.initialize(enablePerformanceMonitor: true);
+          GlassPerformanceMonitor.stop();
+          GlassPerformanceMonitor.reset();
+        });
+      },
+    );
 
     // ── wrap() + adaptive ────────────────────────────────────────────────────
 
     testWidgets(
-        'wrap(adaptiveQuality:true) inserts GlassAdaptiveScope as outermost widget',
-        (tester) async {
-      final wrapped = LiquidGlassWidgets.wrap(
-        child: const SizedBox.shrink(),
-        adaptiveQuality: true,
-      );
-      expect(wrapped.runtimeType.toString(), contains('GlassAdaptiveScope'));
-    });
+      'wrap(adaptiveQuality:true) inserts GlassAdaptiveScope as outermost widget',
+      (tester) async {
+        final wrapped = LiquidGlassWidgets.wrap(
+          child: const SizedBox.shrink(),
+          adaptiveQuality: true,
+        );
+        expect(wrapped.runtimeType.toString(), contains('GlassAdaptiveScope'));
+      },
+    );
 
-    test('wrap() without adaptiveQuality does NOT insert GlassAdaptiveScope',
-        () {
-      final wrapped = LiquidGlassWidgets.wrap(child: const SizedBox.shrink());
-      // With no adaptive quality, wrap returns the child directly.
-      expect(
-        wrapped.runtimeType.toString(),
-        isNot(contains('GlassAdaptiveScope')),
-      );
-    });
+    test(
+      'wrap() without adaptiveQuality does NOT insert GlassAdaptiveScope',
+      () {
+        final wrapped = LiquidGlassWidgets.wrap(child: const SizedBox.shrink());
+        // With no adaptive quality, wrap returns the child directly.
+        expect(
+          wrapped.runtimeType.toString(),
+          isNot(contains('GlassAdaptiveScope')),
+        );
+      },
+    );
   });
 
   // ── GlassTheme.debugFillProperties (lines 90-93) ────────────────────────────
@@ -378,10 +379,7 @@ void main() {
 
       await tester.pumpWidget(
         createTestApp(
-          child: GlassTheme(
-            data: data,
-            child: const SizedBox.shrink(),
-          ),
+          child: GlassTheme(data: data, child: const SizedBox.shrink()),
         ),
       );
 

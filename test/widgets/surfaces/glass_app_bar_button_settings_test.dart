@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -6,12 +6,10 @@ import '../../shared/test_helpers.dart';
 
 void main() {
   group('GlassAppBar.buttonSettings', () {
-    testWidgets('wraps content in DefaultButtonSettings when provided',
-        (tester) async {
-      const testSettings = LiquidGlassSettings(
-        blur: 42,
-        thickness: 99,
-      );
+    testWidgets('wraps content in DefaultButtonSettings when provided', (
+      tester,
+    ) async {
+      const testSettings = LiquidGlassSettings(blur: 42, thickness: 99);
 
       await tester.pumpWidget(
         createTestApp(
@@ -38,8 +36,9 @@ void main() {
       expect(scope.settings.thickness, equals(99.0));
     });
 
-    testWidgets('does not insert DefaultButtonSettings when null',
-        (tester) async {
+    testWidgets('does not insert DefaultButtonSettings when null', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
@@ -98,8 +97,9 @@ void main() {
       expect(inherited, isNull);
     });
 
-    testWidgets('updateShouldNotify returns true when settings change',
-        (tester) async {
+    testWidgets('updateShouldNotify returns true when settings change', (
+      tester,
+    ) async {
       const settingsA = LiquidGlassSettings(blur: 1);
       const settingsB = LiquidGlassSettings(blur: 2);
 
@@ -115,8 +115,9 @@ void main() {
       expect(widgetB.updateShouldNotify(widgetA), isTrue);
     });
 
-    testWidgets('updateShouldNotify returns false when settings are the same',
-        (tester) async {
+    testWidgets('updateShouldNotify returns false when settings are the same', (
+      tester,
+    ) async {
       const settingsA = LiquidGlassSettings(blur: 1);
       const settingsB = LiquidGlassSettings(blur: 1);
 

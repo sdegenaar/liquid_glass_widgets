@@ -60,10 +60,14 @@ void main() {
     });
 
     test('borderRadiusSmall < borderRadius < borderRadiusLarge', () {
-      expect(GlassDefaults.borderRadiusSmall,
-          lessThan(GlassDefaults.borderRadius));
-      expect(GlassDefaults.borderRadius,
-          lessThan(GlassDefaults.borderRadiusLarge));
+      expect(
+        GlassDefaults.borderRadiusSmall,
+        lessThan(GlassDefaults.borderRadius),
+      );
+      expect(
+        GlassDefaults.borderRadius,
+        lessThan(GlassDefaults.borderRadiusLarge),
+      );
     });
   });
 
@@ -81,8 +85,10 @@ void main() {
     });
 
     test('paddingInput is symmetric(horizontal:16, vertical:12)', () {
-      expect(GlassDefaults.paddingInput,
-          const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0));
+      expect(
+        GlassDefaults.paddingInput,
+        const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      );
     });
 
     test('paddingCompact is EdgeInsets.all(8)', () {
@@ -94,12 +100,18 @@ void main() {
     });
 
     test('padding sizes are ordered: minimal < compact < card < panel', () {
-      expect(GlassDefaults.paddingMinimal.top,
-          lessThan(GlassDefaults.paddingCompact.top));
-      expect(GlassDefaults.paddingCompact.top,
-          lessThan(GlassDefaults.paddingCard.top));
-      expect(GlassDefaults.paddingCard.top,
-          lessThan(GlassDefaults.paddingPanel.top));
+      expect(
+        GlassDefaults.paddingMinimal.top,
+        lessThan(GlassDefaults.paddingCompact.top),
+      );
+      expect(
+        GlassDefaults.paddingCompact.top,
+        lessThan(GlassDefaults.paddingCard.top),
+      );
+      expect(
+        GlassDefaults.paddingCard.top,
+        lessThan(GlassDefaults.paddingPanel.top),
+      );
     });
   });
 
@@ -132,24 +144,34 @@ void main() {
   group('GlassDefaults — animation durations', () {
     test('animationDuration is 200ms', () {
       expect(
-          GlassDefaults.animationDuration, const Duration(milliseconds: 200));
+        GlassDefaults.animationDuration,
+        const Duration(milliseconds: 200),
+      );
     });
 
     test('animationDurationFast is 100ms', () {
-      expect(GlassDefaults.animationDurationFast,
-          const Duration(milliseconds: 100));
+      expect(
+        GlassDefaults.animationDurationFast,
+        const Duration(milliseconds: 100),
+      );
     });
 
     test('animationDurationSlow is 300ms', () {
-      expect(GlassDefaults.animationDurationSlow,
-          const Duration(milliseconds: 300));
+      expect(
+        GlassDefaults.animationDurationSlow,
+        const Duration(milliseconds: 300),
+      );
     });
 
     test('fast < standard < slow', () {
-      expect(GlassDefaults.animationDurationFast,
-          lessThan(GlassDefaults.animationDuration));
-      expect(GlassDefaults.animationDuration,
-          lessThan(GlassDefaults.animationDurationSlow));
+      expect(
+        GlassDefaults.animationDurationFast,
+        lessThan(GlassDefaults.animationDuration),
+      );
+      expect(
+        GlassDefaults.animationDuration,
+        lessThan(GlassDefaults.animationDurationSlow),
+      );
     });
   });
 }

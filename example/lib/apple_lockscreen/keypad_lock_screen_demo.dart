@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -17,13 +17,15 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
-  runApp(LiquidGlassWidgets.wrap(
-    child: CupertinoApp(
-      debugShowCheckedModeBanner: false,
-      theme: const CupertinoThemeData(brightness: Brightness.dark),
-      home: const KeypadLockScreenDemo(),
+  runApp(
+    LiquidGlassWidgets.wrap(
+      child: CupertinoApp(
+        debugShowCheckedModeBanner: false,
+        theme: const CupertinoThemeData(brightness: Brightness.dark),
+        home: const KeypadLockScreenDemo(),
+      ),
     ),
-  ));
+  );
 }
 
 /// iOS 26 lock screen keypad — uses [GlassButton] with
@@ -57,17 +59,17 @@ class _KeypadLockScreenDemoState extends State<KeypadLockScreenDemo>
       vsync: this,
     );
 
-    _shakeAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0, end: -12), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: -12, end: 12), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: 12, end: -8), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: -8, end: 8), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: 8, end: -4), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: -4, end: 0), weight: 1),
-    ]).animate(CurvedAnimation(
-      parent: _shakeController,
-      curve: Curves.easeInOut,
-    ));
+    _shakeAnimation =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 0, end: -12), weight: 1),
+          TweenSequenceItem(tween: Tween(begin: -12, end: 12), weight: 2),
+          TweenSequenceItem(tween: Tween(begin: 12, end: -8), weight: 2),
+          TweenSequenceItem(tween: Tween(begin: -8, end: 8), weight: 2),
+          TweenSequenceItem(tween: Tween(begin: 8, end: -4), weight: 2),
+          TweenSequenceItem(tween: Tween(begin: -4, end: 0), weight: 1),
+        ]).animate(
+          CurvedAnimation(parent: _shakeController, curve: Curves.easeInOut),
+        );
 
     _successController = AnimationController(
       duration: const Duration(milliseconds: 600),
@@ -141,8 +143,9 @@ class _KeypadLockScreenDemoState extends State<KeypadLockScreenDemo>
                 image: AssetImage('assets/bulldog.jpeg'),
                 fit: BoxFit.cover,
                 colorFilter: ColorFilter.mode(
-                  CupertinoColors.black
-                      .withValues(alpha: 0.3), // Adjust opacity for darkness
+                  CupertinoColors.black.withValues(
+                    alpha: 0.3,
+                  ), // Adjust opacity for darkness
                   BlendMode.darken, // Or BlendMode.srcOver for a solid overlay
                 ),
                 alignment: Alignment(0, 0),
@@ -336,10 +339,7 @@ class _KeypadLockScreenDemoState extends State<KeypadLockScreenDemo>
         SizedBox(width: 80, height: 80),
 
         // 0 button
-        _KeypadButton(
-          digit: 0,
-          onTap: () => _onDigitTap(0),
-        ),
+        _KeypadButton(digit: 0, onTap: () => _onDigitTap(0)),
 
         // Delete button
         SizedBox(

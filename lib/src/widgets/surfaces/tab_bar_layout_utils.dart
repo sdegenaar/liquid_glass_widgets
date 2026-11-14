@@ -42,7 +42,7 @@ const Color kNativeTabBarGlowColorLight = Color(0x26FFFFFF);
 /// Shared by `TabBarBottomLayout` and `TabBarSearchableLayout` so the two
 /// bars cannot drift apart again.
 ({double radius, double blurRadius, Color? color})
-    resolveTabBarInteractionGlow({
+resolveTabBarInteractionGlow({
   required double? interactionGlowRadius,
   required Color? interactionGlowColor,
   required Color? themeGlowColor,
@@ -53,11 +53,12 @@ const Color kNativeTabBarGlowColorLight = Color(0x26FFFFFF);
   return (
     radius: interactionGlowRadius ?? kNativeTabBarGlowRadius,
     blurRadius: isNative ? kNativeTabBarGlowBlurRadius : themeGlowBlurRadius,
-    color: interactionGlowColor ??
+    color:
+        interactionGlowColor ??
         (isNative
             ? (isDark
-                ? kNativeTabBarGlowColorDark
-                : kNativeTabBarGlowColorLight)
+                  ? kNativeTabBarGlowColorDark
+                  : kNativeTabBarGlowColorLight)
             : themeGlowColor),
   );
 }

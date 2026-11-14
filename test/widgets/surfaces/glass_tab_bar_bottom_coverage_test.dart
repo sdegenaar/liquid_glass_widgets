@@ -1,157 +1,174 @@
 // ignore_for_file: invalid_use_of_visible_for_testing_member
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/widgets/surfaces/tab_bar_bottom_internal.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
-      home: Scaffold(body: LiquidGlassWidgets.wrap(child: child)),
-    );
+  home: Scaffold(body: LiquidGlassWidgets.wrap(child: child)),
+);
 
 GlassTab _tab(String label) =>
     GlassTab(label: label, icon: const Icon(Icons.home));
 
 GlassTab _tabWithGlow(String label) => GlassTab(
-      label: label,
-      icon: const Icon(Icons.star),
-      activeIcon: const Icon(Icons.star_border),
-      glowColor: Colors.amber,
-      thickness: 1.5,
-    );
+  label: label,
+  icon: const Icon(Icons.star),
+  activeIcon: const Icon(Icons.star_border),
+  glowColor: Colors.amber,
+  thickness: 1.5,
+);
 
 void main() {
   group('GlassTabBar.bottom — rendering variants', () {
     testWidgets('basic 2-tab bar renders without crash', (tester) async {
-      await tester.pumpWidget(_wrap(
-        SizedBox(
-          height: 100,
-          child: GlassTabBar.bottom(
-            tabs: [_tab('Home'), _tab('Profile')],
-            selectedIndex: 0,
-            onTabSelected: (_) {},
+      await tester.pumpWidget(
+        _wrap(
+          SizedBox(
+            height: 100,
+            child: GlassTabBar.bottom(
+              tabs: [_tab('Home'), _tab('Profile')],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+            ),
           ),
         ),
-      ));
+      );
       await tester.pump();
       expect(find.text('Home'), findsWidgets);
     });
 
     testWidgets('tab with glowColor and thickness renders', (tester) async {
-      await tester.pumpWidget(_wrap(
-        SizedBox(
-          height: 100,
-          child: GlassTabBar.bottom(
-            tabs: [_tabWithGlow('Glow'), _tab('Normal')],
-            selectedIndex: 0,
-            onTabSelected: (_) {},
+      await tester.pumpWidget(
+        _wrap(
+          SizedBox(
+            height: 100,
+            child: GlassTabBar.bottom(
+              tabs: [_tabWithGlow('Glow'), _tab('Normal')],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+            ),
           ),
         ),
-      ));
+      );
       await tester.pump();
       expect(find.text('Glow'), findsWidgets);
     });
 
     testWidgets('MaskingQuality.off renders simple mode', (tester) async {
-      await tester.pumpWidget(_wrap(
-        SizedBox(
-          height: 100,
-          child: GlassTabBar.bottom(
-            tabs: [_tab('A'), _tab('B'), _tab('C')],
-            selectedIndex: 1,
-            onTabSelected: (_) {},
-            maskingQuality: MaskingQuality.off,
+      await tester.pumpWidget(
+        _wrap(
+          SizedBox(
+            height: 100,
+            child: GlassTabBar.bottom(
+              tabs: [_tab('A'), _tab('B'), _tab('C')],
+              selectedIndex: 1,
+              onTabSelected: (_) {},
+              maskingQuality: MaskingQuality.off,
+            ),
           ),
         ),
-      ));
+      );
       await tester.pump();
       expect(find.text('A'), findsWidgets);
     });
 
     testWidgets('bar with extraButton renders extra btn', (tester) async {
-      await tester.pumpWidget(_wrap(
-        SizedBox(
-          height: 100,
-          child: GlassTabBar.bottom(
-            tabs: [_tab('Home'), _tab('Profile')],
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            extraButton: GlassTabBarExtraButton(
-              icon: const Icon(Icons.add),
-              onTap: () {},
-              label: 'Add',
-            ),
-          ),
-        ),
-      ));
-      await tester.pump();
-      expect(find.byType(SizedBox), findsWidgets);
-    });
-
-    testWidgets('non-default barBorderRadius passed to extra btn',
-        (tester) async {
-      await tester.pumpWidget(_wrap(
-        SizedBox(
-          height: 100,
-          child: GlassTabBar.bottom(
-            tabs: [_tab('Home'), _tab('Profile')],
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            barBorderRadius: 10, // not the default 32
-            extraButton: GlassTabBarExtraButton(
-              icon: const Icon(Icons.add),
-              onTap: () {},
-              label: 'Add',
-            ),
-          ),
-        ),
-      ));
-      await tester.pump();
-      expect(find.byType(SizedBox), findsWidgets);
-    });
-
-    testWidgets(
-        'shadow layer renders with infinite barBorderRadius without collapsing',
-        (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData(brightness: Brightness.light),
-          home: Scaffold(
-            body: AdaptiveLiquidGlassLayer(
-              settings: const LiquidGlassSettings(shadowElevation: 8),
-              child: SizedBox(
-                height: 100,
-                child: GlassTabBar.bottom(
-                  tabs: [_tab('Home'), _tab('Profile')],
-                  selectedIndex: 0,
-                  onTabSelected: (_) {},
-                  barBorderRadius: double.infinity,
-                ),
+        _wrap(
+          SizedBox(
+            height: 100,
+            child: GlassTabBar.bottom(
+              tabs: [_tab('Home'), _tab('Profile')],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              extraButton: GlassTabBarExtraButton(
+                icon: const Icon(Icons.add),
+                onTap: () {},
+                label: 'Add',
               ),
             ),
           ),
         ),
       );
-      await tester.pumpAndSettle();
-      expect(find.byType(GlassTabBar), findsOneWidget);
-
-      final state = tester.state<TabIndicatorState>(find.byType(TabIndicator));
-      final overlay =
-          state.buildShadowOverlay(tester.element(find.byType(TabIndicator)));
-      expect(overlay, isNotNull);
+      await tester.pump();
+      expect(find.byType(SizedBox), findsWidgets);
     });
 
-    testWidgets('standard quality bar renders', (tester) async {
-      await tester.pumpWidget(_wrap(
-        SizedBox(
-          height: 100,
-          child: GlassTabBar.bottom(
-            tabs: [_tab('Home'), _tab('Settings')],
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            quality: GlassQuality.standard,
+    testWidgets('non-default barBorderRadius passed to extra btn', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          SizedBox(
+            height: 100,
+            child: GlassTabBar.bottom(
+              tabs: [_tab('Home'), _tab('Profile')],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              barBorderRadius: 10, // not the default 32
+              extraButton: GlassTabBarExtraButton(
+                icon: const Icon(Icons.add),
+                onTap: () {},
+                label: 'Add',
+              ),
+            ),
           ),
         ),
-      ));
+      );
+      await tester.pump();
+      expect(find.byType(SizedBox), findsWidgets);
+    });
+
+    testWidgets(
+      'shadow layer renders with infinite barBorderRadius without collapsing',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData(brightness: Brightness.light),
+            home: Scaffold(
+              body: AdaptiveLiquidGlassLayer(
+                settings: const LiquidGlassSettings(shadowElevation: 8),
+                child: SizedBox(
+                  height: 100,
+                  child: GlassTabBar.bottom(
+                    tabs: [_tab('Home'), _tab('Profile')],
+                    selectedIndex: 0,
+                    onTabSelected: (_) {},
+                    barBorderRadius: double.infinity,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(GlassTabBar), findsOneWidget);
+
+        final state = tester.state<TabIndicatorState>(
+          find.byType(TabIndicator),
+        );
+        final overlay = state.buildShadowOverlay(
+          tester.element(find.byType(TabIndicator)),
+        );
+        expect(overlay, isNotNull);
+      },
+    );
+
+    testWidgets('standard quality bar renders', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          SizedBox(
+            height: 100,
+            child: GlassTabBar.bottom(
+              tabs: [_tab('Home'), _tab('Settings')],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              quality: GlassQuality.standard,
+            ),
+          ),
+        ),
+      );
       await tester.pump();
       expect(find.text('Home'), findsWidgets);
     });
@@ -166,57 +183,64 @@ void main() {
     });
 
     testWidgets('enableBlend: false renders without crash', (tester) async {
-      await tester.pumpWidget(_wrap(
-        SizedBox(
-          height: 100,
-          child: GlassTabBar.bottom(
-            tabs: [_tab('Home'), _tab('Profile')],
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            enableBlend: false,
-            extraButton: GlassTabBarExtraButton(
-              icon: const Icon(Icons.add),
-              onTap: () {},
-              label: 'Add',
+      await tester.pumpWidget(
+        _wrap(
+          SizedBox(
+            height: 100,
+            child: GlassTabBar.bottom(
+              tabs: [_tab('Home'), _tab('Profile')],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              enableBlend: false,
+              extraButton: GlassTabBarExtraButton(
+                icon: const Icon(Icons.add),
+                onTap: () {},
+                label: 'Add',
+              ),
             ),
           ),
         ),
-      ));
+      );
       await tester.pump();
       expect(find.text('Home'), findsWidgets);
     });
   });
 
   group('GlassTabBar.bottom — interaction behavior', () {
-    testWidgets('GlassInteractionBehavior.none disables glow and scale',
-        (tester) async {
-      await tester.pumpWidget(_wrap(
-        SizedBox(
-          height: 100,
-          child: GlassTabBar.bottom(
-            tabs: [_tab('X'), _tab('Y')],
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            interactionBehavior: GlassInteractionBehavior.none,
+    testWidgets('GlassInteractionBehavior.none disables glow and scale', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          SizedBox(
+            height: 100,
+            child: GlassTabBar.bottom(
+              tabs: [_tab('X'), _tab('Y')],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              interactionBehavior: GlassInteractionBehavior.none,
+            ),
           ),
         ),
-      ));
+      );
       await tester.pump();
       expect(find.byType(SizedBox), findsWidgets);
     });
 
     testWidgets('GlassInteractionBehavior.glowOnly renders', (tester) async {
-      await tester.pumpWidget(_wrap(
-        SizedBox(
-          height: 100,
-          child: GlassTabBar.bottom(
-            tabs: [_tab('X'), _tab('Y')],
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            interactionBehavior: GlassInteractionBehavior.glowOnly,
+      await tester.pumpWidget(
+        _wrap(
+          SizedBox(
+            height: 100,
+            child: GlassTabBar.bottom(
+              tabs: [_tab('X'), _tab('Y')],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              interactionBehavior: GlassInteractionBehavior.glowOnly,
+            ),
           ),
         ),
-      ));
+      );
       await tester.pump();
       expect(find.byType(SizedBox), findsWidgets);
     });
@@ -224,63 +248,69 @@ void main() {
 
   group('GlassTabBar.bottom — tabWidth compact mode', () {
     testWidgets('tabWidth=88 limits pill width', (tester) async {
-      await tester.pumpWidget(_wrap(
-        SizedBox(
-          height: 100,
-          child: GlassTabBar.bottom(
-            tabs: [_tab('H'), _tab('P'), _tab('S')],
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            tabWidth: 88,
+      await tester.pumpWidget(
+        _wrap(
+          SizedBox(
+            height: 100,
+            child: GlassTabBar.bottom(
+              tabs: [_tab('H'), _tab('P'), _tab('S')],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              tabWidth: 88,
+            ),
           ),
         ),
-      ));
+      );
       await tester.pump();
       expect(find.text('H'), findsWidgets);
     });
 
     testWidgets('tabWidth=null fills all space', (tester) async {
-      await tester.pumpWidget(_wrap(
-        SizedBox(
-          height: 100,
-          child: GlassTabBar.bottom(
-            tabs: [_tab('H'), _tab('P')],
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            tabWidth: null,
+      await tester.pumpWidget(
+        _wrap(
+          SizedBox(
+            height: 100,
+            child: GlassTabBar.bottom(
+              tabs: [_tab('H'), _tab('P')],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              tabWidth: null,
+            ),
           ),
         ),
-      ));
+      );
       await tester.pump();
       expect(find.byType(SizedBox), findsWidgets);
     });
   });
 
   group('JellyClipper', () {
-    test('getClip matches the inset optical track at rest and between tabs',
-        () {
-      // A 400px track has 4px padding on each side and four 98px lenses.
-      // Include mid-transition positions as well as every settled tab.
-      const alignments = [-1.0, -2 / 3, -1 / 3, 0.0, 1 / 3, 2 / 3, 1.0];
-      const expectedLefts = [4.0, 53.0, 102.0, 151.0, 200.0, 249.0, 298.0];
-      for (var i = 0; i < alignments.length; i++) {
-        final clipper = JellyClipper(
-          itemCount: 4,
-          alignment: Alignment(alignments[i], 0),
-          thickness: 0,
-          expansion: EdgeInsets.zero,
-          transform: Matrix4.identity(),
-          borderRadius: 24,
-        );
+    test(
+      'getClip matches the inset optical track at rest and between tabs',
+      () {
+        // A 400px track has 4px padding on each side and four 98px lenses.
+        // Include mid-transition positions as well as every settled tab.
+        const alignments = [-1.0, -2 / 3, -1 / 3, 0.0, 1 / 3, 2 / 3, 1.0];
+        const expectedLefts = [4.0, 53.0, 102.0, 151.0, 200.0, 249.0, 298.0];
+        for (var i = 0; i < alignments.length; i++) {
+          final clipper = JellyClipper(
+            itemCount: 4,
+            alignment: Alignment(alignments[i], 0),
+            thickness: 0,
+            expansion: EdgeInsets.zero,
+            transform: Matrix4.identity(),
+            borderRadius: 24,
+          );
 
-        final bounds = clipper.getClip(const Size(400, 64)).getBounds();
+          final bounds = clipper.getClip(const Size(400, 64)).getBounds();
 
-        expect(bounds.left, closeTo(expectedLefts[i], 0.001));
-        expect(bounds.width, closeTo(98, 0.001));
-        expect(bounds.top, 4);
-        expect(bounds.bottom, 60);
-      }
-    });
+          expect(bounds.left, closeTo(expectedLefts[i], 0.001));
+          expect(bounds.width, closeTo(98, 0.001));
+          expect(bounds.top, 4);
+          expect(bounds.bottom, 60);
+        }
+      },
+    );
 
     test('shouldReclip returns false for sub-pixel changes', () {
       final c1 = JellyClipper(
@@ -336,9 +366,7 @@ void main() {
       expect(path.fillType, PathFillType.evenOdd);
     });
 
-    test(
-        'shouldReclip returns true when expansion, transform, borderRadius, or inverse differ',
-        () {
+    test('shouldReclip returns true when expansion, transform, borderRadius, or inverse differ', () {
       final base = JellyClipper(
         itemCount: 3,
         alignment: Alignment.center,
@@ -390,8 +418,7 @@ void main() {
       expect(base.shouldReclip(diffInverse), isTrue);
     });
 
-    test('getClip right overdrag keeps edge icon inside clip window (#328)',
-        () {
+    test('getClip right overdrag keeps edge icon inside clip window (#328)', () {
       // 3 tabs on a 390 px bar → tabWidth = 130, availableWidth = 260.
       // Maximum right overdrag: alignment.x = 1.6 (rubber-band cap).
       // rawLeft = (1.6 + 1) / 2 * 260 = 338
@@ -417,8 +444,7 @@ void main() {
       expect(bounds.left, lessThanOrEqualTo(264.0));
     });
 
-    test('getClip left overdrag keeps first icon inside clip window (#328)',
-        () {
+    test('getClip left overdrag keeps first icon inside clip window (#328)', () {
       // 3 tabs on a 390 px bar.
       // Maximum left overdrag: alignment.x = -1.6.
       // rawLeft = (-1.6 + 1) / 2 * 260 = -78

@@ -7,8 +7,8 @@
 ///   flutter run -t example/lib/demos/scaffold_nav_demo.dart
 library;
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -63,9 +63,8 @@ class _ScreenAState extends State<ScreenA> {
             label: 'Go to B',
             width: 40,
             height: 40,
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const ScreenB()),
-            ),
+            onTap: () => Navigator.of(context)
+                .push(MaterialPageRoute<void>(builder: (_) => const ScreenB())),
           ),
         ],
       ),

@@ -1,4 +1,5 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+
 import 'glass_focus_ring_painter.dart';
 
 /// A shared accessibility and focus region for interactive glass widgets.
@@ -72,32 +73,31 @@ class GlassFocusRegion extends StatefulWidget {
   GlassFocusRegion.observe({
     required this.child,
     required FocusNode focusNode,
-    required ShapeBorder
-        shape, // non-nullable; field is ShapeBorder? so this.shape would widen the type
+    required ShapeBorder shape, // non-nullable; field is ShapeBorder? so this.shape would widen the type
     super.key,
-  })  : observedFocusNode = focusNode,
-        enabled = true,
-        shape = shape, // ignore: prefer_initializing_formals
-        isFocusedNotifier = null,
-        isHoveredNotifier = null,
-        focusNode = null,
-        canRequestFocus = false,
-        autofocus = false,
-        semanticLabel = null,
-        isButton = false,
-        isSlider = false,
-        tracksSelection = false,
-        isSelected = false,
-        toggled = null,
-        checked = null,
-        onKeyboardActivate = null,
-        semanticOnTap = null,
-        semanticOnLongPress = null,
-        semanticValue = null,
-        semanticIncreasedValue = null,
-        semanticDecreasedValue = null,
-        semanticOnIncrease = null,
-        semanticOnDecrease = null;
+  }) : observedFocusNode = focusNode,
+       enabled = true,
+       shape = shape, // ignore: prefer_initializing_formals
+       isFocusedNotifier = null,
+       isHoveredNotifier = null,
+       focusNode = null,
+       canRequestFocus = false,
+       autofocus = false,
+       semanticLabel = null,
+       isButton = false,
+       isSlider = false,
+       tracksSelection = false,
+       isSelected = false,
+       toggled = null,
+       checked = null,
+       onKeyboardActivate = null,
+       semanticOnTap = null,
+       semanticOnLongPress = null,
+       semanticValue = null,
+       semanticIncreasedValue = null,
+       semanticDecreasedValue = null,
+       semanticOnIncrease = null,
+       semanticOnDecrease = null;
 
   // ── Shared fields ────────────────────────────────────────────────────────
 
@@ -298,7 +298,8 @@ class _GlassFocusRegionState extends State<GlassFocusRegion> {
   void _onHighlightModeChange(FocusHighlightMode mode) {
     if (!mounted || !widget._isObserveMode) return;
     final isKeyboard = mode == FocusHighlightMode.traditional;
-    _isFocusedNotifier.value = (widget.observedFocusNode?.hasFocus ?? false) &&
+    _isFocusedNotifier.value =
+        (widget.observedFocusNode?.hasFocus ?? false) &&
         isKeyboard &&
         !_suppressRing;
   }
@@ -405,15 +406,17 @@ class _GlassFocusRegionState extends State<GlassFocusRegion> {
     //   text back to back.
     final hasSemanticLabel =
         widget.semanticLabel != null && widget.semanticLabel!.isNotEmpty;
-    final content =
-        hasSemanticLabel ? ExcludeSemantics(child: widget.child) : widget.child;
+    final content = hasSemanticLabel
+        ? ExcludeSemantics(child: widget.child)
+        : widget.child;
 
     return Semantics(
       // container: true creates an isolated semantics boundary so that the
       // label and tap action stay on this node and are not merged into an
       // ancestor container (which would concatenate the label with unrelated
       // text, e.g. an app-bar title, and put the tap on a different node).
-      container: widget.isButton ||
+      container:
+          widget.isButton ||
           widget.isSlider ||
           widget.checked != null ||
           hasSemanticLabel,

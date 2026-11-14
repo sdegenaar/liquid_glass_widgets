@@ -8,7 +8,7 @@
 
 library;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() async {
@@ -28,9 +28,10 @@ class _AppState extends State<_App> {
   Brightness _brightness = Brightness.dark;
 
   void _toggle() => setState(() {
-        _brightness =
-            _brightness == Brightness.dark ? Brightness.light : Brightness.dark;
-      });
+    _brightness = _brightness == Brightness.dark
+        ? Brightness.light
+        : Brightness.dark;
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -76,12 +77,12 @@ class _HomePageState extends State<_HomePage> {
                 ? const [
                     Color(0xFF0A0A2E),
                     Color(0xFF1A0A3E),
-                    Color(0xFF0D1B2A)
+                    Color(0xFF0D1B2A),
                   ]
                 : const [
                     Color(0xFFE8F0FE),
                     Color(0xFFF3E8FF),
-                    Color(0xFFE8F4FD)
+                    Color(0xFFE8F4FD),
                   ],
           ),
         ),
@@ -151,27 +152,27 @@ class _HomePageState extends State<_HomePage> {
               (
                 CupertinoIcons.square_grid_2x2_fill,
                 'Containers',
-                'GlassContainer.card · GlassContainer · GlassListTile'
+                'GlassContainer.card · GlassContainer · GlassListTile',
               ),
               (
                 CupertinoIcons.hand_point_left,
                 'Interactive',
-                'GlassButton · GlassSwitch · GlassSlider · GlassChip'
+                'GlassButton · GlassSwitch · GlassSlider · GlassChip',
               ),
               (
                 CupertinoIcons.layers_fill,
                 'Surfaces',
-                'GlassTabBar · GlassAppBar · GlassToolbar'
+                'GlassTabBar · GlassAppBar · GlassToolbar',
               ),
               (
                 CupertinoIcons.rectangle_stack_fill,
                 'Overlays',
-                'GlassSheet · GlassMenu · GlassDialog · GlassToast'
+                'GlassSheet · GlassMenu · GlassDialog · GlassToast',
               ),
               (
                 CupertinoIcons.textformat,
                 'Input',
-                'GlassTextField · GlassSearchBar · GlassPicker'
+                'GlassTextField · GlassSearchBar · GlassPicker',
               ),
             ])
               Padding(
@@ -186,9 +187,12 @@ class _HomePageState extends State<_HomePage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(item.$2,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600)),
+                            Text(
+                              item.$2,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                             const SizedBox(height: 2),
                             Text(item.$3, style: const TextStyle(fontSize: 12)),
                           ],

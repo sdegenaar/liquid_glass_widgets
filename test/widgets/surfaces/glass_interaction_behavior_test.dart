@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/renderer/liquid_glass_renderer.dart'
@@ -113,15 +113,17 @@ void main() {
       });
 
       test('exactly two behaviors have glow', () {
-        final withGlow =
-            GlassInteractionBehavior.values.where((b) => b.hasGlow).toList();
+        final withGlow = GlassInteractionBehavior.values
+            .where((b) => b.hasGlow)
+            .toList();
         expect(withGlow, hasLength(2));
         expect(
-            withGlow,
-            containsAll([
-              GlassInteractionBehavior.glowOnly,
-              GlassInteractionBehavior.full
-            ]));
+          withGlow,
+          containsAll([
+            GlassInteractionBehavior.glowOnly,
+            GlassInteractionBehavior.full,
+          ]),
+        );
       });
     });
 
@@ -145,15 +147,17 @@ void main() {
       });
 
       test('exactly two behaviors have scale', () {
-        final withScale =
-            GlassInteractionBehavior.values.where((b) => b.hasScale).toList();
+        final withScale = GlassInteractionBehavior.values
+            .where((b) => b.hasScale)
+            .toList();
         expect(withScale, hasLength(2));
         expect(
-            withScale,
-            containsAll([
-              GlassInteractionBehavior.scaleOnly,
-              GlassInteractionBehavior.full
-            ]));
+          withScale,
+          containsAll([
+            GlassInteractionBehavior.scaleOnly,
+            GlassInteractionBehavior.full,
+          ]),
+        );
       });
     });
 
@@ -188,13 +192,15 @@ void main() {
         expect(pairs, hasLength(GlassInteractionBehavior.values.length));
       });
 
-      test('no behavior can have only-neither (i.e., none is unique null-pair)',
-          () {
-        final noBoth = GlassInteractionBehavior.values
-            .where((b) => !b.hasGlow && !b.hasScale)
-            .toList();
-        expect(noBoth, equals([GlassInteractionBehavior.none]));
-      });
+      test(
+        'no behavior can have only-neither (i.e., none is unique null-pair)',
+        () {
+          final noBoth = GlassInteractionBehavior.values
+              .where((b) => !b.hasGlow && !b.hasScale)
+              .toList();
+          expect(noBoth, equals([GlassInteractionBehavior.none]));
+        },
+      );
     });
 
     // ── Enum identity ─────────────────────────────────────────────────────────
@@ -292,38 +298,41 @@ void main() {
     // ── GlassGlow presence ────────────────────────────────────────────────────
 
     testWidgets(
-        'behavior=none: GlassGlow is NOT in widget tree (transparent short-circuit)',
-        (tester) async {
-      await tester.pumpWidget(_buildBottomBar(
-        behavior: GlassInteractionBehavior.none,
-      ));
+      'behavior=none: GlassGlow is NOT in widget tree (transparent short-circuit)',
+      (tester) async {
+        await tester.pumpWidget(
+          _buildBottomBar(behavior: GlassInteractionBehavior.none),
+        );
+        await tester.pump();
+        // _wrapWithGlow skips GlassGlow when color.a == 0
+        expect(find.byType(GlassGlow), findsNothing);
+      },
+    );
+
+    testWidgets('behavior=scaleOnly: GlassGlow is NOT in widget tree', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildBottomBar(behavior: GlassInteractionBehavior.scaleOnly),
+      );
       await tester.pump();
-      // _wrapWithGlow skips GlassGlow when color.a == 0
       expect(find.byType(GlassGlow), findsNothing);
     });
 
-    testWidgets('behavior=scaleOnly: GlassGlow is NOT in widget tree',
-        (tester) async {
-      await tester.pumpWidget(_buildBottomBar(
-        behavior: GlassInteractionBehavior.scaleOnly,
-      ));
-      await tester.pump();
-      expect(find.byType(GlassGlow), findsNothing);
-    });
-
-    testWidgets('behavior=glowOnly: GlassGlow IS in widget tree',
-        (tester) async {
-      await tester.pumpWidget(_buildBottomBar(
-        behavior: GlassInteractionBehavior.glowOnly,
-      ));
+    testWidgets('behavior=glowOnly: GlassGlow IS in widget tree', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildBottomBar(behavior: GlassInteractionBehavior.glowOnly),
+      );
       await tester.pump();
       expect(find.byType(GlassGlow), findsWidgets);
     });
 
     testWidgets('behavior=full: GlassGlow IS in widget tree', (tester) async {
-      await tester.pumpWidget(_buildBottomBar(
-        behavior: GlassInteractionBehavior.full,
-      ));
+      await tester.pumpWidget(
+        _buildBottomBar(behavior: GlassInteractionBehavior.full),
+      );
       await tester.pump();
       expect(find.byType(GlassGlow), findsWidgets);
     });
@@ -331,23 +340,29 @@ void main() {
     // ── Explicit transparent color also suppresses GlassGlow ─────────────────
 
     testWidgets(
-        'explicit Colors.transparent interactionGlowColor skips GlassGlow',
-        (tester) async {
-      await tester.pumpWidget(_buildBottomBar(
-        behavior: GlassInteractionBehavior.full,
-        interactionGlowColor: Colors.transparent,
-      ));
-      await tester.pump();
-      // Even with full behavior, a transparent glow color should skip the wrapper
-      expect(find.byType(GlassGlow), findsNothing);
-    });
+      'explicit Colors.transparent interactionGlowColor skips GlassGlow',
+      (tester) async {
+        await tester.pumpWidget(
+          _buildBottomBar(
+            behavior: GlassInteractionBehavior.full,
+            interactionGlowColor: Colors.transparent,
+          ),
+        );
+        await tester.pump();
+        // Even with full behavior, a transparent glow color should skip the wrapper
+        expect(find.byType(GlassGlow), findsNothing);
+      },
+    );
 
-    testWidgets('custom non-transparent glow color renders GlassGlow',
-        (tester) async {
-      await tester.pumpWidget(_buildBottomBar(
-        behavior: GlassInteractionBehavior.full,
-        interactionGlowColor: const Color(0x33FFFFFF),
-      ));
+    testWidgets('custom non-transparent glow color renders GlassGlow', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildBottomBar(
+          behavior: GlassInteractionBehavior.full,
+          interactionGlowColor: const Color(0x33FFFFFF),
+        ),
+      );
       await tester.pump();
       expect(find.byType(GlassGlow), findsWidgets);
     });
@@ -530,21 +545,23 @@ void main() {
     });
 
     // Verify old API params are gone (compilation-level check via non-existence)
-    test('does not expose enableBackgroundAnimation or backgroundPressScale',
-        () {
-      // If this test compiles cleanly, the old API is fully removed.
-      // We verify the NEW API exists and has the correct types.
-      final bar = GlassTabBar.searchable(
-        tabs: _tabs,
-        selectedIndex: 0,
-        onTabSelected: (_) {},
-        interactionBehavior: GlassInteractionBehavior.full,
-        pressScale: 1.04,
-        searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
-      );
-      expect(bar.interactionBehavior, isA<GlassInteractionBehavior>());
-      expect(bar.pressScale, isA<double>());
-    });
+    test(
+      'does not expose enableBackgroundAnimation or backgroundPressScale',
+      () {
+        // If this test compiles cleanly, the old API is fully removed.
+        // We verify the NEW API exists and has the correct types.
+        final bar = GlassTabBar.searchable(
+          tabs: _tabs,
+          selectedIndex: 0,
+          onTabSelected: (_) {},
+          interactionBehavior: GlassInteractionBehavior.full,
+          pressScale: 1.04,
+          searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
+        );
+        expect(bar.interactionBehavior, isA<GlassInteractionBehavior>());
+        expect(bar.pressScale, isA<double>());
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -553,16 +570,19 @@ void main() {
 
   group('GlassTabBar.searchable widget rendering per behavior', () {
     for (final behavior in GlassInteractionBehavior.values) {
-      testWidgets('mounts cleanly with behavior=$behavior (search inactive)',
-          (tester) async {
+      testWidgets('mounts cleanly with behavior=$behavior (search inactive)', (
+        tester,
+      ) async {
         await tester.pumpWidget(_buildSearchableBar(behavior: behavior));
         expect(find.byType(GlassTabBar), findsOneWidget);
       });
 
-      testWidgets('mounts cleanly with behavior=$behavior (search active)',
-          (tester) async {
+      testWidgets('mounts cleanly with behavior=$behavior (search active)', (
+        tester,
+      ) async {
         await tester.pumpWidget(
-            _buildSearchableBar(behavior: behavior, isSearchActive: true));
+          _buildSearchableBar(behavior: behavior, isSearchActive: true),
+        );
         await tester.pumpAndSettle();
         expect(find.byType(GlassTabBar), findsOneWidget);
       });
@@ -580,58 +600,63 @@ void main() {
     // boundary to test.
 
     testWidgets(
-        'behavior=none: resolved interactionGlowColor on bar is transparent',
-        (tester) async {
-      final bar = GlassTabBar.searchable(
-        tabs: _tabs,
-        selectedIndex: 0,
-        onTabSelected: (_) {},
-        interactionBehavior: GlassInteractionBehavior.none,
-        searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
-      );
-      // none.hasGlow is false → parent resolves to Colors.transparent
-      expect(GlassInteractionBehavior.none.hasGlow, isFalse);
-      expect(bar.interactionBehavior.hasGlow, isFalse);
-    });
+      'behavior=none: resolved interactionGlowColor on bar is transparent',
+      (tester) async {
+        final bar = GlassTabBar.searchable(
+          tabs: _tabs,
+          selectedIndex: 0,
+          onTabSelected: (_) {},
+          interactionBehavior: GlassInteractionBehavior.none,
+          searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
+        );
+        // none.hasGlow is false → parent resolves to Colors.transparent
+        expect(GlassInteractionBehavior.none.hasGlow, isFalse);
+        expect(bar.interactionBehavior.hasGlow, isFalse);
+      },
+    );
 
     testWidgets(
-        'behavior=scaleOnly: resolved interactionGlowColor on bar is transparent',
-        (tester) async {
-      final bar = GlassTabBar.searchable(
-        tabs: _tabs,
-        selectedIndex: 0,
-        onTabSelected: (_) {},
-        interactionBehavior: GlassInteractionBehavior.scaleOnly,
-        searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
-      );
-      expect(GlassInteractionBehavior.scaleOnly.hasGlow, isFalse);
-      expect(bar.interactionBehavior.hasGlow, isFalse);
-    });
+      'behavior=scaleOnly: resolved interactionGlowColor on bar is transparent',
+      (tester) async {
+        final bar = GlassTabBar.searchable(
+          tabs: _tabs,
+          selectedIndex: 0,
+          onTabSelected: (_) {},
+          interactionBehavior: GlassInteractionBehavior.scaleOnly,
+          searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
+        );
+        expect(GlassInteractionBehavior.scaleOnly.hasGlow, isFalse);
+        expect(bar.interactionBehavior.hasGlow, isFalse);
+      },
+    );
 
     testWidgets(
-        'behavior=glowOnly: interactionGlowColor on bar is non-transparent',
-        (tester) async {
-      final bar = GlassTabBar.searchable(
-        tabs: _tabs,
-        selectedIndex: 0,
-        onTabSelected: (_) {},
-        interactionBehavior: GlassInteractionBehavior.glowOnly,
-        searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
-      );
-      expect(bar.interactionBehavior.hasGlow, isTrue);
-    });
+      'behavior=glowOnly: interactionGlowColor on bar is non-transparent',
+      (tester) async {
+        final bar = GlassTabBar.searchable(
+          tabs: _tabs,
+          selectedIndex: 0,
+          onTabSelected: (_) {},
+          interactionBehavior: GlassInteractionBehavior.glowOnly,
+          searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
+        );
+        expect(bar.interactionBehavior.hasGlow, isTrue);
+      },
+    );
 
-    testWidgets('behavior=full: interactionGlowColor on bar is non-transparent',
-        (tester) async {
-      final bar = GlassTabBar.searchable(
-        tabs: _tabs,
-        selectedIndex: 0,
-        onTabSelected: (_) {},
-        interactionBehavior: GlassInteractionBehavior.full,
-        searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
-      );
-      expect(bar.interactionBehavior.hasGlow, isTrue);
-    });
+    testWidgets(
+      'behavior=full: interactionGlowColor on bar is non-transparent',
+      (tester) async {
+        final bar = GlassTabBar.searchable(
+          tabs: _tabs,
+          selectedIndex: 0,
+          onTabSelected: (_) {},
+          interactionBehavior: GlassInteractionBehavior.full,
+          searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
+        );
+        expect(bar.interactionBehavior.hasGlow, isTrue);
+      },
+    );
 
     // ── Search pill also carries through the behavior ─────────────────────────
     //
@@ -642,36 +667,41 @@ void main() {
     // We verify the behavior enum property instead.
 
     testWidgets(
-        'behavior=none: SearchPill glow suppressed (search active) — verified via enum',
-        (tester) async {
-      // Arrange: mount a none-behavior bar in search-active state.
-      final bar = _buildSearchableBar(
-        behavior: GlassInteractionBehavior.none,
-        isSearchActive: true,
-      );
-      await tester.pumpWidget(bar);
-      await tester.pumpAndSettle();
-      // The widget rendered successfully and behavior.hasGlow is false,
-      // which means Colors.transparent is passed to the SearchPill.
-      expect(GlassInteractionBehavior.none.hasGlow, isFalse);
-      expect(find.byType(GlassTabBar), findsOneWidget);
-    });
+      'behavior=none: SearchPill glow suppressed (search active) — verified via enum',
+      (tester) async {
+        // Arrange: mount a none-behavior bar in search-active state.
+        final bar = _buildSearchableBar(
+          behavior: GlassInteractionBehavior.none,
+          isSearchActive: true,
+        );
+        await tester.pumpWidget(bar);
+        await tester.pumpAndSettle();
+        // The widget rendered successfully and behavior.hasGlow is false,
+        // which means Colors.transparent is passed to the SearchPill.
+        expect(GlassInteractionBehavior.none.hasGlow, isFalse);
+        expect(find.byType(GlassTabBar), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        'behavior=full: GlassGlow present in SearchPill (search active)',
-        (tester) async {
-      await tester.pumpWidget(_buildSearchableBar(
-        behavior: GlassInteractionBehavior.full,
-        isSearchActive: true,
-      ));
-      await tester.pumpAndSettle();
-      expect(find.byType(GlassGlow), findsWidgets);
-    });
+      'behavior=full: GlassGlow present in SearchPill (search active)',
+      (tester) async {
+        await tester.pumpWidget(
+          _buildSearchableBar(
+            behavior: GlassInteractionBehavior.full,
+            isSearchActive: true,
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(GlassGlow), findsWidgets);
+      },
+    );
 
     // ── Tab interaction unaffected by behavior ────────────────────────────────
 
-    testWidgets('tabs still respond to taps with behavior=none',
-        (tester) async {
+    testWidgets('tabs still respond to taps with behavior=none', (
+      tester,
+    ) async {
       int selected = 0;
       await tester.pumpWidget(
         createTestApp(
@@ -732,54 +762,59 @@ void main() {
       expect(bar.interactionBehavior, searchBar.interactionBehavior);
     });
 
-    test('bottom defaults to 1.04; searchable defaults to the native press',
-        () {
-      final bar = GlassTabBar.bottom(
-        tabs: _tabs,
-        selectedIndex: 0,
-        onTabSelected: (_) {},
-      );
-      final searchBar = GlassTabBar.searchable(
-        tabs: _tabs,
-        selectedIndex: 0,
-        onTabSelected: (_) {},
-        searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
-      );
-      expect(bar.pressScale, closeTo(1.04, 0.001));
-      expect(searchBar.pressScale, isNull);
-    });
-
-    test('all four behaviors accepted by GlassTabBar.bottom without assertion',
-        () {
-      for (final b in GlassInteractionBehavior.values) {
-        expect(
-          () => GlassTabBar.bottom(
-            tabs: _tabs,
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            interactionBehavior: b,
-          ),
-          returnsNormally,
+    test(
+      'bottom defaults to 1.04; searchable defaults to the native press',
+      () {
+        final bar = GlassTabBar.bottom(
+          tabs: _tabs,
+          selectedIndex: 0,
+          onTabSelected: (_) {},
         );
-      }
-    });
+        final searchBar = GlassTabBar.searchable(
+          tabs: _tabs,
+          selectedIndex: 0,
+          onTabSelected: (_) {},
+          searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
+        );
+        expect(bar.pressScale, closeTo(1.04, 0.001));
+        expect(searchBar.pressScale, isNull);
+      },
+    );
 
     test(
-        'all four behaviors accepted by GlassTabBar.searchable without assertion',
-        () {
-      for (final b in GlassInteractionBehavior.values) {
-        expect(
-          () => GlassTabBar.searchable(
-            tabs: _tabs,
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            interactionBehavior: b,
-            searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
-          ),
-          returnsNormally,
-        );
-      }
-    });
+      'all four behaviors accepted by GlassTabBar.bottom without assertion',
+      () {
+        for (final b in GlassInteractionBehavior.values) {
+          expect(
+            () => GlassTabBar.bottom(
+              tabs: _tabs,
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              interactionBehavior: b,
+            ),
+            returnsNormally,
+          );
+        }
+      },
+    );
+
+    test(
+      'all four behaviors accepted by GlassTabBar.searchable without assertion',
+      () {
+        for (final b in GlassInteractionBehavior.values) {
+          expect(
+            () => GlassTabBar.searchable(
+              tabs: _tabs,
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              interactionBehavior: b,
+              searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
+            ),
+            returnsNormally,
+          );
+        }
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------

@@ -1,8 +1,8 @@
 import 'package:liquid_glass_widgets/widgets/interactive/glass_button.dart';
 import 'package:liquid_glass_widgets/widgets/surfaces/glass_app_bar.dart';
 import 'package:liquid_glass_widgets/widgets/surfaces/glass_tab_bar.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
 import '../shared/test_helpers.dart';
@@ -13,8 +13,10 @@ void main() {
     fileName: 'glass_app_bar',
     pumpBeforeTest: pumpOnce,
     builder: () => GoldenTestGroup(
-      scenarioConstraints:
-          const BoxConstraints.tightFor(width: 400, height: 100),
+      scenarioConstraints: const BoxConstraints.tightFor(
+        width: 400,
+        height: 100,
+      ),
       children: [
         GoldenTestScenario(
           name: 'centered_title',
@@ -63,26 +65,19 @@ void main() {
     fileName: 'glass_tab_bar_bottom',
     pumpBeforeTest: pumpOnce,
     builder: () => GoldenTestGroup(
-      scenarioConstraints:
-          const BoxConstraints.tightFor(width: 400, height: 120),
+      scenarioConstraints: const BoxConstraints.tightFor(
+        width: 400,
+        height: 120,
+      ),
       children: [
         GoldenTestScenario(
           name: 'three_tabs',
           child: buildWithGradientBackground(
             GlassTabBar.bottom(
               tabs: const [
-                GlassTab(
-                  label: 'Home',
-                  icon: Icon(CupertinoIcons.home),
-                ),
-                GlassTab(
-                  label: 'Search',
-                  icon: Icon(CupertinoIcons.search),
-                ),
-                GlassTab(
-                  label: 'Profile',
-                  icon: Icon(CupertinoIcons.person),
-                ),
+                GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+                GlassTab(label: 'Search', icon: Icon(CupertinoIcons.search)),
+                GlassTab(label: 'Profile', icon: Icon(CupertinoIcons.person)),
               ],
               selectedIndex: 0,
               onTabSelected: (_) {},
@@ -94,14 +89,8 @@ void main() {
           child: buildWithGradientBackground(
             GlassTabBar.bottom(
               tabs: const [
-                GlassTab(
-                  label: 'Home',
-                  icon: Icon(CupertinoIcons.home),
-                ),
-                GlassTab(
-                  label: 'Search',
-                  icon: Icon(CupertinoIcons.search),
-                ),
+                GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+                GlassTab(label: 'Search', icon: Icon(CupertinoIcons.search)),
               ],
               selectedIndex: 0,
               onTabSelected: (_) {},
@@ -121,18 +110,9 @@ void main() {
           child: buildWithGradientBackground(
             GlassTabBar.bottom(
               tabs: const [
-                GlassTab(
-                  label: 'Home',
-                  icon: Icon(CupertinoIcons.home),
-                ),
-                GlassTab(
-                  label: 'Search',
-                  icon: Icon(CupertinoIcons.search),
-                ),
-                GlassTab(
-                  label: 'Profile',
-                  icon: Icon(CupertinoIcons.person),
-                ),
+                GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+                GlassTab(label: 'Search', icon: Icon(CupertinoIcons.search)),
+                GlassTab(label: 'Profile', icon: Icon(CupertinoIcons.person)),
               ],
               tabWidth: null, // explicit expand — overrides the 88.0 default
 

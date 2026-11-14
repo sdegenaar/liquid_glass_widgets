@@ -87,9 +87,11 @@ class GlassPerformanceMonitor {
     _consecutiveOverBudget = 0;
     SchedulerBinding.instance.addTimingsCallback(_onFrameTimings);
     if (kDebugMode) {
-      debugPrint('[LiquidGlass] PerformanceMonitor started '
-          '(budget: ${rasterBudget.inMilliseconds} ms, '
-          'threshold: $sustainedFrameThreshold frames)');
+      debugPrint(
+        '[LiquidGlass] PerformanceMonitor started '
+        '(budget: ${rasterBudget.inMilliseconds} ms, '
+        'threshold: $sustainedFrameThreshold frames)',
+      );
     }
   }
 
@@ -179,8 +181,9 @@ class GlassPerformanceMonitor {
 
     FlutterError.reportError(
       FlutterErrorDetails(
-        exception:
-            Exception('GlassQuality.premium performance budget exceeded'),
+        exception: Exception(
+          'GlassQuality.premium performance budget exceeded',
+        ),
         library: 'liquid_glass_widgets',
         context: ErrorDescription(
           'sustained raster frames > ${rasterBudget.inMilliseconds} ms '

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../theme/glass_theme_data.dart';
@@ -103,9 +104,9 @@ class GlassProgressIndicator extends StatefulWidget {
     this.settings,
     this.quality,
     this.semanticLabel,
-  })  : _type = _ProgressIndicatorType.circular,
-        height = null,
-        minWidth = null;
+  }) : _type = _ProgressIndicatorType.circular,
+       height = null,
+       minWidth = null;
 
   /// Creates a linear glass progress indicator.
   ///
@@ -122,9 +123,9 @@ class GlassProgressIndicator extends StatefulWidget {
     this.settings,
     this.quality,
     this.semanticLabel,
-  })  : _type = _ProgressIndicatorType.linear,
-        size = null,
-        strokeWidth = null;
+  }) : _type = _ProgressIndicatorType.linear,
+       size = null,
+       strokeWidth = null;
 
   // ===========================================================================
   // Progress Properties
@@ -272,10 +273,12 @@ class _GlassProgressIndicatorState extends State<GlassProgressIndicator>
   Widget build(BuildContext context) {
     // Resolve colors from theme if not explicitly provided
     final themeData = GlassThemeData.of(context);
-    final effectiveColor = widget.color ??
+    final effectiveColor =
+        widget.color ??
         themeData.glowColorsFor(context).primary ??
         CupertinoColors.activeBlue.resolveFrom(
-            context); // iOS system blue (adaptive: 007AFF light / 0A84FF dark)
+          context,
+        ); // iOS system blue (adaptive: 007AFF light / 0A84FF dark)
     final effectiveBackgroundColor =
         widget.backgroundColor ?? const Color(0x26FFFFFF); // 15% white
 
@@ -400,13 +403,7 @@ class _CircularProgressPainter extends CustomPainter {
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
 
-    canvas.drawArc(
-      rect,
-      0,
-      2 * math.pi,
-      false,
-      backgroundPaint,
-    );
+    canvas.drawArc(rect, 0, 2 * math.pi, false, backgroundPaint);
 
     // Draw progress arc with glow
     final progressPaint = Paint()
@@ -506,8 +503,9 @@ class _LinearProgressPainter extends CustomPainter {
     } else {
       // Determinate: fill from left (or right in RTL)
       progressWidth = width * value!.clamp(0.0, 1.0);
-      progressX =
-          textDirection == TextDirection.rtl ? width - progressWidth : 0;
+      progressX = textDirection == TextDirection.rtl
+          ? width - progressWidth
+          : 0;
     }
 
     if (progressWidth > 0) {
@@ -550,7 +548,4 @@ class _LinearProgressPainter extends CustomPainter {
 // Internal Types
 // =============================================================================
 
-enum _ProgressIndicatorType {
-  circular,
-  linear,
-}
+enum _ProgressIndicatorType { circular, linear }

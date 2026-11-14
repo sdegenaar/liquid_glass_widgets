@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -7,8 +7,9 @@ import '../../shared/test_helpers.dart';
 
 void main() {
   group('GlassEditScope & GlassEditButton', () {
-    testWidgets('toggles edit mode ambiently and changes button text',
-        (tester) async {
+    testWidgets('toggles edit mode ambiently and changes button text', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: GlassEditScope(
@@ -71,8 +72,9 @@ void main() {
       expect(controller.mode, GlassEditMode.inactive);
     });
 
-    testWidgets('GlassEditScope didUpdateWidget swaps controller',
-        (tester) async {
+    testWidgets('GlassEditScope didUpdateWidget swaps controller', (
+      tester,
+    ) async {
       final ctrl1 = GlassEditController(initialMode: GlassEditMode.inactive);
       final ctrl2 = GlassEditController(initialMode: GlassEditMode.active);
 
@@ -142,28 +144,31 @@ void main() {
       expect(find.text('Custom Edit'), findsOneWidget);
     });
 
-    testWidgets('explicit GlassEditButton respects external state and callback',
-        (tester) async {
-      var toggled = false;
+    testWidgets(
+      'explicit GlassEditButton respects external state and callback',
+      (tester) async {
+        var toggled = false;
 
-      await tester.pumpWidget(
-        createTestApp(
-          child: GlassEditButton.explicit(
-            isEditing: true,
-            onPressed: () => toggled = true,
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassEditButton.explicit(
+              isEditing: true,
+              onPressed: () => toggled = true,
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Done'), findsOneWidget);
-      await tester.tap(find.text('Done'));
-      expect(toggled, isTrue);
-    });
+        expect(find.text('Done'), findsOneWidget);
+        await tester.tap(find.text('Done'));
+        expect(toggled, isTrue);
+      },
+    );
   });
 
   group('GlassListTile Edit Mode', () {
-    testWidgets('shows delete minus badge in edit mode and confirms deletion',
-        (tester) async {
+    testWidgets('shows delete minus badge in edit mode and confirms deletion', (
+      tester,
+    ) async {
       var deleted = false;
 
       await tester.pumpWidget(
@@ -194,8 +199,9 @@ void main() {
       expect(deleted, isTrue);
     });
 
-    testWidgets('tapping tile body cancels delete confirmation',
-        (tester) async {
+    testWidgets('tapping tile body cancels delete confirmation', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: GlassListTile(
@@ -246,47 +252,51 @@ void main() {
       expect(find.text('Delete'), findsNothing);
     });
 
-    testWidgets('renders both edit badge and selection accessory in edit mode',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: GlassListTile(
-            isEditing: true,
-            canSelect: true,
-            isSelected: false,
-            onDelete: _noop,
-            title: const Text('Multi-Accessory Row'),
+    testWidgets(
+      'renders both edit badge and selection accessory in edit mode',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassListTile(
+              isEditing: true,
+              canSelect: true,
+              isSelected: false,
+              onDelete: _noop,
+              title: const Text('Multi-Accessory Row'),
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byIcon(CupertinoIcons.minus_circle_fill), findsOneWidget);
-      expect(find.byIcon(CupertinoIcons.circle), findsOneWidget);
-    });
+        expect(find.byIcon(CupertinoIcons.minus_circle_fill), findsOneWidget);
+        expect(find.byIcon(CupertinoIcons.circle), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        'wraps content in GlassContextMenu when contextMenuActions provided',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: GlassListTile(
-            title: const Text('Tile With Context Menu'),
-            contextMenuActions: [
-              GlassContextMenuAction(
-                trailing: const Text('Cmd+C'),
-                onPressed: () {},
-                child: const Text('Action 1'),
-              ),
-            ],
+      'wraps content in GlassContextMenu when contextMenuActions provided',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassListTile(
+              title: const Text('Tile With Context Menu'),
+              contextMenuActions: [
+                GlassContextMenuAction(
+                  trailing: const Text('Cmd+C'),
+                  onPressed: () {},
+                  child: const Text('Action 1'),
+                ),
+              ],
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byType(GlassContextMenu), findsOneWidget);
-    });
+        expect(find.byType(GlassContextMenu), findsOneWidget);
+      },
+    );
 
-    testWidgets('shows insertion plus badge when onInsert is provided',
-        (tester) async {
+    testWidgets('shows insertion plus badge when onInsert is provided', (
+      tester,
+    ) async {
       var inserted = false;
 
       await tester.pumpWidget(
@@ -328,8 +338,9 @@ void main() {
       expect(selected, isTrue);
     });
 
-    testWidgets('tapping the row body toggles selection in edit mode',
-        (tester) async {
+    testWidgets('tapping the row body toggles selection in edit mode', (
+      tester,
+    ) async {
       bool? selected;
 
       await tester.pumpWidget(
@@ -348,40 +359,43 @@ void main() {
       expect(selected, isTrue);
     });
 
-    testWidgets('delete confirmation shows the trash icon with Delete beneath',
-        (tester) async {
-      var deleted = false;
+    testWidgets(
+      'delete confirmation shows the trash icon with Delete beneath',
+      (tester) async {
+        var deleted = false;
 
-      await tester.pumpWidget(
-        createTestApp(
-          child: GlassListTile(
-            isEditing: true,
-            title: const Text('Row'),
-            onDelete: () => deleted = true,
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassListTile(
+              isEditing: true,
+              title: const Text('Row'),
+              onDelete: () => deleted = true,
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.byIcon(CupertinoIcons.minus_circle_fill));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(CupertinoIcons.minus_circle_fill));
+        await tester.pumpAndSettle();
 
-      final icon = find.byIcon(CupertinoIcons.trash);
-      final label = find.text('Delete');
-      expect(icon, findsOneWidget);
-      expect(label, findsOneWidget);
-      // The caption sits underneath the button, not inline beside it.
-      expect(
-        tester.getTopLeft(label).dy,
-        greaterThan(tester.getBottomLeft(icon).dy),
-      );
+        final icon = find.byIcon(CupertinoIcons.trash);
+        final label = find.text('Delete');
+        expect(icon, findsOneWidget);
+        expect(label, findsOneWidget);
+        // The caption sits underneath the button, not inline beside it.
+        expect(
+          tester.getTopLeft(label).dy,
+          greaterThan(tester.getBottomLeft(icon).dy),
+        );
 
-      await tester.tap(label);
-      await tester.pumpAndSettle();
-      expect(deleted, isTrue);
-    });
+        await tester.tap(label);
+        await tester.pumpAndSettle();
+        expect(deleted, isTrue);
+      },
+    );
 
-    testWidgets('shows reorder bars handle when canReorder is true',
-        (tester) async {
+    testWidgets('shows reorder bars handle when canReorder is true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: const GlassListTile(
@@ -397,8 +411,9 @@ void main() {
       expect(_reorderGrabber(), findsOneWidget);
     });
 
-    testWidgets('pressing the grabber lifts the row before any movement',
-        (tester) async {
+    testWidgets('pressing the grabber lifts the row before any movement', (
+      tester,
+    ) async {
       final haptics = <String>[];
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         SystemChannels.platform,
@@ -409,8 +424,12 @@ void main() {
           return null;
         },
       );
-      addTearDown(() => tester.binding.defaultBinaryMessenger
-          .setMockMethodCallHandler(SystemChannels.platform, null));
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
 
       await tester.pumpWidget(
         createTestApp(
@@ -439,8 +458,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('press-and-hold on the row body lifts it; a tap does not',
-        (tester) async {
+    testWidgets('press-and-hold on the row body lifts it; a tap does not', (
+      tester,
+    ) async {
       final haptics = <String>[];
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         SystemChannels.platform,
@@ -451,8 +471,12 @@ void main() {
           return null;
         },
       );
-      addTearDown(() => tester.binding.defaultBinaryMessenger
-          .setMockMethodCallHandler(SystemChannels.platform, null));
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
 
       await tester.pumpWidget(
         createTestApp(
@@ -486,8 +510,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('inherits edit mode from ambient GlassEditScope',
-        (tester) async {
+    testWidgets('inherits edit mode from ambient GlassEditScope', (
+      tester,
+    ) async {
       final controller = GlassEditController();
 
       await tester.pumpWidget(
@@ -544,8 +569,9 @@ void main() {
       expect(find.byType(GlassDivider), findsWidgets);
     });
 
-    testWidgets('standard GlassReorderableList with padding, header, footer',
-        (tester) async {
+    testWidgets('standard GlassReorderableList with padding, header, footer', (
+      tester,
+    ) async {
       final items = ['Item 1', 'Item 2', 'Item 3'];
       int? reorderedOld;
       int? reorderedNew;
@@ -587,8 +613,9 @@ void main() {
       expect(reorderedNew, isNotNull);
     });
 
-    testWidgets('GlassReorderableList with classic onReorder callback',
-        (tester) async {
+    testWidgets('GlassReorderableList with classic onReorder callback', (
+      tester,
+    ) async {
       final items = ['Alpha', 'Beta', 'Gamma'];
       int? reorderedOld;
       int? reorderedNew;
@@ -623,102 +650,109 @@ void main() {
     });
 
     testWidgets(
-        'solid grouped GlassReorderableList inside GlassEditScope splits segments around middle dragged item',
-        (tester) async {
-      final editController =
-          GlassEditController(initialMode: GlassEditMode.active);
-      addTearDown(editController.dispose);
-      final items = ['Row 0', 'Row 1', 'Row 2'];
+      'solid grouped GlassReorderableList inside GlassEditScope splits segments around middle dragged item',
+      (tester) async {
+        final editController = GlassEditController(
+          initialMode: GlassEditMode.active,
+        );
+        addTearDown(editController.dispose);
+        final items = ['Row 0', 'Row 1', 'Row 2'];
 
-      await tester.pumpWidget(
-        createTestApp(
-          child: GlassEditScope(
-            controller: editController,
-            child: GlassReorderableList.grouped(
-              surfaceStyle: GlassSurfaceStyle.solid,
-              itemCount: items.length,
-              onReorderItem: (oldIdx, newIdx) {},
-              itemBuilder: (context, index) => GlassListTile(
-                key: ValueKey(items[index]),
-                title: Text(items[index]),
-                canReorder: true,
-                reorderIndex: index,
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassEditScope(
+              controller: editController,
+              child: GlassReorderableList.grouped(
+                surfaceStyle: GlassSurfaceStyle.solid,
+                itemCount: items.length,
+                onReorderItem: (oldIdx, newIdx) {},
+                itemBuilder: (context, index) => GlassListTile(
+                  key: ValueKey(items[index]),
+                  title: Text(items[index]),
+                  canReorder: true,
+                  reorderIndex: index,
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Drag the middle item (index 1) so both isAbove (index 0) and !isAbove (index 2) build
-      final middleHandle = _reorderGrabber().at(1);
-      final gesture = await tester.startGesture(tester.getCenter(middleHandle));
-      await tester.pump(const Duration(milliseconds: 100));
-      await gesture.moveBy(const Offset(0, 40));
-      await tester.pump(const Duration(milliseconds: 100));
-      await gesture.up();
-      await tester.pumpAndSettle();
-    });
+        // Drag the middle item (index 1) so both isAbove (index 0) and !isAbove (index 2) build
+        final middleHandle = _reorderGrabber().at(1);
+        final gesture = await tester.startGesture(
+          tester.getCenter(middleHandle),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+        await gesture.moveBy(const Offset(0, 40));
+        await tester.pump(const Duration(milliseconds: 100));
+        await gesture.up();
+        await tester.pumpAndSettle();
+      },
+    );
 
     testWidgets(
-        'GlassListTile delete confirmation toggles off on second minus tap, resets when exiting edit mode, and animates removal',
-        (tester) async {
-      final editController =
-          GlassEditController(initialMode: GlassEditMode.active);
-      addTearDown(editController.dispose);
-      bool deleted = false;
-      late StateSetter outerSetState;
+      'GlassListTile delete confirmation toggles off on second minus tap, resets when exiting edit mode, and animates removal',
+      (tester) async {
+        final editController = GlassEditController(
+          initialMode: GlassEditMode.active,
+        );
+        addTearDown(editController.dispose);
+        bool deleted = false;
+        late StateSetter outerSetState;
 
-      await tester.pumpWidget(
-        createTestApp(
-          child: GlassEditScope(
-            controller: editController,
-            child: StatefulBuilder(
-              builder: (context, setState) {
-                outerSetState = setState;
-                return GlassListTile(
-                  title: const Text('Confirmable Row'),
-                  canSelect: true,
-                  isSelected: true,
-                  onTap: _noop,
-                  onDelete: () => deleted = true,
-                );
-              },
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassEditScope(
+              controller: editController,
+              child: StatefulBuilder(
+                builder: (context, setState) {
+                  outerSetState = setState;
+                  return GlassListTile(
+                    title: const Text('Confirmable Row'),
+                    canSelect: true,
+                    isSelected: true,
+                    onTap: _noop,
+                    onDelete: () => deleted = true,
+                  );
+                },
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Tap minus to open confirmation, then tap minus immediately before slide clips it to reverse it
-      await tester.tap(find.byIcon(CupertinoIcons.minus_circle_fill));
-      await tester.pump();
-      await tester.tap(find.byIcon(CupertinoIcons.minus_circle_fill));
-      await tester.pumpAndSettle();
+        // Tap minus to open confirmation, then tap minus immediately before slide clips it to reverse it
+        await tester.tap(find.byIcon(CupertinoIcons.minus_circle_fill));
+        await tester.pump();
+        await tester.tap(find.byIcon(CupertinoIcons.minus_circle_fill));
+        await tester.pumpAndSettle();
 
-      // Open confirmation again, then exit ambient edit mode via GlassEditController so build() resets it
-      await tester.tap(find.byIcon(CupertinoIcons.minus_circle_fill));
-      await tester.pumpAndSettle();
-      editController.stopEditing();
-      await tester.pumpAndSettle();
+        // Open confirmation again, then exit ambient edit mode via GlassEditController so build() resets it
+        await tester.tap(find.byIcon(CupertinoIcons.minus_circle_fill));
+        await tester.pumpAndSettle();
+        editController.stopEditing();
+        await tester.pumpAndSettle();
 
-      // Test tap down + cancel highlight in light mode when not editing
-      final gHighlight = await tester
-          .startGesture(tester.getCenter(find.text('Confirmable Row')));
-      await tester.pump();
-      await gHighlight.cancel();
-      await tester.pump();
+        // Test tap down + cancel highlight in light mode when not editing
+        final gHighlight = await tester.startGesture(
+          tester.getCenter(find.text('Confirmable Row')),
+        );
+        await tester.pump();
+        await gHighlight.cancel();
+        await tester.pump();
 
-      // Re-enter edit mode, open confirmation, tap Delete, and trigger rebuild mid-removal animation
-      editController.startEditing();
-      await tester.pumpAndSettle();
-      await tester.tap(find.byIcon(CupertinoIcons.minus_circle_fill));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Delete'));
-      await tester.pump(const Duration(milliseconds: 50));
-      outerSetState(() {});
-      await tester.pump(const Duration(milliseconds: 50));
-      await tester.pumpAndSettle();
-      expect(deleted, isTrue);
-    });
+        // Re-enter edit mode, open confirmation, tap Delete, and trigger rebuild mid-removal animation
+        editController.startEditing();
+        await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(CupertinoIcons.minus_circle_fill));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Delete'));
+        await tester.pump(const Duration(milliseconds: 50));
+        outerSetState(() {});
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpAndSettle();
+        expect(deleted, isTrue);
+      },
+    );
   });
 }
 

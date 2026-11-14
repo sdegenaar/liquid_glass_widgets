@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 import '../models/mail_models.dart';
@@ -129,12 +129,7 @@ class _MailboxesViewState extends State<MailboxesView> {
       ),
       // Compose button floats in bottom-right corner
       bottomBar: Padding(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          0,
-          16,
-          botPad > 24 ? botPad - 8 : 16,
-        ),
+        padding: EdgeInsets.fromLTRB(16, 0, 16, botPad > 24 ? botPad - 8 : 16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
@@ -379,13 +374,7 @@ class _MailboxRow extends StatelessWidget {
             SizedBox(
               width: 26,
               height: 26,
-              child: Center(
-                child: Icon(
-                  icon,
-                  size: 22,
-                  color: iconColor,
-                ),
-              ),
+              child: Center(child: Icon(icon, size: 22, color: iconColor)),
             ),
             const SizedBox(width: 12),
 

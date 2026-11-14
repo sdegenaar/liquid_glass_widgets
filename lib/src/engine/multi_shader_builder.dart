@@ -134,9 +134,7 @@ class MultiShaderBuilder extends StatefulWidget {
   /// that reference these assets will be guaranteed to immediately have access
   /// to the shaders.
   static Future<void> precacheShaders(List<String> assetKeys) {
-    return Future.wait(
-      assetKeys.map(precacheShader),
-    );
+    return Future.wait(assetKeys.map(precacheShader));
   }
 
   /// Returns the cached [ui.FragmentProgram] for [assetKey], or `null` if it
@@ -250,8 +248,9 @@ class _MultiShaderBuilderState extends State<MultiShaderBuilder> {
     // Check if all shaders requested by the current widget are loaded.
     // Checking key presence rather than map length prevents crashes if stale
     // shaders finished loading after assetKeys changed.
-    final allLoaded =
-        widget.assetKeys.every((key) => _shaders.containsKey(key));
+    final allLoaded = widget.assetKeys.every(
+      (key) => _shaders.containsKey(key),
+    );
     if (!allLoaded) {
       return widget.child ?? const SizedBox.shrink();
     }

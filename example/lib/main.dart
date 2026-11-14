@@ -1,7 +1,7 @@
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets_example/constants/glass_settings.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:liquid_glass_widgets_example/apple_mail/apple_mail_demo.dart';
 import 'package:liquid_glass_widgets_example/apple_messages/apple_messages_demo.dart';
@@ -85,8 +85,9 @@ class _AppleLiquidGlassShowcaseAppState
 
   void _toggleBrightness() {
     setState(() {
-      _brightness =
-          _brightness == Brightness.dark ? Brightness.light : Brightness.dark;
+      _brightness = _brightness == Brightness.dark
+          ? Brightness.light
+          : Brightness.dark;
     });
   }
 
@@ -119,9 +120,7 @@ class _AppleLiquidGlassShowcaseAppState
         setStyle: _setStyle,
         child: CupertinoApp(
           title: 'Liquid Glass Widgets',
-          theme: CupertinoThemeData(
-            brightness: _brightness,
-          ),
+          theme: CupertinoThemeData(brightness: _brightness),
           // Demo pages use Material widgets (Scaffold, showModalBottomSheet)
           // that require these localizations. Not needed for glass widgets.
           localizationsDelegates: const [
@@ -173,10 +172,7 @@ class _BrightnessScope extends InheritedWidget {
 class _GlassStyleSelector extends StatelessWidget {
   const _GlassStyleSelector();
 
-  static const _styles = [
-    GlassStyle.ios27,
-    GlassStyle.ios26,
-  ];
+  static const _styles = [GlassStyle.ios27, GlassStyle.ios26];
 
   @override
   Widget build(BuildContext context) {
@@ -239,8 +235,9 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage> {
 
     return GlassScaffold(
       background: const ShowcaseBackground(),
-      statusBarStyle:
-          isDark ? GlassStatusBarStyle.light : GlassStatusBarStyle.dark,
+      statusBarStyle: isDark
+          ? GlassStatusBarStyle.light
+          : GlassStatusBarStyle.dark,
       topEdgeFade: true,
       bottomBar: GlassTabBar.bottom(
         selectedIndex: _selectedTab,
@@ -303,8 +300,9 @@ class _ExploreTab extends StatelessWidget {
                     'iOS 26 & 27 Flutter Widget Toolkit',
                     style: TextStyle(
                       fontSize: 17,
-                      color:
-                          CupertinoColors.secondaryLabel.resolveFrom(context),
+                      color: CupertinoColors.secondaryLabel.resolveFrom(
+                        context,
+                      ),
                       letterSpacing: -0.2,
                     ),
                   ),
@@ -322,10 +320,7 @@ class _ExploreTab extends StatelessWidget {
                         gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFF8B0000),
-                            Color(0xFFFA2D48),
-                          ],
+                          colors: [Color(0xFF8B0000), Color(0xFFFA2D48)],
                         ),
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -335,8 +330,11 @@ class _ExploreTab extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.apple_outlined,
-                                  color: CupertinoColors.white, size: 30),
+                              Icon(
+                                Icons.apple_outlined,
+                                color: CupertinoColors.white,
+                                size: 30,
+                              ),
                               SizedBox(width: 6),
                               Text(
                                 'Music',
@@ -363,8 +361,9 @@ class _ExploreTab extends StatelessWidget {
                             'Searchable bottom bar · Play pill · Tab navigation',
                             style: TextStyle(
                               fontSize: 13,
-                              color:
-                                  CupertinoColors.white.withValues(alpha: 0.7),
+                              color: CupertinoColors.white.withValues(
+                                alpha: 0.7,
+                              ),
                             ),
                           ),
                         ],
@@ -541,8 +540,9 @@ class _WidgetsTab extends StatelessWidget {
                     'Browse the full widget catalog.',
                     style: TextStyle(
                       fontSize: 15,
-                      color:
-                          CupertinoColors.secondaryLabel.resolveFrom(context),
+                      color: CupertinoColors.secondaryLabel.resolveFrom(
+                        context,
+                      ),
                     ),
                   ),
                   SizedBox(height: 24),
@@ -662,8 +662,9 @@ class _DemosTab extends StatelessWidget {
                     'Polished Apple app reproductions using the active glass style.',
                     style: TextStyle(
                       fontSize: 15,
-                      color:
-                          CupertinoColors.secondaryLabel.resolveFrom(context),
+                      color: CupertinoColors.secondaryLabel.resolveFrom(
+                        context,
+                      ),
                     ),
                   ),
                   SizedBox(height: 16),
@@ -673,13 +674,9 @@ class _DemosTab extends StatelessWidget {
                   // Large featured cards
                   _LargeDemoCard(
                     title: 'Apple Mail',
-                    subtitle:
-                        'iOS 27 glass demo · pinned nav, gel morph & compose · compare iOS 26 in Inbox ··· menu',
+                    subtitle: 'iOS 27 glass demo · pinned nav, gel morph & compose · compare iOS 26 in Inbox ··· menu',
                     icon: CupertinoIcons.mail_solid,
-                    gradient: const [
-                      Color(0xFF0A3D62),
-                      Color(0xFF007AFF),
-                    ],
+                    gradient: const [Color(0xFF0A3D62), Color(0xFF007AFF)],
                     destination: const AppleMailHomeScreen(),
                   ),
                   SizedBox(height: 14),
@@ -689,10 +686,7 @@ class _DemosTab extends StatelessWidget {
                     subtitle:
                         'Searchable bottom bar, play pill, tab navigation',
                     icon: CupertinoIcons.music_note_2,
-                    gradient: const [
-                      Color(0xFF8B0000),
-                      Color(0xFFFA2D48),
-                    ],
+                    gradient: const [Color(0xFF8B0000), Color(0xFFFA2D48)],
                     destination: const AppleMusicHomeScreen(),
                   ),
                   SizedBox(height: 14),
@@ -701,10 +695,7 @@ class _DemosTab extends StatelessWidget {
                     title: 'Messages',
                     subtitle: 'Conversations, edit menus & filter controls',
                     icon: CupertinoIcons.chat_bubble_2_fill,
-                    gradient: const [
-                      Color(0xFF0A4D20),
-                      Color(0xFF34C759),
-                    ],
+                    gradient: const [Color(0xFF0A4D20), Color(0xFF34C759)],
                     destination: const MessagesScreen(),
                   ),
                   SizedBox(height: 14),
@@ -714,10 +705,7 @@ class _DemosTab extends StatelessWidget {
                     subtitle:
                         'Mini-player, now playing sheet & scroll collapse',
                     icon: CupertinoIcons.mic_fill,
-                    gradient: const [
-                      Color(0xFF4A1A6B),
-                      Color(0xFFA855F7),
-                    ],
+                    gradient: const [Color(0xFF4A1A6B), Color(0xFFA855F7)],
                     destination: const ApplePodcastsHomeScreen(),
                   ),
                   SizedBox(height: 14),
@@ -788,8 +776,9 @@ class _ExamplesTab extends StatelessWidget {
                     'Widget modes & configuration reference.',
                     style: TextStyle(
                       fontSize: 15,
-                      color:
-                          CupertinoColors.secondaryLabel.resolveFrom(context),
+                      color: CupertinoColors.secondaryLabel.resolveFrom(
+                        context,
+                      ),
                     ),
                   ),
                   SizedBox(height: 24),
@@ -821,13 +810,9 @@ class _ExamplesTab extends StatelessWidget {
                   // Large card: Lists, Pickers & Nav
                   _LargeDemoCard(
                     title: 'Lists, Pickers & Nav',
-                    subtitle:
-                        'Swipe & context menus · edit & reorder · disclosure · date pickers · full-screen cover & NavigationStack',
+                    subtitle: 'Swipe & context menus · edit & reorder · disclosure · date pickers · full-screen cover & NavigationStack',
                     icon: CupertinoIcons.square_stack_3d_up_fill,
-                    gradient: const [
-                      Color(0xFF1A2980),
-                      Color(0xFF26D0CE),
-                    ],
+                    gradient: const [Color(0xFF1A2980), Color(0xFF26D0CE)],
                     destination: const ListsPickersAndNavDemoPage(),
                   ),
                   SizedBox(height: 14),
@@ -835,13 +820,9 @@ class _ExamplesTab extends StatelessWidget {
                   // Large card: Tab Bar Menus
                   _LargeDemoCard(
                     title: 'Tab Bar Menus',
-                    subtitle:
-                        'Pull-down menus on bottom, minimizable & searchable bars (#275)',
+                    subtitle: 'Pull-down menus on bottom, minimizable & searchable bars (#275)',
                     icon: CupertinoIcons.ellipsis_vertical_circle_fill,
-                    gradient: const [
-                      Color(0xFF2E0854),
-                      Color(0xFF8E2DE2),
-                    ],
+                    gradient: const [Color(0xFF2E0854), Color(0xFF8E2DE2)],
                     destination: const TabBarMenuDemoPage(),
                   ),
                   SizedBox(height: 14),
@@ -852,10 +833,7 @@ class _ExamplesTab extends StatelessWidget {
                     subtitle:
                         'Standard, peek, Apple Maps & smart silence modes',
                     icon: CupertinoIcons.rectangle_on_rectangle,
-                    gradient: const [
-                      Color(0xFF0E4D92),
-                      Color(0xFF5AC8FA),
-                    ],
+                    gradient: const [Color(0xFF0E4D92), Color(0xFF5AC8FA)],
                     destination: const ShowcaseApp(),
                   ),
                   SizedBox(height: 14),
@@ -937,23 +915,16 @@ class _ExamplesTab extends StatelessWidget {
                     subtitle:
                         'glassEffectTransition(.materialize) — entrance & exit',
                     icon: CupertinoIcons.sparkles,
-                    gradient: const [
-                      Color(0xFF1B2A4A),
-                      Color(0xFF7B2D5E),
-                    ],
+                    gradient: const [Color(0xFF1B2A4A), Color(0xFF7B2D5E)],
                     destination: const MaterializeDemo(),
                   ),
                   SizedBox(height: 14),
 
                   _LargeDemoCard(
                     title: 'Scroll Edge Effect',
-                    subtitle:
-                        'blur · soft · hard — live style switcher + maxSigma tuner',
+                    subtitle: 'blur · soft · hard — live style switcher + maxSigma tuner',
                     icon: CupertinoIcons.arrow_up_to_line,
-                    gradient: const [
-                      Color(0xFF003566),
-                      Color(0xFF0096C7),
-                    ],
+                    gradient: const [Color(0xFF003566), Color(0xFF0096C7)],
                     destination: const ScrollEdgeStyleDemo(),
                   ),
                   SizedBox(height: 14),
@@ -963,10 +934,7 @@ class _ExamplesTab extends StatelessWidget {
                     subtitle:
                         'tabBarMinimizeBehavior — minimizes as you scroll',
                     icon: CupertinoIcons.arrow_down_to_line_alt,
-                    gradient: const [
-                      Color(0xFF0A2342),
-                      Color(0xFF0A84FF),
-                    ],
+                    gradient: const [Color(0xFF0A2342), Color(0xFF0A84FF)],
                     destination: const MinimizableBarDemo(),
                   ),
                   SizedBox(height: 14),
@@ -988,23 +956,16 @@ class _ExamplesTab extends StatelessWidget {
                     subtitle:
                         'Content-aware light/dark bar adaptation on scroll',
                     icon: CupertinoIcons.sun_dust_fill,
-                    gradient: const [
-                      Color(0xFF1C1C2E),
-                      Color(0xFF5AC8FA),
-                    ],
+                    gradient: const [Color(0xFF1C1C2E), Color(0xFF5AC8FA)],
                     destination: const ContentAwareBrightnessDemo(),
                   ),
                   SizedBox(height: 14),
 
                   _LargeDemoCard(
                     title: 'Indicator Parity',
-                    subtitle:
-                        'All 5 pill widgets — live pinch / expansion / aberration tuner',
+                    subtitle: 'All 5 pill widgets — live pinch / expansion / aberration tuner',
                     icon: CupertinoIcons.dial_fill,
-                    gradient: const [
-                      Color(0xFF5E3AFF),
-                      Color(0xFF0A84FF),
-                    ],
+                    gradient: const [Color(0xFF5E3AFF), Color(0xFF0A84FF)],
                     destination: const IndicatorParityDemoPage(),
                   ),
                   SizedBox(height: 14),
@@ -1014,31 +975,23 @@ class _ExamplesTab extends StatelessWidget {
                     subtitle:
                         'Automatic mirroring of layout and physics in RTL',
                     icon: CupertinoIcons.arrow_right_arrow_left_square_fill,
-                    gradient: const [
-                      Color(0xFF8E2DE2),
-                      Color(0xFF4A00E0),
-                    ],
+                    gradient: const [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
                     destination: const RtlLayoutDemo(),
                   ),
                   SizedBox(height: 14),
 
                   _LargeDemoCard(
                     title: 'Meniscus & Blur Lab',
-                    subtitle:
-                        'Optical rim darkening tuner (edgeAbsorption) & 24-tap blur test',
+                    subtitle: 'Optical rim darkening tuner (edgeAbsorption) & 24-tap blur test',
                     icon: CupertinoIcons.circle_righthalf_fill,
-                    gradient: const [
-                      Color(0xFF00C6FF),
-                      Color(0xFF0072FF),
-                    ],
+                    gradient: const [Color(0xFF00C6FF), Color(0xFF0072FF)],
                     destination: const MeniscusAndBlurDemoPage(),
                   ),
                   SizedBox(height: 14),
 
                   _LargeDemoCard(
                     title: 'Touch & Vibrancy',
-                    subtitle:
-                        'Shader contact specular highlight, nested vibrancy fill & menu tracking',
+                    subtitle: 'Shader contact specular highlight, nested vibrancy fill & menu tracking',
                     icon: CupertinoIcons.sparkles,
                     gradient: const [
                       Color(0xFF0F2027),
@@ -1158,10 +1111,7 @@ class _SmallDemoCard extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              color.withValues(alpha: 0.7),
-              color,
-            ],
+            colors: [color.withValues(alpha: 0.7), color],
           ),
           borderRadius: BorderRadius.circular(16),
         ),

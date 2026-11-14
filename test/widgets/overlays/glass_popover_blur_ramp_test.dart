@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -46,14 +46,16 @@ void main() {
   /// The blur the overlay's glass layer is currently rasterising, or null when
   /// no layer is mounted (popover closed).
   double? layerBlur(WidgetTester tester) {
-    final layers =
-        tester.widgetList<LiquidGlassLayer>(find.byType(LiquidGlassLayer));
+    final layers = tester.widgetList<LiquidGlassLayer>(
+      find.byType(LiquidGlassLayer),
+    );
     if (layers.isEmpty) return null;
     return layers.first.settings.blur;
   }
 
-  testWidgets('blur ramps in from ~0 to the target over the morph',
-      (tester) async {
+  testWidgets('blur ramps in from ~0 to the target over the morph', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildApp());
 
     // Frame 0 of the open: overlay is mounted, ramp has just started at 0 — the
@@ -62,8 +64,11 @@ void main() {
     await tester.pump();
     final atStart = layerBlur(tester);
     expect(atStart, isNotNull, reason: 'glass layer should be mounted on open');
-    expect(atStart, lessThan(target * 0.5),
-        reason: 'blur must start ramping from ~0, not full strength');
+    expect(
+      atStart,
+      lessThan(target * 0.5),
+      reason: 'blur must start ramping from ~0, not full strength',
+    );
 
     // Part-way through the ramp it has grown but not yet reached full.
     await tester.pump(const Duration(milliseconds: 120));
@@ -78,8 +83,9 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('blurRampDuration: Duration.zero applies full blur immediately',
-      (tester) async {
+  testWidgets('blurRampDuration: Duration.zero applies full blur immediately', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildApp(blurRampDuration: Duration.zero));
 
     await tester.tap(find.text('Open'));
@@ -91,8 +97,9 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('reduced motion skips the ramp (full blur immediately)',
-      (tester) async {
+  testWidgets('reduced motion skips the ramp (full blur immediately)', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildApp(disableAnimations: true));
 
     await tester.tap(find.text('Open'));
@@ -117,29 +124,30 @@ void main() {
   });
 
   testWidgets(
-      'blurRampDuration change mid-open applies without crash and settles',
-      (tester) async {
-    // Start with a long ramp so we can catch it mid-animation.
-    await tester.pumpWidget(
-      buildApp(blurRampDuration: const Duration(milliseconds: 600)),
-    );
+    'blurRampDuration change mid-open applies without crash and settles',
+    (tester) async {
+      // Start with a long ramp so we can catch it mid-animation.
+      await tester.pumpWidget(
+        buildApp(blurRampDuration: const Duration(milliseconds: 600)),
+      );
 
-    await tester.tap(find.text('Open'));
-    await tester.pump(); // ramp starts
+      await tester.tap(find.text('Open'));
+      await tester.pump(); // ramp starts
 
-    // Confirm the blur is ramping (not yet full).
-    expect(layerBlur(tester)!, lessThan(target * 0.5));
+      // Confirm the blur is ramping (not yet full).
+      expect(layerBlur(tester)!, lessThan(target * 0.5));
 
-    // Rebuild with a much shorter duration while the ramp is still running.
-    // didUpdateWidget must not throw, and the widget must remain mounted.
-    await tester.pumpWidget(
-      buildApp(blurRampDuration: const Duration(milliseconds: 50)),
-    );
-    expect(tester.takeException(), isNull);
-    expect(find.byType(GlassPopover), findsOneWidget);
+      // Rebuild with a much shorter duration while the ramp is still running.
+      // didUpdateWidget must not throw, and the widget must remain mounted.
+      await tester.pumpWidget(
+        buildApp(blurRampDuration: const Duration(milliseconds: 50)),
+      );
+      expect(tester.takeException(), isNull);
+      expect(find.byType(GlassPopover), findsOneWidget);
 
-    // After settling the blur must reach the full configured target.
-    await tester.pumpAndSettle();
-    expect(layerBlur(tester), closeTo(target, 0.01));
-  });
+      // After settling the blur must reach the full configured target.
+      await tester.pumpAndSettle();
+      expect(layerBlur(tester), closeTo(target, 0.01));
+    },
+  );
 }

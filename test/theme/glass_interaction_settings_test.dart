@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -161,10 +161,7 @@ void main() {
 
     test('fallback() has empty interaction settings', () {
       final fallback = GlassThemeData.fallback();
-      expect(
-        fallback.interaction,
-        equals(const GlassInteractionSettings()),
-      );
+      expect(fallback.interaction, equals(const GlassInteractionSettings()));
     });
 
     test('simple() passes interaction through', () {
@@ -184,8 +181,9 @@ void main() {
   // ──────────────────────────────────────────────────────────────────────────
 
   group('GlassThemeData.of interaction propagation', () {
-    testWidgets('interaction is accessible via GlassThemeData.of()',
-        (tester) async {
+    testWidgets('interaction is accessible via GlassThemeData.of()', (
+      tester,
+    ) async {
       const interaction = GlassInteractionSettings(
         stretch: 0.1,
         interactionScale: 1.02,
@@ -197,10 +195,12 @@ void main() {
         MaterialApp(
           home: GlassTheme(
             data: data,
-            child: Builder(builder: (context) {
-              captured = GlassThemeData.of(context).interaction;
-              return const SizedBox.shrink();
-            }),
+            child: Builder(
+              builder: (context) {
+                captured = GlassThemeData.of(context).interaction;
+                return const SizedBox.shrink();
+              },
+            ),
           ),
         ),
       );
@@ -210,15 +210,18 @@ void main() {
       expect(captured!.interactionScale, 1.02);
     });
 
-    testWidgets('returns default interaction when no GlassTheme in tree',
-        (tester) async {
+    testWidgets('returns default interaction when no GlassTheme in tree', (
+      tester,
+    ) async {
       GlassInteractionSettings? captured;
       await tester.pumpWidget(
         MaterialApp(
-          home: Builder(builder: (context) {
-            captured = GlassThemeData.of(context).interaction;
-            return const SizedBox.shrink();
-          }),
+          home: Builder(
+            builder: (context) {
+              captured = GlassThemeData.of(context).interaction;
+              return const SizedBox.shrink();
+            },
+          ),
         ),
       );
 

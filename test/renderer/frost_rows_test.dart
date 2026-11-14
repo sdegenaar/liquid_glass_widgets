@@ -15,12 +15,12 @@ void main() {
   late ui.FragmentShader geometryShader;
   late ui.FragmentShader renderShader;
   setUpAll(() async {
-    geometryShader =
-        (await ui.FragmentProgram.fromAsset(ShaderKeys.blendedGeometry))
-            .fragmentShader();
-    renderShader =
-        (await ui.FragmentProgram.fromAsset(ShaderKeys.liquidGlassRender))
-            .fragmentShader();
+    geometryShader = (await ui.FragmentProgram.fromAsset(
+      ShaderKeys.blendedGeometry,
+    )).fragmentShader();
+    renderShader = (await ui.FragmentProgram.fromAsset(
+      ShaderKeys.liquidGlassRender,
+    )).fragmentShader();
   });
 
   late GeometryRenderLink link;
@@ -74,8 +74,10 @@ void main() {
     final rows = layer.frostRowsPath!;
     final toScreen = layer.getTransformTo(null);
     final toLocal = Matrix4.inverted(toScreen);
-    final screen =
-        MatrixUtils.transformRect(toScreen, Offset.zero & layer.size);
+    final screen = MatrixUtils.transformRect(
+      toScreen,
+      Offset.zero & layer.size,
+    );
     final top = (screen.top * dpr).ceil() + 1;
     final bottom = (screen.bottom * dpr).floor() - 1;
     final x = (screen.center.dx * dpr).floorToDouble() + 0.5;
@@ -92,8 +94,9 @@ void main() {
     }
   }
 
-  testWidgets('a frost clips its blur to the odd physical rows',
-      (tester) async {
+  testWidgets('a frost clips its blur to the odd physical rows', (
+    tester,
+  ) async {
     expectOddRows(tester, await pump(tester, frosted));
   });
 
@@ -127,8 +130,11 @@ void main() {
   });
 
   testWidgets('a rotated frost has no rows to land on', (tester) async {
-    final layer =
-        await pump(tester, frosted, transform: Matrix4.rotationZ(0.1));
+    final layer = await pump(
+      tester,
+      frosted,
+      transform: Matrix4.rotationZ(0.1),
+    );
     expect(layer.frostRowsPath, isNull);
   });
 }
@@ -172,11 +178,11 @@ class _LayerWidget extends SingleChildRenderObjectWidget {
 
   @override
   _Layer createRenderObject(BuildContext context) => _Layer(
-        link: link,
-        renderShader: renderShader,
-        settings: settings,
-        devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
-      );
+    link: link,
+    renderShader: renderShader,
+    settings: settings,
+    devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+  );
 }
 
 // A shape whose geometry is its own size.
@@ -254,9 +260,9 @@ class _ShapeWidget extends SingleChildRenderObjectWidget {
 
   @override
   _Shape createRenderObject(BuildContext context) => _Shape(
-        renderLink: link,
-        geometryShader: geometryShader,
-        settings: settings,
-        devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
-      );
+    renderLink: link,
+    geometryShader: geometryShader,
+    settings: settings,
+    devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+  );
 }

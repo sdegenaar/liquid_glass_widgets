@@ -43,7 +43,8 @@ double? verticalBarPresentationTop(BuildContext context, Rect trigger) =>
   final bar = GlassVerticalBar.maybeOf(context);
   final size = MediaQuery.maybeSizeOf(context);
   if (bar == null || size == null) return null;
-  final stripOnRight = (bar.edge == GlassVerticalBarEdge.trailing) ==
+  final stripOnRight =
+      (bar.edge == GlassVerticalBarEdge.trailing) ==
       (Directionality.of(context) == TextDirection.ltr);
   final inStrip = stripOnRight
       ? trigger.left >= size.width - bar.width

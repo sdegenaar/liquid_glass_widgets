@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/renderer/glass_materialize_scope.dart';
@@ -37,13 +37,11 @@ void main() {
   /// The [Semantics] node an item declares, rather than the merged semantics
   /// tree, so the assertion does not need a semantics handle.
   Finder semanticsLabelled(String label) => find.byWidgetPredicate(
-        (widget) => widget is Semantics && widget.properties.label == label,
-      );
+    (widget) => widget is Semantics && widget.properties.label == label,
+  );
 
-  Finder inHost(Finder matching) => find.descendant(
-        of: find.byType(GlassNavPinnedHost),
-        matching: matching,
-      );
+  Finder inHost(Finder matching) =>
+      find.descendant(of: find.byType(GlassNavPinnedHost), matching: matching);
 
   /// Every [GlassMaterializeScope] above [finder], nearest first.
   Iterable<GlassMaterializeScope> scopesAbove(Finder finder) => find
@@ -75,13 +73,15 @@ void main() {
     });
 
     testWidgets('its label comes from CupertinoLocalizations', (tester) async {
-      await tester.pumpWidget(shellApp(
-        const _Screen(title: 'Root'),
-        localizationsDelegates: const [
-          _StubCupertinoLocalizationsDelegate(),
-          DefaultWidgetsLocalizations.delegate,
-        ],
-      ));
+      await tester.pumpWidget(
+        shellApp(
+          const _Screen(title: 'Root'),
+          localizationsDelegates: const [
+            _StubCupertinoLocalizationsDelegate(),
+            DefaultWidgetsLocalizations.delegate,
+          ],
+        ),
+      );
       await settle(tester);
       await _push(tester, const _Screen(title: 'Detail'));
       await settle(tester);
@@ -89,8 +89,9 @@ void main() {
       expect(inHost(semanticsLabelled('Atrás')), findsOneWidget);
     });
 
-    testWidgets('defaults to the untranslated label with no delegates',
-        (tester) async {
+    testWidgets('defaults to the untranslated label with no delegates', (
+      tester,
+    ) async {
       await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
       await settle(tester);
       await _push(tester, const _Screen(title: 'Detail'));
@@ -115,12 +116,9 @@ void main() {
       await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
       await settle(tester);
       await _push(
-          tester,
-          _Screen(
-            title: 'Detail',
-            leading: [_cancel()],
-            supplement: true,
-          ));
+        tester,
+        _Screen(title: 'Detail', leading: [_cancel()], supplement: true),
+      );
       await settle(tester);
 
       expect(inHost(find.byIcon(CupertinoIcons.back)), findsOneWidget);
@@ -133,21 +131,23 @@ void main() {
       await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
       await settle(tester);
       await _push(
-          tester,
-          _Screen(
-            title: 'Detail',
-            leading: [_cancel()],
-            supplement: true,
-            backButton: false,
-          ));
+        tester,
+        _Screen(
+          title: 'Detail',
+          leading: [_cancel()],
+          supplement: true,
+          backButton: false,
+        ),
+      );
       await settle(tester);
 
       expect(find.byIcon(CupertinoIcons.back), findsNothing);
       expect(inHost(find.byIcon(CupertinoIcons.xmark)), findsOneWidget);
     });
 
-    testWidgets('a leading on a root route pins without a back button',
-        (tester) async {
+    testWidgets('a leading on a root route pins without a back button', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         shellApp(_Screen(title: 'Root', leading: [_cancel()])),
       );
@@ -159,17 +159,22 @@ void main() {
   });
 
   group('backgrounds', () {
-    testWidgets('an item that hides its background gets no glass shell',
-        (tester) async {
-      await tester.pumpWidget(shellApp(_Screen(
-        title: 'Root',
-        leading: [
-          const GlassBarItem.custom(
-            child: SizedBox(width: 44, height: 44, child: Text('avatar')),
-            background: GlassBarItemBackground.none,
+    testWidgets('an item that hides its background gets no glass shell', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        shellApp(
+          _Screen(
+            title: 'Root',
+            leading: [
+              const GlassBarItem.custom(
+                child: SizedBox(width: 44, height: 44, child: Text('avatar')),
+                background: GlassBarItemBackground.none,
+              ),
+            ],
           ),
-        ],
-      )));
+        ),
+      );
       await settle(tester);
 
       expect(inHost(find.text('avatar')), findsOneWidget);
@@ -177,42 +182,50 @@ void main() {
     });
 
     testWidgets(
-        'an item that draws its own glass dissolves through the materialize '
-        'scope, not a layer', (tester) async {
-      await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
-      await settle(tester);
-      await _push(tester, _Screen(title: 'Detail', leading: [_ownCapsule()]));
+      'an item that draws its own glass dissolves through the materialize '
+      'scope, not a layer',
+      (tester) async {
+        await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
+        await settle(tester);
+        await _push(tester, _Screen(title: 'Detail', leading: [_ownCapsule()]));
 
-      // Mid cross-fade, where an ordinary item is painted under an opacity
-      // layer. A glass surface under one has no backdrop to sample, so the
-      // cluster hands the fade to the surface itself instead.
-      await tester.pump(const Duration(milliseconds: 250));
-      final scope = nearestScope(tester, inHost(find.text('capsule')));
-      expect(scope.glassProgress, lessThan(1.0));
-      expect(scope.glassProgress, greaterThan(0.0));
-      expect(scope.contentSigma, greaterThan(0.0));
+        // Mid cross-fade, where an ordinary item is painted under an opacity
+        // layer. A glass surface under one has no backdrop to sample, so the
+        // cluster hands the fade to the surface itself instead.
+        await tester.pump(const Duration(milliseconds: 250));
+        final scope = nearestScope(tester, inHost(find.text('capsule')));
+        expect(scope.glassProgress, lessThan(1.0));
+        expect(scope.glassProgress, greaterThan(0.0));
+        expect(scope.contentSigma, greaterThan(0.0));
 
-      await settle(tester);
-      expect(
-        nearestScope(tester, inHost(find.text('capsule'))).glassProgress,
-        1.0,
+        await settle(tester);
+        expect(
+          nearestScope(tester, inHost(find.text('capsule'))).glassProgress,
+          1.0,
+        );
+      },
+    );
+
+    testWidgets('two items that draw their own glass take turns', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        shellApp(
+          _Screen(
+            title: 'Root',
+            leading: [_ownCapsule(id: #cluster)],
+          ),
+        ),
       );
-    });
-
-    testWidgets('two items that draw their own glass take turns',
-        (tester) async {
-      await tester.pumpWidget(shellApp(_Screen(
-        title: 'Root',
-        leading: [_ownCapsule(id: #cluster)],
-      )));
       await settle(tester);
       await _push(
-          tester,
-          _Screen(
-            title: 'Detail',
-            backButton: false,
-            leading: [_ownCapsule(id: #cluster, label: 'pill')],
-          ));
+        tester,
+        _Screen(
+          title: 'Detail',
+          backButton: false,
+          leading: [_ownCapsule(id: #cluster, label: 'pill')],
+        ),
+      );
 
       // A matched pair of plain items cross-fades; two glass surfaces cannot,
       // because each would sample the other. Before the swap only the
@@ -222,7 +235,9 @@ void main() {
       expect(outgoing.glassProgress, lessThan(1.0));
       expect(outgoing.glassProgress, greaterThan(0.0));
       expect(
-          nearestScope(tester, inHost(find.text('pill'))).glassProgress, 0.0);
+        nearestScope(tester, inHost(find.text('pill'))).glassProgress,
+        0.0,
+      );
 
       await tester.pump(const Duration(milliseconds: 100));
       expect(
@@ -235,11 +250,11 @@ void main() {
     });
 
     testWidgets(
-        'plain content that hides its background keeps the cluster fade',
-        (tester) async {
-      await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
-      await settle(tester);
-      await _push(
+      'plain content that hides its background keeps the cluster fade',
+      (tester) async {
+        await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
+        await settle(tester);
+        await _push(
           tester,
           _Screen(
             title: 'Detail',
@@ -250,54 +265,64 @@ void main() {
               ),
               _ownCapsule(),
             ],
-          ));
-      await tester.pump(const Duration(milliseconds: 250));
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 250));
 
-      // Both sit under the group's own materialize; only the glass item gets
-      // the cluster's fade as a scope of its own. The avatar is faded at
-      // paint, as before.
-      final avatarScopes = scopesAbove(inHost(find.text('avatar')));
-      final capsuleScopes = scopesAbove(inHost(find.text('capsule')));
-      expect(capsuleScopes.length, avatarScopes.length + 1);
-    });
+        // Both sit under the group's own materialize; only the glass item gets
+        // the cluster's fade as a scope of its own. The avatar is faded at
+        // paint, as before.
+        final avatarScopes = scopesAbove(inHost(find.text('avatar')));
+        final capsuleScopes = scopesAbove(inHost(find.text('capsule')));
+        expect(capsuleScopes.length, avatarScopes.length + 1);
+      },
+    );
 
     testWidgets(
-        'a cluster only one route has dissolves through the materialize',
-        (tester) async {
-      await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
-      await settle(tester);
-      await _push(tester, _Screen(title: 'Detail', leading: [_cancel()]));
+      'a cluster only one route has dissolves through the materialize',
+      (tester) async {
+        await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
+        await settle(tester);
+        await _push(tester, _Screen(title: 'Detail', leading: [_cancel()]));
 
-      // Inside the materialize window. The menu wrapper around every group
-      // used to install a resting scope of its own here, so the group's
-      // shell never saw this fade and popped in solid at the window's start.
-      await tester.pump(const Duration(milliseconds: 350));
-      final scope =
-          nearestScope(tester, inHost(find.byIcon(CupertinoIcons.xmark)));
-      expect(scope.glassProgress, lessThan(1.0));
-      expect(scope.glassProgress, greaterThan(0.0));
-    });
+        // Inside the materialize window. The menu wrapper around every group
+        // used to install a resting scope of its own here, so the group's
+        // shell never saw this fade and popped in solid at the window's start.
+        await tester.pump(const Duration(milliseconds: 350));
+        final scope = nearestScope(
+          tester,
+          inHost(find.byIcon(CupertinoIcons.xmark)),
+        );
+        expect(scope.glassProgress, lessThan(1.0));
+        expect(scope.glassProgress, greaterThan(0.0));
+      },
+    );
 
-    testWidgets('a separate item is its own shell beside a shared capsule',
-        (tester) async {
-      await tester.pumpWidget(shellApp(_Screen(
-        title: 'Root',
-        leading: [
-          GlassBarItem.icon(
-            icon: const Icon(CupertinoIcons.xmark),
-            background: GlassBarItemBackground.separate,
-            onTap: () {},
+    testWidgets('a separate item is its own shell beside a shared capsule', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        shellApp(
+          _Screen(
+            title: 'Root',
+            leading: [
+              GlassBarItem.icon(
+                icon: const Icon(CupertinoIcons.xmark),
+                background: GlassBarItemBackground.separate,
+                onTap: () {},
+              ),
+              GlassBarItem.icon(
+                icon: const Icon(CupertinoIcons.add),
+                onTap: () {},
+              ),
+              GlassBarItem.icon(
+                icon: const Icon(CupertinoIcons.search),
+                onTap: () {},
+              ),
+            ],
           ),
-          GlassBarItem.icon(
-            icon: const Icon(CupertinoIcons.add),
-            onTap: () {},
-          ),
-          GlassBarItem.icon(
-            icon: const Icon(CupertinoIcons.search),
-            onTap: () {},
-          ),
-        ],
-      )));
+        ),
+      );
       await settle(tester);
 
       final shells = inHost(find.byType(GlassButton));
@@ -308,10 +333,7 @@ void main() {
         tester.getSize(shells.first).height,
         GlassNavPinnedMetrics.backDiameter,
       );
-      expect(
-        tester.getSize(shells.last).height,
-        GlassNavPinnedMetrics.slot,
-      );
+      expect(tester.getSize(shells.last).height, GlassNavPinnedMetrics.slot);
     });
     testWidgets('a lone shell grows into a shared capsule', (tester) async {
       await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
@@ -324,21 +346,22 @@ void main() {
       expect(shell().height, GlassNavPinnedMetrics.backDiameter);
 
       await _push(
-          tester,
-          _Screen(
-            title: 'Library',
-            backButton: false,
-            leading: [
-              GlassBarItem.icon(
-                icon: const Icon(CupertinoIcons.sidebar_left),
-                onTap: () {},
-              ),
-              GlassBarItem.icon(
-                icon: const Icon(CupertinoIcons.slider_horizontal_3),
-                onTap: () {},
-              ),
-            ],
-          ));
+        tester,
+        _Screen(
+          title: 'Library',
+          backButton: false,
+          leading: [
+            GlassBarItem.icon(
+              icon: const Icon(CupertinoIcons.sidebar_left),
+              onTap: () {},
+            ),
+            GlassBarItem.icon(
+              icon: const Icon(CupertinoIcons.slider_horizontal_3),
+              onTap: () {},
+            ),
+          ],
+        ),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 150));
 
@@ -356,48 +379,51 @@ void main() {
       await settle(tester);
       expect(
         shell(),
-        const Size(
-          GlassNavPinnedMetrics.slot * 2,
-          GlassNavPinnedMetrics.slot,
-        ),
+        const Size(GlassNavPinnedMetrics.slot * 2, GlassNavPinnedMetrics.slot),
       );
     });
   });
 
   group('anchoring', () {
-    testWidgets('a leading cluster grows away from the leading edge',
-        (tester) async {
-      await tester.pumpWidget(shellApp(_Screen(
-        title: 'Root',
-        leading: [
-          GlassBarItem.icon(
-            icon: const Icon(CupertinoIcons.add),
-            id: 'add',
-            onTap: () {},
-          ),
-        ],
-      )));
-      await settle(tester);
-      final before = tester.getTopLeft(inHost(find.byIcon(CupertinoIcons.add)));
-
-      await _push(
-          tester,
+    testWidgets('a leading cluster grows away from the leading edge', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        shellApp(
           _Screen(
-            title: 'Detail',
-            backButton: false,
+            title: 'Root',
             leading: [
               GlassBarItem.icon(
                 icon: const Icon(CupertinoIcons.add),
                 id: 'add',
                 onTap: () {},
               ),
-              GlassBarItem.icon(
-                icon: const Icon(CupertinoIcons.search),
-                id: 'search',
-                onTap: () {},
-              ),
             ],
-          ));
+          ),
+        ),
+      );
+      await settle(tester);
+      final before = tester.getTopLeft(inHost(find.byIcon(CupertinoIcons.add)));
+
+      await _push(
+        tester,
+        _Screen(
+          title: 'Detail',
+          backButton: false,
+          leading: [
+            GlassBarItem.icon(
+              icon: const Icon(CupertinoIcons.add),
+              id: 'add',
+              onTap: () {},
+            ),
+            GlassBarItem.icon(
+              icon: const Icon(CupertinoIcons.search),
+              id: 'search',
+              onTap: () {},
+            ),
+          ],
+        ),
+      );
       await settle(tester);
 
       // The matched item holds its place while the capsule grows trailing-ward.
@@ -409,12 +435,18 @@ void main() {
     });
 
     test('matchGlassNavActions counts positions from the anchored edge', () {
-      final a =
-          GlassBarItem.icon(icon: const Icon(CupertinoIcons.add), onTap: () {});
+      final a = GlassBarItem.icon(
+        icon: const Icon(CupertinoIcons.add),
+        onTap: () {},
+      );
       final b = GlassBarItem.icon(
-          icon: const Icon(CupertinoIcons.search), onTap: () {});
+        icon: const Icon(CupertinoIcons.search),
+        onTap: () {},
+      );
       final c = GlassBarItem.icon(
-          icon: const Icon(CupertinoIcons.bell), onTap: () {});
+        icon: const Icon(CupertinoIcons.bell),
+        onTap: () {},
+      );
 
       // Leading-anchored: the first item of each cluster is the same slot.
       final leading = matchGlassNavActions(
@@ -432,8 +464,9 @@ void main() {
       expect(trailing.singleWhere((s) => s.toItem == b).isEnter, isTrue);
     });
 
-    testWidgets('trailing action groups align to the trailing edge',
-        (tester) async {
+    testWidgets('trailing action groups align to the trailing edge', (
+      tester,
+    ) async {
       final selectItem = GlassBarItem.icon(
         icon: const Icon(CupertinoIcons.checkmark),
         background: GlassBarItemBackground.separate,
@@ -455,19 +488,12 @@ void main() {
         onTap: () {},
       );
 
-      await tester.pumpWidget(shellApp(_Screen(
-        title: 'Inbox',
-        actions: [selectItem, menuItem],
-      )));
+      await tester.pumpWidget(
+        shellApp(_Screen(title: 'Inbox', actions: [selectItem, menuItem])),
+      );
       await settle(tester);
 
-      await _push(
-        tester,
-        _Screen(
-          title: 'Detail',
-          actions: [navUp, navDown],
-        ),
-      );
+      await _push(tester, _Screen(title: 'Detail', actions: [navUp, navDown]));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 150));
 
@@ -482,18 +508,23 @@ void main() {
   });
 
   group('interaction', () {
-    testWidgets('leading items are tappable at rest and inert mid-transition',
-        (tester) async {
+    testWidgets('leading items are tappable at rest and inert mid-transition', (
+      tester,
+    ) async {
       var taps = 0;
-      await tester.pumpWidget(shellApp(_Screen(
-        title: 'Root',
-        leading: [
-          GlassBarItem.icon(
-            icon: const Icon(CupertinoIcons.xmark),
-            onTap: () => taps++,
+      await tester.pumpWidget(
+        shellApp(
+          _Screen(
+            title: 'Root',
+            leading: [
+              GlassBarItem.icon(
+                icon: const Icon(CupertinoIcons.xmark),
+                onTap: () => taps++,
+              ),
+            ],
           ),
-        ],
-      )));
+        ),
+      );
       await settle(tester);
 
       await tester.tap(inHost(find.byIcon(CupertinoIcons.xmark)));
@@ -503,19 +534,24 @@ void main() {
       // Before the midpoint the leading cluster is still the outgoing route's.
       await _push(tester, const _Screen(title: 'Detail'));
       await tester.pump(const Duration(milliseconds: 100));
-      await tester.tap(inHost(find.byIcon(CupertinoIcons.xmark)),
-          warnIfMissed: false);
+      await tester.tap(
+        inHost(find.byIcon(CupertinoIcons.xmark)),
+        warnIfMissed: false,
+      );
       await settle(tester);
       expect(taps, 1);
     });
   });
 
   group('fallback rendering', () {
-    testWidgets('without a shell the leading items render in-route',
-        (tester) async {
-      await tester.pumpWidget(CupertinoApp(
-        home: _Screen(title: 'Root', leading: [_cancel()]),
-      ));
+    testWidgets('without a shell the leading items render in-route', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: _Screen(title: 'Root', leading: [_cancel()]),
+        ),
+      );
       await settle(tester);
 
       expect(find.byType(GlassNavPinnedHost), findsNothing);
@@ -528,19 +564,22 @@ void main() {
       );
     });
 
-    testWidgets('a bare leading item renders in-route without a shell',
-        (tester) async {
-      await tester.pumpWidget(const CupertinoApp(
-        home: _Screen(
-          title: 'Root',
-          leading: [
-            GlassBarItem.custom(
-              child: Text('avatar'),
-              background: GlassBarItemBackground.none,
-            ),
-          ],
+    testWidgets('a bare leading item renders in-route without a shell', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const CupertinoApp(
+          home: _Screen(
+            title: 'Root',
+            leading: [
+              GlassBarItem.custom(
+                child: Text('avatar'),
+                background: GlassBarItemBackground.none,
+              ),
+            ],
+          ),
         ),
-      ));
+      );
       await settle(tester);
 
       expect(find.text('avatar'), findsOneWidget);
@@ -558,17 +597,22 @@ void main() {
     // How far a capsule moves when a menu is set apart beside it.
     const travel = GlassNavPinnedMetrics.slot + GlassNavPinnedMetrics.groupGap;
 
-    testWidgets('a spacer splits a leading run into two shells',
-        (tester) async {
-      await tester.pumpWidget(shellApp(_Screen(
-        title: 'Root',
-        leading: [
-          _icon(CupertinoIcons.sidebar_left),
-          _icon(CupertinoIcons.slider_horizontal_3),
-          const GlassBarItem.spacer(),
-          _icon(CupertinoIcons.xmark),
-        ],
-      )));
+    testWidgets('a spacer splits a leading run into two shells', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        shellApp(
+          _Screen(
+            title: 'Root',
+            leading: [
+              _icon(CupertinoIcons.sidebar_left),
+              _icon(CupertinoIcons.slider_horizontal_3),
+              const GlassBarItem.spacer(),
+              _icon(CupertinoIcons.xmark),
+            ],
+          ),
+        ),
+      );
       await settle(tester);
 
       final shells = inHost(find.byType(GlassButton));
@@ -584,19 +628,23 @@ void main() {
     });
 
     testWidgets('a capsule follows its items to a new place', (tester) async {
-      await tester.pumpWidget(shellApp(_Screen(
-        title: 'Root',
-        actions: [
-          _icon(CupertinoIcons.add, id: 'add'),
-          _icon(CupertinoIcons.search, id: 'search'),
-        ],
-      )));
+      await tester.pumpWidget(
+        shellApp(
+          _Screen(
+            title: 'Root',
+            actions: [
+              _icon(CupertinoIcons.add, id: 'add'),
+              _icon(CupertinoIcons.search, id: 'search'),
+            ],
+          ),
+        ),
+      );
       await settle(tester);
 
       Finder capsule() => find.ancestor(
-            of: inHost(find.byIcon(CupertinoIcons.add)),
-            matching: find.byType(GlassButton),
-          );
+        of: inHost(find.byIcon(CupertinoIcons.add)),
+        matching: find.byType(GlassButton),
+      );
       final element = tester.element(capsule());
       final before = tester.getTopRight(capsule()).dx;
 
@@ -605,17 +653,18 @@ void main() {
       // one would materialize beside it; paired by its items, it moves aside
       // for the menu instead.
       await _push(
-          tester,
-          _Screen(
-            title: 'Detail',
-            backButton: false,
-            actions: [
-              _icon(CupertinoIcons.add, id: 'add'),
-              _icon(CupertinoIcons.search, id: 'search'),
-              const GlassBarItem.spacer(),
-              _icon(CupertinoIcons.ellipsis, id: 'more'),
-            ],
-          ));
+        tester,
+        _Screen(
+          title: 'Detail',
+          backButton: false,
+          actions: [
+            _icon(CupertinoIcons.add, id: 'add'),
+            _icon(CupertinoIcons.search, id: 'search'),
+            const GlassBarItem.spacer(),
+            _icon(CupertinoIcons.ellipsis, id: 'more'),
+          ],
+        ),
+      );
 
       var last = before;
       for (var frame = 0; frame < 40; frame++) {
@@ -629,43 +678,46 @@ void main() {
 
       await settle(tester);
       expect(tester.element(capsule()), same(element));
-      expect(
-        tester.getTopRight(capsule()).dx,
-        before - travel,
-      );
+      expect(tester.getTopRight(capsule()).dx, before - travel);
     });
 
-    testWidgets('a capsule set apart buds out of its neighbour',
-        (tester) async {
-      await tester.pumpWidget(shellApp(_Screen(
-        title: 'Root',
-        actions: [
-          _icon(CupertinoIcons.add, id: 'add'),
-          _icon(CupertinoIcons.search, id: 'search'),
-        ],
-      )));
+    testWidgets('a capsule set apart buds out of its neighbour', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        shellApp(
+          _Screen(
+            title: 'Root',
+            actions: [
+              _icon(CupertinoIcons.add, id: 'add'),
+              _icon(CupertinoIcons.search, id: 'search'),
+            ],
+          ),
+        ),
+      );
       await settle(tester);
 
       Finder shell(IconData icon) => find.ancestor(
-            of: inHost(find.byIcon(icon)),
-            matching: find.byType(GlassButton),
-          );
+        of: inHost(find.byIcon(icon)),
+        matching: find.byType(GlassButton),
+      );
       bool ownLayer(IconData icon) =>
           tester.widget<GlassButton>(shell(icon)).useOwnLayer;
       expect(ownLayer(CupertinoIcons.add), isTrue);
 
       await _push(
-          tester,
-          _Screen(
-            title: 'Detail',
-            backButton: false,
-            actions: [
-              _icon(CupertinoIcons.add, id: 'add'),
-              _icon(CupertinoIcons.search, id: 'search'),
-              const GlassBarItem.spacer(),
-              _icon(CupertinoIcons.ellipsis, id: 'more'),
-            ],
-          ));
+        tester,
+        _Screen(
+          title: 'Detail',
+          backButton: false,
+          actions: [
+            _icon(CupertinoIcons.add, id: 'add'),
+            _icon(CupertinoIcons.search, id: 'search'),
+            const GlassBarItem.spacer(),
+            _icon(CupertinoIcons.ellipsis, id: 'more'),
+          ],
+        ),
+      );
       await tester.pump(const Duration(milliseconds: 16));
 
       // The menu's shell is there from the first frame, inside the capsule it
@@ -702,30 +754,36 @@ void main() {
       expect(ownLayer(CupertinoIcons.ellipsis), isTrue);
     });
 
-    testWidgets('a capsule set apart merges back on the way out',
-        (tester) async {
-      await tester.pumpWidget(shellApp(_Screen(
-        title: 'Root',
-        actions: [_icon(CupertinoIcons.add, id: 'add')],
-      )));
+    testWidgets('a capsule set apart merges back on the way out', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        shellApp(
+          _Screen(
+            title: 'Root',
+            actions: [_icon(CupertinoIcons.add, id: 'add')],
+          ),
+        ),
+      );
       await settle(tester);
       await _push(
-          tester,
-          _Screen(
-            title: 'Detail',
-            backButton: false,
-            actions: [
-              _icon(CupertinoIcons.add, id: 'add'),
-              const GlassBarItem.spacer(),
-              _icon(CupertinoIcons.ellipsis, id: 'more'),
-            ],
-          ));
+        tester,
+        _Screen(
+          title: 'Detail',
+          backButton: false,
+          actions: [
+            _icon(CupertinoIcons.add, id: 'add'),
+            const GlassBarItem.spacer(),
+            _icon(CupertinoIcons.ellipsis, id: 'more'),
+          ],
+        ),
+      );
       await settle(tester);
 
       Finder shell(IconData icon) => find.ancestor(
-            of: inHost(find.byIcon(icon)),
-            matching: find.byType(GlassButton),
-          );
+        of: inHost(find.byIcon(icon)),
+        matching: find.byType(GlassButton),
+      );
       tester.state<NavigatorState>(find.byType(Navigator)).pop();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -747,70 +805,82 @@ void main() {
       expect(inHost(find.byIcon(CupertinoIcons.ellipsis)), findsNothing);
     });
 
-    testWidgets('under reduce motion a capsule set apart materializes',
-        (tester) async {
-      await tester.pumpWidget(CupertinoApp(
-        builder: (context, child) => GlassAccessibilityScope(
-          reduceMotion: true,
-          child: GlassNavigationShell(child: child!),
+    testWidgets('under reduce motion a capsule set apart materializes', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        CupertinoApp(
+          builder: (context, child) => GlassAccessibilityScope(
+            reduceMotion: true,
+            child: GlassNavigationShell(child: child!),
+          ),
+          home: _Screen(
+            title: 'Root',
+            actions: [_icon(CupertinoIcons.add, id: 'add')],
+          ),
         ),
-        home: _Screen(
-          title: 'Root',
-          actions: [_icon(CupertinoIcons.add, id: 'add')],
-        ),
-      ));
+      );
       await settle(tester);
 
       await _push(
-          tester,
-          _Screen(
-            title: 'Detail',
-            backButton: false,
-            actions: [
-              _icon(CupertinoIcons.add, id: 'add'),
-              const GlassBarItem.spacer(),
-              _icon(CupertinoIcons.ellipsis, id: 'more'),
-            ],
-          ));
+        tester,
+        _Screen(
+          title: 'Detail',
+          backButton: false,
+          actions: [
+            _icon(CupertinoIcons.add, id: 'add'),
+            const GlassBarItem.spacer(),
+            _icon(CupertinoIcons.ellipsis, id: 'more'),
+          ],
+        ),
+      );
       await tester.pump(const Duration(milliseconds: 16));
 
       // Nothing buds: the menu is not drawn until the switch.
       expect(inHost(find.byIcon(CupertinoIcons.ellipsis)), findsNothing);
       expect(
         tester
-            .widget<GlassButton>(find.ancestor(
-              of: inHost(find.byIcon(CupertinoIcons.add)),
-              matching: find.byType(GlassButton),
-            ))
+            .widget<GlassButton>(
+              find.ancestor(
+                of: inHost(find.byIcon(CupertinoIcons.add)),
+                matching: find.byType(GlassButton),
+              ),
+            )
             .useOwnLayer,
         isTrue,
       );
     });
 
-    testWidgets('a shell that dissolves closes its gap as it goes',
-        (tester) async {
-      await tester.pumpWidget(shellApp(_Screen(
-        title: 'Root',
-        actions: [
-          _icon(CupertinoIcons.add, id: 'add'),
-          const GlassBarItem.spacer(),
-          _icon(CupertinoIcons.ellipsis, id: 'more'),
-        ],
-      )));
+    testWidgets('a shell that dissolves closes its gap as it goes', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        shellApp(
+          _Screen(
+            title: 'Root',
+            actions: [
+              _icon(CupertinoIcons.add, id: 'add'),
+              const GlassBarItem.spacer(),
+              _icon(CupertinoIcons.ellipsis, id: 'more'),
+            ],
+          ),
+        ),
+      );
       await settle(tester);
       Finder capsule() => find.ancestor(
-            of: inHost(find.byIcon(CupertinoIcons.add)),
-            matching: find.byType(GlassButton),
-          );
+        of: inHost(find.byIcon(CupertinoIcons.add)),
+        matching: find.byType(GlassButton),
+      );
       final before = tester.getTopRight(capsule()).dx;
 
       await _push(
-          tester,
-          _Screen(
-            title: 'Detail',
-            backButton: false,
-            actions: [_icon(CupertinoIcons.add, id: 'add')],
-          ));
+        tester,
+        _Screen(
+          title: 'Detail',
+          backButton: false,
+          actions: [_icon(CupertinoIcons.add, id: 'add')],
+        ),
+      );
 
       var last = before;
       for (var frame = 0; frame < 40; frame++) {
@@ -822,10 +892,7 @@ void main() {
 
       await settle(tester);
       expect(inHost(find.byIcon(CupertinoIcons.ellipsis)), findsNothing);
-      expect(
-        tester.getTopRight(capsule()).dx,
-        before + travel,
-      );
+      expect(tester.getTopRight(capsule()).dx, before + travel);
     });
   });
 }
@@ -838,16 +905,11 @@ GlassBarItem _ownCapsule({Object? id, String label = 'capsule'}) =>
     GlassBarItem.custom(
       id: id,
       background: GlassBarItemBackground.own,
-      child: GlassButton.custom(
-        onTap: () {},
-        child: Text(label),
-      ),
+      child: GlassButton.custom(onTap: () {}, child: Text(label)),
     );
 
-GlassBarItem _cancel() => GlassBarItem.icon(
-      icon: const Icon(CupertinoIcons.xmark),
-      onTap: () {},
-    );
+GlassBarItem _cancel() =>
+    GlassBarItem.icon(icon: const Icon(CupertinoIcons.xmark), onTap: () {});
 
 Future<void> _push(WidgetTester tester, Widget screen) async {
   final navigator = tester.state<NavigatorState>(find.byType(Navigator));

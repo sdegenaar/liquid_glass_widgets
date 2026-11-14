@@ -4,8 +4,8 @@
 // not exercised by the existing tap-based tests. These are the highest-risk
 // paths — any regression in the physics calculation immediately breaks
 // navigation UX.
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -21,10 +21,7 @@ final _tabs = [
   const GlassTab(label: 'Saved', icon: Icon(CupertinoIcons.bookmark)),
 ];
 
-Widget _bar({
-  int selectedIndex = 0,
-  required ValueChanged<int> onTabSelected,
-}) {
+Widget _bar({int selectedIndex = 0, required ValueChanged<int> onTabSelected}) {
   return createTestApp(
     child: GlassTabBar.bottom(
       tabs: _tabs,
@@ -45,8 +42,9 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('GlassTabBar.bottom — same-tab repeat tap (issue #22)', () {
-    testWidgets('tapping the already-selected tab fires onTabChanged',
-        (tester) async {
+    testWidgets('tapping the already-selected tab fires onTabChanged', (
+      tester,
+    ) async {
       final changes = <int>[];
 
       await tester.pumpWidget(
@@ -61,13 +59,18 @@ void main() {
       await tester.pumpAndSettle();
 
       // Must fire even though tab 0 is already the active tab.
-      expect(changes, contains(0),
-          reason: 'onTabChanged must fire on repeat tap of the active tab '
-              '(issue #22 — enables scroll-to-top / refresh pattern)');
+      expect(
+        changes,
+        contains(0),
+        reason:
+            'onTabChanged must fire on repeat tap of the active tab '
+            '(issue #22 — enables scroll-to-top / refresh pattern)',
+      );
     });
 
-    testWidgets('tapping active tab twice fires onTabChanged both times',
-        (tester) async {
+    testWidgets('tapping active tab twice fires onTabChanged both times', (
+      tester,
+    ) async {
       final changes = <int>[];
       int currentIndex = 0;
 
@@ -95,8 +98,11 @@ void main() {
 
       // Two taps on the same tab → at least two callbacks with index 0.
       final zeroTaps = changes.where((i) => i == 0).length;
-      expect(zeroTaps, greaterThanOrEqualTo(2),
-          reason: 'Each tap on the active tab must emit a callback');
+      expect(
+        zeroTaps,
+        greaterThanOrEqualTo(2),
+        reason: 'Each tap on the active tab must emit a callback',
+      );
     });
   });
 
@@ -109,10 +115,7 @@ void main() {
     // predictable regardless of the test device screen size.
     final fiveTabs = List.generate(
       5,
-      (i) => GlassTab(
-        label: 'T$i',
-        icon: const Icon(CupertinoIcons.star),
-      ),
+      (i) => GlassTab(label: 'T$i', icon: const Icon(CupertinoIcons.star)),
     );
 
     Widget fiveTabBar({
@@ -135,8 +138,9 @@ void main() {
       );
     }
 
-    testWidgets('drag ending at 50% of 5-tab bar selects tab 2, not tab 3',
-        (tester) async {
+    testWidgets('drag ending at 50% of 5-tab bar selects tab 2, not tab 3', (
+      tester,
+    ) async {
       // This was the core symptom of issue #23:
       //   relX at center = 0.5
       //   Old formula:  (0.5 / (1/5)).round() = (2.5).round() = 3  ← WRONG
@@ -167,15 +171,23 @@ void main() {
       await tester.dragFrom(Offset(startX, y), Offset(endX - startX, 0));
       await tester.pumpAndSettle();
 
-      expect(changes, isNotEmpty,
-          reason: 'Drag from tab 0 to centre must fire onTabChanged');
-      expect(changes.last, equals(2),
-          reason: 'Centre of 5-tab bar (50%) must snap to tab 2, not tab 3 '
-              '(coordinate space fix — issue #23)');
+      expect(
+        changes,
+        isNotEmpty,
+        reason: 'Drag from tab 0 to centre must fire onTabChanged',
+      );
+      expect(
+        changes.last,
+        equals(2),
+        reason:
+            'Centre of 5-tab bar (50%) must snap to tab 2, not tab 3 '
+            '(coordinate space fix — issue #23)',
+      );
     });
 
-    testWidgets('drag ending at 25% of 5-tab bar selects tab 1',
-        (tester) async {
+    testWidgets('drag ending at 25% of 5-tab bar selects tab 1', (
+      tester,
+    ) async {
       final changes = <int>[];
       int currentIndex = 0;
 
@@ -201,13 +213,17 @@ void main() {
       await tester.pumpAndSettle();
 
       if (changes.isNotEmpty) {
-        expect(changes.last, equals(1),
-            reason: '25% position in 5-tab bar must snap to tab 1');
+        expect(
+          changes.last,
+          equals(1),
+          reason: '25% position in 5-tab bar must snap to tab 1',
+        );
       }
     });
 
-    testWidgets('drag ending at 75% of 5-tab bar selects tab 3',
-        (tester) async {
+    testWidgets('drag ending at 75% of 5-tab bar selects tab 3', (
+      tester,
+    ) async {
       final changes = <int>[];
       int currentIndex = 4;
 
@@ -234,8 +250,11 @@ void main() {
       await tester.pumpAndSettle();
 
       if (changes.isNotEmpty) {
-        expect(changes.last, equals(3),
-            reason: '75% position in 5-tab bar must snap to tab 3');
+        expect(
+          changes.last,
+          equals(3),
+          reason: '75% position in 5-tab bar must snap to tab 3',
+        );
       }
     });
   });
@@ -309,8 +328,9 @@ void main() {
       }
     });
 
-    testWidgets('short drag without crossing zone stays on same tab',
-        (tester) async {
+    testWidgets('short drag without crossing zone stays on same tab', (
+      tester,
+    ) async {
       final changes = <int>[];
 
       await tester.pumpWidget(
@@ -336,8 +356,9 @@ void main() {
       expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
-    testWidgets('drag cancel while mid-drag snaps to nearest tab',
-        (tester) async {
+    testWidgets('drag cancel while mid-drag snaps to nearest tab', (
+      tester,
+    ) async {
       final changes = <int>[];
       await tester.pumpWidget(
         _bar(selectedIndex: 0, onTabSelected: changes.add),
@@ -363,11 +384,10 @@ void main() {
       }
     });
 
-    testWidgets('drag cancel without moving resets alignment cleanly',
-        (tester) async {
-      await tester.pumpWidget(
-        _bar(selectedIndex: 1, onTabSelected: (_) {}),
-      );
+    testWidgets('drag cancel without moving resets alignment cleanly', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_bar(selectedIndex: 1, onTabSelected: (_) {}));
       await tester.pump();
 
       final rect = tester.getRect(find.byType(GlassTabBar));
@@ -383,40 +403,43 @@ void main() {
       expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
-    testWidgets('full drag left-to-right across all tabs fires ordered changes',
-        (tester) async {
-      final changes = <int>[];
-      int currentIndex = 0;
+    testWidgets(
+      'full drag left-to-right across all tabs fires ordered changes',
+      (tester) async {
+        final changes = <int>[];
+        int currentIndex = 0;
 
-      await tester.pumpWidget(
-        StatefulBuilder(
-          builder: (context, setState) => _bar(
-            selectedIndex: currentIndex,
-            onTabSelected: (i) {
-              changes.add(i);
-              setState(() => currentIndex = i);
-            },
+        await tester.pumpWidget(
+          StatefulBuilder(
+            builder: (context, setState) => _bar(
+              selectedIndex: currentIndex,
+              onTabSelected: (i) {
+                changes.add(i);
+                setState(() => currentIndex = i);
+              },
+            ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      final rect = tester.getRect(find.byType(GlassTabBar));
-      // Drag from far left to far right in one gesture
-      await tester.dragFrom(
-        Offset(rect.left + 10, rect.center.dy),
-        Offset(rect.width - 20, 0),
-      );
-      await tester.pumpAndSettle();
+        final rect = tester.getRect(find.byType(GlassTabBar));
+        // Drag from far left to far right in one gesture
+        await tester.dragFrom(
+          Offset(rect.left + 10, rect.center.dy),
+          Offset(rect.width - 20, 0),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byType(GlassTabBar), findsOneWidget);
-      for (final idx in changes) {
-        expect(idx, inInclusiveRange(0, 2));
-      }
-    });
+        expect(find.byType(GlassTabBar), findsOneWidget);
+        for (final idx in changes) {
+          expect(idx, inInclusiveRange(0, 2));
+        }
+      },
+    );
 
-    testWidgets('drag with high velocity snaps past current position',
-        (tester) async {
+    testWidgets('drag with high velocity snaps past current position', (
+      tester,
+    ) async {
       final changes = <int>[];
       int currentIndex = 0;
 

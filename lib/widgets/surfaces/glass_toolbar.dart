@@ -1,4 +1,5 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/widgets/surfaces/vertical_bar_reservation.dart';
 import '../../theme/glass_theme_helpers.dart';
@@ -207,7 +208,8 @@ class GlassToolbar extends StatelessWidget {
   /// own — [GlassButtonGroup] — should follow [GlassVerticalBar.maybeOf] to
   /// run vertically here.
   Widget _buildVertical(GlassVerticalBarData bar) {
-    final outerInset = bar.width -
+    final outerInset =
+        bar.width -
         GlassVerticalBarMetrics.inset -
         GlassVerticalBarMetrics.controlExtent;
     final trailingStrip = bar.edge == GlassVerticalBarEdge.trailing;

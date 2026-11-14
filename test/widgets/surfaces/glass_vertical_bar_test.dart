@@ -1,6 +1,6 @@
 import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -105,11 +105,11 @@ void main() {
 
   /// The centre of [icon] as drawn by the shell.
   Offset pinned(WidgetTester tester, IconData icon) => tester.getCenter(
-        find.descendant(
-          of: find.byType(GlassNavPinnedHost),
-          matching: find.byIcon(icon),
-        ),
-      );
+    find.descendant(
+      of: find.byType(GlassNavPinnedHost),
+      matching: find.byIcon(icon),
+    ),
+  );
 
   group('GlassVerticalBar.resolve', () {
     GlassVerticalBarData? resolve({
@@ -121,16 +121,15 @@ void main() {
       GlassVerticalBarEdge? systemEdge,
       GlassVerticalBarCompression compression =
           GlassVerticalBarCompression.automatic,
-    }) =>
-        GlassVerticalBar.resolve(
-          systemEdge: systemEdge,
-          viewPadding: viewPadding,
-          size: size,
-          platform: platform,
-          textDirection: textDirection,
-          displayFeatures: displayFeatures,
-          compression: compression,
-        );
+    }) => GlassVerticalBar.resolve(
+      systemEdge: systemEdge,
+      viewPadding: viewPadding,
+      size: size,
+      platform: platform,
+      textDirection: textDirection,
+      displayFeatures: displayFeatures,
+      compression: compression,
+    );
 
     test('finds the strip on the side with the only lateral inset', () {
       final bar = resolve()!;
@@ -188,26 +187,30 @@ void main() {
       expect(right.bottom, 82);
     });
 
-    test('starts below the status cluster on the inner display in landscape',
-        () {
-      final bar = resolve(size: const Size(951, 669))!;
-      expect(bar.top, 120);
-      expect(bar.bottom, 24);
-    });
+    test(
+      'starts below the status cluster on the inner display in landscape',
+      () {
+        final bar = resolve(size: const Size(951, 669))!;
+        expect(bar.top, 120);
+        expect(bar.bottom, 24);
+      },
+    );
 
-    test('follows the system to the left in Split View, below the status bar',
-        () {
-      final bar = resolve(
-        viewPadding: const EdgeInsets.fromLTRB(84, 24, 0, 20),
-        size: const Size(472, 669),
-      )!;
-      expect(bar.edge, GlassVerticalBarEdge.leading);
-      expect(bar.width, 84);
-      expect(bar.top, 24 + 24);
-      expect(bar.rowTop, 24 + 24);
-      expect(bar.bottom, 24);
-      expect(bar.collapsesTabBar, isFalse);
-    });
+    test(
+      'follows the system to the left in Split View, below the status bar',
+      () {
+        final bar = resolve(
+          viewPadding: const EdgeInsets.fromLTRB(84, 24, 0, 20),
+          size: const Size(472, 669),
+        )!;
+        expect(bar.edge, GlassVerticalBarEdge.leading);
+        expect(bar.width, 84);
+        expect(bar.top, 24 + 24);
+        expect(bar.rowTop, 24 + 24);
+        expect(bar.bottom, 24);
+        expect(bar.collapsesTabBar, isFalse);
+      },
+    );
 
     test('collapses the tab bar as the compression asks', () {
       const landscape = Size(678, 466);
@@ -216,8 +219,7 @@ void main() {
         resolve(
           size: landscape,
           compression: GlassVerticalBarCompression.prefersTabBar,
-        )!
-            .collapsesTabBar,
+        )!.collapsesTabBar,
         isFalse,
       );
       expect(
@@ -301,10 +303,16 @@ void main() {
     testDuo('publishes the strip to its subtree', (tester) async {
       setScreen(tester);
       GlassVerticalBarData? seen;
-      await tester.pumpWidget(shellApp(Builder(builder: (context) {
-        seen = GlassVerticalBar.maybeOf(context);
-        return const SizedBox();
-      })));
+      await tester.pumpWidget(
+        shellApp(
+          Builder(
+            builder: (context) {
+              seen = GlassVerticalBar.maybeOf(context);
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
       expect(seen?.edge, GlassVerticalBarEdge.trailing);
     });
 
@@ -312,15 +320,22 @@ void main() {
       setScreen(tester);
       tester.view.displayFeatures = [_cutout(382, 0, 466, 214)];
       GlassVerticalBarData? seen;
-      await tester.pumpWidget(shellApp(Builder(builder: (context) {
-        seen = GlassVerticalBar.maybeOf(context);
-        return const SizedBox();
-      })));
+      await tester.pumpWidget(
+        shellApp(
+          Builder(
+            builder: (context) {
+              seen = GlassVerticalBar.maybeOf(context);
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
       expect(seen?.top, 214);
     });
 
-    testDuo('follows the regions UIKit reports while Flutter does not',
-        (tester) async {
+    testDuo('follows the regions UIKit reports while Flutter does not', (
+      tester,
+    ) async {
       setScreen(tester);
       const channel = MethodChannel('liquid_glass_widgets/reserved_regions');
       final messenger = tester.binding.defaultBinaryMessenger;
@@ -334,10 +349,16 @@ void main() {
       addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
 
       GlassVerticalBarData? seen;
-      await tester.pumpWidget(shellApp(Builder(builder: (context) {
-        seen = GlassVerticalBar.maybeOf(context);
-        return const SizedBox();
-      })));
+      await tester.pumpWidget(
+        shellApp(
+          Builder(
+            builder: (context) {
+              seen = GlassVerticalBar.maybeOf(context);
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
       // The table until UIKit answers.
       expect(seen?.top, 170);
       await tester.pump();
@@ -346,17 +367,20 @@ void main() {
       // The cluster grows with a live activity.
       await messenger.handlePlatformMessage(
         channel.name,
-        channel.codec.encodeMethodCall(const MethodCall('didChange', [
-          [382.0, 0.0, 466.0, 214.0],
-        ])),
+        channel.codec.encodeMethodCall(
+          const MethodCall('didChange', [
+            [382.0, 0.0, 466.0, 214.0],
+          ]),
+        ),
         (_) {},
       );
       await tester.pump();
       expect(seen?.top, 214);
     });
 
-    testDuo('publishes the fold UIKit reports, and dialogs avoid it',
-        (tester) async {
+    testDuo('publishes the fold UIKit reports, and dialogs avoid it', (
+      tester,
+    ) async {
       setScreen(
         tester,
         size: const Size(951, 669),
@@ -378,8 +402,8 @@ void main() {
       await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
       await tester.pump();
       final fold = MediaQuery.displayFeaturesOf(
-              tester.element(find.text('Root body')))
-          .singleWhere((feature) => feature.type == DisplayFeatureType.hinge);
+        tester.element(find.text('Root body')),
+      ).singleWhere((feature) => feature.type == DisplayFeatureType.hinge);
       expect(fold.bounds, const Rect.fromLTRB(475, 0, 475, 669));
       expect(fold.state, DisplayFeatureState.postureHalfOpened);
 
@@ -395,8 +419,9 @@ void main() {
       );
     });
 
-    testDuo('insets the content for a strip UIKit leaves to the app',
-        (tester) async {
+    testDuo('insets the content for a strip UIKit leaves to the app', (
+      tester,
+    ) async {
       // The left-hand app in Split View: no lateral inset, only the edge.
       setScreen(
         tester,
@@ -422,13 +447,17 @@ void main() {
     testDuo('publishes nothing when disabled', (tester) async {
       setScreen(tester);
       GlassVerticalBarEdge? seen = GlassVerticalBarEdge.leading;
-      await tester.pumpWidget(shellApp(
-        Builder(builder: (context) {
-          seen = GlassVerticalBar.edgeOf(context);
-          return const SizedBox();
-        }),
-        behavior: GlassVerticalBarBehavior.disabled,
-      ));
+      await tester.pumpWidget(
+        shellApp(
+          Builder(
+            builder: (context) {
+              seen = GlassVerticalBar.edgeOf(context);
+              return const SizedBox();
+            },
+          ),
+          behavior: GlassVerticalBarBehavior.disabled,
+        ),
+      );
       expect(seen, isNull);
     });
 
@@ -439,32 +468,42 @@ void main() {
         padding: const EdgeInsets.fromLTRB(0, 62, 0, 34),
       );
       GlassVerticalBarEdge? seen = GlassVerticalBarEdge.leading;
-      await tester.pumpWidget(shellApp(Builder(builder: (context) {
-        seen = GlassVerticalBar.edgeOf(context);
-        return const SizedBox();
-      })));
+      await tester.pumpWidget(
+        shellApp(
+          Builder(
+            builder: (context) {
+              seen = GlassVerticalBar.edgeOf(context);
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
       expect(seen, isNull);
     });
   });
 
   group('pinned chrome in the strip', () {
-    testDuo('stacks the back button and the groups down the strip',
-        (tester) async {
+    testDuo('stacks the back button and the groups down the strip', (
+      tester,
+    ) async {
       setScreen(tester);
       await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
       await settle(tester);
       _push(
         tester,
-        _Screen(title: 'Detail', actions: [
-          GlassBarItem.icon(
-            icon: const Icon(CupertinoIcons.share),
-            onTap: () {},
-          ),
-          GlassBarItem.icon(
-            icon: const Icon(CupertinoIcons.heart),
-            onTap: () {},
-          ),
-        ]),
+        _Screen(
+          title: 'Detail',
+          actions: [
+            GlassBarItem.icon(
+              icon: const Icon(CupertinoIcons.share),
+              onTap: () {},
+            ),
+            GlassBarItem.icon(
+              icon: const Icon(CupertinoIcons.heart),
+              onTap: () {},
+            ),
+          ],
+        ),
       );
       await settle(tester);
 
@@ -496,24 +535,33 @@ void main() {
 
     testDuo('leaves custom content in the horizontal row', (tester) async {
       setScreen(tester);
-      await tester.pumpWidget(shellApp(_Screen(title: 'Root', actions: [
-        GlassBarItem.custom(child: const Text('Custom')),
-        GlassBarItem.icon(
-          icon: const Icon(CupertinoIcons.bell),
-          onTap: () {},
+      await tester.pumpWidget(
+        shellApp(
+          _Screen(
+            title: 'Root',
+            actions: [
+              GlassBarItem.custom(child: const Text('Custom')),
+              GlassBarItem.icon(
+                icon: const Icon(CupertinoIcons.bell),
+                onTap: () {},
+              ),
+              GlassBarItem.icon(
+                icon: const Icon(CupertinoIcons.star),
+                axisBehavior: GlassBarItemAxisBehavior.horizontalOnly,
+                onTap: () {},
+              ),
+            ],
+          ),
         ),
-        GlassBarItem.icon(
-          icon: const Icon(CupertinoIcons.star),
-          axisBehavior: GlassBarItemAxisBehavior.horizontalOnly,
-          onTap: () {},
-        ),
-      ])));
+      );
       await settle(tester);
 
-      final custom = tester.getRect(find.descendant(
-        of: find.byType(GlassNavPinnedHost),
-        matching: find.text('Custom'),
-      ));
+      final custom = tester.getRect(
+        find.descendant(
+          of: find.byType(GlassNavPinnedHost),
+          matching: find.text('Custom'),
+        ),
+      );
       final star = pinned(tester, CupertinoIcons.star);
       final bell = pinned(tester, CupertinoIcons.bell);
 
@@ -527,42 +575,58 @@ void main() {
       expect(bell.dy, 170 + 24);
     });
 
-    testDuo('verticalPreferred pulls custom content into the strip',
-        (tester) async {
+    testDuo('verticalPreferred pulls custom content into the strip', (
+      tester,
+    ) async {
       setScreen(tester);
-      await tester.pumpWidget(shellApp(_Screen(title: 'Root', actions: [
-        GlassBarItem.custom(
-          child: const SizedBox(width: 20, height: 20, child: Text('3')),
-          axisBehavior: GlassBarItemAxisBehavior.verticalPreferred,
+      await tester.pumpWidget(
+        shellApp(
+          _Screen(
+            title: 'Root',
+            actions: [
+              GlassBarItem.custom(
+                child: const SizedBox(width: 20, height: 20, child: Text('3')),
+                axisBehavior: GlassBarItemAxisBehavior.verticalPreferred,
+              ),
+            ],
+          ),
         ),
-      ])));
+      );
       await settle(tester);
 
-      final badge = tester.getCenter(find.descendant(
-        of: find.byType(GlassNavPinnedHost),
-        matching: find.text('3'),
-      ));
+      final badge = tester.getCenter(
+        find.descendant(
+          of: find.byType(GlassNavPinnedHost),
+          matching: find.text('3'),
+        ),
+      );
       expect(badge.dx, closeTo(418, 0.5));
       expect(badge.dy, greaterThan(170));
     });
 
     testDuo('overflows into a ••• menu above a tab bar', (tester) async {
       setScreen(tester);
-      await tester.pumpWidget(shellApp(_TabsScreen(actions: [
-        for (final icon in [
-          CupertinoIcons.share,
-          CupertinoIcons.heart,
-          CupertinoIcons.flag,
-          CupertinoIcons.bell,
-          CupertinoIcons.tag,
-        ])
-          GlassBarItem.icon(
-            icon: Icon(icon),
-            label: '$icon',
-            background: GlassBarItemBackground.separate,
-            onTap: () {},
+      await tester.pumpWidget(
+        shellApp(
+          _TabsScreen(
+            actions: [
+              for (final icon in [
+                CupertinoIcons.share,
+                CupertinoIcons.heart,
+                CupertinoIcons.flag,
+                CupertinoIcons.bell,
+                CupertinoIcons.tag,
+              ])
+                GlassBarItem.icon(
+                  icon: Icon(icon),
+                  label: '$icon',
+                  background: GlassBarItemBackground.separate,
+                  onTap: () {},
+                ),
+            ],
           ),
-      ])));
+        ),
+      );
       await settle(tester);
 
       // 170 to the tab bar's top at 678 - 24 - 212 = 442, less 12: room for
@@ -584,60 +648,69 @@ void main() {
       expect(more.dy + 24, lessThanOrEqualTo(442 - 12));
     });
 
-    testDuo('stays horizontal under GlassVerticalBarBehavior.disabled',
-        (tester) async {
+    testDuo('stays horizontal under GlassVerticalBarBehavior.disabled', (
+      tester,
+    ) async {
       setScreen(tester);
-      await tester.pumpWidget(shellApp(
-        _Screen(title: 'Root', actions: [
-          GlassBarItem.icon(
-            icon: const Icon(CupertinoIcons.bell),
-            onTap: () {},
+      await tester.pumpWidget(
+        shellApp(
+          _Screen(
+            title: 'Root',
+            actions: [
+              GlassBarItem.icon(
+                icon: const Icon(CupertinoIcons.bell),
+                onTap: () {},
+              ),
+            ],
           ),
-        ]),
-        behavior: GlassVerticalBarBehavior.disabled,
-      ));
+          behavior: GlassVerticalBarBehavior.disabled,
+        ),
+      );
       await settle(tester);
 
       // The bar's own row, at the top of the screen, as before.
       expect(pinned(tester, CupertinoIcons.bell).dy, lessThan(44));
     });
 
-    testDuo('tells a bar drawing its own chrome that the strip is drawn for it',
-        (tester) async {
-      setScreen(tester);
-      final chrome = <GlassPinnedBarChromeData>[];
-      await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
-      await settle(tester);
-      // Kept out of the shell, as a nested navigator's routes are, so the
-      // strip is drawn in-route and the chrome is never hoisted.
-      _push(
-        tester,
-        GlassPinnedBarChrome(
-          enabled: false,
-          actions: [
-            GlassBarItem.icon(
-              icon: const Icon(CupertinoIcons.share),
-              onTap: () {},
-            ),
-          ],
-          builder: (context, data) {
-            chrome.add(data);
-            return const SizedBox.expand();
-          },
-        ),
-      );
-      await settle(tester);
+    testDuo(
+      'tells a bar drawing its own chrome that the strip is drawn for it',
+      (tester) async {
+        setScreen(tester);
+        final chrome = <GlassPinnedBarChromeData>[];
+        await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
+        await settle(tester);
+        // Kept out of the shell, as a nested navigator's routes are, so the
+        // strip is drawn in-route and the chrome is never hoisted.
+        _push(
+          tester,
+          GlassPinnedBarChrome(
+            enabled: false,
+            actions: [
+              GlassBarItem.icon(
+                icon: const Icon(CupertinoIcons.share),
+                onTap: () {},
+              ),
+            ],
+            builder: (context, data) {
+              chrome.add(data);
+              return const SizedBox.expand();
+            },
+          ),
+        );
+        await settle(tester);
 
-      expect(chrome.last.hoisted, isFalse);
-      expect(chrome.last.inStrip, isTrue);
-      expect(chrome.last.leading, isNull);
-      expect(chrome.last.actions, isEmpty);
-      expect(find.byIcon(CupertinoIcons.back), findsOneWidget);
-      expect(find.byIcon(CupertinoIcons.share), findsOneWidget);
-    });
+        expect(chrome.last.hoisted, isFalse);
+        expect(chrome.last.inStrip, isTrue);
+        expect(chrome.last.leading, isNull);
+        expect(chrome.last.actions, isEmpty);
+        expect(find.byIcon(CupertinoIcons.back), findsOneWidget);
+        expect(find.byIcon(CupertinoIcons.share), findsOneWidget);
+      },
+    );
 
-    testDuo('draws the strip in-route against the screen, not the bar',
-        (tester) async {
+    testDuo('draws the strip in-route against the screen, not the bar', (
+      tester,
+    ) async {
       setScreen(tester);
       await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
       await settle(tester);
@@ -670,70 +743,89 @@ void main() {
       );
     });
 
-    testDuo('redraws the strip for a screen that changed while it was covered',
-        (tester) async {
-      setScreen(tester);
-      await tester.pumpWidget(shellApp(GlassPinnedBarChrome(
-        enabled: false,
-        actions: [
-          GlassBarItem.icon(
-            icon: const Icon(CupertinoIcons.share),
-            onTap: () {},
+    testDuo(
+      'redraws the strip for a screen that changed while it was covered',
+      (tester) async {
+        setScreen(tester);
+        await tester.pumpWidget(
+          shellApp(
+            GlassPinnedBarChrome(
+              enabled: false,
+              actions: [
+                GlassBarItem.icon(
+                  icon: const Icon(CupertinoIcons.share),
+                  onTap: () {},
+                ),
+              ],
+              builder: (context, chrome) => const SizedBox.expand(),
+            ),
           ),
-        ],
-        builder: (context, chrome) => const SizedBox.expand(),
-      )));
-      await settle(tester);
-      _push(tester, const _Screen(title: 'Covering'));
-      await settle(tester);
+        );
+        await settle(tester);
+        _push(tester, const _Screen(title: 'Covering'));
+        await settle(tester);
 
-      // Unfolded to the inner display under the covering route: drawn where
-      // it is for a screen that started out that size.
-      setScreen(
-        tester,
-        size: const Size(1040, 720),
-        padding: const EdgeInsets.fromLTRB(0, 0, 84, 20),
-      );
-      await settle(tester);
-      tester.state<NavigatorState>(find.byType(Navigator)).pop();
-      await settle(tester);
+        // Unfolded to the inner display under the covering route: drawn where
+        // it is for a screen that started out that size.
+        setScreen(
+          tester,
+          size: const Size(1040, 720),
+          padding: const EdgeInsets.fromLTRB(0, 0, 84, 20),
+        );
+        await settle(tester);
+        tester.state<NavigatorState>(find.byType(Navigator)).pop();
+        await settle(tester);
 
-      expect(
-        tester.getCenter(find.byIcon(CupertinoIcons.share)).dx,
-        closeTo(992, 0.01),
-      );
-    });
+        expect(
+          tester.getCenter(find.byIcon(CupertinoIcons.share)).dx,
+          closeTo(992, 0.01),
+        );
+      },
+    );
 
-    testDuo('puts the horizontal row where the bar says its header is',
-        (tester) async {
+    testDuo('puts the horizontal row where the bar says its header is', (
+      tester,
+    ) async {
       setScreen(tester);
-      await tester.pumpWidget(shellApp(GlassPinnedBarChrome(
-        stripRowTop: 100,
-        actions: [
-          GlassBarItem.custom(child: const Text('Pro')),
-        ],
-        builder: (context, chrome) => const SizedBox.expand(),
-      )));
+      await tester.pumpWidget(
+        shellApp(
+          GlassPinnedBarChrome(
+            stripRowTop: 100,
+            actions: [GlassBarItem.custom(child: const Text('Pro'))],
+            builder: (context, chrome) => const SizedBox.expand(),
+          ),
+        ),
+      );
       await settle(tester);
 
-      final pro = tester.getCenter(find.descendant(
-        of: find.byType(GlassNavPinnedHost),
-        matching: find.text('Pro'),
-      ));
+      final pro = tester.getCenter(
+        find.descendant(
+          of: find.byType(GlassNavPinnedHost),
+          matching: find.text('Pro'),
+        ),
+      );
       expect(pro.dy, closeTo(100 + 24, 0.5));
     });
 
-    testDuo('stays horizontal and in-route under GlassVerticalBar.disabled',
-        (tester) async {
+    testDuo('stays horizontal and in-route under GlassVerticalBar.disabled', (
+      tester,
+    ) async {
       setScreen(tester);
-      await tester.pumpWidget(shellApp(GlassVerticalBar.disabled(
-        child: _Screen(title: 'Root', actions: [
-          GlassBarItem.icon(
-            icon: const Icon(CupertinoIcons.bell),
-            onTap: () {},
+      await tester.pumpWidget(
+        shellApp(
+          GlassVerticalBar.disabled(
+            child: _Screen(
+              title: 'Root',
+              actions: [
+                GlassBarItem.icon(
+                  icon: const Icon(CupertinoIcons.bell),
+                  onTap: () {},
+                ),
+              ],
+            ),
           ),
-        ]),
-      )));
+        ),
+      );
       await settle(tester);
 
       // Not handed to the shell, which would pin it in the strip...
@@ -752,8 +844,9 @@ void main() {
   });
 
   group('GlassTabBar in the strip', () {
-    testDuo('becomes an icon-only capsule at the bottom of the strip',
-        (tester) async {
+    testDuo('becomes an icon-only capsule at the bottom of the strip', (
+      tester,
+    ) async {
       setScreen(tester);
       await tester.pumpWidget(shellApp(const _TabsScreen()));
       await settle(tester);
@@ -778,8 +871,9 @@ void main() {
       expect(find.text('Library body'), findsOneWidget);
     });
 
-    testDuo('swells under a held finger, then shows the labels',
-        (tester) async {
+    testDuo('swells under a held finger, then shows the labels', (
+      tester,
+    ) async {
       setScreen(tester);
       await tester.pumpWidget(shellApp(const _TabsScreen()));
       await settle(tester);
@@ -804,8 +898,7 @@ void main() {
       expect(find.text('Library'), findsNothing);
     });
 
-    testDuo(
-        'shows the labels as soon as a finger drags, and selects where it '
+    testDuo('shows the labels as soon as a finger drags, and selects where it '
         'lets go', (tester) async {
       setScreen(tester);
       await tester.pumpWidget(shellApp(const _TabsScreen()));
@@ -830,10 +923,12 @@ void main() {
 
     testDuo('collapses to the selected tab and opens on a tap', (tester) async {
       setScreen(tester);
-      await tester.pumpWidget(shellApp(
-        const _TabsScreen(),
-        compression: GlassVerticalBarCompression.prefersBarItems,
-      ));
+      await tester.pumpWidget(
+        shellApp(
+          const _TabsScreen(),
+          compression: GlassVerticalBarCompression.prefersBarItems,
+        ),
+      );
       await settle(tester);
 
       expect(find.byIcon(CupertinoIcons.house), findsOneWidget);
@@ -851,29 +946,33 @@ void main() {
 
     testDuo('brings its own layer outside a GlassScaffold', (tester) async {
       setScreen(tester);
-      await tester.pumpWidget(shellApp(
-        Stack(
-          children: [
-            Positioned.fill(
-              child: GlassTabBar.bottom(
-                quality: GlassQuality.premium,
-                selectedIndex: 0,
-                onTabSelected: (_) {},
-                tabs: const [
-                  GlassTab(icon: Icon(CupertinoIcons.house), label: 'Home'),
-                  GlassTab(icon: Icon(CupertinoIcons.book), label: 'Library'),
-                ],
+      await tester.pumpWidget(
+        shellApp(
+          Stack(
+            children: [
+              Positioned.fill(
+                child: GlassTabBar.bottom(
+                  quality: GlassQuality.premium,
+                  selectedIndex: 0,
+                  onTabSelected: (_) {},
+                  tabs: const [
+                    GlassTab(icon: Icon(CupertinoIcons.house), label: 'Home'),
+                    GlassTab(icon: Icon(CupertinoIcons.book), label: 'Library'),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ));
+      );
       await settle(tester);
 
-      final capsule = tester.widget<GlassButton>(find.descendant(
-        of: find.byType(TabBarVerticalLayout),
-        matching: find.byType(GlassButton),
-      ));
+      final capsule = tester.widget<GlassButton>(
+        find.descendant(
+          of: find.byType(TabBarVerticalLayout),
+          matching: find.byType(GlassButton),
+        ),
+      );
       expect(capsule.useOwnLayer, isTrue);
     });
 
@@ -933,8 +1032,9 @@ void main() {
       expect(close.width, 44);
     });
 
-    testDuo('keeps the title beside its field on the inner display',
-        (tester) async {
+    testDuo('keeps the title beside its field on the inner display', (
+      tester,
+    ) async {
       setScreen(
         tester,
         size: const Size(951, 669),
@@ -1001,9 +1101,9 @@ void main() {
   group('large titles in the strip', () {
     /// The title the app bar draws in the strip's row.
     Finder rowTitle() => find.descendant(
-          of: find.byType(GlassAppBar),
-          matching: find.text('Mailboxes'),
-        );
+      of: find.byType(GlassAppBar),
+      matching: find.text('Mailboxes'),
+    );
 
     testDuo('lifts the title into the row, at 28pt', (tester) async {
       setScreen(tester);
@@ -1030,10 +1130,9 @@ void main() {
 
     testDuo('keeps the row against the strip in right to left', (tester) async {
       setScreen(tester);
-      await tester.pumpWidget(shellApp(
-        const _LargeTitleScreen(),
-        textDirection: TextDirection.rtl,
-      ));
+      await tester.pumpWidget(
+        shellApp(const _LargeTitleScreen(), textDirection: TextDirection.rtl),
+      );
       await settle(tester);
 
       // The strip stays on the right, where the title now starts: it ends
@@ -1070,30 +1169,34 @@ void main() {
       expect(opacities, contains(0.0));
     });
 
-    testDuo('turns its search bar into a magnifier at the bottom of the strip',
-        (tester) async {
-      setScreen(tester);
-      await tester.pumpWidget(
-        shellApp(const _LargeTitleScreen(searchable: true)),
-      );
-      await settle(tester);
+    testDuo(
+      'turns its search bar into a magnifier at the bottom of the strip',
+      (tester) async {
+        setScreen(tester);
+        await tester.pumpWidget(
+          shellApp(const _LargeTitleScreen(searchable: true)),
+        );
+        await settle(tester);
 
-      expect(find.byType(GlassSearchBar), findsNothing);
-      final search = tester.getCenter(find.byIcon(CupertinoIcons.search));
-      expect(
+        expect(find.byType(GlassSearchBar), findsNothing);
+        final search = tester.getCenter(find.byIcon(CupertinoIcons.search));
+        expect(
           search,
           offsetMoreOrLessEquals(
             const Offset(418, 678 - 24 - 24),
             epsilon: 0.01,
-          ));
-      final shell = tester.state<GlassNavigationShellState>(
-        find.byType(GlassNavigationShell),
-      );
-      expect(shell.verticalBarBottom, 48 + 24);
-    });
+          ),
+        );
+        final shell = tester.state<GlassNavigationShellState>(
+          find.byType(GlassNavigationShell),
+        );
+        expect(shell.verticalBarBottom, 48 + 24);
+      },
+    );
 
-    testDuo('opens the search along the bottom and hides the bar',
-        (tester) async {
+    testDuo('opens the search along the bottom and hides the bar', (
+      tester,
+    ) async {
       setScreen(tester);
       await tester.pumpWidget(
         shellApp(const _LargeTitleScreen(searchable: true)),
@@ -1113,10 +1216,7 @@ void main() {
       expect(field.bottom, 678 - 24);
       expect(
         tester.getCenter(find.byIcon(CupertinoIcons.xmark)),
-        offsetMoreOrLessEquals(
-          const Offset(418, 678 - 24 - 24),
-          epsilon: 0.01,
-        ),
+        offsetMoreOrLessEquals(const Offset(418, 678 - 24 - 24), epsilon: 0.01),
       );
       // The field takes focus as it opens.
       expect(
@@ -1126,10 +1226,12 @@ void main() {
       );
       // The navigation bar hides, and the content moves into its place.
       final hidden = tester
-          .widgetList<AnimatedOpacity>(find.ancestor(
-            of: find.byIcon(CupertinoIcons.add),
-            matching: find.byType(AnimatedOpacity),
-          ))
+          .widgetList<AnimatedOpacity>(
+            find.ancestor(
+              of: find.byIcon(CupertinoIcons.add),
+              matching: find.byType(AnimatedOpacity),
+            ),
+          )
           .map((opacity) => opacity.opacity);
       expect(hidden, contains(0.0));
       expect(tester.getTopLeft(find.text('Row 0')).dy, 24);
@@ -1209,13 +1311,12 @@ void main() {
       EdgeInsets viewPadding = _innerPortraitPadding,
       List<DisplayFeature>? displayFeatures,
       TargetPlatform platform = TargetPlatform.iOS,
-    }) =>
-        StatusBarRow.resolve(
-          size: size,
-          viewPadding: viewPadding,
-          displayFeatures: displayFeatures ?? [cluster],
-          platform: platform,
-        );
+    }) => StatusBarRow.resolve(
+      size: size,
+      viewPadding: viewPadding,
+      displayFeatures: displayFeatures ?? [cluster],
+      platform: platform,
+    );
 
     test('runs from the title inset to just short of the cluster', () {
       final row = resolve()!;
@@ -1257,13 +1358,10 @@ void main() {
       expect(resolve(platform: TargetPlatform.android), isNull);
     });
 
-    testDuo('lays the pinned chrome and the title out beside the cluster',
-        (tester) async {
-      setScreen(
-        tester,
-        size: _innerPortrait,
-        padding: _innerPortraitPadding,
-      );
+    testDuo('lays the pinned chrome and the title out beside the cluster', (
+      tester,
+    ) async {
+      setScreen(tester, size: _innerPortrait, padding: _innerPortraitPadding);
       // As on the device: the cluster comes from the package's own reading of
       // UIKit's regions, not from Flutter.
       VerticalBarRegions.instance.value = [cluster];
@@ -1271,12 +1369,15 @@ void main() {
       await settle(tester);
       _push(
         tester,
-        _Screen(title: 'Detail', actions: [
-          GlassBarItem.icon(
-            icon: const Icon(CupertinoIcons.share),
-            onTap: () {},
-          ),
-        ]),
+        _Screen(
+          title: 'Detail',
+          actions: [
+            GlassBarItem.icon(
+              icon: const Icon(CupertinoIcons.share),
+              onTap: () {},
+            ),
+          ],
+        ),
       );
       await settle(tester);
 
@@ -1285,10 +1386,12 @@ void main() {
       expect(back.dx, closeTo(20 + 22, 0.01));
       expect(back.dy, closeTo(48, 0.01));
       // The action ends 2pt short of the cluster at x 535.
-      final share = tester.getRect(find.descendant(
-        of: find.byType(GlassNavPinnedHost),
-        matching: find.byIcon(CupertinoIcons.share),
-      ));
+      final share = tester.getRect(
+        find.descendant(
+          of: find.byType(GlassNavPinnedHost),
+          matching: find.byIcon(CupertinoIcons.share),
+        ),
+      );
       // A capsule is 46pt in the bar's 44pt band, as in any bar.
       expect(share.center.dy, closeTo(48, 1));
       expect(share.right, lessThanOrEqualTo(533));
@@ -1300,11 +1403,7 @@ void main() {
     });
 
     testDuo('starts the content under the status bar', (tester) async {
-      setScreen(
-        tester,
-        size: _innerPortrait,
-        padding: _innerPortraitPadding,
-      );
+      setScreen(tester, size: _innerPortrait, padding: _innerPortraitPadding);
       tester.view.displayFeatures = [cluster];
       await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
       await settle(tester);
@@ -1318,8 +1417,9 @@ void main() {
   });
 
   group('GlassScaffold in the strip', () {
-    testDuo('drops the bottom fade for a bar that left the bottom edge',
-        (tester) async {
+    testDuo('drops the bottom fade for a bar that left the bottom edge', (
+      tester,
+    ) async {
       setScreen(tester);
       await tester.pumpWidget(shellApp(const _TabsScreen()));
       await settle(tester);
@@ -1332,8 +1432,9 @@ void main() {
       expect(effect.topFadeHeight, 24 + 48 + 20);
     });
 
-    testDuo('shrinks the top fade as a large title scrolls away',
-        (tester) async {
+    testDuo('shrinks the top fade as a large title scrolls away', (
+      tester,
+    ) async {
       setScreen(tester);
       await tester.pumpWidget(shellApp(const _LargeTitleScreen()));
       await settle(tester);
@@ -1354,25 +1455,31 @@ void main() {
   group('GlassToolbar in the strip', () {
     testDuo('stacks its items at the bottom of the strip', (tester) async {
       setScreen(tester);
-      await tester.pumpWidget(shellApp(GlassScaffold(
-        appBar: const GlassAppBar.pinned(title: Text('Detail')),
-        bottomBar: GlassToolbar(children: [
-          GlassButton(
-            icon: const Icon(CupertinoIcons.archivebox),
-            width: 48,
-            height: 48,
-            onTap: () {},
+      await tester.pumpWidget(
+        shellApp(
+          GlassScaffold(
+            appBar: const GlassAppBar.pinned(title: Text('Detail')),
+            bottomBar: GlassToolbar(
+              children: [
+                GlassButton(
+                  icon: const Icon(CupertinoIcons.archivebox),
+                  width: 48,
+                  height: 48,
+                  onTap: () {},
+                ),
+                const Spacer(),
+                GlassButton(
+                  icon: const Icon(CupertinoIcons.reply),
+                  width: 48,
+                  height: 48,
+                  onTap: () {},
+                ),
+              ],
+            ),
+            body: const SizedBox(),
           ),
-          const Spacer(),
-          GlassButton(
-            icon: const Icon(CupertinoIcons.reply),
-            width: 48,
-            height: 48,
-            onTap: () {},
-          ),
-        ]),
-        body: const SizedBox(),
-      )));
+        ),
+      );
       await settle(tester);
 
       final archive = tester.getCenter(find.byIcon(CupertinoIcons.archivebox));
@@ -1395,10 +1502,9 @@ void main() {
       bool medium = false,
       TextDirection textDirection = TextDirection.ltr,
     }) async {
-      await tester.pumpWidget(shellApp(
-        const _Screen(title: 'Root'),
-        textDirection: textDirection,
-      ));
+      await tester.pumpWidget(
+        shellApp(const _Screen(title: 'Root'), textDirection: textDirection),
+      );
       await settle(tester);
       GlassModalSheet.show<void>(
         context: tester.element(find.text('Root body')),
@@ -1434,15 +1540,17 @@ void main() {
         sheet(tester).width,
         closeTo(
           GlassModalSheet.restingWidthOf(
-              tester.element(find.text('Root body'))),
+            tester.element(find.text('Root body')),
+          ),
           0.05,
         ),
       );
       expect(sheet(tester).width, closeTo(466 - 2 * 8, 0.05));
     });
 
-    testDuo('reports a card the shorter side wide in a regular width',
-        (tester) async {
+    testDuo('reports a card the shorter side wide in a regular width', (
+      tester,
+    ) async {
       setScreen(tester, size: innerLandscape, padding: innerLandscapePadding);
       await present(tester, medium: true);
 
@@ -1450,15 +1558,17 @@ void main() {
         sheet(tester).width,
         closeTo(
           GlassModalSheet.restingWidthOf(
-              tester.element(find.text('Root body'))),
+            tester.element(find.text('Root body')),
+          ),
           0.05,
         ),
       );
       expect(sheet(tester).width, closeTo(669 - 2 * 8, 0.05));
     });
 
-    testDuo('moves its bar into its own strip on the outer display',
-        (tester) async {
+    testDuo('moves its bar into its own strip on the outer display', (
+      tester,
+    ) async {
       setScreen(tester);
       await present(tester);
 
@@ -1485,8 +1595,9 @@ void main() {
       expect(title.center.dy, closeTo(8 + 16 + 24, 0.5));
     });
 
-    testDuo('starts the strip level with the title row at a medium detent',
-        (tester) async {
+    testDuo('starts the strip level with the title row at a medium detent', (
+      tester,
+    ) async {
       setScreen(tester);
       await present(tester, medium: true);
 
@@ -1515,8 +1626,9 @@ void main() {
       );
     });
 
-    testDuo('is a centred card with a horizontal bar on the inner display',
-        (tester) async {
+    testDuo('is a centred card with a horizontal bar on the inner display', (
+      tester,
+    ) async {
       setScreen(tester, size: innerLandscape, padding: innerLandscapePadding);
       await present(tester);
 
@@ -1554,8 +1666,10 @@ void main() {
       final close = tester.getCenter(find.byIcon(CupertinoIcons.xmark));
       expect(close.dx, closeTo(951 - 84 + 12 + 24, 0.05));
       expect(close.dy, closeTo(120 + 24, 0.05));
-      expect(tester.getRect(find.text('New Note')).left,
-          closeTo(frame.left + 16, 0.05));
+      expect(
+        tester.getRect(find.text('New Note')).left,
+        closeTo(frame.left + 16, 0.05),
+      );
     });
 
     testDuo('keeps a regular iPhone sheet edge to edge', (tester) async {
@@ -1604,8 +1718,9 @@ void main() {
       expect(sheet(tester).right, closeTo(475 - 8, 0.05));
     });
 
-    testDuo('takes the side nearest the leading corner right to left',
-        (tester) async {
+    testDuo('takes the side nearest the leading corner right to left', (
+      tester,
+    ) async {
       setScreen(tester, size: innerLandscape, padding: innerLandscapePadding);
       tester.view.displayFeatures = [
         const DisplayFeature(
@@ -1628,22 +1743,28 @@ void main() {
       required Offset trigger,
     }) async {
       setScreen(tester);
-      await tester.pumpWidget(shellApp(Stack(children: [
-        Positioned(
-          left: trigger.dx,
-          top: trigger.dy,
-          child: GlassPopover(
-            popoverWidth: 282,
-            popoverHeight: 68,
-            trigger: const SizedBox.square(
-              dimension: 48,
-              child: ColoredBox(color: CupertinoColors.white),
-            ),
-            contentBuilder: (context, close) =>
-                const SizedBox.expand(key: Key('popover')),
+      await tester.pumpWidget(
+        shellApp(
+          Stack(
+            children: [
+              Positioned(
+                left: trigger.dx,
+                top: trigger.dy,
+                child: GlassPopover(
+                  popoverWidth: 282,
+                  popoverHeight: 68,
+                  trigger: const SizedBox.square(
+                    dimension: 48,
+                    child: ColoredBox(color: CupertinoColors.white),
+                  ),
+                  contentBuilder: (context, close) =>
+                      const SizedBox.expand(key: Key('popover')),
+                ),
+              ),
+            ],
           ),
         ),
-      ])));
+      );
       await settle(tester);
       await tester.tapAt(trigger + const Offset(24, 24));
       await settle(tester);
@@ -1673,23 +1794,29 @@ void main() {
       int items = 3,
     }) async {
       setScreen(tester);
-      await tester.pumpWidget(shellApp(Stack(children: [
-        Positioned(
-          left: trigger.dx,
-          top: trigger.dy,
-          child: GlassMenu(
-            autoAdjustToScreen: true,
-            trigger: const SizedBox.square(
-              dimension: 48,
-              child: ColoredBox(color: CupertinoColors.white),
-            ),
-            items: [
-              for (var i = 1; i <= items; i++)
-                GlassMenuItem(title: 'Item $i', onTap: () {}),
+      await tester.pumpWidget(
+        shellApp(
+          Stack(
+            children: [
+              Positioned(
+                left: trigger.dx,
+                top: trigger.dy,
+                child: GlassMenu(
+                  autoAdjustToScreen: true,
+                  trigger: const SizedBox.square(
+                    dimension: 48,
+                    child: ColoredBox(color: CupertinoColors.white),
+                  ),
+                  items: [
+                    for (var i = 1; i <= items; i++)
+                      GlassMenuItem(title: 'Item $i', onTap: () {}),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
-      ])));
+      );
       await settle(tester);
       await tester.tapAt(trigger + const Offset(24, 24));
       await settle(tester);
@@ -1698,8 +1825,9 @@ void main() {
     Rect item(WidgetTester tester, int i) =>
         tester.getRect(find.byType(GlassMenuItem).at(i - 1));
 
-    testDuo('opens a menu over its item, down from the upper half',
-        (tester) async {
+    testDuo('opens a menu over its item, down from the upper half', (
+      tester,
+    ) async {
       await openMenu(tester, trigger: const Offset(394, 230));
 
       // Its top and outer edges lie on the item's, inside the menu's 12pt
@@ -1724,30 +1852,36 @@ void main() {
   });
 
   group('Reduce Transparency in the strip', () {
-    testDuo('gives the strip and the title row an opaque background',
-        (tester) async {
+    testDuo('gives the strip and the title row an opaque background', (
+      tester,
+    ) async {
       setScreen(tester);
       tester.platformDispatcher.accessibilityFeaturesTestValue =
           const FakeAccessibilityFeatures(highContrast: true);
       addTearDown(
-          tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
       await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
       await settle(tester);
 
-      final strip = tester.getRect(find
-          .descendant(
-            of: find.byType(VerticalBarBackground),
-            matching: find.byType(DecoratedBox),
-          )
-          .last);
+      final strip = tester.getRect(
+        find
+            .descendant(
+              of: find.byType(VerticalBarBackground),
+              matching: find.byType(DecoratedBox),
+            )
+            .last,
+      );
       // 5pt into the strip, the full height.
       expect(strip, const Rect.fromLTRB(382 + 5, 0, 466, 678));
-      final row = tester.getRect(find
-          .descendant(
-            of: find.byType(VerticalBarBackground),
-            matching: find.byType(DecoratedBox),
-          )
-          .first);
+      final row = tester.getRect(
+        find
+            .descendant(
+              of: find.byType(VerticalBarBackground),
+              matching: find.byType(DecoratedBox),
+            )
+            .first,
+      );
       // Down to where the content starts, 10pt under the title row.
       expect(row, const Rect.fromLTRB(0, 0, 382 + 5, 24 + 48 + 10));
     });
@@ -1775,9 +1909,9 @@ class _Screen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GlassScaffold(
-        appBar: GlassAppBar.pinned(title: Text(title), actions: actions),
-        body: Center(child: Text('$title body')),
-      );
+    appBar: GlassAppBar.pinned(title: Text(title), actions: actions),
+    body: Center(child: Text('$title body')),
+  );
 }
 
 class _TabsScreen extends StatefulWidget {
@@ -1795,28 +1929,28 @@ class _TabsScreenState extends State<_TabsScreen> {
 
   @override
   Widget build(BuildContext context) => GlassScaffold(
-        appBar: GlassAppBar.pinned(
-          title: const Text('Tabs'),
-          actions: widget.actions,
+    appBar: GlassAppBar.pinned(
+      title: const Text('Tabs'),
+      actions: widget.actions,
+    ),
+    bottomBar: GlassTabBar.bottom(
+      selectedIndex: _tab,
+      onTabSelected: (i) => setState(() => _tab = i),
+      tabs: const [
+        GlassTab(icon: Icon(CupertinoIcons.house), label: 'Home'),
+        GlassTab(icon: Icon(CupertinoIcons.book), label: 'Library'),
+        GlassTab(
+          icon: Icon(CupertinoIcons.dot_radiowaves_left_right),
+          label: 'Radio',
         ),
-        bottomBar: GlassTabBar.bottom(
-          selectedIndex: _tab,
-          onTabSelected: (i) => setState(() => _tab = i),
-          tabs: const [
-            GlassTab(icon: Icon(CupertinoIcons.house), label: 'Home'),
-            GlassTab(icon: Icon(CupertinoIcons.book), label: 'Library'),
-            GlassTab(
-              icon: Icon(CupertinoIcons.dot_radiowaves_left_right),
-              label: 'Radio',
-            ),
-            GlassTab(
-              icon: Icon(CupertinoIcons.person_crop_circle),
-              label: 'Profile',
-            ),
-          ],
+        GlassTab(
+          icon: Icon(CupertinoIcons.person_crop_circle),
+          label: 'Profile',
         ),
-        body: Center(child: Text('${_titles[_tab]} body')),
-      );
+      ],
+    ),
+    body: Center(child: Text('${_titles[_tab]} body')),
+  );
 }
 
 class _SearchableTabsScreen extends StatefulWidget {
@@ -1835,31 +1969,31 @@ class _SearchableTabsScreenState extends State<_SearchableTabsScreen> {
 
   @override
   Widget build(BuildContext context) => GlassScaffold(
-        bottomBar: GlassTabBar.searchable(
-          selectedIndex: _tab,
-          onTabSelected: (i) => setState(() => _tab = i),
-          isSearchActive: _searching,
-          searchConfig: GlassSearchBarConfig(
-            onSearchToggle: (active) => setState(() => _searching = active),
-            showPill: widget.showPill,
-          ),
-          tabs: const [
-            GlassTab(icon: Icon(CupertinoIcons.house), label: 'Home'),
-            GlassTab(icon: Icon(CupertinoIcons.book), label: 'Library'),
-            GlassTab(
-              icon: Icon(CupertinoIcons.dot_radiowaves_left_right),
-              label: 'Radio',
-            ),
-            GlassTab(
-              icon: Icon(CupertinoIcons.person_crop_circle),
-              label: 'Profile',
-            ),
-          ],
+    bottomBar: GlassTabBar.searchable(
+      selectedIndex: _tab,
+      onTabSelected: (i) => setState(() => _tab = i),
+      isSearchActive: _searching,
+      searchConfig: GlassSearchBarConfig(
+        onSearchToggle: (active) => setState(() => _searching = active),
+        showPill: widget.showPill,
+      ),
+      tabs: const [
+        GlassTab(icon: Icon(CupertinoIcons.house), label: 'Home'),
+        GlassTab(icon: Icon(CupertinoIcons.book), label: 'Library'),
+        GlassTab(
+          icon: Icon(CupertinoIcons.dot_radiowaves_left_right),
+          label: 'Radio',
         ),
-        body: Center(
-          child: Text(_searching ? 'Search body' : '${_titles[_tab]} body'),
+        GlassTab(
+          icon: Icon(CupertinoIcons.person_crop_circle),
+          label: 'Profile',
         ),
-      );
+      ],
+    ),
+    body: Center(
+      child: Text(_searching ? 'Search body' : '${_titles[_tab]} body'),
+    ),
+  );
 }
 
 class _LargeTitleScreen extends StatefulWidget {
@@ -1882,41 +2016,42 @@ class _LargeTitleScreenState extends State<_LargeTitleScreen> {
 
   @override
   Widget build(BuildContext context) => GlassScaffold(
-        appBar: GlassAppBar.pinned(
-          title: const Text('Mailboxes'),
-          largeTitleController: title,
-          leading: [
-            GlassBarItem.custom(
-              child: const Icon(CupertinoIcons.pencil),
-              label: 'Edit',
-              onTap: () {},
-            ),
-          ],
-          actions: [
-            GlassBarItem.icon(
-              icon: const Icon(CupertinoIcons.add),
-              label: 'Add',
-              onTap: () {},
-            ),
-          ],
+    appBar: GlassAppBar.pinned(
+      title: const Text('Mailboxes'),
+      largeTitleController: title,
+      leading: [
+        GlassBarItem.custom(
+          child: const Icon(CupertinoIcons.pencil),
+          label: 'Edit',
+          onTap: () {},
         ),
-        body: CustomScrollView(
-          controller: title.scrollController,
-          slivers: [
-            GlassLargeTitle(
-              text: 'Mailboxes',
-              controller: title,
-              searchBar:
-                  widget.searchable ? const GlassSearchBar(height: 48) : null,
-            ),
-            SliverList.builder(
-              itemCount: 40,
-              itemBuilder: (context, i) =>
-                  SizedBox(height: 60, child: Text('Row $i')),
-            ),
-          ],
+      ],
+      actions: [
+        GlassBarItem.icon(
+          icon: const Icon(CupertinoIcons.add),
+          label: 'Add',
+          onTap: () {},
         ),
-      );
+      ],
+    ),
+    body: CustomScrollView(
+      controller: title.scrollController,
+      slivers: [
+        GlassLargeTitle(
+          text: 'Mailboxes',
+          controller: title,
+          searchBar: widget.searchable
+              ? const GlassSearchBar(height: 48)
+              : null,
+        ),
+        SliverList.builder(
+          itemCount: 40,
+          itemBuilder: (context, i) =>
+              SizedBox(height: 60, child: Text('Row $i')),
+        ),
+      ],
+    ),
+  );
 }
 
 /// A sheet's own navigation bar: an inline title, cancel and done.
@@ -1925,23 +2060,23 @@ class _SheetBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GlassScaffold(
-        appBar: GlassAppBar.pinned(
-          title: const Text('New Note'),
-          leading: [
-            GlassBarItem.icon(
-              icon: const Icon(CupertinoIcons.xmark),
-              background: GlassBarItemBackground.separate,
-              onTap: () {},
-            ),
-          ],
-          actions: [
-            GlassBarItem.icon(
-              icon: const Icon(CupertinoIcons.checkmark),
-              background: GlassBarItemBackground.separate,
-              onTap: () {},
-            ),
-          ],
+    appBar: GlassAppBar.pinned(
+      title: const Text('New Note'),
+      leading: [
+        GlassBarItem.icon(
+          icon: const Icon(CupertinoIcons.xmark),
+          background: GlassBarItemBackground.separate,
+          onTap: () {},
         ),
-        body: const SizedBox(),
-      );
+      ],
+      actions: [
+        GlassBarItem.icon(
+          icon: const Icon(CupertinoIcons.checkmark),
+          background: GlassBarItemBackground.separate,
+          onTap: () {},
+        ),
+      ],
+    ),
+    body: const SizedBox(),
+  );
 }

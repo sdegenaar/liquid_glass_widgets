@@ -1,5 +1,6 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
+
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/types/glass_interaction_behavior.dart';
 import '../../types/glass_quality.dart';
@@ -113,11 +114,11 @@ class GlassTextField extends StatefulWidget {
     this.glowRadius = 1.5,
     this.onTapOutside,
   }) : assert(
-          height == null || (minHeight == null && maxHeight == null),
-          'height is mutually exclusive with minHeight / maxHeight. '
-          'Use either height for a fixed size, or minHeight/maxHeight for '
-          'a constrained range.',
-        );
+         height == null || (minHeight == null && maxHeight == null),
+         'height is mutually exclusive with minHeight / maxHeight. '
+         'Use either height for a fixed size, or minHeight/maxHeight for '
+         'a constrained range.',
+       );
 
   /// Creates a glass text field styled specifically for search, matching
   /// the compact layout and visuals of [GlassSearchBar].
@@ -153,17 +154,17 @@ class GlassTextField extends StatefulWidget {
     this.glowColor,
     this.glowRadius = 1.5,
     this.onTapOutside,
-  })  : obscureText = false,
-        keyboardType = TextInputType.text,
-        textInputAction = TextInputAction.search,
-        maxLines = 1,
-        minLines = 1,
-        maxLength = null,
-        onLineCountChanged = null,
-        iconAlignment = CrossAxisAlignment.center,
-        minHeight = null,
-        maxHeight = null,
-        bottom = null;
+  }) : obscureText = false,
+       keyboardType = TextInputType.text,
+       textInputAction = TextInputAction.search,
+       maxLines = 1,
+       minLines = 1,
+       maxLength = null,
+       onLineCountChanged = null,
+       iconAlignment = CrossAxisAlignment.center,
+       minHeight = null,
+       maxHeight = null,
+       bottom = null;
 
   // ===========================================================================
   // Text Field Properties
@@ -485,7 +486,8 @@ class _GlassTextFieldState extends State<GlassTextField> {
   Widget _wrapWithGlow(Widget child, bool isDark) {
     if (!widget.interactionBehavior.hasGlow) return child;
     return GlassGlow(
-      glowColor: widget.glowColor ??
+      glowColor:
+          widget.glowColor ??
           (isDark ? const Color(0x1FFFFFFF) : const Color(0x1F000000)),
       glowRadius: widget.glowRadius,
       child: child,
@@ -626,8 +628,10 @@ class _GlassTextFieldState extends State<GlassTextField> {
     final effectiveLineHeight =
         textScaler.scale(fontSize) * (effectiveStyle.height ?? 1.2);
 
-    final lineCount =
-        (size.height / effectiveLineHeight).round().clamp(1, 9999);
+    final lineCount = (size.height / effectiveLineHeight).round().clamp(
+      1,
+      9999,
+    );
 
     if (lineCount != _currentLineCount) {
       _currentLineCount = lineCount;
@@ -638,7 +642,8 @@ class _GlassTextFieldState extends State<GlassTextField> {
   @override
   Widget build(BuildContext context) {
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
-    final effectiveSurfaceStyle = widget.surfaceStyle ??
+    final effectiveSurfaceStyle =
+        widget.surfaceStyle ??
         InheritedGlassSurfaceStyle.maybeOf(context) ??
         GlassSurfaceStyle.glass;
     final isSolid = effectiveSurfaceStyle == GlassSurfaceStyle.solid;
@@ -646,11 +651,11 @@ class _GlassTextFieldState extends State<GlassTextField> {
     final defaultTextStyle = TextStyle(
       color: isSolid
           ? (isDark
-              ? CupertinoColors.label.darkColor
-              : CupertinoColors.label.color)
+                ? CupertinoColors.label.darkColor
+                : CupertinoColors.label.color)
           : (isDark
-              ? const Color.fromRGBO(255, 255, 255, 0.9)
-              : const Color.fromRGBO(0, 0, 0, 0.9)),
+                ? const Color.fromRGBO(255, 255, 255, 0.9)
+                : const Color.fromRGBO(0, 0, 0, 0.9)),
       fontSize: 16,
       height: 1.2,
     );
@@ -658,11 +663,11 @@ class _GlassTextFieldState extends State<GlassTextField> {
     final defaultPlaceholderStyle = TextStyle(
       color: isSolid
           ? (isDark
-              ? CupertinoColors.placeholderText.darkColor
-              : CupertinoColors.placeholderText.color)
+                ? CupertinoColors.placeholderText.darkColor
+                : CupertinoColors.placeholderText.color)
           : (isDark
-              ? const Color.fromRGBO(255, 255, 255, 0.5)
-              : const Color.fromRGBO(0, 0, 0, 0.5)),
+                ? const Color.fromRGBO(255, 255, 255, 0.5)
+                : const Color.fromRGBO(0, 0, 0, 0.5)),
       fontSize: 16,
     );
 
@@ -706,14 +711,16 @@ class _GlassTextFieldState extends State<GlassTextField> {
               _scheduleLineCountCheck();
             },
             onSubmitted: widget.onSubmitted,
-            onTapOutside: widget.onTapOutside ??
+            onTapOutside:
+                widget.onTapOutside ??
                 (event) => FocusManager.instance.primaryFocus?.unfocus(),
             inputFormatters: widget.inputFormatters,
             textCapitalization: widget.textCapitalization,
             style: defaultTextStyle.merge(widget.textStyle),
             placeholder: widget.placeholder,
-            placeholderStyle:
-                defaultPlaceholderStyle.merge(widget.placeholderStyle),
+            placeholderStyle: defaultPlaceholderStyle.merge(
+              widget.placeholderStyle,
+            ),
             padding: EdgeInsets.zero,
             decoration: null,
           ),
@@ -730,8 +737,9 @@ class _GlassTextFieldState extends State<GlassTextField> {
           Semantics(
             container: widget.onSuffixTap != null,
             button: widget.onSuffixTap != null ? true : null,
-            label:
-                widget.onSuffixTap != null ? widget.suffixSemanticLabel : null,
+            label: widget.onSuffixTap != null
+                ? widget.suffixSemanticLabel
+                : null,
             child: GestureDetector(
               onTap: widget.onSuffixTap,
               child: widget.suffixIcon,

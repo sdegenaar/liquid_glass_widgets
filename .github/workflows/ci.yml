@@ -161,13 +161,13 @@ jobs:
 
   # ─────────────────────────────────────────────────────────────────────────
   # Job 4: Oldest-supported Flutter floor check
-  # Pins Flutter 3.41.0 — the version declared in pubspec.yaml — to verify
+  # Pins Flutter 3.47.0 — the version declared in pubspec.yaml — to verify
   # the package actually installs and its tests pass on the declared minimum.
   # The matrix above (stable/beta channels) always resolves to the latest
   # release and structurally cannot catch floor violations.
   # ─────────────────────────────────────────────────────────────────────────
   floor-check:
-    name: Flutter Floor Check (3.41.0)
+    name: Flutter Floor Check (3.47.0)
     runs-on: ubuntu-latest
 
     steps:
@@ -175,7 +175,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.41.0"
+          flutter-version: "3.47.0"
           cache: true
 
       - name: Install dependencies

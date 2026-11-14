@@ -20,9 +20,10 @@
 //   --dart-define=BENCH_SCENES=scroll   only these scenes
 //   --dart-define=BENCH_PAUSE_MS=0      pause between scenes (for recordings)
 //   --dart-define=BENCH_OVERLAY=true    Flutter's performance overlay (recordings)
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_driver/flutter_driver.dart' as driver
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:flutter_driver/flutter_driver.dart'
+    as driver
     show Timeline, TimelineSummary;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -51,56 +52,71 @@ class _Config {
 LiquidGlassSettings get _ios27 =>
     _dark ? LiquidGlassSettings.ios27Dark : LiquidGlassSettings.ios27Light;
 
-final _configs = <_Config>[
-  const _Config('standard', GlassQuality.standard, LiquidGlassSettings()),
-  const _Config('ios26', GlassQuality.premium, LiquidGlassSettings()),
-  _Config('ios27_nofrost', GlassQuality.premium, _ios27.copyWith(frost: 0)),
-  _Config(
-    'ios27_weight1',
-    GlassQuality.premium,
-    _ios27.copyWith(frostWeight: 1),
-  ),
-  _Config('ios27', GlassQuality.premium, _ios27),
-  // No blur under the frost: the ghost runs at its floor sigma.
-  _Config('ios27_noblur', GlassQuality.premium, _ios27.copyWith(blur: 0)),
-  const _Config(
-    'ios26_group',
-    GlassQuality.premium,
-    LiquidGlassSettings(),
-    group: true,
-  ),
-  _Config('ios27_group', GlassQuality.premium, _ios27, group: true),
-]
-    .where(
-        (c) => _onlyConfigs.isEmpty || _onlyConfigs.split(',').contains(c.name))
-    .toList();
+final _configs =
+    <_Config>[
+          const _Config(
+            'standard',
+            GlassQuality.standard,
+            LiquidGlassSettings(),
+          ),
+          const _Config('ios26', GlassQuality.premium, LiquidGlassSettings()),
+          _Config(
+            'ios27_nofrost',
+            GlassQuality.premium,
+            _ios27.copyWith(frost: 0),
+          ),
+          _Config(
+            'ios27_weight1',
+            GlassQuality.premium,
+            _ios27.copyWith(frostWeight: 1),
+          ),
+          _Config('ios27', GlassQuality.premium, _ios27),
+          // No blur under the frost: the ghost runs at its floor sigma.
+          _Config(
+            'ios27_noblur',
+            GlassQuality.premium,
+            _ios27.copyWith(blur: 0),
+          ),
+          const _Config(
+            'ios26_group',
+            GlassQuality.premium,
+            LiquidGlassSettings(),
+            group: true,
+          ),
+          _Config('ios27_group', GlassQuality.premium, _ios27, group: true),
+        ]
+        .where(
+          (c) =>
+              _onlyConfigs.isEmpty || _onlyConfigs.split(',').contains(c.name),
+        )
+        .toList();
 
 bool _runs(String scene) =>
     _onlyScenes.isEmpty || _onlyScenes.split(',').contains(scene);
 
 GlassThemeSettings _themeSettings(LiquidGlassSettings s) => GlassThemeSettings(
-      glassColor: s.glassColor,
-      thickness: s.thickness,
-      blur: s.blur,
-      blurWeight: s.blurWeight,
-      frost: s.frost,
-      frostOpacity: s.frostOpacity,
-      frostClamp: s.frostClamp,
-      frostWeight: s.frostWeight,
-      chromaticAberration: s.chromaticAberration,
-      lightAngle: s.lightAngle,
-      lightIntensity: s.lightIntensity,
-      ambientStrength: s.ambientStrength,
-      fresnelStrength: s.fresnelStrength,
-      refractiveIndex: s.refractiveIndex,
-      saturation: s.saturation,
-      specularSharpness: s.specularSharpness,
-      edgeAbsorption: s.edgeAbsorption,
-      rimShade: s.rimShade,
-      rimShadeEnds: s.rimShadeEnds,
-      rimLight: s.rimLight,
-      lensModel: s.lensModel,
-    );
+  glassColor: s.glassColor,
+  thickness: s.thickness,
+  blur: s.blur,
+  blurWeight: s.blurWeight,
+  frost: s.frost,
+  frostOpacity: s.frostOpacity,
+  frostClamp: s.frostClamp,
+  frostWeight: s.frostWeight,
+  chromaticAberration: s.chromaticAberration,
+  lightAngle: s.lightAngle,
+  lightIntensity: s.lightIntensity,
+  ambientStrength: s.ambientStrength,
+  fresnelStrength: s.fresnelStrength,
+  refractiveIndex: s.refractiveIndex,
+  saturation: s.saturation,
+  specularSharpness: s.specularSharpness,
+  edgeAbsorption: s.edgeAbsorption,
+  rimShade: s.rimShade,
+  rimShadeEnds: s.rimShadeEnds,
+  rimLight: s.rimLight,
+  lensModel: s.lensModel,
+);
 
 const _images = [
   'assets/news_images/ai_mit.jpg',
@@ -126,8 +142,9 @@ class _BenchScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final ink = _dark ? Colors.white : Colors.black;
     return Scaffold(
-      backgroundColor:
-          _dark ? const Color(0xFF101014) : const Color(0xFFF4F2EE),
+      backgroundColor: _dark
+          ? const Color(0xFF101014)
+          : const Color(0xFFF4F2EE),
       extendBody: true,
       extendBodyBehindAppBar: true,
       appBar: PreferredSize(
@@ -177,10 +194,7 @@ class _BenchScreen extends StatelessWidget {
                     Text(
                       'Headline number $i with a longer title that wraps',
                       maxLines: 2,
-                      style: TextStyle(
-                        color: ink,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: TextStyle(color: ink, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -239,9 +253,7 @@ Widget _app(_Config config, {required bool cards}) {
     child: MaterialApp(
       debugShowCheckedModeBanner: false,
       showPerformanceOverlay: _overlay,
-      theme: ThemeData(
-        brightness: _dark ? Brightness.dark : Brightness.light,
-      ),
+      theme: ThemeData(brightness: _dark ? Brightness.dark : Brightness.light),
       home: _BenchScreen(
         key: ValueKey('${config.name}-$cards'),
         config: config,
@@ -280,8 +292,13 @@ void main() {
     // which fails a test; here slow frames are the measurement.
     await LiquidGlassWidgets.initialize(enablePerformanceMonitor: false);
 
-    Future<void> scene(String name, _Config config, int round,
-        {required bool cards, required Future<void> Function() action}) async {
+    Future<void> scene(
+      String name,
+      _Config config,
+      int round, {
+      required bool cards,
+      required Future<void> Function() action,
+    }) async {
       await tester.pumpWidget(_app(config, cards: cards));
       await _pumpFor(tester, const Duration(milliseconds: 1500));
       // Warm-up outside the measurement: first use of every shader and image.
@@ -296,8 +313,7 @@ void main() {
       );
       final summary = driver.TimelineSummary.summarize(
         driver.Timeline.fromJson(timeline.toJson()),
-      ).summaryJson
-        ..removeWhere((key, value) => value is List);
+      ).summaryJson..removeWhere((key, value) => value is List);
       (binding.reportData ??= {})['$name|${config.name}|$round'] = summary;
       if (_pauseMs > 0) {
         await _pumpFor(tester, const Duration(milliseconds: _pauseMs));
@@ -313,39 +329,57 @@ void main() {
       ];
       for (final config in order) {
         if (_runs('scroll')) {
-          await scene('scroll', config, round, cards: false, action: () async {
-            for (var i = 0; i < 4; i++) {
-              await _fling(tester, 1400);
-              await _fling(tester, -1400);
-            }
-          });
+          await scene(
+            'scroll',
+            config,
+            round,
+            cards: false,
+            action: () async {
+              for (var i = 0; i < 4; i++) {
+                await _fling(tester, 1400);
+                await _fling(tester, -1400);
+              }
+            },
+          );
         }
         if (_runs('cards')) {
-          await scene('cards', config, round, cards: true, action: () async {
-            for (var i = 0; i < 3; i++) {
-              await _fling(tester, 1400);
-              await _fling(tester, -1400);
-            }
-          });
+          await scene(
+            'cards',
+            config,
+            round,
+            cards: true,
+            action: () async {
+              for (var i = 0; i < 3; i++) {
+                await _fling(tester, 1400);
+                await _fling(tester, -1400);
+              }
+            },
+          );
         }
         if (_runs('modal')) {
-          await scene('modal', config, round, cards: false, action: () async {
-            final context = tester.element(find.byType(ListView));
-            for (var i = 0; i < 3; i++) {
-              GlassModalSheet.show<void>(
-                context: context,
-                settings: config.settings,
-                quality: config.quality,
-                builder: (context) => const Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Text('Sheet'),
-                ),
-              );
-              await _pumpFor(tester, const Duration(milliseconds: 1200));
-              Navigator.of(context).pop();
-              await _pumpFor(tester, const Duration(milliseconds: 900));
-            }
-          });
+          await scene(
+            'modal',
+            config,
+            round,
+            cards: false,
+            action: () async {
+              final context = tester.element(find.byType(ListView));
+              for (var i = 0; i < 3; i++) {
+                GlassModalSheet.show<void>(
+                  context: context,
+                  settings: config.settings,
+                  quality: config.quality,
+                  builder: (context) => const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text('Sheet'),
+                  ),
+                );
+                await _pumpFor(tester, const Duration(milliseconds: 1200));
+                Navigator.of(context).pop();
+                await _pumpFor(tester, const Duration(milliseconds: 900));
+              }
+            },
+          );
         }
       }
     }

@@ -9,8 +9,8 @@
 /// To run: flutter run -t example/lib/main.dart
 library;
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -28,10 +28,8 @@ class ShadowClippingDemoApp extends StatelessWidget {
     return CupertinoApp(
       debugShowCheckedModeBanner: false,
       theme: const CupertinoThemeData(brightness: Brightness.light),
-      builder: (context, child) => Theme(
-        data: ThemeData.light(useMaterial3: true),
-        child: child!,
-      ),
+      builder: (context, child) =>
+          Theme(data: ThemeData.light(useMaterial3: true), child: child!),
       home: const ShadowClippingDemoPage(),
     );
   }
@@ -64,16 +62,12 @@ class _ShadowClippingDemoPageState extends State<ShadowClippingDemoPage> {
     //
     // We force this demo into Light Mode so the GPU SDF shadows are always visible.
     return CupertinoTheme(
-      data: CupertinoTheme.of(context).copyWith(
-        brightness: Brightness.light,
-      ),
+      data: CupertinoTheme.of(context).copyWith(brightness: Brightness.light),
       child: GlassScaffold(
         background: Container(
           color: const Color(0xFFF0F0F5), // Light background to see shadows
         ),
-        appBar: const GlassAppBar(
-          title: Text('Buttons & Shadows Demo'),
-        ),
+        appBar: const GlassAppBar(title: Text('Buttons & Shadows Demo')),
         bottomBar: GlassTabBar.searchable(
           selectedIndex: _tabIndex,
           onTabSelected: (idx) => setState(() {
@@ -95,21 +89,12 @@ class _ShadowClippingDemoPageState extends State<ShadowClippingDemoPage> {
           scrollController: _scrollController,
           whitenAtBottom: true,
           tabs: [
-            GlassTab(
-              icon: Icon(CupertinoIcons.house),
-              label: 'Home',
-            ),
-            GlassTab(
-              icon: Icon(CupertinoIcons.compass),
-              label: 'Discover',
-            ),
+            GlassTab(icon: Icon(CupertinoIcons.house), label: 'Home'),
+            GlassTab(icon: Icon(CupertinoIcons.compass), label: 'Discover'),
           ],
         ),
         body: AdaptiveLiquidGlassLayer(
-          settings: const LiquidGlassSettings(
-            thickness: 20,
-            blur: 8,
-          ),
+          settings: const LiquidGlassSettings(thickness: 20, blur: 8),
           quality: GlassQuality.premium,
           child: SafeArea(
             child: SingleChildScrollView(
@@ -175,10 +160,13 @@ class _ShadowClippingDemoPageState extends State<ShadowClippingDemoPage> {
                         ),
                         GlassMenuItem(
                           title: 'Option 3',
-                          titleStyle:
-                              TextStyle(color: CupertinoColors.destructiveRed),
-                          icon: Icon(CupertinoIcons.trash,
-                              color: CupertinoColors.destructiveRed),
+                          titleStyle: TextStyle(
+                            color: CupertinoColors.destructiveRed,
+                          ),
+                          icon: Icon(
+                            CupertinoIcons.trash,
+                            color: CupertinoColors.destructiveRed,
+                          ),
                           onTap: () {},
                         ),
                       ],
@@ -187,8 +175,9 @@ class _ShadowClippingDemoPageState extends State<ShadowClippingDemoPage> {
                         width: 56,
                         height: 56,
                         iconSize: 24,
-                        iconColor:
-                            CupertinoColors.black.withValues(alpha: 0.87),
+                        iconColor: CupertinoColors.black.withValues(
+                          alpha: 0.87,
+                        ),
                         onTap: toggle, // Correctly wire up the toggle function
                         useOwnLayer: true, // Required for standalone shadows
                         settings: const LiquidGlassSettings(
@@ -213,9 +202,7 @@ class _ShadowClippingDemoPageState extends State<ShadowClippingDemoPage> {
                     direction: Axis.horizontal,
                     quality: GlassQuality.premium,
                     useOwnLayer: true,
-                    settings: const LiquidGlassSettings(
-                      shadowElevation: 2.0,
-                    ),
+                    settings: const LiquidGlassSettings(shadowElevation: 2.0),
                     items: [
                       GlassButtonGroupItem(
                         icon: Icon(CupertinoIcons.reply),
@@ -245,7 +232,8 @@ class _ShadowClippingDemoPageState extends State<ShadowClippingDemoPage> {
                     width: 300,
                     height: 64,
                     shape: const LiquidRoundedRectangle(
-                        borderRadius: 12), // Gentle corner radius
+                      borderRadius: 12,
+                    ), // Gentle corner radius
                     onTap: () {},
                     useOwnLayer: true,
                     settings: const LiquidGlassSettings(
@@ -290,9 +278,9 @@ class _ShadowClippingDemoPageState extends State<ShadowClippingDemoPage> {
                       Text(
                         '0.0',
                         style: TextStyle(
-                            fontSize: 13,
-                            color:
-                                CupertinoColors.black.withValues(alpha: 0.54)),
+                          fontSize: 13,
+                          color: CupertinoColors.black.withValues(alpha: 0.54),
+                        ),
                       ),
                       Expanded(
                         child: CupertinoSlider(
@@ -305,9 +293,9 @@ class _ShadowClippingDemoPageState extends State<ShadowClippingDemoPage> {
                       Text(
                         '1.0',
                         style: TextStyle(
-                            fontSize: 13,
-                            color:
-                                CupertinoColors.black.withValues(alpha: 0.54)),
+                          fontSize: 13,
+                          color: CupertinoColors.black.withValues(alpha: 0.54),
+                        ),
                       ),
                     ],
                   ),
@@ -405,10 +393,7 @@ class _ElevatedButton extends StatelessWidget {
 /// Side-by-side comparison card: a small glass surface over a colorful
 /// background, with the specified whitenStrength applied.
 class _WhitenCard extends StatelessWidget {
-  const _WhitenCard({
-    required this.label,
-    required this.whitenStrength,
-  });
+  const _WhitenCard({required this.label, required this.whitenStrength});
 
   final String label;
   final double whitenStrength;

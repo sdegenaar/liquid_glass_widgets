@@ -178,8 +178,8 @@ class ShellChromeBarrierGate extends SingleChildRenderObjectWidget {
 class RenderShellChromeBarrierGate extends RenderExcludeSemantics {
   /// Holds its child behind the barriers in [barriers] while any is up.
   RenderShellChromeBarrierGate({required ShellChromeBarriers barriers})
-      : _barriers = barriers,
-        super(excluding: barriers.active);
+    : _barriers = barriers,
+      super(excluding: barriers.active);
 
   /// The registry this follows.
   ShellChromeBarriers get barriers => _barriers;

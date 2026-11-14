@@ -1,5 +1,6 @@
 import 'dart:math' as math;
-import 'package:flutter/cupertino.dart';
+
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
 
 import '../../src/renderer/glass_backdrop_group.dart';
@@ -395,7 +396,8 @@ class _GlassFullScreenCoverState extends State<GlassFullScreenCover>
     if (!widget.enableSwipeToDismiss) return;
 
     final velocity = details.primaryVelocity ?? 0.0;
-    final shouldDismiss = velocity > widget.velocityThreshold ||
+    final shouldDismiss =
+        velocity > widget.velocityThreshold ||
         _dragOffset >= widget.dismissThreshold;
 
     if (shouldDismiss) {
@@ -411,10 +413,7 @@ class _GlassFullScreenCoverState extends State<GlassFullScreenCover>
     if (startY == 0.0) return;
 
     final animation = Tween<double>(begin: startY, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _dragController,
-        curve: Curves.easeOutCubic,
-      ),
+      CurvedAnimation(parent: _dragController, curve: Curves.easeOutCubic),
     );
 
     void listener() {
@@ -440,13 +439,10 @@ class _GlassFullScreenCoverState extends State<GlassFullScreenCover>
         ? (remainingDistance / velocity * 1000).clamp(120.0, 320.0).toInt()
         : 250;
 
-    final animation =
-        Tween<double>(begin: _dragOffset, end: screenHeight).animate(
-      CurvedAnimation(
-        parent: _dragController,
-        curve: Curves.easeInCubic,
-      ),
-    );
+    final animation = Tween<double>(begin: _dragOffset, end: screenHeight)
+        .animate(
+          CurvedAnimation(parent: _dragController, curve: Curves.easeInCubic),
+        );
 
     void listener() {
       setState(() {
@@ -468,7 +464,8 @@ class _GlassFullScreenCoverState extends State<GlassFullScreenCover>
   @override
   Widget build(BuildContext context) {
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
-    final bgColor = widget.backgroundColor ??
+    final bgColor =
+        widget.backgroundColor ??
         (isDark
             ? CupertinoColors.systemBackground.darkColor
             : CupertinoColors.systemBackground.color);
@@ -498,8 +495,9 @@ class _GlassFullScreenCoverState extends State<GlassFullScreenCover>
         : 0.0;
 
     // Subtle scale reduction during drag pull-down (iOS card feel)
-    final currentScale =
-        _dragOffset > 0 ? math.max(0.92, 1.0 - (_dragOffset / 2000.0)) : 1.0;
+    final currentScale = _dragOffset > 0
+        ? math.max(0.92, 1.0 - (_dragOffset / 2000.0))
+        : 1.0;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -520,7 +518,7 @@ class _GlassFullScreenCoverState extends State<GlassFullScreenCover>
               color: bgColor,
               child: Column(
                 children: [
-                  if (topBar != null) topBar,
+                  ?topBar,
                   Expanded(
                     child: CupertinoUserInterfaceLevel(
                       data: CupertinoUserInterfaceLevelData.elevated,
@@ -584,16 +582,10 @@ class _GlassFullScreenCoverRoute<T> extends PageRoute<T> {
   ) {
     Widget page = builder(context);
     if (capturedCupertinoTheme != null) {
-      page = CupertinoTheme(
-        data: capturedCupertinoTheme!,
-        child: page,
-      );
+      page = CupertinoTheme(data: capturedCupertinoTheme!, child: page);
     }
     if (capturedGlassTheme != null) {
-      page = GlassTheme(
-        data: capturedGlassTheme!,
-        child: page,
-      );
+      page = GlassTheme(data: capturedGlassTheme!, child: page);
     }
     return page;
   }

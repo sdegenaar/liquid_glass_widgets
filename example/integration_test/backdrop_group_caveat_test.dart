@@ -5,8 +5,8 @@
 //   flutter drive --profile --no-dds -d <device> \
 //     --driver=test_driver/perf_glass_driver.dart \
 //     --target=integration_test/backdrop_group_caveat_test.dart
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -120,16 +120,18 @@ void main() {
       (false, true),
       (true, true),
     ]) {
-      await tester.pumpWidget(MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          body: _Scene(
-            key: ValueKey((grouped, tinted)),
-            grouped: grouped,
-            tinted: tinted,
+      await tester.pumpWidget(
+        MaterialApp(
+          debugShowCheckedModeBanner: false,
+          home: Scaffold(
+            body: _Scene(
+              key: ValueKey((grouped, tinted)),
+              grouped: grouped,
+              tinted: tinted,
+            ),
           ),
         ),
-      ));
+      );
       final end = DateTime.now().add(const Duration(seconds: 8));
       while (DateTime.now().isBefore(end)) {
         await tester.pump(const Duration(milliseconds: 50));

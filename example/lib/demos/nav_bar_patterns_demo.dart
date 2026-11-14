@@ -26,26 +26,29 @@
 ///   flutter run -t lib/demos/nav_bar_patterns_demo.dart
 library;
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+
 import '../constants/glass_settings.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
-  runApp(LiquidGlassWidgets.wrap(
-    child: CupertinoApp(
-      debugShowCheckedModeBanner: false,
-      theme: const CupertinoThemeData(brightness: Brightness.dark),
-      builder: (context, child) => Theme(
-        data: ThemeData.dark(useMaterial3: true),
-        child: GlassNavigationShell(child: child!),
+  runApp(
+    LiquidGlassWidgets.wrap(
+      child: CupertinoApp(
+        debugShowCheckedModeBanner: false,
+        theme: const CupertinoThemeData(brightness: Brightness.dark),
+        builder: (context, child) => Theme(
+          data: ThemeData.dark(useMaterial3: true),
+          child: GlassNavigationShell(child: child!),
+        ),
+        home: const NavBarPatternsDemo(),
       ),
-      home: const NavBarPatternsDemo(),
     ),
-  ));
+  );
 }
 
 // =============================================================================
@@ -66,9 +69,7 @@ class NavBarPatternsDemo extends StatelessWidget {
         slivers: [
           // Top spacer for app bar area
           SliverToBoxAdapter(
-            child: SizedBox(
-              height: MediaQuery.paddingOf(context).top + 44 + 8,
-            ),
+            child: SizedBox(height: MediaQuery.paddingOf(context).top + 44 + 8),
           ),
           SliverPadding(
             padding: EdgeInsets.symmetric(horizontal: 24),
@@ -140,32 +141,28 @@ class NavBarPatternsDemo extends StatelessWidget {
                 SizedBox(height: 16),
                 _PatternTile(
                   title: 'Large Title + Search Bar',
-                  subtitle:
-                      'Two-phase collapse: title then search — iOS 26 Messages/Mail style',
+                  subtitle: 'Two-phase collapse: title then search — iOS 26 Messages/Mail style',
                   icon: CupertinoIcons.search,
                   onTap: () => _push(context, const _LargeTitleSearchDemo()),
                 ),
                 SizedBox(height: 16),
                 _PatternTile(
                   title: 'Nested Navigation',
-                  subtitle:
-                      'Pinned back button and actions morph in place across pushes',
+                  subtitle: 'Pinned back button and actions morph in place across pushes',
                   icon: CupertinoIcons.square_stack_3d_up,
                   onTap: () => _push(context, const _NestedNavDemo()),
                 ),
                 SizedBox(height: 16),
                 _PatternTile(
                   title: 'Bar Item Types',
-                  subtitle:
-                      'Icon, pull-down menu and custom widget — and how a custom one resizes the capsule',
+                  subtitle: 'Icon, pull-down menu and custom widget — and how a custom one resizes the capsule',
                   icon: CupertinoIcons.square_on_circle,
                   onTap: () => _push(context, const _BarItemTypesDemo()),
                 ),
                 SizedBox(height: 16),
                 _PatternTile(
                   title: 'Header Actions Morph',
-                  subtitle:
-                      'Trailing capsule contracts, bounces and blurs across pushes — iOS 26 drill-down style',
+                  subtitle: 'Trailing capsule contracts, bounces and blurs across pushes — iOS 26 drill-down style',
                   icon: CupertinoIcons.wand_stars,
                   onTap: () => _push(context, const _HeaderMorphDemo()),
                 ),
@@ -181,15 +178,15 @@ class NavBarPatternsDemo extends StatelessWidget {
                 SizedBox(height: 16),
                 _PatternTile(
                   title: 'Custom Bar Pinning',
-                  subtitle:
-                      'A plain Material AppBar that still pins — GlassPinnedBarChrome',
+                  subtitle: 'A plain Material AppBar that still pins — GlassPinnedBarChrome',
                   icon: CupertinoIcons.rectangle_stack_badge_plus,
                   onTap: () => _push(context, const _CustomBarPinningDemo()),
                 ),
                 SizedBox(height: 16),
                 _PatternTile(
                   title: 'Presented Sheets',
-                  subtitle: 'A sheet, dialog or fullscreen dialog covering the '
+                  subtitle:
+                      'A sheet, dialog or fullscreen dialog covering the '
                       'pinned chrome the way it covers the page',
                   icon: CupertinoIcons.rectangle_stack,
                   onTap: () => _push(context, const _PresentedSheetsDemo()),
@@ -197,7 +194,8 @@ class NavBarPatternsDemo extends StatelessWidget {
                 SizedBox(height: 16),
                 _PatternTile(
                   title: 'Sheet From The Capsule',
-                  subtitle: 'GlassBarItem.sheet — the capsule empties and '
+                  subtitle:
+                      'GlassBarItem.sheet — the capsule empties and '
                       'stretches into the sheet, hoisted or in-route',
                   icon: CupertinoIcons.arrow_up_left_square,
                   onTap: () => _push(context, const _SheetItemDemo()),
@@ -205,16 +203,14 @@ class NavBarPatternsDemo extends StatelessWidget {
                 SizedBox(height: 16),
                 _PatternTile(
                   title: 'Title Centering',
-                  subtitle:
-                      'Verifies title is centred on full bar width with asymmetric leading/trailing (fix #198)',
+                  subtitle: 'Verifies title is centred on full bar width with asymmetric leading/trailing (fix #198)',
                   icon: CupertinoIcons.text_aligncenter,
                   onTap: () => _push(context, const _TitleCenteringDemo()),
                 ),
                 SizedBox(height: 16),
                 _PatternTile(
                   title: 'Tinted Bar Items',
-                  subtitle:
-                      'tintColor floods the whole capsule — iOS 26 prominent action (issue #312)',
+                  subtitle: 'tintColor floods the whole capsule — iOS 26 prominent action (issue #312)',
                   icon: CupertinoIcons.circle_fill,
                   onTap: () => _push(context, const _TintedBarItemDemo()),
                 ),
@@ -264,9 +260,11 @@ class _PatternTile extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           children: [
-            Icon(icon,
-                color: CupertinoColors.secondaryLabel.resolveFrom(context),
-                size: 28),
+            Icon(
+              icon,
+              color: CupertinoColors.secondaryLabel.resolveFrom(context),
+              size: 28,
+            ),
             SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -286,8 +284,9 @@ class _PatternTile extends StatelessWidget {
                     subtitle,
                     style: TextStyle(
                       fontSize: 13,
-                      color:
-                          CupertinoColors.secondaryLabel.resolveFrom(context),
+                      color: CupertinoColors.secondaryLabel.resolveFrom(
+                        context,
+                      ),
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -295,9 +294,11 @@ class _PatternTile extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(CupertinoIcons.chevron_right,
-                color: CupertinoColors.tertiaryLabel.resolveFrom(context),
-                size: 16),
+            Icon(
+              CupertinoIcons.chevron_right,
+              color: CupertinoColors.tertiaryLabel.resolveFrom(context),
+              size: 16,
+            ),
           ],
         ),
       ),
@@ -321,7 +322,7 @@ Widget _buildDummyContent({int count = 25, double topPadding = 0}) {
   ];
   return SliverList.separated(
     itemCount: count,
-    separatorBuilder: (_, __) => const SizedBox(height: 12),
+    separatorBuilder: (_, _) => const SizedBox(height: 12),
     itemBuilder: (context, index) {
       final hue = hues[index % hues.length];
       return Padding(
@@ -381,8 +382,9 @@ Widget _buildDummyContent({int count = 25, double topPadding = 0}) {
                       'Scrollable content to test navigation bar behaviour',
                       style: TextStyle(
                         fontSize: 13,
-                        color:
-                            CupertinoColors.secondaryLabel.resolveFrom(context),
+                        color: CupertinoColors.secondaryLabel.resolveFrom(
+                          context,
+                        ),
                       ),
                     ),
                   ],
@@ -448,9 +450,7 @@ class _InlineTitleDemo extends StatelessWidget {
       ),
       body: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 44 + 16),
-          ),
+          SliverToBoxAdapter(child: SizedBox(height: topPad + 44 + 16)),
           _buildDummyContent(),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
@@ -516,14 +516,9 @@ class _LargeTitleCollapseDemoState extends State<_LargeTitleCollapseDemo> {
       body: CustomScrollView(
         controller: _titleController.scrollController,
         slivers: [
-          SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 44),
-          ),
+          SliverToBoxAdapter(child: SizedBox(height: topPad + 44)),
           // Large title fades out as user scrolls — zero boilerplate.
-          GlassLargeTitle(
-            text: 'Chats',
-            controller: _titleController,
-          ),
+          GlassLargeTitle(text: 'Chats', controller: _titleController),
           _buildDummyContent(),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
@@ -550,8 +545,9 @@ class _SolidBackgroundDemo extends StatelessWidget {
       statusBarStyle: GlassStatusBarStyle.auto,
       edgeFade: false,
       appBar: GlassAppBar.pinned(
-        backgroundColor:
-            isDark ? const Color(0xFF1F2C34) : const Color(0xFFE8EDF0),
+        backgroundColor: isDark
+            ? const Color(0xFF1F2C34)
+            : const Color(0xFFE8EDF0),
         title: Text(
           'Solid Background',
           style: TextStyle(
@@ -576,9 +572,7 @@ class _SolidBackgroundDemo extends StatelessWidget {
       ),
       body: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 44 + 16),
-          ),
+          SliverToBoxAdapter(child: SizedBox(height: topPad + 44 + 16)),
           _buildDummyContent(),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
@@ -605,9 +599,7 @@ class _FadeOnlyDemo extends StatelessWidget {
       appBar: const GlassAppBar.pinned(),
       body: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 44),
-          ),
+          SliverToBoxAdapter(child: SizedBox(height: topPad + 44)),
           // Large title as part of content
           SliverToBoxAdapter(
             child: Padding(
@@ -656,25 +648,15 @@ class _TabBarBottomFadeDemoState extends State<_TabBarBottomFadeDemo> {
       bottomBar: GlassTabBar.bottom(
         selectedIndex: _selectedTab,
         onTabSelected: (index) => setState(() => _selectedTab = index),
-        settings:
-            RecommendedGlassSettings.standard.copyWith(thickness: 20, blur: 3),
+        settings: RecommendedGlassSettings.standard.copyWith(
+          thickness: 20,
+          blur: 3,
+        ),
         tabs: const [
-          GlassTab(
-            icon: Icon(CupertinoIcons.house_fill),
-            label: 'Home',
-          ),
-          GlassTab(
-            icon: Icon(CupertinoIcons.search),
-            label: 'Search',
-          ),
-          GlassTab(
-            icon: Icon(CupertinoIcons.bell_fill),
-            label: 'Alerts',
-          ),
-          GlassTab(
-            icon: Icon(CupertinoIcons.person_fill),
-            label: 'Profile',
-          ),
+          GlassTab(icon: Icon(CupertinoIcons.house_fill), label: 'Home'),
+          GlassTab(icon: Icon(CupertinoIcons.search), label: 'Search'),
+          GlassTab(icon: Icon(CupertinoIcons.bell_fill), label: 'Alerts'),
+          GlassTab(icon: Icon(CupertinoIcons.person_fill), label: 'Profile'),
         ],
       ),
       appBar: GlassAppBar.pinned(
@@ -689,9 +671,7 @@ class _TabBarBottomFadeDemoState extends State<_TabBarBottomFadeDemo> {
       ),
       body: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 44 + 16),
-          ),
+          SliverToBoxAdapter(child: SizedBox(height: topPad + 44 + 16)),
           _buildDummyContent(),
           const SliverToBoxAdapter(child: SizedBox(height: 120)),
         ],
@@ -777,21 +757,17 @@ class _FadeHeaderDemoState extends State<_FadeHeaderDemo> {
       bottomBar: GlassTabBar.bottom(
         selectedIndex: 0,
         onTabSelected: (_) {},
-        settings:
-            RecommendedGlassSettings.standard.copyWith(thickness: 20, blur: 3),
+        settings: RecommendedGlassSettings.standard.copyWith(
+          thickness: 20,
+          blur: 3,
+        ),
         tabs: const [
-          GlassTab(
-            icon: Icon(CupertinoIcons.house_fill),
-            label: 'Home',
-          ),
+          GlassTab(icon: Icon(CupertinoIcons.house_fill), label: 'Home'),
           GlassTab(
             icon: Icon(CupertinoIcons.antenna_radiowaves_left_right),
             label: 'Radio',
           ),
-          GlassTab(
-            icon: Icon(CupertinoIcons.music_albums),
-            label: 'Library',
-          ),
+          GlassTab(icon: Icon(CupertinoIcons.music_albums), label: 'Library'),
         ],
       ),
 
@@ -799,9 +775,7 @@ class _FadeHeaderDemoState extends State<_FadeHeaderDemo> {
         controller: _scrollController,
         slivers: [
           // Extra top space for the fixed header overlay.
-          SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 90),
-          ),
+          SliverToBoxAdapter(child: SizedBox(height: topPad + 90)),
           _buildDummyContent(),
           const SliverToBoxAdapter(child: SizedBox(height: 120)),
         ],
@@ -866,9 +840,7 @@ class _LargeTitleSearchDemoState extends State<_LargeTitleSearchDemo> {
       body: CustomScrollView(
         controller: _titleController.scrollController,
         slivers: [
-          SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 44),
-          ),
+          SliverToBoxAdapter(child: SizedBox(height: topPad + 44)),
           // Phase 1: large title fades out.
           // Phase 2: search bar collapses under nav bar.
           // Both driven automatically by GlassLargeTitleController.
@@ -943,50 +915,48 @@ class _BarItemTypesDemo extends StatelessWidget {
   final bool detail;
 
   List<GlassBarItem> get _actions => [
-        GlassBarItem.custom(
-          child: _UnreadBadge(detail ? 128 : 3),
-          id: 'unread',
-          label: 'Unread',
-        ),
-        if (!detail)
-          GlassBarItem.icon(
-            icon: const Icon(CupertinoIcons.add),
-            label: 'Add',
-            onTap: () {},
+    GlassBarItem.custom(
+      child: _UnreadBadge(detail ? 128 : 3),
+      id: 'unread',
+      label: 'Unread',
+    ),
+    if (!detail)
+      GlassBarItem.icon(
+        icon: const Icon(CupertinoIcons.add),
+        label: 'Add',
+        onTap: () {},
+      ),
+    GlassBarItem.menu(
+      icon: const Icon(CupertinoIcons.ellipsis),
+      id: 'more',
+      label: 'More',
+      menuItems: [
+        GlassMenuItem(
+          title: detail ? 'Mark all read' : 'Sort by date',
+          icon: Icon(
+            detail ? CupertinoIcons.checkmark_circle : CupertinoIcons.sort_down,
           ),
-        GlassBarItem.menu(
-          icon: const Icon(CupertinoIcons.ellipsis),
-          id: 'more',
-          label: 'More',
-          menuItems: [
-            GlassMenuItem(
-              title: detail ? 'Mark all read' : 'Sort by date',
-              icon: Icon(
-                detail
-                    ? CupertinoIcons.checkmark_circle
-                    : CupertinoIcons.sort_down,
-              ),
-              onTap: () {},
-            ),
-            GlassMenuItem(
-              title: detail ? 'Mute' : 'Select…',
-              icon: Icon(
-                detail
-                    ? CupertinoIcons.bell_slash
-                    : CupertinoIcons.checkmark_square,
-              ),
-              onTap: () {},
-            ),
-            GlassMenuDivider(),
-            GlassMenuItem(
-              title: 'Delete',
-              icon: const Icon(CupertinoIcons.delete),
-              isDestructive: true,
-              onTap: () {},
-            ),
-          ],
+          onTap: () {},
         ),
-      ];
+        GlassMenuItem(
+          title: detail ? 'Mute' : 'Select…',
+          icon: Icon(
+            detail
+                ? CupertinoIcons.bell_slash
+                : CupertinoIcons.checkmark_square,
+          ),
+          onTap: () {},
+        ),
+        GlassMenuDivider(),
+        GlassMenuItem(
+          title: 'Delete',
+          icon: const Icon(CupertinoIcons.delete),
+          isDestructive: true,
+          onTap: () {},
+        ),
+      ],
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -1009,9 +979,7 @@ class _BarItemTypesDemo extends StatelessWidget {
       ),
       body: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 44 + 16),
-          ),
+          SliverToBoxAdapter(child: SizedBox(height: topPad + 44 + 16)),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             sliver: SliverList.list(
@@ -1019,15 +987,15 @@ class _BarItemTypesDemo extends StatelessWidget {
                 Text(
                   detail
                       ? 'The badge held its position — same id on both screens — '
-                          'while the capsule widened around it to fit 128, and '
-                          'the add icon left. Nothing here is hardcoded: the '
-                          'capsule measures the badge, exactly as UIKit measures '
-                          'a customView. Swipe from the left edge to scrub it.'
+                            'while the capsule widened around it to fit 128, and '
+                            'the add icon left. Nothing here is hardcoded: the '
+                            'capsule measures the badge, exactly as UIKit measures '
+                            'a customView. Swipe from the left edge to scrub it.'
                       : 'Three item kinds in one capsule: a custom widget (the '
-                          'red unread badge), a plain icon, and a pull-down '
-                          'menu. Tap the ellipsis to morph the whole capsule '
-                          'into the menu — the iOS 26 GlassEffectContainer '
-                          'behaviour, not a slot-sized popover.',
+                            'red unread badge), a plain icon, and a pull-down '
+                            'menu. Tap the ellipsis to morph the whole capsule '
+                            'into the menu — the iOS 26 GlassEffectContainer '
+                            'behaviour, not a slot-sized popover.',
                   style: TextStyle(
                     fontSize: 15,
                     height: 1.4,
@@ -1094,95 +1062,95 @@ class _LeadingItemsDemo extends StatelessWidget {
   /// Unchanged across all four screens, so the trailing capsule is a constant
   /// while the leading side is the thing that moves.
   List<GlassBarItem> get _actions => [
-        GlassBarItem.icon(
-          icon: const Icon(CupertinoIcons.add),
-          id: 'add',
-          label: 'Add',
-          onTap: () {},
-        ),
-        GlassBarItem.icon(
-          icon: const Icon(CupertinoIcons.search),
-          id: 'search',
-          label: 'Search',
-          onTap: () {},
-        ),
-      ];
+    GlassBarItem.icon(
+      icon: const Icon(CupertinoIcons.add),
+      id: 'add',
+      label: 'Add',
+      onTap: () {},
+    ),
+    GlassBarItem.icon(
+      icon: const Icon(CupertinoIcons.search),
+      id: 'search',
+      label: 'Search',
+      onTap: () {},
+    ),
+  ];
 
   List<GlassBarItem> _leading(BuildContext context) => switch (stage) {
-        _LeadingStage.profile => [
-            // No shell at all: the photo is already a circle, and a capsule
-            // behind it would read as a second, competing surface.
-            const GlassBarItem.custom(
-              child: _Avatar(),
-              label: 'Account',
-              background: GlassBarItemBackground.none,
-            ),
-          ],
-        _LeadingStage.issues => const [],
-        _LeadingStage.grouped => [
-            GlassBarItem.icon(
-              icon: const Icon(CupertinoIcons.sidebar_left),
-              id: 'sidebar',
-              label: 'Sidebar',
-              onTap: () {},
-            ),
-            GlassBarItem.icon(
-              icon: const Icon(CupertinoIcons.slider_horizontal_3),
-              id: 'filter',
-              label: 'Filter',
-              onTap: () {},
-            ),
-          ],
-        _LeadingStage.cancel || _LeadingStage.both => [
-            GlassBarItem.icon(
-              icon: const Icon(CupertinoIcons.xmark),
-              id: 'cancel',
-              label: 'Cancel',
-              // Its own shell, so it matches the circular back button it
-              // stands in for rather than the taller shared capsule.
-              background: GlassBarItemBackground.separate,
-              onTap: () => Navigator.of(context).pop(),
-            ),
-          ],
-      };
+    _LeadingStage.profile => [
+      // No shell at all: the photo is already a circle, and a capsule
+      // behind it would read as a second, competing surface.
+      const GlassBarItem.custom(
+        child: _Avatar(),
+        label: 'Account',
+        background: GlassBarItemBackground.none,
+      ),
+    ],
+    _LeadingStage.issues => const [],
+    _LeadingStage.grouped => [
+      GlassBarItem.icon(
+        icon: const Icon(CupertinoIcons.sidebar_left),
+        id: 'sidebar',
+        label: 'Sidebar',
+        onTap: () {},
+      ),
+      GlassBarItem.icon(
+        icon: const Icon(CupertinoIcons.slider_horizontal_3),
+        id: 'filter',
+        label: 'Filter',
+        onTap: () {},
+      ),
+    ],
+    _LeadingStage.cancel || _LeadingStage.both => [
+      GlassBarItem.icon(
+        icon: const Icon(CupertinoIcons.xmark),
+        id: 'cancel',
+        label: 'Cancel',
+        // Its own shell, so it matches the circular back button it
+        // stands in for rather than the taller shared capsule.
+        background: GlassBarItemBackground.separate,
+        onTap: () => Navigator.of(context).pop(),
+      ),
+    ],
+  };
 
   String get _title => switch (stage) {
-        _LeadingStage.profile => 'Profile',
-        _LeadingStage.issues => 'Issues',
-        _LeadingStage.cancel => 'New Issue',
-        _LeadingStage.both => 'Filters',
-        _LeadingStage.grouped => 'Library',
-      };
+    _LeadingStage.profile => 'Profile',
+    _LeadingStage.issues => 'Issues',
+    _LeadingStage.cancel => 'New Issue',
+    _LeadingStage.both => 'Filters',
+    _LeadingStage.grouped => 'Library',
+  };
 
   String get _blurb => switch (stage) {
-        _LeadingStage.profile =>
-          'The leading slot holds a bare avatar — GlassBarItemBackground.none, '
-              'the analogue of UIBarButtonItem.hidesSharedBackground. Push to '
-              'Issues and it swaps for the back button at the midpoint: one is '
-              'glass and the other is not, and glass opacity is never animated, '
-              'so the switch is deliberate rather than a fade.',
-        _LeadingStage.issues =>
-          'No leading of its own, so the automatic back button is implied — '
-              'exactly as before this API existed. The trailing capsule has not '
-              'moved once: both its items carry the same ids on every screen '
-              'here.',
-        _LeadingStage.cancel =>
-          'A non-empty leading replaces the back button, matching UIKit\'s '
-              'leftBarButtonItems and Flutter\'s own AppBar.leading. This one '
-              'uses GlassBarItemBackground.separate, so it gets the same '
-              'circular shell the back button had.',
-        _LeadingStage.both =>
-          'leadingItemsSupplementBackButton: true shows both, mirroring '
-              'UINavigationItem.leftItemsSupplementBackButton. Two shells, '
-              'because neither item shares a background with the other.',
-        _LeadingStage.grouped =>
-          'Two shared items, so one capsule — and the back button it replaced '
-              'shared with nothing, so the shell arriving here grew out of a '
-              '44pt circle into a 46pt capsule twice as wide. Both dimensions '
-              'interpolate: the same morph the trailing capsule has always '
-              'done, now on the leading side. Swipe from the left edge to '
-              'scrub it.',
-      };
+    _LeadingStage.profile =>
+      'The leading slot holds a bare avatar — GlassBarItemBackground.none, '
+          'the analogue of UIBarButtonItem.hidesSharedBackground. Push to '
+          'Issues and it swaps for the back button at the midpoint: one is '
+          'glass and the other is not, and glass opacity is never animated, '
+          'so the switch is deliberate rather than a fade.',
+    _LeadingStage.issues =>
+      'No leading of its own, so the automatic back button is implied — '
+          'exactly as before this API existed. The trailing capsule has not '
+          'moved once: both its items carry the same ids on every screen '
+          'here.',
+    _LeadingStage.cancel =>
+      'A non-empty leading replaces the back button, matching UIKit\'s '
+          'leftBarButtonItems and Flutter\'s own AppBar.leading. This one '
+          'uses GlassBarItemBackground.separate, so it gets the same '
+          'circular shell the back button had.',
+    _LeadingStage.both =>
+      'leadingItemsSupplementBackButton: true shows both, mirroring '
+          'UINavigationItem.leftItemsSupplementBackButton. Two shells, '
+          'because neither item shares a background with the other.',
+    _LeadingStage.grouped =>
+      'Two shared items, so one capsule — and the back button it replaced '
+          'shared with nothing, so the shell arriving here grew out of a '
+          '44pt circle into a 46pt capsule twice as wide. Both dimensions '
+          'interpolate: the same morph the trailing capsule has always '
+          'done, now on the leading side. Swipe from the left edge to '
+          'scrub it.',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -1465,10 +1433,7 @@ class _CenteringCase extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 6),
         AnimatedSwitcher(
@@ -1644,25 +1609,26 @@ class _NestedNavDemo extends StatelessWidget {
       ),
       body: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 44 + 16),
-          ),
+          SliverToBoxAdapter(child: SizedBox(height: topPad + 44 + 16)),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             sliver: SliverList.list(
               children: [
                 Text(
                   switch (depth) {
-                    0 => 'Watch the bar while navigating: the compose action '
-                        'is identifier-matched and holds its position, the '
-                        'search action cross-fades into more, and the whole '
-                        'cluster stays pinned while the page slides.',
-                    1 => 'Compose stayed put — same id on both levels. The '
-                        'next level has no actions, so the capsule switches '
-                        'off while the back button stays pinned.',
-                    _ => 'No actions here: the capsule is gone, the back '
-                        'button remains. Swipe from the left edge to scrub '
-                        'the morph back in.',
+                    0 =>
+                      'Watch the bar while navigating: the compose action '
+                          'is identifier-matched and holds its position, the '
+                          'search action cross-fades into more, and the whole '
+                          'cluster stays pinned while the page slides.',
+                    1 =>
+                      'Compose stayed put — same id on both levels. The '
+                          'next level has no actions, so the capsule switches '
+                          'off while the back button stays pinned.',
+                    _ =>
+                      'No actions here: the capsule is gone, the back '
+                          'button remains. Swipe from the left edge to scrub '
+                          'the morph back in.',
                   },
                   style: TextStyle(
                     fontSize: 15,
@@ -1720,20 +1686,18 @@ class _CustomBarPinningDemo extends StatelessWidget {
   /// The trailing items for a level. The plus carries an id on both levels, so
   /// it is identifier-matched and holds its position across the push.
   List<GlassBarItem> _actionsFor(int depth) => [
-        GlassBarItem.icon(
-          icon: const Icon(CupertinoIcons.plus),
-          id: 'add',
-          label: 'New',
-          onTap: () {},
-        ),
-        GlassBarItem.icon(
-          icon: Icon(
-            depth == 0 ? CupertinoIcons.search : CupertinoIcons.ellipsis,
-          ),
-          label: depth == 0 ? 'Search' : 'More',
-          onTap: () {},
-        ),
-      ];
+    GlassBarItem.icon(
+      icon: const Icon(CupertinoIcons.plus),
+      id: 'add',
+      label: 'New',
+      onTap: () {},
+    ),
+    GlassBarItem.icon(
+      icon: Icon(depth == 0 ? CupertinoIcons.search : CupertinoIcons.ellipsis),
+      label: depth == 0 ? 'Search' : 'More',
+      onTap: () {},
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -1775,18 +1739,19 @@ class _CustomBarPinningDemo extends StatelessWidget {
                         Text(
                           depth == 0
                               ? 'This bar is a Material AppBar, not a '
-                                  'GlassAppBar. Its items are declared once as '
-                                  'data and pinned by the shell; the bar itself '
-                                  'still slides with the page.'
+                                    'GlassAppBar. Its items are declared once as '
+                                    'data and pinned by the shell; the bar itself '
+                                    'still slides with the page.'
                               : 'The new action was identifier-matched and held '
-                                  'its position; search cross-faded into more. '
-                                  'Swipe from the left edge to scrub the morph '
-                                  'back.',
+                                    'its position; search cross-faded into more. '
+                                    'Swipe from the left edge to scrub the morph '
+                                    'back.',
                           style: TextStyle(
                             fontSize: 15,
                             height: 1.4,
-                            color: CupertinoColors.secondaryLabel
-                                .resolveFrom(context),
+                            color: CupertinoColors.secondaryLabel.resolveFrom(
+                              context,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -1844,29 +1809,29 @@ class _HeaderMorphDemo extends StatelessWidget {
   const _HeaderMorphDemo();
 
   List<GlassBarItem> get _actions => [
-        GlassBarItem.icon(
-          icon: const Icon(CupertinoIcons.add),
-          id: 'add',
-          label: 'Add',
+    GlassBarItem.icon(
+      icon: const Icon(CupertinoIcons.add),
+      id: 'add',
+      label: 'Add',
+      onTap: () {},
+    ),
+    GlassBarItem.menu(
+      icon: const Icon(CupertinoIcons.ellipsis),
+      label: 'More',
+      menuItems: [
+        GlassMenuItem(
+          title: 'Share repository',
+          icon: const Icon(CupertinoIcons.share),
           onTap: () {},
         ),
-        GlassBarItem.menu(
-          icon: const Icon(CupertinoIcons.ellipsis),
-          label: 'More',
-          menuItems: [
-            GlassMenuItem(
-              title: 'Share repository',
-              icon: const Icon(CupertinoIcons.share),
-              onTap: () {},
-            ),
-            GlassMenuItem(
-              title: 'Favourite',
-              icon: const Icon(CupertinoIcons.star),
-              onTap: () {},
-            ),
-          ],
+        GlassMenuItem(
+          title: 'Favourite',
+          icon: const Icon(CupertinoIcons.star),
+          onTap: () {},
         ),
-      ];
+      ],
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -1889,9 +1854,7 @@ class _HeaderMorphDemo extends StatelessWidget {
       ),
       body: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 44 + 16),
-          ),
+          SliverToBoxAdapter(child: SizedBox(height: topPad + 44 + 16)),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             sliver: SliverList.list(
@@ -1915,7 +1878,8 @@ class _HeaderMorphDemo extends StatelessWidget {
                   onTap: () => _pushDestination(
                     context,
                     title: 'Workflows',
-                    blurb: 'Nothing here matches the previous cluster: the '
+                    blurb:
+                        'Nothing here matches the previous cluster: the '
                         'trailing slot cross-fades into share while the '
                         'capsule contracts to one icon, and add leaves with '
                         'it. Swipe back to scrub the morph in reverse.',
@@ -1936,7 +1900,8 @@ class _HeaderMorphDemo extends StatelessWidget {
                   onTap: () => _pushDestination(
                     context,
                     title: 'Discussions',
-                    blurb: 'The add action carries the same id on both '
+                    blurb:
+                        'The add action carries the same id on both '
                         'levels, so it is treated as the same item and holds '
                         'its position while the menu cross-fades into '
                         'search.',
@@ -1964,7 +1929,8 @@ class _HeaderMorphDemo extends StatelessWidget {
                   onTap: () => _pushDestination(
                     context,
                     title: 'Pull Requests',
-                    blurb: 'The same two actions as the previous screen: '
+                    blurb:
+                        'The same two actions as the previous screen: '
                         'nothing enters, leaves or changes, so the capsule '
                         'does not move at all while the page slides under '
                         'it.',
@@ -2002,7 +1968,8 @@ class _HeaderMorphDemo extends StatelessWidget {
                   onTap: () => _pushDestination(
                     context,
                     title: 'Watchers',
-                    blurb: 'No actions here: the capsule dissolves away '
+                    blurb:
+                        'No actions here: the capsule dissolves away '
                         'while the back button stays pinned, and '
                         'materializes back in on the pop.',
                     actions: const [],
@@ -2016,7 +1983,8 @@ class _HeaderMorphDemo extends StatelessWidget {
                   onTap: () => _pushDestination(
                     context,
                     title: 'Insights',
-                    blurb: 'Three actions where there were two: the capsule '
+                    blurb:
+                        'Three actions where there were two: the capsule '
                         'widens around the incoming cluster while add, '
                         'identifier-matched again, holds its place.',
                     actions: [
@@ -2104,9 +2072,7 @@ class _HeaderMorphDestination extends StatelessWidget {
       ),
       body: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 44 + 16),
-          ),
+          SliverToBoxAdapter(child: SizedBox(height: topPad + 44 + 16)),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             sliver: SliverList.list(
@@ -2159,7 +2125,8 @@ class _PresentedSheetsDemo extends StatelessWidget {
       initialState: GlassSheetState.full,
       builder: (_) => const _PresentedSheetBody(
         title: 'Full-height sheet',
-        body: 'This surface is opaque at the large detent, and nothing is '
+        body:
+            'This surface is opaque at the large detent, and nothing is '
             'drawn on top of it — the back button and actions capsule are '
             'behind it, with the rest of the page.',
       ),
@@ -2346,9 +2313,7 @@ class _SheetItemDemo extends StatelessWidget {
   const _SheetItemDemo({this.detail = false});
 
   void _push(BuildContext context, Widget page) {
-    Navigator.of(context).push(
-      CupertinoPageRoute<void>(builder: (_) => page),
-    );
+    Navigator.of(context).push(CupertinoPageRoute<void>(builder: (_) => page));
   }
 
   /// Whether this is the pushed screen, which carries a second action.
@@ -2361,7 +2326,8 @@ class _SheetItemDemo extends StatelessWidget {
       initialState: GlassSheetState.half,
       builder: (_) => const _PresentedSheetBody(
         title: 'Out of the capsule',
-        body: 'The capsule emptied, a droplet stretched out of it and became '
+        body:
+            'The capsule emptied, a droplet stretched out of it and became '
             'this sheet. Dismiss it and the droplet is poured back into the '
             'bar it came from.',
       ),
@@ -2436,7 +2402,8 @@ class _SheetItemDemo extends StatelessWidget {
                 if (!detail)
                   _PatternTile(
                     title: 'Push To A Second Screen',
-                    subtitle: 'The item is ordinary data, so the capsule '
+                    subtitle:
+                        'The item is ordinary data, so the capsule '
                         'morphs across the push and (+) holds its place',
                     icon: CupertinoIcons.arrow_right,
                     onTap: () =>
@@ -2668,8 +2635,8 @@ class _TintedBarItemDemoState extends State<_TintedBarItemDemo> {
                   _saved
                       ? '✓ Saved! Tap the button again to toggle back to blue.'
                       : 'Tap the blue checkmark in the top-right to save.\n'
-                          'The capsule floods with the tintColor — not just the '
-                          'glyph — and the icon auto-flips to white.',
+                            'The capsule floods with the tintColor — not just the '
+                            'glyph — and the icon auto-flips to white.',
                   style: TextStyle(
                     fontSize: 15,
                     height: 1.5,
@@ -2713,9 +2680,7 @@ class _TintedBarItemDemoState extends State<_TintedBarItemDemo> {
                         description: 'Icon(color:)\nGrey rim visible',
                         child: GlassButton.custom(
                           onTap: () {},
-                          shape: const LiquidRoundedRectangle(
-                            borderRadius: 22,
-                          ),
+                          shape: const LiquidRoundedRectangle(borderRadius: 22),
                           width: 44,
                           height: 44,
                           child: const Icon(
@@ -2737,9 +2702,7 @@ class _TintedBarItemDemoState extends State<_TintedBarItemDemo> {
                           onTap: () {},
                           quality: GlassQuality.premium,
                           useOwnLayer: true,
-                          shape: const LiquidRoundedRectangle(
-                            borderRadius: 22,
-                          ),
+                          shape: const LiquidRoundedRectangle(borderRadius: 22),
                           width: 44,
                           height: 44,
                           child: const Icon(
@@ -2966,8 +2929,9 @@ class _TintComparisonCard extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color:
-                        CupertinoColors.tertiarySystemFill.resolveFrom(context),
+                    color: CupertinoColors.tertiarySystemFill.resolveFrom(
+                      context,
+                    ),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -3025,12 +2989,7 @@ class _TintPill extends StatelessWidget {
             bodyMode: GlassBodyMode.clear,
           ),
           useOwnLayer: true,
-          items: [
-            GlassButtonGroupItem(
-              icon: Icon(icon),
-              onTap: () {},
-            ),
-          ],
+          items: [GlassButtonGroupItem(icon: Icon(icon), onTap: () {})],
         ),
         const SizedBox(height: 6),
         Text(

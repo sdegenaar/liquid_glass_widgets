@@ -15,17 +15,19 @@
 ///   flutter run -t example/lib/demos/glass_menu_navigation_demo.dart
 library;
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
-  runApp(LiquidGlassWidgets.wrap(
-    adaptiveQuality: true,
-    child: const GlassMenuNavigationDemoApp(),
-  ));
+  runApp(
+    LiquidGlassWidgets.wrap(
+      adaptiveQuality: true,
+      child: const GlassMenuNavigationDemoApp(),
+    ),
+  );
 }
 
 class GlassMenuNavigationDemoApp extends StatefulWidget {
@@ -153,17 +155,17 @@ class _GlassMenuNavigationDemoPageState
             );
           },
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            final offsetAnimation = Tween<Offset>(
-              begin: const Offset(1.0, 0.0),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeOutCubic,
-            ));
-            return SlideTransition(
-              position: offsetAnimation,
-              child: child,
-            );
+            final offsetAnimation =
+                Tween<Offset>(
+                  begin: const Offset(1.0, 0.0),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  ),
+                );
+            return SlideTransition(position: offsetAnimation, child: child);
           },
         ),
       );
@@ -270,8 +272,9 @@ class _GlassMenuNavigationDemoPageState
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color:
-                    _isDark ? const Color(0xFF0F311D) : const Color(0xFFE8F8EE),
+                color: _isDark
+                    ? const Color(0xFF0F311D)
+                    : const Color(0xFFE8F8EE),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: _isDark
@@ -382,8 +385,10 @@ class _GlassMenuNavigationDemoPageState
               children: {
                 for (final m in _NavigationMode.values)
                   m: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 8,
+                    ),
                     child: Text(
                       m.label,
                       style: TextStyle(
@@ -423,8 +428,10 @@ class _GlassMenuNavigationDemoPageState
               children: {
                 for (final s in _NavigatorStructure.values)
                   s: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 8,
+                    ),
                     child: Text(
                       s.label,
                       style: TextStyle(
@@ -466,7 +473,11 @@ class _GlassMenuNavigationDemoPageState
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  '${_transitionDurationSeconds.toStringAsFixed(1)}s (${_transitionDurationSeconds > 1.0 ? "Slow Motion" : _transitionDurationSeconds >= 0.5 ? "Normal Speed" : "Fast"})',
+                  '${_transitionDurationSeconds.toStringAsFixed(1)}s (${_transitionDurationSeconds > 1.0
+                      ? "Slow Motion"
+                      : _transitionDurationSeconds >= 0.5
+                      ? "Normal Speed"
+                      : "Fast"})',
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -487,10 +498,7 @@ class _GlassMenuNavigationDemoPageState
           ),
           Text(
             'Tip: Increase slider to 1.5s or 2.0s to clearly inspect the transition frame-by-frame.',
-            style: TextStyle(
-              fontSize: 11,
-              color: _textMuted,
-            ),
+            style: TextStyle(fontSize: 11, color: _textMuted),
           ),
         ],
       ),
@@ -552,8 +560,10 @@ class _GlassMenuNavigationDemoPageState
                 onTap: toggleMenu,
                 shape: const LiquidRoundedSuperellipse(borderRadius: 14),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 12,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -657,8 +667,10 @@ class _GlassMenuNavigationDemoPageState
                 onTap: toggle,
                 shape: const LiquidRoundedSuperellipse(borderRadius: 14),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 12,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -694,10 +706,7 @@ class _GlassMenuNavigationDemoPageState
                     Text(
                       'Tap below to navigate to a new route from this popover:',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: _textSecondary,
-                      ),
+                      style: TextStyle(fontSize: 12, color: _textSecondary),
                     ),
                     const SizedBox(height: 12),
                     CupertinoButton.filled(
@@ -708,7 +717,9 @@ class _GlassMenuNavigationDemoPageState
                       child: const Text(
                         'Navigate to Details',
                         style: TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.w600),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       onPressed: () {
                         close();
@@ -780,7 +791,10 @@ class _GlassMenuNavigationDemoPageState
           child: RichText(
             text: TextSpan(
               style: TextStyle(
-                  fontSize: 12.5, height: 1.45, color: _textSecondary),
+                fontSize: 12.5,
+                height: 1.45,
+                color: _textSecondary,
+              ),
               children: [
                 TextSpan(
                   text: '$title ',
@@ -891,8 +905,9 @@ class _DestinationPage extends StatelessWidget {
                       const SizedBox(height: 24),
                       GlassButton.custom(
                         onTap: onBack,
-                        shape:
-                            const LiquidRoundedSuperellipse(borderRadius: 14),
+                        shape: const LiquidRoundedSuperellipse(
+                          borderRadius: 14,
+                        ),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 20,
@@ -936,24 +951,24 @@ class _ArchitectureInfoPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textColor =
-        isDark ? const Color(0xFFFFFFFF) : const Color(0xFF111116);
-    final bodyColor =
-        isDark ? const Color(0xFFCBD0DD) : const Color(0xFF383C4A);
+    final textColor = isDark
+        ? const Color(0xFFFFFFFF)
+        : const Color(0xFF111116);
+    final bodyColor = isDark
+        ? const Color(0xFFCBD0DD)
+        : const Color(0xFF383C4A);
 
     return CupertinoPageScaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF121217) : const Color(0xFFF3F4F8),
+      backgroundColor: isDark
+          ? const Color(0xFF121217)
+          : const Color(0xFFF3F4F8),
       navigationBar: CupertinoNavigationBar(
         backgroundColor: isDark
             ? const Color(0xFF181920).withValues(alpha: 0.9)
             : const Color(0xFFFFFFFF).withValues(alpha: 0.9),
         middle: Text(
           'Architecture & Design',
-          style: TextStyle(
-            color: textColor,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
         ),
       ),
       child: SafeArea(
@@ -972,8 +987,9 @@ class _ArchitectureInfoPage extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color:
-                    isDark ? const Color(0xFF1C1D24) : const Color(0xFFFFFFFF),
+                color: isDark
+                    ? const Color(0xFF1C1D24)
+                    : const Color(0xFFFFFFFF),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: isDark
@@ -983,11 +999,7 @@ class _ArchitectureInfoPage extends StatelessWidget {
               ),
               child: Text(
                 'In modern Flutter applications, modal overlays and popovers must integrate seamlessly with page transitions. Instead of hoisting glass overlays globally into the root navigator, liquid_glass_widgets binds menus to their nearest route overlay. When an item triggers a route push, the outgoing menu naturally stays behind the incoming route, preventing visual artifacts and backdrop bleeding.',
-                style: TextStyle(
-                  fontSize: 13,
-                  height: 1.5,
-                  color: bodyColor,
-                ),
+                style: TextStyle(fontSize: 13, height: 1.5, color: bodyColor),
               ),
             ),
             const SizedBox(height: 18),
@@ -1004,11 +1016,7 @@ class _ArchitectureInfoPage extends StatelessWidget {
               '1. Nearest Overlay Hierarchy: Overlays are scoped to their enclosing route overlay, ensuring incoming pages always stack cleanly on top.\n'
               '2. Relative Ancestor Coordinate Geometry: Trigger bounding boxes are mapped relative to the overlay container, eliminating layout drift in split-views and tab bars.\n'
               '3. Declarative Router Safety: Overlay dismissals defer safely past Flutter\'s persistent callbacks phase, preventing assertion errors during go_router / Navigator.pages updates.',
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.55,
-                color: bodyColor,
-              ),
+              style: TextStyle(fontSize: 13, height: 1.55, color: bodyColor),
             ),
           ],
         ),

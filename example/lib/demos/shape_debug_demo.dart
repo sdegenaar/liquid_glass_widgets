@@ -7,8 +7,8 @@
 /// To run standalone: flutter run -t lib/demos/shape_debug_demo.dart
 library;
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets_example/constants/glass_settings.dart';
@@ -27,10 +27,8 @@ class ShapeDebugApp extends StatelessWidget {
     return CupertinoApp(
       debugShowCheckedModeBanner: false,
       theme: const CupertinoThemeData(brightness: Brightness.dark),
-      builder: (context, child) => Theme(
-        data: ThemeData.dark(useMaterial3: true),
-        child: child!,
-      ),
+      builder: (context, child) =>
+          Theme(data: ThemeData.dark(useMaterial3: true), child: child!),
       home: const ShapeDebugPage(),
     );
   }
@@ -88,8 +86,9 @@ class _ShapeDebugPageState extends State<ShapeDebugPage> {
                               'RoundedRect vs Superellipse',
                               style: TextStyle(
                                 fontSize: 13,
-                                color: CupertinoColors.white
-                                    .withValues(alpha: 0.54),
+                                color: CupertinoColors.white.withValues(
+                                  alpha: 0.54,
+                                ),
                               ),
                             ),
                           ],
@@ -195,10 +194,7 @@ class _ShapeDebugPageState extends State<ShapeDebugPage> {
 // =============================================================================
 
 class _QualityToggle extends StatelessWidget {
-  const _QualityToggle({
-    required this.quality,
-    required this.onChanged,
-  });
+  const _QualityToggle({required this.quality, required this.onChanged});
 
   final GlassQuality quality;
   final ValueChanged<GlassQuality> onChanged;

@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 import 'dart:ui';
-import 'package:flutter/cupertino.dart';
+
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/scheduler.dart';
+
 import '../../src/utils/glass_localizations.dart';
 import '../../utils/glass_morph_controller.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
@@ -128,8 +130,10 @@ class GlassPopover extends StatefulWidget {
     this.blurRampDuration = const Duration(milliseconds: 260),
     this.blurRampCurve = Curves.easeOut,
     this.semanticLabel,
-  }) : assert(trigger != null || triggerBuilder != null,
-            'Either trigger or triggerBuilder must be provided');
+  }) : assert(
+         trigger != null || triggerBuilder != null,
+         'Either trigger or triggerBuilder must be provided',
+       );
 
   /// The widget that triggers the popover.
   ///
@@ -165,7 +169,7 @@ class GlassPopover extends StatefulWidget {
   /// )
   /// ```
   final Widget Function(BuildContext context, VoidCallback togglePopover)?
-      triggerBuilder;
+  triggerBuilder;
 
   /// Builder for the popover content.
   ///
@@ -176,7 +180,7 @@ class GlassPopover extends StatefulWidget {
   /// so it inherits the glass effect. The widget should use
   /// [MainAxisSize.min] or constrained height to size correctly.
   final Widget Function(BuildContext context, VoidCallback close)
-      contentBuilder;
+  contentBuilder;
 
   /// Width of the expanded popover.
   ///

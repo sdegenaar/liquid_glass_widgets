@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/widgets/interactive/liquid_glass_scope.dart';
 
@@ -10,11 +10,7 @@ void main() {
       await tester.pumpWidget(
         createTestApp(
           child: LiquidGlassScope(
-            child: Container(
-              width: 100,
-              height: 100,
-              color: Colors.blue,
-            ),
+            child: Container(width: 100, height: 100, color: Colors.blue),
           ),
         ),
       );
@@ -26,34 +22,34 @@ void main() {
     testWidgets('renders child widget correctly', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: LiquidGlassScope(
-            child: const Text('Test Content'),
-          ),
+          child: LiquidGlassScope(child: const Text('Test Content')),
         ),
       );
 
       expect(find.text('Test Content'), findsOneWidget);
     });
 
-    testWidgets('provides background key to descendants via static of() method',
-        (tester) async {
-      GlobalKey? foundKey;
+    testWidgets(
+      'provides background key to descendants via static of() method',
+      (tester) async {
+        GlobalKey? foundKey;
 
-      await tester.pumpWidget(
-        createTestApp(
-          child: LiquidGlassScope(
-            child: Builder(
-              builder: (context) {
-                foundKey = LiquidGlassScope.of(context);
-                return const SizedBox();
-              },
+        await tester.pumpWidget(
+          createTestApp(
+            child: LiquidGlassScope(
+              child: Builder(
+                builder: (context) {
+                  foundKey = LiquidGlassScope.of(context);
+                  return const SizedBox();
+                },
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(foundKey, isNotNull);
-    });
+        expect(foundKey, isNotNull);
+      },
+    );
 
     testWidgets('returns null when no scope is present', (tester) async {
       GlobalKey? foundKey;
@@ -185,11 +181,7 @@ void main() {
         createTestApp(
           child: LiquidGlassScope(
             child: GlassBackgroundSource(
-              child: Container(
-                width: 200,
-                height: 200,
-                color: Colors.red,
-              ),
+              child: Container(width: 200, height: 200, color: Colors.red),
             ),
           ),
         ),
@@ -220,11 +212,7 @@ void main() {
       await tester.pumpWidget(
         createTestApp(
           child: GlassBackgroundSource(
-            child: Container(
-              width: 100,
-              height: 100,
-              color: Colors.green,
-            ),
+            child: Container(width: 100, height: 100, color: Colors.green),
           ),
         ),
       );
@@ -254,8 +242,9 @@ void main() {
       expect(find.text('Line 3'), findsOneWidget);
     });
 
-    testWidgets('uses key from LiquidGlassScope when available',
-        (tester) async {
+    testWidgets('uses key from LiquidGlassScope when available', (
+      tester,
+    ) async {
       GlobalKey? scopeKey;
 
       await tester.pumpWidget(
@@ -292,9 +281,7 @@ void main() {
                     color: Colors.blue,
                   ),
                 ),
-                const Center(
-                  child: Text('Overlay Content'),
-                ),
+                const Center(child: Text('Overlay Content')),
               ],
             ),
           ),

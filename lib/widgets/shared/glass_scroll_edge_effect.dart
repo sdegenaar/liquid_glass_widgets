@@ -1,6 +1,6 @@
 import 'dart:ui' as ui;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -238,7 +238,8 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
   @override
   void didUpdateWidget(GlassScrollEdgeEffect oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final bool styleBecameRaster = widget.style != GlassScrollEdgeStyle.blur &&
+    final bool styleBecameRaster =
+        widget.style != GlassScrollEdgeStyle.blur &&
         oldWidget.style == GlassScrollEdgeStyle.blur;
     final bool fadeColorChanged = widget.fadeColor != oldWidget.fadeColor;
 
@@ -265,8 +266,9 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
       return;
     }
 
-    final boundary = _backgroundKey!.currentContext?.findRenderObject()
-        as RenderRepaintBoundary?;
+    final boundary =
+        _backgroundKey!.currentContext?.findRenderObject()
+            as RenderRepaintBoundary?;
 
     if (boundary == null || !boundary.hasSize || boundary.size.isEmpty) {
       // Boundary not ready yet — retry after the first frame.
@@ -374,8 +376,10 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
         if (widget.fadeBottom)
           _buildOverlay(
             isTop: false,
-            height:
-                _effectiveHeight(widget.bottomFadeHeight, screenSize.height),
+            height: _effectiveHeight(
+              widget.bottomFadeHeight,
+              screenSize.height,
+            ),
             screenSize: screenSize,
             hasTexture: hasTexture,
           ),
@@ -474,8 +478,9 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
     // Hard style uses a tighter transition zone (half of soft) combined with
     // a steeper gradient curve — so it's a different *shape*, not just a
     // compressed version of soft.
-    final adjusted =
-        widget.style == GlassScrollEdgeStyle.hard ? height * 0.5 : height;
+    final adjusted = widget.style == GlassScrollEdgeStyle.hard
+        ? height * 0.5
+        : height;
     // Clamp to 40% of available height to avoid overlapping zones.
     return adjusted.clamp(0.0, boundsHeight * 0.4);
   }

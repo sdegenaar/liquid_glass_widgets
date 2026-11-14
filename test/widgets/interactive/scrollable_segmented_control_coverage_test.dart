@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -13,8 +13,10 @@ void main() {
             body: StatefulBuilder(
               builder: (context, setState) {
                 return GlassSegmentedControl.scrollable(
-                  segments:
-                      List.generate(20, (i) => GlassSegment(label: 'Item $i')),
+                  segments: List.generate(
+                    20,
+                    (i) => GlassSegment(label: 'Item $i'),
+                  ),
                   selectedIndex: selectedIndex,
                   onSegmentSelected: (i) {
                     setState(() => selectedIndex = i);
@@ -31,7 +33,9 @@ void main() {
 
       // Scroll to the right
       await tester.drag(
-          find.byType(GlassSegmentedControl), const Offset(-500, 0));
+        find.byType(GlassSegmentedControl),
+        const Offset(-500, 0),
+      );
       await tester.pumpAndSettle();
 
       // Tap an item that is now visible
@@ -41,7 +45,10 @@ void main() {
 
       // Fast flick back
       await tester.fling(
-          find.byType(GlassSegmentedControl), const Offset(1000, 0), 2000);
+        find.byType(GlassSegmentedControl),
+        const Offset(1000, 0),
+        2000,
+      );
       await tester.pumpAndSettle();
 
       // Tap first item

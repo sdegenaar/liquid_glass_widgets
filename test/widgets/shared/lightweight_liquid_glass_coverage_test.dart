@@ -10,7 +10,7 @@
 //   - Class-name heuristics: oval/circle/stadium fallback
 //   - preWarm guard: _isPreparing=true / _cachedProgram != null
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -42,24 +42,26 @@ void main() {
   // ── Shader null → clip wrap fallback ──────────────────────────────────────
 
   group('LightweightLiquidGlass — fallback (shader == null)', () {
-    testWidgets('renders ClipRRect fallback for RoundedRectangleBorder shapes',
-        (tester) async {
-      // resetForTesting ensures _cachedProgram == null → fallback path.
-      await tester.pumpWidget(
-        createTestApp(
-          child: LightweightLiquidGlass(
-            shape: const LiquidRoundedRectangle(borderRadius: 16),
-            settings: _settings,
-            child: const SizedBox(width: 80, height: 40),
+    testWidgets(
+      'renders ClipRRect fallback for RoundedRectangleBorder shapes',
+      (tester) async {
+        // resetForTesting ensures _cachedProgram == null → fallback path.
+        await tester.pumpWidget(
+          createTestApp(
+            child: LightweightLiquidGlass(
+              shape: const LiquidRoundedRectangle(borderRadius: 16),
+              settings: _settings,
+              child: const SizedBox(width: 80, height: 40),
+            ),
           ),
-        ),
-      );
-      await tester.pump();
-      // Shapes that resolve to RoundedRectangleBorder are wrapped in
-      // ClipRRect (not ClipPath) so Flutter PR #177551's PlatformView
-      // clip-forwarding kicks in over a PlatformView backdrop.
-      expect(find.byType(ClipRRect), findsAtLeastNWidgets(1));
-    });
+        );
+        await tester.pump();
+        // Shapes that resolve to RoundedRectangleBorder are wrapped in
+        // ClipRRect (not ClipPath) so Flutter PR #177551's PlatformView
+        // clip-forwarding kicks in over a PlatformView backdrop.
+        expect(find.byType(ClipRRect), findsAtLeastNWidgets(1));
+      },
+    );
 
     testWidgets('LiquidOval fallback uses ClipPath', (tester) async {
       // LiquidOval is intentionally NOT routed through ClipRRect — the
@@ -83,25 +85,27 @@ void main() {
 
   group('LightweightLiquidGlass.inLayer', () {
     testWidgets(
-        'inherits settings from InheritedLiquidGlass when settings=null',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: AdaptiveLiquidGlassLayer(
-            settings: settingsWithoutLighting,
-            child: LightweightLiquidGlass.inLayer(
-              shape: const LiquidRoundedSuperellipse(borderRadius: 16),
-              child: const SizedBox(width: 80, height: 40),
+      'inherits settings from InheritedLiquidGlass when settings=null',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: AdaptiveLiquidGlassLayer(
+              settings: settingsWithoutLighting,
+              child: LightweightLiquidGlass.inLayer(
+                shape: const LiquidRoundedSuperellipse(borderRadius: 16),
+                child: const SizedBox(width: 80, height: 40),
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pump();
-      expect(find.byType(LightweightLiquidGlass), findsOneWidget);
-    });
+        );
+        await tester.pump();
+        expect(find.byType(LightweightLiquidGlass), findsOneWidget);
+      },
+    );
 
-    testWidgets('inLayer with glow and density params does not crash',
-        (tester) async {
+    testWidgets('inLayer with glow and density params does not crash', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
@@ -124,8 +128,9 @@ void main() {
   // ── skipBlur via ancestor ──────────────────────────────────────────────────
 
   group('LightweightLiquidGlass — skipBlur from ancestor', () {
-    testWidgets('blur-providing ancestor causes skipBlur=true path',
-        (tester) async {
+    testWidgets('blur-providing ancestor causes skipBlur=true path', (
+      tester,
+    ) async {
       // InheritedLiquidGlass with isBlurProvidedByAncestor=true and matching
       // blur value → skipBlur = true → _paintGlassContent without BackdropFilter.
       await tester.pumpWidget(
@@ -225,8 +230,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('changing indicatorWeight updates render object',
-        (tester) async {
+    testWidgets('changing indicatorWeight updates render object', (
+      tester,
+    ) async {
       double indicator = 0.0;
       late StateSetter outerSetState;
 
@@ -252,8 +258,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('changing settings to same value uses no-op guard',
-        (tester) async {
+    testWidgets('changing settings to same value uses no-op guard', (
+      tester,
+    ) async {
       // The setter guard: if (_settings == value) return; → covered by pumping
       // same settings twice.
       await tester.pumpWidget(
@@ -292,8 +299,12 @@ void main() {
       await tester.pump();
 
       // Switch to LiquidVerticalRoundedSuperellipse → asymmetric shader path
-      outerSetState(() => shape = const LiquidVerticalRoundedSuperellipse(
-          topRadius: 24, bottomRadius: 8));
+      outerSetState(
+        () => shape = const LiquidVerticalRoundedSuperellipse(
+          topRadius: 24,
+          bottomRadius: 8,
+        ),
+      );
       await tester.pump();
 
       // Switch to LiquidOval → oval/stadium heuristic
@@ -341,8 +352,9 @@ void main() {
   // _RenderLightweightGlass (lines 367-405 in lightweight_liquid_glass.dart).
 
   group('LightweightLiquidGlass — skipBlur and backdropLuma setter paths', () {
-    testWidgets('platform brightness change triggers backdropLuma setter',
-        (tester) async {
+    testWidgets('platform brightness change triggers backdropLuma setter', (
+      tester,
+    ) async {
       // Build in dark mode, then simulate light mode via MediaQuery override.
       Brightness brightness = Brightness.dark;
       late StateSetter outerSetState;
@@ -376,52 +388,54 @@ void main() {
     });
 
     testWidgets(
-        'skipBlur setter: switching from ancestor-blur to non-ancestor-blur',
-        (tester) async {
-      // First render inside LiquidGlassLayer (skipBlur=true), then
-      // re-parent outside it (skipBlur=false) to fire the setter.
-      bool useLayer = true;
-      late StateSetter outerSetState;
+      'skipBlur setter: switching from ancestor-blur to non-ancestor-blur',
+      (tester) async {
+        // First render inside LiquidGlassLayer (skipBlur=true), then
+        // re-parent outside it (skipBlur=false) to fire the setter.
+        bool useLayer = true;
+        late StateSetter outerSetState;
 
-      Widget buildChild() {
-        return LightweightLiquidGlass.inLayer(
-          shape: const LiquidRoundedSuperellipse(borderRadius: 16),
-          child: const SizedBox(width: 80, height: 40),
-        );
-      }
+        Widget buildChild() {
+          return LightweightLiquidGlass.inLayer(
+            shape: const LiquidRoundedSuperellipse(borderRadius: 16),
+            child: const SizedBox(width: 80, height: 40),
+          );
+        }
 
-      await tester.pumpWidget(
-        createTestApp(
-          child: StatefulBuilder(
-            builder: (ctx, setState) {
-              outerSetState = setState;
-              if (useLayer) {
-                return LiquidGlassLayer(
-                  settings: settingsWithoutLighting,
-                  child: buildChild(),
-                );
-              } else {
-                // No layer ancestor → skipBlur=false
-                return AdaptiveLiquidGlassLayer(
-                  settings: settingsWithoutLighting,
-                  child: buildChild(),
-                );
-              }
-            },
+        await tester.pumpWidget(
+          createTestApp(
+            child: StatefulBuilder(
+              builder: (ctx, setState) {
+                outerSetState = setState;
+                if (useLayer) {
+                  return LiquidGlassLayer(
+                    settings: settingsWithoutLighting,
+                    child: buildChild(),
+                  );
+                } else {
+                  // No layer ancestor → skipBlur=false
+                  return AdaptiveLiquidGlassLayer(
+                    settings: settingsWithoutLighting,
+                    child: buildChild(),
+                  );
+                }
+              },
+            ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      // Toggle → different skipBlur value → setter fires
-      outerSetState(() => useLayer = false);
-      await tester.pump();
+        // Toggle → different skipBlur value → setter fires
+        outerSetState(() => useLayer = false);
+        await tester.pump();
 
-      expect(tester.takeException(), isNull);
-    });
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets('shape setter no-op guard (same shape pumped twice)',
-        (tester) async {
+    testWidgets('shape setter no-op guard (same shape pumped twice)', (
+      tester,
+    ) async {
       const shape = LiquidRoundedSuperellipse(borderRadius: 16);
 
       await tester.pumpWidget(
@@ -443,53 +457,57 @@ void main() {
 
   group('LightweightLiquidGlass — Ticker zero-cost guarantees', () {
     testWidgets(
-        'no backgroundKey → no crash and no RepaintBoundary capture attempted',
-        (tester) async {
-      // When backgroundKey is null the Ticker must not start.
-      // Observable: no exceptions thrown, widget renders normally.
-      await tester.pumpWidget(
-        createTestApp(
-          child: LightweightLiquidGlass(
-            shape: const LiquidRoundedSuperellipse(borderRadius: 16),
-            settings: _settings,
-            // No backgroundKey — simulates glass widget outside LiquidGlassScope.
-            child: const SizedBox(width: 80, height: 40),
+      'no backgroundKey → no crash and no RepaintBoundary capture attempted',
+      (tester) async {
+        // When backgroundKey is null the Ticker must not start.
+        // Observable: no exceptions thrown, widget renders normally.
+        await tester.pumpWidget(
+          createTestApp(
+            child: LightweightLiquidGlass(
+              shape: const LiquidRoundedSuperellipse(borderRadius: 16),
+              settings: _settings,
+              // No backgroundKey — simulates glass widget outside LiquidGlassScope.
+              child: const SizedBox(width: 80, height: 40),
+            ),
           ),
-        ),
-      );
-      // Pump several frames to confirm the Ticker stays idle.
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 32));
-      expect(tester.takeException(), isNull);
-    });
+        );
+        // Pump several frames to confirm the Ticker stays idle.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 32));
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets(
-        'backgroundKey present but no RepaintBoundary context → no crash',
-        (tester) async {
-      // This simulates GlassBackgroundSource(enabled: false): the GlobalKey
-      // exists in the scope but has no RepaintBoundary element attached.
-      // _updateTicker must detect hasBoundary=false and NOT start the Ticker.
-      // _handleTick (if it somehow fires) must self-stop without crashing.
-      final orphanKey = GlobalKey();
+      'backgroundKey present but no RepaintBoundary context → no crash',
+      (tester) async {
+        // This simulates GlassBackgroundSource(enabled: false): the GlobalKey
+        // exists in the scope but has no RepaintBoundary element attached.
+        // _updateTicker must detect hasBoundary=false and NOT start the Ticker.
+        // _handleTick (if it somehow fires) must self-stop without crashing.
+        final orphanKey = GlobalKey();
 
-      await tester.pumpWidget(
-        createTestApp(
-          child: LightweightLiquidGlass(
-            shape: const LiquidRoundedSuperellipse(borderRadius: 16),
-            settings: _settings,
-            backgroundKey: orphanKey, // key exists; no RepaintBoundary uses it
-            child: const SizedBox(width: 80, height: 40),
+        await tester.pumpWidget(
+          createTestApp(
+            child: LightweightLiquidGlass(
+              shape: const LiquidRoundedSuperellipse(borderRadius: 16),
+              settings: _settings,
+              backgroundKey:
+                  orphanKey, // key exists; no RepaintBoundary uses it
+              child: const SizedBox(width: 80, height: 40),
+            ),
           ),
-        ),
-      );
-      // Allow multiple frames — the Ticker must NOT fire and crash.
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 32));
-      expect(tester.takeException(), isNull);
-    });
+        );
+        // Allow multiple frames — the Ticker must NOT fire and crash.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 32));
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets('backgroundKey transitions null → non-null → null cleanly',
-        (tester) async {
+    testWidgets('backgroundKey transitions null → non-null → null cleanly', (
+      tester,
+    ) async {
       // Simulates GlassPage toggling enableBackgroundSampling at runtime.
       // The Ticker must start and stop without exceptions.
       GlobalKey? bgKey;
@@ -525,8 +543,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('dispose while backgroundKey is set does not throw',
-        (tester) async {
+    testWidgets('dispose while backgroundKey is set does not throw', (
+      tester,
+    ) async {
       final key = GlobalKey();
 
       await tester.pumpWidget(

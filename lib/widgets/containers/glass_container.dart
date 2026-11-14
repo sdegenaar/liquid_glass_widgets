@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
@@ -178,15 +179,16 @@ class GlassContainer extends StatelessWidget {
     this.height,
     this.color,
     GlassSurfaceStyle surfaceStyle = GlassSurfaceStyle.glass,
-  })  : shape = shape ??
-            (surfaceStyle == GlassSurfaceStyle.solid
-                ? _solidCardShape
-                : _glassCardShape),
-        alignment = null,
-        allowElevation = false,
-        glowIntensity = 0.0,
-        platformViewBackdrop = false,
-        _surfaceStyle = surfaceStyle;
+  }) : shape =
+           shape ??
+           (surfaceStyle == GlassSurfaceStyle.solid
+               ? _solidCardShape
+               : _glassCardShape),
+       alignment = null,
+       allowElevation = false,
+       glowIntensity = 0.0,
+       platformViewBackdrop = false,
+       _surfaceStyle = surfaceStyle;
 
   static const _glassCardShape = LiquidRoundedSuperellipse(borderRadius: 12);
 
@@ -340,18 +342,12 @@ class GlassContainer extends StatelessWidget {
 
     // 2. Apply padding inside the container (before glass effect)
     if (padding != null) {
-      content = Padding(
-        padding: padding!,
-        child: content,
-      );
+      content = Padding(padding: padding!, child: content);
     }
 
     // 3. Apply alignment if provided
     if (alignment != null) {
-      content = Align(
-        alignment: alignment!,
-        child: content,
-      );
+      content = Align(alignment: alignment!, child: content);
     }
 
     // Solid surfaces are a plain filled/clipped shape — no AdaptiveGlass, so no
@@ -406,9 +402,11 @@ class GlassContainer extends StatelessWidget {
           quality: effectiveQuality,
           avoidsRefraction:
               true, // Containers block children from refracting background
-          hasExplicitSettings: settings != null ||
+          hasExplicitSettings:
+              settings != null ||
               InheritedLiquidGlass.hasExplicitSettingsOf(context),
-          hasExplicitQuality: quality != null ||
+          hasExplicitQuality:
+              quality != null ||
               InheritedLiquidGlass.hasExplicitQualityOf(context),
           child: content,
         ),
@@ -456,9 +454,11 @@ class GlassContainer extends StatelessWidget {
         settings: effectiveSettings,
         quality: effectiveQuality,
         avoidsRefraction: false,
-        hasExplicitSettings: settings != null ||
+        hasExplicitSettings:
+            settings != null ||
             InheritedLiquidGlass.hasExplicitSettingsOf(context),
-        hasExplicitQuality: quality != null ||
+        hasExplicitQuality:
+            quality != null ||
             InheritedLiquidGlass.hasExplicitQualityOf(context),
         child: content,
       ),
@@ -485,19 +485,12 @@ class GlassContainer extends StatelessWidget {
   Widget _applyLayout(Widget surface) {
     // 5. Apply width/height constraints
     if (width != null || height != null) {
-      surface = SizedBox(
-        width: width,
-        height: height,
-        child: surface,
-      );
+      surface = SizedBox(width: width, height: height, child: surface);
     }
 
     // 6. Apply margin outside the glass effect
     if (margin != null) {
-      surface = Padding(
-        padding: margin!,
-        child: surface,
-      );
+      surface = Padding(padding: margin!, child: surface);
     }
 
     return surface;

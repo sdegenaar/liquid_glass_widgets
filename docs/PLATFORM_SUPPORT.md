@@ -1,6 +1,6 @@
 # Platform Support
 
-> Last updated: 2026-07-30 · Tracks v0.25.x
+> Last updated: 2026-11-13 · Tracks v1.18.x (Flutter ≥ 3.47.0 / Dart ≥ 3.13.0)
 
 This document describes the rendering behaviour, known limitations, and
 developer guidance for each platform that `liquid_glass_widgets` targets.

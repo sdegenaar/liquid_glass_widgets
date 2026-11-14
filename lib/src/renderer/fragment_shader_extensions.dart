@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs
 
 import 'dart:ui' as ui;
+
 import 'package:flutter/widgets.dart';
 
 /// Helper to sequentially write uniform values to a [ui.FragmentShader].

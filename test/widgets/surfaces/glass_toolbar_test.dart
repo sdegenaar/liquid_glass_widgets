@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -9,10 +9,7 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: GlassToolbar(
-              children: const [
-                Text('Item 1'),
-                Text('Item 2'),
-              ],
+              children: const [Text('Item 1'), Text('Item 2')],
             ),
           ),
         ),
@@ -27,10 +24,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: GlassToolbar(
-              height: height,
-              children: const [],
-            ),
+            body: GlassToolbar(height: height, children: const []),
           ),
         ),
       );
@@ -65,11 +59,7 @@ void main() {
     testWidgets('wraps content in SafeArea', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: GlassToolbar(
-              children: const [],
-            ),
-          ),
+          home: Scaffold(body: GlassToolbar(children: const [])),
         ),
       );
 

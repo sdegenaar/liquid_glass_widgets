@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -15,25 +15,35 @@ void main() {
     });
 
     test('equality holds when fields match', () {
-      const a =
-          GlassAccessibilityData(reduceMotion: true, reduceTransparency: false);
-      const b =
-          GlassAccessibilityData(reduceMotion: true, reduceTransparency: false);
+      const a = GlassAccessibilityData(
+        reduceMotion: true,
+        reduceTransparency: false,
+      );
+      const b = GlassAccessibilityData(
+        reduceMotion: true,
+        reduceTransparency: false,
+      );
       expect(a, equals(b));
       expect(a.hashCode, equals(b.hashCode));
     });
 
     test('equality fails when fields differ', () {
-      const a =
-          GlassAccessibilityData(reduceMotion: true, reduceTransparency: false);
+      const a = GlassAccessibilityData(
+        reduceMotion: true,
+        reduceTransparency: false,
+      );
       const b = GlassAccessibilityData(
-          reduceMotion: false, reduceTransparency: false);
+        reduceMotion: false,
+        reduceTransparency: false,
+      );
       expect(a, isNot(equals(b)));
     });
 
     test('toString includes both fields', () {
-      const data =
-          GlassAccessibilityData(reduceMotion: true, reduceTransparency: false);
+      const data = GlassAccessibilityData(
+        reduceMotion: true,
+        reduceTransparency: false,
+      );
       expect(data.toString(), contains('reduceMotion: true'));
       expect(data.toString(), contains('reduceTransparency: false'));
     });
@@ -44,8 +54,9 @@ void main() {
   // -------------------------------------------------------------------------
 
   group('GlassAccessibilityScope.of / maybeOf', () {
-    testWidgets('of() returns defaults when no scope is in tree',
-        (tester) async {
+    testWidgets('of() returns defaults when no scope is in tree', (
+      tester,
+    ) async {
       GlassAccessibilityData? captured;
 
       await tester.pumpWidget(
@@ -62,8 +73,9 @@ void main() {
       expect(captured, equals(GlassAccessibilityData.defaults));
     });
 
-    testWidgets('maybeOf() returns null when no scope is in tree',
-        (tester) async {
+    testWidgets('maybeOf() returns null when no scope is in tree', (
+      tester,
+    ) async {
       GlassAccessibilityData? captured;
 
       await tester.pumpWidget(
@@ -160,8 +172,9 @@ void main() {
   // -------------------------------------------------------------------------
 
   group('GlassAccessibilityScope — explicit overrides', () {
-    testWidgets('explicit reduceMotion=true overrides MediaQuery false',
-        (tester) async {
+    testWidgets('explicit reduceMotion=true overrides MediaQuery false', (
+      tester,
+    ) async {
       GlassAccessibilityData? captured;
 
       await tester.pumpWidget(
@@ -185,8 +198,9 @@ void main() {
       expect(captured?.reduceMotion, isTrue);
     });
 
-    testWidgets('explicit reduceMotion=false overrides MediaQuery true',
-        (tester) async {
+    testWidgets('explicit reduceMotion=false overrides MediaQuery true', (
+      tester,
+    ) async {
       GlassAccessibilityData? captured;
 
       await tester.pumpWidget(
@@ -209,8 +223,9 @@ void main() {
       expect(captured?.reduceMotion, isFalse);
     });
 
-    testWidgets('null reduceMotion delegates to MediaQuery.disableAnimations',
-        (tester) async {
+    testWidgets('null reduceMotion delegates to MediaQuery.disableAnimations', (
+      tester,
+    ) async {
       GlassAccessibilityData? captured;
 
       await tester.pumpWidget(
@@ -233,29 +248,31 @@ void main() {
       expect(captured?.reduceMotion, isTrue);
     });
 
-    testWidgets('null reduceTransparency delegates to MediaQuery.highContrast',
-        (tester) async {
-      GlassAccessibilityData? captured;
+    testWidgets(
+      'null reduceTransparency delegates to MediaQuery.highContrast',
+      (tester) async {
+        GlassAccessibilityData? captured;
 
-      await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(highContrast: true),
-          child: MaterialApp(
-            home: GlassAccessibilityScope(
-              // reduceTransparency not provided → reads from MediaQuery
-              child: Builder(
-                builder: (context) {
-                  captured = GlassAccessibilityData.of(context);
-                  return const SizedBox.shrink();
-                },
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(highContrast: true),
+            child: MaterialApp(
+              home: GlassAccessibilityScope(
+                // reduceTransparency not provided → reads from MediaQuery
+                child: Builder(
+                  builder: (context) {
+                    captured = GlassAccessibilityData.of(context);
+                    return const SizedBox.shrink();
+                  },
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(captured?.reduceTransparency, isTrue);
-    });
+        expect(captured?.reduceTransparency, isTrue);
+      },
+    );
   });
 
   // -------------------------------------------------------------------------
@@ -263,47 +280,51 @@ void main() {
   // -------------------------------------------------------------------------
 
   group('GlassAccessibilityScope — reactive rebuilds', () {
-    testWidgets('rebuilds dependents when MediaQuery.disableAnimations changes',
-        (tester) async {
-      final mediaQueryData = ValueNotifier(
-        const MediaQueryData(disableAnimations: false),
-      );
-      addTearDown(mediaQueryData.dispose);
+    testWidgets(
+      'rebuilds dependents when MediaQuery.disableAnimations changes',
+      (tester) async {
+        final mediaQueryData = ValueNotifier(
+          const MediaQueryData(disableAnimations: false),
+        );
+        addTearDown(mediaQueryData.dispose);
 
-      final captured = <bool>[];
+        final captured = <bool>[];
 
-      await tester.pumpWidget(
-        ValueListenableBuilder<MediaQueryData>(
-          valueListenable: mediaQueryData,
-          builder: (_, data, __) => MediaQuery(
-            data: data,
-            child: MaterialApp(
-              home: GlassAccessibilityScope(
-                child: Builder(
-                  builder: (context) {
-                    captured
-                        .add(GlassAccessibilityData.of(context).reduceMotion);
-                    return const SizedBox.shrink();
-                  },
+        await tester.pumpWidget(
+          ValueListenableBuilder<MediaQueryData>(
+            valueListenable: mediaQueryData,
+            builder: (_, data, _) => MediaQuery(
+              data: data,
+              child: MaterialApp(
+                home: GlassAccessibilityScope(
+                  child: Builder(
+                    builder: (context) {
+                      captured.add(
+                        GlassAccessibilityData.of(context).reduceMotion,
+                      );
+                      return const SizedBox.shrink();
+                    },
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Initially false
-      expect(captured.last, isFalse);
+        // Initially false
+        expect(captured.last, isFalse);
 
-      // Simulate the user enabling Reduce Motion
-      mediaQueryData.value = const MediaQueryData(disableAnimations: true);
-      await tester.pump();
+        // Simulate the user enabling Reduce Motion
+        mediaQueryData.value = const MediaQueryData(disableAnimations: true);
+        await tester.pump();
 
-      expect(captured.last, isTrue);
-    });
+        expect(captured.last, isTrue);
+      },
+    );
 
-    testWidgets('rebuilds dependents when explicit override changes',
-        (tester) async {
+    testWidgets('rebuilds dependents when explicit override changes', (
+      tester,
+    ) async {
       final override = ValueNotifier<bool?>(null);
       addTearDown(override.dispose);
 
@@ -315,12 +336,13 @@ void main() {
           child: MaterialApp(
             home: ValueListenableBuilder<bool?>(
               valueListenable: override,
-              builder: (_, value, __) => GlassAccessibilityScope(
+              builder: (_, value, _) => GlassAccessibilityScope(
                 reduceMotion: value,
                 child: Builder(
                   builder: (context) {
-                    captured
-                        .add(GlassAccessibilityData.of(context).reduceMotion);
+                    captured.add(
+                      GlassAccessibilityData.of(context).reduceMotion,
+                    );
                     return const SizedBox.shrink();
                   },
                 ),
@@ -367,60 +389,71 @@ void main() {
     tearDown(() => LiquidGlassWidgets.respectSystemAccessibility = true);
 
     testWidgets(
-        'when false, of() returns defaults even if MediaQuery has reduce-motion',
-        (tester) async {
-      LiquidGlassWidgets.respectSystemAccessibility = false;
+      'when false, of() returns defaults even if MediaQuery has reduce-motion',
+      (tester) async {
+        LiquidGlassWidgets.respectSystemAccessibility = false;
 
-      GlassAccessibilityData? captured;
+        GlassAccessibilityData? captured;
 
-      await tester.pumpWidget(
-        MediaQuery(
-          data:
-              const MediaQueryData(disableAnimations: true, highContrast: true),
-          child: MaterialApp(
-            home: Builder(
-              builder: (context) {
-                captured = GlassAccessibilityData.of(context);
-                return const SizedBox.shrink();
-              },
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(
+              disableAnimations: true,
+              highContrast: true,
+            ),
+            child: MaterialApp(
+              home: Builder(
+                builder: (context) {
+                  captured = GlassAccessibilityData.of(context);
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(captured?.reduceMotion, isFalse,
-          reason: 'Global flag=false should ignore MediaQuery');
-      expect(captured?.reduceTransparency, isFalse,
-          reason: 'Global flag=false should ignore MediaQuery');
-    });
+        expect(
+          captured?.reduceMotion,
+          isFalse,
+          reason: 'Global flag=false should ignore MediaQuery',
+        );
+        expect(
+          captured?.reduceTransparency,
+          isFalse,
+          reason: 'Global flag=false should ignore MediaQuery',
+        );
+      },
+    );
 
     testWidgets(
-        'when false, an explicit GlassAccessibilityScope still overrides',
-        (tester) async {
-      LiquidGlassWidgets.respectSystemAccessibility = false;
+      'when false, an explicit GlassAccessibilityScope still overrides',
+      (tester) async {
+        LiquidGlassWidgets.respectSystemAccessibility = false;
 
-      GlassAccessibilityData? captured;
+        GlassAccessibilityData? captured;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: GlassAccessibilityScope(
-            reduceMotion: true, // explicit override
-            child: Builder(
-              builder: (context) {
-                captured = GlassAccessibilityData.of(context);
-                return const SizedBox.shrink();
-              },
+        await tester.pumpWidget(
+          MaterialApp(
+            home: GlassAccessibilityScope(
+              reduceMotion: true, // explicit override
+              child: Builder(
+                builder: (context) {
+                  captured = GlassAccessibilityData.of(context);
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Scope wins regardless of global flag
-      expect(captured?.reduceMotion, isTrue);
-    });
+        // Scope wins regardless of global flag
+        expect(captured?.reduceMotion, isTrue);
+      },
+    );
 
-    testWidgets('can be restored to true after being set to false',
-        (tester) async {
+    testWidgets('can be restored to true after being set to false', (
+      tester,
+    ) async {
       LiquidGlassWidgets.respectSystemAccessibility = false;
       LiquidGlassWidgets.respectSystemAccessibility = true;
 
@@ -440,9 +473,11 @@ void main() {
         ),
       );
 
-      expect(captured?.reduceMotion, isTrue,
-          reason:
-              'After restoring to true, MediaQuery should be respected again');
+      expect(
+        captured?.reduceMotion,
+        isTrue,
+        reason: 'After restoring to true, MediaQuery should be respected again',
+      );
     });
   });
 }

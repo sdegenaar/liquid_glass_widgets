@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 
@@ -127,14 +127,14 @@ class GlassContentAwareScope extends StatefulWidget {
     this.darkToLightThreshold = 0.6,
     this.backgroundColor,
     super.key,
-  })  : assert(
-          lightToDarkThreshold >= 0.5 && lightToDarkThreshold <= 1.0,
-          'lightToDarkThreshold must be within [0.5, 1.0]',
-        ),
-        assert(
-          darkToLightThreshold >= 0.5 && darkToLightThreshold <= 1.0,
-          'darkToLightThreshold must be within [0.5, 1.0]',
-        );
+  }) : assert(
+         lightToDarkThreshold >= 0.5 && lightToDarkThreshold <= 1.0,
+         'lightToDarkThreshold must be within [0.5, 1.0]',
+       ),
+       assert(
+         darkToLightThreshold >= 0.5 && darkToLightThreshold <= 1.0,
+         'darkToLightThreshold must be within [0.5, 1.0]',
+       );
 
   /// The subtree containing both the sampled content and the adaptive
   /// controls.
@@ -187,8 +187,8 @@ class GlassContentAwareScope extends StatefulWidget {
   /// Used by [GlassContentAwareBrightness] (and available to custom
   /// controls) to register for verdicts.
   static GlassContentAwareScopeState? maybeOf(BuildContext context) {
-    final marker =
-        context.dependOnInheritedWidgetOfExactType<_ContentAwareScopeMarker>();
+    final marker = context
+        .dependOnInheritedWidgetOfExactType<_ContentAwareScopeMarker>();
     return marker?.state;
   }
 
@@ -503,17 +503,19 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
 
       // Downscale so a cell maps to ~16 physical pixels — enough for a
       // stable average, cheap enough to read back at scroll rates.
-      final pixelRatio =
-          (_kTargetCellPixels / math.max(minCellExtent, 1.0)).clamp(0.05, 0.5);
+      final pixelRatio = (_kTargetCellPixels / math.max(minCellExtent, 1.0))
+          .clamp(0.05, 0.5);
       final image = await boundary.toImage(pixelRatio: pixelRatio);
       final width = image.width;
       final height = image.height;
-      final byteData =
-          await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      final byteData = await image.toByteData(
+        format: ui.ImageByteFormat.rawRgba,
+      );
       image.dispose();
       if (!mounted || byteData == null) return;
       final rgba = byteData.buffer.asUint8List();
-      final background = widget.backgroundColor ??
+      final background =
+          widget.backgroundColor ??
           (MediaQuery.maybePlatformBrightnessOf(context) == Brightness.dark
               // Whitelisted: Raw black/white used for contrast detection math, not theming.
               ? const Color(0xFF000000)
@@ -550,15 +552,15 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
       // The next scroll tick retries; never let sampling take a screen down.
       // Surface errors in debug/profile so programming mistakes are visible.
       assert(() {
-        FlutterError.reportError(FlutterErrorDetails(
-          exception: e,
-          stack: stack,
-          library: 'liquid_glass_widgets',
-          context: ErrorDescription(
-            'during content-aware brightness sample',
+        FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: e,
+            stack: stack,
+            library: 'liquid_glass_widgets',
+            context: ErrorDescription('during content-aware brightness sample'),
+            silent: true,
           ),
-          silent: true,
-        ));
+        );
         return true;
       }());
     } finally {
@@ -620,10 +622,7 @@ class GlassContentAwareSubscription {
 }
 
 class _ContentAwareScopeMarker extends InheritedWidget {
-  const _ContentAwareScopeMarker({
-    required this.state,
-    required super.child,
-  });
+  const _ContentAwareScopeMarker({required this.state, required super.child});
 
   final GlassContentAwareScopeState state;
 
@@ -726,9 +725,9 @@ class GlassContentAwareBrightness extends StatefulWidget {
     this.gridRows = 1,
     super.key,
   }) : assert(
-          gridColumns > 0 && gridRows > 0,
-          'Grid must have at least 1 cell',
-        );
+         gridColumns > 0 && gridRows > 0,
+         'Grid must have at least 1 cell',
+       );
 
   /// Builds the control under the brightness overrides.
   ///
@@ -839,7 +838,8 @@ class _GlassContentAwareBrightnessState
     if (brightness == _brightness) return;
     _brightness = brightness;
     widget.onBrightnessChanged?.call(brightness);
-    final duration = widget.flipDuration ??
+    final duration =
+        widget.flipDuration ??
         _scope?.widget.flipDuration ??
         _kDefaultFlipDuration;
     final curve =

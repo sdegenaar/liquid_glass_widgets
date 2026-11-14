@@ -13,16 +13,16 @@ import 'package:liquid_glass_widgets/utils/glass_quality_adapter.dart';
 // frost keeps the premium lens and rim instead of losing the whole look.
 
 List<FrameTiming> _frames(int count, int rasterUs) => List.generate(
-      count,
-      (_) => FrameTiming(
-        vsyncStart: 0,
-        buildStart: 0,
-        buildFinish: 0,
-        rasterStart: 0,
-        rasterFinish: rasterUs,
-        rasterFinishWallTime: rasterUs,
-      ),
-    );
+  count,
+  (_) => FrameTiming(
+    vsyncStart: 0,
+    buildStart: 0,
+    buildFinish: 0,
+    rasterStart: 0,
+    rasterFinish: rasterUs,
+    rasterFinishWallTime: rasterUs,
+  ),
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -45,10 +45,7 @@ void main() {
     GlassQualityAdapter.clearSessionCache();
   });
 
-  GlassQualityAdapter adapter({
-    required bool frostStep,
-    List<Object>? events,
-  }) {
+  GlassQualityAdapter adapter({required bool frostStep, List<Object>? events}) {
     final a = GlassQualityAdapter(
       minQuality: GlassQuality.minimal,
       maxQuality: GlassQuality.premium,
@@ -97,11 +94,7 @@ void main() {
 
       overBudget(a);
       expect(a.currentQuality, GlassQuality.minimal);
-      expect(events, [
-        'no frost',
-        GlassQuality.standard,
-        GlassQuality.minimal,
-      ]);
+      expect(events, ['no frost', GlassQuality.standard, GlassQuality.minimal]);
     });
 
     test('on: recovery takes the same steps back', () {
@@ -132,26 +125,32 @@ void main() {
       required LiquidGlassSettings settings,
     }) async {
       late LiquidGlassSettings result;
-      await tester.pumpWidget(GlassFrostBudget(
-        frostEnabled: enabled,
-        child: Builder(builder: (context) {
-          result = GlassFrostBudget.apply(context, settings);
-          return const SizedBox();
-        }),
-      ));
+      await tester.pumpWidget(
+        GlassFrostBudget(
+          frostEnabled: enabled,
+          child: Builder(
+            builder: (context) {
+              result = GlassFrostBudget.apply(context, settings);
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
       return result;
     }
 
-    testWidgets('leaves settings alone while the frost is allowed',
-        (tester) async {
+    testWidgets('leaves settings alone while the frost is allowed', (
+      tester,
+    ) async {
       expect(
         await applied(tester, enabled: true, settings: frosted),
         same(frosted),
       );
     });
 
-    testWidgets('stands a regular blur in for a switched-off frost',
-        (tester) async {
+    testWidgets('stands a regular blur in for a switched-off frost', (
+      tester,
+    ) async {
       final s = await applied(tester, enabled: false, settings: frosted);
       expect(s.frost, 0);
       expect(s.blur, 14 * GlassFrostBudget.blurPerFrost);
@@ -178,13 +177,17 @@ void main() {
 
     testWidgets('GlassAdaptiveScope provides the budget', (tester) async {
       late bool enabled;
-      await tester.pumpWidget(GlassAdaptiveScope(
-        frostStep: true,
-        child: Builder(builder: (context) {
-          enabled = GlassFrostBudget.frostEnabledOf(context);
-          return const SizedBox();
-        }),
-      ));
+      await tester.pumpWidget(
+        GlassAdaptiveScope(
+          frostStep: true,
+          child: Builder(
+            builder: (context) {
+              enabled = GlassFrostBudget.frostEnabledOf(context);
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
       expect(enabled, isTrue);
       expect(
         tester

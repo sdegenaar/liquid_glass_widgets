@@ -3,7 +3,7 @@
 // real size when it arrives and drag normally afterwards. It used to keep
 // the zero for life and divide every drag by it.
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -18,22 +18,21 @@ final _halfPosition = _halfSize / (_screen.height / _dpr);
 Widget _sheetApp(
   GlassModalSheetController controller,
   List<GlassSheetState> log,
-) =>
-    createTestApp(
-      child: Stack(
-        children: [
-          GlassModalSheet(
-            controller: controller,
-            initialState: GlassSheetState.hidden,
-            detents: const {GlassSheetDetent.medium},
-            halfSize: _halfSize,
-            quality: GlassQuality.minimal,
-            onStateChanged: log.add,
-            child: const SizedBox(key: _content, height: 300),
-          ),
-        ],
+) => createTestApp(
+  child: Stack(
+    children: [
+      GlassModalSheet(
+        controller: controller,
+        initialState: GlassSheetState.hidden,
+        detents: const {GlassSheetDetent.medium},
+        halfSize: _halfSize,
+        quality: GlassQuality.minimal,
+        onStateChanged: log.add,
+        child: const SizedBox(key: _content, height: 300),
       ),
-    );
+    ],
+  ),
+);
 
 /// Builds the sheet on a 0×0 view, then sizes the view (the app coming to
 /// the foreground) and opens the sheet to half.
@@ -92,8 +91,9 @@ void main() {
       await _pumpLaunchedInBackground(tester, controller, log);
 
       // Frames between the moves and the release, as a finger gets.
-      final gesture =
-          await tester.startGesture(tester.getCenter(find.byKey(_content)));
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byKey(_content)),
+      );
       await gesture.moveBy(const Offset(0, 40));
       await tester.pump();
       await gesture.moveBy(const Offset(0, 360));

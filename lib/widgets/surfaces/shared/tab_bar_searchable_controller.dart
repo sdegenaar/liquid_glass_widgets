@@ -65,16 +65,17 @@ class SearchablePillLayout {
 
   @override
   int get hashCode => Object.hash(
-        targetTabW,
-        targetSearchLeft,
-        targetSearchW,
-        floatY,
-        extraTargetW,
-        dismissReserve,
-      );
+    targetTabW,
+    targetSearchLeft,
+    targetSearchW,
+    floatY,
+    extraTargetW,
+    dismissReserve,
+  );
 
   @override
-  String toString() => 'SearchablePillLayout('
+  String toString() =>
+      'SearchablePillLayout('
       'tabW: $targetTabW, '
       'searchLeft: $targetSearchLeft, '
       'searchW: $targetSearchW, '
@@ -343,20 +344,20 @@ class SearchableBottomBarController extends ChangeNotifier {
 
     final extraWLeft =
         (extraFullW > 0 && extraPos == GlassExtraButtonPosition.beforeSearch)
-            ? (extraTargetW + spacing)
-            : 0.0;
+        ? (extraTargetW + spacing)
+        : 0.0;
     final extraWRight =
         (extraFullW > 0 && extraPos == GlassExtraButtonPosition.afterSearch)
-            ? (extraTargetW + spacing)
-            : 0.0;
+        ? (extraTargetW + spacing)
+        : 0.0;
     final extraFullWLeft =
         (extraFullW > 0 && extraPos == GlassExtraButtonPosition.beforeSearch)
-            ? (extraFullW + spacing)
-            : 0.0;
+        ? (extraFullW + spacing)
+        : 0.0;
     final extraFullWRight =
         (extraFullW > 0 && extraPos == GlassExtraButtonPosition.afterSearch)
-            ? (extraFullW + spacing)
-            : 0.0;
+        ? (extraFullW + spacing)
+        : 0.0;
 
     final doCollapseLayout = isKeyboardActive && extraCollapsesOnSearch;
     final curExtraWLeft = doCollapseLayout ? 0.0 : extraWLeft;
@@ -381,8 +382,9 @@ class SearchableBottomBarController extends ChangeNotifier {
       maxAvailable: maxTabW,
     );
 
-    final targetTabW =
-        !searching ? naturalTabW : (collapsedTabWidth ?? targetH);
+    final targetTabW = !searching
+        ? naturalTabW
+        : (collapsedTabWidth ?? targetH);
 
     // ── Search pill ────────────────────────────────────────────────────────
     final centeredTab = tabPillAnchor == GlassTabPillAnchor.center;
@@ -390,17 +392,17 @@ class SearchableBottomBarController extends ChangeNotifier {
     final targetSearchLeft = !searching || !expandWhenActive
         ? totalW - targetCompactW - extraWRight
         : isKeyboardActive
-            ? curExtraWLeft
-            : centeredTab
-                ? (maxTabW + targetTabW) / 2 + curExtraWLeft + spacing
-                : targetTabW + curExtraWLeft + spacing;
+        ? curExtraWLeft
+        : centeredTab
+        ? (maxTabW + targetTabW) / 2 + curExtraWLeft + spacing
+        : targetTabW + curExtraWLeft + spacing;
 
     final targetSearchW = !searching || !expandWhenActive
         ? targetCompactW
         : totalW -
-            targetSearchLeft -
-            curExtraWRight -
-            (dismissVisible ? dismissReserve : 0.0);
+              targetSearchLeft -
+              curExtraWRight -
+              (dismissVisible ? dismissReserve : 0.0);
 
     // ── Keyboard float ─────────────────────────────────────────────────────
     final floatY = (_searchFocused && keyboardH > 0) ? keyboardH : 0.0;
@@ -453,6 +455,5 @@ class SearchableBottomBarController extends ChangeNotifier {
     required double from,
     required double to,
     double velocity = 0.0,
-  }) =>
-      SpringSimulation(spring, from, to, velocity);
+  }) => SpringSimulation(spring, from, to, velocity);
 }

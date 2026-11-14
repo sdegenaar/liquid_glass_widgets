@@ -5,7 +5,7 @@
 //   - blend parameter moved from LiquidGlassSettings to LiquidGlassBlendGroup
 //   - shared.dart helpers inlined from test/shared/test_helpers.dart
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/engine/liquid_glass.dart';
@@ -21,8 +21,9 @@ void main() {
       );
     });
 
-    testWidgets('renders cleanly with bodyMode: GlassBodyMode.clear',
-        (tester) async {
+    testWidgets('renders cleanly with bodyMode: GlassBodyMode.clear', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -57,12 +58,8 @@ void main() {
                     settings: settingsWithoutLighting.copyWith(
                       thickness: thickness.toDouble(),
                     ),
-                    shape: const LiquidRoundedSuperellipse(
-                      borderRadius: 100,
-                    ),
-                    child: const SizedBox.square(
-                      dimension: 400,
-                    ),
+                    shape: const LiquidRoundedSuperellipse(borderRadius: 100),
+                    child: const SizedBox.square(dimension: 400),
                   ),
                 ),
               ),
@@ -89,9 +86,7 @@ void main() {
                         glassColor: Colors.blue.withValues(alpha: 0.5),
                       ),
                       glassContainsChild: true,
-                      shape: LiquidRoundedSuperellipse(
-                        borderRadius: radius,
-                      ),
+                      shape: LiquidRoundedSuperellipse(borderRadius: radius),
                       child: SizedBox.square(
                         dimension: 400,
                         child: Container(
@@ -170,15 +165,11 @@ void main() {
                             child: SizedBox.square(dimension: 100),
                           ),
                           LiquidGlass.grouped(
-                            shape: LiquidRoundedRectangle(
-                              borderRadius: 20,
-                            ),
+                            shape: LiquidRoundedRectangle(borderRadius: 20),
                             child: SizedBox.square(dimension: 100),
                           ),
                           LiquidGlass.grouped(
-                            shape: LiquidRoundedSuperellipse(
-                              borderRadius: 20,
-                            ),
+                            shape: LiquidRoundedSuperellipse(borderRadius: 20),
                             child: SizedBox.square(dimension: 100),
                           ),
                         ],

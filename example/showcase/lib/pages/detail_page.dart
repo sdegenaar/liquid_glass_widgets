@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -100,7 +100,7 @@ class _DetailPageState extends State<DetailPage>
                                   gradient: LinearGradient(
                                     colors: [
                                       Color(0xFF4A90E2),
-                                      Color(0xFF357ABD)
+                                      Color(0xFF357ABD),
                                     ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
@@ -192,9 +192,11 @@ class _DetailPageState extends State<DetailPage>
                           ),
                           SizedBox(width: 12),
                           GlassButton(
-                            icon: Icon(widget.isFavorite
-                                ? CupertinoIcons.heart_fill
-                                : CupertinoIcons.heart),
+                            icon: Icon(
+                              widget.isFavorite
+                                  ? CupertinoIcons.heart_fill
+                                  : CupertinoIcons.heart,
+                            ),
                             iconColor: widget.isFavorite
                                 ? CupertinoColors.systemRed
                                 : CupertinoColors.white,
@@ -235,8 +237,9 @@ class _DetailPageState extends State<DetailPage>
                             Text(
                               'Price per night',
                               style: TextStyle(
-                                color: CupertinoColors.white
-                                    .withValues(alpha: 0.70),
+                                color: CupertinoColors.white.withValues(
+                                  alpha: 0.70,
+                                ),
                                 fontSize: 12,
                               ),
                             ),
@@ -297,8 +300,11 @@ class _DetailPageState extends State<DetailPage>
               ),
             ),
             SizedBox(width: 12),
-            Icon(CupertinoIcons.star,
-                color: CupertinoColors.activeOrange, size: 18),
+            Icon(
+              CupertinoIcons.star,
+              color: CupertinoColors.activeOrange,
+              size: 18,
+            ),
             SizedBox(width: 4),
             Text(
               '${widget.destination.rating}',
@@ -354,7 +360,7 @@ class _DetailPageState extends State<DetailPage>
       segments: [
         GlassSegment(label: 'Overview'),
         GlassSegment(label: 'Amenities'),
-        GlassSegment(label: 'Reviews')
+        GlassSegment(label: 'Reviews'),
       ],
       selectedIndex: _selectedSegment,
       onSegmentSelected: (index) {
@@ -447,9 +453,7 @@ class _DetailPageState extends State<DetailPage>
       decoration: BoxDecoration(
         color: CupertinoColors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: CupertinoColors.white.withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: CupertinoColors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -461,7 +465,9 @@ class _DetailPageState extends State<DetailPage>
                 height: 40,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                    shape: BoxShape.circle, color: Color(0xFF4A90E2)),
+                  shape: BoxShape.circle,
+                  color: Color(0xFF4A90E2),
+                ),
                 child: Text(
                   name[0],
                   style: TextStyle(
@@ -498,8 +504,9 @@ class _DetailPageState extends State<DetailPage>
                         Text(
                           time,
                           style: TextStyle(
-                            color:
-                                CupertinoColors.white.withValues(alpha: 0.60),
+                            color: CupertinoColors.white.withValues(
+                              alpha: 0.60,
+                            ),
                             fontSize: 12,
                           ),
                         ),
@@ -552,10 +559,7 @@ class _DetailPageState extends State<DetailPage>
               ),
               child: Text(
                 amenity,
-                style: TextStyle(
-                  color: CupertinoColors.white,
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: CupertinoColors.white, fontSize: 13),
               ),
             );
           }).toList(),
@@ -564,13 +568,19 @@ class _DetailPageState extends State<DetailPage>
         Row(
           children: [
             _buildSpec(
-                CupertinoIcons.group, '${widget.destination.maxGuests} guests'),
-            SizedBox(width: 16),
-            _buildSpec(CupertinoIcons.bed_double,
-                '${widget.destination.bedrooms} beds'),
+              CupertinoIcons.group,
+              '${widget.destination.maxGuests} guests',
+            ),
             SizedBox(width: 16),
             _buildSpec(
-                CupertinoIcons.drop, '${widget.destination.bathrooms} baths'),
+              CupertinoIcons.bed_double,
+              '${widget.destination.bedrooms} beds',
+            ),
+            SizedBox(width: 16),
+            _buildSpec(
+              CupertinoIcons.drop,
+              '${widget.destination.bathrooms} baths',
+            ),
           ],
         ),
       ],
@@ -580,8 +590,11 @@ class _DetailPageState extends State<DetailPage>
   Widget _buildSpec(IconData icon, String label) {
     return Row(
       children: [
-        Icon(icon,
-            color: CupertinoColors.white.withValues(alpha: 0.60), size: 18),
+        Icon(
+          icon,
+          color: CupertinoColors.white.withValues(alpha: 0.60),
+          size: 18,
+        ),
         SizedBox(width: 6),
         Text(
           label,
@@ -600,9 +613,7 @@ class _DetailPageState extends State<DetailPage>
       decoration: BoxDecoration(
         color: CupertinoColors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: CupertinoColors.white.withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: CupertinoColors.white.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
@@ -610,8 +621,10 @@ class _DetailPageState extends State<DetailPage>
             width: 56,
             height: 56,
             alignment: Alignment.center,
-            decoration:
-                BoxDecoration(shape: BoxShape.circle, color: Color(0xFF4A90E2)),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color(0xFF4A90E2),
+            ),
             child: Text(
               widget.destination.hostName[0],
               style: TextStyle(

@@ -1,6 +1,6 @@
 // ignore_for_file: implementation_imports
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/widgets/surfaces/tab_bar_bottom_internal.dart';
@@ -89,31 +89,36 @@ void main() {
       expect(glow.blurRadius, kNativeTabBarGlowBlurRadius);
     });
 
-    test('a theme colour may be null, which the internal widget falls back on',
-        () {
-      final glow = resolveTabBarInteractionGlow(
-        interactionGlowRadius: 1.5,
-        interactionGlowColor: null,
-        themeGlowColor: null,
-        themeGlowBlurRadius: 4,
-        isDark: false,
-      );
+    test(
+      'a theme colour may be null, which the internal widget falls back on',
+      () {
+        final glow = resolveTabBarInteractionGlow(
+          interactionGlowRadius: 1.5,
+          interactionGlowColor: null,
+          themeGlowColor: null,
+          themeGlowBlurRadius: 4,
+          isDark: false,
+        );
 
-      expect(glow.color, isNull);
-    });
+        expect(glow.color, isNull);
+      },
+    );
   });
 
   group('GlassTabBar.bottom', () {
-    testWidgets('reaches the native glow when no radius is given',
-        (tester) async {
-      await tester.pumpWidget(createTestApp(
-        child: GlassTabBar.bottom(
-          tabs: tabs,
-          selectedIndex: 0,
-          onTabSelected: (_) {},
-          maskingQuality: MaskingQuality.off,
+    testWidgets('reaches the native glow when no radius is given', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassTabBar.bottom(
+            tabs: tabs,
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            maskingQuality: MaskingQuality.off,
+          ),
         ),
-      ));
+      );
 
       final indicator = tester.widget<TabIndicator>(find.byType(TabIndicator));
       expect(indicator.interactionGlowRadius, kNativeTabBarGlowRadius);
@@ -124,17 +129,20 @@ void main() {
       );
     });
 
-    testWidgets('an explicit radius still reaches the indicator',
-        (tester) async {
-      await tester.pumpWidget(createTestApp(
-        child: GlassTabBar.bottom(
-          tabs: tabs,
-          selectedIndex: 0,
-          onTabSelected: (_) {},
-          interactionGlowRadius: 0.75,
-          maskingQuality: MaskingQuality.off,
+    testWidgets('an explicit radius still reaches the indicator', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassTabBar.bottom(
+            tabs: tabs,
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            interactionGlowRadius: 0.75,
+            maskingQuality: MaskingQuality.off,
+          ),
         ),
-      ));
+      );
 
       final indicator = tester.widget<TabIndicator>(find.byType(TabIndicator));
       expect(indicator.interactionGlowRadius, 0.75);
@@ -143,47 +151,55 @@ void main() {
   });
 
   group('GlassTabBar.searchable', () {
-    testWidgets('resolves the same native glow as the bottom bar',
-        (tester) async {
-      await tester.pumpWidget(createTestApp(
-        child: GlassTabBar.searchable(
-          tabs: tabs,
-          selectedIndex: 0,
-          onTabSelected: (_) {},
-          isSearchActive: false,
-          maskingQuality: MaskingQuality.off,
-          searchConfig: GlassSearchBarConfig(
-            onSearchToggle: (_) {},
-            hintText: 'Search',
+    testWidgets('resolves the same native glow as the bottom bar', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassTabBar.searchable(
+            tabs: tabs,
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            isSearchActive: false,
+            maskingQuality: MaskingQuality.off,
+            searchConfig: GlassSearchBarConfig(
+              onSearchToggle: (_) {},
+              hintText: 'Search',
+            ),
           ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
 
       // The searchable bar builds its own indicator, which is the reason the
       // two layouts each resolved the glow for themselves and could drift.
-      final indicator = tester
-          .widget<SearchableTabIndicator>(find.byType(SearchableTabIndicator));
+      final indicator = tester.widget<SearchableTabIndicator>(
+        find.byType(SearchableTabIndicator),
+      );
       expect(indicator.interactionGlowRadius, kNativeTabBarGlowRadius);
       expect(indicator.interactionGlowBlurRadius, kNativeTabBarGlowBlurRadius);
     });
   });
 
   group('GlassTabBar.minimizable', () {
-    testWidgets('shares the searchable engine, and its native glow',
-        (tester) async {
-      await tester.pumpWidget(createTestApp(
-        child: GlassTabBar.minimizable(
-          tabs: tabs,
-          selectedIndex: 0,
-          onTabSelected: (_) {},
-          maskingQuality: MaskingQuality.off,
+    testWidgets('shares the searchable engine, and its native glow', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassTabBar.minimizable(
+            tabs: tabs,
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            maskingQuality: MaskingQuality.off,
+          ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
 
-      final indicator = tester
-          .widget<SearchableTabIndicator>(find.byType(SearchableTabIndicator));
+      final indicator = tester.widget<SearchableTabIndicator>(
+        find.byType(SearchableTabIndicator),
+      );
       expect(indicator.interactionGlowRadius, kNativeTabBarGlowRadius);
       expect(indicator.interactionGlowBlurRadius, kNativeTabBarGlowBlurRadius);
     });
@@ -197,14 +213,16 @@ void main() {
       // rather than a typo. It lands on 1.6 here because the radius is a
       // fraction of the layer's shortest side, not an absolute: the same
       // figure `GlassButton` uses on controls smaller than this one.
-      await tester.pumpWidget(createTestApp(
-        child: GlassTabBar.inline(
-          tabs: tabs,
-          selectedIndex: 0,
-          onTabSelected: (_) {},
-          maskingQuality: MaskingQuality.off,
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassTabBar.inline(
+            tabs: tabs,
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            maskingQuality: MaskingQuality.off,
+          ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
 
       final indicator = tester.widget<TabIndicator>(find.byType(TabIndicator));

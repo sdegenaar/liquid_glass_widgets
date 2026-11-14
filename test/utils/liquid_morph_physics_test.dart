@@ -18,14 +18,13 @@ LiquidMorphState _compute(
   double finalDy = _finalDy,
   double horizontalOffset = _hOffset,
   double verticalOffset = _vOffset,
-}) =>
-    LiquidMorphPhysics.compute(
-      rawValue: rawValue,
-      finalDx: finalDx,
-      finalDy: finalDy,
-      horizontalOffset: horizontalOffset,
-      verticalOffset: verticalOffset,
-    );
+}) => LiquidMorphPhysics.compute(
+  rawValue: rawValue,
+  finalDx: finalDx,
+  finalDy: finalDy,
+  horizontalOffset: horizontalOffset,
+  verticalOffset: verticalOffset,
+);
 
 void main() {
   // ── Resting state ─────────────────────────────────────────────────────────
@@ -281,17 +280,17 @@ void main() {
       expect(LiquidMorphPhysics.openSpring.damping, equals(16.0));
     });
 
-    test(
-        'closeSpring matches iOS 27 dismissal profile (stiffness 120, damping 16)',
-        () {
+    test('closeSpring matches iOS 27 dismissal profile (stiffness 120, damping 16)', () {
       expect(LiquidMorphPhysics.closeSpring.stiffness, equals(120.0));
       expect(LiquidMorphPhysics.closeSpring.damping, equals(16.0));
     });
 
-    test('closeVelocityHint is -2.5 (drives spring toward 0 with momentum)',
-        () {
-      expect(LiquidMorphPhysics.closeVelocityHint, equals(-2.5));
-    });
+    test(
+      'closeVelocityHint is -2.5 (drives spring toward 0 with momentum)',
+      () {
+        expect(LiquidMorphPhysics.closeVelocityHint, equals(-2.5));
+      },
+    );
   });
 
   // ── Geometry scaling ──────────────────────────────────────────────────────
@@ -340,24 +339,31 @@ void main() {
       for (int i = 0; i <= 100; i++) {
         final raw = i / 100.0;
         final cur = _compute(raw).sizeT;
-        expect(cur, greaterThanOrEqualTo(prev),
-            reason: 'sizeT not monotonic at rawValue=$raw');
+        expect(
+          cur,
+          greaterThanOrEqualTo(prev),
+          reason: 'sizeT not monotonic at rawValue=$raw',
+        );
         prev = cur;
       }
     });
 
-    test('anchorScale decreases monotonically from 1.0 to 0.0 over [0, 0.4]',
-        () {
-      double prev = 1.1;
-      for (int i = 0; i <= 40; i++) {
-        final raw = i / 100.0; // 0.00 → 0.40
-        final cur = _compute(raw).anchorScale;
-        expect(cur, lessThanOrEqualTo(prev),
-            reason:
-                'anchorScale not monotonically decreasing at rawValue=$raw');
-        prev = cur;
-      }
-    });
+    test(
+      'anchorScale decreases monotonically from 1.0 to 0.0 over [0, 0.4]',
+      () {
+        double prev = 1.1;
+        for (int i = 0; i <= 40; i++) {
+          final raw = i / 100.0; // 0.00 → 0.40
+          final cur = _compute(raw).anchorScale;
+          expect(
+            cur,
+            lessThanOrEqualTo(prev),
+            reason: 'anchorScale not monotonically decreasing at rawValue=$raw',
+          );
+          prev = cur;
+        }
+      },
+    );
 
     test('containerScale is exactly 1.0 throughout normal travel [0, 1]', () {
       for (int i = 0; i <= 100; i++) {
@@ -496,8 +502,11 @@ void main() {
       for (int i = 0; i <= 100; i++) {
         final raw = i / 100.0;
         final cur = computeAdaptive(raw).sizeT;
-        expect(cur, greaterThanOrEqualTo(prev),
-            reason: 'sizeT not monotonic at rawValue=$raw (adaptive)');
+        expect(
+          cur,
+          greaterThanOrEqualTo(prev),
+          reason: 'sizeT not monotonic at rawValue=$raw (adaptive)',
+        );
         prev = cur;
       }
     });
@@ -548,20 +557,24 @@ void main() {
 
   group('LiquidMorphPhysics — closing trajectory (isClosing = true)', () {
     test(
-        'pathT never exceeds 1.0 on close (no reverse launch in wrong direction)',
-        () {
-      for (int i = 0; i <= 100; i++) {
-        final raw = i / 100.0;
-        final s = LiquidMorphPhysics.compute(
-          rawValue: raw,
-          finalDx: _finalDx,
-          finalDy: _finalDy,
-          isClosing: true,
-        );
-        expect(s.pathT, lessThanOrEqualTo(1.0),
-            reason: 'pathT exceeded 1.0 at rawValue=$raw on close');
-      }
-    });
+      'pathT never exceeds 1.0 on close (no reverse launch in wrong direction)',
+      () {
+        for (int i = 0; i <= 100; i++) {
+          final raw = i / 100.0;
+          final s = LiquidMorphPhysics.compute(
+            rawValue: raw,
+            finalDx: _finalDx,
+            finalDy: _finalDy,
+            isClosing: true,
+          );
+          expect(
+            s.pathT,
+            lessThanOrEqualTo(1.0),
+            reason: 'pathT exceeded 1.0 at rawValue=$raw on close',
+          );
+        }
+      },
+    );
 
     test('pathT decreases monotonically from 1.0 to 0.0 on close', () {
       double prev = -0.1;
@@ -573,8 +586,11 @@ void main() {
           finalDy: _finalDy,
           isClosing: true,
         );
-        expect(s.pathT, greaterThanOrEqualTo(prev),
-            reason: 'pathT not monotonic at rawValue=$raw on close');
+        expect(
+          s.pathT,
+          greaterThanOrEqualTo(prev),
+          reason: 'pathT not monotonic at rawValue=$raw on close',
+        );
         prev = s.pathT;
       }
     });
@@ -589,8 +605,11 @@ void main() {
           finalDy: _finalDy,
           isClosing: true,
         );
-        expect(s.sizeT, greaterThanOrEqualTo(prev),
-            reason: 'sizeT not monotonic at rawValue=$raw on close');
+        expect(
+          s.sizeT,
+          greaterThanOrEqualTo(prev),
+          reason: 'sizeT not monotonic at rawValue=$raw on close',
+        );
         prev = s.sizeT;
       }
     });
@@ -616,11 +635,11 @@ void main() {
 
   group('LiquidMorphPhysics — closing blend separation curve', () {
     LiquidMorphState closeCompute(double raw) => LiquidMorphPhysics.compute(
-          rawValue: raw,
-          finalDx: _finalDx,
-          finalDy: _finalDy,
-          isClosing: true,
-        );
+      rawValue: raw,
+      finalDx: _finalDx,
+      finalDy: _finalDy,
+      isClosing: true,
+    );
 
     test('blend is 0.0 at start of close (clampedValue = 1.0)', () {
       expect(closeCompute(1.0).blend, equals(0.0));
@@ -629,10 +648,16 @@ void main() {
     test('blend peaks in mid-close and returns to 0.0 at handoff (0.0)', () {
       final blendAtMid = closeCompute(0.40).blend;
       final blendAtEnd = closeCompute(0.0).blend;
-      expect(blendAtMid, greaterThan(10.0),
-          reason: 'Expected visible SDF bridge in mid-close');
-      expect(blendAtEnd, equals(0.0),
-          reason: 'Expected zero SDF inflation at handoff (clampedValue = 0)');
+      expect(
+        blendAtMid,
+        greaterThan(10.0),
+        reason: 'Expected visible SDF bridge in mid-close',
+      );
+      expect(
+        blendAtEnd,
+        equals(0.0),
+        reason: 'Expected zero SDF inflation at handoff (clampedValue = 0)',
+      );
     });
 
     test('anchorScale on close ramps 0.0 → 1.0 over 0.40 → 0.0', () {
@@ -646,10 +671,16 @@ void main() {
       for (int i = 0; i <= 100; i++) {
         final raw = i / 100.0;
         final b = closeCompute(raw).blend;
-        expect(b, greaterThanOrEqualTo(0.0),
-            reason: 'Negative blend at rawValue=$raw on close');
-        expect(b, lessThanOrEqualTo(28.0),
-            reason: 'Blend exceeds max at rawValue=$raw on close');
+        expect(
+          b,
+          greaterThanOrEqualTo(0.0),
+          reason: 'Negative blend at rawValue=$raw on close',
+        );
+        expect(
+          b,
+          lessThanOrEqualTo(28.0),
+          reason: 'Blend exceeds max at rawValue=$raw on close',
+        );
       }
     });
 

@@ -1,11 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() {
   group('GlassProgressIndicator.circular', () {
-    testWidgets('renders circular indeterminate progress indicator',
-        (tester) async {
+    testWidgets('renders circular indeterminate progress indicator', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -28,16 +29,15 @@ void main() {
       expect(find.byType(GlassProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('renders circular determinate progress indicator',
-        (tester) async {
+    testWidgets('renders circular determinate progress indicator', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
             body: Center(
               child: AdaptiveLiquidGlassLayer(
-                child: GlassProgressIndicator.circular(
-                  value: 0.5,
-                ),
+                child: GlassProgressIndicator.circular(value: 0.5),
               ),
             ),
           ),
@@ -55,9 +55,7 @@ void main() {
           home: Scaffold(
             body: Center(
               child: AdaptiveLiquidGlassLayer(
-                child: GlassProgressIndicator.circular(
-                  size: customSize,
-                ),
+                child: GlassProgressIndicator.circular(size: customSize),
               ),
             ),
           ),
@@ -81,9 +79,7 @@ void main() {
           home: Scaffold(
             body: Center(
               child: AdaptiveLiquidGlassLayer(
-                child: GlassProgressIndicator.circular(
-                  strokeWidth: 5.0,
-                ),
+                child: GlassProgressIndicator.circular(strokeWidth: 5.0),
               ),
             ),
           ),
@@ -99,9 +95,7 @@ void main() {
           home: Scaffold(
             body: Center(
               child: AdaptiveLiquidGlassLayer(
-                child: GlassProgressIndicator.circular(
-                  color: Colors.red,
-                ),
+                child: GlassProgressIndicator.circular(color: Colors.red),
               ),
             ),
           ),
@@ -116,9 +110,7 @@ void main() {
         const MaterialApp(
           home: Scaffold(
             body: Center(
-              child: GlassProgressIndicator.circular(
-                useOwnLayer: true,
-              ),
+              child: GlassProgressIndicator.circular(useOwnLayer: true),
             ),
           ),
         ),
@@ -128,8 +120,9 @@ void main() {
       expect(find.byType(AdaptiveLiquidGlassLayer), findsOneWidget);
     });
 
-    testWidgets('transitions from indeterminate to determinate',
-        (tester) async {
+    testWidgets('transitions from indeterminate to determinate', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -152,9 +145,7 @@ void main() {
           home: Scaffold(
             body: Center(
               child: AdaptiveLiquidGlassLayer(
-                child: GlassProgressIndicator.circular(
-                  value: 0.7,
-                ),
+                child: GlassProgressIndicator.circular(value: 0.7),
               ),
             ),
           ),
@@ -165,16 +156,15 @@ void main() {
       expect(find.byType(GlassProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('transitions from determinate to indeterminate',
-        (tester) async {
+    testWidgets('transitions from determinate to indeterminate', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
             body: Center(
               child: AdaptiveLiquidGlassLayer(
-                child: GlassProgressIndicator.circular(
-                  value: 0.3,
-                ),
+                child: GlassProgressIndicator.circular(value: 0.3),
               ),
             ),
           ),
@@ -202,8 +192,9 @@ void main() {
   });
 
   group('GlassProgressIndicator.linear', () {
-    testWidgets('renders linear indeterminate progress indicator',
-        (tester) async {
+    testWidgets('renders linear indeterminate progress indicator', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -225,16 +216,15 @@ void main() {
       expect(find.byType(GlassProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('renders linear determinate progress indicator',
-        (tester) async {
+    testWidgets('renders linear determinate progress indicator', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
             body: Center(
               child: AdaptiveLiquidGlassLayer(
-                child: GlassProgressIndicator.linear(
-                  value: 0.5,
-                ),
+                child: GlassProgressIndicator.linear(value: 0.5),
               ),
             ),
           ),
@@ -250,9 +240,7 @@ void main() {
           home: Scaffold(
             body: Center(
               child: AdaptiveLiquidGlassLayer(
-                child: GlassProgressIndicator.linear(
-                  height: 8.0,
-                ),
+                child: GlassProgressIndicator.linear(height: 8.0),
               ),
             ),
           ),
@@ -268,9 +256,7 @@ void main() {
           home: Scaffold(
             body: Center(
               child: AdaptiveLiquidGlassLayer(
-                child: GlassProgressIndicator.linear(
-                  minWidth: 300.0,
-                ),
+                child: GlassProgressIndicator.linear(minWidth: 300.0),
               ),
             ),
           ),
@@ -286,9 +272,7 @@ void main() {
           home: Scaffold(
             body: Center(
               child: AdaptiveLiquidGlassLayer(
-                child: GlassProgressIndicator.linear(
-                  color: Colors.green,
-                ),
+                child: GlassProgressIndicator.linear(color: Colors.green),
               ),
             ),
           ),
@@ -303,9 +287,7 @@ void main() {
         const MaterialApp(
           home: Scaffold(
             body: Center(
-              child: GlassProgressIndicator.linear(
-                useOwnLayer: true,
-              ),
+              child: GlassProgressIndicator.linear(useOwnLayer: true),
             ),
           ),
         ),
@@ -392,9 +374,7 @@ void main() {
                   ),
                 ),
                 child: const AdaptiveLiquidGlassLayer(
-                  child: GlassProgressIndicator.circular(
-                    color: Colors.orange,
-                  ),
+                  child: GlassProgressIndicator.circular(color: Colors.orange),
                 ),
               ),
             ),
@@ -413,9 +393,7 @@ void main() {
           home: Scaffold(
             body: Center(
               child: AdaptiveLiquidGlassLayer(
-                child: GlassProgressIndicator.circular(
-                  value: 0.0,
-                ),
+                child: GlassProgressIndicator.circular(value: 0.0),
               ),
             ),
           ),
@@ -431,9 +409,7 @@ void main() {
           home: Scaffold(
             body: Center(
               child: AdaptiveLiquidGlassLayer(
-                child: GlassProgressIndicator.circular(
-                  value: 1.0,
-                ),
+                child: GlassProgressIndicator.circular(value: 1.0),
               ),
             ),
           ),
@@ -450,9 +426,7 @@ void main() {
             home: Scaffold(
               body: Center(
                 child: AdaptiveLiquidGlassLayer(
-                  child: GlassProgressIndicator.circular(
-                    value: i / 10,
-                  ),
+                  child: GlassProgressIndicator.circular(value: i / 10),
                 ),
               ),
             ),

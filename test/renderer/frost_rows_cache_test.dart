@@ -28,8 +28,11 @@ void _expectOddRows(Path rows, Matrix4 transform, double dpr) {
       inverse,
       Offset(screen.center.dx, (row + 0.5) / dpr),
     );
-    expect(rows.contains(centre), row.isOdd,
-        reason: 'row $row at ${transform.getTranslation()}');
+    expect(
+      rows.contains(centre),
+      row.isOdd,
+      reason: 'row $row at ${transform.getTranslation()}',
+    );
   }
 }
 
@@ -72,11 +75,11 @@ void main() {
   test('moving shifts the rows, resizing or scaling rebuilds them', () {
     final cache = FrostRows();
     Path? rows(Matrix4 transform, [Rect bounds = _bounds]) => cache.rows(
-          transform: transform,
-          bounds: bounds,
-          passPhysical: _pass,
-          dpr: 3,
-        );
+      transform: transform,
+      bounds: bounds,
+      passPhysical: _pass,
+      dpr: 3,
+    );
     rows(_at(0, 0));
     expect(cache.builds, 1);
     // A scroll: sixty frames at fractional offsets.

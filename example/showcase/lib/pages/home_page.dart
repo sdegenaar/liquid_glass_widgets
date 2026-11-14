@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -353,11 +353,8 @@ class _HomePageState extends State<HomePage> {
             ),
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
+                  return FadeTransition(opacity: animation, child: child);
+                },
             transitionDuration: const Duration(milliseconds: 400),
           ),
         );
@@ -366,11 +363,11 @@ class _HomePageState extends State<HomePage> {
         tag: 'destination_${destination.id}',
         flightShuttleBuilder:
             (flightContext, animation, direction, fromContext, toContext) {
-          return Container(
-            color: Color(0x00000000),
-            child: toContext.widget,
-          );
-        },
+              return Container(
+                color: Color(0x00000000),
+                child: toContext.widget,
+              );
+            },
         child: Container(
           color: Color(0x00000000),
           child: ClipRRect(
@@ -398,10 +395,7 @@ class _HomePageState extends State<HomePage> {
                       return Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [
-                              Color(0xFF4A90E2),
-                              Color(0xFF357ABD),
-                            ],
+                            colors: [Color(0xFF4A90E2), Color(0xFF357ABD)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -494,8 +488,9 @@ class _HomePageState extends State<HomePage> {
                                     child: Container(
                                       padding: EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: CupertinoColors.white
-                                            .withValues(alpha: 0.2),
+                                        color: CupertinoColors.white.withValues(
+                                          alpha: 0.2,
+                                        ),
                                         shape: BoxShape.circle,
                                       ),
                                       child: Icon(
@@ -520,8 +515,9 @@ class _HomePageState extends State<HomePage> {
                                       vertical: 5,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: CupertinoColors.white
-                                          .withValues(alpha: 0.2),
+                                      color: CupertinoColors.white.withValues(
+                                        alpha: 0.2,
+                                      ),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Row(
@@ -563,8 +559,9 @@ class _HomePageState extends State<HomePage> {
                                   Text(
                                     ' /night',
                                     style: TextStyle(
-                                      color: CupertinoColors.white
-                                          .withValues(alpha: 0.70),
+                                      color: CupertinoColors.white.withValues(
+                                        alpha: 0.70,
+                                      ),
                                       fontSize: 14,
                                     ),
                                   ),
@@ -586,8 +583,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildBottomBar() {
-    const defaultGlassColor =
-        Color(0x3DFFFFFF); // CupertinoColors.white.withValues(alpha: 0.24)
+    const defaultGlassColor = Color(
+      0x3DFFFFFF,
+    ); // CupertinoColors.white.withValues(alpha: 0.24)
     const defaultLightAngle =
         0.75 * math.pi; // 135° — Apple standard, upper-left
     return Padding(
@@ -612,9 +610,7 @@ class _HomePageState extends State<HomePage> {
           onTap: () {
             Navigator.push(
               context,
-              CupertinoPageRoute(
-                builder: (context) => const ConciergePage(),
-              ),
+              CupertinoPageRoute(builder: (context) => const ConciergePage()),
             );
           },
           label: 'Concierge',

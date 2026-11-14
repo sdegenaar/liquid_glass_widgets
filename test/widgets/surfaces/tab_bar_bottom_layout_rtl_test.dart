@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -25,8 +25,10 @@ void main() {
     GlassTab(label: 'Profile', icon: Icon(CupertinoIcons.person)),
   ];
 
-  Widget rtlBar(
-      {required ValueChanged<int> onTabSelected, int selectedIndex = 1}) {
+  Widget rtlBar({
+    required ValueChanged<int> onTabSelected,
+    int selectedIndex = 1,
+  }) {
     return createTestApp(
       child: Directionality(
         textDirection: TextDirection.rtl,
@@ -41,8 +43,10 @@ void main() {
     );
   }
 
-  Widget ltrBar(
-      {required ValueChanged<int> onTabSelected, int selectedIndex = 1}) {
+  Widget ltrBar({
+    required ValueChanged<int> onTabSelected,
+    int selectedIndex = 1,
+  }) {
     return createTestApp(
       child: Directionality(
         textDirection: TextDirection.ltr,
@@ -81,10 +85,12 @@ void main() {
       await tester.pumpWidget(rtlBar(onTabSelected: (_) {}));
 
       final screenWidth = tester.getSize(find.byType(GlassTabBar)).width;
-      final homeCenter =
-          tester.getCenter(find.text('Home').hitTestable().first);
-      final profileCenter =
-          tester.getCenter(find.text('Profile').hitTestable().first);
+      final homeCenter = tester.getCenter(
+        find.text('Home').hitTestable().first,
+      );
+      final profileCenter = tester.getCenter(
+        find.text('Profile').hitTestable().first,
+      );
 
       // RTL ordering: the first tab sits to the right of the last tab.
       expect(homeCenter.dx, greaterThan(profileCenter.dx));
@@ -114,8 +120,9 @@ void main() {
       var selected = -1;
       await tester.pumpWidget(ltrBar(onTabSelected: (i) => selected = i));
 
-      final profile =
-          tester.getCenter(find.text('Profile').hitTestable().first);
+      final profile = tester.getCenter(
+        find.text('Profile').hitTestable().first,
+      );
       final search = tester.getCenter(find.text('Search').hitTestable().first);
       expect(profile.dx, greaterThan(search.dx));
 

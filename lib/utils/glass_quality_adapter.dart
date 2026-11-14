@@ -94,7 +94,7 @@ enum AdaptivePhase {
 class GlassQualityAdapter {
   /// Creates a [GlassQualityAdapter].
   ///
-  /// [onQualityChanged] is called on the Dart main thread whenever the
+  /// [_onQualityChanged] is called on the Dart main thread whenever the
   /// effective quality changes. The callback receives `(from, to)`.
   ///
   /// [initialQuality] overrides both the session cache and Phase 2 — the
@@ -107,18 +107,14 @@ class GlassQualityAdapter {
     required this.maxQuality,
     required this.targetFrameMs,
     required this.allowStepUp,
-    required void Function(GlassQuality from, GlassQuality to) onQualityChanged,
+    required this._onQualityChanged,
     this.initialQuality,
     this.warmupPremiumThresholdMs = 20.0,
     this.warmupStandardThresholdMs = 28.0,
-    void Function(GlassQuality settled, double p75Ms, int frames)?
-        onWarmupComplete,
+    this._onWarmupComplete,
     this.frostStep = false,
-    void Function(bool frostEnabled)? onFrostChanged,
-  })  : _onQualityChanged = onQualityChanged,
-        _onWarmupComplete = onWarmupComplete,
-        _onFrostChanged = onFrostChanged,
-        _currentQuality = maxQuality;
+    this._onFrostChanged,
+  }) : _currentQuality = maxQuality;
 
   // ── Configuration ──────────────────────────────────────────────────────────
 
@@ -397,7 +393,7 @@ class GlassQualityAdapter {
   /// fast devices that stay at [maxQuality] through warmup — those devices
   /// never fire [_onQualityChanged], so their P75 would otherwise be invisible.
   final void Function(GlassQuality settled, double p75Ms, int frames)?
-      _onWarmupComplete;
+  _onWarmupComplete;
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
@@ -452,8 +448,10 @@ class GlassQualityAdapter {
     if (cached != null) {
       // Apply the settled quality from the cache and skip Phase 2.
       // Keep it within [minQuality, maxQuality] in case the config changed.
-      final clamped =
-          _floorQuality(_capQuality(maxQuality, cached), minQuality);
+      final clamped = _floorQuality(
+        _capQuality(maxQuality, cached),
+        minQuality,
+      );
       _lastChangeReason = GlassQualityChangeReason.restoredFromCache;
       _lastP75Ms = null;
       _lastP95Ms = null;
@@ -607,10 +605,7 @@ class GlassQualityAdapter {
     // never raises it after the quality has been selected.
     final effective = allowStepUp
         ? _floorQuality(decided, minQuality)
-        : _floorQuality(
-            _capQuality(decided, _currentQuality),
-            minQuality,
-          );
+        : _floorQuality(_capQuality(decided, _currentQuality), minQuality);
 
     // Write to session cache so remounts within this app process skip Phase 2.
     _sessionSettledQuality = effective;
@@ -840,7 +835,9 @@ class GlassQualityAdapter {
   /// "Lower" here means lower quality (descending: premium → standard → minimal).
   /// Capping prevents exceeding the quality ceiling.
   static GlassQuality _capQuality(
-      GlassQuality requested, GlassQuality ceiling) {
+    GlassQuality requested,
+    GlassQuality ceiling,
+  ) {
     // If requested is BETTER than ceiling, cap it at ceiling.
     if (_qualityOrdinal(requested) > _qualityOrdinal(ceiling)) return ceiling;
     return requested;
@@ -850,7 +847,9 @@ class GlassQualityAdapter {
   ///
   /// "Higher" means higher quality. Flooring prevents going below the minimum.
   static GlassQuality _floorQuality(
-      GlassQuality requested, GlassQuality floor) {
+    GlassQuality requested,
+    GlassQuality floor,
+  ) {
     // If requested is WORSE than floor, elevate it to floor.
     if (_qualityOrdinal(requested) < _qualityOrdinal(floor)) return floor;
     return requested;

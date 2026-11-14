@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 import 'package:liquid_glass_widgets_example/constants/glass_settings.dart';
 
@@ -18,9 +18,10 @@ class InputsPage extends StatelessWidget {
           title: Text(
             'Inputs',
             style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: CupertinoColors.label.resolveFrom(context)),
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: CupertinoColors.label.resolveFrom(context),
+            ),
           ),
         ),
         body: SingleChildScrollView(
@@ -65,10 +66,13 @@ class InputsPage extends StatelessWidget {
                           placeholder: 'example@email.com',
                           keyboardType: TextInputType.emailAddress,
                           useOwnLayer: true,
-                          prefixIcon: Icon(CupertinoIcons.mail,
-                              color: CupertinoColors.secondaryLabel
-                                  .resolveFrom(context),
-                              size: 20),
+                          prefixIcon: Icon(
+                            CupertinoIcons.mail,
+                            color: CupertinoColors.secondaryLabel.resolveFrom(
+                              context,
+                            ),
+                            size: 20,
+                          ),
                         ),
                       ),
                       SizedBox(height: 16),
@@ -119,9 +123,7 @@ class InputsPage extends StatelessWidget {
 
               // Search Bar Example
               _SectionHeader('Search'),
-              const GlassSearchBar(
-                placeholder: 'Search documentation...',
-              ),
+              const GlassSearchBar(placeholder: 'Search documentation...'),
               SizedBox(height: 16),
 
               SizedBox(height: 50),

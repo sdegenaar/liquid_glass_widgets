@@ -12,8 +12,8 @@
 ///   flutter run -t example/lib/demos/indicator_parity_demo.dart
 library;
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -38,10 +38,8 @@ class _DemoApp extends StatelessWidget {
       title: 'Indicator Parity',
       debugShowCheckedModeBanner: false,
       theme: const CupertinoThemeData(brightness: Brightness.dark),
-      builder: (context, child) => Theme(
-        data: ThemeData.dark(useMaterial3: true),
-        child: child!,
-      ),
+      builder: (context, child) =>
+          Theme(data: ThemeData.dark(useMaterial3: true), child: child!),
       home: const IndicatorParityDemoPage(),
     );
   }
@@ -83,7 +81,7 @@ class _IndicatorParityDemoPageState extends State<IndicatorParityDemoPage> {
   // below 36 are written verbatim.
   double _barBorderRadius = _kCapsuleSentinel; // default: true capsule (iOS 26)
   double?
-      _indicatorBorderRadiusOverride; // null = auto (capsule or barRadius − 4)
+  _indicatorBorderRadiusOverride; // null = auto (capsule or barRadius − 4)
 
   // ── Per-widget state ───────────────────────────────────────────────────────
   int _segSelected = 0;
@@ -98,7 +96,7 @@ class _IndicatorParityDemoPageState extends State<IndicatorParityDemoPage> {
   static const _segments = <GlassSegment>[
     GlassSegment(label: 'Journals'),
     GlassSegment(label: 'Photos'),
-    GlassSegment(label: 'Clips')
+    GlassSegment(label: 'Clips'),
   ];
 
   static const _tabs = [
@@ -131,12 +129,7 @@ class _IndicatorParityDemoPageState extends State<IndicatorParityDemoPage> {
       AnimatedGlassIndicator.baseIndicatorSettings.copyWith(
         chromaticAberration: _aberration,
         refractiveIndex: _refraction,
-        glassColor: Color.from(
-          alpha: _glassTint,
-          red: 1,
-          green: 1,
-          blue: 1,
-        ),
+        glassColor: Color.from(alpha: _glassTint, red: 1, green: 1, blue: 1),
       );
 
   EdgeInsets get _expansion =>
@@ -527,16 +520,19 @@ class _TunerPanelState extends State<_TunerPanel> {
                   padding: EdgeInsets.fromLTRB(16, 14, 12, 14),
                   child: Row(
                     children: [
-                      Icon(CupertinoIcons.tuningfork,
-                          color: CupertinoColors.white.withValues(alpha: 0.70),
-                          size: 14),
+                      Icon(
+                        CupertinoIcons.tuningfork,
+                        color: CupertinoColors.white.withValues(alpha: 0.70),
+                        size: 14,
+                      ),
                       SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           'LIVE TUNER — bottom bar, searchable & segmented controls',
                           style: TextStyle(
-                            color:
-                                CupertinoColors.white.withValues(alpha: 0.55),
+                            color: CupertinoColors.white.withValues(
+                              alpha: 0.55,
+                            ),
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.6,
@@ -546,15 +542,17 @@ class _TunerPanelState extends State<_TunerPanel> {
                       // Current values summary (visible when closed)
                       if (!_isOpen) ...[
                         _MiniValuePill(
-                            label: 'P',
-                            value: widget.pinchStrength.toStringAsFixed(1),
-                            color: const Color(0xFF5E3AFF)),
+                          label: 'P',
+                          value: widget.pinchStrength.toStringAsFixed(1),
+                          color: const Color(0xFF5E3AFF),
+                        ),
                         SizedBox(width: 4),
                         _MiniValuePill(
-                            label: 'E',
-                            value:
-                                '${widget.expansionH.round()}×${widget.expansionV.round()}',
-                            color: const Color(0xFF0A84FF)),
+                          label: 'E',
+                          value:
+                              '${widget.expansionH.round()}×${widget.expansionV.round()}',
+                          color: const Color(0xFF0A84FF),
+                        ),
                       ],
                       SizedBox(width: 4),
                       AnimatedRotation(
@@ -583,9 +581,10 @@ class _TunerPanelState extends State<_TunerPanel> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Divider(
-                                height: 1,
-                                thickness: 0.5,
-                                color: Color(0x22FFFFFF)),
+                              height: 1,
+                              thickness: 0.5,
+                              color: Color(0x22FFFFFF),
+                            ),
                             SizedBox(height: 10),
                             _SliderRow(
                               label: 'Pinch Strength',
@@ -593,8 +592,8 @@ class _TunerPanelState extends State<_TunerPanel> {
                               min: 0,
                               max: 1,
                               divisions: 20,
-                              displayValue:
-                                  widget.pinchStrength.toStringAsFixed(2),
+                              displayValue: widget.pinchStrength
+                                  .toStringAsFixed(2),
                               accentColor: const Color(0xFF5E3AFF),
                               onChanged: widget.onPinchChanged,
                             ),
@@ -624,8 +623,9 @@ class _TunerPanelState extends State<_TunerPanel> {
                               min: 0,
                               max: 0.5,
                               divisions: 50,
-                              displayValue:
-                                  widget.aberration.toStringAsFixed(2),
+                              displayValue: widget.aberration.toStringAsFixed(
+                                2,
+                              ),
                               accentColor: const Color(0xFFFF9F0A),
                               onChanged: widget.onAberrationChanged,
                             ),
@@ -645,16 +645,18 @@ class _TunerPanelState extends State<_TunerPanel> {
                               min: 1.0,
                               max: 1.5,
                               divisions: 50,
-                              displayValue:
-                                  widget.refraction.toStringAsFixed(2),
+                              displayValue: widget.refraction.toStringAsFixed(
+                                2,
+                              ),
                               accentColor: const Color(0xFF64D2FF),
                               onChanged: widget.onRefractionChanged,
                             ),
                             SizedBox(height: 6),
                             Divider(
-                                height: 1,
-                                thickness: 0.5,
-                                color: Color(0x22FFFFFF)),
+                              height: 1,
+                              thickness: 0.5,
+                              color: Color(0x22FFFFFF),
+                            ),
                             SizedBox(height: 6),
                             // ── Shape — 3-tier radius ──────────────────────
                             // Slider travels 4..36 in the UI; the max value (36)
@@ -669,8 +671,8 @@ class _TunerPanelState extends State<_TunerPanel> {
                               divisions: 32,
                               displayValue:
                                   widget.barBorderRadius >= _kCapsuleSentinel
-                                      ? 'capsule (default)'
-                                      : '${widget.barBorderRadius.round()} px',
+                                  ? 'capsule (default)'
+                                  : '${widget.barBorderRadius.round()} px',
                               accentColor: const Color(0xFFFF9F0A),
                               onChanged: (v) => widget.onBarBorderRadiusChanged(
                                 // Map slider max → true capsule sentinel
@@ -707,8 +709,9 @@ class _TunerPanelState extends State<_TunerPanel> {
                                               onTap: widget
                                                   .onResetIndicatorBorderRadius,
                                               child: Padding(
-                                                padding:
-                                                    EdgeInsets.only(right: 6),
+                                                padding: EdgeInsets.only(
+                                                  right: 6,
+                                                ),
                                                 child: Icon(
                                                   CupertinoIcons.refresh,
                                                   size: 14,
@@ -719,16 +722,18 @@ class _TunerPanelState extends State<_TunerPanel> {
                                             ),
                                           Container(
                                             padding: EdgeInsets.symmetric(
-                                                horizontal: 8, vertical: 2),
+                                              horizontal: 8,
+                                              vertical: 2,
+                                            ),
                                             decoration: BoxDecoration(
                                               color: const Color(0xFFFF375F)
                                                   .withValues(
-                                                alpha:
-                                                    widget.indicatorBorderRadius ==
+                                                    alpha:
+                                                        widget.indicatorBorderRadius ==
                                                             null
                                                         ? 0.1
                                                         : 0.2,
-                                              ),
+                                                  ),
                                               borderRadius:
                                                   BorderRadius.circular(6),
                                             ),
@@ -740,16 +745,16 @@ class _TunerPanelState extends State<_TunerPanel> {
                                               style: TextStyle(
                                                 color: const Color(0xFFFF375F)
                                                     .withValues(
-                                                  alpha:
-                                                      widget.indicatorBorderRadius ==
+                                                      alpha:
+                                                          widget.indicatorBorderRadius ==
                                                               null
                                                           ? 0.55
                                                           : 1.0,
-                                                ),
+                                                    ),
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w700,
                                                 fontFeatures: const [
-                                                  FontFeature.tabularFigures()
+                                                  FontFeature.tabularFigures(),
                                                 ],
                                               ),
                                             ),
@@ -761,10 +766,11 @@ class _TunerPanelState extends State<_TunerPanel> {
                                   SizedBox(
                                     height: 30,
                                     child: CupertinoSlider(
-                                      value: (widget.indicatorBorderRadius ??
-                                              (widget.barBorderRadius - 4)
-                                                  .clamp(4.0, 30.0))
-                                          .clamp(4.0, 30.0),
+                                      value:
+                                          (widget.indicatorBorderRadius ??
+                                                  (widget.barBorderRadius - 4)
+                                                      .clamp(4.0, 30.0))
+                                              .clamp(4.0, 30.0),
                                       min: 4,
                                       max: 30,
                                       divisions: 26,
@@ -775,8 +781,10 @@ class _TunerPanelState extends State<_TunerPanel> {
                                   ),
                                   if (widget.indicatorBorderRadius == null)
                                     Padding(
-                                      padding:
-                                          EdgeInsets.only(top: 2, bottom: 2),
+                                      padding: EdgeInsets.only(
+                                        top: 2,
+                                        bottom: 2,
+                                      ),
                                       child: Text(
                                         widget.barBorderRadius >=
                                                 _kCapsuleSentinel
@@ -808,8 +816,11 @@ class _TunerPanelState extends State<_TunerPanel> {
 
 /// Compact pill showing a single tuning value in the collapsed tuner header.
 class _MiniValuePill extends StatelessWidget {
-  const _MiniValuePill(
-      {required this.label, required this.value, required this.color});
+  const _MiniValuePill({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
   final String label;
   final String value;
   final Color color;
@@ -935,10 +946,7 @@ class _WidgetSection extends StatelessWidget {
             Container(
               width: 8,
               height: 8,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
             SizedBox(width: 6),
             Text(
@@ -1050,10 +1058,7 @@ class _GlowOrb extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: RadialGradient(
-          colors: [
-            color.withValues(alpha: 0.45),
-            color.withValues(alpha: 0.0),
-          ],
+          colors: [color.withValues(alpha: 0.45), color.withValues(alpha: 0.0)],
         ),
       ),
     );

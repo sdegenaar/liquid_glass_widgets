@@ -18,7 +18,7 @@
 ///   flutter run -t example/lib/demos/meniscus_and_blur_demo.dart
 library;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() async {
@@ -77,8 +77,8 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
         Color(0xFFFF5E3A),
         Color(0xFFFF2A68),
         Color(0xFF8E2DE2),
-        Color(0xFF4A00E0)
-      ]
+        Color(0xFF4A00E0),
+      ],
     ),
     (
       'Pacific Deep',
@@ -86,8 +86,8 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
         Color(0xFF00C6FF),
         Color(0xFF0072FF),
         Color(0xFF0A1128),
-        Color(0xFF001F3F)
-      ]
+        Color(0xFF001F3F),
+      ],
     ),
     (
       'Emerald Forest',
@@ -95,8 +95,8 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
         Color(0xFF11998E),
         Color(0xFF38EF7D),
         Color(0xFF0575E6),
-        Color(0xFF021B79)
-      ]
+        Color(0xFF021B79),
+      ],
     ),
     (
       'Monochrome',
@@ -104,22 +104,22 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
         Color(0xFFE0E0E0),
         Color(0xFF9E9E9E),
         Color(0xFF424242),
-        Color(0xFF121212)
-      ]
+        Color(0xFF121212),
+      ],
     ),
   ];
 
   // Shared settings built from the sliders — surface glass components use this.
   LiquidGlassSettings get _liveSettings => LiquidGlassSettings(
-        thickness: _thickness,
-        blur: _blur,
-        edgeAbsorption: _edgeAbsorption,
-        fresnelStrength: _fresnelStrength,
-        lightIntensity: 0.8,
-        glassColor: _isDarkMode
-            ? const Color.fromARGB(25, 255, 255, 255)
-            : const Color.fromARGB(40, 255, 255, 255),
-      );
+    thickness: _thickness,
+    blur: _blur,
+    edgeAbsorption: _edgeAbsorption,
+    fresnelStrength: _fresnelStrength,
+    lightIntensity: 0.8,
+    glassColor: _isDarkMode
+        ? const Color.fromARGB(25, 255, 255, 255)
+        : const Color.fromARGB(40, 255, 255, 255),
+  );
 
   // Indicator-specific settings — sliding pill indicators are transparent optical
   // lenses (blur: 0) over text/icons. We copy baseIndicatorSettings and inject the
@@ -134,8 +134,9 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
   @override
   Widget build(BuildContext context) {
     final currentBg = _backgrounds[_backgroundIndex];
-    final labelColor =
-        _isDarkMode ? CupertinoColors.white : CupertinoColors.black;
+    final labelColor = _isDarkMode
+        ? CupertinoColors.white
+        : CupertinoColors.black;
 
     return CupertinoTheme(
       data: CupertinoThemeData(
@@ -202,8 +203,9 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
                         Container(
                           padding: const EdgeInsets.all(9),
                           decoration: BoxDecoration(
-                            color: CupertinoColors.activeBlue
-                                .withValues(alpha: 0.18),
+                            color: CupertinoColors.activeBlue.withValues(
+                              alpha: 0.18,
+                            ),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -291,7 +293,9 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
               Text(
                 'Drag the Edge Absorption slider above to compare.',
                 style: TextStyle(
-                    fontSize: 12, color: labelColor.withValues(alpha: 0.5)),
+                  fontSize: 12,
+                  color: labelColor.withValues(alpha: 0.5),
+                ),
               ),
               const SizedBox(height: 10),
               Row(
@@ -324,7 +328,9 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
               Text(
                 'Drag between segments — watch meniscus depth on the moving pill.',
                 style: TextStyle(
-                    fontSize: 12, color: labelColor.withValues(alpha: 0.5)),
+                  fontSize: 12,
+                  color: labelColor.withValues(alpha: 0.5),
+                ),
               ),
               const SizedBox(height: 10),
               GlassSegmentedControl(
@@ -345,7 +351,9 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
               Text(
                 'The thumb is an AnimatedGlassIndicator — same absorption applies.',
                 style: TextStyle(
-                    fontSize: 12, color: labelColor.withValues(alpha: 0.5)),
+                  fontSize: 12,
+                  color: labelColor.withValues(alpha: 0.5),
+                ),
               ),
               const SizedBox(height: 10),
               GlassSlider(
@@ -361,7 +369,9 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
               Text(
                 'The circular thumb uses the same indicator pipeline.',
                 style: TextStyle(
-                    fontSize: 12, color: labelColor.withValues(alpha: 0.5)),
+                  fontSize: 12,
+                  color: labelColor.withValues(alpha: 0.5),
+                ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -391,7 +401,9 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
               Text(
                 'Full GlassQuality.premium path — authentic 3D optical separation under the Fresnel hairline rim with jelly-spring tracking.',
                 style: TextStyle(
-                    fontSize: 12, color: labelColor.withValues(alpha: 0.5)),
+                  fontSize: 12,
+                  color: labelColor.withValues(alpha: 0.5),
+                ),
               ),
               const SizedBox(height: 12),
 
@@ -472,7 +484,9 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
               Text(
                 '50% bandwidth reduction · Zero banding · No transcendental exp() in loop',
                 style: TextStyle(
-                    fontSize: 12, color: labelColor.withValues(alpha: 0.5)),
+                  fontSize: 12,
+                  color: labelColor.withValues(alpha: 0.5),
+                ),
               ),
               const SizedBox(height: 10),
               _progressiveBlurShowcase(labelColor),
@@ -495,8 +509,9 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
             onTap: () => setState(() => _backgroundIndex = idx),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              margin:
-                  EdgeInsets.only(right: idx < _backgrounds.length - 1 ? 8 : 0),
+              margin: EdgeInsets.only(
+                right: idx < _backgrounds.length - 1 ? 8 : 0,
+              ),
               height: 44,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -517,14 +532,17 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
                           color: CupertinoColors.black.withValues(alpha: 0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 3),
-                        )
+                        ),
                       ]
                     : null,
               ),
               alignment: Alignment.center,
               child: isSelected
-                  ? const Icon(CupertinoIcons.checkmark_alt,
-                      color: CupertinoColors.white, size: 18)
+                  ? const Icon(
+                      CupertinoIcons.checkmark_alt,
+                      color: CupertinoColors.white,
+                      size: 18,
+                    )
                   : null,
             ),
           ),
@@ -565,7 +583,8 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
               color: accent.withValues(alpha: active ? 0.14 : 0.05),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                  color: accent.withValues(alpha: active ? 0.35 : 0.1)),
+                color: accent.withValues(alpha: active ? 0.35 : 0.1),
+              ),
             ),
             alignment: Alignment.center,
             child: Icon(icon, color: accent, size: 24),
@@ -576,8 +595,9 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color:
-                  _isDarkMode ? CupertinoColors.white : CupertinoColors.black,
+              color: _isDarkMode
+                  ? CupertinoColors.white
+                  : CupertinoColors.black,
             ),
             textAlign: TextAlign.center,
           ),
@@ -585,7 +605,9 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
           Text(
             active ? 'Beer-Lambert rim depth' : 'No rim absorption',
             style: const TextStyle(
-                fontSize: 11, color: CupertinoColors.systemGrey),
+              fontSize: 11,
+              color: CupertinoColors.systemGrey,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -609,8 +631,9 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color:
-                  _isDarkMode ? CupertinoColors.white : CupertinoColors.black,
+              color: _isDarkMode
+                  ? CupertinoColors.white
+                  : CupertinoColors.black,
             ),
           ),
         ),
@@ -643,24 +666,23 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  CupertinoIcons.speedometer,
-                  size: 36,
-                  color: labelColor,
-                ),
+                Icon(CupertinoIcons.speedometer, size: 36, color: labelColor),
                 const SizedBox(height: 8),
                 Text(
                   'kHalf 48 → 24 · IIR Multiply Recurrence',
                   style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: labelColor),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: labelColor,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Zero transcendental exp() calls inside the blur loop',
                   style: TextStyle(
-                      fontSize: 11, color: labelColor.withValues(alpha: 0.55)),
+                    fontSize: 11,
+                    color: labelColor.withValues(alpha: 0.55),
+                  ),
                 ),
               ],
             ),
@@ -735,8 +757,8 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
               color: isSelected
                   ? CupertinoColors.white
                   : (_isDarkMode
-                      ? CupertinoColors.white
-                      : CupertinoColors.black),
+                        ? CupertinoColors.white
+                        : CupertinoColors.black),
             ),
           ),
         ),

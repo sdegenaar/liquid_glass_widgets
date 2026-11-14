@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/constants/glass_defaults.dart';
 import 'package:liquid_glass_widgets/src/engine/liquid_glass_settings.dart';
@@ -17,10 +17,14 @@ void main() {
       test('saturation is 1.5', () => expect(s.saturation, 1.5));
       test('lightIntensity is 0.5', () => expect(s.lightIntensity, 0.5));
       test('ambientStrength is 0', () => expect(s.ambientStrength, 0));
-      test('chromaticAberration is 0.01',
-          () => expect(s.chromaticAberration, 0.01));
-      test('lightAngle is 3π/4 (GlassDefaults.lightAngle — iOS 26 upper-left)',
-          () => expect(s.lightAngle, closeTo(GlassDefaults.lightAngle, 1e-10)));
+      test(
+        'chromaticAberration is 0.01',
+        () => expect(s.chromaticAberration, 0.01),
+      );
+      test(
+        'lightAngle is 3π/4 (GlassDefaults.lightAngle — iOS 26 upper-left)',
+        () => expect(s.lightAngle, closeTo(GlassDefaults.lightAngle, 1e-10)),
+      );
       test('glassColor is fully transparent white', () {
         expect(s.glassColor, const Color.fromARGB(0, 255, 255, 255));
       });
@@ -40,16 +44,26 @@ void main() {
       );
 
       test('effectiveBlur == blur', () => expect(s.effectiveBlur, 8));
-      test('effectiveThickness == thickness',
-          () => expect(s.effectiveThickness, 30));
-      test('effectiveChromaticAberration == chromaticAberration',
-          () => expect(s.effectiveChromaticAberration, 0.05));
-      test('effectiveLightIntensity == lightIntensity',
-          () => expect(s.effectiveLightIntensity, 0.7));
-      test('effectiveAmbientStrength == ambientStrength',
-          () => expect(s.effectiveAmbientStrength, 0.3));
-      test('effectiveSaturation == saturation when visibility=1',
-          () => expect(s.effectiveSaturation, closeTo(2.0, 1e-10)));
+      test(
+        'effectiveThickness == thickness',
+        () => expect(s.effectiveThickness, 30),
+      );
+      test(
+        'effectiveChromaticAberration == chromaticAberration',
+        () => expect(s.effectiveChromaticAberration, 0.05),
+      );
+      test(
+        'effectiveLightIntensity == lightIntensity',
+        () => expect(s.effectiveLightIntensity, 0.7),
+      );
+      test(
+        'effectiveAmbientStrength == ambientStrength',
+        () => expect(s.effectiveAmbientStrength, 0.3),
+      );
+      test(
+        'effectiveSaturation == saturation when visibility=1',
+        () => expect(s.effectiveSaturation, closeTo(2.0, 1e-10)),
+      );
       test('effectiveGlassColor alpha unchanged at visibility=1', () {
         expect(s.effectiveGlassColor.a, closeTo(128 / 255, 0.01));
       });
@@ -71,16 +85,26 @@ void main() {
 
       test('effectiveBlur is 0', () => expect(s.effectiveBlur, 0));
       test('effectiveThickness is 0', () => expect(s.effectiveThickness, 0));
-      test('effectiveChromaticAberration is 0',
-          () => expect(s.effectiveChromaticAberration, 0));
-      test('effectiveLightIntensity is 0',
-          () => expect(s.effectiveLightIntensity, 0));
-      test('effectiveAmbientStrength is 0',
-          () => expect(s.effectiveAmbientStrength, 0));
-      test('effectiveSaturation is 1.0 (neutral) when visibility=0',
-          () => expect(s.effectiveSaturation, closeTo(1.0, 1e-10)));
-      test('effectiveGlassColor alpha is 0',
-          () => expect(s.effectiveGlassColor.a, closeTo(0.0, 0.01)));
+      test(
+        'effectiveChromaticAberration is 0',
+        () => expect(s.effectiveChromaticAberration, 0),
+      );
+      test(
+        'effectiveLightIntensity is 0',
+        () => expect(s.effectiveLightIntensity, 0),
+      );
+      test(
+        'effectiveAmbientStrength is 0',
+        () => expect(s.effectiveAmbientStrength, 0),
+      );
+      test(
+        'effectiveSaturation is 1.0 (neutral) when visibility=0',
+        () => expect(s.effectiveSaturation, closeTo(1.0, 1e-10)),
+      );
+      test(
+        'effectiveGlassColor alpha is 0',
+        () => expect(s.effectiveGlassColor.a, closeTo(0.0, 0.01)),
+      );
     });
 
     group('visibility=0.5 scales linearly', () {
@@ -93,16 +117,26 @@ void main() {
         ambientStrength: 0.4,
       );
 
-      test('effectiveBlur is halved',
-          () => expect(s.effectiveBlur, closeTo(5.0, 1e-10)));
-      test('effectiveThickness is halved',
-          () => expect(s.effectiveThickness, closeTo(10.0, 1e-10)));
-      test('effectiveChromaticAberration is halved',
-          () => expect(s.effectiveChromaticAberration, closeTo(0.02, 1e-10)));
-      test('effectiveLightIntensity is halved',
-          () => expect(s.effectiveLightIntensity, closeTo(0.5, 1e-10)));
-      test('effectiveAmbientStrength is halved',
-          () => expect(s.effectiveAmbientStrength, closeTo(0.2, 1e-10)));
+      test(
+        'effectiveBlur is halved',
+        () => expect(s.effectiveBlur, closeTo(5.0, 1e-10)),
+      );
+      test(
+        'effectiveThickness is halved',
+        () => expect(s.effectiveThickness, closeTo(10.0, 1e-10)),
+      );
+      test(
+        'effectiveChromaticAberration is halved',
+        () => expect(s.effectiveChromaticAberration, closeTo(0.02, 1e-10)),
+      );
+      test(
+        'effectiveLightIntensity is halved',
+        () => expect(s.effectiveLightIntensity, closeTo(0.5, 1e-10)),
+      );
+      test(
+        'effectiveAmbientStrength is halved',
+        () => expect(s.effectiveAmbientStrength, closeTo(0.2, 1e-10)),
+      );
     });
 
     // ─── effectiveSaturation formula ─────────────────────────────────────────
@@ -111,8 +145,11 @@ void main() {
       test('saturation=1.0 always gives 1.0 regardless of visibility', () {
         for (final v in [0.0, 0.25, 0.5, 0.75, 1.0]) {
           final s = LiquidGlassSettings(saturation: 1.0, visibility: v);
-          expect(s.effectiveSaturation, closeTo(1.0, 1e-10),
-              reason: 'visibility=$v');
+          expect(
+            s.effectiveSaturation,
+            closeTo(1.0, 1e-10),
+            reason: 'visibility=$v',
+          );
         }
       });
 
@@ -121,11 +158,13 @@ void main() {
         expect(s.effectiveSaturation, closeTo(1.5, 1e-10));
       });
 
-      test('saturation=0.0 (full desaturation) at visibility=1.0 gives 0.0',
-          () {
-        const s = LiquidGlassSettings(saturation: 0.0, visibility: 1.0);
-        expect(s.effectiveSaturation, closeTo(0.0, 1e-10));
-      });
+      test(
+        'saturation=0.0 (full desaturation) at visibility=1.0 gives 0.0',
+        () {
+          const s = LiquidGlassSettings(saturation: 0.0, visibility: 1.0);
+          expect(s.effectiveSaturation, closeTo(0.0, 1e-10));
+        },
+      );
 
       test('saturation=0.0 at visibility=0.0 gives neutral 1.0', () {
         const s = LiquidGlassSettings(saturation: 0.0, visibility: 0.0);
@@ -410,19 +449,27 @@ void main() {
       test('lerp fades backerColor smoothly (not a midpoint switch)', () {
         const a = LiquidGlassSettings(backerColor: Color(0x00000000));
         const b = LiquidGlassSettings(backerColor: Color(0xFF000000));
-        expect(LiquidGlassSettings.lerp(a, b, 0.25).backerColor!.a,
-            closeTo(0.25, 0.02));
-        expect(LiquidGlassSettings.lerp(a, b, 0.75).backerColor!.a,
-            closeTo(0.75, 0.02));
+        expect(
+          LiquidGlassSettings.lerp(a, b, 0.25).backerColor!.a,
+          closeTo(0.25, 0.02),
+        );
+        expect(
+          LiquidGlassSettings.lerp(a, b, 0.75).backerColor!.a,
+          closeTo(0.75, 0.02),
+        );
       });
 
-      test('lerp from null fades in from transparent (Color.lerp semantics)',
-          () {
-        const a = LiquidGlassSettings(); // backerColor null
-        const b = LiquidGlassSettings(backerColor: Color(0xFF000000));
-        expect(LiquidGlassSettings.lerp(a, b, 0.5).backerColor!.a,
-            closeTo(0.5, 0.02));
-      });
+      test(
+        'lerp from null fades in from transparent (Color.lerp semantics)',
+        () {
+          const a = LiquidGlassSettings(); // backerColor null
+          const b = LiquidGlassSettings(backerColor: Color(0xFF000000));
+          expect(
+            LiquidGlassSettings.lerp(a, b, 0.5).backerColor!.a,
+            closeTo(0.5, 0.02),
+          );
+        },
+      );
 
       test('lerp of two null backers stays null', () {
         const a = LiquidGlassSettings();
@@ -470,12 +517,18 @@ void main() {
       test('lerp switches bodyMode at t=0.5', () {
         const a = LiquidGlassSettings(bodyMode: GlassBodyMode.adaptive);
         const b = LiquidGlassSettings(bodyMode: GlassBodyMode.clear);
-        expect(LiquidGlassSettings.lerp(a, b, 0.49).bodyMode,
-            equals(GlassBodyMode.adaptive));
-        expect(LiquidGlassSettings.lerp(a, b, 0.50).bodyMode,
-            equals(GlassBodyMode.clear));
-        expect(LiquidGlassSettings.lerp(a, b, 0.99).bodyMode,
-            equals(GlassBodyMode.clear));
+        expect(
+          LiquidGlassSettings.lerp(a, b, 0.49).bodyMode,
+          equals(GlassBodyMode.adaptive),
+        );
+        expect(
+          LiquidGlassSettings.lerp(a, b, 0.50).bodyMode,
+          equals(GlassBodyMode.clear),
+        );
+        expect(
+          LiquidGlassSettings.lerp(a, b, 0.99).bodyMode,
+          equals(GlassBodyMode.clear),
+        );
       });
 
       test('equality includes bodyMode', () {

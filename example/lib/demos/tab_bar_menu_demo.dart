@@ -15,8 +15,9 @@ library;
 
 import 'dart:async';
 import 'dart:ui';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() async {
@@ -34,10 +35,8 @@ class TabBarMenuDemoApp extends StatelessWidget {
       title: 'Tab Bar Menus Demo',
       debugShowCheckedModeBanner: false,
       theme: const CupertinoThemeData(brightness: Brightness.dark),
-      builder: (context, child) => Theme(
-        data: ThemeData.dark(useMaterial3: true),
-        child: child!,
-      ),
+      builder: (context, child) =>
+          Theme(data: ThemeData.dark(useMaterial3: true), child: child!),
       home: const TabBarMenuDemoPage(),
     );
   }
@@ -172,8 +171,9 @@ class _TabBarMenuDemoPageState extends State<TabBarMenuDemoPage> {
                           width: 28,
                           height: 28,
                           decoration: BoxDecoration(
-                            color: CupertinoColors.activeBlue
-                                .withValues(alpha: 0.22),
+                            color: CupertinoColors.activeBlue.withValues(
+                              alpha: 0.22,
+                            ),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Icon(
@@ -186,8 +186,9 @@ class _TabBarMenuDemoPageState extends State<TabBarMenuDemoPage> {
                         Text(
                           'TAB BAR VARIANT',
                           style: TextStyle(
-                            color:
-                                CupertinoColors.white.withValues(alpha: 0.70),
+                            color: CupertinoColors.white.withValues(
+                              alpha: 0.70,
+                            ),
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.8,
@@ -280,19 +281,26 @@ class _TabBarMenuDemoPageState extends State<TabBarMenuDemoPage> {
                         ),
                       ),
                       CupertinoSlidingSegmentedControl<
-                          GlassExtraButtonPlacement>(
+                        GlassExtraButtonPlacement
+                      >(
                         groupValue: _placement,
                         children: const {
                           GlassExtraButtonPlacement.left: Padding(
                             padding: EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             child: Text('Left', style: TextStyle(fontSize: 12)),
                           ),
                           GlassExtraButtonPlacement.right: Padding(
                             padding: EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            child:
-                                Text('Right', style: TextStyle(fontSize: 12)),
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            child: Text(
+                              'Right',
+                              style: TextStyle(fontSize: 12),
+                            ),
                           ),
                         },
                         onValueChanged: (p) {
@@ -319,18 +327,24 @@ class _TabBarMenuDemoPageState extends State<TabBarMenuDemoPage> {
                       groupValue: _menuWidth,
                       children: {
                         180.0: const Padding(
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           child: Text('180', style: TextStyle(fontSize: 12)),
                         ),
                         220.0: const Padding(
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           child: Text('220', style: TextStyle(fontSize: 12)),
                         ),
                         260.0: const Padding(
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           child: Text('260', style: TextStyle(fontSize: 12)),
                         ),
                       },
@@ -437,8 +451,10 @@ class _TabBarMenuDemoPageState extends State<TabBarMenuDemoPage> {
             children: [
               // Badge
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: CupertinoColors.activeBlue.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(12),
@@ -483,8 +499,8 @@ class _TabBarMenuDemoPageState extends State<TabBarMenuDemoPage> {
                 _variant == _TabBarVariant.minimizable
                     ? 'Scroll down to test the pull-down menu while minimized into the trailing pill.'
                     : _variant == _TabBarVariant.searchable
-                        ? 'Tap search to expand the input, or tap the ellipsis menu button.'
-                        : 'Tap the ellipsis button on the bar to morph into the liquid menu.',
+                    ? 'Tap search to expand the input, or tap the ellipsis menu button.'
+                    : 'Tap the ellipsis button on the bar to morph into the liquid menu.',
                 style: TextStyle(
                   fontSize: 14,
                   height: 1.35,
@@ -510,8 +526,8 @@ class _TabBarMenuDemoPageState extends State<TabBarMenuDemoPage> {
                 _selectedTab == 0
                     ? 'EXPLORE FEED'
                     : _selectedTab == 1
-                        ? 'SAVED LIBRARY'
-                        : 'PROFILE ITEMS',
+                    ? 'SAVED LIBRARY'
+                    : 'PROFILE ITEMS',
                 style: TextStyle(
                   color: CupertinoColors.white.withValues(alpha: 0.75),
                   fontSize: 12,
@@ -740,7 +756,7 @@ class _TabBarMenuDemoPageState extends State<TabBarMenuDemoPage> {
           Image.asset(
             'assets/wallpaper.jpg',
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
+            errorBuilder: (_, _, _) => Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [Color(0xFF1B1B2F), Color(0xFF162447)],
@@ -936,15 +952,17 @@ class _FeedCardWidget extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: CupertinoColors.white
-                                    .withValues(alpha: 0.08),
+                                color: CupertinoColors.white.withValues(
+                                  alpha: 0.08,
+                                ),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 item.tag,
                                 style: TextStyle(
-                                  color: CupertinoColors.white
-                                      .withValues(alpha: 0.65),
+                                  color: CupertinoColors.white.withValues(
+                                    alpha: 0.65,
+                                  ),
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -966,8 +984,9 @@ class _FeedCardWidget extends StatelessWidget {
                         Text(
                           item.subtitle,
                           style: TextStyle(
-                            color:
-                                CupertinoColors.white.withValues(alpha: 0.65),
+                            color: CupertinoColors.white.withValues(
+                              alpha: 0.65,
+                            ),
                             fontSize: 13,
                             height: 1.25,
                           ),

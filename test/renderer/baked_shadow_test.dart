@@ -114,9 +114,7 @@ void main() {
 
     final rebaked = layer.debugBakedShadow;
     layer
-      ..shadows = const [
-        BoxShadow(color: Color(0x40000000), blurRadius: 6),
-      ]
+      ..shadows = const [BoxShadow(color: Color(0x40000000), blurRadius: 6)]
       ..debugPaintShadows(canvas, _offset, matte, _bounds.inflate(2));
     expect(identical(layer.debugBakedShadow, rebaked), isFalse);
 

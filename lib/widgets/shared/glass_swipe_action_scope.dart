@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/widgets.dart';
 
 /// An abstract interface for controllable swipe action rows.
 ///
@@ -143,10 +143,7 @@ class GlassSwipeActionScopeState extends State<GlassSwipeActionScope> {
       );
     }
 
-    return _InheritedGlassSwipeActionScope(
-      state: this,
-      child: result,
-    );
+    return _InheritedGlassSwipeActionScope(state: this, child: result);
   }
 }
 

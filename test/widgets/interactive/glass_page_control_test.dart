@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -12,12 +12,7 @@ void main() {
   group('GlassPageControl rendering', () {
     testWidgets('renders inside a GlassButton capsule', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          child: const GlassPageControl(
-            count: 5,
-            currentPage: 0,
-          ),
-        ),
+        createTestApp(child: const GlassPageControl(count: 5, currentPage: 0)),
       );
       await tester.pump();
       // Should be wrapped in a GlassButton (for press interactions)
@@ -32,12 +27,7 @@ void main() {
 
     testWidgets('renders correct number of dots', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          child: const GlassPageControl(
-            count: 5,
-            currentPage: 0,
-          ),
-        ),
+        createTestApp(child: const GlassPageControl(count: 5, currentPage: 0)),
       );
       await tester.pump();
       expect(find.byType(GlassPageControl), findsOneWidget);
@@ -56,12 +46,7 @@ void main() {
 
     testWidgets('renders nothing when count is 0', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          child: const GlassPageControl(
-            count: 0,
-            currentPage: 0,
-          ),
-        ),
+        createTestApp(child: const GlassPageControl(count: 0, currentPage: 0)),
       );
       await tester.pump();
       // Should render SizedBox.shrink, not a GlassButton
@@ -76,12 +61,7 @@ void main() {
 
     testWidgets('renders nothing when count is negative', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          child: const GlassPageControl(
-            count: -1,
-            currentPage: 0,
-          ),
-        ),
+        createTestApp(child: const GlassPageControl(count: -1, currentPage: 0)),
       );
       await tester.pump();
       expect(
@@ -107,15 +87,11 @@ void main() {
       expect(find.byIcon(Icons.location_on), findsOneWidget);
     });
 
-    testWidgets('does not render leading icon when not provided',
-        (tester) async {
+    testWidgets('does not render leading icon when not provided', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        createTestApp(
-          child: const GlassPageControl(
-            count: 3,
-            currentPage: 0,
-          ),
-        ),
+        createTestApp(child: const GlassPageControl(count: 3, currentPage: 0)),
       );
       await tester.pump();
       expect(
@@ -222,12 +198,7 @@ void main() {
     testWidgets('tap does nothing when onPageChanged is null', (tester) async {
       // Just verify it doesn't crash
       await tester.pumpWidget(
-        createTestApp(
-          child: const GlassPageControl(
-            count: 3,
-            currentPage: 0,
-          ),
-        ),
+        createTestApp(child: const GlassPageControl(count: 3, currentPage: 0)),
       );
       await tester.pumpAndSettle();
       await tester.tap(find.byType(GlassPageControl));
@@ -250,10 +221,7 @@ void main() {
           child: StatefulBuilder(
             builder: (context, setState) {
               setPageState = setState;
-              return GlassPageControl(
-                count: 3,
-                currentPage: currentPage,
-              );
+              return GlassPageControl(count: 3, currentPage: currentPage);
             },
           ),
         ),
@@ -280,12 +248,7 @@ void main() {
   group('GlassPageControl edge cases', () {
     testWidgets('single page renders one dot in glass capsule', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          child: const GlassPageControl(
-            count: 1,
-            currentPage: 0,
-          ),
-        ),
+        createTestApp(child: const GlassPageControl(count: 1, currentPage: 0)),
       );
       await tester.pumpAndSettle();
       expect(
@@ -318,10 +281,7 @@ void main() {
           child: const GlassPageControl(
             count: 3,
             currentPage: 1,
-            settings: LiquidGlassSettings(
-              thickness: 20,
-              blur: 3,
-            ),
+            settings: LiquidGlassSettings(thickness: 20, blur: 3),
           ),
         ),
       );
@@ -332,11 +292,7 @@ void main() {
     testWidgets('custom height renders without error', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: const GlassPageControl(
-            count: 4,
-            currentPage: 2,
-            height: 44,
-          ),
+          child: const GlassPageControl(count: 4, currentPage: 2, height: 44),
         ),
       );
       await tester.pumpAndSettle();
@@ -426,9 +382,7 @@ void main() {
 
     testWidgets('no tap hint when onPageChanged is null', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          child: const GlassPageControl(count: 3, currentPage: 0),
-        ),
+        createTestApp(child: const GlassPageControl(count: 3, currentPage: 0)),
       );
       await tester.pump();
       final outerSemantics = tester.widgetList<Semantics>(

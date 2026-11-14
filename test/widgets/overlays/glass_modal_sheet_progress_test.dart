@@ -1,23 +1,23 @@
 // GlassModalSheetController.progress / progressListenable: live half↔full
 // position reporting.
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 import '../../shared/test_helpers.dart';
 
 Widget _sheetApp(GlassModalSheetController controller) => createTestApp(
-      child: Stack(
-        children: [
-          GlassModalSheet(
-            controller: controller,
-            initialState: GlassSheetState.half,
-            child: const Text('Sheet Content'),
-          ),
-        ],
+  child: Stack(
+    children: [
+      GlassModalSheet(
+        controller: controller,
+        initialState: GlassSheetState.half,
+        child: const Text('Sheet Content'),
       ),
-    );
+    ],
+  ),
+);
 
 void main() {
   group('GlassModalSheetController — progress', () {
@@ -29,8 +29,9 @@ void main() {
       expect(GlassModalSheetController().progressListenable, isNull);
     });
 
-    testWidgets('mounted at half → progress 0.0, listenable non-null',
-        (tester) async {
+    testWidgets('mounted at half → progress 0.0, listenable non-null', (
+      tester,
+    ) async {
       final controller = GlassModalSheetController();
       await tester.pumpWidget(_sheetApp(controller));
       await tester.pumpAndSettle();
@@ -63,7 +64,8 @@ void main() {
       void listener() => seen = controller.progress;
       controller.progressListenable!.addListener(listener);
       addTearDown(
-          () => controller.progressListenable?.removeListener(listener));
+        () => controller.progressListenable?.removeListener(listener),
+      );
 
       controller.snapToState(GlassSheetState.full, animate: false);
       expect(seen, 1.0, reason: 'the jump to full should read as 1.0 at once');
@@ -85,30 +87,36 @@ void main() {
     });
 
     testWidgets(
-        'progressListenable notifies during an animated snap and progress '
-        'passes through intermediate values', (tester) async {
-      final controller = GlassModalSheetController();
-      await tester.pumpWidget(_sheetApp(controller));
-      await tester.pumpAndSettle();
+      'progressListenable notifies during an animated snap and progress '
+      'passes through intermediate values',
+      (tester) async {
+        final controller = GlassModalSheetController();
+        await tester.pumpWidget(_sheetApp(controller));
+        await tester.pumpAndSettle();
 
-      var notifications = 0;
-      var sawIntermediate = false;
-      void listener() {
-        notifications++;
-        final p = controller.progress;
-        if (p > 0.05 && p < 0.95) sawIntermediate = true;
-      }
+        var notifications = 0;
+        var sawIntermediate = false;
+        void listener() {
+          notifications++;
+          final p = controller.progress;
+          if (p > 0.05 && p < 0.95) sawIntermediate = true;
+        }
 
-      controller.progressListenable!.addListener(listener);
-      controller.snapToState(GlassSheetState.full, animate: true);
-      await tester.pumpAndSettle();
-      controller.progressListenable!.removeListener(listener);
+        controller.progressListenable!.addListener(listener);
+        controller.snapToState(GlassSheetState.full, animate: true);
+        await tester.pumpAndSettle();
+        controller.progressListenable!.removeListener(listener);
 
-      expect(notifications, greaterThan(0));
-      expect(sawIntermediate, isTrue,
-          reason: 'progress should report positions between the snaps '
-              'while the sheet animates');
-      expect(controller.progress, 1.0);
-    });
+        expect(notifications, greaterThan(0));
+        expect(
+          sawIntermediate,
+          isTrue,
+          reason:
+              'progress should report positions between the snaps '
+              'while the sheet animates',
+        );
+        expect(controller.progress, 1.0);
+      },
+    );
   });
 }

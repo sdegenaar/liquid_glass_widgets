@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 import '../widgets/animated_background.dart';
@@ -75,9 +75,7 @@ class _ConciergePageState extends State<ConciergePage> {
           child: Column(
             children: [
               _buildHeader(),
-              Expanded(
-                child: _buildChatArea(),
-              ),
+              Expanded(child: _buildChatArea()),
               _buildPromptSuggestions(),
               SizedBox(height: 16),
               _buildInputArea(),
@@ -229,18 +227,11 @@ class _ConciergePageState extends State<ConciergePage> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              CupertinoIcons.lightbulb,
-              size: 14,
-              color: Color(0xFF4A90E2),
-            ),
+            Icon(CupertinoIcons.lightbulb, size: 14, color: Color(0xFF4A90E2)),
             SizedBox(width: 6),
             Text(
               prompt,
-              style: TextStyle(
-                color: CupertinoColors.white,
-                fontSize: 13,
-              ),
+              style: TextStyle(color: CupertinoColors.white, fontSize: 13),
             ),
           ],
         ),
@@ -280,10 +271,7 @@ class _ConciergePageState extends State<ConciergePage> {
               child: CupertinoTextField(
                 controller: _chatController,
                 focusNode: _chatFocusNode,
-                style: TextStyle(
-                  color: CupertinoColors.white,
-                  fontSize: 15,
-                ),
+                style: TextStyle(color: CupertinoColors.white, fontSize: 15),
                 maxLines: null,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _onSendMessage(),
@@ -292,9 +280,7 @@ class _ConciergePageState extends State<ConciergePage> {
                   color: CupertinoColors.white.withValues(alpha: 0.4),
                   fontSize: 15,
                 ),
-                decoration: BoxDecoration(
-                  color: Color(0x00000000),
-                ),
+                decoration: BoxDecoration(color: Color(0x00000000)),
                 padding: EdgeInsets.zero,
               ),
             ),
@@ -308,10 +294,7 @@ class _ConciergePageState extends State<ConciergePage> {
                 padding: EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      Color(0xFF4A90E2),
-                      Color(0xFF357ABD),
-                    ],
+                    colors: [Color(0xFF4A90E2), Color(0xFF357ABD)],
                   ),
                   shape: BoxShape.circle,
                 ),
@@ -371,8 +354,9 @@ class _ConciergePageState extends State<ConciergePage> {
                               Text(
                                 'Enable voice-to-text',
                                 style: TextStyle(
-                                  color: CupertinoColors.white
-                                      .withValues(alpha: 0.6),
+                                  color: CupertinoColors.white.withValues(
+                                    alpha: 0.6,
+                                  ),
                                   fontSize: 13,
                                 ),
                               ),
@@ -410,8 +394,9 @@ class _ConciergePageState extends State<ConciergePage> {
                               Text(
                                 'Get travel updates',
                                 style: TextStyle(
-                                  color: CupertinoColors.white
-                                      .withValues(alpha: 0.6),
+                                  color: CupertinoColors.white.withValues(
+                                    alpha: 0.6,
+                                  ),
                                   fontSize: 13,
                                 ),
                               ),

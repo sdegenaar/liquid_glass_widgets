@@ -61,11 +61,7 @@ class GlassTheme extends InheritedWidget {
   /// Creates a glass theme.
   ///
   /// The [data] parameter contains theme configuration for light and dark modes.
-  const GlassTheme({
-    required this.data,
-    required super.child,
-    super.key,
-  });
+  const GlassTheme({required this.data, required super.child, super.key});
 
   /// The theme data containing light and dark configurations.
   final GlassThemeData data;

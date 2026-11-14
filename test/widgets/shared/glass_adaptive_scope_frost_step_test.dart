@@ -2,7 +2,7 @@
 
 import 'dart:ui';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/renderer/glass_frost_budget.dart';
@@ -13,16 +13,16 @@ import 'package:liquid_glass_widgets/utils/glass_quality_adapter.dart';
 // GlassFrostBudget the premium layers read.
 
 List<FrameTiming> _frames(int count, int rasterUs) => List.generate(
-      count,
-      (_) => FrameTiming(
-        vsyncStart: 0,
-        buildStart: 0,
-        buildFinish: 0,
-        rasterStart: 0,
-        rasterFinish: rasterUs,
-        rasterFinishWallTime: rasterUs,
-      ),
-    );
+  count,
+  (_) => FrameTiming(
+    vsyncStart: 0,
+    buildStart: 0,
+    buildFinish: 0,
+    rasterStart: 0,
+    rasterFinish: rasterUs,
+    rasterFinishWallTime: rasterUs,
+  ),
+);
 
 void main() {
   setUp(() {
@@ -48,20 +48,24 @@ void main() {
     required bool frostStep,
     required ValueSetter<(GlassAdaptiveScopeData, bool)> onBuild,
   }) async {
-    await tester.pumpWidget(MaterialApp(
-      home: GlassAdaptiveScope(
-        key: key,
-        frostStep: frostStep,
-        debugLogDiagnostics: true,
-        child: Builder(builder: (context) {
-          onBuild((
-            GlassAdaptiveScopeData.of(context),
-            GlassFrostBudget.frostEnabledOf(context),
-          ));
-          return const SizedBox();
-        }),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GlassAdaptiveScope(
+          key: key,
+          frostStep: frostStep,
+          debugLogDiagnostics: true,
+          child: Builder(
+            builder: (context) {
+              onBuild((
+                GlassAdaptiveScopeData.of(context),
+                GlassFrostBudget.frostEnabledOf(context),
+              ));
+              return const SizedBox();
+            },
+          ),
+        ),
       ),
-    ));
+    );
     return (key.currentState! as dynamic).adapter as GlassQualityAdapter;
   }
 
@@ -101,8 +105,9 @@ void main() {
     expect(logs.any((l) => l.contains('frost on')), isTrue);
   });
 
-  testWidgets('changing frostStep starts over with the frost on',
-      (tester) async {
+  testWidgets('changing frostStep starts over with the frost on', (
+    tester,
+  ) async {
     final key = GlobalKey();
     late (GlassAdaptiveScopeData, bool) seen;
     var adapter = await pumpScope(

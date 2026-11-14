@@ -5,7 +5,7 @@
 //   - GlassGlowColors.lerp
 //   - GlassThemeVariant.lerp (delegation, quality + borderRadius rules)
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -150,8 +150,11 @@ void main() {
         glowOpacity: 1.0,
       );
       final mid = GlassGlowColors.lerp(a, b, 0.5)!;
-      final expected =
-          Color.lerp(const Color(0xFF000000), const Color(0xFFFFFFFF), 0.5);
+      final expected = Color.lerp(
+        const Color(0xFF000000),
+        const Color(0xFFFFFFFF),
+        0.5,
+      );
       expect(mid.primary, expected);
       expect(mid.secondary, expected);
       expect(mid.success, expected);
@@ -170,8 +173,10 @@ void main() {
       expect(GlassGlowColors.lerp(a, b, 0.3)!.primary, isNull);
       expect(GlassGlowColors.lerp(a, b, 0.7)!.primary, const Color(0xFF123456));
       // Scalars still interpolate even when colors switch discretely.
-      expect(GlassGlowColors.lerp(a, b, 0.3)!.glowBlurRadius,
-          closeTo(0.7 * a.glowBlurRadius + 0.3 * b.glowBlurRadius, 1e-9));
+      expect(
+        GlassGlowColors.lerp(a, b, 0.3)!.glowBlurRadius,
+        closeTo(0.7 * a.glowBlurRadius + 0.3 * b.glowBlurRadius, 1e-9),
+      );
     });
   });
 
@@ -213,7 +218,10 @@ void main() {
 
     test('lerping the built-in light and dark variants is well-formed', () {
       final mid = GlassThemeVariant.lerp(
-          GlassThemeVariant.light, GlassThemeVariant.dark, 0.5);
+        GlassThemeVariant.light,
+        GlassThemeVariant.dark,
+        0.5,
+      );
       expect(mid.settings!.thickness, closeTo(32.0, 1e-9));
       expect(mid.settings!.blur, closeTo(0.6, 1e-9));
       expect(mid.settings!.saturation, closeTo(1.75, 1e-9));
@@ -222,14 +230,18 @@ void main() {
       // Endpoints reproduce the variants' settings exactly.
       expect(
         GlassThemeVariant.lerp(
-                GlassThemeVariant.light, GlassThemeVariant.dark, 0.0)
-            .settings,
+          GlassThemeVariant.light,
+          GlassThemeVariant.dark,
+          0.0,
+        ).settings,
         GlassThemeVariant.light.settings,
       );
       expect(
         GlassThemeVariant.lerp(
-                GlassThemeVariant.light, GlassThemeVariant.dark, 1.0)
-            .settings,
+          GlassThemeVariant.light,
+          GlassThemeVariant.dark,
+          1.0,
+        ).settings,
         GlassThemeVariant.dark.settings,
       );
     });

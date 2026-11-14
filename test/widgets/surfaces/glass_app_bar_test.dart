@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -12,9 +12,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: const Scaffold(
-              appBar: GlassAppBar(),
-            ),
+            child: const Scaffold(appBar: GlassAppBar()),
           ),
         ),
       );
@@ -28,9 +26,7 @@ void main() {
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const Scaffold(
-              appBar: GlassAppBar(
-                title: Text('App Title'),
-              ),
+              appBar: GlassAppBar(title: Text('App Title')),
             ),
           ),
         ),
@@ -72,10 +68,7 @@ void main() {
             settings: defaultTestGlassSettings,
             child: Scaffold(
               appBar: GlassAppBar(
-                leading: GlassButton(
-                  icon: Icon(Icons.menu),
-                  onTap: () {},
-                ),
+                leading: GlassButton(icon: Icon(Icons.menu), onTap: () {}),
                 title: const Text('Title'),
               ),
             ),
@@ -113,11 +106,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: const Scaffold(
-              appBar: GlassAppBar(
-                title: Text('Centered'),
-              ),
-            ),
+            child: const Scaffold(appBar: GlassAppBar(title: Text('Centered'))),
           ),
         ),
       );
@@ -128,8 +117,9 @@ void main() {
       final titleFinder = find.text('Centered');
       expect(titleFinder, findsOneWidget);
 
-      final appBarBox =
-          tester.renderObject<RenderBox>(find.byType(GlassAppBar));
+      final appBarBox = tester.renderObject<RenderBox>(
+        find.byType(GlassAppBar),
+      );
       final barCenter =
           appBarBox.localToGlobal(Offset.zero).dx + appBarBox.size.width / 2;
 
@@ -150,10 +140,7 @@ void main() {
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: const Scaffold(
-              appBar: GlassAppBar(
-                title: Text('Left'),
-                centerTitle: false,
-              ),
+              appBar: GlassAppBar(title: Text('Left'), centerTitle: false),
             ),
           ),
         ),
@@ -193,31 +180,34 @@ void main() {
     });
 
     testWidgets(
-        'shouldFullyObstruct returns false for transparent background (default)',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(child: const Scaffold(appBar: GlassAppBar())),
-      );
+      'shouldFullyObstruct returns false for transparent background (default)',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(child: const Scaffold(appBar: GlassAppBar())),
+        );
 
-      final appBar = tester.widget<GlassAppBar>(find.byType(GlassAppBar));
-      final context = tester.element(find.byType(GlassAppBar));
-      expect(appBar.shouldFullyObstruct(context), isFalse);
-    });
+        final appBar = tester.widget<GlassAppBar>(find.byType(GlassAppBar));
+        final context = tester.element(find.byType(GlassAppBar));
+        expect(appBar.shouldFullyObstruct(context), isFalse);
+      },
+    );
 
-    testWidgets('shouldFullyObstruct returns true for fully opaque background',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: const Scaffold(
-            appBar: GlassAppBar(backgroundColor: Colors.black),
+    testWidgets(
+      'shouldFullyObstruct returns true for fully opaque background',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: const Scaffold(
+              appBar: GlassAppBar(backgroundColor: Colors.black),
+            ),
           ),
-        ),
-      );
+        );
 
-      final appBar = tester.widget<GlassAppBar>(find.byType(GlassAppBar));
-      final context = tester.element(find.byType(GlassAppBar));
-      expect(appBar.shouldFullyObstruct(context), isTrue);
-    });
+        final appBar = tester.widget<GlassAppBar>(find.byType(GlassAppBar));
+        final context = tester.element(find.byType(GlassAppBar));
+        expect(appBar.shouldFullyObstruct(context), isTrue);
+      },
+    );
 
     test('defaults are correct', () {
       const appBar = GlassAppBar();
@@ -230,8 +220,9 @@ void main() {
     });
 
     group('bottom parameter', () {
-      testWidgets('preferredSize includes bottom widget height',
-          (tester) async {
+      testWidgets('preferredSize includes bottom widget height', (
+        tester,
+      ) async {
         const bottomHeight = 48.0;
         final appBar = GlassAppBar(
           bottom: PreferredSize(
@@ -263,8 +254,9 @@ void main() {
         expect(find.text('bottom-content'), findsOneWidget);
       });
 
-      testWidgets('scaffold reserves correct height with bottom',
-          (tester) async {
+      testWidgets('scaffold reserves correct height with bottom', (
+        tester,
+      ) async {
         const bottomHeight = 48.0;
         await tester.pumpWidget(
           createTestApp(
@@ -284,14 +276,12 @@ void main() {
         final appBarWidget = tester.widget<GlassAppBar>(
           find.byType(GlassAppBar),
         );
-        expect(
-          appBarWidget.preferredSize.height,
-          equals(44.0 + bottomHeight),
-        );
+        expect(appBarWidget.preferredSize.height, equals(44.0 + bottomHeight));
       });
 
-      testWidgets('no bottom renders single toolbar row (no Column)',
-          (tester) async {
+      testWidgets('no bottom renders single toolbar row (no Column)', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           createTestApp(
             child: const Scaffold(
@@ -310,8 +300,9 @@ void main() {
         );
       });
 
-      testWidgets('with bottom renders a Column wrapping toolbar + bottom',
-          (tester) async {
+      testWidgets('with bottom renders a Column wrapping toolbar + bottom', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           createTestApp(
             child: Scaffold(
@@ -335,35 +326,35 @@ void main() {
         );
       });
 
-      test('custom toolbarHeight is reflected in preferredSize without bottom',
-          () {
-        const appBar = GlassAppBar(toolbarHeight: 56.0);
-        expect(appBar.preferredSize, equals(const Size.fromHeight(56.0)));
-      });
+      test(
+        'custom toolbarHeight is reflected in preferredSize without bottom',
+        () {
+          const appBar = GlassAppBar(toolbarHeight: 56.0);
+          expect(appBar.preferredSize, equals(const Size.fromHeight(56.0)));
+        },
+      );
 
       test(
-          'custom toolbarHeight + bottom height sum correctly in preferredSize',
-          () {
-        final appBar = GlassAppBar(
-          toolbarHeight: 56.0,
-          bottom: const PreferredSize(
-            preferredSize: Size.fromHeight(48.0),
-            child: SizedBox.shrink(),
-          ),
-        );
-        expect(appBar.preferredSize, equals(const Size.fromHeight(104.0)));
-      });
+        'custom toolbarHeight + bottom height sum correctly in preferredSize',
+        () {
+          final appBar = GlassAppBar(
+            toolbarHeight: 56.0,
+            bottom: const PreferredSize(
+              preferredSize: Size.fromHeight(48.0),
+              child: SizedBox.shrink(),
+            ),
+          );
+          expect(appBar.preferredSize, equals(const Size.fromHeight(104.0)));
+        },
+      );
     });
 
-    testWidgets('renders as StatelessWidget (no glass rendering)',
-        (tester) async {
+    testWidgets('renders as StatelessWidget (no glass rendering)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
-          child: const Scaffold(
-            appBar: GlassAppBar(
-              title: Text('No Glass'),
-            ),
-          ),
+          child: const Scaffold(appBar: GlassAppBar(title: Text('No Glass'))),
         ),
       );
 
@@ -388,15 +379,14 @@ void main() {
       );
     });
 
-    testWidgets('wraps itself in GlassIsolationScope with isolated: true',
-        (tester) async {
+    testWidgets('wraps itself in GlassIsolationScope with isolated: true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: const Scaffold(
-              appBar: GlassAppBar(title: Text('Test')),
-            ),
+            child: const Scaffold(appBar: GlassAppBar(title: Text('Test'))),
           ),
         ),
       );
@@ -408,19 +398,21 @@ void main() {
           matching: find.byType(GlassIsolationScope),
         ),
       );
-      expect(scope.isolated, isTrue,
-          reason: 'GlassAppBar should self-isolate for Z-order correctness');
+      expect(
+        scope.isolated,
+        isTrue,
+        reason: 'GlassAppBar should self-isolate for Z-order correctness',
+      );
     });
 
-    testWidgets('provides defaultQuality: premium via isolation scope',
-        (tester) async {
+    testWidgets('provides defaultQuality: premium via isolation scope', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: const Scaffold(
-              appBar: GlassAppBar(title: Text('Test')),
-            ),
+            child: const Scaffold(appBar: GlassAppBar(title: Text('Test'))),
           ),
         ),
       );
@@ -431,91 +423,102 @@ void main() {
           matching: find.byType(GlassIsolationScope),
         ),
       );
-      expect(scope.defaultQuality, equals(GlassQuality.premium),
-          reason: 'App bar buttons should default to premium quality');
+      expect(
+        scope.defaultQuality,
+        equals(GlassQuality.premium),
+        reason: 'App bar buttons should default to premium quality',
+      );
     });
   });
 
   group('title centering', () {
     testWidgets(
-        'title is centred on full bar width when leading button is present '
-        '(regression #198)', (tester) async {
-      // Use a fixed-width surface so we can measure absolute positions.
-      const barWidth = 390.0;
-      await tester.pumpWidget(
-        createTestApp(
-          child: SizedBox(
-            width: barWidth,
-            child: Scaffold(
-              appBar: GlassAppBar(
-                title: const Text('Title'),
-                leading: const SizedBox(width: 44, height: 44),
+      'title is centred on full bar width when leading button is present '
+      '(regression #198)',
+      (tester) async {
+        // Use a fixed-width surface so we can measure absolute positions.
+        const barWidth = 390.0;
+        await tester.pumpWidget(
+          createTestApp(
+            child: SizedBox(
+              width: barWidth,
+              child: Scaffold(
+                appBar: GlassAppBar(
+                  title: const Text('Title'),
+                  leading: const SizedBox(width: 44, height: 44),
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Find the Text widget that renders the title.
-      final titleFinder = find.text('Title');
-      expect(titleFinder, findsOneWidget);
+        // Find the Text widget that renders the title.
+        final titleFinder = find.text('Title');
+        expect(titleFinder, findsOneWidget);
 
-      final titleBox = tester.renderObject<RenderBox>(titleFinder);
-      final titlePos = titleBox.localToGlobal(Offset.zero);
-      final titleCenter = titlePos.dx + titleBox.size.width / 2;
+        final titleBox = tester.renderObject<RenderBox>(titleFinder);
+        final titlePos = titleBox.localToGlobal(Offset.zero);
+        final titleCenter = titlePos.dx + titleBox.size.width / 2;
 
-      // Find the bar's RenderBox to get its actual rendered width.
-      final appBarBox =
-          tester.renderObject<RenderBox>(find.byType(GlassAppBar));
-      final barCenter =
-          appBarBox.localToGlobal(Offset.zero).dx + appBarBox.size.width / 2;
+        // Find the bar's RenderBox to get its actual rendered width.
+        final appBarBox = tester.renderObject<RenderBox>(
+          find.byType(GlassAppBar),
+        );
+        final barCenter =
+            appBarBox.localToGlobal(Offset.zero).dx + appBarBox.size.width / 2;
 
-      // Title center must be within 2 px of the bar center.
-      // Without the Stack fix this would be shifted ~22 px to the right.
-      expect(
-        titleCenter,
-        closeTo(barCenter, 2.0),
-        reason: 'Title should be centred on the full bar width, not just the '
-            'space remaining after the leading widget (bug #198)',
-      );
-    });
+        // Title center must be within 2 px of the bar center.
+        // Without the Stack fix this would be shifted ~22 px to the right.
+        expect(
+          titleCenter,
+          closeTo(barCenter, 2.0),
+          reason:
+              'Title should be centred on the full bar width, not just the '
+              'space remaining after the leading widget (bug #198)',
+        );
+      },
+    );
 
     testWidgets(
-        'title is centred on full bar width with both leading and actions '
-        '(symmetric — existing behaviour preserved)', (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: const Scaffold(
-            appBar: GlassAppBar(
-              title: Text('Title'),
-              leading: SizedBox(width: 44, height: 44),
-              actions: [SizedBox(width: 44, height: 44)],
+      'title is centred on full bar width with both leading and actions '
+      '(symmetric — existing behaviour preserved)',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: const Scaffold(
+              appBar: GlassAppBar(
+                title: Text('Title'),
+                leading: SizedBox(width: 44, height: 44),
+                actions: [SizedBox(width: 44, height: 44)],
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      final titleFinder = find.text('Title');
-      expect(titleFinder, findsOneWidget);
+        final titleFinder = find.text('Title');
+        expect(titleFinder, findsOneWidget);
 
-      final titleBox = tester.renderObject<RenderBox>(titleFinder);
-      final titlePos = titleBox.localToGlobal(Offset.zero);
-      final titleCenter = titlePos.dx + titleBox.size.width / 2;
+        final titleBox = tester.renderObject<RenderBox>(titleFinder);
+        final titlePos = titleBox.localToGlobal(Offset.zero);
+        final titleCenter = titlePos.dx + titleBox.size.width / 2;
 
-      final appBarBox =
-          tester.renderObject<RenderBox>(find.byType(GlassAppBar));
-      final barCenter =
-          appBarBox.localToGlobal(Offset.zero).dx + appBarBox.size.width / 2;
+        final appBarBox = tester.renderObject<RenderBox>(
+          find.byType(GlassAppBar),
+        );
+        final barCenter =
+            appBarBox.localToGlobal(Offset.zero).dx + appBarBox.size.width / 2;
 
-      expect(
-        titleCenter,
-        closeTo(barCenter, 2.0),
-        reason: 'Symmetric leading + actions should also be centred',
-      );
-    });
+        expect(
+          titleCenter,
+          closeTo(barCenter, 2.0),
+          reason: 'Symmetric leading + actions should also be centred',
+        );
+      },
+    );
 
-    testWidgets('centerTitle: false aligns title to leading edge',
-        (tester) async {
+    testWidgets('centerTitle: false aligns title to leading edge', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: const Scaffold(
@@ -532,8 +535,9 @@ void main() {
       final titleFinder = find.text('Left Title');
       expect(titleFinder, findsOneWidget);
 
-      final appBarBox =
-          tester.renderObject<RenderBox>(find.byType(GlassAppBar));
+      final appBarBox = tester.renderObject<RenderBox>(
+        find.byType(GlassAppBar),
+      );
       final barCenter =
           appBarBox.localToGlobal(Offset.zero).dx + appBarBox.size.width / 2;
 
@@ -612,8 +616,7 @@ void main() {
         expect(
           titleLeft,
           16.0,
-          reason:
-              'Title should align directly to padding when no leading widget is provided',
+          reason: 'Title should align directly to padding when no leading widget is provided',
         );
       },
     );
@@ -649,8 +652,7 @@ void main() {
         expect(
           titleLeft,
           horizontalPadding + leadingWidth + 8.0,
-          reason:
-              'Title should include an 8px gap when a leading widget is present',
+          reason: 'Title should include an 8px gap when a leading widget is present',
         );
       },
     );
@@ -694,37 +696,28 @@ void main() {
       },
     );
 
-    testWidgets(
-      'relayouts when centerTitle changes',
-      (tester) async {
-        await tester.pumpWidget(
-          createTestApp(
-            child: const Scaffold(
-              appBar: GlassAppBar(
-                centerTitle: false,
-                title: Text('Title'),
-              ),
-            ),
+    testWidgets('relayouts when centerTitle changes', (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: const Scaffold(
+            appBar: GlassAppBar(centerTitle: false, title: Text('Title')),
           ),
-        );
+        ),
+      );
 
-        final initialLeft = tester.getTopLeft(find.text('Title')).dx;
+      final initialLeft = tester.getTopLeft(find.text('Title')).dx;
 
-        // Rebuild with centerTitle: true
-        await tester.pumpWidget(
-          createTestApp(
-            child: const Scaffold(
-              appBar: GlassAppBar(
-                centerTitle: true,
-                title: Text('Title'),
-              ),
-            ),
+      // Rebuild with centerTitle: true
+      await tester.pumpWidget(
+        createTestApp(
+          child: const Scaffold(
+            appBar: GlassAppBar(centerTitle: true, title: Text('Title')),
           ),
-        );
+        ),
+      );
 
-        final centeredLeft = tester.getTopLeft(find.text('Title')).dx;
-        expect(centeredLeft, greaterThan(initialLeft));
-      },
-    );
+      final centeredLeft = tester.getTopLeft(find.text('Title')).dx;
+      expect(centeredLeft, greaterThan(initialLeft));
+    });
   });
 }

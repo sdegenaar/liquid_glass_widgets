@@ -27,11 +27,7 @@ class GlassMotionScope extends StatefulWidget {
   ///
   /// [lightAngle] is a stream of angles **in radians**. Each emitted value
   /// replaces the `lightAngle` in the [GlassTheme] for this subtree.
-  const GlassMotionScope({
-    required this.child,
-    this.lightAngle,
-    super.key,
-  });
+  const GlassMotionScope({required this.child, this.lightAngle, super.key});
 
   /// Stream of light angles in radians.
   ///
@@ -88,8 +84,9 @@ class _GlassMotionScopeState extends State<GlassMotionScope> {
 
     GlassThemeVariant applyAngle(GlassThemeVariant variant) {
       return variant.copyWith(
-        settings: (variant.settings ?? const GlassThemeSettings())
-            .copyWith(lightAngle: angle),
+        settings: (variant.settings ?? const GlassThemeSettings()).copyWith(
+          lightAngle: angle,
+        ),
       );
     }
 

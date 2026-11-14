@@ -1,6 +1,6 @@
 import 'package:liquid_glass_widgets/widgets/input/glass_search_bar.dart';
 import 'package:liquid_glass_widgets/widgets/input/glass_text_field.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
@@ -28,9 +28,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: const GlassSearchBar(
-              placeholder: placeholder,
-            ),
+            child: const GlassSearchBar(placeholder: placeholder),
           ),
         ),
       );
@@ -58,17 +56,12 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassSearchBar(
-              onChanged: (value) => searchText = value,
-            ),
+            child: GlassSearchBar(onChanged: (value) => searchText = value),
           ),
         ),
       );
 
-      await tester.enterText(
-        find.byType(CupertinoTextField).first,
-        'flutter',
-      );
+      await tester.enterText(find.byType(CupertinoTextField).first, 'flutter');
 
       expect(searchText, equals('flutter'));
     });
@@ -101,9 +94,7 @@ void main() {
               width: 300,
               child: AdaptiveLiquidGlassLayer(
                 settings: defaultTestGlassSettings,
-                child: GlassSearchBar(
-                  controller: controller,
-                ),
+                child: GlassSearchBar(controller: controller),
               ),
             ),
           ),
@@ -125,8 +116,9 @@ void main() {
       expect(controller.text, isEmpty);
     });
 
-    testWidgets('shows cancel button when focused and showsCancelButton true',
-        (tester) async {
+    testWidgets('shows cancel button when focused and showsCancelButton true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: Center(
@@ -184,11 +176,7 @@ void main() {
 
     testWidgets('works in standalone mode', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          child: const GlassSearchBar(
-            useOwnLayer: true,
-          ),
-        ),
+        createTestApp(child: const GlassSearchBar(useOwnLayer: true)),
       );
 
       expect(find.byType(GlassSearchBar), findsOneWidget);
@@ -208,8 +196,9 @@ void main() {
       expect(searchBar.cancelIcon, isNull);
     });
 
-    testWidgets('respects cancelIconSize for the cancel button icon',
-        (tester) async {
+    testWidgets('respects cancelIconSize for the cancel button icon', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: Center(

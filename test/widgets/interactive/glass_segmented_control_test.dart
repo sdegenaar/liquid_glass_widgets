@@ -1,7 +1,8 @@
 // ignore: unnecessary_import
 import 'dart:ui';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/widgets/shared/glass_effect.dart';
@@ -17,7 +18,7 @@ void main() {
             segments: [
               GlassSegment(label: 'One'),
               GlassSegment(label: 'Two'),
-              GlassSegment(label: 'Three')
+              GlassSegment(label: 'Three'),
             ],
             selectedIndex: 0,
             onSegmentSelected: (_) {},
@@ -36,7 +37,7 @@ void main() {
       const segments = <GlassSegment>[
         GlassSegment(label: 'Daily'),
         GlassSegment(label: 'Weekly'),
-        GlassSegment(label: 'Monthly')
+        GlassSegment(label: 'Monthly'),
       ];
 
       await tester.pumpWidget(
@@ -55,8 +56,9 @@ void main() {
       }
     });
 
-    testWidgets('calls onSegmentSelected when tapping a segment',
-        (tester) async {
+    testWidgets('calls onSegmentSelected when tapping a segment', (
+      tester,
+    ) async {
       var selectedIndex = 0;
 
       await tester.pumpWidget(
@@ -65,7 +67,7 @@ void main() {
             segments: [
               GlassSegment(label: 'One'),
               GlassSegment(label: 'Two'),
-              GlassSegment(label: 'Three')
+              GlassSegment(label: 'Three'),
             ],
             selectedIndex: selectedIndex,
             onSegmentSelected: (index) => selectedIndex = index,
@@ -87,7 +89,7 @@ void main() {
             segments: [
               GlassSegment(label: 'Option A'),
               GlassSegment(label: 'Option B'),
-              GlassSegment(label: 'Option C')
+              GlassSegment(label: 'Option C'),
             ],
             selectedIndex: 1,
             onSegmentSelected: (_) {},
@@ -105,7 +107,10 @@ void main() {
       await tester.pumpWidget(
         createTestApp(
           child: GlassSegmentedControl(
-            segments: [GlassSegment(label: 'One'), GlassSegment(label: 'Two')],
+            segments: [
+              GlassSegment(label: 'One'),
+              GlassSegment(label: 'Two'),
+            ],
             selectedIndex: 0,
             onSegmentSelected: (_) {},
             height: customHeight,
@@ -121,7 +126,10 @@ void main() {
       await tester.pumpWidget(
         createTestApp(
           child: GlassSegmentedControl(
-            segments: [GlassSegment(label: 'One'), GlassSegment(label: 'Two')],
+            segments: [
+              GlassSegment(label: 'One'),
+              GlassSegment(label: 'Two'),
+            ],
             selectedIndex: 0,
             onSegmentSelected: (_) {},
             useOwnLayer: true,
@@ -137,15 +145,15 @@ void main() {
       );
 
       expect(semantics.length, greaterThan(0));
-      expect(
-        semantics.any((s) => s.properties.button == true),
-        isTrue,
-      );
+      expect(semantics.any((s) => s.properties.button == true), isTrue);
     });
 
     test('defaults are correct', () {
       final control = GlassSegmentedControl(
-        segments: [GlassSegment(label: 'One'), GlassSegment(label: 'Two')],
+        segments: [
+          GlassSegment(label: 'One'),
+          GlassSegment(label: 'Two'),
+        ],
         selectedIndex: 0,
         onSegmentSelected: (_) {},
       );
@@ -170,7 +178,10 @@ void main() {
     test('asserts selectedIndex within bounds', () {
       expect(
         () => GlassSegmentedControl(
-          segments: [GlassSegment(label: 'One'), GlassSegment(label: 'Two')],
+          segments: [
+            GlassSegment(label: 'One'),
+            GlassSegment(label: 'Two'),
+          ],
           selectedIndex: 5,
           onSegmentSelected: (_) {},
         ),
@@ -188,7 +199,10 @@ void main() {
       await tester.pumpWidget(
         createTestApp(
           child: GlassSegmentedControl(
-            segments: [GlassSegment(label: 'A'), GlassSegment(label: 'B')],
+            segments: [
+              GlassSegment(label: 'A'),
+              GlassSegment(label: 'B'),
+            ],
             selectedIndex: 0,
             onSegmentSelected: (_) {},
           ),
@@ -205,7 +219,7 @@ void main() {
             segments: [
               GlassSegment(label: 'X'),
               GlassSegment(label: 'Y'),
-              GlassSegment(label: 'Z')
+              GlassSegment(label: 'Z'),
             ],
             selectedIndex: 0,
             onSegmentSelected: (i) => tapped = i,
@@ -218,22 +232,27 @@ void main() {
       expect(tapped, 2);
     });
 
-    testWidgets('does not call onSegmentSelected when tapping already-selected',
-        (tester) async {
-      int callCount = 0;
-      await tester.pumpWidget(
-        createTestApp(
-          child: GlassSegmentedControl(
-            segments: [GlassSegment(label: 'A'), GlassSegment(label: 'B')],
-            selectedIndex: 0,
-            onSegmentSelected: (_) => callCount++,
+    testWidgets(
+      'does not call onSegmentSelected when tapping already-selected',
+      (tester) async {
+        int callCount = 0;
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassSegmentedControl(
+              segments: [
+                GlassSegment(label: 'A'),
+                GlassSegment(label: 'B'),
+              ],
+              selectedIndex: 0,
+              onSegmentSelected: (_) => callCount++,
+            ),
           ),
-        ),
-      );
-      await tester.tap(find.text('A').first);
-      await tester.pump();
-      expect(callCount, 0);
-    });
+        );
+        await tester.tap(find.text('A').first);
+        await tester.pump();
+        expect(callCount, 0);
+      },
+    );
   });
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -250,7 +269,7 @@ void main() {
               segments: [
                 GlassSegment(label: 'P'),
                 GlassSegment(label: 'Q'),
-                GlassSegment(label: 'R')
+                GlassSegment(label: 'R'),
               ],
               selectedIndex: 0,
               onSegmentSelected: (_) {},
@@ -259,8 +278,9 @@ void main() {
         ),
       );
 
-      final gesture = await tester
-          .startGesture(tester.getCenter(find.byType(GlassSegmentedControl)));
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(GlassSegmentedControl)),
+      );
       await tester.pump();
       await gesture.moveBy(const Offset(100, 0));
       await tester.pump();
@@ -312,7 +332,7 @@ void main() {
               segments: [
                 GlassSegment(label: 'P'),
                 GlassSegment(label: 'Q'),
-                GlassSegment(label: 'R')
+                GlassSegment(label: 'R'),
               ],
               selectedIndex: 1,
               onSegmentSelected: (_) {},
@@ -321,8 +341,9 @@ void main() {
         ),
       );
 
-      final gesture = await tester
-          .startGesture(tester.getCenter(find.byType(GlassSegmentedControl)));
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(GlassSegmentedControl)),
+      );
       await tester.pump();
       await gesture.moveBy(const Offset(60, 0));
       await tester.pump();
@@ -342,7 +363,10 @@ void main() {
       await tester.pumpWidget(
         createTestApp(
           child: GlassSegmentedControl(
-            segments: [GlassSegment(label: 'A'), GlassSegment(label: 'B')],
+            segments: [
+              GlassSegment(label: 'A'),
+              GlassSegment(label: 'B'),
+            ],
             selectedIndex: 0,
             onSegmentSelected: (_) {},
             selectedTextStyle: const TextStyle(
@@ -360,7 +384,10 @@ void main() {
       await tester.pumpWidget(
         createTestApp(
           child: GlassSegmentedControl(
-            segments: [GlassSegment(label: 'A'), GlassSegment(label: 'B')],
+            segments: [
+              GlassSegment(label: 'A'),
+              GlassSegment(label: 'B'),
+            ],
             selectedIndex: 0,
             onSegmentSelected: (_) {},
             unselectedTextStyle: const TextStyle(
@@ -378,7 +405,10 @@ void main() {
       await tester.pumpWidget(
         createTestApp(
           child: GlassSegmentedControl(
-            segments: [GlassSegment(label: 'A'), GlassSegment(label: 'B')],
+            segments: [
+              GlassSegment(label: 'A'),
+              GlassSegment(label: 'B'),
+            ],
             selectedIndex: 0,
             onSegmentSelected: (_) {},
             backgroundColor: Colors.purple.withValues(alpha: 0.2),
@@ -392,7 +422,10 @@ void main() {
       await tester.pumpWidget(
         createTestApp(
           child: GlassSegmentedControl(
-            segments: [GlassSegment(label: 'A'), GlassSegment(label: 'B')],
+            segments: [
+              GlassSegment(label: 'A'),
+              GlassSegment(label: 'B'),
+            ],
             selectedIndex: 0,
             onSegmentSelected: (_) {},
             indicatorColor: Colors.green.withValues(alpha: 0.4),
@@ -412,7 +445,10 @@ void main() {
       await tester.pumpWidget(
         createTestApp(
           child: GlassSegmentedControl(
-            segments: [GlassSegment(label: 'A'), GlassSegment(label: 'B')],
+            segments: [
+              GlassSegment(label: 'A'),
+              GlassSegment(label: 'B'),
+            ],
             selectedIndex: 0,
             onSegmentSelected: (_) {},
             quality: GlassQuality.standard,
@@ -426,7 +462,10 @@ void main() {
       await tester.pumpWidget(
         createTestApp(
           child: GlassSegmentedControl(
-            segments: [GlassSegment(label: 'A'), GlassSegment(label: 'B')],
+            segments: [
+              GlassSegment(label: 'A'),
+              GlassSegment(label: 'B'),
+            ],
             selectedIndex: 0,
             onSegmentSelected: (_) {},
             useOwnLayer: true,
@@ -443,8 +482,9 @@ void main() {
   // ──────────────────────────────────────────────────────────────────────────
 
   group('GlassSegmentedControl didUpdateWidget', () {
-    testWidgets('updates when selectedIndex changes externally',
-        (tester) async {
+    testWidgets('updates when selectedIndex changes externally', (
+      tester,
+    ) async {
       var index = 0;
       await tester.pumpWidget(
         StatefulBuilder(
@@ -455,7 +495,7 @@ void main() {
                   segments: [
                     GlassSegment(label: 'A'),
                     GlassSegment(label: 'B'),
-                    GlassSegment(label: 'C')
+                    GlassSegment(label: 'C'),
                   ],
                   selectedIndex: index,
                   onSegmentSelected: (i) => setState(() => index = i),
@@ -494,7 +534,7 @@ void main() {
                     segments = [
                       GlassSegment(label: 'A'),
                       GlassSegment(label: 'B'),
-                      GlassSegment(label: 'C')
+                      GlassSegment(label: 'C'),
                     ];
                     selectedIndex = 0;
                   }),
@@ -517,8 +557,9 @@ void main() {
   // Drag-cancel without prior drag (else branch — lines 519-521)
   // ──────────────────────────────────────────────────────────────────────────
   group('GlassSegmentedControl drag-cancel edge cases', () {
-    testWidgets('cancel-without-drag snaps indicator back to selectedIndex',
-        (tester) async {
+    testWidgets('cancel-without-drag snaps indicator back to selectedIndex', (
+      tester,
+    ) async {
       int selected = 0;
       await tester.pumpWidget(
         createTestApp(
@@ -528,7 +569,7 @@ void main() {
               segments: [
                 GlassSegment(label: 'A'),
                 GlassSegment(label: 'B'),
-                GlassSegment(label: 'C')
+                GlassSegment(label: 'C'),
               ],
               selectedIndex: selected,
               onSegmentSelected: (i) => selected = i,
@@ -539,8 +580,9 @@ void main() {
 
       // Start a gesture but do NOT move — cancel immediately.
       // This exercises the `_isDragging == false` branch in _onDragCancel.
-      final gesture = await tester
-          .startGesture(tester.getCenter(find.byType(GlassSegmentedControl)));
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(GlassSegmentedControl)),
+      );
       await tester.pump(const Duration(milliseconds: 10));
       await gesture.cancel();
       await tester.pump();
@@ -549,8 +591,9 @@ void main() {
       expect(selected, 0); // unchanged
     });
 
-    testWidgets('drag then end fires onSegmentSelected when index changes',
-        (tester) async {
+    testWidgets('drag then end fires onSegmentSelected when index changes', (
+      tester,
+    ) async {
       int? fired;
       await tester.pumpWidget(
         createTestApp(
@@ -560,7 +603,7 @@ void main() {
               segments: [
                 GlassSegment(label: 'X'),
                 GlassSegment(label: 'Y'),
-                GlassSegment(label: 'Z')
+                GlassSegment(label: 'Z'),
               ],
               selectedIndex: 0,
               onSegmentSelected: (i) => fired = i,
@@ -579,8 +622,9 @@ void main() {
       expect(fired, isNotNull);
     });
 
-    testWidgets('quality inherited from AdaptiveLiquidGlassLayer ancestor',
-        (tester) async {
+    testWidgets('quality inherited from AdaptiveLiquidGlassLayer ancestor', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
@@ -588,7 +632,10 @@ void main() {
             child: SizedBox(
               width: 300,
               child: GlassSegmentedControl(
-                segments: [GlassSegment(label: 'A'), GlassSegment(label: 'B')],
+                segments: [
+                  GlassSegment(label: 'A'),
+                  GlassSegment(label: 'B'),
+                ],
                 selectedIndex: 0,
                 onSegmentSelected: (_) {},
               ),
@@ -606,12 +653,16 @@ void main() {
   // ──────────────────────────────────────────────────────────────────────────
 
   group('GlassSegmentedControl 3-Tier Indicator Radius', () {
-    testWidgets('Tier 1: capsule sentinel passes directly to indicator',
-        (tester) async {
+    testWidgets('Tier 1: capsule sentinel passes directly to indicator', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: GlassSegmentedControl(
-            segments: [GlassSegment(label: 'A'), GlassSegment(label: 'B')],
+            segments: [
+              GlassSegment(label: 'A'),
+              GlassSegment(label: 'B'),
+            ],
             selectedIndex: 0,
             onSegmentSelected: (_) {},
             // Implicitly barBorderRadius is GlassDefaults.capsuleRadius
@@ -620,16 +671,21 @@ void main() {
       );
 
       final indicator = tester.widget<AnimatedGlassIndicator>(
-          find.byType(AnimatedGlassIndicator).first);
+        find.byType(AnimatedGlassIndicator).first,
+      );
       expect(indicator.borderRadius, equals(GlassDefaults.capsuleRadius));
     });
 
-    testWidgets('Tier 2: custom finite radius applies padding inset',
-        (tester) async {
+    testWidgets('Tier 2: custom finite radius applies padding inset', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: GlassSegmentedControl(
-            segments: [GlassSegment(label: 'A'), GlassSegment(label: 'B')],
+            segments: [
+              GlassSegment(label: 'A'),
+              GlassSegment(label: 'B'),
+            ],
             selectedIndex: 0,
             onSegmentSelected: (_) {},
             borderRadius: 16.0,
@@ -638,17 +694,22 @@ void main() {
       );
 
       final indicator = tester.widget<AnimatedGlassIndicator>(
-          find.byType(AnimatedGlassIndicator).first);
+        find.byType(AnimatedGlassIndicator).first,
+      );
       // Outer 16.0 minus 2.0 padding = 14.0
       expect(indicator.borderRadius, equals(14.0));
     });
 
-    testWidgets('Tier 3: explicit indicatorBorderRadius overrides everything',
-        (tester) async {
+    testWidgets('Tier 3: explicit indicatorBorderRadius overrides everything', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: GlassSegmentedControl(
-            segments: [GlassSegment(label: 'A'), GlassSegment(label: 'B')],
+            segments: [
+              GlassSegment(label: 'A'),
+              GlassSegment(label: 'B'),
+            ],
             selectedIndex: 0,
             onSegmentSelected: (_) {},
             borderRadius: GlassDefaults.capsuleRadius,
@@ -658,7 +719,8 @@ void main() {
       );
 
       final indicator = tester.widget<AnimatedGlassIndicator>(
-          find.byType(AnimatedGlassIndicator).first);
+        find.byType(AnimatedGlassIndicator).first,
+      );
       expect(indicator.borderRadius, equals(8.0));
     });
   });
@@ -710,103 +772,109 @@ void main() {
 
     group('indicatorSettings blur neutralisation', () {
       testWidgets(
-          'premium quality: indicatorSettings with blur > 0 resolves to effectiveBlur == 0 on indicator',
-          (tester) async {
-        await tester.pumpWidget(
-          createTestApp(
-            child: GlassSegmentedControl(
-              segments: const [
-                GlassSegment(label: 'Day'),
-                GlassSegment(label: 'Week'),
-              ],
-              selectedIndex: 0,
-              onSegmentSelected: (_) {},
-              quality: GlassQuality.premium,
-              indicatorSettings: const LiquidGlassSettings(blur: 20),
+        'premium quality: indicatorSettings with blur > 0 resolves to effectiveBlur == 0 on indicator',
+        (tester) async {
+          await tester.pumpWidget(
+            createTestApp(
+              child: GlassSegmentedControl(
+                segments: const [
+                  GlassSegment(label: 'Day'),
+                  GlassSegment(label: 'Week'),
+                ],
+                selectedIndex: 0,
+                onSegmentSelected: (_) {},
+                quality: GlassQuality.premium,
+                indicatorSettings: const LiquidGlassSettings(blur: 20),
+              ),
             ),
-          ),
-        );
-        await tester.pumpAndSettle();
+          );
+          await tester.pumpAndSettle();
 
-        // Press down to trigger active indicator lens bloom (thickness > 0.01)
-        final gesture =
-            await tester.startGesture(tester.getCenter(find.text('Day')));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
+          // Press down to trigger active indicator lens bloom (thickness > 0.01)
+          final gesture = await tester.startGesture(
+            tester.getCenter(find.text('Day')),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
 
-        final indicatorGlass = tester.widget<GlassEffect>(
-          find.byType(GlassEffect).first,
-        );
-        expect(
-          indicatorGlass.settings.effectiveBlur,
-          0.0,
-          reason: 'Premium indicator lens must never apply BackdropFilter blur',
-        );
+          final indicatorGlass = tester.widget<GlassEffect>(
+            find.byType(GlassEffect).first,
+          );
+          expect(
+            indicatorGlass.settings.effectiveBlur,
+            0.0,
+            reason:
+                'Premium indicator lens must never apply BackdropFilter blur',
+          );
 
-        await gesture.up();
-        await tester.pumpAndSettle();
-      });
+          await gesture.up();
+          await tester.pumpAndSettle();
+        },
+      );
 
       testWidgets(
-          'standard quality: indicatorSettings with blur > 0 resolves to effectiveBlur == 0 on indicator',
-          (tester) async {
-        await tester.pumpWidget(
-          createTestApp(
-            child: GlassSegmentedControl(
-              segments: const [
-                GlassSegment(label: 'Day'),
-                GlassSegment(label: 'Week'),
-              ],
-              selectedIndex: 0,
-              onSegmentSelected: (_) {},
-              quality: GlassQuality.standard,
-              indicatorSettings: const LiquidGlassSettings(blur: 15),
+        'standard quality: indicatorSettings with blur > 0 resolves to effectiveBlur == 0 on indicator',
+        (tester) async {
+          await tester.pumpWidget(
+            createTestApp(
+              child: GlassSegmentedControl(
+                segments: const [
+                  GlassSegment(label: 'Day'),
+                  GlassSegment(label: 'Week'),
+                ],
+                selectedIndex: 0,
+                onSegmentSelected: (_) {},
+                quality: GlassQuality.standard,
+                indicatorSettings: const LiquidGlassSettings(blur: 15),
+              ),
             ),
-          ),
-        );
-        await tester.pumpAndSettle();
+          );
+          await tester.pumpAndSettle();
 
-        // Press down to trigger active indicator lens bloom (thickness > 0.01)
-        final gesture =
-            await tester.startGesture(tester.getCenter(find.text('Day')));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
+          // Press down to trigger active indicator lens bloom (thickness > 0.01)
+          final gesture = await tester.startGesture(
+            tester.getCenter(find.text('Day')),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
 
-        final indicatorGlass = tester.widget<GlassEffect>(
-          find.byType(GlassEffect).first,
-        );
-        expect(
-          indicatorGlass.settings.effectiveBlur,
-          0.0,
-          reason:
-              'Standard indicator lens must never apply BackdropFilter blur',
-        );
+          final indicatorGlass = tester.widget<GlassEffect>(
+            find.byType(GlassEffect).first,
+          );
+          expect(
+            indicatorGlass.settings.effectiveBlur,
+            0.0,
+            reason:
+                'Standard indicator lens must never apply BackdropFilter blur',
+          );
 
-        await gesture.up();
-        await tester.pumpAndSettle();
-      });
+          await gesture.up();
+          await tester.pumpAndSettle();
+        },
+      );
     });
 
     testWidgets(
-        'GlassSegmentedControl.scrollable with infinite borderRadius renders without collapsing',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: GlassSegmentedControl.scrollable(
-            segments: const [
-              GlassSegment(label: 'Day'),
-              GlassSegment(label: 'Week'),
-              GlassSegment(label: 'Month'),
-            ],
-            selectedIndex: 0,
-            onSegmentSelected: (_) {},
-            borderRadius: double.infinity,
+      'GlassSegmentedControl.scrollable with infinite borderRadius renders without collapsing',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassSegmentedControl.scrollable(
+              segments: const [
+                GlassSegment(label: 'Day'),
+                GlassSegment(label: 'Week'),
+                GlassSegment(label: 'Month'),
+              ],
+              selectedIndex: 0,
+              onSegmentSelected: (_) {},
+              borderRadius: double.infinity,
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.byType(GlassSegmentedControl), findsOneWidget);
-    });
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(GlassSegmentedControl), findsOneWidget);
+      },
+    );
   });
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -825,97 +893,141 @@ void main() {
     }
 
     testWidgets(
-        'Light Mode inverted dark pill automatically transitions selected text from white to dark during press and restores at rest',
-        (tester) async {
-      await tester.pumpWidget(
-        CupertinoApp(
-          theme: const CupertinoThemeData(brightness: Brightness.light),
-          home: GlassTheme(
-            data: const GlassThemeData.ios27(),
-            child: Center(
-              child: SizedBox(
-                width: 300,
-                child: GlassSegmentedControl(
-                  height: 56,
-                  segments: const [
-                    GlassSegment(
-                      label: 'Day',
-                      icon: Icon(CupertinoIcons.sun_max),
+      'Light Mode inverted dark pill automatically transitions selected text from white to dark during press and restores at rest',
+      (tester) async {
+        await tester.pumpWidget(
+          CupertinoApp(
+            theme: const CupertinoThemeData(brightness: Brightness.light),
+            home: GlassTheme(
+              data: const GlassThemeData.ios27(),
+              child: Center(
+                child: SizedBox(
+                  width: 300,
+                  child: GlassSegmentedControl(
+                    height: 56,
+                    segments: const [
+                      GlassSegment(
+                        label: 'Day',
+                        icon: Icon(CupertinoIcons.sun_max),
+                      ),
+                      GlassSegment(
+                        label: 'Week',
+                        icon: Icon(CupertinoIcons.calendar),
+                      ),
+                    ],
+                    selectedIndex: 0,
+                    onSegmentSelected: (_) {},
+                    indicatorColor: const Color(0xFF121316),
+                    selectedTextStyle: const TextStyle(
+                      color: CupertinoColors.white,
                     ),
-                    GlassSegment(
-                      label: 'Week',
-                      icon: Icon(CupertinoIcons.calendar),
-                    ),
-                  ],
-                  selectedIndex: 0,
-                  onSegmentSelected: (_) {},
-                  indicatorColor: const Color(0xFF121316),
-                  selectedTextStyle: const TextStyle(
-                    color: CupertinoColors.white,
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // 1. At rest (thickness == 0): white text and icon on dark resting pill.
-      expect(
-        resolvedTextColor(tester, 'Day'),
-        equals(CupertinoColors.white),
-      );
-      final iconElement = tester.element(find.byIcon(CupertinoIcons.sun_max));
-      expect(
-        IconTheme.of(iconElement).color,
-        equals(CupertinoColors.white),
-      );
+        // 1. At rest (thickness == 0): white text and icon on dark resting pill.
+        expect(resolvedTextColor(tester, 'Day'), equals(CupertinoColors.white));
+        final iconElement = tester.element(find.byIcon(CupertinoIcons.sun_max));
+        expect(IconTheme.of(iconElement).color, equals(CupertinoColors.white));
 
-      // 2. Press down to lift the glass lens past thickness >= 0.15.
-      final gesture =
-          await tester.startGesture(tester.getCenter(find.text('Day')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 120));
+        // 2. Press down to lift the glass lens past thickness >= 0.15.
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.text('Day')),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
 
-      final pressedColor = resolvedTextColor(tester, 'Day');
-      expect(
-        pressedColor.computeLuminance(),
-        lessThan(0.1),
-        reason:
-            'Active glass lens over light background must transition selected text to dark label color',
-      );
-      expect(
-        IconTheme.of(tester.element(find.byIcon(CupertinoIcons.sun_max)))
-            .color!
-            .computeLuminance(),
-        lessThan(0.1),
-        reason:
-            'Active glass lens over light background must transition selected icon to dark label color',
-      );
+        final pressedColor = resolvedTextColor(tester, 'Day');
+        expect(
+          pressedColor.computeLuminance(),
+          lessThan(0.1),
+          reason: 'Active glass lens over light background must transition selected text to dark label color',
+        );
+        expect(
+          IconTheme.of(tester.element(find.byIcon(CupertinoIcons.sun_max)))
+              .color!
+              .computeLuminance(),
+          lessThan(0.1),
+          reason: 'Active glass lens over light background must transition selected icon to dark label color',
+        );
 
-      // 3. Release and settle back to rest.
-      await gesture.up();
-      await tester.pumpAndSettle();
+        // 3. Release and settle back to rest.
+        await gesture.up();
+        await tester.pumpAndSettle();
 
-      expect(
-        resolvedTextColor(tester, 'Day'),
-        equals(CupertinoColors.white),
-      );
-      expect(
-        IconTheme.of(tester.element(find.byIcon(CupertinoIcons.sun_max))).color,
-        equals(CupertinoColors.white),
-      );
-    });
+        expect(resolvedTextColor(tester, 'Day'), equals(CupertinoColors.white));
+        expect(
+          IconTheme.of(tester.element(find.byIcon(CupertinoIcons.sun_max)))
+              .color,
+          equals(CupertinoColors.white),
+        );
+      },
+    );
 
     testWidgets(
-        'tapping a new segment keeps target label dark during transit and fades to white only as pill settles',
-        (tester) async {
-      var selectedIndex = 0;
-      await tester.pumpWidget(
-        StatefulBuilder(
-          builder: (context, setState) => CupertinoApp(
-            theme: const CupertinoThemeData(brightness: Brightness.light),
+      'tapping a new segment keeps target label dark during transit and fades to white only as pill settles',
+      (tester) async {
+        var selectedIndex = 0;
+        await tester.pumpWidget(
+          StatefulBuilder(
+            builder: (context, setState) => CupertinoApp(
+              theme: const CupertinoThemeData(brightness: Brightness.light),
+              home: GlassTheme(
+                data: const GlassThemeData.ios27(),
+                child: Center(
+                  child: SizedBox(
+                    width: 300,
+                    child: GlassSegmentedControl(
+                      segments: const [
+                        GlassSegment(label: 'Day'),
+                        GlassSegment(label: 'Week'),
+                      ],
+                      selectedIndex: selectedIndex,
+                      onSegmentSelected: (i) =>
+                          setState(() => selectedIndex = i),
+                      indicatorColor: const Color(0xFF121316),
+                      selectedTextStyle: const TextStyle(
+                        color: CupertinoColors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Tap 'Week' (index 1).
+        await tester.tap(find.text('Week'));
+        await tester.pump(); // Frame 0 after tap: pill is still at 'Day'
+
+        expect(
+          resolvedTextColor(tester, 'Week').computeLuminance(),
+          lessThan(0.1),
+          reason: 'Newly tapped segment must not flash white on frame 0 while the dark pill is still at the old segment',
+        );
+
+        // Once settled at 'Week', the dark pill is opaque under 'Week' -> white text.
+        await tester.pumpAndSettle();
+        expect(
+          resolvedTextColor(tester, 'Week'),
+          equals(CupertinoColors.white),
+        );
+      },
+    );
+
+    testWidgets(
+      'Dark Mode inverted white pill automatically transitions selected text from dark to white during press and restores at rest',
+      (tester) async {
+        const darkPillText = Color(0xFF121316);
+        await tester.pumpWidget(
+          CupertinoApp(
+            theme: const CupertinoThemeData(brightness: Brightness.dark),
             home: GlassTheme(
               data: const GlassThemeData.ios27(),
               child: Center(
@@ -926,194 +1038,147 @@ void main() {
                       GlassSegment(label: 'Day'),
                       GlassSegment(label: 'Week'),
                     ],
-                    selectedIndex: selectedIndex,
-                    onSegmentSelected: (i) => setState(() => selectedIndex = i),
+                    selectedIndex: 0,
+                    onSegmentSelected: (_) {},
+                    indicatorColor: CupertinoColors.white,
+                    selectedTextStyle: const TextStyle(color: darkPillText),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(resolvedTextColor(tester, 'Day'), equals(darkPillText));
+
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.text('Day')),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        final pressedColor = resolvedTextColor(tester, 'Day');
+        expect(
+          pressedColor.computeLuminance(),
+          greaterThan(0.9),
+          reason: 'Active glass lens over dark background must transition selected text to light label color',
+        );
+
+        await gesture.up();
+        await tester.pumpAndSettle();
+
+        expect(resolvedTextColor(tester, 'Day'), equals(darkPillText));
+      },
+    );
+
+    testWidgets(
+      'explicit activeSelectedColor overrides automatic contrast in fixed and scrollable modes',
+      (tester) async {
+        const customLensColor = Color(0xFF007AFF);
+
+        // Fixed mode
+        await tester.pumpWidget(
+          CupertinoApp(
+            theme: const CupertinoThemeData(brightness: Brightness.light),
+            home: GlassTheme(
+              data: const GlassThemeData.ios27(),
+              child: Center(
+                child: SizedBox(
+                  width: 300,
+                  child: GlassSegmentedControl(
+                    segments: const [
+                      GlassSegment(label: 'Fixed A'),
+                      GlassSegment(label: 'Fixed B'),
+                    ],
+                    selectedIndex: 0,
+                    onSegmentSelected: (_) {},
                     indicatorColor: const Color(0xFF121316),
                     selectedTextStyle: const TextStyle(
                       color: CupertinoColors.white,
                     ),
+                    activeSelectedColor: customLensColor,
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Tap 'Week' (index 1).
-      await tester.tap(find.text('Week'));
-      await tester.pump(); // Frame 0 after tap: pill is still at 'Day'
+        expect(
+          resolvedTextColor(tester, 'Fixed A'),
+          equals(CupertinoColors.white),
+        );
 
-      expect(
-        resolvedTextColor(tester, 'Week').computeLuminance(),
-        lessThan(0.1),
-        reason:
-            'Newly tapped segment must not flash white on frame 0 while the dark pill is still at the old segment',
-      );
+        var gesture = await tester.startGesture(
+          tester.getCenter(find.text('Fixed A')),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
 
-      // Once settled at 'Week', the dark pill is opaque under 'Week' -> white text.
-      await tester.pumpAndSettle();
-      expect(
-        resolvedTextColor(tester, 'Week'),
-        equals(CupertinoColors.white),
-      );
-    });
+        expect(resolvedTextColor(tester, 'Fixed A'), equals(customLensColor));
 
-    testWidgets(
-        'Dark Mode inverted white pill automatically transitions selected text from dark to white during press and restores at rest',
-        (tester) async {
-      const darkPillText = Color(0xFF121316);
-      await tester.pumpWidget(
-        CupertinoApp(
-          theme: const CupertinoThemeData(brightness: Brightness.dark),
-          home: GlassTheme(
-            data: const GlassThemeData.ios27(),
-            child: Center(
-              child: SizedBox(
-                width: 300,
-                child: GlassSegmentedControl(
-                  segments: const [
-                    GlassSegment(label: 'Day'),
-                    GlassSegment(label: 'Week'),
-                  ],
-                  selectedIndex: 0,
-                  onSegmentSelected: (_) {},
-                  indicatorColor: CupertinoColors.white,
-                  selectedTextStyle: const TextStyle(color: darkPillText),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        await gesture.up();
+        await tester.pumpAndSettle();
+        expect(
+          resolvedTextColor(tester, 'Fixed A'),
+          equals(CupertinoColors.white),
+        );
 
-      expect(resolvedTextColor(tester, 'Day'), equals(darkPillText));
-
-      final gesture =
-          await tester.startGesture(tester.getCenter(find.text('Day')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 120));
-
-      final pressedColor = resolvedTextColor(tester, 'Day');
-      expect(
-        pressedColor.computeLuminance(),
-        greaterThan(0.9),
-        reason:
-            'Active glass lens over dark background must transition selected text to light label color',
-      );
-
-      await gesture.up();
-      await tester.pumpAndSettle();
-
-      expect(resolvedTextColor(tester, 'Day'), equals(darkPillText));
-    });
-
-    testWidgets(
-        'explicit activeSelectedColor overrides automatic contrast in fixed and scrollable modes',
-        (tester) async {
-      const customLensColor = Color(0xFF007AFF);
-
-      // Fixed mode
-      await tester.pumpWidget(
-        CupertinoApp(
-          theme: const CupertinoThemeData(brightness: Brightness.light),
-          home: GlassTheme(
-            data: const GlassThemeData.ios27(),
-            child: Center(
-              child: SizedBox(
-                width: 300,
-                child: GlassSegmentedControl(
-                  segments: const [
-                    GlassSegment(label: 'Fixed A'),
-                    GlassSegment(label: 'Fixed B'),
-                  ],
-                  selectedIndex: 0,
-                  onSegmentSelected: (_) {},
-                  indicatorColor: const Color(0xFF121316),
-                  selectedTextStyle: const TextStyle(
-                    color: CupertinoColors.white,
+        // Scrollable mode
+        await tester.pumpWidget(
+          CupertinoApp(
+            theme: const CupertinoThemeData(brightness: Brightness.light),
+            home: GlassTheme(
+              data: const GlassThemeData.ios27(),
+              child: Center(
+                child: SizedBox(
+                  width: 300,
+                  child: GlassSegmentedControl.scrollable(
+                    segments: const [
+                      GlassSegment(label: 'Scroll A'),
+                      GlassSegment(label: 'Scroll B'),
+                      GlassSegment(label: 'Scroll C'),
+                    ],
+                    selectedIndex: 0,
+                    onSegmentSelected: (_) {},
+                    indicatorColor: const Color(0xFF121316),
+                    selectedTextStyle: const TextStyle(
+                      color: CupertinoColors.white,
+                    ),
+                    activeSelectedColor: customLensColor,
                   ),
-                  activeSelectedColor: customLensColor,
                 ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 16));
+        await tester.pumpAndSettle();
 
-      expect(
-        resolvedTextColor(tester, 'Fixed A'),
-        equals(CupertinoColors.white),
-      );
+        expect(
+          resolvedTextColor(tester, 'Scroll A'),
+          equals(CupertinoColors.white),
+        );
 
-      var gesture =
-          await tester.startGesture(tester.getCenter(find.text('Fixed A')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 120));
+        gesture = await tester.startGesture(
+          tester.getCenter(find.text('Scroll A')),
+        );
+        await gesture.moveBy(const Offset(10, 0));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
 
-      expect(resolvedTextColor(tester, 'Fixed A'), equals(customLensColor));
+        expect(resolvedTextColor(tester, 'Scroll A'), equals(customLensColor));
 
-      await gesture.up();
-      await tester.pumpAndSettle();
-      expect(
-        resolvedTextColor(tester, 'Fixed A'),
-        equals(CupertinoColors.white),
-      );
-
-      // Scrollable mode
-      await tester.pumpWidget(
-        CupertinoApp(
-          theme: const CupertinoThemeData(brightness: Brightness.light),
-          home: GlassTheme(
-            data: const GlassThemeData.ios27(),
-            child: Center(
-              child: SizedBox(
-                width: 300,
-                child: GlassSegmentedControl.scrollable(
-                  segments: const [
-                    GlassSegment(label: 'Scroll A'),
-                    GlassSegment(label: 'Scroll B'),
-                    GlassSegment(label: 'Scroll C'),
-                  ],
-                  selectedIndex: 0,
-                  onSegmentSelected: (_) {},
-                  indicatorColor: const Color(0xFF121316),
-                  selectedTextStyle: const TextStyle(
-                    color: CupertinoColors.white,
-                  ),
-                  activeSelectedColor: customLensColor,
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 16));
-      await tester.pumpAndSettle();
-
-      expect(
-        resolvedTextColor(tester, 'Scroll A'),
-        equals(CupertinoColors.white),
-      );
-
-      gesture =
-          await tester.startGesture(tester.getCenter(find.text('Scroll A')));
-      await gesture.moveBy(const Offset(10, 0));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 120));
-
-      expect(resolvedTextColor(tester, 'Scroll A'), equals(customLensColor));
-
-      await gesture.up();
-      await tester.pumpAndSettle();
-      expect(
-        resolvedTextColor(tester, 'Scroll A'),
-        equals(CupertinoColors.white),
-      );
-    });
+        await gesture.up();
+        await tester.pumpAndSettle();
+        expect(
+          resolvedTextColor(tester, 'Scroll A'),
+          equals(CupertinoColors.white),
+        );
+      },
+    );
   });
 }

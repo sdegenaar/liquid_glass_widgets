@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/renderer/liquid_glass_renderer.dart';
@@ -13,18 +13,9 @@ import '../../shared/test_helpers.dart';
 // ---------------------------------------------------------------------------
 
 final _testTabs = [
-  const GlassTab(
-    label: 'For You',
-    icon: Icon(CupertinoIcons.news),
-  ),
-  const GlassTab(
-    label: 'Following',
-    icon: Icon(CupertinoIcons.person_2),
-  ),
-  const GlassTab(
-    label: 'Saved',
-    icon: Icon(CupertinoIcons.bookmark),
-  ),
+  const GlassTab(label: 'For You', icon: Icon(CupertinoIcons.news)),
+  const GlassTab(label: 'Following', icon: Icon(CupertinoIcons.person_2)),
+  const GlassTab(label: 'Saved', icon: Icon(CupertinoIcons.bookmark)),
 ];
 
 Widget _buildBar({
@@ -84,8 +75,9 @@ void main() {
       expect(find.text('Saved'), findsWidgets);
     });
 
-    testWidgets('displays search hint text when search is active',
-        (tester) async {
+    testWidgets('displays search hint text when search is active', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildBar(isSearchActive: true));
       await tester.pumpAndSettle();
 
@@ -97,9 +89,7 @@ void main() {
     testWidgets('calls onTabSelected when a tab is tapped', (tester) async {
       var selected = 0;
 
-      await tester.pumpWidget(
-        _buildBar(onTabSelected: (i) => selected = i),
-      );
+      await tester.pumpWidget(_buildBar(onTabSelected: (i) => selected = i));
       await tester.pump();
 
       await tester.tap(find.text('Following').first);
@@ -115,8 +105,9 @@ void main() {
 
     // ── Search toggle ─────────────────────────────────────────────────────────
 
-    testWidgets('calls onSearchToggle when search pill is tapped',
-        (tester) async {
+    testWidgets('calls onSearchToggle when search pill is tapped', (
+      tester,
+    ) async {
       bool? lastToggle;
 
       await tester.pumpWidget(
@@ -162,8 +153,9 @@ void main() {
 
     // ── Focus node ────────────────────────────────────────────────────────────
 
-    testWidgets('accepts and preserves a caller-provided FocusNode',
-        (tester) async {
+    testWidgets('accepts and preserves a caller-provided FocusNode', (
+      tester,
+    ) async {
       final focusNode = FocusNode();
       addTearDown(focusNode.dispose);
 
@@ -178,17 +170,20 @@ void main() {
       expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
-    testWidgets('does not dispose caller-provided FocusNode on rebuild',
-        (tester) async {
+    testWidgets('does not dispose caller-provided FocusNode on rebuild', (
+      tester,
+    ) async {
       final focusNode = FocusNode();
       addTearDown(focusNode.dispose);
 
-      await tester
-          .pumpWidget(_buildBar(isSearchActive: true, focusNode: focusNode));
+      await tester.pumpWidget(
+        _buildBar(isSearchActive: true, focusNode: focusNode),
+      );
       await tester.pumpAndSettle();
       // Trigger a rebuild by toggling search state.
-      await tester
-          .pumpWidget(_buildBar(isSearchActive: false, focusNode: focusNode));
+      await tester.pumpWidget(
+        _buildBar(isSearchActive: false, focusNode: focusNode),
+      );
       await tester.pumpAndSettle();
 
       // Node should still be usable after the widget rebuilds.
@@ -276,9 +271,7 @@ void main() {
         tabs: _testTabs,
         selectedIndex: 0,
         onTabSelected: (_) {},
-        searchConfig: GlassSearchBarConfig(
-          onSearchToggle: (_) {},
-        ),
+        searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
       );
 
       expect(bar.isSearchActive, isFalse);
@@ -322,9 +315,7 @@ void main() {
 
   group('GlassSearchBarConfig', () {
     test('can be instantiated with required parameters', () {
-      final config = GlassSearchBarConfig(
-        onSearchToggle: (_) {},
-      );
+      final config = GlassSearchBarConfig(onSearchToggle: (_) {});
 
       expect(config.hintText, equals('Search'));
       expect(config.collapsedTabWidth, isNull);
@@ -405,9 +396,7 @@ void main() {
               selectedIndex: 0,
               onTabSelected: (_) {},
               maskingQuality: MaskingQuality.off,
-              searchConfig: GlassSearchBarConfig(
-                onSearchToggle: (_) {},
-              ),
+              searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
             ),
           ),
         ),
@@ -416,8 +405,9 @@ void main() {
       expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
-    testWidgets('tabPillAnchor center activates centeredTab branch',
-        (tester) async {
+    testWidgets('tabPillAnchor center activates centeredTab branch', (
+      tester,
+    ) async {
       bool searching = false;
       late StateSetter outerSetState;
       await tester.pumpWidget(
@@ -448,38 +438,40 @@ void main() {
       expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
-    testWidgets('didUpdateWidget clears _searchFocused when search deactivated',
-        (tester) async {
-      bool searching = true;
-      late StateSetter outerSetState;
-      await tester.pumpWidget(
-        createTestApp(
-          child: StatefulBuilder(
-            builder: (ctx, setState) {
-              outerSetState = setState;
-              return GlassTabBar.searchable(
-                tabs: _testTabs,
-                selectedIndex: 0,
-                onTabSelected: (_) {},
-                isSearchActive: searching,
-                maskingQuality: MaskingQuality.off,
-                searchConfig: GlassSearchBarConfig(
-                  onSearchToggle: (v) => setState(() => searching = v),
-                  autoFocusOnExpand: true,
-                  showsCancelButton: true,
-                ),
-              );
-            },
+    testWidgets(
+      'didUpdateWidget clears _searchFocused when search deactivated',
+      (tester) async {
+        bool searching = true;
+        late StateSetter outerSetState;
+        await tester.pumpWidget(
+          createTestApp(
+            child: StatefulBuilder(
+              builder: (ctx, setState) {
+                outerSetState = setState;
+                return GlassTabBar.searchable(
+                  tabs: _testTabs,
+                  selectedIndex: 0,
+                  onTabSelected: (_) {},
+                  isSearchActive: searching,
+                  maskingQuality: MaskingQuality.off,
+                  searchConfig: GlassSearchBarConfig(
+                    onSearchToggle: (v) => setState(() => searching = v),
+                    autoFocusOnExpand: true,
+                    showsCancelButton: true,
+                  ),
+                );
+              },
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      outerSetState(() => searching = false);
-      await tester.pumpAndSettle();
+        outerSetState(() => searching = false);
+        await tester.pumpAndSettle();
 
-      expect(find.byType(GlassTabBar), findsOneWidget);
-    });
+        expect(find.byType(GlassTabBar), findsOneWidget);
+      },
+    );
 
     testWidgets('collapsedTabWidth positive value is accepted', (tester) async {
       await tester.pumpWidget(
@@ -502,69 +494,70 @@ void main() {
     });
 
     testWidgets(
-        'extraButton with position afterSearch reserves right-side space',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: GlassTabBar.searchable(
-            tabs: _testTabs,
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            maskingQuality: MaskingQuality.off,
-            extraButton: GlassTabBarExtraButton(
-              icon: const Icon(CupertinoIcons.mic),
-              label: 'Mic',
-              onTap: () {},
-              position: GlassExtraButtonPosition.afterSearch,
-            ),
-            searchConfig: GlassSearchBarConfig(
-              onSearchToggle: (_) {},
+      'extraButton with position afterSearch reserves right-side space',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassTabBar.searchable(
+              tabs: _testTabs,
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              maskingQuality: MaskingQuality.off,
+              extraButton: GlassTabBarExtraButton(
+                icon: const Icon(CupertinoIcons.mic),
+                label: 'Mic',
+                onTap: () {},
+                position: GlassExtraButtonPosition.afterSearch,
+              ),
+              searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
             ),
           ),
-        ),
-      );
-      await tester.pump();
-      expect(find.byIcon(CupertinoIcons.mic), findsOneWidget);
-    });
+        );
+        await tester.pump();
+        expect(find.byIcon(CupertinoIcons.mic), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        'extraButton collapseOnSearchFocus=false keeps button during search',
-        (tester) async {
-      bool searching = false;
-      late StateSetter outerSetState;
-      await tester.pumpWidget(
-        createTestApp(
-          child: StatefulBuilder(
-            builder: (ctx, setState) {
-              outerSetState = setState;
-              return GlassTabBar.searchable(
-                tabs: _testTabs,
-                selectedIndex: 0,
-                onTabSelected: (_) {},
-                isSearchActive: searching,
-                maskingQuality: MaskingQuality.off,
-                extraButton: GlassTabBarExtraButton(
-                  icon: const Icon(CupertinoIcons.add_circled),
-                  label: 'Add',
-                  onTap: () {},
-                  collapseOnSearchFocus: false,
-                ),
-                searchConfig: GlassSearchBarConfig(
-                  onSearchToggle: (v) => setState(() => searching = v),
-                ),
-              );
-            },
+      'extraButton collapseOnSearchFocus=false keeps button during search',
+      (tester) async {
+        bool searching = false;
+        late StateSetter outerSetState;
+        await tester.pumpWidget(
+          createTestApp(
+            child: StatefulBuilder(
+              builder: (ctx, setState) {
+                outerSetState = setState;
+                return GlassTabBar.searchable(
+                  tabs: _testTabs,
+                  selectedIndex: 0,
+                  onTabSelected: (_) {},
+                  isSearchActive: searching,
+                  maskingQuality: MaskingQuality.off,
+                  extraButton: GlassTabBarExtraButton(
+                    icon: const Icon(CupertinoIcons.add_circled),
+                    label: 'Add',
+                    onTap: () {},
+                    collapseOnSearchFocus: false,
+                  ),
+                  searchConfig: GlassSearchBarConfig(
+                    onSearchToggle: (v) => setState(() => searching = v),
+                  ),
+                );
+              },
+            ),
           ),
-        ),
-      );
-      await tester.pump();
-      outerSetState(() => searching = true);
-      await tester.pumpAndSettle();
-      expect(find.byType(GlassTabBar), findsOneWidget);
-    });
+        );
+        await tester.pump();
+        outerSetState(() => searching = true);
+        await tester.pumpAndSettle();
+        expect(find.byType(GlassTabBar), findsOneWidget);
+      },
+    );
 
-    testWidgets('showsCancelButton=false skips dismiss pill layout',
-        (tester) async {
+    testWidgets('showsCancelButton=false skips dismiss pill layout', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: GlassTabBar.searchable(
@@ -584,8 +577,9 @@ void main() {
       expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
-    testWidgets('autoFocusOnExpand=true requests focus when search expands',
-        (tester) async {
+    testWidgets('autoFocusOnExpand=true requests focus when search expands', (
+      tester,
+    ) async {
       bool searching = false;
       late StateSetter outerSetState;
       await tester.pumpWidget(
@@ -658,9 +652,7 @@ void main() {
               // brings its own calibrated sheen — covered separately below.
               interactionGlowRadius: 1.5,
               maskingQuality: MaskingQuality.off,
-              searchConfig: GlassSearchBarConfig(
-                onSearchToggle: (_) {},
-              ),
+              searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
             ),
           ),
         ),
@@ -668,161 +660,177 @@ void main() {
     }
 
     testWidgets(
-        'collapsed logo GlassButton receives GlassThemeData.primary glow color',
-        (tester) async {
-      const expectedColor = Color(0xFF00FF00); // vivid green — unmistakable
+      'collapsed logo GlassButton receives GlassThemeData.primary glow color',
+      (tester) async {
+        const expectedColor = Color(0xFF00FF00); // vivid green — unmistakable
 
-      await tester.pumpWidget(
-        buildWithTheme(primaryGlow: expectedColor),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildWithTheme(primaryGlow: expectedColor));
+        await tester.pumpAndSettle();
 
-      // The collapsed logo pill is now an AdaptiveGlass.grouped wrapped in GlassGlow.
-      // Its glowColor should be exactly the theme primary we injected.
-      final glows = tester.widgetList<GlassGlow>(find.byType(GlassGlow));
-      expect(glows, isNotEmpty,
-          reason: 'Expected at least one GlassGlow in collapsed bar');
+        // The collapsed logo pill is now an AdaptiveGlass.grouped wrapped in GlassGlow.
+        // Its glowColor should be exactly the theme primary we injected.
+        final glows = tester.widgetList<GlassGlow>(find.byType(GlassGlow));
+        expect(
+          glows,
+          isNotEmpty,
+          reason: 'Expected at least one GlassGlow in collapsed bar',
+        );
 
-      // At least one GlassGlow must carry the theme color.
-      final match = glows.any((g) => g.glowColor == expectedColor);
-      expect(match, isTrue,
-          reason: 'No GlassGlow received the theme glow color $expectedColor. '
-              'Found: ${glows.map((g) => g.glowColor).toList()}');
-    });
-
-    testWidgets('native mode brings its own sheen instead of the theme primary',
-        (tester) async {
-      // Parity with GlassButton, which has resolved this since 1.3.0: a null
-      // radius asks for the platform calibration, and the calibration is the
-      // radius, the sigma and the alpha together. The theme's adaptive
-      // primary is white at 24% (light) / 16% (dark) — roughly double the
-      // native sheen — and at a 1.6 radius under a sigma-16 blur that reads
-      // as a fog circle rather than a specular wash. An app that wants its
-      // own colour there passes `interactionGlowColor`, which still wins.
-      const themeColor = Color(0xFF00FF00);
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: GlassTheme(
-            data: GlassThemeData(
-              light: GlassThemeVariant(
-                glowColors: const GlassGlowColors(primary: themeColor),
-              ),
-              dark: GlassThemeVariant(
-                glowColors: const GlassGlowColors(primary: themeColor),
-              ),
-            ),
-            child: Scaffold(
-              backgroundColor: Colors.transparent,
-              body: GlassTabBar.searchable(
-                tabs: _testTabs,
-                selectedIndex: 0,
-                onTabSelected: (_) {},
-                isSearchActive: true,
-                maskingQuality: MaskingQuality.off,
-                searchConfig: GlassSearchBarConfig(
-                  onSearchToggle: (_) {},
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final glows = tester.widgetList<GlassGlow>(find.byType(GlassGlow));
-      expect(glows, isNotEmpty);
-      expect(
-        glows.any((g) => g.glowColor == themeColor),
-        isFalse,
-        reason: 'native mode should not take the theme primary',
-      );
-    });
-
-    testWidgets(
-        'explicit interactionGlowColor overrides theme (widget param wins)',
-        (tester) async {
-      const themeColor = Color(0xFF00FF00);
-      const explicitColor = Color(0xFFFF0000); // red — different from theme
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: GlassTheme(
-            data: GlassThemeData(
-              light: GlassThemeVariant(
-                glowColors: const GlassGlowColors(primary: themeColor),
-              ),
-              dark: GlassThemeVariant(
-                glowColors: const GlassGlowColors(primary: themeColor),
-              ),
-            ),
-            child: Scaffold(
-              backgroundColor: Colors.transparent,
-              body: GlassTabBar.searchable(
-                tabs: _testTabs,
-                selectedIndex: 0,
-                onTabSelected: (_) {},
-                isSearchActive: true,
-                // Explicit widget param must win over theme
-                interactionGlowColor: explicitColor,
-                maskingQuality: MaskingQuality.off,
-                searchConfig: GlassSearchBarConfig(
-                  onSearchToggle: (_) {},
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final glows = tester.widgetList<GlassGlow>(find.byType(GlassGlow));
-      expect(glows, isNotEmpty);
-
-      final hasExplicit = glows.any((g) => g.glowColor == explicitColor);
-      expect(hasExplicit, isTrue,
-          reason: 'Explicit interactionGlowColor should override theme');
-
-      // The theme green must NOT appear — widget param has priority
-      final hasTheme = glows.any((g) => g.glowColor == themeColor);
-      expect(hasTheme, isFalse,
-          reason: 'Theme color should be overridden by explicit param');
-    });
-
-    testWidgets(
-        'GlassInteractionBehavior.none passes Colors.transparent — glow suppressed',
-        (tester) async {
-      const primaryGlow = Color(0xFF00FF00);
-
-      await tester.pumpWidget(
-        buildWithTheme(
-          primaryGlow: primaryGlow,
-          interactionBehavior: GlassInteractionBehavior.none,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // With .none behavior the bar passes Colors.transparent so the glow
-      // wrapper is skipped. No GlassGlow should have the theme green.
-      final glows = tester.widgetList<GlassGlow>(find.byType(GlassGlow));
-      final hasGreen = glows.any((g) => g.glowColor == primaryGlow);
-      expect(hasGreen, isFalse,
+        // At least one GlassGlow must carry the theme color.
+        final match = glows.any((g) => g.glowColor == expectedColor);
+        expect(
+          match,
+          isTrue,
           reason:
-              'GlassInteractionBehavior.none should suppress theme glow color');
-    });
+              'No GlassGlow received the theme glow color $expectedColor. '
+              'Found: ${glows.map((g) => g.glowColor).toList()}',
+        );
+      },
+    );
 
     testWidgets(
-        'bar mounts correctly in tab-bar mode (isSearchActive=false) with theme',
-        (tester) async {
-      const primaryGlow = Color(0xFF00FF00);
+      'native mode brings its own sheen instead of the theme primary',
+      (tester) async {
+        // Parity with GlassButton, which has resolved this since 1.3.0: a null
+        // radius asks for the platform calibration, and the calibration is the
+        // radius, the sigma and the alpha together. The theme's adaptive
+        // primary is white at 24% (light) / 16% (dark) — roughly double the
+        // native sheen — and at a 1.6 radius under a sigma-16 blur that reads
+        // as a fog circle rather than a specular wash. An app that wants its
+        // own colour there passes `interactionGlowColor`, which still wins.
+        const themeColor = Color(0xFF00FF00);
 
-      await tester.pumpWidget(
-        buildWithTheme(primaryGlow: primaryGlow, isSearchActive: false),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          MaterialApp(
+            home: GlassTheme(
+              data: GlassThemeData(
+                light: GlassThemeVariant(
+                  glowColors: const GlassGlowColors(primary: themeColor),
+                ),
+                dark: GlassThemeVariant(
+                  glowColors: const GlassGlowColors(primary: themeColor),
+                ),
+              ),
+              child: Scaffold(
+                backgroundColor: Colors.transparent,
+                body: GlassTabBar.searchable(
+                  tabs: _testTabs,
+                  selectedIndex: 0,
+                  onTabSelected: (_) {},
+                  isSearchActive: true,
+                  maskingQuality: MaskingQuality.off,
+                  searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byType(GlassTabBar), findsOneWidget);
-    });
+        final glows = tester.widgetList<GlassGlow>(find.byType(GlassGlow));
+        expect(glows, isNotEmpty);
+        expect(
+          glows.any((g) => g.glowColor == themeColor),
+          isFalse,
+          reason: 'native mode should not take the theme primary',
+        );
+      },
+    );
+
+    testWidgets(
+      'explicit interactionGlowColor overrides theme (widget param wins)',
+      (tester) async {
+        const themeColor = Color(0xFF00FF00);
+        const explicitColor = Color(0xFFFF0000); // red — different from theme
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: GlassTheme(
+              data: GlassThemeData(
+                light: GlassThemeVariant(
+                  glowColors: const GlassGlowColors(primary: themeColor),
+                ),
+                dark: GlassThemeVariant(
+                  glowColors: const GlassGlowColors(primary: themeColor),
+                ),
+              ),
+              child: Scaffold(
+                backgroundColor: Colors.transparent,
+                body: GlassTabBar.searchable(
+                  tabs: _testTabs,
+                  selectedIndex: 0,
+                  onTabSelected: (_) {},
+                  isSearchActive: true,
+                  // Explicit widget param must win over theme
+                  interactionGlowColor: explicitColor,
+                  maskingQuality: MaskingQuality.off,
+                  searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final glows = tester.widgetList<GlassGlow>(find.byType(GlassGlow));
+        expect(glows, isNotEmpty);
+
+        final hasExplicit = glows.any((g) => g.glowColor == explicitColor);
+        expect(
+          hasExplicit,
+          isTrue,
+          reason: 'Explicit interactionGlowColor should override theme',
+        );
+
+        // The theme green must NOT appear — widget param has priority
+        final hasTheme = glows.any((g) => g.glowColor == themeColor);
+        expect(
+          hasTheme,
+          isFalse,
+          reason: 'Theme color should be overridden by explicit param',
+        );
+      },
+    );
+
+    testWidgets(
+      'GlassInteractionBehavior.none passes Colors.transparent — glow suppressed',
+      (tester) async {
+        const primaryGlow = Color(0xFF00FF00);
+
+        await tester.pumpWidget(
+          buildWithTheme(
+            primaryGlow: primaryGlow,
+            interactionBehavior: GlassInteractionBehavior.none,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // With .none behavior the bar passes Colors.transparent so the glow
+        // wrapper is skipped. No GlassGlow should have the theme green.
+        final glows = tester.widgetList<GlassGlow>(find.byType(GlassGlow));
+        final hasGreen = glows.any((g) => g.glowColor == primaryGlow);
+        expect(
+          hasGreen,
+          isFalse,
+          reason:
+              'GlassInteractionBehavior.none should suppress theme glow color',
+        );
+      },
+    );
+
+    testWidgets(
+      'bar mounts correctly in tab-bar mode (isSearchActive=false) with theme',
+      (tester) async {
+        const primaryGlow = Color(0xFF00FF00);
+
+        await tester.pumpWidget(
+          buildWithTheme(primaryGlow: primaryGlow, isSearchActive: false),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(GlassTabBar), findsOneWidget);
+      },
+    );
   });
 
   // ── onBarTap ───────────────────────────────────────────────────────────────
@@ -845,9 +853,7 @@ void main() {
             isSearchActive: false,
             maskingQuality: MaskingQuality.off,
             onBarTap: () => tapCount++,
-            searchConfig: GlassSearchBarConfig(
-              onSearchToggle: (_) {},
-            ),
+            searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
           ),
         ),
       );
@@ -859,8 +865,11 @@ void main() {
       await tester.tapAt(barBox.topLeft + const Offset(4, 4));
       await tester.pump();
 
-      expect(tapCount, greaterThanOrEqualTo(1),
-          reason: 'onBarTap should have fired at least once');
+      expect(
+        tapCount,
+        greaterThanOrEqualTo(1),
+        reason: 'onBarTap should have fired at least once',
+      );
     });
 
     testWidgets('onBarTap fires while search is active', (tester) async {
@@ -875,9 +884,7 @@ void main() {
             isSearchActive: true,
             maskingQuality: MaskingQuality.off,
             onBarTap: () => tapCount++,
-            searchConfig: GlassSearchBarConfig(
-              onSearchToggle: (_) {},
-            ),
+            searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
           ),
         ),
       );
@@ -891,8 +898,9 @@ void main() {
       expect(tapCount, greaterThanOrEqualTo(1));
     });
 
-    testWidgets('when onBarTap is null the bar still mounts cleanly',
-        (tester) async {
+    testWidgets('when onBarTap is null the bar still mounts cleanly', (
+      tester,
+    ) async {
       // onBarTap defaults to null — verify the widget mounts and operates
       // normally without a wrapping GestureDetector.
       await tester.pumpWidget(_buildBar());
@@ -901,8 +909,9 @@ void main() {
       expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
-    testWidgets('tab selection still works when onBarTap is set',
-        (tester) async {
+    testWidgets('tab selection still works when onBarTap is set', (
+      tester,
+    ) async {
       // Verifies that the translucent GestureDetector does NOT swallow taps
       // intended for internal handlers.
       var selected = -1;
@@ -917,9 +926,7 @@ void main() {
             isSearchActive: false,
             maskingQuality: MaskingQuality.off,
             onBarTap: () => barTaps++,
-            searchConfig: GlassSearchBarConfig(
-              onSearchToggle: (_) {},
-            ),
+            searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
           ),
         ),
       );
@@ -930,8 +937,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Internal handler must still fire.
-      expect(selected, equals(1),
-          reason: 'Tab selection should not be swallowed by onBarTap wrapper');
+      expect(
+        selected,
+        equals(1),
+        reason: 'Tab selection should not be swallowed by onBarTap wrapper',
+      );
       // onBarTap may also fire (translucent) — that is acceptable.
     });
   });
@@ -955,8 +965,9 @@ void main() {
       expect(config.onSearchFieldTap, same(handler));
     });
 
-    testWidgets('onSearchFieldTap fires when active TextField is tapped',
-        (tester) async {
+    testWidgets('onSearchFieldTap fires when active TextField is tapped', (
+      tester,
+    ) async {
       var fieldTapCount = 0;
       final controller = TextEditingController();
       addTearDown(controller.dispose);
@@ -983,39 +994,44 @@ void main() {
       if (textField.evaluate().isNotEmpty) {
         await tester.tap(textField.first);
         await tester.pump();
-        expect(fieldTapCount, greaterThanOrEqualTo(1),
-            reason: 'onSearchFieldTap should fire when TextField is tapped');
+        expect(
+          fieldTapCount,
+          greaterThanOrEqualTo(1),
+          reason: 'onSearchFieldTap should fire when TextField is tapped',
+        );
       }
     });
 
-    testWidgets('onSearchFieldTap=null does not crash when TextField is tapped',
-        (tester) async {
-      // Regression guard: verify null callback doesn't throw.
-      await tester.pumpWidget(
-        createTestApp(
-          child: GlassTabBar.searchable(
-            tabs: _testTabs,
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            isSearchActive: true,
-            maskingQuality: MaskingQuality.off,
-            searchConfig: GlassSearchBarConfig(
-              onSearchToggle: (_) {},
-              // onSearchFieldTap intentionally omitted
+    testWidgets(
+      'onSearchFieldTap=null does not crash when TextField is tapped',
+      (tester) async {
+        // Regression guard: verify null callback doesn't throw.
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassTabBar.searchable(
+              tabs: _testTabs,
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              isSearchActive: true,
+              maskingQuality: MaskingQuality.off,
+              searchConfig: GlassSearchBarConfig(
+                onSearchToggle: (_) {},
+                // onSearchFieldTap intentionally omitted
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final textField = find.byType(CupertinoTextField);
-      if (textField.evaluate().isNotEmpty) {
-        await tester.tap(textField.first);
-        await tester.pump();
-        // Verify: no exception was thrown reaching this point.
-        expect(find.byType(GlassTabBar), findsOneWidget);
-      }
-    });
+        final textField = find.byType(CupertinoTextField);
+        if (textField.evaluate().isNotEmpty) {
+          await tester.tap(textField.first);
+          await tester.pump();
+          // Verify: no exception was thrown reaching this point.
+          expect(find.byType(GlassTabBar), findsOneWidget);
+        }
+      },
+    );
   });
 
   // ── DismissPill focus fix regression ──────────────────────────────────────
@@ -1050,8 +1066,9 @@ void main() {
       );
     }
 
-    testWidgets('tapping dismiss pill calls onSearchToggle(false)',
-        (tester) async {
+    testWidgets('tapping dismiss pill calls onSearchToggle(false)', (
+      tester,
+    ) async {
       bool? lastToggle;
 
       await tester.pumpWidget(
@@ -1064,16 +1081,20 @@ void main() {
       if (dismissPill.evaluate().isNotEmpty) {
         await tester.tap(dismissPill.first);
         await tester.pump();
-        expect(lastToggle, isFalse,
-            reason:
-                'Dismiss pill must call onSearchToggle(false) to collapse the '
-                'bar, preventing the expanded GestureDetector from swallowing '
-                'the next tap and re-requesting focus on back-navigation.');
+        expect(
+          lastToggle,
+          isFalse,
+          reason:
+              'Dismiss pill must call onSearchToggle(false) to collapse the '
+              'bar, preventing the expanded GestureDetector from swallowing '
+              'the next tap and re-requesting focus on back-navigation.',
+        );
       }
     });
 
-    testWidgets('tapping dismiss pill fires onCancelTap when provided',
-        (tester) async {
+    testWidgets('tapping dismiss pill fires onCancelTap when provided', (
+      tester,
+    ) async {
       var cancelCount = 0;
 
       await tester.pumpWidget(
@@ -1088,8 +1109,11 @@ void main() {
       if (dismissPill.evaluate().isNotEmpty) {
         await tester.tap(dismissPill.first);
         await tester.pump();
-        expect(cancelCount, equals(1),
-            reason: 'onCancelTap must fire exactly once when × is tapped.');
+        expect(
+          cancelCount,
+          equals(1),
+          reason: 'onCancelTap must fire exactly once when × is tapped.',
+        );
       }
     });
 
@@ -1173,32 +1197,16 @@ void main() {
 
     test('stores custom searchIcon', () {
       const icon = Icon(CupertinoIcons.star);
-      final config =
-          GlassSearchBarConfig(onSearchToggle: (_) {}, searchIcon: icon);
+      final config = GlassSearchBarConfig(
+        onSearchToggle: (_) {},
+        searchIcon: icon,
+      );
       expect(config.searchIcon, same(icon));
     });
 
-    testWidgets('null searchIcon renders default CupertinoIcons.search',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: GlassTabBar.searchable(
-            tabs: _testTabs,
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            maskingQuality: MaskingQuality.off,
-            searchConfig:
-                GlassSearchBarConfig(onSearchToggle: (_) {}, searchIcon: null),
-          ),
-        ),
-      );
-      await tester.pump();
-      expect(find.byIcon(CupertinoIcons.search), findsAtLeastNWidgets(1));
-    });
-
-    testWidgets('custom searchIcon is rendered in search pill', (tester) async {
-      const customIcon =
-          Icon(CupertinoIcons.star_fill, key: Key('custom_search_icon'));
+    testWidgets('null searchIcon renders default CupertinoIcons.search', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: GlassTabBar.searchable(
@@ -1207,7 +1215,32 @@ void main() {
             onTabSelected: (_) {},
             maskingQuality: MaskingQuality.off,
             searchConfig: GlassSearchBarConfig(
-                onSearchToggle: (_) {}, searchIcon: customIcon),
+              onSearchToggle: (_) {},
+              searchIcon: null,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.byIcon(CupertinoIcons.search), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('custom searchIcon is rendered in search pill', (tester) async {
+      const customIcon = Icon(
+        CupertinoIcons.star_fill,
+        key: Key('custom_search_icon'),
+      );
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassTabBar.searchable(
+            tabs: _testTabs,
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            maskingQuality: MaskingQuality.off,
+            searchConfig: GlassSearchBarConfig(
+              onSearchToggle: (_) {},
+              searchIcon: customIcon,
+            ),
           ),
         ),
       );
@@ -1216,8 +1249,9 @@ void main() {
       expect(find.byIcon(CupertinoIcons.star_fill), findsOneWidget);
     });
 
-    testWidgets('custom searchIcon is rendered alongside any other bar icons',
-        (tester) async {
+    testWidgets('custom searchIcon is rendered alongside any other bar icons', (
+      tester,
+    ) async {
       const customIcon = Icon(CupertinoIcons.star_fill);
       await tester.pumpWidget(
         createTestApp(
@@ -1227,7 +1261,9 @@ void main() {
             onTabSelected: (_) {},
             maskingQuality: MaskingQuality.off,
             searchConfig: GlassSearchBarConfig(
-                onSearchToggle: (_) {}, searchIcon: customIcon),
+              onSearchToggle: (_) {},
+              searchIcon: customIcon,
+            ),
           ),
         ),
       );
@@ -1258,9 +1294,7 @@ void main() {
       await tester.pump();
       expect(find.byIcon(CupertinoIcons.search), findsNothing);
 
-      await tester.pumpWidget(
-        _buildBar(isSearchActive: true, showPill: false),
-      );
+      await tester.pumpWidget(_buildBar(isSearchActive: true, showPill: false));
       await tester.pumpAndSettle();
       expect(find.byIcon(CupertinoIcons.search), findsNothing);
     });
@@ -1298,129 +1332,152 @@ void main() {
 
   group('GlassTabBar.searchable backgroundQuality', () {
     testWidgets(
-        'propagates backgroundQuality to SearchPill and BottomBarExtraBtn',
-        (tester) async {
-      await tester.pumpWidget(_buildBar(
-        quality: GlassQuality.premium,
-        backgroundQuality: GlassQuality.minimal,
-        extraButton: GlassTabBarExtraButton(
-          icon: const Icon(CupertinoIcons.add),
-          onTap: () {},
-          label: 'Add',
-        ),
-      ));
-      await tester.pump();
+      'propagates backgroundQuality to SearchPill and BottomBarExtraBtn',
+      (tester) async {
+        await tester.pumpWidget(
+          _buildBar(
+            quality: GlassQuality.premium,
+            backgroundQuality: GlassQuality.minimal,
+            extraButton: GlassTabBarExtraButton(
+              icon: const Icon(CupertinoIcons.add),
+              onTap: () {},
+              label: 'Add',
+            ),
+          ),
+        );
+        await tester.pump();
 
-      final searchPill = tester.widget<SearchPill>(find.byType(SearchPill));
-      expect(searchPill.quality, equals(GlassQuality.minimal));
+        final searchPill = tester.widget<SearchPill>(find.byType(SearchPill));
+        expect(searchPill.quality, equals(GlassQuality.minimal));
 
-      final extraBtn =
-          tester.widget<BottomBarExtraBtn>(find.byType(BottomBarExtraBtn));
-      expect(extraBtn.quality, equals(GlassQuality.minimal));
-    });
+        final extraBtn = tester.widget<BottomBarExtraBtn>(
+          find.byType(BottomBarExtraBtn),
+        );
+        expect(extraBtn.quality, equals(GlassQuality.minimal));
+      },
+    );
 
     testWidgets(
-        'propagates backgroundQuality to DismissPill when search is active with keyboard',
-        (tester) async {
-      final searchCtrl = SearchableBottomBarController();
+      'propagates backgroundQuality to DismissPill when search is active with keyboard',
+      (tester) async {
+        final searchCtrl = SearchableBottomBarController();
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: MediaQuery(
-              data: const MediaQueryData(
-                viewInsets: EdgeInsets.only(bottom: 200),
-              ),
-              child: GlassTabBar.searchable(
-                tabs: _testTabs,
-                selectedIndex: 0,
-                onTabSelected: (_) {},
-                controller: searchCtrl,
-                isSearchActive: true,
-                quality: GlassQuality.premium,
-                backgroundQuality: GlassQuality.minimal,
-                maskingQuality: MaskingQuality.off,
-                searchConfig: GlassSearchBarConfig(
-                  showsCancelButton: true,
-                  onSearchToggle: (_) {},
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: MediaQuery(
+                data: const MediaQueryData(
+                  viewInsets: EdgeInsets.only(bottom: 200),
+                ),
+                child: GlassTabBar.searchable(
+                  tabs: _testTabs,
+                  selectedIndex: 0,
+                  onTabSelected: (_) {},
+                  controller: searchCtrl,
+                  isSearchActive: true,
+                  quality: GlassQuality.premium,
+                  backgroundQuality: GlassQuality.minimal,
+                  maskingQuality: MaskingQuality.off,
+                  searchConfig: GlassSearchBarConfig(
+                    showsCancelButton: true,
+                    onSearchToggle: (_) {},
+                  ),
                 ),
               ),
             ),
           ),
+        );
+
+        searchCtrl.onFocusChanged(true);
+        await tester.pumpAndSettle();
+
+        final dismissPill = tester.widget<DismissPill>(
+          find.byType(DismissPill),
+        );
+        expect(dismissPill.quality, equals(GlassQuality.minimal));
+      },
+    );
+
+    testWidgets('inherits from quality when backgroundQuality is null', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildBar(
+          quality: GlassQuality.standard,
+          extraButton: GlassTabBarExtraButton(
+            icon: const Icon(CupertinoIcons.add),
+            onTap: () {},
+            label: 'Add',
+          ),
         ),
       );
-
-      searchCtrl.onFocusChanged(true);
-      await tester.pumpAndSettle();
-
-      final dismissPill = tester.widget<DismissPill>(find.byType(DismissPill));
-      expect(dismissPill.quality, equals(GlassQuality.minimal));
-    });
-
-    testWidgets('inherits from quality when backgroundQuality is null',
-        (tester) async {
-      await tester.pumpWidget(_buildBar(
-        quality: GlassQuality.standard,
-        extraButton: GlassTabBarExtraButton(
-          icon: const Icon(CupertinoIcons.add),
-          onTap: () {},
-          label: 'Add',
-        ),
-      ));
       await tester.pump();
 
       final searchPill = tester.widget<SearchPill>(find.byType(SearchPill));
       expect(searchPill.quality, equals(GlassQuality.standard));
 
-      final extraBtn =
-          tester.widget<BottomBarExtraBtn>(find.byType(BottomBarExtraBtn));
+      final extraBtn = tester.widget<BottomBarExtraBtn>(
+        find.byType(BottomBarExtraBtn),
+      );
       expect(extraBtn.quality, equals(GlassQuality.standard));
     });
   });
 
   group('GlassTabBar.searchable — collapsed indicator native press (#272)', () {
-    testWidgets('collapsed tab indicator presses like native button by default',
-        (tester) async {
-      await tester.pumpWidget(_buildBar(isSearchActive: true));
-      await tester.pump();
+    testWidgets(
+      'collapsed tab indicator presses like native button by default',
+      (tester) async {
+        await tester.pumpWidget(_buildBar(isSearchActive: true));
+        await tester.pump();
 
-      final indicatorStretch = tester.widget<LiquidStretch>(find.descendant(
-          of: find.byType(SearchableTabIndicator),
-          matching: find.byType(LiquidStretch)));
-      expect(indicatorStretch.pressGrowth, LiquidStretch.nativePressGrowth);
-      expect(indicatorStretch.anchorStretchSettings,
-          AnchorStretchSettings.nativeTremor);
-      expect(
+        final indicatorStretch = tester.widget<LiquidStretch>(
           find.descendant(
-              of: find.byType(SearchableTabIndicator),
-              matching: find.byType(PressAmbientLift)),
-          findsOneWidget);
-    });
+            of: find.byType(SearchableTabIndicator),
+            matching: find.byType(LiquidStretch),
+          ),
+        );
+        expect(indicatorStretch.pressGrowth, LiquidStretch.nativePressGrowth);
+        expect(
+          indicatorStretch.anchorStretchSettings,
+          AnchorStretchSettings.nativeTremor,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(SearchableTabIndicator),
+            matching: find.byType(PressAmbientLift),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets(
-        'custom interactionGlowColor disables native press lift for collapsed indicator',
-        (tester) async {
-      await tester.pumpWidget(createTestApp(
-        child: GlassTabBar.searchable(
-          tabs: _testTabs,
-          selectedIndex: 0,
-          onTabSelected: (_) {},
-          isSearchActive: true,
-          maskingQuality: MaskingQuality.off,
-          interactionGlowColor: const Color(0xFFFF0000),
-          searchConfig: GlassSearchBarConfig(
-            onSearchToggle: (_) {},
+      'custom interactionGlowColor disables native press lift for collapsed indicator',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassTabBar.searchable(
+              tabs: _testTabs,
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              isSearchActive: true,
+              maskingQuality: MaskingQuality.off,
+              interactionGlowColor: const Color(0xFFFF0000),
+              searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
+            ),
           ),
-        ),
-      ));
-      await tester.pump();
+        );
+        await tester.pump();
 
-      expect(
+        expect(
           find.descendant(
-              of: find.byType(SearchableTabIndicator),
-              matching: find.byType(PressAmbientLift)),
-          findsNothing);
-    });
+            of: find.byType(SearchableTabIndicator),
+            matching: find.byType(PressAmbientLift),
+          ),
+          findsNothing,
+        );
+      },
+    );
   });
 
   // ── Regression: issue #305 ────────────────────────────────────────────────
@@ -1459,13 +1516,15 @@ void main() {
         ),
       );
       await tester.pump();
-      final field =
-          tester.widget<CupertinoTextField>(find.byType(CupertinoTextField));
+      final field = tester.widget<CupertinoTextField>(
+        find.byType(CupertinoTextField),
+      );
       return field.style;
     }
 
-    testWidgets('app light + OS dark → text colour is dark (near-black label)',
-        (tester) async {
+    testWidgets('app light + OS dark → text colour is dark (near-black label)', (
+      tester,
+    ) async {
       final style = await pumpAndGetStyle(
         tester,
         platformBrightness: Brightness.dark, // device OS is dark
@@ -1480,20 +1539,22 @@ void main() {
       );
     });
 
-    testWidgets('app dark + OS light → text colour is light (near-white label)',
-        (tester) async {
-      final style = await pumpAndGetStyle(
-        tester,
-        platformBrightness: Brightness.light, // device OS is light
-        appBrightness: Brightness.dark, // app forced to dark
-      );
-      // CupertinoColors.label.darkColor is the dark-mode variant (near-white).
-      expect(
-        style?.color,
-        equals(CupertinoColors.label.darkColor),
-        reason: 'textColor should use app ThemeMode (dark), not OS (light)',
-      );
-    });
+    testWidgets(
+      'app dark + OS light → text colour is light (near-white label)',
+      (tester) async {
+        final style = await pumpAndGetStyle(
+          tester,
+          platformBrightness: Brightness.light, // device OS is light
+          appBrightness: Brightness.dark, // app forced to dark
+        );
+        // CupertinoColors.label.darkColor is the dark-mode variant (near-white).
+        expect(
+          style?.color,
+          equals(CupertinoColors.label.darkColor),
+          reason: 'textColor should use app ThemeMode (dark), not OS (light)',
+        );
+      },
+    );
 
     testWidgets('explicit textColor is forwarded as-is', (tester) async {
       const explicitColor = Color(0xFFABCDEF);
@@ -1517,49 +1578,52 @@ void main() {
         ),
       );
       await tester.pump();
-      final field =
-          tester.widget<CupertinoTextField>(find.byType(CupertinoTextField));
+      final field = tester.widget<CupertinoTextField>(
+        find.byType(CupertinoTextField),
+      );
       expect(field.style?.color, equals(explicitColor));
     });
 
     testWidgets(
-        'explicit CupertinoDynamicColor in textColor is resolved using app brightness',
-        (tester) async {
-      await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(platformBrightness: Brightness.dark),
-          child: MaterialApp(
-            theme: ThemeData(brightness: Brightness.light),
-            home: Scaffold(
-              backgroundColor: Colors.transparent,
-              body: GlassTabBar.searchable(
-                tabs: _testTabs,
-                selectedIndex: 0,
-                onTabSelected: (_) {},
-                isSearchActive: true,
-                maskingQuality: MaskingQuality.off,
-                searchConfig: GlassSearchBarConfig(
-                  onSearchToggle: (_) {},
-                  textColor: CupertinoColors.label,
+      'explicit CupertinoDynamicColor in textColor is resolved using app brightness',
+      (tester) async {
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(platformBrightness: Brightness.dark),
+            child: MaterialApp(
+              theme: ThemeData(brightness: Brightness.light),
+              home: Scaffold(
+                backgroundColor: Colors.transparent,
+                body: GlassTabBar.searchable(
+                  tabs: _testTabs,
+                  selectedIndex: 0,
+                  onTabSelected: (_) {},
+                  isSearchActive: true,
+                  maskingQuality: MaskingQuality.off,
+                  searchConfig: GlassSearchBarConfig(
+                    onSearchToggle: (_) {},
+                    textColor: CupertinoColors.label,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pump();
-      final field =
-          tester.widget<CupertinoTextField>(find.byType(CupertinoTextField));
-      expect(
-        field.style?.color,
-        equals(CupertinoColors.label.color),
-        reason:
-            'Dynamic color must be eagerly resolved to app light variant, not OS dark variant',
-      );
-    });
+        );
+        await tester.pump();
+        final field = tester.widget<CupertinoTextField>(
+          find.byType(CupertinoTextField),
+        );
+        expect(
+          field.style?.color,
+          equals(CupertinoColors.label.color),
+          reason: 'Dynamic color must be eagerly resolved to app light variant, not OS dark variant',
+        );
+      },
+    );
 
-    testWidgets('hintStyle without color preserves resolved textColor',
-        (tester) async {
+    testWidgets('hintStyle without color preserves resolved textColor', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MediaQuery(
           data: const MediaQueryData(platformBrightness: Brightness.dark),
@@ -1583,8 +1647,9 @@ void main() {
         ),
       );
       await tester.pump();
-      final field =
-          tester.widget<CupertinoTextField>(find.byType(CupertinoTextField));
+      final field = tester.widget<CupertinoTextField>(
+        find.byType(CupertinoTextField),
+      );
       expect(field.style?.fontSize, equals(15));
       expect(
         field.style?.color,
@@ -1631,8 +1696,9 @@ void main() {
       return tester.widget<CupertinoTextField>(find.byType(CupertinoTextField));
     }
 
-    testWidgets('both set → typed text takes textColor, hint takes hintStyle',
-        (tester) async {
+    testWidgets('both set → typed text takes textColor, hint takes hintStyle', (
+      tester,
+    ) async {
       final field = await pumpField(
         tester,
         GlassSearchBarConfig(
@@ -1641,16 +1707,20 @@ void main() {
           hintStyle: const TextStyle(color: hint, fontSize: 15),
         ),
       );
-      expect(field.style?.color, equals(typed),
-          reason: 'an explicit textColor must not be overridden by hintStyle');
+      expect(
+        field.style?.color,
+        equals(typed),
+        reason: 'an explicit textColor must not be overridden by hintStyle',
+      );
       expect(field.placeholderStyle?.color, equals(hint));
       // Metrics stay shared, so the field does not jump on the first key.
       expect(field.style?.fontSize, equals(15));
       expect(field.placeholderStyle?.fontSize, equals(15));
     });
 
-    testWidgets('only hintStyle colour set → typed text still follows it',
-        (tester) async {
+    testWidgets('only hintStyle colour set → typed text still follows it', (
+      tester,
+    ) async {
       // Unchanged behaviour for callers that style the field through
       // hintStyle alone.
       final field = await pumpField(
@@ -1664,8 +1734,9 @@ void main() {
       expect(field.placeholderStyle?.color, equals(hint));
     });
 
-    testWidgets('dynamic colours on both resolve against the app brightness',
-        (tester) async {
+    testWidgets('dynamic colours on both resolve against the app brightness', (
+      tester,
+    ) async {
       final field = await pumpField(
         tester,
         GlassSearchBarConfig(

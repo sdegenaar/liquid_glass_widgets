@@ -29,8 +29,8 @@
 ///
 library;
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:video_player/video_player.dart';
@@ -49,10 +49,8 @@ class VideoGlassDemoApp extends StatelessWidget {
     return CupertinoApp(
       title: 'Video + Glass Demo',
       theme: const CupertinoThemeData(brightness: Brightness.dark),
-      builder: (context, child) => Theme(
-        data: ThemeData.dark(useMaterial3: true),
-        child: child!,
-      ),
+      builder: (context, child) =>
+          Theme(data: ThemeData.dark(useMaterial3: true), child: child!),
       debugShowCheckedModeBanner: false,
       home: const VideoGlassDemoPage(),
     );
@@ -74,17 +72,19 @@ class _VideoGlassDemoPageState extends State<VideoGlassDemoPage> {
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.networkUrl(
-      Uri.parse(
-        // Flutter's official sample video — known-accessible, short, colorful.
-        'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
-      ),
-    )..initialize().then((_) {
-        setState(() {});
-        _controller.setLooping(true);
-        _controller.play();
-        _isPlaying = true;
-      });
+    _controller =
+        VideoPlayerController.networkUrl(
+            Uri.parse(
+              // Flutter's official sample video — known-accessible, short, colorful.
+              'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
+            ),
+          )
+          ..initialize().then((_) {
+            setState(() {});
+            _controller.setLooping(true);
+            _controller.play();
+            _isPlaying = true;
+          });
   }
 
   @override
@@ -133,7 +133,8 @@ class _VideoGlassDemoPageState extends State<VideoGlassDemoPage> {
             else
               Center(
                 child: CircularProgressIndicator(
-                    color: CupertinoColors.white.withValues(alpha: 0.54)),
+                  color: CupertinoColors.white.withValues(alpha: 0.54),
+                ),
               ),
 
             // ── Glass overlay controls ─────────────────────────────
@@ -154,9 +155,7 @@ class _VideoGlassDemoPageState extends State<VideoGlassDemoPage> {
                         children: [
                           Text(
                             'PlatformView Test',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
+                            style: Theme.of(context).textTheme.headlineSmall
                                 ?.copyWith(
                                   color: CupertinoColors.white,
                                   fontWeight: FontWeight.bold,
@@ -166,11 +165,12 @@ class _VideoGlassDemoPageState extends State<VideoGlassDemoPage> {
                           Text(
                             'Glass widgets over a video PlatformView.\n'
                             'Verify: no rectangular blur halo at corners.',
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: CupertinoColors.white
-                                          .withValues(alpha: 0.70),
-                                    ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: CupertinoColors.white.withValues(
+                                    alpha: 0.70,
+                                  ),
+                                ),
                           ),
                         ],
                       ),
@@ -238,10 +238,12 @@ class _VideoGlassDemoPageState extends State<VideoGlassDemoPage> {
                           allowScrubbing: true,
                           colors: VideoProgressColors(
                             playedColor: CupertinoColors.white,
-                            bufferedColor:
-                                CupertinoColors.white.withValues(alpha: 0.24),
-                            backgroundColor:
-                                CupertinoColors.white.withValues(alpha: 0.1),
+                            bufferedColor: CupertinoColors.white.withValues(
+                              alpha: 0.24,
+                            ),
+                            backgroundColor: CupertinoColors.white.withValues(
+                              alpha: 0.1,
+                            ),
                           ),
                         ),
                       ),

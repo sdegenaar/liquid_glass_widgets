@@ -40,8 +40,8 @@ class GlassThemeHelpers {
   /// take precedence.
   static GlassQuality nativeStyleQuality(BuildContext context) =>
       resolveStyle(context) == GlassStyle.classic
-          ? GlassQuality.standard
-          : GlassQuality.premium;
+      ? GlassQuality.standard
+      : GlassQuality.premium;
 
   /// Resolves the effective [GlassQuality] for a widget.
   ///
@@ -212,8 +212,8 @@ class GlassThemeHelpers {
     final scopeDefault = GlassIsolationScope.defaultQualityOf(context);
     GlassQuality? resolved;
     if (!GlassIsolationScope.isIsolated(context) && scopeDefault == null) {
-      final inherited =
-          context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+      final inherited = context
+          .dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
       if (inherited != null &&
           (inherited.hasExplicitQuality || fallback == GlassQuality.standard)) {
         resolved = inherited.quality;
@@ -245,7 +245,9 @@ class GlassThemeHelpers {
 
   /// Returns the lower of [quality] and [ceiling] using the correct ordinal.
   static GlassQuality _applyCeiling(
-      GlassQuality quality, GlassQuality ceiling) {
+    GlassQuality quality,
+    GlassQuality ceiling,
+  ) {
     return _qualityOrdinal(quality) > _qualityOrdinal(ceiling)
         ? ceiling
         : quality;
@@ -335,11 +337,11 @@ class GlassThemeHelpers {
         resolved.frost > 0) {
       final surfaceBaseline = themeData.style == GlassStyle.ios27
           ? (isDark
-              ? GlassThemeSettings.ios27Dark
-              : GlassThemeSettings.ios27Light)
+                ? GlassThemeSettings.ios27Dark
+                : GlassThemeSettings.ios27Light)
           : (isDark
-              ? GlassThemeSettings.ios26Dark
-              : GlassThemeSettings.ios26Light);
+                ? GlassThemeSettings.ios26Dark
+                : GlassThemeSettings.ios26Light);
       // Native iOS 26 / iOS 27 floating overlay platters (_UIContextMenuPlatterView
       // and _UISheetPresentationController) use the full 14pt frosted cloud
       // (`frostOpacity: 1.0`) so sharp background text does not ghost through

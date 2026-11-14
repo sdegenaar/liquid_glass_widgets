@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/utils/glass_morph_controller.dart';
 
@@ -135,8 +135,9 @@ void main() {
       expect(ctrl.hasHandedOff, isFalse);
     });
 
-    testWidgets('value advances above 0 after one engine frame',
-        (tester) async {
+    testWidgets('value advances above 0 after one engine frame', (
+      tester,
+    ) async {
       final ctrl = await _mount(tester);
       ctrl.open();
       // Advance 2 engine frames (spring has non-zero dt to integrate)
@@ -172,8 +173,9 @@ void main() {
       expect(ctrl.isClosing, isTrue);
     });
 
-    testWidgets('value returns toward 0.0 after close() settles',
-        (tester) async {
+    testWidgets('value returns toward 0.0 after close() settles', (
+      tester,
+    ) async {
       final ctrl = await _mount(tester);
       ctrl.open();
       await tester.pumpAndSettle();
@@ -182,8 +184,9 @@ void main() {
       expect(ctrl.value, closeTo(0.0, 0.02));
     });
 
-    testWidgets('hasHandedOff latches true after close animation',
-        (tester) async {
+    testWidgets('hasHandedOff latches true after close animation', (
+      tester,
+    ) async {
       final ctrl = await _mount(tester);
       ctrl.open();
       await tester.pumpAndSettle();
@@ -192,14 +195,16 @@ void main() {
       expect(ctrl.hasHandedOff, isTrue);
     });
 
-    testWidgets('close() can be called before open() without crashing',
-        (tester) async {
+    testWidgets('close() can be called before open() without crashing', (
+      tester,
+    ) async {
       final ctrl = await _mount(tester);
       expect(() => ctrl.close(), returnsNormally);
     });
 
-    testWidgets('isClosing is false at construction (never closed)',
-        (tester) async {
+    testWidgets('isClosing is false at construction (never closed)', (
+      tester,
+    ) async {
       final ctrl = await _mount(tester);
       expect(ctrl.isClosing, isFalse);
     });
@@ -246,8 +251,9 @@ void main() {
 
   group('GlassMorphController — MorphSpeed variants', () {
     for (final speed in MorphSpeed.values) {
-      testWidgets('$speed speed opens and settles without crashing',
-          (tester) async {
+      testWidgets('$speed speed opens and settles without crashing', (
+        tester,
+      ) async {
         final ctrl = await _mount(tester, speed: speed);
         ctrl.open();
         await tester.pumpAndSettle();
@@ -255,9 +261,7 @@ void main() {
       });
     }
 
-    test(
-        'fast spring has higher stiffness than slow (settles faster by design)',
-        () {
+    test('fast spring has higher stiffness than slow (settles faster by design)', () {
       // Verify the contract via physics constants rather than animation timing.
       // GlassMorphController._effectiveSpring uses these values:
       //   slow:   stiffness=60,  damping=11.3
@@ -292,8 +296,9 @@ void main() {
       expect(state.phase, equals(MorphPhase.idle));
     });
 
-    testWidgets('currentDx > 0 after animation settles to halfway',
-        (tester) async {
+    testWidgets('currentDx > 0 after animation settles to halfway', (
+      tester,
+    ) async {
       final ctrl = await _mount(tester);
       ctrl.open();
       // Pump until value is clearly above 0.4 (anchor scale has zeroed out
@@ -305,8 +310,9 @@ void main() {
       expect(state.currentDx, greaterThan(0.0));
     });
 
-    testWidgets('anchorScale decreases below 1.0 during early open',
-        (tester) async {
+    testWidgets('anchorScale decreases below 1.0 during early open', (
+      tester,
+    ) async {
       final ctrl = await _mount(tester);
       ctrl.open();
       await tester.pump(const Duration(milliseconds: 150));
@@ -314,8 +320,9 @@ void main() {
       expect(state.anchorScale, lessThanOrEqualTo(1.0));
     });
 
-    testWidgets('horizontalOffset and verticalOffset are forwarded correctly',
-        (tester) async {
+    testWidgets('horizontalOffset and verticalOffset are forwarded correctly', (
+      tester,
+    ) async {
       final ctrl = await _mount(tester);
       expect(
         () => ctrl.computeState(
@@ -345,14 +352,9 @@ void main() {
       final ctrl = await _mount(tester);
       ctrl.open();
       await _pumpFrame(tester);
-      expect(
-        () async {
-          await tester.pumpWidget(
-            const MaterialApp(home: SizedBox.shrink()),
-          );
-        },
-        returnsNormally,
-      );
+      expect(() async {
+        await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      }, returnsNormally);
     });
   });
 
@@ -408,10 +410,7 @@ void main() {
     test('has all expected values', () {
       expect(
         MorphStyle.values,
-        containsAll([
-          MorphStyle.teardrop,
-          MorphStyle.bloom,
-        ]),
+        containsAll([MorphStyle.teardrop, MorphStyle.bloom]),
       );
     });
   });
@@ -437,8 +436,9 @@ void main() {
       expect(ctrl.disableAnimations, isFalse);
     });
 
-    testWidgets('setDisableAnimations is idempotent (same value is a no-op)',
-        (tester) async {
+    testWidgets('setDisableAnimations is idempotent (same value is a no-op)', (
+      tester,
+    ) async {
       final ctrl = await _mount(tester);
       // Calling with the current value must not throw or notify.
       int notifyCount = 0;
@@ -447,8 +447,9 @@ void main() {
       expect(notifyCount, equals(0));
     });
 
-    testWidgets('open() with disableAnimations=true still settles to ~1.0',
-        (tester) async {
+    testWidgets('open() with disableAnimations=true still settles to ~1.0', (
+      tester,
+    ) async {
       final ctrl = await _mount(tester);
       ctrl.setDisableAnimations(true);
       ctrl.open();
@@ -458,8 +459,7 @@ void main() {
       expect(ctrl.value, closeTo(1.0, 0.01));
     });
 
-    test(
-        'disableAnimations uses instant spring (stiffness=500) — '
+    test('disableAnimations uses instant spring (stiffness=500) — '
         'same as MorphSpeed.instant, which is the fastest preset', () {
       // The instant-spring constant (stiffness=500) used by disableAnimations
       // is identical to MorphSpeed.instant, which already sits above the
@@ -472,8 +472,9 @@ void main() {
       expect(disabledStiffness, greaterThan(normalStiffness));
     });
 
-    testWidgets('disableAnimations does not affect value at rest',
-        (tester) async {
+    testWidgets('disableAnimations does not affect value at rest', (
+      tester,
+    ) async {
       final ctrl = await _mount(tester);
       ctrl.setDisableAnimations(true);
       // No open() called — value must still be 0.
@@ -485,7 +486,9 @@ void main() {
     /// Pumps 120 Hz frames until the controller stops; returns how long that
     /// took, in milliseconds.
     Future<int> runUntilStill(
-        WidgetTester tester, GlassMorphController c) async {
+      WidgetTester tester,
+      GlassMorphController c,
+    ) async {
       var elapsed = 0;
       await tester.pump();
       while (c.animation.isAnimating && elapsed < 3000) {
@@ -495,8 +498,9 @@ void main() {
       return elapsed;
     }
 
-    testWidgets('an open stops once nothing visibly moves, on its target',
-        (tester) async {
+    testWidgets('an open stops once nothing visibly moves, on its target', (
+      tester,
+    ) async {
       final ctrl = await _mount(tester);
       ctrl.open();
       final ms = await runUntilStill(tester, ctrl);
@@ -507,8 +511,9 @@ void main() {
       expect(ctrl.velocity, 0.0);
     });
 
-    testWidgets('a close stops on 0 and reports itself settled',
-        (tester) async {
+    testWidgets('a close stops on 0 and reports itself settled', (
+      tester,
+    ) async {
       final ctrl = await _mount(tester);
       ctrl.open();
       await runUntilStill(tester, ctrl);
@@ -523,49 +528,51 @@ void main() {
     });
 
     testWidgets(
-        'a spring interrupted by another does not snap to the old target',
-        (tester) async {
-      final ctrl = await _mount(tester);
-      ctrl.open();
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
-      ctrl.close();
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 16));
+      'a spring interrupted by another does not snap to the old target',
+      (tester) async {
+        final ctrl = await _mount(tester);
+        ctrl.open();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        ctrl.close();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 16));
 
-      // Still on its way down, nowhere near the open target it abandoned.
-      expect(ctrl.value, lessThan(1.0));
-      await runUntilStill(tester, ctrl);
-      expect(ctrl.value, 0.0);
-    });
+        // Still on its way down, nowhere near the open target it abandoned.
+        expect(ctrl.value, lessThan(1.0));
+        await runUntilStill(tester, ctrl);
+        expect(ctrl.value, 0.0);
+      },
+    );
 
     testWidgets(
-        'settling keeps the status at completed, with no event after it',
-        (tester) async {
-      final ctrl = await _mount(tester);
-      final statuses = <AnimationStatus>[];
-      ctrl.animation.addStatusListener(statuses.add);
+      'settling keeps the status at completed, with no event after it',
+      (tester) async {
+        final ctrl = await _mount(tester);
+        final statuses = <AnimationStatus>[];
+        ctrl.animation.addStatusListener(statuses.add);
 
-      ctrl.open();
-      await runUntilStill(tester, ctrl);
-      // Let any microtask queued by the completion run before asserting.
-      await tester.pump(const Duration(milliseconds: 50));
+        ctrl.open();
+        await runUntilStill(tester, ctrl);
+        // Let any microtask queued by the completion run before asserting.
+        await tester.pump(const Duration(milliseconds: 50));
 
-      expect(ctrl.value, 1.0);
-      expect(ctrl.status, AnimationStatus.completed);
-      expect(ctrl.animation.isCompleted, isTrue);
-      // Landing on the target must not report a status after `completed`:
-      // GlassMenu and GlassPopover gate their hide logic on `forward`.
-      expect(statuses, [AnimationStatus.forward, AnimationStatus.completed]);
+        expect(ctrl.value, 1.0);
+        expect(ctrl.status, AnimationStatus.completed);
+        expect(ctrl.animation.isCompleted, isTrue);
+        // Landing on the target must not report a status after `completed`:
+        // GlassMenu and GlassPopover gate their hide logic on `forward`.
+        expect(statuses, [AnimationStatus.forward, AnimationStatus.completed]);
 
-      statuses.clear();
-      ctrl.close();
-      await runUntilStill(tester, ctrl);
-      await tester.pump(const Duration(milliseconds: 50));
+        statuses.clear();
+        ctrl.close();
+        await runUntilStill(tester, ctrl);
+        await tester.pump(const Duration(milliseconds: 50));
 
-      expect(ctrl.value, 0.0);
-      expect(ctrl.status, AnimationStatus.completed);
-      expect(statuses.last, AnimationStatus.completed);
-    });
+        expect(ctrl.value, 0.0);
+        expect(ctrl.status, AnimationStatus.completed);
+        expect(statuses.last, AnimationStatus.completed);
+      },
+    );
   });
 }

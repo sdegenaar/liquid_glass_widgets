@@ -295,8 +295,10 @@ class LiquidMorphPhysics {
   }) {
     final absDy = finalDy.abs();
     if (absDy <= _adaptiveThresholdDy) return baseAmplitude;
-    return (baseAmplitude * _adaptiveThresholdDy / absDy)
-        .clamp(_minBackOutAmplitude, baseAmplitude);
+    return (baseAmplitude * _adaptiveThresholdDy / absDy).clamp(
+      _minBackOutAmplitude,
+      baseAmplitude,
+    );
   }
 
   /// Computes the SDF blend attenuation factor for a given scale ratio.
@@ -433,8 +435,10 @@ class LiquidMorphPhysics {
     // Shrinks the ghost trigger (Blob A) to 0 over the first 40% of the open
     // animation so the droplet cleanly detaches, and grows it back from 0 to 1
     // over the final 40% of the close animation as the droplet re-merges.
-    final anchorScale =
-        (1.0 - (clampedValue / _anchorEaseDuration)).clamp(0.0, 1.0);
+    final anchorScale = (1.0 - (clampedValue / _anchorEaseDuration)).clamp(
+      0.0,
+      1.0,
+    );
 
     // ── Metaball Blend ────────────────────────────────────────────────────────
     // Separation between pathT (position) and sizeT (size) drives the SDF
@@ -443,16 +447,22 @@ class LiquidMorphPhysics {
     // artificial SDF inflation at handoff.
     final blendAttenuation = computeBlendAttenuation(scaleDelta);
     final separation = (pathT - sizeT).abs();
-    final blend = (separation * _blendMultiplier * blendAttenuation)
-        .clamp(0.0, _maxBlend);
+    final blend = (separation * _blendMultiplier * blendAttenuation).clamp(
+      0.0,
+      _maxBlend,
+    );
 
     // ── Container Scale Pulse ─────────────────────────────────────────────────
     // Subtle squeeze/swell during spring overshoot phases.
     final containerScale = rawValue > 1.0
-        ? 1.0 + (rawValue - 1.0) * 0.10 // open overshoot (negligible)
+        ? 1.0 +
+              (rawValue - 1.0) *
+                  0.10 // open overshoot (negligible)
         : rawValue < 0.0
-            ? 1.0 + rawValue * 0.55 // close undershoot → visible squeeze
-            : 1.0;
+        ? 1.0 +
+              rawValue *
+                  0.55 // close undershoot → visible squeeze
+        : 1.0;
 
     // ── Phase ─────────────────────────────────────────────────────────────────
     final phase = _derivePhase(rawValue, clampedValue);

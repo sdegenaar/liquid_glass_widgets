@@ -5,7 +5,7 @@
 // where the bar is a transparent layout container and glass effects belong
 // on the interactive elements (GlassButton), not the bar surface.
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -57,12 +57,7 @@ class _TabBarScrollableHomeState extends State<TabBarScrollableHome> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        actions: [
-          GlassButton(
-            icon: Icon(CupertinoIcons.add),
-            onTap: _addTab,
-          ),
-        ],
+        actions: [GlassButton(icon: Icon(CupertinoIcons.add), onTap: _addTab)],
       ),
       child: SafeArea(
         child: Center(

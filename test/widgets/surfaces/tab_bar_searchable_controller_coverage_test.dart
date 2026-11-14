@@ -39,8 +39,10 @@ void main() {
     );
 
     test('equality: identical instances are equal', () => expect(a, equals(b)));
-    test('hashCode: equal instances share hashCode',
-        () => expect(a.hashCode, b.hashCode));
+    test(
+      'hashCode: equal instances share hashCode',
+      () => expect(a.hashCode, b.hashCode),
+    );
     test('inequality: different tabW', () => expect(a, isNot(equals(c))));
     test('identical() short-circuit', () => expect(a == a, isTrue));
 

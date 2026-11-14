@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/engine/glass_glow.dart';
@@ -70,7 +70,8 @@ void main() {
         expect(
           copy.hashCode,
           equals(
-              original.copyWith(pressLight: const Color(0xFFF2CB48)).hashCode),
+            original.copyWith(pressLight: const Color(0xFFF2CB48)).hashCode,
+          ),
         );
       });
 
@@ -80,8 +81,10 @@ void main() {
       });
 
       test('copyWith multiple fields', () {
-        final copy =
-            original.copyWith(primary: Colors.white, danger: Colors.black);
+        final copy = original.copyWith(
+          primary: Colors.white,
+          danger: Colors.black,
+        );
         expect(copy.primary, Colors.white);
         expect(copy.danger, Colors.black);
         expect(copy.secondary, Colors.blue);
@@ -166,12 +169,13 @@ void main() {
     });
 
     test(
-        'light thickness is >= dark thickness (light glass needs more contrast)',
-        () {
-      final lightThickness = GlassThemeVariant.light.settings?.thickness ?? 0;
-      final darkThickness = GlassThemeVariant.dark.settings?.thickness ?? 0;
-      expect(lightThickness, greaterThanOrEqualTo(darkThickness));
-    });
+      'light thickness is >= dark thickness (light glass needs more contrast)',
+      () {
+        final lightThickness = GlassThemeVariant.light.settings?.thickness ?? 0;
+        final darkThickness = GlassThemeVariant.dark.settings?.thickness ?? 0;
+        expect(lightThickness, greaterThanOrEqualTo(darkThickness));
+      },
+    );
 
     test('all presets have non-null glowColors', () {
       expect(GlassThemeVariant.light.glowColors, isNotNull);
@@ -309,8 +313,9 @@ void main() {
   // ──────────────────────────────────────────────────────────────────────────
 
   group('GlassThemeData.glowColorsFor adaptive primary', () {
-    testWidgets('injects bright primary in light mode (primary was null)',
-        (tester) async {
+    testWidgets('injects bright primary in light mode (primary was null)', (
+      tester,
+    ) async {
       const data = GlassThemeData(
         light: GlassThemeVariant(
           glowColors: GlassGlowColors(), // primary is null
@@ -324,10 +329,12 @@ void main() {
           child: MaterialApp(
             home: GlassTheme(
               data: data,
-              child: Builder(builder: (context) {
-                injected = data.glowColorsFor(context).primary;
-                return const SizedBox.shrink();
-              }),
+              child: Builder(
+                builder: (context) {
+                  injected = data.glowColorsFor(context).primary;
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
           ),
         ),
@@ -338,8 +345,9 @@ void main() {
       expect(injected, const Color(0x3DFFFFFF));
     });
 
-    testWidgets('injects dimmer primary in dark mode (primary was null)',
-        (tester) async {
+    testWidgets('injects dimmer primary in dark mode (primary was null)', (
+      tester,
+    ) async {
       const data = GlassThemeData(
         dark: GlassThemeVariant(
           glowColors: GlassGlowColors(), // primary is null
@@ -356,10 +364,12 @@ void main() {
           themeMode: ThemeMode.system,
           home: GlassTheme(
             data: data,
-            child: Builder(builder: (context) {
-              injected = data.glowColorsFor(context).primary;
-              return const SizedBox.shrink();
-            }),
+            child: Builder(
+              builder: (context) {
+                injected = data.glowColorsFor(context).primary;
+                return const SizedBox.shrink();
+              },
+            ),
           ),
         ),
       );
@@ -369,8 +379,9 @@ void main() {
       expect(injected, const Color(0x2AFFFFFF));
     });
 
-    testWidgets('does NOT inject when caller already set primary',
-        (tester) async {
+    testWidgets('does NOT inject when caller already set primary', (
+      tester,
+    ) async {
       const explicitPrimary = Colors.purple;
       const data = GlassThemeData(
         light: GlassThemeVariant(
@@ -383,10 +394,12 @@ void main() {
         MaterialApp(
           home: GlassTheme(
             data: data,
-            child: Builder(builder: (context) {
-              resolved = data.glowColorsFor(context).primary;
-              return const SizedBox.shrink();
-            }),
+            child: Builder(
+              builder: (context) {
+                resolved = data.glowColorsFor(context).primary;
+                return const SizedBox.shrink();
+              },
+            ),
           ),
         ),
       );
@@ -394,8 +407,9 @@ void main() {
       expect(resolved, explicitPrimary);
     });
 
-    testWidgets('secondary color is preserved during injection',
-        (tester) async {
+    testWidgets('secondary color is preserved during injection', (
+      tester,
+    ) async {
       const data = GlassThemeData(
         light: GlassThemeVariant(
           glowColors: GlassGlowColors(
@@ -410,10 +424,12 @@ void main() {
         MaterialApp(
           home: GlassTheme(
             data: data,
-            child: Builder(builder: (context) {
-              secondary = data.glowColorsFor(context).secondary;
-              return const SizedBox.shrink();
-            }),
+            child: Builder(
+              builder: (context) {
+                secondary = data.glowColorsFor(context).secondary;
+                return const SizedBox.shrink();
+              },
+            ),
           ),
         ),
       );
@@ -432,10 +448,12 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Builder(builder: (context) {
-            captured = GlassThemeData.of(context);
-            return const SizedBox.shrink();
-          }),
+          home: Builder(
+            builder: (context) {
+              captured = GlassThemeData.of(context);
+              return const SizedBox.shrink();
+            },
+          ),
         ),
       );
 
@@ -443,8 +461,9 @@ void main() {
       expect(captured, equals(GlassThemeData.fallback()));
     });
 
-    testWidgets('returns provided theme when GlassTheme is present',
-        (tester) async {
+    testWidgets('returns provided theme when GlassTheme is present', (
+      tester,
+    ) async {
       const custom = GlassThemeData(
         light: GlassThemeVariant(quality: GlassQuality.minimal),
       );
@@ -454,10 +473,12 @@ void main() {
         MaterialApp(
           home: GlassTheme(
             data: custom,
-            child: Builder(builder: (context) {
-              captured = GlassThemeData.of(context);
-              return const SizedBox.shrink();
-            }),
+            child: Builder(
+              builder: (context) {
+                captured = GlassThemeData.of(context);
+                return const SizedBox.shrink();
+              },
+            ),
           ),
         ),
       );
@@ -482,10 +503,12 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(platformBrightness: Brightness.light),
           child: MaterialApp(
-            home: Builder(builder: (context) {
-              variant = data.variantFor(context);
-              return const SizedBox.shrink();
-            }),
+            home: Builder(
+              builder: (context) {
+                variant = data.variantFor(context);
+                return const SizedBox.shrink();
+              },
+            ),
           ),
         ),
       );
@@ -507,10 +530,12 @@ void main() {
           theme: ThemeData.light(),
           darkTheme: ThemeData.dark(),
           themeMode: ThemeMode.system,
-          home: Builder(builder: (context) {
-            variant = data.variantFor(context);
-            return const SizedBox.shrink();
-          }),
+          home: Builder(
+            builder: (context) {
+              variant = data.variantFor(context);
+              return const SizedBox.shrink();
+            },
+          ),
         ),
       );
 
@@ -519,9 +544,7 @@ void main() {
 
     testWidgets('settingsFor returns the variant settings', (tester) async {
       const data = GlassThemeData(
-        light: GlassThemeVariant(
-          settings: GlassThemeSettings(thickness: 42.0),
-        ),
+        light: GlassThemeVariant(settings: GlassThemeSettings(thickness: 42.0)),
       );
 
       GlassThemeSettings? settings;
@@ -529,10 +552,12 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(platformBrightness: Brightness.light),
           child: MaterialApp(
-            home: Builder(builder: (context) {
-              settings = data.settingsFor(context);
-              return const SizedBox.shrink();
-            }),
+            home: Builder(
+              builder: (context) {
+                settings = data.settingsFor(context);
+                return const SizedBox.shrink();
+              },
+            ),
           ),
         ),
       );
@@ -550,10 +575,12 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(platformBrightness: Brightness.light),
           child: MaterialApp(
-            home: Builder(builder: (context) {
-              quality = data.qualityFor(context);
-              return const SizedBox.shrink();
-            }),
+            home: Builder(
+              builder: (context) {
+                quality = data.qualityFor(context);
+                return const SizedBox.shrink();
+              },
+            ),
           ),
         ),
       );
@@ -561,8 +588,9 @@ void main() {
       expect(quality, GlassQuality.minimal);
     });
 
-    testWidgets('settingsFor returns null when variant has no settings',
-        (tester) async {
+    testWidgets('settingsFor returns null when variant has no settings', (
+      tester,
+    ) async {
       const data = GlassThemeData(
         light: GlassThemeVariant(), // no settings
       );
@@ -570,10 +598,12 @@ void main() {
       GlassThemeSettings? settings;
       await tester.pumpWidget(
         MaterialApp(
-          home: Builder(builder: (context) {
-            settings = data.settingsFor(context);
-            return const SizedBox.shrink();
-          }),
+          home: Builder(
+            builder: (context) {
+              settings = data.settingsFor(context);
+              return const SizedBox.shrink();
+            },
+          ),
         ),
       );
 
@@ -731,81 +761,91 @@ void main() {
 
     group('glowColorsFor preserves appearance fields', () {
       testWidgets(
-          'appearance fields survive adaptive-primary injection (light mode)',
-          (tester) async {
-        const data = GlassThemeData(
-          light: GlassThemeVariant(
-            glowColors: GlassGlowColors(
-              // primary null → injection will run
-              glowBlurRadius: 10,
-              glowSpreadRadius: 0.2,
-              glowOpacity: 0.75,
-            ),
-          ),
-        );
-
-        GlassGlowColors? resolved;
-        await tester.pumpWidget(
-          MediaQuery(
-            data: const MediaQueryData(platformBrightness: Brightness.light),
-            child: MaterialApp(
-              home: GlassTheme(
-                data: data,
-                child: Builder(builder: (context) {
-                  resolved = data.glowColorsFor(context);
-                  return const SizedBox.shrink();
-                }),
+        'appearance fields survive adaptive-primary injection (light mode)',
+        (tester) async {
+          const data = GlassThemeData(
+            light: GlassThemeVariant(
+              glowColors: GlassGlowColors(
+                // primary null → injection will run
+                glowBlurRadius: 10,
+                glowSpreadRadius: 0.2,
+                glowOpacity: 0.75,
               ),
             ),
-          ),
-        );
+          );
 
-        expect(resolved, isNotNull);
-        expect(resolved!.primary, const Color(0x3DFFFFFF)); // injected
-        expect(resolved!.glowBlurRadius, 10);
-        expect(resolved!.glowSpreadRadius, 0.2);
-        expect(resolved!.glowOpacity, 0.75);
-      });
+          GlassGlowColors? resolved;
+          await tester.pumpWidget(
+            MediaQuery(
+              data: const MediaQueryData(platformBrightness: Brightness.light),
+              child: MaterialApp(
+                home: GlassTheme(
+                  data: data,
+                  child: Builder(
+                    builder: (context) {
+                      resolved = data.glowColorsFor(context);
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          expect(resolved, isNotNull);
+          expect(resolved!.primary, const Color(0x3DFFFFFF)); // injected
+          expect(resolved!.glowBlurRadius, 10);
+          expect(resolved!.glowSpreadRadius, 0.2);
+          expect(resolved!.glowOpacity, 0.75);
+        },
+      );
 
       testWidgets(
-          'appearance fields survive adaptive-primary injection (dark mode)',
-          (tester) async {
-        const data = GlassThemeData(
-          dark: GlassThemeVariant(
-            glowColors: GlassGlowColors(
-              glowBlurRadius: 8,
-              glowSpreadRadius: 0.15,
-              glowOpacity: 0.6,
+        'appearance fields survive adaptive-primary injection (dark mode)',
+        (tester) async {
+          const data = GlassThemeData(
+            dark: GlassThemeVariant(
+              glowColors: GlassGlowColors(
+                glowBlurRadius: 8,
+                glowSpreadRadius: 0.15,
+                glowOpacity: 0.6,
+              ),
             ),
-          ),
-        );
+          );
 
-        GlassGlowColors? resolved;
-        tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
-        addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: ThemeData.light(),
-            darkTheme: ThemeData.dark(),
-            themeMode: ThemeMode.system,
-            home: GlassTheme(
-              data: data,
-              child: Builder(builder: (context) {
-                resolved = data.glowColorsFor(context);
-                return const SizedBox.shrink();
-              }),
+          GlassGlowColors? resolved;
+          tester.platformDispatcher.platformBrightnessTestValue =
+              Brightness.dark;
+          addTearDown(
+            tester.platformDispatcher.clearPlatformBrightnessTestValue,
+          );
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: ThemeData.light(),
+              darkTheme: ThemeData.dark(),
+              themeMode: ThemeMode.system,
+              home: GlassTheme(
+                data: data,
+                child: Builder(
+                  builder: (context) {
+                    resolved = data.glowColorsFor(context);
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ),
             ),
-          ),
-        );
+          );
 
-        expect(resolved!.primary, const Color(0x2AFFFFFF)); // dark injection
-        expect(resolved!.glowBlurRadius, 8);
-        expect(resolved!.glowSpreadRadius, 0.15);
-        expect(resolved!.glowOpacity, 0.6);
-      });
+          expect(resolved!.primary, const Color(0x2AFFFFFF)); // dark injection
+          expect(resolved!.glowBlurRadius, 8);
+          expect(resolved!.glowSpreadRadius, 0.15);
+          expect(resolved!.glowOpacity, 0.6);
+        },
+      );
 
-      testWidgets('explicit primary path also preserves appearance fields',
-          (tester) async {
+      testWidgets('explicit primary path also preserves appearance fields', (
+        tester,
+      ) async {
         const data = GlassThemeData(
           light: GlassThemeVariant(
             glowColors: GlassGlowColors(
@@ -821,10 +861,12 @@ void main() {
           MaterialApp(
             home: GlassTheme(
               data: data,
-              child: Builder(builder: (context) {
-                resolved = data.glowColorsFor(context);
-                return const SizedBox.shrink();
-              }),
+              child: Builder(
+                builder: (context) {
+                  resolved = data.glowColorsFor(context);
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
           ),
         );
@@ -839,27 +881,30 @@ void main() {
     // ── GlassGlow widget accepts the new props ────────────────────────────
 
     group('GlassGlow widget accepts appearance fields', () {
-      testWidgets('renders without error when all three fields are non-default',
-          (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: GlassGlow(
-                glowColor: Colors.white24,
-                glowRadius: 1.0,
-                glowBlurRadius: 8,
-                glowSpreadRadius: 0.2,
-                glowOpacity: 0.7,
-                child: const SizedBox(width: 100, height: 100),
+      testWidgets(
+        'renders without error when all three fields are non-default',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: GlassGlow(
+                  glowColor: Colors.white24,
+                  glowRadius: 1.0,
+                  glowBlurRadius: 8,
+                  glowSpreadRadius: 0.2,
+                  glowOpacity: 0.7,
+                  child: const SizedBox(width: 100, height: 100),
+                ),
               ),
             ),
-          ),
-        );
-        expect(tester.takeException(), isNull);
-      });
+          );
+          expect(tester.takeException(), isNull);
+        },
+      );
 
-      testWidgets('glowOpacity=0 suppresses glow without errors',
-          (tester) async {
+      testWidgets('glowOpacity=0 suppresses glow without errors', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
@@ -892,18 +937,21 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
-      testWidgets('GlassGlowLayerState.updateTouch accepts the new fields',
-          (tester) async {
+      testWidgets('GlassGlowLayerState.updateTouch accepts the new fields', (
+        tester,
+      ) async {
         GlassGlowLayerState? state;
 
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
               body: GlassGlowLayer(
-                child: Builder(builder: (innerCtx) {
-                  state = GlassGlowLayer.maybeOf(innerCtx);
-                  return const SizedBox(width: 200, height: 200);
-                }),
+                child: Builder(
+                  builder: (innerCtx) {
+                    state = GlassGlowLayer.maybeOf(innerCtx);
+                    return const SizedBox(width: 200, height: 200);
+                  },
+                ),
               ),
             ),
           ),

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
-import 'package:flutter/cupertino.dart';
+
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -321,8 +322,7 @@ class RecommendedGlassSettings {
     blur: 20,
     thickness: 20,
     glassColor: Color.fromRGBO(255, 255, 255, 0.15),
-    lightAngle: 0.75 *
-        math.pi, // 135° — upper-left, Apple standard (consistent across all surfaces)
+    lightAngle: 0.75 * math.pi, // 135° — upper-left, Apple standard (consistent across all surfaces)
     lightIntensity: 0.7,
     ambientStrength: 0.5,
     saturation: 1.2,
@@ -345,8 +345,7 @@ class RecommendedGlassSettings {
     lightIntensity: 0.7,
     ambientStrength: 0.4,
     saturation: 1.2,
-    refractiveIndex:
-        0.7, // Thin rim for cards/buttons (standard / subtle refraction premium)
+    refractiveIndex: 0.7, // Thin rim for cards/buttons (standard / subtle refraction premium)
     chromaticAberration: 0.0,
   );
 

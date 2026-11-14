@@ -16,7 +16,7 @@
 //   cd example && flutter run -t lib/harnesses/materialize_parity_harness.dart
 library;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -31,11 +31,11 @@ class _App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const CupertinoApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Materialize Parity',
-        theme: CupertinoThemeData(brightness: Brightness.light),
-        home: MaterializeParityHarness(),
-      );
+    debugShowCheckedModeBanner: false,
+    title: 'Materialize Parity',
+    theme: CupertinoThemeData(brightness: Brightness.light),
+    home: MaterializeParityHarness(),
+  );
 }
 
 /// Shows the native and package transitions one above the other.
@@ -169,16 +169,16 @@ class _Label extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 6),
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 11,
-            letterSpacing: 0.4,
-            color: Color(0x8A000000),
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Text(
+      text,
+      style: const TextStyle(
+        fontSize: 11,
+        letterSpacing: 0.4,
+        color: Color(0x8A000000),
+      ),
+    ),
+  );
 }
 
 /// A backdrop with structure, so refraction dissolving to nothing is legible.

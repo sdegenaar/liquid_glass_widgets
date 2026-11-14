@@ -7,8 +7,8 @@ import 'package:liquid_glass_widgets/widgets/surfaces/glass_tab_bar.dart'
 import 'package:liquid_glass_widgets/widgets/interactive/glass_slider.dart';
 import 'package:liquid_glass_widgets/widgets/interactive/glass_switch.dart';
 import 'package:liquid_glass_widgets/widgets/input/glass_search_bar.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
 import '../shared/test_helpers.dart';
@@ -104,10 +104,7 @@ void main() {
           child: buildWithGradientBackground(
             AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
-              child: GlassIconButton(
-                icon: Icon(Icons.delete),
-                onPressed: null,
-              ),
+              child: GlassIconButton(icon: Icon(Icons.delete), onPressed: null),
             ),
           ),
         ),
@@ -127,10 +124,7 @@ void main() {
           child: buildWithGradientBackground(
             AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
-              child: GlassSwitch(
-                value: false,
-                onChanged: (_) {},
-              ),
+              child: GlassSwitch(value: false, onChanged: (_) {}),
             ),
           ),
         ),
@@ -139,10 +133,7 @@ void main() {
           child: buildWithGradientBackground(
             AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
-              child: GlassSwitch(
-                value: true,
-                onChanged: (_) {},
-              ),
+              child: GlassSwitch(value: true, onChanged: (_) {}),
             ),
           ),
         ),
@@ -162,9 +153,7 @@ void main() {
           child: buildWithGradientBackground(
             AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
-              child: GlassChip(
-                label: 'Flutter',
-              ),
+              child: GlassChip(label: 'Flutter'),
             ),
           ),
         ),
@@ -185,11 +174,7 @@ void main() {
           child: buildWithGradientBackground(
             AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
-              child: GlassChip(
-                label: 'Selected',
-                selected: true,
-                onTap: () {},
-              ),
+              child: GlassChip(label: 'Selected', selected: true, onTap: () {}),
             ),
           ),
         ),
@@ -198,10 +183,7 @@ void main() {
           child: buildWithGradientBackground(
             AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
-              child: GlassChip(
-                label: 'Tag',
-                onDeleted: () {},
-              ),
+              child: GlassChip(label: 'Tag', onDeleted: () {}),
             ),
           ),
         ),
@@ -221,10 +203,7 @@ void main() {
           child: buildWithGradientBackground(
             AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
-              child: GlassSlider(
-                value: 0.0,
-                onChanged: (_) {},
-              ),
+              child: GlassSlider(value: 0.0, onChanged: (_) {}),
             ),
           ),
         ),
@@ -233,10 +212,7 @@ void main() {
           child: buildWithGradientBackground(
             AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
-              child: GlassSlider(
-                value: 0.5,
-                onChanged: (_) {},
-              ),
+              child: GlassSlider(value: 0.5, onChanged: (_) {}),
             ),
           ),
         ),
@@ -245,10 +221,7 @@ void main() {
           child: buildWithGradientBackground(
             AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
-              child: GlassSlider(
-                value: 1.0,
-                onChanged: (_) {},
-              ),
+              child: GlassSlider(value: 1.0, onChanged: (_) {}),
             ),
           ),
         ),
@@ -269,7 +242,7 @@ void main() {
             GlassSegmentedControl(
               segments: [
                 GlassSegment(label: 'Daily'),
-                GlassSegment(label: 'Weekly')
+                GlassSegment(label: 'Weekly'),
               ],
               selectedIndex: 0,
               onSegmentSelected: (_) {},
@@ -285,7 +258,7 @@ void main() {
               segments: [
                 GlassSegment(label: 'One'),
                 GlassSegment(label: 'Two'),
-                GlassSegment(label: 'Three')
+                GlassSegment(label: 'Three'),
               ],
               selectedIndex: 1,
               onSegmentSelected: (_) {},
@@ -319,9 +292,7 @@ void main() {
           child: buildWithGradientBackground(
             AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
-              child: const GlassSearchBar(
-                placeholder: 'Search messages',
-              ),
+              child: const GlassSearchBar(placeholder: 'Search messages'),
             ),
           ),
         ),

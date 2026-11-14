@@ -1,6 +1,6 @@
 # Architecture & Engineering Design
 
-`liquid_glass_widgets` is a comprehensive, production-grade implementation of the Apple iOS 26 Liquid Glass design system for Flutter. Built on pure Flutter framework primitives with **zero third-party runtime package dependencies**, it combines physical optics shaders, gesture physics, adaptive runtime performance scaling, and a complete suite of 60+ Cupertino components.
+`liquid_glass_widgets` is a comprehensive, production-grade implementation of the Apple iOS 26 / iOS 27 Liquid Glass design system for Flutter. Built on pure Flutter framework primitives (`flutter` + official first-party `cupertino_ui`) with **zero third-party runtime package dependencies** and **zero `material_ui` imports in `lib/`**, it combines physical optics shaders, gesture physics, adaptive runtime performance scaling, and a complete suite of 60+ Cupertino components.
 
 ---
 

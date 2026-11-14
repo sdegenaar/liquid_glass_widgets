@@ -12,11 +12,11 @@ void main() {
     }
 
     Widget host({bool? enabled}) => Directionality(
-          textDirection: TextDirection.ltr,
-          child: enabled == null
-              ? const OverlaySemanticsHost(child: SizedBox())
-              : OverlaySemanticsHost(enabled: enabled, child: const SizedBox()),
-        );
+      textDirection: TextDirection.ltr,
+      child: enabled == null
+          ? const OverlaySemanticsHost(child: SizedBox())
+          : OverlaySemanticsHost(enabled: enabled, child: const SizedBox()),
+    );
 
     testWidgets('is enabled by default', (tester) async {
       await tester.pumpWidget(host());
@@ -28,8 +28,9 @@ void main() {
       expect(describe(render).childConfigurationsDelegate, isNotNull);
     });
 
-    testWidgets('toggling enabled updates the render object in place',
-        (tester) async {
+    testWidgets('toggling enabled updates the render object in place', (
+      tester,
+    ) async {
       await tester.pumpWidget(host(enabled: true));
       final render = tester.renderObject<RenderOverlaySemanticsHost>(
         find.byType(OverlaySemanticsHost),

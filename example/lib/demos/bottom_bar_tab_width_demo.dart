@@ -7,8 +7,8 @@
 ///   flutter run -t example/lib/demos/bottom_bar_tab_width_demo.dart
 library;
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -28,9 +28,8 @@ class _DemoApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: const CupertinoThemeData(brightness: Brightness.dark),
       builder: (context, child) => Theme(
-        data: ThemeData.dark(useMaterial3: true).copyWith(
-          scaffoldBackgroundColor: const Color(0xFF0A0A0F),
-        ),
+        data: ThemeData.dark(useMaterial3: true)
+            .copyWith(scaffoldBackgroundColor: const Color(0xFF0A0A0F)),
         child: child!,
       ),
       home: const TabWidthDemoPage(),
@@ -71,13 +70,12 @@ class _TabWidthDemoPageState extends State<TabWidthDemoPage> {
   static const _kCounts = [2, 3, 4, 5];
 
   List<GlassTab> get _tabs => [
-        const GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
-        const GlassTab(label: 'Browse', icon: Icon(CupertinoIcons.compass)),
-        const GlassTab(label: 'Library', icon: Icon(CupertinoIcons.book)),
-        const GlassTab(
-            label: 'Radio', icon: Icon(CupertinoIcons.radiowaves_left)),
-        const GlassTab(label: 'Profile', icon: Icon(CupertinoIcons.person)),
-      ].take(_tabCount).toList();
+    const GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+    const GlassTab(label: 'Browse', icon: Icon(CupertinoIcons.compass)),
+    const GlassTab(label: 'Library', icon: Icon(CupertinoIcons.book)),
+    const GlassTab(label: 'Radio', icon: Icon(CupertinoIcons.radiowaves_left)),
+    const GlassTab(label: 'Profile', icon: Icon(CupertinoIcons.person)),
+  ].take(_tabCount).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +83,8 @@ class _TabWidthDemoPageState extends State<TabWidthDemoPage> {
     final clampedSelected = _selected.clamp(0, _tabCount - 1);
     if (clampedSelected != _selected) {
       WidgetsBinding.instance.addPostFrameCallback(
-          (_) => setState(() => _selected = clampedSelected));
+        (_) => setState(() => _selected = clampedSelected),
+      );
     }
 
     return GlassScaffold(
@@ -166,7 +165,8 @@ class _TabWidthDemoPageState extends State<TabWidthDemoPage> {
                     options: _kWidths.keys.toList(),
                     selected: _kWidths.values.toList().indexOf(_tabWidth),
                     onSelected: (i) => setState(
-                        () => _tabWidth = _kWidths.values.elementAt(i)),
+                      () => _tabWidth = _kWidths.values.elementAt(i),
+                    ),
                   ),
 
                   // Extra button toggle (standalone only)
@@ -272,9 +272,7 @@ class _MetricsCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: CupertinoColors.white.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: CupertinoColors.white.withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: CupertinoColors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -282,7 +280,9 @@ class _MetricsCard extends StatelessWidget {
           _MetricRow('Widget', variantLabel),
           SizedBox(height: 8),
           _MetricRow(
-              'tabWidth', tabWidth != null ? '$tabWidth px' : 'null (expand)'),
+            'tabWidth',
+            tabWidth != null ? '$tabWidth px' : 'null (expand)',
+          ),
           SizedBox(height: 8),
           _MetricRow('tabCount', '$tabCount'),
           SizedBox(height: 8),
@@ -317,17 +317,23 @@ class _MetricRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label,
-            style: TextStyle(
-                color: CupertinoColors.white.withValues(alpha: 0.5),
-                fontSize: 13)),
+        Text(
+          label,
+          style: TextStyle(
+            color: CupertinoColors.white.withValues(alpha: 0.5),
+            fontSize: 13,
+          ),
+        ),
         Flexible(
-          child: Text(value,
-              textAlign: TextAlign.end,
-              style: TextStyle(
-                  color: CupertinoColors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600)),
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              color: CupertinoColors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ],
     );

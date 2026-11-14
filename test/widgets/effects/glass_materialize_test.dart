@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -48,8 +48,10 @@ void main() {
             contentSigma: 0,
             child: Builder(
               builder: (context) {
-                resolved =
-                    GlassMaterializeScope.resolveSettings(context, settings);
+                resolved = GlassMaterializeScope.resolveSettings(
+                  context,
+                  settings,
+                );
                 return const SizedBox.shrink();
               },
             ),
@@ -65,16 +67,18 @@ void main() {
       expect(identical(await at(tester, 1.0), base), isTrue);
     });
 
-    testWidgets('fully dematerialized glass skips its render pass',
-        (tester) async {
+    testWidgets('fully dematerialized glass skips its render pass', (
+      tester,
+    ) async {
       final settings = await at(tester, 0.0);
       // The render object early-outs on exactly this condition.
       expect(settings.effectiveThickness, 0.0);
       expect(settings.effectiveBlur, 0.0);
     });
 
-    testWidgets('a dissolving surface stops blurring its backdrop',
-        (tester) async {
+    testWidgets('a dissolving surface stops blurring its backdrop', (
+      tester,
+    ) async {
       // Regression: driving the blur up to keep the shell looking frosty
       // smeared the content behind a surface nobody could see any more — a
       // blurred disc floated over the page after the glass had gone. The
@@ -145,8 +149,9 @@ void main() {
   });
 
   group('scope plumbing', () {
-    testWidgets('a running effect scales the visibility a surface sees',
-        (tester) async {
+    testWidgets('a running effect scales the visibility a surface sees', (
+      tester,
+    ) async {
       final settings = await _resolvedSettings(
         tester,
         (probe) => GlassMaterializeScope(
@@ -167,8 +172,9 @@ void main() {
   });
 
   group('choreography', () {
-    testWidgets('an entrance resolves the glass before the content',
-        (tester) async {
+    testWidgets('an entrance resolves the glass before the content', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const CupertinoApp(
           home: GlassMaterializeEffect(
@@ -184,8 +190,9 @@ void main() {
       expect(scope.glassProgress, greaterThan(scope.contentOpacity));
     });
 
-    testWidgets('an exit empties the content before the glass dissolves',
-        (tester) async {
+    testWidgets('an exit empties the content before the glass dissolves', (
+      tester,
+    ) async {
       // Late in the exit axis (low progress) the content must already be gone
       // while the shell is still visible — the briefly empty circle. Sampled
       // between the two: content is out by 0.45, the shell not until 0.3.
@@ -245,8 +252,9 @@ void main() {
       expect(entrance.transform(1.0), 1.0);
     });
 
-    testWidgets('the tree shape is the same at rest as mid-transition',
-        (tester) async {
+    testWidgets('the tree shape is the same at rest as mid-transition', (
+      tester,
+    ) async {
       // A shell that remounts as a transition starts or settles pops its
       // backdrop, so the wrappers must be present at every progress.
       for (final progress in <double>[1.0, 0.5, 0.0]) {
@@ -285,8 +293,9 @@ void main() {
   });
 
   group('reduce motion', () {
-    testWidgets('collapses to a cross-dissolve with no scale or blur',
-        (tester) async {
+    testWidgets('collapses to a cross-dissolve with no scale or blur', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const CupertinoApp(
           home: GlassAccessibilityScope(
@@ -314,11 +323,11 @@ void main() {
   group('GlassMaterialize', () {
     testWidgets('animates between hidden and shown', (tester) async {
       Widget build(bool visible) => CupertinoApp(
-            home: GlassMaterialize(
-              visible: visible,
-              child: const SizedBox.shrink(),
-            ),
-          );
+        home: GlassMaterialize(
+          visible: visible,
+          child: const SizedBox.shrink(),
+        ),
+      );
 
       await tester.pumpWidget(build(false));
       var scope = tester.widget<GlassMaterializeScope>(
@@ -338,15 +347,16 @@ void main() {
       expect(find.byType(GlassMaterializeScope), findsOneWidget);
     });
 
-    testWidgets('maintainState: false releases the subtree once hidden',
-        (tester) async {
+    testWidgets('maintainState: false releases the subtree once hidden', (
+      tester,
+    ) async {
       Widget build(bool visible) => CupertinoApp(
-            home: GlassMaterialize(
-              visible: visible,
-              maintainState: false,
-              child: const Text('glass', textDirection: TextDirection.ltr),
-            ),
-          );
+        home: GlassMaterialize(
+          visible: visible,
+          maintainState: false,
+          child: const Text('glass', textDirection: TextDirection.ltr),
+        ),
+      );
 
       await tester.pumpWidget(build(true));
       await tester.pumpAndSettle();
@@ -363,12 +373,12 @@ void main() {
     testWidgets('onEnd fires when a transition settles', (tester) async {
       var ends = 0;
       Widget build(bool visible) => CupertinoApp(
-            home: GlassMaterialize(
-              visible: visible,
-              onEnd: () => ends++,
-              child: const SizedBox.shrink(),
-            ),
-          );
+        home: GlassMaterialize(
+          visible: visible,
+          onEnd: () => ends++,
+          child: const SizedBox.shrink(),
+        ),
+      );
 
       await tester.pumpWidget(build(false));
       await tester.pumpWidget(build(true));
@@ -380,12 +390,12 @@ void main() {
   group('AnimatedSwitcher', () {
     testWidgets('switcherBuilder materializes each child', (tester) async {
       Widget build(String label) => CupertinoApp(
-            home: AnimatedSwitcher(
-              duration: GlassDefaults.materializeDuration,
-              transitionBuilder: GlassMaterializeTransition.switcherBuilder,
-              child: Text(label, key: ValueKey(label)),
-            ),
-          );
+        home: AnimatedSwitcher(
+          duration: GlassDefaults.materializeDuration,
+          transitionBuilder: GlassMaterializeTransition.switcherBuilder,
+          child: Text(label, key: ValueKey(label)),
+        ),
+      );
 
       await tester.pumpWidget(build('one'));
       await tester.pumpAndSettle();

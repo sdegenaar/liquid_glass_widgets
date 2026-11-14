@@ -1,7 +1,7 @@
 import 'package:liquid_glass_widgets_example/constants/glass_settings.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 class SurfacesPage extends StatelessWidget {
   const SurfacesPage({super.key});
@@ -22,9 +22,7 @@ class SurfacesPage extends StatelessWidget {
             slivers: [
               // Space for the app bar + safe area
               SliverToBoxAdapter(
-                child: SizedBox(
-                  height: MediaQuery.paddingOf(context).top + 44,
-                ),
+                child: SizedBox(height: MediaQuery.paddingOf(context).top + 44),
               ),
               // ── Large page title (iOS 26 inline style) ──────────────
               SliverToBoxAdapter(
@@ -118,8 +116,8 @@ class SurfacesPage extends StatelessWidget {
 
                       // ── GlassSegmentedControl / GlassTabBar (Inline) ────────
                       const _SectionTitle(
-                          title:
-                              'GlassTabBar (Inline) / GlassSegmentedControl'),
+                        title: 'GlassTabBar (Inline) / GlassSegmentedControl',
+                      ),
                       SizedBox(height: 16),
                       const _TabBarDemo(),
 
@@ -292,8 +290,9 @@ class _BottomBarDemoPageState extends State<_BottomBarDemoPage> {
                             child: Text(
                               _tabTitles[_selectedIndex],
                               style: TextStyle(
-                                color:
-                                    CupertinoColors.label.resolveFrom(context),
+                                color: CupertinoColors.label.resolveFrom(
+                                  context,
+                                ),
                                 fontSize: 34,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: -0.5,
@@ -405,11 +404,13 @@ class _SearchableBarDemoPageState extends State<_SearchableBarDemoPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(CupertinoIcons.search,
-                              color: CupertinoColors.label
-                                  .resolveFrom(context)
-                                  .withValues(alpha: 0.3),
-                              size: 64),
+                          Icon(
+                            CupertinoIcons.search,
+                            color: CupertinoColors.label
+                                .resolveFrom(context)
+                                .withValues(alpha: 0.3),
+                            size: 64,
+                          ),
                           SizedBox(height: 16),
                           Text(
                             'Search',
@@ -452,8 +453,9 @@ class _SearchableBarDemoPageState extends State<_SearchableBarDemoPage> {
                                   child: Text(
                                     _tabTitles[_selectedIndex],
                                     style: TextStyle(
-                                      color: CupertinoColors.label
-                                          .resolveFrom(context),
+                                      color: CupertinoColors.label.resolveFrom(
+                                        context,
+                                      ),
                                       fontSize: 34,
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: -0.5,
@@ -580,8 +582,9 @@ class _ContentRow extends StatelessWidget {
       margin: EdgeInsets.only(bottom: 12),
       height: 64,
       decoration: BoxDecoration(
-        color:
-            CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.06),
+        color: CupertinoColors.label
+            .resolveFrom(context)
+            .withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -591,8 +594,9 @@ class _ContentRow extends StatelessWidget {
             height: 64,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.3),
-              borderRadius:
-                  const BorderRadius.horizontal(left: Radius.circular(14)),
+              borderRadius: const BorderRadius.horizontal(
+                left: Radius.circular(14),
+              ),
             ),
             child: Center(
               child: Text(
@@ -775,8 +779,8 @@ class _TabBarDemoState extends State<_TabBarDemo> {
                 _selectedIndex == 0
                     ? CupertinoIcons.photo
                     : _selectedIndex == 1
-                        ? CupertinoIcons.folder
-                        : CupertinoIcons.person_2,
+                    ? CupertinoIcons.folder
+                    : CupertinoIcons.person_2,
                 size: 32,
                 color: CupertinoColors.label
                     .resolveFrom(context)
@@ -787,8 +791,8 @@ class _TabBarDemoState extends State<_TabBarDemo> {
                 _selectedIndex == 0
                     ? 'Photos View'
                     : _selectedIndex == 1
-                        ? 'Albums View'
-                        : 'Shared View',
+                    ? 'Albums View'
+                    : 'Shared View',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,

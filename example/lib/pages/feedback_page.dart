@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets_example/constants/glass_settings.dart';
@@ -61,9 +61,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
             slivers: [
               // Space for the app bar + safe area
               SliverToBoxAdapter(
-                child: SizedBox(
-                  height: MediaQuery.paddingOf(context).top + 44,
-                ),
+                child: SizedBox(height: MediaQuery.paddingOf(context).top + 44),
               ),
               // ── Large page title (iOS 26 inline style) ──────────────
               SliverToBoxAdapter(
@@ -289,10 +287,13 @@ class _FeedbackPageState extends State<FeedbackPage> {
                       SizedBox(height: 16),
                       Row(
                         children: [
-                          Icon(CupertinoIcons.doc,
-                              color: CupertinoColors.secondaryLabel
-                                  .resolveFrom(context),
-                              size: 32),
+                          Icon(
+                            CupertinoIcons.doc,
+                            color: CupertinoColors.secondaryLabel.resolveFrom(
+                              context,
+                            ),
+                            size: 32,
+                          ),
                           SizedBox(width: 16),
                           Expanded(
                             child: Column(
@@ -303,8 +304,9 @@ class _FeedbackPageState extends State<FeedbackPage> {
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
-                                    color: CupertinoColors.label
-                                        .resolveFrom(context),
+                                    color: CupertinoColors.label.resolveFrom(
+                                      context,
+                                    ),
                                   ),
                                 ),
                                 SizedBox(height: 4),
@@ -312,22 +314,25 @@ class _FeedbackPageState extends State<FeedbackPage> {
                                   _isUploading
                                       ? 'Uploading... ${(_uploadProgress * 100).toInt()}%'
                                       : _uploadProgress == 1.0
-                                          ? 'Upload complete!'
-                                          : '2.4 MB',
+                                      ? 'Upload complete!'
+                                      : '2.4 MB',
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: _uploadProgress == 1.0
                                         ? CupertinoColors.activeGreen
                                         : CupertinoColors.tertiaryLabel
-                                            .resolveFrom(context),
+                                              .resolveFrom(context),
                                   ),
                                 ),
                               ],
                             ),
                           ),
                           if (_uploadProgress == 1.0)
-                            Icon(CupertinoIcons.checkmark_circle_fill,
-                                color: CupertinoColors.activeGreen, size: 24),
+                            Icon(
+                              CupertinoIcons.checkmark_circle_fill,
+                              color: CupertinoColors.activeGreen,
+                              size: 24,
+                            ),
                         ],
                       ),
                       SizedBox(height: 16),
@@ -348,8 +353,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
                           _isUploading
                               ? 'Uploading...'
                               : _uploadProgress == 1.0
-                                  ? 'Upload Again'
-                                  : 'Start Upload',
+                              ? 'Upload Again'
+                              : 'Start Upload',
                         ),
                       ),
 
@@ -401,8 +406,9 @@ class _LabeledWidget extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-              fontSize: 12,
-              color: CupertinoColors.tertiaryLabel.resolveFrom(context)),
+            fontSize: 12,
+            color: CupertinoColors.tertiaryLabel.resolveFrom(context),
+          ),
         ),
       ],
     );
@@ -427,8 +433,9 @@ class _ProgressStage extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-              fontSize: 11,
-              color: CupertinoColors.tertiaryLabel.resolveFrom(context)),
+            fontSize: 11,
+            color: CupertinoColors.tertiaryLabel.resolveFrom(context),
+          ),
         ),
       ],
     );
@@ -455,8 +462,11 @@ class _ToastButton extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon,
-              size: 16, color: CupertinoColors.label.resolveFrom(context)),
+          Icon(
+            icon,
+            size: 16,
+            color: CupertinoColors.label.resolveFrom(context),
+          ),
           SizedBox(width: 8),
           Text(label),
         ],

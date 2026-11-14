@@ -5,6 +5,7 @@
 // skipInitialFrames reset counter, and boundary percentile values.
 
 import 'dart:ui';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/utils/glass_quality_adapter.dart';
 import 'package:liquid_glass_widgets/types/glass_quality.dart';
@@ -15,13 +16,13 @@ import 'package:liquid_glass_widgets/types/glass_quality_change_reason.dart';
 // ---------------------------------------------------------------------------
 
 FrameTiming _ft(int rasterUs) => FrameTiming(
-      vsyncStart: 0,
-      buildStart: 0,
-      buildFinish: 0,
-      rasterStart: 0,
-      rasterFinish: rasterUs,
-      rasterFinishWallTime: rasterUs,
-    );
+  vsyncStart: 0,
+  buildStart: 0,
+  buildFinish: 0,
+  rasterStart: 0,
+  rasterFinish: rasterUs,
+  rasterFinishWallTime: rasterUs,
+);
 
 List<FrameTiming> _frames(int count, int rasterUs) =>
     List.generate(count, (_) => _ft(rasterUs));
@@ -34,16 +35,15 @@ GlassQualityAdapter _make({
   GlassQuality? initialQuality,
   void Function(GlassQuality, GlassQuality)? onChange,
   void Function(GlassQuality, double, int)? onWarmup,
-}) =>
-    GlassQualityAdapter(
-      minQuality: min,
-      maxQuality: max,
-      targetFrameMs: targetFrameMs,
-      allowStepUp: allowStepUp,
-      initialQuality: initialQuality,
-      onQualityChanged: onChange ?? (_, __) {},
-      onWarmupComplete: onWarmup,
-    );
+}) => GlassQualityAdapter(
+  minQuality: min,
+  maxQuality: max,
+  targetFrameMs: targetFrameMs,
+  allowStepUp: allowStepUp,
+  initialQuality: initialQuality,
+  onQualityChanged: onChange ?? (_, _) {},
+  onWarmupComplete: onWarmup,
+);
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -97,23 +97,25 @@ void main() {
 
     test('fires with standard on medium device', () {
       GlassQuality? cbQuality;
-      final adapter = _make(onWarmup: (q, _, __) => cbQuality = q);
+      final adapter = _make(onWarmup: (q, _, _) => cbQuality = q);
       adapter.simulateFrameTimings(
-          _frames(10, 21000)); // 21 ms → standard (20–28 ms band)
+        _frames(10, 21000),
+      ); // 21 ms → standard (20–28 ms band)
       expect(cbQuality, GlassQuality.standard);
     });
 
     test('fires with minimal on slow device', () {
       GlassQuality? cbQuality;
-      final adapter = _make(onWarmup: (q, _, __) => cbQuality = q);
-      adapter
-          .simulateFrameTimings(_frames(10, 35000)); // 35 ms > 28 ms threshold
+      final adapter = _make(onWarmup: (q, _, _) => cbQuality = q);
+      adapter.simulateFrameTimings(
+        _frames(10, 35000),
+      ); // 35 ms > 28 ms threshold
       expect(cbQuality, GlassQuality.minimal);
     });
 
     test('does not fire before warmupFrames threshold', () {
       bool fired = false;
-      final adapter = _make(onWarmup: (_, __, ___) => fired = true);
+      final adapter = _make(onWarmup: (_, _, _) => fired = true);
       adapter.simulateFrameTimings(_frames(9, 10000)); // one short
       expect(fired, isFalse);
     });
@@ -280,8 +282,10 @@ void main() {
     test('staticProbe before any quality change (skip probe enabled)', () {
       // When skipStaticProbeForTesting=true, the adapter runs an immediate static
       // probe on construction and sets lastChangeReason = staticProbe
-      expect(_make().lastChangeReason,
-          anyOf(isNull, GlassQualityChangeReason.staticProbe));
+      expect(
+        _make().lastChangeReason,
+        anyOf(isNull, GlassQualityChangeReason.staticProbe),
+      );
     });
 
     test('warmupComplete after Phase 2 (with quality change)', () {
@@ -295,8 +299,10 @@ void main() {
       adapter.simulateFrameTimings(_frames(10, 10000)); // → premium
       adapter.simulateFrameTimings(_frames(10, 30000));
       adapter.simulateFrameTimings(_frames(10, 30000));
-      expect(adapter.lastChangeReason,
-          GlassQualityChangeReason.thermalDegradation);
+      expect(
+        adapter.lastChangeReason,
+        GlassQualityChangeReason.thermalDegradation,
+      );
     });
 
     test('thermalRecovery after step-up', () {
@@ -305,17 +311,22 @@ void main() {
       adapter.simulateFrameTimings(_frames(10, 3000));
       adapter.simulateFrameTimings(_frames(10, 3000));
       expect(
-          adapter.lastChangeReason, GlassQualityChangeReason.thermalRecovery);
+        adapter.lastChangeReason,
+        GlassQualityChangeReason.thermalRecovery,
+      );
     });
 
     test('restoredFromCache on second adapter start', () {
       final first = _make();
       first.simulateFrameTimings(
-          _frames(10, 21000)); // 21 ms → standard → write cache
+        _frames(10, 21000),
+      ); // 21 ms → standard → write cache
       final second = _make();
       second.start();
       expect(
-          second.lastChangeReason, GlassQualityChangeReason.restoredFromCache);
+        second.lastChangeReason,
+        GlassQualityChangeReason.restoredFromCache,
+      );
       second.stop();
     });
   });
@@ -360,15 +371,17 @@ void main() {
 
     test('P75 at exactly 20 ms steps to standard', () {
       final adapter = _make();
-      adapter
-          .simulateFrameTimings(_frames(10, 20000)); // 20 ms ≥ 20 ms threshold
+      adapter.simulateFrameTimings(
+        _frames(10, 20000),
+      ); // 20 ms ≥ 20 ms threshold
       expect(adapter.currentQuality, GlassQuality.standard);
     });
 
     test('P75 just over 28 ms steps to minimal', () {
       final adapter = _make();
-      adapter
-          .simulateFrameTimings(_frames(10, 29000)); // 29 ms > 28 ms threshold
+      adapter.simulateFrameTimings(
+        _frames(10, 29000),
+      ); // 29 ms > 28 ms threshold
       expect(adapter.currentQuality, GlassQuality.minimal);
     });
   });
@@ -376,15 +389,17 @@ void main() {
   // ── Static probe platform behavior ────────────────────────────────────────
 
   group('static probe platform behavior', () {
-    test('static probe runs on start when skipStaticProbeForTesting is false',
-        () {
-      GlassQualityAdapter.skipStaticProbeForTesting = false;
-      addTearDown(() => GlassQualityAdapter.skipStaticProbeForTesting = true);
+    test(
+      'static probe runs on start when skipStaticProbeForTesting is false',
+      () {
+        GlassQualityAdapter.skipStaticProbeForTesting = false;
+        addTearDown(() => GlassQualityAdapter.skipStaticProbeForTesting = true);
 
-      final adapter = _make(max: GlassQuality.premium);
-      adapter.start();
-      expect(adapter.currentQuality, isNot(GlassQuality.premium));
-      adapter.stop();
-    });
+        final adapter = _make(max: GlassQuality.premium);
+        adapter.start();
+        expect(adapter.currentQuality, isNot(GlassQuality.premium));
+        adapter.stop();
+      },
+    );
   });
 }

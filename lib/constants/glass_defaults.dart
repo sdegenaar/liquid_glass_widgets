@@ -140,8 +140,10 @@ class GlassDefaults {
   static const EdgeInsets paddingPanel = EdgeInsets.all(24.0);
 
   /// Standard padding for input fields
-  static const EdgeInsets paddingInput =
-      EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0);
+  static const EdgeInsets paddingInput = EdgeInsets.symmetric(
+    horizontal: 16.0,
+    vertical: 12.0,
+  );
 
   /// Compact padding for small elements
   static const EdgeInsets paddingCompact = EdgeInsets.all(8.0);

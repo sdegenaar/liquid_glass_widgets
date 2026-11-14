@@ -1,19 +1,22 @@
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 const _pill = Color(0xFF123456);
 
 /// The sliding selection pill, found by the colour it is painted in.
-Finder _pillFinder() => find.byWidgetPredicate((w) =>
-    w is Container &&
-    w.decoration is BoxDecoration &&
-    (w.decoration! as BoxDecoration).color == _pill);
+Finder _pillFinder() => find.byWidgetPredicate(
+  (w) =>
+      w is Container &&
+      w.decoration is BoxDecoration &&
+      (w.decoration! as BoxDecoration).color == _pill,
+);
 
 void main() {
-  testWidgets('a resting mouse moves the selection pill onto the row',
-      (tester) async {
+  testWidgets('a resting mouse moves the selection pill onto the row', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -64,47 +67,46 @@ void main() {
   });
 
   testWidgets(
-      'default selectionColor resolves white pill on classic/dark and dark pill on ios27 light',
-      (tester) async {
-    Widget buildApp(GlassThemeData theme) => MaterialApp(
-          home: GlassTheme(
-            data: theme,
-            child: Scaffold(
-              body: Center(
-                child: GlassMenu(
-                  trigger: const SizedBox(
-                    width: 100,
-                    height: 44,
-                    child: Text('Open Menu'),
-                  ),
-                  items: [
-                    GlassMenuItem(title: 'First Item', onTap: () {}),
-                  ],
+    'default selectionColor resolves white pill on classic/dark and dark pill on ios27 light',
+    (tester) async {
+      Widget buildApp(GlassThemeData theme) => MaterialApp(
+        home: GlassTheme(
+          data: theme,
+          child: Scaffold(
+            body: Center(
+              child: GlassMenu(
+                trigger: const SizedBox(
+                  width: 100,
+                  height: 44,
+                  child: Text('Open Menu'),
                 ),
+                items: [GlassMenuItem(title: 'First Item', onTap: () {})],
               ),
             ),
           ),
-        );
+        ),
+      );
 
-    await tester.pumpWidget(buildApp(const GlassThemeData.classic()));
-    await tester.tap(find.text('Open Menu'));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(buildApp(const GlassThemeData.classic()));
+      await tester.tap(find.text('Open Menu'));
+      await tester.pumpAndSettle();
 
-    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
-    await mouse.addPointer(location: Offset.zero);
-    addTearDown(mouse.removePointer);
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
 
-    await mouse.moveTo(tester.getCenter(find.text('First Item')));
-    await tester.pumpAndSettle();
+      await mouse.moveTo(tester.getCenter(find.text('First Item')));
+      await tester.pumpAndSettle();
 
-    expect(
-      find.byWidgetPredicate(
-        (w) =>
-            w is Container &&
-            w.decoration is BoxDecoration &&
-            (w.decoration! as BoxDecoration).color == const Color(0x3DFFFFFF),
-      ),
-      findsOneWidget,
-    );
-  });
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Container &&
+              w.decoration is BoxDecoration &&
+              (w.decoration! as BoxDecoration).color == const Color(0x3DFFFFFF),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
 }

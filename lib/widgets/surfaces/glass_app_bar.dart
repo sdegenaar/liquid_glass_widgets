@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 import '../../src/renderer/glass_backdrop_group.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
@@ -114,13 +114,13 @@ class GlassAppBar extends StatelessWidget
     this.largeTitleController,
     this.bottom,
     this.groupBackdrop = true,
-  })  : pinnedActions = null,
-        _explicitPinnedPadding = null,
-        pinnedLeading = const <GlassBarItem>[],
-        pinnedBackButton = true,
-        pinnedLeadingItemsSupplementBackButton = false,
-        onBack = null,
-        buttonSize = null;
+  }) : pinnedActions = null,
+       _explicitPinnedPadding = null,
+       pinnedLeading = const <GlassBarItem>[],
+       pinnedBackButton = true,
+       pinnedLeadingItemsSupplementBackButton = false,
+       onBack = null,
+       buttonSize = null;
 
   /// Creates a glass app bar whose chrome pins above the [Navigator].
   ///
@@ -163,16 +163,16 @@ class GlassAppBar extends StatelessWidget
     this.largeTitleController,
     this.bottom,
     this.groupBackdrop = true,
-  })  : assert(buttonSize == null || buttonSize > 0),
-        padding = padding ?? const EdgeInsets.symmetric(horizontal: 8),
-        _explicitPinnedPadding = padding,
-        pinnedActions = actions,
-        pinnedLeading = leading,
-        pinnedBackButton = backButton,
-        pinnedLeadingItemsSupplementBackButton =
-            leadingItemsSupplementBackButton,
-        leading = null,
-        actions = null;
+  }) : assert(buttonSize == null || buttonSize > 0),
+       padding = padding ?? const EdgeInsets.symmetric(horizontal: 8),
+       _explicitPinnedPadding = padding,
+       pinnedActions = actions,
+       pinnedLeading = leading,
+       pinnedBackButton = backButton,
+       pinnedLeadingItemsSupplementBackButton =
+           leadingItemsSupplementBackButton,
+       leading = null,
+       actions = null;
 
   // ===========================================================================
   // Properties
@@ -271,8 +271,8 @@ class GlassAppBar extends StatelessWidget
   /// The total preferred size of the app bar (toolbar + bottom widget).
   @override
   Size get preferredSize => Size.fromHeight(
-        _effectiveToolbarHeight + (bottom?.preferredSize.height ?? 0.0),
-      );
+    _effectiveToolbarHeight + (bottom?.preferredSize.height ?? 0.0),
+  );
 
   /// Whether this app bar fully obstructs the content behind it.
   ///
@@ -392,8 +392,9 @@ class GlassAppBar extends StatelessWidget
     // in a row at the top of the content, beside whatever items stay
     // horizontal. Only a pinned bar moves: UIKit moves the bars a container
     // owns, and the shell is this bar's container.
-    final verticalBar =
-        chrome == null ? null : GlassVerticalBar.maybeOf(context);
+    final verticalBar = chrome == null
+        ? null
+        : GlassVerticalBar.maybeOf(context);
     // On iPhone Duo's inner display held upright it moves up into the status
     // bar's row instead, beside the status cluster, the title leading.
     final statusRow = chrome == null ? null : StatusBarRow.of(context);
@@ -410,18 +411,18 @@ class GlassAppBar extends StatelessWidget
                 top: statusRow.top,
               )
             : verticalBar == null
-                ? padding
-                : verticalBar.edge == GlassVerticalBarEdge.trailing
-                    ? EdgeInsetsDirectional.only(
-                        start: verticalBar.titleInset,
-                        end: GlassVerticalBarMetrics.rowInset,
-                        top: verticalBar.rowTop,
-                      )
-                    : EdgeInsetsDirectional.only(
-                        start: GlassVerticalBarMetrics.rowInset,
-                        end: verticalBar.titleInset,
-                        top: verticalBar.rowTop,
-                      ),
+            ? padding
+            : verticalBar.edge == GlassVerticalBarEdge.trailing
+            ? EdgeInsetsDirectional.only(
+                start: verticalBar.titleInset,
+                end: GlassVerticalBarMetrics.rowInset,
+                top: verticalBar.rowTop,
+              )
+            : EdgeInsetsDirectional.only(
+                start: GlassVerticalBarMetrics.rowInset,
+                end: verticalBar.titleInset,
+                top: verticalBar.rowTop,
+              ),
         child: SizedBox(
           height: inRow
               ? GlassVerticalBarMetrics.rowHeight
@@ -434,10 +435,7 @@ class GlassAppBar extends StatelessWidget
             ),
             children: [
               if (effectiveLeading != null)
-                LayoutId(
-                  id: _ToolbarSlot.leading,
-                  child: effectiveLeading,
-                ),
+                LayoutId(id: _ToolbarSlot.leading, child: effectiveLeading),
               LayoutId(
                 id: _ToolbarSlot.title,
                 child: _buildTitle(context, inStrip: verticalBar != null),
@@ -548,8 +546,9 @@ class GlassAppBar extends StatelessWidget
       if (ancestorTitle != null) {
         styledTitle = styleTitleWidget(Text(ancestorTitle));
       } else {
-        final scopeNotifier =
-            GlassNavigationTitleScope.maybeNotifierOf(context);
+        final scopeNotifier = GlassNavigationTitleScope.maybeNotifierOf(
+          context,
+        );
         if (scopeNotifier != null) {
           styledTitle = ValueListenableBuilder<String?>(
             valueListenable: scopeNotifier,
@@ -575,10 +574,7 @@ class GlassAppBar extends StatelessWidget
         // appears once the large title is mostly gone.
         final barProgress = ((progress - 0.5) / 0.5).clamp(0.0, 1.0);
         final barOpacity = Curves.easeOut.transform(barProgress);
-        return Opacity(
-          opacity: barOpacity,
-          child: styledTitle,
-        );
+        return Opacity(opacity: barOpacity, child: styledTitle);
       },
     );
   }
@@ -673,33 +669,21 @@ class _ToolbarLayout extends MultiChildLayoutDelegate {
 
     // ── Leading ──────────────────────────────────────────────────────────────
     if (hasChild(_ToolbarSlot.leading)) {
-      final Size ls = layoutChild(
-        _ToolbarSlot.leading,
-        slotConstraints,
-      );
+      final Size ls = layoutChild(_ToolbarSlot.leading, slotConstraints);
       leadingWidth = ls.width;
       positionChild(
         _ToolbarSlot.leading,
-        Offset(
-          _isLTR ? 0.0 : size.width - ls.width,
-          _centreY(size, ls),
-        ),
+        Offset(_isLTR ? 0.0 : size.width - ls.width, _centreY(size, ls)),
       );
     }
 
     // ── Actions ──────────────────────────────────────────────────────────────
     if (hasChild(_ToolbarSlot.actions)) {
-      final Size as = layoutChild(
-        _ToolbarSlot.actions,
-        slotConstraints,
-      );
+      final Size as = layoutChild(_ToolbarSlot.actions, slotConstraints);
       actionsWidth = as.width;
       positionChild(
         _ToolbarSlot.actions,
-        Offset(
-          _isLTR ? size.width - as.width : 0.0,
-          _centreY(size, as),
-        ),
+        Offset(_isLTR ? size.width - as.width : 0.0, _centreY(size, as)),
       );
     }
 
@@ -721,10 +705,7 @@ class _ToolbarLayout extends MultiChildLayoutDelegate {
       // Centre on the full bar width (not just the constrained zone).
       positionChild(
         _ToolbarSlot.title,
-        Offset(
-          (size.width - ts.width) / 2.0,
-          _centreY(size, ts),
-        ),
+        Offset((size.width - ts.width) / 2.0, _centreY(size, ts)),
       );
     } else {
       // Leading-aligned: title occupies the space between the two side widgets
@@ -752,10 +733,7 @@ class _ToolbarLayout extends MultiChildLayoutDelegate {
           ? startOccupied + startGap
           : size.width - startOccupied - startGap - ts.width;
 
-      positionChild(
-        _ToolbarSlot.title,
-        Offset(titleX, _centreY(size, ts)),
-      );
+      positionChild(_ToolbarSlot.title, Offset(titleX, _centreY(size, ts)));
     }
   }
 

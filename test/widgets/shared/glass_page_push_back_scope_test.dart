@@ -8,7 +8,7 @@
 //     page (secondaryAnimation > 0).
 //  3. LiquidGlassPushBackScope returns to inactive when the sheet is dismissed.
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/renderer/liquid_glass_push_back_scope.dart';
@@ -48,9 +48,7 @@ void main() {
       await tester.pumpWidget(
         CupertinoApp(
           home: GlassPage(
-            child: const CupertinoPageScaffold(
-              child: Text('Page'),
-            ),
+            child: const CupertinoPageScaffold(child: Text('Page')),
           ),
         ),
       );
@@ -68,8 +66,9 @@ void main() {
       );
     });
 
-    testWidgets('scope becomes active when a sheet is pushed over the page',
-        (tester) async {
+    testWidgets('scope becomes active when a sheet is pushed over the page', (
+      tester,
+    ) async {
       // Build a navigator with our GlassPage as the initial route.
       final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -77,9 +76,7 @@ void main() {
         CupertinoApp(
           navigatorKey: navigatorKey,
           home: GlassPage(
-            child: const CupertinoPageScaffold(
-              child: Text('Main page'),
-            ),
+            child: const CupertinoPageScaffold(child: Text('Main page')),
           ),
         ),
       );
@@ -91,9 +88,7 @@ void main() {
       // Push a new route — this drives secondaryAnimation on the root page.
       navigatorKey.currentState!.push(
         CupertinoPageRoute<void>(
-          builder: (_) => const CupertinoPageScaffold(
-            child: Text('Sheet'),
-          ),
+          builder: (_) => const CupertinoPageScaffold(child: Text('Sheet')),
         ),
       );
 
@@ -136,33 +131,30 @@ void main() {
     });
 
     testWidgets(
-        'scope remains inactive when GlassPage is not inside a navigator route',
-        (tester) async {
-      // GlassPage used without a route context — ModalRoute.of returns null.
-      // The scope must default to inactive and not throw.
-      await tester.pumpWidget(
-        Directionality(
-          textDirection: TextDirection.ltr,
-          child: GlassPage(
-            child: const Text('bare'),
+      'scope remains inactive when GlassPage is not inside a navigator route',
+      (tester) async {
+        // GlassPage used without a route context — ModalRoute.of returns null.
+        // The scope must default to inactive and not throw.
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: GlassPage(child: const Text('bare')),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      expect(
-        find.byType(LiquidGlassPushBackScope),
-        findsOneWidget,
-      );
-      expect(
-        glassPagePushBackActive(tester),
-        isFalse,
-        reason: 'Without a route, push-back scope must always be inactive',
-      );
-    });
+        expect(find.byType(LiquidGlassPushBackScope), findsOneWidget);
+        expect(
+          glassPagePushBackActive(tester),
+          isFalse,
+          reason: 'Without a route, push-back scope must always be inactive',
+        );
+      },
+    );
 
-    testWidgets('GlassPage disposes animation listeners without error',
-        (tester) async {
+    testWidgets('GlassPage disposes animation listeners without error', (
+      tester,
+    ) async {
       // Regression: ensure _subscribeSecondaryAnimation(null) in dispose()
       // does not throw even if the animation was never listened to.
       await tester.pumpWidget(

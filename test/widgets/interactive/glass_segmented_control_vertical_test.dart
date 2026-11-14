@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/widgets/shared/glass_effect.dart';
@@ -20,8 +20,9 @@ void main() {
     expect(control.segmentExtent, isNull);
   });
 
-  testWidgets('vertical control sizes and stacks segments on its main axis',
-      (tester) async {
+  testWidgets('vertical control sizes and stacks segments on its main axis', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       createTestApp(
         child: Align(
@@ -57,8 +58,9 @@ void main() {
     expect(middle.dx, closeTo(top.dx, 0.5));
   });
 
-  testWidgets('vertical indicator occupies and follows the vertical axis',
-      (tester) async {
+  testWidgets('vertical indicator occupies and follows the vertical axis', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       createTestApp(
         child: Align(
@@ -120,8 +122,9 @@ void main() {
     expect(opacity.opacity, 1);
   });
 
-  testWidgets('vertical mode wires only the vertical drag recognizer',
-      (tester) async {
+  testWidgets('vertical mode wires only the vertical drag recognizer', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       createTestApp(
         child: Align(
@@ -150,8 +153,9 @@ void main() {
     expect(drag.onHorizontalDragUpdate, isNull);
   });
 
-  testWidgets('vertical icon segments preserve accessibility labels',
-      (tester) async {
+  testWidgets('vertical icon segments preserve accessibility labels', (
+    tester,
+  ) async {
     final semantics = tester.ensureSemantics();
     await tester.pumpWidget(
       createTestApp(
@@ -210,8 +214,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final gesture =
-        await tester.startGesture(tester.getCenter(find.text('Top')));
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.text('Top')),
+    );
     await tester.pump();
     await gesture.moveBy(const Offset(0, 104));
     // The first large move resolves the tap-vs-drag arena. A subsequent event
@@ -242,8 +247,9 @@ void main() {
     expect(selected, 2);
   });
 
-  testWidgets('vertical indicator rotates the jelly clip budget',
-      (tester) async {
+  testWidgets('vertical indicator rotates the jelly clip budget', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       createTestApp(
         child: Center(

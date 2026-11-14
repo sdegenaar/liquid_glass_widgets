@@ -1,3 +1,18 @@
+# 1.18.0
+
+## Breaking & Behavior Changes (Upgrading from ≤ 1.17.x)
+
+- **Minimum SDK raised to Flutter `>= 3.47.0` / Dart `>= 3.13.0` (`cupertino_ui` migration):** Migrated off Flutter's deprecated `package:flutter/cupertino.dart` SDK library onto the official first-party [`cupertino_ui`](https://pub.dev/packages/cupertino_ui) (`^1.1.6`) package ahead of Flutter `3.50.0`, while keeping **zero `material_ui` / `flutter/material.dart` runtime dependencies** in `lib/`. Apps on Flutter `< 3.47.0` automatically resolve to `1.17.3` via `pub`.
+- **Cupertino host app imports (`CupertinoApp`, `CupertinoPageScaffold`, `CupertinoColors`, `CupertinoThemeData`):** Because Dart treats types from `package:cupertino_ui/cupertino_ui.dart` and the deprecated `package:flutter/cupertino.dart` as distinct nominal classes (such as `ObstructingPreferredSizeWidget` implemented by `GlassAppBar`, `CupertinoPageRoute` extended by `GlassPageRoute`, and `CupertinoDynamicColor`), Cupertino host apps upgrading to `1.18.0` should migrate their Cupertino imports to `package:cupertino_ui/cupertino_ui.dart` (e.g. `dart fix --apply --code=migrate_design_widgets`). `MaterialApp` apps — whether importing `package:material_ui/material_ui.dart` or legacy `package:flutter/material.dart` — remain 100% compatible without changes.
+
+## Features
+
+- **Native Flutter `3.50.0` & `cupertino_ui` / `material_ui` support:** Migrated `lib/`, `test/`, `example/`, and `example/showcase/` to `package:cupertino_ui/cupertino_ui.dart` (and `package:material_ui/material_ui.dart` in `dev_dependencies` / examples), removed temporary `deprecated_member_use` analyzer suppressions, and adopted Dart `3.13` initializing formals and null-aware collection elements across the codebase.
+
+## Bug Fixes
+
+- **Windows & Web (`--wasm`) shader `main()` single-exit compatibility (`flutter/flutter#190809`):** Refactored `void main()` across `progressive_blur.frag`, `lightweight_glass.frag`, `interactive_indicator.frag`, `liquid_glass_render.frag`, and `liquid_glass_geometry_blended.frag` to eliminate early `return;` statements alongside texture samplers, resolving all 4 Flutter `3.50.0` `impellerc` warnings and preventing HLSL / FXC (`d3dcompiler_47.dll` / ANGLE) compilation failures with zero visual or GPU performance change.
+
 # 1.17.3
 
 ## Features

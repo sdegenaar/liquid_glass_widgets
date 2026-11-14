@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
 
 import '../../src/renderer/liquid_glass_renderer.dart';
@@ -249,9 +249,7 @@ class _GlassStepperState extends State<GlassStepper> {
         width: widget.width,
         height: widget.height,
         child: AdaptiveGlass(
-          shape: LiquidRoundedRectangle(
-            borderRadius: widget.height / 2,
-          ),
+          shape: LiquidRoundedRectangle(borderRadius: widget.height / 2),
           settings: GlassThemeHelpers.resolveSettings(
             context,
             explicit: widget.settings,
@@ -394,7 +392,8 @@ class _StepperSideState extends State<_StepperSide> {
               opacity: widget.isEnabled ? 1.0 : 0.3,
               child: Icon(
                 widget.icon,
-                color: CupertinoTheme.of(context).textTheme.textStyle.color ??
+                color:
+                    CupertinoTheme.of(context).textTheme.textStyle.color ??
                     CupertinoColors.label,
                 size: 20,
               ),

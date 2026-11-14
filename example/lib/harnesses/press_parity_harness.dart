@@ -16,7 +16,7 @@
 //   cd example && flutter run -t lib/harnesses/press_parity_harness.dart
 library;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
@@ -34,11 +34,11 @@ class _App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const CupertinoApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Press Parity',
-        theme: CupertinoThemeData(brightness: Brightness.light),
-        home: PressParityHarness(),
-      );
+    debugShowCheckedModeBanner: false,
+    title: 'Press Parity',
+    theme: CupertinoThemeData(brightness: Brightness.light),
+    home: PressParityHarness(),
+  );
 }
 
 /// Shows the native and package press interactions side by side.
@@ -101,8 +101,10 @@ class PressParityHarness extends StatelessWidget {
                     onTap: () {},
                     child: const Text(
                       'Label',
-                      style:
-                          TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -176,16 +178,16 @@ class _Label extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 6),
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 11,
-            letterSpacing: 0.4,
-            color: Color(0x8A000000),
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Text(
+      text,
+      style: const TextStyle(
+        fontSize: 11,
+        letterSpacing: 0.4,
+        color: Color(0x8A000000),
+      ),
+    ),
+  );
 }
 
 /// A backdrop with structure, so refraction moving under the glass is legible.

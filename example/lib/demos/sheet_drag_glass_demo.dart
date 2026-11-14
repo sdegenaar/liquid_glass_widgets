@@ -23,19 +23,21 @@
 //   `useOwnLayer: false, quality: GlassQuality.standard`
 // → the lens no longer detaches (inline paint, no transform-tracking layer).
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
-  runApp(LiquidGlassWidgets.wrap(
-    child: const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: _BackgroundScreen(),
+  runApp(
+    LiquidGlassWidgets.wrap(
+      child: const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: _BackgroundScreen(),
+      ),
     ),
-  ));
+  );
 }
 
 class _BackgroundScreen extends StatelessWidget {
@@ -74,9 +76,13 @@ class _BackgroundScreen extends StatelessWidget {
                 height: 44,
                 shape: LiquidRoundedRectangle(borderRadius: 22.0),
                 child: Center(
-                  child: Text('premium glass',
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w600)),
+                  child: Text(
+                    'premium glass',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -108,13 +114,15 @@ class _Checkerboard extends StatelessWidget {
     return GridView.builder(
       physics: const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
-      gridDelegate:
-          const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: cols),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: cols,
+      ),
       itemCount: cols * 24,
       itemBuilder: (_, i) {
         final bool on = ((i ~/ cols) + (i % cols)).isEven;
         return ColoredBox(
-            color: on ? const Color(0xFF3F51B5) : const Color(0xFFFFC107));
+          color: on ? const Color(0xFF3F51B5) : const Color(0xFFFFC107),
+        );
       },
     );
   }
@@ -125,7 +133,7 @@ class _Sheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const ColoredBox(
-        color: CupertinoColors.systemBackground,
-        child: Center(child: Text('Drag me up/down slowly')),
-      );
+    color: CupertinoColors.systemBackground,
+    child: Center(child: Text('Drag me up/down slowly')),
+  );
 }

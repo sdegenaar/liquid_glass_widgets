@@ -13,7 +13,7 @@ This document is for AI agents interacting with the **`liquid_glass_widgets` rep
 
 ## 1. Environment & Requirements
 
-- **Flutter SDK**: Requires Flutter ≥ 3.41.0 (Dart ≥ 3.5.0) for Impeller shader support.
+- **Flutter SDK**: Requires Flutter ≥ 3.47.0 (Dart ≥ 3.13.0) for Impeller shader and `cupertino_ui` support.
 - **Single Public Entry Point**: All public APIs must be exported from `lib/liquid_glass_widgets.dart`. Internal implementations live under `lib/src/`. Never expose private engine internals.
 
 ---

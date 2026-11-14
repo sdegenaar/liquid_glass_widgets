@@ -1,8 +1,8 @@
 import 'package:liquid_glass_widgets/src/renderer/liquid_glass_renderer.dart';
 import 'package:liquid_glass_widgets/src/engine/stretch.dart';
 import 'package:liquid_glass_widgets/widgets/interactive/glass_icon_button.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
@@ -53,10 +53,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassIconButton(
-              icon: Icon(Icons.add),
-              onPressed: null,
-            ),
+            child: GlassIconButton(icon: Icon(Icons.add), onPressed: null),
           ),
         ),
       );
@@ -73,10 +70,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassIconButton(
-              icon: Icon(Icons.star),
-              onPressed: () {},
-            ),
+            child: GlassIconButton(icon: Icon(Icons.star), onPressed: () {}),
           ),
         ),
       );
@@ -128,10 +122,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassIconButton(
-              icon: Icon(Icons.add),
-              onPressed: () {},
-            ),
+            child: GlassIconButton(icon: Icon(Icons.add), onPressed: () {}),
           ),
         ),
       );
@@ -165,10 +156,7 @@ void main() {
     });
 
     test('defaults are correct', () {
-      final button = GlassIconButton(
-        icon: Icon(Icons.star),
-        onPressed: () {},
-      );
+      final button = GlassIconButton(icon: Icon(Icons.star), onPressed: () {});
 
       expect(button.size, equals(44));
       expect(button.shape, equals(GlassIconButtonShape.circle));
@@ -193,8 +181,9 @@ void main() {
           ),
         );
 
-    testWidgets('always uses a fixed factor — never the native sizing path',
-        (tester) async {
+    testWidgets('always uses a fixed factor — never the native sizing path', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
@@ -211,13 +200,16 @@ void main() {
       // A fixed 0.95 factor: pressGrowth must be null so the button shrinks
       // uniformly rather than inflating by a point-growth amount.
       expect(stretch.interactionScale, equals(0.95));
-      expect(stretch.pressGrowth, isNull,
-          reason:
-              'GlassIconButton must never use the native point-sizing path');
+      expect(
+        stretch.pressGrowth,
+        isNull,
+        reason: 'GlassIconButton must never use the native point-sizing path',
+      );
     });
 
-    testWidgets('forwards explicit anchorStretchSettings to GlassButton',
-        (tester) async {
+    testWidgets('forwards explicit anchorStretchSettings to GlassButton', (
+      tester,
+    ) async {
       const settings = AnchorStretchSettings(intensity: 0.5);
       await tester.pumpWidget(
         createTestApp(
@@ -238,50 +230,51 @@ void main() {
 
   group('GlassIconButton semantics (fixes #354)', () {
     testWidgets(
-        'semanticLabel produces isolated button node with label and tap action',
-        (tester) async {
-      final handle = tester.ensureSemantics();
-      await tester.pumpWidget(
-        CupertinoApp(
-          home: Center(
-            child: Semantics(
-              container: true,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Title'),
-                  GlassIconButton(
-                    key: const Key('icon_btn'),
-                    icon: const Icon(CupertinoIcons.gear_alt_fill),
-                    semanticLabel: 'Settings',
-                    onPressed: () {},
-                  ),
-                ],
+      'semanticLabel produces isolated button node with label and tap action',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          CupertinoApp(
+            home: Center(
+              child: Semantics(
+                container: true,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Title'),
+                    GlassIconButton(
+                      key: const Key('icon_btn'),
+                      icon: const Icon(CupertinoIcons.gear_alt_fill),
+                      semanticLabel: 'Settings',
+                      onPressed: () {},
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Find the semantics node by its label — if the label merged with
-      // 'Title' this finder returns nothing and the test fails.
-      final settingsNode = find.bySemanticsLabel('Settings');
-      expect(settingsNode, findsOneWidget);
+        // Find the semantics node by its label — if the label merged with
+        // 'Title' this finder returns nothing and the test fails.
+        final settingsNode = find.bySemanticsLabel('Settings');
+        expect(settingsNode, findsOneWidget);
 
-      expect(
-        tester.getSemantics(settingsNode),
-        matchesSemantics(
-          label: 'Settings',
-          isButton: true,
-          hasTapAction: true,
-          hasFocusAction: true, // focus merges into the labelled node (#381)
-          hasEnabledState: true,
-          isEnabled: true,
-          isFocusable: true,
-        ),
-      );
-      handle.dispose();
-    });
+        expect(
+          tester.getSemantics(settingsNode),
+          matchesSemantics(
+            label: 'Settings',
+            isButton: true,
+            hasTapAction: true,
+            hasFocusAction: true, // focus merges into the labelled node (#381)
+            hasEnabledState: true,
+            isEnabled: true,
+            isFocusable: true,
+          ),
+        );
+        handle.dispose();
+      },
+    );
 
     testWidgets('label is not merged with sibling text', (tester) async {
       final handle = tester.ensureSemantics();
@@ -316,35 +309,37 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('disabled button omits tap action and reports isEnabled false',
-        (tester) async {
-      final handle = tester.ensureSemantics();
-      await tester.pumpWidget(
-        CupertinoApp(
-          home: Center(
-            child: GlassIconButton(
-              icon: const Icon(CupertinoIcons.gear_alt_fill),
-              semanticLabel: 'Settings',
-              onPressed: null, // disabled
+    testWidgets(
+      'disabled button omits tap action and reports isEnabled false',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          CupertinoApp(
+            home: Center(
+              child: GlassIconButton(
+                icon: const Icon(CupertinoIcons.gear_alt_fill),
+                semanticLabel: 'Settings',
+                onPressed: null, // disabled
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      final settingsNode = find.bySemanticsLabel('Settings');
-      expect(settingsNode, findsOneWidget);
+        final settingsNode = find.bySemanticsLabel('Settings');
+        expect(settingsNode, findsOneWidget);
 
-      expect(
-        tester.getSemantics(settingsNode),
-        matchesSemantics(
-          label: 'Settings',
-          isButton: true,
-          hasTapAction: false,
-          hasEnabledState: true,
-          isEnabled: false,
-        ),
-      );
-      handle.dispose();
-    });
+        expect(
+          tester.getSemantics(settingsNode),
+          matchesSemantics(
+            label: 'Settings',
+            isButton: true,
+            hasTapAction: false,
+            hasEnabledState: true,
+            isEnabled: false,
+          ),
+        );
+        handle.dispose();
+      },
+    );
   });
 }

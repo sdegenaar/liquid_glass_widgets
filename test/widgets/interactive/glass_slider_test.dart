@@ -1,6 +1,7 @@
 // ignore: unnecessary_import
 import 'dart:ui';
-import 'package:flutter/material.dart';
+
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:liquid_glass_widgets/widgets/interactive/glass_slider.dart';
 import 'package:liquid_glass_widgets/widgets/shared/glass_focus_region.dart';
@@ -18,10 +19,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassSlider(
-              value: 0.5,
-              onChanged: (_) {},
-            ),
+            child: GlassSlider(value: 0.5, onChanged: (_) {}),
           ),
         ),
       );
@@ -148,47 +146,46 @@ void main() {
       expect(find.byType(GlassSlider), findsOneWidget);
     });
 
-    testWidgets(
-      'discrete slider respects a non-zero minimum while dragging',
-      (tester) async {
-        double? changedValue;
+    testWidgets('discrete slider respects a non-zero minimum while dragging', (
+      tester,
+    ) async {
+      double? changedValue;
 
-        await tester.pumpWidget(
-          createTestApp(
-            child: AdaptiveLiquidGlassLayer(
-              settings: defaultTestGlassSettings,
-              child: SizedBox(
-                width: 300,
-                child: GlassSlider(
-                  value: 22,
-                  min: 12,
-                  max: 32,
-                  divisions: 20,
-                  onChanged: (value) => changedValue = value,
-                ),
+      await tester.pumpWidget(
+        createTestApp(
+          child: AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: SizedBox(
+              width: 300,
+              child: GlassSlider(
+                value: 22,
+                min: 12,
+                max: 32,
+                divisions: 20,
+                onChanged: (value) => changedValue = value,
               ),
             ),
           ),
-        );
+        ),
+      );
 
-        final finder = find.byType(GlassSlider);
-        final slider = tester.widget<GlassSlider>(finder);
-        final rect = tester.getRect(finder);
-        final usableTrackWidth = rect.width - slider.thumbRadius * 2;
-        final target = Offset(
-          rect.left + slider.thumbRadius + usableTrackWidth * 0.1,
-          rect.center.dy,
-        );
+      final finder = find.byType(GlassSlider);
+      final slider = tester.widget<GlassSlider>(finder);
+      final rect = tester.getRect(finder);
+      final usableTrackWidth = rect.width - slider.thumbRadius * 2;
+      final target = Offset(
+        rect.left + slider.thumbRadius + usableTrackWidth * 0.1,
+        rect.center.dy,
+      );
 
-        final gesture = await tester.startGesture(rect.center);
-        await gesture.moveTo(target);
-        await tester.pump();
+      final gesture = await tester.startGesture(rect.center);
+      await gesture.moveTo(target);
+      await tester.pump();
 
-        expect(changedValue, 14);
+      expect(changedValue, 14);
 
-        await gesture.up();
-      },
-    );
+      await gesture.up();
+    });
 
     testWidgets('works in standalone mode', (tester) async {
       await tester.pumpWidget(
@@ -206,10 +203,7 @@ void main() {
     });
 
     test('defaults are correct', () {
-      final slider = GlassSlider(
-        value: 0.5,
-        onChanged: (_) {},
-      );
+      final slider = GlassSlider(value: 0.5, onChanged: (_) {});
 
       expect(slider.min, equals(0.0));
       expect(slider.max, equals(1.0));
@@ -224,10 +218,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassSlider(
-              value: 0.5,
-              onChanged: (_) {},
-            ),
+            child: GlassSlider(value: 0.5, onChanged: (_) {}),
           ),
         ),
       );
@@ -245,8 +236,9 @@ void main() {
       expect(find.byType(GlassSlider), findsOneWidget);
     });
 
-    testWidgets('divisions drag across boundary triggers haptic (no crash)',
-        (tester) async {
+    testWidgets('divisions drag across boundary triggers haptic (no crash)', (
+      tester,
+    ) async {
       // The haptic path (line 327: HapticFeedback.selectionClick) fires when
       // _dragValue != newValue across a division boundary.
       double value = 0.0;
@@ -289,8 +281,9 @@ void main() {
       expect(find.byType(GlassSlider), findsOneWidget);
     });
 
-    testWidgets('Premium path renders thumb as solid white at rest',
-        (tester) async {
+    testWidgets('Premium path renders thumb as solid white at rest', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: GlassSlider(
@@ -323,12 +316,15 @@ void main() {
       final container = tester.widget<Container>(containerFinder);
       final dec = container.decoration as BoxDecoration;
       expect(dec.color, isNotNull);
-      expect(dec.color!.a,
-          equals(1.0)); // Solid white (Opacity controls visibility)
+      expect(
+        dec.color!.a,
+        equals(1.0),
+      ); // Solid white (Opacity controls visibility)
     });
 
-    testWidgets('Standard path renders thumb as solid white at rest',
-        (tester) async {
+    testWidgets('Standard path renders thumb as solid white at rest', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: GlassSlider(
@@ -351,181 +347,215 @@ void main() {
       final container = tester.widget<Container>(containerFinder);
       final dec = container.decoration as BoxDecoration;
       expect(dec.color, isNotNull);
-      expect(dec.color!.a,
-          equals(1.0)); // Solid white (Opacity controls visibility)
+      expect(
+        dec.color!.a,
+        equals(1.0),
+      ); // Solid white (Opacity controls visibility)
     });
 
     for (final quality in [GlassQuality.standard, GlassQuality.premium]) {
       for (final brightness in Brightness.values) {
         testWidgets(
-            '$quality $brightness keeps the resting shadow outside glass',
-            (tester) async {
-          var value = 0.5;
-          await tester.pumpWidget(createTestApp(
-            theme: ThemeData(brightness: brightness),
-            child: Center(
-              child: SizedBox(
-                width: 300,
-                child: StatefulBuilder(builder: (context, setState) {
-                  return GlassSlider(
-                    value: value,
-                    quality: quality,
-                    onChanged: (next) => setState(() => value = next),
-                  );
-                }),
+          '$quality $brightness keeps the resting shadow outside glass',
+          (tester) async {
+            var value = 0.5;
+            await tester.pumpWidget(
+              createTestApp(
+                theme: ThemeData(brightness: brightness),
+                child: Center(
+                  child: SizedBox(
+                    width: 300,
+                    child: StatefulBuilder(
+                      builder: (context, setState) {
+                        return GlassSlider(
+                          value: value,
+                          quality: quality,
+                          onChanged: (next) => setState(() => value = next),
+                        );
+                      },
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ));
-          await tester.pumpAndSettle();
+            );
+            await tester.pumpAndSettle();
 
-          final shadow = find.descendant(
-            of: find.byType(GlassSlider),
-            matching: find.byWidgetPredicate((widget) =>
-                widget is DecoratedBox &&
-                widget.decoration is BoxDecoration &&
-                (widget.decoration as BoxDecoration).boxShadow?.isNotEmpty ==
-                    true),
-          );
-          expect(shadow, findsOneWidget);
-          // GlassEffect clips its content to the thumb shape, so an internal
-          // BoxShadow loses the pixels that should extend outside the thumb.
-          expect(find.ancestor(of: shadow, matching: find.byType(GlassEffect)),
-              findsNothing);
-          double shadowOpacity() =>
-              (tester.widget<DecoratedBox>(shadow).decoration as BoxDecoration)
-                  .boxShadow!
-                  .single
-                  .color
-                  .a;
-          expect(shadowOpacity(), 0.15);
-          final restingCenter = tester.getCenter(shadow);
+            final shadow = find.descendant(
+              of: find.byType(GlassSlider),
+              matching: find.byWidgetPredicate(
+                (widget) =>
+                    widget is DecoratedBox &&
+                    widget.decoration is BoxDecoration &&
+                    (widget.decoration as BoxDecoration)
+                            .boxShadow
+                            ?.isNotEmpty ==
+                        true,
+              ),
+            );
+            expect(shadow, findsOneWidget);
+            // GlassEffect clips its content to the thumb shape, so an internal
+            // BoxShadow loses the pixels that should extend outside the thumb.
+            expect(
+              find.ancestor(of: shadow, matching: find.byType(GlassEffect)),
+              findsNothing,
+            );
+            double shadowOpacity() =>
+                (tester.widget<DecoratedBox>(shadow).decoration
+                        as BoxDecoration)
+                    .boxShadow!
+                    .single
+                    .color
+                    .a;
+            expect(shadowOpacity(), 0.15);
+            final restingCenter = tester.getCenter(shadow);
 
-          final gesture = await tester.startGesture(restingCenter);
-          await gesture.moveBy(const Offset(60, 0));
-          await tester.pumpAndSettle();
-          expect(value, greaterThan(0.5));
-          expect(shadowOpacity(), 0);
+            final gesture = await tester.startGesture(restingCenter);
+            await gesture.moveBy(const Offset(60, 0));
+            await tester.pumpAndSettle();
+            expect(value, greaterThan(0.5));
+            expect(shadowOpacity(), 0);
 
-          await gesture.up();
-          await tester.pumpAndSettle();
-          expect(shadowOpacity(), 0.15);
-          expect(tester.getCenter(shadow).dx, greaterThan(restingCenter.dx));
-          final material = find.byWidgetPredicate((widget) =>
-              widget is Container &&
-              widget.decoration is BoxDecoration &&
-              (widget.decoration as BoxDecoration).color == Colors.white);
-          expect(tester.getCenter(shadow), tester.getCenter(material));
+            await gesture.up();
+            await tester.pumpAndSettle();
+            expect(shadowOpacity(), 0.15);
+            expect(tester.getCenter(shadow).dx, greaterThan(restingCenter.dx));
+            final material = find.byWidgetPredicate(
+              (widget) =>
+                  widget is Container &&
+                  widget.decoration is BoxDecoration &&
+                  (widget.decoration as BoxDecoration).color == Colors.white,
+            );
+            expect(tester.getCenter(shadow), tester.getCenter(material));
 
-          final cancelled = await tester.startGesture(tester.getCenter(shadow));
-          await tester.pumpAndSettle();
-          expect(shadowOpacity(), 0);
-          await cancelled.cancel();
-          await tester.pumpAndSettle();
-          expect(shadowOpacity(), 0.15);
-        });
+            final cancelled = await tester.startGesture(
+              tester.getCenter(shadow),
+            );
+            await tester.pumpAndSettle();
+            expect(shadowOpacity(), 0);
+            await cancelled.cancel();
+            await tester.pumpAndSettle();
+            expect(shadowOpacity(), 0.15);
+          },
+        );
       }
     }
 
     for (final quality in [GlassQuality.standard, GlassQuality.premium]) {
-      testWidgets('$quality custom shadows preserve geometry and animate alpha',
-          (tester) async {
-        const customShadows = [
-          BoxShadow(
-            color: Color.from(alpha: 0.4, red: 0.2, green: 0.3, blue: 0.5),
-            blurRadius: 12,
-            spreadRadius: 1,
-            offset: Offset(2, 4),
-            blurStyle: BlurStyle.outer,
-          ),
-          BoxShadow(
-            color: Color.from(alpha: 0.12, red: 0, green: 0, blue: 0),
-            blurRadius: 3,
-            offset: Offset(0, 1),
-          ),
-        ];
-        await tester.pumpWidget(createTestApp(
+      testWidgets(
+        '$quality custom shadows preserve geometry and animate alpha',
+        (tester) async {
+          const customShadows = [
+            BoxShadow(
+              color: Color.from(alpha: 0.4, red: 0.2, green: 0.3, blue: 0.5),
+              blurRadius: 12,
+              spreadRadius: 1,
+              offset: Offset(2, 4),
+              blurStyle: BlurStyle.outer,
+            ),
+            BoxShadow(
+              color: Color.from(alpha: 0.12, red: 0, green: 0, blue: 0),
+              blurRadius: 3,
+              offset: Offset(0, 1),
+            ),
+          ];
+          await tester.pumpWidget(
+            createTestApp(
+              child: Center(
+                child: SizedBox(
+                  width: 300,
+                  child: GlassSlider(
+                    value: 0.5,
+                    quality: quality,
+                    thumbShadow: customShadows,
+                    onChanged: (_) {},
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          final shadow = find.descendant(
+            of: find.byType(GlassSlider),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is DecoratedBox &&
+                  widget.decoration is BoxDecoration &&
+                  (widget.decoration as BoxDecoration).boxShadow?.length == 2,
+            ),
+          );
+          List<BoxShadow> renderedShadows() =>
+              (tester.widget<DecoratedBox>(shadow).decoration as BoxDecoration)
+                  .boxShadow!;
+          expect(shadow, findsOneWidget);
+          expect(
+            find.ancestor(of: shadow, matching: find.byType(GlassEffect)),
+            findsNothing,
+          );
+          expect(renderedShadows(), customShadows);
+
+          final gesture = await tester.startGesture(tester.getCenter(shadow));
+          await gesture.moveBy(const Offset(30, 0));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 75));
+          final fading = renderedShadows();
+          final fade = fading.first.color.a / customShadows.first.color.a;
+          expect(fade, greaterThan(0));
+          expect(fade, lessThan(1));
+          for (var i = 0; i < customShadows.length; i++) {
+            final original = customShadows[i];
+            expect(fading[i].color.a, closeTo(original.color.a * fade, 1e-9));
+            expect(fading[i].copyWith(color: original.color), original);
+          }
+          await tester.pumpAndSettle();
+          expect(renderedShadows().every((s) => s.color.a == 0), isTrue);
+          await gesture.up();
+          await tester.pumpAndSettle();
+          expect(renderedShadows(), customShadows);
+
+          final cancelled = await tester.startGesture(tester.getCenter(shadow));
+          await tester.pumpAndSettle();
+          expect(renderedShadows().every((s) => s.color.a == 0), isTrue);
+          await cancelled.cancel();
+          await tester.pumpAndSettle();
+          expect(renderedShadows(), customShadows);
+        },
+      );
+    }
+
+    testWidgets('thumbShadow can disable and restore the default on rebuild', (
+      tester,
+    ) async {
+      List<BoxShadow>? shadows = const [];
+      late StateSetter update;
+      await tester.pumpWidget(
+        createTestApp(
           child: Center(
             child: SizedBox(
               width: 300,
-              child: GlassSlider(
-                value: 0.5,
-                quality: quality,
-                thumbShadow: customShadows,
-                onChanged: (_) {},
+              child: StatefulBuilder(
+                builder: (context, setState) {
+                  update = setState;
+                  return GlassSlider(
+                    value: 0.5,
+                    thumbShadow: shadows,
+                    onChanged: (_) {},
+                  );
+                },
               ),
             ),
           ),
-        ));
-        await tester.pumpAndSettle();
-        final shadow = find.descendant(
-          of: find.byType(GlassSlider),
-          matching: find.byWidgetPredicate((widget) =>
-              widget is DecoratedBox &&
-              widget.decoration is BoxDecoration &&
-              (widget.decoration as BoxDecoration).boxShadow?.length == 2),
-        );
-        List<BoxShadow> renderedShadows() =>
-            (tester.widget<DecoratedBox>(shadow).decoration as BoxDecoration)
-                .boxShadow!;
-        expect(shadow, findsOneWidget);
-        expect(find.ancestor(of: shadow, matching: find.byType(GlassEffect)),
-            findsNothing);
-        expect(renderedShadows(), customShadows);
-
-        final gesture = await tester.startGesture(tester.getCenter(shadow));
-        await gesture.moveBy(const Offset(30, 0));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 75));
-        final fading = renderedShadows();
-        final fade = fading.first.color.a / customShadows.first.color.a;
-        expect(fade, greaterThan(0));
-        expect(fade, lessThan(1));
-        for (var i = 0; i < customShadows.length; i++) {
-          final original = customShadows[i];
-          expect(fading[i].color.a, closeTo(original.color.a * fade, 1e-9));
-          expect(fading[i].copyWith(color: original.color), original);
-        }
-        await tester.pumpAndSettle();
-        expect(renderedShadows().every((s) => s.color.a == 0), isTrue);
-        await gesture.up();
-        await tester.pumpAndSettle();
-        expect(renderedShadows(), customShadows);
-
-        final cancelled = await tester.startGesture(tester.getCenter(shadow));
-        await tester.pumpAndSettle();
-        expect(renderedShadows().every((s) => s.color.a == 0), isTrue);
-        await cancelled.cancel();
-        await tester.pumpAndSettle();
-        expect(renderedShadows(), customShadows);
-      });
-    }
-
-    testWidgets('thumbShadow can disable and restore the default on rebuild',
-        (tester) async {
-      List<BoxShadow>? shadows = const [];
-      late StateSetter update;
-      await tester.pumpWidget(createTestApp(
-        child: Center(
-          child: SizedBox(
-            width: 300,
-            child: StatefulBuilder(builder: (context, setState) {
-              update = setState;
-              return GlassSlider(
-                value: 0.5,
-                thumbShadow: shadows,
-                onChanged: (_) {},
-              );
-            }),
-          ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
       final shadow = find.descendant(
         of: find.byType(GlassSlider),
-        matching: find.byWidgetPredicate((widget) =>
-            widget is DecoratedBox &&
-            widget.decoration is BoxDecoration &&
-            (widget.decoration as BoxDecoration).boxShadow?.isNotEmpty == true),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is DecoratedBox &&
+              widget.decoration is BoxDecoration &&
+              (widget.decoration as BoxDecoration).boxShadow?.isNotEmpty ==
+                  true,
+        ),
       );
       expect(shadow, findsNothing);
       update(() => shadows = null);
@@ -573,8 +603,9 @@ void main() {
         }
       });
 
-      testWidgets('does not activate on Space key (sliders use arrows)',
-          (tester) async {
+      testWidgets('does not activate on Space key (sliders use arrows)', (
+        tester,
+      ) async {
         double value = 0.5;
         final focusNode = FocusNode();
 
@@ -599,42 +630,40 @@ void main() {
     });
 
     testWidgets(
-        'lifted thumb expands symmetrically to 1.55x (57.35 x 37.2 pt) matching native UISlider',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: Center(
-            child: SizedBox(
-              width: 338,
-              child: GlassSlider(
-                value: 0.5,
-                onChanged: (_) {},
+      'lifted thumb expands symmetrically to 1.55x (57.35 x 37.2 pt) matching native UISlider',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: Center(
+              child: SizedBox(
+                width: 338,
+                child: GlassSlider(value: 0.5, onChanged: (_) {}),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final thumbEffectFinder = find.descendant(
-        of: find.byType(GlassSlider),
-        matching: find.byType(GlassEffect),
-      );
-      final restingRect = tester.getRect(thumbEffectFinder);
-      expect(restingRect.width, closeTo(37.0, 0.1));
-      expect(restingRect.height, closeTo(24.0, 0.1));
+        final thumbEffectFinder = find.descendant(
+          of: find.byType(GlassSlider),
+          matching: find.byType(GlassEffect),
+        );
+        final restingRect = tester.getRect(thumbEffectFinder);
+        expect(restingRect.width, closeTo(37.0, 0.1));
+        expect(restingRect.height, closeTo(24.0, 0.1));
 
-      final gesture = await tester.startGesture(restingRect.center);
-      await tester.pump(const Duration(milliseconds: 200));
-      await tester.pumpAndSettle();
+        final gesture = await tester.startGesture(restingRect.center);
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pumpAndSettle();
 
-      final liftedRect = tester.getRect(thumbEffectFinder);
-      expect(liftedRect.width, closeTo(57.35, 0.2));
-      expect(liftedRect.height, closeTo(37.20, 0.2));
-      expect(liftedRect.center.dx, closeTo(restingRect.center.dx, 0.2));
+        final liftedRect = tester.getRect(thumbEffectFinder);
+        expect(liftedRect.width, closeTo(57.35, 0.2));
+        expect(liftedRect.height, closeTo(37.20, 0.2));
+        expect(liftedRect.center.dx, closeTo(restingRect.center.dx, 0.2));
 
-      await gesture.up();
-      await tester.pumpAndSettle();
-    });
+        await gesture.up();
+        await tester.pumpAndSettle();
+      },
+    );
   });
 }

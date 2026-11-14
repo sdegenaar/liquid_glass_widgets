@@ -72,8 +72,10 @@ class GlassTabBarAccessoryPlacementScope extends InheritedWidget {
   ///
   /// Defaults to [GlassTabBarAccessoryPlacement.expanded] if no scope is found.
   static GlassTabBarAccessoryPlacement of(BuildContext context) {
-    final scope = context.dependOnInheritedWidgetOfExactType<
-        GlassTabBarAccessoryPlacementScope>();
+    final scope = context
+        .dependOnInheritedWidgetOfExactType<
+          GlassTabBarAccessoryPlacementScope
+        >();
     return scope?.placement ?? GlassTabBarAccessoryPlacement.expanded;
   }
 

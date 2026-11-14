@@ -5,16 +5,17 @@
 ///   flutter run -t example/lib/demos/glass_modal_sheet_demo.dart
 library;
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
-  runApp(LiquidGlassWidgets.wrap(
-      child: const ShowcaseApp(), adaptiveQuality: false));
+  runApp(
+    LiquidGlassWidgets.wrap(child: const ShowcaseApp(), adaptiveQuality: false),
+  );
 }
 
 class ShowcaseApp extends StatefulWidget {
@@ -229,7 +230,7 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
         segments: [
           GlassSegment(label: 'Standard'),
           GlassSegment(label: 'Premium'),
-          GlassSegment(label: 'Minimal')
+          GlassSegment(label: 'Minimal'),
         ],
         selectedIndex: currentIndex >= 0 ? currentIndex : 1,
         onSegmentSelected: (index) {
@@ -385,29 +386,35 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
                   ),
                   items: [
                     GlassMenuItem(
-                        title: 'Upgrade plan',
-                        icon: Icon(CupertinoIcons.arrow_up_circle),
-                        onTap: () {}),
+                      title: 'Upgrade plan',
+                      icon: Icon(CupertinoIcons.arrow_up_circle),
+                      onTap: () {},
+                    ),
                     GlassMenuItem(
-                        title: 'Settings',
-                        icon: Icon(CupertinoIcons.settings),
-                        onTap: () {}),
+                      title: 'Settings',
+                      icon: Icon(CupertinoIcons.settings),
+                      onTap: () {},
+                    ),
                     GlassMenuItem(
-                        title: 'Offline Pages',
-                        icon: Icon(CupertinoIcons.arrow_down_circle),
-                        onTap: () {}),
+                      title: 'Offline Pages',
+                      icon: Icon(CupertinoIcons.arrow_down_circle),
+                      onTap: () {},
+                    ),
                     GlassMenuItem(
-                        title: 'Members',
-                        icon: Icon(CupertinoIcons.person_2),
-                        onTap: () {}),
+                      title: 'Members',
+                      icon: Icon(CupertinoIcons.person_2),
+                      onTap: () {},
+                    ),
                     GlassMenuItem(
-                        title: 'Trash',
-                        icon: Icon(CupertinoIcons.trash),
-                        onTap: () {}),
+                      title: 'Trash',
+                      icon: Icon(CupertinoIcons.trash),
+                      onTap: () {},
+                    ),
                     GlassMenuItem(
-                        title: 'Help & support',
-                        icon: Icon(CupertinoIcons.question_circle),
-                        onTap: () {}),
+                      title: 'Help & support',
+                      icon: Icon(CupertinoIcons.question_circle),
+                      onTap: () {},
+                    ),
                   ],
                 ),
                 SizedBox(width: 16),
@@ -417,15 +424,18 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
                   menuWidth: 260,
                   menuHeight: 250, // Test scrolling
                   quality: widget.currentQuality,
-                  selectionColor:
-                      CupertinoColors.activeBlue.withValues(alpha: 0.3),
+                  selectionColor: CupertinoColors.activeBlue.withValues(
+                    alpha: 0.3,
+                  ),
                   triggerBuilder: (context, toggle) => GlassButton.custom(
                     onTap: toggle,
                     width: 56,
                     height: 56,
                     shape: const LiquidOval(),
-                    child: Icon(CupertinoIcons.layers_alt,
-                        color: CupertinoColors.white),
+                    child: Icon(
+                      CupertinoIcons.layers_alt,
+                      color: CupertinoColors.white,
+                    ),
                   ),
                   items: [
                     const GlassMenuLabel(title: 'PRIMARY ACTIONS'),
@@ -486,53 +496,65 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
                   ),
                   items: [
                     GlassMenuItem(
-                        title: 'Alice',
-                        icon: const CircleAvatar(
-                          radius: 12,
-                          backgroundImage:
-                              NetworkImage('https://i.pravatar.cc/100?img=1'),
+                      title: 'Alice',
+                      icon: const CircleAvatar(
+                        radius: 12,
+                        backgroundImage: NetworkImage(
+                          'https://i.pravatar.cc/100?img=1',
                         ),
-                        onTap: () {}),
+                      ),
+                      onTap: () {},
+                    ),
                     GlassMenuItem(
-                        title: 'Bob',
-                        icon: const CircleAvatar(
-                          radius: 12,
-                          backgroundImage:
-                              NetworkImage('https://i.pravatar.cc/100?img=2'),
+                      title: 'Bob',
+                      icon: const CircleAvatar(
+                        radius: 12,
+                        backgroundImage: NetworkImage(
+                          'https://i.pravatar.cc/100?img=2',
                         ),
-                        onTap: () {}),
+                      ),
+                      onTap: () {},
+                    ),
                     GlassMenuItem(
-                        title: 'Charlie',
-                        icon: const CircleAvatar(
-                          radius: 12,
-                          backgroundImage:
-                              NetworkImage('https://i.pravatar.cc/100?img=3'),
+                      title: 'Charlie',
+                      icon: const CircleAvatar(
+                        radius: 12,
+                        backgroundImage: NetworkImage(
+                          'https://i.pravatar.cc/100?img=3',
                         ),
-                        onTap: () {}),
+                      ),
+                      onTap: () {},
+                    ),
                     GlassMenuItem(
-                        title: 'Diana',
-                        icon: const CircleAvatar(
-                          radius: 12,
-                          backgroundImage:
-                              NetworkImage('https://i.pravatar.cc/100?img=4'),
+                      title: 'Diana',
+                      icon: const CircleAvatar(
+                        radius: 12,
+                        backgroundImage: NetworkImage(
+                          'https://i.pravatar.cc/100?img=4',
                         ),
-                        onTap: () {}),
+                      ),
+                      onTap: () {},
+                    ),
                     GlassMenuItem(
-                        title: 'Ethan',
-                        icon: const CircleAvatar(
-                          radius: 12,
-                          backgroundImage:
-                              NetworkImage('https://i.pravatar.cc/100?img=5'),
+                      title: 'Ethan',
+                      icon: const CircleAvatar(
+                        radius: 12,
+                        backgroundImage: NetworkImage(
+                          'https://i.pravatar.cc/100?img=5',
                         ),
-                        onTap: () {}),
+                      ),
+                      onTap: () {},
+                    ),
                     GlassMenuItem(
-                        title: 'Fiona',
-                        icon: const CircleAvatar(
-                          radius: 12,
-                          backgroundImage:
-                              NetworkImage('https://i.pravatar.cc/100?img=9'),
+                      title: 'Fiona',
+                      icon: const CircleAvatar(
+                        radius: 12,
+                        backgroundImage: NetworkImage(
+                          'https://i.pravatar.cc/100?img=9',
                         ),
-                        onTap: () {}),
+                      ),
+                      onTap: () {},
+                    ),
                   ],
                 ),
               ],
@@ -639,22 +661,23 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   Text(
                     description,
                     style: TextStyle(
-                        fontSize: 12,
-                        color: CupertinoColors.white.withValues(alpha: 0.54)),
+                      fontSize: 12,
+                      color: CupertinoColors.white.withValues(alpha: 0.54),
+                    ),
                   ),
                 ],
               ),
             ),
-            Icon(CupertinoIcons.chevron_right,
-                color: CupertinoColors.systemGrey, size: 20),
+            Icon(
+              CupertinoIcons.chevron_right,
+              color: CupertinoColors.systemGrey,
+              size: 20,
+            ),
           ],
         ),
       ),
@@ -697,8 +720,7 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
       quality: widget.currentQuality,
       builder: (context) => const BaseScenario(
         title: 'Standard Experience',
-        subtitle:
-            'Explore how interactive glass elements behave inside a glass sheet.',
+        subtitle: 'Explore how interactive glass elements behave inside a glass sheet.',
       ),
     );
   }
@@ -769,8 +791,9 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
           ),
           Text(
             'Standalone GlassContainer.card component demo.',
-            style:
-                TextStyle(color: CupertinoColors.white.withValues(alpha: 0.54)),
+            style: TextStyle(
+              color: CupertinoColors.white.withValues(alpha: 0.54),
+            ),
           ),
           SizedBox(height: 24),
         ],
@@ -787,8 +810,7 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
       enableSaturationGlow: false,
       builder: (context) => const BaseScenario(
         title: 'Static Experience',
-        subtitle:
-            'This scenario has all tactile feedback disabled (no scaling, no glow).',
+        subtitle: 'This scenario has all tactile feedback disabled (no scaling, no glow).',
       ),
     );
   }
@@ -800,8 +822,7 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
       suppressInteractionOnChildren: true,
       builder: (context) => const BaseScenario(
         title: 'Smart Silence',
-        subtitle:
-            'In this mode, children dispatch an InteractionNotification. The sheet stays stable.',
+        subtitle: 'In this mode, children dispatch an InteractionNotification. The sheet stays stable.',
         silenceInteractions: true,
       ),
     );
@@ -815,8 +836,7 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
       fillThreshold: 0.8,
       builder: (context) => const BaseScenario(
         title: 'Gradual Experience',
-        subtitle:
-            'Watch as the glass smoothly transitions into a solid color during expansion.',
+        subtitle: 'Watch as the glass smoothly transitions into a solid color during expansion.',
       ),
     );
   }
@@ -828,8 +848,7 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
       enableTopFade: true,
       builder: (context) => const BaseScenario(
         title: 'Top Fade Experience',
-        subtitle:
-            'A subtle gradient fade at the top of the sheet helps content blend smoothly.',
+        subtitle: 'A subtle gradient fade at the top of the sheet helps content blend smoothly.',
       ),
     );
   }
@@ -841,8 +860,7 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
       barrierColor: const Color(0x00000000),
       builder: (context) => const BaseScenario(
         title: 'Transparent Barrier',
-        subtitle:
-            'The background remains fully visible and interactive without any dimming layer.',
+        subtitle: 'The background remains fully visible and interactive without any dimming layer.',
       ),
     );
   }
@@ -859,8 +877,7 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
       ),
       builder: (context) => const BaseScenario(
         title: 'Solid Brown Half',
-        subtitle:
-            'Demonstrates overriding glass settings for a specific state (Half = Solid Brown).',
+        subtitle: 'Demonstrates overriding glass settings for a specific state (Half = Solid Brown).',
       ),
     );
   }
@@ -873,8 +890,7 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
       fullSettings: const LiquidGlassSettings(thickness: 40, blur: 15),
       builder: (context) => const BaseScenario(
         title: 'Dynamic Glass Morphing',
-        subtitle:
-            'The material itself changes during expansion: Half (Thin) → Full (Thick Frosted).',
+        subtitle: 'The material itself changes during expansion: Half (Thin) → Full (Thick Frosted).',
       ),
     );
   }
@@ -888,8 +904,7 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
       fullSize: 0.8,
       builder: (context) => const BaseScenario(
         title: 'Custom Layout',
-        subtitle:
-            'Peek is taller (150px), Half is lower (35%), and Full only reaches 80% height.',
+        subtitle: 'Peek is taller (150px), Half is lower (35%), and Full only reaches 80% height.',
       ),
     );
   }
@@ -996,8 +1011,10 @@ class MapsExperienceScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child:
-                      Icon(CupertinoIcons.back, color: CupertinoColors.black),
+                  child: Icon(
+                    CupertinoIcons.back,
+                    color: CupertinoColors.black,
+                  ),
                 ),
               ),
             ),
@@ -1064,16 +1081,15 @@ class _BaseScenarioState extends State<BaseScenario> {
               children: [
                 Text(
                   widget.title,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 8),
                 Text(
                   widget.subtitle,
                   style: TextStyle(
-                      fontSize: 15, color: CupertinoColors.systemGrey),
+                    fontSize: 15,
+                    color: CupertinoColors.systemGrey,
+                  ),
                 ),
                 SizedBox(height: 25),
 
@@ -1137,8 +1153,10 @@ class _BaseScenarioState extends State<BaseScenario> {
                     color: CupertinoColors.activeBlue.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(CupertinoIcons.star,
-                      color: CupertinoColors.activeBlue),
+                  child: Icon(
+                    CupertinoIcons.star,
+                    color: CupertinoColors.activeBlue,
+                  ),
                 ),
                 SizedBox(width: 16),
                 Expanded(
@@ -1155,13 +1173,17 @@ class _BaseScenarioState extends State<BaseScenario> {
                       Text(
                         'Secondary information or description text goes here.',
                         style: TextStyle(
-                            color: CupertinoColors.systemGrey, fontSize: 13),
+                          color: CupertinoColors.systemGrey,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                Icon(CupertinoIcons.chevron_right,
-                    color: CupertinoColors.systemGrey),
+                Icon(
+                  CupertinoIcons.chevron_right,
+                  color: CupertinoColors.systemGrey,
+                ),
               ],
             ),
           ),

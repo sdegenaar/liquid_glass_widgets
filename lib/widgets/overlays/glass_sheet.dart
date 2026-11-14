@@ -1,4 +1,5 @@
 import 'dart:ui';
+
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../types/interaction_notification.dart';
 
@@ -7,8 +8,10 @@ import '../../types/glass_style.dart';
 import '../shared/adaptive_glass.dart';
 import '../../theme/glass_theme_helpers.dart';
 import '../../theme/glass_theme.dart';
+
 import 'package:flutter/services.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+
 import '../../src/widgets/overlays/glass_sheet_defaults.dart';
 import '../../constants/glass_defaults.dart';
 
@@ -315,7 +318,8 @@ class GlassSheet extends StatefulWidget {
     final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
     final capturedCupertinoTheme = CupertinoTheme.of(context);
     final capturedStyle = GlassThemeHelpers.resolveStyle(context);
-    final effectiveBarrierColor = barrierColor ??
+    final effectiveBarrierColor =
+        barrierColor ??
         (capturedStyle == GlassStyle.classic
             ? GlassDefaults.barrierColor
             : const Color(0x24000000));
@@ -329,14 +333,14 @@ class GlassSheet extends StatefulWidget {
       transitionDuration: const Duration(milliseconds: 350),
       transitionBuilder: (context, animation, secondaryAnimation, child) {
         return SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, 1),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeOutCubic,
-            reverseCurve: Curves.easeInCubic,
-          )),
+          position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+              .animate(
+                CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutCubic,
+                  reverseCurve: Curves.easeInCubic,
+                ),
+              ),
           child: child,
         );
       },
@@ -376,15 +380,9 @@ class GlassSheet extends StatefulWidget {
             ),
           ),
         );
-        dialog = CupertinoTheme(
-          data: capturedCupertinoTheme,
-          child: dialog,
-        );
+        dialog = CupertinoTheme(data: capturedCupertinoTheme, child: dialog);
         if (capturedGlassTheme != null) {
-          dialog = GlassTheme(
-            data: capturedGlassTheme,
-            child: dialog,
-          );
+          dialog = GlassTheme(data: capturedGlassTheme, child: dialog);
         }
         return dialog;
       },
@@ -424,8 +422,10 @@ class _DismissibleSheetWrapperState extends State<_DismissibleSheetWrapper> {
     if (!_isDragging) return;
     setState(() {
       // Only allow downward dragging (positive offset).
-      _dragOffset =
-          (_dragOffset + details.delta.dy).clamp(0.0, double.infinity);
+      _dragOffset = (_dragOffset + details.delta.dy).clamp(
+        0.0,
+        double.infinity,
+      );
     });
   }
 
@@ -451,8 +451,9 @@ class _DismissibleSheetWrapperState extends State<_DismissibleSheetWrapper> {
         onVerticalDragUpdate: _onDragUpdate,
         onVerticalDragEnd: _onDragEnd,
         child: AnimatedContainer(
-          duration:
-              _isDragging ? Duration.zero : const Duration(milliseconds: 250),
+          duration: _isDragging
+              ? Duration.zero
+              : const Duration(milliseconds: 250),
           curve: Curves.easeOutCubic,
           transform: Matrix4.translationValues(0, _dragOffset, 0),
           child: widget.child,
@@ -537,7 +538,8 @@ class _GlassSheetState extends State<GlassSheet> with TickerProviderStateMixin {
     // Automatically determine bottom radius if none is provided.
     // If the sheet floats (bottom margin > 0), round the bottom corners.
     // If it is docked (bottom margin == 0), keep the bottom flat.
-    final effectiveBottomRadius = widget.bottomBorderRadius ??
+    final effectiveBottomRadius =
+        widget.bottomBorderRadius ??
         (widget.margin.resolve(Directionality.of(context)).bottom > 0
             ? 32.0
             : 0.0);
@@ -547,10 +549,16 @@ class _GlassSheetState extends State<GlassSheet> with TickerProviderStateMixin {
       builder: (context, child) {
         final t = _saturationAnimation.value;
         final style = GlassThemeHelpers.resolveStyle(context);
-        final currentTopRadius =
-            lerpDouble(effectiveTopRadius, effectiveTopRadius * 0.98, t)!;
-        final currentBottomRadius =
-            lerpDouble(effectiveBottomRadius, effectiveBottomRadius * 0.98, t)!;
+        final currentTopRadius = lerpDouble(
+          effectiveTopRadius,
+          effectiveTopRadius * 0.98,
+          t,
+        )!;
+        final currentBottomRadius = lerpDouble(
+          effectiveBottomRadius,
+          effectiveBottomRadius * 0.98,
+          t,
+        )!;
 
         final shape = LiquidVerticalRoundedSuperellipse(
           topRadius: currentTopRadius,
@@ -559,8 +567,11 @@ class _GlassSheetState extends State<GlassSheet> with TickerProviderStateMixin {
 
         final pulsedSettings = style == GlassStyle.classic
             ? effectiveSettings.copyWith(
-                lightIntensity:
-                    lerpDouble(effectiveSettings.lightIntensity, 0.8, t)!,
+                lightIntensity: lerpDouble(
+                  effectiveSettings.lightIntensity,
+                  0.8,
+                  t,
+                )!,
                 saturation: lerpDouble(effectiveSettings.saturation, 2.2, t)!,
               )
             : effectiveSettings;
@@ -613,12 +624,15 @@ class _GlassSheetState extends State<GlassSheet> with TickerProviderStateMixin {
             (effectiveSettings.blur > 0.05 || effectiveSettings.frost > 0.05)) {
           final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
           result = GlassGlow(
-            glowColor: widget.glowColor ??
+            glowColor:
+                widget.glowColor ??
                 (isDark
-                    ? CupertinoColors.white
-                        .withValues(alpha: GlassDefaults.specularLightAlpha)
-                    : CupertinoColors.black
-                        .withValues(alpha: GlassDefaults.specularDarkAlpha)),
+                    ? CupertinoColors.white.withValues(
+                        alpha: GlassDefaults.specularLightAlpha,
+                      )
+                    : CupertinoColors.black.withValues(
+                        alpha: GlassDefaults.specularDarkAlpha,
+                      )),
             glowRadius: widget.glowRadius,
             clipper: ShapeBorderClipper(shape: shape),
             child: result,
@@ -653,10 +667,7 @@ class _GlassSheetState extends State<GlassSheet> with TickerProviderStateMixin {
           );
         }
 
-        return Padding(
-          padding: widget.margin,
-          child: sheetContent,
-        );
+        return Padding(padding: widget.margin, child: sheetContent);
       },
     );
   }
@@ -668,11 +679,7 @@ class _SheetHeader extends StatelessWidget {
   final Color? color;
   final VoidCallback? onDismiss;
 
-  const _SheetHeader({
-    required this.showIndicator,
-    this.color,
-    this.onDismiss,
-  });
+  const _SheetHeader({required this.showIndicator, this.color, this.onDismiss});
 
   @override
   Widget build(BuildContext context) {
@@ -684,7 +691,8 @@ class _SheetHeader extends StatelessWidget {
         children: [
           SizedBox(height: topPadding),
           Center(
-              child: _GlassDragIndicator(color: color, onDismiss: onDismiss)),
+            child: _GlassDragIndicator(color: color, onDismiss: onDismiss),
+          ),
           const SizedBox(height: 8),
         ],
       );
@@ -700,10 +708,7 @@ class _SheetHeader extends StatelessWidget {
 /// 36×5dp (4dp in classic mode), white at ~35% opacity in dark mode or black
 /// at 20% in light mode.
 class _GlassDragIndicator extends StatelessWidget {
-  const _GlassDragIndicator({
-    this.color,
-    this.onDismiss,
-  });
+  const _GlassDragIndicator({this.color, this.onDismiss});
 
   final Color? color;
   final VoidCallback? onDismiss;
@@ -714,8 +719,9 @@ class _GlassDragIndicator extends StatelessWidget {
     final style = GlassThemeHelpers.resolveStyle(context);
     final height = style == GlassStyle.classic ? 4.0 : 5.0;
     // iOS 26/27: white at 35% in dark mode, black at 20% in light mode
-    final defaultColor =
-        isDark ? const Color(0x59FFFFFF) : const Color(0x33000000);
+    final defaultColor = isDark
+        ? const Color(0x59FFFFFF)
+        : const Color(0x33000000);
 
     return Semantics(
       // VoiceOver on iOS announces the grabber as "Drag to resize, double-tap

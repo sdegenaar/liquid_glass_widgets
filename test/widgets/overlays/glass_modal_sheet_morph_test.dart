@@ -7,7 +7,8 @@
 // directly.
 
 import 'dart:ui' show lerpDouble;
-import 'package:flutter/material.dart';
+
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart'
     show
@@ -46,14 +47,11 @@ const _glassSettings = LiquidGlassSettings(blur: 10.0);
 const _solidSettings = LiquidGlassSettings(blur: 0.0);
 
 Widget _app(Widget child, {bool disableAnimations = false}) => MaterialApp(
-      home: MediaQuery(
-        data: MediaQueryData(
-          size: _screen,
-          disableAnimations: disableAnimations,
-        ),
-        child: Scaffold(backgroundColor: Colors.transparent, body: child),
-      ),
-    );
+  home: MediaQuery(
+    data: MediaQueryData(size: _screen, disableAnimations: disableAnimations),
+    child: Scaffold(backgroundColor: Colors.transparent, body: child),
+  ),
+);
 
 void main() {
   group('SheetMorphGeometry.restingRect', () {
@@ -235,22 +233,24 @@ void main() {
       );
     });
 
-    test('degenerate card fraction or screen height returns safe fallbacks',
-        () {
-      expect(
-        SheetMorphGeometry.dampedDismissTravel(0.1, cardFraction: 0.0),
-        0.0,
-      );
-      expect(SheetMorphGeometry.dismissScale(0.1, cardFraction: 0.0), 1.0);
-      const resting = Rect.fromLTRB(8, 400, 392, 794);
-      final rect = SheetMorphGeometry.dismissedRect(
-        restingRect: resting,
-        travel: 0.1,
-        screenHeight: 0.0,
-      );
-      expect(rect.width, resting.width);
-      expect(rect.height, resting.height);
-    });
+    test(
+      'degenerate card fraction or screen height returns safe fallbacks',
+      () {
+        expect(
+          SheetMorphGeometry.dampedDismissTravel(0.1, cardFraction: 0.0),
+          0.0,
+        );
+        expect(SheetMorphGeometry.dismissScale(0.1, cardFraction: 0.0), 1.0);
+        const resting = Rect.fromLTRB(8, 400, 392, 794);
+        final rect = SheetMorphGeometry.dismissedRect(
+          restingRect: resting,
+          travel: 0.1,
+          screenHeight: 0.0,
+        );
+        expect(rect.width, resting.width);
+        expect(rect.height, resting.height);
+      },
+    );
 
     test('an untouched sheet dismisses from exactly its resting frame', () {
       const resting = Rect.fromLTRB(8, 400, 392, 794);
@@ -287,26 +287,28 @@ void main() {
       expect(swept.center.dy, closeTo(straight.center.dy, 1e-9));
     });
 
-    test('a swiped sheet shrinks about its centre as it follows the finger',
-        () {
-      const resting = Rect.fromLTRB(8, 400, 392, 794);
-      final swiped = SheetMorphGeometry.dismissedRect(
-        restingRect: resting,
-        travel: 0.15,
-        screenHeight: 800,
-      );
+    test(
+      'a swiped sheet shrinks about its centre as it follows the finger',
+      () {
+        const resting = Rect.fromLTRB(8, 400, 392, 794);
+        final swiped = SheetMorphGeometry.dismissedRect(
+          restingRect: resting,
+          travel: 0.15,
+          screenHeight: 800,
+        );
 
-      final scale = SheetMorphGeometry.dismissScale(
-        0.15,
-        cardFraction: resting.height / 800.0,
-      );
-      // Tracks the finger 1:1 — 0.15 of 800 is 120 logical pixels down.
-      expect(swiped.center.dy, closeTo(resting.center.dy + 120.0, 1e-9));
-      expect(swiped.center.dx, closeTo(resting.center.dx, 1e-9));
-      // Uniform: both axes take the same scale.
-      expect(swiped.width, closeTo(resting.width * scale, 1e-9));
-      expect(swiped.height, closeTo(resting.height * scale, 1e-9));
-    });
+        final scale = SheetMorphGeometry.dismissScale(
+          0.15,
+          cardFraction: resting.height / 800.0,
+        );
+        // Tracks the finger 1:1 — 0.15 of 800 is 120 logical pixels down.
+        expect(swiped.center.dy, closeTo(resting.center.dy + 120.0, 1e-9));
+        expect(swiped.center.dx, closeTo(resting.center.dx, 1e-9));
+        // Uniform: both axes take the same scale.
+        expect(swiped.width, closeTo(resting.width * scale, 1e-9));
+        expect(swiped.height, closeTo(resting.height * scale, 1e-9));
+      },
+    );
   });
 
   group('SheetMorphGeometry.rubberBand', () {
@@ -398,9 +400,13 @@ void main() {
       );
       expect(justPast, greaterThan(200.0), reason: 'it does keep moving');
       expect(wellPast, greaterThan(justPast));
-      expect(wellPast - justPast, lessThan(340.0),
-          reason: 'but far less than '
-              'the finger did');
+      expect(
+        wellPast - justPast,
+        lessThan(340.0),
+        reason:
+            'but far less than '
+            'the finger did',
+      );
     });
   });
 
@@ -483,8 +489,10 @@ void main() {
         closeTo(0.1, 1e-9),
       );
       expect(
-        SheetMorphGeometry.dampedDismissTravel(knee,
-            cardFraction: cardFraction),
+        SheetMorphGeometry.dampedDismissTravel(
+          knee,
+          cardFraction: cardFraction,
+        ),
         closeTo(knee, 1e-9),
         reason: 'direct manipulation up to the knee',
       );
@@ -494,7 +502,8 @@ void main() {
         cardFraction: cardFraction,
       );
       expect(long, greaterThan(knee), reason: 'never fully frozen');
-      final limit = (1.0 - SheetMorphGeometry.minDismissScale) /
+      final limit =
+          (1.0 - SheetMorphGeometry.minDismissScale) /
           SheetMorphGeometry.dismissScaleGain *
           cardFraction;
       expect(
@@ -595,9 +604,7 @@ void main() {
     });
   });
 
-  group(
-      'SheetMorphGeometry.blobRect — continuous fluid expansion (large scaleDelta)',
-      () {
+  group('SheetMorphGeometry.blobRect — continuous fluid expansion (large scaleDelta)', () {
     // Typical compose-button → full sheet geometry.
     const trigger = Rect.fromLTWH(172.5, 790.0, 48.0, 48.0);
     const destination = Rect.fromLTWH(0.0, 0.0, 393.0, 852.0);
@@ -638,15 +645,16 @@ void main() {
         scaleDelta: scaleDelta,
       );
       final expectedWidth = lerpDouble(trigger.width, destination.width, 0.50)!;
-      final expectedHeight =
-          lerpDouble(trigger.height, destination.height, 0.50)!;
+      final expectedHeight = lerpDouble(
+        trigger.height,
+        destination.height,
+        0.50,
+      )!;
       expect(rect.width, closeTo(expectedWidth, 1e-6));
       expect(rect.height, closeTo(expectedHeight, 1e-6));
     });
 
-    test(
-        'anchor drift is clamped to at most 8px, keeping the blob rooted at trigger',
-        () {
+    test('anchor drift is clamped to at most 8px, keeping the blob rooted at trigger', () {
       final rect = SheetMorphGeometry.blobRect(
         trigger: trigger,
         destination: destination,
@@ -656,10 +664,12 @@ void main() {
       );
       // Even under extreme pathT - sizeT separation (0.8), the anchor drift
       // is clamped to 8px so the blob never detaches from the trigger button.
-      final driftX = rect.center.dx -
+      final driftX =
+          rect.center.dx -
           (trigger.center.dx +
               (destination.center.dx - trigger.center.dx) * 0.1);
-      final driftY = rect.center.dy -
+      final driftY =
+          rect.center.dy -
           (trigger.center.dy +
               (destination.center.dy - trigger.center.dy) * 0.1);
       expect(driftX.abs(), lessThanOrEqualTo(8.0 + 1e-6));
@@ -678,9 +688,7 @@ void main() {
       expect(rect.height, greaterThanOrEqualTo(0.0));
     });
 
-    test(
-        'close undershoot (sizeT = -0.2) does not collapse to 0 px on large destinations',
-        () {
+    test('close undershoot (sizeT = -0.2) does not collapse to 0 px on large destinations', () {
       final rect = SheetMorphGeometry.blobRect(
         trigger: trigger,
         destination: destination,
@@ -721,8 +729,11 @@ void main() {
           isClosing: true,
         );
         final expectedW = lerpDouble(closeTrigger.width, closeDest.width, 0.5)!;
-        final expectedH =
-            lerpDouble(closeTrigger.height, closeDest.height, 0.5)!;
+        final expectedH = lerpDouble(
+          closeTrigger.height,
+          closeDest.height,
+          0.5,
+        )!;
         expect(rect.width, closeTo(expectedW, 1e-6));
         expect(rect.height, closeTo(expectedH, 1e-6));
       });
@@ -803,11 +814,13 @@ void main() {
   });
 
   group('SheetMorphGeometry.contentReveal', () {
-    test('stays hidden during initial button detach on open (sizeT <= 0.15)',
-        () {
-      expect(SheetMorphGeometry.contentReveal(0.0, isClosing: false), 0.0);
-      expect(SheetMorphGeometry.contentReveal(0.15, isClosing: false), 0.0);
-    });
+    test(
+      'stays hidden during initial button detach on open (sizeT <= 0.15)',
+      () {
+        expect(SheetMorphGeometry.contentReveal(0.0, isClosing: false), 0.0);
+        expect(SheetMorphGeometry.contentReveal(0.15, isClosing: false), 0.0);
+      },
+    );
 
     test('fades in over sizeT 0.15 -> 0.55 on open and holds at 1.0 after', () {
       final mid = SheetMorphGeometry.contentReveal(0.35, isClosing: false);
@@ -833,26 +846,25 @@ void main() {
     const sheet = Rect.fromLTWH(0.0, 50.0, 400.0, 800.0);
     const blob = Rect.fromLTWH(100.0, 450.0, 200.0, 400.0);
 
-    test('maps sheet top-center to blob top-center and scales by width ratio',
-        () {
-      final matrix = SheetMorphGeometry.contentPortal(
-        sheet: sheet,
-        blob: blob,
-      );
-      final mappedTopCenter = MatrixUtils.transformPoint(
-        matrix,
-        sheet.topCenter,
-      );
-      expect(mappedTopCenter.dx, closeTo(blob.topCenter.dx, 1e-6));
-      expect(mappedTopCenter.dy, closeTo(blob.topCenter.dy, 1e-6));
+    test(
+      'maps sheet top-center to blob top-center and scales by width ratio',
+      () {
+        final matrix = SheetMorphGeometry.contentPortal(
+          sheet: sheet,
+          blob: blob,
+        );
+        final mappedTopCenter = MatrixUtils.transformPoint(
+          matrix,
+          sheet.topCenter,
+        );
+        expect(mappedTopCenter.dx, closeTo(blob.topCenter.dx, 1e-6));
+        expect(mappedTopCenter.dy, closeTo(blob.topCenter.dy, 1e-6));
 
-      final mappedTopLeft = MatrixUtils.transformPoint(
-        matrix,
-        sheet.topLeft,
-      );
-      expect(mappedTopLeft.dx, closeTo(blob.topLeft.dx, 1e-6));
-      expect(mappedTopLeft.dy, closeTo(blob.topLeft.dy, 1e-6));
-    });
+        final mappedTopLeft = MatrixUtils.transformPoint(matrix, sheet.topLeft);
+        expect(mappedTopLeft.dx, closeTo(blob.topLeft.dx, 1e-6));
+        expect(mappedTopLeft.dy, closeTo(blob.topLeft.dy, 1e-6));
+      },
+    );
 
     test('returns identity when sheet matches blob', () {
       final matrix = SheetMorphGeometry.contentPortal(
@@ -864,35 +876,37 @@ void main() {
   });
 
   group('SheetMorphGeometry.dormantSurface', () {
-    test('zeroes blur, frost, thickness, refractiveIndex, specular, and alpha',
-        () {
-      const active = LiquidGlassSettings(
-        blur: 16.0,
-        thickness: 24.0,
-        glassColor: Color(0x80FFFFFF),
-        lightIntensity: 1.2,
-        ambientStrength: 0.4,
-        refractiveIndex: 1.5,
-      );
-      final dormant = SheetMorphGeometry.dormantSurface(active);
-      expect(dormant.blur, 0.0);
-      expect(dormant.frost, 0.0);
-      expect(dormant.thickness, 0.0);
-      expect(dormant.refractiveIndex, 1.0);
-      expect(dormant.lightIntensity, 0.0);
-      expect(dormant.ambientStrength, 0.0);
-      expect(dormant.glassColor.a, 0.0);
-      // Preserves effectiveShadow.isEmpty stability across handoff:
-      expect(
-        dormant.effectiveShadow.isEmpty,
-        equals(active.effectiveShadow.isEmpty),
-      );
+    test(
+      'zeroes blur, frost, thickness, refractiveIndex, specular, and alpha',
+      () {
+        const active = LiquidGlassSettings(
+          blur: 16.0,
+          thickness: 24.0,
+          glassColor: Color(0x80FFFFFF),
+          lightIntensity: 1.2,
+          ambientStrength: 0.4,
+          refractiveIndex: 1.5,
+        );
+        final dormant = SheetMorphGeometry.dormantSurface(active);
+        expect(dormant.blur, 0.0);
+        expect(dormant.frost, 0.0);
+        expect(dormant.thickness, 0.0);
+        expect(dormant.refractiveIndex, 1.0);
+        expect(dormant.lightIntensity, 0.0);
+        expect(dormant.ambientStrength, 0.0);
+        expect(dormant.glassColor.a, 0.0);
+        // Preserves effectiveShadow.isEmpty stability across handoff:
+        expect(
+          dormant.effectiveShadow.isEmpty,
+          equals(active.effectiveShadow.isEmpty),
+        );
 
-      final dormantWithBacker = SheetMorphGeometry.dormantSurface(
-        const LiquidGlassSettings(backerColor: Color(0xCCFFFFFF)),
-      );
-      expect(dormantWithBacker.backerColor?.a, closeTo(1e-6, 1e-7));
-    });
+        final dormantWithBacker = SheetMorphGeometry.dormantSurface(
+          const LiquidGlassSettings(backerColor: Color(0xCCFFFFFF)),
+        );
+        expect(dormantWithBacker.backerColor?.a, closeTo(1e-6, 1e-7));
+      },
+    );
   });
 
   group('SheetMorphGeometry.restingFillOpacity', () {
@@ -1152,33 +1166,40 @@ void main() {
       );
     }
 
-    testWidgets('fills the droplet with expandedDarkColor in dark mode',
-        (tester) async {
+    testWidgets('fills the droplet with expandedDarkColor in dark mode', (
+      tester,
+    ) async {
       final route = AnimationController(
         vsync: tester,
         duration: const Duration(milliseconds: 500),
       )..forward();
       addTearDown(route.dispose);
 
-      await tester.pumpWidget(buildPresenter(
-        routeAnimation: route,
-        // The full detent is opaque, so the droplet fills on its way there.
-        restingState: GlassSheetState.full,
-        expandedColor: Colors.white,
-        expandedDarkColor: Colors.black,
-        brightness: Brightness.dark,
-      ));
+      await tester.pumpWidget(
+        buildPresenter(
+          routeAnimation: route,
+          // The full detent is opaque, so the droplet fills on its way there.
+          restingState: GlassSheetState.full,
+          expandedColor: Colors.white,
+          expandedDarkColor: Colors.black,
+          brightness: Brightness.dark,
+        ),
+      );
 
       // The fill fades in while the droplet grows, so look across the morph.
       final fills = <Color>{};
       for (var frame = 0; frame < 30; frame++) {
         await tester.pump(const Duration(milliseconds: 16));
-        fills.addAll(tester
-            .widgetList<ColoredBox>(find.descendant(
-              of: find.byType(AdaptiveGlass),
-              matching: find.byType(ColoredBox),
-            ))
-            .map((box) => box.color.withValues(alpha: 1.0)));
+        fills.addAll(
+          tester
+              .widgetList<ColoredBox>(
+                find.descendant(
+                  of: find.byType(AdaptiveGlass),
+                  matching: find.byType(ColoredBox),
+                ),
+              )
+              .map((box) => box.color.withValues(alpha: 1.0)),
+        );
       }
 
       expect(fills, contains(Colors.black.withValues(alpha: 1.0)));
@@ -1187,8 +1208,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('renders the droplet before it lands, then the real sheet',
-        (tester) async {
+    testWidgets('renders the droplet before it lands, then the real sheet', (
+      tester,
+    ) async {
       final route = AnimationController(
         vsync: tester,
         duration: const Duration(milliseconds: 500),
@@ -1228,134 +1250,131 @@ void main() {
     });
 
     testWidgets(
-        'full-screen sheet reveals content inside the expanding droplet (#446)',
-        (tester) async {
-      final route = AnimationController(
-        vsync: tester,
-        duration: const Duration(milliseconds: 500),
-      )..forward();
-      addTearDown(route.dispose);
+      'full-screen sheet reveals content inside the expanding droplet (#446)',
+      (tester) async {
+        final route = AnimationController(
+          vsync: tester,
+          duration: const Duration(milliseconds: 500),
+        )..forward();
+        addTearDown(route.dispose);
 
-      await tester.pumpWidget(
-        buildPresenter(
-          routeAnimation: route,
-          restingState: GlassSheetState.full,
-        ),
-      );
-      await tester.pump(const Duration(milliseconds: 16));
+        await tester.pumpWidget(
+          buildPresenter(
+            routeAnimation: route,
+            restingState: GlassSheetState.full,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 16));
 
-      // Initial detach: content hidden while still button-sized.
-      expect(
-        tester.widget<Visibility>(find.byType(Visibility).first).visible,
-        isFalse,
-      );
+        // Initial detach: content hidden while still button-sized.
+        expect(
+          tester.widget<Visibility>(find.byType(Visibility).first).visible,
+          isFalse,
+        );
 
-      // Mid-morph (droplet still expanding, not yet handed off): content is
-      // visible inside the portal while the sheet's own full-screen fill box
-      // stays suppressed (alpha == 0.0) so only blob B's fill paints.
-      await tester.pump(const Duration(milliseconds: 100));
-      expect(find.byType(AdaptiveLiquidGlassLayer), findsWidgets);
-      expect(
-        tester.widget<Visibility>(find.byType(Visibility).first).visible,
-        isTrue,
-      );
-      expect(find.text('Sheet body'), findsOneWidget);
-      final fillBoxMidMorph = tester.widget<DecoratedBox>(
-        find.byKey(const Key('glass_modal_sheet_fill')),
-      );
-      expect(
-        (fillBoxMidMorph.decoration as BoxDecoration).color!.a,
-        0.0,
-      );
+        // Mid-morph (droplet still expanding, not yet handed off): content is
+        // visible inside the portal while the sheet's own full-screen fill box
+        // stays suppressed (alpha == 0.0) so only blob B's fill paints.
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(find.byType(AdaptiveLiquidGlassLayer), findsWidgets);
+        expect(
+          tester.widget<Visibility>(find.byType(Visibility).first).visible,
+          isTrue,
+        );
+        expect(find.text('Sheet body'), findsOneWidget);
+        final fillBoxMidMorph = tester.widget<DecoratedBox>(
+          find.byKey(const Key('glass_modal_sheet_fill')),
+        );
+        expect((fillBoxMidMorph.decoration as BoxDecoration).color!.a, 0.0);
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Once handed off, the sheet's own fill box takes over seamlessly at 1.0.
-      expect(find.byType(AdaptiveLiquidGlassLayer), findsNothing);
-      final fillBoxSettled = tester.widget<DecoratedBox>(
-        find.byKey(const Key('glass_modal_sheet_fill')),
-      );
-      expect(
-        (fillBoxSettled.decoration as BoxDecoration).color!.a,
-        1.0,
-      );
-    });
+        // Once handed off, the sheet's own fill box takes over seamlessly at 1.0.
+        expect(find.byType(AdaptiveLiquidGlassLayer), findsNothing);
+        final fillBoxSettled = tester.widget<DecoratedBox>(
+          find.byKey(const Key('glass_modal_sheet_fill')),
+        );
+        expect((fillBoxSettled.decoration as BoxDecoration).color!.a, 1.0);
+      },
+    );
 
     testWidgets(
-        'preserves active InheritedLiquidGlass settings for nested glass widgets during morph',
-        (tester) async {
-      final route = AnimationController(
-        vsync: tester,
-        duration: const Duration(milliseconds: 500),
-      )..forward();
-      addTearDown(route.dispose);
+      'preserves active InheritedLiquidGlass settings for nested glass widgets during morph',
+      (tester) async {
+        final route = AnimationController(
+          vsync: tester,
+          duration: const Duration(milliseconds: 500),
+        )..forward();
+        addTearDown(route.dispose);
 
-      const customSettings = LiquidGlassSettings(
-        blur: 16.0,
-        thickness: 24.0,
-        lightIntensity: 0.8,
-        glassColor: Color(0x80FFFFFF),
-      );
+        const customSettings = LiquidGlassSettings(
+          blur: 16.0,
+          thickness: 24.0,
+          lightIntensity: 0.8,
+          glassColor: Color(0x80FFFFFF),
+        );
 
-      await tester.pumpWidget(
-        _app(
-          GlassSheetMorphPresenter(
-            routeAnimation: route,
-            triggerRect: const Rect.fromLTWH(172, 700, 56, 56),
-            anchor: null,
-            speed: MorphSpeed.normal,
-            restingState: GlassSheetState.half,
-            controller: GlassModalSheetController(),
-            geometry: _defaultGeometry,
-            horizontalMargin: 8.0,
-            bottomMargin: 6.0,
-            topBorderRadius: 56.0,
-            fullTopBorderRadius: 46.0,
-            bottomBorderRadius: null,
-            fullBottomBorderRadius: null,
-            settings: customSettings,
-            peekSettings: null,
-            halfSettings: null,
-            fullSettings: null,
-            expandedColor: null,
-            quality: null,
-            peekHorizontalMargin: null,
-            peekBottomMargin: null,
-            peekWidth: null,
-            peekTopBorderRadius: null,
-            platformViewBackdrop: false,
-            child: GlassModalSheetScaffold(
-              initialState: GlassSheetState.half,
+        await tester.pumpWidget(
+          _app(
+            GlassSheetMorphPresenter(
+              routeAnimation: route,
+              triggerRect: const Rect.fromLTWH(172, 700, 56, 56),
+              anchor: null,
+              speed: MorphSpeed.normal,
+              restingState: GlassSheetState.half,
+              controller: GlassModalSheetController(),
+              geometry: _defaultGeometry,
+              horizontalMargin: 8.0,
+              bottomMargin: 6.0,
+              topBorderRadius: 56.0,
+              fullTopBorderRadius: 46.0,
+              bottomBorderRadius: null,
+              fullBottomBorderRadius: null,
               settings: customSettings,
-              body: const SizedBox.shrink(),
-              sheet: const Text('Nested child'),
+              peekSettings: null,
+              halfSettings: null,
+              fullSettings: null,
+              expandedColor: null,
+              quality: null,
+              peekHorizontalMargin: null,
+              peekBottomMargin: null,
+              peekWidth: null,
+              peekTopBorderRadius: null,
+              platformViewBackdrop: false,
+              child: GlassModalSheetScaffold(
+                initialState: GlassSheetState.half,
+                settings: customSettings,
+                body: const SizedBox.shrink(),
+                sheet: const Text('Nested child'),
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Pump into mid-morph where the outer sheet surface is dormant.
-      await tester.pump(const Duration(milliseconds: 120));
-      expect(find.byType(AdaptiveLiquidGlassLayer), findsWidgets);
-      final midMorphInherited = InheritedLiquidGlass.of(
-        tester.element(find.text('Nested child')),
-      );
-      expect(midMorphInherited, isNotNull);
-      expect(midMorphInherited!.thickness, 24.0);
-      expect(midMorphInherited.lightIntensity, 0.8);
-      expect(midMorphInherited.glassColor.a, greaterThan(0.0));
+        // Pump into mid-morph where the outer sheet surface is dormant.
+        await tester.pump(const Duration(milliseconds: 120));
+        expect(find.byType(AdaptiveLiquidGlassLayer), findsWidgets);
+        final midMorphInherited = InheritedLiquidGlass.of(
+          tester.element(find.text('Nested child')),
+        );
+        expect(midMorphInherited, isNotNull);
+        expect(midMorphInherited!.thickness, 24.0);
+        expect(midMorphInherited.lightIntensity, 0.8);
+        expect(midMorphInherited.glassColor.a, greaterThan(0.0));
 
-      await tester.pumpAndSettle();
-      final settledInherited = InheritedLiquidGlass.of(
-        tester.element(find.text('Nested child')),
-      );
-      expect(settledInherited, isNotNull);
-      expect(settledInherited!.thickness, 24.0);
-      expect(settledInherited.lightIntensity, 0.8);
-    });
+        await tester.pumpAndSettle();
+        final settledInherited = InheritedLiquidGlass.of(
+          tester.element(find.text('Nested child')),
+        );
+        expect(settledInherited, isNotNull);
+        expect(settledInherited!.thickness, 24.0);
+        expect(settledInherited.lightIntensity, 0.8);
+      },
+    );
 
-    testWidgets('the sheet is mounted for the whole morph, never remounted',
-        (tester) async {
+    testWidgets('the sheet is mounted for the whole morph, never remounted', (
+      tester,
+    ) async {
       // Remounting a glass widget mid-animation re-seeds its layers and springs
       // and shows as a glitch frame, so the sheet element must survive the
       // handoff rather than being inserted at the end.
@@ -1368,8 +1387,9 @@ void main() {
       await tester.pumpWidget(buildPresenter(routeAnimation: route));
       await tester.pump(const Duration(milliseconds: 16));
 
-      final elementDuringMorph =
-          tester.element(find.byType(GlassModalSheetScaffold));
+      final elementDuringMorph = tester.element(
+        find.byType(GlassModalSheetScaffold),
+      );
 
       await tester.pumpAndSettle();
 
@@ -1409,8 +1429,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('a dragged dismissal morphs too, not just a resting one',
-        (tester) async {
+    testWidgets('a dragged dismissal morphs too, not just a resting one', (
+      tester,
+    ) async {
       // iOS 26 morphs a swiped-away sheet back into its trigger from wherever
       // the finger let go. This used to skip the morph entirely on the grounds
       // that starting from the resting frame would jump — the jump was real,
@@ -1519,11 +1540,14 @@ void main() {
     testWidgets('a normal morph is still travelling at 200 ms', (tester) async {
       // Guards the test above from passing for the wrong reason.
       expect(
-          await landedWithin200ms(tester, disableAnimations: false), isFalse);
+        await landedWithin200ms(tester, disableAnimations: false),
+        isFalse,
+      );
     });
 
-    testWidgets('morphs into the full detent as well as the half detent',
-        (tester) async {
+    testWidgets('morphs into the full detent as well as the half detent', (
+      tester,
+    ) async {
       final route = AnimationController(
         vsync: tester,
         duration: const Duration(milliseconds: 500),
@@ -1541,8 +1565,9 @@ void main() {
       expect(find.text('Sheet body'), findsOneWidget);
     });
 
-    testWidgets('skips the blend group under platformViewBackdrop (#214)',
-        (tester) async {
+    testWidgets('skips the blend group under platformViewBackdrop (#214)', (
+      tester,
+    ) async {
       // LiquidGlassBlendGroup needs a full LiquidGlassLayer, which
       // AdaptiveLiquidGlassLayer does not create in this mode.
       final route = AnimationController(
@@ -1609,10 +1634,12 @@ void main() {
         _app(
           Align(
             alignment: Alignment.bottomCenter,
-            child: GlassMorphTrigger(builder: (context, a) {
-              anchor = a;
-              return const SizedBox(key: triggerKey, width: 56, height: 56);
-            }),
+            child: GlassMorphTrigger(
+              builder: (context, a) {
+                anchor = a;
+                return const SizedBox(key: triggerKey, width: 56, height: 56);
+              },
+            ),
           ),
         ),
       );
@@ -1639,14 +1666,19 @@ void main() {
       );
     }
 
-    testWidgets('hands the same anchor to its builder across rebuilds',
-        (tester) async {
+    testWidgets('hands the same anchor to its builder across rebuilds', (
+      tester,
+    ) async {
       final seen = <GlassMorphAnchor>[];
       await tester.pumpWidget(
-        _app(GlassMorphTrigger(builder: (context, anchor) {
-          seen.add(anchor);
-          return const SizedBox(width: 56, height: 56);
-        })),
+        _app(
+          GlassMorphTrigger(
+            builder: (context, anchor) {
+              seen.add(anchor);
+              return const SizedBox(width: 56, height: 56);
+            },
+          ),
+        ),
       );
       await tester.pump();
 
@@ -1654,8 +1686,9 @@ void main() {
       expect(seen.every((a) => identical(a, seen.first)), isTrue);
     });
 
-    testWidgets('paints nothing while presented, and is restored after',
-        (tester) async {
+    testWidgets('paints nothing while presented, and is restored after', (
+      tester,
+    ) async {
       final anchor = await pumpTrigger(tester);
       expect(triggerOpacity(tester), 1.0);
 
@@ -1673,8 +1706,9 @@ void main() {
       expect(triggerOpacity(tester), 1.0);
     });
 
-    testWidgets('keeps bouncing after the presented route is gone',
-        (tester) async {
+    testWidgets('keeps bouncing after the presented route is gone', (
+      tester,
+    ) async {
       // The whole point of the trigger owning a ticker: the route is torn down
       // as soon as the droplet lands, so a bounce driven from there would be
       // truncated mid-swing and the button would snap home.
@@ -1693,15 +1727,18 @@ void main() {
         await tester.pump(const Duration(milliseconds: 16));
         if (find.byType(GlassSheetMorphPresenter).evaluate().isEmpty) {
           routeGone = true;
-          final dy =
-              (tester.getTopLeft(find.byKey(triggerKey)).dy - resting.dy).abs();
+          final dy = (tester.getTopLeft(find.byKey(triggerKey)).dy - resting.dy)
+              .abs();
           if (dy > maxOffsetAfterRouteGone) maxOffsetAfterRouteGone = dy;
         }
       }
 
       expect(routeGone, isTrue, reason: 'route never popped');
-      expect(maxOffsetAfterRouteGone, greaterThan(0.5),
-          reason: 'trigger was not still bouncing once the route had gone');
+      expect(
+        maxOffsetAfterRouteGone,
+        greaterThan(0.5),
+        reason: 'trigger was not still bouncing once the route had gone',
+      );
 
       // ...and it eases back to exactly where it started.
       await tester.pumpAndSettle();
@@ -1711,8 +1748,9 @@ void main() {
       );
     });
 
-    testWidgets('does not rebuild the consumer subtree during the bounce',
-        (tester) async {
+    testWidgets('does not rebuild the consumer subtree during the bounce', (
+      tester,
+    ) async {
       // The bounce repaints the trigger every frame; building the consumer's
       // widget inside the AnimatedBuilder callback would rebuild their whole
       // subtree at 60fps along with it.
@@ -1722,11 +1760,13 @@ void main() {
         _app(
           Align(
             alignment: Alignment.bottomCenter,
-            child: GlassMorphTrigger(builder: (context, a) {
-              anchor = a;
-              builds++;
-              return const SizedBox(key: triggerKey, width: 56, height: 56);
-            }),
+            child: GlassMorphTrigger(
+              builder: (context, a) {
+                anchor = a;
+                builds++;
+                return const SizedBox(key: triggerKey, width: 56, height: 56);
+              },
+            ),
           ),
         ),
       );
@@ -1747,13 +1787,18 @@ void main() {
 
       // One rebuild when the bounce is handed over is expected; per-frame is
       // the regression.
-      expect(builds - before, lessThanOrEqualTo(3),
-          reason: 'consumer rebuilt ${builds - before} times over $frames '
-              'frames — the trigger should be repainted, not rebuilt');
+      expect(
+        builds - before,
+        lessThanOrEqualTo(3),
+        reason:
+            'consumer rebuilt ${builds - before} times over $frames '
+            'frames — the trigger should be repainted, not rebuilt',
+      );
     });
 
-    testWidgets('a fresh open cancels a bounce still in flight',
-        (tester) async {
+    testWidgets('a fresh open cancels a bounce still in flight', (
+      tester,
+    ) async {
       // Tapping the button mid-bounce must not leave it stranded off-centre.
       final anchor = await pumpTrigger(tester);
       final resting = tester.getTopLeft(find.byKey(triggerKey));
@@ -1777,8 +1822,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('a sheet presented WITHOUT a morph never shrinks on a swipe',
-        (tester) async {
+    testWidgets('a sheet presented WITHOUT a morph never shrinks on a swipe', (
+      tester,
+    ) async {
       // The boundary of this feature, and the reason the swipe-away transform
       // lives in the presenter rather than in the sheet's own metrics. iOS
       // hangs its interactive shrink off the zoom transition, not off the
@@ -1813,7 +1859,8 @@ void main() {
       expect(
         tester.getRect(body).width,
         closeTo(restingWidth, 0.01),
-        reason: 'a sheet with no trigger to morph into slides away at full '
+        reason:
+            'a sheet with no trigger to morph into slides away at full '
             'size, exactly as it did before the morph existed',
       );
 
@@ -1821,8 +1868,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('sideways does nothing until the dismiss drag is under way',
-        (tester) async {
+    testWidgets('sideways does nothing until the dismiss drag is under way', (
+      tester,
+    ) async {
       // Above the threshold the sheet keeps its own jelly-follow stretch and
       // nothing else — a sideways wobble must not start sliding the card
       // around before the swipe has actually committed to going down.
@@ -1874,130 +1922,136 @@ void main() {
     });
 
     testWidgets(
-        'dragging back up above the threshold closes the sideways axis and springs home',
-        (tester) async {
-      final anchor = await pumpTrigger(tester);
-      await present(tester, anchor);
-      await tester.pumpAndSettle();
+      'dragging back up above the threshold closes the sideways axis and springs home',
+      (tester) async {
+        final anchor = await pumpTrigger(tester);
+        await present(tester, anchor);
+        await tester.pumpAndSettle();
 
-      final body = find.text('Sheet body');
-      final resting = tester.getRect(body);
+        final body = find.text('Sheet body');
+        final resting = tester.getRect(body);
 
-      // Committed to the downward drag: axis opens.
-      final swipe = await tester.startGesture(const Offset(200, 420));
-      await swipe.moveBy(const Offset(0, 60));
-      await tester.pump();
-      final opened = tester.getRect(body);
-      expect(opened.width, lessThan(resting.width * 0.95));
+        // Committed to the downward drag: axis opens.
+        final swipe = await tester.startGesture(const Offset(200, 420));
+        await swipe.moveBy(const Offset(0, 60));
+        await tester.pump();
+        final opened = tester.getRect(body);
+        expect(opened.width, lessThan(resting.width * 0.95));
 
-      await swipe.moveBy(const Offset(70, 0));
-      await tester.pump(const Duration(milliseconds: 50));
-      await tester.pump(const Duration(milliseconds: 50));
+        await swipe.moveBy(const Offset(70, 0));
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump(const Duration(milliseconds: 50));
 
-      expect(
-        tester.getRect(body).center.dx,
-        greaterThan(opened.center.dx),
-        reason: 'sheet follows finger sideways while falling',
-      );
+        expect(
+          tester.getRect(body).center.dx,
+          greaterThan(opened.center.dx),
+          reason: 'sheet follows finger sideways while falling',
+        );
 
-      // Drag back up above the lowest detent threshold without releasing finger.
-      await swipe.moveBy(const Offset(0, -60));
-      await tester.pump();
+        // Drag back up above the lowest detent threshold without releasing finger.
+        await swipe.moveBy(const Offset(0, -60));
+        await tester.pump();
 
-      // Pumping frames should animate return spring back to centre.
-      for (var i = 0; i < 20; i++) {
-        await tester.pump(const Duration(milliseconds: 25));
-      }
+        // Pumping frames should animate return spring back to centre.
+        for (var i = 0; i < 20; i++) {
+          await tester.pump(const Duration(milliseconds: 25));
+        }
 
-      expect(
-        tester.getRect(body).center.dx,
-        closeTo(resting.center.dx, 1.0),
-        reason: 'axis closed and card sprang back to centre',
-      );
+        expect(
+          tester.getRect(body).center.dx,
+          closeTo(resting.center.dx, 1.0),
+          reason: 'axis closed and card sprang back to centre',
+        );
 
-      await swipe.up();
-      await tester.pumpAndSettle();
-    });
+        await swipe.up();
+        await tester.pumpAndSettle();
+      },
+    );
 
-    testWidgets('a swipe can be pushed sideways, and springs back if released',
-        (tester) async {
-      // iOS lets a falling sheet be pushed around the screen, not just down.
-      // The sideways axis is pure translation — it never feeds the shrink.
-      final anchor = await pumpTrigger(tester);
-      await present(tester, anchor);
-      await tester.pumpAndSettle();
+    testWidgets(
+      'a swipe can be pushed sideways, and springs back if released',
+      (tester) async {
+        // iOS lets a falling sheet be pushed around the screen, not just down.
+        // The sideways axis is pure translation — it never feeds the shrink.
+        final anchor = await pumpTrigger(tester);
+        await present(tester, anchor);
+        await tester.pumpAndSettle();
 
-      final body = find.text('Sheet body');
-      final resting = tester.getRect(body);
+        final body = find.text('Sheet body');
+        final resting = tester.getRect(body);
 
-      // Below the detent, but short of the dismiss threshold so the release
-      // cancels rather than closing.
-      final drag = await tester.startGesture(const Offset(200, 420));
-      await drag.moveBy(const Offset(0, 60));
-      await tester.pump();
+        // Below the detent, but short of the dismiss threshold so the release
+        // cancels rather than closing.
+        final drag = await tester.startGesture(const Offset(200, 420));
+        await drag.moveBy(const Offset(0, 60));
+        await tester.pump();
 
-      final falling = tester.getRect(body);
-      expect(
-        falling.width,
-        lessThan(resting.width),
-        reason: 'the downward travel shrinks it',
-      );
+        final falling = tester.getRect(body);
+        expect(
+          falling.width,
+          lessThan(resting.width),
+          reason: 'the downward travel shrinks it',
+        );
 
-      // Far enough that the card's edge passes its free slack and leans on
-      // the screen-edge pin.
-      await drag.moveBy(const Offset(200, 0));
-      // One frame in, the chase spring has only just set off — the card
-      // already moves, but visibly behind the finger. That trail is the
-      // sideways weight.
-      await tester.pump(const Duration(milliseconds: 16));
-      final chasing = tester.getRect(body).center.dx - falling.center.dx;
-      expect(chasing, greaterThan(0.0), reason: 'the chase starts at once');
-      expect(
-        chasing,
-        lessThan(80.0),
-        reason: 'but trails the finger — a card that tracked it exactly '
-            'reads as weightless',
-      );
+        // Far enough that the card's edge passes its free slack and leans on
+        // the screen-edge pin.
+        await drag.moveBy(const Offset(200, 0));
+        // One frame in, the chase spring has only just set off — the card
+        // already moves, but visibly behind the finger. That trail is the
+        // sideways weight.
+        await tester.pump(const Duration(milliseconds: 16));
+        final chasing = tester.getRect(body).center.dx - falling.center.dx;
+        expect(chasing, greaterThan(0.0), reason: 'the chase starts at once');
+        expect(
+          chasing,
+          lessThan(80.0),
+          reason:
+              'but trails the finger — a card that tracked it exactly '
+              'reads as weightless',
+        );
 
-      // Settled, the chase lands on the damped offset: the free slack plus
-      // the few points of give the edge pin allows, well short of the finger.
-      await tester.pump(const Duration(milliseconds: 150));
-      await tester.pump(const Duration(milliseconds: 150));
-      final swept = tester.getRect(body);
-      final movedBy = swept.center.dx - falling.center.dx;
-      expect(
-        movedBy,
-        greaterThan(chasing),
-        reason: 'the card catches up once the finger stops',
-      );
-      expect(
-        movedBy,
-        lessThan(140.0),
-        reason: 'but pinned at the screen edge, far short of the finger',
-      );
-      // Loose tolerance: the held sheet's own position creeps a little over
-      // the settle window; a sweep that fed the shrink would move this ~10%+.
-      expect(
-        swept.width,
-        closeTo(falling.width, falling.width * 0.02),
-        reason: 'and the sweep leaves the shrink alone — scale is keyed to the '
-            'vertical travel only',
-      );
+        // Settled, the chase lands on the damped offset: the free slack plus
+        // the few points of give the edge pin allows, well short of the finger.
+        await tester.pump(const Duration(milliseconds: 150));
+        await tester.pump(const Duration(milliseconds: 150));
+        final swept = tester.getRect(body);
+        final movedBy = swept.center.dx - falling.center.dx;
+        expect(
+          movedBy,
+          greaterThan(chasing),
+          reason: 'the card catches up once the finger stops',
+        );
+        expect(
+          movedBy,
+          lessThan(140.0),
+          reason: 'but pinned at the screen edge, far short of the finger',
+        );
+        // Loose tolerance: the held sheet's own position creeps a little over
+        // the settle window; a sweep that fed the shrink would move this ~10%+.
+        expect(
+          swept.width,
+          closeTo(falling.width, falling.width * 0.02),
+          reason:
+              'and the sweep leaves the shrink alone — scale is keyed to the '
+              'vertical travel only',
+        );
 
-      await drag.up();
-      await tester.pumpAndSettle();
+        await drag.up();
+        await tester.pumpAndSettle();
 
-      expect(
-        find.byType(GlassSheetMorphPresenter),
-        findsOneWidget,
-        reason: 'released short of the threshold, so it did not dismiss',
-      );
-      expect(tester.getRect(body).center.dx, closeTo(resting.center.dx, 0.5));
-      expect(tester.getRect(body).width, closeTo(resting.width, 0.5));
-    });
+        expect(
+          find.byType(GlassSheetMorphPresenter),
+          findsOneWidget,
+          reason: 'released short of the threshold, so it did not dismiss',
+        );
+        expect(tester.getRect(body).center.dx, closeTo(resting.center.dx, 0.5));
+        expect(tester.getRect(body).width, closeTo(resting.width, 0.5));
+      },
+    );
 
-    testWidgets('the swipe declares its scale to the premium renderer',
-        (tester) async {
+    testWidgets('the swipe declares its scale to the premium renderer', (
+      tester,
+    ) async {
       // The renderer freezes its shader UVs under a uniform scale-down, for
       // the CupertinoSheet push-back — where the page being sampled shrinks
       // with the glass. A swipe is the opposite: the page behind holds still,
@@ -2021,9 +2075,13 @@ void main() {
           )
           .selfScaled;
 
-      expect(selfScaled(), isFalse,
-          reason: 'at rest the sheet is not scaling itself, so a push-back '
-              'over it must still freeze');
+      expect(
+        selfScaled(),
+        isFalse,
+        reason:
+            'at rest the sheet is not scaling itself, so a push-back '
+            'over it must still freeze',
+      );
 
       final drag = await tester.startGesture(const Offset(200, 420));
       await drag.moveBy(const Offset(0, 60));
@@ -2035,8 +2093,9 @@ void main() {
       expect(selfScaled(), isFalse, reason: 'and released, it is over');
     });
 
-    testWidgets('the rendered mid-swipe frame is exactly the geometry\'s',
-        (tester) async {
+    testWidgets('the rendered mid-swipe frame is exactly the geometry\'s', (
+      tester,
+    ) async {
       // The release hands [SheetMorphGeometry.dismissedRect] to the morph as
       // the frame to catch, while what is on screen comes from the presenter's
       // own pair of Transforms. The two paths are written to agree; this pins
@@ -2067,7 +2126,8 @@ void main() {
         final s = tester.getRect(surface).width / resting.width;
         final damped = (1.0 - s) / SheetMorphGeometry.dismissScaleGain;
         const knee = 0.48;
-        final tail = (1.0 - SheetMorphGeometry.minDismissScale) /
+        final tail =
+            (1.0 - SheetMorphGeometry.minDismissScale) /
                 SheetMorphGeometry.dismissScaleGain -
             knee;
         final raw = damped <= knee
@@ -2150,8 +2210,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('a swipe-down dismissal still hands the trigger back',
-        (tester) async {
+    testWidgets('a swipe-down dismissal still hands the trigger back', (
+      tester,
+    ) async {
       // Whether or not the closing morph gets to hand the trigger back
       // mid-flight, the presenter restores it as it is disposed. Without that
       // safety net the button would stay invisible for good.
@@ -2173,8 +2234,9 @@ void main() {
       expect(triggerOpacity(tester), 1.0);
     });
 
-    testWidgets('survives its trigger being unmounted while presented',
-        (tester) async {
+    testWidgets('survives its trigger being unmounted while presented', (
+      tester,
+    ) async {
       // The presenter restores the anchor from dispose as a safety net; that
       // must not touch a trigger that has already gone away.
       final anchor = await pumpTrigger(tester);
@@ -2187,8 +2249,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('an anchor whose trigger has gone falls back to the slide',
-        (tester) async {
+    testWidgets('an anchor whose trigger has gone falls back to the slide', (
+      tester,
+    ) async {
       final anchor = await pumpTrigger(tester);
       // Trigger unmounted — its rect can no longer be resolved.
       await tester.pumpWidget(_app(const SizedBox.shrink()));
@@ -2204,8 +2267,9 @@ void main() {
       );
     });
 
-    testWidgets('abrupt route removal triggers anchor restore for safety',
-        (tester) async {
+    testWidgets('abrupt route removal triggers anchor restore for safety', (
+      tester,
+    ) async {
       final anchor = await pumpTrigger(tester);
       await present(tester, anchor);
       await tester.pump();
@@ -2215,9 +2279,8 @@ void main() {
       final route = ModalRoute.of(
         tester.element(find.byType(GlassSheetMorphPresenter)),
       )!;
-      Navigator.of(
-        tester.element(find.byType(GlassSheetMorphPresenter)),
-      ).removeRoute(route);
+      Navigator.of(tester.element(find.byType(GlassSheetMorphPresenter)))
+          .removeRoute(route);
       await tester.pumpAndSettle();
 
       expect(triggerOpacity(tester), 1.0);
@@ -2228,10 +2291,14 @@ void main() {
     testWidgets('rejects both an anchor and a rect', (tester) async {
       late GlassMorphAnchor anchor;
       await tester.pumpWidget(
-        _app(GlassMorphTrigger(builder: (context, a) {
-          anchor = a;
-          return const SizedBox(width: 56, height: 56);
-        })),
+        _app(
+          GlassMorphTrigger(
+            builder: (context, a) {
+              anchor = a;
+              return const SizedBox(width: 56, height: 56);
+            },
+          ),
+        ),
       );
       await tester.pump();
       final context = tester.element(find.byType(GlassMorphTrigger));
@@ -2247,8 +2314,9 @@ void main() {
       );
     });
 
-    testWidgets('without a trigger the slide transition is unchanged',
-        (tester) async {
+    testWidgets('without a trigger the slide transition is unchanged', (
+      tester,
+    ) async {
       await tester.pumpWidget(_app(const SizedBox.shrink()));
       final context = tester.element(find.byType(SizedBox));
 
@@ -2265,18 +2333,23 @@ void main() {
       expect(find.text('Sheet body'), findsOneWidget);
     });
 
-    testWidgets('falls back to the slide when blending is unavailable',
-        (tester) async {
+    testWidgets('falls back to the slide when blending is unavailable', (
+      tester,
+    ) async {
       // Headless test runs report ImageFilter.isShaderFilterSupported == false,
       // which is exactly the Skia/web path: the metaball neck cannot be drawn,
       // so the sheet must present with its ordinary slide rather than a
       // degraded morph.
       late GlassMorphAnchor anchor;
       await tester.pumpWidget(
-        _app(GlassMorphTrigger(builder: (context, a) {
-          anchor = a;
-          return const SizedBox(width: 56, height: 56);
-        })),
+        _app(
+          GlassMorphTrigger(
+            builder: (context, a) {
+              anchor = a;
+              return const SizedBox(width: 56, height: 56);
+            },
+          ),
+        ),
       );
       final context = tester.element(find.byType(Scaffold));
 
@@ -2295,8 +2368,9 @@ void main() {
       expect(find.text('Sheet body'), findsOneWidget);
     });
 
-    testWidgets('an explicit rect takes the same fallback path',
-        (tester) async {
+    testWidgets('an explicit rect takes the same fallback path', (
+      tester,
+    ) async {
       await tester.pumpWidget(_app(const SizedBox.shrink()));
       final context = tester.element(find.byType(SizedBox));
 
@@ -2310,8 +2384,9 @@ void main() {
 
       expect(find.text('Sheet body'), findsOneWidget);
     });
-    testWidgets('minimal quality falls back even with blending forced',
-        (tester) async {
+    testWidgets('minimal quality falls back even with blending forced', (
+      tester,
+    ) async {
       GlassModalSheet.debugMorphSupportsBlending = true;
       addTearDown(() => GlassModalSheet.debugMorphSupportsBlending = null);
 
@@ -2330,8 +2405,9 @@ void main() {
       expect(find.byType(SlideTransition), findsWidgets);
     });
 
-    testWidgets('platformViewBackdrop falls back even with blending forced',
-        (tester) async {
+    testWidgets('platformViewBackdrop falls back even with blending forced', (
+      tester,
+    ) async {
       GlassModalSheet.debugMorphSupportsBlending = true;
       addTearDown(() => GlassModalSheet.debugMorphSupportsBlending = null);
 
@@ -2362,14 +2438,16 @@ void main() {
         _app(
           Align(
             alignment: Alignment.bottomCenter,
-            child: GlassMorphTrigger(builder: (context, a) {
-              anchor = a;
-              return const SizedBox(
-                key: Key('trigger-content'),
-                width: 56,
-                height: 56,
-              );
-            }),
+            child: GlassMorphTrigger(
+              builder: (context, a) {
+                anchor = a;
+                return const SizedBox(
+                  key: Key('trigger-content'),
+                  width: 56,
+                  height: 56,
+                );
+              },
+            ),
           ),
         ),
       );
@@ -2395,8 +2473,9 @@ void main() {
             .opacity >
         0.0;
 
-    testWidgets('presents through the morph instead of the slide',
-        (tester) async {
+    testWidgets('presents through the morph instead of the slide', (
+      tester,
+    ) async {
       final anchor = await pumpTrigger(tester);
       final context = contextOf(tester);
 
@@ -2423,8 +2502,9 @@ void main() {
       expect(find.text('Sheet body'), findsOneWidget);
     });
 
-    testWidgets('empties the trigger for the whole morph, then hands it back',
-        (tester) async {
+    testWidgets('empties the trigger for the whole morph, then hands it back', (
+      tester,
+    ) async {
       final anchor = await pumpTrigger(tester);
       final context = contextOf(tester);
 
@@ -2450,8 +2530,9 @@ void main() {
       expect(triggerPainted(tester), isTrue);
     });
 
-    testWidgets('an explicit rect blooms instead of duplicating the trigger',
-        (tester) async {
+    testWidgets('an explicit rect blooms instead of duplicating the trigger', (
+      tester,
+    ) async {
       // With no anchor the trigger stays painted, so drawing the anchor blob
       // over it would read as two buttons. It is suppressed and the droplet
       // blooms from the rect's centre instead.
@@ -2485,8 +2566,9 @@ void main() {
       expect(find.text('Sheet body'), findsOneWidget);
     });
 
-    testWidgets('an anchored morph draws both blobs so the neck can form',
-        (tester) async {
+    testWidgets('an anchored morph draws both blobs so the neck can form', (
+      tester,
+    ) async {
       final anchor = await pumpTrigger(tester);
       final context = contextOf(tester);
 
@@ -2510,8 +2592,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('hides the droplet once the trigger has caught it',
-        (tester) async {
+    testWidgets('hides the droplet once the trigger has caught it', (
+      tester,
+    ) async {
       // The droplet and the restored trigger must never be on screen together
       // — that is the duplicated-button artifact the anchor exists to avoid,
       // and it reappears at the tail of the close if the overlay isn't hidden
@@ -2547,8 +2630,11 @@ void main() {
 
         if (triggerPainted(tester)) {
           // Trigger is back — the droplet must be gone.
-          expect(dropletOpacity, 0.0,
-              reason: 'droplet still painted after the trigger returned');
+          expect(
+            dropletOpacity,
+            0.0,
+            reason: 'droplet still painted after the trigger returned',
+          );
           sawBothHidden = true;
         }
       }
@@ -2557,8 +2643,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('a barrier tap morphs back and then pops the route',
-        (tester) async {
+    testWidgets('a barrier tap morphs back and then pops the route', (
+      tester,
+    ) async {
       final anchor = await pumpTrigger(tester);
       final context = contextOf(tester);
 
@@ -2590,8 +2677,9 @@ void main() {
       expect(find.text('Sheet body'), findsNothing);
     });
 
-    testWidgets('every speed profile keeps the page up for its morph',
-        (tester) async {
+    testWidgets('every speed profile keeps the page up for its morph', (
+      tester,
+    ) async {
       // Each must outlast its spring's full settle (968 / 696 / 544 / 352 ms),
       // not just the moment the droplet is caught — the trigger's closing
       // bounce is driven by this route and snaps if it unmounts mid-swing.
@@ -2628,46 +2716,46 @@ void main() {
         );
 
         await tester.pumpAndSettle();
-        Navigator.of(
-          tester.element(find.byType(GlassSheetMorphPresenter)),
-        ).pop();
+        Navigator.of(tester.element(find.byType(GlassSheetMorphPresenter)))
+            .pop();
         await tester.pumpAndSettle();
       }
     });
 
     testWidgets(
-        'combines outer GlassMaterializeScope with morph content progress',
-        (tester) async {
-      GlassMaterializeScope? capturedScope;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: MediaQuery(
-            data: const MediaQueryData(size: _screen),
-            child: GlassMaterializeScope(
-              glassProgress: 0.5,
-              contentOpacity: 0.8,
-              contentSigma: 2.0,
-              child: Stack(
-                children: [
-                  GlassModalSheet(
-                    child: Builder(
-                      builder: (ctx) {
-                        capturedScope = GlassMaterializeScope.maybeOf(ctx);
-                        return const SizedBox.shrink();
-                      },
+      'combines outer GlassMaterializeScope with morph content progress',
+      (tester) async {
+        GlassMaterializeScope? capturedScope;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MediaQuery(
+              data: const MediaQueryData(size: _screen),
+              child: GlassMaterializeScope(
+                glassProgress: 0.5,
+                contentOpacity: 0.8,
+                contentSigma: 2.0,
+                child: Stack(
+                  children: [
+                    GlassModalSheet(
+                      child: Builder(
+                        builder: (ctx) {
+                          capturedScope = GlassMaterializeScope.maybeOf(ctx);
+                          return const SizedBox.shrink();
+                        },
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(capturedScope, isNotNull);
-      expect(capturedScope!.glassProgress, closeTo(0.5, 1e-6));
-      expect(capturedScope!.contentOpacity, closeTo(0.8, 1e-6));
-      expect(capturedScope!.contentSigma, closeTo(2.0, 1e-6));
-    });
+        );
+        await tester.pumpAndSettle();
+        expect(capturedScope, isNotNull);
+        expect(capturedScope!.glassProgress, closeTo(0.5, 1e-6));
+        expect(capturedScope!.contentOpacity, closeTo(0.8, 1e-6));
+        expect(capturedScope!.contentSigma, closeTo(2.0, 1e-6));
+      },
+    );
   });
 }

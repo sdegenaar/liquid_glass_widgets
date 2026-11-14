@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../liquid_glass_setup.dart';
 import '../../types/glass_quality.dart';
@@ -48,8 +49,8 @@ class InheritedLiquidGlass extends InheritedWidget {
   /// Returns `true` when the nearest [InheritedLiquidGlass] (or renderer layer)
   /// carries explicitly supplied [LiquidGlassSettings].
   static bool hasExplicitSettingsOf(BuildContext context) {
-    final inherited =
-        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    final inherited = context
+        .dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
     if (inherited != null) {
       return inherited.hasExplicitSettings;
     }
@@ -64,8 +65,8 @@ class InheritedLiquidGlass extends InheritedWidget {
   /// Returns `true` when the nearest [InheritedLiquidGlass] carries an
   /// explicitly supplied [GlassQuality] override.
   static bool hasExplicitQualityOf(BuildContext context) {
-    final inherited =
-        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    final inherited = context
+        .dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
     return inherited?.hasExplicitQuality ?? false;
   }
 
@@ -75,8 +76,8 @@ class InheritedLiquidGlass extends InheritedWidget {
   /// to look up `LiquidGlassSettings.of(context)` from the renderer package
   /// to maintain compatibility with standard `LiquidGlassLayer` usage.
   static LiquidGlassSettings? of(BuildContext context) {
-    final inherited =
-        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    final inherited = context
+        .dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
     if (inherited != null) {
       return inherited.settings;
     }

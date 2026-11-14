@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+
 import '../../constants/glass_defaults.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
@@ -233,9 +234,9 @@ class GlassButton extends StatefulWidget {
     this.canRequestFocus = true,
     this.excludeFromSemantics = false,
     this.isStationary = false,
-  })  : icon = null,
-        iconSize = 24.0,
-        iconColor = null;
+  }) : icon = null,
+       iconSize = 24.0,
+       iconColor = null;
 
   // ===========================================================================
   // Content Properties
@@ -739,7 +740,7 @@ class _GlassButtonState extends State<GlassButton>
     final growth = interactionScale == null
         ? LiquidStretch.nativePressGrowth
         : math.max(widget.width ?? 480, widget.height ?? 480) *
-            (interactionScale - 1.0);
+              (interactionScale - 1.0);
     return (growth / 2 + 8).ceilToDouble();
   }
 
@@ -756,8 +757,8 @@ class _GlassButtonState extends State<GlassButton>
     final effectiveInteractionScale =
         widget.interactionScale ?? themeInteraction.interactionScale;
 
-    final resolvedGlowColors =
-        GlassThemeData.of(context).glowColorsFor(context);
+    final resolvedGlowColors = GlassThemeData.of(context)
+        .glowColorsFor(context);
     // The press light's colour: explicit widget param > the theme's colour
     // for this brightness > white.
     final Color? pressLightColor =
@@ -778,7 +779,8 @@ class _GlassButtonState extends State<GlassButton>
             alpha: effectiveAmbientBaseLightColor.a * nativeGlowAlpha,
           );
 
-    final effectiveGlowColor = widget.glowColor ??
+    final effectiveGlowColor =
+        widget.glowColor ??
         (isNativeGlow ? nativeGlowColor : resolvedGlowColors.primary) ??
         CupertinoColors.white.withValues(alpha: 0.24);
     final effectiveGlowBlurRadius =
@@ -796,17 +798,19 @@ class _GlassButtonState extends State<GlassButton>
         alignment: widget.alignment,
         widthFactor: widget.width == null ? 1.0 : null,
         heightFactor: widget.height == null ? 1.0 : null,
-        child: widget.child ??
+        child:
+            widget.child ??
             IconTheme(
               data: IconThemeData(
-                color: widget.iconColor ??
+                color:
+                    widget.iconColor ??
                     (widget.style == GlassButtonStyle.prominent
                         ? CupertinoColors.white
                         : (CupertinoTheme.of(context)
-                                .textTheme
-                                .textStyle
-                                .color ??
-                            CupertinoColors.label)),
+                                  .textTheme
+                                  .textStyle
+                                  .color ??
+                              CupertinoColors.label)),
                 size: widget.iconSize,
               ),
               child: widget.icon ?? const SizedBox.shrink(),
@@ -823,14 +827,18 @@ class _GlassButtonState extends State<GlassButton>
     // The default lift is halved in dark mode, where the resting surface is
     // darker and the same overlay reads as a flash; an explicit value is
     // honoured unchanged.
-    final double effectiveAmbientBaseLight = widget.ambientBaseLight ??
+    final double effectiveAmbientBaseLight =
+        widget.ambientBaseLight ??
         (GlassTheme.brightnessOf(context) == Brightness.dark
             ? GlassDefaults.ambientBaseLightDark
             : GlassDefaults.ambientBaseLight);
 
     final ambientOverlay = AnimatedBuilder(
-      animation:
-          Listenable.merge([_saturationAnimation, _isHovered, _isFocused]),
+      animation: Listenable.merge([
+        _saturationAnimation,
+        _isHovered,
+        _isFocused,
+      ]),
       builder: (context, _) {
         double opacity = _saturationAnimation.value * effectiveAmbientBaseLight;
         if (_isFocused.value) {
@@ -848,8 +856,10 @@ class _GlassButtonState extends State<GlassButton>
               clipper: ShapeBorderClipper(shape: widget.shape),
               child: ColoredBox(
                 color: effectiveAmbientBaseLightColor.withValues(
-                  alpha: (effectiveAmbientBaseLightColor.a * opacity)
-                      .clamp(0.0, 1.0),
+                  alpha: (effectiveAmbientBaseLightColor.a * opacity).clamp(
+                    0.0,
+                    1.0,
+                  ),
                 ),
               ),
             ),
@@ -862,10 +872,7 @@ class _GlassButtonState extends State<GlassButton>
     // while the surface behind it brightens, as it does natively.
     final contentWithAmbient = Stack(
       alignment: widget.alignment,
-      children: [
-        ambientOverlay,
-        contentWidget,
-      ],
+      children: [ambientOverlay, contentWidget],
     );
 
     // Resolve effective glow radius:
@@ -877,8 +884,9 @@ class _GlassButtonState extends State<GlassButton>
     final effectiveGlowRadius = widget.glowRadius ?? 1.6;
 
     // Resolve effective blur: null falls through to 16.0 for a creamy organic falloff.
-    final nativeGlowBlurRadius =
-        widget.glowRadius == null ? 16.0 : effectiveGlowBlurRadius;
+    final nativeGlowBlurRadius = widget.glowRadius == null
+        ? 16.0
+        : effectiveGlowBlurRadius;
 
     // This part is static relative to the glass saturation pulse.
     // clipper is passed directly to GlassGlow (not to AdaptiveGlass) so the
@@ -926,9 +934,12 @@ class _GlassButtonState extends State<GlassButton>
           baseSettings = baseSettings.copyWith(
             thickness: (baseSettings.effectiveThickness * 2.5).clamp(30, 100),
             glassColor: baseSettings.glassColor.withValues(
-                alpha: (baseSettings.glassColor.a * 2.5).clamp(0.4, 0.9)),
-            lightIntensity:
-                (baseSettings.effectiveLightIntensity * 1.5).clamp(0.3, 1.0),
+              alpha: (baseSettings.glassColor.a * 2.5).clamp(0.4, 0.9),
+            ),
+            lightIntensity: (baseSettings.effectiveLightIntensity * 1.5).clamp(
+              0.3,
+              1.0,
+            ),
           );
         }
 
@@ -957,7 +968,8 @@ class _GlassButtonState extends State<GlassButton>
           // Sized from the scale, so a 56 px button at 1.3 reserves 17 px; texture
           // only, no GPU cost at rest. Grouped buttons don't need this — they
           // share the parent layer.
-          clipExpansion: widget.useOwnLayer &&
+          clipExpansion:
+              widget.useOwnLayer &&
                   (effectiveInteractionScale == null ||
                       effectiveInteractionScale > 1.0)
               ? EdgeInsets.all(_pressHeadroom(effectiveInteractionScale))
@@ -987,7 +999,8 @@ class _GlassButtonState extends State<GlassButton>
     //   correct resolution even inside a RepaintBoundary.
 
     final bool hasStretch = widget.stretch > 0;
-    final bool skipBoundary = effectiveQuality == GlassQuality.minimal ||
+    final bool skipBoundary =
+        effectiveQuality == GlassQuality.minimal ||
         (effectiveQuality == GlassQuality.premium && hasStretch);
 
     final stretchContent = LiquidStretch(
@@ -1006,22 +1019,21 @@ class _GlassButtonState extends State<GlassButton>
       anchorStretch: widget.anchorStretch != true
           ? widget.anchorStretch
           : themeInteraction.anchorStretch ?? widget.anchorStretch,
-      anchorStretchSettings: widget.anchorStretchSettings ??
+      anchorStretchSettings:
+          widget.anchorStretchSettings ??
           themeInteraction.anchorStretchSettings ??
           AnchorStretchSettings.nativeTremor,
       child: glassWidget,
     );
 
-    final stretchWidget =
-        skipBoundary ? stretchContent : RepaintBoundary(child: stretchContent);
+    final stretchWidget = skipBoundary
+        ? stretchContent
+        : RepaintBoundary(child: stretchContent);
 
     // Apply opacity when disabled
     final innerWidget = widget.enabled
         ? stretchWidget
-        : Opacity(
-            opacity: 0.5,
-            child: stretchWidget,
-          );
+        : Opacity(opacity: 0.5, child: stretchWidget);
 
     // ---------------------------------------------------------------------------
     // GlassFocusRegion abstracts the focus ring painting and keyboard intent
@@ -1105,10 +1117,7 @@ class _GlassButtonState extends State<GlassButton>
 /// shape boundary. During stretch interaction ([expansion] → 0), the clip
 /// tightens to the exact shape boundary, hiding rasterization artifacts.
 class _ExpandedShapeClipper extends CustomClipper<Path> {
-  _ExpandedShapeClipper({
-    required this.shape,
-    this.expansion = 0.0,
-  });
+  _ExpandedShapeClipper({required this.shape, this.expansion = 0.0});
 
   final ShapeBorder shape;
   final double expansion;

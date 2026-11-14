@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 import '../../../widgets/surfaces/glass_large_title.dart';
 import '../../../widgets/surfaces/glass_vertical_bar.dart';
@@ -38,9 +38,9 @@ class VerticalBarBackground extends StatelessWidget {
   /// measured in light mode.
   static const CupertinoDynamicColor hairlineColor =
       CupertinoDynamicColor.withBrightness(
-    color: Color(0xFFE6E6E6),
-    darkColor: Color(0xFF262626),
-  );
+        color: Color(0xFFE6E6E6),
+        darkColor: Color(0xFF262626),
+      );
 
   /// Thickness of the hairline: one physical pixel.
   static double hairlineWidth(BuildContext context) =>
@@ -56,22 +56,24 @@ class VerticalBarBackground extends StatelessWidget {
     final stripWidth = bar.width - GlassVerticalBarMetrics.backgroundInset;
     // Physical, as the strip is: its inner edge faces the content on either
     // side, whatever the reading direction.
-    final stripOnRight = (bar.edge == GlassVerticalBarEdge.trailing) ==
+    final stripOnRight =
+        (bar.edge == GlassVerticalBarEdge.trailing) ==
         (Directionality.of(context) == TextDirection.ltr);
 
     final controller = this.controller;
     Widget row(double collapse) => DecoratedBox(
-          decoration: BoxDecoration(
-            color: fill,
-            border: Border(bottom: hairline),
-          ),
-          child: SizedBox(
-            height: bar.rowTop +
-                VerticalBarTitleRow.contentTop -
-                GlassVerticalBarMetrics.edgeMargin -
-                collapse * VerticalBarTitleRow.collapseExtent,
-          ),
-        );
+      decoration: BoxDecoration(
+        color: fill,
+        border: Border(bottom: hairline),
+      ),
+      child: SizedBox(
+        height:
+            bar.rowTop +
+            VerticalBarTitleRow.contentTop -
+            GlassVerticalBarMetrics.edgeMargin -
+            collapse * VerticalBarTitleRow.collapseExtent,
+      ),
+    );
 
     return IgnorePointer(
       child: Stack(

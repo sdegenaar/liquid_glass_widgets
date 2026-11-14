@@ -44,8 +44,10 @@ void main() {
       });
 
       test('t=0.5 interpolates', () {
-        expect(LiquidGlassSettings.lerp(a, b, 0.5).ambientRim,
-            closeTo(2.0, 1e-10));
+        expect(
+          LiquidGlassSettings.lerp(a, b, 0.5).ambientRim,
+          closeTo(2.0, 1e-10),
+        );
       });
     });
 

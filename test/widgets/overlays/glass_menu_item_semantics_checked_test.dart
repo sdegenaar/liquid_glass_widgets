@@ -1,7 +1,7 @@
 import 'dart:ui' show CheckedState;
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/rendering.dart' show SemanticsAction, SemanticsNode;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -51,8 +51,9 @@ void main() {
     SemanticsNode row(WidgetTester tester, String title) =>
         tester.getSemantics(find.bySemanticsLabel(title).first);
 
-    testWidgets('a checked row is a checked radio button, not a button',
-        (tester) async {
+    testWidgets('a checked row is a checked radio button, not a button', (
+      tester,
+    ) async {
       final semantics = tester.ensureSemantics();
       await openPicker(tester);
 
@@ -82,8 +83,7 @@ void main() {
     });
   });
 
-  testWidgets(
-      'GlassPullDownButton preserves semanticsChecked when onSelected '
+  testWidgets('GlassPullDownButton preserves semanticsChecked when onSelected '
       'is set', (tester) async {
     await tester.pumpWidget(
       CupertinoApp(

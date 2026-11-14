@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -10,8 +10,9 @@ void main() {
   setUp(LightweightLiquidGlass.resetForTesting);
 
   group('LightweightLiquidGlass constructors', () {
-    testWidgets('main constructor renders with explicit settings',
-        (tester) async {
+    testWidgets('main constructor renders with explicit settings', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: LightweightLiquidGlass(
@@ -24,8 +25,9 @@ void main() {
       expect(find.byType(LightweightLiquidGlass), findsOneWidget);
     });
 
-    testWidgets('renders cleanly with bodyMode: GlassBodyMode.clear',
-        (tester) async {
+    testWidgets('renders cleanly with bodyMode: GlassBodyMode.clear', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: LightweightLiquidGlass(
@@ -43,8 +45,9 @@ void main() {
       expect(find.text('clear body mode'), findsOneWidget);
     });
 
-    testWidgets('inLayer constructor inherits settings from ancestor',
-        (tester) async {
+    testWidgets('inLayer constructor inherits settings from ancestor', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
@@ -126,32 +129,34 @@ void main() {
     });
 
     testWidgets(
-        'renders with LiquidRoundedRectangle(borderRadius: double.infinity) without collapsing ClipRRect to 0.0',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: LightweightLiquidGlass(
-            shape: const LiquidRoundedRectangle(borderRadius: double.infinity),
-            child: const SizedBox(width: 100, height: 50),
+      'renders with LiquidRoundedRectangle(borderRadius: double.infinity) without collapsing ClipRRect to 0.0',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: LightweightLiquidGlass(
+              shape: const LiquidRoundedRectangle(
+                borderRadius: double.infinity,
+              ),
+              child: const SizedBox(width: 100, height: 50),
+            ),
           ),
-        ),
-      );
-      expect(find.byType(LightweightLiquidGlass), findsOneWidget);
-      final clipRRect = tester.widget<ClipRRect>(find.byType(ClipRRect));
-      final radius = clipRRect.borderRadius as BorderRadius;
-      expect(radius.topLeft.x.isFinite, isTrue);
-      expect(radius.topLeft.x, greaterThan(0.0));
-    });
+        );
+        expect(find.byType(LightweightLiquidGlass), findsOneWidget);
+        final clipRRect = tester.widget<ClipRRect>(find.byType(ClipRRect));
+        final radius = clipRRect.borderRadius as BorderRadius;
+        expect(radius.topLeft.x.isFinite, isTrue);
+        expect(radius.topLeft.x, greaterThan(0.0));
+      },
+    );
   });
 
   group('LightweightLiquidGlass platform brightness paths', () {
-    testWidgets('renders correctly in dark platform brightness',
-        (tester) async {
+    testWidgets('renders correctly in dark platform brightness', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MediaQuery(
-          data: const MediaQueryData(
-            platformBrightness: Brightness.dark,
-          ),
+          data: const MediaQueryData(platformBrightness: Brightness.dark),
           child: createTestApp(
             child: LightweightLiquidGlass(
               shape: const LiquidRoundedSuperellipse(borderRadius: 16),
@@ -163,13 +168,12 @@ void main() {
       expect(find.byType(LightweightLiquidGlass), findsOneWidget);
     });
 
-    testWidgets('renders correctly in light platform brightness',
-        (tester) async {
+    testWidgets('renders correctly in light platform brightness', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MediaQuery(
-          data: const MediaQueryData(
-            platformBrightness: Brightness.light,
-          ),
+          data: const MediaQueryData(platformBrightness: Brightness.light),
           child: createTestApp(
             child: LightweightLiquidGlass(
               shape: const LiquidRoundedSuperellipse(borderRadius: 16),
@@ -277,8 +281,9 @@ void main() {
                   child: const SizedBox(width: 80, height: 40),
                 ),
                 GestureDetector(
-                  onTap: () => setState(() =>
-                      settings = const LiquidGlassSettings(thickness: 30)),
+                  onTap: () => setState(
+                    () => settings = const LiquidGlassSettings(thickness: 30),
+                  ),
                   child: const Text('bump'),
                 ),
               ],
@@ -304,8 +309,11 @@ void main() {
                   child: const SizedBox(width: 80, height: 40),
                 ),
                 GestureDetector(
-                  onTap: () => setState(() => shape =
-                      const LiquidRoundedSuperellipse(borderRadius: 24)),
+                  onTap: () => setState(
+                    () => shape = const LiquidRoundedSuperellipse(
+                      borderRadius: 24,
+                    ),
+                  ),
                   child: const Text('bump'),
                 ),
               ],
@@ -320,27 +328,29 @@ void main() {
     });
 
     testWidgets(
-        'skipBlur update triggers rebuild via ancestor InheritedLiquidGlass',
-        (tester) async {
-      // InheritedLiquidGlass with isBlurProvidedByAncestor=true triggers skipBlur path
-      await tester.pumpWidget(
-        createTestApp(
-          child: AdaptiveLiquidGlassLayer(
-            settings: settingsWithoutLighting,
-            child: LightweightLiquidGlass.inLayer(
-              shape: const LiquidRoundedSuperellipse(borderRadius: 16),
-              child: const SizedBox(width: 100, height: 50),
+      'skipBlur update triggers rebuild via ancestor InheritedLiquidGlass',
+      (tester) async {
+        // InheritedLiquidGlass with isBlurProvidedByAncestor=true triggers skipBlur path
+        await tester.pumpWidget(
+          createTestApp(
+            child: AdaptiveLiquidGlassLayer(
+              settings: settingsWithoutLighting,
+              child: LightweightLiquidGlass.inLayer(
+                shape: const LiquidRoundedSuperellipse(borderRadius: 16),
+                child: const SizedBox(width: 100, height: 50),
+              ),
             ),
           ),
-        ),
-      );
-      expect(find.byType(LightweightLiquidGlass), findsOneWidget);
-    });
+        );
+        expect(find.byType(LightweightLiquidGlass), findsOneWidget);
+      },
+    );
   });
 
   group('LightweightLiquidGlass fallback path (shader null)', () {
-    testWidgets('renders fallback container when shader cache is cleared',
-        (tester) async {
+    testWidgets('renders fallback container when shader cache is cleared', (
+      tester,
+    ) async {
       // After resetForTesting, _sharedShader is null → fallback ClipPath path executes.
       LightweightLiquidGlass.resetForTesting();
 

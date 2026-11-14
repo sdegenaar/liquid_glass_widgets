@@ -5,7 +5,7 @@
 //   - lines 412-418: _handleDragCancel → _cleanupDrag (isDragging guard)
 //   - lines 582-585: GlassGlow Opacity branch (transition > 0.05)
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -31,17 +31,20 @@ Widget _buildSlider({
 
 void main() {
   group('GlassSlider — _handleDragCancel / _cleanupDrag', () {
-    testWidgets('drag cancel after drag-start cleans up correctly',
-        (tester) async {
+    testWidgets('drag cancel after drag-start cleans up correctly', (
+      tester,
+    ) async {
       double sliderValue = 0.5;
 
       await tester.pumpWidget(
-        StatefulBuilder(builder: (ctx, setState) {
-          return _buildSlider(
-            value: sliderValue,
-            onChanged: (v) => setState(() => sliderValue = v),
-          );
-        }),
+        StatefulBuilder(
+          builder: (ctx, setState) {
+            return _buildSlider(
+              value: sliderValue,
+              onChanged: (v) => setState(() => sliderValue = v),
+            );
+          },
+        ),
       );
       await tester.pump();
 
@@ -49,8 +52,9 @@ void main() {
       final rect = tester.getRect(finder);
 
       // Start a drag and move enough to set _isDragging=true.
-      final gesture =
-          await tester.startGesture(Offset(rect.left + 100, rect.center.dy));
+      final gesture = await tester.startGesture(
+        Offset(rect.left + 100, rect.center.dy),
+      );
       await gesture.moveBy(const Offset(30, 0));
       await tester.pump(const Duration(milliseconds: 16));
 
@@ -61,16 +65,12 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('_cleanupDrag guard: cancel without prior drag-start no-ops',
-        (tester) async {
+    testWidgets('_cleanupDrag guard: cancel without prior drag-start no-ops', (
+      tester,
+    ) async {
       // Touch down and immediately cancel (no moveBy) → _isDragging stays false
       // → _cleanupDrag returns early at the guard.
-      await tester.pumpWidget(
-        _buildSlider(
-          value: 0.3,
-          onChanged: (_) {},
-        ),
-      );
+      await tester.pumpWidget(_buildSlider(value: 0.3, onChanged: (_) {}));
       await tester.pump();
 
       final finder = find.byType(GlassSlider);
@@ -89,13 +89,15 @@ void main() {
       double sliderValue = 0.5;
 
       await tester.pumpWidget(
-        StatefulBuilder(builder: (ctx, setState) {
-          return _buildSlider(
-            value: sliderValue,
-            onChanged: (v) => setState(() => sliderValue = v),
-            onChangeEnd: (v) => endValue = v,
-          );
-        }),
+        StatefulBuilder(
+          builder: (ctx, setState) {
+            return _buildSlider(
+              value: sliderValue,
+              onChanged: (v) => setState(() => sliderValue = v),
+              onChangeEnd: (v) => endValue = v,
+            );
+          },
+        ),
       );
       await tester.pump();
 
@@ -116,8 +118,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('onChangeEnd is null-safe (no crash when omitted)',
-        (tester) async {
+    testWidgets('onChangeEnd is null-safe (no crash when omitted)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _buildSlider(
           value: 0.5,
@@ -140,23 +143,26 @@ void main() {
   });
 
   group('GlassSlider — GlassGlow opacity branch (transition > 0.05)', () {
-    testWidgets('dragging renders GlassGlow when transition exceeds threshold',
-        (tester) async {
+    testWidgets('dragging renders GlassGlow when transition exceeds threshold', (
+      tester,
+    ) async {
       double sliderValue = 0.5;
 
       await tester.pumpWidget(
-        StatefulBuilder(builder: (ctx, setState) {
-          return createTestApp(
-            child: SizedBox(
-              width: 300,
-              height: 60,
-              child: GlassSlider(
-                value: sliderValue,
-                onChanged: (v) => setState(() => sliderValue = v),
+        StatefulBuilder(
+          builder: (ctx, setState) {
+            return createTestApp(
+              child: SizedBox(
+                width: 300,
+                height: 60,
+                child: GlassSlider(
+                  value: sliderValue,
+                  onChanged: (v) => setState(() => sliderValue = v),
+                ),
               ),
-            ),
-          );
-        }),
+            );
+          },
+        ),
       );
       await tester.pump();
 
@@ -164,8 +170,9 @@ void main() {
       final rect = tester.getRect(finder);
 
       // Start drag (thumb transition animates from 0 → 1, revealing GlassGlow).
-      final gesture =
-          await tester.startGesture(Offset(rect.left + 80, rect.center.dy));
+      final gesture = await tester.startGesture(
+        Offset(rect.left + 80, rect.center.dy),
+      );
       await tester.pump(const Duration(milliseconds: 50));
       // Mid-animation: transition > 0.05 → GlassGlow + Opacity branch rendered.
       await gesture.moveBy(const Offset(20, 0));

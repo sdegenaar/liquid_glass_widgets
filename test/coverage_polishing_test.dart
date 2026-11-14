@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -142,17 +142,15 @@ void main() {
         CupertinoApp(
           theme: const CupertinoThemeData(brightness: Brightness.light),
           home: Center(
-            child: GlassListTile(
-              title: const Text('Item'),
-              onTap: () {},
-            ),
+            child: GlassListTile(title: const Text('Item'), onTap: () {}),
           ),
         ),
       );
 
       // Press down to show highlight
-      final gesture = await tester
-          .startGesture(tester.getCenter(find.byType(GlassListTile)));
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(GlassListTile)),
+      );
       await tester.pump(const Duration(milliseconds: 50));
 
       // Cancel gesture to trigger onTapCancel
@@ -166,16 +164,14 @@ void main() {
         CupertinoApp(
           theme: const CupertinoThemeData(brightness: Brightness.dark),
           home: Center(
-            child: GlassListTile(
-              title: const Text('Item Dark'),
-              onTap: () {},
-            ),
+            child: GlassListTile(title: const Text('Item Dark'), onTap: () {}),
           ),
         ),
       );
 
-      final gesture = await tester
-          .startGesture(tester.getCenter(find.byType(GlassListTile)));
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(GlassListTile)),
+      );
       await tester.pump(const Duration(milliseconds: 50));
       await gesture.up();
       await tester.pumpAndSettle();
@@ -208,9 +204,7 @@ void main() {
         const CupertinoApp(
           theme: CupertinoThemeData(brightness: Brightness.dark),
           home: Center(
-            child: GlassToolbar(
-              children: [Icon(CupertinoIcons.heart)],
-            ),
+            child: GlassToolbar(children: [Icon(CupertinoIcons.heart)]),
           ),
         ),
       );
@@ -226,9 +220,7 @@ void main() {
           home: GlassPage(
             edgeToEdge: true,
             statusBarStyle: GlassStatusBarStyle.none,
-            child: Scaffold(
-              body: Center(child: Text('Content')),
-            ),
+            child: Scaffold(body: Center(child: Text('Content'))),
           ),
         ),
       );

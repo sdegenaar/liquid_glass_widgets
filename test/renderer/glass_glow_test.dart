@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/src/engine/glass_glow.dart';
 
@@ -54,9 +54,7 @@ void main() {
     testWidgets('disposes cleanly when removed from tree', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: GlassGlowLayer(
-            child: SizedBox(width: 100, height: 100),
-          ),
+          home: GlassGlowLayer(child: SizedBox(width: 100, height: 100)),
         ),
       );
       // Remove from tree
@@ -90,9 +88,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: GlassGlowLayer(
-            child: GlassGlow(
-              child: SizedBox(width: 200, height: 200),
-            ),
+            child: GlassGlow(child: SizedBox(width: 200, height: 200)),
           ),
         ),
       );
@@ -112,9 +108,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: GlassGlowLayer(
-            child: GlassGlow(
-              child: SizedBox(width: 200, height: 200),
-            ),
+            child: GlassGlow(child: SizedBox(width: 200, height: 200)),
           ),
         ),
       );
@@ -144,14 +138,13 @@ void main() {
       expect(glow.glowRadius, 0.5);
     });
 
-    testWidgets('GlassGlow without GlassGlowLayer does not throw',
-        (tester) async {
+    testWidgets('GlassGlow without GlassGlowLayer does not throw', (
+      tester,
+    ) async {
       // _handlePointer should silently return when layerState == null
       await tester.pumpWidget(
         const MaterialApp(
-          home: GlassGlow(
-            child: SizedBox(width: 100, height: 100),
-          ),
+          home: GlassGlow(child: SizedBox(width: 100, height: 100)),
         ),
       );
 
@@ -162,14 +155,13 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('GlassGlowLayerState.updateTouch updates on subsequent call',
-        (tester) async {
+    testWidgets('GlassGlowLayerState.updateTouch updates on subsequent call', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: GlassGlowLayer(
-            child: GlassGlow(
-              child: SizedBox(width: 200, height: 200),
-            ),
+            child: GlassGlow(child: SizedBox(width: 200, height: 200)),
           ),
         ),
       );
@@ -188,8 +180,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('removeTouch is idempotent – calling twice does not crash',
-        (tester) async {
+    testWidgets('removeTouch is idempotent – calling twice does not crash', (
+      tester,
+    ) async {
       GlassGlowLayerState? state;
       await tester.pumpWidget(
         MaterialApp(
@@ -232,51 +225,68 @@ void main() {
           home: SizedBox(
             width: 200,
             height: 80,
-            child:
-                GlassGlowLayer(key: layerKey, child: const SizedBox.expand()),
+            child: GlassGlowLayer(
+              key: layerKey,
+              child: const SizedBox.expand(),
+            ),
           ),
         ),
       );
 
       expect(layerKey.currentState!.dragging, isFalse);
 
-      layerKey.currentState!.updateTouch(const Offset(50, 40),
-          radius: 1.0, color: Colors.white24);
+      layerKey.currentState!.updateTouch(
+        const Offset(50, 40),
+        radius: 1.0,
+        color: Colors.white24,
+      );
       await tester.pump();
 
       expect(layerKey.currentState!.dragging, isTrue);
     });
 
     testWidgets(
-        'subsequent updateTouch calls while dragging keep dragging=true',
-        (tester) async {
-      final layerKey = GlobalKey<GlassGlowLayerState>();
+      'subsequent updateTouch calls while dragging keep dragging=true',
+      (tester) async {
+        final layerKey = GlobalKey<GlassGlowLayerState>();
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: SizedBox(
-            width: 200,
-            height: 80,
-            child:
-                GlassGlowLayer(key: layerKey, child: const SizedBox.expand()),
+        await tester.pumpWidget(
+          MaterialApp(
+            home: SizedBox(
+              width: 200,
+              height: 80,
+              child: GlassGlowLayer(
+                key: layerKey,
+                child: const SizedBox.expand(),
+              ),
+            ),
           ),
-        ),
-      );
+        );
 
-      final state = layerKey.currentState!;
-      state.updateTouch(const Offset(10, 40),
-          radius: 1.0, color: Colors.white24);
-      await tester.pump();
-      expect(state.dragging, isTrue);
+        final state = layerKey.currentState!;
+        state.updateTouch(
+          const Offset(10, 40),
+          radius: 1.0,
+          color: Colors.white24,
+        );
+        await tester.pump();
+        expect(state.dragging, isTrue);
 
-      // Subsequent moves should not toggle _dragging
-      state.updateTouch(const Offset(50, 40),
-          radius: 1.0, color: Colors.white24);
-      state.updateTouch(const Offset(90, 40),
-          radius: 1.0, color: Colors.white24);
-      await tester.pump();
-      expect(state.dragging, isTrue);
-    });
+        // Subsequent moves should not toggle _dragging
+        state.updateTouch(
+          const Offset(50, 40),
+          radius: 1.0,
+          color: Colors.white24,
+        );
+        state.updateTouch(
+          const Offset(90, 40),
+          radius: 1.0,
+          color: Colors.white24,
+        );
+        await tester.pump();
+        expect(state.dragging, isTrue);
+      },
+    );
 
     testWidgets('removeTouch sets dragging=false', (tester) async {
       final layerKey = GlobalKey<GlassGlowLayerState>();
@@ -286,15 +296,20 @@ void main() {
           home: SizedBox(
             width: 200,
             height: 80,
-            child:
-                GlassGlowLayer(key: layerKey, child: const SizedBox.expand()),
+            child: GlassGlowLayer(
+              key: layerKey,
+              child: const SizedBox.expand(),
+            ),
           ),
         ),
       );
 
       final state = layerKey.currentState!;
-      state.updateTouch(const Offset(50, 40),
-          radius: 1.0, color: Colors.white24);
+      state.updateTouch(
+        const Offset(50, 40),
+        radius: 1.0,
+        color: Colors.white24,
+      );
       await tester.pump();
       expect(state.dragging, isTrue);
 
@@ -303,8 +318,9 @@ void main() {
       expect(state.dragging, isFalse);
     });
 
-    testWidgets('removeTouch while not dragging is a no-op (no crash)',
-        (tester) async {
+    testWidgets('removeTouch while not dragging is a no-op (no crash)', (
+      tester,
+    ) async {
       final layerKey = GlobalKey<GlassGlowLayerState>();
 
       await tester.pumpWidget(
@@ -312,8 +328,10 @@ void main() {
           home: SizedBox(
             width: 200,
             height: 80,
-            child:
-                GlassGlowLayer(key: layerKey, child: const SizedBox.expand()),
+            child: GlassGlowLayer(
+              key: layerKey,
+              child: const SizedBox.expand(),
+            ),
           ),
         ),
       );
@@ -322,8 +340,9 @@ void main() {
       expect(layerKey.currentState!.dragging, isFalse);
     });
 
-    testWidgets('drag → release → drag cycle works without crash',
-        (tester) async {
+    testWidgets('drag → release → drag cycle works without crash', (
+      tester,
+    ) async {
       final layerKey = GlobalKey<GlassGlowLayerState>();
 
       await tester.pumpWidget(
@@ -331,8 +350,10 @@ void main() {
           home: SizedBox(
             width: 200,
             height: 80,
-            child:
-                GlassGlowLayer(key: layerKey, child: const SizedBox.expand()),
+            child: GlassGlowLayer(
+              key: layerKey,
+              child: const SizedBox.expand(),
+            ),
           ),
         ),
       );
@@ -340,8 +361,11 @@ void main() {
       final state = layerKey.currentState!;
 
       // Cycle 1 — enter interactive spring
-      state.updateTouch(const Offset(10, 40),
-          radius: 1.0, color: Colors.white24);
+      state.updateTouch(
+        const Offset(10, 40),
+        radius: 1.0,
+        color: Colors.white24,
+      );
       await tester.pump();
       expect(state.dragging, isTrue);
 
@@ -350,8 +374,11 @@ void main() {
       expect(state.dragging, isFalse);
 
       // Cycle 2 — re-enter interactive spring after smooth restore
-      state.updateTouch(const Offset(90, 40),
-          radius: 1.0, color: Colors.white24);
+      state.updateTouch(
+        const Offset(90, 40),
+        radius: 1.0,
+        color: Colors.white24,
+      );
       await tester.pump();
       expect(state.dragging, isTrue);
 
@@ -361,53 +388,60 @@ void main() {
     });
 
     testWidgets(
-        'pointer gesture triggers interactive spring and releases it on up',
-        (tester) async {
-      // GlassGlow.build() creates its OWN inner GlassGlowLayer for event
-      // routing, so the keyed outer layer is not the one receiving the touch.
-      // We test end-to-end via the inner layer — same pattern as the passing
-      // "responds to pointer down and move events" test above.
-      GlassGlowLayerState? innerState;
+      'pointer gesture triggers interactive spring and releases it on up',
+      (tester) async {
+        // GlassGlow.build() creates its OWN inner GlassGlowLayer for event
+        // routing, so the keyed outer layer is not the one receiving the touch.
+        // We test end-to-end via the inner layer — same pattern as the passing
+        // "responds to pointer down and move events" test above.
+        GlassGlowLayerState? innerState;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: SizedBox(
-            width: 200,
-            height: 200,
-            child: GlassGlow(
-              glowColor: Colors.white24,
-              child: Builder(
-                builder: (context) {
-                  innerState = GlassGlowLayer.maybeOf(context);
-                  return const SizedBox.expand();
-                },
+        await tester.pumpWidget(
+          MaterialApp(
+            home: SizedBox(
+              width: 200,
+              height: 200,
+              child: GlassGlow(
+                glowColor: Colors.white24,
+                child: Builder(
+                  builder: (context) {
+                    innerState = GlassGlowLayer.maybeOf(context);
+                    return const SizedBox.expand();
+                  },
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(innerState, isNotNull);
-      expect(innerState!.dragging, isFalse);
+        expect(innerState, isNotNull);
+        expect(innerState!.dragging, isFalse);
 
-      // Simulate drag — directly call the public API (same as what the
-      // Listener in GlassGlow does internally).
-      innerState!.updateTouch(const Offset(100, 100),
-          radius: 1.0, color: Colors.white24);
-      await tester.pump();
-      expect(innerState!.dragging, isTrue);
+        // Simulate drag — directly call the public API (same as what the
+        // Listener in GlassGlow does internally).
+        innerState!.updateTouch(
+          const Offset(100, 100),
+          radius: 1.0,
+          color: Colors.white24,
+        );
+        await tester.pump();
+        expect(innerState!.dragging, isTrue);
 
-      // Move
-      innerState!.updateTouch(const Offset(120, 100),
-          radius: 1.0, color: Colors.white24);
-      await tester.pump();
-      expect(innerState!.dragging, isTrue);
+        // Move
+        innerState!.updateTouch(
+          const Offset(120, 100),
+          radius: 1.0,
+          color: Colors.white24,
+        );
+        await tester.pump();
+        expect(innerState!.dragging, isTrue);
 
-      // Release
-      innerState!.removeTouch();
-      await tester.pump();
-      expect(innerState!.dragging, isFalse);
-    });
+        // Release
+        innerState!.removeTouch();
+        await tester.pump();
+        expect(innerState!.dragging, isFalse);
+      },
+    );
   });
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -415,8 +449,9 @@ void main() {
   // ──────────────────────────────────────────────────────────────────────────
 
   group('GlassGlowLayer bounds', () {
-    testWidgets('clamps the touch to the layer when the pointer leaves it',
-        (tester) async {
+    testWidgets('clamps the touch to the layer when the pointer leaves it', (
+      tester,
+    ) async {
       // A captured pointer keeps reporting moves after it leaves the widget,
       // and the layer clips the glow to its own shape — so an unclamped centre
       // slides the highlight out of the clip and the light fades to nothing

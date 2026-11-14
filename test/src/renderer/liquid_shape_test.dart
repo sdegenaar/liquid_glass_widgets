@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -13,10 +13,14 @@ void main() {
 
       // Test equality and hashCode
       expect(shape, equals(const LiquidRoundedSuperellipse(borderRadius: 20)));
-      expect(shape.hashCode,
-          equals(const LiquidRoundedSuperellipse(borderRadius: 20).hashCode));
-      expect(shape,
-          isNot(equals(const LiquidRoundedSuperellipse(borderRadius: 25))));
+      expect(
+        shape.hashCode,
+        equals(const LiquidRoundedSuperellipse(borderRadius: 20).hashCode),
+      );
+      expect(
+        shape,
+        isNot(equals(const LiquidRoundedSuperellipse(borderRadius: 25))),
+      );
 
       // Test copyWith
       final copied = shape.copyWith(borderRadius: 30);
@@ -60,10 +64,14 @@ void main() {
 
       // Test equality and hashCode
       expect(shape, equals(const LiquidRoundedRectangle(borderRadius: 15)));
-      expect(shape.hashCode,
-          equals(const LiquidRoundedRectangle(borderRadius: 15).hashCode));
       expect(
-          shape, isNot(equals(const LiquidRoundedRectangle(borderRadius: 20))));
+        shape.hashCode,
+        equals(const LiquidRoundedRectangle(borderRadius: 15).hashCode),
+      );
+      expect(
+        shape,
+        isNot(equals(const LiquidRoundedRectangle(borderRadius: 20))),
+      );
 
       // Test copyWith
       final copied = shape.copyWith(borderRadius: 25);
@@ -81,23 +89,38 @@ void main() {
     });
 
     test('LiquidVerticalRoundedRectangle works correctly', () {
-      const shape =
-          LiquidVerticalRoundedRectangle(topRadius: 10, bottomRadius: 20);
+      const shape = LiquidVerticalRoundedRectangle(
+        topRadius: 10,
+        bottomRadius: 20,
+      );
 
       // Test equality and hashCode
       expect(
-          shape,
-          equals(const LiquidVerticalRoundedRectangle(
-              topRadius: 10, bottomRadius: 20)));
+        shape,
+        equals(
+          const LiquidVerticalRoundedRectangle(topRadius: 10, bottomRadius: 20),
+        ),
+      );
       expect(
-          shape.hashCode,
-          equals(const LiquidVerticalRoundedRectangle(
-                  topRadius: 10, bottomRadius: 20)
-              .hashCode));
+        shape.hashCode,
+        equals(
+          const LiquidVerticalRoundedRectangle(
+            topRadius: 10,
+            bottomRadius: 20,
+          ).hashCode,
+        ),
+      );
       expect(
-          shape,
-          isNot(equals(const LiquidVerticalRoundedRectangle(
-              topRadius: 15, bottomRadius: 20))));
+        shape,
+        isNot(
+          equals(
+            const LiquidVerticalRoundedRectangle(
+              topRadius: 15,
+              bottomRadius: 20,
+            ),
+          ),
+        ),
+      );
 
       // Test copyWith
       final copied = shape.copyWith(topRadius: 15);
@@ -117,23 +140,41 @@ void main() {
     });
 
     test('LiquidVerticalRoundedSuperellipse works correctly', () {
-      const shape =
-          LiquidVerticalRoundedSuperellipse(topRadius: 5, bottomRadius: 15);
+      const shape = LiquidVerticalRoundedSuperellipse(
+        topRadius: 5,
+        bottomRadius: 15,
+      );
 
       // Test equality and hashCode
       expect(
-          shape,
-          equals(const LiquidVerticalRoundedSuperellipse(
-              topRadius: 5, bottomRadius: 15)));
+        shape,
+        equals(
+          const LiquidVerticalRoundedSuperellipse(
+            topRadius: 5,
+            bottomRadius: 15,
+          ),
+        ),
+      );
       expect(
-          shape.hashCode,
-          equals(const LiquidVerticalRoundedSuperellipse(
-                  topRadius: 5, bottomRadius: 15)
-              .hashCode));
+        shape.hashCode,
+        equals(
+          const LiquidVerticalRoundedSuperellipse(
+            topRadius: 5,
+            bottomRadius: 15,
+          ).hashCode,
+        ),
+      );
       expect(
-          shape,
-          isNot(equals(const LiquidVerticalRoundedSuperellipse(
-              topRadius: 10, bottomRadius: 15))));
+        shape,
+        isNot(
+          equals(
+            const LiquidVerticalRoundedSuperellipse(
+              topRadius: 10,
+              bottomRadius: 15,
+            ),
+          ),
+        ),
+      );
 
       // Test copyWith
       final copied = shape.copyWith(bottomRadius: 25);

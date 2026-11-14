@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -72,8 +72,9 @@ Future<void> _slowDrag(WidgetTester tester, double dy) async {
 
 void main() {
   group('GlassTabBar.minimizable — scroll to minimize', () {
-    testWidgets('a slow scroll down minimizes, and back up expands',
-        (tester) async {
+    testWidgets('a slow scroll down minimizes, and back up expands', (
+      tester,
+    ) async {
       final scroll = ScrollController();
       addTearDown(scroll.dispose);
       final minimize = GlassTabBarMinimizeController(
@@ -94,8 +95,9 @@ void main() {
       expect(_barHeight(tester), _expandedHeight);
     });
 
-    testWidgets('a fling minimizes and stays minimized once it settles',
-        (tester) async {
+    testWidgets('a fling minimizes and stays minimized once it settles', (
+      tester,
+    ) async {
       final scroll = ScrollController();
       addTearDown(scroll.dispose);
       final minimize = GlassTabBarMinimizeController(
@@ -134,8 +136,9 @@ void main() {
       expect(minimize.minimized, isFalse);
     });
 
-    testWidgets('content shorter than the viewport never minimizes',
-        (tester) async {
+    testWidgets('content shorter than the viewport never minimizes', (
+      tester,
+    ) async {
       final scroll = ScrollController();
       addTearDown(scroll.dispose);
       final minimize = GlassTabBarMinimizeController(
@@ -189,8 +192,9 @@ void main() {
   });
 
   group('GlassTabBar.minimizable — scaffold synchronisation', () {
-    testWidgets('the body inset tracks the bar with extendBody: false',
-        (tester) async {
+    testWidgets('the body inset tracks the bar with extendBody: false', (
+      tester,
+    ) async {
       final scroll = ScrollController();
       addTearDown(scroll.dispose);
       final minimize = GlassTabBarMinimizeController(
@@ -212,46 +216,52 @@ void main() {
       expect(
         minimizedBody.height - expandedBody.height,
         _expandedHeight - _minimizedHeight,
-        reason: 'GlassScaffold must re-read preferredSize when the bar '
+        reason:
+            'GlassScaffold must re-read preferredSize when the bar '
             'minimizes from its own state',
       );
     });
 
-    testWidgets('the bar re-renders even though the widget instance is reused',
-        (tester) async {
-      final scroll = ScrollController();
-      addTearDown(scroll.dispose);
-      final minimize = GlassTabBarMinimizeController(
-        behavior: GlassBarMinimizeBehavior.onScrollDown,
-      );
-      addTearDown(minimize.dispose);
+    testWidgets(
+      'the bar re-renders even though the widget instance is reused',
+      (tester) async {
+        final scroll = ScrollController();
+        addTearDown(scroll.dispose);
+        final minimize = GlassTabBarMinimizeController(
+          behavior: GlassBarMinimizeBehavior.onScrollDown,
+        );
+        addTearDown(minimize.dispose);
 
-      await tester.pumpWidget(_app(minimize: minimize, scroll: scroll));
-      await tester.pumpAndSettle();
-      final expandedBar = tester.getSize(find.byType(GlassTabBar));
+        await tester.pumpWidget(_app(minimize: minimize, scroll: scroll));
+        await tester.pumpAndSettle();
+        final expandedBar = tester.getSize(find.byType(GlassTabBar));
 
-      // No pumpWidget — nothing above the bar rebuilds, so only the bar's own
-      // subscription can drive this.
-      minimize.minimize();
-      await tester.pumpAndSettle();
+        // No pumpWidget — nothing above the bar rebuilds, so only the bar's own
+        // subscription can drive this.
+        minimize.minimize();
+        await tester.pumpAndSettle();
 
-      expect(tester.getSize(find.byType(GlassTabBar)).height,
-          lessThan(expandedBar.height));
-    });
+        expect(
+          tester.getSize(find.byType(GlassTabBar)).height,
+          lessThan(expandedBar.height),
+        );
+      },
+    );
   });
 
   group('GlassTabBar.minimizable — bottom accessory placement', () {
     late GlassTabBarAccessoryPlacement observed;
 
     Widget probe() => Builder(
-          builder: (context) {
-            observed = GlassTabBarAccessoryPlacementScope.of(context);
-            return const SizedBox(height: 48, child: Text('mini player'));
-          },
-        );
+      builder: (context) {
+        observed = GlassTabBarAccessoryPlacementScope.of(context);
+        return const SizedBox(height: 48, child: Text('mini player'));
+      },
+    );
 
-    testWidgets('moves inline when the bar minimizes and no placement is set',
-        (tester) async {
+    testWidgets('moves inline when the bar minimizes and no placement is set', (
+      tester,
+    ) async {
       final scroll = ScrollController();
       addTearDown(scroll.dispose);
       final minimize = GlassTabBarMinimizeController(
@@ -259,11 +269,9 @@ void main() {
       );
       addTearDown(minimize.dispose);
 
-      await tester.pumpWidget(_app(
-        minimize: minimize,
-        scroll: scroll,
-        bottomAccessory: probe(),
-      ));
+      await tester.pumpWidget(
+        _app(minimize: minimize, scroll: scroll, bottomAccessory: probe()),
+      );
       await tester.pumpAndSettle();
       expect(observed, GlassTabBarAccessoryPlacement.expanded);
 
@@ -280,12 +288,14 @@ void main() {
       );
       addTearDown(minimize.dispose);
 
-      await tester.pumpWidget(_app(
-        minimize: minimize,
-        scroll: scroll,
-        bottomAccessory: probe(),
-        accessoryPlacement: GlassTabBarAccessoryPlacement.expanded,
-      ));
+      await tester.pumpWidget(
+        _app(
+          minimize: minimize,
+          scroll: scroll,
+          bottomAccessory: probe(),
+          accessoryPlacement: GlassTabBarAccessoryPlacement.expanded,
+        ),
+      );
       await tester.pumpAndSettle();
 
       minimize.minimize();
@@ -293,8 +303,7 @@ void main() {
       expect(observed, GlassTabBarAccessoryPlacement.expanded);
     });
 
-    testWidgets(
-        'the reserved height drops to match, so the scaffold stays in '
+    testWidgets('the reserved height drops to match, so the scaffold stays in '
         'sync', (tester) async {
       final scroll = ScrollController();
       addTearDown(scroll.dispose);
@@ -303,14 +312,15 @@ void main() {
       );
       addTearDown(minimize.dispose);
 
-      await tester.pumpWidget(_app(
-        minimize: minimize,
-        scroll: scroll,
-        bottomAccessory: probe(),
-      ));
+      await tester.pumpWidget(
+        _app(minimize: minimize, scroll: scroll, bottomAccessory: probe()),
+      );
       await tester.pumpAndSettle();
-      expect(_barHeight(tester), greaterThan(_expandedHeight),
-          reason: 'expanded, the accessory adds its own row above the pill');
+      expect(
+        _barHeight(tester),
+        greaterThan(_expandedHeight),
+        reason: 'expanded, the accessory adds its own row above the pill',
+      );
 
       minimize.minimize();
       await tester.pumpAndSettle();
@@ -324,47 +334,54 @@ void main() {
       expect(tester.getSize(find.byType(GlassTabBar)).height, _minimizedHeight);
     });
 
-    testWidgets('searchable does not pull its accessory inline on search',
-        (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        home: GlassScaffold(
-          body: const SizedBox.expand(),
-          bottomBar: GlassTabBar.searchable(
-            tabs: _testTabs,
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            isSearchActive: true,
-            searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
-            bottomAccessory: probe(),
-            bottomAccessoryHeight: 48,
-            maskingQuality: MaskingQuality.off,
+    testWidgets('searchable does not pull its accessory inline on search', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GlassScaffold(
+            body: const SizedBox.expand(),
+            bottomBar: GlassTabBar.searchable(
+              tabs: _testTabs,
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              isSearchActive: true,
+              searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
+              bottomAccessory: probe(),
+              bottomAccessoryHeight: 48,
+              maskingQuality: MaskingQuality.off,
+            ),
           ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
 
-      expect(observed, GlassTabBarAccessoryPlacement.expanded,
-          reason: 'a search field expanding is not the bar minimizing');
+      expect(
+        observed,
+        GlassTabBarAccessoryPlacement.expanded,
+        reason: 'a search field expanding is not the bar minimizing',
+      );
     });
   });
 
   group('GlassTabBar.minimizable — lifecycle', () {
-    testWidgets('asserts when both a controller and minimized: true are passed',
-        (tester) async {
-      expect(
-        () => GlassTabBar.minimizable(
-          tabs: _testTabs,
-          selectedIndex: 0,
-          onTabSelected: (_) {},
-          minimized: true,
-          minimizeController: GlassTabBarMinimizeController(),
-        ),
-        throwsAssertionError,
-      );
-    });
-
     testWidgets(
-        'swapping the scroll controller re-targets without a spurious '
+      'asserts when both a controller and minimized: true are passed',
+      (tester) async {
+        expect(
+          () => GlassTabBar.minimizable(
+            tabs: _testTabs,
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            minimized: true,
+            minimizeController: GlassTabBarMinimizeController(),
+          ),
+          throwsAssertionError,
+        );
+      },
+    );
+
+    testWidgets('swapping the scroll controller re-targets without a spurious '
         'minimize', (tester) async {
       final first = ScrollController();
       addTearDown(first.dispose);
@@ -387,8 +404,9 @@ void main() {
       expect(minimize.scrollController, same(second));
     });
 
-    testWidgets('one controller on two mounted lists does not throw',
-        (tester) async {
+    testWidgets('one controller on two mounted lists does not throw', (
+      tester,
+    ) async {
       final scroll = ScrollController();
       addTearDown(scroll.dispose);
       final minimize = GlassTabBarMinimizeController(
@@ -398,34 +416,36 @@ void main() {
 
       // The AnimatedSwitcher / Navigator-transition case: two scroll views
       // share one controller, so ScrollController.position throws.
-      await tester.pumpWidget(MaterialApp(
-        home: GlassScaffold(
-          body: Column(
-            children: [
-              Expanded(
-                child: ListView(
-                  controller: scroll,
-                  children: const [SizedBox(height: 2000)],
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GlassScaffold(
+            body: Column(
+              children: [
+                Expanded(
+                  child: ListView(
+                    controller: scroll,
+                    children: const [SizedBox(height: 2000)],
+                  ),
                 ),
-              ),
-              Expanded(
-                child: ListView(
-                  controller: scroll,
-                  children: const [SizedBox(height: 2000)],
+                Expanded(
+                  child: ListView(
+                    controller: scroll,
+                    children: const [SizedBox(height: 2000)],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          bottomBar: GlassTabBar.minimizable(
-            tabs: _testTabs,
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            minimizeController: minimize,
-            scrollController: scroll,
-            maskingQuality: MaskingQuality.off,
+              ],
+            ),
+            bottomBar: GlassTabBar.minimizable(
+              tabs: _testTabs,
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              minimizeController: minimize,
+              scrollController: scroll,
+              maskingQuality: MaskingQuality.off,
+            ),
           ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
 
       await tester.drag(find.byType(ListView).first, const Offset(0, -100));

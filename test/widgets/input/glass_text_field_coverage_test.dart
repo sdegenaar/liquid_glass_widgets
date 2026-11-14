@@ -4,7 +4,7 @@
 //   - focusNode swap when widget.focusNode changes (null → external + rewire)
 //   - disabled → _isPressed cleared
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -51,8 +51,9 @@ void main() {
       node2.dispose();
     });
 
-    testWidgets('disabled=true while pressed clears _isPressed',
-        (tester) async {
+    testWidgets('disabled=true while pressed clears _isPressed', (
+      tester,
+    ) async {
       bool enabled = true;
       late StateSetter outerSetState;
 
@@ -89,11 +90,7 @@ void main() {
     testWidgets('tapping a GlassTextField focuses it', (tester) async {
       // Exercises the _onFocusChange path and basic interaction.
       await tester.pumpWidget(
-        createTestApp(
-          child: const GlassTextField(
-            placeholder: 'Tap me',
-          ),
-        ),
+        createTestApp(child: const GlassTextField(placeholder: 'Tap me')),
       );
       await tester.pump();
 
@@ -108,10 +105,7 @@ void main() {
     testWidgets('height wraps field in SizedBox', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: const GlassTextField(
-            placeholder: 'Fixed height',
-            height: 44,
-          ),
+          child: const GlassTextField(placeholder: 'Fixed height', height: 44),
         ),
       );
       await tester.pump();
@@ -126,8 +120,9 @@ void main() {
       expect(sizedBoxes.any((sb) => sb.height == 44), isTrue);
     });
 
-    testWidgets('minHeight / maxHeight wraps field in ConstrainedBox',
-        (tester) async {
+    testWidgets('minHeight / maxHeight wraps field in ConstrainedBox', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: const GlassTextField(
@@ -146,62 +141,59 @@ void main() {
         ),
       );
       expect(
-        constrainedBoxes.any((cb) =>
-            cb.constraints.minHeight == 40 && cb.constraints.maxHeight == 200),
+        constrainedBoxes.any(
+          (cb) =>
+              cb.constraints.minHeight == 40 && cb.constraints.maxHeight == 200,
+        ),
         isTrue,
       );
     });
 
     testWidgets('height and minHeight are mutually exclusive', (tester) async {
       expect(
-        () => GlassTextField(
-          placeholder: 'Bad',
-          height: 44,
-          minHeight: 30,
-        ),
+        () => GlassTextField(placeholder: 'Bad', height: 44, minHeight: 30),
         throwsAssertionError,
       );
     });
 
     testWidgets('height and maxHeight are mutually exclusive', (tester) async {
       expect(
-        () => GlassTextField(
-          placeholder: 'Bad',
-          height: 44,
-          maxHeight: 200,
-        ),
+        () => GlassTextField(placeholder: 'Bad', height: 44, maxHeight: 200),
         throwsAssertionError,
       );
     });
   });
 
   group('GlassTextField — iconAlignment', () {
-    testWidgets('iconAlignment: CrossAxisAlignment.end positions icons at end',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: const GlassTextField(
-            placeholder: 'Chat',
-            maxLines: 5,
-            iconAlignment: CrossAxisAlignment.end,
-            prefixIcon: Icon(Icons.emoji_emotions, size: 20),
-            suffixIcon: Icon(Icons.send, size: 20),
+    testWidgets(
+      'iconAlignment: CrossAxisAlignment.end positions icons at end',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: const GlassTextField(
+              placeholder: 'Chat',
+              maxLines: 5,
+              iconAlignment: CrossAxisAlignment.end,
+              prefixIcon: Icon(Icons.emoji_emotions, size: 20),
+              suffixIcon: Icon(Icons.send, size: 20),
+            ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      // Find the Row that contains the prefix icon — it should have
-      // crossAxisAlignment == CrossAxisAlignment.end.
-      final rows = tester.widgetList<Row>(find.byType(Row));
-      expect(
-        rows.any((r) => r.crossAxisAlignment == CrossAxisAlignment.end),
-        isTrue,
-      );
-    });
+        // Find the Row that contains the prefix icon — it should have
+        // crossAxisAlignment == CrossAxisAlignment.end.
+        final rows = tester.widgetList<Row>(find.byType(Row));
+        expect(
+          rows.any((r) => r.crossAxisAlignment == CrossAxisAlignment.end),
+          isTrue,
+        );
+      },
+    );
 
-    testWidgets('iconAlignment: CrossAxisAlignment.start pins icons to top',
-        (tester) async {
+    testWidgets('iconAlignment: CrossAxisAlignment.start pins icons to top', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: const GlassTextField(
@@ -244,8 +236,9 @@ void main() {
       expect(reportedLines, greaterThanOrEqualTo(1));
     });
 
-    testWidgets('callback does not fire when line count unchanged',
-        (tester) async {
+    testWidgets('callback does not fire when line count unchanged', (
+      tester,
+    ) async {
       int callCount = 0;
       final controller = TextEditingController();
 
@@ -268,50 +261,52 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(callCount, initialCallCount,
-          reason: 'Should not fire again when line count stays the same');
+      expect(
+        callCount,
+        initialCallCount,
+        reason: 'Should not fire again when line count stays the same',
+      );
     });
 
     testWidgets(
-        'callback fires when text is changed programmatically via controller',
-        (tester) async {
-      int? reportedLines;
-      final controller = TextEditingController();
+      'callback fires when text is changed programmatically via controller',
+      (tester) async {
+        int? reportedLines;
+        final controller = TextEditingController();
 
-      await tester.pumpWidget(
-        createTestApp(
-          child: GlassTextField(
-            controller: controller,
-            minLines: 1,
-            maxLines: 5,
-            placeholder: 'Test',
-            onLineCountChanged: (lines) => reportedLines = lines,
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassTextField(
+              controller: controller,
+              minLines: 1,
+              maxLines: 5,
+              placeholder: 'Test',
+              onLineCountChanged: (lines) => reportedLines = lines,
+            ),
           ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump();
+        );
+        await tester.pump();
+        await tester.pump();
 
-      // Clear report to isolate the programmatic change
-      reportedLines = null;
+        // Clear report to isolate the programmatic change
+        reportedLines = null;
 
-      // Update text programmatically to force multi-line layout
-      controller.text = 'Line 1\nLine 2\nLine 3\nLine 4';
-      await tester.pump();
-      await tester.pump();
+        // Update text programmatically to force multi-line layout
+        controller.text = 'Line 1\nLine 2\nLine 3\nLine 4';
+        await tester.pump();
+        await tester.pump();
 
-      expect(reportedLines, equals(4));
-      controller.dispose();
-    });
+        expect(reportedLines, equals(4));
+        controller.dispose();
+      },
+    );
   });
 
   group('GlassTextField.search named constructor', () {
     testWidgets('search constructor sets search-bar defaults', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: const GlassTextField.search(
-            placeholder: 'Search keywords',
-          ),
+          child: const GlassTextField.search(placeholder: 'Search keywords'),
         ),
       );
       await tester.pump();
@@ -322,8 +317,10 @@ void main() {
       expect(field.placeholder, equals('Search keywords'));
       expect(field.height, equals(44.0));
       expect(field.iconSpacing, equals(8.0));
-      expect(field.padding,
-          equals(const EdgeInsets.symmetric(horizontal: 12, vertical: 8)));
+      expect(
+        field.padding,
+        equals(const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+      );
       expect(field.shape, const LiquidRoundedRectangle(borderRadius: 22));
       expect(field.maxLines, equals(1));
       expect(field.obscureText, isFalse);
@@ -333,8 +330,9 @@ void main() {
   });
 
   group('GlassTextField — didUpdateWidget controller swap', () {
-    testWidgets('swapping external controller rewires listener',
-        (tester) async {
+    testWidgets('swapping external controller rewires listener', (
+      tester,
+    ) async {
       final ctrl1 = TextEditingController();
       final ctrl2 = TextEditingController();
       TextEditingController? externalCtrl = ctrl1;
@@ -378,10 +376,7 @@ void main() {
     testWidgets('minHeight alone wraps in ConstrainedBox', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: const GlassTextField(
-            placeholder: 'Min only',
-            minHeight: 60,
-          ),
+          child: const GlassTextField(placeholder: 'Min only', minHeight: 60),
         ),
       );
       await tester.pump();
@@ -393,9 +388,11 @@ void main() {
         ),
       );
       expect(
-        constrainedBoxes.any((cb) =>
-            cb.constraints.minHeight == 60 &&
-            cb.constraints.maxHeight == double.infinity),
+        constrainedBoxes.any(
+          (cb) =>
+              cb.constraints.minHeight == 60 &&
+              cb.constraints.maxHeight == double.infinity,
+        ),
         isTrue,
       );
     });
@@ -403,10 +400,7 @@ void main() {
     testWidgets('maxHeight alone wraps in ConstrainedBox', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: const GlassTextField(
-            placeholder: 'Max only',
-            maxHeight: 150,
-          ),
+          child: const GlassTextField(placeholder: 'Max only', maxHeight: 150),
         ),
       );
       await tester.pump();
@@ -418,16 +412,19 @@ void main() {
         ),
       );
       expect(
-        constrainedBoxes.any((cb) =>
-            cb.constraints.minHeight == 0 && cb.constraints.maxHeight == 150),
+        constrainedBoxes.any(
+          (cb) =>
+              cb.constraints.minHeight == 0 && cb.constraints.maxHeight == 150,
+        ),
         isTrue,
       );
     });
   });
 
   group('GlassTextField — suffix icon spacing', () {
-    testWidgets('suffix icon uses widget.iconSpacing not hard-coded 12',
-        (tester) async {
+    testWidgets('suffix icon uses widget.iconSpacing not hard-coded 12', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: const GlassTextField(
@@ -442,10 +439,7 @@ void main() {
       // Find all SizedBox widgets inside the Row with the suffix icon.
       // Both prefix and suffix gaps should use widget.iconSpacing (20).
       final sizedBoxes = tester.widgetList<SizedBox>(
-        find.descendant(
-          of: find.byType(Row),
-          matching: find.byType(SizedBox),
-        ),
+        find.descendant(of: find.byType(Row), matching: find.byType(SizedBox)),
       );
       // There should be at least one SizedBox with width 20 (the suffix gap).
       expect(

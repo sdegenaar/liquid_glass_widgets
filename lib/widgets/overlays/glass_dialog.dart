@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 import '../../src/renderer/liquid_glass_renderer.dart';
 
@@ -149,21 +149,24 @@ class GlassDialog extends StatelessWidget {
     this.quality,
     this.maxWidth,
   }) : assert(
-          actions.length > 0 && actions.length <= 3,
-          'GlassDialog must have 1-3 actions',
-        );
+         actions.length > 0 && actions.length <= 3,
+         'GlassDialog must have 1-3 actions',
+       );
 
   static const double _classicWidth = 280;
 
   static const _actionButtonShape = LiquidRoundedSuperellipse(borderRadius: 12);
 
   // Cache default colors to avoid allocations
-  static const _defaultGlowColor =
-      Color(0x4DFFFFFF); // white.withValues(alpha: 0.3)
-  static const _destructiveGlowColor =
-      Color(0x4DFF0000); // red.withValues(alpha: 0.3)
-  static const _primaryGlowColor =
-      Color(0x4D0000FF); // blue.withValues(alpha: 0.3)
+  static const _defaultGlowColor = Color(
+    0x4DFFFFFF,
+  ); // white.withValues(alpha: 0.3)
+  static const _destructiveGlowColor = Color(
+    0x4DFF0000,
+  ); // red.withValues(alpha: 0.3)
+  static const _primaryGlowColor = Color(
+    0x4D0000FF,
+  ); // blue.withValues(alpha: 0.3)
 
   // ===========================================================================
   // Content Properties
@@ -289,7 +292,8 @@ class GlassDialog extends StatelessWidget {
     return showCupertinoDialog<T>(
       context: context,
       barrierDismissible: barrierDismissible,
-      barrierColor: barrierColor ??
+      barrierColor:
+          barrierColor ??
           (isNative
               ? glassAlertBarrierColor(isDark: isDark)
               : kCupertinoModalBarrierColor),
@@ -303,15 +307,9 @@ class GlassDialog extends StatelessWidget {
           quality: quality,
           maxWidth: maxWidth,
         );
-        dialog = CupertinoTheme(
-          data: capturedCupertinoTheme,
-          child: dialog,
-        );
+        dialog = CupertinoTheme(data: capturedCupertinoTheme, child: dialog);
         if (capturedGlassTheme != null) {
-          dialog = GlassTheme(
-            data: capturedGlassTheme,
-            child: dialog,
-          );
+          dialog = GlassTheme(data: capturedGlassTheme, child: dialog);
         }
         return dialog;
       },
@@ -353,7 +351,8 @@ class GlassDialog extends StatelessWidget {
     );
     // The action buttons sit flat on the platter, so they resolve the ambient
     // surface optics minus the surface's exterior shadow.
-    final buttonSettings = settings ??
+    final buttonSettings =
+        settings ??
         GlassThemeHelpers.resolveSettings(context)
             .copyWith(shadow: const [], shadowElevation: 0);
 
@@ -391,8 +390,9 @@ class GlassDialog extends StatelessWidget {
                     message!,
                     style: TextStyle(
                       fontSize: 14,
-                      color:
-                          CupertinoColors.secondaryLabel.resolveFrom(context),
+                      color: CupertinoColors.secondaryLabel.resolveFrom(
+                        context,
+                      ),
                       height: 1.4,
                     ),
                     textAlign: TextAlign.center,
@@ -401,10 +401,7 @@ class GlassDialog extends StatelessWidget {
                 ],
 
                 // Custom content
-                if (content != null) ...[
-                  content!,
-                  const SizedBox(height: 8),
-                ],
+                if (content != null) ...[content!, const SizedBox(height: 8)],
 
                 const SizedBox(height: 12),
 
@@ -445,14 +442,14 @@ class GlassDialog extends StatelessWidget {
   }
 
   TextStyle _labelStyle(GlassDialogAction action) => TextStyle(
-        fontSize: 16,
-        fontWeight: action.isPrimary ? FontWeight.bold : FontWeight.w600,
-      );
+    fontSize: 16,
+    fontWeight: action.isPrimary ? FontWeight.bold : FontWeight.w600,
+  );
 
   Widget _buildActions(BuildContext context) => LayoutBuilder(
-        builder: (context, constraints) =>
-            _buildActionsIn(context, constraints.maxWidth),
-      );
+    builder: (context, constraints) =>
+        _buildActionsIn(context, constraints.maxWidth),
+  );
 
   Widget _buildActionsIn(BuildContext context, double width) {
     // 1-2 actions: Horizontal layout, unless a label does not fit
@@ -463,9 +460,7 @@ class GlassDialog extends StatelessWidget {
           final action = entry.value;
           return Expanded(
             child: Padding(
-              padding: EdgeInsetsDirectional.only(
-                start: index > 0 ? 8 : 0,
-              ),
+              padding: EdgeInsetsDirectional.only(start: index > 0 ? 8 : 0),
               child: _buildActionButton(action, context),
             ),
           );
@@ -480,9 +475,7 @@ class GlassDialog extends StatelessWidget {
         final index = entry.key;
         final action = entry.value;
         return Padding(
-          padding: EdgeInsets.only(
-            top: index > 0 ? 8 : 0,
-          ),
+          padding: EdgeInsets.only(top: index > 0 ? 8 : 0),
           child: _buildActionButton(action, context),
         );
       }).toList(),

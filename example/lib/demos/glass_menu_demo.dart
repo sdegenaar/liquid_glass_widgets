@@ -8,7 +8,7 @@
 ///   flutter run -t example/lib/demos/glass_menu_demo.dart
 library;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -41,10 +41,7 @@ final _kMenuGlass = LiquidGlassSettings(
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
-  runApp(LiquidGlassWidgets.wrap(
-    adaptiveQuality: true,
-    child: const _App(),
-  ));
+  runApp(LiquidGlassWidgets.wrap(adaptiveQuality: true, child: const _App()));
 }
 
 class _App extends StatefulWidget {
@@ -76,11 +73,7 @@ class _AppState extends State<_App> {
 // ── Demo screen ─────────────────────────────────────────────────────────────
 
 class MenuDemoPage extends StatefulWidget {
-  const MenuDemoPage({
-    super.key,
-    this.isDark,
-    this.onThemeToggle,
-  });
+  const MenuDemoPage({super.key, this.isDark, this.onThemeToggle});
 
   /// External theme state. If null, the widget manages its own toggle.
   final bool? isDark;
@@ -113,75 +106,75 @@ class _MenuDemoPageState extends State<MenuDemoPage> {
   }
 
   List<Widget> get _items => [
-        // Section label — tests theme color inheritance
-        const GlassMenuLabel(title: 'Actions'),
+    // Section label — tests theme color inheritance
+    const GlassMenuLabel(title: 'Actions'),
+    GlassMenuItem(
+      title: 'Navigate to Page',
+      icon: const Icon(CupertinoIcons.arrow_right_circle_fill),
+      onTap: () {
+        Navigator.of(context).push(
+          CupertinoPageRoute<void>(
+            builder: (_) => const _SampleDestinationPage(),
+          ),
+        );
+      },
+    ),
+    GlassMenuItem(
+      title: 'Share…',
+      icon: const Icon(CupertinoIcons.share),
+      onTap: () {},
+      submenu: [
         GlassMenuItem(
-          title: 'Navigate to Page',
-          icon: const Icon(CupertinoIcons.arrow_right_circle_fill),
-          onTap: () {
-            Navigator.of(context).push(
-              CupertinoPageRoute<void>(
-                builder: (_) => const _SampleDestinationPage(),
-              ),
-            );
-          },
+          title: 'AirDrop',
+          icon: const Icon(CupertinoIcons.wifi),
+          onTap: () => debugPrint('AirDrop tapped'),
         ),
         GlassMenuItem(
-          title: 'Share…',
-          icon: const Icon(CupertinoIcons.share),
+          title: 'Messages',
+          icon: const Icon(CupertinoIcons.chat_bubble_fill),
+          onTap: () => debugPrint('Messages tapped'),
+        ),
+        GlassMenuItem(
+          title: 'Mail',
+          icon: const Icon(CupertinoIcons.mail_solid),
+          onTap: () => debugPrint('Mail tapped'),
+        ),
+        GlassMenuItem(
+          title: 'More…',
+          icon: const Icon(CupertinoIcons.ellipsis_circle),
           onTap: () {},
           submenu: [
             GlassMenuItem(
-              title: 'AirDrop',
-              icon: const Icon(CupertinoIcons.wifi),
-              onTap: () => debugPrint('AirDrop tapped'),
+              title: 'Copy Link',
+              icon: const Icon(CupertinoIcons.link),
+              onTap: () => debugPrint('Copy Link tapped'),
             ),
             GlassMenuItem(
-              title: 'Messages',
-              icon: const Icon(CupertinoIcons.chat_bubble_fill),
-              onTap: () => debugPrint('Messages tapped'),
-            ),
-            GlassMenuItem(
-              title: 'Mail',
-              icon: const Icon(CupertinoIcons.mail_solid),
-              onTap: () => debugPrint('Mail tapped'),
-            ),
-            GlassMenuItem(
-              title: 'More…',
-              icon: const Icon(CupertinoIcons.ellipsis_circle),
-              onTap: () {},
-              submenu: [
-                GlassMenuItem(
-                  title: 'Copy Link',
-                  icon: const Icon(CupertinoIcons.link),
-                  onTap: () => debugPrint('Copy Link tapped'),
-                ),
-                GlassMenuItem(
-                  title: 'Save to Files',
-                  icon: const Icon(CupertinoIcons.folder_badge_plus),
-                  onTap: () => debugPrint('Save to Files tapped'),
-                ),
-              ],
+              title: 'Save to Files',
+              icon: const Icon(CupertinoIcons.folder_badge_plus),
+              onTap: () => debugPrint('Save to Files tapped'),
             ),
           ],
         ),
-        ...List.generate(
-          _itemCount,
-          (i) => GlassMenuItem(
-            title: 'Option ${i + 1}',
-            icon: Icon(CupertinoIcons.star_fill),
-            onTap: () => debugPrint('tapped ${i + 1}'),
-          ),
-        ),
-        // Divider — tests theme color inheritance
-        const GlassMenuDivider(),
-        GlassMenuItem(
-          title: 'Delete',
-          icon: Icon(CupertinoIcons.trash),
-          isDestructive: true,
-          onTap: () => debugPrint('delete'),
-        ),
-      ];
+      ],
+    ),
+    ...List.generate(
+      _itemCount,
+      (i) => GlassMenuItem(
+        title: 'Option ${i + 1}',
+        icon: Icon(CupertinoIcons.star_fill),
+        onTap: () => debugPrint('tapped ${i + 1}'),
+      ),
+    ),
+    // Divider — tests theme color inheritance
+    const GlassMenuDivider(),
+    GlassMenuItem(
+      title: 'Delete',
+      icon: Icon(CupertinoIcons.trash),
+      isDestructive: true,
+      onTap: () => debugPrint('delete'),
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -194,18 +187,14 @@ class _MenuDemoPageState extends State<MenuDemoPage> {
 
     // Wrap with MediaQuery to override text scale for testing
     return MediaQuery(
-      data: MediaQuery.of(context).copyWith(
-        textScaler: TextScaler.linear(_textScale),
-      ),
+      data: MediaQuery.of(context)
+          .copyWith(textScaler: TextScaler.linear(_textScale)),
       child: CupertinoPageScaffold(
         child: Stack(
           fit: StackFit.expand,
           children: [
             // Wallpaper
-            Image.asset(
-              'assets/wallpaper.jpg',
-              fit: BoxFit.cover,
-            ),
+            Image.asset('assets/wallpaper.jpg', fit: BoxFit.cover),
 
             // Theme-aware scrim
             Container(
@@ -340,7 +329,8 @@ class _MenuDemoPageState extends State<MenuDemoPage> {
                                 vertical: 4,
                               ),
                               onPressed: () => setState(
-                                  () => _glowOnTapOnly = !_glowOnTapOnly),
+                                () => _glowOnTapOnly = !_glowOnTapOnly,
+                              ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -376,8 +366,10 @@ class _MenuDemoPageState extends State<MenuDemoPage> {
                   // ── 3×3 grid of menu triggers ─────────────────────────
                   Expanded(
                     child: Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 8,
+                      ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -460,10 +452,10 @@ class _MenuDemoPageState extends State<MenuDemoPage> {
   }
 
   Widget _row(List<Widget> children) => Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: children,
-      );
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    crossAxisAlignment: CrossAxisAlignment.center,
+    children: children,
+  );
 
   Widget _trigger({
     required String label,
@@ -471,16 +463,15 @@ class _MenuDemoPageState extends State<MenuDemoPage> {
     double width = 96,
     double height = 40,
     LiquidShape? shape,
-  }) =>
-      _Trigger(
-        label: label,
-        alignment: alignment,
-        items: _items,
-        width: width,
-        height: height,
-        shape: shape,
-        glowOnTapOnly: _glowOnTapOnly,
-      );
+  }) => _Trigger(
+    label: label,
+    alignment: alignment,
+    items: _items,
+    width: width,
+    height: height,
+    shape: shape,
+    glowOnTapOnly: _glowOnTapOnly,
+  );
 
   // ── Continuous swipe demo panel ───────────────────────────────────────────
 
@@ -552,10 +543,7 @@ class _MenuDemoPageState extends State<MenuDemoPage> {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Text(
             'Press-and-hold, slide to an item, release — no second tap needed.',
-            style: TextStyle(
-              color: labelColor,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: labelColor, fontSize: 12),
           ),
         ),
 
@@ -659,12 +647,14 @@ class _MenuDemoPageState extends State<MenuDemoPage> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color:
-                            CupertinoColors.activeBlue.withValues(alpha: 0.2),
+                        color: CupertinoColors.activeBlue.withValues(
+                          alpha: 0.2,
+                        ),
                         borderRadius: BorderRadius.circular(22),
                         border: Border.all(
-                          color:
-                              CupertinoColors.activeBlue.withValues(alpha: 0.5),
+                          color: CupertinoColors.activeBlue.withValues(
+                            alpha: 0.5,
+                          ),
                           width: 1,
                         ),
                       ),
@@ -825,10 +815,7 @@ class _SampleDestinationPage extends StatelessWidget {
                 'The menu dismissed instantly on frame 0 of the transition without overlapping this page.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: CupertinoTheme.of(context)
-                      .textTheme
-                      .textStyle
-                      .color
+                  color: CupertinoTheme.of(context).textTheme.textStyle.color
                       ?.withValues(alpha: 0.7),
                   fontSize: 14,
                 ),

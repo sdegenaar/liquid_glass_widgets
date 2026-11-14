@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/src/renderer/liquid_glass_renderer.dart';
 import 'package:liquid_glass_widgets/types/glass_quality.dart';
@@ -6,8 +6,9 @@ import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.
 import 'package:liquid_glass_widgets/widgets/shared/inherited_liquid_glass.dart';
 
 void main() {
-  testWidgets('AdaptiveLiquidGlassLayer provides settings to descendants',
-      (WidgetTester tester) async {
+  testWidgets('AdaptiveLiquidGlassLayer provides settings to descendants', (
+    WidgetTester tester,
+  ) async {
     const double expectedBlur = 25.0;
     const double expectedThickness = 50.0;
 
@@ -37,8 +38,9 @@ void main() {
     expect(receivedSettings!.thickness, equals(expectedThickness));
   });
 
-  testWidgets('AdaptiveLiquidGlassLayer fallback works with ofOrDefault',
-      (WidgetTester tester) async {
+  testWidgets('AdaptiveLiquidGlassLayer fallback works with ofOrDefault', (
+    WidgetTester tester,
+  ) async {
     const double expectedBlur = 15.0;
 
     late LiquidGlassSettings settings;
@@ -62,14 +64,11 @@ void main() {
     expect(settings.blur, equals(expectedBlur));
   });
 
-  testWidgets('AdaptiveLiquidGlassLayer works without shape parameter',
-      (WidgetTester tester) async {
+  testWidgets('AdaptiveLiquidGlassLayer works without shape parameter', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        home: AdaptiveLiquidGlassLayer(
-          child: SizedBox(),
-        ),
-      ),
+      const MaterialApp(home: AdaptiveLiquidGlassLayer(child: SizedBox())),
     );
 
     expect(find.byType(AdaptiveLiquidGlassLayer), findsOneWidget);
@@ -85,50 +84,53 @@ void main() {
   // it. (The wrapper only physically toggles under Impeller; on the headless
   // Skia runner this asserts the stable keying that makes the reparent possible,
   // which is the actual fix.)
-  KeyedSubtree probeWrapper(WidgetTester tester) =>
-      tester.widgetList<KeyedSubtree>(find.byType(KeyedSubtree)).firstWhere(
-            (w) => w.child is _MorphProbe,
-            orElse: () => throw StateError(
-              'child is not wrapped in a KeyedSubtree — the morph-preservation '
-              'fix is missing',
-            ),
-          );
+  KeyedSubtree probeWrapper(WidgetTester tester) => tester
+      .widgetList<KeyedSubtree>(find.byType(KeyedSubtree))
+      .firstWhere(
+        (w) => w.child is _MorphProbe,
+        orElse: () => throw StateError(
+          'child is not wrapped in a KeyedSubtree — the morph-preservation '
+          'fix is missing',
+        ),
+      );
 
   testWidgets(
-      'keeps a stable-keyed child wrapper across a platformViewBackdrop toggle',
-      (WidgetTester tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: AdaptiveLiquidGlassLayer(
-          quality: GlassQuality.premium,
-          child: _MorphProbe(),
+    'keeps a stable-keyed child wrapper across a platformViewBackdrop toggle',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: AdaptiveLiquidGlassLayer(
+            quality: GlassQuality.premium,
+            child: _MorphProbe(),
+          ),
         ),
-      ),
-    );
-    final keyBefore = probeWrapper(tester).key;
-    final elementBefore = tester.element(find.byType(_MorphProbe));
-    expect(keyBefore, isA<GlobalKey>());
+      );
+      final keyBefore = probeWrapper(tester).key;
+      final elementBefore = tester.element(find.byType(_MorphProbe));
+      expect(keyBefore, isA<GlobalKey>());
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: AdaptiveLiquidGlassLayer(
-          quality: GlassQuality.premium,
-          platformViewBackdrop: true,
-          child: _MorphProbe(),
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: AdaptiveLiquidGlassLayer(
+            quality: GlassQuality.premium,
+            platformViewBackdrop: true,
+            child: _MorphProbe(),
+          ),
         ),
-      ),
-    );
-    final keyAfter = probeWrapper(tester).key;
-    final elementAfter = tester.element(find.byType(_MorphProbe));
+      );
+      final keyAfter = probeWrapper(tester).key;
+      final elementAfter = tester.element(find.byType(_MorphProbe));
 
-    // Same GlobalKey instance → the wrapper is stable, so Flutter reparents the
-    // subtree rather than remounting it, and the child element is preserved.
-    expect(keyAfter, same(keyBefore));
-    expect(elementAfter, same(elementBefore));
-  });
+      // Same GlobalKey instance → the wrapper is stable, so Flutter reparents the
+      // subtree rather than remounting it, and the child element is preserved.
+      expect(keyAfter, same(keyBefore));
+      expect(elementAfter, same(elementBefore));
+    },
+  );
 
-  testWidgets('wraps its child in a keyed subtree on the minimal path too',
-      (WidgetTester tester) async {
+  testWidgets('wraps its child in a keyed subtree on the minimal path too', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: AdaptiveLiquidGlassLayer(

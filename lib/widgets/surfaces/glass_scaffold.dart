@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/services.dart';
 
@@ -439,13 +439,11 @@ class GlassScaffold extends StatelessWidget {
     // Only build() re-runs. `body` is the same Widget instance every time, so
     // the element for the app's content is re-parented rather than rebuilt.
     final bar = bottomBar;
-    final barResize =
-        bar is GlassDynamicPreferredSize ? bar.preferredSizeListenable : null;
+    final barResize = bar is GlassDynamicPreferredSize
+        ? bar.preferredSizeListenable
+        : null;
     if (barResize != null) {
-      return ListenableBuilder(
-        listenable: barResize,
-        builder: _buildContent,
-      );
+      return ListenableBuilder(listenable: barResize, builder: _buildContent);
     }
     return _buildContent(context, null);
   }
@@ -468,7 +466,8 @@ class GlassScaffold extends StatelessWidget {
         ? StatusBarRow.of(context)
         : null;
     final bottom = bottomBar;
-    final bottomBarInStrip = verticalBar != null &&
+    final bottomBarInStrip =
+        verticalBar != null &&
         (bottom is GlassToolbar ||
             (bottom is GlassTabBar && bottom.followsVerticalBar));
 
@@ -478,15 +477,15 @@ class GlassScaffold extends StatelessWidget {
     final effectiveAppBarHeight = appBarInStrip
         ? verticalBar.rowTop + GlassVerticalBarMetrics.rowHeight
         : statusRow != null
-            ? math.max(0.0, statusRow.bottom - topPad)
-            : appBar is PreferredSizeWidget
-                ? (appBar! as PreferredSizeWidget).preferredSize.height
-                : appBarHeight;
+        ? math.max(0.0, statusRow.bottom - topPad)
+        : appBar is PreferredSizeWidget
+        ? (appBar! as PreferredSizeWidget).preferredSize.height
+        : appBarHeight;
     final effectiveBottomBarHeight = bottomBarInStrip
         ? 0.0
         : bottomBar is PreferredSizeWidget
-            ? (bottomBar as PreferredSizeWidget).preferredSize.height
-            : (bottomBar != null ? (bottomBarHeight ?? 60.0) : 0.0);
+        ? (bottomBar as PreferredSizeWidget).preferredSize.height
+        : (bottomBar != null ? (bottomBarHeight ?? 60.0) : 0.0);
 
     // Resolve edge fade toggles.
     final doFadeTop = topEdgeFade ?? (edgeFade && appBar != null);
@@ -496,7 +495,8 @@ class GlassScaffold extends StatelessWidget {
     // Calculate fade heights.
     // Only include appBarHeight when an appBar is present — without one, the
     // fade covers just the status bar area + extent.
-    final topFadeHeight = topPad +
+    final topFadeHeight =
+        topPad +
         (appBar != null ? effectiveAppBarHeight : 0.0) +
         topEdgeFadeExtent;
     final bottomFadeHeight =
@@ -534,10 +534,10 @@ class GlassScaffold extends StatelessWidget {
           largeTitle == null
               ? topFadeHeight
               : topFadeHeight -
-                  VerticalBarTitleRow.collapseExtent *
-                      (largeTitle.isSearchPresented
-                          ? 1.0
-                          : largeTitle.collapseProgress),
+                    VerticalBarTitleRow.collapseExtent *
+                        (largeTitle.isSearchPresented
+                            ? 1.0
+                            : largeTitle.collapseProgress),
           child!,
         ),
         child: bodyContent,
@@ -614,7 +614,8 @@ class GlassScaffold extends StatelessWidget {
                       // are multiple positions. Falling back to 0.0 for that
                       // brief ~300 ms window is correct UX — the header just
                       // stays fully visible during the transition.
-                      final offset = headerScrollController!.hasClients &&
+                      final offset =
+                          headerScrollController!.hasClients &&
                               headerScrollController!.positions.length == 1
                           ? headerScrollController!.offset
                           : 0.0;
@@ -723,11 +724,10 @@ class GlassScaffold extends StatelessWidget {
 
     // Resolve effective background: explicit widget > backgroundColor colour >
     // null.
-    final Widget? effectiveBackground = background ??
+    final Widget? effectiveBackground =
+        background ??
         (backgroundColor != null
-            ? SizedBox.expand(
-                child: ColoredBox(color: backgroundColor!),
-              )
+            ? SizedBox.expand(child: ColoredBox(color: backgroundColor!))
             : null);
 
     // Wrap in CupertinoTheme with resolved brightness so CupertinoPageScaffold
@@ -741,12 +741,11 @@ class GlassScaffold extends StatelessWidget {
     final CupertinoThemeData currentCupertinoTheme = CupertinoTheme.of(context);
 
     Widget scaffold = CupertinoTheme(
-      data: currentCupertinoTheme.copyWith(
-        brightness: resolvedBrightness,
-      ),
+      data: currentCupertinoTheme.copyWith(brightness: resolvedBrightness),
       child: CupertinoPageScaffold(
-        backgroundColor:
-            effectiveBackground != null ? const Color(0x00000000) : null,
+        backgroundColor: effectiveBackground != null
+            ? const Color(0x00000000)
+            : null,
         resizeToAvoidBottomInset: resizeToAvoidBottomInset ?? true,
         child: stackWidget,
       ),

@@ -23,7 +23,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 const _controlsCmdFile = '/tmp/lgw_controls_cmd.txt';
@@ -99,8 +99,10 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
     // synthetic touch input. Counterpart of native `-autoTab N`.
     const autoTab = int.fromEnvironment('AUTO_TAB', defaultValue: -1);
     if (autoTab >= 0) {
-      const delayMs =
-          int.fromEnvironment('AUTO_TAB_DELAY_MS', defaultValue: 3000);
+      const delayMs = int.fromEnvironment(
+        'AUTO_TAB_DELAY_MS',
+        defaultValue: 3000,
+      );
       Future<void>.delayed(const Duration(milliseconds: delayMs), () {
         if (mounted) setState(() => _selectedTab = autoTab);
       });
@@ -145,9 +147,9 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
     switch (args[0]) {
       case 'sim':
         if (args.length > 2 &&
-            Directory.systemTemp.path
-                .toUpperCase()
-                .contains(args[1].toUpperCase())) {
+            Directory.systemTemp.path.toUpperCase().contains(
+              args[1].toUpperCase(),
+            )) {
           _runCmd(args.sublist(2));
         }
       case 'style':
@@ -185,8 +187,9 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
         final box = _tabBarKey.currentContext?.findRenderObject() as RenderBox?;
         if (box != null && box.hasSize) {
           final binding = WidgetsBinding.instance;
-          final targetLocalX =
-              args.length > 1 ? double.parse(args[1]) : 45.0 + 58.0;
+          final targetLocalX = args.length > 1
+              ? double.parse(args[1])
+              : 45.0 + 58.0;
           final start = box.localToGlobal(const Offset(45, 31));
           final totalDx = targetLocalX - 45.0;
           const steps = 24;
@@ -243,11 +246,13 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
           final binding = WidgetsBinding.instance;
           _ptrEpoch += 1;
           final p = _ptrEpoch;
-          binding
-              .handlePointerEvent(PointerDownEvent(pointer: p, position: pos));
+          binding.handlePointerEvent(
+            PointerDownEvent(pointer: p, position: pos),
+          );
           Future<void>.delayed(const Duration(milliseconds: 40), () {
-            binding
-                .handlePointerEvent(PointerUpEvent(pointer: p, position: pos));
+            binding.handlePointerEvent(
+              PointerUpEvent(pointer: p, position: pos),
+            );
           });
         }
       case 'context_menu':
@@ -548,8 +553,8 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
             children: List.generate(24, (idx) {
               final color = idx.isEven
                   ? (_isDark
-                      ? const Color(0xFF383838)
-                      : const Color(0xFFD1D1D1))
+                        ? const Color(0xFF383838)
+                        : const Color(0xFFD1D1D1))
                   : (_isDark ? CupertinoColors.black : CupertinoColors.white);
               return Container(
                 width: double.infinity,
@@ -588,8 +593,9 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
     const surfaceStyle = GlassSurfaceStyle.solid;
 
     final labelColor = _isDark ? CupertinoColors.white : CupertinoColors.black;
-    final secondaryColor =
-        _isDark ? const Color(0x99EBEBF5) : const Color(0x993C3C43);
+    final secondaryColor = _isDark
+        ? const Color(0x99EBEBF5)
+        : const Color(0x993C3C43);
 
     return CupertinoApp(
       debugShowCheckedModeBanner: false,
@@ -758,10 +764,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                 label: 'Surfaces',
                 icon: Icon(CupertinoIcons.layers_alt_fill),
               ),
-              GlassTab(
-                label: 'Lenses',
-                icon: Icon(CupertinoIcons.sparkles),
-              ),
+              GlassTab(label: 'Lenses', icon: Icon(CupertinoIcons.sparkles)),
               GlassTab(
                 label: 'Settings',
                 icon: Icon(CupertinoIcons.gear_alt_fill),
@@ -1046,17 +1049,18 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                                 borderRadius: 18,
                               ),
                               useOwnLayer: true,
-                              settings: (themeData.settingsFor(context) ??
-                                      const GlassThemeSettings())
-                                  .applyTo(const LiquidGlassSettings())
-                                  .copyWith(
-                                    bodyMode: GlassBodyMode.clear,
-                                    frost: 0,
-                                    saturation: 1.0,
-                                    ambientStrength: 0.0,
-                                    lightIntensity: 0.25,
-                                    glassColor: const Color(0xFF0088FF),
-                                  ),
+                              settings:
+                                  (themeData.settingsFor(context) ??
+                                          const GlassThemeSettings())
+                                      .applyTo(const LiquidGlassSettings())
+                                      .copyWith(
+                                        bodyMode: GlassBodyMode.clear,
+                                        frost: 0,
+                                        saturation: 1.0,
+                                        ambientStrength: 0.0,
+                                        lightIntensity: 0.25,
+                                        glassColor: const Color(0xFF0088FF),
+                                      ),
                               quality: effectiveButtonQuality,
                               onTap: () {},
                               child: DecoratedBox(
@@ -1229,9 +1233,7 @@ class _ControlsParityHarnessAppState extends State<ControlsParityHarnessApp> {
                       key: _contextMenuBtnKey,
                       width: 131,
                       height: 34.5,
-                      shape: const LiquidRoundedSuperellipse(
-                        borderRadius: 18,
-                      ),
+                      shape: const LiquidRoundedSuperellipse(borderRadius: 18),
                       useOwnLayer: true,
                       quality: buttonQuality,
                       onTap: () => _presentContextMenu(innerCtx),

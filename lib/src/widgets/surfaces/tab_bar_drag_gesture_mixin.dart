@@ -183,8 +183,10 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
 
     final absOver = overdrag.abs();
     final resisted = absOver / (1.0 + absOver * _overdragResistance);
-    return (overdrag.sign * resisted * _overdragScale)
-        .clamp(-maxBarSwayPx, maxBarSwayPx);
+    return (overdrag.sign * resisted * _overdragScale).clamp(
+      -maxBarSwayPx,
+      maxBarSwayPx,
+    );
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -198,8 +200,9 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
 
   @override
   void dispose() {
-    WidgetsBinding.instance.pointerRouter
-        .removeGlobalRoute(_handleGlobalPointer);
+    WidgetsBinding.instance.pointerRouter.removeGlobalRoute(
+      _handleGlobalPointer,
+    );
     super.dispose();
   }
 
@@ -442,8 +445,10 @@ mixin TabDragGestureMixin<T extends StatefulWidget> on State<T> {
   /// past the nearest-position tab.
   void onBarDragEnd(DragEndDetails d) {
     final relX = (tabXAlign + 1) / 2;
-    final positionIndex =
-        (relX * (tabCount - 1)).round().clamp(0, tabCount - 1);
+    final positionIndex = (relX * (tabCount - 1)).round().clamp(
+      0,
+      tabCount - 1,
+    );
 
     final renderObject = tabTrackContext.findRenderObject();
     if (renderObject is! RenderBox) return;

@@ -42,12 +42,12 @@ class GlassTabBarScrollSample {
 
   /// Reads the sample from a live scroll position.
   GlassTabBarScrollSample.fromPosition(ScrollPosition position)
-      : pixels = position.pixels,
-        minScrollExtent = position.minScrollExtent,
-        maxScrollExtent = position.maxScrollExtent,
-        viewportDimension = position.viewportDimension,
-        direction = position.userScrollDirection,
-        outOfRange = position.outOfRange;
+    : pixels = position.pixels,
+      minScrollExtent = position.minScrollExtent,
+      maxScrollExtent = position.maxScrollExtent,
+      viewportDimension = position.viewportDimension,
+      direction = position.userScrollDirection,
+      outOfRange = position.outOfRange;
 
   /// Current scroll offset.
   final double pixels;
@@ -124,8 +124,8 @@ class GlassTabBarMinimizeController extends ChangeNotifier {
   /// resolves to [GlassBarMinimizeBehavior.never] — opt in explicitly with
   /// [GlassBarMinimizeBehavior.onScrollDown].
   GlassTabBarMinimizeController({
-    GlassBarMinimizeBehavior behavior = GlassBarMinimizeBehavior.automatic,
-  }) : _behavior = behavior;
+    this._behavior = GlassBarMinimizeBehavior.automatic,
+  });
 
   // ── Thresholds ────────────────────────────────────────────────────────────
   //
@@ -214,8 +214,8 @@ class GlassTabBarMinimizeController extends ChangeNotifier {
   /// [behavior] with [GlassBarMinimizeBehavior.automatic] resolved.
   GlassBarMinimizeBehavior get resolvedBehavior =>
       _behavior == GlassBarMinimizeBehavior.automatic
-          ? GlassBarMinimizeBehavior.never
-          : _behavior;
+      ? GlassBarMinimizeBehavior.never
+      : _behavior;
 
   bool get _minimizes =>
       resolvedBehavior == GlassBarMinimizeBehavior.onScrollDown ||
@@ -344,14 +344,16 @@ class GlassTabBarMinimizeController extends ChangeNotifier {
     // notifications would re-run the rules against an offset already sampled.
     if (notification is! ScrollUpdateNotification) return;
 
-    handleSample(GlassTabBarScrollSample(
-      pixels: metrics.pixels,
-      minScrollExtent: metrics.minScrollExtent,
-      maxScrollExtent: metrics.maxScrollExtent,
-      viewportDimension: metrics.viewportDimension,
-      direction: _notificationDirection,
-      outOfRange: metrics.outOfRange,
-    ));
+    handleSample(
+      GlassTabBarScrollSample(
+        pixels: metrics.pixels,
+        minScrollExtent: metrics.minScrollExtent,
+        maxScrollExtent: metrics.maxScrollExtent,
+        viewportDimension: metrics.viewportDimension,
+        direction: _notificationDirection,
+        outOfRange: metrics.outOfRange,
+      ),
+    );
   }
 
   // ── The decision function ─────────────────────────────────────────────────
@@ -454,8 +456,8 @@ class GlassTabBarMinimizeController extends ChangeNotifier {
   /// bottom-aligned content — it is the end.
   bool _atRestingEdge(GlassTabBarScrollSample sample) =>
       resolvedBehavior == GlassBarMinimizeBehavior.onScrollUp
-          ? sample.pixels >= sample.maxScrollExtent
-          : sample.pixels <= sample.minScrollExtent;
+      ? sample.pixels >= sample.maxScrollExtent
+      : sample.pixels <= sample.minScrollExtent;
 
   void _setMinimized(bool value) {
     if (_minimized == value) return; // idempotent — no notify storm

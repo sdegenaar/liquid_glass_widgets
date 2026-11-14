@@ -114,8 +114,10 @@ class GeometryTransformTrackingLayer extends OffsetLayer {
     } catch (_) {
       return;
     }
-    final transformChanged =
-        !MatrixUtils.matrixEquals(currentTransform, _lastTransform);
+    final transformChanged = !MatrixUtils.matrixEquals(
+      currentTransform,
+      _lastTransform,
+    );
     if (updateAtComposite case final update?) {
       // Always give a composited glass layer a chance to reconcile its
       // screen-space uniforms during addToScene — even when its own transform

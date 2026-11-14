@@ -13,6 +13,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter/rendering.dart';
+
 import '../renderer/glass_materialize_scope.dart';
 import 'internal/transform_tracking_repaint_boundary_mixin.dart';
 import 'liquid_glass_blend_group.dart';
@@ -46,13 +47,13 @@ class LiquidGlass extends StatelessWidget {
     this.glassContainsChild = false,
     this.clipBehavior = Clip.hardEdge,
     super.key,
-  })  : grouped = false,
-        blendGroupLink = null,
-        clipExpansion = EdgeInsets.zero,
-        shadows = const <BoxShadow>[],
-        ownLayerConfig = null,
-        _captureImage = null,
-        _captureOriginInScreenSpace = Offset.zero;
+  }) : grouped = false,
+       blendGroupLink = null,
+       clipExpansion = EdgeInsets.zero,
+       shadows = const <BoxShadow>[],
+       ownLayerConfig = null,
+       _captureImage = null,
+       _captureOriginInScreenSpace = Offset.zero;
 
   /// Creates a new [LiquidGlass] that is part of a [LiquidGlassBlendGroup].
   ///
@@ -66,12 +67,12 @@ class LiquidGlass extends StatelessWidget {
     this.glassContainsChild = false,
     this.clipBehavior = Clip.hardEdge,
     this.blendGroupLink,
-  })  : ownLayerConfig = null,
-        clipExpansion = EdgeInsets.zero,
-        shadows = const <BoxShadow>[],
-        _captureImage = null,
-        _captureOriginInScreenSpace = Offset.zero,
-        grouped = true;
+  }) : ownLayerConfig = null,
+       clipExpansion = EdgeInsets.zero,
+       shadows = const <BoxShadow>[],
+       _captureImage = null,
+       _captureOriginInScreenSpace = Offset.zero,
+       grouped = true;
 
   /// Creates a new [LiquidGlass] that creates its own [LiquidGlassLayer].
   ///
@@ -90,12 +91,10 @@ class LiquidGlass extends StatelessWidget {
     this.clipBehavior = Clip.hardEdge,
     this.blendGroupLink,
     this.clipExpansion = EdgeInsets.zero,
-    ui.Image? captureImage,
-    Offset captureOriginInScreenSpace = Offset.zero,
-  })  : ownLayerConfig = settings,
-        _captureImage = captureImage,
-        _captureOriginInScreenSpace = captureOriginInScreenSpace,
-        grouped = false;
+    this._captureImage,
+    this._captureOriginInScreenSpace = Offset.zero,
+  }) : ownLayerConfig = settings,
+       grouped = false;
 
   /// The child of this widget.
   ///
@@ -159,9 +158,7 @@ class LiquidGlass extends StatelessWidget {
         captureOriginInScreenSpace: _captureOriginInScreenSpace,
         child: LiquidGlassBlendGroup(
           blend: 0,
-          child: Builder(
-            builder: _buildContent,
-          ),
+          child: Builder(builder: _buildContent),
         ),
       );
     }
@@ -176,18 +173,13 @@ class LiquidGlass extends StatelessWidget {
       return LiquidGlassBlendGroup(
         blend: 0,
         child: Builder(
-          builder: (context) => _buildContent(
-            context,
-            LiquidGlassBlendGroup.of(context),
-          ),
+          builder: (context) =>
+              _buildContent(context, LiquidGlassBlendGroup.of(context)),
         ),
       );
     }
 
-    return _buildContent(
-      context,
-      blendGroupLink,
-    );
+    return _buildContent(context, blendGroupLink);
   }
 
   Widget _buildContent(BuildContext context, [GlassGroupLink? blendGroupLink]) {
@@ -212,10 +204,7 @@ class LiquidGlass extends StatelessWidget {
         // because `settings` comes from the (possibly transformed) scope.
         child: GlassMaterializeScope.wrapContent(
           context,
-          Opacity(
-            opacity: settings.visibility.clamp(0, 1),
-            child: child,
-          ),
+          Opacity(opacity: settings.visibility.clamp(0, 1), child: child),
         ),
       ),
     );
@@ -260,12 +249,10 @@ class _RawLiquidGlass extends SingleChildRenderObjectWidget {
 class RenderLiquidGlass extends RenderProxyBox
     with TransformTrackingRenderObjectMixin {
   RenderLiquidGlass({
-    required LiquidShape shape,
-    required bool glassContainsChild,
-    required GlassGroupLink? blendGroupLink,
-  })  : _shape = shape,
-        _glassContainsChild = glassContainsChild,
-        _blendGroupLink = blendGroupLink;
+    required this._shape,
+    required this._glassContainsChild,
+    required this._blendGroupLink,
+  });
 
   late LiquidShape _shape;
   LiquidShape get shape => _shape;

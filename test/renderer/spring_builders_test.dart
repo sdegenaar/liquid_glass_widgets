@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/utils/glass_spring.dart';
 
@@ -68,15 +68,14 @@ void main() {
 
     testWidgets('spring switches when active changes', (tester) async {
       Widget buildWidget({required bool active}) => MaterialApp(
-            home: VelocitySpringBuilder(
-              value: 0.5,
-              springWhenActive: GlassSpring.interactive(),
-              springWhenReleased: GlassSpring.smooth(),
-              active: active,
-              builder: (context, value, velocity, child) =>
-                  const SizedBox.shrink(),
-            ),
-          );
+        home: VelocitySpringBuilder(
+          value: 0.5,
+          springWhenActive: GlassSpring.interactive(),
+          springWhenReleased: GlassSpring.smooth(),
+          active: active,
+          builder: (context, value, velocity, child) => const SizedBox.shrink(),
+        ),
+      );
 
       await tester.pumpWidget(buildWidget(active: true));
       await tester.pump();
@@ -158,15 +157,15 @@ void main() {
       Offset latestValue = Offset.zero;
 
       Widget build(Offset val) => MaterialApp(
-            home: OffsetSpringBuilder(
-              value: val,
-              spring: GlassSpring.bouncy(),
-              builder: (context, value, child) {
-                latestValue = value;
-                return const SizedBox.shrink();
-              },
-            ),
-          );
+        home: OffsetSpringBuilder(
+          value: val,
+          spring: GlassSpring.bouncy(),
+          builder: (context, value, child) {
+            latestValue = value;
+            return const SizedBox.shrink();
+          },
+        ),
+      );
 
       await tester.pumpWidget(build(Offset.zero));
       await tester.pumpWidget(build(const Offset(50, 50)));
@@ -177,12 +176,12 @@ void main() {
 
     testWidgets('spring change redirects simulation', (tester) async {
       Widget build(SpringDescription spring) => MaterialApp(
-            home: OffsetSpringBuilder(
-              value: const Offset(100, 0),
-              spring: spring,
-              builder: (context, value, child) => const SizedBox.shrink(),
-            ),
-          );
+        home: OffsetSpringBuilder(
+          value: const Offset(100, 0),
+          spring: spring,
+          builder: (context, value, child) => const SizedBox.shrink(),
+        ),
+      );
 
       await tester.pumpWidget(build(GlassSpring.smooth()));
       await tester.pump();
@@ -209,8 +208,9 @@ void main() {
   // ──────────────────────────────────────────────────────────────────────────
 
   group('SpringBuilder additional branches', () {
-    testWidgets('spring change while ticking redirects smoothly',
-        (tester) async {
+    testWidgets('spring change while ticking redirects smoothly', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: SpringBuilder(

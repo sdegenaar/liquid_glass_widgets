@@ -44,8 +44,7 @@ class GlassBackdropGroupBoundary extends SingleChildRenderObjectWidget {
 /// The render object of a [GlassBackdropGroupBoundary].
 class RenderGlassBackdropGroupBoundary extends RenderProxyBox {
   /// Creates the boundary of a group, see [startsGroup].
-  RenderGlassBackdropGroupBoundary({bool startsGroup = true})
-      : _startsGroup = startsGroup;
+  RenderGlassBackdropGroupBoundary({this._startsGroup = true});
 
   final Set<RenderObject> _members = {};
   bool _repaintScheduled = false;
@@ -135,8 +134,7 @@ bool opensRenderPassBelow(RenderObject node) {
     RenderAnimatedOpacityMixin() ||
     RenderSliverOpacity() ||
     RenderShaderMask() ||
-    RenderBackdropFilter() =>
-      true,
+    RenderBackdropFilter() => true,
     RenderLiquidGlassGeometry() => true,
     RenderClipRect(:final clipBehavior) => saves(clipBehavior),
     RenderClipRRect(:final clipBehavior) => saves(clipBehavior),

@@ -1,7 +1,7 @@
 import 'package:liquid_glass_widgets_example/constants/glass_settings.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 class InputPage extends StatefulWidget {
   const InputPage({super.key});
@@ -43,9 +43,7 @@ class _InputPageState extends State<InputPage> {
             slivers: [
               // Space for the app bar + safe area
               SliverToBoxAdapter(
-                child: SizedBox(
-                  height: MediaQuery.paddingOf(context).top + 44,
-                ),
+                child: SizedBox(height: MediaQuery.paddingOf(context).top + 44),
               ),
               // ── Large page title (iOS 26 inline style) ──────────────
               SliverToBoxAdapter(
@@ -93,15 +91,20 @@ class _InputPageState extends State<InputPage> {
                       GlassTextField(
                         controller: _searchController,
                         placeholder: 'Search...',
-                        prefixIcon: Icon(CupertinoIcons.search,
-                            size: 20,
-                            color: CupertinoColors.secondaryLabel
-                                .resolveFrom(context)),
+                        prefixIcon: Icon(
+                          CupertinoIcons.search,
+                          size: 20,
+                          color: CupertinoColors.secondaryLabel.resolveFrom(
+                            context,
+                          ),
+                        ),
                         suffixIcon: _searchController.text.isNotEmpty
-                            ? Icon(CupertinoIcons.xmark_circle_fill,
+                            ? Icon(
+                                CupertinoIcons.xmark_circle_fill,
                                 size: 20,
                                 color: CupertinoColors.secondaryLabel
-                                    .resolveFrom(context))
+                                    .resolveFrom(context),
+                              )
                             : null,
                         onSuffixTap: () {
                           setState(() => _searchController.clear());
@@ -150,34 +153,41 @@ class _InputPageState extends State<InputPage> {
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color:
-                                    CupertinoColors.label.resolveFrom(context),
+                                color: CupertinoColors.label.resolveFrom(
+                                  context,
+                                ),
                               ),
                             ),
                             SizedBox(height: 24),
                             GlassTextField(
                               placeholder: 'Full Name',
-                              prefixIcon: Icon(CupertinoIcons.person,
-                                  size: 20,
-                                  color: CupertinoColors.secondaryLabel
-                                      .resolveFrom(context)),
+                              prefixIcon: Icon(
+                                CupertinoIcons.person,
+                                size: 20,
+                                color: CupertinoColors.secondaryLabel
+                                    .resolveFrom(context),
+                              ),
                             ),
                             SizedBox(height: 16),
                             GlassTextField(
                               placeholder: 'Email Address',
-                              prefixIcon: Icon(CupertinoIcons.mail,
-                                  size: 20,
-                                  color: CupertinoColors.secondaryLabel
-                                      .resolveFrom(context)),
+                              prefixIcon: Icon(
+                                CupertinoIcons.mail,
+                                size: 20,
+                                color: CupertinoColors.secondaryLabel
+                                    .resolveFrom(context),
+                              ),
                               keyboardType: TextInputType.emailAddress,
                             ),
                             SizedBox(height: 16),
                             GlassTextField(
                               placeholder: 'Password',
-                              prefixIcon: Icon(CupertinoIcons.lock,
-                                  size: 20,
-                                  color: CupertinoColors.secondaryLabel
-                                      .resolveFrom(context)),
+                              prefixIcon: Icon(
+                                CupertinoIcons.lock,
+                                size: 20,
+                                color: CupertinoColors.secondaryLabel
+                                    .resolveFrom(context),
+                              ),
                               obscureText: true,
                             ),
                             SizedBox(height: 24),
@@ -187,15 +197,17 @@ class _InputPageState extends State<InputPage> {
                                 onTap: () {},
                                 height: 56,
                                 shape: const LiquidRoundedSuperellipse(
-                                    borderRadius: 12),
+                                  borderRadius: 12,
+                                ),
                                 child: Center(
                                   child: Text(
                                     'Sign Up',
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: CupertinoColors.label
-                                          .resolveFrom(context),
+                                      color: CupertinoColors.label.resolveFrom(
+                                        context,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -222,9 +234,7 @@ class _InputPageState extends State<InputPage> {
                       // ── GlassPasswordField ─────────────────────────
                       const _SectionTitle(title: 'GlassPasswordField'),
                       SizedBox(height: 16),
-                      const GlassPasswordField(
-                        placeholder: 'Enter password',
-                      ),
+                      const GlassPasswordField(placeholder: 'Enter password'),
 
                       SizedBox(height: 40),
 
@@ -280,10 +290,12 @@ class _InputPageState extends State<InputPage> {
                               child: GlassTextField(
                                 placeholder: 'example@email.com',
                                 keyboardType: TextInputType.emailAddress,
-                                prefixIcon: Icon(CupertinoIcons.mail,
-                                    color: CupertinoColors.secondaryLabel
-                                        .resolveFrom(context),
-                                    size: 20),
+                                prefixIcon: Icon(
+                                  CupertinoIcons.mail,
+                                  color: CupertinoColors.secondaryLabel
+                                      .resolveFrom(context),
+                                  size: 20,
+                                ),
                               ),
                             ),
                             SizedBox(height: 16),

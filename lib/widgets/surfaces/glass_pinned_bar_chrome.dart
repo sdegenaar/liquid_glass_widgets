@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/widgets/surfaces/vertical_bar_title_row.dart';
@@ -182,8 +182,8 @@ class GlassPinnedBarChrome extends StatefulWidget {
     this.largeTitleController,
     this.stripRowTop,
     this.enabled = true,
-  })  : assert(buttonSize == null || buttonSize > 0),
-        assert(toolbarHeight == null || toolbarHeight >= 0);
+  }) : assert(buttonSize == null || buttonSize > 0),
+       assert(toolbarHeight == null || toolbarHeight >= 0);
 
   /// Builds the bar from the chrome resolved for this frame.
   final GlassPinnedBarChromeBuilder builder;
@@ -343,7 +343,8 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
     // an inactive tab's route is muted but still laid out — so the route must
     // also not be the current one. A portal can't be shown or hidden during
     // build, so after the frame.
-    final onstage = TickerMode.valuesOf(context).enabled ||
+    final onstage =
+        TickerMode.valuesOf(context).enabled ||
         (ModalRoute.isCurrentOf(context) ?? true);
     if (onstage != _onstage) {
       _onstage = onstage;
@@ -480,10 +481,7 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
   }
 
   /// The back button, or the space it occupied once the shell has it.
-  Widget _buildBackButton(
-    BuildContext context, {
-    double? backSize,
-  }) {
+  Widget _buildBackButton(BuildContext context, {double? backSize}) {
     final size =
         backSize ?? widget.buttonSize ?? GlassNavPinnedMetrics.backDiameter;
     if (_handedOver) {
@@ -495,7 +493,8 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
       height: size,
       iconSize: GlassNavPinnedMetrics.iconSize,
       platformViewBackdrop: widget.platformViewBackdrop,
-      label: Localizations.of<CupertinoLocalizations>(
+      label:
+          Localizations.of<CupertinoLocalizations>(
             context,
             CupertinoLocalizations,
           )?.backButtonLabel ??
@@ -546,8 +545,8 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
 
           VoidCallback? tapOf(GlassBarActionItem item) =>
               item is GlassBarSheetItem
-                  ? () => item.onPresent(anchor)
-                  : (item.hasTap ? item.onTap : null);
+              ? () => item.onPresent(anchor)
+              : (item.hasTap ? item.onTap : null);
 
           if (!group.glass) {
             final item = group.items.single;
@@ -588,16 +587,14 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
           // The tint replaces the body colour only: it starts from the bar's
           // button settings, so the capsule keeps the outline and rim its
           // neighbours get.
-          final tintColor =
-              group.items.length == 1 ? group.items.first.tintColor : null;
+          final tintColor = group.items.length == 1
+              ? group.items.first.tintColor
+              : null;
           final groupSettings = tintColor != null
               ? GlassThemeHelpers.resolveSettings(
                   context,
                   explicit: DefaultButtonSettings.of(context),
-                ).copyWith(
-                  glassColor: tintColor,
-                  bodyMode: GlassBodyMode.clear,
-                )
+                ).copyWith(glassColor: tintColor, bodyMode: GlassBodyMode.clear)
               : null;
           return GlassButtonGroup.icons(
             platformViewBackdrop: widget.platformViewBackdrop,
@@ -671,13 +668,13 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
       width: item is GlassBarCustomItem
           ? (group.axis == Axis.vertical ? group.crossExtent : null)
           : (group.axis == Axis.horizontal
-              ? group.slotExtent
-              : group.crossExtent),
+                ? group.slotExtent
+                : group.crossExtent),
       height: item is GlassBarCustomItem
           ? (group.axis == Axis.horizontal ? group.crossExtent : null)
           : (group.axis == Axis.vertical
-              ? group.slotExtent
-              : group.crossExtent),
+                ? group.slotExtent
+                : group.crossExtent),
       child: Center(
         child: Directionality(
           textDirection: ambientDirection,
@@ -726,8 +723,10 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
       items
           // A spacer stays on both sides, to split whichever items it is
           // between.
-          .where((item) =>
-              item is! GlassBarActionItem || item.goesVertical == vertical)
+          .where(
+            (item) =>
+                item is! GlassBarActionItem || item.goesVertical == vertical,
+          )
           .toList(),
       axis: vertical ? Axis.vertical : Axis.horizontal,
       buttonSize: vertical ? null : widget.buttonSize,
@@ -768,19 +767,21 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
     GlassVerticalBarData bar,
     OverlayChildLayoutInfo layout,
   ) {
-    const columnWidth = GlassVerticalBarMetrics.controlExtent +
+    const columnWidth =
+        GlassVerticalBarMetrics.controlExtent +
         2 * GlassVerticalBarMetrics.inset;
     final columnOffset = bar.width - columnWidth;
     final trailingStrip = bar.edge == GlassVerticalBarEdge.trailing;
     final reserved = _shell?.verticalBarBottom ?? 0.0;
-    final available = MediaQuery.sizeOf(context).height -
+    final available =
+        MediaQuery.sizeOf(context).height -
         bar.top -
         (reserved > 0
             ? reserved + GlassVerticalBarMetrics.spacing
             : bar.bottom) -
         (_showsBack
             ? GlassVerticalBarMetrics.controlExtent +
-                GlassVerticalBarMetrics.spacing
+                  GlassVerticalBarMetrics.spacing
             : 0.0);
     final strip = Positioned.directional(
       textDirection: Directionality.of(context),
@@ -800,13 +801,10 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
                 context,
                 backSize: GlassVerticalBarMetrics.controlExtent,
               ),
-            for (final group in fitGlassNavStripGroups(
-              [
-                ..._stripGroups(widget.leading, vertical: true),
-                ..._stripGroups(widget.actions, vertical: true),
-              ],
-              available,
-            ))
+            for (final group in fitGlassNavStripGroups([
+              ..._stripGroups(widget.leading, vertical: true),
+              ..._stripGroups(widget.actions, vertical: true),
+            ], available))
               _buildGroup(group),
           ],
         ),
@@ -822,15 +820,18 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
           height: layout.overlaySize.height,
           child: Transform(
             transform: layout.childPaintTransform,
-            child: Stack(clipBehavior: Clip.none, children: [
-              Positioned(
-                left: span.left,
-                width: span.right - span.left,
-                top: 0,
-                bottom: 0,
-                child: Stack(clipBehavior: Clip.none, children: [strip]),
-              ),
-            ]),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(
+                  left: span.left,
+                  width: span.right - span.left,
+                  top: 0,
+                  bottom: 0,
+                  child: Stack(clipBehavior: Clip.none, children: [strip]),
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -875,8 +876,8 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
       controller: _strip,
       overlayChildBuilder: (context, layout) =>
           verticalBar == null || _handedOver
-              ? const SizedBox.shrink()
-              : _buildStrip(context, verticalBar, layout),
+          ? const SizedBox.shrink()
+          : _buildStrip(context, verticalBar, layout),
       child: bar,
     );
 

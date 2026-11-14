@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
-import 'package:flutter/cupertino.dart';
+
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 
@@ -102,8 +103,9 @@ class _GlassContextMenuActionState extends State<GlassContextMenuAction>
         ? CupertinoColors.destructiveRed
         : CupertinoColors.label.resolveFrom(context);
 
-    final effectiveColor =
-        widget.enabled ? baseTextColor : baseTextColor.withValues(alpha: 0.4);
+    final effectiveColor = widget.enabled
+        ? baseTextColor
+        : baseTextColor.withValues(alpha: 0.4);
 
     return GlassFocusRegion(
       enabled: widget.enabled,
@@ -127,7 +129,7 @@ class _GlassContextMenuActionState extends State<GlassContextMenuAction>
             final highlightColor = widget.isDestructive
                 ? CupertinoColors.destructiveRed.withValues(alpha: 0.14)
                 : (isDark ? CupertinoColors.white : CupertinoColors.black)
-                    .withValues(alpha: 0.08);
+                      .withValues(alpha: 0.08);
 
             return AnimatedContainer(
               duration: isPressed.value
@@ -389,8 +391,8 @@ class _GlassContextMenuState extends State<GlassContextMenu> {
 
     final recognizerDuration =
         widget.longPressDuration < const Duration(milliseconds: 200)
-            ? widget.longPressDuration
-            : const Duration(milliseconds: 180);
+        ? widget.longPressDuration
+        : const Duration(milliseconds: 180);
     final commitDuration = widget.longPressDuration > recognizerDuration
         ? widget.longPressDuration - recognizerDuration
         : Duration.zero;
@@ -437,53 +439,53 @@ class _GlassContextMenuState extends State<GlassContextMenu> {
 
     final recognizerDuration =
         widget.longPressDuration < const Duration(milliseconds: 200)
-            ? widget.longPressDuration
-            : const Duration(milliseconds: 180);
+        ? widget.longPressDuration
+        : const Duration(milliseconds: 180);
 
     return RawGestureDetector(
       behavior: HitTestBehavior.opaque,
       gestures: {
-        _ContextMenuLongPressRecognizer: GestureRecognizerFactoryWithHandlers<
-            _ContextMenuLongPressRecognizer>(
-          () => _ContextMenuLongPressRecognizer(
-            duration: recognizerDuration,
-            debugOwner: this,
-            onRejected: () {},
-          ),
-          (instance) {
-            instance
-              ..onLongPressStart = (_) {
-                _openContextMenu(isInteractive: true);
-              }
-              ..onLongPressMoveUpdate = (details) {
-                if (_isRouteOpen && _routeStaticKey != null) {
-                  _routeStaticKey!.currentState
-                      ?.updateGlidePosition(details.globalPosition);
-                }
-              }
-              ..onLongPressEnd = (_) {
-                if (_isRouteOpen && _routeStaticKey != null) {
-                  _routeStaticKey!.currentState?.endGlide();
-                }
-              };
-          },
-        ),
+        _ContextMenuLongPressRecognizer:
+            GestureRecognizerFactoryWithHandlers<
+              _ContextMenuLongPressRecognizer
+            >(
+              () => _ContextMenuLongPressRecognizer(
+                duration: recognizerDuration,
+                debugOwner: this,
+                onRejected: () {},
+              ),
+              (instance) {
+                instance
+                  ..onLongPressStart = (_) {
+                    _openContextMenu(isInteractive: true);
+                  }
+                  ..onLongPressMoveUpdate = (details) {
+                    if (_isRouteOpen && _routeStaticKey != null) {
+                      _routeStaticKey!.currentState?.updateGlidePosition(
+                        details.globalPosition,
+                      );
+                    }
+                  }
+                  ..onLongPressEnd = (_) {
+                    if (_isRouteOpen && _routeStaticKey != null) {
+                      _routeStaticKey!.currentState?.endGlide();
+                    }
+                  };
+              },
+            ),
         TapGestureRecognizer:
             GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
-          () => TapGestureRecognizer(debugOwner: this),
-          (instance) {
-            instance.onSecondaryTapUp = (_) {
-              _openContextMenu(isInteractive: false);
-            };
-          },
-        ),
+              () => TapGestureRecognizer(debugOwner: this),
+              (instance) {
+                instance.onSecondaryTapUp = (_) {
+                  _openContextMenu(isInteractive: false);
+                };
+              },
+            ),
       },
       // While the menu is open the row is lifted out of the page: it is hidden
       // here and drawn by the route overlay, leaving an empty slot behind.
-      child: Opacity(
-        opacity: _isRouteOpen ? 0.0 : 1.0,
-        child: widget.child,
-      ),
+      child: Opacity(opacity: _isRouteOpen ? 0.0 : 1.0, child: widget.child),
     );
   }
 }
@@ -817,8 +819,9 @@ class _GlassContextMenuRouteStaticState
 
   @override
   void dispose() {
-    GestureBinding.instance.pointerRouter
-        .removeGlobalRoute(_handleGlobalPointer);
+    GestureBinding.instance.pointerRouter.removeGlobalRoute(
+      _handleGlobalPointer,
+    );
     super.dispose();
   }
 
@@ -913,7 +916,8 @@ class _GlassContextMenuRouteStaticState
     final bool isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     final GlassStyle style =
         GlassTheme.maybeOf(context)?.data.style ?? GlassStyle.ios27;
-    final Color scrim = widget.scrimColor ??
+    final Color scrim =
+        widget.scrimColor ??
         (isDark ? const Color(0x40000000) : const Color(0x32000000));
 
     final LiquidGlassSettings classicFallback = isDark
@@ -933,23 +937,25 @@ class _GlassContextMenuRouteStaticState
           );
     final LiquidGlassSettings platterSettings =
         GlassThemeHelpers.resolveSettings(
-      context,
-      explicit: widget.settings,
-      fallback: classicFallback,
-      isOverlayPlatter: true,
-    );
+          context,
+          explicit: widget.settings,
+          fallback: classicFallback,
+          isOverlayPlatter: true,
+        );
 
     final bool hasCustomPreview = widget.previewBuilder != null;
     final Widget previewWidget = hasCustomPreview
         ? widget.previewBuilder!(context)
         : (widget.previewChild ?? const SizedBox.shrink());
 
-    final double effectivePreviewBorderRadius = widget.previewBorderRadius ??
+    final double effectivePreviewBorderRadius =
+        widget.previewBorderRadius ??
         (hasCustomPreview ? 34.0 : widget.rowBorderRadius);
     final BorderRadius rowRadii =
         widget.rowCorners ?? BorderRadius.circular(widget.rowBorderRadius);
-    final BorderRadius previewRadii =
-        BorderRadius.circular(effectivePreviewBorderRadius);
+    final BorderRadius previewRadii = BorderRadius.circular(
+      effectivePreviewBorderRadius,
+    );
 
     final effectivePlatterQuality = GlassThemeHelpers.resolveQuality(
       context,
@@ -957,7 +963,8 @@ class _GlassContextMenuRouteStaticState
       fallback: GlassQuality.premium,
     );
 
-    final bool shaderDrawsRim = style != GlassStyle.classic &&
+    final bool shaderDrawsRim =
+        style != GlassStyle.classic &&
         effectivePlatterQuality == GlassQuality.premium &&
         ImageFilter.isShaderFilterSupported;
     final Color platterBorder = shaderDrawsRim
@@ -1008,17 +1015,18 @@ class _GlassContextMenuRouteStaticState
                             borderRadius: BorderRadius.circular(21.0),
                             color: !isMeasurement && _hoveredIndex == i
                                 ? (widget.actions[i]
-                                            is GlassContextMenuAction &&
-                                        (widget.actions[i]
-                                                as GlassContextMenuAction)
-                                            .isDestructive
-                                    ? CupertinoColors.destructiveRed
-                                        .withValues(alpha: 0.16)
-                                    : (isDark
-                                            ? CupertinoColors.white
-                                            : CupertinoColors.black)
-                                        .withValues(
-                                            alpha: isDark ? 0.12 : 0.08))
+                                              is GlassContextMenuAction &&
+                                          (widget.actions[i]
+                                                  as GlassContextMenuAction)
+                                              .isDestructive
+                                      ? CupertinoColors.destructiveRed
+                                            .withValues(alpha: 0.16)
+                                      : (isDark
+                                                ? CupertinoColors.white
+                                                : CupertinoColors.black)
+                                            .withValues(
+                                              alpha: isDark ? 0.12 : 0.08,
+                                            ))
                                 : const Color(0x00000000),
                           ),
                           child: widget.actions[i],
@@ -1037,7 +1045,8 @@ class _GlassContextMenuRouteStaticState
     final double bottomSafe = screenSize.height - padding.bottom - 16.0;
     const double gap = 16.0;
 
-    final Size effectivePreviewSize = _measuredPreviewSize ??
+    final Size effectivePreviewSize =
+        _measuredPreviewSize ??
         (hasCustomPreview ? const Size(240.0, 201.0) : widget.targetRect.size);
 
     final double estimatedPlatterHeight =
@@ -1045,11 +1054,15 @@ class _GlassContextMenuRouteStaticState
     final Size effectivePlatterSize =
         _measuredPlatterSize ?? Size(widget.menuWidth, estimatedPlatterHeight);
 
-    final double previewWidth =
-        effectivePreviewSize.width.clamp(100.0, screenSize.width - 32.0);
+    final double previewWidth = effectivePreviewSize.width.clamp(
+      100.0,
+      screenSize.width - 32.0,
+    );
     final double previewHeight = effectivePreviewSize.height;
-    final double platterWidth =
-        effectivePlatterSize.width.clamp(100.0, screenSize.width - 32.0);
+    final double platterWidth = effectivePlatterSize.width.clamp(
+      100.0,
+      screenSize.width - 32.0,
+    );
     final double platterHeight = effectivePlatterSize.height;
 
     final double totalHeight = previewHeight + gap + platterHeight;
@@ -1073,16 +1086,20 @@ class _GlassContextMenuRouteStaticState
         restingPreviewTop = topSafe;
       } else {
         final double minTop = topSafe + platterHeight + gap;
-        restingPreviewTop = (widget.targetRect.bottom - previewHeight)
-            .clamp(minTop, bottomSafe - previewHeight);
+        restingPreviewTop = (widget.targetRect.bottom - previewHeight).clamp(
+          minTop,
+          bottomSafe - previewHeight,
+        );
       }
     } else {
       restingPreviewTop = widget.targetRect.top;
     }
 
     final double restingPreviewLeft = hasCustomPreview
-        ? ((screenSize.width - previewWidth) / 2.0)
-            .clamp(16.0, screenSize.width - previewWidth - 16.0)
+        ? ((screenSize.width - previewWidth) / 2.0).clamp(
+            16.0,
+            screenSize.width - previewWidth - 16.0,
+          )
         : widget.targetRect.left;
 
     final Rect restingPreviewRect = Rect.fromLTWH(
@@ -1098,8 +1115,10 @@ class _GlassContextMenuRouteStaticState
     final double idealPlatterLeft =
         widget.targetRect.center.dx - (platterWidth / 2.0);
     final double restingPlatterLeft = hasCustomPreview
-        ? ((screenSize.width - platterWidth) / 2.0)
-            .clamp(16.0, screenSize.width - platterWidth - 16.0)
+        ? ((screenSize.width - platterWidth) / 2.0).clamp(
+            16.0,
+            screenSize.width - platterWidth - 16.0,
+          )
         : idealPlatterLeft.clamp(16.0, screenSize.width - platterWidth - 16.0);
 
     final Rect restingPlatterRect = Rect.fromLTWH(
@@ -1109,7 +1128,8 @@ class _GlassContextMenuRouteStaticState
       platterHeight,
     );
 
-    final cardColor = widget.backgroundColor ??
+    final cardColor =
+        widget.backgroundColor ??
         (isDark ? const Color(0xFF1C1C1E) : CupertinoColors.white);
 
     return AnimatedBuilder(
@@ -1144,10 +1164,12 @@ class _GlassContextMenuRouteStaticState
           // Native order: the platter ghosts out first (~35ms) while the card
           // holds, then the card eases back into the row (~110ms).
           final double w = (1.0 - v).clamp(0.0, 1.0);
-          final double u =
-              Curves.easeInOut.transform(((w - 0.2) / 0.65).clamp(0.0, 1.0));
-          final double cf =
-              Curves.easeInOut.transform(((w - 0.18) / 0.55).clamp(0.0, 1.0));
+          final double u = Curves.easeInOut.transform(
+            ((w - 0.2) / 0.65).clamp(0.0, 1.0),
+          );
+          final double cf = Curves.easeInOut.transform(
+            ((w - 0.18) / 0.55).clamp(0.0, 1.0),
+          );
           cardRect = Rect.lerp(restingPreviewRect, widget.targetRect, u)!;
           cardRadii = BorderRadius.lerp(previewRadii, rowRadii, u)!;
           shadowFactor = (1.0 - u) * (1.0 - u);
@@ -1165,8 +1187,9 @@ class _GlassContextMenuRouteStaticState
         } else if (v <= _kLiftSplit) {
           // Stage 1: the row lifts off the page with a broad soft shadow.
           final double raw = (v / _kLiftSplit).clamp(0.0, 1.0);
-          final double p =
-              interactive ? raw : Curves.easeOutCubic.transform(raw);
+          final double p = interactive
+              ? raw
+              : Curves.easeOutCubic.transform(raw);
           final double scale = 1.0 + (_kLiftScale - 1.0) * p;
           cardRect = Rect.fromCenter(
             center: widget.targetRect.center,
@@ -1185,19 +1208,24 @@ class _GlassContextMenuRouteStaticState
         } else {
           // Stage 2: the lifted row morphs into the preview card while the
           // platter pops out beneath it.
-          final double t =
-              ((v - _kLiftSplit) / (1.0 - _kLiftSplit)).clamp(0.0, 1.0);
-          final double m = Curves.easeOutCubic
-              .transform(((t - 0.15) / 0.85).clamp(0.0, 1.0));
-          final double c =
-              Curves.easeInOut.transform(((t - 0.05) / 0.75).clamp(0.0, 1.0));
+          final double t = ((v - _kLiftSplit) / (1.0 - _kLiftSplit)).clamp(
+            0.0,
+            1.0,
+          );
+          final double m = Curves.easeOutCubic.transform(
+            ((t - 0.15) / 0.85).clamp(0.0, 1.0),
+          );
+          final double c = Curves.easeInOut.transform(
+            ((t - 0.05) / 0.75).clamp(0.0, 1.0),
+          );
           cardRect = Rect.lerp(liftedRowRect, restingPreviewRect, m)!;
           cardRadii = BorderRadius.lerp(rowRadii, previewRadii, m)!;
           shadowFactor = 1.0;
           rowAlpha = hasCustomPreview ? 1.0 - c : 1.0;
           previewAlpha = hasCustomPreview ? c : 0.0;
-          rowScale =
-              hasCustomPreview ? _kLiftScale : lerpDouble(_kLiftScale, 1.0, m)!;
+          rowScale = hasCustomPreview
+              ? _kLiftScale
+              : lerpDouble(_kLiftScale, 1.0, m)!;
           previewScale = lerpDouble(
             liftedRowRect.width / previewWidth,
             1.0,
@@ -1228,8 +1256,9 @@ class _GlassContextMenuRouteStaticState
                 ),
         );
 
-        final Alignment platterAnchor =
-            placeBelow ? Alignment.topCenter : Alignment.bottomCenter;
+        final Alignment platterAnchor = placeBelow
+            ? Alignment.topCenter
+            : Alignment.bottomCenter;
 
         final List<BoxShadow>? cardShadows = shadowFactor <= 0.0
             ? null

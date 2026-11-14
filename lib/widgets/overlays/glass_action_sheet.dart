@@ -1,6 +1,7 @@
 import 'dart:ui' show SemanticsRole;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+
 import '../../constants/glass_defaults.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/widgets/overlays/glass_alert_platter.dart';
@@ -170,15 +171,9 @@ Future<T?> showGlassActionSheet<T>({
   final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
 
   Widget withAmbientThemes(Widget sheet) {
-    sheet = CupertinoTheme(
-      data: capturedCupertinoTheme,
-      child: sheet,
-    );
+    sheet = CupertinoTheme(data: capturedCupertinoTheme, child: sheet);
     if (capturedGlassTheme != null) {
-      sheet = GlassTheme(
-        data: capturedGlassTheme,
-        child: sheet,
-      );
+      sheet = GlassTheme(data: capturedGlassTheme, child: sheet);
     }
     return sheet;
   }
@@ -215,10 +210,7 @@ Future<T?> showGlassActionSheet<T>({
                   },
                 ),
               if (showCancelButton)
-                GlassAlertPlatterAction(
-                  label: cancelLabel,
-                  onPressed: dismiss,
-                ),
+                GlassAlertPlatterAction(label: cancelLabel, onPressed: dismiss),
             ],
           ),
         );
@@ -301,8 +293,8 @@ class _GlassActionSheetContent extends StatelessWidget {
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     final cardColor = themeData.style == GlassStyle.classic
         ? (isDark
-            ? CupertinoColors.black.withValues(alpha: 0.65)
-            : CupertinoColors.white.withValues(alpha: 0.65))
+              ? CupertinoColors.black.withValues(alpha: 0.65)
+              : CupertinoColors.white.withValues(alpha: 0.65))
         : null;
     final dividerColor = isDark
         ? CupertinoColors.white.withValues(alpha: 0.2)
@@ -347,7 +339,8 @@ class _GlassActionSheetContent extends StatelessWidget {
                     SizedBox(
                       height: 1,
                       child: Center(
-                          child: Container(height: 0.5, color: dividerColor)),
+                        child: Container(height: 0.5, color: dividerColor),
+                      ),
                     ),
                   _ActionSheetButton(
                     action: actions[i],
@@ -398,8 +391,8 @@ class _GlassActionSheetContent extends StatelessWidget {
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     final cardColor = themeData.style == GlassStyle.classic
         ? (isDark
-            ? CupertinoColors.black.withValues(alpha: 0.65)
-            : CupertinoColors.white.withValues(alpha: 0.65))
+              ? CupertinoColors.black.withValues(alpha: 0.65)
+              : CupertinoColors.white.withValues(alpha: 0.65))
         : null;
     final effectiveSettings = GlassThemeHelpers.resolveSettings(
       context,
@@ -446,10 +439,7 @@ class _GlassActionSheetContent extends StatelessWidget {
 /// A single action button within the action sheet — manages its own pressed
 /// state to provide iOS-style opacity highlight on tap-down.
 class _ActionSheetButton extends StatefulWidget {
-  const _ActionSheetButton({
-    required this.action,
-    required this.glowColors,
-  });
+  const _ActionSheetButton({required this.action, required this.glowColors});
 
   final GlassActionSheetAction action;
   final GlassGlowColors? glowColors;
@@ -505,14 +495,11 @@ class _ActionSheetButtonState extends State<_ActionSheetButton>
               curve: Curves.easeOutCubic,
               color: showHighlight
                   ? CupertinoColors.label
-                      .resolveFrom(context)
-                      .withValues(alpha: 0.06)
+                        .resolveFrom(context)
+                        .withValues(alpha: 0.06)
                   : const Color(0x00000000),
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: child,
             );
           },

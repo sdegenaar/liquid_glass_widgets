@@ -14,7 +14,7 @@
 ///   flutter run -t lib/apple_messages/apple_messages_demo.dart
 library;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -26,15 +26,17 @@ import '../constants/sf_symbols.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const _kBg = CupertinoDynamicColor.withBrightness(
-    // iOS system grouped background — subtle cool gray so glass pills remain
-    // visible against the background even when the press specular fires bright.
-    // Pure white (#FFF) gives zero contrast and makes pressed glass disappear.
-    color: Color(0xFFF2F2F7),
-    darkColor: Color(0xFF000000));
+  // iOS system grouped background — subtle cool gray so glass pills remain
+  // visible against the background even when the press specular fires bright.
+  // Pure white (#FFF) gives zero contrast and makes pressed glass disappear.
+  color: Color(0xFFF2F2F7),
+  darkColor: Color(0xFF000000),
+);
 const _kSeparator = CupertinoColors.separator; // ~20% white
 const _kAvatarBg = CupertinoDynamicColor.withBrightness(
-    color: Color(0xFFE5E5EA),
-    darkColor: Color(0xFF3A3A50)); // muted indigo — iOS default avatar bg
+  color: Color(0xFFE5E5EA),
+  darkColor: Color(0xFF3A3A50),
+); // muted indigo — iOS default avatar bg
 const _kBlue = CupertinoColors.systemBlue; // iOS 26 blue
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -94,14 +96,12 @@ const _kConversations = [
   ),
   _Conversation(
     name: '+61 428 048 980',
-    preview:
-        'Hi! Just a reminder your appointment is Fri 9 May at 2:30 PM. Reply STOP to opt out.',
+    preview: 'Hi! Just a reminder your appointment is Fri 9 May at 2:30 PM. Reply STOP to opt out.',
     time: 'Monday',
   ),
   _Conversation(
     name: '+61 482 092 063',
-    preview:
-        'Your parcel has been delivered to the front door. Track at auspost.com.au',
+    preview: 'Your parcel has been delivered to the front door. Track at auspost.com.au',
     time: 'Monday',
   ),
   _Conversation(
@@ -118,8 +118,7 @@ const _kConversations = [
   ),
   _Conversation(
     name: '+61 409 593 783',
-    preview:
-        'Hi! FREE flu vaccines are now available for ALL ages at participating pharmacies near you.',
+    preview: 'Hi! FREE flu vaccines are now available for ALL ages at participating pharmacies near you.',
     time: 'Sunday',
   ),
   _Conversation(
@@ -166,16 +165,18 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
   await LiquidGlassWidgets.initialize();
-  runApp(LiquidGlassWidgets.wrap(
-    child: const AppleMessagesDemoApp(),
-    adaptiveQuality: true,
-    // ignore: experimental_member_use
-    adaptiveConfig: const GlassAdaptiveScopeConfig(
-      // Left on intentionally for 0.9.1 — helps gather diagnostics
-      // if the adaptive threshold fix doesn't hold on all hardware.
-      debugLogDiagnostics: true,
+  runApp(
+    LiquidGlassWidgets.wrap(
+      child: const AppleMessagesDemoApp(),
+      adaptiveQuality: true,
+      // ignore: experimental_member_use
+      adaptiveConfig: const GlassAdaptiveScopeConfig(
+        // Left on intentionally for 0.9.1 — helps gather diagnostics
+        // if the adaptive threshold fix doesn't hold on all hardware.
+        debugLogDiagnostics: true,
+      ),
     ),
-  ));
+  );
 }
 
 class AppleMessagesDemoApp extends StatelessWidget {
@@ -252,9 +253,8 @@ class _MessagesScreenState extends State<MessagesScreen> {
           // Conversation rows
           SliverList(
             delegate: SliverChildBuilderDelegate(
-              (context, i) => _ConversationRow(
-                conversation: _kConversations[i],
-              ),
+              (context, i) =>
+                  _ConversationRow(conversation: _kConversations[i]),
               childCount: _kConversations.length,
             ),
           ),
@@ -412,8 +412,11 @@ class _FilterMenu extends StatelessWidget {
           title: 'Messages',
           icon: Icon(SFSymbols.bubble_left_and_bubble_right),
           trailing: activeFilter == 'Messages'
-              ? Icon(SFSymbols.checkmark,
-                  color: CupertinoColors.label.resolveFrom(context), size: 16)
+              ? Icon(
+                  SFSymbols.checkmark,
+                  color: CupertinoColors.label.resolveFrom(context),
+                  size: 16,
+                )
               : null,
           onTap: () => onFilterChanged('Messages'),
         ),
@@ -421,8 +424,11 @@ class _FilterMenu extends StatelessWidget {
           title: 'Spam',
           icon: Icon(SFSymbols.xmark_bin),
           trailing: activeFilter == 'Spam'
-              ? Icon(SFSymbols.checkmark,
-                  color: CupertinoColors.label.resolveFrom(context), size: 16)
+              ? Icon(
+                  SFSymbols.checkmark,
+                  color: CupertinoColors.label.resolveFrom(context),
+                  size: 16,
+                )
               : null,
           onTap: () => onFilterChanged('Spam'),
         ),
@@ -430,16 +436,16 @@ class _FilterMenu extends StatelessWidget {
           title: 'Recently Deleted',
           icon: Icon(SFSymbols.trash),
           trailing: activeFilter == 'Recently Deleted'
-              ? Icon(SFSymbols.checkmark,
-                  color: CupertinoColors.label.resolveFrom(context), size: 16)
+              ? Icon(
+                  SFSymbols.checkmark,
+                  color: CupertinoColors.label.resolveFrom(context),
+                  size: 16,
+                )
               : null,
           onTap: () => onFilterChanged('Recently Deleted'),
         ),
         const GlassMenuDivider(),
-        GlassMenuItem(
-          title: 'Manage Filtering',
-          onTap: () {},
-        ),
+        GlassMenuItem(title: 'Manage Filtering', onTap: () {}),
       ],
     );
   }
@@ -496,8 +502,9 @@ class _ConversationRow extends StatelessWidget {
                             child: Text(
                               c.name,
                               style: TextStyle(
-                                color:
-                                    CupertinoColors.label.resolveFrom(context),
+                                color: CupertinoColors.label.resolveFrom(
+                                  context,
+                                ),
                                 fontSize: 17,
                                 fontWeight: c.isUnread
                                     ? FontWeight.w600
@@ -511,8 +518,9 @@ class _ConversationRow extends StatelessWidget {
                           Text(
                             c.time,
                             style: TextStyle(
-                              color: CupertinoColors.secondaryLabel
-                                  .resolveFrom(context),
+                              color: CupertinoColors.secondaryLabel.resolveFrom(
+                                context,
+                              ),
                               fontSize: 13,
                             ),
                           ),
@@ -520,8 +528,9 @@ class _ConversationRow extends StatelessWidget {
                           Icon(
                             SFSymbols.chevron_right,
                             size: 12,
-                            color: CupertinoColors.tertiaryLabel
-                                .resolveFrom(context),
+                            color: CupertinoColors.tertiaryLabel.resolveFrom(
+                              context,
+                            ),
                           ),
                         ],
                       ),
@@ -529,8 +538,9 @@ class _ConversationRow extends StatelessWidget {
                       Text(
                         c.hasAttachment ? '📷  ${c.preview}' : c.preview,
                         style: TextStyle(
-                          color: CupertinoColors.secondaryLabel
-                              .resolveFrom(context),
+                          color: CupertinoColors.secondaryLabel.resolveFrom(
+                            context,
+                          ),
                           fontSize: 15,
                           height: 1.3,
                         ),
@@ -556,7 +566,8 @@ class _ConversationRow extends StatelessWidget {
                   height: 0.33,
                   color: isDark
                       ? const Color(
-                          0x60FFFFFF) // ~38% white — matches iOS 26 hairline
+                          0x60FFFFFF,
+                        ) // ~38% white — matches iOS 26 hairline
                       : _kSeparator.resolveFrom(context),
                 ),
               );
@@ -656,7 +667,11 @@ class _SearchBarState extends State<_SearchBar> {
           // On devices with small or no insets (Android gesture nav, iPhone SE),
           // a minimum padding of 32 ensures it's not too close to the bottom edge.
           padding: EdgeInsets.fromLTRB(
-              12, 8, 12, widget.bottomPad > 32 ? widget.bottomPad - 8 : 32),
+            12,
+            8,
+            12,
+            widget.bottomPad > 32 ? widget.bottomPad - 8 : 32,
+          ),
           child: AdaptiveLiquidGlassLayer(
             quality: GlassQuality.premium,
             blendAmount: 20,
@@ -670,8 +685,7 @@ class _SearchBarState extends State<_SearchBar> {
                     child: GlassSearchBar(
                       focusNode: _focusNode,
                       placeholder: 'Search',
-                      useOwnLayer:
-                          isLight, // joins blend group in dark, separates in light to show shadow
+                      useOwnLayer: isLight, // joins blend group in dark, separates in light to show shadow
                       quality: GlassQuality.premium,
                       showsCancelButton: true,
                       height: 48,
@@ -702,8 +716,9 @@ class _SearchBarState extends State<_SearchBar> {
                                 ambientBaseLight: isLight ? 0.25 : 0.08,
                                 icon: Icon(
                                   SFSymbols.square_and_pencil,
-                                  color: CupertinoColors.label
-                                      .resolveFrom(context),
+                                  color: CupertinoColors.label.resolveFrom(
+                                    context,
+                                  ),
                                   size: 26, // Increased from 22
                                 ),
                               ),

@@ -149,10 +149,12 @@ class JellyClipper extends CustomClipper<Path> {
 
     // Create rounded rect path
     final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        inflatedRect,
-        Radius.circular(safeRadius > 0 ? safeRadius : 0),
-      ));
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          inflatedRect,
+          Radius.circular(safeRadius > 0 ? safeRadius : 0),
+        ),
+      );
 
     // Apply jelly physics transform around the center
     final center = inflatedRect.center;

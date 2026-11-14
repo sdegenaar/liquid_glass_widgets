@@ -23,11 +23,11 @@ void main() {
   final skip = !ui.ImageFilter.isShaderFilterSupported;
 
   Future<void> initialize(WidgetTester tester) => tester.runAsync(
-        () => LiquidGlassWidgets.initialize(
-          enablePerformanceMonitor: false,
-          warmUpMode: GlassWarmUpMode.always,
-        ),
-      );
+    () => LiquidGlassWidgets.initialize(
+      enablePerformanceMonitor: false,
+      warmUpMode: GlassWarmUpMode.always,
+    ),
+  );
 
   List<RenderLiquidGlassLayer> layersUnder(WidgetTester tester, Finder from) {
     final found = <RenderLiquidGlassLayer>[];
@@ -41,52 +41,67 @@ void main() {
   }
 
   Widget host(Widget child) => LiquidGlassWidgets.wrap(
-        child: Directionality(
-          textDirection: TextDirection.ltr,
-          child: Align(alignment: Alignment.topLeft, child: child),
-        ),
-      );
+    child: Directionality(
+      textDirection: TextDirection.ltr,
+      child: Align(alignment: Alignment.topLeft, child: child),
+    ),
+  );
 
   const shape = LiquidRoundedSuperellipse(borderRadius: 24);
 
-  testWidgets('an idle glass layer that cannot reconcile requests no frames',
-      skip: skip, (tester) async {
+  testWidgets(
+    'an idle glass layer that cannot reconcile requests no frames',
+    skip: skip,
+    (tester) async {
+      await initialize(tester);
+      // No blur and no thickness: the layer paints nothing and keeps no matte,
+      // so _updateAtComposite has nothing to update and returns false.
+      await tester.pumpWidget(
+        host(
+          GlassContainer(
+            useOwnLayer: true,
+            quality: GlassQuality.premium,
+            settings: const LiquidGlassSettings(blur: 0, thickness: 0),
+            width: 120,
+            height: 48,
+            shape: shape,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Precondition: this really is the "cannot reconcile" state.
+      final layers = layersUnder(tester, find.byType(GlassContainer));
+      expect(layers, hasLength(1));
+      expect(layers.single.geometryImage, isNull);
+
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        expect(
+          tester.binding.hasScheduledFrame,
+          isFalse,
+          reason: 'frame $i: an idle, unmoved layer must not repaint itself',
+        );
+      }
+    },
+  );
+
+  testWidgets('an idle, ready glass layer requests no frames', skip: skip, (
+    tester,
+  ) async {
     await initialize(tester);
-    // No blur and no thickness: the layer paints nothing and keeps no matte,
-    // so _updateAtComposite has nothing to update and returns false.
-    await tester.pumpWidget(host(GlassContainer(
-      useOwnLayer: true,
-      quality: GlassQuality.premium,
-      settings: const LiquidGlassSettings(blur: 0, thickness: 0),
-      width: 120,
-      height: 48,
-      shape: shape,
-    )));
-    await tester.pumpAndSettle();
-
-    // Precondition: this really is the "cannot reconcile" state.
-    final layers = layersUnder(tester, find.byType(GlassContainer));
-    expect(layers, hasLength(1));
-    expect(layers.single.geometryImage, isNull);
-
-    for (var i = 0; i < 5; i++) {
-      await tester.pump(const Duration(milliseconds: 16));
-      expect(tester.binding.hasScheduledFrame, isFalse,
-          reason: 'frame $i: an idle, unmoved layer must not repaint itself');
-    }
-  });
-
-  testWidgets('an idle, ready glass layer requests no frames', skip: skip,
-      (tester) async {
-    await initialize(tester);
-    await tester.pumpWidget(host(GlassContainer(
-      useOwnLayer: true,
-      quality: GlassQuality.premium,
-      settings: const LiquidGlassSettings(blur: 8),
-      width: 120,
-      height: 48,
-      shape: shape,
-    )));
+    await tester.pumpWidget(
+      host(
+        GlassContainer(
+          useOwnLayer: true,
+          quality: GlassQuality.premium,
+          settings: const LiquidGlassSettings(blur: 8),
+          width: 120,
+          height: 48,
+          shape: shape,
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     final layers = layersUnder(tester, find.byType(GlassContainer));
@@ -95,62 +110,74 @@ void main() {
 
     for (var i = 0; i < 5; i++) {
       await tester.pump(const Duration(milliseconds: 16));
-      expect(tester.binding.hasScheduledFrame, isFalse,
-          reason: 'frame $i: an idle, unmoved layer must not repaint itself');
+      expect(
+        tester.binding.hasScheduledFrame,
+        isFalse,
+        reason: 'frame $i: an idle, unmoved layer must not repaint itself',
+      );
     }
   });
 
   testWidgets(
-      'a nested glass layer follows its enclosing pass when the ancestor '
-      'closes it',
-      skip: skip, (tester) async {
-    await initialize(tester);
-    final outer = ValueNotifier(const LiquidGlassSettings(blur: 8));
-    await tester.pumpWidget(host(ValueListenableBuilder<LiquidGlassSettings>(
-      valueListenable: outer,
-      builder: (context, settings, child) => GlassContainer(
-        useOwnLayer: true,
-        quality: GlassQuality.premium,
-        settings: settings,
-        width: 300,
-        height: 300,
-        shape: shape,
-        child: child,
-      ),
-      child: Center(
-        child: GlassContainer(
-          useOwnLayer: true,
-          quality: GlassQuality.premium,
-          settings: const LiquidGlassSettings(blur: 8),
-          width: 80,
-          height: 48,
-          shape: shape,
+    'a nested glass layer follows its enclosing pass when the ancestor '
+    'closes it',
+    skip: skip,
+    (tester) async {
+      await initialize(tester);
+      final outer = ValueNotifier(const LiquidGlassSettings(blur: 8));
+      await tester.pumpWidget(
+        host(
+          ValueListenableBuilder<LiquidGlassSettings>(
+            valueListenable: outer,
+            builder: (context, settings, child) => GlassContainer(
+              useOwnLayer: true,
+              quality: GlassQuality.premium,
+              settings: settings,
+              width: 300,
+              height: 300,
+              shape: shape,
+              child: child,
+            ),
+            child: Center(
+              child: GlassContainer(
+                useOwnLayer: true,
+                quality: GlassQuality.premium,
+                settings: const LiquidGlassSettings(blur: 8),
+                width: 80,
+                height: 48,
+                shape: shape,
+              ),
+            ),
+          ),
         ),
-      ),
-    )));
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    final layers = layersUnder(tester, find.byType(GlassContainer).first);
-    expect(layers, hasLength(2), reason: 'outer and nested premium layers');
-    final inner = layers.last;
-    final openRect = inner.enclosingBackdropPassRect();
-    expect(openRect, isNotNull, reason: 'nested inside the outer glass pass');
-    expect(inner.debugUniformsPassRect, openRect);
+      final layers = layersUnder(tester, find.byType(GlassContainer).first);
+      expect(layers, hasLength(2), reason: 'outer and nested premium layers');
+      final inner = layers.last;
+      final openRect = inner.enclosingBackdropPassRect();
+      expect(openRect, isNotNull, reason: 'nested inside the outer glass pass');
+      expect(inner.debugUniformsPassRect, openRect);
 
-    // The ancestor closes its pass (nothing left to render). The nested layer
-    // is not itself dirtied by this; it must still end up on the root pass.
-    outer.value = const LiquidGlassSettings(blur: 0, thickness: 0);
-    await tester.pump();
-    await tester.pump();
-    expect(inner.enclosingBackdropPassRect(), isNull);
-    expect(inner.debugUniformsPassRect, isNull,
-        reason: 'uniforms were left written against the closed outer pass');
+      // The ancestor closes its pass (nothing left to render). The nested layer
+      // is not itself dirtied by this; it must still end up on the root pass.
+      outer.value = const LiquidGlassSettings(blur: 0, thickness: 0);
+      await tester.pump();
+      await tester.pump();
+      expect(inner.enclosingBackdropPassRect(), isNull);
+      expect(
+        inner.debugUniformsPassRect,
+        isNull,
+        reason: 'uniforms were left written against the closed outer pass',
+      );
 
-    // ...and re-opens it.
-    outer.value = const LiquidGlassSettings(blur: 8);
-    await tester.pump();
-    await tester.pump();
-    expect(inner.debugUniformsPassRect, inner.enclosingBackdropPassRect());
-    expect(inner.debugUniformsPassRect, isNotNull);
-  });
+      // ...and re-opens it.
+      outer.value = const LiquidGlassSettings(blur: 8);
+      await tester.pump();
+      await tester.pump();
+      expect(inner.debugUniformsPassRect, inner.enclosingBackdropPassRect());
+      expect(inner.debugUniformsPassRect, isNotNull);
+    },
+  );
 }

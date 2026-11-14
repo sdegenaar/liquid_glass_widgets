@@ -1,6 +1,7 @@
 // ignore: unnecessary_import
 import 'dart:ui';
-import 'package:flutter/cupertino.dart';
+
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -14,9 +15,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassChip(
-              label: 'Test Chip',
-            ),
+            child: GlassChip(label: 'Test Chip'),
           ),
         ),
       );
@@ -32,9 +31,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassChip(
-              label: testLabel,
-            ),
+            child: GlassChip(label: testLabel),
           ),
         ),
       );
@@ -58,18 +55,16 @@ void main() {
       expect(find.byIcon(CupertinoIcons.heart_fill), findsOneWidget);
     });
 
-    testWidgets('displays delete button when onDeleted provided',
-        (tester) async {
+    testWidgets('displays delete button when onDeleted provided', (
+      tester,
+    ) async {
       var deleted = false;
 
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassChip(
-              label: 'Tag',
-              onDeleted: () => deleted = true,
-            ),
+            child: GlassChip(label: 'Tag', onDeleted: () => deleted = true),
           ),
         ),
       );
@@ -89,10 +84,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassChip(
-              label: 'Filter',
-              onTap: () => tapped = true,
-            ),
+            child: GlassChip(label: 'Filter', onTap: () => tapped = true),
           ),
         ),
       );
@@ -108,11 +100,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassChip(
-              label: 'Selected',
-              selected: true,
-              onTap: () {},
-            ),
+            child: GlassChip(label: 'Selected', selected: true, onTap: () {}),
           ),
         ),
       );
@@ -122,21 +110,14 @@ void main() {
 
     testWidgets('works in standalone mode', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          child: GlassChip(
-            label: 'Standalone',
-            useOwnLayer: true,
-          ),
-        ),
+        createTestApp(child: GlassChip(label: 'Standalone', useOwnLayer: true)),
       );
 
       expect(find.byType(GlassChip), findsOneWidget);
     });
 
     test('defaults are correct', () {
-      final chip = GlassChip(
-        label: 'Test',
-      );
+      final chip = GlassChip(label: 'Test');
 
       expect(chip.selected, isFalse);
       expect(chip.useOwnLayer, isFalse);
@@ -149,8 +130,9 @@ void main() {
     });
 
     group('GlassSurfaceStyle.solid', () {
-      testWidgets('bypasses GlassButton and AdaptiveGlass in solid mode',
-          (tester) async {
+      testWidgets('bypasses GlassButton and AdaptiveGlass in solid mode', (
+        tester,
+      ) async {
         var tapped = false;
         var deleted = false;
 
@@ -179,15 +161,14 @@ void main() {
         expect(deleted, isTrue);
       });
 
-      testWidgets('inherits GlassSurfaceStyle.solid inside solid card',
-          (tester) async {
+      testWidgets('inherits GlassSurfaceStyle.solid inside solid card', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           createTestApp(
             child: GlassContainer.card(
               surfaceStyle: GlassSurfaceStyle.solid,
-              child: const GlassChip(
-                label: 'Inherited Solid',
-              ),
+              child: const GlassChip(label: 'Inherited Solid'),
             ),
           ),
         );
@@ -202,51 +183,52 @@ void main() {
       });
 
       testWidgets(
-          'uses custom color when unselected and selectedColor when selected',
-          (tester) async {
-        const customFill = Color(0xFFEEEEEE);
-        const customSelected = Color(0xFF7B2CBF);
+        'uses custom color when unselected and selectedColor when selected',
+        (tester) async {
+          const customFill = Color(0xFFEEEEEE);
+          const customSelected = Color(0xFF7B2CBF);
 
-        await tester.pumpWidget(
-          createTestApp(
-            child: const GlassChip(
-              label: 'Stage 1',
-              surfaceStyle: GlassSurfaceStyle.solid,
-              color: customFill,
-              selectedColor: customSelected,
-              selected: false,
+          await tester.pumpWidget(
+            createTestApp(
+              child: const GlassChip(
+                label: 'Stage 1',
+                surfaceStyle: GlassSurfaceStyle.solid,
+                color: customFill,
+                selectedColor: customSelected,
+                selected: false,
+              ),
             ),
-          ),
-        );
+          );
 
-        DecoratedBox pill = tester.widget<DecoratedBox>(
-          find.descendant(
-            of: find.byType(GlassChip),
-            matching: find.byType(DecoratedBox),
-          ),
-        );
-        expect((pill.decoration as ShapeDecoration).color, customFill);
-
-        await tester.pumpWidget(
-          createTestApp(
-            child: const GlassChip(
-              label: 'Stage 1',
-              surfaceStyle: GlassSurfaceStyle.solid,
-              color: customFill,
-              selectedColor: customSelected,
-              selected: true,
+          DecoratedBox pill = tester.widget<DecoratedBox>(
+            find.descendant(
+              of: find.byType(GlassChip),
+              matching: find.byType(DecoratedBox),
             ),
-          ),
-        );
+          );
+          expect((pill.decoration as ShapeDecoration).color, customFill);
 
-        pill = tester.widget<DecoratedBox>(
-          find.descendant(
-            of: find.byType(GlassChip),
-            matching: find.byType(DecoratedBox),
-          ),
-        );
-        expect((pill.decoration as ShapeDecoration).color, customSelected);
-      });
+          await tester.pumpWidget(
+            createTestApp(
+              child: const GlassChip(
+                label: 'Stage 1',
+                surfaceStyle: GlassSurfaceStyle.solid,
+                color: customFill,
+                selectedColor: customSelected,
+                selected: true,
+              ),
+            ),
+          );
+
+          pill = tester.widget<DecoratedBox>(
+            find.descendant(
+              of: find.byType(GlassChip),
+              matching: find.byType(DecoratedBox),
+            ),
+          );
+          expect((pill.decoration as ShapeDecoration).color, customSelected);
+        },
+      );
 
       testWidgets('Space key triggers onTap in solid mode', (tester) async {
         var tapped = false;
@@ -273,8 +255,9 @@ void main() {
         expect(tapped, isTrue);
       });
 
-      testWidgets('ellipsizes long labels without overflowing narrow parents',
-          (tester) async {
+      testWidgets('ellipsizes long labels without overflowing narrow parents', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           createTestApp(
             child: SizedBox(
@@ -358,8 +341,9 @@ void main() {
             ),
           );
 
-          final node =
-              tester.getSemantics(find.bySemanticsLabel('Semantics Chip'));
+          final node = tester.getSemantics(
+            find.bySemanticsLabel('Semantics Chip'),
+          );
           // ignore: deprecated_member_use
           expect(node.hasFlag(SemanticsFlag.isButton), true);
           // ignore: deprecated_member_use

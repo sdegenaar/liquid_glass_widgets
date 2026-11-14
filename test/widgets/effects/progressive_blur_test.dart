@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -16,15 +16,15 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 /// bottom.
 void main() {
   Widget host(Widget child) => MaterialApp(
-        home: Scaffold(
-          body: Stack(
-            children: [
-              const Positioned.fill(child: ColoredBox(color: Colors.blue)),
-              Positioned(top: 0, left: 0, right: 0, height: 96, child: child),
-            ],
-          ),
-        ),
-      );
+    home: Scaffold(
+      body: Stack(
+        children: [
+          const Positioned.fill(child: ColoredBox(color: Colors.blue)),
+          Positioned(top: 0, left: 0, right: 0, height: 96, child: child),
+        ],
+      ),
+    ),
+  );
 
   testWidgets('renders a backdrop filter when blurring', (tester) async {
     await tester.pumpWidget(host(const ProgressiveBlur(maxSigma: 20)));
@@ -37,8 +37,9 @@ void main() {
     expect(find.byType(ClipRect), findsWidgets);
   });
 
-  testWidgets('maxSigma <= 0 is a passthrough (no backdrop filter)',
-      (tester) async {
+  testWidgets('maxSigma <= 0 is a passthrough (no backdrop filter)', (
+    tester,
+  ) async {
     await tester.pumpWidget(host(const ProgressiveBlur(maxSigma: 0)));
     await tester.pump();
 
@@ -46,8 +47,9 @@ void main() {
     expect(find.byType(BackdropFilter), findsNothing);
   });
 
-  testWidgets('dropping maxSigma to 0 removes the backdrop filter',
-      (tester) async {
+  testWidgets('dropping maxSigma to 0 removes the backdrop filter', (
+    tester,
+  ) async {
     await tester.pumpWidget(host(const ProgressiveBlur(maxSigma: 20)));
     await tester.pump();
     expect(find.byType(BackdropFilter), findsOneWidget);
@@ -77,8 +79,9 @@ void main() {
 
   testWidgets('honours the direction without throwing', (tester) async {
     for (final dir in ProgressiveBlurDirection.values) {
-      await tester
-          .pumpWidget(host(ProgressiveBlur(maxSigma: 18, direction: dir)));
+      await tester.pumpWidget(
+        host(ProgressiveBlur(maxSigma: 18, direction: dir)),
+      );
       await tester.pump();
       expect(tester.takeException(), isNull);
     }
@@ -142,16 +145,15 @@ void main() {
       double falloff = 1,
       ProgressiveBlurDirection direction = ProgressiveBlurDirection.topToBottom,
       double axis = 0,
-    }) =>
-        progressiveBlurUniforms(
-          origin: origin,
-          size: size,
-          devicePixelRatio: devicePixelRatio,
-          maxSigma: maxSigma,
-          falloff: falloff,
-          direction: direction,
-          axis: axis,
-        );
+    }) => progressiveBlurUniforms(
+      origin: origin,
+      size: size,
+      devicePixelRatio: devicePixelRatio,
+      maxSigma: maxSigma,
+      falloff: falloff,
+      direction: direction,
+      axis: axis,
+    );
 
     test('carries the region origin through, in device pixels', () {
       // The regression: the origin used to be hard-coded to (0, 0), so the

@@ -1,4 +1,5 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+
 import 'dart:math' as math;
 
 /// Data model for an individual animated circle
@@ -39,11 +40,7 @@ class AnimatedCirclesPainter extends CustomPainter {
       final x = centerX + circle.orbitRadius * math.cos(animation.value);
       final y = centerY + circle.orbitRadius * math.sin(animation.value);
 
-      canvas.drawCircle(
-        Offset(x, y),
-        circle.radius,
-        paint,
-      );
+      canvas.drawCircle(Offset(x, y), circle.radius, paint);
     }
   }
 
@@ -88,20 +85,19 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
       final animation = Tween<double>(
         begin: 0,
         end: 2 * math.pi,
-      ).animate(CurvedAnimation(
-        parent: controller,
-        curve: Curves.linear,
-      ));
+      ).animate(CurvedAnimation(parent: controller, curve: Curves.linear));
 
       _controllers.add(controller);
       _animations.add(animation);
 
-      _circles.add(CircleData(
-        radius: 60.0 + (i * 25),
-        centerX: 0.15 + (i * 0.18),
-        centerY: 0.25 + (i * 0.12),
-        orbitRadius: 40.0 + (i * 20),
-      ));
+      _circles.add(
+        CircleData(
+          radius: 60.0 + (i * 25),
+          centerX: 0.15 + (i * 0.18),
+          centerY: 0.25 + (i * 0.12),
+          orbitRadius: 40.0 + (i * 20),
+        ),
+      );
 
       controller.repeat();
     }
@@ -156,19 +152,12 @@ class GradientBackground extends StatelessWidget {
 class AppBackground extends StatelessWidget {
   final Widget child;
 
-  const AppBackground({
-    super.key,
-    required this.child,
-  });
+  const AppBackground({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
     return Stack(
-      children: [
-        const GradientBackground(),
-        const AnimatedBackground(),
-        child,
-      ],
+      children: [const GradientBackground(), const AnimatedBackground(), child],
     );
   }
 }

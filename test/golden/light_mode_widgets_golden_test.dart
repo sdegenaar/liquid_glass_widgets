@@ -1,7 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 import '../shared/test_helpers.dart';
@@ -88,10 +88,7 @@ void main() {
                 height: 44,
                 child: const Text(
                   'Light Mode',
-                  style: TextStyle(
-                    color: CupertinoColors.label,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: CupertinoColors.label, fontSize: 14),
                 ),
               ),
             ),
@@ -114,8 +111,10 @@ void main() {
     tags: ['golden'],
     pumpBeforeTest: pumpOnce,
     builder: () => LightGoldenTestGroup(
-      scenarioConstraints:
-          const BoxConstraints.tightFor(width: 400, height: 100),
+      scenarioConstraints: const BoxConstraints.tightFor(
+        width: 400,
+        height: 100,
+      ),
       children: [
         LightGoldenTestScenario(
           name: 'centered_title',
@@ -124,9 +123,7 @@ void main() {
               settings: defaultTestGlassSettings,
               child: const Material(
                 color: Colors.transparent,
-                child: GlassAppBar(
-                  title: Text('App Title'),
-                ),
+                child: GlassAppBar(title: Text('App Title')),
               ),
             ),
           ),
@@ -174,26 +171,19 @@ void main() {
     tags: ['golden'],
     pumpBeforeTest: pumpOnce,
     builder: () => LightGoldenTestGroup(
-      scenarioConstraints:
-          const BoxConstraints.tightFor(width: 400, height: 120),
+      scenarioConstraints: const BoxConstraints.tightFor(
+        width: 400,
+        height: 120,
+      ),
       children: [
         LightGoldenTestScenario(
           name: 'three_tabs',
           child: buildWithLightBackground(
             GlassTabBar.bottom(
               tabs: const [
-                GlassTab(
-                  label: 'Home',
-                  icon: Icon(CupertinoIcons.home),
-                ),
-                GlassTab(
-                  label: 'Search',
-                  icon: Icon(CupertinoIcons.search),
-                ),
-                GlassTab(
-                  label: 'Profile',
-                  icon: Icon(CupertinoIcons.person),
-                ),
+                GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+                GlassTab(label: 'Search', icon: Icon(CupertinoIcons.search)),
+                GlassTab(label: 'Profile', icon: Icon(CupertinoIcons.person)),
               ],
               selectedIndex: 0,
               onTabSelected: (_) {},
@@ -205,18 +195,9 @@ void main() {
           child: buildWithLightBackground(
             GlassTabBar.bottom(
               tabs: const [
-                GlassTab(
-                  label: 'Home',
-                  icon: Icon(CupertinoIcons.home),
-                ),
-                GlassTab(
-                  label: 'Search',
-                  icon: Icon(CupertinoIcons.search),
-                ),
-                GlassTab(
-                  label: 'Profile',
-                  icon: Icon(CupertinoIcons.person),
-                ),
+                GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+                GlassTab(label: 'Search', icon: Icon(CupertinoIcons.search)),
+                GlassTab(label: 'Profile', icon: Icon(CupertinoIcons.person)),
               ],
               selectedIndex: 1,
               onTabSelected: (_) {},
@@ -228,14 +209,8 @@ void main() {
           child: buildWithLightBackground(
             GlassTabBar.bottom(
               tabs: const [
-                GlassTab(
-                  label: 'Home',
-                  icon: Icon(CupertinoIcons.home),
-                ),
-                GlassTab(
-                  label: 'Library',
-                  icon: Icon(CupertinoIcons.book),
-                ),
+                GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+                GlassTab(label: 'Library', icon: Icon(CupertinoIcons.book)),
               ],
               selectedIndex: 0,
               onTabSelected: (_) {},
@@ -342,8 +317,10 @@ void main() {
     tags: ['golden'],
     pumpBeforeTest: pumpOnce,
     builder: () => LightGoldenTestGroup(
-      scenarioConstraints:
-          const BoxConstraints.tightFor(width: 400, height: 80),
+      scenarioConstraints: const BoxConstraints.tightFor(
+        width: 400,
+        height: 80,
+      ),
       children: [
         LightGoldenTestScenario(
           name: 'two_actions',

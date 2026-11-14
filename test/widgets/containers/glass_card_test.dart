@@ -1,10 +1,10 @@
 // GlassCard is deprecated (use GlassContainer.card) but stays covered here
 // until its removal in 2.0.0.
-// ignore_for_file: deprecated_member_use_from_same_package, deprecated_member_use
+// ignore_for_file: deprecated_member_use_from_same_package
 import 'package:liquid_glass_widgets/widgets/containers/glass_card.dart';
 import 'package:liquid_glass_widgets/widgets/containers/glass_container.dart';
 import 'package:liquid_glass_widgets/src/renderer/liquid_glass_renderer.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
@@ -32,9 +32,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: const GlassCard(
-              child: Text(testText),
-            ),
+            child: const GlassCard(child: Text(testText)),
           ),
         ),
       );
@@ -47,9 +45,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: const GlassCard(
-              child: Text('Content'),
-            ),
+            child: const GlassCard(child: Text('Content')),
           ),
         ),
       );
@@ -97,8 +93,9 @@ void main() {
       expect(card.quality, isNull);
     });
 
-    testWidgets('forwards every property to GlassContainer.card',
-        (tester) async {
+    testWidgets('forwards every property to GlassContainer.card', (
+      tester,
+    ) async {
       const shape = LiquidRoundedSuperellipse(borderRadius: 20);
 
       await tester.pumpWidget(
@@ -118,8 +115,9 @@ void main() {
         ),
       );
 
-      final container =
-          tester.widget<GlassContainer>(find.byType(GlassContainer));
+      final container = tester.widget<GlassContainer>(
+        find.byType(GlassContainer),
+      );
       expect(container.width, 120);
       expect(container.height, 80);
       expect(container.padding, const EdgeInsets.all(4));
@@ -128,8 +126,9 @@ void main() {
       expect(container.clipBehavior, Clip.antiAlias);
     });
 
-    testWidgets('default GlassCard matches default GlassContainer.card',
-        (tester) async {
+    testWidgets('default GlassCard matches default GlassContainer.card', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
@@ -138,8 +137,9 @@ void main() {
           ),
         ),
       );
-      final fromCard =
-          tester.widget<GlassContainer>(find.byType(GlassContainer));
+      final fromCard = tester.widget<GlassContainer>(
+        find.byType(GlassContainer),
+      );
 
       const direct = GlassContainer.card();
       expect(fromCard.padding, direct.padding);

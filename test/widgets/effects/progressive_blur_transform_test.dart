@@ -1,6 +1,6 @@
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/widgets/effects/progressive_blur.dart';
 
@@ -36,34 +36,39 @@ void main() {
   late ui.FragmentProgram program;
 
   setUp(() async {
-    program =
-        await ui.FragmentProgram.fromAsset('shaders/progressive_blur.frag');
+    program = await ui.FragmentProgram.fromAsset(
+      'shaders/progressive_blur.frag',
+    );
   });
 
   Widget app(double dy, {Widget? child}) => Directionality(
-        textDirection: TextDirection.ltr,
-        child: Transform.translate(
-          offset: Offset(0, dy),
-          child: RepaintBoundary(
-            child: SizedBox(
-              width: 200,
-              height: 96,
-              child: _Host(program: program, child: child),
-            ),
-          ),
+    textDirection: TextDirection.ltr,
+    child: Transform.translate(
+      offset: Offset(0, dy),
+      child: RepaintBoundary(
+        child: SizedBox(
+          width: 200,
+          height: 96,
+          child: _Host(program: program, child: child),
         ),
-      );
+      ),
+    ),
+  );
 
-  testWidgets('repaints when an ancestor moves the retained layer',
-      (tester) async {
+  testWidgets('repaints when an ancestor moves the retained layer', (
+    tester,
+  ) async {
     await tester.pumpWidget(app(300, child: const SizedBox.expand()));
     final blur = tester.renderObject<RenderBox>(find.byType(_Host));
     expect(blur.debugNeedsPaint, isFalse);
 
     // Only the Transform repaints; the RepaintBoundary reuses its layer.
     await tester.pumpWidget(app(0, child: const SizedBox.expand()));
-    expect(blur.debugNeedsPaint, isTrue,
-        reason: 'the blur still holds the origin from the offset paint');
+    expect(
+      blur.debugNeedsPaint,
+      isTrue,
+      reason: 'the blur still holds the origin from the offset paint',
+    );
 
     await tester.pump();
     expect(blur.debugNeedsPaint, isFalse);

@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/engine/liquid_glass_layer.dart';
@@ -11,18 +11,9 @@ import '../../shared/test_helpers.dart';
 void main() {
   group('GlassTabBar.bottom', () {
     final testTabs = [
-      const GlassTab(
-        label: 'Home',
-        icon: Icon(CupertinoIcons.home),
-      ),
-      const GlassTab(
-        label: 'Search',
-        icon: Icon(CupertinoIcons.search),
-      ),
-      const GlassTab(
-        label: 'Profile',
-        icon: Icon(CupertinoIcons.person),
-      ),
+      const GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+      const GlassTab(label: 'Search', icon: Icon(CupertinoIcons.search)),
+      const GlassTab(label: 'Profile', icon: Icon(CupertinoIcons.person)),
     ];
 
     testWidgets('can be instantiated with required parameters', (tester) async {
@@ -117,8 +108,9 @@ void main() {
       expect(find.byIcon(CupertinoIcons.add), findsOneWidget);
     });
 
-    testWidgets('places extra button on the left when configured',
-        (tester) async {
+    testWidgets('places extra button on the left when configured', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: GlassTabBar.bottom(
@@ -137,8 +129,9 @@ void main() {
       );
 
       final addCenter = tester.getCenter(find.byIcon(CupertinoIcons.add));
-      final homeCenter =
-          tester.getCenter(find.byIcon(CupertinoIcons.home).first);
+      final homeCenter = tester.getCenter(
+        find.byIcon(CupertinoIcons.home).first,
+      );
 
       expect(addCenter.dx, lessThan(homeCenter.dx));
     });
@@ -186,10 +179,7 @@ void main() {
       );
 
       expect(semantics.length, greaterThan(0));
-      expect(
-        semantics.any((s) => s.properties.button == true),
-        isTrue,
-      );
+      expect(semantics.any((s) => s.properties.button == true), isTrue);
     });
 
     test('defaults are correct', () {
@@ -209,10 +199,7 @@ void main() {
 
   group('GlassTab', () {
     test('can be instantiated', () {
-      const tab = GlassTab(
-        label: 'Home',
-        icon: Icon(CupertinoIcons.home),
-      );
+      const tab = GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home));
 
       expect(tab.label, equals('Home'));
       expect(tab.icon, isA<Icon>());
@@ -299,85 +286,89 @@ void main() {
       expect(button.iconColor, Colors.red);
     });
 
-    test('GlassTabBarExtraButton.menu constructor sets properties correctly',
-        () {
-      final button = GlassTabBarExtraButton.menu(
-        icon: const Icon(CupertinoIcons.ellipsis),
-        label: 'More',
-        size: 72,
-        placement: GlassExtraButtonPlacement.left,
-        menuWidth: 220,
-        menuAlignment: GlassMenuAlignment.topRight,
-        menuItems: [
-          GlassMenuItem(
-            icon: const Icon(CupertinoIcons.share),
-            title: 'Share',
-            onTap: () {},
-          ),
-        ],
-      );
+    test(
+      'GlassTabBarExtraButton.menu constructor sets properties correctly',
+      () {
+        final button = GlassTabBarExtraButton.menu(
+          icon: const Icon(CupertinoIcons.ellipsis),
+          label: 'More',
+          size: 72,
+          placement: GlassExtraButtonPlacement.left,
+          menuWidth: 220,
+          menuAlignment: GlassMenuAlignment.topRight,
+          menuItems: [
+            GlassMenuItem(
+              icon: const Icon(CupertinoIcons.share),
+              title: 'Share',
+              onTap: () {},
+            ),
+          ],
+        );
 
-      expect(button.isMenu, isTrue);
-      expect(button.label, 'More');
-      expect(button.enabled, isTrue);
-      expect(button.size, 72);
-      expect(button.placement, GlassExtraButtonPlacement.left);
-      expect(button.menuWidth, 220);
-      expect(button.menuAlignment, GlassMenuAlignment.topRight);
-      expect(button.menuItems?.length, 1);
-      expect(() => button.onTap(), returnsNormally);
-    });
+        expect(button.isMenu, isTrue);
+        expect(button.label, 'More');
+        expect(button.enabled, isTrue);
+        expect(button.size, 72);
+        expect(button.placement, GlassExtraButtonPlacement.left);
+        expect(button.menuWidth, 220);
+        expect(button.menuAlignment, GlassMenuAlignment.topRight);
+        expect(button.menuItems?.length, 1);
+        expect(() => button.onTap(), returnsNormally);
+      },
+    );
 
     testWidgets(
-        'tapping extraButton in menu mode opens GlassMenu in GlassTabBar.bottom',
-        (tester) async {
-      var itemTapped = false;
-      const tabs = [
-        GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
-        GlassTab(label: 'Profile', icon: Icon(CupertinoIcons.person)),
-      ];
+      'tapping extraButton in menu mode opens GlassMenu in GlassTabBar.bottom',
+      (tester) async {
+        var itemTapped = false;
+        const tabs = [
+          GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+          GlassTab(label: 'Profile', icon: Icon(CupertinoIcons.person)),
+        ];
 
-      final menuButton = GlassTabBarExtraButton.menu(
-        icon: const Icon(CupertinoIcons.ellipsis),
-        label: 'Options',
-        menuItems: [
-          GlassMenuItem(
-            icon: const Icon(CupertinoIcons.share),
-            title: 'Share Action',
-            onTap: () => itemTapped = true,
+        final menuButton = GlassTabBarExtraButton.menu(
+          icon: const Icon(CupertinoIcons.ellipsis),
+          label: 'Options',
+          menuItems: [
+            GlassMenuItem(
+              icon: const Icon(CupertinoIcons.share),
+              title: 'Share Action',
+              onTap: () => itemTapped = true,
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassTabBar.bottom(
+              tabs: tabs,
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              maskingQuality: MaskingQuality.off,
+              extraButton: menuButton,
+            ),
           ),
-        ],
-      );
+        );
+        await tester.pumpAndSettle();
 
-      await tester.pumpWidget(
-        createTestApp(
-          child: GlassTabBar.bottom(
-            tabs: tabs,
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            maskingQuality: MaskingQuality.off,
-            extraButton: menuButton,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        expect(find.text('Share Action'), findsNothing);
 
-      expect(find.text('Share Action'), findsNothing);
+        await tester.tap(find.byIcon(CupertinoIcons.ellipsis));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(CupertinoIcons.ellipsis));
-      await tester.pumpAndSettle();
+        expect(find.text('Share Action'), findsOneWidget);
 
-      expect(find.text('Share Action'), findsOneWidget);
+        await tester.tap(find.text('Share Action'));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Share Action'));
-      await tester.pumpAndSettle();
+        expect(itemTapped, isTrue);
+        expect(find.text('Share Action'), findsNothing);
+      },
+    );
 
-      expect(itemTapped, isTrue);
-      expect(find.text('Share Action'), findsNothing);
-    });
-
-    testWidgets('disabled extraButton in menu mode does not open menu on tap',
-        (tester) async {
+    testWidgets('disabled extraButton in menu mode does not open menu on tap', (
+      tester,
+    ) async {
       const tabs = [
         GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
         GlassTab(label: 'Profile', icon: Icon(CupertinoIcons.person)),
@@ -433,10 +424,14 @@ void main() {
 
   group('GlassExtraButtonPosition', () {
     test('has beforeSearch and afterSearch values', () {
-      expect(GlassExtraButtonPosition.values,
-          contains(GlassExtraButtonPosition.beforeSearch));
-      expect(GlassExtraButtonPosition.values,
-          contains(GlassExtraButtonPosition.afterSearch));
+      expect(
+        GlassExtraButtonPosition.values,
+        contains(GlassExtraButtonPosition.beforeSearch),
+      );
+      expect(
+        GlassExtraButtonPosition.values,
+        contains(GlassExtraButtonPosition.afterSearch),
+      );
     });
   });
 
@@ -490,21 +485,22 @@ void main() {
     });
 
     testWidgets(
-        'showIndicator=false with backgroundQuality and default maskingQuality renders',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: GlassTabBar.bottom(
-            tabs: testTabs3,
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            showIndicator: false,
-            backgroundQuality: GlassQuality.minimal,
+      'showIndicator=false with backgroundQuality and default maskingQuality renders',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassTabBar.bottom(
+              tabs: testTabs3,
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              showIndicator: false,
+              backgroundQuality: GlassQuality.minimal,
+            ),
           ),
-        ),
-      );
-      expect(find.byType(GlassTabBar), findsOneWidget);
-    });
+        );
+        expect(find.byType(GlassTabBar), findsOneWidget);
+      },
+    );
 
     testWidgets('MaskingQuality.off renders correctly', (tester) async {
       await tester.pumpWidget(
@@ -558,8 +554,9 @@ void main() {
       expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
-    testWidgets('custom selectedIconColor and unselectedIconColor',
-        (tester) async {
+    testWidgets('custom selectedIconColor and unselectedIconColor', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: GlassTabBar.bottom(
@@ -650,10 +647,7 @@ void main() {
                 icon: Icon(CupertinoIcons.home),
                 activeIcon: Icon(CupertinoIcons.house_fill),
               ),
-              GlassTab(
-                label: 'Search',
-                icon: Icon(CupertinoIcons.search),
-              ),
+              GlassTab(label: 'Search', icon: Icon(CupertinoIcons.search)),
             ],
             selectedIndex: 0,
             onTabSelected: (_) {},
@@ -708,9 +702,7 @@ void main() {
 
   group('GlassTab extended', () {
     test('tabs with no label centers icon', () {
-      const tab = GlassTab(
-        icon: Icon(CupertinoIcons.home),
-      );
+      const tab = GlassTab(icon: Icon(CupertinoIcons.home));
       expect(tab.label, isNull);
     });
 
@@ -748,18 +740,9 @@ void main() {
 
   group('GlassTabBar.bottom _TabIndicator didUpdateWidget', () {
     final testTabs = [
-      const GlassTab(
-        label: 'Home',
-        icon: Icon(CupertinoIcons.home),
-      ),
-      const GlassTab(
-        label: 'Search',
-        icon: Icon(CupertinoIcons.search),
-      ),
-      const GlassTab(
-        label: 'Profile',
-        icon: Icon(CupertinoIcons.person),
-      ),
+      const GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+      const GlassTab(label: 'Search', icon: Icon(CupertinoIcons.search)),
+      const GlassTab(label: 'Profile', icon: Icon(CupertinoIcons.person)),
     ];
 
     testWidgets('tabIndex change updates indicator alignment', (tester) async {
@@ -848,23 +831,15 @@ void main() {
     late List<GlassTab> tabs;
     setUp(() {
       tabs = [
-        const GlassTab(
-          label: 'A',
-          icon: Icon(CupertinoIcons.home),
-        ),
-        const GlassTab(
-          label: 'B',
-          icon: Icon(CupertinoIcons.search),
-        ),
-        const GlassTab(
-          label: 'C',
-          icon: Icon(CupertinoIcons.person),
-        ),
+        const GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
+        const GlassTab(label: 'B', icon: Icon(CupertinoIcons.search)),
+        const GlassTab(label: 'C', icon: Icon(CupertinoIcons.person)),
       ];
     });
 
-    testWidgets('tap on different tab calls onTabSelected (_onBarTapDown)',
-        (tester) async {
+    testWidgets('tap on different tab calls onTabSelected (_onBarTapDown)', (
+      tester,
+    ) async {
       int selected = 0;
       await tester.pumpWidget(
         createTestApp(
@@ -888,8 +863,9 @@ void main() {
       expect(selected, 1);
     });
 
-    testWidgets('drag across bar fires _onDragUpdate and _onDragEnd',
-        (tester) async {
+    testWidgets('drag across bar fires _onDragUpdate and _onDragEnd', (
+      tester,
+    ) async {
       int selected = 0;
       await tester.pumpWidget(
         createTestApp(
@@ -951,8 +927,9 @@ void main() {
       expect(find.byType(GlassTabBar), findsOneWidget);
     });
 
-    testWidgets('quality inherited from parent InheritedLiquidGlass',
-        (tester) async {
+    testWidgets('quality inherited from parent InheritedLiquidGlass', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
@@ -1067,66 +1044,79 @@ void main() {
       const GlassTab(label: 'Settings', icon: Icon(CupertinoIcons.settings)),
     ];
 
-    testWidgets('fast full-width drag on 5-tab bar does not crash or overflow',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: SizedBox(
-            width: 375,
-            child: StatefulBuilder(
-              builder: (context, setState) => GlassTabBar.bottom(
-                tabs: fiveTabs,
-                selectedIndex: 0,
-                onTabSelected: (_) {},
-                maskingQuality: MaskingQuality.off,
-                // Uses default expansion: symmetric(h:12, v:8)
+    testWidgets(
+      'fast full-width drag on 5-tab bar does not crash or overflow',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: SizedBox(
+              width: 375,
+              child: StatefulBuilder(
+                builder: (context, setState) => GlassTabBar.bottom(
+                  tabs: fiveTabs,
+                  selectedIndex: 0,
+                  onTabSelected: (_) {},
+                  maskingQuality: MaskingQuality.off,
+                  // Uses default expansion: symmetric(h:12, v:8)
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final bar = find.byType(GlassTabBar);
-      await tester.drag(bar, const Offset(350, 0));
-      await tester.pumpAndSettle();
+        final bar = find.byType(GlassTabBar);
+        await tester.drag(bar, const Offset(350, 0));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(GlassTabBar), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
+        expect(find.byType(GlassTabBar), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets(
-        'all 5 labels remain findable after drag with default expansion',
-        (tester) async {
-      int selected = 0;
-      await tester.pumpWidget(
-        createTestApp(
-          child: SizedBox(
-            width: 375,
-            child: StatefulBuilder(
-              builder: (context, setState) => GlassTabBar.bottom(
-                tabs: fiveTabs,
-                selectedIndex: selected,
-                onTabSelected: (i) => setState(() => selected = i),
-                maskingQuality: MaskingQuality.off,
+      'all 5 labels remain findable after drag with default expansion',
+      (tester) async {
+        int selected = 0;
+        await tester.pumpWidget(
+          createTestApp(
+            child: SizedBox(
+              width: 375,
+              child: StatefulBuilder(
+                builder: (context, setState) => GlassTabBar.bottom(
+                  tabs: fiveTabs,
+                  selectedIndex: selected,
+                  onTabSelected: (i) => setState(() => selected = i),
+                  maskingQuality: MaskingQuality.off,
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      await tester.drag(find.byType(GlassTabBar), const Offset(300, 0));
-      await tester.pumpAndSettle();
+        await tester.drag(find.byType(GlassTabBar), const Offset(300, 0));
+        await tester.pumpAndSettle();
 
-      for (final label in ['Home', 'Search', 'Inbox', 'Profile', 'Settings']) {
-        expect(find.text(label), findsWidgets,
-            reason: '$label disappeared after drag with h:12 expansion');
-      }
-    });
+        for (final label in [
+          'Home',
+          'Search',
+          'Inbox',
+          'Profile',
+          'Settings',
+        ]) {
+          expect(
+            find.text(label),
+            findsWidgets,
+            reason: '$label disappeared after drag with h:12 expansion',
+          );
+        }
+      },
+    );
 
-    testWidgets('wider h:16 expansion does not crash on 5-tab bar',
-        (tester) async {
+    testWidgets('wider h:16 expansion does not crash on 5-tab bar', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: SizedBox(
@@ -1136,8 +1126,10 @@ void main() {
               selectedIndex: 2,
               onTabSelected: (_) {},
               maskingQuality: MaskingQuality.off,
-              indicatorExpansion:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              indicatorExpansion: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
             ),
           ),
         ),
@@ -1166,140 +1158,156 @@ void main() {
     });
 
     test('glassColor is fully transparent (optics only — no base tint)', () {
-      expect(
-        AnimatedGlassIndicator.baseIndicatorSettings.glassColor.a,
-        0.0,
-      );
+      expect(AnimatedGlassIndicator.baseIndicatorSettings.glassColor.a, 0.0);
     });
 
     testWidgets(
-        'indicatorSettings with only blur overridden preserves 0.0 aberration',
-        (tester) async {
-      // Verifies the merge gap fix: a caller passing LiquidGlassSettings(blur:2)
-      // should keep chromaticAberration: 0.0 from baseIndicatorSettings.
-      await tester.pumpWidget(
-        createTestApp(
-          child: GlassTabBar.bottom(
-            tabs: [
-              const GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
-              const GlassTab(label: 'B', icon: Icon(CupertinoIcons.search)),
-            ],
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            maskingQuality: MaskingQuality.off,
-            // Only blur is changed — chromaticAberration should stay 0.0
-            indicatorSettings: const LiquidGlassSettings(blur: 2),
+      'indicatorSettings with only blur overridden preserves 0.0 aberration',
+      (tester) async {
+        // Verifies the merge gap fix: a caller passing LiquidGlassSettings(blur:2)
+        // should keep chromaticAberration: 0.0 from baseIndicatorSettings.
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassTabBar.bottom(
+              tabs: [
+                const GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
+                const GlassTab(label: 'B', icon: Icon(CupertinoIcons.search)),
+              ],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              maskingQuality: MaskingQuality.off,
+              // Only blur is changed — chromaticAberration should stay 0.0
+              indicatorSettings: const LiquidGlassSettings(blur: 2),
+            ),
           ),
-        ),
-      );
-      expect(find.byType(GlassTabBar), findsOneWidget);
-      expect(tester.takeException(), isNull);
+        );
+        expect(find.byType(GlassTabBar), findsOneWidget);
+        expect(tester.takeException(), isNull);
 
-      // Press down to activate indicator lens (thickness > 0.01)
-      final gesture =
-          await tester.startGesture(tester.getCenter(find.text('A').first));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+        // Press down to activate indicator lens (thickness > 0.01)
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.text('A').first),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      final indicatorGlass = tester.widget<GlassEffect>(
-        find.byType(GlassEffect).first,
-      );
-      expect(
-        indicatorGlass.settings.effectiveBlur,
-        0.0,
-        reason:
-            'Indicator lens in GlassTabBar must never apply BackdropFilter blur',
-      );
+        final indicatorGlass = tester.widget<GlassEffect>(
+          find.byType(GlassEffect).first,
+        );
+        expect(
+          indicatorGlass.settings.effectiveBlur,
+          0.0,
+          reason: 'Indicator lens in GlassTabBar must never apply BackdropFilter blur',
+        );
 
-      await gesture.up();
-      await tester.pumpAndSettle();
-    });
+        await gesture.up();
+        await tester.pumpAndSettle();
+      },
+    );
 
     testWidgets(
-        'indicatorSettings chromaticAberration: 0.0 correctly overrides base',
-        (tester) async {
-      // 0.0 differs from LiquidGlassSettings() default (0.01) so it IS an
-      // intentional override and must replace the base 0.15.
-      await tester.pumpWidget(
-        createTestApp(
-          child: GlassTabBar.bottom(
-            tabs: [
-              const GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
-              const GlassTab(label: 'B', icon: Icon(CupertinoIcons.search)),
-            ],
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            maskingQuality: MaskingQuality.off,
-            indicatorSettings:
-                const LiquidGlassSettings(chromaticAberration: 0.0),
+      'indicatorSettings chromaticAberration: 0.0 correctly overrides base',
+      (tester) async {
+        // 0.0 differs from LiquidGlassSettings() default (0.01) so it IS an
+        // intentional override and must replace the base 0.15.
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassTabBar.bottom(
+              tabs: [
+                const GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
+                const GlassTab(label: 'B', icon: Icon(CupertinoIcons.search)),
+              ],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              maskingQuality: MaskingQuality.off,
+              indicatorSettings: const LiquidGlassSettings(
+                chromaticAberration: 0.0,
+              ),
+            ),
           ),
-        ),
-      );
-      expect(find.byType(GlassTabBar), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
+        );
+        expect(find.byType(GlassTabBar), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   group('GlassTabBar.bottom indicator brightness', () {
-    testWidgets('default indicator follows dark app theme on a light device',
-        (tester) async {
+    testWidgets('default indicator follows dark app theme on a light device', (
+      tester,
+    ) async {
       tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
       addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
-      await tester.pumpWidget(createTestApp(
-        theme: ThemeData.dark(),
-        child: GlassTabBar.bottom(
-          tabs: const [
-            GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
-            GlassTab(label: 'B', icon: Icon(CupertinoIcons.search))
-          ],
-          selectedIndex: 0,
-          onTabSelected: (_) {},
+      await tester.pumpWidget(
+        createTestApp(
+          theme: ThemeData.dark(),
+          child: GlassTabBar.bottom(
+            tabs: const [
+              GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
+              GlassTab(label: 'B', icon: Icon(CupertinoIcons.search)),
+            ],
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+          ),
         ),
-      ));
+      );
       final indicator = tester.widget<AnimatedGlassIndicator>(
-          find.byType(AnimatedGlassIndicator).first);
-      expect(indicator.indicatorColor,
-          CupertinoColors.white.withValues(alpha: .1));
+        find.byType(AnimatedGlassIndicator).first,
+      );
+      expect(
+        indicator.indicatorColor,
+        CupertinoColors.white.withValues(alpha: .1),
+      );
     });
 
-    testWidgets('default indicator follows light app theme on a dark device',
-        (tester) async {
+    testWidgets('default indicator follows light app theme on a dark device', (
+      tester,
+    ) async {
       tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
       addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
-      await tester.pumpWidget(createTestApp(
-        theme: ThemeData.light(),
-        child: GlassTabBar.bottom(
-          tabs: const [
-            GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
-            GlassTab(label: 'B', icon: Icon(CupertinoIcons.search))
-          ],
-          selectedIndex: 0,
-          onTabSelected: (_) {},
+      await tester.pumpWidget(
+        createTestApp(
+          theme: ThemeData.light(),
+          child: GlassTabBar.bottom(
+            tabs: const [
+              GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
+              GlassTab(label: 'B', icon: Icon(CupertinoIcons.search)),
+            ],
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+          ),
         ),
-      ));
+      );
       final indicator = tester.widget<AnimatedGlassIndicator>(
-          find.byType(AnimatedGlassIndicator).first);
-      expect(indicator.indicatorColor,
-          CupertinoColors.black.withValues(alpha: .1));
+        find.byType(AnimatedGlassIndicator).first,
+      );
+      expect(
+        indicator.indicatorColor,
+        CupertinoColors.black.withValues(alpha: .1),
+      );
     });
 
-    testWidgets('explicit indicatorColor is preserved regardless of theme',
-        (tester) async {
+    testWidgets('explicit indicatorColor is preserved regardless of theme', (
+      tester,
+    ) async {
       const customColor = Color(0x33FF0000);
-      await tester.pumpWidget(createTestApp(
-        theme: ThemeData.light(),
-        child: GlassTabBar.bottom(
-          tabs: const [
-            GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
-            GlassTab(label: 'B', icon: Icon(CupertinoIcons.search))
-          ],
-          selectedIndex: 0,
-          onTabSelected: (_) {},
-          indicatorColor: customColor,
+      await tester.pumpWidget(
+        createTestApp(
+          theme: ThemeData.light(),
+          child: GlassTabBar.bottom(
+            tabs: const [
+              GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
+              GlassTab(label: 'B', icon: Icon(CupertinoIcons.search)),
+            ],
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            indicatorColor: customColor,
+          ),
         ),
-      ));
+      );
       final indicator = tester.widget<AnimatedGlassIndicator>(
-          find.byType(AnimatedGlassIndicator).first);
+        find.byType(AnimatedGlassIndicator).first,
+      );
       expect(indicator.indicatorColor, customColor);
     });
   });
@@ -1309,8 +1317,9 @@ void main() {
   // ─────────────────────────────────────────────────────────────────────────
 
   group('GlassTabBar.bottom 3-Tier Indicator Radius', () {
-    testWidgets('Tier 1: capsule sentinel passes directly to indicator',
-        (tester) async {
+    testWidgets('Tier 1: capsule sentinel passes directly to indicator', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: GlassTabBar.bottom(
@@ -1326,12 +1335,14 @@ void main() {
       );
 
       final indicator = tester.widget<AnimatedGlassIndicator>(
-          find.byType(AnimatedGlassIndicator).first);
+        find.byType(AnimatedGlassIndicator).first,
+      );
       expect(indicator.borderRadius, equals(GlassDefaults.capsuleRadius));
     });
 
-    testWidgets('Tier 2: custom finite radius applies padding inset',
-        (tester) async {
+    testWidgets('Tier 2: custom finite radius applies padding inset', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: GlassTabBar.bottom(
@@ -1347,13 +1358,15 @@ void main() {
       );
 
       final indicator = tester.widget<AnimatedGlassIndicator>(
-          find.byType(AnimatedGlassIndicator).first);
+        find.byType(AnimatedGlassIndicator).first,
+      );
       // Outer 24.0 minus 4.0 padding = 20.0
       expect(indicator.borderRadius, equals(20.0));
     });
 
-    testWidgets('Tier 3: explicit indicatorBorderRadius overrides everything',
-        (tester) async {
+    testWidgets('Tier 3: explicit indicatorBorderRadius overrides everything', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: GlassTabBar.bottom(
@@ -1370,45 +1383,52 @@ void main() {
       );
 
       final indicator = tester.widget<AnimatedGlassIndicator>(
-          find.byType(AnimatedGlassIndicator).first);
+        find.byType(AnimatedGlassIndicator).first,
+      );
       expect(indicator.borderRadius, equals(10.0));
     });
 
     group('backgroundQuality', () {
       testWidgets(
-          'propagates backgroundQuality to track AdaptiveGlass and preserves quality on indicator',
-          (tester) async {
-        await tester.pumpWidget(
-          createTestApp(
-            child: GlassTabBar.bottom(
-              tabs: const [
-                GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
-                GlassTab(label: 'B', icon: Icon(CupertinoIcons.search)),
-              ],
-              selectedIndex: 0,
-              onTabSelected: (_) {},
-              quality: GlassQuality.premium,
-              backgroundQuality: GlassQuality.minimal,
+        'propagates backgroundQuality to track AdaptiveGlass and preserves quality on indicator',
+        (tester) async {
+          await tester.pumpWidget(
+            createTestApp(
+              child: GlassTabBar.bottom(
+                tabs: const [
+                  GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
+                  GlassTab(label: 'B', icon: Icon(CupertinoIcons.search)),
+                ],
+                selectedIndex: 0,
+                onTabSelected: (_) {},
+                quality: GlassQuality.premium,
+                backgroundQuality: GlassQuality.minimal,
+              ),
             ),
-          ),
-        );
+          );
 
-        final bar = tester.widget<GlassTabBar>(find.byType(GlassTabBar));
-        expect(bar.backgroundQuality, equals(GlassQuality.minimal));
-        expect(bar.quality, equals(GlassQuality.premium));
+          final bar = tester.widget<GlassTabBar>(find.byType(GlassTabBar));
+          expect(bar.backgroundQuality, equals(GlassQuality.minimal));
+          expect(bar.quality, equals(GlassQuality.premium));
 
-        final indicator = tester.widget<AnimatedGlassIndicator>(
-            find.byType(AnimatedGlassIndicator).first);
-        expect(indicator.quality, equals(GlassQuality.premium));
+          final indicator = tester.widget<AnimatedGlassIndicator>(
+            find.byType(AnimatedGlassIndicator).first,
+          );
+          expect(indicator.quality, equals(GlassQuality.premium));
 
-        final adaptiveGlasses =
-            tester.widgetList<AdaptiveGlass>(find.byType(AdaptiveGlass));
-        expect(adaptiveGlasses.any((g) => g.quality == GlassQuality.minimal),
-            isTrue);
-      });
+          final adaptiveGlasses = tester.widgetList<AdaptiveGlass>(
+            find.byType(AdaptiveGlass),
+          );
+          expect(
+            adaptiveGlasses.any((g) => g.quality == GlassQuality.minimal),
+            isTrue,
+          );
+        },
+      );
 
-      testWidgets('inherits from quality when backgroundQuality is null',
-          (tester) async {
+      testWidgets('inherits from quality when backgroundQuality is null', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           createTestApp(
             child: GlassTabBar.bottom(
@@ -1428,17 +1448,22 @@ void main() {
         expect(bar.quality, equals(GlassQuality.standard));
 
         final indicator = tester.widget<AnimatedGlassIndicator>(
-            find.byType(AnimatedGlassIndicator).first);
+          find.byType(AnimatedGlassIndicator).first,
+        );
         expect(indicator.quality, equals(GlassQuality.standard));
 
-        final adaptiveGlasses =
-            tester.widgetList<AdaptiveGlass>(find.byType(AdaptiveGlass));
-        expect(adaptiveGlasses.every((g) => g.quality == GlassQuality.standard),
-            isTrue);
+        final adaptiveGlasses = tester.widgetList<AdaptiveGlass>(
+          find.byType(AdaptiveGlass),
+        );
+        expect(
+          adaptiveGlasses.every((g) => g.quality == GlassQuality.standard),
+          isTrue,
+        );
       });
 
-      testWidgets('propagates backgroundQuality to BottomBarExtraBtn',
-          (tester) async {
+      testWidgets('propagates backgroundQuality to BottomBarExtraBtn', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           createTestApp(
             child: GlassTabBar.bottom(
@@ -1459,37 +1484,41 @@ void main() {
           ),
         );
 
-        final extraBtn =
-            tester.widget<BottomBarExtraBtn>(find.byType(BottomBarExtraBtn));
+        final extraBtn = tester.widget<BottomBarExtraBtn>(
+          find.byType(BottomBarExtraBtn),
+        );
         expect(extraBtn.quality, equals(GlassQuality.minimal));
       });
 
       testWidgets(
-          'GlassTabBar.bottom indicator does not inherit enclosing backdrop pass rect from tab bar layer',
-          (tester) async {
-        await tester.pumpWidget(
-          createTestApp(
-            child: GlassTabBar.bottom(
-              tabs: const [
-                GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
-                GlassTab(label: 'B', icon: Icon(CupertinoIcons.search)),
-              ],
-              selectedIndex: 0,
-              onTabSelected: (_) {},
-              quality: GlassQuality.premium,
+        'GlassTabBar.bottom indicator does not inherit enclosing backdrop pass rect from tab bar layer',
+        (tester) async {
+          await tester.pumpWidget(
+            createTestApp(
+              child: GlassTabBar.bottom(
+                tabs: const [
+                  GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
+                  GlassTab(label: 'B', icon: Icon(CupertinoIcons.search)),
+                ],
+                selectedIndex: 0,
+                onTabSelected: (_) {},
+                quality: GlassQuality.premium,
+              ),
             ),
-          ),
-        );
-        await tester.pumpAndSettle();
+          );
+          await tester.pumpAndSettle();
 
-        // The indicator's own RenderLiquidGlassLayer must resolve null for enclosingBackdropPassRect
-        final indicatorLayers = tester.allRenderObjects
-            .whereType<RenderLiquidGlassLayer>()
-            .where((l) => l.enclosingBackdropPassRect() != null);
-        expect(indicatorLayers, isEmpty,
-            reason:
-                'RenderLiquidGlassLayer in GlassTabBar must not leak backdrop pass to tab indicator');
-      });
+          // The indicator's own RenderLiquidGlassLayer must resolve null for enclosingBackdropPassRect
+          final indicatorLayers = tester.allRenderObjects
+              .whereType<RenderLiquidGlassLayer>()
+              .where((l) => l.enclosingBackdropPassRect() != null);
+          expect(
+            indicatorLayers,
+            isEmpty,
+            reason: 'RenderLiquidGlassLayer in GlassTabBar must not leak backdrop pass to tab indicator',
+          );
+        },
+      );
     });
   });
 }

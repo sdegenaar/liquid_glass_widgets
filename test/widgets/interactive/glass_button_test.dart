@@ -5,8 +5,8 @@ import 'package:liquid_glass_widgets/theme/glass_theme.dart';
 import 'package:liquid_glass_widgets/theme/glass_theme_data.dart';
 import 'package:liquid_glass_widgets/types/glass_quality.dart';
 import 'package:liquid_glass_widgets/widgets/interactive/glass_button.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
@@ -20,10 +20,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassButton(
-              icon: Icon(CupertinoIcons.heart),
-              onTap: () {},
-            ),
+            child: GlassButton(icon: Icon(CupertinoIcons.heart), onTap: () {}),
           ),
         ),
       );
@@ -37,10 +34,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassButton(
-              icon: Icon(Icons.star),
-              onTap: () {},
-            ),
+            child: GlassButton(icon: Icon(Icons.star), onTap: () {}),
           ),
         ),
       );
@@ -157,29 +151,31 @@ void main() {
       expect(size.height, equals(customHeight));
     });
 
-    testWidgets('GlassButton.custom shrink-wraps to child when sizes are null',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: AdaptiveLiquidGlassLayer(
-            settings: defaultTestGlassSettings,
-            child: Center(
-              child: GlassButton.custom(
-                onTap: () {},
-                // No explicit width or height
-                child: const SizedBox(width: 40, height: 20),
+    testWidgets(
+      'GlassButton.custom shrink-wraps to child when sizes are null',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: AdaptiveLiquidGlassLayer(
+              settings: defaultTestGlassSettings,
+              child: Center(
+                child: GlassButton.custom(
+                  onTap: () {},
+                  // No explicit width or height
+                  child: const SizedBox(width: 40, height: 20),
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      final buttonSize = tester.getSize(find.byType(GlassButton));
+        final buttonSize = tester.getSize(find.byType(GlassButton));
 
-      // Should perfectly wrap the 40x20 child, not expand to fill the screen
-      expect(buttonSize.width, equals(40));
-      expect(buttonSize.height, equals(20));
-    });
+        // Should perfectly wrap the 40x20 child, not expand to fill the screen
+        expect(buttonSize.width, equals(40));
+        expect(buttonSize.height, equals(20));
+      },
+    );
 
     testWidgets('has proper semantics', (tester) async {
       const semanticLabel = 'Add Item';
@@ -242,10 +238,7 @@ void main() {
     });
 
     test('defaults are correct', () {
-      final button = GlassButton(
-        icon: Icon(Icons.star),
-        onTap: () {},
-      );
+      final button = GlassButton(icon: Icon(Icons.star), onTap: () {});
 
       expect(button.width, equals(56));
       expect(button.height, equals(56));
@@ -273,26 +266,22 @@ void main() {
     Widget themed({
       required GlassInteractionSettings interaction,
       required Widget child,
-    }) =>
-        createTestApp(
-          child: GlassTheme(
-            data: GlassThemeData(interaction: interaction),
-            child: AdaptiveLiquidGlassLayer(
-              settings: defaultTestGlassSettings,
-              child: child,
-            ),
-          ),
-        );
+    }) => createTestApp(
+      child: GlassTheme(
+        data: GlassThemeData(interaction: interaction),
+        child: AdaptiveLiquidGlassLayer(
+          settings: defaultTestGlassSettings,
+          child: child,
+        ),
+      ),
+    );
 
     testWidgets('defaults to the native sizing', (tester) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassButton(
-              icon: const Icon(Icons.star),
-              onTap: () {},
-            ),
+            child: GlassButton(icon: const Icon(Icons.star), onTap: () {}),
           ),
         ),
       );
@@ -306,8 +295,9 @@ void main() {
       expect(stretch.anchorStretchSettings.bounciness, equals(0.0));
     });
 
-    testWidgets('an explicit interactionScale is a fixed factor',
-        (tester) async {
+    testWidgets('an explicit interactionScale is a fixed factor', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
@@ -326,18 +316,16 @@ void main() {
       expect(stretch.pressGrowth, isNull);
     });
 
-    testWidgets('the theme supplies a fixed factor and stretch settings',
-        (tester) async {
+    testWidgets('the theme supplies a fixed factor and stretch settings', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         themed(
           interaction: const GlassInteractionSettings(
             interactionScale: 1.2,
             anchorStretchSettings: AnchorStretchSettings(intensity: 0.7),
           ),
-          child: GlassButton(
-            icon: const Icon(Icons.star),
-            onTap: () {},
-          ),
+          child: GlassButton(icon: const Icon(Icons.star), onTap: () {}),
         ),
       );
 
@@ -347,8 +335,9 @@ void main() {
       expect(stretch.anchorStretchSettings.intensity, equals(0.7));
     });
 
-    testWidgets('explicit anchorStretchSettings win over the theme',
-        (tester) async {
+    testWidgets('explicit anchorStretchSettings win over the theme', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         themed(
           interaction: const GlassInteractionSettings(
@@ -368,16 +357,14 @@ void main() {
 
   // ── _handleTapCancel (lines 436-438) ────────────────────────────────────────
   group('GlassButton tap-cancel', () {
-    testWidgets('tap-cancel on enabled button reverses animation',
-        (tester) async {
+    testWidgets('tap-cancel on enabled button reverses animation', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassButton(
-              icon: const Icon(Icons.star),
-              onTap: () {},
-            ),
+            child: GlassButton(icon: const Icon(Icons.star), onTap: () {}),
           ),
         ),
       );
@@ -393,8 +380,9 @@ void main() {
       expect(find.byType(GlassButton), findsOneWidget);
     });
 
-    testWidgets('tap-cancel on disabled button is a no-op (line 437 guard)',
-        (tester) async {
+    testWidgets('tap-cancel on disabled button is a no-op (line 437 guard)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
@@ -422,10 +410,7 @@ void main() {
   // ── persistPressOnDrag (lines 596-620) ──────────────────────────────────────
   group('GlassButton persistPressOnDrag', () {
     test('default value is true', () {
-      final button = GlassButton(
-        icon: const Icon(Icons.star),
-        onTap: () {},
-      );
+      final button = GlassButton(icon: const Icon(Icons.star), onTap: () {});
       expect(button.persistPressOnDrag, isTrue);
     });
 
@@ -437,8 +422,9 @@ void main() {
       expect(button.persistPressOnDrag, isTrue);
     });
 
-    testWidgets('persistPressOnDrag: true — uses Listener (pointer events)',
-        (tester) async {
+    testWidgets('persistPressOnDrag: true — uses Listener (pointer events)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
@@ -479,29 +465,31 @@ void main() {
     });
 
     testWidgets(
-        'persistPressOnDrag: false — uses GestureDetector tap callbacks',
-        (tester) async {
-      var tapped = false;
-      await tester.pumpWidget(
-        createTestApp(
-          child: AdaptiveLiquidGlassLayer(
-            settings: defaultTestGlassSettings,
-            child: GlassButton(
-              icon: const Icon(Icons.star),
-              onTap: () => tapped = true,
-              persistPressOnDrag: false,
+      'persistPressOnDrag: false — uses GestureDetector tap callbacks',
+      (tester) async {
+        var tapped = false;
+        await tester.pumpWidget(
+          createTestApp(
+            child: AdaptiveLiquidGlassLayer(
+              settings: defaultTestGlassSettings,
+              child: GlassButton(
+                icon: const Icon(Icons.star),
+                onTap: () => tapped = true,
+                persistPressOnDrag: false,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.byType(GlassButton));
-      await tester.pump();
-      expect(tapped, isTrue);
-    });
+        await tester.tap(find.byType(GlassButton));
+        await tester.pump();
+        expect(tapped, isTrue);
+      },
+    );
 
-    testWidgets('persistPressOnDrag: false — cancel reverses animation',
-        (tester) async {
+    testWidgets('persistPressOnDrag: false — cancel reverses animation', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
@@ -622,8 +610,9 @@ void main() {
     // -------------------------------------------------------------------------
     // focusNode parameter
     // -------------------------------------------------------------------------
-    testWidgets('focusNode parameter allows programmatic focus',
-        (tester) async {
+    testWidgets('focusNode parameter allows programmatic focus', (
+      tester,
+    ) async {
       final focusNode = FocusNode();
       addTearDown(focusNode.dispose);
 
@@ -674,40 +663,44 @@ void main() {
     // -------------------------------------------------------------------------
     // Focus ring visual presence
     // -------------------------------------------------------------------------
-    testWidgets('focus ring CustomPaint NOT in tree when button is not focused',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: AdaptiveLiquidGlassLayer(
-            settings: defaultTestGlassSettings,
-            child: GlassButton(
-              icon: const Icon(CupertinoIcons.heart),
-              onTap: () {},
+    testWidgets(
+      'focus ring CustomPaint NOT in tree when button is not focused',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: AdaptiveLiquidGlassLayer(
+              settings: defaultTestGlassSettings,
+              child: GlassButton(
+                icon: const Icon(CupertinoIcons.heart),
+                onTap: () {},
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pump();
+        await tester.pump();
 
-      // CustomPaint for the focus ring is only inserted when focused.
-      // When not focused, ValueListenableBuilder returns child directly —
-      // no Stack, no CustomPaint for the ring.
-      // We look for a CustomPaint that is a descendant of the GlassButton's
-      // Stack — if none exist, the ring is correctly absent.
-      expect(
-        find.descendant(
-          of: find.byType(Stack),
-          matching: find.byType(CustomPaint),
-        ),
-        findsNothing,
-        reason: 'Focus ring CustomPaint must not be present when button is '
-            'unfocused (zero GPU cost for touch users)',
-      );
-    });
+        // CustomPaint for the focus ring is only inserted when focused.
+        // When not focused, ValueListenableBuilder returns child directly —
+        // no Stack, no CustomPaint for the ring.
+        // We look for a CustomPaint that is a descendant of the GlassButton's
+        // Stack — if none exist, the ring is correctly absent.
+        expect(
+          find.descendant(
+            of: find.byType(Stack),
+            matching: find.byType(CustomPaint),
+          ),
+          findsNothing,
+          reason:
+              'Focus ring CustomPaint must not be present when button is '
+              'unfocused (zero GPU cost for touch users)',
+        );
+      },
+    );
 
-    testWidgets('focus ring CustomPaint IS in tree when button is focused',
-        (tester) async {
+    testWidgets('focus ring CustomPaint IS in tree when button is focused', (
+      tester,
+    ) async {
       final focusNode = FocusNode();
       addTearDown(focusNode.dispose);
 
@@ -730,8 +723,10 @@ void main() {
           FocusHighlightStrategy.alwaysTraditional;
       focusNode.requestFocus();
       await tester.pump();
-      addTearDown(() => FocusManager.instance.highlightStrategy =
-          FocusHighlightStrategy.automatic);
+      addTearDown(
+        () => FocusManager.instance.highlightStrategy =
+            FocusHighlightStrategy.automatic,
+      );
 
       // After keyboard focus, ValueListenableBuilder inserts Stack + CustomPaint.
       expect(
@@ -747,8 +742,9 @@ void main() {
     // -------------------------------------------------------------------------
     // Reduce Motion
     // -------------------------------------------------------------------------
-    testWidgets('keyboard activation works with reduceMotion enabled',
-        (tester) async {
+    testWidgets('keyboard activation works with reduceMotion enabled', (
+      tester,
+    ) async {
       var tapped = false;
       final focusNode = FocusNode();
       addTearDown(focusNode.dispose);
@@ -777,8 +773,11 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.space);
       await tester.pumpAndSettle();
 
-      expect(tapped, isTrue,
-          reason: 'onTap must fire even when reduceMotion is enabled');
+      expect(
+        tapped,
+        isTrue,
+        reason: 'onTap must fire even when reduceMotion is enabled',
+      );
     });
 
     // -------------------------------------------------------------------------
@@ -805,9 +804,7 @@ void main() {
 
         // Find the Semantics widget with the button role directly.
         expect(
-          tester.getSemantics(
-            find.bySemanticsLabel('Like'),
-          ),
+          tester.getSemantics(find.bySemanticsLabel('Like')),
           matchesSemantics(
             isButton: true,
             label: 'Like',
@@ -844,9 +841,7 @@ void main() {
         await tester.pump();
 
         expect(
-          tester.getSemantics(
-            find.bySemanticsLabel('Like'),
-          ),
+          tester.getSemantics(find.bySemanticsLabel('Like')),
           matchesSemantics(
             isButton: true,
             label: 'Like',
@@ -861,8 +856,9 @@ void main() {
       }
     });
 
-    testWidgets('excludeFromSemantics hides button from semantics tree',
-        (tester) async {
+    testWidgets('excludeFromSemantics hides button from semantics tree', (
+      tester,
+    ) async {
       final handle = tester.ensureSemantics();
 
       try {
@@ -890,8 +886,9 @@ void main() {
   });
 
   group('GlassButton press highlight', () {
-    testWidgets('ambient base light is clipped to the button shape',
-        (tester) async {
+    testWidgets('ambient base light is clipped to the button shape', (
+      tester,
+    ) async {
       const shape = LiquidRoundedSuperellipse(borderRadius: 40);
 
       await tester.pumpWidget(
@@ -939,14 +936,14 @@ void main() {
     // The pressed light, found by its RGB: the shape-clipped ColoredBox the
     // button paints under its content while the finger is down.
     Finder pressLight(int rgb) => find.descendant(
-          of: find.byType(GlassButton),
-          matching: find.byWidgetPredicate(
-            (w) =>
-                w is ColoredBox &&
-                w.color.toARGB32() & 0x00FFFFFF == rgb &&
-                w.color.a > 0,
-          ),
-        );
+      of: find.byType(GlassButton),
+      matching: find.byWidgetPredicate(
+        (w) =>
+            w is ColoredBox &&
+            w.color.toARGB32() & 0x00FFFFFF == rgb &&
+            w.color.a > 0,
+      ),
+    );
 
     Color sheenOf(WidgetTester tester) => tester
         .widget<GlassGlow>(
@@ -974,31 +971,30 @@ void main() {
       required Brightness brightness,
       Color? lightPressLight,
       Color? darkPressLight,
-    }) =>
-        createTestApp(
-          child: GlassTheme(
-            data: GlassThemeData(
-              brightness: brightness,
-              light: GlassThemeVariant(
-                glowColors: GlassGlowColors(pressLight: lightPressLight),
-              ),
-              dark: GlassThemeVariant(
-                glowColors: GlassGlowColors(pressLight: darkPressLight),
-              ),
-            ),
-            child: AdaptiveLiquidGlassLayer(
-              settings: const LiquidGlassSettings(blur: 0),
-              child: button,
-            ),
+    }) => createTestApp(
+      child: GlassTheme(
+        data: GlassThemeData(
+          brightness: brightness,
+          light: GlassThemeVariant(
+            glowColors: GlassGlowColors(pressLight: lightPressLight),
           ),
-        );
+          dark: GlassThemeVariant(
+            glowColors: GlassGlowColors(pressLight: darkPressLight),
+          ),
+        ),
+        child: AdaptiveLiquidGlassLayer(
+          settings: const LiquidGlassSettings(blur: 0),
+          child: button,
+        ),
+      ),
+    );
 
     GlassButton star({Color? pressLightColor, Color? glowColor}) => GlassButton(
-          icon: const Icon(Icons.star),
-          onTap: () {},
-          pressLightColor: pressLightColor,
-          glowColor: glowColor,
-        );
+      icon: const Icon(Icons.star),
+      onTap: () {},
+      pressLightColor: pressLightColor,
+      glowColor: glowColor,
+    );
 
     const page = Color(0xFFF2CB48);
     const darkPage = Color(0xFF5E4A10);
@@ -1007,29 +1003,32 @@ void main() {
       (
         Brightness.light,
         GlassDefaults.ambientBaseLight,
-        const Color(0x1AFFFFFF)
+        const Color(0x1AFFFFFF),
       ),
       (
         Brightness.dark,
         GlassDefaults.ambientBaseLightDark,
-        const Color(0x12FFFFFF)
+        const Color(0x12FFFFFF),
       ),
     ]) {
-      testWidgets('${brightness.name}: white at the native strength by default',
-          (tester) async {
-        await tester.pumpWidget(host(star(), brightness: brightness));
+      testWidgets(
+        '${brightness.name}: white at the native strength by default',
+        (tester) async {
+          await tester.pumpWidget(host(star(), brightness: brightness));
 
-        expect(sheenOf(tester), sheen);
-        final gesture = await pressAndHold(tester);
-        final light = tester.widget<ColoredBox>(pressLight(0xFFFFFF));
-        expect(light.color.a, closeTo(strength, 0.005));
-        await gesture.up();
-        await tester.pumpAndSettle();
-      });
+          expect(sheenOf(tester), sheen);
+          final gesture = await pressAndHold(tester);
+          final light = tester.widget<ColoredBox>(pressLight(0xFFFFFF));
+          expect(light.color.a, closeTo(strength, 0.005));
+          await gesture.up();
+          await tester.pumpAndSettle();
+        },
+      );
     }
 
-    testWidgets("the theme's colour for the brightness lights the press",
-        (tester) async {
+    testWidgets("the theme's colour for the brightness lights the press", (
+      tester,
+    ) async {
       for (final (brightness, colour) in [
         (Brightness.light, page),
         (Brightness.dark, darkPage),
@@ -1101,7 +1100,9 @@ void main() {
       final gesture = await pressAndHold(tester);
       final light = tester.widget<ColoredBox>(pressLight(0xF2CB48));
       expect(
-          light.color.a, closeTo(half * GlassDefaults.ambientBaseLight, 0.005));
+        light.color.a,
+        closeTo(half * GlassDefaults.ambientBaseLight, 0.005),
+      );
       await gesture.up();
       await tester.pumpAndSettle();
     });

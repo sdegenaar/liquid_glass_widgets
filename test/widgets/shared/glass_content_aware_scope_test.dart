@@ -11,8 +11,8 @@
 
 import 'dart:typed_data';
 
-import 'package:flutter/cupertino.dart' show CupertinoTheme;
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart' show CupertinoTheme;
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -32,8 +32,8 @@ Uint8List _rowOf(int width, Color color, {int alpha = 255}) {
 }
 
 List<Rect> _cells(int count) => <Rect>[
-      for (var i = 0; i < count; i++) Rect.fromLTWH(i.toDouble(), 0, 1, 1),
-    ];
+  for (var i = 0; i < count; i++) Rect.fromLTWH(i.toDouble(), 0, 1, 1),
+];
 
 /// Runs one deterministic sample to completion.
 ///
@@ -124,8 +124,12 @@ void main() {
     test('unpainted pixels read as a light background', () {
       final rgba = _rowOf(6, const Color(0xFF000000), alpha: 0);
       expect(
-        _verdict(rgba, 6,
-            current: Brightness.dark, background: const Color(0xFFFFFFFF)),
+        _verdict(
+          rgba,
+          6,
+          current: Brightness.dark,
+          background: const Color(0xFFFFFFFF),
+        ),
         Brightness.light,
       );
     });
@@ -191,9 +195,7 @@ void main() {
           sampleInterval: sampleInterval,
           child: Stack(
             children: [
-              Positioned.fill(
-                child: GlassContentAwareContent(child: content),
-              ),
+              Positioned.fill(child: GlassContentAwareContent(child: content)),
               Positioned(
                 left: 0,
                 right: 0,
@@ -201,7 +203,8 @@ void main() {
                 height: 80,
                 child: GlassContentAwareBrightness(
                   onBrightnessChanged: onBrightnessChanged,
-                  builder: builder ??
+                  builder:
+                      builder ??
                       (context, brightness, darkAmount) =>
                           const SizedBox.expand(),
                 ),
@@ -212,31 +215,35 @@ void main() {
       );
     }
 
-    testWidgets('dark content flips the control dark and cross-fades',
-        (tester) async {
+    testWidgets('dark content flips the control dark and cross-fades', (
+      tester,
+    ) async {
       final flips = <Brightness>[];
       Brightness? builtBrightness;
       double? builtDarkAmount;
       Brightness? innerPlatformBrightness;
       Brightness? innerCupertinoBrightness;
 
-      await tester.pumpWidget(pipeline(
-        content: const ColoredBox(color: Color(0xFF000000)),
-        onBrightnessChanged: flips.add,
-        builder: (context, brightness, darkAmount) {
-          builtBrightness = brightness;
-          builtDarkAmount = darkAmount;
-          innerPlatformBrightness = MediaQuery.platformBrightnessOf(context);
-          innerCupertinoBrightness = CupertinoTheme.of(context).brightness;
-          return const SizedBox.expand();
-        },
-      ));
+      await tester.pumpWidget(
+        pipeline(
+          content: const ColoredBox(color: Color(0xFF000000)),
+          onBrightnessChanged: flips.add,
+          builder: (context, brightness, darkAmount) {
+            builtBrightness = brightness;
+            builtDarkAmount = darkAmount;
+            innerPlatformBrightness = MediaQuery.platformBrightnessOf(context);
+            innerCupertinoBrightness = CupertinoTheme.of(context).brightness;
+            return const SizedBox.expand();
+          },
+        ),
+      );
       expect(builtBrightness, Brightness.light);
       expect(builtDarkAmount, 0.0);
       expect(innerPlatformBrightness, Brightness.light);
 
       final scopeState = tester.state<GlassContentAwareScopeState>(
-          find.byType(GlassContentAwareScope));
+        find.byType(GlassContentAwareScope),
+      );
       await _settleSample(tester, scopeState);
       await tester.pump();
 
@@ -261,49 +268,63 @@ void main() {
       expect(flips, [Brightness.dark]);
     });
 
-    testWidgets('light content keeps the control light — no flip events',
-        (tester) async {
+    testWidgets('light content keeps the control light — no flip events', (
+      tester,
+    ) async {
       final flips = <Brightness>[];
-      await tester.pumpWidget(pipeline(
-        content: const ColoredBox(color: Color(0xFFFFFFFF)),
-        onBrightnessChanged: flips.add,
-      ));
+      await tester.pumpWidget(
+        pipeline(
+          content: const ColoredBox(color: Color(0xFFFFFFFF)),
+          onBrightnessChanged: flips.add,
+        ),
+      );
       final scopeState = tester.state<GlassContentAwareScopeState>(
-          find.byType(GlassContentAwareScope));
+        find.byType(GlassContentAwareScope),
+      );
       await _settleSample(tester, scopeState);
       await tester.pump();
       expect(flips, isEmpty);
     });
 
-    testWidgets('half-and-half content is sticky in both directions',
-        (tester) async {
+    testWidgets('half-and-half content is sticky in both directions', (
+      tester,
+    ) async {
       final flips = <Brightness>[];
-      await tester.pumpWidget(pipeline(
-        content: const Row(children: [
-          Expanded(child: ColoredBox(color: Color(0xFF000000))),
-          Expanded(child: ColoredBox(color: Color(0xFFFFFFFF))),
-        ]),
-        onBrightnessChanged: flips.add,
-      ));
+      await tester.pumpWidget(
+        pipeline(
+          content: const Row(
+            children: [
+              Expanded(child: ColoredBox(color: Color(0xFF000000))),
+              Expanded(child: ColoredBox(color: Color(0xFFFFFFFF))),
+            ],
+          ),
+          onBrightnessChanged: flips.add,
+        ),
+      );
       final scopeState = tester.state<GlassContentAwareScopeState>(
-          find.byType(GlassContentAwareScope));
+        find.byType(GlassContentAwareScope),
+      );
       await _settleSample(tester, scopeState);
       await tester.pump();
       expect(flips, isEmpty);
     });
 
-    testWidgets('lerped GlassTheme is served to the consumer subtree',
-        (tester) async {
+    testWidgets('lerped GlassTheme is served to the consumer subtree', (
+      tester,
+    ) async {
       GlassThemeData? innerTheme;
-      await tester.pumpWidget(pipeline(
-        content: const ColoredBox(color: Color(0xFF000000)),
-        builder: (context, brightness, darkAmount) {
-          innerTheme = GlassThemeData.of(context);
-          return const SizedBox.expand();
-        },
-      ));
+      await tester.pumpWidget(
+        pipeline(
+          content: const ColoredBox(color: Color(0xFF000000)),
+          builder: (context, brightness, darkAmount) {
+            innerTheme = GlassThemeData.of(context);
+            return const SizedBox.expand();
+          },
+        ),
+      );
       final scopeState = tester.state<GlassContentAwareScopeState>(
-          find.byType(GlassContentAwareScope));
+        find.byType(GlassContentAwareScope),
+      );
 
       // At rest (light), both slots of the synthetic data hold the light
       // variant, so variant resolution is brightness-independent.
@@ -323,40 +344,44 @@ void main() {
       expect(innerTheme!.dark, GlassThemeVariant.dark);
     });
 
-    testWidgets('scroll notifications drive the sampler lifecycle',
-        (tester) async {
+    testWidgets('scroll notifications drive the sampler lifecycle', (
+      tester,
+    ) async {
       final flips = <Brightness>[];
-      await tester.pumpWidget(MaterialApp(
-        home: GlassContentAwareScope(
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: GlassContentAwareContent(
-                  child: ListView(
-                    children: [
-                      Container(height: 600, color: const Color(0xFFFFFFFF)),
-                      Container(height: 2000, color: const Color(0xFF000000)),
-                    ],
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GlassContentAwareScope(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: GlassContentAwareContent(
+                    child: ListView(
+                      children: [
+                        Container(height: 600, color: const Color(0xFFFFFFFF)),
+                        Container(height: 2000, color: const Color(0xFF000000)),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: 80,
-                child: GlassContentAwareBrightness(
-                  onBrightnessChanged: flips.add,
-                  builder: (context, brightness, darkAmount) =>
-                      const SizedBox.expand(),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: 80,
+                  child: GlassContentAwareBrightness(
+                    onBrightnessChanged: flips.add,
+                    builder: (context, brightness, darkAmount) =>
+                        const SizedBox.expand(),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ));
+      );
       final scopeState = tester.state<GlassContentAwareScopeState>(
-          find.byType(GlassContentAwareScope));
+        find.byType(GlassContentAwareScope),
+      );
 
       // Idle: no periodic sampler.
       expect(scopeState.isScrollSamplingActive, isFalse);
@@ -384,27 +409,30 @@ void main() {
   });
 
   group('GlassContentAwareBrightness — brightnessOverride', () {
-    testWidgets('follows the listenable and bypasses the scope',
-        (tester) async {
+    testWidgets('follows the listenable and bypasses the scope', (
+      tester,
+    ) async {
       final override = ValueNotifier<Brightness>(Brightness.light);
       addTearDown(override.dispose);
       final flips = <Brightness>[];
       Brightness? builtBrightness;
       double? builtDarkAmount;
 
-      await tester.pumpWidget(MaterialApp(
-        home: GlassContentAwareScope(
-          child: GlassContentAwareBrightness(
-            brightnessOverride: override,
-            onBrightnessChanged: flips.add,
-            builder: (context, brightness, darkAmount) {
-              builtBrightness = brightness;
-              builtDarkAmount = darkAmount;
-              return const SizedBox.expand();
-            },
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GlassContentAwareScope(
+            child: GlassContentAwareBrightness(
+              brightnessOverride: override,
+              onBrightnessChanged: flips.add,
+              builder: (context, brightness, darkAmount) {
+                builtBrightness = brightness;
+                builtDarkAmount = darkAmount;
+                return const SizedBox.expand();
+              },
+            ),
           ),
         ),
-      ));
+      );
       expect(builtBrightness, Brightness.light);
 
       override.value = Brightness.dark;
@@ -421,22 +449,25 @@ void main() {
       expect(builtDarkAmount, 0.0);
     });
 
-    testWidgets('an initially-dark override starts dark with no animation',
-        (tester) async {
+    testWidgets('an initially-dark override starts dark with no animation', (
+      tester,
+    ) async {
       final override = ValueNotifier<Brightness>(Brightness.dark);
       addTearDown(override.dispose);
       final flips = <Brightness>[];
       double? builtDarkAmount;
-      await tester.pumpWidget(MaterialApp(
-        home: GlassContentAwareBrightness(
-          brightnessOverride: override,
-          onBrightnessChanged: flips.add,
-          builder: (context, brightness, darkAmount) {
-            builtDarkAmount = darkAmount;
-            return const SizedBox.expand();
-          },
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GlassContentAwareBrightness(
+            brightnessOverride: override,
+            onBrightnessChanged: flips.add,
+            builder: (context, brightness, darkAmount) {
+              builtDarkAmount = darkAmount;
+              return const SizedBox.expand();
+            },
+          ),
         ),
-      ));
+      );
       expect(builtDarkAmount, 1.0);
       expect(flips, isEmpty);
     });
@@ -447,18 +478,18 @@ void main() {
       Brightness? builtBrightness;
       double? builtDarkAmount;
       Widget app(Brightness platform) => MediaQuery(
-            data: MediaQueryData(platformBrightness: platform),
-            child: Directionality(
-              textDirection: TextDirection.ltr,
-              child: GlassContentAwareBrightness(
-                builder: (context, brightness, darkAmount) {
-                  builtBrightness = brightness;
-                  builtDarkAmount = darkAmount;
-                  return const SizedBox.expand();
-                },
-              ),
-            ),
-          );
+        data: MediaQueryData(platformBrightness: platform),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: GlassContentAwareBrightness(
+            builder: (context, brightness, darkAmount) {
+              builtBrightness = brightness;
+              builtDarkAmount = darkAmount;
+              return const SizedBox.expand();
+            },
+          ),
+        ),
+      );
 
       await tester.pumpWidget(app(Brightness.dark));
       expect(builtBrightness, Brightness.dark);

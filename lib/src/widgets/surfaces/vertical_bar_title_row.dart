@@ -28,7 +28,8 @@ class VerticalBarTitleRow extends StatelessWidget {
 
   /// Distance from the top of the screen to the content below a large title:
   /// the title row, and 10pt beneath it.
-  static const double contentTop = GlassVerticalBarMetrics.edgeMargin +
+  static const double contentTop =
+      GlassVerticalBarMetrics.edgeMargin +
       GlassVerticalBarMetrics.rowHeight +
       10.0;
 

@@ -10,7 +10,7 @@
 
 import 'dart:ui' as ui;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -26,7 +26,8 @@ void main() {
     expect(
       ui.ImageFilter.isShaderFilterSupported,
       isTrue,
-      reason: 'This device reports no shader filter support, so glass would '
+      reason:
+          'This device reports no shader filter support, so glass would '
           'render through the frosted fallback. Run it on Impeller.',
     );
   });
@@ -51,15 +52,18 @@ void main() {
     return null;
   }
 
-  testWidgets('a capsule with nowhere to go dissolves through the shader',
-      (tester) async {
-    runApp(LiquidGlassWidgets.wrap(
-      child: CupertinoApp(
-        debugShowCheckedModeBanner: false,
-        builder: (context, child) => GlassNavigationShell(child: child!),
-        home: const _Root(),
+  testWidgets('a capsule with nowhere to go dissolves through the shader', (
+    tester,
+  ) async {
+    runApp(
+      LiquidGlassWidgets.wrap(
+        child: CupertinoApp(
+          debugShowCheckedModeBanner: false,
+          builder: (context, child) => GlassNavigationShell(child: child!),
+          home: const _Root(),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     // At rest the effect is mounted but inert, so the capsule's glass shell is
@@ -84,7 +88,8 @@ void main() {
     expect(
       samples.where((v) => v > 0.0 && v < 1.0),
       isNotEmpty,
-      reason: 'the capsule must dissolve through intermediate values, not '
+      reason:
+          'the capsule must dissolve through intermediate values, not '
           'switch off at the midpoint',
     );
     expect(
@@ -97,15 +102,18 @@ void main() {
     expect(capsuleScope(tester), isNull, reason: 'gone once the push settles');
   });
 
-  testWidgets('the settled glass carries no leftover blur or fade',
-      (tester) async {
-    runApp(LiquidGlassWidgets.wrap(
-      child: CupertinoApp(
-        debugShowCheckedModeBanner: false,
-        builder: (context, child) => GlassNavigationShell(child: child!),
-        home: const _Root(),
+  testWidgets('the settled glass carries no leftover blur or fade', (
+    tester,
+  ) async {
+    runApp(
+      LiquidGlassWidgets.wrap(
+        child: CupertinoApp(
+          debugShowCheckedModeBanner: false,
+          builder: (context, child) => GlassNavigationShell(child: child!),
+          home: const _Root(),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     // resolveSettings returns its input instance when the scope is at rest;
@@ -130,16 +138,16 @@ class _Root extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GlassScaffold(
-        appBar: GlassAppBar.pinned(
-          actions: [
-            GlassBarItem.icon(
-              icon: const Icon(CupertinoIcons.search),
-              onTap: () {},
-            ),
-          ],
+    appBar: GlassAppBar.pinned(
+      actions: [
+        GlassBarItem.icon(
+          icon: const Icon(CupertinoIcons.search),
+          onTap: () {},
         ),
-        body: const SizedBox.expand(),
-      );
+      ],
+    ),
+    body: const SizedBox.expand(),
+  );
 }
 
 /// A destination with a back button and no actions — the capsule has nowhere
@@ -149,7 +157,7 @@ class _Detail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const GlassScaffold(
-        appBar: GlassAppBar.pinned(title: Text('Trending'), actions: []),
-        body: SizedBox.expand(),
-      );
+    appBar: GlassAppBar.pinned(title: Text('Trending'), actions: []),
+    body: SizedBox.expand(),
+  );
 }

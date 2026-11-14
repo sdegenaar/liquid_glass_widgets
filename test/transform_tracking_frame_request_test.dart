@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -13,8 +13,9 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 /// here rather than the frame count: the test binding's semantics request
 /// frames of their own and would mask the freeze.
 void main() {
-  testWidgets('no frame leaves scrolled glass dirty without the next frame',
-      (tester) async {
+  testWidgets('no frame leaves scrolled glass dirty without the next frame', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       Directionality(
         textDirection: TextDirection.ltr,
@@ -34,8 +35,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final glass =
-        tester.renderObject(find.byType(LightweightLiquidGlass).first);
+    final glass = tester.renderObject(
+      find.byType(LightweightLiquidGlass).first,
+    );
     final gesture = await tester.startGesture(const Offset(150, 400));
     // Past the touch slop: the scroll drag is accepted (the slop itself is
     // swallowed by `DragStartBehavior.start`, so the page has not moved yet).

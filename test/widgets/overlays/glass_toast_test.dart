@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -11,10 +11,8 @@ void main() {
       await tester.pumpWidget(
         createTestApp(
           child: Builder(
-            builder: (context) => GlassToast(
-              message: 'Test message',
-              onDismissed: () {},
-            ),
+            builder: (context) =>
+                GlassToast(message: 'Test message', onDismissed: () {}),
           ),
         ),
       );
@@ -71,7 +69,9 @@ void main() {
       );
 
       expect(
-          find.byIcon(CupertinoIcons.check_mark_circled_solid), findsOneWidget);
+        find.byIcon(CupertinoIcons.check_mark_circled_solid),
+        findsOneWidget,
+      );
     });
 
     testWidgets('displays default error icon', (tester) async {
@@ -119,8 +119,10 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(CupertinoIcons.exclamationmark_triangle_fill),
-          findsOneWidget);
+      expect(
+        find.byIcon(CupertinoIcons.exclamationmark_triangle_fill),
+        findsOneWidget,
+      );
     });
 
     testWidgets('displays action button when provided', (tester) async {
@@ -286,10 +288,7 @@ void main() {
     });
 
     testWidgets('respects custom glass settings', (tester) async {
-      const customSettings = LiquidGlassSettings(
-        thickness: 50.0,
-        blur: 8.0,
-      );
+      const customSettings = LiquidGlassSettings(thickness: 50.0, blur: 8.0);
 
       await tester.pumpWidget(
         createTestApp(
@@ -325,10 +324,7 @@ void main() {
 
   group('GlassToastAction', () {
     test('can be instantiated with required parameters', () {
-      final action = GlassToastAction(
-        label: 'Action',
-        onPressed: () {},
-      );
+      final action = GlassToastAction(label: 'Action', onPressed: () {});
 
       expect(action.label, equals('Action'));
       expect(action.onPressed, isA<VoidCallback>());
@@ -337,8 +333,9 @@ void main() {
 
   // ── Swipeable toast — Dismissible path (line 499) ───────────────────────────
   group('GlassToast swipeable', () {
-    testWidgets('swipeable=true wraps toast in Dismissible (line 499)',
-        (tester) async {
+    testWidgets('swipeable=true wraps toast in Dismissible (line 499)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: Builder(
@@ -372,8 +369,9 @@ void main() {
 
   // ── Center position (lines 516, 526) ────────────────────────────────────────
   group('GlassToast center position', () {
-    testWidgets('position=center wraps child in Center (lines 516, 526)',
-        (tester) async {
+    testWidgets('position=center wraps child in Center (lines 516, 526)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: Builder(

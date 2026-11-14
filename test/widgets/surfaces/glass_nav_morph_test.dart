@@ -6,7 +6,7 @@
 // `--dart-define=GLASS_NAV_MORPH_TRACE=true` to print the per-frame trace
 // while tuning against the native reference recording.
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/widgets/surfaces/shared/glass_nav_pinned_host.dart';
@@ -37,8 +37,11 @@ void main() {
     final all = find.byWidgetPredicate(
       (w) => w.runtimeType.toString() == '_PinnedCluster',
     );
-    expect(all, findsWidgets,
-        reason: 'no _PinnedCluster found — was the render widget renamed?');
+    expect(
+      all,
+      findsWidgets,
+      reason: 'no _PinnedCluster found — was the render widget renamed?',
+    );
     return all.last;
   }
 
@@ -65,8 +68,10 @@ void main() {
       final s = capsuleScale(tester);
       samples.add((ms / 500, w, s));
       if (_trace) {
-        debugPrint('t=${ms}ms p=${ms / 500} W=$w '
-            'scale=${s.toStringAsFixed(4)}');
+        debugPrint(
+          't=${ms}ms p=${ms / 500} W=$w '
+          'scale=${s.toStringAsFixed(4)}',
+        );
       }
       await tester.pump(step);
     }
@@ -79,13 +84,17 @@ void main() {
       expect(curve.transform(0.0), 0.0);
       expect(curve.transform(1.0), 1.0);
       // Overshoots the target on the way in.
-      final peak = List.generate(100, (i) => curve.transform(i / 100))
-          .reduce((a, b) => a > b ? a : b);
+      final peak = List.generate(
+        100,
+        (i) => curve.transform(i / 100),
+      ).reduce((a, b) => a > b ? a : b);
       expect(peak, greaterThan(1.02), reason: 'the bounce must be visible');
       if (_trace) {
         for (var i = 0; i <= 40; i++) {
-          debugPrint('t=${(i / 40).toStringAsFixed(3)} '
-              'w=${curve.transform(i / 40).toStringAsFixed(4)}');
+          debugPrint(
+            't=${(i / 40).toStringAsFixed(3)} '
+            'w=${curve.transform(i / 40).toStringAsFixed(4)}',
+          );
         }
       }
     });
@@ -93,31 +102,44 @@ void main() {
     test('the swell pulse rises, peaks and returns to zero', () {
       expect(GlassNavPinnedMetrics.swellPulseAt(0.0), 0.0);
       expect(GlassNavPinnedMetrics.swellPulseAt(1.0), closeTo(0.0, 1e-9));
-      final peak =
-          List.generate(101, (i) => GlassNavPinnedMetrics.swellPulseAt(i / 100))
-              .reduce((a, b) => a > b ? a : b);
+      final peak = List.generate(
+        101,
+        (i) => GlassNavPinnedMetrics.swellPulseAt(i / 100),
+      ).reduce((a, b) => a > b ? a : b);
       expect(peak, closeTo(GlassNavPinnedMetrics.swellAmount, 1e-6));
     });
   });
 
   group('capsule width over a push', () {
-    testWidgets('inflates, contracts past the target, bounces and settles',
-        (tester) async {
-      await tester.pumpWidget(shellApp(_Screen(
-        title: 'From',
-        actions: [
-          GlassBarItem.icon(icon: const Icon(CupertinoIcons.add), onTap: () {}),
-          GlassBarItem.icon(
-              icon: const Icon(CupertinoIcons.ellipsis), onTap: () {}),
-        ],
-        next: _Screen(
-          title: 'To',
-          actions: [
-            GlassBarItem.icon(
-                icon: const Icon(CupertinoIcons.share), onTap: () {}),
-          ],
+    testWidgets('inflates, contracts past the target, bounces and settles', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        shellApp(
+          _Screen(
+            title: 'From',
+            actions: [
+              GlassBarItem.icon(
+                icon: const Icon(CupertinoIcons.add),
+                onTap: () {},
+              ),
+              GlassBarItem.icon(
+                icon: const Icon(CupertinoIcons.ellipsis),
+                onTap: () {},
+              ),
+            ],
+            next: _Screen(
+              title: 'To',
+              actions: [
+                GlassBarItem.icon(
+                  icon: const Icon(CupertinoIcons.share),
+                  onTap: () {},
+                ),
+              ],
+            ),
+          ),
         ),
-      )));
+      );
       await tester.pumpAndSettle();
       await tester.pump();
 
@@ -140,12 +162,18 @@ void main() {
 
       // Gel swell: the whole shell inflates past its resting size first…
       final peak = scales.reduce((a, b) => a > b ? a : b);
-      expect(peak, greaterThan(1.1),
-          reason: 'the pill must puff up as the morph starts');
+      expect(
+        peak,
+        greaterThan(1.1),
+        reason: 'the pill must puff up as the morph starts',
+      );
       // …then squeezes past its final size on the bounce…
       final dip = scales.reduce((a, b) => a < b ? a : b);
-      expect(dip, lessThan(0.98),
-          reason: 'the pill must squeeze past its final size and relax');
+      expect(
+        dip,
+        lessThan(0.98),
+        reason: 'the pill must squeeze past its final size and relax',
+      );
       // …in that order, and lands settled.
       expect(scales.indexOf(peak), lessThan(scales.indexOf(dip)));
       expect(scales.last, moreOrLessEquals(1.0, epsilon: 1e-6));
@@ -155,47 +183,73 @@ void main() {
       // Same const icon on both routes: identifier-free, but const
       // canonicalisation makes it the same instance, so nothing enters,
       // exits or cross-fades — the native bar keeps such a cluster frozen.
-      await tester.pumpWidget(shellApp(_Screen(
-        title: 'From',
-        actions: [
-          GlassBarItem.icon(icon: const Icon(CupertinoIcons.add), onTap: () {}),
-        ],
-        next: _Screen(
-          title: 'To',
-          actions: [
-            GlassBarItem.icon(
-                icon: const Icon(CupertinoIcons.add), onTap: () {}),
-          ],
+      await tester.pumpWidget(
+        shellApp(
+          _Screen(
+            title: 'From',
+            actions: [
+              GlassBarItem.icon(
+                icon: const Icon(CupertinoIcons.add),
+                onTap: () {},
+              ),
+            ],
+            next: _Screen(
+              title: 'To',
+              actions: [
+                GlassBarItem.icon(
+                  icon: const Icon(CupertinoIcons.add),
+                  onTap: () {},
+                ),
+              ],
+            ),
+          ),
         ),
-      )));
+      );
       await tester.pumpAndSettle();
       await tester.pump();
 
       final samples = await trace(tester);
       for (final (p, w, scale) in samples) {
-        expect(scale, closeTo(1.0, 1e-9),
-            reason: 'an unchanged cluster must not pulse (p=$p)');
-        expect(w, GlassNavPinnedMetrics.slot,
-            reason: 'an unchanged cluster must not resize (p=$p)');
+        expect(
+          scale,
+          closeTo(1.0, 1e-9),
+          reason: 'an unchanged cluster must not pulse (p=$p)',
+        );
+        expect(
+          w,
+          GlassNavPinnedMetrics.slot,
+          reason: 'an unchanged cluster must not resize (p=$p)',
+        );
       }
     });
 
     testWidgets('a pop leads with the swell, not the settle', (tester) async {
-      await tester.pumpWidget(shellApp(_Screen(
-        title: 'From',
-        actions: [
-          GlassBarItem.icon(icon: const Icon(CupertinoIcons.add), onTap: () {}),
-          GlassBarItem.icon(
-              icon: const Icon(CupertinoIcons.ellipsis), onTap: () {}),
-        ],
-        next: _Screen(
-          title: 'To',
-          actions: [
-            GlassBarItem.icon(
-                icon: const Icon(CupertinoIcons.share), onTap: () {}),
-          ],
+      await tester.pumpWidget(
+        shellApp(
+          _Screen(
+            title: 'From',
+            actions: [
+              GlassBarItem.icon(
+                icon: const Icon(CupertinoIcons.add),
+                onTap: () {},
+              ),
+              GlassBarItem.icon(
+                icon: const Icon(CupertinoIcons.ellipsis),
+                onTap: () {},
+              ),
+            ],
+            next: _Screen(
+              title: 'To',
+              actions: [
+                GlassBarItem.icon(
+                  icon: const Icon(CupertinoIcons.share),
+                  onTap: () {},
+                ),
+              ],
+            ),
+          ),
         ),
-      )));
+      );
       await tester.pumpAndSettle();
       await tester.pump();
       await tester.tap(find.text('go'));
@@ -216,15 +270,18 @@ void main() {
       // the swell must lead — its peak sits in the first half of the
       // transition — and the shell must land settled at exactly 1.
       final peak = scales.reduce((a, b) => a > b ? a : b);
-      expect(peak, greaterThan(1.1),
-          reason: 'the pop must swell like the push does');
-      expect(scales.indexOf(peak), lessThan(scales.length ~/ 2),
-          reason: 'the swell must lead the pop, not trail it');
-      expect(scales.last, moreOrLessEquals(1.0, epsilon: 1e-6));
       expect(
-        tester.getSize(cluster()).width,
-        2 * GlassNavPinnedMetrics.slot,
+        peak,
+        greaterThan(1.1),
+        reason: 'the pop must swell like the push does',
       );
+      expect(
+        scales.indexOf(peak),
+        lessThan(scales.length ~/ 2),
+        reason: 'the swell must lead the pop, not trail it',
+      );
+      expect(scales.last, moreOrLessEquals(1.0, epsilon: 1e-6));
+      expect(tester.getSize(cluster()).width, 2 * GlassNavPinnedMetrics.slot);
     });
   });
 }
@@ -244,9 +301,9 @@ class _Screen extends StatelessWidget {
         child: next == null
             ? const SizedBox.shrink()
             : CupertinoButton(
-                onPressed: () => Navigator.of(context).push(
-                  CupertinoPageRoute<void>(builder: (_) => next!),
-                ),
+                onPressed: () =>
+                    Navigator.of(context)
+                        .push(CupertinoPageRoute<void>(builder: (_) => next!)),
                 child: const Text('go'),
               ),
       ),

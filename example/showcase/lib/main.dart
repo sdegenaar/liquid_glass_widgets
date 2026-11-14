@@ -1,6 +1,7 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+
 import 'pages/home_page.dart';
 
 /// Wanderlust - A luxury travel showcase app
@@ -19,8 +20,9 @@ void main() async {
     const SystemUiOverlayStyle(
       statusBarBrightness: Brightness.dark,
       statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor:
-          Color(0x00000000), // Color(0x00000000) equivalent
+      systemNavigationBarColor: Color(
+        0x00000000,
+      ), // Color(0x00000000) equivalent
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );

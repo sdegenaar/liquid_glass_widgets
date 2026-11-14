@@ -1,7 +1,3 @@
-// Using deprecated Colors.withOpacity for backwards compatibility with
-// existing code patterns in the codebase.
-// ignore_for_file: deprecated_member_use
-
 // Physics calculations adapted from example code in the liquid_glass_renderer
 // package by whynotmake-it team (https://github.com/whynotmake-it/flutter_liquid_glass).
 // Used under MIT License.
@@ -108,7 +104,7 @@ class DraggableIndicatorPhysics {
       // !isFinite: NaN or Infinity from synthetic/custom velocity — fall back
       // to a neutral transform. Keep a sub-pixel translation so the
       // TransformLayer stays mounted and avoids edge-snapping artifacts.
-      return Matrix4.identity()..translate(0.0001, 0.0);
+      return Matrix4.identity()..translateByDouble(0.0001, 0.0, 0.0, 1.0);
     }
 
     // Normalize velocity direction
@@ -130,10 +126,10 @@ class DraggableIndicatorPhysics {
     final scaleX = squashX * stretchX;
     final scaleY = squashY * stretchY;
 
-    final matrix = Matrix4.identity()..scale(scaleX, scaleY);
+    final matrix = Matrix4.identity()..scaleByDouble(scaleX, scaleY, 1.0, 1.0);
     if (matrix.isIdentity()) {
       // Catch floating-point rounding rendering drops when speed is > 0 but microscopic
-      matrix.translate(0.0001, 0.0);
+      matrix.translateByDouble(0.0001, 0.0, 0.0, 1.0);
     }
     return matrix;
   }
@@ -200,10 +196,12 @@ class DraggableIndicatorPhysics {
     final padding = indicatorWidth / 2;
 
     // Map drag position to 0-1 range
-    final mainPosition =
-        direction == Axis.horizontal ? localPosition.dx : localPosition.dy;
-    final mainExtent =
-        direction == Axis.horizontal ? box.size.width : box.size.height;
+    final mainPosition = direction == Axis.horizontal
+        ? localPosition.dx
+        : localPosition.dy;
+    final mainExtent = direction == Axis.horizontal
+        ? box.size.width
+        : box.size.height;
     var rawRelativeX = (mainPosition / mainExtent).clamp(0.0, 1.0);
 
     if (mirrorForRtl &&
@@ -256,11 +254,12 @@ class DraggableIndicatorPhysics {
   }) {
     final box = context.findRenderObject()! as RenderBox;
     final localPosition = box.globalToLocal(globalPosition);
-    final width =
-        direction == Axis.horizontal ? box.size.width : box.size.height;
+    final width = direction == Axis.horizontal
+        ? box.size.width
+        : box.size.height;
     double fraction =
         (direction == Axis.horizontal ? localPosition.dx : localPosition.dy) /
-            width;
+        width;
 
     return (fraction * itemCount).floor().clamp(0, itemCount - 1);
   }
@@ -317,14 +316,18 @@ class DraggableIndicatorPhysics {
 
     if (safeVelocityX.abs() > velocityThreshold) {
       // High velocity - project where we would end up
-      final projectedX =
-          (currentRelativeX + safeVelocityX * projectionTime).clamp(0.0, 1.0);
-      var targetIndex =
-          (projectedX / itemWidth).round().clamp(0, itemCount - 1);
+      final projectedX = (currentRelativeX + safeVelocityX * projectionTime)
+          .clamp(0.0, 1.0);
+      var targetIndex = (projectedX / itemWidth).round().clamp(
+        0,
+        itemCount - 1,
+      );
 
       // Ensure we move at least one item with strong velocity
-      final currentIndex =
-          (currentRelativeX / itemWidth).round().clamp(0, itemCount - 1);
+      final currentIndex = (currentRelativeX / itemWidth).round().clamp(
+        0,
+        itemCount - 1,
+      );
 
       if (safeVelocityX > velocityThreshold &&
           targetIndex <= currentIndex &&

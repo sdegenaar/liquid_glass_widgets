@@ -3,13 +3,14 @@
 // NOT part of the public API — do not export from liquid_glass_widgets.dart.
 library;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 // ── External brightness resolver ──────────────────────────────────────────────
 //
 // MaterialApp users need the package to honour ThemeMode (light/dark/system).
-// Because this package has zero flutter/material.dart imports (required for the
-// cupertino_ui split), we cannot call Theme.maybeBrightnessOf ourselves.
+// Because this package has zero material_ui / flutter/material.dart imports
+// (required for the cupertino_ui split), we cannot call Theme.maybeBrightnessOf
+// ourselves.
 //
 // Instead, LiquidGlassWidgets.wrap() accepts an optional [brightnessResolver]
 // callback that the caller provides from their own code (where they may freely

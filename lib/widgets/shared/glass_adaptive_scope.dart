@@ -161,7 +161,8 @@ class GlassAdaptiveScopeData {
   int get hashCode => Object.hash(effectiveQuality, phase, frostEnabled);
 
   @override
-  String toString() => 'GlassAdaptiveScopeData(quality: $effectiveQuality, '
+  String toString() =>
+      'GlassAdaptiveScopeData(quality: $effectiveQuality, '
       'phase: $phase, frostEnabled: $frostEnabled)';
 }
 
@@ -386,16 +387,16 @@ class GlassAdaptiveScopeConfig {
 
   @override
   int get hashCode => Object.hash(
-        minQuality,
-        maxQuality,
-        initialQuality,
-        targetFrameMs,
-        allowStepUp,
-        warmupPremiumThresholdMs,
-        warmupStandardThresholdMs,
-        frostStep,
-        debugLogDiagnostics,
-      );
+    minQuality,
+    maxQuality,
+    initialQuality,
+    targetFrameMs,
+    allowStepUp,
+    warmupPremiumThresholdMs,
+    warmupStandardThresholdMs,
+    frostStep,
+    debugLogDiagnostics,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -631,7 +632,8 @@ class _GlassAdaptiveScopeState extends State<GlassAdaptiveScope>
     // The previous GLES shader compilation ANR risk is mitigated by the
     // `toImage()` warmup in LiquidGlassWidgets.initialize(). If a device
     // genuinely cannot sustain this, Phase 2 will demote it.
-    _effectiveQuality = widget.initialQuality ??
+    _effectiveQuality =
+        widget.initialQuality ??
         GlassQualityAdapter.sessionSettledQuality ??
         widget.maxQuality;
     _createAdapter();
@@ -656,7 +658,8 @@ class _GlassAdaptiveScopeState extends State<GlassAdaptiveScope>
         oldWidget.frostStep != widget.frostStep) {
       _adapter.stop();
       // Mirror the same seeding logic as initState to avoid a one-frame flash.
-      _effectiveQuality = widget.initialQuality ??
+      _effectiveQuality =
+          widget.initialQuality ??
           GlassQualityAdapter.sessionSettledQuality ??
           widget.maxQuality;
       _frostEnabled = true;
@@ -704,8 +707,10 @@ class _GlassAdaptiveScopeState extends State<GlassAdaptiveScope>
       if (!mounted) return;
       setState(() => _frostEnabled = enabled);
       if (widget.debugLogDiagnostics && kDebugMode) {
-        debugPrint('GlassAdaptiveScope: frost ${enabled ? 'on' : 'off'} '
-            '(P95 ${_adapter.lastP95Ms?.toStringAsFixed(1) ?? '-'} ms)');
+        debugPrint(
+          'GlassAdaptiveScope: frost ${enabled ? 'on' : 'off'} '
+          '(P95 ${_adapter.lastP95Ms?.toStringAsFixed(1) ?? '-'} ms)',
+        );
       }
     });
     // The callback above needs a frame; on a screen that just went idle
@@ -788,7 +793,8 @@ class _GlassAdaptiveScopeState extends State<GlassAdaptiveScope>
     final noChange = d.from == d.to;
     final buf = StringBuffer()
       ..writeln(
-          '┌─ 📊 GlassAdaptiveScope ─────────────────────────────────────');
+        '┌─ 📊 GlassAdaptiveScope ─────────────────────────────────────',
+      );
     if (noChange) {
       buf.writeln('│  Stayed  : ${d.to.name} (no change needed)');
     } else {
@@ -809,7 +815,8 @@ class _GlassAdaptiveScopeState extends State<GlassAdaptiveScope>
     buf
       ..writeln('│')
       ..writeln(
-          '│  📬 Post to: github.com/sdegenaar/liquid_glass_widgets/discussions')
+        '│  📬 Post to: github.com/sdegenaar/liquid_glass_widgets/discussions',
+      )
       ..write('└──────────────────────────────────────────────────────────');
     // ignore: avoid_print
     debugPrint(buf.toString());
@@ -823,10 +830,7 @@ class _GlassAdaptiveScopeState extends State<GlassAdaptiveScope>
         phase: _adapter.phase,
         frostEnabled: _frostEnabled,
       ),
-      child: GlassFrostBudget(
-        frostEnabled: _frostEnabled,
-        child: widget.child,
-      ),
+      child: GlassFrostBudget(frostEnabled: _frostEnabled, child: widget.child),
     );
   }
 
@@ -842,10 +846,7 @@ class _GlassAdaptiveScopeState extends State<GlassAdaptiveScope>
 /// Internal [InheritedWidget] that carries [GlassAdaptiveScopeData] down the
 /// tree. Not exported — access only via [GlassAdaptiveScopeData.of].
 class _InheritedAdaptiveQuality extends InheritedWidget {
-  const _InheritedAdaptiveQuality({
-    required this.data,
-    required super.child,
-  });
+  const _InheritedAdaptiveQuality({required this.data, required super.child});
 
   final GlassAdaptiveScopeData data;
 

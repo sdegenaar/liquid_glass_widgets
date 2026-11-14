@@ -206,11 +206,20 @@ class GlassVerticalBarData {
       other.titleInset == titleInset;
 
   @override
-  int get hashCode => Object.hash(edge, width, top, bottom, collapsesTabBar,
-      rowTop, titleInset, systemInset);
+  int get hashCode => Object.hash(
+    edge,
+    width,
+    top,
+    bottom,
+    collapsesTabBar,
+    rowTop,
+    titleInset,
+    systemInset,
+  );
 
   @override
-  String toString() => 'GlassVerticalBarData(${edge.name}, width: $width, '
+  String toString() =>
+      'GlassVerticalBarData(${edge.name}, width: $width, '
       'top: $top, bottom: $bottom, collapsesTabBar: $collapsesTabBar, '
       'rowTop: $rowTop, titleInset: $titleInset, systemInset: $systemInset)';
 }
@@ -236,11 +245,7 @@ class GlassVerticalBarData {
 /// ```
 class GlassVerticalBar extends InheritedWidget {
   /// Publishes [data] to the subtree.
-  const GlassVerticalBar({
-    super.key,
-    required this.data,
-    required super.child,
-  });
+  const GlassVerticalBar({super.key, required this.data, required super.child});
 
   /// Keeps the bars in [child] horizontal under a strip.
   ///
@@ -254,7 +259,7 @@ class GlassVerticalBar extends InheritedWidget {
   /// chrome in-route: the shell pins chrome against the window, not against
   /// the column.
   const GlassVerticalBar.disabled({super.key, required super.child})
-      : data = null;
+    : data = null;
 
   /// The strip, or null where bars are horizontal.
   final GlassVerticalBarData? data;
@@ -332,7 +337,8 @@ class GlassVerticalBar extends InheritedWidget {
     final systemInset = left != right;
     if (!systemInset) {
       if (systemEdge == null) return null;
-      left = (systemEdge == GlassVerticalBarEdge.leading) ==
+      left =
+          (systemEdge == GlassVerticalBarEdge.leading) ==
           (textDirection == TextDirection.ltr);
     }
     final onStart = left == (textDirection == TextDirection.ltr);
@@ -340,8 +346,8 @@ class GlassVerticalBar extends InheritedWidget {
     final stripWidth = !systemInset
         ? GlassVerticalBarMetrics.stripWidth
         : left
-            ? viewPadding.left
-            : viewPadding.right;
+        ? viewPadding.left
+        : viewPadding.right;
     final strip = left
         ? Rect.fromLTWH(0, 0, stripWidth, size.height)
         : Rect.fromLTWH(size.width - stripWidth, 0, stripWidth, size.height);
@@ -369,11 +375,15 @@ class GlassVerticalBar extends InheritedWidget {
         continue;
       }
       if (bounds.center.dy < size.height / 2) {
-        top =
-            math.max(top ?? GlassVerticalBarMetrics.edgeMargin, bounds.bottom);
+        top = math.max(
+          top ?? GlassVerticalBarMetrics.edgeMargin,
+          bounds.bottom,
+        );
       } else {
-        bottom = math.max(bottom ?? GlassVerticalBarMetrics.edgeMargin,
-            size.height - bounds.top);
+        bottom = math.max(
+          bottom ?? GlassVerticalBarMetrics.edgeMargin,
+          size.height - bounds.top,
+        );
       }
     }
     if (statusBarOnTop) {
@@ -384,8 +394,8 @@ class GlassVerticalBar extends InheritedWidget {
       top = innerLandscape
           ? 120.0
           : outerLandscape
-              ? (left ? cameraClearance : null)
-              : 170.0;
+          ? (left ? cameraClearance : null)
+          : 170.0;
       bottom = outerLandscape && right ? cameraClearance : null;
     }
 

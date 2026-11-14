@@ -10,8 +10,9 @@
 
 import 'dart:math' as math;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/rendering.dart';
+
 import '../../../widgets/shared/inherited_liquid_glass.dart';
 import '../../../utils/glass_spring.dart';
 import 'rendering/liquid_glass_render_object.dart';
@@ -267,7 +268,7 @@ class GlassGlowLayer extends StatefulWidget {
   /// [LiquidGlassRenderObject.setTouchSpecular] directly — zero [setState],
   /// zero widget rebuild, only [RenderObject.markNeedsPaint].
   static ValueNotifier<({Offset position, double intensity})>?
-      touchSpecularNotifierOf(BuildContext context) {
+  touchSpecularNotifierOf(BuildContext context) {
     if (!context.mounted) return null;
     return context
         .findAncestorStateOfType<GlassGlowLayerState>()
@@ -303,9 +304,10 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
   /// Updated on every spring animation tick, so listeners need not poll.
   /// At rest: intensity == 0.0. While pressed: intensity rises to 1.0.
   final _touchSpecularNotifier =
-      ValueNotifier<({Offset position, double intensity})>(
-    (position: Offset.zero, intensity: 0.0),
-  );
+      ValueNotifier<({Offset position, double intensity})>((
+        position: Offset.zero,
+        intensity: 0.0,
+      ));
 
   bool _dragging = false;
 
@@ -449,8 +451,8 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
 
   @override
   Widget build(BuildContext context) {
-    final inherited =
-        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    final inherited = context
+        .dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
     final avoidsRefraction = inherited?.avoidsRefraction ?? false;
 
     return ListenableBuilder(
@@ -466,9 +468,7 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
           clipper: widget.clipper,
           pulse: widget.pulse,
           glowRadius: _baseRadius * _radiusController.value,
-          glowColor: _baseColor.withValues(
-            alpha: animatedAlpha * _baseOpacity,
-          ),
+          glowColor: _baseColor.withValues(alpha: animatedAlpha * _baseOpacity),
           touchIntensity: _baseColor.a > 0 ? _alphaController.value : 0.0,
           glowOffset: _offsetController.value,
           glowBlurRadius: _baseBlurRadius,
@@ -541,24 +541,16 @@ class _RenderGlassGlowLayerWidget extends SingleChildRenderObjectWidget {
 
 class _RenderGlassGlowLayer extends RenderProxyBox {
   _RenderGlassGlowLayer({
-    required double glowRadius,
-    required Color glowColor,
-    double touchIntensity = 0.0,
-    required Offset glowOffset,
-    required double glowBlurRadius,
-    required double glowSpreadRadius,
-    required double pulse,
-    bool propagateToAncestor = true,
-    CustomClipper<Path>? clipper,
-  })  : _glowRadius = glowRadius,
-        _glowColor = glowColor,
-        _touchIntensity = touchIntensity,
-        _glowOffset = glowOffset,
-        _glowBlurRadius = glowBlurRadius,
-        _glowSpreadRadius = glowSpreadRadius,
-        _pulse = pulse,
-        _propagateToAncestor = propagateToAncestor,
-        _clipper = clipper;
+    required this._glowRadius,
+    required this._glowColor,
+    this._touchIntensity = 0.0,
+    required this._glowOffset,
+    required this._glowBlurRadius,
+    required this._glowSpreadRadius,
+    required this._pulse,
+    this._propagateToAncestor = true,
+    this._clipper,
+  });
 
   // ---------------------------------------------------------------------------
   // Clipper — path caching + proper shouldReclip / ChangeNotifier wiring.

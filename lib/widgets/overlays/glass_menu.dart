@@ -1,9 +1,11 @@
 import 'dart:async' show scheduleMicrotask;
 import 'dart:math' as math;
 import 'dart:ui';
-import 'package:flutter/cupertino.dart';
+
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+
 import '../../src/utils/glass_localizations.dart';
 import '../../src/widgets/surfaces/shell_chrome_barrier.dart';
 import '../../utils/glass_morph_controller.dart';
@@ -120,7 +122,7 @@ class GlassMenu extends StatefulWidget {
   /// )
   /// ```
   final Widget Function(BuildContext context, VoidCallback toggleMenu)?
-      triggerBuilder;
+  triggerBuilder;
 
   /// The list of items to display in the menu.
   ///
@@ -393,9 +395,11 @@ class GlassMenu extends StatefulWidget {
     this.semanticLabel,
     this.menuSemanticLabel,
     this.onLevelChanged,
-  })  : assert(maxStackHeight == null || maxStackHeight > 0),
-        assert(trigger != null || triggerBuilder != null,
-            'Either trigger or triggerBuilder must be provided');
+  }) : assert(maxStackHeight == null || maxStackHeight > 0),
+       assert(
+         trigger != null || triggerBuilder != null,
+         'Either trigger or triggerBuilder must be provided',
+       );
 
   @override
   State<GlassMenu> createState() => _GlassMenuState();

@@ -50,7 +50,8 @@ void main() {
       expect(
         source,
         contains('!defined(IMPELLER_OPENGLES_UNFLIPPED_DEPRECATED)'),
-        reason: 'The flip must be suppressed on Flutter 3.46+, which '
+        reason:
+            'The flip must be suppressed on Flutter 3.46+, which '
             'no longer stores GLES render targets bottom-up.',
       );
       expect(source, contains('#define LGR_GLES_FLIP_SAMPLE_Y'));
@@ -81,7 +82,8 @@ void main() {
       expect(
         offenders,
         isEmpty,
-        reason: 'These shaders branch on IMPELLER_TARGET_OPENGLES directly. '
+        reason:
+            'These shaders branch on IMPELLER_TARGET_OPENGLES directly. '
             'Use LGR_GLES_FLIP_SAMPLE_Y (shaders/gles_compat.glsl) so the '
             'compensation is skipped on Flutter 3.46+:\n'
             '${offenders.join('\n')}',
@@ -105,7 +107,8 @@ void main() {
       expect(
         missing,
         isEmpty,
-        reason: 'LGR_GLES_FLIP_SAMPLE_Y is undefined without the header, so '
+        reason:
+            'LGR_GLES_FLIP_SAMPLE_Y is undefined without the header, so '
             'the guarded branch would silently never compile in:\n'
             '${missing.join('\n')}',
       );

@@ -77,16 +77,16 @@ class GlassIsolationScope extends InheritedWidget {
   ///
   /// Used by [AdaptiveGlass] to decide whether to force `useOwnLayer: true`.
   static bool isIsolated(BuildContext context) {
-    final scope =
-        context.dependOnInheritedWidgetOfExactType<GlassIsolationScope>();
+    final scope = context
+        .dependOnInheritedWidgetOfExactType<GlassIsolationScope>();
     return scope?.isolated ?? false;
   }
 
   /// Returns the [defaultQuality] from the nearest [GlassIsolationScope],
   /// or `null` if none is set.
   static GlassQuality? defaultQualityOf(BuildContext context) {
-    final scope =
-        context.dependOnInheritedWidgetOfExactType<GlassIsolationScope>();
+    final scope = context
+        .dependOnInheritedWidgetOfExactType<GlassIsolationScope>();
     return scope?.defaultQuality;
   }
 

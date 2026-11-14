@@ -6,12 +6,13 @@
 /// Run standalone: `flutter run -t lib/apple_news/apple_news_demo.dart`
 library;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, TargetPlatform;
 
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+
 import '../constants/sf_symbols.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -21,9 +22,13 @@ import '../constants/sf_symbols.dart';
 const _kNewsRed = Color(0xFFFF2D55);
 const _kLiveBadge = Color(0xFFFF3B30);
 const _kBackground = CupertinoDynamicColor.withBrightness(
-    color: Color(0xFFF2F2F7), darkColor: Color(0xFF000000));
+  color: Color(0xFFF2F2F7),
+  darkColor: Color(0xFF000000),
+);
 const _kCardBackground = CupertinoDynamicColor.withBrightness(
-    color: Color(0xFFFFFFFF), darkColor: Color(0xFF1C1C1E));
+  color: Color(0xFFFFFFFF),
+  darkColor: Color(0xFF1C1C1E),
+);
 const _kSeparator = CupertinoColors.separator;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,8 +59,7 @@ class _Article {
 
 const _kTopStories = [
   _Article(
-    headline:
-        'Tehran warns US over Strait of Hormuz threat; Netanyahu suggests Israel helped rescue airman',
+    headline: 'Tehran warns US over Strait of Hormuz threat; Netanyahu suggests Israel helped rescue airman',
     publication: 'The Guardian',
     imageAsset: 'assets/news_images/tehran_guardian.jpg',
     // isLive: true,
@@ -63,15 +67,13 @@ const _kTopStories = [
     moreCoverage: true,
   ),
   _Article(
-    headline:
-        'Markets surge after Fed signals three rate cuts this year despite persistent inflation',
+    headline: 'Markets surge after Fed signals three rate cuts this year despite persistent inflation',
     publication: 'The Wall Street Journal',
     imageAsset: 'assets/news_images/markets_wsj.jpg',
     moreCoverage: true,
   ),
   _Article(
-    headline:
-        'Apple announces spatial computing breakthrough at WWDC, Vision Pro 2 coming this fall',
+    headline: 'Apple announces spatial computing breakthrough at WWDC, Vision Pro 2 coming this fall',
     publication: 'Bloomberg',
     imageAsset: 'assets/news_images/apple_bloomberg.jpg',
   ),
@@ -79,33 +81,28 @@ const _kTopStories = [
 
 const _kMoreArticles = [
   _Article(
-    headline:
-        'Scientists discover potential link between gut microbiome and Alzheimer\'s disease risk',
+    headline: 'Scientists discover potential link between gut microbiome and Alzheimer\'s disease risk',
     publication: 'Nature',
     imageAsset: 'assets/news_images/science_nature.jpg',
   ),
   _Article(
-    headline:
-        'UEFA Champions League: Real Madrid face Arsenal in stunning semi-final clash',
+    headline: 'UEFA Champions League: Real Madrid face Arsenal in stunning semi-final clash',
     publication: 'BBC Sport',
     imageAsset: 'assets/news_images/soccer_bbc.jpg',
   ),
   _Article(
-    headline:
-        'Climate summit reaches historic agreement on carbon emissions targets ahead of 2030 deadline',
+    headline: 'Climate summit reaches historic agreement on carbon emissions targets ahead of 2030 deadline',
     publication: 'Reuters',
     imageAsset: 'assets/news_images/climate_reuters.jpg',
     isLive: true,
   ),
   _Article(
-    headline:
-        'New AI model writes code faster than senior engineers, raising questions about the future of work',
+    headline: 'New AI model writes code faster than senior engineers, raising questions about the future of work',
     publication: 'MIT Technology Review',
     imageAsset: 'assets/news_images/ai_mit.jpg',
   ),
   _Article(
-    headline:
-        'SpaceX Starship completes first fully successful orbital flight and ocean landing',
+    headline: 'SpaceX Starship completes first fully successful orbital flight and ocean landing',
     publication: 'The Verge',
     imageAsset: 'assets/news_images/spacex_verge.jpg',
   ),
@@ -203,16 +200,18 @@ const _kCategories = [
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
-  runApp(LiquidGlassWidgets.wrap(
-    child: const AppleNewsDemoApp(),
-    adaptiveQuality: true,
-    // ignore: experimental_member_use
-    // adaptiveConfig: const GlassAdaptiveScopeConfig(
-    //   // Left on intentionally for 0.9.1 — helps gather diagnostics
-    //   // if the adaptive threshold fix doesn't hold on all hardware.
-    //   debugLogDiagnostics: true,
-    // ),
-  ));
+  runApp(
+    LiquidGlassWidgets.wrap(
+      child: const AppleNewsDemoApp(),
+      adaptiveQuality: true,
+      // ignore: experimental_member_use
+      // adaptiveConfig: const GlassAdaptiveScopeConfig(
+      //   // Left on intentionally for 0.9.1 — helps gather diagnostics
+      //   // if the adaptive threshold fix doesn't hold on all hardware.
+      //   debugLogDiagnostics: true,
+      // ),
+    ),
+  );
 }
 
 class AppleNewsDemoApp extends StatelessWidget {
@@ -249,7 +248,8 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
   Widget build(BuildContext context) {
     // Android 3-button nav requires us to push the bar above the opaque buttons.
     // On iOS and gesture-nav Android, viewPaddingOf returns 0 so no offset applies.
-    final isIOS = defaultTargetPlatform == TargetPlatform.iOS ||
+    final isIOS =
+        defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.macOS;
     final sysBottom = isIOS ? 0.0 : MediaQuery.viewPaddingOf(context).bottom;
 
@@ -276,9 +276,8 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
           child: !_isSearching
               ? _buildTodayView(key: const ValueKey('today'))
               : _searchFieldFocused
-                  ? _buildNoRecentSearches(key: const ValueKey('no-recent'))
-                  : _buildSearchBrowseView(
-                      key: const ValueKey('search-browse')),
+              ? _buildNoRecentSearches(key: const ValueKey('no-recent'))
+              : _buildSearchBrowseView(key: const ValueKey('search-browse')),
         ),
       ),
 
@@ -432,12 +431,15 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
       key: key,
       slivers: [
         SliverToBoxAdapter(
-            child: SizedBox(height: MediaQuery.paddingOf(context).top + 8)),
+          child: SizedBox(height: MediaQuery.paddingOf(context).top + 8),
+        ),
         SliverToBoxAdapter(child: _buildNewsHeader()),
         SliverToBoxAdapter(child: _buildCategoryChips()),
         SliverToBoxAdapter(
           child: _buildSectionHeader(
-              'Top Stories', 'Chosen by the Apple News editors.'),
+            'Top Stories',
+            'Chosen by the Apple News editors.',
+          ),
         ),
         SliverToBoxAdapter(child: _buildHeroArticleCard(_kTopStories[0])),
         SliverList(
@@ -448,7 +450,8 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
           ),
         ),
         SliverToBoxAdapter(
-            child: _buildSectionHeader('Trending Stories', null)),
+          child: _buildSectionHeader('Trending Stories', null),
+        ),
         SliverList(
           delegate: SliverChildBuilderDelegate(
             (context, index) => _buildCompactArticleCard(_kMoreArticles[index]),
@@ -474,9 +477,11 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
             children: [
               Row(
                 children: [
-                  Icon(CupertinoIcons.star,
-                      color: CupertinoColors.label.resolveFrom(context),
-                      size: 38),
+                  Icon(
+                    CupertinoIcons.star,
+                    color: CupertinoColors.label.resolveFrom(context),
+                    size: 38,
+                  ),
                   //  SizedBox(width: 4),
                   Text(
                     'News',
@@ -528,7 +533,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         itemCount: _kCategories.length,
-        separatorBuilder: (_, __) => SizedBox(width: 8),
+        separatorBuilder: (_, _) => SizedBox(width: 8),
         itemBuilder: (context, index) =>
             _CategoryChip(label: _kCategories[index]),
       ),
@@ -573,10 +578,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
           children: [
             AspectRatio(
               aspectRatio: 16 / 9,
-              child: Image.asset(
-                article.imageAsset,
-                fit: BoxFit.cover,
-              ),
+              child: Image.asset(article.imageAsset, fit: BoxFit.cover),
             ),
             Container(
               color: _kCardBackground.resolveFrom(context),
@@ -589,8 +591,9 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
                   Text(
                     article.publication,
                     style: TextStyle(
-                      color:
-                          CupertinoColors.secondaryLabel.resolveFrom(context),
+                      color: CupertinoColors.secondaryLabel.resolveFrom(
+                        context,
+                      ),
                       fontSize: 13,
                       fontStyle: FontStyle.italic,
                     ),
@@ -608,13 +611,16 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
                   if (article.moreCoverage) ...[
                     SizedBox(height: 12),
                     Container(
-                        height: 1, color: _kSeparator.resolveFrom(context)),
+                      height: 1,
+                      color: _kSeparator.resolveFrom(context),
+                    ),
                     SizedBox(height: 10),
                     Text(
                       'MORE COVERAGE',
                       style: TextStyle(
-                        color:
-                            CupertinoColors.tertiaryLabel.resolveFrom(context),
+                        color: CupertinoColors.tertiaryLabel.resolveFrom(
+                          context,
+                        ),
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.5,
@@ -652,8 +658,9 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
                     Text(
                       article.publication,
                       style: TextStyle(
-                        color:
-                            CupertinoColors.secondaryLabel.resolveFrom(context),
+                        color: CupertinoColors.secondaryLabel.resolveFrom(
+                          context,
+                        ),
                         fontSize: 12,
                         fontStyle: FontStyle.italic,
                       ),
@@ -675,8 +682,9 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
                       Text(
                         'MORE COVERAGE',
                         style: TextStyle(
-                          color: CupertinoColors.tertiaryLabel
-                              .resolveFrom(context),
+                          color: CupertinoColors.tertiaryLabel.resolveFrom(
+                            context,
+                          ),
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.5,
@@ -713,9 +721,10 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
       child: Text(
         'Live',
         style: TextStyle(
-            color: CupertinoColors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.w600),
+          color: CupertinoColors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -730,7 +739,8 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
       key: key,
       slivers: [
         SliverToBoxAdapter(
-            child: SizedBox(height: MediaQuery.paddingOf(context).top + 8)),
+          child: SizedBox(height: MediaQuery.paddingOf(context).top + 8),
+        ),
         SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(20, 8, 16, 20),
@@ -740,9 +750,11 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
                 // Apple News logo row — matches reference screenshot
                 Row(
                   children: [
-                    Icon(CupertinoIcons.star,
-                        color: CupertinoColors.label.resolveFrom(context),
-                        size: 22),
+                    Icon(
+                      CupertinoIcons.star,
+                      color: CupertinoColors.label.resolveFrom(context),
+                      size: 22,
+                    ),
                     SizedBox(width: 4),
                     Text(
                       'News',
@@ -757,8 +769,9 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
                 Text(
                   'Search',
                   style: TextStyle(
-                    color: CupertinoColors.secondaryLabel
-                        .resolveFrom(context), // iOS secondary-label grey
+                    color: CupertinoColors.secondaryLabel.resolveFrom(
+                      context,
+                    ), // iOS secondary-label grey
                     fontSize: 34,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.5,
@@ -770,7 +783,11 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
         ),
         SliverPadding(
           padding: EdgeInsets.fromLTRB(
-              16, 0, 16, MediaQuery.paddingOf(context).bottom + 100),
+            16,
+            0,
+            16,
+            MediaQuery.paddingOf(context).bottom + 100,
+          ),
           sliver: SliverGrid(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -885,10 +902,7 @@ class _TopicCard extends StatelessWidget {
           // Image at partial opacity so the category colour dominates.
           Opacity(
             opacity: 0.45,
-            child: Image.asset(
-              topic.imageAsset,
-              fit: BoxFit.cover,
-            ),
+            child: Image.asset(topic.imageAsset, fit: BoxFit.cover),
           ),
           Positioned(
             left: 12,
@@ -902,8 +916,9 @@ class _TopicCard extends StatelessWidget {
                 fontWeight: FontWeight.w700,
                 shadows: [
                   Shadow(
-                      blurRadius: 6,
-                      color: CupertinoColors.black.withValues(alpha: 0.54))
+                    blurRadius: 6,
+                    color: CupertinoColors.black.withValues(alpha: 0.54),
+                  ),
                 ],
               ),
             ),

@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -10,9 +10,7 @@ void main() {
         MaterialApp(
           home: AdaptiveLiquidGlassLayer(
             settings: const LiquidGlassSettings(),
-            child: const Scaffold(
-              body: GlassPasswordField(),
-            ),
+            child: const Scaffold(body: GlassPasswordField()),
           ),
         ),
       );
@@ -21,8 +19,9 @@ void main() {
 
       // Initially obscured
       expect(find.byIcon(CupertinoIcons.eye_slash_fill), findsOneWidget);
-      final textField =
-          tester.widget<CupertinoTextField>(find.byType(CupertinoTextField));
+      final textField = tester.widget<CupertinoTextField>(
+        find.byType(CupertinoTextField),
+      );
       expect(textField.obscureText, isTrue);
 
       // Tap toggle
@@ -31,8 +30,9 @@ void main() {
 
       // Now visible
       expect(find.byIcon(CupertinoIcons.eye_fill), findsOneWidget);
-      final textFieldVisible =
-          tester.widget<CupertinoTextField>(find.byType(CupertinoTextField));
+      final textFieldVisible = tester.widget<CupertinoTextField>(
+        find.byType(CupertinoTextField),
+      );
       expect(textFieldVisible.obscureText, isFalse);
     });
 
@@ -48,8 +48,9 @@ void main() {
         ),
       );
 
-      final textField =
-          tester.widget<CupertinoTextField>(find.byType(CupertinoTextField));
+      final textField = tester.widget<CupertinoTextField>(
+        find.byType(CupertinoTextField),
+      );
       expect(textField.minLines, 3);
       expect(textField.maxLines, 5);
       expect(textField.keyboardType, TextInputType.multiline);
@@ -86,10 +87,7 @@ void main() {
           home: AdaptiveLiquidGlassLayer(
             settings: const LiquidGlassSettings(),
             child: Scaffold(
-              body: GlassPicker(
-                value: value,
-                onTap: () {},
-              ),
+              body: GlassPicker(value: value, onTap: () {}),
             ),
           ),
         ),
@@ -102,28 +100,30 @@ void main() {
     });
 
     // ── GlassFormField helperText (lines 109-110) ────────────────────────────
-    testWidgets('GlassFormField helperText shown without error (lines 109-110)',
-        (tester) async {
-      const helper = 'Must be 8+ characters';
+    testWidgets(
+      'GlassFormField helperText shown without error (lines 109-110)',
+      (tester) async {
+        const helper = 'Must be 8+ characters';
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: AdaptiveLiquidGlassLayer(
-            settings: const LiquidGlassSettings(),
-            child: const Scaffold(
-              body: GlassFormField(
-                label: 'Password',
-                // No errorText — exercises else if (helperText != null)
-                helperText: helper,
-                child: GlassTextField(),
+        await tester.pumpWidget(
+          MaterialApp(
+            home: AdaptiveLiquidGlassLayer(
+              settings: const LiquidGlassSettings(),
+              child: const Scaffold(
+                body: GlassFormField(
+                  label: 'Password',
+                  // No errorText — exercises else if (helperText != null)
+                  helperText: helper,
+                  child: GlassTextField(),
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Password'), findsOneWidget);
-      expect(find.text(helper), findsOneWidget);
-    });
+        expect(find.text('Password'), findsOneWidget);
+        expect(find.text(helper), findsOneWidget);
+      },
+    );
   });
 }

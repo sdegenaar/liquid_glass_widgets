@@ -12,6 +12,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter/rendering.dart';
+
 import 'glass_drag_builder.dart';
 import '../renderer/liquid_glass_self_scale_scope.dart';
 import '../../utils/glass_spring.dart';
@@ -271,23 +272,23 @@ class LiquidStretch extends StatelessWidget {
         // factor keeps the critically damped spring it always had.
         final effectivePressSpring = pressed
             ? (pressSpring ??
-                (pressGrowth == null
-                    ? GlassSpring.smooth(
-                        duration: const Duration(milliseconds: 300),
-                      )
-                    : GlassSpring.snappy(
-                        duration: const Duration(milliseconds: 250),
-                        extraBounce: 0.1,
-                      )))
+                  (pressGrowth == null
+                      ? GlassSpring.smooth(
+                          duration: const Duration(milliseconds: 300),
+                        )
+                      : GlassSpring.snappy(
+                          duration: const Duration(milliseconds: 250),
+                          extraBounce: 0.1,
+                        )))
             : (releaseSpring ??
-                (pressGrowth == null
-                    ? GlassSpring.smooth(
-                        duration: const Duration(milliseconds: 300),
-                      )
-                    : GlassSpring.bouncy(
-                        duration: const Duration(milliseconds: 280),
-                        extraBounce: 0.15,
-                      )));
+                  (pressGrowth == null
+                      ? GlassSpring.smooth(
+                          duration: const Duration(milliseconds: 300),
+                        )
+                      : GlassSpring.bouncy(
+                          duration: const Duration(milliseconds: 280),
+                          extraBounce: 0.15,
+                        )));
         return OffsetSpringBuilder(
           value: () {
             if (value == null) return Offset.zero;
@@ -306,29 +307,29 @@ class LiquidStretch extends StatelessWidget {
               (!effectiveAllowPositiveX && o.dx > 0)
                   ? 0
                   : (!effectiveAllowNegativeX && o.dx < 0)
-                      ? 0
-                      : o.dx,
+                  ? 0
+                  : o.dx,
               (!effectiveAllowPositiveY && o.dy > 0)
                   ? 0
                   : (!effectiveAllowNegativeY && o.dy < 0)
-                      ? 0
-                      : o.dy,
+                  ? 0
+                  : o.dy,
             );
             return o;
           }(),
           spring: value == null
               ? (releaseSpring ??
-                  GlassSpring.bouncy(
-                    extraBounce: anchorStretchSettings.bounciness,
-                  ))
+                    GlassSpring.bouncy(
+                      extraBounce: anchorStretchSettings.bounciness,
+                    ))
               : (releaseSpring != null ||
-                      anchorStretchSettings.bounciness == 0.0
-                  ? GlassSpring.smooth(
-                      duration: const Duration(milliseconds: 150),
-                    )
-                  : GlassSpring.interactive(
-                      extraBounce: anchorStretchSettings.bounciness - 0.14,
-                    )),
+                        anchorStretchSettings.bounciness == 0.0
+                    ? GlassSpring.smooth(
+                        duration: const Duration(milliseconds: 150),
+                      )
+                    : GlassSpring.interactive(
+                        extraBounce: anchorStretchSettings.bounciness - 0.14,
+                      )),
           builder: (context, offset, child) => SpringBuilder(
             value: pressTarget,
             spring: effectivePressSpring,
@@ -352,7 +353,8 @@ class LiquidStretch extends StatelessWidget {
               // swiped sheet, a materializing shell) is carried through, as
               // the glass below resolves only the nearest scope.
               return LiquidGlassSelfScaleScope(
-                selfScaled: LiquidGlassSelfScaleScope.of(context) ||
+                selfScaled:
+                    LiquidGlassSelfScaleScope.of(context) ||
                     (growth == null
                         ? press < LiquidGlassSelfScaleScope.freezeScaleThreshold
                         : press < 0.0),
@@ -453,20 +455,14 @@ class RawLiquidStretch extends SingleChildRenderObjectWidget {
 
 class RenderRawLiquidStretch extends RenderProxyBox {
   RenderRawLiquidStretch({
-    required Offset stretchPixels,
-    double pressGrowthPixels = 0.0,
-    Axis? axis,
-    bool anchorStretch = false,
-    double anchorStretchIntensity = 0.5,
-    double anchorSquashFactor = 0.3,
-    double anchorTranslationDamping = 0.15,
-  })  : _stretchPixels = stretchPixels,
-        _pressGrowthPixels = pressGrowthPixels,
-        _axis = axis,
-        _anchorStretch = anchorStretch,
-        _anchorStretchIntensity = anchorStretchIntensity,
-        _anchorSquashFactor = anchorSquashFactor,
-        _anchorTranslationDamping = anchorTranslationDamping;
+    required this._stretchPixels,
+    this._pressGrowthPixels = 0.0,
+    this._axis,
+    this._anchorStretch = false,
+    this._anchorStretchIntensity = 0.5,
+    this._anchorSquashFactor = 0.3,
+    this._anchorTranslationDamping = 0.15,
+  });
 
   Offset _stretchPixels;
   double _pressGrowthPixels;
@@ -634,10 +630,7 @@ class RenderRawLiquidStretch extends RenderProxyBox {
       return matrix..translateByDouble(0.0001, 0.0, 0.0, 1.0);
     }
 
-    final scale = getScale(
-      stretchPixels: _stretchPixels,
-      size: size,
-    );
+    final scale = getScale(stretchPixels: _stretchPixels, size: size);
 
     // If axis is constrained, scale from the opposite edge
     if (_axis == Axis.vertical) {
@@ -693,17 +686,21 @@ class RenderRawLiquidStretch extends RenderProxyBox {
 
           // Elongate along the drag direction.
           // Cap at 30% to prevent extreme transforms on long drags.
-          final stretchX = 1.0 +
+          final stretchX =
+              1.0 +
               (relativeX * _anchorStretchIntensity * xDamping).clamp(0.0, 0.3);
-          final stretchY = 1.0 +
+          final stretchY =
+              1.0 +
               (relativeY * _anchorStretchIntensity * yDamping).clamp(0.0, 0.3);
 
           // Perpendicular compression (balloon-squeeze): dragging right
           // elongates X and compresses Y, and vice versa.
           // Cap squash at 15% to avoid extreme narrowing on wide buttons.
-          final squashX = 1.0 -
+          final squashX =
+              1.0 -
               (relativeY * _anchorSquashFactor * xDamping).clamp(0.0, 0.15);
-          final squashY = 1.0 -
+          final squashY =
+              1.0 -
               (relativeX * _anchorSquashFactor * yDamping).clamp(0.0, 0.15);
 
           final scaleX = (stretchX * squashX).clamp(0.01, double.infinity);
@@ -716,9 +713,11 @@ class RenderRawLiquidStretch extends RenderProxyBox {
           // At ±20px the pivot is fully at the target edge. Near zero it
           // passes through center, and the stretch itself is negligible
           // so the pivot position doesn't produce visible artifacts.
-          final pivotX = size.width *
+          final pivotX =
+              size.width *
               (0.5 - _signedSmoothStep(_stretchPixels.dx, 20.0) * 0.5);
-          final pivotY = size.height *
+          final pivotY =
+              size.height *
               (0.5 - _signedSmoothStep(_stretchPixels.dy, 20.0) * 0.5);
 
           matrix
@@ -752,10 +751,7 @@ class RenderRawLiquidStretch extends RenderProxyBox {
     return matrix;
   }
 
-  Offset getScale({
-    required Offset stretchPixels,
-    required Size size,
-  }) {
+  Offset getScale({required Offset stretchPixels, required Size size}) {
     if (size.isEmpty) {
       return const Offset(1, 1);
     }

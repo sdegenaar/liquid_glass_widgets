@@ -10,10 +10,6 @@
 analyzer:
   errors:
     unintended_html_in_doc_comment: ignore
-    # Flutter 3.47+ / 3.50.0 deprecates package:flutter/cupertino.dart and
-    # material.dart in favour of cupertino_ui / material_ui (#291). Kept as
-    # ignore while pubspec.yaml supports Flutter >=3.41.0.
-    deprecated_member_use: ignore
   exclude:
     - build/**
     - android/**

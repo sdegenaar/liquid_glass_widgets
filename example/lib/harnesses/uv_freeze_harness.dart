@@ -25,8 +25,9 @@
 library;
 
 import 'dart:math' as math;
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 // ignore: implementation_imports
 import 'package:liquid_glass_widgets/src/renderer/liquid_glass_push_back_scope.dart';
@@ -277,10 +278,7 @@ class _UvFreezeHarnessState extends State<UvFreezeHarness>
         decoration: BoxDecoration(
           color: const Color(0xFF6D28D9).withValues(alpha: 0.25),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: const Color(0xFF8B5CF6),
-            width: 1.5,
-          ),
+          border: Border.all(color: const Color(0xFF8B5CF6), width: 1.5),
         ),
         child: Row(
           children: [
@@ -379,9 +377,9 @@ class _UvFreezeHarnessState extends State<UvFreezeHarness>
           Text(
             _simulateOldBug
                 ? 'UV coordinates are FORCED FROZEN (pre-fix bug under outer scale).\n'
-                    '👉 Scroll this list now: watch the GlassTabBar at the bottom jitter and swim!'
+                      '👉 Scroll this list now: watch the GlassTabBar at the bottom jitter and swim!'
                 : 'UV coordinates track LIVE (PR #292 fix).\n'
-                    '👉 Scroll this list now: the GlassTabBar remains 100% rock-solid under ${_scale.toStringAsFixed(2)}× scale.',
+                      '👉 Scroll this list now: the GlassTabBar remains 100% rock-solid under ${_scale.toStringAsFixed(2)}× scale.',
             style: const TextStyle(
               fontSize: 12,
               height: 1.4,
@@ -399,8 +397,8 @@ class _UvFreezeHarnessState extends State<UvFreezeHarness>
         // Use horizontal drag so vertical scroll is NEVER blocked
         onHorizontalDragUpdate: (details) {
           setState(() {
-            _cardHorizontalOffset =
-                (_cardHorizontalOffset + details.delta.dx).clamp(-80.0, 80.0);
+            _cardHorizontalOffset = (_cardHorizontalOffset + details.delta.dx)
+                .clamp(-80.0, 80.0);
           });
         },
         child: Transform.translate(
@@ -656,8 +654,10 @@ class _DiagnosticHudState extends State<_DiagnosticHud> {
               GestureDetector(
                 onTap: widget.onToggleBugSimulation,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: widget.simulateOldBug
                         ? const Color(0xFFDC2626)
@@ -777,8 +777,10 @@ class _DiagnosticHudState extends State<_DiagnosticHud> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 CupertinoButton(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   color: widget.animateBackground
                       ? const Color(0xFF10B981)
                       : const Color(0x33FFFFFF),
@@ -799,8 +801,10 @@ class _DiagnosticHudState extends State<_DiagnosticHud> {
                       color: const Color(0x33FFFFFF),
                       minimumSize: const Size(26, 26),
                       onPressed: widget.onScrollToBottom,
-                      child: const Text('Scroll End',
-                          style: TextStyle(fontSize: 10)),
+                      child: const Text(
+                        'Scroll End',
+                        style: TextStyle(fontSize: 10),
+                      ),
                     ),
                     const SizedBox(width: 4),
                     CupertinoButton(
@@ -858,10 +862,7 @@ class _HighFrequencyBackdrop extends StatelessWidget {
                 ),
               ),
             ),
-            CustomPaint(
-              painter: _FineGridPainter(),
-              size: Size.infinite,
-            ),
+            CustomPaint(painter: _FineGridPainter(), size: Size.infinite),
             Positioned(
               left: 40 + math.cos(angle) * 120,
               top: 140 + math.sin(angle) * 100,
@@ -964,7 +965,10 @@ class _StripePainter extends CustomPainter {
     const spacing = 48.0;
     for (double x = -size.height; x < size.width + size.height; x += spacing) {
       canvas.drawLine(
-          Offset(x, 0), Offset(x + size.height, size.height), paint);
+        Offset(x, 0),
+        Offset(x + size.height, size.height),
+        paint,
+      );
     }
   }
 

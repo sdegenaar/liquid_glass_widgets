@@ -26,14 +26,14 @@ Bring Apple's Liquid Glass to your Flutter app — supporting both **iOS 27** an
 
 ```yaml
 dependencies:
-  liquid_glass_widgets: ^1.17.3
+  liquid_glass_widgets: ^1.18.0
 ```
 
 ```bash
 flutter pub get
 ```
 
-> **Requirements:** Flutter ≥ 3.41.0 (Dart ≥ 3.5.0).
+> **Requirements:** Flutter ≥ 3.47.0 (Dart ≥ 3.13.0). Ready for Flutter 3.50+ (`cupertino_ui` & `material_ui`).
 
 
 ## Quick Start
@@ -45,7 +45,7 @@ Two steps — that's the entire setup:
 **Step 2.** Wrap your app with `LiquidGlassWidgets.wrap()`:
 
 ```dart
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() async {
@@ -97,7 +97,7 @@ GlassScaffold(
 ## AI Coding & Vibecoding Support
 
 Building with **Antigravity**, **Cursor**, **Claude Code**, or **GitHub Copilot**?
-Install the official skill to help your agent use the current `1.17.x` APIs instead of hand-rolled `BackdropFilter` stacks:
+Install the official skill to help your agent use the current `1.18.x` APIs instead of hand-rolled `BackdropFilter` stacks:
 
 - **Antigravity / Gemini CLI**:
   ```bash
@@ -116,7 +116,7 @@ Install the official skill to help your agent use the current `1.17.x` APIs inst
 - **Liquid Morph Engine** — Standalone spring-physics system powering native teardrop morphing for `GlassMenu`, `GlassPullDownButton`, `GlassPopover`, and `GlassModalSheet.show(morphFrom:)`. See [`docs/LIQUID_MORPH_ENGINE.md`](docs/LIQUID_MORPH_ENGINE.md).
 - **Pinned Navigation Chrome & Bezel Transitions** — `GlassNavigationShell` morphs pinned bar items across routes, `GlassBarItem.spacer()` splits and merges capsules like SwiftUI's `ToolbarSpacer(.fixed)`, and `GlassPageTransitionsBuilder` clips transitioning pages to the active iPhone display-bezel superellipse. See [`docs/GLASS_NAVIGATION_TRANSITION.md`](docs/GLASS_NAVIGATION_TRANSITION.md).
 - **Native List & Form Patterns** — `GlassListTile`, `GlassSwipeActions`, `GlassReorderableList` with `GlassEditScope` / `GlassEditButton`, `GlassDisclosureGroup`, `GlassContextMenu`, `GlassFullScreenCover`, and `GlassDatePicker` (`.compact` / `.graphical` / `.wheel`), plus `GlassSurfaceStyle.solid` for zero-shader inset-grouped cards.
-- **Cross-Platform & Zero External Dependencies** — Runs on iOS, Android, macOS, Web, Windows, and Linux using only the pure Flutter SDK (`flutter: sdk: flutter`).
+- **Cross-Platform & Zero Third-Party Dependencies** — Runs on iOS, Android, macOS, Web, Windows, and Linux using only the Flutter SDK and official first-party `cupertino_ui` (`flutter.dev`, zero `material_ui` runtime dependency).
 - **Accessibility, Keyboard & RTL Support** — Reads Reduce Motion and Increase Contrast, supports iOS On/Off switch labels (`I`/`O`), keyboard Tab/Space/Enter focus, VoiceOver/TalkBack semantics, and RTL layouts.
 
 
@@ -457,7 +457,7 @@ Run the full showcase or any standalone demo from [`example/`](example/):
 
 ## Dependencies & Credits
 
-**Zero third-party `pubspec.yaml` dependencies.** Built exclusively on the Flutter SDK (`flutter: sdk: flutter`).
+**Zero third-party `pubspec.yaml` dependencies.** Built exclusively on the Flutter SDK and official first-party [`cupertino_ui`](https://pub.dev/packages/cupertino_ui) (`flutter.dev`, zero `material_ui` runtime dependency).
 
 Special thanks to **Tim Lehmann** ([whynotmake.it](https://github.com/whynotmake-it)) and the [whynotmake-it](https://github.com/whynotmake-it/flutter_liquid_glass) team:
 - [`liquid_glass_renderer`](https://github.com/whynotmake-it/flutter_liquid_glass/tree/main/packages/liquid_glass_renderer) (MIT License): Pioneered the foundational fragment shader pipeline, blend group tracking, and texture capture architecture maintained in-tree in [`lib/src/engine/`](lib/src/engine/).

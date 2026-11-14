@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
-import 'package:flutter/cupertino.dart';
+
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
 
 import '../../src/renderer/liquid_glass_renderer.dart';
@@ -70,8 +71,8 @@ class GlassDatePicker extends StatefulWidget {
     this.shape,
     this.quality,
     this.surfaceStyle = GlassSurfaceStyle.glass,
-  })  : assert(monthNames == null || monthNames.length == 12),
-        assert(weekdayNames == null || weekdayNames.length == 7);
+  }) : assert(monthNames == null || monthNames.length == 12),
+       assert(weekdayNames == null || weekdayNames.length == 7);
 
   /// Creates a compact pill-styled [GlassDatePicker].
   const GlassDatePicker.compact({
@@ -92,9 +93,9 @@ class GlassDatePicker extends StatefulWidget {
     this.shape,
     this.quality,
     this.surfaceStyle = GlassSurfaceStyle.glass,
-  })  : style = GlassDatePickerStyle.compact,
-        assert(monthNames == null || monthNames.length == 12),
-        assert(weekdayNames == null || weekdayNames.length == 7);
+  }) : style = GlassDatePickerStyle.compact,
+       assert(monthNames == null || monthNames.length == 12),
+       assert(weekdayNames == null || weekdayNames.length == 7);
 
   /// Creates an inline graphical calendar-styled [GlassDatePicker].
   const GlassDatePicker.graphical({
@@ -115,9 +116,9 @@ class GlassDatePicker extends StatefulWidget {
     this.shape,
     this.quality,
     this.surfaceStyle = GlassSurfaceStyle.glass,
-  })  : style = GlassDatePickerStyle.graphical,
-        assert(monthNames == null || monthNames.length == 12),
-        assert(weekdayNames == null || weekdayNames.length == 7);
+  }) : style = GlassDatePickerStyle.graphical,
+       assert(monthNames == null || monthNames.length == 12),
+       assert(weekdayNames == null || weekdayNames.length == 7);
 
   /// Creates a wheel-styled [GlassDatePicker] using Cupertino wheels in liquid glass.
   const GlassDatePicker.wheel({
@@ -138,9 +139,9 @@ class GlassDatePicker extends StatefulWidget {
     this.shape,
     this.quality,
     this.surfaceStyle = GlassSurfaceStyle.glass,
-  })  : style = GlassDatePickerStyle.wheel,
-        assert(monthNames == null || monthNames.length == 12),
-        assert(weekdayNames == null || weekdayNames.length == 7);
+  }) : style = GlassDatePickerStyle.wheel,
+       assert(monthNames == null || monthNames.length == 12),
+       assert(weekdayNames == null || weekdayNames.length == 7);
 
   /// The initially selected date and time.
   final DateTime initialDateTime;
@@ -224,9 +225,9 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
 
   static const CupertinoDynamicColor _kNativeCalendarBlue =
       CupertinoDynamicColor.withBrightness(
-    color: Color(0xFF0088FF),
-    darkColor: Color(0xFF0091FF),
-  );
+        color: Color(0xFF0088FF),
+        darkColor: Color(0xFF0091FF),
+      );
 
   Color _effectiveTint(BuildContext context) => widget.tintColor != null
       ? CupertinoDynamicColor.resolve(widget.tintColor!, context)
@@ -244,7 +245,7 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
     'September',
     'October',
     'November',
-    'December'
+    'December',
   ];
 
   static const List<String> _shortMonthNames = [
@@ -259,7 +260,7 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
     'Sep',
     'Oct',
     'Nov',
-    'Dec'
+    'Dec',
   ];
 
   static const List<String> _sundayFirstWeekdays = [
@@ -269,7 +270,7 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
     'WED',
     'THU',
     'FRI',
-    'SAT'
+    'SAT',
   ];
 
   static const List<String> _mondayFirstWeekdays = [
@@ -279,15 +280,18 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
     'THU',
     'FRI',
     'SAT',
-    'SUN'
+    'SUN',
   ];
 
   @override
   void initState() {
     super.initState();
     _selectedDateTime = widget.initialDateTime;
-    _displayedMonth =
-        DateTime(widget.initialDateTime.year, widget.initialDateTime.month, 1);
+    _displayedMonth = DateTime(
+      widget.initialDateTime.year,
+      widget.initialDateTime.month,
+      1,
+    );
     _monthPageController = PageController(
       initialPage: _monthToPage(_displayedMonth),
     );
@@ -496,8 +500,10 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
     );
   }
 
-  void _openCompactModal(BuildContext context,
-      {required bool initialTabIsTime}) {
+  void _openCompactModal(
+    BuildContext context, {
+    required bool initialTabIsTime,
+  }) {
     final isTimePopover =
         initialTabIsTime || widget.mode == GlassDatePickerMode.time;
     final box = _compactRowKey.currentContext?.findRenderObject() as RenderBox?;
@@ -521,8 +527,10 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
     final topAbove = pillRect.top - 9.0 - popoverHeight;
     final top = topAbove >= 60.0
         ? topAbove
-        : (pillRect.bottom + 9.0)
-            .clamp(60.0, screenSize.height - popoverHeight - 24.0);
+        : (pillRect.bottom + 9.0).clamp(
+            60.0,
+            screenSize.height - popoverHeight - 24.0,
+          );
 
     setState(() => _activeCompactIsTime = isTimePopover);
     PageController popoverPageController = PageController(
@@ -544,19 +552,23 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
           opacity: curved,
           child: ScaleTransition(
             scale: Tween<double>(begin: 0.92, end: 1.0).animate(curved),
-            alignment:
-                topAbove >= 60.0 ? Alignment.bottomRight : Alignment.topRight,
+            alignment: topAbove >= 60.0
+                ? Alignment.bottomRight
+                : Alignment.topRight,
             child: child,
           ),
         );
       },
-      pageBuilder: (modalContext, _, __) {
-        final platterColor =
-            isDark ? const Color(0xE0252528) : const Color(0xECF9F9FB);
-        final platterCapColor =
-            isDark ? const Color(0xFF252528) : const Color(0xFFF7F7FA);
-        final borderColor =
-            isDark ? const Color(0x2EFFFFFF) : const Color(0x18000000);
+      pageBuilder: (modalContext, _, _) {
+        final platterColor = isDark
+            ? const Color(0xE0252528)
+            : const Color(0xECF9F9FB);
+        final platterCapColor = isDark
+            ? const Color(0xFF252528)
+            : const Color(0xFFF7F7FA);
+        final borderColor = isDark
+            ? const Color(0x2EFFFFFF)
+            : const Color(0x18000000);
 
         Widget popover = _OnDispose(
           onDispose: () => popoverPageController.dispose(),
@@ -575,14 +587,16 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
                     ),
                     shadows: [
                       BoxShadow(
-                        color: CupertinoColors.black
-                            .withValues(alpha: isDark ? 0.45 : 0.14),
+                        color: CupertinoColors.black.withValues(
+                          alpha: isDark ? 0.45 : 0.14,
+                        ),
                         blurRadius: 36,
                         offset: const Offset(0, 12),
                       ),
                       BoxShadow(
-                        color: CupertinoColors.black
-                            .withValues(alpha: isDark ? 0.25 : 0.05),
+                        color: CupertinoColors.black.withValues(
+                          alpha: isDark ? 0.25 : 0.05,
+                        ),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -619,7 +633,8 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
                                           val.minute,
                                         );
                                         setState(
-                                            () => _selectedDateTime = updated);
+                                          () => _selectedDateTime = updated,
+                                        );
                                         widget.onDateTimeChanged?.call(updated);
                                       },
                                     ),
@@ -640,8 +655,12 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
                             : StatefulBuilder(
                                 builder: (popoverCtx, setPopoverState) {
                                   return Padding(
-                                    padding:
-                                        const EdgeInsets.fromLTRB(8, 13, 8, 14),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      8,
+                                      13,
+                                      8,
+                                      14,
+                                    ),
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
@@ -659,9 +678,10 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
                                                 popoverPageController.dispose();
                                                 popoverPageController =
                                                     PageController(
-                                                  initialPage: _monthToPage(
-                                                      _displayedMonth),
-                                                );
+                                                      initialPage: _monthToPage(
+                                                        _displayedMonth,
+                                                      ),
+                                                    );
                                                 _syncMonthPageController();
                                               }
                                             });
@@ -690,7 +710,8 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
                                               compact: true,
                                               onChanged: (m) {
                                                 setState(
-                                                    () => _displayedMonth = m);
+                                                  () => _displayedMonth = m,
+                                                );
                                                 setPopoverState(() {});
                                               },
                                             ),
@@ -728,15 +749,9 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
             ],
           ),
         );
-        popover = CupertinoTheme(
-          data: capturedCupertinoTheme,
-          child: popover,
-        );
+        popover = CupertinoTheme(data: capturedCupertinoTheme, child: popover);
         if (capturedGlassTheme != null) {
-          popover = GlassTheme(
-            data: capturedGlassTheme,
-            child: popover,
-          );
+          popover = GlassTheme(data: capturedGlassTheme, child: popover);
         }
         return popover;
       },
@@ -925,10 +940,16 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
         },
         itemBuilder: (pageCtx, page) {
           final monthDate = _pageToMonth(page);
-          final daysInMonth =
-              DateTime(monthDate.year, monthDate.month + 1, 0).day;
-          final firstWeekday =
-              DateTime(monthDate.year, monthDate.month, 1).weekday;
+          final daysInMonth = DateTime(
+            monthDate.year,
+            monthDate.month + 1,
+            0,
+          ).day;
+          final firstWeekday = DateTime(
+            monthDate.year,
+            monthDate.month,
+            1,
+          ).weekday;
           final leading = widget.firstDayOfWeek == 7
               ? (firstWeekday % 7)
               : ((firstWeekday - 1) % 7);
@@ -936,8 +957,9 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
           return _buildCalendarGrid(
             pageCtx,
             monthDate: monthDate,
-            cellSize:
-                compact ? (sixRows ? 36.0 : 42.67) : (sixRows ? 37.5 : 44.0),
+            cellSize: compact
+                ? (sixRows ? 36.0 : 42.67)
+                : (sixRows ? 37.5 : 44.0),
             rowGap: compact ? (sixRows ? 1.8 : 3.0) : (sixRows ? 2.46 : 4.33),
             onDayTapped: onDayTapped,
           );
@@ -971,8 +993,9 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
     final today = DateTime.now();
     final effectiveTint = _effectiveTint(context);
     final labelColor = CupertinoColors.label.resolveFrom(context);
-    final invertedLabelColor =
-        CupertinoColors.systemBackground.resolveFrom(context);
+    final invertedLabelColor = CupertinoColors.systemBackground.resolveFrom(
+      context,
+    );
 
     for (int i = 0; i < totalCells; i++) {
       if (i < leadingPaddingDays || i >= leadingPaddingDays + daysInMonth) {
@@ -983,11 +1006,13 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
         final dayNum = i - leadingPaddingDays + 1;
         final cellDate = DateTime(year, month, dayNum);
 
-        final isSelected = cellDate.year == _selectedDateTime.year &&
+        final isSelected =
+            cellDate.year == _selectedDateTime.year &&
             cellDate.month == _selectedDateTime.month &&
             cellDate.day == _selectedDateTime.day;
 
-        final isToday = cellDate.year == today.year &&
+        final isToday =
+            cellDate.year == today.year &&
             cellDate.month == today.month &&
             cellDate.day == today.day;
 
@@ -1049,8 +1074,9 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
                     style: TextStyle(
                       fontSize: 20,
                       letterSpacing: -0.45,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w400,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w400,
                       color: textColor,
                     ),
                   ),
@@ -1102,9 +1128,10 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
               context,
               widget.use24hFormat
                   ? hour.toString().padLeft(2, '0')
-                  : (hour % 12 == 0 ? 12 : hour % 12)
-                      .toString()
-                      .padLeft(2, '0'),
+                  : (hour % 12 == 0 ? 12 : hour % 12).toString().padLeft(
+                      2,
+                      '0',
+                    ),
               onIncrement: () => _onTimeChanged((hour + 1) % 24, minute),
               onDecrement: () => _onTimeChanged((hour - 1 + 24) % 24, minute),
             ),
@@ -1119,10 +1146,8 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
             _buildTimeDigitPill(
               context,
               minute.toString().padLeft(2, '0'),
-              onIncrement: () => _onTimeChanged(
-                hour,
-                (minute + widget.minuteInterval) % 60,
-              ),
+              onIncrement: () =>
+                  _onTimeChanged(hour, (minute + widget.minuteInterval) % 60),
               onDecrement: () => _onTimeChanged(
                 hour,
                 (minute - widget.minuteInterval + 60) % 60,
@@ -1227,8 +1252,8 @@ class GlassMultiDatePicker extends StatefulWidget {
     this.shape,
     this.quality,
     this.surfaceStyle = GlassSurfaceStyle.glass,
-  })  : assert(monthNames == null || monthNames.length == 12),
-        assert(weekdayNames == null || weekdayNames.length == 7);
+  }) : assert(monthNames == null || monthNames.length == 12),
+       assert(weekdayNames == null || weekdayNames.length == 7);
 
   /// The set of currently selected dates.
   final Set<DateTime> selectedDates;
@@ -1295,9 +1320,9 @@ class _GlassMultiDatePickerState extends State<GlassMultiDatePicker> {
 
   static const CupertinoDynamicColor _kNativeCalendarBlue =
       CupertinoDynamicColor.withBrightness(
-    color: Color(0xFF0088FF),
-    darkColor: Color(0xFF0091FF),
-  );
+        color: Color(0xFF0088FF),
+        darkColor: Color(0xFF0091FF),
+      );
 
   Color _effectiveTint(BuildContext context) => widget.tintColor != null
       ? CupertinoDynamicColor.resolve(widget.tintColor!, context)
@@ -1315,7 +1340,7 @@ class _GlassMultiDatePickerState extends State<GlassMultiDatePicker> {
     'September',
     'October',
     'November',
-    'December'
+    'December',
   ];
 
   static const List<String> _sundayFirstWeekdays = [
@@ -1325,7 +1350,7 @@ class _GlassMultiDatePickerState extends State<GlassMultiDatePicker> {
     'WED',
     'THU',
     'FRI',
-    'SAT'
+    'SAT',
   ];
 
   static const List<String> _mondayFirstWeekdays = [
@@ -1335,14 +1360,15 @@ class _GlassMultiDatePickerState extends State<GlassMultiDatePicker> {
     'THU',
     'FRI',
     'SAT',
-    'SUN'
+    'SUN',
   ];
 
   @override
   void initState() {
     super.initState();
-    _selectedDates =
-        Set<DateTime>.from(widget.selectedDates.map(_normalizeDate));
+    _selectedDates = Set<DateTime>.from(
+      widget.selectedDates.map(_normalizeDate),
+    );
     final initialMonth = widget.displayedMonth != null
         ? DateTime(widget.displayedMonth!.year, widget.displayedMonth!.month, 1)
         : DateTime(DateTime.now().year, DateTime.now().month, 1);
@@ -1372,8 +1398,9 @@ class _GlassMultiDatePickerState extends State<GlassMultiDatePicker> {
   void didUpdateWidget(covariant GlassMultiDatePicker oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.selectedDates != widget.selectedDates) {
-      _selectedDates =
-          Set<DateTime>.from(widget.selectedDates.map(_normalizeDate));
+      _selectedDates = Set<DateTime>.from(
+        widget.selectedDates.map(_normalizeDate),
+      );
     }
     if (oldWidget.displayedMonth != widget.displayedMonth &&
         widget.displayedMonth != null) {
@@ -1453,12 +1480,15 @@ class _GlassMultiDatePickerState extends State<GlassMultiDatePicker> {
   }) {
     final effectiveTint = _effectiveTint(context);
     final labelColor = CupertinoColors.label.resolveFrom(context);
-    final invertedLabelColor =
-        CupertinoColors.systemBackground.resolveFrom(context);
-    final selectionCircleColor =
-        widget.tintColor != null ? effectiveTint : labelColor;
-    final selectionTextColor =
-        widget.tintColor != null ? CupertinoColors.white : invertedLabelColor;
+    final invertedLabelColor = CupertinoColors.systemBackground.resolveFrom(
+      context,
+    );
+    final selectionCircleColor = widget.tintColor != null
+        ? effectiveTint
+        : labelColor;
+    final selectionTextColor = widget.tintColor != null
+        ? CupertinoColors.white
+        : invertedLabelColor;
     final year = monthDate.year;
     final month = monthDate.month;
 
@@ -1484,7 +1514,8 @@ class _GlassMultiDatePickerState extends State<GlassMultiDatePicker> {
         final selected = _isDateSelected(cellDate);
         final disabled = _isDateDisabled(cellDate);
 
-        final isToday = cellDate.year == today.year &&
+        final isToday =
+            cellDate.year == today.year &&
             cellDate.month == today.month &&
             cellDate.day == today.day;
 
@@ -1557,7 +1588,8 @@ class _GlassMultiDatePickerState extends State<GlassMultiDatePicker> {
     final effectiveTint = _effectiveTint(context);
     final monthName = effectiveMonthNames[_displayedMonth.month - 1];
     final year = _displayedMonth.year;
-    final weekdays = widget.weekdayNames ??
+    final weekdays =
+        widget.weekdayNames ??
         (widget.firstDayOfWeek == 7
             ? _sundayFirstWeekdays
             : _mondayFirstWeekdays);
@@ -1605,8 +1637,9 @@ class _GlassMultiDatePickerState extends State<GlassMultiDatePicker> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color:
-                            CupertinoColors.secondaryLabel.resolveFrom(context),
+                        color: CupertinoColors.secondaryLabel.resolveFrom(
+                          context,
+                        ),
                       ),
                     ),
                   ),
@@ -1632,10 +1665,16 @@ class _GlassMultiDatePickerState extends State<GlassMultiDatePicker> {
                 },
                 itemBuilder: (pageCtx, page) {
                   final monthDate = _pageToMonth(page);
-                  final daysInMonth =
-                      DateTime(monthDate.year, monthDate.month + 1, 0).day;
-                  final firstWeekday =
-                      DateTime(monthDate.year, monthDate.month, 1).weekday;
+                  final daysInMonth = DateTime(
+                    monthDate.year,
+                    monthDate.month + 1,
+                    0,
+                  ).day;
+                  final firstWeekday = DateTime(
+                    monthDate.year,
+                    monthDate.month,
+                    1,
+                  ).weekday;
                   final leading = widget.firstDayOfWeek == 7
                       ? (firstWeekday % 7)
                       : ((firstWeekday - 1) % 7);
@@ -1750,16 +1789,10 @@ Future<DateTime?> showGlassDatePicker({
       );
       sheet = DefaultTextStyle(
         style: capturedCupertinoTheme.textTheme.textStyle,
-        child: CupertinoTheme(
-          data: capturedCupertinoTheme,
-          child: sheet,
-        ),
+        child: CupertinoTheme(data: capturedCupertinoTheme, child: sheet),
       );
       if (capturedGlassTheme != null) {
-        sheet = GlassTheme(
-          data: capturedGlassTheme,
-          child: sheet,
-        );
+        sheet = GlassTheme(data: capturedGlassTheme, child: sheet);
       }
       return sheet;
     },
@@ -1792,8 +1825,9 @@ class _CalendarHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final titleColor =
-        pickerOpen ? tint : CupertinoColors.label.resolveFrom(context);
+    final titleColor = pickerOpen
+        ? tint
+        : CupertinoColors.label.resolveFrom(context);
     return SizedBox(
       height: 44,
       child: Row(
@@ -1851,7 +1885,8 @@ class _CalendarHeader extends StatelessWidget {
       label: left ? 'Previous month' : 'Next month',
       child: GestureDetector(
         key: ValueKey<String>(
-            left ? 'glass_calendar_previous' : 'glass_calendar_next'),
+          left ? 'glass_calendar_previous' : 'glass_calendar_next',
+        ),
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: SizedBox(
@@ -1949,8 +1984,9 @@ class _MonthYearWheelState extends State<_MonthYearWheel> {
     _month = widget.displayedMonth.month;
     _year = widget.displayedMonth.year;
     _monthController = FixedExtentScrollController(initialItem: _month - 1);
-    _yearController =
-        FixedExtentScrollController(initialItem: _year - _firstYear);
+    _yearController = FixedExtentScrollController(
+      initialItem: _year - _firstYear,
+    );
   }
 
   @override
@@ -1972,8 +2008,9 @@ class _MonthYearWheelState extends State<_MonthYearWheel> {
       letterSpacing: -0.45,
       color: CupertinoColors.label.resolveFrom(context),
     );
-    final overlayColor =
-        CupertinoColors.tertiarySystemFill.resolveFrom(context);
+    final overlayColor = CupertinoColors.tertiarySystemFill.resolveFrom(
+      context,
+    );
     return Padding(
       padding: EdgeInsets.only(
         top: widget.compact ? 8 : 19.67,

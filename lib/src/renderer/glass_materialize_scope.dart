@@ -109,7 +109,8 @@ class GlassMaterializeScope extends InheritedWidget {
   /// faded as t², so it left roughly twice as fast as the glass it belonged
   /// to.
   LiquidGlassSettings _transform(LiquidGlassSettings base) => base.copyWith(
-      visibility: base.visibility * glassProgress.clamp(0.0, 1.0));
+    visibility: base.visibility * glassProgress.clamp(0.0, 1.0),
+  );
 
   @override
   bool updateShouldNotify(GlassMaterializeScope oldWidget) =>

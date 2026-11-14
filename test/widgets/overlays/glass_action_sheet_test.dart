@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -11,10 +11,7 @@ void main() {
 
   group('GlassActionSheetAction', () {
     test('can be instantiated with required fields', () {
-      final action = GlassActionSheetAction(
-        label: 'Delete',
-        onPressed: () {},
-      );
+      final action = GlassActionSheetAction(label: 'Delete', onPressed: () {});
       expect(action.label, 'Delete');
       expect(action.style, GlassActionSheetStyle.defaultStyle);
       expect(action.icon, isNull);
@@ -59,12 +56,13 @@ void main() {
 
     test('values are defaultStyle, destructive, cancel', () {
       expect(
-          GlassActionSheetStyle.values,
-          containsAll([
-            GlassActionSheetStyle.defaultStyle,
-            GlassActionSheetStyle.destructive,
-            GlassActionSheetStyle.cancel,
-          ]));
+        GlassActionSheetStyle.values,
+        containsAll([
+          GlassActionSheetStyle.defaultStyle,
+          GlassActionSheetStyle.destructive,
+          GlassActionSheetStyle.cancel,
+        ]),
+      );
     });
   });
 
@@ -83,10 +81,7 @@ void main() {
                 title: 'Sheet Title',
                 message: 'Sheet message',
                 actions: [
-                  GlassActionSheetAction(
-                    label: 'Save',
-                    onPressed: () {},
-                  ),
+                  GlassActionSheetAction(label: 'Save', onPressed: () {}),
                   GlassActionSheetAction(
                     label: 'Delete',
                     style: GlassActionSheetStyle.destructive,
@@ -117,10 +112,7 @@ void main() {
               onPressed: () => showGlassActionSheet(
                 context: context,
                 actions: [
-                  GlassActionSheetAction(
-                    label: 'Action',
-                    onPressed: () {},
-                  ),
+                  GlassActionSheetAction(label: 'Action', onPressed: () {}),
                 ],
               ),
               child: const Text('Open'),
@@ -135,8 +127,9 @@ void main() {
       expect(find.text('Cancel'), findsOneWidget);
     });
 
-    testWidgets('hides cancel button when showCancelButton is false',
-        (tester) async {
+    testWidgets('hides cancel button when showCancelButton is false', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: Builder(
@@ -144,10 +137,7 @@ void main() {
               onPressed: () => showGlassActionSheet(
                 context: context,
                 actions: [
-                  GlassActionSheetAction(
-                    label: 'Action',
-                    onPressed: () {},
-                  ),
+                  GlassActionSheetAction(label: 'Action', onPressed: () {}),
                 ],
                 showCancelButton: false,
               ),
@@ -171,10 +161,7 @@ void main() {
               onPressed: () => showGlassActionSheet(
                 context: context,
                 actions: [
-                  GlassActionSheetAction(
-                    label: 'Action',
-                    onPressed: () {},
-                  ),
+                  GlassActionSheetAction(label: 'Action', onPressed: () {}),
                 ],
                 cancelLabel: 'Dismiss',
               ),
@@ -231,10 +218,7 @@ void main() {
               onPressed: () => showGlassActionSheet(
                 context: context,
                 actions: [
-                  GlassActionSheetAction(
-                    label: 'Action',
-                    onPressed: () {},
-                  ),
+                  GlassActionSheetAction(label: 'Action', onPressed: () {}),
                 ],
               ),
               child: const Text('Open'),

@@ -9,17 +9,15 @@
 /// Run standalone: `flutter run -t lib/demos/content_aware_brightness_demo.dart`
 library;
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
-  runApp(LiquidGlassWidgets.wrap(
-    child: const ContentAwareBrightnessDemoApp(),
-  ));
+  runApp(LiquidGlassWidgets.wrap(child: const ContentAwareBrightnessDemoApp()));
 }
 
 class ContentAwareBrightnessDemoApp extends StatelessWidget {
@@ -30,10 +28,8 @@ class ContentAwareBrightnessDemoApp extends StatelessWidget {
     return CupertinoApp(
       title: 'Content-Aware Brightness',
       theme: const CupertinoThemeData(brightness: Brightness.light),
-      builder: (context, child) => Theme(
-        data: ThemeData.light(useMaterial3: true),
-        child: child!,
-      ),
+      builder: (context, child) =>
+          Theme(data: ThemeData.light(useMaterial3: true), child: child!),
       home: const ContentAwareBrightnessDemo(),
       debugShowCheckedModeBanner: false,
     );
@@ -149,8 +145,9 @@ class _ContentAwareBrightnessDemoState
                       'changes from light to dark.',
                       style: TextStyle(
                         fontSize: 15,
-                        color:
-                            CupertinoColors.secondaryLabel.resolveFrom(context),
+                        color: CupertinoColors.secondaryLabel.resolveFrom(
+                          context,
+                        ),
                         height: 1.4,
                       ),
                     ),
@@ -197,9 +194,7 @@ class _ContentAwareBrightnessDemoState
 
           // Bottom padding
           SliverToBoxAdapter(
-            child: SizedBox(
-              height: MediaQuery.paddingOf(context).bottom + 120,
-            ),
+            child: SizedBox(height: MediaQuery.paddingOf(context).bottom + 120),
           ),
         ],
       ),
@@ -222,10 +217,7 @@ class _ContentAwareBrightnessDemoState
             icon: Icon(CupertinoIcons.house),
             activeIcon: Icon(CupertinoIcons.house_fill),
           ),
-          GlassTab(
-            label: 'Search',
-            icon: Icon(CupertinoIcons.search),
-          ),
+          GlassTab(label: 'Search', icon: Icon(CupertinoIcons.search)),
           GlassTab(
             label: 'Library',
             icon: Icon(CupertinoIcons.book),
@@ -281,8 +273,11 @@ class _BandCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(band.icon,
-                size: 48, color: band.textColor.withValues(alpha: 0.6)),
+            Icon(
+              band.icon,
+              size: 48,
+              color: band.textColor.withValues(alpha: 0.6),
+            ),
             SizedBox(height: 16),
             Text(
               band.title,

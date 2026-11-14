@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+
 import '../src/renderer/liquid_glass_renderer.dart';
 
 /// Theme-level configuration for glass widget interaction physics.
@@ -151,10 +152,10 @@ class GlassInteractionSettings {
 
   @override
   int get hashCode => Object.hash(
-        stretch,
-        interactionScale,
-        resistance,
-        anchorStretch,
-        anchorStretchSettings,
-      );
+    stretch,
+    interactionScale,
+    resistance,
+    anchorStretch,
+    anchorStretchSettings,
+  );
 }

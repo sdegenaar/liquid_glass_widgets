@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 /// Placeholder gradient images for testing before adding real photos
 ///
@@ -103,9 +103,7 @@ class PlaceholderImages {
     return Container(
       width: width,
       height: height,
-      decoration: BoxDecoration(
-        gradient: getById(destinationId),
-      ),
+      decoration: BoxDecoration(gradient: getById(destinationId)),
       child: Center(
         child: Icon(
           CupertinoIcons.photo,

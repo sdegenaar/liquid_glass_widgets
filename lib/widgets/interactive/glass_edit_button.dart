@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
 
 import '../shared/glass_edit_scope.dart';
@@ -38,8 +38,8 @@ class GlassEditButton extends StatelessWidget {
     this.color,
     this.onPressed,
     this.enableHaptics = true,
-  })  : _isExplicit = false,
-        _explicitIsEditing = false;
+  }) : _isExplicit = false,
+       _explicitIsEditing = false;
 
   /// Creates a standalone [GlassEditButton] with an explicit [isEditing] state.
   const GlassEditButton.explicit({
@@ -50,8 +50,8 @@ class GlassEditButton extends StatelessWidget {
     this.doneLabel = 'Done',
     this.color,
     this.enableHaptics = true,
-  })  : _isExplicit = true,
-        _explicitIsEditing = isEditing;
+  }) : _isExplicit = true,
+       _explicitIsEditing = isEditing;
 
   /// Label shown when inactive (defaults to 'Edit').
   final String editLabel;
@@ -76,8 +76,9 @@ class GlassEditButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = _isExplicit ? null : GlassEditScope.maybeOf(context);
-    final isEditing =
-        _isExplicit ? _explicitIsEditing : (controller?.isEditing ?? false);
+    final isEditing = _isExplicit
+        ? _explicitIsEditing
+        : (controller?.isEditing ?? false);
 
     final effectiveColor = color ?? CupertinoColors.label.resolveFrom(context);
     final effectiveQuality = GlassThemeHelpers.resolveQuality(

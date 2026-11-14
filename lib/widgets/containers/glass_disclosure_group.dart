@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 
@@ -76,12 +76,12 @@ class GlassDisclosureGroup extends StatefulWidget {
     this.subtitleStyle,
     this.leadingIconColor,
     this.headerBuilder,
-  })  : _useOwnLayer = false,
-        _settings = null,
-        _quality = null,
-        surfaceStyle = null,
-        color = null,
-        shape = null;
+  }) : _useOwnLayer = false,
+       _settings = null,
+       _quality = null,
+       surfaceStyle = null,
+       color = null,
+       shape = null;
 
   /// Creates a standalone [GlassDisclosureGroup] that renders inside its
   /// own independent [GlassContainer.card].
@@ -109,14 +109,12 @@ class GlassDisclosureGroup extends StatefulWidget {
     this.subtitleStyle,
     this.leadingIconColor,
     this.headerBuilder,
-    LiquidGlassSettings? settings,
-    GlassQuality? quality,
+    this._settings,
+    this._quality,
     this.surfaceStyle,
     this.color,
     this.shape,
-  })  : _useOwnLayer = true,
-        _settings = settings,
-        _quality = quality;
+  }) : _useOwnLayer = true;
 
   /// Primary title widget displayed in the disclosure header.
   final Widget title;
@@ -199,7 +197,8 @@ class GlassDisclosureGroup extends StatefulWidget {
     BuildContext context,
     bool isExpanded,
     VoidCallback toggle,
-  )? headerBuilder;
+  )?
+  headerBuilder;
 
   /// How the standalone card is painted ([GlassDisclosureGroup.standalone] only).
   ///
@@ -268,8 +267,10 @@ class GlassDisclosureGroupState extends State<GlassDisclosureGroup>
         reverseCurve: widget.animationCurve.flipped,
       );
       _heightFactor = curvedAnimation;
-      _chevronTurns =
-          Tween<double>(begin: 0.0, end: 0.25).animate(curvedAnimation);
+      _chevronTurns = Tween<double>(
+        begin: 0.0,
+        end: 0.25,
+      ).animate(curvedAnimation);
     }
   }
 
@@ -325,13 +326,13 @@ class GlassDisclosureGroupState extends State<GlassDisclosureGroup>
         final target = _isExpanded ? 1.0 : 0.0;
         _controller
             .animateWith(
-          SpringSimulation(widget.spring!, _controller.value, target, 0.0),
-        )
+              SpringSimulation(widget.spring!, _controller.value, target, 0.0),
+            )
             .whenCompleteOrCancel(() {
-          if (mounted && !_controller.isAnimating) {
-            _controller.value = target;
-          }
-        });
+              if (mounted && !_controller.isAnimating) {
+                _controller.value = target;
+              }
+            });
       } else {
         if (_isExpanded) {
           _controller.forward();
@@ -351,13 +352,10 @@ class GlassDisclosureGroupState extends State<GlassDisclosureGroup>
         : _buildDefaultHeader(context);
 
     // Accessibility semantics
-    header = Semantics(
-      button: true,
-      expanded: _isExpanded,
-      child: header,
-    );
+    header = Semantics(button: true, expanded: _isExpanded, child: header);
 
-    final effectiveSurfaceStyle = widget.surfaceStyle ??
+    final effectiveSurfaceStyle =
+        widget.surfaceStyle ??
         InheritedGlassSurfaceStyle.maybeOf(context) ??
         GlassSurfaceStyle.glass;
 
@@ -380,10 +378,7 @@ class GlassDisclosureGroupState extends State<GlassDisclosureGroup>
     Widget group = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        header,
-        expandedContent,
-      ],
+      children: [header, expandedContent],
     );
 
     if (widget._useOwnLayer) {
@@ -408,16 +403,18 @@ class GlassDisclosureGroupState extends State<GlassDisclosureGroup>
   Widget _buildDefaultHeader(BuildContext context) {
     final dynamicLabelColor =
         CupertinoTheme.of(context).textTheme.textStyle.color ??
-            CupertinoColors.label;
+        CupertinoColors.label;
 
-    final effectiveTitleStyle = widget.titleStyle ??
+    final effectiveTitleStyle =
+        widget.titleStyle ??
         TextStyle(
           color: dynamicLabelColor,
           fontSize: 16,
           fontWeight: FontWeight.w500,
         );
 
-    final effectiveSubtitleStyle = widget.subtitleStyle ??
+    final effectiveSubtitleStyle =
+        widget.subtitleStyle ??
         TextStyle(
           color: CupertinoColors.secondaryLabel.resolveFrom(context),
           fontSize: 13,
@@ -437,7 +434,8 @@ class GlassDisclosureGroupState extends State<GlassDisclosureGroup>
         ? Tween<double>(begin: 0.0, end: -0.25).animate(_heightFactor)
         : _chevronTurns;
 
-    Widget trailingWidget = widget.trailing ??
+    Widget trailingWidget =
+        widget.trailing ??
         RotationTransition(
           turns: chevronTurns,
           child: SizedBox(
@@ -489,8 +487,8 @@ class GlassDisclosureGroupState extends State<GlassDisclosureGroup>
         duration: const Duration(milliseconds: 150),
         color: _isPressed
             ? CupertinoColors.systemGrey4
-                .resolveFrom(context)
-                .withValues(alpha: 0.18)
+                  .resolveFrom(context)
+                  .withValues(alpha: 0.18)
             : CupertinoColors.transparent,
         padding: widget.contentPadding,
         child: Row(
@@ -520,8 +518,9 @@ class GlassDisclosureGroupState extends State<GlassDisclosureGroup>
       return const SizedBox.shrink();
     }
 
-    final double endIndent =
-        effectiveSurfaceStyle == GlassSurfaceStyle.solid ? 16.0 : 0.0;
+    final double endIndent = effectiveSurfaceStyle == GlassSurfaceStyle.solid
+        ? 16.0
+        : 0.0;
     final processedChildren = <Widget>[];
 
     for (var i = 0; i < widget.children.length; i++) {

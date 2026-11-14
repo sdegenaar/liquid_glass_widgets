@@ -1,13 +1,15 @@
 // ignore: unnecessary_import
 import 'dart:ui';
-import 'package:flutter/cupertino.dart';
+
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() {
   group('GlassButtonGroup', () {
-    testWidgets('renders children in horizontal direction by default',
-        (tester) async {
+    testWidgets('renders children in horizontal direction by default', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         CupertinoApp(
           home: Center(
@@ -70,8 +72,9 @@ void main() {
       expect(flex.direction, Axis.vertical);
     });
 
-    testWidgets('suppresses dividers when showDividers is false',
-        (tester) async {
+    testWidgets('suppresses dividers when showDividers is false', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         CupertinoApp(
           home: Center(
@@ -97,9 +100,11 @@ void main() {
       // In children mode with showDividers: false, no Container dividers should be added
       // Note: children might contain containers natively but the explicit divider is a Container with width/height 1
       final containers = tester.widgetList<Container>(find.byType(Container));
-      final hasDivider = containers.any((c) =>
-          (c.constraints?.maxWidth == 1.0) ||
-          (c.constraints?.maxHeight == 1.0));
+      final hasDivider = containers.any(
+        (c) =>
+            (c.constraints?.maxWidth == 1.0) ||
+            (c.constraints?.maxHeight == 1.0),
+      );
       expect(hasDivider, isFalse);
     });
   });
@@ -149,8 +154,9 @@ void main() {
       // Handled internally by ignoring taps on disabled
     });
 
-    testWidgets('renders lightweight items with dividers if enabled',
-        (tester) async {
+    testWidgets('renders lightweight items with dividers if enabled', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         CupertinoApp(
           home: Center(
@@ -238,7 +244,9 @@ void main() {
 
     test('default constructor still has null menuItems', () {
       final item = GlassButtonGroupItem(
-          icon: const Icon(CupertinoIcons.add), onTap: () {});
+        icon: const Icon(CupertinoIcons.add),
+        onTap: () {},
+      );
       expect(item.menuItems, isNull);
       expect(item.menuWidth, 200);
     });
@@ -330,31 +338,33 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('GlassButtonGroupItem.menu edge cases', () {
-    testWidgets('menu item at index 0 (first position) wraps pill in GlassMenu',
-        (tester) async {
-      // GlassMenu must appear even when the menu item is the FIRST item,
-      // verifying that indexWhere correctly finds index 0.
-      await tester.pumpWidget(
-        CupertinoApp(
-          home: Center(
-            child: GlassButtonGroup.icons(
-              items: [
-                GlassButtonGroupItem.menu(
-                  icon: Icon(CupertinoIcons.ellipsis),
-                  menuItems: [GlassMenuItem(title: 'Copy', onTap: () {})],
-                ),
-                GlassButtonGroupItem(
-                  icon: Icon(CupertinoIcons.share),
-                  onTap: () {},
-                ),
-              ],
+    testWidgets(
+      'menu item at index 0 (first position) wraps pill in GlassMenu',
+      (tester) async {
+        // GlassMenu must appear even when the menu item is the FIRST item,
+        // verifying that indexWhere correctly finds index 0.
+        await tester.pumpWidget(
+          CupertinoApp(
+            home: Center(
+              child: GlassButtonGroup.icons(
+                items: [
+                  GlassButtonGroupItem.menu(
+                    icon: Icon(CupertinoIcons.ellipsis),
+                    menuItems: [GlassMenuItem(title: 'Copy', onTap: () {})],
+                  ),
+                  GlassButtonGroupItem(
+                    icon: Icon(CupertinoIcons.share),
+                    onTap: () {},
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pump();
-      expect(find.byType(GlassMenu), findsOneWidget);
-    });
+        );
+        await tester.pump();
+        expect(find.byType(GlassMenu), findsOneWidget);
+      },
+    );
 
     testWidgets('non-menu sibling onTap fires independently', (tester) async {
       // Tapping a regular item in a group that also contains a menu item must
@@ -388,8 +398,9 @@ void main() {
       expect(tapCount, 1);
     });
 
-    testWidgets('vertical direction group with menu item renders GlassMenu',
-        (tester) async {
+    testWidgets('vertical direction group with menu item renders GlassMenu', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         CupertinoApp(
           home: Center(

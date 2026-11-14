@@ -47,52 +47,62 @@ class _Unreconcilable extends SingleChildRenderObjectWidget {
 /// as long as the app runs.
 void main() {
   Widget at(Offset position, Widget child) => Directionality(
-        textDirection: TextDirection.ltr,
-        child: Stack(
-          children: [
-            Positioned(left: position.dx, top: position.dy, child: child),
-          ],
-        ),
-      );
+    textDirection: TextDirection.ltr,
+    child: Stack(
+      children: [Positioned(left: position.dx, top: position.dy, child: child)],
+    ),
+  );
 
-  testWidgets(
-      'a tracked layer whose composite update cannot succeed does not '
+  testWidgets('a tracked layer whose composite update cannot succeed does not '
       'repaint every frame', (tester) async {
-    await tester.pumpWidget(at(
-      const Offset(10, 10),
-      const _Unreconcilable(child: SizedBox(width: 50, height: 50)),
-    ));
-    final ro = tester
-        .renderObject<_RenderUnreconcilable>(find.byType(_Unreconcilable));
+    await tester.pumpWidget(
+      at(
+        const Offset(10, 10),
+        const _Unreconcilable(child: SizedBox(width: 50, height: 50)),
+      ),
+    );
+    final ro = tester.renderObject<_RenderUnreconcilable>(
+      find.byType(_Unreconcilable),
+    );
 
     await tester.pump(const Duration(milliseconds: 16));
     final paints = ro.paints;
     for (var i = 0; i < 8; i++) {
       await tester.pump(const Duration(milliseconds: 16));
     }
-    expect(ro.paints, paints,
-        reason: 'nothing moved, so nothing is owed a repaint');
+    expect(
+      ro.paints,
+      paints,
+      reason: 'nothing moved, so nothing is owed a repaint',
+    );
     expect(ro.transformChanged, 0);
     expect(tester.binding.hasScheduledFrame, isFalse);
   });
 
-  testWidgets('a tracked layer that really moved still asks for a repaint',
-      (tester) async {
+  testWidgets('a tracked layer that really moved still asks for a repaint', (
+    tester,
+  ) async {
     final position = ValueNotifier(const Offset(10, 10));
-    await tester.pumpWidget(ValueListenableBuilder<Offset>(
-      valueListenable: position,
-      child: const _Unreconcilable(child: SizedBox(width: 50, height: 50)),
-      builder: (context, value, child) => at(value, child!),
-    ));
+    await tester.pumpWidget(
+      ValueListenableBuilder<Offset>(
+        valueListenable: position,
+        child: const _Unreconcilable(child: SizedBox(width: 50, height: 50)),
+        builder: (context, value, child) => at(value, child!),
+      ),
+    );
     await tester.pump();
-    final ro = tester
-        .renderObject<_RenderUnreconcilable>(find.byType(_Unreconcilable));
+    final ro = tester.renderObject<_RenderUnreconcilable>(
+      find.byType(_Unreconcilable),
+    );
 
     final before = ro.transformChanged;
     position.value = const Offset(40, 25);
     await tester.pump();
     await tester.pump();
-    expect(ro.transformChanged, greaterThan(before),
-        reason: 'a move the layer could not follow must still repaint it');
+    expect(
+      ro.transformChanged,
+      greaterThan(before),
+      reason: 'a move the layer could not follow must still repaint it',
+    );
   });
 }

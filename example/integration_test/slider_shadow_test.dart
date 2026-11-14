@@ -5,7 +5,7 @@
 // --driver=test_driver/slider_shadow_driver.dart --target=integration_test/slider_shadow_test.dart.
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -21,44 +21,50 @@ void main() {
     int? restingShadowRed;
     for (final brightness in [Brightness.light, Brightness.dark]) {
       value = 0.5;
-      await tester.pumpWidget(LiquidGlassWidgets.wrap(
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData(brightness: brightness),
-          home: RepaintBoundary(
-            key: boundaryKey,
-            child: Scaffold(
-              backgroundColor:
-                  brightness == Brightness.light ? Colors.white : Colors.black,
-              body: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Premium slider — ${brightness.name}'),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: 300,
-                      child: StatefulBuilder(builder: (context, setState) {
-                        return GlassSlider(
-                          value: value,
-                          quality: GlassQuality.premium,
-                          onChanged: (next) => setState(() => value = next),
-                        );
-                      }),
-                    ),
-                  ],
+      await tester.pumpWidget(
+        LiquidGlassWidgets.wrap(
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(brightness: brightness),
+            home: RepaintBoundary(
+              key: boundaryKey,
+              child: Scaffold(
+                backgroundColor: brightness == Brightness.light
+                    ? Colors.white
+                    : Colors.black,
+                body: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Premium slider — ${brightness.name}'),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: 300,
+                        child: StatefulBuilder(
+                          builder: (context, setState) {
+                            return GlassSlider(
+                              value: value,
+                              quality: GlassQuality.premium,
+                              onChanged: (next) => setState(() => value = next),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 300));
 
       Future<ui.Image> snapshot(String phase) async {
-        final boundary = boundaryKey.currentContext!.findRenderObject()!
-            as RenderRepaintBoundary;
+        final boundary =
+            boundaryKey.currentContext!.findRenderObject()!
+                as RenderRepaintBoundary;
         final image = await boundary.toImage(pixelRatio: 3);
         await binding.takeScreenshot('slider-${brightness.name}-$phase');
         return image;
@@ -68,8 +74,9 @@ void main() {
       if (brightness == Brightness.light) {
         final slider = tester.widget<GlassSlider>(find.byType(GlassSlider));
         final rect = tester.getRect(find.byType(GlassSlider));
-        final boundary = boundaryKey.currentContext!.findRenderObject()!
-            as RenderRepaintBoundary;
+        final boundary =
+            boundaryKey.currentContext!.findRenderObject()!
+                as RenderRepaintBoundary;
         final center = boundary.globalToLocal(rect.center);
         // Two logical pixels below the opaque pill: these pixels are outside
         // the glass clip, and should contain the thumb's soft shadow.
@@ -80,8 +87,9 @@ void main() {
       }
       rest.dispose();
 
-      final gesture =
-          await tester.startGesture(tester.getCenter(find.byType(GlassSlider)));
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(GlassSlider)),
+      );
       await tester.pumpAndSettle();
       (await snapshot('pressed')).dispose();
       for (var step = 0; step < 12; step++) {
@@ -96,7 +104,10 @@ void main() {
       (await snapshot('released')).dispose();
       expect(tester.takeException(), isNull);
     }
-    expect(restingShadowRed, lessThan(245),
-        reason: 'resting shadow extends beyond glass');
+    expect(
+      restingShadowRed,
+      lessThan(245),
+      reason: 'resting shadow extends beyond glass',
+    );
   });
 }

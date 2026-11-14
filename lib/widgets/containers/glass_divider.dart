@@ -1,4 +1,5 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+
 import '../../theme/glass_theme.dart';
 
 /// A glass-aesthetic separator for use between glass content sections.
@@ -108,7 +109,8 @@ class GlassDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     // Resolve colour: prefer explicit, fall back to theme-adaptive default.
     final brightness = GlassTheme.brightnessOf(context);
-    final effectiveColor = color ??
+    final effectiveColor =
+        color ??
         (brightness == Brightness.dark
             ? CupertinoColors.white.withValues(alpha: 0.20)
             : CupertinoColors.black.withValues(alpha: 0.10));
@@ -125,10 +127,7 @@ class GlassDivider extends StatelessWidget {
             padding: EdgeInsets.only(top: indent, bottom: endIndent),
             child: Center(
               // Replaces Material VerticalDivider — identical pixel output.
-              child: Container(
-                width: thickness,
-                color: effectiveColor,
-              ),
+              child: Container(width: thickness, color: effectiveColor),
             ),
           ),
         ),
@@ -142,10 +141,7 @@ class GlassDivider extends StatelessWidget {
         child: SizedBox(
           height: effectiveHeight,
           child: Center(
-            child: Container(
-              height: thickness,
-              color: effectiveColor,
-            ),
+            child: Container(height: thickness, color: effectiveColor),
           ),
         ),
       ),

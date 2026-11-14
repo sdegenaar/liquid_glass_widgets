@@ -17,8 +17,8 @@
 ///   flutter run -t example/lib/demos/color_fidelity_demo.dart
 library;
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() async {
@@ -36,10 +36,8 @@ class ColorFidelityDemoApp extends StatelessWidget {
       title: 'Color Fidelity & Decoupled Quality',
       debugShowCheckedModeBanner: false,
       theme: const CupertinoThemeData(brightness: Brightness.dark),
-      builder: (context, child) => Theme(
-        data: ThemeData.dark(useMaterial3: true),
-        child: child!,
-      ),
+      builder: (context, child) =>
+          Theme(data: ThemeData.dark(useMaterial3: true), child: child!),
       home: const ColorFidelityDemoPage(),
     );
   }
@@ -67,20 +65,20 @@ class _ColorFidelityDemoPageState extends State<ColorFidelityDemoPage> {
       1; // 0: null (inherit), 1: minimal, 2: standard, 3: premium
 
   GlassQuality? get _trackQuality => switch (_trackQualityIndex) {
-        0 => null,
-        1 => GlassQuality.minimal,
-        2 => GlassQuality.standard,
-        3 => GlassQuality.premium,
-        _ => null,
-      };
+    0 => null,
+    1 => GlassQuality.minimal,
+    2 => GlassQuality.standard,
+    3 => GlassQuality.premium,
+    _ => null,
+  };
 
   String get _trackQualityName => switch (_trackQualityIndex) {
-        0 => 'Inherit (Premium)',
-        1 => 'Minimal (Frosted)',
-        2 => 'Standard (2D)',
-        3 => 'Premium (3D Liquid)',
-        _ => 'Unknown',
-      };
+    0 => 'Inherit (Premium)',
+    1 => 'Minimal (Frosted)',
+    2 => 'Standard (2D)',
+    3 => 'Premium (3D Liquid)',
+    _ => 'Unknown',
+  };
 
   static const List<(String, Color)> _swatches = [
     ('Issue #269 Blue', Color(0xD9C3E0F5)),
@@ -109,8 +107,9 @@ class _ColorFidelityDemoPageState extends State<ColorFidelityDemoPage> {
       glassColor: _selectedColor,
     );
 
-    final activeSettings =
-        _bodyMode == GlassBodyMode.clear ? clearSettings : adaptiveSettings;
+    final activeSettings = _bodyMode == GlassBodyMode.clear
+        ? clearSettings
+        : adaptiveSettings;
 
     return GlassPage(
       background: Stack(
@@ -181,7 +180,9 @@ class _ColorFidelityDemoPageState extends State<ColorFidelityDemoPage> {
           tabs: const [
             GlassTab(icon: Icon(CupertinoIcons.sparkles), label: 'Fidelity'),
             GlassTab(
-                icon: Icon(CupertinoIcons.slider_horizontal_3), label: 'Tuner'),
+              icon: Icon(CupertinoIcons.slider_horizontal_3),
+              label: 'Tuner',
+            ),
             GlassTab(icon: Icon(CupertinoIcons.layers_alt), label: 'Decoupled'),
           ],
         ),
@@ -279,8 +280,9 @@ class _ColorFidelityDemoPageState extends State<ColorFidelityDemoPage> {
           decoration: BoxDecoration(
             color: CupertinoColors.black.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(12),
-            border:
-                Border.all(color: CupertinoColors.white.withValues(alpha: 0.1)),
+            border: Border.all(
+              color: CupertinoColors.white.withValues(alpha: 0.1),
+            ),
           ),
           child: Row(
             children: [
@@ -291,7 +293,8 @@ class _ColorFidelityDemoPageState extends State<ColorFidelityDemoPage> {
                   color: _selectedColor,
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                      color: CupertinoColors.white.withValues(alpha: 0.3)),
+                    color: CupertinoColors.white.withValues(alpha: 0.3),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -390,8 +393,9 @@ class _ColorFidelityDemoPageState extends State<ColorFidelityDemoPage> {
       decoration: BoxDecoration(
         color: CupertinoColors.black.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: CupertinoColors.white.withValues(alpha: 0.15)),
+        border: Border.all(
+          color: CupertinoColors.white.withValues(alpha: 0.15),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -470,13 +474,17 @@ class _ColorFidelityDemoPageState extends State<ColorFidelityDemoPage> {
             children: [
               Text(
                 'Backdrop Blur: ${_blur.toStringAsFixed(1)}px',
-                style:
-                    const TextStyle(color: CupertinoColors.white, fontSize: 13),
+                style: const TextStyle(
+                  color: CupertinoColors.white,
+                  fontSize: 13,
+                ),
               ),
               if (_blur == 0.0)
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: CupertinoColors.activeBlue.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(4),
@@ -544,8 +552,10 @@ class _ColorFidelityDemoPageState extends State<ColorFidelityDemoPage> {
               return GestureDetector(
                 onTap: () => setState(() => _selectedColor = swatch.$2),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: swatch.$2.withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(8),
@@ -560,8 +570,9 @@ class _ColorFidelityDemoPageState extends State<ColorFidelityDemoPage> {
                     swatch.$1,
                     style: TextStyle(
                       fontSize: 11,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                       color: swatch.$2.computeLuminance() > 0.5
                           ? CupertinoColors.black
                           : CupertinoColors.white,
@@ -582,16 +593,20 @@ class _ColorFidelityDemoPageState extends State<ColorFidelityDemoPage> {
       decoration: BoxDecoration(
         color: CupertinoColors.black.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: CupertinoColors.white.withValues(alpha: 0.15)),
+        border: Border.all(
+          color: CupertinoColors.white.withValues(alpha: 0.15),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(CupertinoIcons.layers,
-                  color: CupertinoColors.systemTeal, size: 20),
+              const Icon(
+                CupertinoIcons.layers,
+                color: CupertinoColors.systemTeal,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               const Text(
                 'GlassTabBar.backgroundQuality',

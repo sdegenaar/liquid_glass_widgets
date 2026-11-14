@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/gestures.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -316,9 +316,10 @@ class GlassModalSheet extends StatefulWidget {
     this.peekBottomRadius,
     this.placement = GlassSheetPlacement.automatic,
   }) : assert(
-            detents.length > 0,
-            'GlassModalSheet needs at least one detent — add medium and/or large '
-            '(small alone is a floor, not a resting height).');
+         detents.length > 0,
+         'GlassModalSheet needs at least one detent — add medium and/or large '
+         '(small alone is a floor, not a resting height).',
+       );
 
   /// The width a sheet presented from [context] rests at, at [state].
   ///
@@ -474,7 +475,7 @@ class GlassModalSheet extends StatefulWidget {
     LiquidGlassSettings? fullStateContentSettings,
     Set<GlassSheetDetent> detents = const {
       GlassSheetDetent.medium,
-      GlassSheetDetent.large
+      GlassSheetDetent.large,
     },
     bool dismissible = true,
     double? peekHorizontalMargin,
@@ -489,13 +490,15 @@ class GlassModalSheet extends StatefulWidget {
     AnimationStyle? sheetAnimationStyle,
   }) {
     assert(
-        morphFrom == null || morphFromRect == null,
-        'Pass either morphFrom (the GlassMorphAnchor from a GlassMorphTrigger) '
-        'or morphFromRect (an explicit global rect) — not both.');
+      morphFrom == null || morphFromRect == null,
+      'Pass either morphFrom (the GlassMorphAnchor from a GlassMorphTrigger) '
+      'or morphFromRect (an explicit global rect) — not both.',
+    );
     assert(
-        detents.isNotEmpty,
-        'GlassModalSheet.show() needs at least one detent — add medium '
-        'and/or large (small alone is a floor, not a resting height).');
+      detents.isNotEmpty,
+      'GlassModalSheet.show() needs at least one detent — add medium '
+      'and/or large (small alone is a floor, not a resting height).',
+    );
     assert(() {
       if (mode == GlassSheetMode.persistent &&
           barrierColor == const Color(0x00000000)) {
@@ -526,7 +529,8 @@ class GlassModalSheet extends StatefulWidget {
     // read while the trigger is still laid out, and the render capabilities
     // decide which transition the route is built with in the first place.
     final morphTriggerRect = _resolveMorphTriggerRect(morphFrom, morphFromRect);
-    final morphing = morphTriggerRect != null &&
+    final morphing =
+        morphTriggerRect != null &&
         _supportsMorph(
           context,
           quality: quality,
@@ -544,8 +548,8 @@ class GlassModalSheet extends StatefulWidget {
     final reverseTransitionDuration = morphing
         ? transitionDuration
         : sheetAnimationStyle?.reverseDuration ??
-            sheetAnimationStyle?.duration ??
-            slideDuration;
+              sheetAnimationStyle?.duration ??
+              slideDuration;
 
     // On a half-folded display the route presents into one side of the fold,
     // as [DisplayFeatureSubScreen] does for any dialog. The sheet is laid out
@@ -558,176 +562,178 @@ class GlassModalSheet extends StatefulWidget {
     final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
     final capturedCupertinoTheme = CupertinoTheme.of(context);
     final capturedStyle = GlassThemeHelpers.resolveStyle(context);
-    final effectiveBarrierColor = barrierColor ??
+    final effectiveBarrierColor =
+        barrierColor ??
         (capturedStyle == GlassStyle.classic
             ? GlassDefaults.barrierColor
             : const Color(0x24000000));
 
-    return Navigator.of(context, rootNavigator: useRootNavigator)
-        .push<T>(_GlassModalSheetRoute<T>(
-      anchorPoint: subScreen?.center,
-      barrierDismissible: isDismissible,
-      barrierLabel: 'Dismiss',
-      barrierColor: morphing
-          // When morphing, the presenter drives the scrim itself via the liquid
-          // spring so it stays in lockstep with the blob. A route-level barrier
-          // would fade linearly on an independent clock, creating the "two
-          // separate things" visual that GlassMenu avoids by having no route
-          // barrier at all. Pass transparent here so the route's built-in
-          // linear fade does not run alongside the spring-driven scrim.
-          ? const Color(0x00000000)
-          : effectiveBarrierColor,
-      settings: routeSettings,
-      transitionDuration: transitionDuration,
-      reverseTransitionDuration: reverseTransitionDuration,
-      transitionBuilder: (context, animation, secondaryAnimation, child) {
-        // Morphing: the droplet IS the transition. Mapping the engine onto this
-        // linear route animation would flatten the J-curve and the underdamped
-        // catch, so the page passes straight through.
-        if (morphing) return child;
-        return SlideTransition(
-          position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
-              .animate(
-            CurvedAnimation(
-              parent: animation,
-              curve: sheetAnimationStyle?.curve ?? Curves.easeOutQuart,
-              reverseCurve: sheetAnimationStyle?.reverseCurve,
-            ),
-          ),
-          child: child,
-        );
-      },
-      pageBuilder: (context, animation, secondaryAnimation) =>
-          _inSubScreen(context, subScreen, () {
-        Widget wrapThemes(Widget child) {
-          Widget wrapped = CupertinoTheme(
-            data: capturedCupertinoTheme,
+    return Navigator.of(context, rootNavigator: useRootNavigator).push<T>(
+      _GlassModalSheetRoute<T>(
+        anchorPoint: subScreen?.center,
+        barrierDismissible: isDismissible,
+        barrierLabel: 'Dismiss',
+        barrierColor: morphing
+            // When morphing, the presenter drives the scrim itself via the liquid
+            // spring so it stays in lockstep with the blob. A route-level barrier
+            // would fade linearly on an independent clock, creating the "two
+            // separate things" visual that GlassMenu avoids by having no route
+            // barrier at all. Pass transparent here so the route's built-in
+            // linear fade does not run alongside the spring-driven scrim.
+            ? const Color(0x00000000)
+            : effectiveBarrierColor,
+        settings: routeSettings,
+        transitionDuration: transitionDuration,
+        reverseTransitionDuration: reverseTransitionDuration,
+        transitionBuilder: (context, animation, secondaryAnimation, child) {
+          // Morphing: the droplet IS the transition. Mapping the engine onto this
+          // linear route animation would flatten the J-curve and the underdamped
+          // catch, so the page passes straight through.
+          if (morphing) return child;
+          return SlideTransition(
+            position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+                .animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: sheetAnimationStyle?.curve ?? Curves.easeOutQuart,
+                    reverseCurve: sheetAnimationStyle?.reverseCurve,
+                  ),
+                ),
             child: child,
           );
-          if (capturedGlassTheme != null) {
-            wrapped = GlassTheme(
-              data: capturedGlassTheme,
-              child: wrapped,
-            );
-          }
-          return wrapped;
-        }
-
-        final scaffold = GlassModalSheetScaffold(
-          controller: effectiveController,
-          halfSize: halfSize,
-          fullSize: fullSize,
-          initialState: resolvedInitialState,
-          fillThreshold: fillThreshold,
-          settings: settings,
-          expandedColor: expandedColor,
-          expandedDarkColor: expandedDarkColor,
-          mode: mode,
-          peekSize: peekSize,
-          quality: quality,
-          platformViewBackdrop: platformViewBackdrop,
-          interactionScale: interactionScale,
-          enableInteractionGlow: enableInteractionGlow,
-          enableSaturationGlow: enableSaturationGlow,
-          peekSettings: peekSettings,
-          halfSettings: halfSettings,
-          fullSettings: fullSettings,
-          stretch: stretch,
-          fillTransition: fillTransition,
-          showDragIndicator: showDragIndicator,
-          dragIndicatorColor: dragIndicatorColor,
-          dragIndicatorWidth: dragIndicatorWidth,
-          dragIndicatorHeight: dragIndicatorHeight,
-          dragIndicatorTopPadding: dragIndicatorTopPadding,
-          topBorderRadius: topBorderRadius,
-          bottomBorderRadius: bottomBorderRadius,
-          fullTopBorderRadius: fullTopBorderRadius,
-          fullBottomBorderRadius: fullBottomBorderRadius,
-          horizontalMargin: horizontalMargin,
-          bottomMargin: bottomMargin,
-          resistance: resistance,
-          snapThreshold: snapThreshold,
-          velocityThreshold: velocityThreshold,
-          glowColor: glowColor,
-          glowRadius: glowRadius,
-          suppressInteractionOnChildren: suppressInteractionOnChildren,
-          padding: padding,
-          enableTopFade: enableTopFade,
-          topFadeHeight: topFadeHeight,
-          maintainContentGlass: maintainContentGlass,
-          fullStateContentSettings: fullStateContentSettings,
-          detents: detents,
-          dismissible: dismissible,
-          barrierDismissible: isDismissible,
-          peekHorizontalMargin: peekHorizontalMargin,
-          peekBottomMargin: peekBottomMargin,
-          peekWidth: peekWidth,
-          peekTopBorderRadius: peekTopBorderRadius,
-          peekBottomRadius: peekBottomRadius,
-          placement: placement,
-          onStateChanged: (state) {
-            onStateChanged?.call(state);
-            if (state == GlassSheetState.hidden && !isClosing) {
-              isClosing = true;
-              Navigator.of(context).pop();
+        },
+        pageBuilder: (context, animation, secondaryAnimation) => _inSubScreen(
+          context,
+          subScreen,
+          () {
+            Widget wrapThemes(Widget child) {
+              Widget wrapped = CupertinoTheme(
+                data: capturedCupertinoTheme,
+                child: child,
+              );
+              if (capturedGlassTheme != null) {
+                wrapped = GlassTheme(data: capturedGlassTheme, child: wrapped);
+              }
+              return wrapped;
             }
-          },
-          body: const SizedBox.shrink(),
-          sheet: Builder(builder: builder),
-        );
 
-        if (!morphing) return wrapThemes(scaffold);
-
-        return wrapThemes(
-          GlassSheetMorphPresenter(
-            routeAnimation: animation,
-            triggerRect: morphTriggerRect,
-            anchor: morphFrom,
-            speed: morphSpeed,
-            restingState: resolvedInitialState,
-            controller: effectiveController,
-            // Built from the same inputs as the sheet's own _buildGeometry, so
-            // the droplet aims at the detent the sheet will actually rest at.
-            geometry: SheetGeometry(
-              mode: mode,
+            final scaffold = GlassModalSheetScaffold(
+              controller: effectiveController,
               halfSize: halfSize,
-              fullSize: fullSize ?? _stripFullSize(context),
+              fullSize: fullSize,
+              initialState: resolvedInitialState,
+              fillThreshold: fillThreshold,
+              settings: settings,
+              expandedColor: expandedColor,
+              expandedDarkColor: expandedDarkColor,
+              mode: mode,
               peekSize: peekSize,
-              enablePeek: SheetGeometry.resolvePeek(
-                detents: detents,
-                mode: mode,
-              ),
-              enableHalf: detents.contains(GlassSheetDetent.medium),
-              enableFull: detents.contains(GlassSheetDetent.large),
+              quality: quality,
+              platformViewBackdrop: platformViewBackdrop,
+              interactionScale: interactionScale,
+              enableInteractionGlow: enableInteractionGlow,
+              enableSaturationGlow: enableSaturationGlow,
+              peekSettings: peekSettings,
+              halfSettings: halfSettings,
+              fullSettings: fullSettings,
+              stretch: stretch,
+              fillTransition: fillTransition,
+              showDragIndicator: showDragIndicator,
+              dragIndicatorColor: dragIndicatorColor,
+              dragIndicatorWidth: dragIndicatorWidth,
+              dragIndicatorHeight: dragIndicatorHeight,
+              dragIndicatorTopPadding: dragIndicatorTopPadding,
+              topBorderRadius: topBorderRadius,
+              bottomBorderRadius: bottomBorderRadius,
+              fullTopBorderRadius: fullTopBorderRadius,
+              fullBottomBorderRadius: fullBottomBorderRadius,
+              horizontalMargin: horizontalMargin,
+              bottomMargin: bottomMargin,
+              resistance: resistance,
+              snapThreshold: snapThreshold,
+              velocityThreshold: velocityThreshold,
+              glowColor: glowColor,
+              glowRadius: glowRadius,
+              suppressInteractionOnChildren: suppressInteractionOnChildren,
+              padding: padding,
+              enableTopFade: enableTopFade,
+              topFadeHeight: topFadeHeight,
+              maintainContentGlass: maintainContentGlass,
+              fullStateContentSettings: fullStateContentSettings,
+              detents: detents,
               dismissible: dismissible,
-            ),
-            horizontalMargin: horizontalMargin,
-            bottomMargin: bottomMargin,
-            topBorderRadius: topBorderRadius,
-            fullTopBorderRadius: fullTopBorderRadius,
-            bottomBorderRadius: bottomBorderRadius,
-            fullBottomBorderRadius: fullBottomBorderRadius,
-            settings: settings,
-            peekSettings: peekSettings,
-            halfSettings: halfSettings,
-            fullSettings: fullSettings,
-            expandedColor: expandedColor,
-            expandedDarkColor: expandedDarkColor,
-            quality: quality,
-            peekHorizontalMargin: peekHorizontalMargin,
-            peekBottomMargin: peekBottomMargin,
-            peekWidth: peekWidth,
-            peekTopBorderRadius: peekTopBorderRadius,
-            platformViewBackdrop: platformViewBackdrop,
-            // The route-level barrier is transparent above; the presenter drives
-            // the scrim itself via the liquid spring for single-unified-motion.
-            barrierColor: effectiveBarrierColor,
-            placement: placement,
-            child: scaffold,
-          ),
-        );
-      }),
-    ));
+              barrierDismissible: isDismissible,
+              peekHorizontalMargin: peekHorizontalMargin,
+              peekBottomMargin: peekBottomMargin,
+              peekWidth: peekWidth,
+              peekTopBorderRadius: peekTopBorderRadius,
+              peekBottomRadius: peekBottomRadius,
+              placement: placement,
+              onStateChanged: (state) {
+                onStateChanged?.call(state);
+                if (state == GlassSheetState.hidden && !isClosing) {
+                  isClosing = true;
+                  Navigator.of(context).pop();
+                }
+              },
+              body: const SizedBox.shrink(),
+              sheet: Builder(builder: builder),
+            );
+
+            if (!morphing) return wrapThemes(scaffold);
+
+            return wrapThemes(
+              GlassSheetMorphPresenter(
+                routeAnimation: animation,
+                triggerRect: morphTriggerRect,
+                anchor: morphFrom,
+                speed: morphSpeed,
+                restingState: resolvedInitialState,
+                controller: effectiveController,
+                // Built from the same inputs as the sheet's own _buildGeometry, so
+                // the droplet aims at the detent the sheet will actually rest at.
+                geometry: SheetGeometry(
+                  mode: mode,
+                  halfSize: halfSize,
+                  fullSize: fullSize ?? _stripFullSize(context),
+                  peekSize: peekSize,
+                  enablePeek: SheetGeometry.resolvePeek(
+                    detents: detents,
+                    mode: mode,
+                  ),
+                  enableHalf: detents.contains(GlassSheetDetent.medium),
+                  enableFull: detents.contains(GlassSheetDetent.large),
+                  dismissible: dismissible,
+                ),
+                horizontalMargin: horizontalMargin,
+                bottomMargin: bottomMargin,
+                topBorderRadius: topBorderRadius,
+                fullTopBorderRadius: fullTopBorderRadius,
+                bottomBorderRadius: bottomBorderRadius,
+                fullBottomBorderRadius: fullBottomBorderRadius,
+                settings: settings,
+                peekSettings: peekSettings,
+                halfSettings: halfSettings,
+                fullSettings: fullSettings,
+                expandedColor: expandedColor,
+                expandedDarkColor: expandedDarkColor,
+                quality: quality,
+                peekHorizontalMargin: peekHorizontalMargin,
+                peekBottomMargin: peekBottomMargin,
+                peekWidth: peekWidth,
+                peekTopBorderRadius: peekTopBorderRadius,
+                platformViewBackdrop: platformViewBackdrop,
+                // The route-level barrier is transparent above; the presenter drives
+                // the scrim itself via the liquid spring for single-unified-motion.
+                barrierColor: effectiveBarrierColor,
+                placement: placement,
+                child: scaffold,
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 
   /// Resolves the trigger's global rect from whichever of [morphFrom] /
@@ -745,11 +751,12 @@ class GlassModalSheet extends StatefulWidget {
 
     final rect = morphFrom._rect;
     assert(
-        rect != null,
-        'GlassModalSheet.show(morphFrom:) needs a GlassMorphAnchor whose '
-        'GlassMorphTrigger is mounted and laid out. It was not on screen when '
-        'show() was called — pass morphFromRect if the trigger has no render '
-        'box of its own.');
+      rect != null,
+      'GlassModalSheet.show(morphFrom:) needs a GlassMorphAnchor whose '
+      'GlassMorphTrigger is mounted and laid out. It was not on screen when '
+      'show() was called — pass morphFromRect if the trigger has no render '
+      'box of its own.',
+    );
     return rect;
   }
 
@@ -796,8 +803,8 @@ class GlassModalSheet extends StatefulWidget {
   /// from the top of the screen instead of stopping short of the status bar.
   static double? _stripFullSize(BuildContext context) =>
       GlassVerticalBar.maybeOf(context) == null
-          ? null
-          : MediaQuery.sizeOf(context).height - _kStripSheetTop;
+      ? null
+      : MediaQuery.sizeOf(context).height - _kStripSheetTop;
 
   /// Route transition duration that covers a morph at [speed].
   ///
@@ -848,11 +855,13 @@ class GlassModalSheet extends StatefulWidget {
     final corner = Directionality.of(context) == TextDirection.rtl
         ? screen.topRight
         : screen.topLeft;
-    double distance(Rect side) => (Offset(
-                corner.dx.clamp(side.left, side.right),
-                corner.dy.clamp(side.top, side.bottom)) -
-            corner)
-        .distance;
+    double distance(Rect side) =>
+        (Offset(
+                  corner.dx.clamp(side.left, side.right),
+                  corner.dy.clamp(side.top, side.bottom),
+                ) -
+                corner)
+            .distance;
     return sides.reduce((a, b) => distance(b) < distance(a) ? b : a);
   }
 

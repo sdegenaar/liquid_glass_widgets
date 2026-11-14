@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 
@@ -110,9 +110,9 @@ class GlassListTile extends StatefulWidget {
     this.canSelect = false,
     this.isSelected = false,
     this.onSelectedChanged,
-  })  : _useOwnLayer = false,
-        _settings = null,
-        _quality = null;
+  }) : _useOwnLayer = false,
+       _settings = null,
+       _quality = null;
 
   /// Creates a standalone glass list tile that manages its own glass layer.
   ///
@@ -160,11 +160,9 @@ class GlassListTile extends StatefulWidget {
     this.canSelect = false,
     this.isSelected = false,
     this.onSelectedChanged,
-    LiquidGlassSettings? settings,
-    GlassQuality? quality,
-  })  : _useOwnLayer = true,
-        _settings = settings,
-        _quality = quality;
+    this._settings,
+    this._quality,
+  }) : _useOwnLayer = true;
 
   // ===========================================================================
   // Content Properties
@@ -358,17 +356,17 @@ class GlassListTile extends StatefulWidget {
 
   /// A standard iOS-style disclosure chevron for use as [trailing].
   static Widget get chevron => const Icon(
-        CupertinoIcons.chevron_forward,
-        color: CupertinoColors.systemGrey,
-        size: 20,
-      );
+    CupertinoIcons.chevron_forward,
+    color: CupertinoColors.systemGrey,
+    size: 20,
+  );
 
   /// A standard iOS-style detail disclosure (circle with 'i') for [trailing].
   static Widget get infoButton => const Icon(
-        CupertinoIcons.info,
-        color: CupertinoColors.systemGrey,
-        size: 20,
-      );
+    CupertinoIcons.info,
+    color: CupertinoColors.systemGrey,
+    size: 20,
+  );
 
   @override
   State<GlassListTile> createState() => _GlassListTileState();
@@ -459,7 +457,8 @@ class _GlassListTileState extends State<GlassListTile>
     // keeping the swipe action platter flush with the card boundary.
     if (widget.contextMenuActions != null &&
         widget.contextMenuActions!.isNotEmpty) {
-      final bool inSolidSection = InheritedGlassSurfaceStyle.maybeOf(context) ==
+      final bool inSolidSection =
+          InheritedGlassSurfaceStyle.maybeOf(context) ==
           GlassSurfaceStyle.solid;
       final bool isDarkTile =
           GlassTheme.brightnessOf(context) == Brightness.dark;
@@ -476,7 +475,8 @@ class _GlassListTileState extends State<GlassListTile>
         quality: widget.contextMenuQuality,
         settings: widget.contextMenuSettings,
         onDismissed: widget.onContextMenuDismissed,
-        longPressDuration: widget.contextMenuLongPressDuration ??
+        longPressDuration:
+            widget.contextMenuLongPressDuration ??
             const Duration(milliseconds: 700),
         child: content,
       );
@@ -493,14 +493,16 @@ class _GlassListTileState extends State<GlassListTile>
       );
     }
 
-    final hasSwipeActions = !effectiveIsEditing &&
+    final hasSwipeActions =
+        !effectiveIsEditing &&
         ((widget.leadingSwipeActions != null &&
                 widget.leadingSwipeActions!.isNotEmpty) ||
             (widget.trailingSwipeActions != null &&
                 widget.trailingSwipeActions!.isNotEmpty));
 
     if (hasSwipeActions) {
-      final effectiveStyle = widget.swipeActionStyle ??
+      final effectiveStyle =
+          widget.swipeActionStyle ??
           (InheritedGlassSurfaceStyle.maybeOf(context) ==
                   GlassSurfaceStyle.solid
               ? GlassSwipeActionStyle.solidVibrancy
@@ -552,15 +554,17 @@ class _GlassListTileState extends State<GlassListTile>
   Widget _buildContent(BuildContext context, bool isEditing) {
     final dynamicLabelColor =
         CupertinoTheme.of(context).textTheme.textStyle.color ??
-            CupertinoColors.label;
+        CupertinoColors.label;
 
-    final effectiveTitleStyle = widget.titleStyle ??
+    final effectiveTitleStyle =
+        widget.titleStyle ??
         TextStyle(
           color: dynamicLabelColor,
           fontSize: 16,
           fontWeight: FontWeight.w500,
         );
-    final effectiveSubtitleStyle = widget.subtitleStyle ??
+    final effectiveSubtitleStyle =
+        widget.subtitleStyle ??
         TextStyle(
           color: dynamicLabelColor.withValues(alpha: 0.65),
           fontSize: 13,
@@ -703,7 +707,7 @@ class _GlassListTileState extends State<GlassListTile>
 
     Widget row = Row(
       children: [
-        if (leadingAccessory != null) leadingAccessory,
+        ?leadingAccessory,
         if (widget.leading != null) ...[
           IconTheme(
             data: IconThemeData(
@@ -735,7 +739,7 @@ class _GlassListTileState extends State<GlassListTile>
             ],
           ),
         ),
-        if (trailingAccessory != null) trailingAccessory,
+        ?trailingAccessory,
       ],
     );
 
@@ -743,17 +747,20 @@ class _GlassListTileState extends State<GlassListTile>
 
     final bool showSelectedHighlight =
         isEditing && widget.canSelect && widget.isSelected;
-    final Color selectedHighlight =
-        isDarkEdit ? const Color(0xFF3A3A3C) : const Color(0xFFD1D1D6);
+    final Color selectedHighlight = isDarkEdit
+        ? const Color(0xFF3A3A3C)
+        : const Color(0xFFD1D1D6);
 
     if (effectiveCanDelete && isEditing) {
       final Color platterColor = showSelectedHighlight
           ? selectedHighlight
           : (isDarkEdit ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA));
-      final Color pageColor =
-          isDarkEdit ? const Color(0xFF000000) : const Color(0xFFF2F2F7);
-      final Color labelColor =
-          isDarkEdit ? const Color(0x99EBEBF5) : const Color(0x993C3C43);
+      final Color pageColor = isDarkEdit
+          ? const Color(0xFF000000)
+          : const Color(0xFFF2F2F7);
+      final Color labelColor = isDarkEdit
+          ? const Color(0x99EBEBF5)
+          : const Color(0x993C3C43);
 
       // Native iOS: a 60x48 red button with an outline trash glyph and the
       // "Delete" caption *underneath* it, sitting in the vacated strip.
@@ -933,8 +940,8 @@ class _GlassListTileState extends State<GlassListTile>
                 curve: Curves.easeOutCubic,
                 color: showHighlight
                     ? (GlassTheme.brightnessOf(context) == Brightness.light
-                        ? CupertinoColors.black.withValues(alpha: 0.08)
-                        : CupertinoColors.white.withValues(alpha: 0.08))
+                          ? CupertinoColors.black.withValues(alpha: 0.08)
+                          : CupertinoColors.white.withValues(alpha: 0.08))
                     : const Color(0x00000000),
                 child: child,
               );
@@ -1081,7 +1088,10 @@ class _InstantMultiDragGestureRecognizer extends MultiDragGestureRecognizer {
 
 class _InstantPointerState extends MultiDragPointerState {
   _InstantPointerState(
-      super.initialPosition, super.kind, super.gestureSettings);
+    super.initialPosition,
+    super.kind,
+    super.gestureSettings,
+  );
 
   void acceptNow() => resolve(GestureDisposition.accepted);
 

@@ -15,7 +15,7 @@
 ///   flutter run -t lib/apple_mail/apple_mail_demo.dart
 library;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 import 'models/mail_models.dart';
@@ -34,10 +34,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
 
-  runApp(LiquidGlassWidgets.wrap(
-    adaptiveQuality: true,
-    child: const AppleMailDemoApp(),
-  ));
+  runApp(
+    LiquidGlassWidgets.wrap(
+      adaptiveQuality: true,
+      child: const AppleMailDemoApp(),
+    ),
+  );
 }
 
 class AppleMailDemoApp extends StatelessWidget {

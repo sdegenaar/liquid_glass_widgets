@@ -9,8 +9,8 @@
 ///   cd example && flutter run -t lib/demos/lists_pickers_and_nav_demo.dart
 library;
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show Theme, ThemeData;
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart' show Theme, ThemeData;
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() async {
@@ -135,35 +135,38 @@ class _ListsPickersAndNavDemoPageState
   }
 
   List<Widget> _menuActions(int index) => [
-        GlassContextMenuAction(
-          icon: Icon(_contacts[index].favorite
-              ? CupertinoIcons.star_slash
-              : CupertinoIcons.star_fill),
-          iconPosition: GlassContextMenuIconPosition.leading,
-          child: Text(_contacts[index].favorite ? 'Unfavorite' : 'Favorite'),
-          onPressed: () => _toggleFavorite(index),
-        ),
-        GlassContextMenuAction(
-          icon: const Icon(CupertinoIcons.doc_on_doc),
-          iconPosition: GlassContextMenuIconPosition.leading,
-          child: const Text('Copy Phone'),
-          onPressed: () {},
-        ),
-        GlassContextMenuAction(
-          icon: const Icon(CupertinoIcons.trash),
-          iconPosition: GlassContextMenuIconPosition.leading,
-          isDestructive: true,
-          child: const Text('Delete Contact'),
-          onPressed: () => _swipe[index].dismiss(),
-        ),
-      ];
+    GlassContextMenuAction(
+      icon: Icon(
+        _contacts[index].favorite
+            ? CupertinoIcons.star_slash
+            : CupertinoIcons.star_fill,
+      ),
+      iconPosition: GlassContextMenuIconPosition.leading,
+      child: Text(_contacts[index].favorite ? 'Unfavorite' : 'Favorite'),
+      onPressed: () => _toggleFavorite(index),
+    ),
+    GlassContextMenuAction(
+      icon: const Icon(CupertinoIcons.doc_on_doc),
+      iconPosition: GlassContextMenuIconPosition.leading,
+      child: const Text('Copy Phone'),
+      onPressed: () {},
+    ),
+    GlassContextMenuAction(
+      icon: const Icon(CupertinoIcons.trash),
+      iconPosition: GlassContextMenuIconPosition.leading,
+      isDestructive: true,
+      child: const Text('Delete Contact'),
+      onPressed: () => _swipe[index].dismiss(),
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final isDark = _resolveIsDark(context);
     final canPopOuter = Navigator.maybeOf(context)?.canPop() ?? false;
-    final VoidCallback? onExitDemo =
-        canPopOuter ? () => Navigator.of(context).maybePop() : null;
+    final VoidCallback? onExitDemo = canPopOuter
+        ? () => Navigator.of(context).maybePop()
+        : null;
 
     return GlassTheme(
       data: GlassThemeData.ios27(
@@ -191,8 +194,9 @@ class _ListsPickersAndNavDemoPageState
                   : pages[_tab];
 
               return GlassScaffold(
-                backgroundColor:
-                    isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7),
+                backgroundColor: isDark
+                    ? const Color(0xFF000000)
+                    : const Color(0xFFF2F2F7),
                 bottomEdgeFade: !(_tab == 4 && _navPath.isNotEmpty),
                 bottomBar: GlassTabBar.bottom(
                   selectedIndex: _tab,
@@ -201,13 +205,13 @@ class _ListsPickersAndNavDemoPageState
                   backgroundQuality: GlassQuality.premium,
                   indicatorColor: isDark
                       ? CupertinoColors.label
-                          .resolveFrom(themedContext)
-                          .withValues(alpha: 0.20)
+                            .resolveFrom(themedContext)
+                            .withValues(alpha: 0.20)
                       : null,
                   unselectedIconColor: isDark
                       ? CupertinoColors.label
-                          .resolveFrom(themedContext)
-                          .withValues(alpha: 0.9)
+                            .resolveFrom(themedContext)
+                            .withValues(alpha: 0.9)
                       : null,
                   tabs: const [
                     GlassTab(
@@ -232,9 +236,7 @@ class _ListsPickersAndNavDemoPageState
                     ),
                   ],
                 ),
-                body: GlassSwipeActionScope(
-                  child: activePage,
-                ),
+                body: GlassSwipeActionScope(child: activePage),
               );
             },
           ),
@@ -291,55 +293,50 @@ class _ListsPickersAndNavDemoPageState
               onPressed: onExitDemo,
             ),
           ),
-        if (trailing != null)
-          Positioned(
-            top: 60,
-            right: 16,
-            child: trailing,
-          ),
+        if (trailing != null) Positioned(top: 60, right: 16, child: trailing),
       ],
     );
   }
 
   Widget _info(BuildContext context, String text) => GlassContainer.card(
-        surfaceStyle: GlassSurfaceStyle.solid,
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 13.7,
-            height: 1.29,
-            color: CupertinoColors.secondaryLabel.resolveFrom(context),
-          ),
-        ),
-      );
+    surfaceStyle: GlassSurfaceStyle.solid,
+    margin: const EdgeInsets.only(bottom: 8),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    child: Text(
+      text,
+      style: TextStyle(
+        fontSize: 13.7,
+        height: 1.29,
+        color: CupertinoColors.secondaryLabel.resolveFrom(context),
+      ),
+    ),
+  );
 
   Widget _header(String text) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 26, 16, 10),
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.41,
-            color: CupertinoColors.systemGrey,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.fromLTRB(16, 26, 16, 10),
+    child: Text(
+      text,
+      style: const TextStyle(
+        fontSize: 17,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.41,
+        color: CupertinoColors.systemGrey,
+      ),
+    ),
+  );
 
   Widget _sectionHeader(String text) => Padding(
-        padding: const EdgeInsets.fromLTRB(0, 20, 0, 4),
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.41,
-            color: CupertinoColors.systemGrey,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.fromLTRB(0, 20, 0, 4),
+    child: Text(
+      text,
+      style: const TextStyle(
+        fontSize: 17,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.41,
+        color: CupertinoColors.systemGrey,
+      ),
+    ),
+  );
 
   // -- 0. Swipe & menu ------------------------------------------------------
 
@@ -393,8 +390,10 @@ class _ListsPickersAndNavDemoPageState
                     onTap: () => _toggleFavorite(i),
                   ),
                 ],
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 18,
+                ),
                 leading: Padding(
                   padding: const EdgeInsets.only(right: 2),
                   child: _Avatar(_contacts[i], 44),
@@ -430,8 +429,10 @@ class _ListsPickersAndNavDemoPageState
           children: [
             // A capsule stretches to fit its label on one line.
             GlassListTile(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 18,
+              ),
               title: const Text('One long action'),
               subtitle: const Text('Swipe left'),
               trailingSwipeActions: [
@@ -445,8 +446,10 @@ class _ListsPickersAndNavDemoPageState
             ),
             // The longest labels share what is left of 80% of the row width.
             GlassListTile(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 18,
+              ),
               title: const Text('Three actions'),
               subtitle: const Text('Swipe left'),
               trailingSwipeActions: [
@@ -512,8 +515,10 @@ class _ListsPickersAndNavDemoPageState
               GlassDisclosureGroup(
                 isExpanded: ex[0],
                 onExpansionChanged: (v) => _setExpanded(0, v),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 15,
+                ),
                 leading: const Icon(
                   CupertinoIcons.heart_fill,
                   color: CupertinoColors.systemRed,
@@ -564,8 +569,10 @@ class _ListsPickersAndNavDemoPageState
               GlassDisclosureGroup(
                 isExpanded: ex[1],
                 onExpansionChanged: (v) => _setExpanded(1, v),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 15,
+                ),
                 leading: const Icon(
                   CupertinoIcons.person_2_fill,
                   color: CupertinoColors.systemBlue,
@@ -616,8 +623,10 @@ class _ListsPickersAndNavDemoPageState
               GlassDisclosureGroup(
                 isExpanded: ex[2],
                 onExpansionChanged: (v) => _setExpanded(2, v),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 15,
+                ),
                 leading: const Icon(
                   CupertinoIcons.lock_shield_fill,
                   color: CupertinoColors.systemGreen,
@@ -685,35 +694,34 @@ class _ListsPickersAndNavDemoPageState
     Widget? trailing,
     Color? valueColor,
     Widget? leading,
-  }) =>
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-        child: Row(
-          children: [
-            if (leading != null) ...[
-              SizedBox(width: 24, child: Center(child: leading)),
-              const SizedBox(width: 11),
-            ],
-            Text(
-              k,
-              style: TextStyle(
-                fontSize: 17,
-                color: CupertinoColors.label.resolveFrom(context),
-              ),
-            ),
-            const Spacer(),
-            if (v != null)
-              Text(
-                v,
-                style: TextStyle(
-                  fontSize: 17,
-                  color: valueColor ?? CupertinoColors.systemGrey,
-                ),
-              ),
-            if (trailing != null) trailing,
-          ],
+  }) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+    child: Row(
+      children: [
+        if (leading != null) ...[
+          SizedBox(width: 24, child: Center(child: leading)),
+          const SizedBox(width: 11),
+        ],
+        Text(
+          k,
+          style: TextStyle(
+            fontSize: 17,
+            color: CupertinoColors.label.resolveFrom(context),
+          ),
         ),
-      );
+        const Spacer(),
+        if (v != null)
+          Text(
+            v,
+            style: TextStyle(
+              fontSize: 17,
+              color: valueColor ?? CupertinoColors.systemGrey,
+            ),
+          ),
+        ?trailing,
+      ],
+    ),
+  );
 
   // -- 2. Edit mode ---------------------------------------------------------
 
@@ -748,8 +756,9 @@ class _ListsPickersAndNavDemoPageState
             padding: EdgeInsets.zero,
             dividerIndent: 124,
             dividerEndIndent: 16,
-            header:
-                _sectionHeader('Edit Mode & Reordering (EditButton + ForEach)'),
+            header: _sectionHeader(
+              'Edit Mode & Reordering (EditButton + ForEach)',
+            ),
             itemCount: _items.length,
             onReorder: (o, n) => setState(() {
               if (o < n) n -= 1;
@@ -757,8 +766,10 @@ class _ListsPickersAndNavDemoPageState
             }),
             itemBuilder: (context, i) => GlassListTile(
               key: ValueKey(_items[i]),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 6.5),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 6.5,
+              ),
               title: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12.64),
                 child: Row(
@@ -766,8 +777,9 @@ class _ListsPickersAndNavDemoPageState
                     const SizedBox(width: 3.6),
                     CustomPaint(
                       size: const Size(16, 16),
-                      painter:
-                          _DashedSquirclePainter(CupertinoColors.systemBlue),
+                      painter: _DashedSquirclePainter(
+                        CupertinoColors.systemBlue,
+                      ),
                     ),
                     const SizedBox(width: 10.4),
                     Expanded(
@@ -808,11 +820,7 @@ class _ListsPickersAndNavDemoPageState
   late DateTime _graphicalDate = _now;
   Set<DateTime> _multi = {};
 
-  Widget _pickers(
-    BuildContext context,
-    bool isDark,
-    VoidCallback? onExitDemo,
-  ) {
+  Widget _pickers(BuildContext context, bool isDark, VoidCallback? onExitDemo) {
     return _page(
       context,
       'Pickers',
@@ -885,8 +893,9 @@ class _ListsPickersAndNavDemoPageState
                       'Selected dates count: ${_multi.length}',
                       style: TextStyle(
                         fontSize: 12,
-                        color:
-                            CupertinoColors.secondaryLabel.resolveFrom(context),
+                        color: CupertinoColors.secondaryLabel.resolveFrom(
+                          context,
+                        ),
                       ),
                     ),
                   ),
@@ -908,8 +917,9 @@ class _ListsPickersAndNavDemoPageState
     bool isDark,
     VoidCallback? onExitDemo,
   ) {
-    final accentBlue =
-        isDark ? const Color(0xFF0091FF) : const Color(0xFF0088FF);
+    final accentBlue = isDark
+        ? const Color(0xFF0091FF)
+        : const Color(0xFF0088FF);
     final labelColor = CupertinoColors.label.resolveFrom(context);
     final rowTextStyle = TextStyle(
       fontSize: 17,
@@ -919,9 +929,7 @@ class _ListsPickersAndNavDemoPageState
     );
     return GlassNavigationStack(
       path: _navPath,
-      destinations: {
-        String: (context, value) => _NavDetail(value as String),
-      },
+      destinations: {String: (context, value) => _NavDetail(value as String)},
       root: ColoredBox(
         color: isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7),
         child: _page(
@@ -946,8 +954,10 @@ class _ListsPickersAndNavDemoPageState
               children: [
                 GlassListTile(
                   onTap: () => _presentCover(context),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 15,
+                  ),
                   title: Row(
                     children: [
                       Icon(
@@ -994,8 +1004,10 @@ class _ListsPickersAndNavDemoPageState
               children: [
                 GlassNavigationLink<String>(
                   value: 'Level 1: Optics Architecture',
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 15,
+                  ),
                   titleStyle: rowTextStyle,
                   leading: Icon(
                     CupertinoIcons.sparkles,
@@ -1006,8 +1018,10 @@ class _ListsPickersAndNavDemoPageState
                 ),
                 GlassNavigationLink<String>(
                   value: 'Level 1: Impeller Backend',
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 15,
+                  ),
                   titleStyle: rowTextStyle,
                   leading: Center(
                     child: CustomPaint(
@@ -1044,42 +1058,27 @@ class _Contact {
   final List<Color> colors;
   final bool favorite;
 
-  _Contact copyWith({bool? favorite}) => _Contact(
-        name,
-        title,
-        phone,
-        colors,
-        favorite: favorite ?? this.favorite,
-      );
+  _Contact copyWith({bool? favorite}) =>
+      _Contact(name, title, phone, colors, favorite: favorite ?? this.favorite);
 }
 
 const _initialContacts = [
-  _Contact(
-    'Alex Rivera',
-    'Product Design Director',
-    '+1 (408) 555-0142',
-    [Color(0xFF007AFF), Color(0xFF32ADE6)],
-    favorite: true,
-  ),
-  _Contact(
-    'Jordan Lee',
-    'Engineering Lead',
-    '+1 (408) 555-0189',
-    [Color(0xFF5856D6), Color(0xFFAF52DE)],
-    favorite: true,
-  ),
-  _Contact(
-    'Taylor Brooks',
-    'Creative Director',
-    '+1 (408) 555-0167',
-    [Color(0xFFFF2D55), Color(0xFFFF9500)],
-  ),
-  _Contact(
-    'Morgan Davis',
-    'Principal Architect',
-    '+1 (408) 555-0123',
-    [Color(0xFFAF52DE), Color(0xFF007AFF)],
-  ),
+  _Contact('Alex Rivera', 'Product Design Director', '+1 (408) 555-0142', [
+    Color(0xFF007AFF),
+    Color(0xFF32ADE6),
+  ], favorite: true),
+  _Contact('Jordan Lee', 'Engineering Lead', '+1 (408) 555-0189', [
+    Color(0xFF5856D6),
+    Color(0xFFAF52DE),
+  ], favorite: true),
+  _Contact('Taylor Brooks', 'Creative Director', '+1 (408) 555-0167', [
+    Color(0xFFFF2D55),
+    Color(0xFFFF9500),
+  ]),
+  _Contact('Morgan Davis', 'Principal Architect', '+1 (408) 555-0123', [
+    Color(0xFFAF52DE),
+    Color(0xFF007AFF),
+  ]),
 ];
 
 class _Avatar extends StatelessWidget {
@@ -1089,26 +1088,26 @@ class _Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: size,
-        height: size,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: c.colors,
-          ),
-        ),
-        child: Text(
-          c.name[0],
-          style: TextStyle(
-            fontSize: size * 0.4,
-            fontWeight: FontWeight.w600,
-            color: CupertinoColors.white,
-          ),
-        ),
-      );
+    width: size,
+    height: size,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: c.colors,
+      ),
+    ),
+    child: Text(
+      c.name[0],
+      style: TextStyle(
+        fontSize: size * 0.4,
+        fontWeight: FontWeight.w600,
+        color: CupertinoColors.white,
+      ),
+    ),
+  );
 }
 
 class _VipPreview extends StatelessWidget {
@@ -1117,57 +1116,57 @@ class _VipPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: 240,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: resolveGlassSolidSurfaceColor(context),
-          borderRadius: BorderRadius.circular(20),
+    width: 240,
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: resolveGlassSolidSurfaceColor(context),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _Avatar(c, 64),
+        const SizedBox(height: 12),
+        Text(
+          c.name,
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: CupertinoColors.label.resolveFrom(context),
+          ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        const SizedBox(height: 12),
+        Text(
+          c.title,
+          style: TextStyle(
+            fontSize: 15,
+            color: CupertinoColors.secondaryLabel.resolveFrom(context),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(height: 0.5, color: CupertinoColors.separator),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _Avatar(c, 64),
-            const SizedBox(height: 12),
+            const Icon(
+              CupertinoIcons.phone_fill,
+              size: 14,
+              color: CupertinoColors.systemGreen,
+            ),
+            const SizedBox(width: 8),
             Text(
-              c.name,
+              c.phone,
               style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
+                fontSize: 13,
                 color: CupertinoColors.label.resolveFrom(context),
               ),
             ),
-            const SizedBox(height: 12),
-            Text(
-              c.title,
-              style: TextStyle(
-                fontSize: 15,
-                color: CupertinoColors.secondaryLabel.resolveFrom(context),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(height: 0.5, color: CupertinoColors.separator),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  CupertinoIcons.phone_fill,
-                  size: 14,
-                  color: CupertinoColors.systemGreen,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  c.phone,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: CupertinoColors.label.resolveFrom(context),
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
-      );
+      ],
+    ),
+  );
 }
 
 class _CoverBody extends StatelessWidget {
@@ -1176,8 +1175,9 @@ class _CoverBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
-    final accentBlue =
-        isDark ? const Color(0xFF0091FF) : const Color(0xFF0088FF);
+    final accentBlue = isDark
+        ? const Color(0xFF0091FF)
+        : const Color(0xFF0088FF);
     return Padding(
       padding: const EdgeInsets.only(top: 40),
       child: Column(
@@ -1225,8 +1225,9 @@ class _NavDetail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
-    final accentBlue =
-        isDark ? const Color(0xFF0091FF) : const Color(0xFF0088FF);
+    final accentBlue = isDark
+        ? const Color(0xFF0091FF)
+        : const Color(0xFF0088FF);
     return ColoredBox(
       color: isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF),
       child: Stack(
@@ -1262,15 +1263,18 @@ class _NavDetail extends StatelessWidget {
                         fontSize: 17,
                         height: 1.29,
                         letterSpacing: -0.41,
-                        color:
-                            CupertinoColors.secondaryLabel.resolveFrom(context),
+                        color: CupertinoColors.secondaryLabel.resolveFrom(
+                          context,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
                   CupertinoButton(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 7,
+                    ),
                     minimumSize: const Size(0, 34),
                     color: accentBlue,
                     borderRadius: BorderRadius.circular(17),

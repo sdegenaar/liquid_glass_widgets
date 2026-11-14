@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -11,10 +11,7 @@ void main() {
     testWidgets('renders with a selected value', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: GlassPicker(
-            value: 'Option A',
-            onTap: () {},
-          ),
+          child: GlassPicker(value: 'Option A', onTap: () {}),
         ),
       );
       expect(find.text('Option A'), findsOneWidget);
@@ -23,25 +20,21 @@ void main() {
     testWidgets('renders placeholder when value is null', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: const GlassPicker(
-            value: null,
-            placeholder: 'Choose one',
-          ),
+          child: const GlassPicker(value: null, placeholder: 'Choose one'),
         ),
       );
       expect(find.text('Choose one'), findsOneWidget);
     });
 
     testWidgets(
-        'renders default placeholder when value is null and no placeholder given',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: const GlassPicker(value: null),
-        ),
-      );
-      expect(find.text('Select'), findsOneWidget);
-    });
+      'renders default placeholder when value is null and no placeholder given',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(child: const GlassPicker(value: null)),
+        );
+        expect(find.text('Select'), findsOneWidget);
+      },
+    );
 
     testWidgets('renders custom icon', (tester) async {
       await tester.pumpWidget(
@@ -55,31 +48,28 @@ void main() {
       expect(find.byIcon(Icons.arrow_drop_down), findsOneWidget);
     });
 
-    testWidgets('renders default chevron icon when no icon given',
-        (tester) async {
+    testWidgets('renders default chevron icon when no icon given', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        createTestApp(
-          child: const GlassPicker(value: 'X'),
-        ),
+        createTestApp(child: const GlassPicker(value: 'X')),
       );
       expect(
-          find.byIcon(CupertinoIcons.chevron_up_chevron_down), findsOneWidget);
+        find.byIcon(CupertinoIcons.chevron_up_chevron_down),
+        findsOneWidget,
+      );
     });
 
     testWidgets('custom height is accepted', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          child: const GlassPicker(value: 'Y', height: 64),
-        ),
+        createTestApp(child: const GlassPicker(value: 'Y', height: 64)),
       );
       expect(find.byType(GlassPicker), findsOneWidget);
     });
 
     testWidgets('custom width is accepted', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          child: const GlassPicker(value: 'Z', width: 200),
-        ),
+        createTestApp(child: const GlassPicker(value: 'Z', width: 200)),
       );
       expect(find.byType(GlassPicker), findsOneWidget);
     });
@@ -115,10 +105,7 @@ void main() {
       var tapped = false;
       await tester.pumpWidget(
         createTestApp(
-          child: GlassPicker(
-            value: 'Tap me',
-            onTap: () => tapped = true,
-          ),
+          child: GlassPicker(value: 'Tap me', onTap: () => tapped = true),
         ),
       );
       await tester.tap(find.byType(GlassPicker));
@@ -128,9 +115,7 @@ void main() {
 
     testWidgets('onTap is null is safe (no crash)', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          child: const GlassPicker(value: 'No tap'),
-        ),
+        createTestApp(child: const GlassPicker(value: 'No tap')),
       );
       await tester.tap(find.byType(GlassPicker));
       await tester.pump();
@@ -143,10 +128,7 @@ void main() {
     testWidgets('renders with useOwnLayer=true', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: const GlassPicker(
-            value: 'Layered',
-            useOwnLayer: true,
-          ),
+          child: const GlassPicker(value: 'Layered', useOwnLayer: true),
         ),
       );
       expect(find.byType(GlassPicker), findsOneWidget);
@@ -155,10 +137,7 @@ void main() {
     testWidgets('renders with custom quality', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: const GlassPicker(
-            value: 'Q',
-            quality: GlassQuality.standard,
-          ),
+          child: const GlassPicker(value: 'Q', quality: GlassQuality.standard),
         ),
       );
       expect(find.byType(GlassPicker), findsOneWidget);
@@ -260,35 +239,36 @@ void main() {
     });
 
     testWidgets(
-        'showSheet propagates ambient GlassTheme and scrolls CupertinoPicker items',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: GlassTheme(
-            data: const GlassThemeData.ios26(brightness: Brightness.dark),
-            child: Builder(
-              builder: (ctx) => GestureDetector(
-                onTap: () => GlassPicker.showSheet<int>(
-                  context: ctx,
-                  items: const [1, 2, 3],
-                  itemBuilder: (item) => Text('Item $item'),
-                  title: 'Numbers',
+      'showSheet propagates ambient GlassTheme and scrolls CupertinoPicker items',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassTheme(
+              data: const GlassThemeData.ios26(brightness: Brightness.dark),
+              child: Builder(
+                builder: (ctx) => GestureDetector(
+                  onTap: () => GlassPicker.showSheet<int>(
+                    context: ctx,
+                    items: const [1, 2, 3],
+                    itemBuilder: (item) => Text('Item $item'),
+                    title: 'Numbers',
+                  ),
+                  child: const Text('Open Themed Sheet'),
                 ),
-                child: const Text('Open Themed Sheet'),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.text('Open Themed Sheet'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Open Themed Sheet'));
+        await tester.pumpAndSettle();
 
-      await tester.drag(find.byType(CupertinoPicker), const Offset(0, -60));
-      await tester.pumpAndSettle();
+        await tester.drag(find.byType(CupertinoPicker), const Offset(0, -60));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(CupertinoPicker), findsOneWidget);
-    });
+        expect(find.byType(CupertinoPicker), findsOneWidget);
+      },
+    );
   });
 
   group('GlassPicker.showSheet result', () {
@@ -324,8 +304,9 @@ void main() {
       return result;
     }
 
-    testWidgets('Done without scrolling returns the first item',
-        (tester) async {
+    testWidgets('Done without scrolling returns the first item', (
+      tester,
+    ) async {
       final result = await openSheet(tester);
 
       await tester.tap(find.text('Done'));
@@ -381,8 +362,9 @@ void main() {
       expect(await result, 'Apple');
     });
 
-    testWidgets('empty items open without error and Done returns null',
-        (tester) async {
+    testWidgets('empty items open without error and Done returns null', (
+      tester,
+    ) async {
       final result = await openSheet(tester, items: const []);
 
       expect(tester.takeException(), isNull);
@@ -396,31 +378,34 @@ void main() {
     });
 
     testWidgets(
-        'shown from a MaterialApp, title does not inherit error text style',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) => CupertinoButton(
-              onPressed: () => GlassPicker.showSheet<String>(
-                context: context,
-                items: fruits,
-                itemBuilder: Text.new,
-                title: 'Fruit',
+      'shown from a MaterialApp, title does not inherit error text style',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) => CupertinoButton(
+                onPressed: () => GlassPicker.showSheet<String>(
+                  context: context,
+                  items: fruits,
+                  itemBuilder: Text.new,
+                  title: 'Fruit',
+                ),
+                child: const Text('Open'),
               ),
-              child: const Text('Open'),
             ),
           ),
-        ),
-      );
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
+        );
+        await tester.tap(find.text('Open'));
+        await tester.pumpAndSettle();
 
-      final titleStyle =
-          tester.renderObject<RenderParagraph>(find.text('Fruit')).text.style!;
-      expect(titleStyle.decoration, isNot(TextDecoration.underline));
-      expect(titleStyle.fontFamily, isNot('monospace'));
-    });
+        final titleStyle = tester
+            .renderObject<RenderParagraph>(find.text('Fruit'))
+            .text
+            .style!;
+        expect(titleStyle.decoration, isNot(TextDecoration.underline));
+        expect(titleStyle.fontFamily, isNot('monospace'));
+      },
+    );
   });
 
   group('GlassPicker.showSheet semantics', () {
@@ -452,8 +437,9 @@ void main() {
       return result;
     }
 
-    testWidgets('the picker is one adjustable node labelled with the title',
-        (tester) async {
+    testWidgets('the picker is one adjustable node labelled with the title', (
+      tester,
+    ) async {
       final handle = tester.ensureSemantics();
       await openSheet(tester);
 
@@ -473,8 +459,9 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('the label follows the selection as the wheel scrolls',
-        (tester) async {
+    testWidgets('the label follows the selection as the wheel scrolls', (
+      tester,
+    ) async {
       final handle = tester.ensureSemantics();
       await openSheet(tester);
 
@@ -497,8 +484,9 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('increase and decrease move the wheel and Done returns it',
-        (tester) async {
+    testWidgets('increase and decrease move the wheel and Done returns it', (
+      tester,
+    ) async {
       final handle = tester.ensureSemantics();
       final result = await openSheet(tester);
 
@@ -529,18 +517,16 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('Done and Cancel are buttons; Cancel returns null',
-        (tester) async {
+    testWidgets('Done and Cancel are buttons; Cancel returns null', (
+      tester,
+    ) async {
       final handle = tester.ensureSemantics();
       final result = await openSheet(tester);
 
       for (final label in ['Done', 'Cancel']) {
         expect(
           find.semantics.byLabel(label),
-          isSemantics(
-            isButton: true,
-            hasTapAction: true,
-          ),
+          isSemantics(isButton: true, hasTapAction: true),
         );
       }
 
@@ -572,13 +558,15 @@ void main() {
       },
       // ModalBarrier only exposes its dismiss action on Apple platforms;
       // elsewhere the system back action closes the sheet.
-      variant: const TargetPlatformVariant(
-        {TargetPlatform.iOS, TargetPlatform.macOS},
-      ),
+      variant: const TargetPlatformVariant({
+        TargetPlatform.iOS,
+        TargetPlatform.macOS,
+      }),
     );
 
-    testWidgets('without a title the picker node keeps no label',
-        (tester) async {
+    testWidgets('without a title the picker node keeps no label', (
+      tester,
+    ) async {
       final handle = tester.ensureSemantics();
       await openSheet(tester, title: null);
 
@@ -596,8 +584,9 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('empty items keep the title label without a value',
-        (tester) async {
+    testWidgets('empty items keep the title label without a value', (
+      tester,
+    ) async {
       final handle = tester.ensureSemantics();
       await openSheet(tester, items: const []);
 
@@ -610,8 +599,9 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('the picker node follows a text direction change',
-        (tester) async {
+    testWidgets('the picker node follows a text direction change', (
+      tester,
+    ) async {
       final handle = tester.ensureSemantics();
       final direction = ValueNotifier(TextDirection.ltr);
       addTearDown(direction.dispose);

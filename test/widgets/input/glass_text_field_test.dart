@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -27,9 +27,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: const GlassTextField(
-              placeholder: placeholder,
-            ),
+            child: const GlassTextField(placeholder: placeholder),
           ),
         ),
       );
@@ -42,9 +40,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: const GlassTextField(
-              prefixIcon: Icon(Icons.search),
-            ),
+            child: const GlassTextField(prefixIcon: Icon(Icons.search)),
           ),
         ),
       );
@@ -57,9 +53,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: const GlassTextField(
-              suffixIcon: Icon(Icons.clear),
-            ),
+            child: const GlassTextField(suffixIcon: Icon(Icons.clear)),
           ),
         ),
       );
@@ -74,9 +68,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassTextField(
-              onChanged: (value) => text = value,
-            ),
+            child: GlassTextField(onChanged: (value) => text = value),
           ),
         ),
       );
@@ -93,9 +85,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassTextField(
-              onSubmitted: (value) => submitted = value,
-            ),
+            child: GlassTextField(onSubmitted: (value) => submitted = value),
           ),
         ),
       );
@@ -132,15 +122,14 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: const GlassTextField(
-              obscureText: true,
-            ),
+            child: const GlassTextField(obscureText: true),
           ),
         ),
       );
 
-      final textField = tester
-          .widget<CupertinoTextField>(find.byType(CupertinoTextField).first);
+      final textField = tester.widget<CupertinoTextField>(
+        find.byType(CupertinoTextField).first,
+      );
       expect(textField.obscureText, isTrue);
     });
 
@@ -149,15 +138,14 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: const GlassTextField(
-              enabled: false,
-            ),
+            child: const GlassTextField(enabled: false),
           ),
         ),
       );
 
-      final textField = tester
-          .widget<CupertinoTextField>(find.byType(CupertinoTextField).first);
+      final textField = tester.widget<CupertinoTextField>(
+        find.byType(CupertinoTextField).first,
+      );
       expect(textField.enabled, isFalse);
     });
 
@@ -192,8 +180,9 @@ void main() {
     });
 
     // ── _effectiveBorderRadius shape paths (lines 349-352) ──────────────────
-    testWidgets('LiquidRoundedRectangle shape gives correct border radius',
-        (tester) async {
+    testWidgets('LiquidRoundedRectangle shape gives correct border radius', (
+      tester,
+    ) async {
       // Line 349: shape is LiquidRoundedRectangle → BorderRadius.circular(shape.borderRadius)
       await tester.pumpWidget(
         createTestApp(
@@ -210,32 +199,32 @@ void main() {
     });
 
     testWidgets(
-        'LiquidRoundedRectangle shape with infinite borderRadius renders without error',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: AdaptiveLiquidGlassLayer(
-            settings: defaultTestGlassSettings,
-            child: const GlassTextField(
-              shape: LiquidRoundedRectangle(borderRadius: double.infinity),
+      'LiquidRoundedRectangle shape with infinite borderRadius renders without error',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: AdaptiveLiquidGlassLayer(
+              settings: defaultTestGlassSettings,
+              child: const GlassTextField(
+                shape: LiquidRoundedRectangle(borderRadius: double.infinity),
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.byType(GlassTextField), findsOneWidget);
-    });
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(GlassTextField), findsOneWidget);
+      },
+    );
 
-    testWidgets('LiquidOval shape falls back to default border radius',
-        (tester) async {
+    testWidgets('LiquidOval shape falls back to default border radius', (
+      tester,
+    ) async {
       // Line 352: fallback → BorderRadius.circular(10)
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: const GlassTextField(
-              shape: LiquidOval(),
-            ),
+            child: const GlassTextField(shape: LiquidOval()),
           ),
         ),
       );
@@ -254,16 +243,15 @@ void main() {
     Widget buildField({
       GlassInteractionBehavior behavior = GlassInteractionBehavior.full,
       Color? glowColor,
-    }) =>
-        createTestApp(
-          child: AdaptiveLiquidGlassLayer(
-            settings: defaultTestGlassSettings,
-            child: GlassTextField(
-              interactionBehavior: behavior,
-              glowColor: glowColor,
-            ),
-          ),
-        );
+    }) => createTestApp(
+      child: AdaptiveLiquidGlassLayer(
+        settings: defaultTestGlassSettings,
+        child: GlassTextField(
+          interactionBehavior: behavior,
+          glowColor: glowColor,
+        ),
+      ),
+    );
 
     // ── API defaults ─────────────────────────────────────────────────────────
 
@@ -293,8 +281,9 @@ void main() {
       );
     });
 
-    testWidgets('forwards textCapitalization to CupertinoTextField',
-        (tester) async {
+    testWidgets('forwards textCapitalization to CupertinoTextField', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
@@ -312,8 +301,9 @@ void main() {
       expect(field.textCapitalization, TextCapitalization.sentences);
     });
 
-    testWidgets('GlassTextArea forwards textCapitalization to GlassTextField',
-        (tester) async {
+    testWidgets('GlassTextArea forwards textCapitalization to GlassTextField', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
@@ -356,30 +346,35 @@ void main() {
     // ── Rendering per behavior ────────────────────────────────────────────────
 
     testWidgets('behavior=full: GlassGlow present in tree', (tester) async {
-      await tester
-          .pumpWidget(buildField(behavior: GlassInteractionBehavior.full));
+      await tester.pumpWidget(
+        buildField(behavior: GlassInteractionBehavior.full),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(GlassGlow), findsOneWidget);
     });
 
     testWidgets('behavior=glowOnly: GlassGlow present in tree', (tester) async {
-      await tester
-          .pumpWidget(buildField(behavior: GlassInteractionBehavior.glowOnly));
+      await tester.pumpWidget(
+        buildField(behavior: GlassInteractionBehavior.glowOnly),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(GlassGlow), findsOneWidget);
     });
 
     testWidgets('behavior=none: GlassGlow absent from tree', (tester) async {
-      await tester
-          .pumpWidget(buildField(behavior: GlassInteractionBehavior.none));
+      await tester.pumpWidget(
+        buildField(behavior: GlassInteractionBehavior.none),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(GlassGlow), findsNothing);
     });
 
-    testWidgets('behavior=scaleOnly: GlassGlow absent from tree',
-        (tester) async {
-      await tester
-          .pumpWidget(buildField(behavior: GlassInteractionBehavior.scaleOnly));
+    testWidgets('behavior=scaleOnly: GlassGlow absent from tree', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildField(behavior: GlassInteractionBehavior.scaleOnly),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(GlassGlow), findsNothing);
     });
@@ -387,32 +382,39 @@ void main() {
     // ── AnimatedScale presence / absence ─────────────────────────────────────
 
     testWidgets('behavior=full: AnimatedScale present in tree', (tester) async {
-      await tester
-          .pumpWidget(buildField(behavior: GlassInteractionBehavior.full));
+      await tester.pumpWidget(
+        buildField(behavior: GlassInteractionBehavior.full),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(AnimatedScale), findsOneWidget);
     });
 
-    testWidgets('behavior=scaleOnly: AnimatedScale present in tree',
-        (tester) async {
-      await tester
-          .pumpWidget(buildField(behavior: GlassInteractionBehavior.scaleOnly));
+    testWidgets('behavior=scaleOnly: AnimatedScale present in tree', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildField(behavior: GlassInteractionBehavior.scaleOnly),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(AnimatedScale), findsOneWidget);
     });
 
-    testWidgets('behavior=none: AnimatedScale absent from tree',
-        (tester) async {
-      await tester
-          .pumpWidget(buildField(behavior: GlassInteractionBehavior.none));
+    testWidgets('behavior=none: AnimatedScale absent from tree', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildField(behavior: GlassInteractionBehavior.none),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(AnimatedScale), findsNothing);
     });
 
-    testWidgets('behavior=glowOnly: AnimatedScale absent from tree',
-        (tester) async {
-      await tester
-          .pumpWidget(buildField(behavior: GlassInteractionBehavior.glowOnly));
+    testWidgets('behavior=glowOnly: AnimatedScale absent from tree', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildField(behavior: GlassInteractionBehavior.glowOnly),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(AnimatedScale), findsNothing);
     });
@@ -434,39 +436,45 @@ void main() {
 
     // ── Hot-rebuild state transitions ─────────────────────────────────────────
 
-    testWidgets('live transition full → none removes GlassGlow',
-        (tester) async {
+    testWidgets('live transition full → none removes GlassGlow', (
+      tester,
+    ) async {
       // Start with full.
-      await tester
-          .pumpWidget(buildField(behavior: GlassInteractionBehavior.full));
+      await tester.pumpWidget(
+        buildField(behavior: GlassInteractionBehavior.full),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(GlassGlow), findsOneWidget);
 
       // Hot-rebuild with none.
-      await tester
-          .pumpWidget(buildField(behavior: GlassInteractionBehavior.none));
+      await tester.pumpWidget(
+        buildField(behavior: GlassInteractionBehavior.none),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(GlassGlow), findsNothing);
     });
 
     testWidgets('live transition none → full adds GlassGlow', (tester) async {
       // Start with none.
-      await tester
-          .pumpWidget(buildField(behavior: GlassInteractionBehavior.none));
+      await tester.pumpWidget(
+        buildField(behavior: GlassInteractionBehavior.none),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(GlassGlow), findsNothing);
 
       // Hot-rebuild with full.
-      await tester
-          .pumpWidget(buildField(behavior: GlassInteractionBehavior.full));
+      await tester.pumpWidget(
+        buildField(behavior: GlassInteractionBehavior.full),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(GlassGlow), findsOneWidget);
     });
 
     // ── Delegation — GlassPasswordField & GlassTextArea inherit the param ─────
 
-    testWidgets('GlassPasswordField: behavior=none removes GlassGlow',
-        (tester) async {
+    testWidgets('GlassPasswordField: behavior=none removes GlassGlow', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
@@ -481,8 +489,9 @@ void main() {
       expect(find.byType(GlassGlow), findsNothing);
     });
 
-    testWidgets('GlassTextArea: behavior=none removes GlassGlow',
-        (tester) async {
+    testWidgets('GlassTextArea: behavior=none removes GlassGlow', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
@@ -499,8 +508,9 @@ void main() {
 
     // ── Delegation — full parameter pass-through ─────────────────────────────
 
-    testWidgets('GlassPasswordField: passes pressScale/glowColor/glowRadius',
-        (tester) async {
+    testWidgets('GlassPasswordField: passes pressScale/glowColor/glowRadius', (
+      tester,
+    ) async {
       const customColor = Color(0xFF00FF00);
       const field = GlassPasswordField(
         pressScale: 1.08,
@@ -512,8 +522,9 @@ void main() {
       expect(field.glowRadius, 2.0);
     });
 
-    testWidgets('GlassTextArea: passes pressScale/glowColor/glowRadius',
-        (tester) async {
+    testWidgets('GlassTextArea: passes pressScale/glowColor/glowRadius', (
+      tester,
+    ) async {
       const customColor = Color(0xFF0000FF);
       const field = GlassTextArea(
         pressScale: 1.06,
@@ -525,16 +536,15 @@ void main() {
       expect(field.glowRadius, 2.5);
     });
 
-    testWidgets('GlassPasswordField: onTapOutside wired through',
-        (tester) async {
+    testWidgets('GlassPasswordField: onTapOutside wired through', (
+      tester,
+    ) async {
       var called = false;
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassPasswordField(
-              onTapOutside: (_) => called = true,
-            ),
+            child: GlassPasswordField(onTapOutside: (_) => called = true),
           ),
         ),
       );
@@ -562,8 +572,9 @@ void main() {
       expect(scale.scale, 1.0);
     });
 
-    testWidgets('AnimatedScale grows to pressScale on pointer down',
-        (tester) async {
+    testWidgets('AnimatedScale grows to pressScale on pointer down', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
@@ -578,8 +589,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Simulate pointer down (without full tap which would also trigger keyboard).
-      final gesture = await tester
-          .startGesture(tester.getCenter(find.byType(GlassTextField)));
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(GlassTextField)),
+      );
       await tester.pump();
 
       final scale = tester.widget<AnimatedScale>(find.byType(AnimatedScale));
@@ -588,15 +600,17 @@ void main() {
       // Release — scale should return to 1.0.
       await gesture.up();
       await tester.pumpAndSettle();
-      final scaleAfter =
-          tester.widget<AnimatedScale>(find.byType(AnimatedScale));
+      final scaleAfter = tester.widget<AnimatedScale>(
+        find.byType(AnimatedScale),
+      );
       expect(scaleAfter.scale, 1.0);
     });
 
     // ── _isPressed cleared when field becomes disabled ────────────────────────
 
-    testWidgets('_isPressed resets to false when enabled becomes false',
-        (tester) async {
+    testWidgets('_isPressed resets to false when enabled becomes false', (
+      tester,
+    ) async {
       // Start enabled.
       await tester.pumpWidget(
         createTestApp(
@@ -613,8 +627,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Press down to activate the scale.
-      final gesture = await tester
-          .startGesture(tester.getCenter(find.byType(GlassTextField)));
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(GlassTextField)),
+      );
       await tester.pump();
       expect(
         tester.widget<AnimatedScale>(find.byType(AnimatedScale)).scale,
@@ -649,8 +664,9 @@ void main() {
   // ===========================================================================
 
   group('GlassTextField onLineCountChanged — fixed-height guard', () {
-    testWidgets('callback fires on initial build with fixed height',
-        (tester) async {
+    testWidgets('callback fires on initial build with fixed height', (
+      tester,
+    ) async {
       // Verifies the basic contract: onLineCountChanged fires at least once
       // on initial layout even when the field is inside a fixed-height SizedBox.
       final lineCounts = <int>[];
@@ -675,8 +691,9 @@ void main() {
       expect(lineCounts, isNotEmpty);
     });
 
-    testWidgets('callback is not permanently blocked after first measurement',
-        (tester) async {
+    testWidgets('callback is not permanently blocked after first measurement', (
+      tester,
+    ) async {
       // Regression test for the size-equality guard bug.
       // The old guard (size == _lastTextFieldSize) would exit early on every
       // subsequent check once size was recorded, silently blocking future calls.
@@ -729,8 +746,9 @@ void main() {
   // ===========================================================================
 
   group('GlassTextField fixed-height vertical centring', () {
-    testWidgets('fixed height: Align(center) wraps the Row for centring',
-        (tester) async {
+    testWidgets('fixed height: Align(center) wraps the Row for centring', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: GlassTextField(
@@ -749,21 +767,20 @@ void main() {
     });
 
     testWidgets(
-        'dynamic height (no height param): uses full padding (no Align centring)',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: AdaptiveLiquidGlassLayer(
-            settings: defaultTestGlassSettings,
-            child: const GlassTextField(
-              placeholder: 'Dynamic',
+      'dynamic height (no height param): uses full padding (no Align centring)',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: AdaptiveLiquidGlassLayer(
+              settings: defaultTestGlassSettings,
+              child: const GlassTextField(placeholder: 'Dynamic'),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.byType(GlassTextField), findsOneWidget);
-    });
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(GlassTextField), findsOneWidget);
+      },
+    );
   });
 
   // ===========================================================================
@@ -771,8 +788,9 @@ void main() {
   // ===========================================================================
 
   group('GlassTextField bottom panel', () {
-    testWidgets('bottom provided: Column is present in the tree',
-        (tester) async {
+    testWidgets('bottom provided: Column is present in the tree', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: GlassTextField(
@@ -810,8 +828,9 @@ void main() {
       expect(field.bottom, isNull);
     });
 
-    testWidgets('GlassTextArea: bottom forwarded to GlassTextField',
-        (tester) async {
+    testWidgets('GlassTextArea: bottom forwarded to GlassTextField', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: GlassTextArea(
@@ -827,49 +846,55 @@ void main() {
     });
 
     testWidgets(
-        'bottom + maxHeight: no RenderFlex overflow when panel exceeds constraint',
-        (tester) async {
-      // Regression for the Column overflow bug (v0.12.4):
-      // Previously the Column had no Flexible child. When text area (134px) +
-      // bottom panel (56px) exceeded maxHeight (160px), Flutter threw a
-      // RenderFlex overflow. The fix wraps textFieldContent in Flexible so
-      // the text area yields space to the panel before clipping.
-      final errors = <FlutterErrorDetails>[];
-      final originalOnError = FlutterError.onError;
-      FlutterError.onError = errors.add;
+      'bottom + maxHeight: no RenderFlex overflow when panel exceeds constraint',
+      (tester) async {
+        // Regression for the Column overflow bug (v0.12.4):
+        // Previously the Column had no Flexible child. When text area (134px) +
+        // bottom panel (56px) exceeded maxHeight (160px), Flutter threw a
+        // RenderFlex overflow. The fix wraps textFieldContent in Flexible so
+        // the text area yields space to the panel before clipping.
+        final errors = <FlutterErrorDetails>[];
+        final originalOnError = FlutterError.onError;
+        FlutterError.onError = errors.add;
 
-      await tester.pumpWidget(
-        createTestApp(
-          child: SizedBox(
-            width: 300,
-            child: GlassTextField(
-              // Many lines of text to force text area taller than maxHeight
-              // allows after accounting for the bottom panel.
-              maxLines: 10,
-              minHeight: 44,
-              maxHeight: 120, // tight — panel (48+) + text will exceed this
-              useOwnLayer: true,
-              settings: defaultTestGlassSettings,
-              bottom: const SizedBox(height: 48), // fixed panel height
+        await tester.pumpWidget(
+          createTestApp(
+            child: SizedBox(
+              width: 300,
+              child: GlassTextField(
+                // Many lines of text to force text area taller than maxHeight
+                // allows after accounting for the bottom panel.
+                maxLines: 10,
+                minHeight: 44,
+                maxHeight: 120, // tight — panel (48+) + text will exceed this
+                useOwnLayer: true,
+                settings: defaultTestGlassSettings,
+                bottom: const SizedBox(height: 48), // fixed panel height
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      FlutterError.onError = originalOnError;
+        FlutterError.onError = originalOnError;
 
-      // No RenderFlex overflow errors should have been reported.
-      final overflows = errors.where((e) =>
-          e.exception.toString().contains('overflowed') ||
-          e.exception.toString().contains('RenderFlex'));
-      expect(overflows, isEmpty,
-          reason:
-              'bottom panel + maxHeight must not cause RenderFlex overflow');
-    });
+        // No RenderFlex overflow errors should have been reported.
+        final overflows = errors.where(
+          (e) =>
+              e.exception.toString().contains('overflowed') ||
+              e.exception.toString().contains('RenderFlex'),
+        );
+        expect(
+          overflows,
+          isEmpty,
+          reason: 'bottom panel + maxHeight must not cause RenderFlex overflow',
+        );
+      },
+    );
 
-    testWidgets('bottom + maxHeight: text area child is Flexible in Column',
-        (tester) async {
+    testWidgets('bottom + maxHeight: text area child is Flexible in Column', (
+      tester,
+    ) async {
       // Structural guarantee: the first child of the bottom-panel Column must
       // be a Flexible so that it surrenders space to the fixed bottom panel.
       await tester.pumpWidget(
@@ -899,8 +924,9 @@ void main() {
   // ═══════════════════════════════════════════════════════════════════════════
 
   group('onLineCountChanged — dynamic height', () {
-    testWidgets('callback fires with correct count in unconstrained field',
-        (tester) async {
+    testWidgets('callback fires with correct count in unconstrained field', (
+      tester,
+    ) async {
       int lines = 0;
       final controller = TextEditingController();
 
@@ -958,8 +984,9 @@ void main() {
       controller.dispose();
     });
 
-    testWidgets('onLineCountChanged fires correctly after re-focus',
-        (tester) async {
+    testWidgets('onLineCountChanged fires correctly after re-focus', (
+      tester,
+    ) async {
       int lines = 0;
       final controller = TextEditingController();
       final focusNode = FocusNode();
@@ -1005,8 +1032,11 @@ void main() {
       await tester.pump();
 
       // Callback must still fire after re-focus.
-      expect(lines, greaterThanOrEqualTo(1),
-          reason: 'onLineCountChanged must still fire after re-focus');
+      expect(
+        lines,
+        greaterThanOrEqualTo(1),
+        reason: 'onLineCountChanged must still fire after re-focus',
+      );
 
       controller.dispose();
       focusNode.dispose();
@@ -1021,35 +1051,37 @@ void main() {
   // ═══════════════════════════════════════════════════════════════════════════
 
   group('iconAlignment in fixed-height mode', () {
-    testWidgets('Row crossAxisAlignment forced to .center in fixed-height mode',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: const GlassTextField(
-            height: 50,
-            iconAlignment: CrossAxisAlignment.end,
-            prefixIcon: Icon(Icons.add, size: 20),
-            useOwnLayer: true,
-            settings: defaultTestGlassSettings,
+    testWidgets(
+      'Row crossAxisAlignment forced to .center in fixed-height mode',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: const GlassTextField(
+              height: 50,
+              iconAlignment: CrossAxisAlignment.end,
+              prefixIcon: Icon(Icons.add, size: 20),
+              useOwnLayer: true,
+              settings: defaultTestGlassSettings,
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // In fixed-height mode, the Row must use .center (not .end)
-      // to prevent icon drift under system text scaling. The math:
-      // icon pos = (container − icon) / 2, independent of Row height.
-      final rows = tester.widgetList<Row>(find.byType(Row));
-      expect(
-        rows.any((r) => r.crossAxisAlignment == CrossAxisAlignment.center),
-        isTrue,
-        reason:
-            'Fixed-height mode forces .center for drift-free icon positioning',
-      );
-    });
+        // In fixed-height mode, the Row must use .center (not .end)
+        // to prevent icon drift under system text scaling. The math:
+        // icon pos = (container − icon) / 2, independent of Row height.
+        final rows = tester.widgetList<Row>(find.byType(Row));
+        expect(
+          rows.any((r) => r.crossAxisAlignment == CrossAxisAlignment.center),
+          isTrue,
+          reason: 'Fixed-height mode forces .center for drift-free icon positioning',
+        );
+      },
+    );
 
-    testWidgets('icons render without crash with iconAlignment: .end',
-        (tester) async {
+    testWidgets('icons render without crash with iconAlignment: .end', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: SizedBox(
@@ -1058,8 +1090,11 @@ void main() {
               height: 50,
               maxLines: 1,
               iconAlignment: CrossAxisAlignment.end,
-              prefixIcon:
-                  Icon(Icons.emoji_emotions, size: 24, key: Key('prefix')),
+              prefixIcon: Icon(
+                Icons.emoji_emotions,
+                size: 24,
+                key: Key('prefix'),
+              ),
               suffixIcon: Icon(Icons.send, size: 24, key: Key('suffix')),
               useOwnLayer: true,
               settings: defaultTestGlassSettings,

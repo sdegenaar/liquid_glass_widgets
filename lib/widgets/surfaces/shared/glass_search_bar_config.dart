@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 /// Configuration for the morphing search bar in [GlassTabBar.searchable].
 ///

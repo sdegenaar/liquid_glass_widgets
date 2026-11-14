@@ -15,6 +15,7 @@ import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/widgets.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart' show SchedulerBinding, SchedulerPhase;
+
 import '../renderer/glass_backdrop_group.dart';
 import '../renderer/glass_backdrop_group_boundary.dart';
 import '../renderer/glass_frost_budget.dart';
@@ -77,8 +78,7 @@ class _ScaleSafeRepaintBoundary extends SingleChildRenderObjectWidget {
 }
 
 class _RenderScaleSafeRepaintBoundary extends RenderProxyBox {
-  _RenderScaleSafeRepaintBoundary({required EdgeInsets expansion})
-      : _expansion = expansion;
+  _RenderScaleSafeRepaintBoundary({required this._expansion});
 
   EdgeInsets _expansion;
   set expansion(EdgeInsets value) {
@@ -98,11 +98,11 @@ class _RenderScaleSafeRepaintBoundary extends RenderProxyBox {
   /// triggering a hard clip at the original layout boundary.
   @override
   Rect get paintBounds => Rect.fromLTRB(
-        -_expansion.left,
-        -_expansion.top,
-        size.width + _expansion.right,
-        size.height + _expansion.bottom,
-      );
+    -_expansion.left,
+    -_expansion.top,
+    size.width + _expansion.right,
+    size.height + _expansion.bottom,
+  );
 }
 
 /// Represents a layer of multiple [LiquidGlass] shapes or
@@ -234,16 +234,15 @@ class _LiquidGlassLayerState extends State<LiquidGlassLayer>
     // [LOCAL PATCH]: a running materialize transition above this layer
     // dissolves its glass through the settings' visibility channel — the one
     // fade the backdrop pass honours. Identity (the same instance) at rest.
-    final settings =
-        GlassMaterializeScope.resolveSettings(context, widget.settings);
+    final settings = GlassMaterializeScope.resolveSettings(
+      context,
+      widget.settings,
+    );
 
     if (!ImageFilter.isShaderFilterSupported) {
       return LiquidGlassRenderScope(
         settings: settings,
-        child: InheritedGeometryRenderLink(
-          link: _link,
-          child: widget.child,
-        ),
+        child: InheritedGeometryRenderLink(link: _link, child: widget.child),
       );
     }
 
@@ -350,12 +349,14 @@ class _TouchSpecularBridgeState extends State<_TouchSpecularBridge> {
   void _onTouchSpecular() {
     final v = _notifier?.value;
     if (v == null) return;
-    final ro = _rawShapesKey.currentContext?.findRenderObject()
-        as RenderLiquidGlassLayer?;
+    final ro =
+        _rawShapesKey.currentContext?.findRenderObject()
+            as RenderLiquidGlassLayer?;
     if (ro == null) return;
 
-    final layerBox = GlassGlowLayer.maybeOf(context)?.context.findRenderObject()
-        as RenderBox?;
+    final layerBox =
+        GlassGlowLayer.maybeOf(context)?.context.findRenderObject()
+            as RenderBox?;
     final Offset pos;
     if (layerBox != null && layerBox.attached && layerBox.hasSize) {
       pos = layerBox.localToGlobal(v.position);
@@ -472,12 +473,10 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
     super.backdropKey,
     super.captureImage,
     super.captureOriginInScreenSpace,
-    EdgeInsets clipExpansion = EdgeInsets.zero,
-    bool selfScaled = false,
-    bool pushBackActive = false,
-  })  : _clipExpansion = clipExpansion,
-        _selfScaled = selfScaled,
-        _pushBackActive = pushBackActive;
+    this._clipExpansion = EdgeInsets.zero,
+    this._selfScaled = false,
+    this._pushBackActive = false,
+  });
 
   // ── Cached filters ──────────────────────────────────────────────────────
   // The BackdropFilterLayers' filters are rebuilt only when their settings
@@ -572,11 +571,7 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
     final path = Path();
     for (final geometry in shapes) {
       if (!geometry.$1.attached) continue;
-      path.addPath(
-        geometry.$2.path,
-        Offset.zero,
-        matrix4: geometry.$3.storage,
-      );
+      path.addPath(geometry.$2.path, Offset.zero, matrix4: geometry.$3.storage);
     }
     return path;
   }
@@ -615,10 +610,10 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
 
   @override
   Size get desiredMatteSize => switch (owner?.rootNode) {
-        final RenderView rv => rv.size,
-        final RenderBox rb => rb.size,
-        _ => Size.zero,
-      };
+    final RenderView rv => rv.size,
+    final RenderBox rb => rb.size,
+    _ => Size.zero,
+  };
 
   Matrix4? _unscaledTransform;
   Offset? _unscaledCaptureOrigin;
@@ -667,7 +662,9 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
   /// calls no [markNeedsPaint], no [setState], and no layout-invalidation, so
   /// it does not violate Flutter's read-only paint contract.
   void _updateScaleState(
-      Matrix4 currentTransform, Offset currentCaptureOrigin) {
+    Matrix4 currentTransform,
+    Offset currentCaptureOrigin,
+  ) {
     if (!_hasScale(currentTransform)) {
       _unscaledTransform = currentTransform;
       _unscaledCaptureOrigin = currentCaptureOrigin;
@@ -855,13 +852,9 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
         boundingBox,
         _shapePath(shapes),
         (context, offset) {
-          context.pushLayer(
-            blurLayer,
-            (context, offset) {
-              paintShapeContents(context, offset, shapes, insideGlass: true);
-            },
-            offset,
-          );
+          context.pushLayer(blurLayer, (context, offset) {
+            paintShapeContents(context, offset, shapes, insideGlass: true);
+          }, offset);
         },
         oldLayer: _clipPathLayerHandle.layer,
       );
@@ -1019,13 +1012,7 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
     // coordinates, perfectly neutralising the double-scale artifact.
 
     if (captureImage case final capture?) {
-      paintLiquidGlassWithCapture(
-        context,
-        offset,
-        shapes,
-        clipRect,
-        capture,
-      );
+      paintLiquidGlassWithCapture(context, offset, shapes, clipRect, capture);
       // paintLiquidGlassWithCapture handles all three passes (blur, shader, contents).
       // Release the stale BackdropFilter layer handles so the engine can collect
       // the offscreen surface when we're no longer using the backdrop path.
@@ -1048,13 +1035,9 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
       offset,
       clipRect,
       (context, offset) {
-        context.pushLayer(
-          shaderLayer,
-          (context, offset) {
-            paintShapeContents(context, offset, shapes, insideGlass: false);
-          },
-          offset,
-        );
+        context.pushLayer(shaderLayer, (context, offset) {
+          paintShapeContents(context, offset, shapes, insideGlass: false);
+        }, offset);
       },
       oldLayer: _clipRectLayerHandle.layer ?? _ClipRectLayer(),
     );
@@ -1135,8 +1118,7 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
     Offset offset,
     ui.Image geometry,
     Rect bounds,
-  ) =>
-      _paintShadows(canvas, offset, geometry, bounds);
+  ) => _paintShadows(canvas, offset, geometry, bounds);
 
   /// The image the shadows are baked into, once the geometry held still.
   @visibleForTesting

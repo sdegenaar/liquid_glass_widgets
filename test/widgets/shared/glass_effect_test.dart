@@ -1,6 +1,6 @@
 // ignore_for_file: require_trailing_commas
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/widgets/shared/glass_effect.dart';
@@ -48,8 +48,9 @@ void main() {
   // or standard so the shader path is not exercised.
 
   group('GlassEffect construction', () {
-    testWidgets('minimal quality renders child via AdaptiveGlass fallback',
-        (tester) async {
+    testWidgets('minimal quality renders child via AdaptiveGlass fallback', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildGlassEffect(quality: GlassQuality.minimal));
       await tester.pumpAndSettle();
       expect(find.byType(GlassEffect), findsOneWidget);
@@ -58,8 +59,9 @@ void main() {
     });
 
     testWidgets('standard quality renders without crashing', (tester) async {
-      await tester
-          .pumpWidget(_buildGlassEffect(quality: GlassQuality.standard));
+      await tester.pumpWidget(
+        _buildGlassEffect(quality: GlassQuality.standard),
+      );
       await tester.pump();
       expect(find.byType(GlassEffect), findsOneWidget);
     });
@@ -116,42 +118,44 @@ void main() {
     });
 
     testWidgets(
-        'disposes cleanly with interactionIntensity > 0 (ticker may be active)',
-        (tester) async {
-      final key = GlobalKey(debugLabel: 'bg');
-      await tester.pumpWidget(
-        createTestApp(
-          child: Stack(
-            children: [
-              RepaintBoundary(
-                key: key,
-                child: const SizedBox(width: 200, height: 200),
-              ),
-              GlassEffect(
-                shape: _shape,
-                settings: _settings,
-                interactionIntensity: 0.8,
-                quality: GlassQuality.minimal,
-                backgroundKey: key,
-                child: const SizedBox(width: 80, height: 40),
-              ),
-            ],
+      'disposes cleanly with interactionIntensity > 0 (ticker may be active)',
+      (tester) async {
+        final key = GlobalKey(debugLabel: 'bg');
+        await tester.pumpWidget(
+          createTestApp(
+            child: Stack(
+              children: [
+                RepaintBoundary(
+                  key: key,
+                  child: const SizedBox(width: 200, height: 200),
+                ),
+                GlassEffect(
+                  shape: _shape,
+                  settings: _settings,
+                  interactionIntensity: 0.8,
+                  quality: GlassQuality.minimal,
+                  backgroundKey: key,
+                  child: const SizedBox(width: 80, height: 40),
+                ),
+              ],
+            ),
           ),
-        ),
-      );
-      // Pump a few frames but don't call pumpAndSettle — the Ticker never settles.
-      await tester.pump(const Duration(milliseconds: 100));
+        );
+        // Pump a few frames but don't call pumpAndSettle — the Ticker never settles.
+        await tester.pump(const Duration(milliseconds: 100));
 
-      // Remove → dispose called while ticker state could be non-zero
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-      expect(find.byType(GlassEffect), findsNothing);
-    });
+        // Remove → dispose called while ticker state could be non-zero
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        expect(find.byType(GlassEffect), findsNothing);
+      },
+    );
   });
 
   group('GlassEffect didUpdateWidget', () {
-    testWidgets('quality change from minimal to standard does not crash',
-        (tester) async {
+    testWidgets('quality change from minimal to standard does not crash', (
+      tester,
+    ) async {
       GlassQuality q = GlassQuality.minimal;
       late StateSetter outerSetState;
       await tester.pumpWidget(
@@ -178,8 +182,9 @@ void main() {
       expect(find.byType(GlassEffect), findsOneWidget);
     });
 
-    testWidgets('interactionIntensity change re-evaluates ticker',
-        (tester) async {
+    testWidgets('interactionIntensity change re-evaluates ticker', (
+      tester,
+    ) async {
       double intensity = 0.0;
       late StateSetter outerSetState;
       await tester.pumpWidget(
@@ -212,8 +217,9 @@ void main() {
       expect(find.byType(GlassEffect), findsOneWidget);
     });
 
-    testWidgets('settings update propagates via didUpdateWidget',
-        (tester) async {
+    testWidgets('settings update propagates via didUpdateWidget', (
+      tester,
+    ) async {
       LiquidGlassSettings s = const LiquidGlassSettings(thickness: 10);
       late StateSetter outerSetState;
       await tester.pumpWidget(
@@ -241,28 +247,30 @@ void main() {
   });
 
   group('GlassEffect avoidsRefraction path', () {
-    testWidgets('InheritedLiquidGlass avoidsRefraction=true routes to minimal',
-        (tester) async {
-      // When the glass is wrapped in an AdaptiveLiquidGlassLayer, the
-      // InheritedLiquidGlass marks avoidsRefraction=true for children.
-      await tester.pumpWidget(
-        createTestApp(
-          child: AdaptiveLiquidGlassLayer(
-            settings: settingsWithoutLighting,
-            child: GlassEffect(
-              shape: _shape,
-              settings: _settings,
-              interactionIntensity: 0.0,
-              // Use standard so that without avoidsRefraction it'd hit Path B
-              quality: GlassQuality.standard,
-              child: const SizedBox(width: 80, height: 40),
+    testWidgets(
+      'InheritedLiquidGlass avoidsRefraction=true routes to minimal',
+      (tester) async {
+        // When the glass is wrapped in an AdaptiveLiquidGlassLayer, the
+        // InheritedLiquidGlass marks avoidsRefraction=true for children.
+        await tester.pumpWidget(
+          createTestApp(
+            child: AdaptiveLiquidGlassLayer(
+              settings: settingsWithoutLighting,
+              child: GlassEffect(
+                shape: _shape,
+                settings: _settings,
+                interactionIntensity: 0.0,
+                // Use standard so that without avoidsRefraction it'd hit Path B
+                quality: GlassQuality.standard,
+                child: const SizedBox(width: 80, height: 40),
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.byType(GlassEffect), findsOneWidget);
-    });
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(GlassEffect), findsOneWidget);
+      },
+    );
   });
 
   group('GlassEffect shape variants', () {
@@ -290,8 +298,9 @@ void main() {
   });
 
   group('GlassEffect ultra-clean fallback (shader null)', () {
-    testWidgets('renders transparent ClipPath when shader not ready',
-        (tester) async {
+    testWidgets('renders transparent ClipPath when shader not ready', (
+      tester,
+    ) async {
       // On headless test runners _cachedProgram is always null (no GPU).
       // standard quality + no backgroundKey + avoidsRefraction=false → ClipPath fallback.
       await tester.pumpWidget(
@@ -328,41 +337,43 @@ void main() {
   // pushClipPath branch through the lightweight (no-GPU) code path.
   group('GlassEffect blur clip — pushClipPath double-offset regression', () {
     testWidgets(
-        'blur > 0 at non-zero screen offset renders child without displacement',
-        (tester) async {
-      // Place the widget at a non-zero offset with Padding so that
-      // `offset` passed to paint() is non-zero.  Pre-fix, the clip rect
-      // was shifted by `offset` twice, placing it off-screen.
-      await tester.pumpWidget(
-        createTestApp(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 60, left: 40),
-            child: GlassEffect(
-              shape: const LiquidRoundedSuperellipse(borderRadius: 16),
-              settings: const LiquidGlassSettings(
-                thickness: 20,
-                blur: 2, // triggers the pushClipPath branch
-                glassColor: Color(0x3DFFFFFF),
+      'blur > 0 at non-zero screen offset renders child without displacement',
+      (tester) async {
+        // Place the widget at a non-zero offset with Padding so that
+        // `offset` passed to paint() is non-zero.  Pre-fix, the clip rect
+        // was shifted by `offset` twice, placing it off-screen.
+        await tester.pumpWidget(
+          createTestApp(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 60, left: 40),
+              child: GlassEffect(
+                shape: const LiquidRoundedSuperellipse(borderRadius: 16),
+                settings: const LiquidGlassSettings(
+                  thickness: 20,
+                  blur: 2, // triggers the pushClipPath branch
+                  glassColor: Color(0x3DFFFFFF),
+                ),
+                interactionIntensity: 0.0,
+                quality: GlassQuality.standard,
+                child: const Text('offset-child'),
               ),
-              interactionIntensity: 0.0,
-              quality: GlassQuality.standard,
-              child: const Text('offset-child'),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // The child must be painted and reachable — a displaced clip would still
-      // render the child but outside its intended bounds; in test-mode the
-      // ClipPathLayer receives the correct (non-doubled) path so the child
-      // is visible within the expected widget area.
-      expect(find.text('offset-child'), findsOneWidget);
-      expect(find.byType(GlassEffect), findsOneWidget);
-    });
+        // The child must be painted and reachable — a displaced clip would still
+        // render the child but outside its intended bounds; in test-mode the
+        // ClipPathLayer receives the correct (non-doubled) path so the child
+        // is visible within the expected widget area.
+        expect(find.text('offset-child'), findsOneWidget);
+        expect(find.byType(GlassEffect), findsOneWidget);
+      },
+    );
 
-    testWidgets('blur > 0 at zero offset (baseline) renders child correctly',
-        (tester) async {
+    testWidgets('blur > 0 at zero offset (baseline) renders child correctly', (
+      tester,
+    ) async {
       // Verify the fix does not break the zero-offset case.
       await tester.pumpWidget(
         createTestApp(
@@ -383,8 +394,9 @@ void main() {
       expect(find.text('zero-offset-child'), findsOneWidget);
     });
 
-    testWidgets('blur == 0 still renders child (no-op path unchanged)',
-        (tester) async {
+    testWidgets('blur == 0 still renders child (no-op path unchanged)', (
+      tester,
+    ) async {
       // Confirm the blur==0 branch (no pushClipPath) is unaffected by the fix.
       await tester.pumpWidget(
         createTestApp(

@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/widgets/surfaces/tab_bar_searchable_internal.dart';
@@ -241,10 +241,7 @@ void main() {
         createTestApp(
           child: GlassTabBar.bottom(
             tabs: const [
-              GlassTab(
-                icon: Icon(CupertinoIcons.home),
-                semanticLabel: 'Home',
-              ),
+              GlassTab(icon: Icon(CupertinoIcons.home), semanticLabel: 'Home'),
               GlassTab(
                 icon: Icon(CupertinoIcons.search),
                 semanticLabel: 'Search',

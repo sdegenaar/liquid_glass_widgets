@@ -227,17 +227,16 @@ List<double> progressiveBlurUniforms({
   required double falloff,
   required ProgressiveBlurDirection direction,
   required double axis,
-}) =>
-    <double>[
-      maxSigma * devicePixelRatio,
-      falloff,
-      direction._uniform,
-      axis, // 0 = horizontal, 1 = vertical
-      origin.dx * devicePixelRatio,
-      origin.dy * devicePixelRatio,
-      size.width * devicePixelRatio,
-      size.height * devicePixelRatio,
-    ];
+}) => <double>[
+  maxSigma * devicePixelRatio,
+  falloff,
+  direction._uniform,
+  axis, // 0 = horizontal, 1 = vertical
+  origin.dx * devicePixelRatio,
+  origin.dy * devicePixelRatio,
+  size.width * devicePixelRatio,
+  size.height * devicePixelRatio,
+];
 
 // Everything below is reachable only with a compiled FragmentProgram, which a
 // headless VM never provides — so it cannot be exercised by `flutter test`, and
@@ -302,15 +301,14 @@ class _ProgressiveBlurLayer extends SingleChildRenderObjectWidget {
   void updateRenderObject(
     BuildContext context,
     _RenderProgressiveBlur renderObject,
-  ) =>
-      renderObject.update(
-        hShader: hShader,
-        vShader: vShader,
-        maxSigma: maxSigma,
-        falloff: falloff,
-        direction: direction,
-        devicePixelRatio: devicePixelRatio,
-      );
+  ) => renderObject.update(
+    hShader: hShader,
+    vShader: vShader,
+    maxSigma: maxSigma,
+    falloff: falloff,
+    direction: direction,
+    devicePixelRatio: devicePixelRatio,
+  );
 }
 
 /// The shader-path render object, exposed so tests can mount it directly.
@@ -320,18 +318,13 @@ typedef RenderProgressiveBlur = _RenderProgressiveBlur;
 class _RenderProgressiveBlur extends RenderProxyBox
     with TransformTrackingRenderObjectMixin {
   _RenderProgressiveBlur({
-    required ui.FragmentShader hShader,
-    required ui.FragmentShader vShader,
-    required double maxSigma,
-    required double falloff,
-    required ProgressiveBlurDirection direction,
-    required double devicePixelRatio,
-  })  : _hShader = hShader,
-        _vShader = vShader,
-        _maxSigma = maxSigma,
-        _falloff = falloff,
-        _direction = direction,
-        _devicePixelRatio = devicePixelRatio;
+    required this._hShader,
+    required this._vShader,
+    required this._maxSigma,
+    required this._falloff,
+    required this._direction,
+    required this._devicePixelRatio,
+  });
 
   ui.FragmentShader _hShader;
   ui.FragmentShader _vShader;

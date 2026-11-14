@@ -21,7 +21,7 @@
 ///   flutter run -t lib/demos/rtl_layout_demo.dart
 library;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 import '../constants/glass_settings.dart';
@@ -122,10 +122,7 @@ class _RtlLayoutDemoState extends State<RtlLayoutDemo> {
               icon: Icon(CupertinoIcons.home),
               activeIcon: Icon(CupertinoIcons.house_fill),
             ),
-            GlassTab(
-              label: 'Search',
-              icon: Icon(CupertinoIcons.search),
-            ),
+            GlassTab(label: 'Search', icon: Icon(CupertinoIcons.search)),
             GlassTab(
               label: 'Settings',
               icon: Icon(CupertinoIcons.settings),
@@ -140,9 +137,7 @@ class _RtlLayoutDemoState extends State<RtlLayoutDemo> {
             // Hero: GlassLargeTitle — scale anchor is AlignmentDirectional.bottomStart
             // In RTL the rubber-band overscroll stretches from the physical right.
             // ------------------------------------------------------------------
-            SliverToBoxAdapter(
-              child: SizedBox(height: topPad + 44),
-            ),
+            SliverToBoxAdapter(child: SizedBox(height: topPad + 44)),
             GlassLargeTitle(
               text: _isRtl ? 'تخطيط ي.م.' : 'RTL Widgets',
               controller: _titleController,
@@ -176,9 +171,9 @@ class _RtlLayoutDemoState extends State<RtlLayoutDemo> {
                         child: Text(
                           _isRtl
                               ? '← Tap "Settings" (physical left) → reports index 2\n'
-                                  '← Tap "Home" (physical right) → reports index 0'
+                                    '← Tap "Home" (physical right) → reports index 0'
                               : '"Home" is on the left → index 0\n'
-                                  '"Settings" is on the right → index 2',
+                                    '"Settings" is on the right → index 2',
                           style: const TextStyle(
                             color: CupertinoColors.systemGrey,
                             fontSize: 13,
@@ -248,8 +243,7 @@ class _RtlLayoutDemoState extends State<RtlLayoutDemo> {
                       // --------------------------------------------------------
                       _SectionHeader(
                         title: 'GlassProgressIndicator.linear',
-                        subtitle:
-                            'Fill starts from physical right (logical start) in RTL',
+                        subtitle: 'Fill starts from physical right (logical start) in RTL',
                         icon: CupertinoIcons.chart_bar_fill,
                       ),
                       _DemoCard(
@@ -278,13 +272,15 @@ class _RtlLayoutDemoState extends State<RtlLayoutDemo> {
                                     () => _progressValue =
                                         (_progressValue - 0.1).clamp(0.0, 1.0),
                                   ),
-                                  child:
-                                      const Icon(CupertinoIcons.minus_circle),
+                                  child: const Icon(
+                                    CupertinoIcons.minus_circle,
+                                  ),
                                 ),
                                 Text(
                                   '${(_progressValue * 100).round()}%',
                                   style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 CupertinoButton(
                                   padding: EdgeInsets.zero,
@@ -337,33 +333,35 @@ class _RtlLayoutDemoState extends State<RtlLayoutDemo> {
                         icon: CupertinoIcons.list_bullet,
                       ),
                       GlassGroupedSection(
-                        header:
-                            Text(_isRtl ? 'قسم الإعدادات' : 'Settings Section'),
+                        header: Text(
+                          _isRtl ? 'قسم الإعدادات' : 'Settings Section',
+                        ),
                         footer: Text(
-                          _isRtl
-                              ? 'نص التذييل يتوافق مع الحافة البادئة'
-                              : 'Footer text aligns to the logical leading edge.',
+                          _isRtl ? 'نص التذييل يتوافق مع الحافة البادئة' : 'Footer text aligns to the logical leading edge.',
                         ),
                         children: [
                           GlassListTile(
                             leading: const Icon(CupertinoIcons.person_fill),
                             title: Text(_isRtl ? 'الحساب' : 'Account'),
-                            trailing:
-                                const Icon(CupertinoIcons.chevron_forward),
+                            trailing: const Icon(
+                              CupertinoIcons.chevron_forward,
+                            ),
                             onTap: () {},
                           ),
                           GlassListTile(
                             leading: const Icon(CupertinoIcons.bell_fill),
                             title: Text(_isRtl ? 'الإشعارات' : 'Notifications'),
-                            trailing:
-                                const Icon(CupertinoIcons.chevron_forward),
+                            trailing: const Icon(
+                              CupertinoIcons.chevron_forward,
+                            ),
                             onTap: () {},
                           ),
                           GlassListTile(
                             leading: const Icon(CupertinoIcons.lock_fill),
                             title: Text(_isRtl ? 'الخصوصية' : 'Privacy'),
-                            trailing:
-                                const Icon(CupertinoIcons.chevron_forward),
+                            trailing: const Icon(
+                              CupertinoIcons.chevron_forward,
+                            ),
                             onTap: () {},
                           ),
                         ],

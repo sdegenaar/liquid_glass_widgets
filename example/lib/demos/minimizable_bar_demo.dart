@@ -18,8 +18,8 @@
 ///
 library;
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -39,9 +39,8 @@ class _DemoApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: const CupertinoThemeData(brightness: Brightness.dark),
       builder: (context, child) => Theme(
-        data: ThemeData.dark(useMaterial3: true).copyWith(
-          scaffoldBackgroundColor: const Color(0xFF0A0A0F),
-        ),
+        data: ThemeData.dark(useMaterial3: true)
+            .copyWith(scaffoldBackgroundColor: const Color(0xFF0A0A0F)),
         child: child!,
       ),
       home: const _DemoHome(),
@@ -73,11 +72,11 @@ enum _TrailingMode {
 
 extension on GlassBarMinimizeBehavior {
   String get label => switch (this) {
-        GlassBarMinimizeBehavior.automatic => 'Auto',
-        GlassBarMinimizeBehavior.never => 'Never',
-        GlassBarMinimizeBehavior.onScrollDown => 'Down',
-        GlassBarMinimizeBehavior.onScrollUp => 'Up',
-      };
+    GlassBarMinimizeBehavior.automatic => 'Auto',
+    GlassBarMinimizeBehavior.never => 'Never',
+    GlassBarMinimizeBehavior.onScrollDown => 'Down',
+    GlassBarMinimizeBehavior.onScrollUp => 'Up',
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -128,8 +127,10 @@ class _DemoHomeState extends State<_DemoHome> {
 
   /// One scroll view per tab, as on iOS — the minimize follows whichever one
   /// is currently under the bar.
-  late final List<ScrollController> _scrollControllers =
-      List.generate(_tabs.length, (_) => ScrollController());
+  late final List<ScrollController> _scrollControllers = List.generate(
+    _tabs.length,
+    (_) => ScrollController(),
+  );
 
   final _minimize = GlassTabBarMinimizeController(
     behavior: GlassBarMinimizeBehavior.onScrollDown,
@@ -171,33 +172,33 @@ class _DemoHomeState extends State<_DemoHome> {
     return switch (_trailingMode) {
       _TrailingMode.none => null,
       _TrailingMode.always => GlassTabBarTrailingButton(
-          icon: const Icon(CupertinoIcons.square_pencil),
-          label: 'Compose',
-          onTap: () => setState(() => _composerTaps++),
-        ),
+        icon: const Icon(CupertinoIcons.square_pencil),
+        label: 'Compose',
+        onTap: () => setState(() => _composerTaps++),
+      ),
       _TrailingMode.menu => GlassTabBarTrailingButton.menu(
-          icon: const Icon(CupertinoIcons.ellipsis),
-          label: 'More actions',
-          menuItems: [
-            GlassMenuItem(
-              icon: const Icon(CupertinoIcons.square_arrow_up),
-              title: 'Share',
-              onTap: () => setState(() => _lastMenuAction = 'Share'),
-            ),
-            GlassMenuItem(
-              icon: const Icon(CupertinoIcons.pencil),
-              title: 'Edit',
-              onTap: () => setState(() => _lastMenuAction = 'Edit'),
-            ),
-            const GlassMenuDivider(),
-            GlassMenuItem(
-              icon: const Icon(CupertinoIcons.trash),
-              title: 'Delete',
-              isDestructive: true,
-              onTap: () => setState(() => _lastMenuAction = 'Delete'),
-            ),
-          ],
-        ),
+        icon: const Icon(CupertinoIcons.ellipsis),
+        label: 'More actions',
+        menuItems: [
+          GlassMenuItem(
+            icon: const Icon(CupertinoIcons.square_arrow_up),
+            title: 'Share',
+            onTap: () => setState(() => _lastMenuAction = 'Share'),
+          ),
+          GlassMenuItem(
+            icon: const Icon(CupertinoIcons.pencil),
+            title: 'Edit',
+            onTap: () => setState(() => _lastMenuAction = 'Edit'),
+          ),
+          const GlassMenuDivider(),
+          GlassMenuItem(
+            icon: const Icon(CupertinoIcons.trash),
+            title: 'Delete',
+            isDestructive: true,
+            onTap: () => setState(() => _lastMenuAction = 'Delete'),
+          ),
+        ],
+      ),
     };
   }
 
@@ -246,14 +247,12 @@ class _DemoHomeState extends State<_DemoHome> {
       reverse: reverse,
       slivers: [
         if (!reverse)
-          SliverSafeArea(
-            sliver: SliverToBoxAdapter(child: _buildControls()),
-          ),
+          SliverSafeArea(sliver: SliverToBoxAdapter(child: _buildControls())),
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 160),
           sliver: SliverList.separated(
             itemCount: itemCount,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (context, i) => _ContentCard(index: i),
           ),
         ),
@@ -282,7 +281,10 @@ class _DemoHomeState extends State<_DemoHome> {
           const Text(
             'GlassTabBar.minimizable',
             style: TextStyle(
-                fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white),
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -307,9 +309,10 @@ class _DemoHomeState extends State<_DemoHome> {
               for (final b in GlassBarMinimizeBehavior.values)
                 b: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Text(b.label,
-                      style:
-                          const TextStyle(fontSize: 13, color: Colors.white)),
+                  child: Text(
+                    b.label,
+                    style: const TextStyle(fontSize: 13, color: Colors.white),
+                  ),
                 ),
             },
           ),
@@ -324,9 +327,10 @@ class _DemoHomeState extends State<_DemoHome> {
               for (final s in _ScrollSource.values)
                 s: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Text(s.label,
-                      style:
-                          const TextStyle(fontSize: 13, color: Colors.white)),
+                  child: Text(
+                    s.label,
+                    style: const TextStyle(fontSize: 13, color: Colors.white),
+                  ),
                 ),
             },
           ),
@@ -341,9 +345,10 @@ class _DemoHomeState extends State<_DemoHome> {
               for (final m in _TrailingMode.values)
                 m: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Text(m.label,
-                      style:
-                          const TextStyle(fontSize: 13, color: Colors.white)),
+                  child: Text(
+                    m.label,
+                    style: const TextStyle(fontSize: 13, color: Colors.white),
+                  ),
                 ),
             },
           ),
@@ -392,8 +397,10 @@ class _DemoHomeState extends State<_DemoHome> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: const TextStyle(fontSize: 14, color: Colors.white)),
+                Text(
+                  title,
+                  style: const TextStyle(fontSize: 14, color: Colors.white),
+                ),
                 Text(
                   subtitle,
                   style: TextStyle(
@@ -411,13 +418,13 @@ class _DemoHomeState extends State<_DemoHome> {
   }
 
   Widget _label(String text) => Text(
-        text,
-        style: TextStyle(
-          fontSize: 11,
-          letterSpacing: 1.1,
-          color: Colors.white.withValues(alpha: 0.45),
-        ),
-      );
+    text,
+    style: TextStyle(
+      fontSize: 11,
+      letterSpacing: 1.1,
+      color: Colors.white.withValues(alpha: 0.45),
+    ),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -487,10 +494,7 @@ class _ContentCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         gradient: LinearGradient(
-          colors: [
-            hue.withValues(alpha: 0.55),
-            hue.withValues(alpha: 0.18),
-          ],
+          colors: [hue.withValues(alpha: 0.55), hue.withValues(alpha: 0.18)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -500,7 +504,10 @@ class _ContentCard extends StatelessWidget {
       child: Text(
         'Item number $index',
         style: const TextStyle(
-            fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white),
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
       ),
     );
   }

@@ -1,6 +1,6 @@
 import 'dart:ui' show FrameTiming;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/utils/glass_performance_monitor.dart';
 
@@ -148,9 +148,7 @@ void main() {
       expect(GlassPerformanceMonitor.activePremiumCount, equals(0));
 
       await tester.pumpWidget(
-        const PremiumGlassTracker(
-          child: SizedBox.shrink(),
-        ),
+        const PremiumGlassTracker(child: SizedBox.shrink()),
       );
 
       expect(GlassPerformanceMonitor.activePremiumCount, equals(1));
@@ -158,9 +156,7 @@ void main() {
 
     testWidgets('decrements count on unmount', (tester) async {
       await tester.pumpWidget(
-        const PremiumGlassTracker(
-          child: SizedBox.shrink(),
-        ),
+        const PremiumGlassTracker(child: SizedBox.shrink()),
       );
       expect(GlassPerformanceMonitor.activePremiumCount, equals(1));
 
@@ -188,9 +184,7 @@ void main() {
     testWidgets('renders its child transparently', (tester) async {
       const key = Key('child');
       await tester.pumpWidget(
-        const PremiumGlassTracker(
-          child: SizedBox.shrink(key: key),
-        ),
+        const PremiumGlassTracker(child: SizedBox.shrink(key: key)),
       );
       expect(find.byKey(key), findsOneWidget);
     });
@@ -243,24 +237,25 @@ void main() {
     });
 
     testWidgets(
-        'PremiumGlassTracker mounts and unmounts while monitor is running',
-        (tester) async {
-      GlassPerformanceMonitor.start();
+      'PremiumGlassTracker mounts and unmounts while monitor is running',
+      (tester) async {
+        GlassPerformanceMonitor.start();
 
-      await tester.pumpWidget(
-        const PremiumGlassTracker(child: SizedBox.shrink()),
-      );
-      expect(GlassPerformanceMonitor.activePremiumCount, 1);
+        await tester.pumpWidget(
+          const PremiumGlassTracker(child: SizedBox.shrink()),
+        );
+        expect(GlassPerformanceMonitor.activePremiumCount, 1);
 
-      // Run a few frames — the frame callback fires but won't emit warning
-      // because rasterDuration in tests is typically zero.
-      await tester.pump(const Duration(milliseconds: 100));
+        // Run a few frames — the frame callback fires but won't emit warning
+        // because rasterDuration in tests is typically zero.
+        await tester.pump(const Duration(milliseconds: 100));
 
-      await tester.pumpWidget(const SizedBox.shrink());
-      expect(GlassPerformanceMonitor.activePremiumCount, 0);
+        await tester.pumpWidget(const SizedBox.shrink());
+        expect(GlassPerformanceMonitor.activePremiumCount, 0);
 
-      GlassPerformanceMonitor.stop();
-    });
+        GlassPerformanceMonitor.stop();
+      },
+    );
 
     test('rasterBudget defaults restored after test', () {
       final original = GlassPerformanceMonitor.rasterBudget;
@@ -287,8 +282,9 @@ void main() {
   group('simulateFrameTimings — _onFrameTimings direct coverage', () {
     test('over-budget frame with premium surface emits warning', () {
       GlassPerformanceMonitor.sustainedFrameThreshold = 1;
-      GlassPerformanceMonitor.rasterBudget =
-          const Duration(microseconds: 1); // 1µs budget → 100ms is way over
+      GlassPerformanceMonitor.rasterBudget = const Duration(
+        microseconds: 1,
+      ); // 1µs budget → 100ms is way over
 
       GlassPerformanceMonitor.trackPremiumMount();
 
@@ -346,9 +342,7 @@ void main() {
       GlassPerformanceMonitor.rasterBudget = const Duration(microseconds: 1);
       // No trackPremiumMount() called
 
-      GlassPerformanceMonitor.simulateFrameTimings([
-        makeTiming(100000),
-      ]);
+      GlassPerformanceMonitor.simulateFrameTimings([makeTiming(100000)]);
       expect(GlassPerformanceMonitor.warningEmitted, isFalse);
 
       GlassPerformanceMonitor.rasterBudget = const Duration(milliseconds: 16);
@@ -366,16 +360,12 @@ void main() {
 
       try {
         // First call should emit warning and return
-        GlassPerformanceMonitor.simulateFrameTimings([
-          makeTiming(100000),
-        ]);
+        GlassPerformanceMonitor.simulateFrameTimings([makeTiming(100000)]);
         expect(GlassPerformanceMonitor.warningEmitted, isTrue);
         expect(errorCount, 1);
 
         // Second call — _warningEmitted guard prevents re-emit
-        GlassPerformanceMonitor.simulateFrameTimings([
-          makeTiming(100000),
-        ]);
+        GlassPerformanceMonitor.simulateFrameTimings([makeTiming(100000)]);
         expect(errorCount, 1); // still just 1
       } finally {
         FlutterError.onError = original;
@@ -400,9 +390,7 @@ void main() {
         expect(GlassPerformanceMonitor.warningEmitted, isFalse);
 
         // 1 more — triggers threshold
-        GlassPerformanceMonitor.simulateFrameTimings([
-          makeTiming(20000),
-        ]);
+        GlassPerformanceMonitor.simulateFrameTimings([makeTiming(20000)]);
         expect(GlassPerformanceMonitor.warningEmitted, isTrue);
       } finally {
         FlutterError.onError = original;

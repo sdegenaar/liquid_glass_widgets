@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -11,17 +11,16 @@ void main() {
   group('GlassDivider', () {
     testWidgets('renders a horizontal Divider by default', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: GlassDivider()),
-        ),
+        const MaterialApp(home: Scaffold(body: GlassDivider())),
       );
       expect(find.byType(GlassDivider), findsOneWidget);
       // GlassDivider uses a raw Container instead of Material Divider.
       expect(find.byType(Container), findsWidgets);
     });
 
-    testWidgets('renders a VerticalDivider when axis is vertical',
-        (tester) async {
+    testWidgets('renders a VerticalDivider when axis is vertical', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -52,9 +51,7 @@ void main() {
     testWidgets('applies indent and endIndent', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: GlassDivider(indent: 16, endIndent: 8),
-          ),
+          home: Scaffold(body: GlassDivider(indent: 16, endIndent: 8)),
         ),
       );
       final padding = tester.widget<Padding>(find.byType(Padding).first);
@@ -117,37 +114,37 @@ void main() {
     });
 
     testWidgets(
-        'GlassGroupedSection injects dividers between tiles, not after last',
-        (tester) async {
-      // GlassGroupedSection is the source of truth for divider rendering.
-      // It should inject (n-1) GlassDividers for n tiles.
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: GlassGroupedSection(
-              children: const [
-                GlassListTile(title: Text('First')),
-                GlassListTile(title: Text('Middle')),
-                GlassListTile(title: Text('Last')),
-              ],
+      'GlassGroupedSection injects dividers between tiles, not after last',
+      (tester) async {
+        // GlassGroupedSection is the source of truth for divider rendering.
+        // It should inject (n-1) GlassDividers for n tiles.
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: GlassGroupedSection(
+                children: const [
+                  GlassListTile(title: Text('First')),
+                  GlassListTile(title: Text('Middle')),
+                  GlassListTile(title: Text('Last')),
+                ],
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pump();
-      // 3 tiles → 2 dividers injected between them, none after the last.
-      expect(find.byType(GlassDivider), findsNWidgets(2));
-    });
+        );
+        await tester.pump();
+        // 3 tiles → 2 dividers injected between them, none after the last.
+        expect(find.byType(GlassDivider), findsNWidgets(2));
+      },
+    );
 
-    testWidgets('GlassGroupedSection with 1 tile injects no dividers',
-        (tester) async {
+    testWidgets('GlassGroupedSection with 1 tile injects no dividers', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
             body: GlassGroupedSection(
-              children: [
-                GlassListTile(title: Text('Only')),
-              ],
+              children: [GlassListTile(title: Text('Only'))],
             ),
           ),
         ),
@@ -156,33 +153,39 @@ void main() {
       expect(find.byType(GlassDivider), findsNothing);
     });
 
-    testWidgets('GlassGroupedSection uses smart indent based on leading widget',
-        (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: GlassGroupedSection(
-              children: [
-                GlassListTile(
-                    leading: Icon(Icons.star), title: Text('With Icon')),
-                GlassListTile(title: Text('No Icon')),
-                GlassListTile(title: Text('Last')),
-              ],
+    testWidgets(
+      'GlassGroupedSection uses smart indent based on leading widget',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: GlassGroupedSection(
+                children: [
+                  GlassListTile(
+                    leading: Icon(Icons.star),
+                    title: Text('With Icon'),
+                  ),
+                  GlassListTile(title: Text('No Icon')),
+                  GlassListTile(title: Text('Last')),
+                ],
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      final dividers =
-          tester.widgetList<GlassDivider>(find.byType(GlassDivider)).toList();
-      expect(dividers.length, 2);
-      expect(dividers[0].indent, 56.0); // Preceding tile has leading icon
-      expect(dividers[1].indent, 16.0); // Preceding tile has no leading icon
-    });
+        final dividers = tester
+            .widgetList<GlassDivider>(find.byType(GlassDivider))
+            .toList();
+        expect(dividers.length, 2);
+        expect(dividers[0].indent, 56.0); // Preceding tile has leading icon
+        expect(dividers[1].indent, 16.0); // Preceding tile has no leading icon
+      },
+    );
 
-    testWidgets('GlassGroupedSection respects user-placed dividers',
-        (tester) async {
+    testWidgets('GlassGroupedSection respects user-placed dividers', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -198,8 +201,9 @@ void main() {
       );
       await tester.pump();
 
-      final dividers =
-          tester.widgetList<GlassDivider>(find.byType(GlassDivider)).toList();
+      final dividers = tester
+          .widgetList<GlassDivider>(find.byType(GlassDivider))
+          .toList();
       expect(dividers.length, 1);
       expect(dividers[0].indent, 40.0);
     });
@@ -213,9 +217,7 @@ void main() {
     testWidgets('renders without error', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: GlassStepper(value: 5, onChanged: (_) {}),
-          ),
+          home: Scaffold(body: GlassStepper(value: 5, onChanged: (_) {})),
         ),
       );
       await tester.pump();
@@ -225,9 +227,7 @@ void main() {
     testWidgets('shows decrement and increment icons', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: GlassStepper(value: 5, onChanged: (_) {}),
-          ),
+          home: Scaffold(body: GlassStepper(value: 5, onChanged: (_) {})),
         ),
       );
       await tester.pump();
@@ -235,8 +235,9 @@ void main() {
       expect(find.byIcon(CupertinoIcons.plus), findsOneWidget);
     });
 
-    testWidgets('calls onChanged with incremented value on + tap',
-        (tester) async {
+    testWidgets('calls onChanged with incremented value on + tap', (
+      tester,
+    ) async {
       double result = 5;
       await tester.pumpWidget(
         MaterialApp(
@@ -254,8 +255,9 @@ void main() {
       expect(result, 6);
     });
 
-    testWidgets('calls onChanged with decremented value on − tap',
-        (tester) async {
+    testWidgets('calls onChanged with decremented value on − tap', (
+      tester,
+    ) async {
       double result = 5;
       await tester.pumpWidget(
         MaterialApp(
@@ -350,8 +352,9 @@ void main() {
     });
 
     // ── wraps above max (line 196) ────────────────────────────────────────────
-    testWidgets('wraps above max when wraps is true (line 196)',
-        (tester) async {
+    testWidgets('wraps above max when wraps is true (line 196)', (
+      tester,
+    ) async {
       double result = 10;
       await tester.pumpWidget(
         MaterialApp(
@@ -374,23 +377,25 @@ void main() {
     });
 
     // ── decimal value VoiceOver path (line 230) ───────────────────────────────
-    testWidgets('decimal value uses toStringAsFixed(1) in Semantics (line 230)',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: GlassStepper(
-              value:
-                  5.5, // 5.5 != 5.5.truncateToDouble() → uses toStringAsFixed
-              onChanged: (_) {},
+    testWidgets(
+      'decimal value uses toStringAsFixed(1) in Semantics (line 230)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: GlassStepper(
+                value:
+                    5.5, // 5.5 != 5.5.truncateToDouble() → uses toStringAsFixed
+                onChanged: (_) {},
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      // Verify widget builds without error
-      expect(find.byType(GlassStepper), findsOneWidget);
-    });
+        );
+        await tester.pumpAndSettle();
+        // Verify widget builds without error
+        expect(find.byType(GlassStepper), findsOneWidget);
+      },
+    );
   });
 
   // ===========================================================================
@@ -399,8 +404,9 @@ void main() {
   // ===========================================================================
 
   group('GlassStepper autoRepeat and cancel paths', () {
-    testWidgets('autoRepeat=true: long-press increment starts repeat timer',
-        (tester) async {
+    testWidgets('autoRepeat=true: long-press increment starts repeat timer', (
+      tester,
+    ) async {
       double value = 5;
       await tester.pumpWidget(
         MaterialApp(
@@ -420,8 +426,9 @@ void main() {
       );
 
       // Long-press the increment icon to trigger _startRepeat
-      final gesture = await tester
-          .startGesture(tester.getCenter(find.byIcon(CupertinoIcons.plus)));
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byIcon(CupertinoIcons.plus)),
+      );
       await tester.pump();
       // Wait past autoRepeatDelay so the timer fires at least once
       await tester.pump(const Duration(milliseconds: 150));
@@ -432,8 +439,9 @@ void main() {
       expect(value, greaterThan(5)); // repeated increments occurred
     });
 
-    testWidgets('increment tap-cancel calls _cancelRepeat without crash',
-        (tester) async {
+    testWidgets('increment tap-cancel calls _cancelRepeat without crash', (
+      tester,
+    ) async {
       double value = 5;
       await tester.pumpWidget(
         MaterialApp(
@@ -451,8 +459,9 @@ void main() {
       );
 
       // Press and then cancel — exercises onTapCancel → _cancelRepeat
-      final gesture = await tester
-          .startGesture(tester.getCenter(find.byIcon(CupertinoIcons.plus)));
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byIcon(CupertinoIcons.plus)),
+      );
       await tester.pump();
       await gesture.cancel();
       await tester.pump();
@@ -460,8 +469,9 @@ void main() {
       expect(find.byType(GlassStepper), findsOneWidget);
     });
 
-    testWidgets('decrement tap-cancel calls _cancelRepeat without crash',
-        (tester) async {
+    testWidgets('decrement tap-cancel calls _cancelRepeat without crash', (
+      tester,
+    ) async {
       double value = 5;
       await tester.pumpWidget(
         MaterialApp(
@@ -478,8 +488,9 @@ void main() {
         ),
       );
 
-      final gesture = await tester
-          .startGesture(tester.getCenter(find.byIcon(CupertinoIcons.minus)));
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byIcon(CupertinoIcons.minus)),
+      );
       await tester.pump();
       await gesture.cancel();
       await tester.pump();
@@ -561,9 +572,7 @@ void main() {
           home: Scaffold(
             body: GlassGroupedSection(
               header: Text('Section Header'),
-              children: [
-                GlassListTile(title: Text('Item')),
-              ],
+              children: [GlassListTile(title: Text('Item'))],
             ),
           ),
         ),
@@ -577,9 +586,7 @@ void main() {
           home: Scaffold(
             body: GlassGroupedSection(
               footer: Text('Section Footer'),
-              children: [
-                GlassListTile(title: Text('Item')),
-              ],
+              children: [GlassListTile(title: Text('Item'))],
             ),
           ),
         ),
@@ -592,9 +599,7 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: GlassGroupedSection(
-              children: [
-                GlassListTile(title: Text('Item')),
-              ],
+              children: [GlassListTile(title: Text('Item'))],
             ),
           ),
         ),
@@ -602,8 +607,9 @@ void main() {
       expect(find.byType(GlassContainer), findsOneWidget);
     });
 
-    testWidgets('handles non-GlassListTile children gracefully',
-        (tester) async {
+    testWidgets('handles non-GlassListTile children gracefully', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -625,9 +631,7 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: GlassGroupedSection(
-              children: [
-                GlassListTile(title: Text('Only Item')),
-              ],
+              children: [GlassListTile(title: Text('Only Item'))],
             ),
           ),
         ),

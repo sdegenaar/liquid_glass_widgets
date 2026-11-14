@@ -126,11 +126,7 @@ class GlassThemeSettings {
     rimLight: 1.0,
     bodyShade: 0,
     shadow: [
-      BoxShadow(
-        color: Color(0x0F000000),
-        blurRadius: 12,
-        offset: Offset(0, 6),
-      ),
+      BoxShadow(color: Color(0x0F000000), blurRadius: 12, offset: Offset(0, 6)),
     ],
   );
 
@@ -185,11 +181,7 @@ class GlassThemeSettings {
     rimLight: 1,
     bodyShade: 0,
     shadow: [
-      BoxShadow(
-        color: Color(0x0A000000),
-        blurRadius: 10,
-        offset: Offset(0, 7),
-      ),
+      BoxShadow(color: Color(0x0A000000), blurRadius: 10, offset: Offset(0, 7)),
     ],
   );
 
@@ -367,8 +359,10 @@ class GlassThemeSettings {
       frostClamp: pick(frostClamp, baseline.frostClamp),
       frostWeight: pick(frostWeight, baseline.frostWeight),
       blurWeight: pick(blurWeight, baseline.blurWeight),
-      chromaticAberration:
-          pick(chromaticAberration, baseline.chromaticAberration),
+      chromaticAberration: pick(
+        chromaticAberration,
+        baseline.chromaticAberration,
+      ),
       lightAngle: pick(lightAngle, baseline.lightAngle),
       lightIntensity: pick(lightIntensity, baseline.lightIntensity),
       ambientStrength: pick(ambientStrength, baseline.ambientStrength),
@@ -422,16 +416,28 @@ class GlassThemeSettings {
       frostClamp: _lerpDoubleField(a.frostClamp, b.frostClamp, t),
       frostWeight: _lerpDoubleField(a.frostWeight, b.frostWeight, t),
       blurWeight: _lerpDoubleField(a.blurWeight, b.blurWeight, t),
-      chromaticAberration:
-          _lerpDoubleField(a.chromaticAberration, b.chromaticAberration, t),
+      chromaticAberration: _lerpDoubleField(
+        a.chromaticAberration,
+        b.chromaticAberration,
+        t,
+      ),
       lightAngle: _lerpDoubleField(a.lightAngle, b.lightAngle, t),
       lightIntensity: _lerpDoubleField(a.lightIntensity, b.lightIntensity, t),
-      ambientStrength:
-          _lerpDoubleField(a.ambientStrength, b.ambientStrength, t),
-      fresnelStrength:
-          _lerpDoubleField(a.fresnelStrength, b.fresnelStrength, t),
-      refractiveIndex:
-          _lerpDoubleField(a.refractiveIndex, b.refractiveIndex, t),
+      ambientStrength: _lerpDoubleField(
+        a.ambientStrength,
+        b.ambientStrength,
+        t,
+      ),
+      fresnelStrength: _lerpDoubleField(
+        a.fresnelStrength,
+        b.fresnelStrength,
+        t,
+      ),
+      refractiveIndex: _lerpDoubleField(
+        a.refractiveIndex,
+        b.refractiveIndex,
+        t,
+      ),
       saturation: _lerpDoubleField(a.saturation, b.saturation, t),
       specularSharpness: t < 0.5 ? a.specularSharpness : b.specularSharpness,
       edgeAbsorption: _lerpDoubleField(a.edgeAbsorption, b.edgeAbsorption, t),
@@ -440,8 +446,11 @@ class GlassThemeSettings {
       rimLight: _lerpDoubleField(a.rimLight, b.rimLight, t),
       bodyShade: _lerpDoubleField(a.bodyShade, b.bodyShade, t),
       lensModel: t < 0.5 ? a.lensModel : b.lensModel,
-      shadowElevation:
-          _lerpDoubleField(a.shadowElevation, b.shadowElevation, t),
+      shadowElevation: _lerpDoubleField(
+        a.shadowElevation,
+        b.shadowElevation,
+        t,
+      ),
       shadow: (a.shadow == null || b.shadow == null)
           ? (t < 0.5 ? a.shadow : b.shadow)
           : BoxShadow.lerpList(a.shadow, b.shadow, t),
@@ -548,35 +557,36 @@ class GlassThemeSettings {
 
   @override
   int get hashCode => Object.hashAll([
-        visibility,
-        glassColor,
-        thickness,
-        blur,
-        frost,
-        frostOpacity,
-        frostClamp,
-        frostWeight,
-        blurWeight,
-        chromaticAberration,
-        lightAngle,
-        lightIntensity,
-        ambientStrength,
-        fresnelStrength,
-        refractiveIndex,
-        saturation,
-        specularSharpness,
-        edgeAbsorption,
-        rimShade,
-        rimShadeEnds,
-        rimLight,
-        bodyShade,
-        lensModel,
-        shadowElevation,
-        shadow == null ? null : Object.hashAll(shadow!),
-      ]);
+    visibility,
+    glassColor,
+    thickness,
+    blur,
+    frost,
+    frostOpacity,
+    frostClamp,
+    frostWeight,
+    blurWeight,
+    chromaticAberration,
+    lightAngle,
+    lightIntensity,
+    ambientStrength,
+    fresnelStrength,
+    refractiveIndex,
+    saturation,
+    specularSharpness,
+    edgeAbsorption,
+    rimShade,
+    rimShadeEnds,
+    rimLight,
+    bodyShade,
+    lensModel,
+    shadowElevation,
+    shadow == null ? null : Object.hashAll(shadow!),
+  ]);
 
   @override
-  String toString() => 'GlassThemeSettings('
+  String toString() =>
+      'GlassThemeSettings('
       'visibility: $visibility, '
       'thickness: $thickness, '
       'blur: $blur, '

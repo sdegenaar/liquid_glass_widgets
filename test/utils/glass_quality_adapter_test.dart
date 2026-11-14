@@ -80,8 +80,7 @@ void main() {
   tearDown(() {
     GlassQualityAdapter.skipStaticProbeForTesting = false;
     GlassQualityAdapter.skipInitialFrames = 90; // restore production default
-    GlassQualityAdapter
-        .clearSessionCache(); // prevent cache leakage between tests
+    GlassQualityAdapter.clearSessionCache(); // prevent cache leakage between tests
   });
 
   // ── Construction & initial state ──────────────────────────────────────────
@@ -110,8 +109,10 @@ void main() {
     test('P75 < 20 ms → stays at maxQuality (premium)', () {
       final changes = <(GlassQuality, GlassQuality)>[];
       final adapter = _makeAdapter(max: GlassQuality.premium, changes: changes);
-      _runWarmup(adapter,
-          rasterUs: 15000); // 15 ms — well within premium threshold
+      _runWarmup(
+        adapter,
+        rasterUs: 15000,
+      ); // 15 ms — well within premium threshold
 
       expect(adapter.currentQuality, GlassQuality.premium);
       expect(changes, isEmpty);
@@ -120,8 +121,10 @@ void main() {
     test('P75 in [20, 28] ms → steps down to standard', () {
       final changes = <(GlassQuality, GlassQuality)>[];
       final adapter = _makeAdapter(max: GlassQuality.premium, changes: changes);
-      _runWarmup(adapter,
-          rasterUs: 25000); // 25 ms — in the 20–28 ms standard band
+      _runWarmup(
+        adapter,
+        rasterUs: 25000,
+      ); // 25 ms — in the 20–28 ms standard band
 
       expect(adapter.currentQuality, GlassQuality.standard);
       expect(changes.length, 1);
@@ -142,30 +145,34 @@ void main() {
     test('P75 > 28 ms → steps down to minimal', () {
       final changes = <(GlassQuality, GlassQuality)>[];
       final adapter = _makeAdapter(max: GlassQuality.premium, changes: changes);
-      _runWarmup(adapter,
-          rasterUs: 35000); // 35 ms — confirmed slow device/driver
+      _runWarmup(
+        adapter,
+        rasterUs: 35000,
+      ); // 35 ms — confirmed slow device/driver
 
       expect(adapter.currentQuality, GlassQuality.minimal);
     });
 
-    test('warm-up does not promote an already downgraded quality when locked',
-        () {
-      final changes = <(GlassQuality, GlassQuality)>[];
-      final adapter = _makeAdapter(
-        allowStepUp: false,
-        changes: changes,
-      );
+    test(
+      'warm-up does not promote an already downgraded quality when locked',
+      () {
+        final changes = <(GlassQuality, GlassQuality)>[];
+        final adapter = _makeAdapter(allowStepUp: false, changes: changes);
 
-      _runWarmup(adapter, rasterUs: 25000); // premium → standard
-      expect(adapter.currentQuality, GlassQuality.standard);
-      changes.clear();
+        _runWarmup(adapter, rasterUs: 25000); // premium → standard
+        expect(adapter.currentQuality, GlassQuality.standard);
+        changes.clear();
 
-      adapter.reset();
-      _runWarmup(adapter, rasterUs: 5000); // would otherwise promote to premium
+        adapter.reset();
+        _runWarmup(
+          adapter,
+          rasterUs: 5000,
+        ); // would otherwise promote to premium
 
-      expect(adapter.currentQuality, GlassQuality.standard);
-      expect(changes, isEmpty);
-    });
+        expect(adapter.currentQuality, GlassQuality.standard);
+        expect(changes, isEmpty);
+      },
+    );
 
     test('minQuality floor is honoured even when P75 > 20 ms', () {
       final adapter = _makeAdapter(
@@ -212,9 +219,7 @@ void main() {
   // The defaults themselves (20 ms / 28 ms) are tested in the group above.
 
   group('custom warmup thresholds', () {
-    test(
-        'custom warmupPremiumThresholdMs is respected — lower gate demotes sooner',
-        () {
+    test('custom warmupPremiumThresholdMs is respected — lower gate demotes sooner', () {
       // With a tight premium threshold of 12 ms, 15 ms should fall to standard.
       final changes = <(GlassQuality, GlassQuality)>[];
       final adapter = GlassQualityAdapter(
@@ -228,14 +233,15 @@ void main() {
       );
       _runWarmup(adapter, rasterUs: 15000); // 15 ms — above 12 ms custom gate
 
-      expect(adapter.currentQuality, GlassQuality.standard,
-          reason: '15 ms P75 exceeds custom premium threshold of 12 ms');
+      expect(
+        adapter.currentQuality,
+        GlassQuality.standard,
+        reason: '15 ms P75 exceeds custom premium threshold of 12 ms',
+      );
       expect(changes, [(GlassQuality.premium, GlassQuality.standard)]);
     });
 
-    test(
-        'custom warmupPremiumThresholdMs is respected — raised gate keeps premium',
-        () {
+    test('custom warmupPremiumThresholdMs is respected — raised gate keeps premium', () {
       // With a raised premium threshold of 25 ms, even 22 ms stays premium.
       final changes = <(GlassQuality, GlassQuality)>[];
       final adapter = GlassQualityAdapter(
@@ -248,17 +254,20 @@ void main() {
         warmupStandardThresholdMs: 28.0,
         onQualityChanged: (from, to) => changes.add((from, to)),
       );
-      _runWarmup(adapter,
-          rasterUs: 22000); // 22 ms — under the custom 25 ms gate
+      _runWarmup(
+        adapter,
+        rasterUs: 22000,
+      ); // 22 ms — under the custom 25 ms gate
 
-      expect(adapter.currentQuality, GlassQuality.premium,
-          reason: '22 ms P75 is within the custom premium threshold of 25 ms');
+      expect(
+        adapter.currentQuality,
+        GlassQuality.premium,
+        reason: '22 ms P75 is within the custom premium threshold of 25 ms',
+      );
       expect(changes, isEmpty);
     });
 
-    test(
-        'custom warmupStandardThresholdMs is respected — lower gate reaches minimal sooner',
-        () {
+    test('custom warmupStandardThresholdMs is respected — lower gate reaches minimal sooner', () {
       // With a tight standard threshold of 25 ms, 27 ms should reach minimal.
       final changes = <(GlassQuality, GlassQuality)>[];
       final adapter = GlassQualityAdapter(
@@ -270,11 +279,16 @@ void main() {
         warmupStandardThresholdMs: 25.0, // custom: tighter than default 28 ms
         onQualityChanged: (from, to) => changes.add((from, to)),
       );
-      _runWarmup(adapter,
-          rasterUs: 27000); // 27 ms — above 25 ms custom standard gate
+      _runWarmup(
+        adapter,
+        rasterUs: 27000,
+      ); // 27 ms — above 25 ms custom standard gate
 
-      expect(adapter.currentQuality, GlassQuality.minimal,
-          reason: '27 ms P75 exceeds custom standard threshold of 25 ms');
+      expect(
+        adapter.currentQuality,
+        GlassQuality.minimal,
+        reason: '27 ms P75 exceeds custom standard threshold of 25 ms',
+      );
     });
 
     test('both custom thresholds work together', () {
@@ -286,7 +300,7 @@ void main() {
         allowStepUp: false,
         warmupPremiumThresholdMs: 10.0,
         warmupStandardThresholdMs: 15.0,
-        onQualityChanged: (_, __) {},
+        onQualityChanged: (_, _) {},
       );
       // 12 ms — between the two custom thresholds → standard
       _runWarmup(adapter, rasterUs: 12000);
@@ -314,9 +328,11 @@ void main() {
 
       // Quality should be premium (8 ms P75 < 20 ms) because the 50 ms
       // startup frames were discarded.
-      expect(adapter.currentQuality, GlassQuality.premium,
-          reason:
-              'Startup spike frames should not pollute the warmup benchmark');
+      expect(
+        adapter.currentQuality,
+        GlassQuality.premium,
+        reason: 'Startup spike frames should not pollute the warmup benchmark',
+      );
     });
 
     test('skip counter resets on reset()', () {
@@ -356,21 +372,23 @@ void main() {
       expect(changes, [(GlassQuality.premium, GlassQuality.standard)]);
     });
 
-    test('second degrade: standard → minimal after 3 more over-budget windows',
-        () {
-      final adapter = _makeAdapter(max: GlassQuality.premium);
-      _runWarmup(adapter, rasterUs: 5000);
+    test(
+      'second degrade: standard → minimal after 3 more over-budget windows',
+      () {
+        final adapter = _makeAdapter(max: GlassQuality.premium);
+        _runWarmup(adapter, rasterUs: 5000);
 
-      for (int i = 0; i < 3; i++) {
-        adapter.simulateFrameTimings(_frames(5, 30000));
-      }
-      expect(adapter.currentQuality, GlassQuality.standard);
+        for (int i = 0; i < 3; i++) {
+          adapter.simulateFrameTimings(_frames(5, 30000));
+        }
+        expect(adapter.currentQuality, GlassQuality.standard);
 
-      for (int i = 0; i < 3; i++) {
-        adapter.simulateFrameTimings(_frames(5, 30000));
-      }
-      expect(adapter.currentQuality, GlassQuality.minimal);
-    });
+        for (int i = 0; i < 3; i++) {
+          adapter.simulateFrameTimings(_frames(5, 30000));
+        }
+        expect(adapter.currentQuality, GlassQuality.minimal);
+      },
+    );
 
     test('does not degrade below minQuality floor', () {
       final adapter = _makeAdapter(
@@ -387,87 +405,93 @@ void main() {
       expect(adapter.currentQuality, GlassQuality.standard);
     });
 
-    test('under-budget windows do not trigger step-up when allowStepUp=false',
-        () {
-      final changes = <(GlassQuality, GlassQuality)>[];
-      final adapter = _makeAdapter(allowStepUp: false, changes: changes);
-      _runWarmup(adapter, rasterUs: 5000);
-      // Degrade once
-      for (int i = 0; i < 3; i++) {
-        adapter.simulateFrameTimings(_frames(5, 30000));
-      }
-      changes.clear();
+    test(
+      'under-budget windows do not trigger step-up when allowStepUp=false',
+      () {
+        final changes = <(GlassQuality, GlassQuality)>[];
+        final adapter = _makeAdapter(allowStepUp: false, changes: changes);
+        _runWarmup(adapter, rasterUs: 5000);
+        // Degrade once
+        for (int i = 0; i < 3; i++) {
+          adapter.simulateFrameTimings(_frames(5, 30000));
+        }
+        changes.clear();
 
-      // Now send many under-budget windows.
-      for (int i = 0; i < 20; i++) {
-        adapter.simulateFrameTimings(_frames(5, 2000));
-      }
+        // Now send many under-budget windows.
+        for (int i = 0; i < 20; i++) {
+          adapter.simulateFrameTimings(_frames(5, 2000));
+        }
 
-      expect(adapter.currentQuality, GlassQuality.standard);
-      expect(changes, isEmpty);
-    });
+        expect(adapter.currentQuality, GlassQuality.standard);
+        expect(changes, isEmpty);
+      },
+    );
 
-    test('10 consecutive under-budget windows → step-up when allowStepUp=true',
-        () {
-      final changes = <(GlassQuality, GlassQuality)>[];
-      final adapter = _makeAdapter(allowStepUp: true, changes: changes);
-      _runWarmup(adapter, rasterUs: 5000);
-      // Degrade once
-      for (int i = 0; i < 3; i++) {
-        adapter.simulateFrameTimings(_frames(5, 30000));
-      }
-      expect(adapter.currentQuality, GlassQuality.standard);
-      changes.clear();
+    test(
+      '10 consecutive under-budget windows → step-up when allowStepUp=true',
+      () {
+        final changes = <(GlassQuality, GlassQuality)>[];
+        final adapter = _makeAdapter(allowStepUp: true, changes: changes);
+        _runWarmup(adapter, rasterUs: 5000);
+        // Degrade once
+        for (int i = 0; i < 3; i++) {
+          adapter.simulateFrameTimings(_frames(5, 30000));
+        }
+        expect(adapter.currentQuality, GlassQuality.standard);
+        changes.clear();
 
-      // Under-budget threshold: 16 × 0.6 = 9.6 ms. Send 2 ms frames.
-      for (int i = 0; i < 10; i++) {
-        adapter.simulateFrameTimings(_frames(5, 2000));
-      }
+        // Under-budget threshold: 16 × 0.6 = 9.6 ms. Send 2 ms frames.
+        for (int i = 0; i < 10; i++) {
+          adapter.simulateFrameTimings(_frames(5, 2000));
+        }
 
-      expect(adapter.currentQuality, GlassQuality.premium);
-      expect(changes, [(GlassQuality.standard, GlassQuality.premium)]);
-    });
+        expect(adapter.currentQuality, GlassQuality.premium);
+        expect(changes, [(GlassQuality.standard, GlassQuality.premium)]);
+      },
+    );
 
-    test('a neutral window decays recovery progress rather than erasing it',
-        () {
-      // Regression: recovery requires `upgradeWindowCount` CONSECUTIVE
-      // under-budget windows, and a neutral window used to reset that
-      // counter to zero. Because the measure is P95 — a tail statistic — an
-      // ordinary scrolling list drifts into the neutral band often enough
-      // that the counter never reached the threshold, so a single transient
-      // cost demoted quality permanently with no path back.
-      final changes = <(GlassQuality, GlassQuality)>[];
-      final adapter = _makeAdapter(allowStepUp: true, changes: changes);
-      _runWarmup(adapter, rasterUs: 5000);
+    test(
+      'a neutral window decays recovery progress rather than erasing it',
+      () {
+        // Regression: recovery requires `upgradeWindowCount` CONSECUTIVE
+        // under-budget windows, and a neutral window used to reset that
+        // counter to zero. Because the measure is P95 — a tail statistic — an
+        // ordinary scrolling list drifts into the neutral band often enough
+        // that the counter never reached the threshold, so a single transient
+        // cost demoted quality permanently with no path back.
+        final changes = <(GlassQuality, GlassQuality)>[];
+        final adapter = _makeAdapter(allowStepUp: true, changes: changes);
+        _runWarmup(adapter, rasterUs: 5000);
 
-      // Degrade to standard.
-      for (int i = 0; i < 3; i++) {
-        adapter.simulateFrameTimings(_frames(5, 30000));
-      }
-      expect(adapter.currentQuality, GlassQuality.standard);
-      changes.clear();
+        // Degrade to standard.
+        for (int i = 0; i < 3; i++) {
+          adapter.simulateFrameTimings(_frames(5, 30000));
+        }
+        expect(adapter.currentQuality, GlassQuality.standard);
+        changes.clear();
 
-      // Nine under-budget windows: one short of the step-up threshold.
-      // Under-budget is 16 x 0.6 = 9.6 ms, so 2 ms qualifies.
-      for (int i = 0; i < 9; i++) {
-        adapter.simulateFrameTimings(_frames(5, 2000));
-      }
-      expect(adapter.currentQuality, GlassQuality.standard);
+        // Nine under-budget windows: one short of the step-up threshold.
+        // Under-budget is 16 x 0.6 = 9.6 ms, so 2 ms qualifies.
+        for (int i = 0; i < 9; i++) {
+          adapter.simulateFrameTimings(_frames(5, 2000));
+        }
+        expect(adapter.currentQuality, GlassQuality.standard);
 
-      // One neutral window — 15 ms sits between 9.6 ms and 24 ms, so it is
-      // neither jank nor comfortably fast. This must not wipe the nine.
-      adapter.simulateFrameTimings(_frames(5, 15000));
+        // One neutral window — 15 ms sits between 9.6 ms and 24 ms, so it is
+        // neither jank nor comfortably fast. This must not wipe the nine.
+        adapter.simulateFrameTimings(_frames(5, 15000));
 
-      // Nine more good windows. With the counter decayed to 8 rather than
-      // reset to 0, the threshold is crossed. Under the old behaviour this
-      // run would end at 9 and the adapter would stay demoted forever.
-      for (int i = 0; i < 9; i++) {
-        adapter.simulateFrameTimings(_frames(5, 2000));
-      }
+        // Nine more good windows. With the counter decayed to 8 rather than
+        // reset to 0, the threshold is crossed. Under the old behaviour this
+        // run would end at 9 and the adapter would stay demoted forever.
+        for (int i = 0; i < 9; i++) {
+          adapter.simulateFrameTimings(_frames(5, 2000));
+        }
 
-      expect(adapter.currentQuality, GlassQuality.premium);
-      expect(changes, [(GlassQuality.standard, GlassQuality.premium)]);
-    });
+        expect(adapter.currentQuality, GlassQuality.premium);
+        expect(changes, [(GlassQuality.standard, GlassQuality.premium)]);
+      },
+    );
 
     test('a sustained over-budget window still degrades immediately', () {
       // Guard for the other side of the same branch: the decay must not make
@@ -525,21 +549,26 @@ void main() {
       expect(adapter.currentQuality, GlassQuality.standard);
     });
 
-    test('frames within the tolerable zone reset both counters → no change',
-        () {
-      final changes = <(GlassQuality, GlassQuality)>[];
-      final adapter = _makeAdapter(max: GlassQuality.premium, changes: changes);
-      _runWarmup(adapter, rasterUs: 5000);
-      changes.clear();
+    test(
+      'frames within the tolerable zone reset both counters → no change',
+      () {
+        final changes = <(GlassQuality, GlassQuality)>[];
+        final adapter = _makeAdapter(
+          max: GlassQuality.premium,
+          changes: changes,
+        );
+        _runWarmup(adapter, rasterUs: 5000);
+        changes.clear();
 
-      // 16 ms exactly — right on budget, in the "no change" band.
-      for (int i = 0; i < 20; i++) {
-        adapter.simulateFrameTimings(_frames(5, 16000));
-      }
+        // 16 ms exactly — right on budget, in the "no change" band.
+        for (int i = 0; i < 20; i++) {
+          adapter.simulateFrameTimings(_frames(5, 16000));
+        }
 
-      expect(adapter.currentQuality, GlassQuality.premium);
-      expect(changes, isEmpty);
-    });
+        expect(adapter.currentQuality, GlassQuality.premium);
+        expect(changes, isEmpty);
+      },
+    );
   });
 
   // ── Lifecycle API ─────────────────────────────────────────────────────────
@@ -671,7 +700,9 @@ void main() {
       final adapter1 = _makeAdapter(max: GlassQuality.premium);
       adapter1.simulateFrameTimings(
         List.generate(
-            10, (_) => _frameTiming(35000)), // 35 ms > 28 ms → minimal
+          10,
+          (_) => _frameTiming(35000),
+        ), // 35 ms > 28 ms → minimal
       );
       expect(adapter1.currentQuality, GlassQuality.minimal);
 
@@ -714,7 +745,7 @@ void main() {
         targetFrameMs: 16,
         allowStepUp: false,
         initialQuality: GlassQuality.minimal,
-        onQualityChanged: (_, __) {},
+        onQualityChanged: (_, _) {},
       );
       adapter.start();
       expect(adapter.usedCachedQuality, isTrue);
@@ -738,7 +769,7 @@ void main() {
         targetFrameMs: 16,
         allowStepUp: false,
         initialQuality: GlassQuality.minimal, // explicit — beats session cache
-        onQualityChanged: (_, __) {},
+        onQualityChanged: (_, _) {},
       );
       adapter2.start();
       expect(adapter2.currentQuality, GlassQuality.minimal);
@@ -750,7 +781,9 @@ void main() {
       final adapter1 = _makeAdapter(max: GlassQuality.premium);
       adapter1.simulateFrameTimings(
         List.generate(
-            10, (_) => _frameTiming(35000)), // 35 ms > 28 ms → minimal
+          10,
+          (_) => _frameTiming(35000),
+        ), // 35 ms > 28 ms → minimal
       );
       expect(adapter1.currentQuality, GlassQuality.minimal);
 
@@ -781,20 +814,25 @@ void main() {
     });
 
     test(
-        'sessionSettledQuality getter returns null before any Phase 2 completes',
-        () {
-      expect(GlassQualityAdapter.sessionSettledQuality, isNull);
-    });
+      'sessionSettledQuality getter returns null before any Phase 2 completes',
+      () {
+        expect(GlassQualityAdapter.sessionSettledQuality, isNull);
+      },
+    );
 
-    test('sessionSettledQuality getter returns settled quality after Phase 2',
-        () {
-      final adapter = _makeAdapter(max: GlassQuality.premium);
-      adapter.simulateFrameTimings(
-        List.generate(
-            10, (_) => _frameTiming(35000)), // 35 ms > 28 ms → minimal
-      );
-      expect(GlassQualityAdapter.sessionSettledQuality, GlassQuality.minimal);
-    });
+    test(
+      'sessionSettledQuality getter returns settled quality after Phase 2',
+      () {
+        final adapter = _makeAdapter(max: GlassQuality.premium);
+        adapter.simulateFrameTimings(
+          List.generate(
+            10,
+            (_) => _frameTiming(35000),
+          ), // 35 ms > 28 ms → minimal
+        );
+        expect(GlassQualityAdapter.sessionSettledQuality, GlassQuality.minimal);
+      },
+    );
   });
 
   // ── Diagnostic tracking ───────────────────────────────────────────────────
@@ -803,13 +841,20 @@ void main() {
     setUp(() => GlassQualityAdapter.clearSessionCache());
     tearDown(() => GlassQualityAdapter.clearSessionCache());
 
-    test('lastChangeReason is warmupComplete after Phase 2 with quality change',
-        () {
-      final adapter = _makeAdapter(max: GlassQuality.premium);
-      _runWarmup(adapter,
-          rasterUs: 22000); // 22 ms → standard (in 20–28 ms band)
-      expect(adapter.lastChangeReason, GlassQualityChangeReason.warmupComplete);
-    });
+    test(
+      'lastChangeReason is warmupComplete after Phase 2 with quality change',
+      () {
+        final adapter = _makeAdapter(max: GlassQuality.premium);
+        _runWarmup(
+          adapter,
+          rasterUs: 22000,
+        ); // 22 ms → standard (in 20–28 ms band)
+        expect(
+          adapter.lastChangeReason,
+          GlassQualityChangeReason.warmupComplete,
+        );
+      },
+    );
 
     test('lastP75Ms is approximately the measured P75 after warmup', () {
       final adapter = _makeAdapter(max: GlassQuality.premium);
@@ -840,8 +885,10 @@ void main() {
         adapter.simulateFrameTimings(_frames(5, 30000)); // over-budget
       }
 
-      expect(adapter.lastChangeReason,
-          GlassQualityChangeReason.thermalDegradation);
+      expect(
+        adapter.lastChangeReason,
+        GlassQualityChangeReason.thermalDegradation,
+      );
     });
 
     test('lastP95Ms is set after thermal degradation', () {
@@ -856,22 +903,26 @@ void main() {
       expect(adapter.lastP95Ms!, greaterThan(0));
     });
 
-    test('lastP75Ms is null after thermal degradation (P75 only in Phase 2)',
-        () {
-      final adapter = _makeAdapter(max: GlassQuality.premium);
-      _runWarmup(adapter, rasterUs: 5000);
+    test(
+      'lastP75Ms is null after thermal degradation (P75 only in Phase 2)',
+      () {
+        final adapter = _makeAdapter(max: GlassQuality.premium);
+        _runWarmup(adapter, rasterUs: 5000);
 
-      for (int i = 0; i < 3; i++) {
-        adapter.simulateFrameTimings(_frames(5, 30000));
-      }
+        for (int i = 0; i < 3; i++) {
+          adapter.simulateFrameTimings(_frames(5, 30000));
+        }
 
-      // After thermal event the P75 field should be cleared.
-      expect(adapter.lastP75Ms, isNull);
-    });
+        // After thermal event the P75 field should be cleared.
+        expect(adapter.lastP75Ms, isNull);
+      },
+    );
 
     test('lastChangeReason is thermalRecovery after runtime step-up', () {
-      final adapter =
-          _makeAdapter(max: GlassQuality.premium, allowStepUp: true);
+      final adapter = _makeAdapter(
+        max: GlassQuality.premium,
+        allowStepUp: true,
+      );
       _runWarmup(adapter, rasterUs: 5000);
 
       // Degrade first.
@@ -886,7 +937,9 @@ void main() {
       }
 
       expect(
-          adapter.lastChangeReason, GlassQualityChangeReason.thermalRecovery);
+        adapter.lastChangeReason,
+        GlassQualityChangeReason.thermalRecovery,
+      );
     });
 
     test('lastChangeReason is restoredFromCache on second adapter', () {
@@ -896,8 +949,10 @@ void main() {
 
       final adapter2 = _makeAdapter(max: GlassQuality.premium);
       adapter2.start();
-      expect(adapter2.lastChangeReason,
-          GlassQualityChangeReason.restoredFromCache);
+      expect(
+        adapter2.lastChangeReason,
+        GlassQualityChangeReason.restoredFromCache,
+      );
       adapter2.stop();
     });
 
@@ -936,7 +991,7 @@ void main() {
         17,
         65,
         88,
-        23
+        23,
       ];
       final sorted = List<int>.from(samples)..sort();
 
@@ -949,22 +1004,44 @@ void main() {
       }
     });
 
-    test('quickSelect handles already sorted, reverse, and identical arrays',
-        () {
-      final sorted = [1, 2, 3, 4, 5, 6, 7];
-      expect(GlassQualityAdapter.quickSelectForTesting(List.of(sorted), 0), 1);
-      expect(GlassQualityAdapter.quickSelectForTesting(List.of(sorted), 3), 4);
-      expect(GlassQualityAdapter.quickSelectForTesting(List.of(sorted), 6), 7);
+    test(
+      'quickSelect handles already sorted, reverse, and identical arrays',
+      () {
+        final sorted = [1, 2, 3, 4, 5, 6, 7];
+        expect(
+          GlassQualityAdapter.quickSelectForTesting(List.of(sorted), 0),
+          1,
+        );
+        expect(
+          GlassQualityAdapter.quickSelectForTesting(List.of(sorted), 3),
+          4,
+        );
+        expect(
+          GlassQualityAdapter.quickSelectForTesting(List.of(sorted), 6),
+          7,
+        );
 
-      final reverse = [7, 6, 5, 4, 3, 2, 1];
-      expect(GlassQualityAdapter.quickSelectForTesting(List.of(reverse), 0), 1);
-      expect(GlassQualityAdapter.quickSelectForTesting(List.of(reverse), 3), 4);
-      expect(GlassQualityAdapter.quickSelectForTesting(List.of(reverse), 6), 7);
+        final reverse = [7, 6, 5, 4, 3, 2, 1];
+        expect(
+          GlassQualityAdapter.quickSelectForTesting(List.of(reverse), 0),
+          1,
+        );
+        expect(
+          GlassQualityAdapter.quickSelectForTesting(List.of(reverse), 3),
+          4,
+        );
+        expect(
+          GlassQualityAdapter.quickSelectForTesting(List.of(reverse), 6),
+          7,
+        );
 
-      final identical = [5, 5, 5, 5, 5];
-      expect(
-          GlassQualityAdapter.quickSelectForTesting(List.of(identical), 2), 5);
-    });
+        final identical = [5, 5, 5, 5, 5];
+        expect(
+          GlassQualityAdapter.quickSelectForTesting(List.of(identical), 2),
+          5,
+        );
+      },
+    );
   });
 
   // ── Measurement holds ─────────────────────────────────────────────────────
@@ -1005,8 +1082,7 @@ void main() {
       hold.release();
     });
 
-    test(
-        'after release, settleFramesAfterHold frames are dropped, then '
+    test('after release, settleFramesAfterHold frames are dropped, then '
         'counting resumes', () {
       final adapter = _makeAdapter();
       _runWarmup(adapter, rasterUs: 10000);
@@ -1039,19 +1115,21 @@ void main() {
       expect(adapter.currentQuality, isNot(GlassQuality.premium));
     });
 
-    test('a batch that ends the settle window measures its remaining frames',
-        () {
-      final adapter = _makeAdapter();
-      _runWarmup(adapter, rasterUs: 10000);
+    test(
+      'a batch that ends the settle window measures its remaining frames',
+      () {
+        final adapter = _makeAdapter();
+        _runWarmup(adapter, rasterUs: 10000);
 
-      GlassAdaptiveScope.holdMeasurement().release();
-      adapter.simulateFrameTimings(_frames(15, 40000)); // 15 of 20 dropped
-      expect(adapter.currentQuality, GlassQuality.premium);
+        GlassAdaptiveScope.holdMeasurement().release();
+        adapter.simulateFrameTimings(_frames(15, 40000)); // 15 of 20 dropped
+        expect(adapter.currentQuality, GlassQuality.premium);
 
-      // 5 more are dropped, the other 15 count.
-      adapter.simulateFrameTimings(_frames(20, 40000));
-      expect(adapter.currentQuality, isNot(GlassQuality.premium));
-    });
+        // 5 more are dropped, the other 15 count.
+        adapter.simulateFrameTimings(_frames(20, 40000));
+        expect(adapter.currentQuality, isNot(GlassQuality.premium));
+      },
+    );
 
     test('nested holds measure again only after the last release', () {
       final adapter = _makeAdapter();
@@ -1093,13 +1171,15 @@ void main() {
       expect(GlassAdaptiveScope.measurementHeld, isFalse);
     });
 
-    test('releasing a hold after resetMeasurementHoldsForTesting is a no-op',
-        () {
-      final hold = GlassAdaptiveScope.holdMeasurement();
-      GlassQualityAdapter.resetMeasurementHoldsForTesting();
-      expect(hold.release, returnsNormally);
-      expect(GlassQualityAdapter.measurementHeld, isFalse);
-    });
+    test(
+      'releasing a hold after resetMeasurementHoldsForTesting is a no-op',
+      () {
+        final hold = GlassAdaptiveScope.holdMeasurement();
+        GlassQualityAdapter.resetMeasurementHoldsForTesting();
+        expect(hold.release, returnsNormally);
+        expect(GlassQualityAdapter.measurementHeld, isFalse);
+      },
+    );
 
     test('live frame timings callback respects measurement hold', () {
       final adapter = _makeAdapter();

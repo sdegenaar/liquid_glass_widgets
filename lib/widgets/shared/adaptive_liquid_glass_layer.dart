@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/widgets.dart';
+
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../theme/glass_theme.dart';
@@ -120,7 +121,8 @@ class _AdaptiveLiquidGlassLayerState extends State<AdaptiveLiquidGlassLayer> {
     final themeOverride = themeData.settingsFor(context);
     final withTheme = themeOverride?.applyTo(baseSettings) ?? baseSettings;
     final effectiveSettings = widget.settings ?? withTheme;
-    final effectiveQuality = widget.quality ??
+    final effectiveQuality =
+        widget.quality ??
         themeData.qualityFor(context) ??
         GlassQuality.standard;
 
@@ -162,18 +164,22 @@ class _AdaptiveLiquidGlassLayerState extends State<AdaptiveLiquidGlassLayer> {
 
     // Detect if we should use the full Impeller-native rendering pipeline.
     // platformViewBackdrop is never true here — that case returned above.
-    final bool useFullRenderer = AdaptiveLiquidGlassLayer._canUseImpeller &&
+    final bool useFullRenderer =
+        AdaptiveLiquidGlassLayer._canUseImpeller &&
         effectiveQuality == GlassQuality.premium;
 
     // Resolve shadow for SDF rendering. Shadows only apply in light mode.
     final bool isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
-    final List<BoxShadow> resolvedShadows =
-        isDark ? const <BoxShadow>[] : effectiveSettings.effectiveShadow;
+    final List<BoxShadow> resolvedShadows = isDark
+        ? const <BoxShadow>[]
+        : effectiveSettings.effectiveShadow;
 
     // Keep the child subtree's element identity stable across the wrapper toggle
     // below (see [_contentKey]) so its animation controllers survive.
-    final Widget keyedContent =
-        KeyedSubtree(key: _contentKey, child: widget.child);
+    final Widget keyedContent = KeyedSubtree(
+      key: _contentKey,
+      child: widget.child,
+    );
 
     return PremiumGlassTracker(
       child: LiquidGlassLayer(

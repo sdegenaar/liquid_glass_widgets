@@ -33,83 +33,96 @@ void main() {
   });
 
   testWidgets(
-      'paint refreshes the resting baseline between sheet presentations',
-      (tester) async {
-    final key = GlobalKey();
-    Future<void> frame(
-        {required bool active,
+    'paint refreshes the resting baseline between sheet presentations',
+    (tester) async {
+      final key = GlobalKey();
+      Future<void> frame({
+        required bool active,
         required double scale,
         required double x,
         required Offset origin,
-        bool selfScaled = false}) async {
-      await tester.pumpWidget(Directionality(
-        textDirection: TextDirection.ltr,
-        child: Align(
-            alignment: Alignment.topLeft,
-            child: Transform.translate(
-              offset: Offset(x, 0),
-              child: Transform.scale(
+        bool selfScaled = false,
+      }) async {
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Transform.translate(
+                offset: Offset(x, 0),
+                child: Transform.scale(
                   scale: scale,
                   alignment: Alignment.topLeft,
                   child: _Layer(
-                      key: key,
-                      active: active,
-                      origin: origin,
-                      selfScaled: selfScaled)),
-            )),
-      ));
-    }
+                    key: key,
+                    active: active,
+                    origin: origin,
+                    selfScaled: selfScaled,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
 
-    RenderLiquidGlassLayer render() =>
-        key.currentContext!.findRenderObject()! as RenderLiquidGlassLayer;
-    await frame(active: false, scale: 1, x: 10, origin: const Offset(10, 20));
-    await frame(active: true, scale: .9, x: 30, origin: const Offset(30, 40));
-    expect(render().matteTransform[0], 1);
-    expect(render().matteTransform.getTranslation().x, 10);
-    expect(render().captureOriginInScreenSpace, const Offset(10, 20));
+      RenderLiquidGlassLayer render() =>
+          key.currentContext!.findRenderObject()! as RenderLiquidGlassLayer;
+      await frame(active: false, scale: 1, x: 10, origin: const Offset(10, 20));
+      await frame(active: true, scale: .9, x: 30, origin: const Offset(30, 40));
+      expect(render().matteTransform[0], 1);
+      expect(render().matteTransform.getTranslation().x, 10);
+      expect(render().captureOriginInScreenSpace, const Offset(10, 20));
 
-    // Dismissal moves the resting page. Its next paint must refresh BOTH
-    // snapshots, rather than reusing the previous presentation's baseline.
-    await frame(active: false, scale: 1, x: 50, origin: const Offset(50, 60));
-    await frame(active: true, scale: .9, x: 70, origin: const Offset(70, 80));
-    expect(render().matteTransform[0], 1);
-    expect(render().matteTransform.getTranslation().x, 50);
-    expect(render().captureOriginInScreenSpace, const Offset(50, 60));
+      // Dismissal moves the resting page. Its next paint must refresh BOTH
+      // snapshots, rather than reusing the previous presentation's baseline.
+      await frame(active: false, scale: 1, x: 50, origin: const Offset(50, 60));
+      await frame(active: true, scale: .9, x: 70, origin: const Offset(70, 80));
+      expect(render().matteTransform[0], 1);
+      expect(render().matteTransform.getTranslation().x, 50);
+      expect(render().captureOriginInScreenSpace, const Offset(50, 60));
 
-    // Self-scaling controls and ordinary app-level scaling still use live UVs.
-    await frame(
+      // Self-scaling controls and ordinary app-level scaling still use live UVs.
+      await frame(
         active: true,
         scale: .8,
         x: 80,
         origin: const Offset(80, 90),
-        selfScaled: true);
-    expect(render().matteTransform[0], closeTo(.8, 1e-9));
-    expect(render().captureOriginInScreenSpace, const Offset(80, 90));
-    await frame(active: false, scale: .7, x: 90, origin: const Offset(90, 100));
-    expect(render().matteTransform[0], closeTo(.7, 1e-9));
-    expect(render().captureOriginInScreenSpace, const Offset(90, 100));
-    expect(tester.takeException(), isNull);
-  });
+        selfScaled: true,
+      );
+      expect(render().matteTransform[0], closeTo(.8, 1e-9));
+      expect(render().captureOriginInScreenSpace, const Offset(80, 90));
+      await frame(
+        active: false,
+        scale: .7,
+        x: 90,
+        origin: const Offset(90, 100),
+      );
+      expect(render().matteTransform[0], closeTo(.7, 1e-9));
+      expect(render().captureOriginInScreenSpace, const Offset(90, 100));
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
 RenderLiquidGlassLayer _layer({required bool active}) => RenderLiquidGlassLayer(
-      renderShader: null,
-      devicePixelRatio: 1,
-      settings: const LiquidGlassSettings(),
-      shadows: const [],
-      link: GeometryRenderLink(),
-      pushBackActive: active,
-    );
+  renderShader: null,
+  devicePixelRatio: 1,
+  settings: const LiquidGlassSettings(),
+  shadows: const [],
+  link: GeometryRenderLink(),
+  pushBackActive: active,
+);
 
 // Exercise the real render object without depending on Impeller availability.
 // Empty geometry skips shader drawing but retains layout/paint and UV caching.
 class _Layer extends SingleChildRenderObjectWidget {
-  const _Layer(
-      {super.key,
-      required this.active,
-      required this.origin,
-      required this.selfScaled})
-      : super(child: const SizedBox(width: 100, height: 40));
+  const _Layer({
+    super.key,
+    required this.active,
+    required this.origin,
+    required this.selfScaled,
+  }) : super(child: const SizedBox(width: 100, height: 40));
   final bool active;
   final Offset origin;
   final bool selfScaled;
@@ -120,7 +133,9 @@ class _Layer extends SingleChildRenderObjectWidget {
         ..selfScaled = selfScaled;
   @override
   void updateRenderObject(
-      BuildContext context, RenderLiquidGlassLayer renderObject) {
+    BuildContext context,
+    RenderLiquidGlassLayer renderObject,
+  ) {
     renderObject
       ..captureOriginInScreenSpace = origin
       ..selfScaled = selfScaled

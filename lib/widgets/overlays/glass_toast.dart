@@ -1,5 +1,7 @@
 import 'dart:async';
-import 'package:flutter/cupertino.dart';
+
+import 'package:cupertino_ui/cupertino_ui.dart';
+
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../theme/glass_theme_data.dart';
@@ -44,10 +46,7 @@ enum GlassToastType {
 /// Action button that can be displayed in a toast.
 class GlassToastAction {
   /// Creates a toast action button.
-  const GlassToastAction({
-    required this.label,
-    required this.onPressed,
-  });
+  const GlassToastAction({required this.label, required this.onPressed});
 
   /// The label text for the action button
   final String label;
@@ -234,15 +233,9 @@ class GlassToast extends StatefulWidget {
           quality: quality,
           onDismissed: removeEntry,
         );
-        toast = CupertinoTheme(
-          data: capturedCupertinoTheme,
-          child: toast,
-        );
+        toast = CupertinoTheme(data: capturedCupertinoTheme, child: toast);
         if (capturedGlassTheme != null) {
-          toast = GlassTheme(
-            data: capturedGlassTheme,
-            child: toast,
-          );
+          toast = GlassTheme(data: capturedGlassTheme, child: toast);
         }
         return toast;
       },
@@ -274,16 +267,19 @@ class _GlassToastState extends State<GlassToast> {
     final Color semanticColor = _getSemanticColor(glowColors);
 
     // Use user-provided icon or fall back to default for the toast type
-    final Widget displayIcon = widget.icon ??
-        Icon(widget.type == GlassToastType.success
-            ? CupertinoIcons.check_mark_circled_solid
-            : widget.type == GlassToastType.error
-                ? CupertinoIcons.xmark_circle_fill
-                : widget.type == GlassToastType.info
-                    ? CupertinoIcons.info_circle_fill
-                    : widget.type == GlassToastType.warning
-                        ? CupertinoIcons.exclamationmark_triangle_fill
-                        : CupertinoIcons.chat_bubble_fill);
+    final Widget displayIcon =
+        widget.icon ??
+        Icon(
+          widget.type == GlassToastType.success
+              ? CupertinoIcons.check_mark_circled_solid
+              : widget.type == GlassToastType.error
+              ? CupertinoIcons.xmark_circle_fill
+              : widget.type == GlassToastType.info
+              ? CupertinoIcons.info_circle_fill
+              : widget.type == GlassToastType.warning
+              ? CupertinoIcons.exclamationmark_triangle_fill
+              : CupertinoIcons.chat_bubble_fill,
+        );
 
     return Semantics(
       liveRegion: true,
@@ -293,14 +289,17 @@ class _GlassToastState extends State<GlassToast> {
   }
 
   Widget _buildToastContent(
-      BuildContext context, Color semanticColor, Widget displayIcon) {
+    BuildContext context,
+    Color semanticColor,
+    Widget displayIcon,
+  ) {
     final hasAction = widget.action != null;
     final themeData = GlassThemeData.of(context);
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     final bgColor = themeData.style == GlassStyle.classic
         ? (isDark
-            ? CupertinoColors.black.withValues(alpha: 0.7)
-            : CupertinoColors.white.withValues(alpha: 0.7))
+              ? CupertinoColors.black.withValues(alpha: 0.7)
+              : CupertinoColors.white.withValues(alpha: 0.7))
         : null;
     final textColor = CupertinoColors.label.resolveFrom(context);
     final effectiveSettings = GlassThemeHelpers.resolveSettings(
@@ -324,10 +323,7 @@ class _GlassToastState extends State<GlassToast> {
         quality: effectiveQuality,
         useOwnLayer: false,
         child: Container(
-          constraints: const BoxConstraints(
-            minHeight: 48,
-            maxWidth: 400,
-          ),
+          constraints: const BoxConstraints(minHeight: 48, maxWidth: 400),
           decoration: BoxDecoration(
             color: bgColor,
             borderRadius: BorderRadius.circular(24),
@@ -462,8 +458,9 @@ class _GlassToastOverlayState extends State<_GlassToastOverlay>
   late Animation<double> _fadeAnimation;
   Timer? _dismissTimer;
 
-  static const Animation<Offset> _noSlide =
-      AlwaysStoppedAnimation<Offset>(Offset.zero);
+  static const Animation<Offset> _noSlide = AlwaysStoppedAnimation<Offset>(
+    Offset.zero,
+  );
 
   @override
   void initState() {
@@ -493,10 +490,7 @@ class _GlassToastOverlayState extends State<_GlassToastOverlay>
       curve: const Interval(0.0, 0.5),
       reverseCurve: const Interval(0.5, 1.0),
     );
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(_fadeCurve);
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_fadeCurve);
 
     // Start entrance animation
     _controller.forward();

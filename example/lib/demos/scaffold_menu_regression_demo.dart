@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -66,10 +66,7 @@ class ScaffoldMenuRegressionDemo extends StatelessWidget {
             SizedBox(height: 4),
             Text(
               'GlassScaffold + GlassMenu — 0.14.x investigations',
-              style: TextStyle(
-                fontSize: 15,
-                color: Color(0x99FFFFFF),
-              ),
+              style: TextStyle(fontSize: 15, color: Color(0x99FFFFFF)),
             ),
             SizedBox(height: 32),
 
@@ -173,15 +170,20 @@ class _GlassScaffoldBugPage extends StatelessWidget {
         title: Text(
           'GlassScaffold — backgroundColor:',
           style: TextStyle(
-              color: CupertinoColors.white, fontWeight: FontWeight.w600),
+            color: CupertinoColors.white,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(CupertinoIcons.checkmark_seal_fill,
-                color: CupertinoColors.activeGreen, size: 48),
+            Icon(
+              CupertinoIcons.checkmark_seal_fill,
+              color: CupertinoColors.activeGreen,
+              size: 48,
+            ),
             SizedBox(height: 16),
             Text(
               'FIXED ✓',
@@ -280,7 +282,9 @@ class _GlassMenuInScaffoldPage extends StatelessWidget {
         title: Text(
           'GlassMenu + GlassScaffold',
           style: TextStyle(
-              color: CupertinoColors.white, fontWeight: FontWeight.w600),
+            color: CupertinoColors.white,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         actions: [
           GlassMenu(
@@ -480,8 +484,9 @@ class _InfoLabel extends StatelessWidget {
       decoration: BoxDecoration(
         color: CupertinoColors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border:
-            Border.all(color: CupertinoColors.white.withValues(alpha: 0.12)),
+        border: Border.all(
+          color: CupertinoColors.white.withValues(alpha: 0.12),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

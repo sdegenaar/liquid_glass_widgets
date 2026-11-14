@@ -8,18 +8,9 @@ void main() {
 
   group('DraggableIndicatorPhysics.applyRubberBandResistance', () {
     test('returns value unchanged in normal range (0-1)', () {
-      expect(
-        DraggableIndicatorPhysics.applyRubberBandResistance(0.0),
-        0.0,
-      );
-      expect(
-        DraggableIndicatorPhysics.applyRubberBandResistance(0.5),
-        0.5,
-      );
-      expect(
-        DraggableIndicatorPhysics.applyRubberBandResistance(1.0),
-        1.0,
-      );
+      expect(DraggableIndicatorPhysics.applyRubberBandResistance(0.0), 0.0);
+      expect(DraggableIndicatorPhysics.applyRubberBandResistance(0.5), 0.5);
+      expect(DraggableIndicatorPhysics.applyRubberBandResistance(1.0), 1.0);
     });
 
     test('compresses overdrag to the right (value > 1)', () {
@@ -162,12 +153,20 @@ void main() {
     test('range is always -1 to 1 for valid indices', () {
       for (int count = 2; count <= 6; count++) {
         for (int i = 0; i < count; i++) {
-          final alignment =
-              DraggableIndicatorPhysics.computeAlignment(i, count);
-          expect(alignment, greaterThanOrEqualTo(-1.0),
-              reason: 'index=$i count=$count');
-          expect(alignment, lessThanOrEqualTo(1.0),
-              reason: 'index=$i count=$count');
+          final alignment = DraggableIndicatorPhysics.computeAlignment(
+            i,
+            count,
+          );
+          expect(
+            alignment,
+            greaterThanOrEqualTo(-1.0),
+            reason: 'index=$i count=$count',
+          );
+          expect(
+            alignment,
+            lessThanOrEqualTo(1.0),
+            reason: 'index=$i count=$count',
+          );
         }
       }
     });
@@ -254,9 +253,7 @@ void main() {
     });
 
     // ── ensure-minimum-jump branches (lines 259, 263) ────────────────────────
-    test(
-        'rightward velocity at last item does NOT increment beyond bounds (line 259 guard)',
-        () {
+    test('rightward velocity at last item does NOT increment beyond bounds (line 259 guard)', () {
       // currentIndex = itemCount-1 so the guard `currentIndex < itemCount - 1`
       // is false → targetIndex stays at what projection computed.
       final result = DraggableIndicatorPhysics.computeTargetIndex(
@@ -270,9 +267,7 @@ void main() {
       expect(result, equals(2));
     });
 
-    test(
-        'leftward velocity at first item does NOT decrement below 0 (line 263 guard)',
-        () {
+    test('leftward velocity at first item does NOT decrement below 0 (line 263 guard)', () {
       // currentIndex = 0 so the guard `currentIndex > 0` is false.
       final result = DraggableIndicatorPhysics.computeTargetIndex(
         currentRelativeX: 0.01, // near the first item
@@ -284,9 +279,7 @@ void main() {
       expect(result, equals(0));
     });
 
-    test(
-        'rightward velocity with projected index > currentIndex skips ensure-jump (line 256-259 false branch)',
-        () {
+    test('rightward velocity with projected index > currentIndex skips ensure-jump (line 256-259 false branch)', () {
       // Projection already produces a larger index → guard is false, targetIndex unchanged.
       final result = DraggableIndicatorPhysics.computeTargetIndex(
         currentRelativeX: 0.35, // currentIndex = 1
@@ -300,9 +293,7 @@ void main() {
       expect(result, equals(2));
     });
 
-    test(
-        'leftward velocity with projected index < currentIndex skips ensure-jump (line 260-263 false branch)',
-        () {
+    test('leftward velocity with projected index < currentIndex skips ensure-jump (line 260-263 false branch)', () {
       final result = DraggableIndicatorPhysics.computeTargetIndex(
         currentRelativeX: 0.67, // currentIndex ≈ 2
         velocityX: -2.0,
@@ -325,9 +316,7 @@ void main() {
   // in the pure-math part: index = (rawRelativeX * itemCount).floor().clamp(0, n-1)
   // ──────────────────────────────────────────────────────────────────────────
 
-  group(
-      'DraggableIndicatorPhysics.tabIndexFromGlobalPosition — formula contract',
-      () {
+  group('DraggableIndicatorPhysics.tabIndexFromGlobalPosition — formula contract', () {
     // Helper replicating the inner arithmetic without a RenderBox.
     int formula(double rawRelativeX, int itemCount) =>
         (rawRelativeX * itemCount).floor().clamp(0, itemCount - 1);
@@ -337,7 +326,9 @@ void main() {
       test('tap at 49% → index 0', () => expect(formula(0.49, 2), 0));
       test('tap at 50% → index 1', () => expect(formula(0.50, 2), 1));
       test(
-          'tap at 100% → index 1 (clamped)', () => expect(formula(1.00, 2), 1));
+        'tap at 100% → index 1 (clamped)',
+        () => expect(formula(1.00, 2), 1),
+      );
     });
 
     group('4 tabs — equal 25/50/75 boundaries (regression for issue #157)', () {
@@ -345,16 +336,24 @@ void main() {
       test('tap at 0% → index 0', () => expect(formula(0.00, 4), 0));
       test('tap at 24% → index 0', () => expect(formula(0.24, 4), 0));
       test(
-          'tap at 25% → index 1 (boundary)', () => expect(formula(0.25, 4), 1));
+        'tap at 25% → index 1 (boundary)',
+        () => expect(formula(0.25, 4), 1),
+      );
       test('tap at 49% → index 1', () => expect(formula(0.49, 4), 1));
       test(
-          'tap at 50% → index 2 (boundary)', () => expect(formula(0.50, 4), 2));
+        'tap at 50% → index 2 (boundary)',
+        () => expect(formula(0.50, 4), 2),
+      );
       test('tap at 74% → index 2', () => expect(formula(0.74, 4), 2));
       test(
-          'tap at 75% → index 3 (boundary)', () => expect(formula(0.75, 4), 3));
+        'tap at 75% → index 3 (boundary)',
+        () => expect(formula(0.75, 4), 3),
+      );
       test('tap at 99% → index 3', () => expect(formula(0.99, 4), 3));
       test(
-          'tap at 100% → index 3 (clamped)', () => expect(formula(1.00, 4), 3));
+        'tap at 100% → index 3 (clamped)',
+        () => expect(formula(1.00, 4), 3),
+      );
     });
 
     group('3 tabs — equal 33.3/66.6 boundaries', () {

@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -32,119 +32,130 @@ void main() {
       .toList();
 
   GlassBarItem addItem({VoidCallback? onTap}) => GlassBarItem.icon(
-        id: 'add',
-        icon: const Icon(CupertinoIcons.add),
-        label: 'Add',
-        onTap: onTap ?? () {},
-      );
+    id: 'add',
+    icon: const Icon(CupertinoIcons.add),
+    label: 'Add',
+    onTap: onTap ?? () {},
+  );
 
   /// The pinned `Add` icon, as a pointer user hits it.
   Finder pinnedAdd() => find.descendant(
-        of: find.byType(GlassNavPinnedHost),
-        matching: find.byIcon(CupertinoIcons.add),
-      );
+    of: find.byType(GlassNavPinnedHost),
+    matching: find.byIcon(CupertinoIcons.add),
+  );
 
   Widget pageMenu(
     GlassMenuController controller, {
     bool showDismissBarrier = true,
     VoidCallback? onCopy,
-  }) =>
-      GlassMenu(
-        controller: controller,
-        showDismissBarrier: showDismissBarrier,
-        trigger: const SizedBox(width: 44, height: 44, child: Text('Open')),
-        items: [GlassMenuItem(title: 'Copy', onTap: onCopy ?? () {})],
-      );
+  }) => GlassMenu(
+    controller: controller,
+    showDismissBarrier: showDismissBarrier,
+    trigger: const SizedBox(width: 44, height: 44, child: Text('Open')),
+    items: [GlassMenuItem(title: 'Copy', onTap: onCopy ?? () {})],
+  );
 
   /// The #472 repro: a pinned `Add` action and a menu in the page body.
   Widget page(Widget body, {List<GlassBarItem>? actions}) => GlassScaffold(
-        appBar: GlassAppBar.pinned(
-          title: const Text('Title'),
-          actions: actions ?? [addItem()],
-        ),
-        body: Center(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Text('Page text'),
-            body,
-          ]),
-        ),
-      );
+    appBar: GlassAppBar.pinned(
+      title: const Text('Title'),
+      actions: actions ?? [addItem()],
+    ),
+    body: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [const Text('Page text'), body],
+      ),
+    ),
+  );
 
   Widget shellApp(Widget home) => CupertinoApp(
-        builder: (context, child) => GlassNavigationShell(child: child!),
-        home: home,
-      );
+    builder: (context, child) => GlassNavigationShell(child: child!),
+    home: home,
+  );
 
   group('a page GlassMenu inside GlassNavigationShell', () {
     testWidgets(
-        'hides the pinned actions while open and restores them on close '
-        '(#472)', (tester) async {
-      final semantics = tester.ensureSemantics();
-      final controller = GlassMenuController();
-      await tester.pumpWidget(shellApp(page(pageMenu(controller))));
-      await settle(tester);
-      expect(find.semantics.byLabel('Add'), findsOne);
+      'hides the pinned actions while open and restores them on close '
+      '(#472)',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        final controller = GlassMenuController();
+        await tester.pumpWidget(shellApp(page(pageMenu(controller))));
+        await settle(tester);
+        expect(find.semantics.byLabel('Add'), findsOne);
 
-      controller.open();
-      await settle(tester);
+        controller.open();
+        await settle(tester);
 
-      expect(find.semantics.byLabel('Add'), findsNothing);
-      expect(find.semantics.byLabel('Page text'), findsNothing);
-      expect(find.semantics.byLabel('Copy'), findsOne);
-      expect(traversal(tester), ['Dismiss menu', 'Copy']);
+        expect(find.semantics.byLabel('Add'), findsNothing);
+        expect(find.semantics.byLabel('Page text'), findsNothing);
+        expect(find.semantics.byLabel('Copy'), findsOne);
+        expect(traversal(tester), ['Dismiss menu', 'Copy']);
 
-      controller.close();
-      await settle(tester);
+        controller.close();
+        await settle(tester);
 
-      expect(find.semantics.byLabel('Add'), findsOne);
-      expect(find.semantics.byLabel('Page text'), findsOne);
-      semantics.dispose();
-    });
+        expect(find.semantics.byLabel('Add'), findsOne);
+        expect(find.semantics.byLabel('Page text'), findsOne);
+        semantics.dispose();
+      },
+    );
 
     testWidgets(
-        'a tap on the pinned actions closes the menu instead of reaching them',
-        (tester) async {
-      final semantics = tester.ensureSemantics();
-      final controller = GlassMenuController();
-      var added = 0;
-      await tester.pumpWidget(shellApp(page(
-        pageMenu(controller),
-        actions: [addItem(onTap: () => added++)],
-      )));
-      await settle(tester);
-      controller.open();
-      await settle(tester);
-
-      await tester.tap(pinnedAdd(), warnIfMissed: false);
-      await settle(tester);
-
-      expect(added, 0);
-      expect(controller.isOpen, isFalse);
-      // Back for pointers in the same frame as for screen readers.
-      expect(find.semantics.byLabel('Add'), findsOne);
-
-      await tester.tap(pinnedAdd());
-      await settle(tester);
-      expect(added, 1);
-      semantics.dispose();
-    });
-
-    testWidgets('a long press or drag on the chrome activates nothing',
-        (tester) async {
-      final controller = GlassMenuController();
-      var added = 0;
-      await tester.pumpWidget(shellApp(page(
-        pageMenu(controller),
-        actions: [
-          addItem(onTap: () => added++),
-          GlassBarItem.icon(
-            id: 'share',
-            icon: const Icon(CupertinoIcons.share),
-            label: 'Share',
-            onTap: () {},
+      'a tap on the pinned actions closes the menu instead of reaching them',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        final controller = GlassMenuController();
+        var added = 0;
+        await tester.pumpWidget(
+          shellApp(
+            page(
+              pageMenu(controller),
+              actions: [addItem(onTap: () => added++)],
+            ),
           ),
-        ],
-      )));
+        );
+        await settle(tester);
+        controller.open();
+        await settle(tester);
+
+        await tester.tap(pinnedAdd(), warnIfMissed: false);
+        await settle(tester);
+
+        expect(added, 0);
+        expect(controller.isOpen, isFalse);
+        // Back for pointers in the same frame as for screen readers.
+        expect(find.semantics.byLabel('Add'), findsOne);
+
+        await tester.tap(pinnedAdd());
+        await settle(tester);
+        expect(added, 1);
+        semantics.dispose();
+      },
+    );
+
+    testWidgets('a long press or drag on the chrome activates nothing', (
+      tester,
+    ) async {
+      final controller = GlassMenuController();
+      var added = 0;
+      await tester.pumpWidget(
+        shellApp(
+          page(
+            pageMenu(controller),
+            actions: [
+              addItem(onTap: () => added++),
+              GlassBarItem.icon(
+                id: 'share',
+                icon: const Icon(CupertinoIcons.share),
+                label: 'Share',
+                onTap: () {},
+              ),
+            ],
+          ),
+        ),
+      );
       await settle(tester);
 
       // Past the touch slop and back, ending where it started.
@@ -205,13 +216,14 @@ void main() {
       expect(controller.isOpen, isFalse);
     });
 
-    testWidgets('pointers that miss the chrome reach the menu and barrier',
-        (tester) async {
+    testWidgets('pointers that miss the chrome reach the menu and barrier', (
+      tester,
+    ) async {
       final controller = GlassMenuController();
       var copied = 0;
-      await tester.pumpWidget(shellApp(page(
-        pageMenu(controller, onCopy: () => copied++),
-      )));
+      await tester.pumpWidget(
+        shellApp(page(pageMenu(controller, onCopy: () => copied++))),
+      );
       await settle(tester);
       controller.open();
       await settle(tester);
@@ -227,8 +239,9 @@ void main() {
       expect(controller.isOpen, isFalse);
     });
 
-    testWidgets('restores the pinned actions when closed from the barrier',
-        (tester) async {
+    testWidgets('restores the pinned actions when closed from the barrier', (
+      tester,
+    ) async {
       final semantics = tester.ensureSemantics();
       final controller = GlassMenuController();
       await tester.pumpWidget(shellApp(page(pageMenu(controller))));
@@ -247,47 +260,57 @@ void main() {
     });
 
     testWidgets(
-        'leaves the pinned actions alone with showDismissBarrier: false',
-        (tester) async {
-      final semantics = tester.ensureSemantics();
-      final controller = GlassMenuController();
-      var added = 0;
-      await tester.pumpWidget(shellApp(page(
-        pageMenu(controller, showDismissBarrier: false),
-        actions: [addItem(onTap: () => added++)],
-      )));
-      await settle(tester);
+      'leaves the pinned actions alone with showDismissBarrier: false',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        final controller = GlassMenuController();
+        var added = 0;
+        await tester.pumpWidget(
+          shellApp(
+            page(
+              pageMenu(controller, showDismissBarrier: false),
+              actions: [addItem(onTap: () => added++)],
+            ),
+          ),
+        );
+        await settle(tester);
 
-      controller.open();
-      await settle(tester);
+        controller.open();
+        await settle(tester);
 
-      expect(find.byType(ShellChromeBarrier), findsNothing);
-      expect(find.semantics.byLabel('Dismiss menu'), findsNothing);
-      expect(find.semantics.byLabel('Page text'), findsOne);
-      expect(find.semantics.byLabel('Add'), findsOne);
-      expect(traversal(tester), containsAllInOrder(['Add', 'Copy']));
+        expect(find.byType(ShellChromeBarrier), findsNothing);
+        expect(find.semantics.byLabel('Dismiss menu'), findsNothing);
+        expect(find.semantics.byLabel('Page text'), findsOne);
+        expect(find.semantics.byLabel('Add'), findsOne);
+        expect(traversal(tester), containsAllInOrder(['Add', 'Copy']));
 
-      await tester.tap(pinnedAdd());
-      await tester.pump();
-      expect(added, 1);
-      semantics.dispose();
-    });
+        await tester.tap(pinnedAdd());
+        await tester.pump();
+        expect(added, 1);
+        semantics.dispose();
+      },
+    );
 
-    testWidgets('restores the pinned actions when removed while open',
-        (tester) async {
+    testWidgets('restores the pinned actions when removed while open', (
+      tester,
+    ) async {
       final semantics = tester.ensureSemantics();
       final controller = GlassMenuController();
       final showMenu = ValueNotifier<bool>(true);
       addTearDown(showMenu.dispose);
       var added = 0;
-      await tester.pumpWidget(shellApp(page(
-        ValueListenableBuilder<bool>(
-          valueListenable: showMenu,
-          builder: (context, show, _) =>
-              show ? pageMenu(controller) : const SizedBox.shrink(),
+      await tester.pumpWidget(
+        shellApp(
+          page(
+            ValueListenableBuilder<bool>(
+              valueListenable: showMenu,
+              builder: (context, show, _) =>
+                  show ? pageMenu(controller) : const SizedBox.shrink(),
+            ),
+            actions: [addItem(onTap: () => added++)],
+          ),
         ),
-        actions: [addItem(onTap: () => added++)],
-      )));
+      );
       await settle(tester);
 
       controller.open();
@@ -305,27 +328,32 @@ void main() {
       semantics.dispose();
     });
 
-    testWidgets('restores the chrome when its route is popped while open',
-        (tester) async {
+    testWidgets('restores the chrome when its route is popped while open', (
+      tester,
+    ) async {
       final semantics = tester.ensureSemantics();
       final controller = GlassMenuController();
       var edited = 0;
-      await tester.pumpWidget(shellApp(page(
-        const SizedBox.shrink(),
-        actions: [
-          GlassBarItem.icon(
-            id: 'edit',
-            icon: const Icon(CupertinoIcons.pencil),
-            label: 'Edit',
-            onTap: () => edited++,
+      await tester.pumpWidget(
+        shellApp(
+          page(
+            const SizedBox.shrink(),
+            actions: [
+              GlassBarItem.icon(
+                id: 'edit',
+                icon: const Icon(CupertinoIcons.pencil),
+                label: 'Edit',
+                onTap: () => edited++,
+              ),
+            ],
           ),
-        ],
-      )));
+        ),
+      );
       await settle(tester);
       final navigator = tester.state<NavigatorState>(find.byType(Navigator));
-      navigator.push(CupertinoPageRoute<void>(
-        builder: (_) => page(pageMenu(controller)),
-      ));
+      navigator.push(
+        CupertinoPageRoute<void>(builder: (_) => page(pageMenu(controller))),
+      );
       await settle(tester);
 
       controller.open();
@@ -337,10 +365,12 @@ void main() {
 
       expect(find.semantics.byLabel('Copy'), findsNothing);
       expect(find.semantics.byLabel('Edit'), findsOne);
-      await tester.tap(find.descendant(
-        of: find.byType(GlassNavPinnedHost),
-        matching: find.byIcon(CupertinoIcons.pencil),
-      ));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(GlassNavPinnedHost),
+          matching: find.byIcon(CupertinoIcons.pencil),
+        ),
+      );
       await tester.pump();
       expect(edited, 1);
       semantics.dispose();
@@ -351,29 +381,31 @@ void main() {
     Widget capsuleMenuPage({
       Widget body = const SizedBox.shrink(),
       VoidCallback? onCut,
-    }) =>
-        page(
-          body,
-          actions: [
-            GlassBarItem.menu(
-              icon: const Icon(CupertinoIcons.ellipsis),
-              id: 'more',
-              label: 'More',
-              menuItems: [GlassMenuItem(title: 'Cut', onTap: onCut ?? () {})],
-            ),
-          ],
-        );
+    }) => page(
+      body,
+      actions: [
+        GlassBarItem.menu(
+          icon: const Icon(CupertinoIcons.ellipsis),
+          id: 'more',
+          label: 'More',
+          menuItems: [GlassMenuItem(title: 'Cut', onTap: onCut ?? () {})],
+        ),
+      ],
+    );
 
     Future<void> openCapsuleMenu(WidgetTester tester) async {
-      await tester.tap(find.descendant(
-        of: find.byType(GlassNavPinnedHost),
-        matching: find.byIcon(CupertinoIcons.ellipsis),
-      ));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(GlassNavPinnedHost),
+          matching: find.byIcon(CupertinoIcons.ellipsis),
+        ),
+      );
       await settle(tester);
     }
 
-    testWidgets('exposes its rows and blocks the capsule and the page',
-        (tester) async {
+    testWidgets('exposes its rows and blocks the capsule and the page', (
+      tester,
+    ) async {
       final semantics = tester.ensureSemantics();
       await tester.pumpWidget(shellApp(capsuleMenuPage()));
       await settle(tester);
@@ -397,21 +429,26 @@ void main() {
       semantics.dispose();
     });
 
-    testWidgets('keeps working while a page-level barrier holds the chrome',
-        (tester) async {
+    testWidgets('keeps working while a page-level barrier holds the chrome', (
+      tester,
+    ) async {
       final semantics = tester.ensureSemantics();
       final held = ValueNotifier<bool>(false);
       addTearDown(held.dispose);
       var cut = 0;
-      await tester.pumpWidget(shellApp(capsuleMenuPage(
-        onCut: () => cut++,
-        body: ValueListenableBuilder<bool>(
-          valueListenable: held,
-          builder: (context, value, _) => value
-              ? const ShellChromeBarrier(child: SizedBox.shrink())
-              : const SizedBox.shrink(),
+      await tester.pumpWidget(
+        shellApp(
+          capsuleMenuPage(
+            onCut: () => cut++,
+            body: ValueListenableBuilder<bool>(
+              valueListenable: held,
+              builder: (context, value, _) => value
+                  ? const ShellChromeBarrier(child: SizedBox.shrink())
+                  : const SizedBox.shrink(),
+            ),
+          ),
         ),
-      )));
+      );
       await settle(tester);
 
       await openCapsuleMenu(tester);
@@ -440,12 +477,14 @@ void main() {
     final semantics = tester.ensureSemantics();
     final controller = GlassMenuController();
     var added = 0;
-    await tester.pumpWidget(CupertinoApp(
-      home: page(
-        pageMenu(controller),
-        actions: [addItem(onTap: () => added++)],
+    await tester.pumpWidget(
+      CupertinoApp(
+        home: page(
+          pageMenu(controller),
+          actions: [addItem(onTap: () => added++)],
+        ),
       ),
-    ));
+    );
     await settle(tester);
     expect(find.byType(ShellChromeBarrierGate), findsNothing);
     expect(find.byType(ShellChromeBarrierScope), findsNothing);
@@ -490,8 +529,9 @@ void main() {
       expect(notified, 2);
     });
 
-    testWidgets('a barrier moves its hold when its scope changes',
-        (tester) async {
+    testWidgets('a barrier moves its hold when its scope changes', (
+      tester,
+    ) async {
       final first = ShellChromeBarriers();
       final second = ShellChromeBarriers();
       addTearDown(first.dispose);
@@ -513,29 +553,30 @@ void main() {
       expect(second.active, isFalse);
     });
 
-    testWidgets('a barrier moved with a GlobalKey keeps its hold',
-        (tester) async {
+    testWidgets('a barrier moved with a GlobalKey keeps its hold', (
+      tester,
+    ) async {
       final barriers = ShellChromeBarriers();
       addTearDown(barriers.dispose);
       final key = GlobalKey();
       Widget tree({required bool left}) => ShellChromeBarrierScope(
-            barriers: barriers,
-            child: Row(
-              textDirection: TextDirection.ltr,
-              children: [
-                for (final side in [true, false])
-                  SizedBox(
-                    width: 10,
-                    child: side == left
-                        ? ShellChromeBarrier(
-                            key: key,
-                            child: const SizedBox.shrink(),
-                          )
-                        : null,
-                  ),
-              ],
-            ),
-          );
+        barriers: barriers,
+        child: Row(
+          textDirection: TextDirection.ltr,
+          children: [
+            for (final side in [true, false])
+              SizedBox(
+                width: 10,
+                child: side == left
+                    ? ShellChromeBarrier(
+                        key: key,
+                        child: const SizedBox.shrink(),
+                      )
+                    : null,
+              ),
+          ],
+        ),
+      );
 
       await tester.pumpWidget(tree(left: true));
       expect(barriers.active, isTrue);
@@ -544,10 +585,12 @@ void main() {
       expect(find.byKey(key), findsOne);
       expect(barriers.active, isTrue);
 
-      await tester.pumpWidget(ShellChromeBarrierScope(
-        barriers: barriers,
-        child: const SizedBox.shrink(),
-      ));
+      await tester.pumpWidget(
+        ShellChromeBarrierScope(
+          barriers: barriers,
+          child: const SizedBox.shrink(),
+        ),
+      );
       expect(barriers.active, isFalse);
     });
 

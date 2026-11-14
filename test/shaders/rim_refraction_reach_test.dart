@@ -62,6 +62,8 @@ void main() {
 
     expect(reach, greaterThan(pillHeight));
     expect(
-        math.min(reach, 0.5 * pillHeight), lessThanOrEqualTo(pillHeight / 2));
+      math.min(reach, 0.5 * pillHeight),
+      lessThanOrEqualTo(pillHeight / 2),
+    );
   });
 }

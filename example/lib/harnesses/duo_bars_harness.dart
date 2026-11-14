@@ -58,7 +58,7 @@ library;
 import 'dart:io' show Directory, File;
 import 'dart:ui' show DisplayFeatureType;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -74,8 +74,9 @@ final Map<String, String> _env = () {
   return {
     for (final line in file.readAsLinesSync())
       if (line.contains('='))
-        line.substring(0, line.indexOf('=')).trim():
-            line.substring(line.indexOf('=') + 1).trim(),
+        line.substring(0, line.indexOf('=')).trim(): line
+            .substring(line.indexOf('=') + 1)
+            .trim(),
   };
 }();
 
@@ -93,25 +94,29 @@ final GlassSheetPlacement _placement = GlassSheetPlacement.values.firstWhere(
   (value) => value.name == _env['PLACEMENT'],
   orElse: () => GlassSheetPlacement.automatic,
 );
-final GlassVerticalBarCompression _compression =
-    GlassVerticalBarCompression.values.firstWhere(
-  (value) => value.name == _env['COMPRESSION'],
-  orElse: () => GlassVerticalBarCompression.automatic,
-);
+final GlassVerticalBarCompression _compression = GlassVerticalBarCompression
+    .values
+    .firstWhere(
+      (value) => value.name == _env['COMPRESSION'],
+      orElse: () => GlassVerticalBarCompression.automatic,
+    );
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
   switch (_env['ORIENT']) {
     case 'portrait':
-      await SystemChrome.setPreferredOrientations(
-          [DeviceOrientation.portraitUp]);
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+      ]);
     case 'landscapeLeft':
-      await SystemChrome.setPreferredOrientations(
-          [DeviceOrientation.landscapeLeft]);
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+      ]);
     case 'landscapeRight':
-      await SystemChrome.setPreferredOrientations(
-          [DeviceOrientation.landscapeRight]);
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeRight,
+      ]);
   }
   runApp(LiquidGlassWidgets.wrap(child: const _App()));
 }
@@ -121,68 +126,68 @@ class _App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => CupertinoApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Duo Bars',
-        theme: const CupertinoThemeData(brightness: Brightness.light),
-        builder: (context, child) => Directionality(
-          textDirection: _rtl ? TextDirection.rtl : TextDirection.ltr,
-          // The package reads Reduce Transparency from highContrast until
-          // Flutter surfaces it (flutter/flutter#190318).
-          child: MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              highContrast:
-                  _reduceTransparency || MediaQuery.highContrastOf(context),
-            ),
-            child: GlassNavigationShell(
-              verticalBarBehavior: _barsDisabled
-                  ? GlassVerticalBarBehavior.disabled
-                  : GlassVerticalBarBehavior.automatic,
-              verticalBarCompression: _compression,
-              child: child!,
-            ),
-          ),
+    debugShowCheckedModeBanner: false,
+    title: 'Duo Bars',
+    theme: const CupertinoThemeData(brightness: Brightness.light),
+    builder: (context, child) => Directionality(
+      textDirection: _rtl ? TextDirection.rtl : TextDirection.ltr,
+      // The package reads Reduce Transparency from highContrast until
+      // Flutter surfaces it (flutter/flutter#190318).
+      child: MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          highContrast:
+              _reduceTransparency || MediaQuery.highContrastOf(context),
         ),
-        // A navigator is only built with a route source; every route this
-        // harness shows comes from the initial stack below.
-        onGenerateRoute: (_) => _route(const _ListScreen(title: 'Inbox')),
-        onGenerateInitialRoutes: (_) => _initialRoutes(),
-      );
+        child: GlassNavigationShell(
+          verticalBarBehavior: _barsDisabled
+              ? GlassVerticalBarBehavior.disabled
+              : GlassVerticalBarBehavior.automatic,
+          verticalBarCompression: _compression,
+          child: child!,
+        ),
+      ),
+    ),
+    // A navigator is only built with a route source; every route this
+    // harness shows comes from the initial stack below.
+    onGenerateRoute: (_) => _route(const _ListScreen(title: 'Inbox')),
+    onGenerateInitialRoutes: (_) => _initialRoutes(),
+  );
 
   /// The native scenarios open on a pushed detail screen, with the root
   /// underneath, so the back button is showing.
   static List<Route<void>> _initialRoutes() => switch (_scenario) {
-        'root' => [_route(const _RootScreen())],
-        'sheet' => [_route(const _SheetScreen())],
-        'popover' => [
-            _route(const _ListScreen(title: 'Inbox')),
-            _route(const _DetailScreen(popover: true)),
-          ],
-        'menu' => [
-            _route(const _ListScreen(title: 'Inbox')),
-            _route(const _DetailScreen(menu: true)),
-          ],
-        'search' => [_route(const _RootScreen(searchable: true))],
-        'tabs' => [_route(const _TabsScreen(pushed: false))],
-        'tabsnav' => [_route(const _TabsScreen())],
-        'navbottom' => [
-            _route(const _ListScreen(title: 'Inbox')),
-            _route(const _BottomBarScreen()),
-          ],
-        'axis' => [
-            _route(const _ListScreen(title: 'Inbox')),
-            _route(const _AxisScreen()),
-          ],
-        'alert' => [
-            _route(const _ListScreen(title: 'Inbox')),
-            _route(const _DetailScreen(alert: true)),
-          ],
-        'push' => [_route(const _ListScreen(title: 'Inbox', pushes: true))],
-        'nested' => [_route(const _NestedScreen())],
-        _ => [
-            _route(const _ListScreen(title: 'Inbox')),
-            _route(const _DetailScreen()),
-          ],
-      };
+    'root' => [_route(const _RootScreen())],
+    'sheet' => [_route(const _SheetScreen())],
+    'popover' => [
+      _route(const _ListScreen(title: 'Inbox')),
+      _route(const _DetailScreen(popover: true)),
+    ],
+    'menu' => [
+      _route(const _ListScreen(title: 'Inbox')),
+      _route(const _DetailScreen(menu: true)),
+    ],
+    'search' => [_route(const _RootScreen(searchable: true))],
+    'tabs' => [_route(const _TabsScreen(pushed: false))],
+    'tabsnav' => [_route(const _TabsScreen())],
+    'navbottom' => [
+      _route(const _ListScreen(title: 'Inbox')),
+      _route(const _BottomBarScreen()),
+    ],
+    'axis' => [
+      _route(const _ListScreen(title: 'Inbox')),
+      _route(const _AxisScreen()),
+    ],
+    'alert' => [
+      _route(const _ListScreen(title: 'Inbox')),
+      _route(const _DetailScreen(alert: true)),
+    ],
+    'push' => [_route(const _ListScreen(title: 'Inbox', pushes: true))],
+    'nested' => [_route(const _NestedScreen())],
+    _ => [
+      _route(const _ListScreen(title: 'Inbox')),
+      _route(const _DetailScreen()),
+    ],
+  };
 }
 
 /// The iOS 27 material, which the native bars are drawn in.
@@ -224,8 +229,8 @@ class _Rows extends StatelessWidget {
     final top = GlassVerticalBar.maybeOf(context) != null
         ? stripTop + 10
         : _barInStatusRow(context)
-            ? padding.top + 10
-            : padding.top + barTop;
+        ? padding.top + 10
+        : padding.top + barTop;
     return ListView.builder(
       padding: EdgeInsets.only(top: top, bottom: 120),
       itemCount: count,
@@ -266,48 +271,55 @@ class _Row extends StatelessWidget {
       bottom: false,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        child: Row(children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: HSVColor.fromAHSV(1, (i % 12) * 30.0, 0.7, 0.9).toColor(),
-              borderRadius: BorderRadius.circular(10),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: HSVColor.fromAHSV(
+                  1,
+                  (i % 12) * 30.0,
+                  0.7,
+                  0.9,
+                ).toColor(),
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          // SwiftUI's headline and subheadline: their tracking, and the line
-          // heights the native rows measure at.
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 2,
-              children: [
-                Text(
-                  '$title row ${i + 1}',
-                  style: const TextStyle(
-                    fontSize: 17,
-                    height: 22 / 17,
-                    letterSpacing: -0.43,
-                    fontWeight: FontWeight.w600,
-                    color: CupertinoColors.label,
+            const SizedBox(width: 12),
+            // SwiftUI's headline and subheadline: their tracking, and the line
+            // heights the native rows measure at.
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 2,
+                children: [
+                  Text(
+                    '$title row ${i + 1}',
+                    style: const TextStyle(
+                      fontSize: 17,
+                      height: 22 / 17,
+                      letterSpacing: -0.43,
+                      fontWeight: FontWeight.w600,
+                      color: CupertinoColors.label,
+                    ),
                   ),
-                ),
-                // A non-breaking space for iOS's line breaking, which keeps a
-                // lone word off the last line.
-                const Text(
-                  'Secondary text that fills the width of the\u00a0row',
-                  style: TextStyle(
-                    fontSize: 15,
-                    height: 18.4 / 15,
-                    letterSpacing: -0.23,
-                    color: CupertinoColors.secondaryLabel,
+                  // A non-breaking space for iOS's line breaking, which keeps a
+                  // lone word off the last line.
+                  const Text(
+                    'Secondary text that fills the width of the\u00a0row',
+                    style: TextStyle(
+                      fontSize: 15,
+                      height: 18.4 / 15,
+                      letterSpacing: -0.23,
+                      color: CupertinoColors.secondaryLabel,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ]),
+          ],
+        ),
       ),
     );
   }
@@ -341,13 +353,13 @@ class _ListScreenState extends State<_ListScreen> {
 
   @override
   Widget build(BuildContext context) => GlassScaffold(
-        backgroundColor: CupertinoColors.white,
-        appBar: GlassAppBar.pinned(
-          title: Text(widget.title),
-          buttonSettings: _glass,
-        ),
-        body: _Rows(title: widget.title),
-      );
+    backgroundColor: CupertinoColors.white,
+    appBar: GlassAppBar.pinned(
+      title: Text(widget.title),
+      buttonSettings: _glass,
+    ),
+    body: _Rows(title: widget.title),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -358,41 +370,41 @@ class _ListScreenState extends State<_ListScreen> {
 /// them: the pinned compose button first, then share and favourite sharing a
 /// capsule, then a spacer, then the overflow menu on its own.
 List<GlassBarItem> _detailActions() => [
-      GlassBarItem.icon(
-        icon: const Icon(CupertinoIcons.square_pencil),
-        label: 'Compose',
-        background: GlassBarItemBackground.separate,
+  GlassBarItem.icon(
+    icon: const Icon(CupertinoIcons.square_pencil),
+    label: 'Compose',
+    background: GlassBarItemBackground.separate,
+    onTap: () {},
+  ),
+  GlassBarItem.icon(
+    icon: const Icon(CupertinoIcons.share),
+    label: 'Share',
+    onTap: () {},
+  ),
+  GlassBarItem.icon(
+    icon: const Icon(CupertinoIcons.heart),
+    label: 'Favourite',
+    onTap: () {},
+  ),
+  const GlassBarItem.spacer(),
+  GlassBarItem.menu(
+    icon: const Icon(CupertinoIcons.ellipsis),
+    label: 'More',
+    menuItems: [
+      GlassMenuItem(
+        title: 'Copy',
+        icon: const Icon(CupertinoIcons.doc_on_doc),
         onTap: () {},
       ),
-      GlassBarItem.icon(
-        icon: const Icon(CupertinoIcons.share),
-        label: 'Share',
+      GlassMenuItem(
+        title: 'Delete',
+        icon: const Icon(CupertinoIcons.delete),
+        isDestructive: true,
         onTap: () {},
       ),
-      GlassBarItem.icon(
-        icon: const Icon(CupertinoIcons.heart),
-        label: 'Favourite',
-        onTap: () {},
-      ),
-      const GlassBarItem.spacer(),
-      GlassBarItem.menu(
-        icon: const Icon(CupertinoIcons.ellipsis),
-        label: 'More',
-        menuItems: [
-          GlassMenuItem(
-            title: 'Copy',
-            icon: const Icon(CupertinoIcons.doc_on_doc),
-            onTap: () {},
-          ),
-          GlassMenuItem(
-            title: 'Delete',
-            icon: const Icon(CupertinoIcons.delete),
-            isDestructive: true,
-            onTap: () {},
-          ),
-        ],
-      ),
-    ];
+    ],
+  ),
+];
 
 class _DetailScreen extends StatefulWidget {
   const _DetailScreen({
@@ -472,9 +484,7 @@ class _DetailScreenState extends State<_DetailScreen> {
             _routeMenuItem(context)
           else if (widget.popover)
             GlassBarItem.custom(
-              child: _ComposePopover(
-                onReady: (open) => _openPopover = open,
-              ),
+              child: _ComposePopover(onReady: (open) => _openPopover = open),
               label: 'Compose',
               background: GlassBarItemBackground.separate,
               axisBehavior: GlassBarItemAxisBehavior.verticalPreferred,
@@ -505,10 +515,12 @@ GlassBarItem _routeMenuItem(BuildContext screen) {
   return GlassBarItem.sheet(
     id: 'more',
     label: 'More',
-    icon: Builder(builder: (context) {
-      iconContext = context;
-      return const Icon(CupertinoIcons.ellipsis);
-    }),
+    icon: Builder(
+      builder: (context) {
+        iconContext = context;
+        return const Icon(CupertinoIcons.ellipsis);
+      },
+    ),
     onPresent: (_) {
       // The icon drawn in the strip lives above the navigator, so the route
       // is pushed from the screen.
@@ -516,14 +528,16 @@ GlassBarItem _routeMenuItem(BuildContext screen) {
       if (context == null || !context.mounted) return;
       final box = context.findRenderObject()! as RenderBox;
       final icon = box.localToGlobal(Offset.zero) & box.size;
-      Navigator.of(screen, rootNavigator: true).push(RawDialogRoute<void>(
-        barrierDismissible: false,
-        barrierColor: const Color(0x00000000),
-        transitionDuration: Duration.zero,
-        pageBuilder: (_, __, ___) => _RouteMenu(
-          source: Rect.fromCenter(center: icon.center, width: 48, height: 48),
+      Navigator.of(screen, rootNavigator: true).push(
+        RawDialogRoute<void>(
+          barrierDismissible: false,
+          barrierColor: const Color(0x00000000),
+          transitionDuration: Duration.zero,
+          pageBuilder: (_, _, _) => _RouteMenu(
+            source: Rect.fromCenter(center: icon.center, width: 48, height: 48),
+          ),
         ),
-      ));
+      );
     },
   );
 }
@@ -548,47 +562,46 @@ class _RouteMenuState extends State<_RouteMenu> {
   }
 
   @override
-  Widget build(BuildContext context) => Stack(children: [
-        Positioned.fromRect(
-          rect: widget.source,
-          child: GlassMenu(
-            controller: _controller,
-            settings: _glass,
-            trigger: const SizedBox.expand(),
-            menuWidth: 250,
-            autoAdjustToScreen: true,
-            // Pop once the droplet is home.
-            onClose: () {
-              final navigator = Navigator.of(context);
-              Future<void>.delayed(
-                const Duration(milliseconds: 700),
-                () {
-                  if (mounted) navigator.pop();
-                },
-              );
-            },
-            // As tall as the native `menu` scenario's: taller than the room
-            // between the item's centre and the status cluster.
-            items: [
-              for (final (title, icon) in [
-                ('Unpin', CupertinoIcons.pin_slash),
-                ('Share', CupertinoIcons.share),
-                ('Invite', CupertinoIcons.person_badge_plus),
-                ('Copy ID', CupertinoIcons.doc_on_doc),
-                ('Add to folder', CupertinoIcons.folder_badge_plus),
-                ('Edit', CupertinoIcons.pencil),
-              ])
-                GlassMenuItem(title: title, icon: Icon(icon), onTap: () {}),
-              GlassMenuItem(
-                title: 'Delete',
-                icon: const Icon(CupertinoIcons.delete),
-                isDestructive: true,
-                onTap: () {},
-              ),
-            ],
-          ),
+  Widget build(BuildContext context) => Stack(
+    children: [
+      Positioned.fromRect(
+        rect: widget.source,
+        child: GlassMenu(
+          controller: _controller,
+          settings: _glass,
+          trigger: const SizedBox.expand(),
+          menuWidth: 250,
+          autoAdjustToScreen: true,
+          // Pop once the droplet is home.
+          onClose: () {
+            final navigator = Navigator.of(context);
+            Future<void>.delayed(const Duration(milliseconds: 700), () {
+              if (mounted) navigator.pop();
+            });
+          },
+          // As tall as the native `menu` scenario's: taller than the room
+          // between the item's centre and the status cluster.
+          items: [
+            for (final (title, icon) in [
+              ('Unpin', CupertinoIcons.pin_slash),
+              ('Share', CupertinoIcons.share),
+              ('Invite', CupertinoIcons.person_badge_plus),
+              ('Copy ID', CupertinoIcons.doc_on_doc),
+              ('Add to folder', CupertinoIcons.folder_badge_plus),
+              ('Edit', CupertinoIcons.pencil),
+            ])
+              GlassMenuItem(title: title, icon: Icon(icon), onTap: () {}),
+            GlassMenuItem(
+              title: 'Delete',
+              icon: const Icon(CupertinoIcons.delete),
+              isDestructive: true,
+              onTap: () {},
+            ),
+          ],
         ),
-      ]);
+      ),
+    ],
+  );
 }
 
 /// The global centre of the painted [icon], or null where none is painted.
@@ -633,39 +646,39 @@ class _ComposePopover extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GlassPopover(
-        settings: _glass,
-        // The native popover's frame: a 68pt capsule around one line of body
-        // text, 18pt in from each end.
-        popoverWidth: 282,
-        popoverHeight: 68,
-        popoverBorderRadius: 34,
-        triggerBuilder: (context, toggle) {
-          // The shell draws the strip's copy; the bar keeps an unpainted one
-          // to measure, which is not the one to open.
-          if (context.findAncestorWidgetOfExactType<Opacity>()?.opacity != 0) {
-            onReady(toggle);
-          }
-          return GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: toggle,
-            child: const SizedBox.square(
-              dimension: 48,
-              child: Icon(CupertinoIcons.square_pencil),
-            ),
-          );
-        },
-        contentBuilder: (context, close) => const Center(
-          child: Text(
-            'Popover from a vertical bar item',
-            maxLines: 1,
-            style: TextStyle(
-              fontSize: 17,
-              letterSpacing: -0.43,
-              color: CupertinoColors.label,
-            ),
-          ),
+    settings: _glass,
+    // The native popover's frame: a 68pt capsule around one line of body
+    // text, 18pt in from each end.
+    popoverWidth: 282,
+    popoverHeight: 68,
+    popoverBorderRadius: 34,
+    triggerBuilder: (context, toggle) {
+      // The shell draws the strip's copy; the bar keeps an unpainted one
+      // to measure, which is not the one to open.
+      if (context.findAncestorWidgetOfExactType<Opacity>()?.opacity != 0) {
+        onReady(toggle);
+      }
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: toggle,
+        child: const SizedBox.square(
+          dimension: 48,
+          child: Icon(CupertinoIcons.square_pencil),
         ),
       );
+    },
+    contentBuilder: (context, close) => const Center(
+      child: Text(
+        'Popover from a vertical bar item',
+        maxLines: 1,
+        style: TextStyle(
+          fontSize: 17,
+          letterSpacing: -0.43,
+          color: CupertinoColors.label,
+        ),
+      ),
+    ),
+  );
 }
 
 /// The native `sheet` scenario: a root screen that presents a sheet 1s in.
@@ -686,8 +699,9 @@ class _SheetScreenState extends State<_SheetScreen> {
       if (!mounted) return;
       GlassModalSheet.show<void>(
         context: context,
-        initialState:
-            _mediumDetent ? GlassSheetState.half : GlassSheetState.full,
+        initialState: _mediumDetent
+            ? GlassSheetState.half
+            : GlassSheetState.full,
         // The native medium detent on the outer display, in portrait.
         halfSize: 398,
         detents: _mediumDetent
@@ -714,25 +728,25 @@ class _SheetScreenState extends State<_SheetScreen> {
 
   @override
   Widget build(BuildContext context) => GlassScaffold(
-        backgroundColor: CupertinoColors.white,
-        appBar: GlassAppBar.pinned(
-          title: const Text('Notes'),
-          buttonSettings: _glass,
-          largeTitleController: _title,
-          actions: [
-            GlassBarItem.icon(
-              icon: const Icon(CupertinoIcons.add),
-              label: 'New',
-              onTap: () {},
-            ),
-          ],
+    backgroundColor: CupertinoColors.white,
+    appBar: GlassAppBar.pinned(
+      title: const Text('Notes'),
+      buttonSettings: _glass,
+      largeTitleController: _title,
+      actions: [
+        GlassBarItem.icon(
+          icon: const Icon(CupertinoIcons.add),
+          label: 'New',
+          onTap: () {},
         ),
-        body: _LargeTitleRows(
-          title: 'Notes',
-          rowTitle: 'Notes',
-          controller: _title,
-        ),
-      );
+      ],
+    ),
+    body: _LargeTitleRows(
+      title: 'Notes',
+      rowTitle: 'Notes',
+      controller: _title,
+    ),
+  );
 }
 
 /// The sheet's own navigation stack: an inline title, cancel and done.
@@ -741,34 +755,34 @@ class _SheetBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GlassScaffold(
-        backgroundColor: const Color(0x00000000),
-        statusBarStyle: GlassStatusBarStyle.none,
-        appBar: GlassAppBar.pinned(
-          title: const Text('New Note'),
-          buttonSettings: _glass,
-          // A sheet's horizontal bar, 16pt in from its edges.
-          toolbarHeight: 48,
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          leading: [
-            GlassBarItem.icon(
-              icon: const Icon(CupertinoIcons.xmark),
-              label: 'Cancel',
-              background: GlassBarItemBackground.separate,
-              onTap: () => Navigator.of(context).maybePop(),
-            ),
-          ],
-          actions: [
-            GlassBarItem.icon(
-              icon: const Icon(CupertinoIcons.checkmark),
-              label: 'Done',
-              background: GlassBarItemBackground.separate,
-              tintColor: CupertinoColors.systemBlue,
-              onTap: () => Navigator.of(context).maybePop(),
-            ),
-          ],
+    backgroundColor: const Color(0x00000000),
+    statusBarStyle: GlassStatusBarStyle.none,
+    appBar: GlassAppBar.pinned(
+      title: const Text('New Note'),
+      buttonSettings: _glass,
+      // A sheet's horizontal bar, 16pt in from its edges.
+      toolbarHeight: 48,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      leading: [
+        GlassBarItem.icon(
+          icon: const Icon(CupertinoIcons.xmark),
+          label: 'Cancel',
+          background: GlassBarItemBackground.separate,
+          onTap: () => Navigator.of(context).maybePop(),
         ),
-        body: const _Rows(title: 'Sheet', count: 12, stripTop: 74, barTop: 84),
-      );
+      ],
+      actions: [
+        GlassBarItem.icon(
+          icon: const Icon(CupertinoIcons.checkmark),
+          label: 'Done',
+          background: GlassBarItemBackground.separate,
+          tintColor: CupertinoColors.systemBlue,
+          onTap: () => Navigator.of(context).maybePop(),
+        ),
+      ],
+    ),
+    body: const _Rows(title: 'Sheet', count: 12, stripTop: 74, barTop: 84),
+  );
 }
 
 class _BottomBarScreen extends StatelessWidget {
@@ -788,21 +802,22 @@ class _BottomBarScreen extends StatelessWidget {
       bottomBar: GlassToolbar(
         children: [
           GlassButtonGroup.icons(
-              settings: _glass,
-              direction: vertical ? Axis.vertical : Axis.horizontal,
-              itemPadding: vertical
-                  ? const EdgeInsets.symmetric(horizontal: 13, vertical: 14)
-                  : const EdgeInsets.all(12),
-              items: [
-                GlassButtonGroupItem(
-                  icon: const Icon(CupertinoIcons.archivebox),
-                  onTap: () {},
-                ),
-                GlassButtonGroupItem(
-                  icon: const Icon(CupertinoIcons.flag),
-                  onTap: () {},
-                ),
-              ]),
+            settings: _glass,
+            direction: vertical ? Axis.vertical : Axis.horizontal,
+            itemPadding: vertical
+                ? const EdgeInsets.symmetric(horizontal: 13, vertical: 14)
+                : const EdgeInsets.all(12),
+            items: [
+              GlassButtonGroupItem(
+                icon: const Icon(CupertinoIcons.archivebox),
+                onTap: () {},
+              ),
+              GlassButtonGroupItem(
+                icon: const Icon(CupertinoIcons.flag),
+                onTap: () {},
+              ),
+            ],
+          ),
           const Spacer(),
           GlassButton(
             settings: _glass,
@@ -851,36 +866,36 @@ class _RootScreenState extends State<_RootScreen> {
 
   @override
   Widget build(BuildContext context) => GlassScaffold(
-        backgroundColor: CupertinoColors.white,
-        appBar: GlassAppBar.pinned(
-          title: const Text('Mailboxes'),
-          buttonSettings: _glass,
-          largeTitleController: _title,
-          leading: [
-            GlassBarItem.custom(
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 14),
-                child: Center(child: Text('Edit')),
-              ),
-              label: 'Edit',
-              onTap: () {},
-            ),
-          ],
-          actions: [
-            GlassBarItem.icon(
-              icon: const Icon(CupertinoIcons.add),
-              label: 'Add',
-              onTap: () {},
-            ),
-          ],
+    backgroundColor: CupertinoColors.white,
+    appBar: GlassAppBar.pinned(
+      title: const Text('Mailboxes'),
+      buttonSettings: _glass,
+      largeTitleController: _title,
+      leading: [
+        GlassBarItem.custom(
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 14),
+            child: Center(child: Text('Edit')),
+          ),
+          label: 'Edit',
+          onTap: () {},
         ),
-        body: _LargeTitleRows(
-          title: 'Mailboxes',
-          rowTitle: 'Mail',
-          controller: _title,
-          searchable: widget.searchable,
+      ],
+      actions: [
+        GlassBarItem.icon(
+          icon: const Icon(CupertinoIcons.add),
+          label: 'Add',
+          onTap: () {},
         ),
-      );
+      ],
+    ),
+    body: _LargeTitleRows(
+      title: 'Mailboxes',
+      rowTitle: 'Mail',
+      controller: _title,
+      searchable: widget.searchable,
+    ),
+  );
 }
 
 /// The forty rows under a [GlassLargeTitle], as a NavigationStack root lays
@@ -954,16 +969,16 @@ class _LargeTitleRowsState extends State<_LargeTitleRows> {
             // and 17pt text, as native draws it there.
             searchBar: widget.searchable
                 ? vertical
-                    ? const GlassSearchBar(
-                        height: 48,
-                        searchIconColor: CupertinoColors.label,
-                        textStyle: TextStyle(fontSize: 17),
-                        placeholderStyle: TextStyle(
-                          fontSize: 17,
-                          color: CupertinoColors.secondaryLabel,
-                        ),
-                      )
-                    : const GlassSearchBar(height: 36)
+                      ? const GlassSearchBar(
+                          height: 48,
+                          searchIconColor: CupertinoColors.label,
+                          textStyle: TextStyle(fontSize: 17),
+                          placeholderStyle: TextStyle(
+                            fontSize: 17,
+                            color: CupertinoColors.secondaryLabel,
+                          ),
+                        )
+                      : const GlassSearchBar(height: 36)
                 : null,
           ),
           SliverPadding(
@@ -1021,41 +1036,38 @@ class _AxisScreen extends StatelessWidget {
   }
 
   static Widget _text(String label) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Center(child: Text(label)),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 12),
+    child: Center(child: Text(label)),
+  );
 
   @override
   Widget build(BuildContext context) => GlassScaffold(
-        backgroundColor: CupertinoColors.white,
-        appBar: GlassAppBar.pinned(
-          title: const Text('Detail'),
-          buttonSettings: _glass,
-          actions: [
-            GlassBarItem.custom(child: _text('Text'), onTap: () {}),
-            GlassBarItem.custom(
-              child: _text('Text VP'),
-              axisBehavior: GlassBarItemAxisBehavior.verticalPreferred,
-              onTap: () {},
-            ),
-            GlassBarItem.custom(child: _pill('Custom')),
-            GlassBarItem.custom(
-              child: _pill('Custom VP', squeezed: true),
-              axisBehavior: GlassBarItemAxisBehavior.verticalPreferred,
-            ),
-            GlassBarItem.icon(
-              icon: const Icon(CupertinoIcons.star),
-              axisBehavior: GlassBarItemAxisBehavior.horizontalOnly,
-              onTap: () {},
-            ),
-            GlassBarItem.icon(
-              icon: const Icon(CupertinoIcons.bell),
-              onTap: () {},
-            ),
-          ],
+    backgroundColor: CupertinoColors.white,
+    appBar: GlassAppBar.pinned(
+      title: const Text('Detail'),
+      buttonSettings: _glass,
+      actions: [
+        GlassBarItem.custom(child: _text('Text'), onTap: () {}),
+        GlassBarItem.custom(
+          child: _text('Text VP'),
+          axisBehavior: GlassBarItemAxisBehavior.verticalPreferred,
+          onTap: () {},
         ),
-        body: const _Rows(title: 'Detail'),
-      );
+        GlassBarItem.custom(child: _pill('Custom')),
+        GlassBarItem.custom(
+          child: _pill('Custom VP', squeezed: true),
+          axisBehavior: GlassBarItemAxisBehavior.verticalPreferred,
+        ),
+        GlassBarItem.icon(
+          icon: const Icon(CupertinoIcons.star),
+          axisBehavior: GlassBarItemAxisBehavior.horizontalOnly,
+          onTap: () {},
+        ),
+        GlassBarItem.icon(icon: const Icon(CupertinoIcons.bell), onTap: () {}),
+      ],
+    ),
+    body: const _Rows(title: 'Detail'),
+  );
 }
 
 /// The detail screen in a nested navigator, its bar drawn by the app from
@@ -1071,11 +1083,11 @@ class _NestedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Navigator(
-        onGenerateInitialRoutes: (_, __) => [
-          _route(const ColoredBox(color: CupertinoColors.white)),
-          _route(const _OwnBarDetail()),
-        ],
-      );
+    onGenerateInitialRoutes: (_, _) => [
+      _route(const ColoredBox(color: CupertinoColors.white)),
+      _route(const _OwnBarDetail()),
+    ],
+  );
 }
 
 class _OwnBarDetail extends StatelessWidget {
@@ -1083,21 +1095,24 @@ class _OwnBarDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GlassPinnedBarChrome(
-        enabled: false,
-        buttonSettings: _glass,
-        actions: _detailActions(),
-        builder: (context, chrome) {
-          final ownChrome = !chrome.hoisted && !chrome.inStrip;
-          return ColoredBox(
-            color: CupertinoColors.white,
-            child: Stack(children: [
-              const _Rows(title: 'Detail'),
-              Positioned(
-                top: MediaQuery.paddingOf(context).top + 24,
-                left: 20,
-                right: 20,
-                height: GlassVerticalBarMetrics.rowHeight,
-                child: Row(spacing: 12, children: [
+    enabled: false,
+    buttonSettings: _glass,
+    actions: _detailActions(),
+    builder: (context, chrome) {
+      final ownChrome = !chrome.hoisted && !chrome.inStrip;
+      return ColoredBox(
+        color: CupertinoColors.white,
+        child: Stack(
+          children: [
+            const _Rows(title: 'Detail'),
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + 24,
+              left: 20,
+              right: 20,
+              height: GlassVerticalBarMetrics.rowHeight,
+              child: Row(
+                spacing: 12,
+                children: [
                   if (ownChrome)
                     GlassButton(
                       settings: _glass,
@@ -1125,18 +1140,17 @@ class _OwnBarDetail extends StatelessWidget {
                           CupertinoIcons.heart,
                           CupertinoIcons.ellipsis,
                         ])
-                          GlassButtonGroupItem(
-                            icon: Icon(icon),
-                            onTap: () {},
-                          ),
+                          GlassButtonGroupItem(icon: Icon(icon), onTap: () {}),
                       ],
                     ),
-                ]),
+                ],
               ),
-            ]),
-          );
-        },
+            ),
+          ],
+        ),
       );
+    },
+  );
 }
 
 /// Four tabs, each its own navigation stack: opened on a pushed detail screen
@@ -1211,14 +1225,14 @@ class _TabsScreenState extends State<_TabsScreen> {
         // The search tab's screen. In a compact width the open field takes
         // its title's row; in a regular width the title stays beside it.
         ? MediaQuery.sizeOf(context).width < 800
-            ? const GlassScaffold(
-                backgroundColor: CupertinoColors.white,
-                body: _Rows(title: 'Search', stripTop: 78),
-              )
-            : const _TabRootScreen(title: 'Search', adds: false)
+              ? const GlassScaffold(
+                  backgroundColor: CupertinoColors.white,
+                  body: _Rows(title: 'Search', stripTop: 78),
+                )
+              : const _TabRootScreen(title: 'Search', adds: false)
         : Navigator(
             key: ValueKey(_tab),
-            onGenerateInitialRoutes: (_, __) => [
+            onGenerateInitialRoutes: (_, _) => [
               if (widget.pushed) ...[
                 _route(_ListScreen(title: _titles[_tab])),
                 _route(const _DetailScreen()),
@@ -1227,7 +1241,12 @@ class _TabsScreenState extends State<_TabsScreen> {
             ],
           );
     if (_noScaffold) {
-      return Stack(children: [body, Positioned.fill(child: bar)]);
+      return Stack(
+        children: [
+          body,
+          Positioned.fill(child: bar),
+        ],
+      );
     }
     return GlassScaffold(
       backgroundColor: CupertinoColors.white,
@@ -1261,24 +1280,24 @@ class _TabRootScreenState extends State<_TabRootScreen> {
 
   @override
   Widget build(BuildContext context) => GlassScaffold(
-        backgroundColor: CupertinoColors.white,
-        appBar: GlassAppBar.pinned(
-          title: Text(widget.title),
-          buttonSettings: _glass,
-          largeTitleController: _title,
-          actions: [
-            if (widget.adds)
-              GlassBarItem.icon(
-                icon: const Icon(CupertinoIcons.add),
-                label: 'Add',
-                onTap: () {},
-              ),
-          ],
-        ),
-        body: _LargeTitleRows(
-          title: widget.title,
-          rowTitle: widget.title,
-          controller: _title,
-        ),
-      );
+    backgroundColor: CupertinoColors.white,
+    appBar: GlassAppBar.pinned(
+      title: Text(widget.title),
+      buttonSettings: _glass,
+      largeTitleController: _title,
+      actions: [
+        if (widget.adds)
+          GlassBarItem.icon(
+            icon: const Icon(CupertinoIcons.add),
+            label: 'Add',
+            onTap: () {},
+          ),
+      ],
+    ),
+    body: _LargeTitleRows(
+      title: widget.title,
+      rowTitle: widget.title,
+      controller: _title,
+    ),
+  );
 }

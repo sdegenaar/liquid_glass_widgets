@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart' as barrel;
@@ -19,8 +19,10 @@ void main() {
 
     test('a cluster that disappears dematerializes over the head', () {
       expect(phase(0.0), 1.0);
-      expect(phase(GlassNavPinnedMetrics.dematerializeEnd / 2),
-          closeTo(0.5, 1e-9));
+      expect(
+        phase(GlassNavPinnedMetrics.dematerializeEnd / 2),
+        closeTo(0.5, 1e-9),
+      );
       expect(phase(GlassNavPinnedMetrics.dematerializeEnd), 0.0);
       expect(phase(1.0), 0.0);
     });
@@ -48,22 +50,19 @@ void main() {
       }
     });
 
-    test(
-      'the outgoing cluster is never solid once the incoming one begins, so '
-      'the two are never both fully present',
-      () {
-        for (var i = 0; i <= 100; i++) {
-          final p = i / 100;
-          final exit = phase(p);
-          final enter = phase(p, inFrom: false, inTo: true);
-          expect(
-            exit + enter,
-            lessThanOrEqualTo(1.0 + 1e-9),
-            reason: 'phases overlap at p=$p',
-          );
-        }
-      },
-    );
+    test('the outgoing cluster is never solid once the incoming one begins, so '
+        'the two are never both fully present', () {
+      for (var i = 0; i <= 100; i++) {
+        final p = i / 100;
+        final exit = phase(p);
+        final enter = phase(p, inFrom: false, inTo: true);
+        expect(
+          exit + enter,
+          lessThanOrEqualTo(1.0 + 1e-9),
+          reason: 'phases overlap at p=$p',
+        );
+      }
+    });
 
     test('the configuration never swaps while a cluster is still solid', () {
       // The window must straddle swapAt: swapping the items shown inside a
@@ -174,14 +173,8 @@ void main() {
     test('empty sides produce pure enters or pure exits', () {
       final a = _icon(CupertinoIcons.add);
 
-      expect(
-        matchGlassNavActions([], [a]).single.isEnter,
-        isTrue,
-      );
-      expect(
-        matchGlassNavActions([a], []).single.isExit,
-        isTrue,
-      );
+      expect(matchGlassNavActions([], [a]).single.isEnter, isTrue);
+      expect(matchGlassNavActions([a], []).single.isExit, isTrue);
       expect(matchGlassNavActions([], []), isEmpty);
     });
   });
@@ -241,7 +234,9 @@ void main() {
       // Positionally the capsule would pair with the menu at the trailing
       // edge; its items say it is the capsule a place further in.
       expect(
-          pairs.singleWhere((p) => p.to == to.first).from, same(from.single));
+        pairs.singleWhere((p) => p.to == to.first).from,
+        same(from.single),
+      );
       expect(pairs.singleWhere((p) => p.to == to.last).from, isNull);
     });
 

@@ -9,7 +9,7 @@
 //   - equality / hashCode include brightness field
 //   - brightness=null falls through to cascade (backward compat)
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -32,10 +32,12 @@ Future<T> pumpCapture<T>(
       child: MaterialApp(
         home: GlassTheme(
           data: data,
-          child: Builder(builder: (ctx) {
-            result = capture(ctx, data);
-            return const SizedBox.shrink();
-          }),
+          child: Builder(
+            builder: (ctx) {
+              result = capture(ctx, data);
+              return const SizedBox.shrink();
+            },
+          ),
         ),
       ),
     ),
@@ -92,45 +94,58 @@ void main() {
 
   group('GlassThemeData.variantFor — brightness override', () {
     testWidgets(
-        'returns light variant when brightness=light and device is dark',
-        (tester) async {
-      const data = GlassThemeData(brightness: Brightness.light);
-      final variant = await pumpCapture<GlassThemeVariant>(
-        tester,
-        data: data,
-        deviceBrightness: Brightness.dark,
-        capture: (ctx, d) => d.variantFor(ctx),
-      );
-      expect(variant, GlassThemeVariant.light,
-          reason: 'brightness=light forces light variant even on dark device');
-    });
-
-    testWidgets('returns dark variant when brightness=dark and device is light',
-        (tester) async {
-      const data = GlassThemeData(brightness: Brightness.dark);
-      final variant = await pumpCapture<GlassThemeVariant>(
-        tester,
-        data: data,
-        deviceBrightness: Brightness.light,
-        capture: (ctx, d) => d.variantFor(ctx),
-      );
-      expect(variant, GlassThemeVariant.dark,
-          reason: 'brightness=dark forces dark variant even on light device');
-    });
+      'returns light variant when brightness=light and device is dark',
+      (tester) async {
+        const data = GlassThemeData(brightness: Brightness.light);
+        final variant = await pumpCapture<GlassThemeVariant>(
+          tester,
+          data: data,
+          deviceBrightness: Brightness.dark,
+          capture: (ctx, d) => d.variantFor(ctx),
+        );
+        expect(
+          variant,
+          GlassThemeVariant.light,
+          reason: 'brightness=light forces light variant even on dark device',
+        );
+      },
+    );
 
     testWidgets(
-        'without override, variantFor follows the cascade (device light → light)',
-        (tester) async {
-      const data = GlassThemeData(); // brightness: null
-      final variant = await pumpCapture<GlassThemeVariant>(
-        tester,
-        data: data,
-        deviceBrightness: Brightness.light,
-        capture: (ctx, d) => d.variantFor(ctx),
-      );
-      expect(variant, GlassThemeVariant.light,
-          reason: 'No override → cascade → device light → light variant');
-    });
+      'returns dark variant when brightness=dark and device is light',
+      (tester) async {
+        const data = GlassThemeData(brightness: Brightness.dark);
+        final variant = await pumpCapture<GlassThemeVariant>(
+          tester,
+          data: data,
+          deviceBrightness: Brightness.light,
+          capture: (ctx, d) => d.variantFor(ctx),
+        );
+        expect(
+          variant,
+          GlassThemeVariant.dark,
+          reason: 'brightness=dark forces dark variant even on light device',
+        );
+      },
+    );
+
+    testWidgets(
+      'without override, variantFor follows the cascade (device light → light)',
+      (tester) async {
+        const data = GlassThemeData(); // brightness: null
+        final variant = await pumpCapture<GlassThemeVariant>(
+          tester,
+          data: data,
+          deviceBrightness: Brightness.light,
+          capture: (ctx, d) => d.variantFor(ctx),
+        );
+        expect(
+          variant,
+          GlassThemeVariant.light,
+          reason: 'No override → cascade → device light → light variant',
+        );
+      },
+    );
   });
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -139,71 +154,82 @@ void main() {
 
   group('GlassThemeData.glowColorsFor — consistent brightness source', () {
     testWidgets(
-        'uses light-mode glow primary when brightness=light, device is dark',
-        (tester) async {
-      const data = GlassThemeData(brightness: Brightness.light);
-      final colors = await pumpCapture<GlassGlowColors>(
-        tester,
-        data: data,
-        deviceBrightness: Brightness.dark,
-        capture: (ctx, d) => d.glowColorsFor(ctx),
-      );
-      // Light mode: 0x3D = 24% opacity (higher than dark mode's 0x2A = 16%)
-      expect(colors.primary, const Color(0x3DFFFFFF),
-          reason:
-              'Light-mode adaptive primary (0x3DFFFFFF) used when brightness=light');
-    });
+      'uses light-mode glow primary when brightness=light, device is dark',
+      (tester) async {
+        const data = GlassThemeData(brightness: Brightness.light);
+        final colors = await pumpCapture<GlassGlowColors>(
+          tester,
+          data: data,
+          deviceBrightness: Brightness.dark,
+          capture: (ctx, d) => d.glowColorsFor(ctx),
+        );
+        // Light mode: 0x3D = 24% opacity (higher than dark mode's 0x2A = 16%)
+        expect(
+          colors.primary,
+          const Color(0x3DFFFFFF),
+          reason: 'Light-mode adaptive primary (0x3DFFFFFF) used when brightness=light',
+        );
+      },
+    );
 
     testWidgets(
-        'uses dark-mode glow primary when brightness=dark, device is light',
-        (tester) async {
-      const data = GlassThemeData(brightness: Brightness.dark);
-      final colors = await pumpCapture<GlassGlowColors>(
-        tester,
-        data: data,
-        deviceBrightness: Brightness.light,
-        capture: (ctx, d) => d.glowColorsFor(ctx),
-      );
-      // Dark mode: 0x2A = 16% opacity
-      expect(colors.primary, const Color(0x2AFFFFFF),
-          reason:
-              'Dark-mode adaptive primary (0x2AFFFFFF) used when brightness=dark');
-    });
+      'uses dark-mode glow primary when brightness=dark, device is light',
+      (tester) async {
+        const data = GlassThemeData(brightness: Brightness.dark);
+        final colors = await pumpCapture<GlassGlowColors>(
+          tester,
+          data: data,
+          deviceBrightness: Brightness.light,
+          capture: (ctx, d) => d.glowColorsFor(ctx),
+        );
+        // Dark mode: 0x2A = 16% opacity
+        expect(
+          colors.primary,
+          const Color(0x2AFFFFFF),
+          reason: 'Dark-mode adaptive primary (0x2AFFFFFF) used when brightness=dark',
+        );
+      },
+    );
 
     testWidgets(
-        'glowColorsFor and variantFor use the SAME brightness — no split-brain',
-        (tester) async {
-      // This is the architectural correctness test: glowColorsFor must never
-      // use a different brightness source than variantFor. If they disagree,
-      // the glow palette and glass variant are for different modes — broken.
-      const data = GlassThemeData(brightness: Brightness.light);
+      'glowColorsFor and variantFor use the SAME brightness — no split-brain',
+      (tester) async {
+        // This is the architectural correctness test: glowColorsFor must never
+        // use a different brightness source than variantFor. If they disagree,
+        // the glow palette and glass variant are for different modes — broken.
+        const data = GlassThemeData(brightness: Brightness.light);
 
-      GlassThemeVariant? variant;
-      GlassGlowColors? colors;
+        GlassThemeVariant? variant;
+        GlassGlowColors? colors;
 
-      await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(platformBrightness: Brightness.dark),
-          child: MaterialApp(
-            home: GlassTheme(
-              data: data,
-              child: Builder(builder: (ctx) {
-                variant = data.variantFor(ctx);
-                colors = data.glowColorsFor(ctx);
-                return const SizedBox.shrink();
-              }),
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(platformBrightness: Brightness.dark),
+            child: MaterialApp(
+              home: GlassTheme(
+                data: data,
+                child: Builder(
+                  builder: (ctx) {
+                    variant = data.variantFor(ctx);
+                    colors = data.glowColorsFor(ctx);
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // variantFor should pick the light variant
-      expect(variant, GlassThemeVariant.light);
-      // glowColorsFor should inject the light-mode primary (0x3D)
-      expect(colors!.primary, const Color(0x3DFFFFFF),
-          reason:
-              'glowColorsFor must use same brightness source as variantFor');
-    });
+        // variantFor should pick the light variant
+        expect(variant, GlassThemeVariant.light);
+        // glowColorsFor should inject the light-mode primary (0x3D)
+        expect(
+          colors!.primary,
+          const Color(0x3DFFFFFF),
+          reason: 'glowColorsFor must use same brightness source as variantFor',
+        );
+      },
+    );
   });
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -214,8 +240,11 @@ void main() {
     test('copyWith preserves brightness when not specified', () {
       const original = GlassThemeData(brightness: Brightness.light);
       final copy = original.copyWith();
-      expect(copy.brightness, Brightness.light,
-          reason: 'Unspecified copyWith field is preserved (sentinel pattern)');
+      expect(
+        copy.brightness,
+        Brightness.light,
+        reason: 'Unspecified copyWith field is preserved (sentinel pattern)',
+      );
     });
 
     test('copyWith sets brightness to a new value', () {
@@ -228,9 +257,11 @@ void main() {
       const original = GlassThemeData(brightness: Brightness.light);
       // Explicitly pass null to clear the override
       final copy = original.copyWith(brightness: null);
-      expect(copy.brightness, isNull,
-          reason:
-              'Passing null to copyWith must clear the brightness override');
+      expect(
+        copy.brightness,
+        isNull,
+        reason: 'Passing null to copyWith must clear the brightness override',
+      );
     });
 
     test('copyWith from null brightness, setting to light', () {
@@ -277,51 +308,62 @@ void main() {
   // ──────────────────────────────────────────────────────────────────────────
 
   group('GlassThemeData.brightness=null — backward compatibility', () {
-    testWidgets('existing code with no brightness field still works correctly',
-        (tester) async {
-      // Simulates any existing app that does not set the brightness field.
-      // With device in light mode and no explicit theme, it should resolve to
-      // light — same as before this feature was added.
-      const data = GlassThemeData();
-      final variant = await pumpCapture<GlassThemeVariant>(
-        tester,
-        data: data,
-        deviceBrightness: Brightness.light,
-        capture: (ctx, d) => d.variantFor(ctx),
-      );
-      expect(variant, GlassThemeVariant.light,
-          reason: 'Null brightness falls through cascade — no regression');
-    });
+    testWidgets(
+      'existing code with no brightness field still works correctly',
+      (tester) async {
+        // Simulates any existing app that does not set the brightness field.
+        // With device in light mode and no explicit theme, it should resolve to
+        // light — same as before this feature was added.
+        const data = GlassThemeData();
+        final variant = await pumpCapture<GlassThemeVariant>(
+          tester,
+          data: data,
+          deviceBrightness: Brightness.light,
+          capture: (ctx, d) => d.variantFor(ctx),
+        );
+        expect(
+          variant,
+          GlassThemeVariant.light,
+          reason: 'Null brightness falls through cascade — no regression',
+        );
+      },
+    );
 
     testWidgets(
-        'existing dark-device apps still get dark variant with null brightness',
-        (tester) async {
-      // The pumpCapture helper uses plain MaterialApp with no explicit ThemeMode.
-      // With device dark and ThemeMode.system, the Material theme resolves dark.
-      // We verify the correct variant is selected by checking which field matches.
-      const data = GlassThemeData(); // brightness: null
-      GlassThemeVariant? variant;
-      await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(platformBrightness: Brightness.dark),
-          child: MaterialApp(
-            theme: ThemeData.light(),
-            darkTheme: ThemeData.dark(),
-            themeMode: ThemeMode.system, // follows device
-            home: GlassTheme(
-              data: data,
-              child: Builder(builder: (ctx) {
-                variant = data.variantFor(ctx);
-                return const SizedBox.shrink();
-              }),
+      'existing dark-device apps still get dark variant with null brightness',
+      (tester) async {
+        // The pumpCapture helper uses plain MaterialApp with no explicit ThemeMode.
+        // With device dark and ThemeMode.system, the Material theme resolves dark.
+        // We verify the correct variant is selected by checking which field matches.
+        const data = GlassThemeData(); // brightness: null
+        GlassThemeVariant? variant;
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(platformBrightness: Brightness.dark),
+            child: MaterialApp(
+              theme: ThemeData.light(),
+              darkTheme: ThemeData.dark(),
+              themeMode: ThemeMode.system, // follows device
+              home: GlassTheme(
+                data: data,
+                child: Builder(
+                  builder: (ctx) {
+                    variant = data.variantFor(ctx);
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ),
             ),
           ),
-        ),
-      );
-      // variantFor returned the dark variant — verify by identity not equality.
-      expect(variant == GlassThemeVariant.dark, isTrue,
+        );
+        // variantFor returned the dark variant — verify by identity not equality.
+        expect(
+          variant == GlassThemeVariant.dark,
+          isTrue,
           reason:
-              'Null brightness falls through to system dark — no regression');
-    });
+              'Null brightness falls through to system dark — no regression',
+        );
+      },
+    );
   });
 }

@@ -21,11 +21,11 @@ void main() {
   final skip = !ui.ImageFilter.isShaderFilterSupported;
 
   Future<void> initialize(WidgetTester tester) => tester.runAsync(
-        () => LiquidGlassWidgets.initialize(
-          enablePerformanceMonitor: false,
-          warmUpMode: GlassWarmUpMode.always,
-        ),
-      );
+    () => LiquidGlassWidgets.initialize(
+      enablePerformanceMonitor: false,
+      warmUpMode: GlassWarmUpMode.always,
+    ),
+  );
 
   RenderLiquidGlassLayer glassLayerIn(WidgetTester tester, Finder from) {
     final found = <RenderLiquidGlassLayer>[];
@@ -45,18 +45,13 @@ void main() {
         // Built once, so moving it only re-lays out the Positioned.
         child: child,
         builder: (context, value, child) => Stack(
-          children: [
-            Positioned(left: value.dx, top: value.dy, child: child!),
-          ],
+          children: [Positioned(left: value.dx, top: value.dy, child: child!)],
         ),
       );
 
   Widget host(Widget child) => LiquidGlassWidgets.wrap(
-        child: Directionality(
-          textDirection: TextDirection.ltr,
-          child: child,
-        ),
-      );
+    child: Directionality(textDirection: TextDirection.ltr, child: child),
+  );
 
   const shape = LiquidRoundedSuperellipse(borderRadius: 24);
 
@@ -65,117 +60,159 @@ void main() {
     const LiquidGlassSettings(blur: 8), // no frost
   ]) {
     testWidgets(
-        'glass that layout only moves schedules no frame and keeps its matte '
-        '(frost ${settings.frost})',
-        skip: skip, (tester) async {
-      tester.view.devicePixelRatio = 3;
-      addTearDown(tester.view.reset);
-      await initialize(tester);
-      final position = ValueNotifier(const Offset(20, 21));
-      await tester.pumpWidget(host(moving(
-        position,
-        GlassContainer(
-          useOwnLayer: true,
-          quality: GlassQuality.premium,
-          settings: settings,
-          width: 120,
-          height: 48,
-          shape: shape,
-        ),
-      )));
-      await tester.pumpAndSettle();
-      final layer = glassLayerIn(tester, find.byType(GlassContainer));
-      final matte = layer.geometryImage;
-      expect(matte, isNotNull);
+      'glass that layout only moves schedules no frame and keeps its matte '
+      '(frost ${settings.frost})',
+      skip: skip,
+      (tester) async {
+        tester.view.devicePixelRatio = 3;
+        addTearDown(tester.view.reset);
+        await initialize(tester);
+        final position = ValueNotifier(const Offset(20, 21));
+        await tester.pumpWidget(
+          host(
+            moving(
+              position,
+              GlassContainer(
+                useOwnLayer: true,
+                quality: GlassQuality.premium,
+                settings: settings,
+                width: 120,
+                height: 48,
+                shape: shape,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final layer = glassLayerIn(tester, find.byType(GlassContainer));
+        final matte = layer.geometryImage;
+        expect(matte, isNotNull);
 
-      // Odd physical rows down, so the frost rows change phase too.
-      position.value = const Offset(57, 22);
-      await tester.pump();
-      expect(tester.binding.hasScheduledFrame, isFalse,
-          reason: 'a move the layer follows at composite owes no repaint');
-      await tester.pump();
-      expect(identical(layer.geometryImage, matte), isTrue,
-          reason: 'the matte is in local space and did not change');
-    });
+        // Odd physical rows down, so the frost rows change phase too.
+        position.value = const Offset(57, 22);
+        await tester.pump();
+        expect(
+          tester.binding.hasScheduledFrame,
+          isFalse,
+          reason: 'a move the layer follows at composite owes no repaint',
+        );
+        await tester.pump();
+        expect(
+          identical(layer.geometryImage, matte),
+          isTrue,
+          reason: 'the matte is in local space and did not change',
+        );
+      },
+    );
   }
 
   for (final boundaryBetween in [false, true]) {
     final suffix = boundaryBetween ? ' across a RepaintBoundary' : '';
 
     testWidgets(
-        'a group that moved within its layer still rebuilds the matte$suffix',
-        skip: skip, (tester) async {
-      await initialize(tester);
-      final position = ValueNotifier(const Offset(20, 21));
-      Widget moved = moving(
-        position,
-        const LiquidGlass(
-          shape: shape,
-          child: SizedBox(width: 120, height: 48),
-        ),
-      );
-      if (boundaryBetween) moved = RepaintBoundary(child: moved);
-      await tester.pumpWidget(host(LiquidGlassLayer(
-        settings: const LiquidGlassSettings(blur: 8),
-        // A plain LiquidGlass is a group of its own, so the whole group moves.
-        child: moved,
-      )));
-      await tester.pumpAndSettle();
-      final layer = glassLayerIn(tester, find.byType(LiquidGlassLayer));
-      final matte = layer.geometryImage;
-      expect(matte, isNotNull);
+      'a group that moved within its layer still rebuilds the matte$suffix',
+      skip: skip,
+      (tester) async {
+        await initialize(tester);
+        final position = ValueNotifier(const Offset(20, 21));
+        Widget moved = moving(
+          position,
+          const LiquidGlass(
+            shape: shape,
+            child: SizedBox(width: 120, height: 48),
+          ),
+        );
+        if (boundaryBetween) moved = RepaintBoundary(child: moved);
+        await tester.pumpWidget(
+          host(
+            LiquidGlassLayer(
+              settings: const LiquidGlassSettings(blur: 8),
+              // A plain LiquidGlass is a group of its own, so the whole group moves.
+              child: moved,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final layer = glassLayerIn(tester, find.byType(LiquidGlassLayer));
+        final matte = layer.geometryImage;
+        expect(matte, isNotNull);
 
-      position.value = const Offset(57, 22);
-      await tester.pump();
-      if (!boundaryBetween) {
-        expect(identical(layer.geometryImage, matte), isFalse,
-            reason: 'rebuilt in the same frame when the layer paints');
-        expect(tester.binding.hasScheduledFrame, isFalse,
-            reason: 'no second frame needed once the matte is already current');
-      } else {
+        position.value = const Offset(57, 22);
         await tester.pump();
-        expect(identical(layer.geometryImage, matte), isFalse,
-            reason: 'wakes the enclosing glass layer across a RepaintBoundary');
-      }
-    });
+        if (!boundaryBetween) {
+          expect(
+            identical(layer.geometryImage, matte),
+            isFalse,
+            reason: 'rebuilt in the same frame when the layer paints',
+          );
+          expect(
+            tester.binding.hasScheduledFrame,
+            isFalse,
+            reason: 'no second frame needed once the matte is already current',
+          );
+        } else {
+          await tester.pump();
+          expect(
+            identical(layer.geometryImage, matte),
+            isFalse,
+            reason: 'wakes the enclosing glass layer across a RepaintBoundary',
+          );
+        }
+      },
+    );
 
     testWidgets(
-        'a shape that moved within its group still rebuilds the matte$suffix',
-        skip: skip, (tester) async {
-      await initialize(tester);
-      final position = ValueNotifier(const Offset(20, 21));
-      Widget moved = moving(
-        position,
-        const LiquidGlass.grouped(
-          shape: shape,
-          child: SizedBox(width: 120, height: 48),
-        ),
-      );
-      if (boundaryBetween) moved = RepaintBoundary(child: moved);
-      await tester.pumpWidget(host(LiquidGlassLayer(
-        settings: const LiquidGlassSettings(blur: 8),
-        child: LiquidGlassBlendGroup(
-          // Only the shape moves; the group stays where it is.
-          child: moved,
-        ),
-      )));
-      await tester.pumpAndSettle();
-      final layer = glassLayerIn(tester, find.byType(LiquidGlassLayer));
-      final matte = layer.geometryImage;
-      expect(matte, isNotNull);
+      'a shape that moved within its group still rebuilds the matte$suffix',
+      skip: skip,
+      (tester) async {
+        await initialize(tester);
+        final position = ValueNotifier(const Offset(20, 21));
+        Widget moved = moving(
+          position,
+          const LiquidGlass.grouped(
+            shape: shape,
+            child: SizedBox(width: 120, height: 48),
+          ),
+        );
+        if (boundaryBetween) moved = RepaintBoundary(child: moved);
+        await tester.pumpWidget(
+          host(
+            LiquidGlassLayer(
+              settings: const LiquidGlassSettings(blur: 8),
+              child: LiquidGlassBlendGroup(
+                // Only the shape moves; the group stays where it is.
+                child: moved,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final layer = glassLayerIn(tester, find.byType(LiquidGlassLayer));
+        final matte = layer.geometryImage;
+        expect(matte, isNotNull);
 
-      position.value = const Offset(57, 22);
-      await tester.pump();
-      if (!boundaryBetween) {
-        expect(identical(layer.geometryImage, matte), isFalse,
-            reason: 'rebuilt in the same frame when the layer paints');
-        expect(tester.binding.hasScheduledFrame, isFalse,
-            reason: 'no second frame needed once the matte is already current');
-      } else {
+        position.value = const Offset(57, 22);
         await tester.pump();
-        expect(identical(layer.geometryImage, matte), isFalse,
-            reason: 'wakes the enclosing glass layer across a RepaintBoundary');
-      }
-    });
+        if (!boundaryBetween) {
+          expect(
+            identical(layer.geometryImage, matte),
+            isFalse,
+            reason: 'rebuilt in the same frame when the layer paints',
+          );
+          expect(
+            tester.binding.hasScheduledFrame,
+            isFalse,
+            reason: 'no second frame needed once the matte is already current',
+          );
+        } else {
+          await tester.pump();
+          expect(
+            identical(layer.geometryImage, matte),
+            isFalse,
+            reason: 'wakes the enclosing glass layer across a RepaintBoundary',
+          );
+        }
+      },
+    );
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:io';
-import 'package:flutter/cupertino.dart';
+
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -65,7 +66,8 @@ class _PlatformViewDemoState extends State<PlatformViewDemo> {
       // └─────────────────────────────────────────────────────────────────┘
       bottomBar: GlassTabBar.searchable(
         settings: LiquidGlassSettings(
-            glassColor: CupertinoColors.black.withValues(alpha: 0.26)),
+          glassColor: CupertinoColors.black.withValues(alpha: 0.26),
+        ),
         quality: GlassQuality.premium,
         platformViewBackdrop: Platform.isIOS,
         isSearchActive: _searchActive,

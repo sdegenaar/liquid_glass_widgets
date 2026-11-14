@@ -7,8 +7,8 @@
 ///
 library;
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -26,10 +26,8 @@ class GlassBottomBarDemoApp extends StatelessWidget {
     return CupertinoApp(
       title: 'Glass Bottom Bar Demo',
       theme: const CupertinoThemeData(brightness: Brightness.dark),
-      builder: (context, child) => Theme(
-        data: ThemeData.dark(useMaterial3: true),
-        child: child!,
-      ),
+      builder: (context, child) =>
+          Theme(data: ThemeData.dark(useMaterial3: true), child: child!),
       home: const GlassBottomBarDemoPage(),
     );
   }
@@ -47,20 +45,20 @@ class _GlassBottomBarDemoPageState extends State<GlassBottomBarDemoPage> {
   int _bgQualityIndex = 1; // Default to minimal to showcase decoupled track
 
   GlassQuality? get _backgroundQuality => switch (_bgQualityIndex) {
-        0 => null, // Inherits quality (premium)
-        1 => GlassQuality.minimal,
-        2 => GlassQuality.standard,
-        3 => GlassQuality.premium,
-        _ => null,
-      };
+    0 => null, // Inherits quality (premium)
+    1 => GlassQuality.minimal,
+    2 => GlassQuality.standard,
+    3 => GlassQuality.premium,
+    _ => null,
+  };
 
   String get _bgQualityLabel => switch (_bgQualityIndex) {
-        0 => 'Inherit (Premium)',
-        1 => 'Minimal (Frosted)',
-        2 => 'Standard (2D)',
-        3 => 'Premium (3D)',
-        _ => 'Unknown',
-      };
+    0 => 'Inherit (Premium)',
+    1 => 'Minimal (Frosted)',
+    2 => 'Standard (2D)',
+    3 => 'Premium (3D)',
+    _ => 'Unknown',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -85,10 +83,7 @@ class _GlassBottomBarDemoPageState extends State<GlassBottomBarDemoPage> {
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     shadows: [
-                      Shadow(
-                        blurRadius: 10,
-                        color: CupertinoColors.black,
-                      ),
+                      Shadow(blurRadius: 10, color: CupertinoColors.black),
                     ],
                   ),
                 ),
@@ -128,23 +123,31 @@ class _GlassBottomBarDemoPageState extends State<GlassBottomBarDemoPage> {
                         children: const {
                           0: Padding(
                             padding: EdgeInsets.symmetric(horizontal: 6),
-                            child:
-                                Text('Inherit', style: TextStyle(fontSize: 12)),
+                            child: Text(
+                              'Inherit',
+                              style: TextStyle(fontSize: 12),
+                            ),
                           ),
                           1: Padding(
                             padding: EdgeInsets.symmetric(horizontal: 6),
-                            child:
-                                Text('Minimal', style: TextStyle(fontSize: 12)),
+                            child: Text(
+                              'Minimal',
+                              style: TextStyle(fontSize: 12),
+                            ),
                           ),
                           2: Padding(
                             padding: EdgeInsets.symmetric(horizontal: 6),
-                            child: Text('Standard',
-                                style: TextStyle(fontSize: 12)),
+                            child: Text(
+                              'Standard',
+                              style: TextStyle(fontSize: 12),
+                            ),
                           ),
                           3: Padding(
                             padding: EdgeInsets.symmetric(horizontal: 6),
-                            child:
-                                Text('Premium', style: TextStyle(fontSize: 12)),
+                            child: Text(
+                              'Premium',
+                              style: TextStyle(fontSize: 12),
+                            ),
                           ),
                         },
                         onValueChanged: (v) {

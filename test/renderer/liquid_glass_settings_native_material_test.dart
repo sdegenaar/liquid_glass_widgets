@@ -107,10 +107,14 @@ void main() {
       });
 
       test('lensModel switches at the midpoint', () {
-        expect(LiquidGlassSettings.lerp(a, tuned, 0.49).lensModel,
-            GlassLensModel.spherical);
-        expect(LiquidGlassSettings.lerp(a, tuned, 0.5).lensModel,
-            GlassLensModel.paraxial);
+        expect(
+          LiquidGlassSettings.lerp(a, tuned, 0.49).lensModel,
+          GlassLensModel.spherical,
+        );
+        expect(
+          LiquidGlassSettings.lerp(a, tuned, 0.5).lensModel,
+          GlassLensModel.paraxial,
+        );
       });
     });
 
@@ -180,34 +184,38 @@ void main() {
       expect(s, equals(theme));
     });
 
-    test('lerp interpolates the numbers and switches lensModel at the midpoint',
-        () {
-      const a = GlassThemeSettings(
-        frost: 0,
-        frostOpacity: 1,
-        frostClamp: 0,
-        frostWeight: 1,
-        blurWeight: 1,
-        rimShade: 0,
-        rimShadeEnds: 0.2,
-        rimLight: 0,
-        bodyShade: 0,
-        lensModel: GlassLensModel.spherical,
-      );
-      final s = GlassThemeSettings.lerp(a, theme, 0.5)!;
-      expect(s.frost, closeTo(7, 1e-10));
-      expect(s.frostOpacity, closeTo(0.865, 1e-10));
-      expect(s.frostClamp, closeTo(0.2, 1e-10));
-      expect(s.frostWeight, closeTo(1.5, 1e-10));
-      expect(s.blurWeight, closeTo(0.9, 1e-10));
-      expect(s.rimShade, closeTo(0.5, 1e-10));
-      expect(s.rimShadeEnds, closeTo(0.15, 1e-10));
-      expect(s.rimLight, closeTo(0.575, 1e-10));
-      expect(s.bodyShade, closeTo(0.14, 1e-10));
-      expect(s.lensModel, GlassLensModel.paraxial);
-      expect(GlassThemeSettings.lerp(a, theme, 0.49)!.lensModel,
-          GlassLensModel.spherical);
-    });
+    test(
+      'lerp interpolates the numbers and switches lensModel at the midpoint',
+      () {
+        const a = GlassThemeSettings(
+          frost: 0,
+          frostOpacity: 1,
+          frostClamp: 0,
+          frostWeight: 1,
+          blurWeight: 1,
+          rimShade: 0,
+          rimShadeEnds: 0.2,
+          rimLight: 0,
+          bodyShade: 0,
+          lensModel: GlassLensModel.spherical,
+        );
+        final s = GlassThemeSettings.lerp(a, theme, 0.5)!;
+        expect(s.frost, closeTo(7, 1e-10));
+        expect(s.frostOpacity, closeTo(0.865, 1e-10));
+        expect(s.frostClamp, closeTo(0.2, 1e-10));
+        expect(s.frostWeight, closeTo(1.5, 1e-10));
+        expect(s.blurWeight, closeTo(0.9, 1e-10));
+        expect(s.rimShade, closeTo(0.5, 1e-10));
+        expect(s.rimShadeEnds, closeTo(0.15, 1e-10));
+        expect(s.rimLight, closeTo(0.575, 1e-10));
+        expect(s.bodyShade, closeTo(0.14, 1e-10));
+        expect(s.lensModel, GlassLensModel.paraxial);
+        expect(
+          GlassThemeSettings.lerp(a, theme, 0.49)!.lensModel,
+          GlassLensModel.spherical,
+        );
+      },
+    );
 
     test('each field takes part in == and hashCode', () {
       final variants = [
@@ -250,20 +258,22 @@ void main() {
       expect(s.lensModel, GlassLensModel.paraxial);
     });
 
-    test('GlassThemeSettings presets stay 1:1 with LiquidGlassSettings presets',
-        () {
-      const defaults = LiquidGlassSettings();
-      final pairs = <(LiquidGlassSettings, GlassThemeSettings)>[
-        (LiquidGlassSettings.classicLight, GlassThemeSettings.classicLight),
-        (LiquidGlassSettings.classicDark, GlassThemeSettings.classicDark),
-        (LiquidGlassSettings.ios26Light, GlassThemeSettings.ios26Light),
-        (LiquidGlassSettings.ios26Dark, GlassThemeSettings.ios26Dark),
-        (LiquidGlassSettings.ios27Light, GlassThemeSettings.ios27Light),
-        (LiquidGlassSettings.ios27Dark, GlassThemeSettings.ios27Dark),
-      ];
-      for (final (liquidPreset, themePreset) in pairs) {
-        expect(themePreset.applyTo(defaults), equals(liquidPreset));
-      }
-    });
+    test(
+      'GlassThemeSettings presets stay 1:1 with LiquidGlassSettings presets',
+      () {
+        const defaults = LiquidGlassSettings();
+        final pairs = <(LiquidGlassSettings, GlassThemeSettings)>[
+          (LiquidGlassSettings.classicLight, GlassThemeSettings.classicLight),
+          (LiquidGlassSettings.classicDark, GlassThemeSettings.classicDark),
+          (LiquidGlassSettings.ios26Light, GlassThemeSettings.ios26Light),
+          (LiquidGlassSettings.ios26Dark, GlassThemeSettings.ios26Dark),
+          (LiquidGlassSettings.ios27Light, GlassThemeSettings.ios27Light),
+          (LiquidGlassSettings.ios27Dark, GlassThemeSettings.ios27Dark),
+        ];
+        for (final (liquidPreset, themePreset) in pairs) {
+          expect(themePreset.applyTo(defaults), equals(liquidPreset));
+        }
+      },
+    );
   });
 }

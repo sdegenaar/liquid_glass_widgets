@@ -1,5 +1,5 @@
 import 'package:liquid_glass_widgets/widgets/interactive/glass_switch.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
@@ -14,10 +14,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassSwitch(
-              value: false,
-              onChanged: (_) {},
-            ),
+            child: GlassSwitch(value: false, onChanged: (_) {}),
           ),
         ),
       );
@@ -46,16 +43,14 @@ void main() {
       expect(value, isTrue);
     });
 
-    testWidgets('shows thumb in correct position when value is false',
-        (tester) async {
+    testWidgets('shows thumb in correct position when value is false', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassSwitch(
-              value: false,
-              onChanged: (_) {},
-            ),
+            child: GlassSwitch(value: false, onChanged: (_) {}),
           ),
         ),
       );
@@ -63,16 +58,14 @@ void main() {
       expect(find.byType(GlassSwitch), findsOneWidget);
     });
 
-    testWidgets('shows thumb in correct position when value is true',
-        (tester) async {
+    testWidgets('shows thumb in correct position when value is true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: GlassSwitch(
-              value: true,
-              onChanged: (_) {},
-            ),
+            child: GlassSwitch(value: true, onChanged: (_) {}),
           ),
         ),
       );
@@ -136,10 +129,7 @@ void main() {
     });
 
     test('defaults are correct', () {
-      final glassSwitch = GlassSwitch(
-        value: false,
-        onChanged: (_) {},
-      );
+      final glassSwitch = GlassSwitch(value: false, onChanged: (_) {});
 
       expect(glassSwitch.width, equals(58.0));
       expect(glassSwitch.height, equals(26.0));
@@ -149,8 +139,9 @@ void main() {
     });
 
     // ── didUpdateWidget animation branches (lines 212-227) ───────────────────
-    testWidgets('toggling value=true animates forward (lines 218-219)',
-        (tester) async {
+    testWidgets('toggling value=true animates forward (lines 218-219)', (
+      tester,
+    ) async {
       bool value = false;
       late StateSetter outerSetState;
       await tester.pumpWidget(
@@ -178,8 +169,9 @@ void main() {
       expect(find.byType(GlassSwitch), findsOneWidget);
     });
 
-    testWidgets('toggling value=false animates reverse (line 221)',
-        (tester) async {
+    testWidgets('toggling value=false animates reverse (line 221)', (
+      tester,
+    ) async {
       bool value = true;
       late StateSetter outerSetState;
       await tester.pumpWidget(
@@ -207,8 +199,9 @@ void main() {
       expect(find.byType(GlassSwitch), findsOneWidget);
     });
 
-    testWidgets('mid-animation glow overlay renders when transition > 0.05',
-        (tester) async {
+    testWidgets('mid-animation glow overlay renders when transition > 0.05', (
+      tester,
+    ) async {
       // Catching line 446-451: `if (transition > 0.05) Opacity(GlassGlow(...))`
       // This renders during the animation. We pump partway through the animation
       // to ensure the glow layer is built.
@@ -246,123 +239,121 @@ void main() {
       required bool initialValue,
       required ValueChanged<bool> onChanged,
       double width = 58.0,
-    }) =>
-        createTestApp(
-          child: AdaptiveLiquidGlassLayer(
-            settings: defaultTestGlassSettings,
-            child: GlassSwitch(
-              value: initialValue,
-              onChanged: onChanged,
-              width: width,
-            ),
-          ),
-        );
+    }) => createTestApp(
+      child: AdaptiveLiquidGlassLayer(
+        settings: defaultTestGlassSettings,
+        child: GlassSwitch(
+          value: initialValue,
+          onChanged: onChanged,
+          width: width,
+        ),
+      ),
+    );
 
-    testWidgets('slow drag past 50% midpoint toggles switch on',
-        (tester) async {
+    testWidgets('slow drag past 50% midpoint toggles switch on', (
+      tester,
+    ) async {
       bool value = false;
       await tester.pumpWidget(
-        buildDraggableSwitch(
-          initialValue: value,
-          onChanged: (v) => value = v,
-        ),
+        buildDraggableSwitch(initialValue: value, onChanged: (v) => value = v),
       );
 
       final switchFinder = find.byType(GlassSwitch);
       final switchRect = tester.getRect(switchFinder);
 
       // Drag from left side to well past the midpoint (right quarter).
-      await tester.drag(
-        switchFinder,
-        Offset(switchRect.width * 0.6, 0),
-      );
+      await tester.drag(switchFinder, Offset(switchRect.width * 0.6, 0));
       await tester.pumpAndSettle();
 
-      expect(value, isTrue,
-          reason: 'Dragging past 50% should toggle the switch on');
+      expect(
+        value,
+        isTrue,
+        reason: 'Dragging past 50% should toggle the switch on',
+      );
     });
 
-    testWidgets('drag from on→off past midpoint toggles switch off',
-        (tester) async {
+    testWidgets('drag from on→off past midpoint toggles switch off', (
+      tester,
+    ) async {
       bool value = true;
       await tester.pumpWidget(
-        buildDraggableSwitch(
-          initialValue: value,
-          onChanged: (v) => value = v,
-        ),
+        buildDraggableSwitch(initialValue: value, onChanged: (v) => value = v),
       );
 
       final switchFinder = find.byType(GlassSwitch);
       final switchRect = tester.getRect(switchFinder);
 
       // Start from a position near the right and drag left past the midpoint.
-      await tester.drag(
-        switchFinder,
-        Offset(-switchRect.width * 0.6, 0),
-      );
+      await tester.drag(switchFinder, Offset(-switchRect.width * 0.6, 0));
       await tester.pumpAndSettle();
 
-      expect(value, isFalse,
-          reason: 'Dragging left past 50% should toggle the switch off');
+      expect(
+        value,
+        isFalse,
+        reason: 'Dragging left past 50% should toggle the switch off',
+      );
     });
 
     testWidgets(
-        'external value change while dragging: widget survives without crash',
-        (tester) async {
-      // This test verifies that _dragAbandonedExternally prevents a double-fire
-      // of onChanged. We drive the external change via the parent StatefulWidget
-      // then verify the widget tree is intact after the gesture ends.
-      bool value = false;
-      int callCount = 0;
-      late StateSetter outerSetState;
+      'external value change while dragging: widget survives without crash',
+      (tester) async {
+        // This test verifies that _dragAbandonedExternally prevents a double-fire
+        // of onChanged. We drive the external change via the parent StatefulWidget
+        // then verify the widget tree is intact after the gesture ends.
+        bool value = false;
+        int callCount = 0;
+        late StateSetter outerSetState;
 
-      await tester.pumpWidget(
-        createTestApp(
-          child: StatefulBuilder(
-            builder: (ctx, setState) {
-              outerSetState = setState;
-              return AdaptiveLiquidGlassLayer(
-                settings: defaultTestGlassSettings,
-                child: GlassSwitch(
-                  value: value,
-                  onChanged: (v) {
-                    callCount++;
-                    outerSetState(() => value = v);
-                  },
-                ),
-              );
-            },
+        await tester.pumpWidget(
+          createTestApp(
+            child: StatefulBuilder(
+              builder: (ctx, setState) {
+                outerSetState = setState;
+                return AdaptiveLiquidGlassLayer(
+                  settings: defaultTestGlassSettings,
+                  child: GlassSwitch(
+                    value: value,
+                    onChanged: (v) {
+                      callCount++;
+                      outerSetState(() => value = v);
+                    },
+                  ),
+                );
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      final switchFinder = find.byType(GlassSwitch);
+        final switchFinder = find.byType(GlassSwitch);
 
-      // Start a drag gesture — must move > kTouchSlop (18 px) to trigger
-      // onHorizontalDragStart recognition so _isDragging is set to true.
-      final gesture = await tester.startGesture(
-        tester.getCenter(switchFinder),
-      );
-      await tester.pump();
-      await gesture.moveBy(const Offset(20, 0)); // > kTouchSlop
-      await tester.pump();
+        // Start a drag gesture — must move > kTouchSlop (18 px) to trigger
+        // onHorizontalDragStart recognition so _isDragging is set to true.
+        final gesture = await tester.startGesture(
+          tester.getCenter(switchFinder),
+        );
+        await tester.pump();
+        await gesture.moveBy(const Offset(20, 0)); // > kTouchSlop
+        await tester.pump();
 
-      // External change: parent overrides value programmatically.
-      // This goes through didUpdateWidget → sets _dragAbandonedExternally.
-      outerSetState(() => value = true);
-      await tester.pump();
+        // External change: parent overrides value programmatically.
+        // This goes through didUpdateWidget → sets _dragAbandonedExternally.
+        outerSetState(() => value = true);
+        await tester.pump();
 
-      // Lift finger — _onDragEnd must not call onChanged again.
-      await gesture.up();
-      await tester.pumpAndSettle();
+        // Lift finger — _onDragEnd must not call onChanged again.
+        await gesture.up();
+        await tester.pumpAndSettle();
 
-      // onChanged must NOT have been called (the external setState handled it).
-      expect(callCount, equals(0),
-          reason:
-              '_dragAbandonedExternally should suppress onChanged in _onDragEnd');
-      // Widget must still be alive.
-      expect(find.byType(GlassSwitch), findsOneWidget);
-    });
+        // onChanged must NOT have been called (the external setState handled it).
+        expect(
+          callCount,
+          equals(0),
+          reason: '_dragAbandonedExternally should suppress onChanged in _onDragEnd',
+        );
+        // Widget must still be alive.
+        expect(find.byType(GlassSwitch), findsOneWidget);
+      },
+    );
 
     // ── Regression: realistic gesture sequences ──────────────────────────────
 
@@ -394,22 +385,23 @@ void main() {
         // Use pointer-level tap down+up to match onTapDown+onTapUp handler.
         await tester.tapAt(tester.getCenter(find.byType(GlassSwitch)));
         await tester.pumpAndSettle();
-        expect(value, equals(expected),
-            reason: 'Tap $i: expected $expected, got $value');
+        expect(
+          value,
+          equals(expected),
+          reason: 'Tap $i: expected $expected, got $value',
+        );
       }
     });
 
-    testWidgets('slow drag (below slop then above) keeps pill plump',
-        (tester) async {
+    testWidgets('slow drag (below slop then above) keeps pill plump', (
+      tester,
+    ) async {
       // Regression: slow drag fired onTapCancel which deflated the bloom before
       // onHorizontalDragStart could stop it. Widget must not crash.
       bool value = false;
 
       await tester.pumpWidget(
-        buildDraggableSwitch(
-          initialValue: value,
-          onChanged: (v) => value = v,
-        ),
+        buildDraggableSwitch(initialValue: value, onChanged: (v) => value = v),
       );
 
       final switchFinder = find.byType(GlassSwitch);
@@ -431,12 +423,16 @@ void main() {
 
       // Widget must still be alive and functional.
       expect(find.byType(GlassSwitch), findsOneWidget);
-      expect(value, isTrue,
-          reason: 'Slow drag past midpoint should still toggle');
+      expect(
+        value,
+        isTrue,
+        reason: 'Slow drag past midpoint should still toggle',
+      );
     });
 
-    testWidgets('drag not reaching midpoint snaps back without toggle',
-        (tester) async {
+    testWidgets('drag not reaching midpoint snaps back without toggle', (
+      tester,
+    ) async {
       bool value = false;
       late StateSetter outerSetState;
 
@@ -476,8 +472,9 @@ void main() {
       expect(find.byType(GlassSwitch), findsOneWidget);
     });
 
-    testWidgets('fast flick right toggles on regardless of position',
-        (tester) async {
+    testWidgets('fast flick right toggles on regardless of position', (
+      tester,
+    ) async {
       bool value = false;
       late StateSetter outerSetState;
 
@@ -503,12 +500,16 @@ void main() {
       await tester.fling(switchFinder, const Offset(30, 0), 500);
       await tester.pumpAndSettle();
 
-      expect(value, isTrue,
-          reason: 'Fast rightward flick should toggle on via velocity');
+      expect(
+        value,
+        isTrue,
+        reason: 'Fast rightward flick should toggle on via velocity',
+      );
     });
 
-    testWidgets('fast flick left toggles off regardless of position',
-        (tester) async {
+    testWidgets('fast flick left toggles off regardless of position', (
+      tester,
+    ) async {
       bool value = true;
       late StateSetter outerSetState;
 
@@ -533,12 +534,16 @@ void main() {
       await tester.fling(switchFinder, const Offset(-30, 0), 500);
       await tester.pumpAndSettle();
 
-      expect(value, isFalse,
-          reason: 'Fast leftward flick should toggle off via velocity');
+      expect(
+        value,
+        isFalse,
+        reason: 'Fast leftward flick should toggle off via velocity',
+      );
     });
 
-    testWidgets('thickness controller resets cleanly on second interaction',
-        (tester) async {
+    testWidgets('thickness controller resets cleanly on second interaction', (
+      tester,
+    ) async {
       // Regression: _thicknessController at value=1.0 (end of previous
       // animation) was not being reset to 0.0 before the next forward().
       // This caused the bloom to skip entirely on the second tap.
@@ -580,10 +585,10 @@ void main() {
 
     // ── New targeted tests for production hardening ─────────────────────────
 
-    testWidgets(
-        'initial state: switch starting as true renders thumb at right '
-        'and first tap animates in reverse direction (anchor fix)',
-        (tester) async {
+    testWidgets('initial state: switch starting as true renders thumb at right '
+        'and first tap animates in reverse direction (anchor fix)', (
+      tester,
+    ) async {
       // Regression: _isMovingForward was hardcoded to `true`, so the first
       // tap on a switch starting as `true` bloomed from the wrong anchor
       // (left edge instead of right edge). After the fix, _isMovingForward
@@ -623,20 +628,24 @@ void main() {
       await tester.pumpAndSettle();
 
       // State must have toggled off correctly.
-      expect(value, isFalse,
-          reason:
-              'First tap on a switch initialised as true must toggle it off');
+      expect(
+        value,
+        isFalse,
+        reason: 'First tap on a switch initialised as true must toggle it off',
+      );
 
       // Second tap: false→true. Must behave consistently.
       await tester.tapAt(tester.getCenter(find.byType(GlassSwitch)));
       await tester.pumpAndSettle();
-      expect(value, isTrue,
-          reason:
-              'Second tap must toggle back on; confirms direction consistency');
+      expect(
+        value,
+        isTrue,
+        reason:
+            'Second tap must toggle back on; confirms direction consistency',
+      );
     });
 
-    testWidgets(
-        '_justEndedDrag: onChanged is called exactly once after a drag '
+    testWidgets('_justEndedDrag: onChanged is called exactly once after a drag '
         'toggle, not twice (race condition fix)', (tester) async {
       // Regression: _justEndedDrag was reset via addPostFrameCallback, which
       // could fire *after* didUpdateWidget if the parent setState was batched
@@ -684,18 +693,25 @@ void main() {
 
       // onChanged must have been called exactly once — from _onDragEnd.
       // A second call would mean the race condition is still present.
-      expect(callCount, equals(1),
-          reason: 'onChanged must fire exactly once per drag toggle; '
-              'a count of 2 means _justEndedDrag race is still present');
-      expect(value, isTrue,
-          reason: 'Drag past midpoint must toggle the switch on');
+      expect(
+        callCount,
+        equals(1),
+        reason:
+            'onChanged must fire exactly once per drag toggle; '
+            'a count of 2 means _justEndedDrag race is still present',
+      );
+      expect(
+        value,
+        isTrue,
+        reason: 'Drag past midpoint must toggle the switch on',
+      );
       expect(find.byType(GlassSwitch), findsOneWidget);
     });
 
-    testWidgets(
-        'float guard: rapid consecutive toggles never skip bloom '
-        '(>= 0.99 threshold is robust against floating-point drift)',
-        (tester) async {
+    testWidgets('float guard: rapid consecutive toggles never skip bloom '
+        '(>= 0.99 threshold is robust against floating-point drift)', (
+      tester,
+    ) async {
       // Regression: using == 1.0 to guard the thickness controller reset was
       // fragile — floating-point drift could leave it at 0.9999... meaning the
       // reset to 0.0 was skipped and the bloom sequence played from mid-point.
@@ -741,14 +757,20 @@ void main() {
       // Let everything settle cleanly.
       await tester.pumpAndSettle();
       expect(find.byType(GlassSwitch), findsOneWidget);
-      expect(value, isFalse,
-          reason: 'Final state must reflect the last programmatic toggle');
+      expect(
+        value,
+        isFalse,
+        reason: 'Final state must reflect the last programmatic toggle',
+      );
 
       // One more toggle from a clean resting state to confirm full recovery.
       outerSetState(() => value = true);
       await tester.pumpAndSettle();
-      expect(value, isTrue,
-          reason: 'Switch must be fully functional after rapid interruption');
+      expect(
+        value,
+        isTrue,
+        reason: 'Switch must be fully functional after rapid interruption',
+      );
     });
     group('keyboard focus & accessibility', () {
       testWidgets('Space key toggles switch when focused', (tester) async {
@@ -838,154 +860,159 @@ void main() {
     });
 
     testWidgets(
-        'renders resting thumbShadow outside GlassEffect clip and supports custom thumbShadow',
-        (tester) async {
-      List<BoxShadow>? shadows;
-      late StateSetter update;
-      await tester.pumpWidget(
-        createTestApp(
-          child: StatefulBuilder(
-            builder: (context, setState) {
-              update = setState;
-              return GlassSwitch(
-                value: false,
-                thumbShadow: shadows,
-                onChanged: (_) {},
-              );
-            },
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final shadowFinder = find.descendant(
-        of: find.byType(GlassSwitch),
-        matching: find.byWidgetPredicate(
-          (widget) =>
-              widget is DecoratedBox &&
-              widget.decoration is BoxDecoration &&
-              (widget.decoration as BoxDecoration).boxShadow?.isNotEmpty ==
-                  true,
-        ),
-      );
-      expect(shadowFinder, findsOneWidget);
-      expect(
-        find.ancestor(of: shadowFinder, matching: find.byType(GlassEffect)),
-        findsNothing,
-      );
-      final defaultShadow = (tester
-              .widget<DecoratedBox>(shadowFinder)
-              .decoration as BoxDecoration)
-          .boxShadow!
-          .single;
-      expect(defaultShadow.color.a, 0.15);
-      expect(defaultShadow.blurRadius, 8);
-      expect(defaultShadow.offset, const Offset(0, 2));
-
-      update(() => shadows = const []);
-      await tester.pumpAndSettle();
-      expect(shadowFinder, findsNothing);
-    });
-
-    testWidgets(
-        'lifted thumb achieves symmetric base overhang and rubber-band over-drag overhang',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestApp(
-          child: AdaptiveLiquidGlassLayer(
-            settings: defaultTestGlassSettings,
-            child: GlassSwitch(
-              value: false,
-              width: 63.0,
-              height: 28.0,
-              onChanged: (_) {},
+      'renders resting thumbShadow outside GlassEffect clip and supports custom thumbShadow',
+      (tester) async {
+        List<BoxShadow>? shadows;
+        late StateSetter update;
+        await tester.pumpWidget(
+          createTestApp(
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                update = setState;
+                return GlassSwitch(
+                  value: false,
+                  thumbShadow: shadows,
+                  onChanged: (_) {},
+                );
+              },
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final switchFinder = find.byType(GlassSwitch);
-      final switchRect = tester.getRect(switchFinder);
-      final thumbEffectFinder = find.descendant(
-        of: switchFinder,
-        matching: find.byType(GlassEffect),
-      );
+        final shadowFinder = find.descendant(
+          of: find.byType(GlassSwitch),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is DecoratedBox &&
+                widget.decoration is BoxDecoration &&
+                (widget.decoration as BoxDecoration).boxShadow?.isNotEmpty ==
+                    true,
+          ),
+        );
+        expect(shadowFinder, findsOneWidget);
+        expect(
+          find.ancestor(of: shadowFinder, matching: find.byType(GlassEffect)),
+          findsNothing,
+        );
+        final defaultShadow =
+            (tester.widget<DecoratedBox>(shadowFinder).decoration
+                    as BoxDecoration)
+                .boxShadow!
+                .single;
+        expect(defaultShadow.color.a, 0.15);
+        expect(defaultShadow.blurRadius, 8);
+        expect(defaultShadow.offset, const Offset(0, 2));
 
-      // Press down on the OFF switch: pump past kPressTimeout (100ms) so
-      // onTapDown fires, then pump 150ms so the 120ms bloom reaches peak.
-      // At 63×28, native iOS 27 pressed OFF lens frame is (-8.67, -5.33, 58.0, 38.33).
-      final gesture = await tester.startGesture(switchRect.center);
-      await tester.pump(const Duration(milliseconds: 110));
-      await tester.pump(const Duration(milliseconds: 150));
-
-      final pressedLeftOverhang =
-          switchRect.left - tester.getRect(thumbEffectFinder).left;
-      expect(pressedLeftOverhang, closeTo(8.67, 0.2));
-
-      // Drag left past OFF (-30 px) and verify native rubber-band left overhang (~15.6 px).
-      await gesture.moveBy(const Offset(-5, 0)); // clear 3px touchSlop
-      await tester.pump();
-      await gesture.moveBy(const Offset(-30, 0));
-      await tester.pump(const Duration(milliseconds: 100));
-      final overDraggedLeftOverhang =
-          switchRect.left - tester.getRect(thumbEffectFinder).left;
-      expect(overDraggedLeftOverhang, greaterThan(15.0));
-
-      // Drag right across the runway and 30 px past ON, verifying symmetric
-      // right rubber-band overhang (~15.6 px).
-      await gesture.moveBy(const Offset(82, 0));
-      await tester.pump(const Duration(milliseconds: 100));
-      final overDraggedRightOverhang =
-          tester.getRect(thumbEffectFinder).right - switchRect.right;
-      expect(overDraggedRightOverhang, closeTo(overDraggedLeftOverhang, 0.5));
-
-      await gesture.up();
-      await tester.pumpAndSettle();
-    });
+        update(() => shadows = const []);
+        await tester.pumpAndSettle();
+        expect(shadowFinder, findsNothing);
+      },
+    );
 
     testWidgets(
-        'didUpdateWidget snaps thumb back to target after cancelled mid-runway drag',
-        (tester) async {
-      Color thumbColor = Colors.white;
-      late StateSetter update;
-
-      await tester.pumpWidget(
-        createTestApp(
-          child: StatefulBuilder(
-            builder: (context, setState) {
-              update = setState;
-              return GlassSwitch(
+      'lifted thumb achieves symmetric base overhang and rubber-band over-drag overhang',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: AdaptiveLiquidGlassLayer(
+              settings: defaultTestGlassSettings,
+              child: GlassSwitch(
                 value: false,
-                thumbColor: thumbColor,
+                width: 63.0,
+                height: 28.0,
                 onChanged: (_) {},
-              );
-            },
+              ),
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final center = tester.getCenter(find.byType(GlassSwitch));
-      final gesture = await tester.startGesture(center);
-      await tester.pump();
-      await gesture.moveBy(const Offset(5, 0));
-      await tester.pump();
-      await gesture.moveBy(const Offset(10, 0));
-      await tester.pump();
-      await gesture.cancel();
-      await tester.pump();
+        final switchFinder = find.byType(GlassSwitch);
+        final switchRect = tester.getRect(switchFinder);
+        final thumbEffectFinder = find.descendant(
+          of: switchFinder,
+          matching: find.byType(GlassEffect),
+        );
 
-      update(() => thumbColor = Colors.grey);
-      await tester.pumpAndSettle();
-      expect(find.byType(GlassSwitch), findsOneWidget);
-    });
+        // Press down on the OFF switch: pump past kPressTimeout (100ms) so
+        // onTapDown fires, then pump 150ms so the 120ms bloom reaches peak.
+        // At 63×28, native iOS 27 pressed OFF lens frame is (-8.67, -5.33, 58.0, 38.33).
+        final gesture = await tester.startGesture(switchRect.center);
+        await tester.pump(const Duration(milliseconds: 110));
+        await tester.pump(const Duration(milliseconds: 150));
+
+        final pressedLeftOverhang =
+            switchRect.left - tester.getRect(thumbEffectFinder).left;
+        expect(pressedLeftOverhang, closeTo(8.67, 0.2));
+
+        // Drag left past OFF (-30 px) and verify native rubber-band left overhang (~15.6 px).
+        await gesture.moveBy(const Offset(-5, 0)); // clear 3px touchSlop
+        await tester.pump();
+        await gesture.moveBy(const Offset(-30, 0));
+        await tester.pump(const Duration(milliseconds: 100));
+        final overDraggedLeftOverhang =
+            switchRect.left - tester.getRect(thumbEffectFinder).left;
+        expect(overDraggedLeftOverhang, greaterThan(15.0));
+
+        // Drag right across the runway and 30 px past ON, verifying symmetric
+        // right rubber-band overhang (~15.6 px).
+        await gesture.moveBy(const Offset(82, 0));
+        await tester.pump(const Duration(milliseconds: 100));
+        final overDraggedRightOverhang =
+            tester.getRect(thumbEffectFinder).right - switchRect.right;
+        expect(overDraggedRightOverhang, closeTo(overDraggedLeftOverhang, 0.5));
+
+        await gesture.up();
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'didUpdateWidget snaps thumb back to target after cancelled mid-runway drag',
+      (tester) async {
+        Color thumbColor = Colors.white;
+        late StateSetter update;
+
+        await tester.pumpWidget(
+          createTestApp(
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                update = setState;
+                return GlassSwitch(
+                  value: false,
+                  thumbColor: thumbColor,
+                  onChanged: (_) {},
+                );
+              },
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final center = tester.getCenter(find.byType(GlassSwitch));
+        final gesture = await tester.startGesture(center);
+        await tester.pump();
+        await gesture.moveBy(const Offset(5, 0));
+        await tester.pump();
+        await gesture.moveBy(const Offset(10, 0));
+        await tester.pump();
+        await gesture.cancel();
+        await tester.pump();
+
+        update(() => thumbColor = Colors.grey);
+        await tester.pumpAndSettle();
+        expect(find.byType(GlassSwitch), findsOneWidget);
+      },
+    );
   });
 
   group('GlassSwitch On/Off Labels', () {
-    Finder marks() => find.byWidgetPredicate((widget) =>
-        widget is CustomPaint &&
-        widget.painter.runtimeType.toString() == '_OnOffLabelsPainter');
+    Finder marks() => find.byWidgetPredicate(
+      (widget) =>
+          widget is CustomPaint &&
+          widget.painter.runtimeType.toString() == '_OnOffLabelsPainter',
+    );
 
     Widget build({
       required bool value,
@@ -996,31 +1023,30 @@ void main() {
       Color? offLabelColor,
       double? width,
       double? height,
-    }) =>
-        createTestApp(
-          child: Builder(
-            builder: (context) => MediaQuery(
-              data: MediaQuery.of(context)
-                  .copyWith(onOffSwitchLabels: onOffSwitchLabels),
-              child: Directionality(
-                textDirection: textDirection,
-                child: Center(
-                  child: AdaptiveLiquidGlassLayer(
-                    settings: defaultTestGlassSettings,
-                    child: GlassSwitch(
-                      value: value,
-                      onChanged: onChanged ?? (_) {},
-                      onLabelColor: onLabelColor,
-                      offLabelColor: offLabelColor,
-                      width: width ?? 58,
-                      height: height ?? 26,
-                    ),
-                  ),
+    }) => createTestApp(
+      child: Builder(
+        builder: (context) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(onOffSwitchLabels: onOffSwitchLabels),
+          child: Directionality(
+            textDirection: textDirection,
+            child: Center(
+              child: AdaptiveLiquidGlassLayer(
+                settings: defaultTestGlassSettings,
+                child: GlassSwitch(
+                  value: value,
+                  onChanged: onChanged ?? (_) {},
+                  onLabelColor: onLabelColor,
+                  offLabelColor: offLabelColor,
+                  width: width ?? 58,
+                  height: height ?? 26,
                 ),
               ),
             ),
           ),
-        );
+        ),
+      ),
+    );
 
     // Default 58x26 track: the pill thumb is 22 * (37 / 24) wide, so the
     // gap beside the resting thumb is 58 - 2 - thumbWidth, centered at
@@ -1080,8 +1106,9 @@ void main() {
       expect(tester.renderObject(marks()), isNot(paints..circle()));
     });
 
-    testWidgets('at 63x28 the marks land where a UISwitch draws them',
-        (tester) async {
+    testWidgets('at 63x28 the marks land where a UISwitch draws them', (
+      tester,
+    ) async {
       // Measured on the iOS 27.2 simulator from 3x screenshots, from the
       // track's top-left corner: the I spans x 14-15 and y 9-19; the O is
       // 10pt across its outside with a 1pt stroke, centered at x 48, y 14.
@@ -1089,50 +1116,52 @@ void main() {
       await tester.pumpWidget(build(value: true, width: 63, height: 28));
       expect(
         tester.renderObject(marks()),
-        paints
-          ..something((method, args) {
-            if (method != #drawRect) return false;
-            final rect = args[0] as Rect;
-            return close(rect.left, 14) &&
-                close(rect.right, 15) &&
-                close(rect.top, 9) &&
-                close(rect.bottom, 19);
-          }),
+        paints..something((method, args) {
+          if (method != #drawRect) return false;
+          final rect = args[0] as Rect;
+          return close(rect.left, 14) &&
+              close(rect.right, 15) &&
+              close(rect.top, 9) &&
+              close(rect.bottom, 19);
+        }),
       );
 
       await tester.pumpWidget(build(value: false, width: 63, height: 28));
       await tester.pumpAndSettle();
       expect(
         tester.renderObject(marks()),
-        paints
-          ..something((method, args) {
-            if (method != #drawCircle) return false;
-            final center = args[0] as Offset;
-            final radius = args[1] as double;
-            final paint = args[2] as Paint;
-            final outer = 2 * radius + paint.strokeWidth;
-            final inner = 2 * radius - paint.strokeWidth;
-            return close(center.dx, 48) &&
-                close(center.dy, 14) &&
-                close(outer, 10) &&
-                close(inner, 8) &&
-                // UIKit's light grey ring, as CupertinoSwitch draws it.
-                paint.color.toARGB32() == 0xFFB3B3B3;
-          }),
+        paints..something((method, args) {
+          if (method != #drawCircle) return false;
+          final center = args[0] as Offset;
+          final radius = args[1] as double;
+          final paint = args[2] as Paint;
+          final outer = 2 * radius + paint.strokeWidth;
+          final inner = 2 * radius - paint.strokeWidth;
+          return close(center.dx, 48) &&
+              close(center.dy, 14) &&
+              close(outer, 10) &&
+              close(inner, 8) &&
+              // UIKit's light grey ring, as CupertinoSwitch draws it.
+              paint.color.toARGB32() == 0xFFB3B3B3;
+        }),
       );
 
       // Right to left, mirrored about the middle of the track.
-      await tester.pumpWidget(build(
+      await tester.pumpWidget(
+        build(
           value: false,
           width: 63,
           height: 28,
-          textDirection: TextDirection.rtl));
+          textDirection: TextDirection.rtl,
+        ),
+      );
       await tester.pumpAndSettle();
       expect(
         tester.renderObject(marks()),
-        paints
-          ..something((method, args) =>
-              method == #drawCircle && close((args[0] as Offset).dx, 15)),
+        paints..something(
+          (method, args) =>
+              method == #drawCircle && close((args[0] as Offset).dx, 15),
+        ),
       );
     });
 
@@ -1140,38 +1169,38 @@ void main() {
       for (final (width, height) in [
         (58.0, 26.0),
         (63.0, 28.0),
-        (72.0, 32.0)
+        (72.0, 32.0),
       ]) {
         final thumbWidth = (height - 4) * (37.0 / 24.0);
-        await tester
-            .pumpWidget(build(value: false, width: width, height: height));
+        await tester.pumpWidget(
+          build(value: false, width: width, height: height),
+        );
         await tester.pumpAndSettle();
         expect(
           tester.renderObject(marks()),
-          paints
-            ..something((method, args) {
-              if (method != #drawCircle) return false;
-              final center = args[0] as Offset;
-              final paint = args[2] as Paint;
-              final left =
-                  center.dx - (args[1] as double) - paint.strokeWidth / 2;
-              final right =
-                  center.dx + (args[1] as double) + paint.strokeWidth / 2;
-              return left > 2 + thumbWidth && right < width;
-            }),
+          paints..something((method, args) {
+            if (method != #drawCircle) return false;
+            final center = args[0] as Offset;
+            final paint = args[2] as Paint;
+            final left =
+                center.dx - (args[1] as double) - paint.strokeWidth / 2;
+            final right =
+                center.dx + (args[1] as double) + paint.strokeWidth / 2;
+            return left > 2 + thumbWidth && right < width;
+          }),
           reason: '${width}x$height off',
         );
-        await tester
-            .pumpWidget(build(value: true, width: width, height: height));
+        await tester.pumpWidget(
+          build(value: true, width: width, height: height),
+        );
         await tester.pumpAndSettle();
         expect(
           tester.renderObject(marks()),
-          paints
-            ..something((method, args) {
-              if (method != #drawRect) return false;
-              final rect = args[0] as Rect;
-              return rect.left > 0 && rect.right < width - 2 - thumbWidth;
-            }),
+          paints..something((method, args) {
+            if (method != #drawRect) return false;
+            final rect = args[0] as Rect;
+            return rect.left > 0 && rect.right < width - 2 - thumbWidth;
+          }),
           reason: '${width}x$height on',
         );
       }
@@ -1189,23 +1218,27 @@ void main() {
     testWidgets('label colors can be set', (tester) async {
       const on = Color(0xFF112233);
       const off = Color(0xFF445566);
-      await tester
-          .pumpWidget(build(value: true, onLabelColor: on, offLabelColor: off));
+      await tester.pumpWidget(
+        build(value: true, onLabelColor: on, offLabelColor: off),
+      );
       expect(tester.renderObject(marks()), paints..rect(color: on));
       await tester.pumpWidget(
-          build(value: false, onLabelColor: on, offLabelColor: off));
+        build(value: false, onLabelColor: on, offLabelColor: off),
+      );
       await tester.pumpAndSettle();
       expect(tester.renderObject(marks()), paints..circle(color: off));
     });
 
     group('in RTL', () {
       testWidgets('the marks are mirrored', (tester) async {
-        await tester
-            .pumpWidget(build(value: false, textDirection: TextDirection.rtl));
+        await tester.pumpWidget(
+          build(value: false, textDirection: TextDirection.rtl),
+        );
         expect(tester.renderObject(marks()), ringAt(offInset));
 
-        await tester
-            .pumpWidget(build(value: true, textDirection: TextDirection.rtl));
+        await tester.pumpWidget(
+          build(value: true, textDirection: TextDirection.rtl),
+        );
         await tester.pumpAndSettle();
         expect(tester.renderObject(marks()), barAt(width - onInset));
       });
@@ -1223,8 +1256,9 @@ void main() {
       }
 
       testWidgets('the thumb rests on the left when on', (tester) async {
-        await tester
-            .pumpWidget(build(value: true, textDirection: TextDirection.rtl));
+        await tester.pumpWidget(
+          build(value: true, textDirection: TextDirection.rtl),
+        );
         expect(thumbRect(tester).center.dx, lessThan(width / 2));
 
         await tester.pumpWidget(build(value: true));
@@ -1234,11 +1268,13 @@ void main() {
 
       testWidgets('dragging left turns it on', (tester) async {
         var value = false;
-        await tester.pumpWidget(build(
-          value: value,
-          textDirection: TextDirection.rtl,
-          onChanged: (v) => value = v,
-        ));
+        await tester.pumpWidget(
+          build(
+            value: value,
+            textDirection: TextDirection.rtl,
+            onChanged: (v) => value = v,
+          ),
+        );
         await tester.timedDrag(
           find.byType(GlassSwitch),
           const Offset(-40, 0),

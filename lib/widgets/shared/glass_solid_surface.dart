@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 import '../../theme/glass_theme.dart';
 import '../../types/glass_style.dart';
@@ -35,7 +35,8 @@ Color resolveGlassSolidSurfaceColor(BuildContext context) {
   if (GlassTheme.brightnessOf(context) != Brightness.dark) {
     return kGlassSolidSurfaceLight;
   }
-  final isElevated = CupertinoUserInterfaceLevel.maybeOf(context) ==
+  final isElevated =
+      CupertinoUserInterfaceLevel.maybeOf(context) ==
       CupertinoUserInterfaceLevelData.elevated;
   return isElevated ? kGlassSolidSurfaceDarkElevated : kGlassSolidSurfaceDark;
 }

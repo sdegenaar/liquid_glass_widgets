@@ -13,7 +13,7 @@
 // fresh mount lands with the selection already centred rather than sliding
 // in from the first segment.
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -135,13 +135,15 @@ class _SegmentedRegridHomeState extends State<SegmentedRegridHome> {
                   GlassButton(
                     icon: const Icon(CupertinoIcons.zoom_in),
                     onTap: () => _setStep(
-                        _steps[(stepIdx + 1).clamp(0, _steps.length - 1)]),
+                      _steps[(stepIdx + 1).clamp(0, _steps.length - 1)],
+                    ),
                   ),
                   const SizedBox(width: 12),
                   GlassButton(
                     icon: const Icon(CupertinoIcons.zoom_out),
                     onTap: () => _setStep(
-                        _steps[(stepIdx - 1).clamp(0, _steps.length - 1)]),
+                      _steps[(stepIdx - 1).clamp(0, _steps.length - 1)],
+                    ),
                   ),
                 ],
               ),

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 /// Regression test for Issue #124:
@@ -31,9 +31,8 @@ class BrightnessResolutionDemoApp extends StatelessWidget {
     return MaterialApp(
       title: 'Brightness Resolution Test',
       themeMode: ThemeMode.light, // App locked to light mode
-      theme: ThemeData.light(useMaterial3: true).copyWith(
-        scaffoldBackgroundColor: const Color(0xFFF0F0F5),
-      ),
+      theme: ThemeData.light(useMaterial3: true)
+          .copyWith(scaffoldBackgroundColor: const Color(0xFFF0F0F5)),
       darkTheme: ThemeData.dark(useMaterial3: true),
       home: const _TestScreen(),
     );
@@ -68,9 +67,8 @@ class _TestScreenState extends State<_TestScreen> {
             children: [
               Text(
                 'Brightness Resolution Test',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(context).textTheme.headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 24),
               _InfoRow(
@@ -103,9 +101,7 @@ class _TestScreenState extends State<_TestScreen> {
                 style: TextStyle(fontSize: 15, height: 1.6),
               ),
               const SizedBox(height: 32),
-              const Expanded(
-                child: _PassFailCard(),
-              ),
+              const Expanded(child: _PassFailCard()),
             ],
           ),
         ),
@@ -118,10 +114,7 @@ class _TestScreenState extends State<_TestScreen> {
             icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home),
           ),
-          GlassTab(
-            label: 'Search',
-            icon: Icon(Icons.search),
-          ),
+          GlassTab(label: 'Search', icon: Icon(Icons.search)),
           GlassTab(
             label: 'Profile',
             icon: Icon(Icons.person_outline),
@@ -153,8 +146,10 @@ class _InfoRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(label,
-                style: const TextStyle(fontWeight: FontWeight.w500)),
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -166,7 +161,10 @@ class _InfoRow extends StatelessWidget {
             child: Text(
               value,
               style: TextStyle(
-                  color: color, fontWeight: FontWeight.bold, fontSize: 13),
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
             ),
           ),
         ],
@@ -197,11 +195,14 @@ class _PassFailCard extends StatelessWidget {
       child: const Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('✅ PASS',
-              style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green)),
+          Text(
+            '✅ PASS',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
+            ),
+          ),
           SizedBox(height: 8),
           Text(
             'GlassTabBar has a soft shadow\nand no black border.',
@@ -209,11 +210,14 @@ class _PassFailCard extends StatelessWidget {
             style: TextStyle(fontSize: 14, color: Colors.black54),
           ),
           SizedBox(height: 24),
-          Text('❌ FAIL',
-              style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red)),
+          Text(
+            '❌ FAIL',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
+            ),
+          ),
           SizedBox(height: 8),
           Text(
             'GlassTabBar loses shadow\nor shows a black/dark border.',

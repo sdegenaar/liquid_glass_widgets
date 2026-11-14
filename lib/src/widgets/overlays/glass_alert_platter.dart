@@ -23,7 +23,7 @@
 
 import 'dart:ui' show SemanticsRole;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 import '../../../src/renderer/liquid_glass_renderer.dart';
 import '../../../src/utils/glass_localizations.dart';
@@ -154,8 +154,9 @@ class GlassAlertPlatter extends StatelessWidget {
         child: SafeArea(
           child: Center(
             child: ConstrainedBox(
-              constraints:
-                  BoxConstraints(maxWidth: maxWidth ?? kGlassAlertPlatterWidth),
+              constraints: BoxConstraints(
+                maxWidth: maxWidth ?? kGlassAlertPlatterWidth,
+              ),
               child: Semantics(
                 role: semanticsRole,
                 scopesRoute: true,
@@ -182,7 +183,11 @@ class GlassAlertPlatter extends StatelessWidget {
                           Flexible(
                             child: SingleChildScrollView(
                               padding: const EdgeInsetsDirectional.fromSTEB(
-                                  30, 22, 30, 4.33),
+                                30,
+                                22,
+                                30,
+                                4.33,
+                              ),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,7 +237,11 @@ class GlassAlertPlatter extends StatelessWidget {
                           ),
                         Padding(
                           padding: EdgeInsets.fromLTRB(
-                              16, hasHeader ? 16 : 22, 16, 16),
+                            16,
+                            hasHeader ? 16 : 22,
+                            16,
+                            16,
+                          ),
                           child: LayoutBuilder(
                             builder: (context, constraints) =>
                                 _buildActions(context, constraints.maxWidth),
@@ -302,9 +311,9 @@ class GlassAlertPlatter extends StatelessWidget {
 }
 
 TextStyle _labelStyle(GlassAlertPlatterAction action) => TextStyle(
-      fontSize: 17,
-      fontWeight: action.isPrimary ? FontWeight.w600 : FontWeight.w500,
-    );
+  fontSize: 17,
+  fontWeight: action.isPrimary ? FontWeight.w600 : FontWeight.w500,
+);
 
 /// A flat, filled capsule action (`_UIAlertControllerFilledBackgroundView`):
 /// 48 pt tall, fully rounded, filled with a translucent wash that darkens the
@@ -362,17 +371,19 @@ class _GlassAlertPlatterButtonState extends State<_GlassAlertPlatterButton> {
     final enabled = action.onPressed != null;
     final isPressed = enabled && _pressed;
     final fill = isDark
-        ? CupertinoColors.white
-            .withValues(alpha: isPressed ? restDark + 0.085 : restDark)
-        : CupertinoColors.black
-            .withValues(alpha: isPressed ? restLight + 0.10 : restLight);
+        ? CupertinoColors.white.withValues(
+            alpha: isPressed ? restDark + 0.085 : restDark,
+          )
+        : CupertinoColors.black.withValues(
+            alpha: isPressed ? restLight + 0.10 : restLight,
+          );
     // A disabled action keeps its fill and weight and dims its title to
     // tertiaryLabel, which UIKit reports for a disabled UIAlertAction.
     final textColor = !enabled
         ? CupertinoColors.tertiaryLabel.resolveFrom(context)
         : action.isDestructive
-            ? CupertinoColors.systemRed.resolveFrom(context)
-            : CupertinoColors.label.resolveFrom(context);
+        ? CupertinoColors.systemRed.resolveFrom(context)
+        : CupertinoColors.label.resolveFrom(context);
     // One line, as native, except at accessibility sizes where native wraps the
     // title and grows the button rather than truncating it.
     final wraps = _isInAccessibilityMode(context);

@@ -18,7 +18,7 @@
 ///   flutter run -t example/lib/demos/scroll_edge_style_demo.dart
 library;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() async {
@@ -162,11 +162,7 @@ class _ScrollEdgeStyleDemoState extends State<ScrollEdgeStyleDemo> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF090A10),
-              Color(0xFF140F24),
-              Color(0xFF0A1424),
-            ],
+            colors: [Color(0xFF090A10), Color(0xFF140F24), Color(0xFF0A1424)],
           ),
         ),
       ),
@@ -258,8 +254,9 @@ class _ScrollEdgeStyleDemoState extends State<ScrollEdgeStyleDemo> {
                             _styleCaption(_style),
                             style: TextStyle(
                               fontSize: 12,
-                              color: CupertinoColors.secondaryLabel
-                                  .resolveFrom(context),
+                              color: CupertinoColors.secondaryLabel.resolveFrom(
+                                context,
+                              ),
                             ),
                           ),
                         ],
@@ -287,7 +284,8 @@ class _ScrollEdgeStyleDemoState extends State<ScrollEdgeStyleDemo> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 _SectionHeader(
-                                    'Top Extent (${_topExtent.round()} px)'),
+                                  'Top Extent (${_topExtent.round()} px)',
+                                ),
                                 const SizedBox(height: 4),
                                 GlassSlider(
                                   value: _topExtent,
@@ -305,7 +303,8 @@ class _ScrollEdgeStyleDemoState extends State<ScrollEdgeStyleDemo> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 _SectionHeader(
-                                    'Bottom Extent (${_bottomExtent.round()} px)'),
+                                  'Bottom Extent (${_bottomExtent.round()} px)',
+                                ),
                                 const SizedBox(height: 4),
                                 GlassSlider(
                                   value: _bottomExtent,
@@ -330,7 +329,8 @@ class _ScrollEdgeStyleDemoState extends State<ScrollEdgeStyleDemo> {
                                 children: [
                                   const SizedBox(height: 16),
                                   _SectionHeader(
-                                      'maxSigma (${_maxSigma.round()} px)'),
+                                    'maxSigma (${_maxSigma.round()} px)',
+                                  ),
                                   const SizedBox(height: 4),
                                   GlassSlider(
                                     value: _maxSigma,
@@ -365,8 +365,9 @@ class _ScrollEdgeStyleDemoState extends State<ScrollEdgeStyleDemo> {
                                 'Top Fade',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: CupertinoColors.label
-                                      .resolveFrom(context),
+                                  color: CupertinoColors.label.resolveFrom(
+                                    context,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -382,8 +383,9 @@ class _ScrollEdgeStyleDemoState extends State<ScrollEdgeStyleDemo> {
                                 'Bottom Fade',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: CupertinoColors.label
-                                      .resolveFrom(context),
+                                  color: CupertinoColors.label.resolveFrom(
+                                    context,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -425,21 +427,18 @@ class _ScrollEdgeStyleDemoState extends State<ScrollEdgeStyleDemo> {
 
           // ── Solid Content Cards (No GlassContainer.card anti-pattern) ─────────────
           SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final item = _items[index];
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: _SolidContentCard(
-                    emoji: item.$1,
-                    title: item.$2,
-                    body: item.$3,
-                    accentColor: item.$4,
-                  ),
-                );
-              },
-              childCount: _items.length,
-            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final item = _items[index];
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: _SolidContentCard(
+                  emoji: item.$1,
+                  title: item.$2,
+                  body: item.$3,
+                  accentColor: item.$4,
+                ),
+              );
+            }, childCount: _items.length),
           ),
 
           // Bottom padding to clear bottom tab bar & allow clean scroll-through
@@ -450,16 +449,16 @@ class _ScrollEdgeStyleDemoState extends State<ScrollEdgeStyleDemo> {
   }
 
   String _styleBadgeText(GlassScrollEdgeStyle style) => switch (style) {
-        GlassScrollEdgeStyle.soft => 'Soft · iOS 26 Default',
-        GlassScrollEdgeStyle.hard => 'Hard · Crisp Cutoff',
-        GlassScrollEdgeStyle.blur => 'Blur · GPU Progressive Frost',
-      };
+    GlassScrollEdgeStyle.soft => 'Soft · iOS 26 Default',
+    GlassScrollEdgeStyle.hard => 'Hard · Crisp Cutoff',
+    GlassScrollEdgeStyle.blur => 'Blur · GPU Progressive Frost',
+  };
 
   String _styleCaption(GlassScrollEdgeStyle style) => switch (style) {
-        GlassScrollEdgeStyle.soft => 'Diffused fade (Zero GPU cost)',
-        GlassScrollEdgeStyle.hard => '50% tighter transition band',
-        GlassScrollEdgeStyle.blur => 'Live ImageFilter.shader pass',
-      };
+    GlassScrollEdgeStyle.soft => 'Diffused fade (Zero GPU cost)',
+    GlassScrollEdgeStyle.hard => '50% tighter transition band',
+    GlassScrollEdgeStyle.blur => 'Live ImageFilter.shader pass',
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -508,10 +507,7 @@ class _SolidContentCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF181928),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF2B2D42),
-          width: 1.2,
-        ),
+        border: Border.all(color: const Color(0xFF2B2D42), width: 1.2),
         boxShadow: [
           BoxShadow(
             color: CupertinoColors.black.withValues(alpha: 0.25),
@@ -537,10 +533,7 @@ class _SolidContentCard extends StatelessWidget {
               ),
             ),
             alignment: Alignment.center,
-            child: Text(
-              emoji,
-              style: const TextStyle(fontSize: 22),
-            ),
+            child: Text(emoji, style: const TextStyle(fontSize: 22)),
           ),
           const SizedBox(width: 14),
 

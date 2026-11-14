@@ -296,10 +296,10 @@ sealed class GlassBarActionItem extends GlassBarItem {
   /// Resolves [GlassBarItemAxisBehavior.automatic] by kind: everything but
   /// custom content does.
   bool get goesVertical => switch (axisBehavior) {
-        GlassBarItemAxisBehavior.verticalPreferred => true,
-        GlassBarItemAxisBehavior.horizontalOnly => false,
-        GlassBarItemAxisBehavior.automatic => this is! GlassBarCustomItem,
-      };
+    GlassBarItemAxisBehavior.verticalPreferred => true,
+    GlassBarItemAxisBehavior.horizontalOnly => false,
+    GlassBarItemAxisBehavior.automatic => this is! GlassBarCustomItem,
+  };
 
   /// Whether this item has an active tap action of its own.
   ///

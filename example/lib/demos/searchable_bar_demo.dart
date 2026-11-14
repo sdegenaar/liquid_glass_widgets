@@ -8,8 +8,8 @@
 ///
 library;
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -29,9 +29,8 @@ class _ReproApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: const CupertinoThemeData(brightness: Brightness.dark),
       builder: (context, child) => Theme(
-        data: ThemeData.dark(useMaterial3: true).copyWith(
-          scaffoldBackgroundColor: const Color(0xFF0A0A0F),
-        ),
+        data: ThemeData.dark(useMaterial3: true)
+            .copyWith(scaffoldBackgroundColor: const Color(0xFF0A0A0F)),
         child: child!,
       ),
       home: const _ReproHome(),
@@ -101,15 +100,19 @@ class _ReproHomeState extends State<_ReproHome> {
                   Text(
                     'SearchableBottomBar Repro',
                     style: TextStyle(
-                        color: CupertinoColors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700),
+                      color: CupertinoColors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   SizedBox(height: 16),
 
                   // Global Config Toggles
-                  _buildToggleRow('showsCancelButton', _showsCancelButton,
-                      (v) => setState(() => _showsCancelButton = v)),
+                  _buildToggleRow(
+                    'showsCancelButton',
+                    _showsCancelButton,
+                    (v) => setState(() => _showsCancelButton = v),
+                  ),
 
                   SizedBox(height: 8),
                   _buildSegmentedConfig<double>(
@@ -142,8 +145,10 @@ class _ReproHomeState extends State<_ReproHome> {
                       return GestureDetector(
                         onTap: () => setState(() => _scenario = s),
                         child: Container(
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 7,
+                          ),
                           decoration: BoxDecoration(
                             color: active
                                 ? const Color(0xFF0A84FF)
@@ -155,11 +160,13 @@ class _ReproHomeState extends State<_ReproHome> {
                             style: TextStyle(
                               color: active
                                   ? CupertinoColors.white
-                                  : CupertinoColors.white
-                                      .withValues(alpha: 0.7),
+                                  : CupertinoColors.white.withValues(
+                                      alpha: 0.7,
+                                    ),
                               fontSize: 12,
-                              fontWeight:
-                                  active ? FontWeight.w600 : FontWeight.w400,
+                              fontWeight: active
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
                             ),
                           ),
                         ),
@@ -186,16 +193,22 @@ class _ReproHomeState extends State<_ReproHome> {
   }
 
   Widget _buildToggleRow(
-      String label, bool value, ValueChanged<bool> onChanged) {
+    String label,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
     return Padding(
       padding: EdgeInsets.only(bottom: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: TextStyle(
-                  color: CupertinoColors.white.withValues(alpha: 0.8),
-                  fontSize: 13)),
+          Text(
+            label,
+            style: TextStyle(
+              color: CupertinoColors.white.withValues(alpha: 0.8),
+              fontSize: 13,
+            ),
+          ),
           Transform.scale(
             scale: 0.75,
             child: CupertinoSwitch(value: value, onChanged: onChanged),
@@ -214,10 +227,13 @@ class _ReproHomeState extends State<_ReproHome> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label,
-            style: TextStyle(
-                color: CupertinoColors.white.withValues(alpha: 0.8),
-                fontSize: 13)),
+        Text(
+          label,
+          style: TextStyle(
+            color: CupertinoColors.white.withValues(alpha: 0.8),
+            fontSize: 13,
+          ),
+        ),
         CupertinoSlidingSegmentedControl<T>(
           groupValue: value,
           onValueChanged: (v) {
@@ -240,13 +256,13 @@ class _ReproHomeState extends State<_ReproHome> {
   Widget _buildScenario(_Scenario s, _GlobalConfig config) {
     return switch (s) {
       _Scenario.extraButtonLeft => _ScenarioExtraButton(
-          position: GlassExtraButtonPosition.beforeSearch,
-          config: config,
-        ),
+        position: GlassExtraButtonPosition.beforeSearch,
+        config: config,
+      ),
       _Scenario.extraButtonRight => _ScenarioExtraButton(
-          position: GlassExtraButtonPosition.afterSearch,
-          config: config,
-        ),
+        position: GlassExtraButtonPosition.afterSearch,
+        config: config,
+      ),
       _Scenario.springDesync => _ScenarioSpringDesync(config: config),
       _Scenario.paddingFlicker => _ScenarioPaddingFlicker(config: config),
     };
@@ -311,9 +327,10 @@ class _ScenarioExtraButtonState extends State<_ScenarioExtraButton> {
               Text(
                 _searching ? 'SEARCH ACTIVE' : 'Tab $_selectedIndex',
                 style: TextStyle(
-                    color: CupertinoColors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700),
+                  color: CupertinoColors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               SizedBox(height: 8),
               Text(
@@ -321,17 +338,21 @@ class _ScenarioExtraButtonState extends State<_ScenarioExtraButton> {
                 'Toggle collapseOnSearchFocus below ↓',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                    color: CupertinoColors.white.withValues(alpha: 0.6),
-                    height: 1.6),
+                  color: CupertinoColors.white.withValues(alpha: 0.6),
+                  height: 1.6,
+                ),
               ),
               SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('collapseOnSearchFocus  ',
-                      style: TextStyle(
-                          color: CupertinoColors.white.withValues(alpha: 0.8),
-                          fontSize: 13)),
+                  Text(
+                    'collapseOnSearchFocus  ',
+                    style: TextStyle(
+                      color: CupertinoColors.white.withValues(alpha: 0.8),
+                      fontSize: 13,
+                    ),
+                  ),
                   Transform.scale(
                     scale: 0.75,
                     child: CupertinoSwitch(
@@ -418,33 +439,41 @@ class _ScenarioSpringDesyncState extends State<_ScenarioSpringDesync> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Toggles: $_toggleCount',
-                  style: TextStyle(
-                      color: CupertinoColors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.w700)),
+              Text(
+                'Toggles: $_toggleCount',
+                style: TextStyle(
+                  color: CupertinoColors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               SizedBox(height: 12),
-              Text('✓ No visibly jarring jump on rapid reverse',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      color: CupertinoColors.white.withValues(alpha: 0.6),
-                      height: 1.6)),
+              Text(
+                '✓ No visibly jarring jump on rapid reverse',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: CupertinoColors.white.withValues(alpha: 0.6),
+                  height: 1.6,
+                ),
+              ),
               SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _ActionButton(
-                      label: 'Toggle once',
-                      color: const Color(0xFF30D158),
-                      onTap: () => setState(() {
-                            _searching = !_searching;
-                            _toggleCount++;
-                          })),
+                    label: 'Toggle once',
+                    color: const Color(0xFF30D158),
+                    onTap: () => setState(() {
+                      _searching = !_searching;
+                      _toggleCount++;
+                    }),
+                  ),
                   SizedBox(width: 12),
                   _ActionButton(
-                      label: 'Rapid ×5',
-                      color: const Color(0xFFFF9F0A),
-                      onTap: _rapidReverse),
+                    label: 'Rapid ×5',
+                    color: const Color(0xFFFF9F0A),
+                    onTap: _rapidReverse,
+                  ),
                 ],
               ),
             ],
@@ -505,11 +534,14 @@ class _ScenarioPaddingFlickerState extends State<_ScenarioPaddingFlicker> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Padding change on focus',
-                  style: TextStyle(
-                      color: CupertinoColors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700)),
+              Text(
+                'Padding change on focus',
+                style: TextStyle(
+                  color: CupertinoColors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               SizedBox(height: 8),
               Text(
                 'hPad: ${hPad.toStringAsFixed(0)}  '
@@ -518,8 +550,9 @@ class _ScenarioPaddingFlickerState extends State<_ScenarioPaddingFlicker> {
                 'at the moment of toggle.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                    color: CupertinoColors.white.withValues(alpha: 0.6),
-                    height: 1.6),
+                  color: CupertinoColors.white.withValues(alpha: 0.6),
+                  height: 1.6,
+                ),
               ),
             ],
           ),
@@ -587,9 +620,10 @@ class _ActionButton extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-              color: CupertinoColors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: 14),
+            color: CupertinoColors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+          ),
         ),
       ),
     );

@@ -1,4 +1,5 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/widgets.dart';
+
 import '../../utils/accessibility_config.dart' as glass_config;
 
 // ---------------------------------------------------------------------------
@@ -148,7 +149,8 @@ class GlassAccessibilityData {
   int get hashCode => Object.hash(reduceMotion, reduceTransparency);
 
   @override
-  String toString() => 'GlassAccessibilityData(reduceMotion: $reduceMotion, '
+  String toString() =>
+      'GlassAccessibilityData(reduceMotion: $reduceMotion, '
       'reduceTransparency: $reduceTransparency)';
 }
 
@@ -189,10 +191,7 @@ class GlassAccessibilityScope extends StatelessWidget {
           reduceTransparency ?? MediaQuery.highContrastOf(context),
     );
 
-    return _InheritedGlassAccessibility(
-      data: data,
-      child: child,
-    );
+    return _InheritedGlassAccessibility(data: data, child: child);
   }
 }
 

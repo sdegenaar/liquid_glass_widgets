@@ -62,7 +62,7 @@ class OverlaySemanticsHost extends SingleChildRenderObjectWidget {
 /// The render object for [OverlaySemanticsHost].
 class RenderOverlaySemanticsHost extends RenderProxyBox {
   /// Creates the render object for [OverlaySemanticsHost].
-  RenderOverlaySemanticsHost({required bool enabled}) : _enabled = enabled;
+  RenderOverlaySemanticsHost({required this._enabled});
 
   /// Whether the child's semantics configurations form a sibling merge group.
   bool get enabled => _enabled;

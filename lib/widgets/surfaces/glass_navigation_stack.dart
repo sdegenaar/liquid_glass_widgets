@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 import '../effects/glass_materialize.dart';
 import '../shared/glass_page.dart' show GlassPageRoute;
@@ -9,7 +9,7 @@ import '../containers/glass_list_tile.dart';
 class GlassNavigationPath extends ChangeNotifier {
   /// Creates a [GlassNavigationPath] with optional initial elements.
   GlassNavigationPath([List<dynamic>? initial])
-      : _stack = List<dynamic>.from(initial ?? []);
+    : _stack = List<dynamic>.from(initial ?? []);
 
   final List<dynamic> _stack;
 
@@ -265,9 +265,8 @@ class GlassNavigationStackState extends State<GlassNavigationStack> {
     final resolvedBuilder = builder;
     final route = GlassPageRoute<void>(
       transitionCornerRadius: widget.transitionCornerRadius,
-      builder: (context) => GlassNavigationTitleScope(
-        child: resolvedBuilder(context, value),
-      ),
+      builder: (context) =>
+          GlassNavigationTitleScope(child: resolvedBuilder(context, value)),
     );
     final entry = _StackRouteEntry(value, route);
     _entries.add(entry);
@@ -325,8 +324,10 @@ class GlassNavigationStackState extends State<GlassNavigationStack> {
               settings: settings,
               transitionCornerRadius: widget.transitionCornerRadius,
               builder: (context) {
-                context.dependOnInheritedWidgetOfExactType<
-                    _GlassNavigationStackScope>();
+                context
+                    .dependOnInheritedWidgetOfExactType<
+                      _GlassNavigationStackScope
+                    >();
                 return GlassNavigationTitleScope(child: widget.root);
               },
             );
@@ -378,9 +379,9 @@ class GlassNavigationLink<T> extends StatelessWidget {
     this.enabled = true,
     this.transitionCornerRadius,
   }) : assert(
-          destination != null || value != null,
-          'Either destination or value must be provided.',
-        );
+         destination != null || value != null,
+         'Either destination or value must be provided.',
+       );
 
   /// Builder for the destination widget pushed when this link is tapped.
   final WidgetBuilder? destination;
@@ -470,10 +471,12 @@ class GlassNavigationLink<T> extends StatelessWidget {
       leading: leading,
       title: title ?? const SizedBox.shrink(),
       subtitle: subtitle,
-      contentPadding: contentPadding ??
+      contentPadding:
+          contentPadding ??
           const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       titleStyle: titleStyle,
-      trailing: trailing ??
+      trailing:
+          trailing ??
           Icon(
             isRtl ? CupertinoIcons.chevron_left : CupertinoIcons.chevron_right,
             size: 15,
@@ -572,10 +575,7 @@ class _InheritedNavigationTitleScope extends InheritedWidget {
 }
 
 class _InheritedNavigationTitle extends InheritedWidget {
-  const _InheritedNavigationTitle({
-    required this.title,
-    required super.child,
-  });
+  const _InheritedNavigationTitle({required this.title, required super.child});
 
   final String title;
 
@@ -585,10 +585,7 @@ class _InheritedNavigationTitle extends InheritedWidget {
 }
 
 class _GlassNavigationTitle extends StatefulWidget {
-  const _GlassNavigationTitle({
-    required this.title,
-    required this.child,
-  });
+  const _GlassNavigationTitle({required this.title, required this.child});
 
   final String title;
   final Widget child;
@@ -620,21 +617,14 @@ class _GlassNavigationTitleState extends State<_GlassNavigationTitle> {
   void _publishTitle(String title) {
     final notifier = _notifier;
     if (notifier == null) return;
-    notifier.publish(
-      title,
-      isActive: () => mounted && _notifier == notifier,
-    );
+    notifier.publish(title, isActive: () => mounted && _notifier == notifier);
   }
 
   @override
   Widget build(BuildContext context) {
     return _InheritedNavigationTitle(
       title: widget.title,
-      child: Semantics(
-        header: true,
-        label: widget.title,
-        child: widget.child,
-      ),
+      child: Semantics(header: true, label: widget.title, child: widget.child),
     );
   }
 }

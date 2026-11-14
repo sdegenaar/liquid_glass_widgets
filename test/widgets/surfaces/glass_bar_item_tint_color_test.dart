@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/widgets/surfaces/shared/glass_nav_pinned_host.dart';
@@ -188,38 +188,42 @@ void main() {
       );
     });
 
-    test('allows tintColor on separate, none, and own items without assertion',
-        () {
-      final separate = GlassBarItem.icon(
-        icon: const Icon(CupertinoIcons.add),
-        onTap: () {},
-        background: GlassBarItemBackground.separate,
-        tintColor: testTint,
-      ) as GlassBarActionItem;
+    test(
+      'allows tintColor on separate, none, and own items without assertion',
+      () {
+        final separate = GlassBarItem.icon(
+          icon: const Icon(CupertinoIcons.add),
+          onTap: () {},
+          background: GlassBarItemBackground.separate,
+          tintColor: testTint,
+        ) as GlassBarActionItem;
 
-      final none = GlassBarItem.icon(
-        icon: const Icon(CupertinoIcons.clear),
-        onTap: () {},
-        background: GlassBarItemBackground.none,
-        tintColor: testTint,
-      ) as GlassBarActionItem;
+        final none = GlassBarItem.icon(
+          icon: const Icon(CupertinoIcons.clear),
+          onTap: () {},
+          background: GlassBarItemBackground.none,
+          tintColor: testTint,
+        ) as GlassBarActionItem;
 
-      final own = GlassBarItem.icon(
-        icon: const Icon(CupertinoIcons.check_mark),
-        onTap: () {},
-        background: GlassBarItemBackground.own,
-        tintColor: testTint,
-      ) as GlassBarActionItem;
+        final own = GlassBarItem.icon(
+          icon: const Icon(CupertinoIcons.check_mark),
+          onTap: () {},
+          background: GlassBarItemBackground.own,
+          tintColor: testTint,
+        ) as GlassBarActionItem;
 
-      expect(
-          () => groupGlassNavBarItems([separate, none, own]), returnsNormally);
-      final groups = groupGlassNavBarItems([separate, none, own]);
-      expect(groups, hasLength(3));
-      expect(groups[0].background, GlassBarItemBackground.separate);
-      expect(groups[0].items.single.tintColor, testTint);
-      expect(groups[1].background, GlassBarItemBackground.none);
-      expect(groups[2].background, GlassBarItemBackground.own);
-    });
+        expect(
+          () => groupGlassNavBarItems([separate, none, own]),
+          returnsNormally,
+        );
+        final groups = groupGlassNavBarItems([separate, none, own]);
+        expect(groups, hasLength(3));
+        expect(groups[0].background, GlassBarItemBackground.separate);
+        expect(groups[0].items.single.tintColor, testTint);
+        expect(groups[1].background, GlassBarItemBackground.none);
+        expect(groups[2].background, GlassBarItemBackground.own);
+      },
+    );
 
     test('correctly splits mixed runs of shared and tinted separate items', () {
       final shared1 = GlassBarItem.icon(
@@ -247,8 +251,12 @@ void main() {
         background: GlassBarItemBackground.shared,
       ) as GlassBarActionItem;
 
-      final groups =
-          groupGlassNavBarItems([shared1, shared2, separate, shared3]);
+      final groups = groupGlassNavBarItems([
+        shared1,
+        shared2,
+        separate,
+        shared3,
+      ]);
       expect(groups, hasLength(3));
 
       // Group 1: shared run of 2 items
@@ -268,42 +276,44 @@ void main() {
 
   group('GlassPinnedBarChrome local rendering with tintColor', () {
     testWidgets(
-        'renders GlassButtonGroup with clear bodyMode and tintColor for separate item',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            appBar: AppBar(
-              actions: [
-                GlassPinnedBarChrome(
-                  actions: [
-                    GlassBarItem.icon(
-                      icon: const Icon(CupertinoIcons.heart_fill),
-                      onTap: () {},
-                      background: GlassBarItemBackground.separate,
-                      tintColor: testTint,
-                    ),
-                  ],
-                  builder: (context, chrome) => Row(children: chrome.actions),
-                ),
-              ],
+      'renders GlassButtonGroup with clear bodyMode and tintColor for separate item',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              appBar: AppBar(
+                actions: [
+                  GlassPinnedBarChrome(
+                    actions: [
+                      GlassBarItem.icon(
+                        icon: const Icon(CupertinoIcons.heart_fill),
+                        onTap: () {},
+                        background: GlassBarItemBackground.separate,
+                        tintColor: testTint,
+                      ),
+                    ],
+                    builder: (context, chrome) => Row(children: chrome.actions),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final buttonGroupFinder = find.byType(GlassButtonGroup);
-      expect(buttonGroupFinder, findsOneWidget);
+        final buttonGroupFinder = find.byType(GlassButtonGroup);
+        expect(buttonGroupFinder, findsOneWidget);
 
-      final buttonGroup = tester.widget<GlassButtonGroup>(buttonGroupFinder);
-      expect(buttonGroup.settings, isNotNull);
-      expect(buttonGroup.settings!.glassColor, testTint);
-      expect(buttonGroup.settings!.bodyMode, GlassBodyMode.clear);
-    });
+        final buttonGroup = tester.widget<GlassButtonGroup>(buttonGroupFinder);
+        expect(buttonGroup.settings, isNotNull);
+        expect(buttonGroup.settings!.glassColor, testTint);
+        expect(buttonGroup.settings!.bodyMode, GlassBodyMode.clear);
+      },
+    );
 
-    testWidgets('tinted group keeps buttonSettings under its tint',
-        (tester) async {
+    testWidgets('tinted group keeps buttonSettings under its tint', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -328,8 +338,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final buttonGroup =
-          tester.widget<GlassButtonGroup>(find.byType(GlassButtonGroup));
+      final buttonGroup = tester.widget<GlassButtonGroup>(
+        find.byType(GlassButtonGroup),
+      );
       expect(
         buttonGroup.settings,
         LiquidGlassSettings.ios27Light.copyWith(
@@ -340,40 +351,42 @@ void main() {
     });
 
     testWidgets(
-        'renders GlassButtonGroup without settings when tintColor is null',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            appBar: AppBar(
-              actions: [
-                GlassPinnedBarChrome(
-                  actions: [
-                    GlassBarItem.icon(
-                      icon: const Icon(CupertinoIcons.heart),
-                      onTap: () {},
-                      background: GlassBarItemBackground.separate,
-                      tintColor: null,
-                    ),
-                  ],
-                  builder: (context, chrome) => Row(children: chrome.actions),
-                ),
-              ],
+      'renders GlassButtonGroup without settings when tintColor is null',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              appBar: AppBar(
+                actions: [
+                  GlassPinnedBarChrome(
+                    actions: [
+                      GlassBarItem.icon(
+                        icon: const Icon(CupertinoIcons.heart),
+                        onTap: () {},
+                        background: GlassBarItemBackground.separate,
+                        tintColor: null,
+                      ),
+                    ],
+                    builder: (context, chrome) => Row(children: chrome.actions),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final buttonGroupFinder = find.byType(GlassButtonGroup);
-      expect(buttonGroupFinder, findsOneWidget);
+        final buttonGroupFinder = find.byType(GlassButtonGroup);
+        expect(buttonGroupFinder, findsOneWidget);
 
-      final buttonGroup = tester.widget<GlassButtonGroup>(buttonGroupFinder);
-      expect(buttonGroup.settings, isNull);
-    });
+        final buttonGroup = tester.widget<GlassButtonGroup>(buttonGroupFinder);
+        expect(buttonGroup.settings, isNull);
+      },
+    );
 
-    testWidgets('shared multi-item group renders with null settings',
-        (tester) async {
+    testWidgets('shared multi-item group renders with null settings', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -409,47 +422,48 @@ void main() {
     });
 
     testWidgets(
-        'multiple separate items render distinct GlassButtonGroup with respective tints',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            appBar: AppBar(
-              actions: [
-                GlassPinnedBarChrome(
-                  actions: [
-                    GlassBarItem.icon(
-                      icon: const Icon(CupertinoIcons.heart),
-                      onTap: () {},
-                      background: GlassBarItemBackground.separate,
-                      tintColor: testTint,
-                    ),
-                    GlassBarItem.icon(
-                      icon: const Icon(CupertinoIcons.bookmark),
-                      onTap: () {},
-                      background: GlassBarItemBackground.separate,
-                      tintColor: testTintSecondary,
-                    ),
-                  ],
-                  builder: (context, chrome) => Row(children: chrome.actions),
-                ),
-              ],
+      'multiple separate items render distinct GlassButtonGroup with respective tints',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              appBar: AppBar(
+                actions: [
+                  GlassPinnedBarChrome(
+                    actions: [
+                      GlassBarItem.icon(
+                        icon: const Icon(CupertinoIcons.heart),
+                        onTap: () {},
+                        background: GlassBarItemBackground.separate,
+                        tintColor: testTint,
+                      ),
+                      GlassBarItem.icon(
+                        icon: const Icon(CupertinoIcons.bookmark),
+                        onTap: () {},
+                        background: GlassBarItemBackground.separate,
+                        tintColor: testTintSecondary,
+                      ),
+                    ],
+                    builder: (context, chrome) => Row(children: chrome.actions),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final buttonGroups = tester
-          .widgetList<GlassButtonGroup>(find.byType(GlassButtonGroup))
-          .toList();
-      expect(buttonGroups, hasLength(2));
+        final buttonGroups = tester
+            .widgetList<GlassButtonGroup>(find.byType(GlassButtonGroup))
+            .toList();
+        expect(buttonGroups, hasLength(2));
 
-      expect(buttonGroups[0].settings?.glassColor, testTint);
-      expect(buttonGroups[0].settings?.bodyMode, GlassBodyMode.clear);
+        expect(buttonGroups[0].settings?.glassColor, testTint);
+        expect(buttonGroups[0].settings?.bodyMode, GlassBodyMode.clear);
 
-      expect(buttonGroups[1].settings?.glassColor, testTintSecondary);
-      expect(buttonGroups[1].settings?.bodyMode, GlassBodyMode.clear);
-    });
+        expect(buttonGroups[1].settings?.glassColor, testTintSecondary);
+        expect(buttonGroups[1].settings?.bodyMode, GlassBodyMode.clear);
+      },
+    );
   });
 }

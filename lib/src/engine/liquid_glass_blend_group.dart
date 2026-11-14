@@ -11,6 +11,7 @@
 import 'dart:ui';
 
 import 'package:flutter/widgets.dart';
+
 import '../renderer/fragment_shader_extensions.dart';
 import 'internal/transform_tracking_repaint_boundary_mixin.dart';
 import 'liquid_glass.dart';
@@ -206,9 +207,8 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
     required super.geometryShader,
     required super.settings,
     required GlassGroupLink link,
-    required double blend,
-  })  : _link = link,
-        _blend = blend {
+    required this._blend,
+  }) : _link = link {
     link.addListener(_onLinkUpdate);
     link.onShapeTransformChanged = _onShapeTransformChanged;
   }
@@ -369,18 +369,16 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
         settings.frost > 0
             ? 1.0
             : ((settings.rimShade > 0 ||
-                    (settings.lensModel == GlassLensModel.paraxial &&
-                        settings.rimLight > 0))
-                ? 2.0
-                : 0.0),
+                      (settings.lensModel == GlassLensModel.paraxial &&
+                          settings.rimLight > 0))
+                  ? 2.0
+                  : 0.0),
       ),
     );
   }
 
   @override
-  void updateGeometryShaderShapes(
-    List<ShapeGeometry> shapes,
-  ) {
+  void updateGeometryShaderShapes(List<ShapeGeometry> shapes) {
     if (shapes.length > LiquidGlassBlendGroup.maxShapesPerLayer) {
       throw UnsupportedError(
         'Only ${LiquidGlassBlendGroup.maxShapesPerLayer} shapes are supported '
@@ -423,11 +421,9 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
 
     for (final (
           index,
-          MapEntry(
-            key: renderObject,
-            value: (shape, glassContainsChild),
-          )
-        ) in link.shapeEntries.indexed) {
+          MapEntry(key: renderObject, value: (shape, glassContainsChild)),
+        )
+        in link.shapeEntries.indexed) {
       if (!renderObject.attached || !renderObject.hasSize) continue;
 
       try {
@@ -438,11 +434,13 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
         );
         shapes.add(shapeData);
 
-        layerBounds = layerBounds?.expandToInclude(shapeData.shapeBounds) ??
+        layerBounds =
+            layerBounds?.expandToInclude(shapeData.shapeBounds) ??
             shapeData.shapeBounds;
 
-        final existingShape =
-            cachedShapes.length > index ? cachedShapes[index] : null;
+        final existingShape = cachedShapes.length > index
+            ? cachedShapes[index]
+            : null;
 
         if (existingShape == null) {
           anyShapeChangedInLayer = true;
@@ -462,9 +460,7 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
       // that band plus a transparent border texel, since the matte's edge
       // texels are what the shadow blurs and what the render pass clamps to
       // outside the matte.
-      (layerBounds ?? Rect.zero).inflate(
-        blend * .25 + 3 / devicePixelRatio,
-      ),
+      (layerBounds ?? Rect.zero).inflate(blend * .25 + 3 / devicePixelRatio),
       shapes,
       anyShapeChangedInLayer,
     );
@@ -539,15 +535,15 @@ class GlassGroupLink with ChangeNotifier {
 
   /// Information about a shape registered with this link.
   final Map<RenderLiquidGlass, (LiquidShape shape, bool glassContainsChild)>
-      _shapes = {};
+  _shapes = {};
 
   /// Shape entries as an iterable — returned directly from the underlying Map
   /// without allocating a new List. All call sites only need to iterate, never
   /// index, so Iterable is sufficient and avoids 2–3 heap allocations per frame.
   Iterable<
-      MapEntry<RenderLiquidGlass,
-          (LiquidShape shape, bool glassContainsChild)>> get shapeEntries =>
-      _shapes.entries;
+    MapEntry<RenderLiquidGlass, (LiquidShape shape, bool glassContainsChild)>
+  >
+  get shapeEntries => _shapes.entries;
 
   /// Check if any shapes are registered.
   bool get hasShapes => _shapes.isNotEmpty;

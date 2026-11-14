@@ -28,10 +28,7 @@ import 'package:flutter/widgets.dart';
 /// ```
 class LiquidGlassScope extends StatefulWidget {
   /// Creates a new [LiquidGlassScope].
-  const LiquidGlassScope({
-    required this.child,
-    super.key,
-  });
+  const LiquidGlassScope({required this.child, super.key});
 
   /// Convenience constructor for the common pattern of a background behind content.
   ///
@@ -63,8 +60,9 @@ class LiquidGlassScope extends StatefulWidget {
 
 class _LiquidGlassScopeState extends State<LiquidGlassScope> {
   // Create the key ONCE and keep it stable across rebuilds
-  final GlobalKey _backgroundKey =
-      GlobalKey(debugLabel: 'LiquidGlassBackground');
+  final GlobalKey _backgroundKey = GlobalKey(
+    debugLabel: 'LiquidGlassBackground',
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -142,10 +140,7 @@ class GlassBackgroundSource extends StatelessWidget {
     // If no scope is found, render the child normally — no silent failures.
     if (key == null) return child;
 
-    return RepaintBoundary(
-      key: key,
-      child: child,
-    );
+    return RepaintBoundary(key: key, child: child);
   }
 }
 

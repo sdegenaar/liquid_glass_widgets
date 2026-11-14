@@ -1,7 +1,7 @@
 // Coverage for LiquidGlassWidgets.wrap() uncovered branches (lines 249,255,257,259)
 // and glass_modal_sheet.dart L292,365-369 (assert block + onStateChanged close).
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -9,16 +9,18 @@ void main() {
   // ── LiquidGlassWidgets.wrap ───────────────────────────────────────────────
 
   group('LiquidGlassWidgets.wrap', () {
-    testWidgets('zero-config wraps child and renders without error',
-        (tester) async {
+    testWidgets('zero-config wraps child and renders without error', (
+      tester,
+    ) async {
       final wrapped = LiquidGlassWidgets.wrap(child: const SizedBox.shrink());
       await tester.pumpWidget(MaterialApp(home: wrapped));
       await tester.pump();
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('adaptiveQuality=true with no config uses default config',
-        (tester) async {
+    testWidgets('adaptiveQuality=true with no config uses default config', (
+      tester,
+    ) async {
       final wrapped = LiquidGlassWidgets.wrap(
         child: const SizedBox.shrink(),
         adaptiveQuality: true,
@@ -29,8 +31,9 @@ void main() {
       expect(find.byType(GlassAdaptiveScope), findsOneWidget);
     });
 
-    testWidgets('adaptiveQuality=true with explicit config uses it',
-        (tester) async {
+    testWidgets('adaptiveQuality=true with explicit config uses it', (
+      tester,
+    ) async {
       final wrapped = LiquidGlassWidgets.wrap(
         child: const SizedBox.shrink(),
         adaptiveQuality: true,
@@ -44,21 +47,25 @@ void main() {
       expect(find.byType(GlassAdaptiveScope), findsOneWidget);
     });
 
-    testWidgets('passes the warm-up thresholds on to the scope',
-        (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        home: LiquidGlassWidgets.wrap(
-          child: const SizedBox.shrink(),
-          adaptiveQuality: true,
-          adaptiveConfig: const GlassAdaptiveScopeConfig(
-            warmupPremiumThresholdMs: 24.0,
-            warmupStandardThresholdMs: 32.0,
-            frostStep: true,
+    testWidgets('passes the warm-up thresholds on to the scope', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: LiquidGlassWidgets.wrap(
+            child: const SizedBox.shrink(),
+            adaptiveQuality: true,
+            adaptiveConfig: const GlassAdaptiveScopeConfig(
+              warmupPremiumThresholdMs: 24.0,
+              warmupStandardThresholdMs: 32.0,
+              frostStep: true,
+            ),
           ),
         ),
-      ));
-      final scope =
-          tester.widget<GlassAdaptiveScope>(find.byType(GlassAdaptiveScope));
+      );
+      final scope = tester.widget<GlassAdaptiveScope>(
+        find.byType(GlassAdaptiveScope),
+      );
       expect(scope.warmupPremiumThresholdMs, 24.0);
       expect(scope.warmupStandardThresholdMs, 32.0);
       expect(scope.frostStep, isTrue);
@@ -74,8 +81,9 @@ void main() {
       expect(c == const GlassAdaptiveScopeConfig(), isFalse);
     });
 
-    testWidgets('respectSystemAccessibility=false sets global flag',
-        (tester) async {
+    testWidgets('respectSystemAccessibility=false sets global flag', (
+      tester,
+    ) async {
       final wrapped = LiquidGlassWidgets.wrap(
         child: const SizedBox.shrink(),
         respectSystemAccessibility: false,
@@ -102,8 +110,9 @@ void main() {
   // ── GlassModalSheet assertion block ───────────────────────────────────────
 
   group('GlassModalSheet.show assert', () {
-    testWidgets('persistent mode + transparent barrier logs warning in debug',
-        (tester) async {
+    testWidgets('persistent mode + transparent barrier logs warning in debug', (
+      tester,
+    ) async {
       // The assert block (line 290-299) is a debug-only print — we exercise it
       // in debug mode by calling show() with the flagged combination.
       // We expect no exception (assert block returns true).

@@ -9,7 +9,7 @@
 //   - _logDiagnostic (no-change branch, with p75/p95/frames, kDebugMode gate)
 //   - _InheritedAdaptiveQuality.updateShouldNotify (same vs different data)
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/utils/glass_quality_adapter.dart';
@@ -75,15 +75,19 @@ void main() {
       const base = GlassAdaptiveScopeConfig();
       expect(
         base,
-        isNot(equals(const GlassAdaptiveScopeConfig(
-          minQuality: GlassQuality.standard,
-        ))),
+        isNot(
+          equals(
+            const GlassAdaptiveScopeConfig(minQuality: GlassQuality.standard),
+          ),
+        ),
       );
       expect(
         base,
-        isNot(equals(const GlassAdaptiveScopeConfig(
-          maxQuality: GlassQuality.standard,
-        ))),
+        isNot(
+          equals(
+            const GlassAdaptiveScopeConfig(maxQuality: GlassQuality.standard),
+          ),
+        ),
       );
       expect(
         base,
@@ -95,22 +99,16 @@ void main() {
       );
       expect(
         base,
-        isNot(equals(const GlassAdaptiveScopeConfig(
-          debugLogDiagnostics: true,
-        ))),
+        isNot(
+          equals(const GlassAdaptiveScopeConfig(debugLogDiagnostics: true)),
+        ),
       );
     });
 
     test('equality with initialQuality set', () {
-      const a = GlassAdaptiveScopeConfig(
-        initialQuality: GlassQuality.standard,
-      );
-      const b = GlassAdaptiveScopeConfig(
-        initialQuality: GlassQuality.standard,
-      );
-      const c = GlassAdaptiveScopeConfig(
-        initialQuality: GlassQuality.minimal,
-      );
+      const a = GlassAdaptiveScopeConfig(initialQuality: GlassQuality.standard);
+      const b = GlassAdaptiveScopeConfig(initialQuality: GlassQuality.standard);
+      const c = GlassAdaptiveScopeConfig(initialQuality: GlassQuality.minimal);
       expect(a, equals(b));
       expect(a, isNot(equals(c)));
     });
@@ -153,9 +151,9 @@ void main() {
 
   group('didChangeAppLifecycleState', () {
     testWidgets('resumed calls adapter.reset() without crash', (tester) async {
-      await tester.pumpWidget(_app(
-        const GlassAdaptiveScope(child: SizedBox.shrink()),
-      ));
+      await tester.pumpWidget(
+        _app(const GlassAdaptiveScope(child: SizedBox.shrink())),
+      );
       await tester.pump();
 
       // Simulate app lifecycle: paused then resumed.
@@ -169,11 +167,12 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('paused does NOT call reset (only resumed does)',
-        (tester) async {
-      await tester.pumpWidget(_app(
-        const GlassAdaptiveScope(child: SizedBox.shrink()),
-      ));
+    testWidgets('paused does NOT call reset (only resumed does)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _app(const GlassAdaptiveScope(child: SizedBox.shrink())),
+      );
       await tester.pump();
 
       // Only paused/inactive/hidden — no reset should trigger
@@ -191,39 +190,43 @@ void main() {
 
   group('onDiagnostic receives warmupComplete event', () {
     testWidgets(
-        'onDiagnostic fires with warmupComplete when quality does not change',
-        (tester) async {
-      // Start at premium (same as maxQuality) → warmup completes but quality
-      // doesn't change → _onWarmupComplete fires the no-change diagnostic path.
-      final diagnostics = <GlassAdaptiveDiagnostic>[];
+      'onDiagnostic fires with warmupComplete when quality does not change',
+      (tester) async {
+        // Start at premium (same as maxQuality) → warmup completes but quality
+        // doesn't change → _onWarmupComplete fires the no-change diagnostic path.
+        final diagnostics = <GlassAdaptiveDiagnostic>[];
 
-      await tester.pumpWidget(_app(
-        GlassAdaptiveScope(
-          maxQuality: GlassQuality.premium,
-          initialQuality: GlassQuality.premium,
-          onDiagnostic: diagnostics.add,
-          child: const SizedBox.shrink(),
-        ),
-      ));
+        await tester.pumpWidget(
+          _app(
+            GlassAdaptiveScope(
+              maxQuality: GlassQuality.premium,
+              initialQuality: GlassQuality.premium,
+              onDiagnostic: diagnostics.add,
+              child: const SizedBox.shrink(),
+            ),
+          ),
+        );
 
-      // Pump enough frames to exhaust warmup (warmupFrames = 3).
-      for (int i = 0; i < 10; i++) {
-        await tester.pump(const Duration(milliseconds: 16));
-      }
-      await tester.pump(); // drain postFrameCallbacks
+        // Pump enough frames to exhaust warmup (warmupFrames = 3).
+        for (int i = 0; i < 10; i++) {
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+        await tester.pump(); // drain postFrameCallbacks
 
-      // The warmupComplete diagnostic may or may not fire within the test
-      // runner's frame timing (all durations are ~0 ms in headless tests).
-      // The important thing is that wiring the callback doesn't crash.
-      expect(tester.takeException(), isNull);
-    });
+        // The warmupComplete diagnostic may or may not fire within the test
+        // runner's frame timing (all durations are ~0 ms in headless tests).
+        // The important thing is that wiring the callback doesn't crash.
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   // ── onQualityChanged callback ──────────────────────────────────────────────
 
   group('onQualityChanged + onDiagnostic on quality change', () {
-    testWidgets('both callbacks fire when quality actually changes',
-        (tester) async {
+    testWidgets('both callbacks fire when quality actually changes', (
+      tester,
+    ) async {
       final qualityChanges = <(GlassQuality, GlassQuality)>[];
       final diagnostics = <GlassAdaptiveDiagnostic>[];
 
@@ -231,15 +234,17 @@ void main() {
       // The adapter will start at premium (initialQuality) but warmup will
       // see fast frames (0 ms — test runner), so it should try to stay at
       // premium. Since maxQuality is standard, the adapter will downgrade.
-      await tester.pumpWidget(_app(
-        GlassAdaptiveScope(
-          initialQuality: GlassQuality.premium,
-          maxQuality: GlassQuality.standard,
-          onQualityChanged: (from, to) => qualityChanges.add((from, to)),
-          onDiagnostic: diagnostics.add,
-          child: const SizedBox.shrink(),
+      await tester.pumpWidget(
+        _app(
+          GlassAdaptiveScope(
+            initialQuality: GlassQuality.premium,
+            maxQuality: GlassQuality.standard,
+            onQualityChanged: (from, to) => qualityChanges.add((from, to)),
+            onDiagnostic: diagnostics.add,
+            child: const SizedBox.shrink(),
+          ),
         ),
-      ));
+      );
 
       for (int i = 0; i < 15; i++) {
         await tester.pump(const Duration(milliseconds: 16));
@@ -251,12 +256,14 @@ void main() {
     });
 
     testWidgets('onQualityChanged is null-safe (no crash)', (tester) async {
-      await tester.pumpWidget(_app(
-        const GlassAdaptiveScope(
-          // onQualityChanged: null (default)
-          child: SizedBox.shrink(),
+      await tester.pumpWidget(
+        _app(
+          const GlassAdaptiveScope(
+            // onQualityChanged: null (default)
+            child: SizedBox.shrink(),
+          ),
         ),
-      ));
+      );
       for (int i = 0; i < 10; i++) {
         await tester.pump(const Duration(milliseconds: 16));
       }
@@ -268,38 +275,45 @@ void main() {
   // ── debugLogDiagnostics ────────────────────────────────────────────────────
 
   group('debugLogDiagnostics _logDiagnostic branches', () {
-    testWidgets('no-change diagnostic is logged when debugLogDiagnostics=true',
-        (tester) async {
-      // _logDiagnostic: noChange branch (from == to) and p75/frames fields.
-      await tester.pumpWidget(_app(
-        const GlassAdaptiveScope(
-          debugLogDiagnostics: true,
-          initialQuality: GlassQuality.premium,
-          maxQuality: GlassQuality.premium,
-          child: SizedBox.shrink(),
-        ),
-      ));
+    testWidgets(
+      'no-change diagnostic is logged when debugLogDiagnostics=true',
+      (tester) async {
+        // _logDiagnostic: noChange branch (from == to) and p75/frames fields.
+        await tester.pumpWidget(
+          _app(
+            const GlassAdaptiveScope(
+              debugLogDiagnostics: true,
+              initialQuality: GlassQuality.premium,
+              maxQuality: GlassQuality.premium,
+              child: SizedBox.shrink(),
+            ),
+          ),
+        );
 
-      for (int i = 0; i < 10; i++) {
-        await tester.pump(const Duration(milliseconds: 16));
-      }
-      await tester.pump();
+        for (int i = 0; i < 10; i++) {
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+        await tester.pump();
 
-      // Must not throw; output is verified visually / by not crashing.
-      expect(tester.takeException(), isNull);
-    });
+        // Must not throw; output is verified visually / by not crashing.
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets('change diagnostic is logged when debugLogDiagnostics=true',
-        (tester) async {
+    testWidgets('change diagnostic is logged when debugLogDiagnostics=true', (
+      tester,
+    ) async {
       // _logDiagnostic: change branch (from != to).
-      await tester.pumpWidget(_app(
-        const GlassAdaptiveScope(
-          debugLogDiagnostics: true,
-          initialQuality: GlassQuality.premium,
-          maxQuality: GlassQuality.standard, // forces cap → change logged
-          child: SizedBox.shrink(),
+      await tester.pumpWidget(
+        _app(
+          const GlassAdaptiveScope(
+            debugLogDiagnostics: true,
+            initialQuality: GlassQuality.premium,
+            maxQuality: GlassQuality.standard, // forces cap → change logged
+            child: SizedBox.shrink(),
+          ),
         ),
-      ));
+      );
 
       for (int i = 0; i < 10; i++) {
         await tester.pump(const Duration(milliseconds: 16));
@@ -354,16 +368,20 @@ void main() {
     testWidgets('does NOT rebuild when data is unchanged', (tester) async {
       int buildCount = 0;
 
-      await tester.pumpWidget(_app(
-        GlassAdaptiveScope(
-          initialQuality: GlassQuality.standard,
-          child: Builder(builder: (ctx) {
-            GlassAdaptiveScopeData.of(ctx); // register dependency
-            buildCount++;
-            return const SizedBox.shrink();
-          }),
+      await tester.pumpWidget(
+        _app(
+          GlassAdaptiveScope(
+            initialQuality: GlassQuality.standard,
+            child: Builder(
+              builder: (ctx) {
+                GlassAdaptiveScopeData.of(ctx); // register dependency
+                buildCount++;
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
         ),
-      ));
+      );
       await tester.pump();
       final countAfterFirst = buildCount;
 
@@ -376,32 +394,40 @@ void main() {
       int buildCount = 0;
       GlassAdaptiveScopeData? lastData;
 
-      await tester.pumpWidget(_app(
-        GlassAdaptiveScope(
-          initialQuality: GlassQuality.premium,
-          maxQuality: GlassQuality.premium,
-          child: Builder(builder: (ctx) {
-            lastData = GlassAdaptiveScopeData.of(ctx);
-            buildCount++;
-            return const SizedBox.shrink();
-          }),
+      await tester.pumpWidget(
+        _app(
+          GlassAdaptiveScope(
+            initialQuality: GlassQuality.premium,
+            maxQuality: GlassQuality.premium,
+            child: Builder(
+              builder: (ctx) {
+                lastData = GlassAdaptiveScopeData.of(ctx);
+                buildCount++;
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
         ),
-      ));
+      );
       await tester.pump();
       expect(lastData?.effectiveQuality, GlassQuality.premium);
 
       // Swap in a new scope with different quality → forces rebuild.
-      await tester.pumpWidget(_app(
-        GlassAdaptiveScope(
-          initialQuality: GlassQuality.standard,
-          maxQuality: GlassQuality.standard,
-          child: Builder(builder: (ctx) {
-            lastData = GlassAdaptiveScopeData.of(ctx);
-            buildCount++;
-            return const SizedBox.shrink();
-          }),
+      await tester.pumpWidget(
+        _app(
+          GlassAdaptiveScope(
+            initialQuality: GlassQuality.standard,
+            maxQuality: GlassQuality.standard,
+            child: Builder(
+              builder: (ctx) {
+                lastData = GlassAdaptiveScopeData.of(ctx);
+                buildCount++;
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
         ),
-      ));
+      );
       await tester.pump();
 
       expect(lastData?.effectiveQuality, GlassQuality.standard);
@@ -415,12 +441,9 @@ void main() {
     testWidgets('adapter getter is accessible and non-null', (tester) async {
       final scopeKey = GlobalKey<State<StatefulWidget>>();
 
-      await tester.pumpWidget(_app(
-        GlassAdaptiveScope(
-          key: scopeKey,
-          child: const SizedBox.shrink(),
-        ),
-      ));
+      await tester.pumpWidget(
+        _app(GlassAdaptiveScope(key: scopeKey, child: const SizedBox.shrink())),
+      );
       await tester.pump();
 
       // Access the adapter via the testing backdoor.

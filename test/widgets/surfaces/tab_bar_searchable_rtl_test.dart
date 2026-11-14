@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -30,15 +30,18 @@ void main() {
   }
 
   group('GlassTabBar.searchable RTL', () {
-    testWidgets('first tab renders on the trailing (right) edge',
-        (tester) async {
+    testWidgets('first tab renders on the trailing (right) edge', (
+      tester,
+    ) async {
       await tester.pumpWidget(rtlBar(onTabSelected: (_) {}));
 
       final screenWidth = tester.getSize(find.byType(GlassTabBar)).width;
-      final homeCenter =
-          tester.getCenter(find.text('Home').hitTestable().first);
-      final profileCenter =
-          tester.getCenter(find.text('Profile').hitTestable().first);
+      final homeCenter = tester.getCenter(
+        find.text('Home').hitTestable().first,
+      );
+      final profileCenter = tester.getCenter(
+        find.text('Profile').hitTestable().first,
+      );
 
       // RTL ordering: the first tab sits to the right of the last tab.
       expect(homeCenter.dx, greaterThan(profileCenter.dx));
@@ -65,7 +68,8 @@ void main() {
     ) async {
       var selected = -1;
       await tester.pumpWidget(
-          rtlBar(onTabSelected: (i) => selected = i, selectedIndex: 1));
+        rtlBar(onTabSelected: (i) => selected = i, selectedIndex: 1),
+      );
 
       // Visual order under RTL is Profile | Search | Home, left to right.
       final home = tester.getCenter(find.text('Home').hitTestable().first);
@@ -94,8 +98,9 @@ void main() {
         ),
       );
 
-      final profile =
-          tester.getCenter(find.text('Profile').hitTestable().first);
+      final profile = tester.getCenter(
+        find.text('Profile').hitTestable().first,
+      );
       final search = tester.getCenter(find.text('Search').hitTestable().first);
       expect(profile.dx, greaterThan(search.dx));
 

@@ -12,8 +12,8 @@
 ///   flutter run -t example/lib/demos/quality_comparison_demo.dart
 library;
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -152,7 +152,10 @@ const _kPillDefault = _Preset(
   // blur must be 0.0: AnimatedGlassIndicator.baseIndicatorSettings mandates blur=0 for
   // indicators. A non-zero value propagates through _mergeWithBase and triggers the
   // BackdropFilter clip path — indicators are not frosted surfaces.
-  thickness: 1.0, ambient: 0.28, glow: 0.50, light: 1.0,
+  thickness: 1.0,
+  ambient: 0.28,
+  glow: 0.50,
+  light: 1.0,
   blur: 0.0,
   stdOpacityMultiplier: 1.0,
 );
@@ -161,13 +164,19 @@ const _kBtnDefault = _Preset(
   // light↑ 0.72→0.88: rim specular needs to be brighter on 2D shader to match
   // the 3D SDF Fresnel rim of Premium. glow↓ 0.75→0.65: compensates so total
   // perceived brightness doesn't overshoot. Result: ~88% parity with Premium.
-  thickness: 17, ambient: 0.28, glow: 0.65, light: 0.88,
+  thickness: 17,
+  ambient: 0.28,
+  glow: 0.65,
+  light: 0.88,
   blur: 3.0,
   stdOpacityMultiplier: 1.0,
 );
 const _kCardDefault = _Preset(
   // GlassContainer.card + tab bar surface — tuned for ~88% visual parity
-  thickness: 19, ambient: 0.26, glow: 0.0, light: 0.90,
+  thickness: 19,
+  ambient: 0.26,
+  glow: 0.0,
+  light: 0.90,
   blur: 3.0,
   stdOpacityMultiplier: 1.0,
 );
@@ -177,12 +186,14 @@ const _kCardDefault = _Preset(
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LiquidGlassWidgets.initialize();
-  runApp(LiquidGlassWidgets.wrap(
-    // Recommended for production: auto-benchmarks the device and
-    // degrades quality gracefully on weaker hardware.
-    adaptiveQuality: true,
-    child: const _App(),
-  ));
+  runApp(
+    LiquidGlassWidgets.wrap(
+      // Recommended for production: auto-benchmarks the device and
+      // degrades quality gracefully on weaker hardware.
+      adaptiveQuality: true,
+      child: const _App(),
+    ),
+  );
 }
 
 class _App extends StatelessWidget {
@@ -194,10 +205,8 @@ class _App extends StatelessWidget {
       title: 'Quality Comparison',
       debugShowCheckedModeBanner: false,
       theme: const CupertinoThemeData(brightness: Brightness.dark),
-      builder: (context, child) => Theme(
-        data: ThemeData.dark(useMaterial3: true),
-        child: child!,
-      ),
+      builder: (context, child) =>
+          Theme(data: ThemeData.dark(useMaterial3: true), child: child!),
       home: const GlassQualityComparisonDemo(),
     );
   }
@@ -243,15 +252,15 @@ class GlassQualityComparisonDemoState
   /// Premium — reference settings that update dynamically based on the active
   /// thematic preset or global custom overrides.
   LiquidGlassSettings get _kGlass => LiquidGlassSettings(
-        glassColor: _glassColor.withValues(alpha: _baseOpacity),
-        blur: _blur,
-        thickness: _thickness,
-        lightIntensity: _lightIntensity,
-        ambientStrength: _ambient,
-        chromaticAberration: 0.02,
-        refractiveIndex: _refractiveIndex,
-        saturation: _saturation,
-      );
+    glassColor: _glassColor.withValues(alpha: _baseOpacity),
+    blur: _blur,
+    thickness: _thickness,
+    lightIntensity: _lightIntensity,
+    ambientStrength: _ambient,
+    chromaticAberration: 0.02,
+    refractiveIndex: _refractiveIndex,
+    saturation: _saturation,
+  );
 
   /// Standard pill / animated indicator settings.
   LiquidGlassSettings get _kGlassPill => _pill.toSettings(_kGlass.glassColor);
@@ -283,18 +292,23 @@ class GlassQualityComparisonDemoState
                   _buildHeader(),
                   if (_showTuning)
                     Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 4,
+                      ),
                       child: SizedBox(
                         height: 280,
                         child: Container(
                           decoration: BoxDecoration(
-                            color:
-                                CupertinoColors.black.withValues(alpha: 0.45),
+                            color: CupertinoColors.black.withValues(
+                              alpha: 0.45,
+                            ),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                                color: CupertinoColors.white
-                                    .withValues(alpha: 0.1)),
+                              color: CupertinoColors.white.withValues(
+                                alpha: 0.1,
+                              ),
+                            ),
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
@@ -409,7 +423,7 @@ class GlassQualityComparisonDemoState
                                 color: presetColor.withValues(alpha: 0.25),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
-                              )
+                              ),
                             ]
                           : null,
                     ),
@@ -426,7 +440,7 @@ class GlassQualityComparisonDemoState
                                 color: presetColor.withValues(alpha: 0.5),
                                 blurRadius: 4,
                                 spreadRadius: 1,
-                              )
+                              ),
                             ],
                           ),
                         ),
@@ -508,26 +522,62 @@ class GlassQualityComparisonDemoState
           ),
         ),
         SizedBox(height: 8),
-        _Slider('Opacity', _baseOpacity, 0.01, 1.0,
-            (v) => setState(() => _baseOpacity = v),
-            color: CupertinoColors.white),
-        _Slider('Thickness', _thickness, 1.0, 60.0,
-            (v) => setState(() => _thickness = v),
-            color: CupertinoColors.white),
-        _Slider('Specularity', _lightIntensity, 0.0, 2.5,
-            (v) => setState(() => _lightIntensity = v),
-            color: CupertinoColors.white),
-        _Slider('Blur', _blur, 0.0, 20.0, (v) => setState(() => _blur = v),
-            color: CupertinoColors.white),
         _Slider(
-            'Ambient', _ambient, 0.0, 0.6, (v) => setState(() => _ambient = v),
-            color: CupertinoColors.white),
-        _Slider('Saturation', _saturation, 0.0, 3.0,
-            (v) => setState(() => _saturation = v),
-            color: CupertinoColors.white),
-        _Slider('Refraction', _refractiveIndex, 1.0, 2.0,
-            (v) => setState(() => _refractiveIndex = v),
-            color: CupertinoColors.white),
+          'Opacity',
+          _baseOpacity,
+          0.01,
+          1.0,
+          (v) => setState(() => _baseOpacity = v),
+          color: CupertinoColors.white,
+        ),
+        _Slider(
+          'Thickness',
+          _thickness,
+          1.0,
+          60.0,
+          (v) => setState(() => _thickness = v),
+          color: CupertinoColors.white,
+        ),
+        _Slider(
+          'Specularity',
+          _lightIntensity,
+          0.0,
+          2.5,
+          (v) => setState(() => _lightIntensity = v),
+          color: CupertinoColors.white,
+        ),
+        _Slider(
+          'Blur',
+          _blur,
+          0.0,
+          20.0,
+          (v) => setState(() => _blur = v),
+          color: CupertinoColors.white,
+        ),
+        _Slider(
+          'Ambient',
+          _ambient,
+          0.0,
+          0.6,
+          (v) => setState(() => _ambient = v),
+          color: CupertinoColors.white,
+        ),
+        _Slider(
+          'Saturation',
+          _saturation,
+          0.0,
+          3.0,
+          (v) => setState(() => _saturation = v),
+          color: CupertinoColors.white,
+        ),
+        _Slider(
+          'Refraction',
+          _refractiveIndex,
+          1.0,
+          2.0,
+          (v) => setState(() => _refractiveIndex = v),
+          color: CupertinoColors.white,
+        ),
       ],
     );
   }
@@ -542,10 +592,11 @@ class GlassQualityComparisonDemoState
             Text(
               'STANDARD ONLY  ·  Premium is locked',
               style: TextStyle(
-                  color: Color(0xFF5AC8FA),
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2),
+                color: Color(0xFF5AC8FA),
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+              ),
             ),
             GestureDetector(
               onTap: () {
@@ -561,7 +612,8 @@ class GlassQualityComparisonDemoState
                   color: const Color(0xFF5AC8FA).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(4),
                   border: Border.all(
-                      color: const Color(0xFF5AC8FA).withValues(alpha: 0.3)),
+                    color: const Color(0xFF5AC8FA).withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Text(
                   'RESET TO DEFAULTS',
@@ -580,35 +632,39 @@ class GlassQualityComparisonDemoState
         Text(
           'saturation → bgBoost  ·  ambient → lift  ·  glow → fresnel edge',
           style: TextStyle(
-              color: CupertinoColors.white.withValues(alpha: 0.24),
-              fontSize: 8,
-              fontFamily: 'monospace'),
+            color: CupertinoColors.white.withValues(alpha: 0.24),
+            fontSize: 8,
+            fontFamily: 'monospace',
+          ),
         ),
         SizedBox(height: 8),
         _PresetSection(
-            label: '● PILL / INDICATOR',
-            color: const Color(0xFF5AC8FA),
-            preset: _pill,
-            onChanged: (p) => setState(() => _pill = p),
-            thicknessMin: 0.1,
-            thicknessMax: 8.0,
-            thicknessLabel: 'rim px'),
+          label: '● PILL / INDICATOR',
+          color: const Color(0xFF5AC8FA),
+          preset: _pill,
+          onChanged: (p) => setState(() => _pill = p),
+          thicknessMin: 0.1,
+          thicknessMax: 8.0,
+          thicknessLabel: 'rim px',
+        ),
         SizedBox(height: 8),
         _PresetSection(
-            label: '● BUTTON',
-            color: const Color(0xFF4ADE80),
-            preset: _btn,
-            onChanged: (p) => setState(() => _btn = p),
-            thicknessMin: 0.0,
-            thicknessMax: 30.0),
+          label: '● BUTTON',
+          color: const Color(0xFF4ADE80),
+          preset: _btn,
+          onChanged: (p) => setState(() => _btn = p),
+          thicknessMin: 0.0,
+          thicknessMax: 30.0,
+        ),
         SizedBox(height: 8),
         _PresetSection(
-            label: '● CARD / SURFACE',
-            color: const Color(0xFFBB86FC),
-            preset: _card,
-            onChanged: (p) => setState(() => _card = p),
-            thicknessMin: 0.0,
-            thicknessMax: 30.0),
+          label: '● CARD / SURFACE',
+          color: const Color(0xFFBB86FC),
+          preset: _card,
+          onChanged: (p) => setState(() => _card = p),
+          thicknessMin: 0.0,
+          thicknessMax: 30.0,
+        ),
       ],
     );
   }
@@ -620,10 +676,11 @@ class GlassQualityComparisonDemoState
         Text(
           'REAL-TIME STANDARD PARITY MATHEMATICS',
           style: TextStyle(
-              color: CupertinoColors.white.withValues(alpha: 0.38),
-              fontSize: 9,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.8),
+            color: CupertinoColors.white.withValues(alpha: 0.38),
+            fontSize: 9,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.8,
+          ),
         ),
         SizedBox(height: 4),
         Text(
@@ -732,7 +789,7 @@ class GlassQualityComparisonDemoState
               segments: [
                 GlassSegment(label: 'Day'),
                 GlassSegment(label: 'Week'),
-                GlassSegment(label: 'Month')
+                GlassSegment(label: 'Month'),
               ],
               selectedIndex: _segIndex,
               onSegmentSelected: (i) => setState(() => _segIndex = i),
@@ -745,7 +802,7 @@ class GlassQualityComparisonDemoState
               segments: [
                 GlassSegment(label: 'Day'),
                 GlassSegment(label: 'Week'),
-                GlassSegment(label: 'Month')
+                GlassSegment(label: 'Month'),
               ],
               selectedIndex: _segIndex,
               onSegmentSelected: (i) => setState(() => _segIndex = i),
@@ -875,8 +932,9 @@ class GlassQualityComparisonDemoState
               value: _sliderValue,
               quality: GlassQuality.premium,
               activeColor: const Color(0xFF007AFF), // iOS system blue
-              inactiveColor:
-                  const Color(0x20FFFFFF), // glass tint for frosted track
+              inactiveColor: const Color(
+                0x20FFFFFF,
+              ), // glass tint for frosted track
               trackHeight: 5, // matches real iOS slider track thickness
               onChanged: (v) => setState(() => _sliderValue = v),
             ),
@@ -884,8 +942,9 @@ class GlassQualityComparisonDemoState
               value: _sliderValue,
               quality: GlassQuality.standard,
               activeColor: const Color(0xFF007AFF), // iOS system blue
-              inactiveColor:
-                  const Color(0x20FFFFFF), // glass tint for frosted track
+              inactiveColor: const Color(
+                0x20FFFFFF,
+              ), // glass tint for frosted track
               trackHeight: 5, // matches real iOS slider track thickness
               onChanged: (v) => setState(() => _sliderValue = v),
             ),
@@ -932,10 +991,7 @@ class _QualityBadge extends StatelessWidget {
           ),
           Text(
             subtitle,
-            style: TextStyle(
-              color: color.withValues(alpha: 0.7),
-              fontSize: 10,
-            ),
+            style: TextStyle(color: color.withValues(alpha: 0.7), fontSize: 10),
           ),
         ],
       ),
@@ -975,13 +1031,9 @@ class _ComparisonRow extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Center(child: premium),
-            ),
+            Expanded(child: Center(child: premium)),
             SizedBox(width: 12),
-            Expanded(
-              child: Center(child: standard),
-            ),
+            Expanded(child: Center(child: standard)),
           ],
         ),
       ],
@@ -1119,12 +1171,15 @@ class _PresetSectionState extends State<_PresetSection> {
             onTap: () => setState(() => _expanded = !_expanded),
             child: Row(
               children: [
-                Text(widget.label,
-                    style: TextStyle(
-                        color: c,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.1)),
+                Text(
+                  widget.label,
+                  style: TextStyle(
+                    color: c,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.1,
+                  ),
+                ),
                 SizedBox(width: 4),
                 Flexible(
                   child: Text(
@@ -1136,42 +1191,73 @@ class _PresetSectionState extends State<_PresetSection> {
                     'stdOp=${p.stdOpacityMultiplier.toStringAsFixed(2)}',
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                        color: c.withValues(alpha: 0.6),
-                        fontSize: 8,
-                        fontFamily: 'monospace'),
+                      color: c.withValues(alpha: 0.6),
+                      fontSize: 8,
+                      fontFamily: 'monospace',
+                    ),
                   ),
                 ),
                 SizedBox(width: 4),
-                Text(_expanded ? '▲' : '▼',
-                    style: TextStyle(
-                        color: c.withValues(alpha: 0.5), fontSize: 8)),
+                Text(
+                  _expanded ? '▲' : '▼',
+                  style: TextStyle(
+                    color: c.withValues(alpha: 0.5),
+                    fontSize: 8,
+                  ),
+                ),
               ],
             ),
           ),
           if (_expanded) ...[
             SizedBox(height: 4),
             _Slider(
-                widget.thicknessLabel,
-                p.thickness,
-                widget.thicknessMin,
-                widget.thicknessMax,
-                (v) => widget.onChanged(p.copyWith(thickness: v)),
-                color: c),
-            _Slider('ambient', p.ambient, 0.0, 0.35,
-                (v) => widget.onChanged(p.copyWith(ambient: v)),
-                color: c),
-            _Slider('glow', p.glow, 0.0, 2.0,
-                (v) => widget.onChanged(p.copyWith(glow: v)),
-                color: c),
-            _Slider('light', p.light, 0.0, 1.5,
-                (v) => widget.onChanged(p.copyWith(light: v)),
-                color: c),
-            _Slider('blur', p.blur, 0.0, 12.0,
-                (v) => widget.onChanged(p.copyWith(blur: v)),
-                color: c),
-            _Slider('stdOp', p.stdOpacityMultiplier, 0.0, 2.0,
-                (v) => widget.onChanged(p.copyWith(stdOpacityMultiplier: v)),
-                color: c),
+              widget.thicknessLabel,
+              p.thickness,
+              widget.thicknessMin,
+              widget.thicknessMax,
+              (v) => widget.onChanged(p.copyWith(thickness: v)),
+              color: c,
+            ),
+            _Slider(
+              'ambient',
+              p.ambient,
+              0.0,
+              0.35,
+              (v) => widget.onChanged(p.copyWith(ambient: v)),
+              color: c,
+            ),
+            _Slider(
+              'glow',
+              p.glow,
+              0.0,
+              2.0,
+              (v) => widget.onChanged(p.copyWith(glow: v)),
+              color: c,
+            ),
+            _Slider(
+              'light',
+              p.light,
+              0.0,
+              1.5,
+              (v) => widget.onChanged(p.copyWith(light: v)),
+              color: c,
+            ),
+            _Slider(
+              'blur',
+              p.blur,
+              0.0,
+              12.0,
+              (v) => widget.onChanged(p.copyWith(blur: v)),
+              color: c,
+            ),
+            _Slider(
+              'stdOp',
+              p.stdOpacityMultiplier,
+              0.0,
+              2.0,
+              (v) => widget.onChanged(p.copyWith(stdOpacityMultiplier: v)),
+              color: c,
+            ),
           ],
         ],
       ),
@@ -1180,8 +1266,14 @@ class _PresetSectionState extends State<_PresetSection> {
 }
 
 class _Slider extends StatelessWidget {
-  const _Slider(this.label, this.value, this.min, this.max, this.onChanged,
-      {this.color = const Color(0xB2FFFFFF)});
+  const _Slider(
+    this.label,
+    this.value,
+    this.min,
+    this.max,
+    this.onChanged, {
+    this.color = const Color(0xB2FFFFFF),
+  });
 
   final String label;
   final double value;
@@ -1252,19 +1344,19 @@ class _Preset {
   final double stdOpacityMultiplier;
 
   LiquidGlassSettings toSettings(Color baseColor) => LiquidGlassSettings(
-        glassColor: baseColor,
-        thickness: thickness,
-        saturation:
-            1.08, // Neutral — uSaturation is hue-sat in lightweight_glass.frag;
-        // has no effect on white glass, so fixed at 1.08.
-        ambientStrength: ambient,
-        glowIntensity: glow,
-        lightIntensity: light,
-        blur: blur,
-        chromaticAberration: 0.02,
-        refractiveIndex: 1.25,
-        standardOpacityMultiplier: stdOpacityMultiplier,
-      );
+    glassColor: baseColor,
+    thickness: thickness,
+    saturation:
+        1.08, // Neutral — uSaturation is hue-sat in lightweight_glass.frag;
+    // has no effect on white glass, so fixed at 1.08.
+    ambientStrength: ambient,
+    glowIntensity: glow,
+    lightIntensity: light,
+    blur: blur,
+    chromaticAberration: 0.02,
+    refractiveIndex: 1.25,
+    standardOpacityMultiplier: stdOpacityMultiplier,
+  );
 
   _Preset copyWith({
     double? thickness,
@@ -1273,13 +1365,12 @@ class _Preset {
     double? light,
     double? blur,
     double? stdOpacityMultiplier,
-  }) =>
-      _Preset(
-        thickness: thickness ?? this.thickness,
-        ambient: ambient ?? this.ambient,
-        glow: glow ?? this.glow,
-        light: light ?? this.light,
-        blur: blur ?? this.blur,
-        stdOpacityMultiplier: stdOpacityMultiplier ?? this.stdOpacityMultiplier,
-      );
+  }) => _Preset(
+    thickness: thickness ?? this.thickness,
+    ambient: ambient ?? this.ambient,
+    glow: glow ?? this.glow,
+    light: light ?? this.light,
+    blur: blur ?? this.blur,
+    stdOpacityMultiplier: stdOpacityMultiplier ?? this.stdOpacityMultiplier,
+  );
 }

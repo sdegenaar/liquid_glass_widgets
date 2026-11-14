@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart' show CupertinoColors;
+import 'package:cupertino_ui/cupertino_ui.dart' show CupertinoColors;
 import 'package:flutter/widgets.dart';
 
 import '../../src/renderer/liquid_glass_renderer.dart';
@@ -238,7 +238,8 @@ class _GlassPageControlState extends State<GlassPageControl>
 
     final effectiveActiveColor =
         widget.activeColor ?? CupertinoColors.label.resolveFrom(context);
-    final effectiveInactiveColor = widget.inactiveColor ??
+    final effectiveInactiveColor =
+        widget.inactiveColor ??
         CupertinoColors.tertiaryLabel.resolveFrom(context);
 
     // Build the dot row content
@@ -281,14 +282,16 @@ class _GlassPageControlState extends State<GlassPageControl>
               if (isActive && wasPrevious) {
                 dotColor = effectiveActiveColor;
               } else if (isActive) {
-                dotColor = Color.lerp(
+                dotColor =
+                    Color.lerp(
                       effectiveInactiveColor,
                       effectiveActiveColor,
                       t,
                     ) ??
                     effectiveActiveColor;
               } else if (wasPrevious) {
-                dotColor = Color.lerp(
+                dotColor =
+                    Color.lerp(
                       effectiveActiveColor,
                       effectiveInactiveColor,
                       t,
@@ -350,7 +353,8 @@ class _GlassPageControlState extends State<GlassPageControl>
     // Wrap in a Semantics node so screen readers announce the current page.
     // The inner GlassButton has no label (custom child), so this outer node
     // is the sole announcement source — no double-reading occurs.
-    final effectiveLabel = widget.semanticLabel ??
+    final effectiveLabel =
+        widget.semanticLabel ??
         'Page ${widget.currentPage + 1} of ${widget.count}';
     return Semantics(
       label: effectiveLabel,

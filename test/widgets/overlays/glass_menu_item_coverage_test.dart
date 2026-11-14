@@ -9,7 +9,7 @@
 //   liquid_glass_setup.dart:
 //     - line 36: LiquidGlassWidgets private constructor (static-only class)
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -22,10 +22,7 @@ void main() {
     testWidgets('renders with default params', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: const SizedBox(
-            width: 200,
-            child: GlassMenuDivider(),
-          ),
+          child: const SizedBox(width: 200, child: GlassMenuDivider()),
         ),
       );
       await tester.pump();
@@ -38,11 +35,7 @@ void main() {
         createTestApp(
           child: const SizedBox(
             width: 200,
-            child: GlassMenuDivider(
-              height: 20,
-              color: Colors.blue,
-              indent: 16,
-            ),
+            child: GlassMenuDivider(height: 20, color: Colors.blue, indent: 16),
           ),
         ),
       );
@@ -75,10 +68,7 @@ void main() {
         createTestApp(
           child: const SizedBox(
             width: 200,
-            child: GlassMenuLabel(
-              height: 40,
-              child: Icon(Icons.star),
-            ),
+            child: GlassMenuLabel(height: 40, child: Icon(Icons.star)),
           ),
         ),
       );
@@ -110,16 +100,14 @@ void main() {
   // ── GlassMenuItem tap-cancel → _isPressed = false ────────────────────────
 
   group('GlassMenuItem — tap cancel clears pressed state', () {
-    testWidgets('press then cancel clears _isPressed (lines 224-225)',
-        (tester) async {
+    testWidgets('press then cancel clears _isPressed (lines 224-225)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: SizedBox(
             width: 200,
-            child: GlassMenuItem(
-              title: 'Item',
-              onTap: () {},
-            ),
+            child: GlassMenuItem(title: 'Item', onTap: () {}),
           ),
         ),
       );
@@ -174,23 +162,26 @@ void main() {
   });
 
   group('GlassSlider — GlassGlow opacity branch (transition > 0.05)', () {
-    testWidgets('dragging slider renders glow animation overlay',
-        (tester) async {
+    testWidgets('dragging slider renders glow animation overlay', (
+      tester,
+    ) async {
       double sliderValue = 0.5;
 
       await tester.pumpWidget(
-        StatefulBuilder(builder: (ctx, setState) {
-          return createTestApp(
-            child: SizedBox(
-              width: 300,
-              height: 60,
-              child: GlassSlider(
-                value: sliderValue,
-                onChanged: (v) => setState(() => sliderValue = v),
+        StatefulBuilder(
+          builder: (ctx, setState) {
+            return createTestApp(
+              child: SizedBox(
+                width: 300,
+                height: 60,
+                child: GlassSlider(
+                  value: sliderValue,
+                  onChanged: (v) => setState(() => sliderValue = v),
+                ),
               ),
-            ),
-          );
-        }),
+            );
+          },
+        ),
       );
       await tester.pump();
 
@@ -198,8 +189,9 @@ void main() {
       final rect = tester.getRect(finder);
 
       // Start drag (thumb transition animates from 0 → 1).
-      final gesture =
-          await tester.startGesture(Offset(rect.left + 80, rect.center.dy));
+      final gesture = await tester.startGesture(
+        Offset(rect.left + 80, rect.center.dy),
+      );
       await tester.pump(const Duration(milliseconds: 50));
       // Mid-animation: transition > 0.05 → GlassGlow + Opacity rendered.
       await gesture.moveBy(const Offset(20, 0));

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' show lerpDouble;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/gestures.dart' show DeviceGestureSettings;
 
 import '../../../src/renderer/liquid_glass_renderer.dart';
@@ -147,8 +147,10 @@ class TabBarVerticalLayout extends StatefulWidget {
   static const double _labelOffset = 22.3;
 
   /// The labels' text style.
-  static const TextStyle _labelStyle =
-      TextStyle(fontSize: 12, fontWeight: FontWeight.w500);
+  static const TextStyle _labelStyle = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+  );
 
   /// Size of the lens the indicator lifts into while the capsule is touched.
   static const Size _lensSize = Size(89.3, 86.7);
@@ -247,16 +249,16 @@ class _TabBarVerticalLayoutState extends State<TabBarVerticalLayout>
   @override
   int tabIndexFromGlobal(Offset globalPosition) =>
       tabIsDown && !tabIsDragging && _touchedSlot != null
-          ? _touchedSlot!
-          : super.tabIndexFromGlobal(globalPosition);
+      ? _touchedSlot!
+      : super.tabIndexFromGlobal(globalPosition);
 
   int _slotCountOf(TabBarVerticalLayout layout) =>
       layout.tabs.length + (layout.searchConfig == null ? 0 : 1);
 
   int _selectedSlotOf(TabBarVerticalLayout layout) =>
       layout.searchConfig != null && layout.isSearchActive
-          ? layout.tabs.length
-          : layout.selectedIndex;
+      ? layout.tabs.length
+      : layout.selectedIndex;
 
   @override
   int get tabCount => _slotCountOf(widget);
@@ -340,7 +342,8 @@ class _TabBarVerticalLayoutState extends State<TabBarVerticalLayout>
       widgetQuality: widget.quality,
       fallback: GlassQuality.premium,
     );
-    final indicatorColor = widget.indicatorColor ??
+    final indicatorColor =
+        widget.indicatorColor ??
         CupertinoColors.secondarySystemFill.resolveFrom(context);
 
     // The pill at rest and the lens it lifts into, [lift] of the way: the
@@ -350,34 +353,33 @@ class _TabBarVerticalLayoutState extends State<TabBarVerticalLayout>
       required double lift,
       required double velocity,
       required bool glass,
-    }) =>
-        Positioned.fromRect(
-          rect: rect,
-          child: IgnorePointer(
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                AnimatedGlassIndicator(
-                  velocity: velocity,
-                  itemCount: 1,
-                  alignment: Alignment.center,
-                  direction: Axis.vertical,
-                  thickness: lift,
-                  quality: quality,
-                  indicatorColor: indicatorColor,
-                  isBackgroundIndicator: false,
-                  paintBackground: !glass,
-                  paintGlass: glass,
-                  settings: widget.indicatorSettings,
-                  padding: EdgeInsets.zero,
-                  // Sized by [rect] itself: an expansion this large would
-                  // outgrow the glass layer's clip.
-                  expansion: EdgeInsets.zero,
-                ),
-              ],
+    }) => Positioned.fromRect(
+      rect: rect,
+      child: IgnorePointer(
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            AnimatedGlassIndicator(
+              velocity: velocity,
+              itemCount: 1,
+              alignment: Alignment.center,
+              direction: Axis.vertical,
+              thickness: lift,
+              quality: quality,
+              indicatorColor: indicatorColor,
+              isBackgroundIndicator: false,
+              paintBackground: !glass,
+              paintGlass: glass,
+              settings: widget.indicatorSettings,
+              padding: EdgeInsets.zero,
+              // Sized by [rect] itself: an expansion this large would
+              // outgrow the glass layer's clip.
+              expansion: EdgeInsets.zero,
             ),
-          ),
-        );
+          ],
+        ),
+      ),
+    );
 
     return SizedBox(
       width: restWidth,
@@ -391,8 +393,9 @@ class _TabBarVerticalLayoutState extends State<TabBarVerticalLayout>
         value: touched && !labelled ? 1.0 : 0.0,
         builder: (context, pressValue, _) => SpringBuilder(
           // The labels fade quickly either way, ahead of the capsule.
-          spring:
-              GlassSpring.smooth(duration: const Duration(milliseconds: 100)),
+          spring: GlassSpring.smooth(
+            duration: const Duration(milliseconds: 100),
+          ),
           value: labelled ? 1.0 : 0.0,
           builder: (context, labelsIn, _) => SpringBuilder(
             // Opening overshoots by about a sixth before it settles, as
@@ -422,7 +425,8 @@ class _TabBarVerticalLayoutState extends State<TabBarVerticalLayout>
                     : GlassSpring.snappy(
                         duration: const Duration(milliseconds: 300),
                       ),
-                value: touched ||
+                value:
+                    touched ||
                         (align - computeTabAlignment(tabIndex)).abs() > 0.05
                     ? 1.0
                     : 0.0,
@@ -432,13 +436,23 @@ class _TabBarVerticalLayoutState extends State<TabBarVerticalLayout>
                   final press = pressValue.abs() < 1e-3 ? 0.0 : pressValue;
                   final open = openValue.abs() < 1e-3 ? 0.0 : openValue;
                   final width = lerpDouble(
-                      restWidth, TabBarVerticalLayout._pressedWidth, open)!;
-                  final pitch = lerpDouble(restExtent,
-                      TabBarVerticalLayout._pressedItemExtent, open)!;
-                  final height = firstIcon +
+                    restWidth,
+                    TabBarVerticalLayout._pressedWidth,
+                    open,
+                  )!;
+                  final pitch = lerpDouble(
+                    restExtent,
+                    TabBarVerticalLayout._pressedItemExtent,
+                    open,
+                  )!;
+                  final height =
+                      firstIcon +
                       (count - 1) * pitch +
-                      lerpDouble(firstIcon,
-                          TabBarVerticalLayout._pressedEndInset, open)!;
+                      lerpDouble(
+                        firstIcon,
+                        TabBarVerticalLayout._pressedEndInset,
+                        open,
+                      )!;
                   final labels = labelsIn.clamp(0.0, 1.0);
                   final capsule = Rect.fromLTWH(
                     (restWidth - width) / 2,
@@ -449,15 +463,21 @@ class _TabBarVerticalLayoutState extends State<TabBarVerticalLayout>
                     height,
                   );
 
-                  final lensHeight =
-                      lerpDouble(pill.height, lens.height, lift)!;
+                  final lensHeight = lerpDouble(
+                    pill.height,
+                    lens.height,
+                    lift,
+                  )!;
                   final slot = (align + 1) / 2 * (count - 1);
-                  final centre = (firstIcon +
-                          slot * pitch +
-                          TabBarVerticalLayout._lensOffset * open)
-                      .clamp(lensHeight / 2,
-                          math.max(lensHeight / 2, height - lensHeight / 2))
-                      .toDouble();
+                  final centre =
+                      (firstIcon +
+                              slot * pitch +
+                              TabBarVerticalLayout._lensOffset * open)
+                          .clamp(
+                            lensHeight / 2,
+                            math.max(lensHeight / 2, height - lensHeight / 2),
+                          )
+                          .toDouble();
                   // In the capsule's own coordinates.
                   final rest = Rect.fromCenter(
                     center: Offset(width / 2, centre),
@@ -472,34 +492,39 @@ class _TabBarVerticalLayoutState extends State<TabBarVerticalLayout>
 
                   // One layer of tabs, every icon and label in [colorOf]'s
                   // colour.
-                  List<Widget> tabsIn(Color Function(int slot) colorOf,
-                          {required bool semantics, Rect? within}) =>
-                      [
-                        for (var i = 0; i < count; i++)
-                          // Only the tabs the indicator reaches: the icon, and
-                          // the label beneath it while it shows.
-                          if (within == null ||
-                              (firstIcon + i * pitch - widget.iconSize / 2 <
-                                      within.bottom &&
-                                  firstIcon +
-                                          i * pitch +
-                                          widget.iconSize / 2 +
-                                          TabBarVerticalLayout._labelOffset *
-                                              labels >
-                                      within.top))
-                            ..._slot(
-                              slots[i].$1,
-                              slot: i,
-                              centre: Offset(width / 2, firstIcon + i * pitch),
-                              color: colorOf(i),
-                              labels: labels,
-                              semantics: semantics,
-                            ),
-                      ];
+                  List<Widget> tabsIn(
+                    Color Function(int slot) colorOf, {
+                    required bool semantics,
+                    Rect? within,
+                  }) => [
+                    for (var i = 0; i < count; i++)
+                      // Only the tabs the indicator reaches: the icon, and
+                      // the label beneath it while it shows.
+                      if (within == null ||
+                          (firstIcon + i * pitch - widget.iconSize / 2 <
+                                  within.bottom &&
+                              firstIcon +
+                                      i * pitch +
+                                      widget.iconSize / 2 +
+                                      TabBarVerticalLayout._labelOffset *
+                                          labels >
+                                  within.top))
+                        ..._slot(
+                          slots[i].$1,
+                          slot: i,
+                          centre: Offset(width / 2, firstIcon + i * pitch),
+                          color: colorOf(i),
+                          labels: labels,
+                          semantics: semantics,
+                        ),
+                  ];
 
                   return Transform.scale(
                     scale: lerpDouble(
-                        1.0, TabBarVerticalLayout._pressScale, press),
+                      1.0,
+                      TabBarVerticalLayout._pressScale,
+                      press,
+                    ),
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
@@ -508,8 +533,9 @@ class _TabBarVerticalLayoutState extends State<TabBarVerticalLayout>
                           child: GlassButton.custom(
                             onTap:
                                 () {}, // The capsule handles its own touches.
-                            shape:
-                                LiquidRoundedRectangle(borderRadius: width / 2),
+                            shape: LiquidRoundedRectangle(
+                              borderRadius: width / 2,
+                            ),
                             settings: widget.settings,
                             quality: widget.quality,
                             platformViewBackdrop: widget.platformViewBackdrop,
@@ -563,19 +589,25 @@ class _TabBarVerticalLayoutState extends State<TabBarVerticalLayout>
                                         height: count * pitch,
                                         child: SizedBox(key: _track),
                                       ),
-                                      indicator(covered,
-                                          lift: lift,
-                                          velocity: velocity,
-                                          glass: false),
-                                      ...tabsIn((i) => slots[i].$2,
-                                          semantics: true),
+                                      indicator(
+                                        covered,
+                                        lift: lift,
+                                        velocity: velocity,
+                                        glass: false,
+                                      ),
+                                      ...tabsIn(
+                                        (i) => slots[i].$2,
+                                        semantics: true,
+                                      ),
                                       ClipPath(
                                         clipper: _IndicatorClipper(covered),
                                         child: Stack(
                                           clipBehavior: Clip.none,
-                                          children: tabsIn((_) => selectedColor,
-                                              semantics: false,
-                                              within: covered),
+                                          children: tabsIn(
+                                            (_) => selectedColor,
+                                            semantics: false,
+                                            within: covered,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -587,8 +619,12 @@ class _TabBarVerticalLayoutState extends State<TabBarVerticalLayout>
                         ),
                         // The lens overhangs the capsule, so it is drawn over it
                         // rather than inside it.
-                        indicator(covered.shift(capsule.topLeft),
-                            lift: lift, velocity: velocity, glass: true),
+                        indicator(
+                          covered.shift(capsule.topLeft),
+                          lift: lift,
+                          velocity: velocity,
+                          glass: true,
+                        ),
                       ],
                     ),
                   );
@@ -622,7 +658,8 @@ class _TabBarVerticalLayoutState extends State<TabBarVerticalLayout>
         child: IconTheme.merge(
           data: IconThemeData(color: color, size: widget.iconSize),
           // A label-only tab keeps its label, shrunk to the slot.
-          child: icon ??
+          child:
+              icon ??
               FittedBox(
                 child: Text(
                   tab.label!,
@@ -666,8 +703,9 @@ class _TabBarVerticalLayoutState extends State<TabBarVerticalLayout>
                     maxLines: 1,
                     softWrap: false,
                     overflow: TextOverflow.visible,
-                    style:
-                        TabBarVerticalLayout._labelStyle.copyWith(color: color),
+                    style: TabBarVerticalLayout._labelStyle.copyWith(
+                      color: color,
+                    ),
                   ),
                 ),
               ),
@@ -725,8 +763,8 @@ class _TabBarVerticalLayoutState extends State<TabBarVerticalLayout>
             label: searching
                 ? search.hintText
                 : tabs[selectedSlot].semanticLabel ??
-                    tabs[selectedSlot].label ??
-                    '',
+                      tabs[selectedSlot].label ??
+                      '',
             width: width,
             height: width,
             child: searching
@@ -784,10 +822,12 @@ class _TabBarVerticalLayoutState extends State<TabBarVerticalLayout>
     final spacing = regular
         ? GlassVerticalBarMetrics.spacing
         : TabBarVerticalLayout._compactSearchFieldSpacing;
-    final rowEnd =
-        trailingStrip ? bar.width : GlassVerticalBarMetrics.titleInset;
-    final rowStart =
-        trailingStrip ? GlassVerticalBarMetrics.titleInset : bar.width;
+    final rowEnd = trailingStrip
+        ? bar.width
+        : GlassVerticalBarMetrics.titleInset;
+    final rowStart = trailingStrip
+        ? GlassVerticalBarMetrics.titleInset
+        : bar.width;
     return Stack(
       children: [
         strip,
@@ -853,8 +893,9 @@ class _VerticalSearchField extends StatelessWidget {
       fontSize: config.hintStyle?.fontSize ?? 17,
       fontWeight: config.hintStyle?.fontWeight ?? FontWeight.w400,
     );
-    final defaultCancelColor =
-        dark ? const Color(0xE6FFFFFF) : const Color(0xE6000000);
+    final defaultCancelColor = dark
+        ? const Color(0xE6FFFFFF)
+        : const Color(0xE6000000);
 
     return Row(
       children: [
@@ -893,7 +934,8 @@ class _VerticalSearchField extends StatelessWidget {
             settings: settings,
             quality: quality,
             useOwnLayer: true,
-            icon: config.cancelIcon ??
+            icon:
+                config.cancelIcon ??
                 Icon(
                   CupertinoIcons.xmark,
                   color: config.cancelButtonColor ?? defaultCancelColor,
@@ -946,7 +988,8 @@ class _VerticalTab extends StatelessWidget {
             child: IconTheme.merge(
               data: IconThemeData(color: color, size: iconSize),
               // A label-only tab keeps its label, shrunk to the slot.
-              child: icon ??
+              child:
+                  icon ??
                   FittedBox(
                     child: Text(
                       tab.label!,
@@ -971,7 +1014,8 @@ class _IndicatorClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) => Path()
     ..addRRect(
-        RRect.fromRectAndRadius(rect, Radius.circular(rect.shortestSide / 2)));
+      RRect.fromRectAndRadius(rect, Radius.circular(rect.shortestSide / 2)),
+    );
 
   @override
   bool shouldReclip(_IndicatorClipper oldClipper) => oldClipper.rect != rect;

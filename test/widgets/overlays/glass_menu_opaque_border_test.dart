@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -50,18 +50,22 @@ Future<GlassMenuController> _open(
 }
 
 /// Flat fills of [color] in the open menu.
-Finder _fills(Color color) => find.byWidgetPredicate((widget) =>
-    widget is DecoratedBox &&
-    widget.decoration is ShapeDecoration &&
-    (widget.decoration as ShapeDecoration).color == color);
+Finder _fills(Color color) => find.byWidgetPredicate(
+  (widget) =>
+      widget is DecoratedBox &&
+      widget.decoration is ShapeDecoration &&
+      (widget.decoration as ShapeDecoration).color == color,
+);
 
 /// Outlines drawn with [side] in the open menu.
-Finder _outlines(BorderSide side) => find.byWidgetPredicate((widget) =>
-    widget is DecoratedBox &&
-    widget.decoration is ShapeDecoration &&
-    (widget.decoration as ShapeDecoration).color == null &&
-    ((widget.decoration as ShapeDecoration).shape as OutlinedBorder).side ==
-        side);
+Finder _outlines(BorderSide side) => find.byWidgetPredicate(
+  (widget) =>
+      widget is DecoratedBox &&
+      widget.decoration is ShapeDecoration &&
+      (widget.decoration as ShapeDecoration).color == null &&
+      ((widget.decoration as ShapeDecoration).shape as OutlinedBorder).side ==
+          side,
+);
 
 Finder _glassAround(String row) =>
     find.ancestor(of: find.text(row), matching: find.byType(GlassContainer));
@@ -74,8 +78,9 @@ void main() {
       expect(_fills(_opaque), findsNothing);
     });
 
-    testWidgets('draws the panel as a flat fill instead of glass',
-        (tester) async {
+    testWidgets('draws the panel as a flat fill instead of glass', (
+      tester,
+    ) async {
       await _open(tester, opaqueColor: _opaque);
       expect(_glassAround('Copy'), findsNothing);
       expect(_fills(_opaque), findsOneWidget);
@@ -92,8 +97,12 @@ void main() {
       expect((fill.decoration as ShapeDecoration).color!.a, 1.0);
       expect(
         tester
-            .widgetList<Opacity>(find.ancestor(
-                of: _fills(_opaque), matching: find.byType(Opacity)))
+            .widgetList<Opacity>(
+              find.ancestor(
+                of: _fills(_opaque),
+                matching: find.byType(Opacity),
+              ),
+            )
             .every((o) => o.opacity == 1.0),
         isTrue,
       );
@@ -110,18 +119,20 @@ void main() {
     testWidgets('rows still work', (tester) async {
       var tapped = 0;
       final controller = GlassMenuController();
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: Center(
-            child: GlassMenu(
-              controller: controller,
-              opaqueColor: _opaque,
-              trigger: const SizedBox(width: 44, height: 44),
-              items: [GlassMenuItem(title: 'Copy', onTap: () => tapped++)],
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: GlassMenu(
+                controller: controller,
+                opaqueColor: _opaque,
+                trigger: const SizedBox(width: 44, height: 44),
+                items: [GlassMenuItem(title: 'Copy', onTap: () => tapped++)],
+              ),
             ),
           ),
         ),
-      ));
+      );
       controller.open();
       await tester.pumpAndSettle();
       await tester.tap(find.text('Copy'));
@@ -146,20 +157,24 @@ void main() {
         tester.getRect(_glassAround('Copy')),
       );
       // Painted after the surface in the same Stack, so it sits on top.
-      final stack = tester.widget<Stack>(find
-          .ancestor(of: _outlines(_border), matching: find.byType(Stack))
-          .first);
+      final stack = tester.widget<Stack>(
+        find
+            .ancestor(of: _outlines(_border), matching: find.byType(Stack))
+            .first,
+      );
       expect(stack.children, hasLength(2));
       expect(
         find.descendant(
-            of: find.byWidget(stack.children.last),
-            matching: _outlines(_border)),
+          of: find.byWidget(stack.children.last),
+          matching: _outlines(_border),
+        ),
         findsOneWidget,
       );
     });
 
-    testWidgets('outlines an opaque panel and its submenu card',
-        (tester) async {
+    testWidgets('outlines an opaque panel and its submenu card', (
+      tester,
+    ) async {
       await _open(tester, opaqueColor: _opaque, border: _border);
       expect(_outlines(_border), findsOneWidget);
       expect(

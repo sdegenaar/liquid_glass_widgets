@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/widgets.dart';
 
 /// The editing state of a list or form, providing parity with SwiftUI's `EditMode`.
 enum GlassEditMode {
@@ -19,7 +19,7 @@ enum GlassEditMode {
 class GlassEditController extends ChangeNotifier {
   /// Creates a controller with the given initial edit mode.
   GlassEditController({GlassEditMode initialMode = GlassEditMode.inactive})
-      : _mode = initialMode;
+    : _mode = initialMode;
 
   GlassEditMode _mode;
 
@@ -113,8 +113,8 @@ class GlassEditScope extends StatefulWidget {
 
   /// Returns the nearest [GlassEditController] in the widget tree, or null if none is found.
   static GlassEditController? maybeOf(BuildContext context) {
-    final inherited =
-        context.dependOnInheritedWidgetOfExactType<_InheritedGlassEditScope>();
+    final inherited = context
+        .dependOnInheritedWidgetOfExactType<_InheritedGlassEditScope>();
     return inherited?.controller;
   }
 
@@ -133,7 +133,8 @@ class _GlassEditScopeState extends State<GlassEditScope> {
   @override
   void initState() {
     super.initState();
-    _controller = widget.controller ??
+    _controller =
+        widget.controller ??
         GlassEditController(initialMode: widget.initialMode);
     _controller.addListener(_handleControllerChanged);
   }
@@ -143,7 +144,8 @@ class _GlassEditScopeState extends State<GlassEditScope> {
     super.didUpdateWidget(oldWidget);
     if (widget.controller != oldWidget.controller) {
       oldWidget.controller?.removeListener(_handleControllerChanged);
-      _controller = widget.controller ??
+      _controller =
+          widget.controller ??
           GlassEditController(initialMode: widget.initialMode);
       _controller.addListener(_handleControllerChanged);
     }

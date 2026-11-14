@@ -13,8 +13,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import '../renderer/_env_web.dart'
     if (dart.library.io) '../renderer/_env_io.dart';
 
-final String _shadersRoot =
-    !kIsWeb && isTestEnvironment ? '' : 'packages/liquid_glass_widgets/';
+final String _shadersRoot = !kIsWeb && isTestEnvironment
+    ? ''
+    : 'packages/liquid_glass_widgets/';
 
 abstract class ShaderKeys {
   const ShaderKeys._();

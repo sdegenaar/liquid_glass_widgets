@@ -1,4 +1,5 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+
 import '../../theme/glass_theme.dart';
 import '../../types/glass_style.dart';
 import '../shared/glass_focus_region.dart';
@@ -186,8 +187,9 @@ class GlassMenuDivider extends StatelessWidget {
       defaultLineColor = resolvedBase.withValues(alpha: 0.45);
     } else {
       defaultLineColor =
-          (isDark ? CupertinoColors.white : CupertinoColors.black)
-              .withValues(alpha: isDark ? 0.18 : 0.14);
+          (isDark ? CupertinoColors.white : CupertinoColors.black).withValues(
+            alpha: isDark ? 0.18 : 0.14,
+          );
     }
     return SizedBox(
       height: height,
@@ -237,8 +239,10 @@ class GlassMenuLabel extends StatelessWidget {
     this.horizontalPadding = 16.0,
     this.alignment,
     super.key,
-  }) : assert(title != null || child != null,
-            'Either title or child must be provided');
+  }) : assert(
+         title != null || child != null,
+         'Either title or child must be provided',
+       );
 
   @override
   Widget build(BuildContext context) {
@@ -264,10 +268,12 @@ class GlassMenuLabel extends StatelessWidget {
       height: height,
       padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
       alignment: alignment ?? (title != null ? Alignment.centerLeft : null),
-      child: child ??
+      child:
+          child ??
           Text(
             title!.toUpperCase(),
-            style: style ??
+            style:
+                style ??
                 TextStyle(
                   color: defaultLabelColor,
                   fontSize: 11,
@@ -312,19 +318,22 @@ class _GlassMenuItemState extends State<GlassMenuItem>
 
     // Determine the base color of the item (inheritance logic)
     // Priority: iconColor > titleStyle.color > destructiveRed > theme foreground
-    final Color baseColor = widget.iconColor ??
+    final Color baseColor =
+        widget.iconColor ??
         widget.titleStyle?.color ??
         (widget.isDestructive ? destructiveColor : defaultForeground);
 
     // Apply specific opacities based on original design specs:
     // Icon: 100% (enabled), 50% (disabled)
     // Text: 90% (static for enabled/disabled)
-    final Color iconColor = widget.iconColor ??
+    final Color iconColor =
+        widget.iconColor ??
         (widget.isDestructive
             ? destructiveColor
             : baseColor.withValues(alpha: widget.enabled ? 1.0 : 0.5));
 
-    final Color textColor = widget.titleStyle?.color ??
+    final Color textColor =
+        widget.titleStyle?.color ??
         (widget.isDestructive
             ? destructiveColor
             : baseColor.withValues(alpha: 0.9));
@@ -350,14 +359,15 @@ class _GlassMenuItemState extends State<GlassMenuItem>
         final Color backgroundColor = effectiveSelected
             ? const Color(0x00000000) // Parent renders the sliding pill
             : effectivePressed
-                ? pressWash // Standalone press
-                : (isHov || isFoc)
-                    ? hoverWash
-                    : const Color(0x00000000);
+            ? pressWash // Standalone press
+            : (isHov || isFoc)
+            ? hoverWash
+            : const Color(0x00000000);
 
         // Scale effect on press (subtle squash like iOS buttons)
-        final double scale =
-            (widget.enablePressScale && effectivePressed) ? 0.98 : 1.0;
+        final double scale = (widget.enablePressScale && effectivePressed)
+            ? 0.98
+            : 1.0;
 
         return ConstrainedBox(
           constraints: BoxConstraints(minHeight: widget.height),
@@ -367,9 +377,11 @@ class _GlassMenuItemState extends State<GlassMenuItem>
             curve: Curves.easeOutCubic,
             child: AnimatedContainer(
               duration: (effectiveSelected || effectivePressed)
-                  ? Duration.zero // Instant highlight on tap down
+                  ? Duration
+                        .zero // Instant highlight on tap down
                   : const Duration(
-                      milliseconds: 150), // Smooth fade out on release
+                      milliseconds: 150,
+                    ), // Smooth fade out on release
               curve: Curves.easeOutCubic,
               constraints: BoxConstraints(minHeight: widget.height),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -383,7 +395,8 @@ class _GlassMenuItemState extends State<GlassMenuItem>
                   builder: (context, constraints) {
                     // A submenu row shows a chevron unless the caller supplied
                     // its own trailing widget.
-                    final Widget? trailing = widget.trailing ??
+                    final Widget? trailing =
+                        widget.trailing ??
                         (widget.submenu != null
                             ? Icon(
                                 CupertinoIcons.chevron_right,
@@ -415,7 +428,8 @@ class _GlassMenuItemState extends State<GlassMenuItem>
                                 widget.title,
                                 maxLines: widget.maxLines,
                                 overflow: TextOverflow.ellipsis,
-                                style: widget.titleStyle ??
+                                style:
+                                    widget.titleStyle ??
                                     TextStyle(
                                       color: textColor,
                                       fontSize: 17,
@@ -427,7 +441,8 @@ class _GlassMenuItemState extends State<GlassMenuItem>
                                   widget.subtitle!,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: widget.subtitleStyle ??
+                                  style:
+                                      widget.subtitleStyle ??
                                       TextStyle(
                                         color: textColor.withValues(alpha: 0.6),
                                         fontSize: 13,
@@ -439,12 +454,13 @@ class _GlassMenuItemState extends State<GlassMenuItem>
                         ),
 
                         // Trailing
-                        if (trailing != null) trailing,
+                        ?trailing,
                       ],
                     );
 
                     if (constraints.hasBoundedWidth) {
-                      final double minRequired = (widget.icon != null
+                      final double minRequired =
+                          (widget.icon != null
                               ? (widget.iconSize + 12.0)
                               : 0.0) +
                           (trailing != null ? 24.0 : 0.0);

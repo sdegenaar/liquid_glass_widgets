@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+
 import 'theme/glass_theme.dart';
 import 'theme/glass_theme_data.dart';
 import 'types/glass_quality.dart';
@@ -120,7 +121,8 @@ class LiquidGlassWidgets {
     // Android Vulkan/GLES), preload the multi-pass shaders as well.
     // Web, Windows, and Linux skip premium preload by default as they are
     // capped at standard quality by the GlassAdaptiveScope static probe.
-    final bool shouldPreloadPremium = warmUpMode == GlassWarmUpMode.always ||
+    final bool shouldPreloadPremium =
+        warmUpMode == GlassWarmUpMode.always ||
         (warmUpMode == GlassWarmUpMode.auto && !_shouldSkipPremiumPreload());
 
     if (shouldPreloadPremium) {
@@ -254,10 +256,11 @@ class LiquidGlassWidgets {
     /// ));
     /// ```
     ///
-    /// This package has zero `flutter/material.dart` imports (required for the
-    /// `cupertino_ui` split). The callback pattern lets you bridge Material's
-    /// `ThemeMode` into the glass brightness cascade without coupling the
-    /// package to Material. `CupertinoApp` users can omit this parameter.
+    /// This package has zero `material_ui` / `flutter/material.dart` imports
+    /// (required for the `cupertino_ui` split). The callback pattern lets you
+    /// bridge Material's `ThemeMode` into the glass brightness cascade without
+    /// coupling the package to Material. `CupertinoApp` users can omit this
+    /// parameter.
     Brightness? Function(BuildContext)? brightnessResolver,
   }) {
     // Apply global accessibility preference.
@@ -265,7 +268,7 @@ class LiquidGlassWidgets {
 
     // Register the optional Material brightness resolver.
     // This lets MaterialApp users pass Theme.maybeBrightnessOf without this
-    // package needing to import flutter/material.dart.
+    // package needing to import material_ui or flutter/material.dart.
     glassExternalBrightnessResolver = brightnessResolver;
 
     Widget result = child;

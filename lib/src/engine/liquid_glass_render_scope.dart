@@ -9,6 +9,7 @@
 // ignore_for_file: public_member_api_docs
 
 import 'package:flutter/widgets.dart';
+
 import 'liquid_glass_settings.dart';
 
 class LiquidGlassRenderScope extends InheritedWidget {
@@ -22,8 +23,8 @@ class LiquidGlassRenderScope extends InheritedWidget {
   final LiquidGlassSettings settings;
 
   static LiquidGlassRenderScope of(BuildContext context) {
-    final scope =
-        context.dependOnInheritedWidgetOfExactType<LiquidGlassRenderScope>();
+    final scope = context
+        .dependOnInheritedWidgetOfExactType<LiquidGlassRenderScope>();
     assert(
       scope != null,
       'No liquid glass renderer found in context. '

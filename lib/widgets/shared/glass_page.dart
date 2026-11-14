@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/rendering.dart'
     show RenderClipRSuperellipse, RenderCustomPaint;
@@ -20,7 +20,6 @@ import '../../theme/glass_theme_data.dart';
 // in debug mode to emit a helpful error if setup was skipped.
 // Marked as visible for testing — do not use in production code.
 @visibleForTesting
-
 /// Whether the initialization guard is enabled.
 bool glassPageInitializeGuardEnabled = true;
 
@@ -404,8 +403,9 @@ class _GlassPageState extends State<GlassPage> {
       GlassStatusBarStyle.none => false,
     };
 
-    final SystemUiOverlayStyle newStyle =
-        useLightIcons ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark;
+    final SystemUiOverlayStyle newStyle = useLightIcons
+        ? SystemUiOverlayStyle.light
+        : SystemUiOverlayStyle.dark;
 
     // Save the current style once so we can restore it on dispose.
     _previousOverlayStyle ??= SystemUiOverlayStyle.light;
@@ -434,7 +434,8 @@ class _GlassPageState extends State<GlassPage> {
     // Read the adaptive quality ceiling. Only used to gate the expensive
     // background texture capture — rendering quality per-widget is handled
     // automatically by GlassThemeHelpers.resolveQuality() inside each widget.
-    final quality = GlassAdaptiveScopeData.maybeOf(context)?.effectiveQuality ??
+    final quality =
+        GlassAdaptiveScopeData.maybeOf(context)?.effectiveQuality ??
         GlassQuality.premium;
 
     final bool doSample = _effectiveSampling && quality != GlassQuality.minimal;
@@ -489,10 +490,7 @@ class _GlassPageState extends State<GlassPage> {
     // This is the "special page" escape hatch — one level below app theme,
     // one level above individual widget settings.
     if (widget.themeOverride != null) {
-      content = GlassTheme(
-        data: widget.themeOverride!,
-        child: content,
-      );
+      content = GlassTheme(data: widget.themeOverride!, child: content);
     }
 
     // Wrap in AnnotatedRegion so the status bar style sticks even on
@@ -647,7 +645,8 @@ class _GlassPageTransitionClipState extends State<GlassPageTransitionClip> {
       return false;
     }
     final primary = widget.primaryAnimation ?? route?.animation;
-    final gestureInProgress = _listenedUserGesture?.value ??
+    final gestureInProgress =
+        _listenedUserGesture?.value ??
         (route?.navigator?.userGestureInProgress ?? false);
     final isTopGestureRoute =
         gestureInProgress && (route == null || route.isCurrent);
@@ -736,15 +735,17 @@ class _GlassPageTransitionClipState extends State<GlassPageTransitionClip> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _route = ModalRoute.of(context);
-    final parentScope = context.dependOnInheritedWidgetOfExactType<
-        _InheritedPageTransitionClipScope>();
+    final parentScope = context
+        .dependOnInheritedWidgetOfExactType<
+          _InheritedPageTransitionClipScope
+        >();
     final sameRouteParent = (parentScope != null && parentScope.route == _route)
         ? parentScope.state
         : null;
     _inheritedCornerRadius =
         (parentScope != null && parentScope.route == _route)
-            ? parentScope.cornerRadius
-            : null;
+        ? parentScope.cornerRadius
+        : null;
     _updateParentRegistration(sameRouteParent);
     _syncSubscriptions();
   }
@@ -769,7 +770,8 @@ class _GlassPageTransitionClipState extends State<GlassPageTransitionClip> {
 
   @override
   Widget build(BuildContext context) {
-    final double rawRadius = widget.cornerRadius ??
+    final double rawRadius =
+        widget.cornerRadius ??
         _inheritedCornerRadius ??
         GlassPageTransitionClip.resolveDisplayCornerRadius(context);
     final double effectiveRadius = GlassDefaults.safeRadius(rawRadius);
@@ -965,9 +967,7 @@ class GlassPageRoute<T> extends CupertinoPageRoute<T> {
 /// ```
 class GlassPageTransitionsBuilder extends PageTransitionsBuilder {
   /// Creates a [GlassPageTransitionsBuilder].
-  const GlassPageTransitionsBuilder({
-    this.transitionCornerRadius,
-  });
+  const GlassPageTransitionsBuilder({this.transitionCornerRadius});
 
   /// Continuous superellipse corner radius applied to the page while
   /// transitioning.

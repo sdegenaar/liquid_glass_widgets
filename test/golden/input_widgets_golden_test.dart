@@ -1,5 +1,5 @@
 import 'package:liquid_glass_widgets/widgets/input/glass_text_field.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
 import '../shared/test_helpers.dart';
@@ -17,9 +17,7 @@ void main() {
           child: buildWithGradientBackground(
             AdaptiveLiquidGlassLayer(
               settings: defaultTestGlassSettings,
-              child: const GlassTextField(
-                placeholder: 'Enter text...',
-              ),
+              child: const GlassTextField(placeholder: 'Enter text...'),
             ),
           ),
         ),

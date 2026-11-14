@@ -1,5 +1,5 @@
 import 'package:liquid_glass_widgets/widgets/overlays/glass_dialog.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../shared/test_helpers.dart';
@@ -7,23 +7,13 @@ import '../../shared/test_helpers.dart';
 void main() {
   group('GlassDialog', () {
     final testActions = [
-      GlassDialogAction(
-        label: 'Cancel',
-        onPressed: () {},
-      ),
-      GlassDialogAction(
-        label: 'OK',
-        onPressed: () {},
-      ),
+      GlassDialogAction(label: 'Cancel', onPressed: () {}),
+      GlassDialogAction(label: 'OK', onPressed: () {}),
     ];
 
     testWidgets('can be instantiated with required parameters', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          child: GlassDialog(
-            actions: testActions,
-          ),
-        ),
+        createTestApp(child: GlassDialog(actions: testActions)),
       );
 
       expect(find.byType(GlassDialog), findsOneWidget);
@@ -32,10 +22,7 @@ void main() {
     testWidgets('displays title when provided', (tester) async {
       await tester.pumpWidget(
         createTestApp(
-          child: GlassDialog(
-            title: 'Alert',
-            actions: testActions,
-          ),
+          child: GlassDialog(title: 'Alert', actions: testActions),
         ),
       );
 
@@ -71,11 +58,7 @@ void main() {
 
     testWidgets('displays all action buttons', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          child: GlassDialog(
-            actions: testActions,
-          ),
-        ),
+        createTestApp(child: GlassDialog(actions: testActions)),
       );
 
       expect(find.text('Cancel'), findsOneWidget);
@@ -131,29 +114,24 @@ void main() {
     });
 
     test('defaults are correct', () {
-      final dialog = GlassDialog(
-        actions: testActions,
-      );
+      final dialog = GlassDialog(actions: testActions);
 
-      expect(dialog.maxWidth, isNull,
-          reason: 'null follows the active style: 320 native, 280 classic');
+      expect(
+        dialog.maxWidth,
+        isNull,
+        reason: 'null follows the active style: 320 native, 280 classic',
+      );
       expect(dialog.quality, isNull);
     });
 
     test('asserts 1-3 actions', () {
-      expect(
-        () => GlassDialog(actions: []),
-        throwsAssertionError,
-      );
+      expect(() => GlassDialog(actions: []), throwsAssertionError);
 
       expect(
         () => GlassDialog(
           actions: List.generate(
             4,
-            (i) => GlassDialogAction(
-              label: 'Action $i',
-              onPressed: () {},
-            ),
+            (i) => GlassDialogAction(label: 'Action $i', onPressed: () {}),
           ),
         ),
         throwsAssertionError,
@@ -163,10 +141,7 @@ void main() {
 
   group('GlassDialogAction', () {
     test('can be instantiated', () {
-      final action = GlassDialogAction(
-        label: 'OK',
-        onPressed: () {},
-      );
+      final action = GlassDialogAction(label: 'OK', onPressed: () {});
 
       expect(action.label, equals('OK'));
       expect(action.isPrimary, isFalse);
@@ -196,9 +171,9 @@ void main() {
 
   group('GlassDialog action layout', () {
     List<GlassDialogAction> two(String a, String b) => [
-          GlassDialogAction(label: a, onPressed: () {}),
-          GlassDialogAction(label: b, onPressed: () {}, isPrimary: true),
-        ];
+      GlassDialogAction(label: a, onPressed: () {}),
+      GlassDialogAction(label: b, onPressed: () {}, isPrimary: true),
+    ];
 
     Future<void> pumpDialog(
       WidgetTester tester,
@@ -234,7 +209,9 @@ void main() {
 
     testWidgets('stacks two actions when a label is too long', (tester) async {
       await pumpDialog(
-          tester, two('Cancel', 'Continue without saving changes'));
+        tester,
+        two('Cancel', 'Continue without saving changes'),
+      );
 
       expect(inRow, findsNothing);
       expect(
@@ -243,15 +220,17 @@ void main() {
       );
     });
 
-    testWidgets('stacks two short labels at a large text scale',
-        (tester) async {
+    testWidgets('stacks two short labels at a large text scale', (
+      tester,
+    ) async {
       await pumpDialog(tester, two('No', 'OK'), textScale: 4.0);
 
       expect(inRow, findsNothing);
     });
 
-    testWidgets('keeps a single long action in the horizontal row',
-        (tester) async {
+    testWidgets('keeps a single long action in the horizontal row', (
+      tester,
+    ) async {
       await pumpDialog(tester, [
         GlassDialogAction(
           label: 'Continue without saving',

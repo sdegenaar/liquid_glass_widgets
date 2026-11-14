@@ -1,4 +1,5 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../types/glass_quality.dart';
@@ -248,10 +249,7 @@ class GlassIconButton extends StatelessWidget {
         ? CupertinoColors.label.resolveFrom(context)
         : CupertinoColors.tertiaryLabel.resolveFrom(context);
     final iconWidget = IconTheme(
-      data: IconThemeData(
-        color: iconColor,
-        size: effectiveIconSize,
-      ),
+      data: IconThemeData(color: iconColor, size: effectiveIconSize),
       child: icon,
     );
 
@@ -287,9 +285,7 @@ class GlassIconButton extends StatelessWidget {
       case GlassIconButtonShape.circle:
         return _defaultOval;
       case GlassIconButtonShape.roundedSquare:
-        return LiquidRoundedRectangle(
-          borderRadius: borderRadius,
-        );
+        return LiquidRoundedRectangle(borderRadius: borderRadius);
     }
   }
 }

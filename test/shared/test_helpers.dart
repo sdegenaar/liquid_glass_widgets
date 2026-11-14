@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -48,10 +48,7 @@ class GoldenTestScenario extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget content = child;
     if (constraints != null) {
-      content = ConstrainedBox(
-        constraints: constraints!,
-        child: content,
-      );
+      content = ConstrainedBox(constraints: constraints!, child: content);
     }
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -128,44 +125,40 @@ void goldenTest(
   BoxConstraints? constraints,
   List<String>? tags,
 }) {
-  testWidgets(
-    description,
-    tags: tags,
-    (tester) async {
-      tester.view.physicalSize = const Size(1200, 1600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
+  testWidgets(description, tags: tags, (tester) async {
+    tester.view.physicalSize = const Size(1200, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
 
-      await tester.pumpWidget(
-        MaterialApp(
-          debugShowCheckedModeBanner: false,
-          home: Scaffold(
-            backgroundColor: const Color(0xFF1E1E2E),
-            body: SingleChildScrollView(
-              child: RepaintBoundary(
-                key: const ValueKey('golden_scenario_root'),
-                child: builder(),
-              ),
+    await tester.pumpWidget(
+      MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          backgroundColor: const Color(0xFF1E1E2E),
+          body: SingleChildScrollView(
+            child: RepaintBoundary(
+              key: const ValueKey('golden_scenario_root'),
+              child: builder(),
             ),
           ),
         ),
-      );
+      ),
+    );
 
-      if (pumpBeforeTest != null) {
-        await pumpBeforeTest(tester);
-      } else {
-        await tester.pumpAndSettle();
-      }
+    if (pumpBeforeTest != null) {
+      await pumpBeforeTest(tester);
+    } else {
+      await tester.pumpAndSettle();
+    }
 
-      await expectLater(
-        find.byKey(const ValueKey('golden_scenario_root')),
-        matchesGoldenFile('goldens/$fileName.png'),
-      );
-    },
-  );
+    await expectLater(
+      find.byKey(const ValueKey('golden_scenario_root')),
+      matchesGoldenFile('goldens/$fileName.png'),
+    );
+  });
 }
 
 /// Executes a **light-mode** golden test.
@@ -189,53 +182,49 @@ void goldenTestLight(
   BoxConstraints? constraints,
   List<String>? tags,
 }) {
-  testWidgets(
-    description,
-    tags: tags,
-    (tester) async {
-      tester.view.physicalSize = const Size(1200, 1600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
+  testWidgets(description, tags: tags, (tester) async {
+    tester.view.physicalSize = const Size(1200, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
 
-      await tester.pumpWidget(
-        GlassTheme(
-          // Level-1 brightness override: all glass widgets see Brightness.light
-          // regardless of the runner's OS setting.
-          data: const GlassThemeData(brightness: Brightness.light),
-          child: MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: ThemeData(
-              brightness: Brightness.light,
-              scaffoldBackgroundColor: const Color(0xFFF2F2F7),
-            ),
-            home: Scaffold(
-              backgroundColor: const Color(0xFFF2F2F7),
-              body: SingleChildScrollView(
-                child: RepaintBoundary(
-                  key: const ValueKey('golden_scenario_root'),
-                  child: builder(),
-                ),
+    await tester.pumpWidget(
+      GlassTheme(
+        // Level-1 brightness override: all glass widgets see Brightness.light
+        // regardless of the runner's OS setting.
+        data: const GlassThemeData(brightness: Brightness.light),
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            brightness: Brightness.light,
+            scaffoldBackgroundColor: const Color(0xFFF2F2F7),
+          ),
+          home: Scaffold(
+            backgroundColor: const Color(0xFFF2F2F7),
+            body: SingleChildScrollView(
+              child: RepaintBoundary(
+                key: const ValueKey('golden_scenario_root'),
+                child: builder(),
               ),
             ),
           ),
         ),
-      );
+      ),
+    );
 
-      if (pumpBeforeTest != null) {
-        await pumpBeforeTest(tester);
-      } else {
-        await tester.pumpAndSettle();
-      }
+    if (pumpBeforeTest != null) {
+      await pumpBeforeTest(tester);
+    } else {
+      await tester.pumpAndSettle();
+    }
 
-      await expectLater(
-        find.byKey(const ValueKey('golden_scenario_root')),
-        matchesGoldenFile('goldens/$fileName.png'),
-      );
-    },
-  );
+    await expectLater(
+      find.byKey(const ValueKey('golden_scenario_root')),
+      matchesGoldenFile('goldens/$fileName.png'),
+    );
+  });
 }
 
 /// Wraps a widget with grid paper background for visual reference in golden tests
@@ -246,14 +235,8 @@ Widget buildWithGridPaper(Widget child) {
       textDirection: TextDirection.ltr,
       child: Stack(
         children: [
-          const Positioned.fill(
-            child: GridPaper(
-              color: Colors.black,
-            ),
-          ),
-          Center(
-            child: child,
-          ),
+          const Positioned.fill(child: GridPaper(color: Colors.black)),
+          Center(child: child),
         ],
       ),
     ),
@@ -267,11 +250,7 @@ Widget buildWithGradientBackground(Widget child) {
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [
-          Color(0xFF6366F1),
-          Color(0xFF8B5CF6),
-          Color(0xFFEC4899),
-        ],
+        colors: [Color(0xFF6366F1), Color(0xFF8B5CF6), Color(0xFFEC4899)],
       ),
     ),
     child: Directionality(
@@ -370,10 +349,7 @@ class LightGoldenTestScenario extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget content = child;
     if (constraints != null) {
-      content = ConstrainedBox(
-        constraints: constraints!,
-        child: content,
-      );
+      content = ConstrainedBox(constraints: constraints!, child: content);
     }
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -398,8 +374,10 @@ class LightGoldenTestScenario extends StatelessWidget {
 }
 
 /// Wraps a widget with gradient background AND a glass layer for golden tests
-Widget buildWithGradientAndGlass(Widget child,
-    {LiquidGlassSettings? settings}) {
+Widget buildWithGradientAndGlass(
+  Widget child, {
+  LiquidGlassSettings? settings,
+}) {
   return buildWithGradientBackground(
     AdaptiveLiquidGlassLayer(
       settings: settings ?? defaultTestGlassSettings,
@@ -409,20 +387,15 @@ Widget buildWithGradientAndGlass(Widget child,
 }
 
 /// Creates a standard test wrapper with MaterialApp for widget tests
-Widget createTestApp({
-  required Widget child,
-  ThemeData? theme,
-}) {
+Widget createTestApp({required Widget child, ThemeData? theme}) {
   return MaterialApp(
-    theme: theme ??
+    theme:
+        theme ??
         ThemeData(
           brightness: Brightness.dark,
           scaffoldBackgroundColor: Colors.transparent,
         ),
-    home: Scaffold(
-      backgroundColor: Colors.transparent,
-      body: child,
-    ),
+    home: Scaffold(backgroundColor: Colors.transparent, body: child),
   );
 }
 

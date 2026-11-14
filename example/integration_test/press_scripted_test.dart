@@ -7,7 +7,7 @@
 //
 //   cd example && flutter test integration_test/press_scripted_test.dart -d <device>
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -22,8 +22,9 @@ void main() {
 
   /// The uniform scale RawLiquidStretch applies to its child.
   double scaleOf(WidgetTester tester) {
-    final stretch =
-        tester.renderObject<RenderProxyBox>(find.byType(RawLiquidStretch));
+    final stretch = tester.renderObject<RenderProxyBox>(
+      find.byType(RawLiquidStretch),
+    );
     return stretch.child!.getTransformTo(stretch).entry(0, 0);
   }
 
@@ -33,28 +34,31 @@ void main() {
     required double longestSide,
   }) async {
     await LiquidGlassWidgets.initialize();
-    await tester.pumpWidget(LiquidGlassWidgets.wrap(
-      child: CupertinoApp(
-        debugShowCheckedModeBanner: false,
-        theme: const CupertinoThemeData(brightness: Brightness.light),
-        home: CupertinoPageScaffold(
-          child: Stack(
-            children: [
-              const Positioned.fill(child: _Backdrop()),
-              AdaptiveLiquidGlassLayer(
-                settings: RecommendedGlassSettings.standard,
-                child: Center(child: button),
-              ),
-            ],
+    await tester.pumpWidget(
+      LiquidGlassWidgets.wrap(
+        child: CupertinoApp(
+          debugShowCheckedModeBanner: false,
+          theme: const CupertinoThemeData(brightness: Brightness.light),
+          home: CupertinoPageScaffold(
+            child: Stack(
+              children: [
+                const Positioned.fill(child: _Backdrop()),
+                AdaptiveLiquidGlassLayer(
+                  settings: RecommendedGlassSettings.standard,
+                  child: Center(child: button),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 1500));
 
-    final gesture =
-        await tester.startGesture(tester.getCenter(find.byType(GlassButton)));
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(GlassButton)),
+    );
     await tester.pump(const Duration(milliseconds: 1500));
     expect(
       scaleOf(tester),

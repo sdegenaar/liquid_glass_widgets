@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../constants/glass_defaults.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
@@ -200,8 +200,10 @@ class GlassSegmentedControl extends StatefulWidget {
     this.indicatorColor,
     this.indicatorSettings,
     this.indicatorPinchStrength = 0.4,
-    this.indicatorExpansion =
-        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    this.indicatorExpansion = const EdgeInsets.symmetric(
+      horizontal: 12,
+      vertical: 8,
+    ),
     this.settings,
     this.useOwnLayer = false,
     this.quality,
@@ -225,19 +227,19 @@ class GlassSegmentedControl extends StatefulWidget {
     this.maskingQuality = MaskingQuality.high,
     this.dividerSettings,
     this.indicatorShadow,
-  })  : assert(
-          segments.length >= 2,
-          'GlassSegmentedControl requires at least 2 segments',
-        ),
-        assert(
-          segments.length <= 6,
-          'GlassSegmentedControl works best with 2–5 segments. '
-          'For 6+ items use GlassSegmentedControl.scrollable().',
-        ),
-        assert(
-          selectedIndex >= 0 && selectedIndex < segments.length,
-          'selectedIndex must be within bounds of segments list',
-        );
+  }) : assert(
+         segments.length >= 2,
+         'GlassSegmentedControl requires at least 2 segments',
+       ),
+       assert(
+         segments.length <= 6,
+         'GlassSegmentedControl works best with 2–5 segments. '
+         'For 6+ items use GlassSegmentedControl.scrollable().',
+       ),
+       assert(
+         selectedIndex >= 0 && selectedIndex < segments.length,
+         'selectedIndex must be within bounds of segments list',
+       );
 
   /// Creates a scrollable glass segmented control that 100% mimics
   /// [GlassTabBar]`(isScrollable: true)` from the original API.
@@ -274,8 +276,10 @@ class GlassSegmentedControl extends StatefulWidget {
     this.indicatorColor,
     this.indicatorSettings,
     this.indicatorPinchStrength = 0.4,
-    this.indicatorExpansion =
-        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    this.indicatorExpansion = const EdgeInsets.symmetric(
+      horizontal: 12,
+      vertical: 8,
+    ),
     this.settings,
     this.useOwnLayer = false,
     this.quality,
@@ -292,18 +296,20 @@ class GlassSegmentedControl extends StatefulWidget {
     this.maskingQuality = MaskingQuality.high,
     this.dividerSettings,
     this.indicatorShadow,
-  })  : isScrollable = true,
-        direction = Axis.horizontal,
-        segmentExtent = null,
-        interactionBehavior = GlassInteractionBehavior.full,
-        glowColor = null,
-        glowRadius = 1.5,
-        assert(segments.length >= 1,
-            'GlassSegmentedControl.scrollable requires at least 1 segment'),
-        assert(
-          selectedIndex >= 0 && selectedIndex < segments.length,
-          'selectedIndex must be within bounds of segments list',
-        );
+  }) : isScrollable = true,
+       direction = Axis.horizontal,
+       segmentExtent = null,
+       interactionBehavior = GlassInteractionBehavior.full,
+       glowColor = null,
+       glowRadius = 1.5,
+       assert(
+         segments.length >= 1,
+         'GlassSegmentedControl.scrollable requires at least 1 segment',
+       ),
+       assert(
+         selectedIndex >= 0 && selectedIndex < segments.length,
+         'selectedIndex must be within bounds of segments list',
+       );
 
   // ===========================================================================
   // Segment Configuration
@@ -695,7 +701,8 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
     }
 
     // ── Fixed mode: equal-width SegmentedControlContent ───────────────────────
-    final backgroundColor = widget.backgroundColor ??
+    final backgroundColor =
+        widget.backgroundColor ??
         (GlassTheme.brightnessOf(context) == Brightness.light
             ? lightBg
             : _defaultDarkBg);

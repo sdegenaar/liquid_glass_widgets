@@ -33,9 +33,8 @@ void main() {
     });
 
     test('glassColor override', () {
-      final merged = const GlassThemeSettings(
-        glassColor: Color(0xFF0000FF),
-      ).applyTo(base);
+      final merged = const GlassThemeSettings(glassColor: Color(0xFF0000FF))
+          .applyTo(base);
       expect(merged.glassColor, const Color(0xFF0000FF));
       expect(merged.blur, base.blur);
     });
@@ -53,8 +52,8 @@ void main() {
     });
 
     test('chromaticAberration override', () {
-      final merged =
-          const GlassThemeSettings(chromaticAberration: 3.0).applyTo(base);
+      final merged = const GlassThemeSettings(chromaticAberration: 3.0)
+          .applyTo(base);
       expect(merged.chromaticAberration, 3.0);
       expect(merged.blur, base.blur);
     });
@@ -65,20 +64,20 @@ void main() {
     });
 
     test('lightIntensity override', () {
-      final merged =
-          const GlassThemeSettings(lightIntensity: 0.8).applyTo(base);
+      final merged = const GlassThemeSettings(lightIntensity: 0.8)
+          .applyTo(base);
       expect(merged.lightIntensity, 0.8);
     });
 
     test('ambientStrength override', () {
-      final merged =
-          const GlassThemeSettings(ambientStrength: 0.7).applyTo(base);
+      final merged = const GlassThemeSettings(ambientStrength: 0.7)
+          .applyTo(base);
       expect(merged.ambientStrength, 0.7);
     });
 
     test('refractiveIndex override', () {
-      final merged =
-          const GlassThemeSettings(refractiveIndex: 1.5).applyTo(base);
+      final merged = const GlassThemeSettings(refractiveIndex: 1.5)
+          .applyTo(base);
       expect(merged.refractiveIndex, 1.5);
     });
 
@@ -95,16 +94,15 @@ void main() {
     });
 
     test('fresnelStrength override', () {
-      final merged =
-          const GlassThemeSettings(fresnelStrength: 0.45).applyTo(base);
+      final merged = const GlassThemeSettings(fresnelStrength: 0.45)
+          .applyTo(base);
       expect(merged.fresnelStrength, 0.45);
       expect(merged.blur, base.blur);
     });
 
     test('edgeAbsorption override', () {
-      final merged = const GlassThemeSettings(
-        edgeAbsorption: 0.25,
-      ).applyTo(base);
+      final merged = const GlassThemeSettings(edgeAbsorption: 0.25)
+          .applyTo(base);
       expect(merged.edgeAbsorption, 0.25);
       expect(merged.blur, base.blur);
     });
@@ -267,8 +265,11 @@ void main() {
     });
 
     test('differing in any field are not equal', () {
-      const base =
-          GlassThemeSettings(thickness: 30.0, blur: 5.0, saturation: 1.2);
+      const base = GlassThemeSettings(
+        thickness: 30.0,
+        blur: 5.0,
+        saturation: 1.2,
+      );
       expect(base, isNot(equals(base.copyWith(thickness: 31.0))));
       expect(base, isNot(equals(base.copyWith(blur: 6.0))));
       expect(base, isNot(equals(base.copyWith(saturation: 1.3))));

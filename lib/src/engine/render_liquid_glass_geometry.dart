@@ -9,9 +9,11 @@
 // ignore_for_file: public_member_api_docs
 
 import 'dart:ui';
+
 import 'package:flutter/foundation.dart';
 
 import 'package:flutter/rendering.dart';
+
 import '../../constants/glass_defaults.dart';
 import '../renderer/fragment_shader_extensions.dart';
 import 'liquid_glass.dart';
@@ -49,13 +51,12 @@ abstract class RenderLiquidGlassGeometry extends RenderProxyBox {
   /// Creates a new [RenderLiquidGlassGeometry] with the given
   /// [geometryShader].
   RenderLiquidGlassGeometry({
-    required GeometryRenderLink renderLink,
+    required this._renderLink,
     required this.geometryShader,
     required LiquidGlassSettings settings,
     required double devicePixelRatio,
-  })  : _renderLink = renderLink,
-        _settings = settings,
-        _devicePixelRatio = devicePixelRatio {
+  }) : _settings = settings,
+       _devicePixelRatio = devicePixelRatio {
     updateShaderWithSettings(settings, devicePixelRatio);
   }
 
@@ -170,9 +171,7 @@ abstract class RenderLiquidGlassGeometry extends RenderProxyBox {
   );
 
   /// Uploads shape data to geometry shader in screen space coordinates
-  void updateGeometryShaderShapes(
-    List<ShapeGeometry> shapes,
-  );
+  void updateGeometryShaderShapes(List<ShapeGeometry> shapes);
 
   /// Paints the contents of all shapes to the given [context] at the given
   /// [offset].
@@ -185,15 +184,10 @@ abstract class RenderLiquidGlassGeometry extends RenderProxyBox {
 
   /// Gathers all shapes and computes them in both layer and screen space
   /// Returns (layerBounds, shapes, anyShapeChangedInLayer)
-  (
-    Rect bounds,
-    List<ShapeGeometry> geometries,
-    bool needsUpdate,
-  ) gatherShapeData();
+  (Rect bounds, List<ShapeGeometry> geometries, bool needsUpdate)
+  gatherShapeData();
 
-  Path getPath(
-    List<ShapeGeometry> geometries,
-  ) {
+  Path getPath(List<ShapeGeometry> geometries) {
     final path = Path();
     for (final shape in geometries) {
       path.addPath(
@@ -298,12 +292,7 @@ abstract class RenderLiquidGlassGeometry extends RenderProxyBox {
       // snapping
       ..translate(-leftPixel, -topPixel)
       ..drawRect(
-        Rect.fromLTWH(
-          leftPixel,
-          topPixel,
-          width.toDouble(),
-          height.toDouble(),
-        ),
+        Rect.fromLTWH(leftPixel, topPixel, width.toDouble(), height.toDouble()),
         paint,
       );
 
@@ -539,9 +528,9 @@ class ShapeGeometry {
     required this.glassContainsChild,
     required this.shapeBounds,
     this.shapeToGeometry,
-  })  : rawCornerRadius = _getRadiusFromGlassShape(shape),
-        rawBottomCornerRadius = _getBottomRadiusFromGlassShape(shape),
-        rawShapeType = RawShapeType.fromLiquidGlassShape(shape);
+  }) : rawCornerRadius = _getRadiusFromGlassShape(shape),
+       rawBottomCornerRadius = _getBottomRadiusFromGlassShape(shape),
+       rawShapeType = RawShapeType.fromLiquidGlassShape(shape);
 
   static double _getRadiusFromGlassShape(LiquidShape shape) {
     switch (shape) {
@@ -612,10 +601,6 @@ class ShapeGeometry {
   }
 
   @override
-  int get hashCode => Object.hash(
-        renderObject,
-        shape,
-        glassContainsChild,
-        shapeBounds,
-      );
+  int get hashCode =>
+      Object.hash(renderObject, shape, glassContainsChild, shapeBounds);
 }

@@ -6,8 +6,8 @@
 /// To run: flutter run -t lib/demos/text_field_demo.dart
 library;
 
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -25,10 +25,8 @@ class TextFieldDemoApp extends StatelessWidget {
     return CupertinoApp(
       debugShowCheckedModeBanner: false,
       theme: const CupertinoThemeData(brightness: Brightness.dark),
-      builder: (context, child) => Theme(
-        data: ThemeData.dark(useMaterial3: true),
-        child: child!,
-      ),
+      builder: (context, child) =>
+          Theme(data: ThemeData.dark(useMaterial3: true), child: child!),
       home: const TextFieldDemo(),
     );
   }
@@ -90,8 +88,9 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
 
   @override
   Widget build(BuildContext context) {
-    final expandHeight =
-        _expandLines > 1 ? null : (_expandHasFocus ? 46.0 : 50.0);
+    final expandHeight = _expandLines > 1
+        ? null
+        : (_expandHasFocus ? 46.0 : 50.0);
     final expandRadius = _expandLines <= 1 ? 22.0 : 12.0;
     final composerRadius = _composerLines <= 1 ? 22.0 : 12.0;
 
@@ -112,9 +111,7 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
       ),
       child: GlassScaffold(
         backgroundColor: const Color(0x00000000),
-        appBar: GlassAppBar(
-          title: Text('GlassTextField'),
-        ),
+        appBar: GlassAppBar(title: Text('GlassTextField')),
         body: SingleChildScrollView(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom + 16,
@@ -141,9 +138,10 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
 
               SizedBox(height: 8),
               Divider(
-                  color: CupertinoColors.white.withValues(alpha: 0.12),
-                  indent: 16,
-                  endIndent: 16),
+                color: CupertinoColors.white.withValues(alpha: 0.12),
+                indent: 16,
+                endIndent: 16,
+              ),
 
               // ── Expandable input ────────────────────────────────────────
               _section(
@@ -170,9 +168,12 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
                       color: CupertinoColors.white.withValues(alpha: 0.60),
                     ),
                     suffixIcon: _expandHasFocus
-                        ? Icon(CupertinoIcons.paperplane,
-                            color:
-                                CupertinoColors.white.withValues(alpha: 0.70))
+                        ? Icon(
+                            CupertinoIcons.paperplane,
+                            color: CupertinoColors.white.withValues(
+                              alpha: 0.70,
+                            ),
+                          )
                         : null,
                     onLineCountChanged: (lines) {
                       setState(() => _expandLines = lines);
@@ -192,9 +193,10 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
 
               SizedBox(height: 8),
               Divider(
-                  color: CupertinoColors.white.withValues(alpha: 0.12),
-                  indent: 16,
-                  endIndent: 16),
+                color: CupertinoColors.white.withValues(alpha: 0.12),
+                indent: 16,
+                endIndent: 16,
+              ),
 
               // ── Chat composer with bottom panel ─────────────────────────
               _section(
@@ -213,8 +215,9 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
                     final msgIndex = _messages.length - 1 - index;
                     final isMe = msgIndex % 2 == 0;
                     return Align(
-                      alignment:
-                          isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      alignment: isMe
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
                       child: Container(
                         margin: EdgeInsets.symmetric(vertical: 3),
                         constraints: BoxConstraints(
@@ -228,8 +231,9 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
                           ),
                           settings: LiquidGlassSettings(
                             glassColor: isMe
-                                ? CupertinoColors.activeBlue
-                                    .withValues(alpha: 0.3)
+                                ? CupertinoColors.activeBlue.withValues(
+                                    alpha: 0.3,
+                                  )
                                 : CupertinoColors.white.withValues(alpha: 0.15),
                           ),
                           child: Padding(
@@ -270,17 +274,11 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
                   ),
                   useOwnLayer: true,
                   quality: GlassQuality.premium,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   interactionBehavior: GlassInteractionBehavior.full,
                   onChanged: (_) => setState(() {}),
                   bottom: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     child: Row(
                       children: [
                         IconButton(
@@ -304,12 +302,12 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
                           duration: const Duration(milliseconds: 180),
                           transitionBuilder: (child, animation) =>
                               FadeTransition(
-                            opacity: animation,
-                            child: ScaleTransition(
-                              scale: animation,
-                              child: child,
-                            ),
-                          ),
+                                opacity: animation,
+                                child: ScaleTransition(
+                                  scale: animation,
+                                  child: child,
+                                ),
+                              ),
                           child: IconButton(
                             key: ValueKey(
                               _composerController.text.isNotEmpty
@@ -321,8 +319,9 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
                               size: 28,
                               color: _composerController.text.isNotEmpty
                                   ? CupertinoColors.white
-                                  : CupertinoColors.white
-                                      .withValues(alpha: 0.38),
+                                  : CupertinoColors.white.withValues(
+                                      alpha: 0.38,
+                                    ),
                             ),
                             onPressed: _sendMessage,
                           ),

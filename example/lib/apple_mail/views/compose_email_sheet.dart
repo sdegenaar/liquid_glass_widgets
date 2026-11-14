@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -33,8 +33,9 @@ class ComposeEmailSheet extends StatefulWidget {
 class _ComposeEmailSheetState extends State<ComposeEmailSheet> {
   late final TextEditingController _toController;
   late final TextEditingController _subjectController;
-  final TextEditingController _bodyController =
-      TextEditingController(text: 'Sent from my iPhone');
+  final TextEditingController _bodyController = TextEditingController(
+    text: 'Sent from my iPhone',
+  );
 
   // ValueNotifier instead of setState so that only the send-button
   // ValueListenableBuilder rebuilds on each keystroke. This keeps the
@@ -46,8 +47,9 @@ class _ComposeEmailSheetState extends State<ComposeEmailSheet> {
   void initState() {
     super.initState();
     _toController = TextEditingController(text: widget.initialRecipient ?? '');
-    _subjectController =
-        TextEditingController(text: widget.initialSubject ?? '');
+    _subjectController = TextEditingController(
+      text: widget.initialSubject ?? '',
+    );
     _toController.addListener(_validate);
     _subjectController.addListener(_validate);
     _validate();
@@ -129,8 +131,9 @@ class _ComposeEmailSheetState extends State<ComposeEmailSheet> {
     // stable during typing and keyboard animation.
 
     return Container(
-      color:
-          isDark ? const Color(0xFF1C1C1E) : CupertinoColors.systemBackground,
+      color: isDark
+          ? const Color(0xFF1C1C1E)
+          : CupertinoColors.systemBackground,
       child: SafeArea(
         top: false,
         bottom: false,
@@ -211,8 +214,8 @@ class _ComposeEmailSheetState extends State<ComposeEmailSheet> {
                             color: canSend
                                 ? CupertinoColors.white
                                 : (isDark
-                                    ? const Color(0xFF636366)
-                                    : const Color(0xFF8E8E93)),
+                                      ? const Color(0xFF636366)
+                                      : const Color(0xFF8E8E93)),
                           ),
                         ),
                       );
@@ -224,8 +227,12 @@ class _ComposeEmailSheetState extends State<ComposeEmailSheet> {
 
             // Large Title: "New Message"
             Padding(
-              padding:
-                  const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
+              padding: const EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 4,
+                bottom: 8,
+              ),
               child: Text(
                 widget.title,
                 style: TextStyle(
@@ -255,8 +262,10 @@ class _ComposeEmailSheetState extends State<ComposeEmailSheet> {
                   // scrolling content sit cleanly above the keyboard or home indicator.
                   final submergedOffset = sheetInfo?.submergedBottom ?? 0.0;
                   final hasKeyboard = bottomInset > 0;
-                  final floorFromScreenBottom =
-                      math.max(bottomInset, mqPadding.bottom);
+                  final floorFromScreenBottom = math.max(
+                    bottomInset,
+                    mqPadding.bottom,
+                  );
                   final effectiveBottomPadding =
                       floorFromScreenBottom + submergedOffset;
 
@@ -321,8 +330,9 @@ class _ComposeEmailSheetState extends State<ComposeEmailSheet> {
                                   fontSize: 16,
                                 ),
                                 style: TextStyle(
-                                  color:
-                                      CupertinoColors.label.resolveFrom(bCtx),
+                                  color: CupertinoColors.label.resolveFrom(
+                                    bCtx,
+                                  ),
                                   fontSize: 16,
                                 ),
                                 decoration: null,
@@ -432,10 +442,7 @@ class _ComposeKeyboardToolbar extends StatelessWidget {
 }
 
 class _ComposeFieldRow extends StatelessWidget {
-  const _ComposeFieldRow({
-    required this.label,
-    required this.child,
-  });
+  const _ComposeFieldRow({required this.label, required this.child});
 
   final String label;
   final Widget child;

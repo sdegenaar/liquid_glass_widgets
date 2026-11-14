@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 import '../models/mail_models.dart';
@@ -257,15 +257,18 @@ class _InboxViewState extends State<InboxView> {
                             : CupertinoIcons.person_crop_circle,
                       ),
                       onTap: () => setState(
-                          () => _showContactPhotos = !_showContactPhotos),
+                        () => _showContactPhotos = !_showContactPhotos,
+                      ),
                     ),
                     const GlassMenuDivider(),
                     GlassMenuItem(
                       title: 'iOS 27 Glass',
                       closeDelay: const Duration(milliseconds: 650),
                       onTap: () {
-                        MailGlassScope.of(context).value =
-                            !MailGlassScope.isIos27(context);
+                        MailGlassScope.of(context)
+                            .value = !MailGlassScope.isIos27(
+                          context,
+                        );
                       },
                       trailing: GlassSwitch(
                         value: MailGlassScope.isIos27(context),
@@ -328,44 +331,41 @@ class _InboxViewState extends State<InboxView> {
 
             // Email List Rows
             SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, i) {
-                  final email = widget.emails[i];
-                  final isSelected = _selectedIds.contains(email.id);
+              delegate: SliverChildBuilderDelegate((context, i) {
+                final email = widget.emails[i];
+                final isSelected = _selectedIds.contains(email.id);
 
-                  return _EmailRow(
-                    item: email,
-                    isSelectMode: _isSelectMode,
-                    isSelected: isSelected,
-                    showContactPhotos: _showContactPhotos,
-                    onSelectToggle: () => _toggleItemSelection(email.id),
-                    onToggleUnread: () => widget.onToggleUnread(email.id),
-                    onDelete: () => widget.onDeleteEmail(email.id),
-                    onTap: () {
-                      if (_isSelectMode) {
-                        _toggleItemSelection(email.id);
-                      } else {
-                        Navigator.of(context).push(
-                          CupertinoPageRoute(
-                            builder: (context) => MailGlassScope(
-                              child: EmailDetailView(
-                                item: email,
-                                emailIndex: i,
-                                allEmails: widget.emails,
-                                onDelete: () {
-                                  widget.onDeleteEmail(email.id);
-                                  Navigator.of(context).pop();
-                                },
-                              ),
+                return _EmailRow(
+                  item: email,
+                  isSelectMode: _isSelectMode,
+                  isSelected: isSelected,
+                  showContactPhotos: _showContactPhotos,
+                  onSelectToggle: () => _toggleItemSelection(email.id),
+                  onToggleUnread: () => widget.onToggleUnread(email.id),
+                  onDelete: () => widget.onDeleteEmail(email.id),
+                  onTap: () {
+                    if (_isSelectMode) {
+                      _toggleItemSelection(email.id);
+                    } else {
+                      Navigator.of(context).push(
+                        CupertinoPageRoute(
+                          builder: (context) => MailGlassScope(
+                            child: EmailDetailView(
+                              item: email,
+                              emailIndex: i,
+                              allEmails: widget.emails,
+                              onDelete: () {
+                                widget.onDeleteEmail(email.id);
+                                Navigator.of(context).pop();
+                              },
                             ),
                           ),
-                        );
-                      }
-                    },
-                  );
-                },
-                childCount: widget.emails.length,
-              ),
+                        ),
+                      );
+                    }
+                  },
+                );
+              }, childCount: widget.emails.length),
             ),
             SliverToBoxAdapter(child: SizedBox(height: 96 + botPad)),
           ],
@@ -626,8 +626,9 @@ class _EmailRow extends StatelessWidget {
                               : CupertinoIcons.circle,
                           color: isSelected
                               ? CupertinoColors.activeBlue
-                              : CupertinoColors.tertiaryLabel
-                                  .resolveFrom(context),
+                              : CupertinoColors.tertiaryLabel.resolveFrom(
+                                  context,
+                                ),
                           size: 22,
                         ),
                       )
@@ -681,8 +682,9 @@ class _EmailRow extends StatelessWidget {
                                     fontWeight: item.isUnread
                                         ? FontWeight.w700
                                         : FontWeight.w600,
-                                    color: CupertinoColors.label
-                                        .resolveFrom(context),
+                                    color: CupertinoColors.label.resolveFrom(
+                                      context,
+                                    ),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -719,8 +721,9 @@ class _EmailRow extends StatelessWidget {
                                     fontWeight: item.isUnread
                                         ? FontWeight.w600
                                         : FontWeight.w400,
-                                    color: CupertinoColors.label
-                                        .resolveFrom(context),
+                                    color: CupertinoColors.label.resolveFrom(
+                                      context,
+                                    ),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -745,8 +748,9 @@ class _EmailRow extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 14,
                               height: 1.25,
-                              color: CupertinoColors.secondaryLabel
-                                  .resolveFrom(context),
+                              color: CupertinoColors.secondaryLabel.resolveFrom(
+                                context,
+                              ),
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -820,10 +824,7 @@ class _EmailAvatar extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _InboxBottomBar extends StatelessWidget {
-  const _InboxBottomBar({
-    required this.bottomPad,
-    required this.onOpenCompose,
-  });
+  const _InboxBottomBar({required this.bottomPad, required this.onOpenCompose});
 
   final double bottomPad;
   final void Function(GlassMorphAnchor? anchor) onOpenCompose;

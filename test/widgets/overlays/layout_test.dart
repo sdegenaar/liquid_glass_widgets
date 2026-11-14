@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/widgets/overlays/glass_popover.dart';
 
 void main() {
-  testWidgets('GlassPopover localToGlobal check after scroll',
-      (WidgetTester tester) async {
+  testWidgets('GlassPopover localToGlobal check after scroll', (
+    WidgetTester tester,
+  ) async {
     final scrollController = ScrollController();
 
     await tester.pumpWidget(

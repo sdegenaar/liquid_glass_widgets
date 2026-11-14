@@ -10,7 +10,7 @@
 // implemented: register(controlBox:, onBrightnessChanged:, initialBrightness:)
 // and the sampleNow() / requestSample() public API.
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -28,27 +28,29 @@ Future<void> _settleSample(
 void main() {
   group('GlassContentAwareScope — brightness callback path', () {
     Widget host({required Color content}) => MaterialApp(
-          home: GlassContentAwareScope(
-            child: GlassContentAwareContent(
-              child: ColoredBox(color: content),
-            ),
-          ),
-        );
+      home: GlassContentAwareScope(
+        child: GlassContentAwareContent(child: ColoredBox(color: content)),
+      ),
+    );
 
     testWidgets('scope state is findable', (tester) async {
       await tester.pumpWidget(host(content: const Color(0xFF000000)));
       final scope = tester.state<GlassContentAwareScopeState>(
-          find.byType(GlassContentAwareScope));
+        find.byType(GlassContentAwareScope),
+      );
       expect(scope, isNotNull);
     });
 
-    testWidgets('register returns a subscription and cancel is idempotent',
-        (tester) async {
+    testWidgets('register returns a subscription and cancel is idempotent', (
+      tester,
+    ) async {
       await tester.pumpWidget(host(content: const Color(0xFF000000)));
       final scope = tester.state<GlassContentAwareScopeState>(
-          find.byType(GlassContentAwareScope));
-      final box = tester.renderObject(find.byType(GlassContentAwareContent))
-          as RenderBox;
+        find.byType(GlassContentAwareScope),
+      );
+      final box = tester.renderObject(
+        find.byType(GlassContentAwareContent),
+      ) as RenderBox;
 
       final verdicts = <Brightness>[];
       final sub = scope.register(
@@ -64,13 +66,16 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('dark content triggers dark brightness verdict',
-        (tester) async {
+    testWidgets('dark content triggers dark brightness verdict', (
+      tester,
+    ) async {
       await tester.pumpWidget(host(content: const Color(0xFF000000)));
       final scope = tester.state<GlassContentAwareScopeState>(
-          find.byType(GlassContentAwareScope));
-      final box = tester.renderObject(find.byType(GlassContentAwareContent))
-          as RenderBox;
+        find.byType(GlassContentAwareScope),
+      );
+      final box = tester.renderObject(
+        find.byType(GlassContentAwareContent),
+      ) as RenderBox;
 
       final verdicts = <Brightness>[];
       final sub = scope.register(
@@ -86,11 +91,13 @@ void main() {
       sub.cancel();
     });
 
-    testWidgets('requestSample is coalesced — second call is a no-op',
-        (tester) async {
+    testWidgets('requestSample is coalesced — second call is a no-op', (
+      tester,
+    ) async {
       await tester.pumpWidget(host(content: const Color(0xFFFFFFFF)));
       final scope = tester.state<GlassContentAwareScopeState>(
-          find.byType(GlassContentAwareScope));
+        find.byType(GlassContentAwareScope),
+      );
 
       // Two rapid calls must not crash or double-deliver.
       scope.requestSample();
@@ -99,13 +106,16 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('scope disposes cleanly when tree is torn down',
-        (tester) async {
+    testWidgets('scope disposes cleanly when tree is torn down', (
+      tester,
+    ) async {
       await tester.pumpWidget(host(content: const Color(0xFF000000)));
       final scope = tester.state<GlassContentAwareScopeState>(
-          find.byType(GlassContentAwareScope));
-      final box = tester.renderObject(find.byType(GlassContentAwareContent))
-          as RenderBox;
+        find.byType(GlassContentAwareScope),
+      );
+      final box = tester.renderObject(
+        find.byType(GlassContentAwareContent),
+      ) as RenderBox;
 
       final sub = scope.register(
         controlBox: () => box,
@@ -123,15 +133,18 @@ void main() {
   });
 
   group('GlassContentAwareScope — GlassScaffold brightness integration', () {
-    testWidgets('GlassScaffold contentAwareBrightness renders without error',
-        (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        home: GlassScaffold(
-          contentAwareBrightness: true,
-          bottomBar: const SizedBox(height: 60),
-          body: ListView(children: [Container(height: 2000)]),
+    testWidgets('GlassScaffold contentAwareBrightness renders without error', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GlassScaffold(
+            contentAwareBrightness: true,
+            bottomBar: const SizedBox(height: 60),
+            body: ListView(children: [Container(height: 2000)]),
+          ),
         ),
-      ));
+      );
       await tester.pump();
       expect(tester.takeException(), isNull);
     });

@@ -1,5 +1,6 @@
 import '../../shared/test_helpers.dart';
-import 'package:flutter/material.dart';
+
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -21,13 +22,8 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
-                  child: GlassProgressIndicator.circular(
-                    value: 0.0,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
+                  child: GlassProgressIndicator.circular(value: 0.0),
                 ),
               ),
             ),
@@ -40,13 +36,8 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
-                  child: GlassProgressIndicator.circular(
-                    value: 0.25,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
+                  child: GlassProgressIndicator.circular(value: 0.25),
                 ),
               ),
             ),
@@ -59,13 +50,8 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
-                  child: GlassProgressIndicator.circular(
-                    value: 0.5,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
+                  child: GlassProgressIndicator.circular(value: 0.5),
                 ),
               ),
             ),
@@ -78,13 +64,8 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
-                  child: GlassProgressIndicator.circular(
-                    value: 0.75,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
+                  child: GlassProgressIndicator.circular(value: 0.75),
                 ),
               ),
             ),
@@ -97,13 +78,8 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
-                  child: GlassProgressIndicator.circular(
-                    value: 1.0,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
+                  child: GlassProgressIndicator.circular(value: 1.0),
                 ),
               ),
             ),
@@ -127,10 +103,7 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
                   child: GlassProgressIndicator.circular(
                     value: 0.5,
                     size: 14.0,
@@ -148,10 +121,7 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
                   child: GlassProgressIndicator.circular(
                     value: 0.5,
                     size: 20.0,
@@ -169,10 +139,7 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
                   child: GlassProgressIndicator.circular(
                     value: 0.5,
                     size: 28.0,
@@ -201,10 +168,7 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
                   child: GlassProgressIndicator.circular(
                     value: 0.5,
                     color: Color(0xFF007AFF),
@@ -221,10 +185,7 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
                   child: GlassProgressIndicator.circular(
                     value: 0.5,
                     color: Colors.green,
@@ -241,10 +202,7 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
                   child: GlassProgressIndicator.circular(
                     value: 0.5,
                     color: Colors.red,
@@ -273,13 +231,8 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
-                  child: GlassProgressIndicator.linear(
-                    value: 0.0,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
+                  child: GlassProgressIndicator.linear(value: 0.0),
                 ),
               ),
             ),
@@ -292,13 +245,8 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
-                  child: GlassProgressIndicator.linear(
-                    value: 0.25,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
+                  child: GlassProgressIndicator.linear(value: 0.25),
                 ),
               ),
             ),
@@ -311,13 +259,8 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
-                  child: GlassProgressIndicator.linear(
-                    value: 0.5,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
+                  child: GlassProgressIndicator.linear(value: 0.5),
                 ),
               ),
             ),
@@ -330,13 +273,8 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
-                  child: GlassProgressIndicator.linear(
-                    value: 0.75,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
+                  child: GlassProgressIndicator.linear(value: 0.75),
                 ),
               ),
             ),
@@ -349,13 +287,8 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
-                  child: GlassProgressIndicator.linear(
-                    value: 1.0,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
+                  child: GlassProgressIndicator.linear(value: 1.0),
                 ),
               ),
             ),
@@ -379,14 +312,8 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
-                  child: GlassProgressIndicator.linear(
-                    value: 0.5,
-                    height: 2.0,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
+                  child: GlassProgressIndicator.linear(value: 0.5, height: 2.0),
                 ),
               ),
             ),
@@ -399,14 +326,8 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
-                  child: GlassProgressIndicator.linear(
-                    value: 0.5,
-                    height: 4.0,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
+                  child: GlassProgressIndicator.linear(value: 0.5, height: 4.0),
                 ),
               ),
             ),
@@ -419,14 +340,8 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
-                  child: GlassProgressIndicator.linear(
-                    value: 0.5,
-                    height: 8.0,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
+                  child: GlassProgressIndicator.linear(value: 0.5, height: 8.0),
                 ),
               ),
             ),
@@ -450,10 +365,7 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
                   child: GlassProgressIndicator.linear(
                     value: 0.5,
                     color: Color(0xFF007AFF),
@@ -470,10 +382,7 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
                   child: GlassProgressIndicator.linear(
                     value: 0.5,
                     color: Colors.green,
@@ -490,10 +399,7 @@ void main() {
               color: Colors.grey[300],
               child: const Center(
                 child: AdaptiveLiquidGlassLayer(
-                  settings: LiquidGlassSettings(
-                    thickness: 30,
-                    blur: 12,
-                  ),
+                  settings: LiquidGlassSettings(thickness: 30, blur: 12),
                   child: GlassProgressIndicator.linear(
                     value: 0.5,
                     color: Colors.red,

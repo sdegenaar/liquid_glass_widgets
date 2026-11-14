@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' show ImageFilter, lerpDouble;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/rendering.dart';
 
@@ -199,8 +199,10 @@ abstract final class GlassNavPinnedMetrics {
     if (inFrom && inTo) return 1.0;
     if (!inFrom && !inTo) return 0.0;
     if (inTo) {
-      return ((progress - materializeStart) / (1.0 - materializeStart))
-          .clamp(0.0, 1.0);
+      return ((progress - materializeStart) / (1.0 - materializeStart)).clamp(
+        0.0,
+        1.0,
+      );
     }
     return 1.0 - (progress / dematerializeEnd).clamp(0.0, 1.0);
   }
@@ -231,8 +233,12 @@ class GlassNavMorphCurve extends Curve {
   /// The perceptual settle duration [GlassSpring.bouncy] is specified with.
   static const double _settleSeconds = 0.5;
 
-  static final SpringSimulation _simulation =
-      SpringSimulation(GlassSpring.bouncy(extraBounce: 0.1), 0.0, 1.0, 0.0);
+  static final SpringSimulation _simulation = SpringSimulation(
+    GlassSpring.bouncy(extraBounce: 0.1),
+    0.0,
+    1.0,
+    0.0,
+  );
 
   /// The residual at the end of the sample window, divided out so the curve
   /// honours the Curve contract of ending exactly at 1.
@@ -336,7 +342,7 @@ class GlassNavPinnedState {
   /// Null leaves the tap to present without the hold, which hands the capsule
   /// back with the rest of the chrome.
   final void Function(GlassBarSheetItem item, GlassMorphAnchor anchor)?
-      holdForSheet;
+  holdForSheet;
 }
 
 /// Renders the pinned leading and trailing clusters above the [Navigator].
@@ -369,13 +375,15 @@ class GlassNavPinnedHost extends StatelessWidget {
     required bool inFrom,
     required bool inTo,
   }) {
-    final identity = state.transition == GlassEffectTransition.identity ||
+    final identity =
+        state.transition == GlassEffectTransition.identity ||
         GlassAccessibilityData.of(context).reduceMotion;
     if (identity) {
       if (inFrom && inTo) return 1.0;
       if (!inFrom && !inTo) return 0.0;
-      final showsIncoming =
-          GlassNavPinnedMetrics.showsIncomingAt(state.flowProgress);
+      final showsIncoming = GlassNavPinnedMetrics.showsIncomingAt(
+        state.flowProgress,
+      );
       return (inTo ? showsIncoming : !showsIncoming) ? 1.0 : 0.0;
     }
     return GlassNavPinnedMetrics.clusterPhaseAt(
@@ -411,7 +419,8 @@ class GlassNavPinnedHost extends StatelessWidget {
       );
     }
 
-    final barHeight = heightOf(state.flowTo) ??
+    final barHeight =
+        heightOf(state.flowTo) ??
         heightOf(state.flowFrom) ??
         GlassNavPinnedMetrics.toolbarHeight;
     final statusRow = StatusBarRow.of(context);
@@ -431,7 +440,8 @@ class GlassNavPinnedHost extends StatelessWidget {
                 _itemsFor(context, state, registration, side),
                 buttonSize: registration.buttonSize,
               ),
-              anchoredAtStart: (side == _BarSide.leading) ==
+              anchoredAtStart:
+                  (side == _BarSide.leading) ==
                   (textDirection == TextDirection.ltr),
               scaleAlignment: side == _BarSide.leading
                   ? AlignmentDirectional.centerStart
@@ -450,7 +460,8 @@ class GlassNavPinnedHost extends StatelessWidget {
     // The incoming route's guide, as `buttonSettings` above resolves the
     // material: a transition between two bars that disagree lands on the one
     // being entered rather than sliding the chrome between them.
-    final inset = state.flowTo.horizontalInset ??
+    final inset =
+        state.flowTo.horizontalInset ??
         state.flowFrom.horizontalInset ??
         GlassNavPinnedMetrics.horizontalPadding;
 
@@ -458,7 +469,8 @@ class GlassNavPinnedHost extends StatelessWidget {
     // bar's row, centred in it, as the route's own bar lays its row out.
     if (statusRow != null) {
       return Positioned(
-        top: statusRow.top +
+        top:
+            statusRow.top +
             (statusRow.height - GlassNavPinnedMetrics.toolbarHeight) / 2,
         left: statusRow.left,
         right: statusRow.right,
@@ -505,7 +517,8 @@ class GlassNavPinnedHost extends StatelessWidget {
     // bottom have reserved, less the gap between the two.
     final reserved =
         GlassNavigationShell.maybeOf(context)?.verticalBarBottom ?? 0.0;
-    final available = MediaQuery.sizeOf(context).height -
+    final available =
+        MediaQuery.sizeOf(context).height -
         bar.top -
         (reserved > 0
             ? reserved + GlassVerticalBarMetrics.spacing
@@ -514,39 +527,41 @@ class GlassNavPinnedHost extends StatelessWidget {
     List<GlassNavBarGroup> stripGroups(
       BuildContext context,
       GlassNavBarRegistration registration,
-    ) =>
-        fitGlassNavStripGroups(
-          [
-            for (final side in _BarSide.values)
-              ...groupGlassNavBarItems(
-                _itemsFor(context, state, registration, side)
-                    .where((item) => _goesInStrip(item, vertical: true))
-                    .toList(),
-                axis: Axis.vertical,
-              ),
-          ],
-          available,
-        );
+    ) => fitGlassNavStripGroups([
+      for (final side in _BarSide.values)
+        ...groupGlassNavBarItems(
+          _itemsFor(
+            context,
+            state,
+            registration,
+            side,
+          ).where((item) => _goesInStrip(item, vertical: true)).toList(),
+          axis: Axis.vertical,
+        ),
+    ], available);
 
     List<GlassNavBarGroup> rowGroups(
       BuildContext context,
       GlassNavBarRegistration registration,
-    ) =>
-        [
-          for (final side in _BarSide.values)
-            ...groupGlassNavBarItems(
-              _itemsFor(context, state, registration, side)
-                  .where((item) => _goesInStrip(item, vertical: false))
-                  .toList(),
-              buttonSize: registration.buttonSize,
-            ),
-        ];
+    ) => [
+      for (final side in _BarSide.values)
+        ...groupGlassNavBarItems(
+          _itemsFor(
+            context,
+            state,
+            registration,
+            side,
+          ).where((item) => _goesInStrip(item, vertical: false)).toList(),
+          buttonSize: registration.buttonSize,
+        ),
+    ];
 
     // The strip's controls sit [GlassVerticalBarMetrics.inset] from its inner
     // edge. The column is centred in a box that inset wide on both sides of a
     // control, so a group swelling through a morph grows about its own centre
     // and never meets the clamp of a narrower box.
-    const columnWidth = GlassVerticalBarMetrics.controlExtent +
+    const columnWidth =
+        GlassVerticalBarMetrics.controlExtent +
         2 * GlassVerticalBarMetrics.inset;
     final columnOffset = bar.width - columnWidth;
 
@@ -676,7 +691,7 @@ class GlassNavBarGroup {
     final diameter = buttonSize ?? GlassNavPinnedMetrics.backDiameter;
     return background == GlassBarItemBackground.shared
         ? diameter +
-            (GlassNavPinnedMetrics.slot - GlassNavPinnedMetrics.backDiameter)
+              (GlassNavPinnedMetrics.slot - GlassNavPinnedMetrics.backDiameter)
         : diameter;
   }
 
@@ -692,7 +707,8 @@ class GlassNavBarGroup {
   /// Square with [crossExtent] in a horizontal bar. In the strip a lone item
   /// is a circle too, while a capsule of several gives each item
   /// [GlassVerticalBarMetrics.itemExtent].
-  double get slotExtent => axis == Axis.vertical &&
+  double get slotExtent =>
+      axis == Axis.vertical &&
           background == GlassBarItemBackground.shared &&
           items.length > 1
       ? GlassVerticalBarMetrics.itemExtent
@@ -705,9 +721,11 @@ class GlassNavBarGroup {
 
   /// Whether [item] is one of [items] — by identity, or by `id` where it has
   /// one, as items are matched across routes.
-  bool contains(GlassBarActionItem item) => items.any((candidate) =>
-      identical(candidate, item) ||
-      (item.id != null && candidate.id == item.id));
+  bool contains(GlassBarActionItem item) => items.any(
+    (candidate) =>
+        identical(candidate, item) ||
+        (item.id != null && candidate.id == item.id),
+  );
 }
 
 /// Splits a cluster's items into the shells that will actually be drawn.
@@ -729,12 +747,14 @@ List<GlassNavBarGroup> groupGlassNavBarItems(
 
   void flushRun() {
     if (run.isEmpty) return;
-    groups.add(GlassNavBarGroup(
-      items: run,
-      background: GlassBarItemBackground.shared,
-      axis: axis,
-      buttonSize: buttonSize,
-    ));
+    groups.add(
+      GlassNavBarGroup(
+        items: run,
+        background: GlassBarItemBackground.shared,
+        axis: axis,
+        buttonSize: buttonSize,
+      ),
+    );
     run = <GlassBarActionItem>[];
   }
 
@@ -757,12 +777,14 @@ List<GlassNavBarGroup> groupGlassNavBarItems(
       continue;
     }
     flushRun();
-    groups.add(GlassNavBarGroup(
-      items: [item],
-      background: item.background,
-      axis: axis,
-      buttonSize: buttonSize,
-    ));
+    groups.add(
+      GlassNavBarGroup(
+        items: [item],
+        background: item.background,
+        axis: axis,
+        buttonSize: buttonSize,
+      ),
+    );
   }
   flushRun();
   return groups;
@@ -808,8 +830,8 @@ List<GlassNavBarGroup> fitGlassNavStripGroups(
 ) {
   double extentOf(int count, GlassBarItemBackground background) =>
       count == 1 || background != GlassBarItemBackground.shared
-          ? count * GlassVerticalBarMetrics.controlExtent
-          : count * GlassVerticalBarMetrics.itemExtent;
+      ? count * GlassVerticalBarMetrics.controlExtent
+      : count * GlassVerticalBarMetrics.itemExtent;
 
   var total = 0.0;
   for (final group in groups) {
@@ -819,7 +841,8 @@ List<GlassNavBarGroup> fitGlassNavStripGroups(
   if (total <= available) return groups;
 
   // Room for everything that stays, with the ••• circle held back at the end.
-  final budget = available -
+  final budget =
+      available -
       GlassVerticalBarMetrics.controlExtent -
       GlassVerticalBarMetrics.spacing;
   final kept = <GlassNavBarGroup>[];
@@ -843,12 +866,15 @@ List<GlassNavBarGroup> fitGlassNavStripGroups(
       fits++;
     }
     if (fits > 0) {
-      kept.add(GlassNavBarGroup(
-        items: group.items.sublist(0, fits),
-        background:
-            fits == 1 ? GlassBarItemBackground.separate : group.background,
-        axis: Axis.vertical,
-      ));
+      kept.add(
+        GlassNavBarGroup(
+          items: group.items.sublist(0, fits),
+          background: fits == 1
+              ? GlassBarItemBackground.separate
+              : group.background,
+          axis: Axis.vertical,
+        ),
+      );
       used += gap + extentOf(fits, group.background);
     }
     overflow.addAll(group.items.sublist(fits));
@@ -862,17 +888,20 @@ List<GlassNavBarGroup> fitGlassNavStripGroups(
       continue;
     }
     if (!item.hasTap) continue;
-    entries.add(GlassMenuItem(
-      title: item.label ?? '',
-      icon: switch (item) {
-        GlassBarIconItem(:final icon) => icon,
-        GlassBarSheetItem(:final icon) => icon,
-        _ => null,
-      },
-      enabled: item.enabled,
-      onTap:
-          item is GlassBarSheetItem ? () => item.onPresent(null) : item.onTap,
-    ));
+    entries.add(
+      GlassMenuItem(
+        title: item.label ?? '',
+        icon: switch (item) {
+          GlassBarIconItem(:final icon) => icon,
+          GlassBarSheetItem(:final icon) => icon,
+          _ => null,
+        },
+        enabled: item.enabled,
+        onTap: item is GlassBarSheetItem
+            ? () => item.onPresent(null)
+            : item.onTap,
+      ),
+    );
   }
   if (entries.isEmpty) return kept;
   return [
@@ -935,7 +964,8 @@ GlassBarIconItem _backItem(
   return GlassBarIconItem(
     icon: const Icon(CupertinoIcons.back),
     id: _backItemId,
-    label: Localizations.of<CupertinoLocalizations>(
+    label:
+        Localizations.of<CupertinoLocalizations>(
           context,
           CupertinoLocalizations,
         )?.backButtonLabel ??
@@ -998,7 +1028,8 @@ class _PinnedSide extends StatelessWidget {
   final List<GlassNavBarGroup> Function(
     BuildContext context,
     GlassNavBarRegistration registration,
-  ) groupsFor;
+  )
+  groupsFor;
 
   /// Whether groups are matched and placed from the box's left edge — its top
   /// edge in the strip — so each cluster grows away from the edge it is
@@ -1032,7 +1063,8 @@ class _PinnedSide extends StatelessWidget {
 
     // The groups are laid out in reading order, so which end of the list sits
     // against the edge the run is pinned to depends on the text direction.
-    final fromStart = axis == Axis.vertical ||
+    final fromStart =
+        axis == Axis.vertical ||
         anchoredAtStart == (Directionality.of(context) == TextDirection.ltr);
 
     // A group's place, counted from the pinned edge.
@@ -1092,7 +1124,8 @@ class _PinnedSide extends StatelessWidget {
     // they separate. Not under the plain cross-fade or reduce motion, where
     // the group materializes on its own, and only between shells drawing the
     // run's own material: grouped glass takes the layer's settings.
-    final budding = !state.settled &&
+    final budding =
+        !state.settled &&
         !state.crossFade &&
         presenting == null &&
         state.transition != GlassEffectTransition.identity &&
@@ -1303,12 +1336,12 @@ class _PinnedRun extends MultiChildRenderObjectWidget {
 
   @override
   RenderObject createRenderObject(BuildContext context) => _RenderPinnedRun(
-        axis: axis,
-        anchoredAtStart: anchoredAtStart,
-        spacing: spacing,
-        positionT: positionT,
-        minCross: minCross,
-      );
+    axis: axis,
+    anchoredAtStart: anchoredAtStart,
+    spacing: spacing,
+    positionT: positionT,
+    minCross: minCross,
+  );
 
   @override
   void updateRenderObject(BuildContext context, _RenderPinnedRun renderObject) {
@@ -1326,16 +1359,12 @@ class _RenderPinnedRun extends RenderBox
         ContainerRenderObjectMixin<RenderBox, _RunParentData>,
         RenderBoxContainerDefaultsMixin<RenderBox, _RunParentData> {
   _RenderPinnedRun({
-    required Axis axis,
-    required bool anchoredAtStart,
-    required double spacing,
-    required double positionT,
-    double minCross = 0.0,
-  })  : _axis = axis,
-        _anchoredAtStart = anchoredAtStart,
-        _spacing = spacing,
-        _positionT = positionT,
-        _minCross = minCross;
+    required this._axis,
+    required this._anchoredAtStart,
+    required this._spacing,
+    required this._positionT,
+    this._minCross = 0.0,
+  });
 
   Axis _axis;
   set axis(Axis value) {
@@ -1469,8 +1498,10 @@ class _RenderPinnedRun extends RenderBox
       child = childAfter(child);
     }
 
-    final (runSize, distances, offsets) =
-        _arrange(constraints, (child) => child.size);
+    final (runSize, distances, offsets) = _arrange(
+      constraints,
+      (child) => child.size,
+    );
     size = runSize;
 
     var i = 0;
@@ -1712,10 +1743,12 @@ List<GlassNavActionSlot> matchGlassNavActions(
   for (var i = 0; i < to.length; i++) {
     final match = takeMatch(to[i], i);
     if (match != null) usedFrom.add(match);
-    slots.add(GlassNavActionSlot(
-      fromItem: match != null ? from[match] : null,
-      toItem: to[i],
-    ));
+    slots.add(
+      GlassNavActionSlot(
+        fromItem: match != null ? from[match] : null,
+        toItem: to[i],
+      ),
+    );
   }
 
   // Anything left on the outgoing route exits in place.
@@ -1808,14 +1841,14 @@ class _PinnedCluster extends MultiChildRenderObjectWidget {
 
   @override
   RenderObject createRenderObject(BuildContext context) => _RenderPinnedCluster(
-        orders: orders,
-        widthT: widthT,
-        positionT: positionT,
-        morphScale: morphScale,
-        crossExtent: crossExtent,
-        anchoredAtStart: anchoredAtStart,
-        axis: axis,
-      );
+    orders: orders,
+    widthT: widthT,
+    positionT: positionT,
+    morphScale: morphScale,
+    crossExtent: crossExtent,
+    anchoredAtStart: anchoredAtStart,
+    axis: axis,
+  );
 
   @override
   void updateRenderObject(
@@ -1838,20 +1871,14 @@ class _RenderPinnedCluster extends RenderBox
         ContainerRenderObjectMixin<RenderBox, _ClusterParentData>,
         RenderBoxContainerDefaultsMixin<RenderBox, _ClusterParentData> {
   _RenderPinnedCluster({
-    required List<_SlotOrder> orders,
-    required double widthT,
-    required double positionT,
-    required double morphScale,
-    required double crossExtent,
-    required bool anchoredAtStart,
-    required Axis axis,
-  })  : _orders = orders,
-        _widthT = widthT,
-        _positionT = positionT,
-        _morphScale = morphScale,
-        _crossExtent = crossExtent,
-        _anchoredAtStart = anchoredAtStart,
-        _axis = axis;
+    required this._orders,
+    required this._widthT,
+    required this._positionT,
+    required this._morphScale,
+    required this._crossExtent,
+    required this._anchoredAtStart,
+    required this._axis,
+  });
 
   List<_SlotOrder> _orders;
   set orders(List<_SlotOrder> value) {
@@ -2032,7 +2059,8 @@ class _RenderPinnedCluster extends RenderBox
         widthOf(slot, from: false),
         _positionT,
       )!;
-      final main = (_anchoredAtStart ? edge : width - edge - slotWidth) +
+      final main =
+          (_anchoredAtStart ? edge : width - edge - slotWidth) +
           (slotWidth - _mainOf(child.size)) / 2.0;
       if (_vertical) {
         data.offset = Offset((_crossExtent - child.size.width) / 2.0, main);
@@ -2068,7 +2096,8 @@ class _RenderPinnedCluster extends RenderBox
       for (var slot = 0; slot < slotCount; slot++) {
         final order = from ? _orders[slot].fromOrder : _orders[slot].toOrder;
         if (order == null) continue;
-        total += (from ? fromWidths[slot] : toWidths[slot]) ??
+        total +=
+            (from ? fromWidths[slot] : toWidths[slot]) ??
             (from ? toWidths[slot] : fromWidths[slot]) ??
             0.0;
       }
@@ -2080,8 +2109,9 @@ class _RenderPinnedCluster extends RenderBox
       totalFor(from: false),
       _widthT,
     )!;
-    return constraints
-        .constrain(_sized(width * _morphScale, _crossExtent * _morphScale));
+    return constraints.constrain(
+      _sized(width * _morphScale, _crossExtent * _morphScale),
+    );
   }
 
   /// The paint transform of the gel: a uniform scale about the box origin.
@@ -2356,22 +2386,23 @@ class _PinnedGroupState extends State<_PinnedGroup> {
     // frozen while its neighbours morph.
     final overshoot = (springT - 1.0).clamp(0.0, 1.0);
     final morphing = fromItems.isNotEmpty && toItems.isNotEmpty;
-    final changes = widget.reshapes ||
+    final changes =
+        widget.reshapes ||
         fromItems.length != toItems.length ||
         slots.any((s) => s.isEnter || s.isExit || s.crossFades);
     final morphScale = !morphing || !changes || state.settled || state.crossFade
         ? 1.0
         : 1.0 +
-            GlassNavPinnedMetrics.swellPulseAt(morphT) -
-            GlassNavPinnedMetrics.squeezeScale * overshoot;
+              GlassNavPinnedMetrics.swellPulseAt(morphT) -
+              GlassNavPinnedMetrics.squeezeScale * overshoot;
 
     // With one side empty the shell holds the width it has: collapsing the
     // width would leave a degenerate glass shape on the way out.
     final widthT = fromItems.isEmpty
         ? 1.0
         : toItems.isEmpty
-            ? 0.0
-            : clampedT;
+        ? 0.0
+        : clampedT;
 
     // Drives the materialize window for a group that only one route has. The
     // side has already dropped groups whose phase is zero, so this is only
@@ -2425,9 +2456,9 @@ class _PinnedGroupState extends State<_PinnedGroup> {
     final q = state.crossFade
         ? p.clamp(0.0, 1.0)
         : ((morphT - GlassNavPinnedMetrics.crossFadeStart) /
-                (GlassNavPinnedMetrics.crossFadeEnd -
-                    GlassNavPinnedMetrics.crossFadeStart))
-            .clamp(0.0, 1.0);
+                  (GlassNavPinnedMetrics.crossFadeEnd -
+                      GlassNavPinnedMetrics.crossFadeStart))
+              .clamp(0.0, 1.0);
 
     // A bud's items fade on the item windows, as an item entering or leaving
     // a shell does, since its glass never dissolves.
@@ -2498,19 +2529,20 @@ class _PinnedGroupState extends State<_PinnedGroup> {
       // shell and a bare item can: stacked, each samples the other, and the
       // overlap reads as a brighter pad inside the incoming capsule. They
       // take turns instead, on the same windows a group only one route has.
-      final sequenced = crossFades &&
+      final sequenced =
+          crossFades &&
           fromItem?.background == GlassBarItemBackground.own &&
           toItem?.background == GlassBarItemBackground.own;
       double sequencedPhase({required bool inFrom}) => state.settled
           ? 1.0
           : showsIncoming == inFrom
-              ? 0.0
-              : GlassNavPinnedHost.phaseFor(
-                  context,
-                  state,
-                  inFrom: inFrom,
-                  inTo: !inFrom,
-                );
+          ? 0.0
+          : GlassNavPinnedHost.phaseFor(
+              context,
+              state,
+              inFrom: inFrom,
+              inTo: !inFrom,
+            );
 
       if (fromItem != null) {
         if (toItem == null) {
@@ -2520,17 +2552,41 @@ class _PinnedGroupState extends State<_PinnedGroup> {
           final visible = state.settled
               ? !showsIncoming
               : (morphing ||
-                  widget.buds ||
-                  (fadesWithGroup ? phase > 0.0 : q < 1.0));
+                    widget.buds ||
+                    (fadesWithGroup ? phase > 0.0 : q < 1.0));
           if (visible) {
-            children.add(clusterChild(
+            children.add(
+              clusterChild(
+                slot: i,
+                isFrom: true,
+                opacity: state.settled
+                    ? 1.0
+                    : fadesWithGroup
+                    ? phase
+                    : (1.0 - q),
+                blurSigma: outSigma,
+                item: fromItem,
+                child: _ClusterItem(
+                  item: fromItem,
+                  enabled: false,
+                  slotExtent: fromGroup.slotExtent,
+                  axis: fromGroup.axis,
+                  tintColor: fromItem.tintColor,
+                ),
+              ),
+            );
+          }
+        } else if (crossFades && (!state.settled ? q < 1.0 : !showsIncoming)) {
+          // Cross-fading outgoing side.
+          children.add(
+            clusterChild(
               slot: i,
               isFrom: true,
-              opacity: state.settled
+              opacity: sequenced
+                  ? sequencedPhase(inFrom: true)
+                  : state.settled
                   ? 1.0
-                  : fadesWithGroup
-                      ? phase
-                      : (1.0 - q),
+                  : (1.0 - q),
               blurSigma: outSigma,
               item: fromItem,
               child: _ClusterItem(
@@ -2540,28 +2596,8 @@ class _PinnedGroupState extends State<_PinnedGroup> {
                 axis: fromGroup.axis,
                 tintColor: fromItem.tintColor,
               ),
-            ));
-          }
-        } else if (crossFades && (!state.settled ? q < 1.0 : !showsIncoming)) {
-          // Cross-fading outgoing side.
-          children.add(clusterChild(
-            slot: i,
-            isFrom: true,
-            opacity: sequenced
-                ? sequencedPhase(inFrom: true)
-                : state.settled
-                    ? 1.0
-                    : (1.0 - q),
-            blurSigma: outSigma,
-            item: fromItem,
-            child: _ClusterItem(
-              item: fromItem,
-              enabled: false,
-              slotExtent: fromGroup.slotExtent,
-              axis: fromGroup.axis,
-              tintColor: fromItem.tintColor,
             ),
-          ));
+          );
         }
       }
 
@@ -2573,18 +2609,50 @@ class _PinnedGroupState extends State<_PinnedGroup> {
           final visible = state.settled
               ? showsIncoming
               : (morphing ||
-                  widget.buds ||
-                  (fadesWithGroup ? phase > 0.0 : q > 0.0));
+                    widget.buds ||
+                    (fadesWithGroup ? phase > 0.0 : q > 0.0));
           if (visible) {
-            children.add(clusterChild(
+            children.add(
+              clusterChild(
+                slot: i,
+                isFrom: false,
+                opacity: state.settled
+                    ? 1.0
+                    : fadesWithGroup
+                    ? phase
+                    : q,
+                blurSigma: inSigma,
+                item: toItem,
+                child: _ClusterItem(
+                  item: toItem,
+                  enabled: state.settled,
+                  slotExtent: toGroup.slotExtent,
+                  axis: toGroup.axis,
+                  tintColor: toItem.tintColor,
+                  onMenuTap: identical(toItem, menuItem) ? _menu.open : null,
+                  onSheetTap: _presentSheet,
+                ),
+              ),
+            );
+          }
+        } else if (!crossFades || (!state.settled ? q > 0.0 : showsIncoming)) {
+          // Matched persistent item or cross-fading incoming side.
+          children.add(
+            clusterChild(
               slot: i,
               isFrom: false,
-              opacity: state.settled
-                  ? 1.0
-                  : fadesWithGroup
-                      ? phase
-                      : q,
-              blurSigma: inSigma,
+              opacity: sequenced
+                  ? sequencedPhase(inFrom: false)
+                  : crossFades
+                  ? (state.settled ? 1.0 : q)
+                  : 1.0,
+              // Reshaping, the item blurs on the way into the morph and
+              // sharpens on the way out, as the shell's do natively.
+              blurSigma: crossFades
+                  ? inSigma
+                  : widget.reshapes
+                  ? math.min(outSigma, inSigma)
+                  : 0.0,
               item: toItem,
               child: _ClusterItem(
                 item: toItem,
@@ -2595,36 +2663,8 @@ class _PinnedGroupState extends State<_PinnedGroup> {
                 onMenuTap: identical(toItem, menuItem) ? _menu.open : null,
                 onSheetTap: _presentSheet,
               ),
-            ));
-          }
-        } else if (!crossFades || (!state.settled ? q > 0.0 : showsIncoming)) {
-          // Matched persistent item or cross-fading incoming side.
-          children.add(clusterChild(
-            slot: i,
-            isFrom: false,
-            opacity: sequenced
-                ? sequencedPhase(inFrom: false)
-                : crossFades
-                    ? (state.settled ? 1.0 : q)
-                    : 1.0,
-            // Reshaping, the item blurs on the way into the morph and
-            // sharpens on the way out, as the shell's do natively.
-            blurSigma: crossFades
-                ? inSigma
-                : widget.reshapes
-                    ? math.min(outSigma, inSigma)
-                    : 0.0,
-            item: toItem,
-            child: _ClusterItem(
-              item: toItem,
-              enabled: state.settled,
-              slotExtent: toGroup.slotExtent,
-              axis: toGroup.axis,
-              tintColor: toItem.tintColor,
-              onMenuTap: identical(toItem, menuItem) ? _menu.open : null,
-              onSheetTap: _presentSheet,
             ),
-          ));
+          );
         }
       }
     }
@@ -2636,8 +2676,11 @@ class _PinnedGroupState extends State<_PinnedGroup> {
       widthT: widthT,
       positionT: clampedT,
       morphScale: morphScale,
-      crossExtent:
-          lerpDouble(fromGroup.crossExtent, toGroup.crossExtent, clampedT)!,
+      crossExtent: lerpDouble(
+        fromGroup.crossExtent,
+        toGroup.crossExtent,
+        clampedT,
+      )!,
       anchoredAtStart: widget.anchoredAtStart,
       axis: toGroup.axis,
       children: children,
@@ -2671,8 +2714,8 @@ class _PinnedGroupState extends State<_PinnedGroup> {
       alignment: vertical
           ? Alignment.topCenter
           : widget.anchoredAtStart
-              ? Alignment.centerLeft
-              : Alignment.centerRight,
+          ? Alignment.centerLeft
+          : Alignment.centerRight,
       scaleFrom: GlassNavPinnedMetrics.materializeScaleFrom,
       child: FractionalTranslation(
         translation: vertical
@@ -2760,9 +2803,7 @@ class _PinnedGroupState extends State<_PinnedGroup> {
       platformViewBackdrop: platformViewBackdrop,
       // The radius scales with the gel so the shape stays a true scaled
       // capsule rather than squaring off as it inflates.
-      shape: LiquidRoundedRectangle(
-        borderRadius: borderRadius * morphScale,
-      ),
+      shape: LiquidRoundedRectangle(borderRadius: borderRadius * morphScale),
       // Sized by the measured cluster, exactly as GlassButtonGroup.icons
       // sizes to its content.
       width: null,
@@ -2857,8 +2898,14 @@ class _ClusterItem extends StatelessWidget {
     final interactive = enabled && item.enabled;
 
     Widget slot(Widget icon) => axis == Axis.vertical
-        ? SizedBox(height: slotExtent, child: Center(child: icon))
-        : SizedBox(width: slotExtent, child: Center(child: icon));
+        ? SizedBox(
+            height: slotExtent,
+            child: Center(child: icon),
+          )
+        : SizedBox(
+            width: slotExtent,
+            child: Center(child: icon),
+          );
 
     Widget content = switch (item) {
       GlassBarIconItem(:final icon) => slot(icon),
@@ -2875,8 +2922,8 @@ class _ClusterItem extends StatelessWidget {
         // Falls back to the standard CupertinoColors.label when untinted.
         color: tintColor != null
             ? (tintColor!.computeLuminance() > 0.35
-                ? const Color(0xFF000000)
-                : const Color(0xFFFFFFFF))
+                  ? const Color(0xFF000000)
+                  : const Color(0xFFFFFFFF))
             : CupertinoColors.label.resolveFrom(context),
       ),
       child: content,

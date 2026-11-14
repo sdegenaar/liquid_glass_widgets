@@ -13,7 +13,7 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -34,72 +34,99 @@ void main() {
     expect(
       ui.ImageFilter.isShaderFilterSupported,
       isTrue,
-      reason: 'This device reports no shader filter support, so the blur '
+      reason:
+          'This device reports no shader filter support, so the blur '
           'would render through the clipped fallback. Run it on Impeller.',
     );
   });
 
-  testWidgets('a progressive blur frosts nothing outside its own rectangle',
-      (tester) async {
+  testWidgets('a progressive blur frosts nothing outside its own rectangle', (
+    tester,
+  ) async {
     final root = GlobalKey();
     const band = Rect.fromLTWH(60, 200, 200, 120);
-    runApp(RepaintBoundary(
-      key: root,
-      child: Directionality(
-        textDirection: TextDirection.ltr,
-        child: Stack(
-          children: [
-            const Positioned.fill(child: _Stripes()),
-            Positioned.fromRect(
-              rect: band,
-              child: const ProgressiveBlur(maxSigma: 18),
-            ),
-          ],
+    runApp(
+      RepaintBoundary(
+        key: root,
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: Stack(
+            children: [
+              const Positioned.fill(child: _Stripes()),
+              Positioned.fromRect(
+                rect: band,
+                child: const ProgressiveBlur(maxSigma: 18),
+              ),
+            ],
+          ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     final frame = await _Frame.capture(tester, root);
     // Inside: frosted at the strong edge, easing to sharp at the far edge.
     expect(
-        frame.midtones(
-            x: band.center.dx, top: band.top + 4, bottom: band.top + 24),
-        greaterThan(_kFrosted));
+      frame.midtones(
+        x: band.center.dx,
+        top: band.top + 4,
+        bottom: band.top + 24,
+      ),
+      greaterThan(_kFrosted),
+    );
     expect(
-        frame.midtones(
-            x: band.center.dx, top: band.bottom - 6, bottom: band.bottom),
-        lessThan(_kSharp));
+      frame.midtones(
+        x: band.center.dx,
+        top: band.bottom - 6,
+        bottom: band.bottom,
+      ),
+      lessThan(_kSharp),
+    );
     // Outside: the rows above the band, and the columns either side of it.
     expect(
-        frame.midtones(
-            x: band.center.dx, top: band.top - 40, bottom: band.top - 20),
-        lessThan(_kSharp),
-        reason: 'the rows above the band must stay sharp');
+      frame.midtones(
+        x: band.center.dx,
+        top: band.top - 40,
+        bottom: band.top - 20,
+      ),
+      lessThan(_kSharp),
+      reason: 'the rows above the band must stay sharp',
+    );
     expect(
-        frame.midtones(
-            x: band.left - 30, top: band.top + 4, bottom: band.top + 24),
-        lessThan(_kSharp),
-        reason: 'the columns left of the band must stay sharp');
+      frame.midtones(
+        x: band.left - 30,
+        top: band.top + 4,
+        bottom: band.top + 24,
+      ),
+      lessThan(_kSharp),
+      reason: 'the columns left of the band must stay sharp',
+    );
     expect(
-        frame.midtones(
-            x: band.right + 30, top: band.top + 4, bottom: band.top + 24),
-        lessThan(_kSharp),
-        reason: 'the columns right of the band must stay sharp');
+      frame.midtones(
+        x: band.right + 30,
+        top: band.top + 4,
+        bottom: band.top + 24,
+      ),
+      lessThan(_kSharp),
+      reason: 'the columns right of the band must stay sharp',
+    );
   });
 
-  testWidgets('a scroll-edge blur stays on its own route mid back-swipe',
-      (tester) async {
+  testWidgets('a scroll-edge blur stays on its own route mid back-swipe', (
+    tester,
+  ) async {
     final root = GlobalKey();
-    runApp(RepaintBoundary(
-      key: root,
-      child: LiquidGlassWidgets.wrap(
-        child: const CupertinoApp(
-          debugShowCheckedModeBanner: false,
-          home: _Previous(),
+    runApp(
+      RepaintBoundary(
+        key: root,
+        child: LiquidGlassWidgets.wrap(
+          child: const CupertinoApp(
+            debugShowCheckedModeBanner: false,
+            home: _Previous(),
+          ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
 
     final navigator = tester.state<NavigatorState>(find.byType(Navigator));
@@ -109,25 +136,30 @@ void main() {
     // Sample the strong quarter of each band, where the eased sigma is still
     // several stripe periods wide, and mid-screen as the sharp reference.
     final size = tester.view.physicalSize / tester.view.devicePixelRatio;
-    final effect = tester
-        .widget<GlassScrollEdgeEffect>(find.byType(GlassScrollEdgeEffect));
+    final effect = tester.widget<GlassScrollEdgeEffect>(
+      find.byType(GlassScrollEdgeEffect),
+    );
     final top = _Rows(effect.topFadeHeight * 0.05, effect.topFadeHeight * 0.25);
-    final bottom = _Rows(size.height - effect.bottomFadeHeight * 0.25,
-        size.height - effect.bottomFadeHeight * 0.05);
+    final bottom = _Rows(
+      size.height - effect.bottomFadeHeight * 0.25,
+      size.height - effect.bottomFadeHeight * 0.05,
+    );
     final middle = _Rows(size.height / 2 - 7, size.height / 2 + 7);
 
     // At rest both bands frost the pushed route and ease to sharp between.
     var frame = await _Frame.capture(tester, root);
-    expect(frame.midtones(x: size.width / 2, top: top.top, bottom: top.bottom),
-        greaterThan(_kFrosted));
     expect(
-        frame.midtones(
-            x: size.width / 2, top: bottom.top, bottom: bottom.bottom),
-        greaterThan(_kFrosted));
+      frame.midtones(x: size.width / 2, top: top.top, bottom: top.bottom),
+      greaterThan(_kFrosted),
+    );
     expect(
-        frame.midtones(
-            x: size.width / 2, top: middle.top, bottom: middle.bottom),
-        lessThan(_kSharp));
+      frame.midtones(x: size.width / 2, top: bottom.top, bottom: bottom.bottom),
+      greaterThan(_kFrosted),
+    );
+    expect(
+      frame.midtones(x: size.width / 2, top: middle.top, bottom: middle.bottom),
+      lessThan(_kSharp),
+    );
 
     // Hold an interactive pop part-way: the previous route fills the gap on
     // the left, the frosted one is still fully live on the right.
@@ -144,15 +176,21 @@ void main() {
     frame = await _Frame.capture(tester, root);
     final revealed = split / 2;
     final outgoing = (split + size.width) / 2;
-    expect(frame.midtones(x: revealed, top: top.top, bottom: top.bottom),
-        lessThan(_kSharp),
-        reason: 'the revealed route must stay sharp under the top band');
-    expect(frame.midtones(x: revealed, top: bottom.top, bottom: bottom.bottom),
-        lessThan(_kSharp),
-        reason: 'the revealed route must stay sharp under the bottom band');
-    expect(frame.midtones(x: outgoing, top: top.top, bottom: top.bottom),
-        greaterThan(_kFrosted),
-        reason: 'the outgoing route keeps its own frost while it slides');
+    expect(
+      frame.midtones(x: revealed, top: top.top, bottom: top.bottom),
+      lessThan(_kSharp),
+      reason: 'the revealed route must stay sharp under the top band',
+    );
+    expect(
+      frame.midtones(x: revealed, top: bottom.top, bottom: bottom.bottom),
+      lessThan(_kSharp),
+      reason: 'the revealed route must stay sharp under the bottom band',
+    );
+    expect(
+      frame.midtones(x: outgoing, top: top.top, bottom: top.bottom),
+      greaterThan(_kFrosted),
+      reason: 'the outgoing route keeps its own frost while it slides',
+    );
 
     await gesture.up();
     await tester.pumpAndSettle();
@@ -187,8 +225,11 @@ class _Frame {
 
   /// The share of pixels down column [x] between logical rows [top] and
   /// [bottom] whose red channel is neither near black nor near white.
-  double midtones(
-      {required double x, required double top, required double bottom}) {
+  double midtones({
+    required double x,
+    required double top,
+    required double bottom,
+  }) {
     var mid = 0;
     var total = 0;
     final px = (x * _dpr).round();
@@ -216,11 +257,11 @@ class _Frosted extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const GlassScaffold(
-        edgeStyle: GlassScrollEdgeStyle.blur,
-        bottomEdgeFade: true,
-        appBar: GlassAppBar(title: Text('Screen B')),
-        body: _Stripes(),
-      );
+    edgeStyle: GlassScrollEdgeStyle.blur,
+    bottomEdgeFade: true,
+    appBar: GlassAppBar(title: Text('Screen B')),
+    body: _Stripes(),
+  );
 }
 
 /// 2 pt black stripes on white, every 4 pt — pixel-aligned at any integer
@@ -239,7 +280,9 @@ class _StripePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     canvas.drawRect(
-        Offset.zero & size, Paint()..color = const Color(0xFFFFFFFF));
+      Offset.zero & size,
+      Paint()..color = const Color(0xFFFFFFFF),
+    );
     final ink = Paint()..color = const Color(0xFF000000);
     for (var y = 0.0; y < size.height; y += 4) {
       canvas.drawRect(Rect.fromLTWH(0, y, size.width, 2), ink);

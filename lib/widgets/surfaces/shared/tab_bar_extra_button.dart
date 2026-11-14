@@ -57,10 +57,10 @@ class GlassTabBarExtraButton {
     this.position = GlassExtraButtonPosition.beforeSearch,
     this.collapseOnSearchFocus = true,
     this.enabled = true,
-  })  : menuItems = null,
-        menuAlignment = null,
-        menuWidth = 200,
-        menuHeight = null;
+  }) : menuItems = null,
+       menuAlignment = null,
+       menuWidth = 200,
+       menuHeight = null;
 
   /// Opens a [GlassMenu] pull-down when the extra button is tapped.
   ///

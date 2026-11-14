@@ -9,9 +9,9 @@
 //   - label color lerps for dynamic colors, passes through custom colors
 //   - end-to-end: bar over dark content in a scope flips dark
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart' show ValueListenable;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/widgets/surfaces/tab_bar_bottom_internal.dart'
@@ -35,68 +35,76 @@ class _BrightnessProbe extends StatelessWidget {
 }
 
 List<GlassTab> _tabs({Widget? probeIcon}) => [
-      GlassTab(
-        label: 'Home',
-        icon: probeIcon ?? const Icon(CupertinoIcons.home),
-      ),
-      const GlassTab(
-        label: 'Music',
-        icon: Icon(CupertinoIcons.music_note),
-      ),
-    ];
+  GlassTab(label: 'Home', icon: probeIcon ?? const Icon(CupertinoIcons.home)),
+  const GlassTab(label: 'Music', icon: Icon(CupertinoIcons.music_note)),
+];
 
 Widget _wrapBar(Widget bar) => MaterialApp(
-      home: Scaffold(
-        body: const SizedBox.expand(),
-        bottomNavigationBar: SizedBox(height: 100, child: bar),
-      ),
-    );
+  home: Scaffold(
+    body: const SizedBox.expand(),
+    bottomNavigationBar: SizedBox(height: 100, child: bar),
+  ),
+);
 
 void main() {
   group('GlassTabBar.bottom — adaptive brightness plumbing', () {
     testWidgets('classic path mounts no adaptive machinery', (tester) async {
-      await tester.pumpWidget(_wrapBar(GlassTabBar.bottom(
-        tabs: _tabs(),
-        selectedIndex: 0,
-        onTabSelected: (_) {},
-      )));
+      await tester.pumpWidget(
+        _wrapBar(
+          GlassTabBar.bottom(
+            tabs: _tabs(),
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+          ),
+        ),
+      );
       expect(find.byType(GlassContentAwareBrightness), findsNothing);
       expect(find.text('Home'), findsWidgets);
     });
 
-    testWidgets('adaptiveBrightness without a scope stays ambient',
-        (tester) async {
-      await tester.pumpWidget(_wrapBar(GlassTabBar.bottom(
-        tabs: _tabs(),
-        selectedIndex: 0,
-        onTabSelected: (_) {},
-        adaptiveBrightness: true,
-      )));
+    testWidgets('adaptiveBrightness without a scope stays ambient', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrapBar(
+          GlassTabBar.bottom(
+            tabs: _tabs(),
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            adaptiveBrightness: true,
+          ),
+        ),
+      );
       expect(find.byType(GlassContentAwareBrightness), findsOneWidget);
       expect(find.text('Home'), findsWidgets);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('brightnessOverride drives the bar and its subtree',
-        (tester) async {
+    testWidgets('brightnessOverride drives the bar and its subtree', (
+      tester,
+    ) async {
       final override = ValueNotifier<Brightness>(Brightness.light);
       addTearDown(override.dispose);
       final flips = <Brightness>[];
       Brightness? probePlatform;
       Brightness? probeCupertino;
 
-      await tester.pumpWidget(_wrapBar(GlassTabBar.bottom(
-        tabs: _tabs(
-          probeIcon: _BrightnessProbe((platform, cupertino) {
-            probePlatform = platform;
-            probeCupertino = cupertino;
-          }),
+      await tester.pumpWidget(
+        _wrapBar(
+          GlassTabBar.bottom(
+            tabs: _tabs(
+              probeIcon: _BrightnessProbe((platform, cupertino) {
+                probePlatform = platform;
+                probeCupertino = cupertino;
+              }),
+            ),
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            brightnessOverride: override,
+            onBrightnessChanged: flips.add,
+          ),
         ),
-        selectedIndex: 0,
-        onTabSelected: (_) {},
-        brightnessOverride: override,
-        onBrightnessChanged: flips.add,
-      )));
+      );
       expect(probePlatform, Brightness.light);
 
       override.value = Brightness.dark;
@@ -115,31 +123,34 @@ void main() {
 
     testWidgets('end-to-end: bar over dark content flips dark', (tester) async {
       final flips = <Brightness>[];
-      await tester.pumpWidget(MaterialApp(
-        home: GlassContentAwareScope(
-          child: Scaffold(
-            extendBody: true,
-            body: GlassContentAwareContent(
-              child: const ColoredBox(
-                color: Color(0xFF000000),
-                child: SizedBox.expand(),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GlassContentAwareScope(
+            child: Scaffold(
+              extendBody: true,
+              body: GlassContentAwareContent(
+                child: const ColoredBox(
+                  color: Color(0xFF000000),
+                  child: SizedBox.expand(),
+                ),
               ),
-            ),
-            bottomNavigationBar: SizedBox(
-              height: 100,
-              child: GlassTabBar.bottom(
-                tabs: _tabs(),
-                selectedIndex: 0,
-                onTabSelected: (_) {},
-                adaptiveBrightness: true,
-                onBrightnessChanged: flips.add,
+              bottomNavigationBar: SizedBox(
+                height: 100,
+                child: GlassTabBar.bottom(
+                  tabs: _tabs(),
+                  selectedIndex: 0,
+                  onTabSelected: (_) {},
+                  adaptiveBrightness: true,
+                  onBrightnessChanged: flips.add,
+                ),
               ),
             ),
           ),
         ),
-      ));
+      );
       final scope = tester.state<GlassContentAwareScopeState>(
-          find.byType(GlassContentAwareScope));
+        find.byType(GlassContentAwareScope),
+      );
       await tester.runAsync(() async {
         await Future<void>.delayed(const Duration(milliseconds: 100));
         await scope.sampleNow();
@@ -158,15 +169,17 @@ void main() {
       bool adaptive = false,
       Widget? probeIcon,
     }) {
-      return _wrapBar(GlassTabBar.searchable(
-        tabs: _tabs(probeIcon: probeIcon),
-        selectedIndex: 0,
-        onTabSelected: (_) {},
-        searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
-        adaptiveBrightness: adaptive,
-        brightnessOverride: override,
-        onBrightnessChanged: onBrightnessChanged,
-      ));
+      return _wrapBar(
+        GlassTabBar.searchable(
+          tabs: _tabs(probeIcon: probeIcon),
+          selectedIndex: 0,
+          onTabSelected: (_) {},
+          searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
+          adaptiveBrightness: adaptive,
+          brightnessOverride: override,
+          onBrightnessChanged: onBrightnessChanged,
+        ),
+      );
     }
 
     testWidgets('classic path mounts no adaptive machinery', (tester) async {
@@ -174,27 +187,31 @@ void main() {
       expect(find.byType(GlassContentAwareBrightness), findsNothing);
     });
 
-    testWidgets('adaptiveBrightness without a scope stays ambient',
-        (tester) async {
+    testWidgets('adaptiveBrightness without a scope stays ambient', (
+      tester,
+    ) async {
       await tester.pumpWidget(searchableBar(adaptive: true));
       expect(find.byType(GlassContentAwareBrightness), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('brightnessOverride drives the bar and fires the callback',
-        (tester) async {
+    testWidgets('brightnessOverride drives the bar and fires the callback', (
+      tester,
+    ) async {
       final override = ValueNotifier<Brightness>(Brightness.light);
       addTearDown(override.dispose);
       final flips = <Brightness>[];
       Brightness? probePlatform;
 
-      await tester.pumpWidget(searchableBar(
-        override: override,
-        onBrightnessChanged: flips.add,
-        probeIcon: _BrightnessProbe((platform, _) {
-          probePlatform = platform;
-        }),
-      ));
+      await tester.pumpWidget(
+        searchableBar(
+          override: override,
+          onBrightnessChanged: flips.add,
+          probeIcon: _BrightnessProbe((platform, _) {
+            probePlatform = platform;
+          }),
+        ),
+      );
       expect(probePlatform, Brightness.light);
 
       override.value = Brightness.dark;
@@ -212,25 +229,36 @@ void main() {
       Widget Function(Widget child) wrap,
     ) async {
       late BuildContext captured;
-      await tester.pumpWidget(wrap(Builder(builder: (context) {
-        captured = context;
-        return const SizedBox();
-      })));
+      await tester.pumpWidget(
+        wrap(
+          Builder(
+            builder: (context) {
+              captured = context;
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
       return captured;
     }
 
-    testWidgets('classic path resolves the ambient label color',
-        (tester) async {
-      final context =
-          await contextUnder(tester, (child) => MaterialApp(home: child));
+    testWidgets('classic path resolves the ambient label color', (
+      tester,
+    ) async {
+      final context = await contextUnder(
+        tester,
+        (child) => MaterialApp(home: child),
+      );
       final color = resolveBarLabelColor(context, null);
       // Light ambient → the label's light variant.
       expect(color.toARGB32(), CupertinoColors.label.color.toARGB32());
     });
 
     testWidgets('dynamic label colors lerp with darkAmount', (tester) async {
-      final context =
-          await contextUnder(tester, (child) => MaterialApp(home: child));
+      final context = await contextUnder(
+        tester,
+        (child) => MaterialApp(home: child),
+      );
       final light = resolveBarLabelColor(context, 0.0);
       final dark = resolveBarLabelColor(context, 1.0);
       final mid = resolveBarLabelColor(context, 0.5);
@@ -242,13 +270,13 @@ void main() {
           CupertinoColors.label.color,
           CupertinoColors.label.darkColor,
           0.5,
-        )!
-            .toARGB32(),
+        )!.toARGB32(),
       );
     });
 
-    testWidgets('non-dynamic custom label colors pass through unchanged',
-        (tester) async {
+    testWidgets('non-dynamic custom label colors pass through unchanged', (
+      tester,
+    ) async {
       const custom = Color(0xFF336699);
       final context = await contextUnder(
         tester,
@@ -267,8 +295,9 @@ void main() {
       expect(resolveBarLabelColor(context, null), custom);
     });
 
-    testWidgets('a color-less text theme falls back to CupertinoColors.label',
-        (tester) async {
+    testWidgets('a color-less text theme falls back to CupertinoColors.label', (
+      tester,
+    ) async {
       final context = await contextUnder(
         tester,
         (child) => MaterialApp(

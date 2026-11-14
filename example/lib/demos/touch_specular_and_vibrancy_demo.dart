@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 /// Interactive demonstration of the v1.5.0 features:
@@ -64,7 +64,7 @@ class _TouchSpecularAndVibrancyDemoState
             Image.asset(
               'assets/wallpaper.jpg',
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+              errorBuilder: (_, _, _) => Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -89,8 +89,10 @@ class _TouchSpecularAndVibrancyDemoState
 
             SafeArea(
               child: ListView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 16,
+                ),
                 children: [
                   _buildTouchSpecularSection(settings),
                   const SizedBox(height: 28),
@@ -160,10 +162,12 @@ class _TouchSpecularAndVibrancyDemoState
                                 color: _isPointerDown
                                     ? const Color(0xFF34C759)
                                     : (_isDark
-                                        ? CupertinoColors.white
-                                            .withValues(alpha: 0.7)
-                                        : CupertinoColors.black
-                                            .withValues(alpha: 0.7)),
+                                          ? CupertinoColors.white.withValues(
+                                              alpha: 0.7,
+                                            )
+                                          : CupertinoColors.black.withValues(
+                                              alpha: 0.7,
+                                            )),
                                 size: 18,
                               ),
                               const SizedBox(width: 8),
@@ -177,8 +181,8 @@ class _TouchSpecularAndVibrancyDemoState
                                   color: _isPointerDown
                                       ? const Color(0xFF34C759)
                                       : (_isDark
-                                          ? CupertinoColors.white
-                                          : CupertinoColors.black),
+                                            ? CupertinoColors.white
+                                            : CupertinoColors.black),
                                 ),
                               ),
                             ],
@@ -192,10 +196,10 @@ class _TouchSpecularAndVibrancyDemoState
                             decoration: BoxDecoration(
                               color: _isPointerDown
                                   ? const Color(0xFF34C759)
-                                      .withValues(alpha: 0.2)
+                                        .withValues(alpha: 0.2)
                                   : (_isDark
-                                      ? const Color(0x33000000)
-                                      : const Color(0x44FFFFFF)),
+                                        ? const Color(0x33000000)
+                                        : const Color(0x44FFFFFF)),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -206,8 +210,8 @@ class _TouchSpecularAndVibrancyDemoState
                                 color: _isPointerDown
                                     ? const Color(0xFF34C759)
                                     : (_isDark
-                                        ? CupertinoColors.systemGrey2
-                                        : CupertinoColors.systemGrey),
+                                          ? CupertinoColors.systemGrey2
+                                          : CupertinoColors.systemGrey),
                               ),
                             ),
                           ),
@@ -224,10 +228,12 @@ class _TouchSpecularAndVibrancyDemoState
                                 CupertinoIcons.hand_draw,
                                 size: 30,
                                 color: _isDark
-                                    ? CupertinoColors.white
-                                        .withValues(alpha: 0.8)
-                                    : CupertinoColors.black
-                                        .withValues(alpha: 0.7),
+                                    ? CupertinoColors.white.withValues(
+                                        alpha: 0.8,
+                                      )
+                                    : CupertinoColors.black.withValues(
+                                        alpha: 0.7,
+                                      ),
                               ),
                               const SizedBox(height: 8),
                               Text(
@@ -236,10 +242,12 @@ class _TouchSpecularAndVibrancyDemoState
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
                                   color: _isDark
-                                      ? CupertinoColors.white
-                                          .withValues(alpha: 0.9)
-                                      : CupertinoColors.black
-                                          .withValues(alpha: 0.8),
+                                      ? CupertinoColors.white.withValues(
+                                          alpha: 0.9,
+                                        )
+                                      : CupertinoColors.black.withValues(
+                                          alpha: 0.8,
+                                        ),
                                 ),
                               ),
                             ],
@@ -341,8 +349,8 @@ class _TouchSpecularAndVibrancyDemoState
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color:
-                                const Color(0xFF007AFF).withValues(alpha: 0.2),
+                            color: const Color(0xFF007AFF)
+                                .withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(
@@ -421,8 +429,10 @@ class _TouchSpecularAndVibrancyDemoState
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(CupertinoIcons.slider_horizontal_3,
-                                  size: 14),
+                              Icon(
+                                CupertinoIcons.slider_horizontal_3,
+                                size: 14,
+                              ),
                               SizedBox(width: 6),
                               Text(
                                 'Options',
@@ -506,10 +516,7 @@ class _TouchSpecularAndVibrancyDemoState
                   SizedBox(width: 8),
                   Text(
                     'Open Interactive Menu',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),

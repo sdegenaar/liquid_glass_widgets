@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
 
 import '../../src/renderer/liquid_glass_renderer.dart';
@@ -54,18 +54,18 @@ class GlassReorderableList extends StatefulWidget {
     this.header,
     this.footer,
     this.enableHaptics = true,
-  })  : assert(
-          onReorderItem != null || onReorder != null,
-          'Either onReorderItem or onReorder must be provided.',
-        ),
-        _isGrouped = false,
-        dividerIndent = 56.0,
-        dividerEndIndent = 0.0,
-        _settings = null,
-        _shape = null,
-        _quality = null,
-        _useOwnLayer = null,
-        _surfaceStyle = GlassSurfaceStyle.glass;
+  }) : assert(
+         onReorderItem != null || onReorder != null,
+         'Either onReorderItem or onReorder must be provided.',
+       ),
+       _isGrouped = false,
+       dividerIndent = 56.0,
+       dividerEndIndent = 0.0,
+       _settings = null,
+       _shape = null,
+       _quality = null,
+       _useOwnLayer = null,
+       _surfaceStyle = GlassSurfaceStyle.glass;
 
   /// Creates a [GlassReorderableList] styled as an iOS grouped table card
   /// with superellipse corners, automatic dividers, and optional header/footer.
@@ -89,21 +89,16 @@ class GlassReorderableList extends StatefulWidget {
     this.enableHaptics = true,
     this.dividerIndent = 56.0,
     this.dividerEndIndent = 0.0,
-    LiquidGlassSettings? settings,
-    LiquidShape? shape,
-    GlassQuality? quality,
-    bool? useOwnLayer,
-    GlassSurfaceStyle surfaceStyle = GlassSurfaceStyle.glass,
-  })  : assert(
-          onReorderItem != null || onReorder != null,
-          'Either onReorderItem or onReorder must be provided.',
-        ),
-        _isGrouped = true,
-        _settings = settings,
-        _shape = shape,
-        _quality = quality,
-        _useOwnLayer = useOwnLayer,
-        _surfaceStyle = surfaceStyle;
+    this._settings,
+    this._shape,
+    this._quality,
+    this._useOwnLayer,
+    this._surfaceStyle = GlassSurfaceStyle.glass,
+  }) : assert(
+         onReorderItem != null || onReorder != null,
+         'Either onReorderItem or onReorder must be provided.',
+       ),
+       _isGrouped = true;
 
   /// Total number of items in the list.
   final int itemCount;
@@ -217,14 +212,16 @@ class _GlassReorderableListState extends State<GlassReorderableList> {
                         decoration: BoxDecoration(
                           boxShadow: [
                             BoxShadow(
-                              color: CupertinoColors.black
-                                  .withValues(alpha: 0.18 * animValue),
+                              color: CupertinoColors.black.withValues(
+                                alpha: 0.18 * animValue,
+                              ),
                               blurRadius: shadowElevation,
                               offset: Offset(0, 8.0 * animValue),
                             ),
                             BoxShadow(
-                              color: CupertinoColors.black
-                                  .withValues(alpha: 0.06 * animValue),
+                              color: CupertinoColors.black.withValues(
+                                alpha: 0.06 * animValue,
+                              ),
                               blurRadius: 6.0 * animValue,
                               offset: Offset(0, 2.0 * animValue),
                             ),
@@ -238,10 +235,11 @@ class _GlassReorderableListState extends State<GlassReorderableList> {
                       // Native iOS 27 lifts the row with a slightly translucent
                       // card fill: the rows passing underneath stay faintly
                       // visible.
-                      color: widget._isGrouped &&
+                      color:
+                          widget._isGrouped &&
                               widget._surfaceStyle == GlassSurfaceStyle.solid
                           ? resolveGlassSolidSurfaceColor(context)
-                              .withValues(alpha: 1.0 - (0.24 * animValue))
+                                .withValues(alpha: 1.0 - (0.24 * animValue))
                           : null,
                       borderRadius: BorderRadius.zero,
                     ),
@@ -296,7 +294,8 @@ class _GlassReorderableListState extends State<GlassReorderableList> {
         settings: widget._settings,
         quality: widget._quality,
         surfaceStyle: widget._surfaceStyle,
-        color: _draggedIndex != null &&
+        color:
+            _draggedIndex != null &&
                 effectiveSurfaceStyle == GlassSurfaceStyle.solid
             ? const Color(0x00000000)
             : null,
@@ -469,10 +468,7 @@ class _GlassReorderableListState extends State<GlassReorderableList> {
       proxyDecorator: (child, index, animation) {
         Widget wrapped = child;
         if (editController != null) {
-          wrapped = GlassEditScope(
-            controller: editController,
-            child: wrapped,
-          );
+          wrapped = GlassEditScope(controller: editController, child: wrapped);
         }
         wrapped = InheritedGlassSurfaceStyle(
           surfaceStyle: surfaceStyle,
@@ -518,18 +514,15 @@ class _ReorderableRowWithDivider extends StatelessWidget {
     Widget content = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        tile,
-        if (!isProxy && showDivider) divider,
-      ],
+      children: [tile, if (!isProxy && showDivider) divider],
     );
     if (!isProxy && decoration != null) {
       content = Container(
         decoration: decoration,
         clipBehavior:
             (borderRadius != null && borderRadius != BorderRadius.zero)
-                ? Clip.antiAlias
-                : Clip.none,
+            ? Clip.antiAlias
+            : Clip.none,
         child: content,
       );
     }

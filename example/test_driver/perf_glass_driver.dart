@@ -14,9 +14,8 @@ Future<void> main() {
       final directory = Directory('build/glass-perf');
       await directory.create(recursive: true);
       final stamp = DateTime.now().toIso8601String().replaceAll(':', '-');
-      await File('${directory.path}/summary-$stamp.json').writeAsString(
-        const JsonEncoder.withIndent('  ').convert(data),
-      );
+      await File('${directory.path}/summary-$stamp.json')
+          .writeAsString(const JsonEncoder.withIndent('  ').convert(data));
     },
   );
 }

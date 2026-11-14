@@ -1,5 +1,5 @@
 import 'package:liquid_glass_widgets/widgets/overlays/glass_sheet.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -9,11 +9,7 @@ void main() {
   group('GlassSheet', () {
     testWidgets('can be instantiated with required parameters', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          child: const GlassSheet(
-            child: Text('Sheet Content'),
-          ),
-        ),
+        createTestApp(child: const GlassSheet(child: Text('Sheet Content'))),
       );
 
       expect(find.byType(GlassSheet), findsOneWidget);
@@ -24,11 +20,7 @@ void main() {
       const testText = 'Bottom Sheet Text';
 
       await tester.pumpWidget(
-        createTestApp(
-          child: const GlassSheet(
-            child: Text(testText),
-          ),
-        ),
+        createTestApp(child: const GlassSheet(child: Text(testText))),
       );
 
       expect(find.text(testText), findsOneWidget);
@@ -36,18 +28,15 @@ void main() {
 
     testWidgets('shows drag indicator by default', (tester) async {
       await tester.pumpWidget(
-        createTestApp(
-          child: const GlassSheet(
-            child: Text('Content'),
-          ),
-        ),
+        createTestApp(child: const GlassSheet(child: Text('Content'))),
       );
 
       expect(find.byType(GlassSheet), findsOneWidget);
     });
 
-    testWidgets('hides drag indicator when showDragIndicator is false',
-        (tester) async {
+    testWidgets('hides drag indicator when showDragIndicator is false', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: const GlassSheet(
@@ -101,16 +90,15 @@ void main() {
     });
 
     test('defaults are correct', () {
-      const sheet = GlassSheet(
-        child: Text('Content'),
-      );
+      const sheet = GlassSheet(child: Text('Content'));
 
       expect(sheet.showDragIndicator, isTrue);
       expect(sheet.quality, isNull);
     });
 
-    testWidgets('drag indicator Semantics.onTap dismisses the route',
-        (tester) async {
+    testWidgets('drag indicator Semantics.onTap dismisses the route', (
+      tester,
+    ) async {
       final semantics = tester.ensureSemantics();
       await tester.pumpWidget(
         MaterialApp(
@@ -120,9 +108,8 @@ void main() {
                 onPressed: () {
                   showModalBottomSheet(
                     context: context,
-                    builder: (context) => const GlassSheet(
-                      child: Text('Sheet Content'),
-                    ),
+                    builder: (context) =>
+                        const GlassSheet(child: Text('Sheet Content')),
                   );
                 },
                 child: const Text('Open'),

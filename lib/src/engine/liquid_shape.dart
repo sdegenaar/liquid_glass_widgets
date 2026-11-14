@@ -96,16 +96,11 @@ class LiquidRoundedSuperellipse extends LiquidShape {
   bool get isSuperellipse => true;
 
   @override
-  OutlinedBorder get _equivalentOutlinedBorder => RoundedSuperellipseBorder(
-        borderRadius: toBorderRadius(),
-        side: side,
-      );
+  OutlinedBorder get _equivalentOutlinedBorder =>
+      RoundedSuperellipseBorder(borderRadius: toBorderRadius(), side: side);
 
   @override
-  LiquidRoundedSuperellipse copyWith({
-    BorderSide? side,
-    double? borderRadius,
-  }) {
+  LiquidRoundedSuperellipse copyWith({BorderSide? side, double? borderRadius}) {
     return LiquidRoundedSuperellipse(
       side: side ?? this.side,
       borderRadius: borderRadius ?? this.borderRadius,
@@ -149,16 +144,12 @@ class LiquidOval extends LiquidShape {
 
   @override
   OutlinedBorder copyWith({BorderSide? side}) {
-    return LiquidOval(
-      side: side ?? this.side,
-    );
+    return LiquidOval(side: side ?? this.side);
   }
 
   @override
   ShapeBorder scale(double t) {
-    return LiquidOval(
-      side: side.scale(t),
-    );
+    return LiquidOval(side: side.scale(t));
   }
 
   @override
@@ -195,16 +186,11 @@ class LiquidRoundedRectangle extends LiquidShape {
   BorderRadius toBorderRadius() => GlassDefaults.safeBorderRadius(borderRadius);
 
   @override
-  OutlinedBorder get _equivalentOutlinedBorder => RoundedRectangleBorder(
-        borderRadius: toBorderRadius(),
-        side: side,
-      );
+  OutlinedBorder get _equivalentOutlinedBorder =>
+      RoundedRectangleBorder(borderRadius: toBorderRadius(), side: side);
 
   @override
-  LiquidRoundedRectangle copyWith({
-    BorderSide? side,
-    double? borderRadius,
-  }) {
+  LiquidRoundedRectangle copyWith({BorderSide? side, double? borderRadius}) {
     return LiquidRoundedRectangle(
       side: side ?? this.side,
       borderRadius: borderRadius ?? this.borderRadius,
@@ -260,10 +246,8 @@ class LiquidVerticalRoundedRectangle extends LiquidShape {
       GlassDefaults.safeVerticalBorderRadius(topRadius, bottomRadius);
 
   @override
-  OutlinedBorder get _equivalentOutlinedBorder => RoundedRectangleBorder(
-        borderRadius: toBorderRadius(),
-        side: side,
-      );
+  OutlinedBorder get _equivalentOutlinedBorder =>
+      RoundedRectangleBorder(borderRadius: toBorderRadius(), side: side);
 
   @override
   LiquidVerticalRoundedRectangle copyWith({
@@ -334,10 +318,8 @@ class LiquidVerticalRoundedSuperellipse extends LiquidShape {
   bool get isSuperellipse => true;
 
   @override
-  OutlinedBorder get _equivalentOutlinedBorder => RoundedSuperellipseBorder(
-        borderRadius: toBorderRadius(),
-        side: side,
-      );
+  OutlinedBorder get _equivalentOutlinedBorder =>
+      RoundedSuperellipseBorder(borderRadius: toBorderRadius(), side: side);
 
   @override
   LiquidVerticalRoundedSuperellipse copyWith({

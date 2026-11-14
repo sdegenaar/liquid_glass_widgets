@@ -22,23 +22,22 @@ const _settings = LiquidGlassSettings(thickness: 20, blur: 0);
 void main() {
   late ui.FragmentShader geometryShader;
   setUpAll(() async {
-    geometryShader =
-        (await ui.FragmentProgram.fromAsset(ShaderKeys.blendedGeometry))
-            .fragmentShader();
+    geometryShader = (await ui.FragmentProgram.fromAsset(
+      ShaderKeys.blendedGeometry,
+    )).fragmentShader();
   });
 
   RenderLiquidGlassBlendGroup blendGroupFor(
     GeometryRenderLink renderLink,
     GlassGroupLink link,
-  ) =>
-      RenderLiquidGlassBlendGroup(
-        renderLink: renderLink,
-        devicePixelRatio: 1,
-        geometryShader: geometryShader,
-        settings: _settings,
-        link: link,
-        blend: 0,
-      );
+  ) => RenderLiquidGlassBlendGroup(
+    renderLink: renderLink,
+    devicePixelRatio: 1,
+    geometryShader: geometryShader,
+    settings: _settings,
+    link: link,
+    blend: 0,
+  );
 
   group('GeometryRenderLink registration', () {
     test('registering the same geometry twice keeps one entry', () {
@@ -132,10 +131,7 @@ void main() {
 
     ui.Picture record() {
       final recorder = ui.PictureRecorder();
-      Canvas(recorder).drawRect(
-        const Rect.fromLTWH(0, 0, 8, 8),
-        Paint(),
-      );
+      Canvas(recorder).drawRect(const Rect.fromLTWH(0, 0, 8, 8), Paint());
       return recorder.endRecording();
     }
 
@@ -150,8 +146,9 @@ void main() {
       rendered.dispose();
     });
 
-    testWidgets('releases the recorded picture for an empty matte',
-        (tester) async {
+    testWidgets('releases the recorded picture for an empty matte', (
+      tester,
+    ) async {
       final picture = record();
       final rendered = await tester.runAsync(
         () => cache(picture, Rect.zero).renderAsync(),
@@ -164,16 +161,17 @@ void main() {
   });
 
   group('RenderLiquidGlassBlendGroup.gatherShapeData', () {
-    test('reserves 3 physical pixels around shapeBounds even without rim/frost',
-        () {
+    test('reserves 3 physical pixels around shapeBounds even without rim/frost', () {
       final link = GlassGroupLink();
-      final shape = RenderLiquidGlass(
-        shape: const LiquidRoundedRectangle(borderRadius: 23),
-        glassContainsChild: false,
-        blendGroupLink: link,
-      )..child = RenderConstrainedBox(
-          additionalConstraints: BoxConstraints.tight(const Size(46, 46)),
-        );
+      final shape =
+          RenderLiquidGlass(
+              shape: const LiquidRoundedRectangle(borderRadius: 23),
+              glassContainsChild: false,
+              blendGroupLink: link,
+            )
+            ..child = RenderConstrainedBox(
+              additionalConstraints: BoxConstraints.tight(const Size(46, 46)),
+            );
       final blendGroup = RenderLiquidGlassBlendGroup(
         renderLink: GeometryRenderLink(),
         devicePixelRatio: 3,
@@ -191,8 +189,10 @@ void main() {
       final owner = PipelineOwner();
       blendGroup
         ..attach(owner)
-        ..layout(BoxConstraints.tight(const Size(46, 46)),
-            parentUsesSize: true);
+        ..layout(
+          BoxConstraints.tight(const Size(46, 46)),
+          parentUsesSize: true,
+        );
 
       final (bounds, shapes, _) = blendGroup.gatherShapeData();
       expect(shapes, hasLength(1));

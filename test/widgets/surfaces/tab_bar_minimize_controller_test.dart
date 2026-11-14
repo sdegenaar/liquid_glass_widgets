@@ -24,20 +24,18 @@ GlassTabBarScrollSample _sample(
   double max = 2000,
   double viewport = 800,
   bool outOfRange = false,
-}) =>
-    GlassTabBarScrollSample(
-      pixels: pixels,
-      minScrollExtent: min,
-      maxScrollExtent: max,
-      viewportDimension: viewport,
-      direction: direction,
-      outOfRange: outOfRange,
-    );
+}) => GlassTabBarScrollSample(
+  pixels: pixels,
+  minScrollExtent: min,
+  maxScrollExtent: max,
+  viewportDimension: viewport,
+  direction: direction,
+  outOfRange: outOfRange,
+);
 
 GlassTabBarMinimizeController _controller([
   GlassBarMinimizeBehavior behavior = GlassBarMinimizeBehavior.onScrollDown,
-]) =>
-    GlassTabBarMinimizeController(behavior: behavior);
+]) => GlassTabBarMinimizeController(behavior: behavior);
 
 /// Feeds a run of samples starting from [from], stepping by [step].
 void _scroll(
@@ -58,15 +56,14 @@ ScrollMetrics _metrics(
   double max = 2000,
   double viewport = 800,
   AxisDirection axisDirection = AxisDirection.down,
-}) =>
-    FixedScrollMetrics(
-      pixels: pixels,
-      minScrollExtent: min,
-      maxScrollExtent: max,
-      viewportDimension: viewport,
-      axisDirection: axisDirection,
-      devicePixelRatio: 1.0,
-    );
+}) => FixedScrollMetrics(
+  pixels: pixels,
+  minScrollExtent: min,
+  maxScrollExtent: max,
+  viewportDimension: viewport,
+  axisDirection: axisDirection,
+  devicePixelRatio: 1.0,
+);
 
 /// A context to hang synthetic notifications off. [ScrollNotification] requires
 /// one; the state machine never reads it.
@@ -86,17 +83,21 @@ void _drag(
   ScrollDirection direction = ScrollDirection.reverse,
   AxisDirection axisDirection = AxisDirection.down,
 }) {
-  c.handleNotification(UserScrollNotification(
-    metrics: _metrics(from, axisDirection: axisDirection),
-    context: context,
-    direction: direction,
-  ));
-  for (var i = 1; i <= count; i++) {
-    c.handleNotification(ScrollUpdateNotification(
-      metrics: _metrics(from + i * step, axisDirection: axisDirection),
+  c.handleNotification(
+    UserScrollNotification(
+      metrics: _metrics(from, axisDirection: axisDirection),
       context: context,
-      scrollDelta: step,
-    ));
+      direction: direction,
+    ),
+  );
+  for (var i = 1; i <= count; i++) {
+    c.handleNotification(
+      ScrollUpdateNotification(
+        metrics: _metrics(from + i * step, axisDirection: axisDirection),
+        context: context,
+        scrollDelta: step,
+      ),
+    );
   }
 }
 
@@ -136,8 +137,11 @@ void main() {
       janky.handleSample(_sample(116));
 
       expect(smooth.minimized, isFalse);
-      expect(janky.minimized, isFalse,
-          reason: '16px of travel is 16px however it was sampled');
+      expect(
+        janky.minimized,
+        isFalse,
+        reason: '16px of travel is 16px however it was sampled',
+      );
 
       smooth.handleSample(_sample(121));
       janky.handleSample(_sample(121));
@@ -172,8 +176,11 @@ void main() {
       c.handleSample(_sample(118)); // +18, just under
       c.handleSample(_sample(110, direction: ScrollDirection.forward)); // flip
       c.handleSample(_sample(128)); // +18 again from a zeroed accumulator
-      expect(c.minimized, isFalse,
-          reason: 'the two +18 runs must not sum across the reversal');
+      expect(
+        c.minimized,
+        isFalse,
+        reason: 'the two +18 runs must not sum across the reversal',
+      );
     });
 
     test('expands on upward travel past the smaller expand threshold', () {
@@ -186,16 +193,18 @@ void main() {
       expect(c.minimized, isFalse);
     });
 
-    test('momentum keeps accumulating — the direction survives the lift-off',
-        () {
-      final c = _controller();
-      c.handleSample(_sample(100));
-      // Finger lifts after 8px; ballistic frames carry the rest, and
-      // userScrollDirection is not reset by goBallistic.
-      c.handleSample(_sample(108));
-      c.handleSample(_sample(140));
-      expect(c.minimized, isTrue);
-    });
+    test(
+      'momentum keeps accumulating — the direction survives the lift-off',
+      () {
+        final c = _controller();
+        c.handleSample(_sample(100));
+        // Finger lifts after 8px; ballistic frames carry the rest, and
+        // userScrollDirection is not reset by goBallistic.
+        c.handleSample(_sample(108));
+        c.handleSample(_sample(140));
+        expect(c.minimized, isTrue);
+      },
+    );
   });
 
   group('GlassTabBarMinimizeController — guards', () {
@@ -220,16 +229,18 @@ void main() {
       expect(c.minimized, isFalse);
     });
 
-    test('overscroll does not minimize, and the bounce back does not expand',
-        () {
-      final c = _controller()..minimize();
-      c.handleSample(_sample(1990));
-      c.handleSample(_sample(2030, outOfRange: true));
-      expect(c.minimized, isTrue);
-      // Bounce-back: pixels fall while the direction is still `reverse`.
-      c.handleSample(_sample(2000, outOfRange: true));
-      expect(c.minimized, isTrue);
-    });
+    test(
+      'overscroll does not minimize, and the bounce back does not expand',
+      () {
+        final c = _controller()..minimize();
+        c.handleSample(_sample(1990));
+        c.handleSample(_sample(2030, outOfRange: true));
+        expect(c.minimized, isTrue);
+        // Bounce-back: pixels fall while the direction is still `reverse`.
+        c.handleSample(_sample(2000, outOfRange: true));
+        expect(c.minimized, isTrue);
+      },
+    );
 
     test('non-scrollable content never minimizes', () {
       final c = _controller();
@@ -238,13 +249,15 @@ void main() {
       expect(c.minimized, isFalse);
     });
 
-    test('content shrinking below the scrollable floor expands a minimized bar',
-        () {
-      final c = _controller()..minimize();
-      expect(c.minimized, isTrue);
-      c.handleSample(_sample(0, max: 10));
-      expect(c.minimized, isFalse);
-    });
+    test(
+      'content shrinking below the scrollable floor expands a minimized bar',
+      () {
+        final c = _controller()..minimize();
+        expect(c.minimized, isTrue);
+        c.handleSample(_sample(0, max: 10));
+        expect(c.minimized, isFalse);
+      },
+    );
 
     test('reaching the top expands with no threshold', () {
       final c = _controller()..minimize();
@@ -275,8 +288,9 @@ void main() {
 
     test('minimize() is a no-op unless the behaviour minimizes', () {
       expect(
-          (_controller(GlassBarMinimizeBehavior.never)..minimize()).minimized,
-          isFalse);
+        (_controller(GlassBarMinimizeBehavior.never)..minimize()).minimized,
+        isFalse,
+      );
       expect((_controller()..minimize()).minimized, isTrue);
     });
 
@@ -291,12 +305,18 @@ void main() {
       final c = _controller(GlassBarMinimizeBehavior.onScrollUp);
       c.handleSample(_sample(500, direction: ScrollDirection.forward));
       c.handleSample(_sample(478, direction: ScrollDirection.forward));
-      expect(c.minimized, isTrue,
-          reason: 'scrolling up minimizes under onScrollUp');
+      expect(
+        c.minimized,
+        isTrue,
+        reason: 'scrolling up minimizes under onScrollUp',
+      );
 
       c.handleSample(_sample(492));
-      expect(c.minimized, isFalse,
-          reason: 'scrolling back down expands under onScrollUp');
+      expect(
+        c.minimized,
+        isFalse,
+        reason: 'scrolling back down expands under onScrollUp',
+      );
     });
 
     test('onScrollUp rests at the end of the content, not the start', () {
@@ -310,8 +330,9 @@ void main() {
   });
 
   group('GlassTabBarMinimizeController — notification driving', () {
-    testWidgets('minimizes after the threshold of accumulated travel',
-        (tester) async {
+    testWidgets('minimizes after the threshold of accumulated travel', (
+      tester,
+    ) async {
       final context = await _pumpContext(tester);
       final c = _controller();
       _drag(c, context, from: 100, step: 5, count: 3); // 15px — under 20
@@ -320,12 +341,19 @@ void main() {
       expect(c.minimized, isTrue);
     });
 
-    testWidgets('expands after the smaller threshold of upward travel',
-        (tester) async {
+    testWidgets('expands after the smaller threshold of upward travel', (
+      tester,
+    ) async {
       final context = await _pumpContext(tester);
       final c = _controller()..minimize();
-      _drag(c, context,
-          from: 500, step: -4, count: 4, direction: ScrollDirection.forward);
+      _drag(
+        c,
+        context,
+        from: 500,
+        step: -4,
+        count: 4,
+        direction: ScrollDirection.forward,
+      );
       expect(c.minimized, isFalse);
     });
 
@@ -336,77 +364,102 @@ void main() {
       // every sample, and the bar would never minimize — silently.
       final context = await _pumpContext(tester);
       final c = _controller();
-      c.handleNotification(UserScrollNotification(
-        metrics: _metrics(100),
-        context: context,
-        direction: ScrollDirection.reverse,
-      ));
-      for (final pixels in [104.0, 108.0, 112.0, 116.0, 121.0, 125.0]) {
-        c.handleNotification(ScrollUpdateNotification(
-          metrics: _metrics(pixels),
+      c.handleNotification(
+        UserScrollNotification(
+          metrics: _metrics(100),
           context: context,
-          scrollDelta: 4,
-        ));
+          direction: ScrollDirection.reverse,
+        ),
+      );
+      for (final pixels in [104.0, 108.0, 112.0, 116.0, 121.0, 125.0]) {
+        c.handleNotification(
+          ScrollUpdateNotification(
+            metrics: _metrics(pixels),
+            context: context,
+            scrollDelta: 4,
+          ),
+        );
       }
       expect(c.minimized, isTrue);
     });
 
-    testWidgets('updates with no user scroll behind them decide nothing',
-        (tester) async {
+    testWidgets('updates with no user scroll behind them decide nothing', (
+      tester,
+    ) async {
       final context = await _pumpContext(tester);
       final c = _controller();
       for (final pixels in [100.0, 120.0, 140.0, 160.0]) {
-        c.handleNotification(ScrollUpdateNotification(
-          metrics: _metrics(pixels),
-          context: context,
-          scrollDelta: 20,
-        ));
+        c.handleNotification(
+          ScrollUpdateNotification(
+            metrics: _metrics(pixels),
+            context: context,
+            scrollDelta: 20,
+          ),
+        );
       }
-      expect(c.minimized, isFalse,
-          reason: 'a jumpTo dispatches no UserScrollNotification');
+      expect(
+        c.minimized,
+        isFalse,
+        reason: 'a jumpTo dispatches no UserScrollNotification',
+      );
     });
 
     testWidgets('horizontal notifications are ignored', (tester) async {
       final context = await _pumpContext(tester);
       final c = _controller();
-      _drag(c, context,
-          from: 100, step: 10, count: 5, axisDirection: AxisDirection.right);
-      expect(c.minimized, isFalse,
-          reason: 'a carousel in the body must not minimize the bar');
+      _drag(
+        c,
+        context,
+        from: 100,
+        step: 10,
+        count: 5,
+        axisDirection: AxisDirection.right,
+      );
+      expect(
+        c.minimized,
+        isFalse,
+        reason: 'a carousel in the body must not minimize the bar',
+      );
     });
 
-    testWidgets('reaching the top expands, as through a ScrollController',
-        (tester) async {
+    testWidgets('reaching the top expands, as through a ScrollController', (
+      tester,
+    ) async {
       final context = await _pumpContext(tester);
       final c = _controller()..minimize();
-      c.handleNotification(ScrollUpdateNotification(
-        metrics: _metrics(0),
-        context: context,
-        scrollDelta: -10,
-      ));
+      c.handleNotification(
+        ScrollUpdateNotification(
+          metrics: _metrics(0),
+          context: context,
+          scrollDelta: -10,
+        ),
+      );
       expect(c.minimized, isFalse);
     });
 
-    testWidgets('a real drag through a NotificationListener minimizes',
-        (tester) async {
+    testWidgets('a real drag through a NotificationListener minimizes', (
+      tester,
+    ) async {
       // The synthetic tests above assume the order Flutter dispatches in; this
       // one takes it from the framework.
       final c = _controller();
       addTearDown(c.dispose);
 
-      await tester.pumpWidget(Directionality(
-        textDirection: TextDirection.ltr,
-        child: NotificationListener<ScrollNotification>(
-          onNotification: (notification) {
-            c.handleNotification(notification);
-            return false;
-          },
-          child: ListView.builder(
-            itemCount: 100,
-            itemBuilder: (context, i) => const SizedBox(height: 80),
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              c.handleNotification(notification);
+              return false;
+            },
+            child: ListView.builder(
+              itemCount: 100,
+              itemBuilder: (context, i) => const SizedBox(height: 80),
+            ),
           ),
         ),
-      ));
+      );
 
       await tester.drag(find.byType(ListView), const Offset(0, -120));
       await tester.pumpAndSettle();
@@ -422,8 +475,10 @@ void main() {
       final c = _controller();
       _drag(c, context, from: 100, step: 5, count: 2);
       c.dispose();
-      expect(() => _drag(c, context, from: 200, step: 5, count: 10),
-          returnsNormally);
+      expect(
+        () => _drag(c, context, from: 200, step: 5, count: 10),
+        returnsNormally,
+      );
       expect(c.minimized, isFalse);
     });
   });

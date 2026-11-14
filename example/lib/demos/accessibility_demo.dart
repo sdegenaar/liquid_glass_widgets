@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() {
@@ -30,9 +30,7 @@ class _AccessibilityDemoState extends State<AccessibilityDemo> {
   @override
   Widget build(BuildContext context) {
     return GlassScaffold(
-      appBar: const GlassAppBar(
-        title: Text('Keyboard Navigation'),
-      ),
+      appBar: const GlassAppBar(title: Text('Keyboard Navigation')),
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
@@ -55,13 +53,9 @@ class _AccessibilityDemoState extends State<AccessibilityDemo> {
                     'Inputs & Search',
                     const Column(
                       children: [
-                        GlassTextField(
-                          placeholder: 'Type something...',
-                        ),
+                        GlassTextField(placeholder: 'Type something...'),
                         SizedBox(height: 16),
-                        GlassSearchBar(
-                          placeholder: 'Search for items...',
-                        ),
+                        GlassSearchBar(placeholder: 'Search for items...'),
                       ],
                     ),
                   ),
@@ -158,8 +152,9 @@ class _AccessibilityDemoState extends State<AccessibilityDemo> {
                               leading: const Icon(CupertinoIcons.settings),
                               title: const Text('Settings'),
                               trailing: const Icon(
-                                  CupertinoIcons.chevron_forward,
-                                  color: CupertinoColors.systemGrey),
+                                CupertinoIcons.chevron_forward,
+                                color: CupertinoColors.systemGrey,
+                              ),
                               onTap: () {},
                             ),
                             const GlassDivider(),
@@ -167,8 +162,9 @@ class _AccessibilityDemoState extends State<AccessibilityDemo> {
                               leading: const Icon(CupertinoIcons.person),
                               title: const Text('Profile'),
                               trailing: const Icon(
-                                  CupertinoIcons.chevron_forward,
-                                  color: CupertinoColors.systemGrey),
+                                CupertinoIcons.chevron_forward,
+                                color: CupertinoColors.systemGrey,
+                              ),
                               onTap: () {},
                             ),
                           ],
@@ -205,10 +201,7 @@ class _AccessibilityDemoState extends State<AccessibilityDemo> {
                           value: _stepperValue,
                           onChanged: (v) => setState(() => _stepperValue = v),
                         ),
-                        GlassChip(
-                          label: 'Dismissible',
-                          onDeleted: () {},
-                        ),
+                        GlassChip(label: 'Dismissible', onDeleted: () {}),
                       ],
                     ),
                   ),

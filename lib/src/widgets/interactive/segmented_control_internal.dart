@@ -17,7 +17,7 @@
 // Both the tab bar and segmented control already share the right abstractions:
 // DraggableIndicatorPhysics, AnimatedGlassIndicator, and GlassSpring.
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 import '../../../constants/glass_defaults.dart';
 import '../../renderer/liquid_glass_renderer.dart';
@@ -56,8 +56,10 @@ class SegmentedControlContent extends StatefulWidget {
     this.direction = Axis.horizontal,
     this.indicatorSettings,
     this.indicatorPinchStrength = 0.4,
-    this.indicatorExpansion =
-        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    this.indicatorExpansion = const EdgeInsets.symmetric(
+      horizontal: 12,
+      vertical: 8,
+    ),
     this.backgroundKey,
     this.interactionBehavior = GlassInteractionBehavior.full,
     this.glowColor,
@@ -190,8 +192,9 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
   }
 
   void _onDragUpdate(DragUpdateDetails details) {
-    final nextAlignment =
-        _getAlignmentFromGlobalPosition(details.globalPosition);
+    final nextAlignment = _getAlignmentFromGlobalPosition(
+      details.globalPosition,
+    );
     setState(() {
       _isDragging = true;
       _mainAlign = nextAlignment;
@@ -212,8 +215,9 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
     final mainVelocity = widget.direction == Axis.horizontal
         ? details.velocity.pixelsPerSecond.dx
         : details.velocity.pixelsPerSecond.dy;
-    final mainExtent =
-        widget.direction == Axis.horizontal ? box.size.width : box.size.height;
+    final mainExtent = widget.direction == Axis.horizontal
+        ? box.size.width
+        : box.size.height;
     final velocityX = (mainVelocity / mainExtent) / draggableRange;
 
     final targetSegmentIndex = DraggableIndicatorPhysics.computeTargetIndex(
@@ -263,14 +267,11 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
 
   // ── Build ─────────────────────────────────────────────────────────────────
 
-  static const _defaultDarkIndicatorColor =
-      Color(0x4DEBEBF5); // rgba(235, 235, 245, 0.30)
+  static const _defaultDarkIndicatorColor = Color(
+    0x4DEBEBF5,
+  ); // rgba(235, 235, 245, 0.30)
   static const _defaultLightIndicatorShadow = [
-    BoxShadow(
-      color: Color(0x1F000000),
-      blurRadius: 4,
-      offset: Offset(0, 1),
-    ),
+    BoxShadow(color: Color(0x1F000000), blurRadius: 4, offset: Offset(0, 1)),
   ];
 
   @override
@@ -279,11 +280,15 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
     final themeStyle = GlassTheme.maybeOf(context)?.data.style;
     final isNativeTheme =
         themeStyle == GlassStyle.ios27 || themeStyle == GlassStyle.ios26;
-    final rawIndicatorColor = widget.indicatorColor ??
+    final rawIndicatorColor =
+        widget.indicatorColor ??
         (isLight ? CupertinoColors.white : _defaultDarkIndicatorColor);
-    final indicatorColor =
-        CupertinoDynamicColor.resolve(rawIndicatorColor, context);
-    final restingShadows = (!isNativeTheme &&
+    final indicatorColor = CupertinoDynamicColor.resolve(
+      rawIndicatorColor,
+      context,
+    );
+    final restingShadows =
+        (!isNativeTheme &&
             isLight &&
             widget.indicatorColor == null &&
             !_isDragging &&
@@ -296,11 +301,14 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
     // the inset padding (2 px), unless explicitly overridden.
     // If the outer container is a perfect capsule (e.g. 9999.0), the indicator
     // is also a perfect capsule.
-    final indicatorRadius = widget.indicatorBorderRadius ??
+    final indicatorRadius =
+        widget.indicatorBorderRadius ??
         (widget.borderRadius >= GlassDefaults.capsuleRadius
             ? GlassDefaults.capsuleRadius
-            : (widget.borderRadius - 2.0)
-                .clamp(0.0, GlassDefaults.capsuleRadius));
+            : (widget.borderRadius - 2.0).clamp(
+                0.0,
+                GlassDefaults.capsuleRadius,
+              ));
 
     final dynamicLabelColor = CupertinoDynamicColor.resolve(
       CupertinoTheme.of(context).textTheme.textStyle.color ??
@@ -317,8 +325,9 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
       baseSelectedTextStyle.color ?? dynamicLabelColor,
       context,
     );
-    final selectedTextStyle =
-        baseSelectedTextStyle.copyWith(color: restingSelectedTextColor);
+    final selectedTextStyle = baseSelectedTextStyle.copyWith(
+      color: restingSelectedTextColor,
+    );
 
     final defaultUnselectedColor = isNativeTheme
         ? dynamicLabelColor
@@ -347,7 +356,8 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
     // luminance-inverted pill (dark pill in Light Mode or light pill in Dark
     // Mode) automatically interpolates the selected text/icon color to
     // dynamicLabelColor unless overridden via activeSelectedColor.
-    final isIndicatorInverted = widget.indicatorColor != null &&
+    final isIndicatorInverted =
+        widget.indicatorColor != null &&
         indicatorColor.a >= 0.5 &&
         (isLight
             ? indicatorColor.computeLuminance() < 0.5
@@ -361,17 +371,19 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
     final resolvedActiveSelectedColor = widget.activeSelectedColor != null
         ? CupertinoDynamicColor.resolve(widget.activeSelectedColor!, context)
         : null;
-    final lensSelectedTextColor = resolvedActiveSelectedColor ??
+    final lensSelectedTextColor =
+        resolvedActiveSelectedColor ??
         (isIndicatorInverted && isTextColorInverted
             ? dynamicLabelColor
             : restingSelectedTextColor);
-    final lensSelectedIconColor = resolvedActiveSelectedColor ??
+    final lensSelectedIconColor =
+        resolvedActiveSelectedColor ??
         (isIndicatorInverted && isIconColorInverted
             ? dynamicLabelColor
             : restingSelectedIconColor);
     final needsLensColorShift =
         lensSelectedTextColor != restingSelectedTextColor ||
-            lensSelectedIconColor != restingSelectedIconColor;
+        lensSelectedIconColor != restingSelectedIconColor;
 
     return Listener(
       // Raw pointer events fire BEFORE gesture recognizers and never compete
@@ -386,22 +398,30 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
       },
       child: GestureDetector(
         excludeFromSemantics: true,
-        onHorizontalDragDown:
-            widget.direction == Axis.horizontal ? _onDragDown : null,
-        onHorizontalDragUpdate:
-            widget.direction == Axis.horizontal ? _onDragUpdate : null,
-        onHorizontalDragEnd:
-            widget.direction == Axis.horizontal ? _onDragEnd : null,
-        onHorizontalDragCancel:
-            widget.direction == Axis.horizontal ? _onDragCancel : null,
-        onVerticalDragDown:
-            widget.direction == Axis.vertical ? _onDragDown : null,
-        onVerticalDragUpdate:
-            widget.direction == Axis.vertical ? _onDragUpdate : null,
-        onVerticalDragEnd:
-            widget.direction == Axis.vertical ? _onDragEnd : null,
-        onVerticalDragCancel:
-            widget.direction == Axis.vertical ? _onDragCancel : null,
+        onHorizontalDragDown: widget.direction == Axis.horizontal
+            ? _onDragDown
+            : null,
+        onHorizontalDragUpdate: widget.direction == Axis.horizontal
+            ? _onDragUpdate
+            : null,
+        onHorizontalDragEnd: widget.direction == Axis.horizontal
+            ? _onDragEnd
+            : null,
+        onHorizontalDragCancel: widget.direction == Axis.horizontal
+            ? _onDragCancel
+            : null,
+        onVerticalDragDown: widget.direction == Axis.vertical
+            ? _onDragDown
+            : null,
+        onVerticalDragUpdate: widget.direction == Axis.vertical
+            ? _onDragUpdate
+            : null,
+        onVerticalDragEnd: widget.direction == Axis.vertical
+            ? _onDragEnd
+            : null,
+        onVerticalDragCancel: widget.direction == Axis.vertical
+            ? _onDragCancel
+            : null,
         child: VelocitySpringBuilder(
           value: _mainAlign,
           springWhenActive: GlassSpring.interactive(),
@@ -429,28 +449,29 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
                 // While the indicator is in transit to a newly selected segment
                 // (isMoving), the resting pill is not underneath selectedIndex
                 // yet even on the first frame before thickness ramps to 0.15.
-                final glassPhase =
-                    isMoving ? 1.0 : (thickness / 0.15).clamp(0.0, 1.0);
+                final glassPhase = isMoving
+                    ? 1.0
+                    : (thickness / 0.15).clamp(0.0, 1.0);
                 final effectiveSegmentsChild =
                     (needsLensColorShift && glassPhase > 0.0)
-                        ? _buildSegmentsFlex(
-                            selectedStyle: selectedTextStyle.copyWith(
-                              color: Color.lerp(
-                                restingSelectedTextColor,
-                                lensSelectedTextColor,
-                                glassPhase,
-                              ),
-                            ),
-                            unselectedStyle: unselectedTextStyle,
-                            selectedIconColor: Color.lerp(
-                              restingSelectedIconColor,
-                              lensSelectedIconColor,
-                              glassPhase,
-                            )!,
-                            unselectedIconColor: unselectedIconColor,
-                            animateSelectedTextStyle: false,
-                          )
-                        : child!;
+                    ? _buildSegmentsFlex(
+                        selectedStyle: selectedTextStyle.copyWith(
+                          color: Color.lerp(
+                            restingSelectedTextColor,
+                            lensSelectedTextColor,
+                            glassPhase,
+                          ),
+                        ),
+                        unselectedStyle: unselectedTextStyle,
+                        selectedIconColor: Color.lerp(
+                          restingSelectedIconColor,
+                          lensSelectedIconColor,
+                          glassPhase,
+                        )!,
+                        unselectedIconColor: unselectedIconColor,
+                        animateSelectedTextStyle: false,
+                      )
+                    : child!;
 
                 return Stack(
                   clipBehavior: Clip.none,
@@ -547,7 +568,8 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
                   isButton: true,
                   tracksSelection: true,
                   isSelected: widget.selectedIndex == i,
-                  semanticLabel: widget.segments[i].semanticLabel ??
+                  semanticLabel:
+                      widget.segments[i].semanticLabel ??
                       widget.segments[i].label,
                   onKeyboardActivate: () => _onSegmentTap(i),
                   semanticOnTap: () => _onSegmentTap(i),
@@ -566,8 +588,9 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
                           unselectedStyle: unselectedStyle,
                           selectedIconColor: selectedIconColor,
                           unselectedIconColor: unselectedIconColor,
-                          animateStyle: !(widget.selectedIndex == i &&
-                              !animateSelectedTextStyle),
+                          animateStyle:
+                              !(widget.selectedIndex == i &&
+                                  !animateSelectedTextStyle),
                         ),
                       ),
                     ),
@@ -592,8 +615,9 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
   }) {
     final style = isSelected ? selectedStyle : unselectedStyle;
     final iconColor = isSelected ? selectedIconColor : unselectedIconColor;
-    final styleDuration =
-        animateStyle ? const Duration(milliseconds: 200) : Duration.zero;
+    final styleDuration = animateStyle
+        ? const Duration(milliseconds: 200)
+        : Duration.zero;
     final hasLabel = tab.label != null && tab.label!.isNotEmpty;
     final hasIcon = tab.icon != null;
 
@@ -602,10 +626,7 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
         mainAxisSize: MainAxisSize.min,
         children: [
           IconTheme(
-            data: IconThemeData(
-              color: iconColor,
-              size: 16,
-            ),
+            data: IconThemeData(color: iconColor, size: 16),
             child: tab.icon!,
           ),
           const SizedBox(height: 2),

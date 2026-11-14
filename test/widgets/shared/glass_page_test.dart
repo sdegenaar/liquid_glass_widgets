@@ -1,20 +1,17 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() {
   group('GlassPage', () {
-    testWidgets('renders child directly when no background provided',
-        (tester) async {
+    testWidgets('renders child directly when no background provided', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: GlassPage(
-            child: const Scaffold(
-              body: Text('Content'),
-            ),
-          ),
+          home: GlassPage(child: const Scaffold(body: Text('Content'))),
         ),
       );
 
@@ -27,48 +24,51 @@ void main() {
     });
 
     testWidgets(
-        'passes child through without Theme wrapper when background provided in MaterialApp',
-        (tester) async {
-      // GlassPage no longer injects a Theme to force Scaffold transparency.
-      // GlassScaffold handles its own background color on CupertinoPageScaffold.
-      // Users who use GlassPage with a raw Scaffold must set backgroundColor
-      // explicitly if they want transparency.
-      await tester.pumpWidget(
-        MaterialApp(
-          home: GlassPage(
-            background: const SizedBox(key: Key('bg')),
-            child: Scaffold(
-              body: const Text('Content'),
+      'passes child through without Theme wrapper when background provided in MaterialApp',
+      (tester) async {
+        // GlassPage no longer injects a Theme to force Scaffold transparency.
+        // GlassScaffold handles its own background color on CupertinoPageScaffold.
+        // Users who use GlassPage with a raw Scaffold must set backgroundColor
+        // explicitly if they want transparency.
+        await tester.pumpWidget(
+          MaterialApp(
+            home: GlassPage(
+              background: const SizedBox(key: Key('bg')),
+              child: Scaffold(body: const Text('Content')),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byKey(const Key('bg')), findsOneWidget);
-      expect(find.text('Content'), findsOneWidget);
-      // No Theme injection around child — GlassPage is now a pure host-agnostic wrapper.
-      final glassPageFinder = find.byType(GlassPage);
-      final themesInsidePage = find.descendant(
-        of: glassPageFinder,
-        matching: find.byType(Theme),
-      );
-      // Any Theme found inside GlassPage should not be from GlassPage itself
-      // (i.e., no scoped GlassTheme themeOverride wrapper — we didn't set one).
-      expect(
-          tester.widgetList<Theme>(themesInsidePage).where(
-              (t) => t.data.scaffoldBackgroundColor == const Color(0x00000000)),
-          isEmpty);
-    });
+        expect(find.byKey(const Key('bg')), findsOneWidget);
+        expect(find.text('Content'), findsOneWidget);
+        // No Theme injection around child — GlassPage is now a pure host-agnostic wrapper.
+        final glassPageFinder = find.byType(GlassPage);
+        final themesInsidePage = find.descendant(
+          of: glassPageFinder,
+          matching: find.byType(Theme),
+        );
+        // Any Theme found inside GlassPage should not be from GlassPage itself
+        // (i.e., no scoped GlassTheme themeOverride wrapper — we didn't set one).
+        expect(
+          tester
+              .widgetList<Theme>(themesInsidePage)
+              .where(
+                (t) =>
+                    t.data.scaffoldBackgroundColor == const Color(0x00000000),
+              ),
+          isEmpty,
+        );
+      },
+    );
 
-    testWidgets('works in pure CupertinoApp host with no Material ancestor',
-        (tester) async {
+    testWidgets('works in pure CupertinoApp host with no Material ancestor', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         CupertinoApp(
           home: GlassPage(
             background: const SizedBox(key: Key('bg')),
-            child: const CupertinoPageScaffold(
-              child: Text('Content'),
-            ),
+            child: const CupertinoPageScaffold(child: Text('Content')),
           ),
         ),
       );
@@ -87,9 +87,7 @@ void main() {
         MaterialApp(
           home: GlassPage(
             themeOverride: overrideTheme,
-            child: const Scaffold(
-              body: Text('Content'),
-            ),
+            child: const Scaffold(body: Text('Content')),
           ),
         ),
       );
@@ -98,8 +96,9 @@ void main() {
       expect(themeData.data.light.settings?.blur, 100);
     });
 
-    testWidgets('handles GlassStatusBarStyle.dark and light appropriately',
-        (tester) async {
+    testWidgets('handles GlassStatusBarStyle.dark and light appropriately', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: GlassPage(
@@ -109,9 +108,10 @@ void main() {
         ),
       );
 
-      final annotatedDark =
-          tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(
-              find.byType(AnnotatedRegion<SystemUiOverlayStyle>).first);
+      final annotatedDark = tester
+          .widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+            find.byType(AnnotatedRegion<SystemUiOverlayStyle>).first,
+          );
       expect(annotatedDark.value, SystemUiOverlayStyle.dark);
 
       await tester.pumpWidget(
@@ -123,69 +123,78 @@ void main() {
         ),
       );
 
-      final annotatedLight =
-          tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(
-              find.byType(AnnotatedRegion<SystemUiOverlayStyle>).first);
+      final annotatedLight = tester
+          .widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+            find.byType(AnnotatedRegion<SystemUiOverlayStyle>).first,
+          );
       expect(annotatedLight.value, SystemUiOverlayStyle.light);
     });
 
-    testWidgets('handles GlassStatusBarStyle.auto based on platform brightness',
-        (tester) async {
-      // Simulate dark mode OS
-      tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    testWidgets(
+      'handles GlassStatusBarStyle.auto based on platform brightness',
+      (tester) async {
+        // Simulate dark mode OS
+        tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: GlassPage(
-            statusBarStyle: GlassStatusBarStyle.auto,
-            child: const Scaffold(body: Text('Content')),
+        await tester.pumpWidget(
+          MaterialApp(
+            home: GlassPage(
+              statusBarStyle: GlassStatusBarStyle.auto,
+              child: const Scaffold(body: Text('Content')),
+            ),
           ),
-        ),
-      );
+        );
 
-      final annotatedLight =
-          tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(
-              find.byType(AnnotatedRegion<SystemUiOverlayStyle>).first);
-      // In dark mode, auto uses light icons
-      expect(annotatedLight.value, SystemUiOverlayStyle.light);
+        final annotatedLight = tester
+            .widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+              find.byType(AnnotatedRegion<SystemUiOverlayStyle>).first,
+            );
+        // In dark mode, auto uses light icons
+        expect(annotatedLight.value, SystemUiOverlayStyle.light);
 
-      // Simulate light mode OS
-      tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+        // Simulate light mode OS
+        tester.platformDispatcher.platformBrightnessTestValue =
+            Brightness.light;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: GlassPage(
-            statusBarStyle: GlassStatusBarStyle.auto,
-            child: const Scaffold(body: Text('Content')),
+        await tester.pumpWidget(
+          MaterialApp(
+            home: GlassPage(
+              statusBarStyle: GlassStatusBarStyle.auto,
+              child: const Scaffold(body: Text('Content')),
+            ),
           ),
-        ),
-      );
+        );
 
-      final annotatedDark =
-          tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(
-              find.byType(AnnotatedRegion<SystemUiOverlayStyle>).first);
-      // In light mode, auto uses dark icons
-      expect(annotatedDark.value, SystemUiOverlayStyle.dark);
+        final annotatedDark = tester
+            .widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+              find.byType(AnnotatedRegion<SystemUiOverlayStyle>).first,
+            );
+        // In light mode, auto uses dark icons
+        expect(annotatedDark.value, SystemUiOverlayStyle.dark);
 
-      tester.platformDispatcher.clearPlatformBrightnessTestValue();
-    });
+        tester.platformDispatcher.clearPlatformBrightnessTestValue();
+      },
+    );
 
-    testWidgets('edgeToEdge property updates properly on rebuild',
-        (tester) async {
+    testWidgets('edgeToEdge property updates properly on rebuild', (
+      tester,
+    ) async {
       bool edgeToEdge = false;
 
       await tester.pumpWidget(
-        StatefulBuilder(builder: (context, setState) {
-          return MaterialApp(
-            home: GestureDetector(
-              onTap: () => setState(() => edgeToEdge = !edgeToEdge),
-              child: GlassPage(
-                edgeToEdge: edgeToEdge,
-                child: const Scaffold(body: Text('Content')),
+        StatefulBuilder(
+          builder: (context, setState) {
+            return MaterialApp(
+              home: GestureDetector(
+                onTap: () => setState(() => edgeToEdge = !edgeToEdge),
+                child: GlassPage(
+                  edgeToEdge: edgeToEdge,
+                  child: const Scaffold(body: Text('Content')),
+                ),
               ),
-            ),
-          );
-        }),
+            );
+          },
+        ),
       );
 
       expect(find.byType(GlassPage), findsOneWidget);
@@ -203,240 +212,250 @@ void main() {
     });
 
     testWidgets(
-        'applies ClipRSuperellipse during push, pop, and swipe-back, and unclips at rest',
-        (tester) async {
-      await tester.pumpWidget(
-        CupertinoApp(
-          home: Builder(
-            builder: (context) => GlassPage(
-              background: const ColoredBox(color: Color(0xFF112233)),
-              child: CupertinoPageScaffold(
-                child: Center(
-                  child: CupertinoButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        CupertinoPageRoute<void>(
-                          builder: (_) => const GlassPage(
-                            transitionCornerRadius: 42.0,
-                            child: CupertinoPageScaffold(
-                              child: Center(child: Text('Detail Page')),
+      'applies ClipRSuperellipse during push, pop, and swipe-back, and unclips at rest',
+      (tester) async {
+        await tester.pumpWidget(
+          CupertinoApp(
+            home: Builder(
+              builder: (context) => GlassPage(
+                background: const ColoredBox(color: Color(0xFF112233)),
+                child: CupertinoPageScaffold(
+                  child: Center(
+                    child: CupertinoButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          CupertinoPageRoute<void>(
+                            builder: (_) => const GlassPage(
+                              transitionCornerRadius: 42.0,
+                              child: CupertinoPageScaffold(
+                                child: Center(child: Text('Detail Page')),
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                    child: const Text('Push Detail'),
+                        );
+                      },
+                      child: const Text('Push Detail'),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      List<ClipRSuperellipse> activeClips() => tester
-          .widgetList<ClipRSuperellipse>(
-            find.byType(ClipRSuperellipse, skipOffstage: false),
-          )
-          .where((c) => c.clipBehavior != Clip.none)
-          .toList();
+        List<ClipRSuperellipse> activeClips() => tester
+            .widgetList<ClipRSuperellipse>(
+              find.byType(ClipRSuperellipse, skipOffstage: false),
+            )
+            .where((c) => c.clipBehavior != Clip.none)
+            .toList();
 
-      // At rest on root page: no active ClipRSuperellipse
-      expect(activeClips(), isEmpty);
+        // At rest on root page: no active ClipRSuperellipse
+        expect(activeClips(), isEmpty);
 
-      // Start push transition
-      await tester.tap(find.text('Push Detail'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 120));
+        // Start push transition
+        await tester.tap(find.text('Push Detail'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
 
-      // Mid-push: only the incoming primary sliding route (42.0) clips;
-      // the underlying root route stays unclipped so no corner gap appears.
-      final midPushClips = activeClips();
-      expect(midPushClips.length, 1);
-      expect(midPushClips.single.borderRadius, BorderRadius.circular(42.0));
+        // Mid-push: only the incoming primary sliding route (42.0) clips;
+        // the underlying root route stays unclipped so no corner gap appears.
+        final midPushClips = activeClips();
+        expect(midPushClips.length, 1);
+        expect(midPushClips.single.borderRadius, BorderRadius.circular(42.0));
 
-      // Settle push: no active clips at rest
-      await tester.pumpAndSettle();
-      expect(find.text('Detail Page'), findsOneWidget);
-      expect(activeClips(), isEmpty);
+        // Settle push: no active clips at rest
+        await tester.pumpAndSettle();
+        expect(find.text('Detail Page'), findsOneWidget);
+        expect(activeClips(), isEmpty);
 
-      // Interactive swipe-back from left edge (cancelled)
-      var gesture = await tester.startGesture(const Offset(2, 300));
-      await gesture.moveBy(const Offset(60, 0));
-      await tester.pump();
-      expect(activeClips().length, 1);
-      expect(activeClips().single.borderRadius, BorderRadius.circular(42.0));
+        // Interactive swipe-back from left edge (cancelled)
+        var gesture = await tester.startGesture(const Offset(2, 300));
+        await gesture.moveBy(const Offset(60, 0));
+        await tester.pump();
+        expect(activeClips().length, 1);
+        expect(activeClips().single.borderRadius, BorderRadius.circular(42.0));
 
-      // Release early to cancel swipe-back
-      await gesture.up();
-      await tester.pump(const Duration(milliseconds: 50));
-      expect(activeClips(), isNotEmpty);
+        // Release early to cancel swipe-back
+        await gesture.up();
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(activeClips(), isNotEmpty);
 
-      await tester.pumpAndSettle();
-      expect(find.text('Detail Page'), findsOneWidget);
-      expect(activeClips(), isEmpty);
+        await tester.pumpAndSettle();
+        expect(find.text('Detail Page'), findsOneWidget);
+        expect(activeClips(), isEmpty);
 
-      // Interactive swipe-back from left edge (completed)
-      gesture = await tester.startGesture(const Offset(2, 300));
-      await gesture.moveBy(const Offset(500, 0));
-      await tester.pump();
-      expect(activeClips().length, 1);
+        // Interactive swipe-back from left edge (completed)
+        gesture = await tester.startGesture(const Offset(2, 300));
+        await gesture.moveBy(const Offset(500, 0));
+        await tester.pump();
+        expect(activeClips().length, 1);
 
-      await gesture.up();
-      await tester.pumpAndSettle();
-      expect(find.text('Push Detail'), findsOneWidget);
-      expect(activeClips(), isEmpty);
-    });
+        await gesture.up();
+        await tester.pumpAndSettle();
+        expect(find.text('Push Detail'), findsOneWidget);
+        expect(activeClips(), isEmpty);
+      },
+    );
 
-    testWidgets('transitionCornerRadius: 0 disables clipping during transition',
-        (tester) async {
-      await tester.pumpWidget(
-        CupertinoApp(
-          home: Builder(
-            builder: (context) => GlassScaffold(
-              transitionCornerRadius: 0.0,
-              body: Center(
-                child: CupertinoButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      CupertinoPageRoute<void>(
-                        builder: (_) => const GlassScaffold(
-                          transitionCornerRadius: 0.0,
-                          body: Center(child: Text('Unclipped Detail')),
+    testWidgets(
+      'transitionCornerRadius: 0 disables clipping during transition',
+      (tester) async {
+        await tester.pumpWidget(
+          CupertinoApp(
+            home: Builder(
+              builder: (context) => GlassScaffold(
+                transitionCornerRadius: 0.0,
+                body: Center(
+                  child: CupertinoButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        CupertinoPageRoute<void>(
+                          builder: (_) => const GlassScaffold(
+                            transitionCornerRadius: 0.0,
+                            body: Center(child: Text('Unclipped Detail')),
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                  child: const Text('Push Unclipped'),
+                      );
+                    },
+                    child: const Text('Push Unclipped'),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.text('Push Unclipped'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 120));
+        await tester.tap(find.text('Push Unclipped'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
 
-      final activeClips = tester
-          .widgetList<ClipRSuperellipse>(
-            find.byType(ClipRSuperellipse, skipOffstage: false),
-          )
-          .where((c) => c.clipBehavior != Clip.none);
-      expect(activeClips, isEmpty);
+        final activeClips = tester
+            .widgetList<ClipRSuperellipse>(
+              find.byType(ClipRSuperellipse, skipOffstage: false),
+            )
+            .where((c) => c.clipBehavior != Clip.none);
+        expect(activeClips, isEmpty);
 
-      await tester.pumpAndSettle();
-      expect(find.text('Unclipped Detail'), findsOneWidget);
-    });
+        await tester.pumpAndSettle();
+        expect(find.text('Unclipped Detail'), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        'GlassPageTransitionsBuilder clips MaterialPageRoute transitions in MaterialApp',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData(
-            pageTransitionsTheme: const PageTransitionsTheme(
-              builders: {
-                TargetPlatform.android:
-                    GlassPageTransitionsBuilder(transitionCornerRadius: 36.0),
-                TargetPlatform.iOS:
-                    GlassPageTransitionsBuilder(transitionCornerRadius: 36.0),
-                TargetPlatform.macOS:
-                    GlassPageTransitionsBuilder(transitionCornerRadius: 36.0),
-              },
+      'GlassPageTransitionsBuilder clips MaterialPageRoute transitions in MaterialApp',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData(
+              pageTransitionsTheme: const PageTransitionsTheme(
+                builders: {
+                  TargetPlatform.android: GlassPageTransitionsBuilder(
+                    transitionCornerRadius: 36.0,
+                  ),
+                  TargetPlatform.iOS: GlassPageTransitionsBuilder(
+                    transitionCornerRadius: 36.0,
+                  ),
+                  TargetPlatform.macOS: GlassPageTransitionsBuilder(
+                    transitionCornerRadius: 36.0,
+                  ),
+                },
+              ),
             ),
-          ),
-          home: Builder(
-            builder: (context) => Scaffold(
-              body: Center(
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const Scaffold(
-                          body: Center(child: Text('Material Detail')),
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const Scaffold(
+                            body: Center(child: Text('Material Detail')),
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                  child: const Text('Go Material'),
+                      );
+                    },
+                    child: const Text('Go Material'),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      List<ClipRSuperellipse> activeClips() => tester
-          .widgetList<ClipRSuperellipse>(
-            find.byType(ClipRSuperellipse, skipOffstage: false),
-          )
-          .where((c) => c.clipBehavior != Clip.none)
-          .toList();
+        List<ClipRSuperellipse> activeClips() => tester
+            .widgetList<ClipRSuperellipse>(
+              find.byType(ClipRSuperellipse, skipOffstage: false),
+            )
+            .where((c) => c.clipBehavior != Clip.none)
+            .toList();
 
-      expect(activeClips(), isEmpty);
+        expect(activeClips(), isEmpty);
 
-      await tester.tap(find.text('Go Material'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+        await tester.tap(find.text('Go Material'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      final midClips = activeClips();
-      expect(midClips.length, 1);
-      expect(midClips.single.borderRadius, BorderRadius.circular(36.0));
+        final midClips = activeClips();
+        expect(midClips.length, 1);
+        expect(midClips.single.borderRadius, BorderRadius.circular(36.0));
 
-      await tester.pumpAndSettle();
-      expect(find.text('Material Detail'), findsOneWidget);
-      expect(activeClips(), isEmpty);
-    });
+        await tester.pumpAndSettle();
+        expect(find.text('Material Detail'), findsOneWidget);
+        expect(activeClips(), isEmpty);
+      },
+    );
 
     testWidgets(
-        'GlassPageTransitionClip updates subscriptions on didUpdateWidget',
-        (tester) async {
-      final controller1 = AnimationController(
-        vsync: const TestVSync(),
-        value: 1.0,
-      );
-      final controller2 = AnimationController(
-        vsync: const TestVSync(),
-        value: 0.5,
-      );
-      addTearDown(controller1.dispose);
-      addTearDown(controller2.dispose);
+      'GlassPageTransitionClip updates subscriptions on didUpdateWidget',
+      (tester) async {
+        final controller1 = AnimationController(
+          vsync: const TestVSync(),
+          value: 1.0,
+        );
+        final controller2 = AnimationController(
+          vsync: const TestVSync(),
+          value: 0.5,
+        );
+        addTearDown(controller1.dispose);
+        addTearDown(controller2.dispose);
 
-      await tester.pumpWidget(
-        Directionality(
-          textDirection: TextDirection.ltr,
-          child: GlassPageTransitionClip(
-            primaryAnimation: controller1,
-            cornerRadius: 30.0,
-            child: const SizedBox.expand(),
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: GlassPageTransitionClip(
+              primaryAnimation: controller1,
+              cornerRadius: 30.0,
+              child: const SizedBox.expand(),
+            ),
           ),
-        ),
-      );
+        );
 
-      var clip =
-          tester.widget<ClipRSuperellipse>(find.byType(ClipRSuperellipse));
-      expect(clip.clipBehavior, Clip.none);
+        var clip = tester.widget<ClipRSuperellipse>(
+          find.byType(ClipRSuperellipse),
+        );
+        expect(clip.clipBehavior, Clip.none);
 
-      await tester.pumpWidget(
-        Directionality(
-          textDirection: TextDirection.ltr,
-          child: GlassPageTransitionClip(
-            primaryAnimation: controller2,
-            cornerRadius: 30.0,
-            child: const SizedBox.expand(),
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: GlassPageTransitionClip(
+              primaryAnimation: controller2,
+              cornerRadius: 30.0,
+              child: const SizedBox.expand(),
+            ),
           ),
-        ),
-      );
+        );
 
-      clip = tester.widget<ClipRSuperellipse>(find.byType(ClipRSuperellipse));
-      expect(clip.clipBehavior, Clip.antiAlias);
-      expect(clip.borderRadius, BorderRadius.circular(30.0));
-    });
+        clip = tester.widget<ClipRSuperellipse>(find.byType(ClipRSuperellipse));
+        expect(clip.clipBehavior, Clip.antiAlias);
+        expect(clip.borderRadius, BorderRadius.circular(30.0));
+      },
+    );
 
-    testWidgets('resolveDisplayCornerRadius adapts to device screen geometry',
-        (tester) async {
+    testWidgets('resolveDisplayCornerRadius adapts to device screen geometry', (
+      tester,
+    ) async {
       Future<double> resolveFor({
         required Size size,
         required EdgeInsets viewPadding,
@@ -447,8 +466,9 @@ void main() {
             data: MediaQueryData(size: size, viewPadding: viewPadding),
             child: Builder(
               builder: (context) {
-                resolved =
-                    GlassPageTransitionClip.resolveDisplayCornerRadius(context);
+                resolved = GlassPageTransitionClip.resolveDisplayCornerRadius(
+                  context,
+                );
                 return const SizedBox.shrink();
               },
             ),
@@ -503,8 +523,7 @@ void main() {
       );
     });
 
-    testWidgets(
-        'GlassPageRoute linearizes delegated parallax during interactive back swipe '
+    testWidgets('GlassPageRoute linearizes delegated parallax during interactive back swipe '
         'and preserves Cupertino curve when non-interactive', (tester) async {
       const homeKey = ValueKey('delegated-home');
       const detailKey = ValueKey('delegated-detail');
@@ -569,79 +588,80 @@ void main() {
     });
 
     testWidgets(
-        'GlassPageRoute fullscreenDialog suppresses delegatedTransition and '
-        'GlassPageTransitionsBuilder shares Cupertino duration and delegated parallax',
-        (tester) async {
-      final normalRoute = GlassPageRoute<void>(
-        builder: (_) => const SizedBox.shrink(),
-      );
-      final dialogRoute = GlassPageRoute<void>(
-        fullscreenDialog: true,
-        builder: (_) => const SizedBox.shrink(),
-      );
-      const transitionsBuilder = GlassPageTransitionsBuilder();
+      'GlassPageRoute fullscreenDialog suppresses delegatedTransition and '
+      'GlassPageTransitionsBuilder shares Cupertino duration and delegated parallax',
+      (tester) async {
+        final normalRoute = GlassPageRoute<void>(
+          builder: (_) => const SizedBox.shrink(),
+        );
+        final dialogRoute = GlassPageRoute<void>(
+          fullscreenDialog: true,
+          builder: (_) => const SizedBox.shrink(),
+        );
+        const transitionsBuilder = GlassPageTransitionsBuilder();
 
-      expect(normalRoute.delegatedTransition, isNotNull);
-      expect(dialogRoute.delegatedTransition, isNull);
-      expect(
-        transitionsBuilder.transitionDuration,
-        CupertinoRouteTransitionMixin.kTransitionDuration,
-      );
-      expect(
-        transitionsBuilder.delegatedTransition,
-        equals(normalRoute.delegatedTransition),
-      );
+        expect(normalRoute.delegatedTransition, isNotNull);
+        expect(dialogRoute.delegatedTransition, isNull);
+        expect(
+          transitionsBuilder.transitionDuration,
+          CupertinoRouteTransitionMixin.kTransitionDuration,
+        );
+        expect(
+          transitionsBuilder.delegatedTransition,
+          equals(normalRoute.delegatedTransition),
+        );
 
-      const rootKey = ValueKey('root-custom-route');
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData(
-            pageTransitionsTheme: const PageTransitionsTheme(
-              builders: {
-                TargetPlatform.android: GlassPageTransitionsBuilder(),
-                TargetPlatform.iOS: GlassPageTransitionsBuilder(),
-                TargetPlatform.macOS: GlassPageTransitionsBuilder(),
-              },
+        const rootKey = ValueKey('root-custom-route');
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData(
+              pageTransitionsTheme: const PageTransitionsTheme(
+                builders: {
+                  TargetPlatform.android: GlassPageTransitionsBuilder(),
+                  TargetPlatform.iOS: GlassPageTransitionsBuilder(),
+                  TargetPlatform.macOS: GlassPageTransitionsBuilder(),
+                },
+              ),
             ),
-          ),
-          onGenerateRoute: (settings) {
-            return PageRouteBuilder<void>(
-              pageBuilder: (context, _, __) => Scaffold(
-                key: rootKey,
-                body: Center(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const Scaffold(
-                            body: Center(child: Text('Second Material')),
+            onGenerateRoute: (settings) {
+              return PageRouteBuilder<void>(
+                pageBuilder: (context, _, _) => Scaffold(
+                  key: rootKey,
+                  body: Center(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const Scaffold(
+                              body: Center(child: Text('Second Material')),
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                    child: const Text('Push Material'),
+                        );
+                      },
+                      child: const Text('Push Material'),
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
-        ),
-      );
+              );
+            },
+          ),
+        );
 
-      await tester.tap(find.text('Push Material'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Push Material'));
+        await tester.pumpAndSettle();
 
-      final gesture = await tester.startGesture(const Offset(2, 300));
-      await gesture.moveBy(const Offset(400, 0));
-      await tester.pump();
-      expect(
-        tester.getTopLeft(find.byKey(rootKey)).dx,
-        closeTo(-800.0 / 6.0, 0.5),
-      );
+        final gesture = await tester.startGesture(const Offset(2, 300));
+        await gesture.moveBy(const Offset(400, 0));
+        await tester.pump();
+        expect(
+          tester.getTopLeft(find.byKey(rootKey)).dx,
+          closeTo(-800.0 / 6.0, 0.5),
+        );
 
-      await gesture.up();
-      await tester.pumpAndSettle();
-      expect(tester.getTopLeft(find.byKey(rootKey)).dx, closeTo(0.0, 0.01));
-    });
+        await gesture.up();
+        await tester.pumpAndSettle();
+        expect(tester.getTopLeft(find.byKey(rootKey)).dx, closeTo(0.0, 0.01));
+      },
+    );
   });
 }

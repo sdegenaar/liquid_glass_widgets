@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 
 import '../../types/glass_quality.dart';
 import '../overlays/glass_menu.dart';
@@ -146,7 +146,8 @@ class GlassPullDownButton extends StatelessWidget {
           final defaultShape = buttonWidth == buttonHeight
               ? const LiquidOval()
               : LiquidRoundedSuperellipse(
-                  borderRadius: (buttonWidth < buttonHeight
+                  borderRadius:
+                      (buttonWidth < buttonHeight
                           ? buttonWidth
                           : buttonHeight) /
                       2,

@@ -1,4 +1,5 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../theme/glass_theme.dart';
@@ -308,7 +309,8 @@ class GlassChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
-    final effectiveSurfaceStyle = surfaceStyle ??
+    final effectiveSurfaceStyle =
+        surfaceStyle ??
         InheritedGlassSurfaceStyle.maybeOf(context) ??
         GlassSurfaceStyle.glass;
     final isSolid = effectiveSurfaceStyle == GlassSurfaceStyle.solid;
@@ -316,13 +318,15 @@ class GlassChip extends StatelessWidget {
     final baseColor = isDark ? CupertinoColors.white : CupertinoColors.black;
     final defaultContentColor = isSolid
         ? (isDark
-            ? CupertinoColors.label.darkColor
-            : CupertinoColors.label.color)
+              ? CupertinoColors.label.darkColor
+              : CupertinoColors.label.color)
         : baseColor.withValues(alpha: 0.9);
-    final defaultSelectedColor =
-        baseColor.withValues(alpha: isDark ? 0.3 : 0.1);
-    final defaultGlowUnselected =
-        baseColor.withValues(alpha: isDark ? 0.2 : 0.05);
+    final defaultSelectedColor = baseColor.withValues(
+      alpha: isDark ? 0.3 : 0.1,
+    );
+    final defaultGlowUnselected = baseColor.withValues(
+      alpha: isDark ? 0.2 : 0.05,
+    );
 
     final defaultLabelStyle = TextStyle(
       fontSize: 14,
@@ -343,10 +347,7 @@ class GlassChip extends StatelessWidget {
           // Leading icon
           if (icon != null) ...[
             IconTheme(
-              data: IconThemeData(
-                color: effectiveIconColor,
-                size: iconSize,
-              ),
+              data: IconThemeData(color: effectiveIconColor, size: iconSize),
               child: icon!,
             ),
             SizedBox(width: spacing),
@@ -405,7 +406,8 @@ class GlassChip extends StatelessWidget {
         return true;
       }());
 
-      final solidSelectedColor = selectedColor ??
+      final solidSelectedColor =
+          selectedColor ??
           (isDark
               ? CupertinoColors.white.withValues(alpha: 0.24)
               : CupertinoColors.black.withValues(alpha: 0.14));
@@ -414,10 +416,7 @@ class GlassChip extends StatelessWidget {
           : (color ?? resolveGlassSolidWellColor(context));
 
       final solidPill = DecoratedBox(
-        decoration: ShapeDecoration(
-          color: fillColor,
-          shape: _chipShape,
-        ),
+        decoration: ShapeDecoration(color: fillColor, shape: _chipShape),
         child: chipContent,
       );
 
@@ -458,15 +457,16 @@ class GlassChip extends StatelessWidget {
     final effectiveInteractionScale = interactionScale != 1.03
         ? interactionScale
         : themeInteraction.interactionScale ?? interactionScale;
-    final effectiveStretch =
-        stretch != 0.3 ? stretch : themeInteraction.stretch ?? stretch;
+    final effectiveStretch = stretch != 0.3
+        ? stretch
+        : themeInteraction.stretch ?? stretch;
     final effectiveAnchorStretch = anchorStretch != true
         ? anchorStretch
         : themeInteraction.anchorStretch ?? anchorStretch;
     final effectiveAnchorStretchSettings =
         !identical(anchorStretchSettings, const AnchorStretchSettings())
-            ? anchorStretchSettings
-            : themeInteraction.anchorStretchSettings ?? anchorStretchSettings;
+        ? anchorStretchSettings
+        : themeInteraction.anchorStretchSettings ?? anchorStretchSettings;
 
     return IntrinsicWidth(
       child: IntrinsicHeight(

@@ -35,7 +35,7 @@ final List<Destination> sampleDestinations = [
       'Hot Tub',
       'Chef Available',
       'Concierge',
-      'Beach Access'
+      'Beach Access',
     ],
     hostName: 'Elena Papadopoulos',
     hostAvatar: 'assets/images/host_elena.jpg',
@@ -69,7 +69,7 @@ final List<Destination> sampleDestinations = [
       'Wine Cellar',
       'Fireplace',
       'Mountain View',
-      'Heated Floors'
+      'Heated Floors',
     ],
     hostName: 'Klaus Müller',
     hostAvatar: 'assets/images/host_klaus.jpg',
@@ -103,7 +103,7 @@ final List<Destination> sampleDestinations = [
       'Traditional Decor',
       'Chef Included',
       'Guided Tours',
-      'Pool'
+      'Pool',
     ],
     hostName: 'Amina Benali',
     hostAvatar: 'assets/images/host_amina.jpg',
@@ -137,7 +137,7 @@ final List<Destination> sampleDestinations = [
       'Private Deck',
       'Outdoor Shower',
       'Spa Services',
-      'Kayaks Included'
+      'Kayaks Included',
     ],
     hostName: 'Teiva Dupont',
     hostAvatar: 'assets/images/host_teiva.jpg',
@@ -171,7 +171,7 @@ final List<Destination> sampleDestinations = [
       'Rooftop Terrace',
       'Concierge 24/7',
       'Gym Access',
-      'Art Collection'
+      'Art Collection',
     ],
     hostName: 'Marcus Chen',
     hostAvatar: 'assets/images/host_marcus.jpg',
@@ -205,7 +205,7 @@ final List<Destination> sampleDestinations = [
       'Infinity Pool',
       'Yoga Deck',
       'Breakfast Included',
-      'Nature Tours'
+      'Nature Tours',
     ],
     hostName: 'Made Suartika',
     hostAvatar: 'assets/images/host_made.jpg',

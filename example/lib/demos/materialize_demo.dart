@@ -21,7 +21,7 @@
 ///   flutter run -t lib/demos/materialize_demo.dart
 library;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() async {
@@ -188,12 +188,12 @@ class _Caption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 4),
-        child: Text(
-          text,
-          style: const TextStyle(fontSize: 13, color: Color(0x99FFFFFF)),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 4),
+    child: Text(
+      text,
+      style: const TextStyle(fontSize: 13, color: Color(0x99FFFFFF)),
+    ),
+  );
 }
 
 /// A busy backdrop, so the dissolving refraction has something to refract.
@@ -207,11 +207,7 @@ class _Backdrop extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1B2A4A),
-            Color(0xFF7B2D5E),
-            Color(0xFFB5542F),
-          ],
+          colors: [Color(0xFF1B2A4A), Color(0xFF7B2D5E), Color(0xFFB5542F)],
         ),
       ),
       child: Column(

@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -25,106 +25,112 @@ void main() {
     });
 
     testWidgets(
-        'GlassNavigationLink with explicit destination pushes screen on tap',
-        (tester) async {
-      await tester.pumpWidget(
-        CupertinoApp(
-          home: GlassNavigationStack(
-            root: CupertinoPageScaffold(
-              child: Center(
-                child: GlassNavigationLink(
-                  title: const Text('Go to Detail'),
-                  destination: (context) => const CupertinoPageScaffold(
-                    child: Center(child: Text('Detail Screen Reached')),
+      'GlassNavigationLink with explicit destination pushes screen on tap',
+      (tester) async {
+        await tester.pumpWidget(
+          CupertinoApp(
+            home: GlassNavigationStack(
+              root: CupertinoPageScaffold(
+                child: Center(
+                  child: GlassNavigationLink(
+                    title: const Text('Go to Detail'),
+                    destination: (context) => const CupertinoPageScaffold(
+                      child: Center(child: Text('Detail Screen Reached')),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Go to Detail'), findsOneWidget);
-      expect(find.text('Detail Screen Reached'), findsNothing);
+        expect(find.text('Go to Detail'), findsOneWidget);
+        expect(find.text('Detail Screen Reached'), findsNothing);
 
-      // Tap link
-      await tester.tap(find.text('Go to Detail'));
-      await tester.pumpAndSettle();
+        // Tap link
+        await tester.tap(find.text('Go to Detail'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Detail Screen Reached'), findsOneWidget);
-    });
+        expect(find.text('Detail Screen Reached'), findsOneWidget);
+      },
+    );
 
-    testWidgets('typed navigation via GlassNavigationPath and destinations map',
-        (tester) async {
-      final path = GlassNavigationPath();
+    testWidgets(
+      'typed navigation via GlassNavigationPath and destinations map',
+      (tester) async {
+        final path = GlassNavigationPath();
 
-      await tester.pumpWidget(
-        CupertinoApp(
-          home: GlassNavigationStack(
-            path: path,
-            destinations: {
-              _Park: (context, park) {
-                final p = park as _Park;
-                return CupertinoPageScaffold(
-                  child:
-                      Center(child: Text('Park: ${p.name} in ${p.location}')),
-                );
+        await tester.pumpWidget(
+          CupertinoApp(
+            home: GlassNavigationStack(
+              path: path,
+              destinations: {
+                _Park: (context, park) {
+                  final p = park as _Park;
+                  return CupertinoPageScaffold(
+                    child: Center(
+                      child: Text('Park: ${p.name} in ${p.location}'),
+                    ),
+                  );
+                },
               },
-            },
-            root: CupertinoPageScaffold(
-              child: Center(
-                child: GlassNavigationLink<_Park>(
-                  title: const Text('Visit Yosemite'),
-                  value: const _Park('Yosemite', 'California'),
+              root: CupertinoPageScaffold(
+                child: Center(
+                  child: GlassNavigationLink<_Park>(
+                    title: const Text('Visit Yosemite'),
+                    value: const _Park('Yosemite', 'California'),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Visit Yosemite'), findsOneWidget);
-      expect(find.text('Park: Yosemite in California'), findsNothing);
+        expect(find.text('Visit Yosemite'), findsOneWidget);
+        expect(find.text('Park: Yosemite in California'), findsNothing);
 
-      // Tap link with typed value
-      await tester.tap(find.text('Visit Yosemite'));
-      await tester.pumpAndSettle();
+        // Tap link with typed value
+        await tester.tap(find.text('Visit Yosemite'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Park: Yosemite in California'), findsOneWidget);
-      expect(path.length, 1);
+        expect(find.text('Park: Yosemite in California'), findsOneWidget);
+        expect(path.length, 1);
 
-      // Pop path programmatically
-      path.pop();
-      await tester.pumpAndSettle();
+        // Pop path programmatically
+        path.pop();
+        await tester.pumpAndSettle();
 
-      expect(find.text('Park: Yosemite in California'), findsNothing);
-      expect(find.text('Visit Yosemite'), findsOneWidget);
-    });
+        expect(find.text('Park: Yosemite in California'), findsNothing);
+        expect(find.text('Visit Yosemite'), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        'GlassNavigationLink renders GlassListTile with chevron by default',
-        (tester) async {
-      await tester.pumpWidget(
-        CupertinoApp(
-          home: CupertinoPageScaffold(
-            child: GlassNavigationLink(
-              leading: const Icon(CupertinoIcons.star),
-              title: const Text('Starred Items'),
-              subtitle: const Text('Favorites'),
-              destination: (context) => const SizedBox(),
+      'GlassNavigationLink renders GlassListTile with chevron by default',
+      (tester) async {
+        await tester.pumpWidget(
+          CupertinoApp(
+            home: CupertinoPageScaffold(
+              child: GlassNavigationLink(
+                leading: const Icon(CupertinoIcons.star),
+                title: const Text('Starred Items'),
+                subtitle: const Text('Favorites'),
+                destination: (context) => const SizedBox(),
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byType(GlassListTile), findsOneWidget);
-      expect(find.byIcon(CupertinoIcons.chevron_right), findsOneWidget);
-      expect(find.text('Starred Items'), findsOneWidget);
-      expect(find.text('Favorites'), findsOneWidget);
-    });
+        expect(find.byType(GlassListTile), findsOneWidget);
+        expect(find.byIcon(CupertinoIcons.chevron_right), findsOneWidget);
+        expect(find.text('Starred Items'), findsOneWidget);
+        expect(find.text('Favorites'), findsOneWidget);
+      },
+    );
 
-    testWidgets('GlassNavigationLink supports custom child widget',
-        (tester) async {
+    testWidgets('GlassNavigationLink supports custom child widget', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         CupertinoApp(
           home: GlassNavigationStack(
@@ -152,30 +158,33 @@ void main() {
       expect(find.text('Custom Target Screen'), findsOneWidget);
     });
 
-    test('GlassNavigationPath helpers: isEmpty, isNotEmpty, popToRoot, clear',
-        () {
-      final path = GlassNavigationPath();
-      expect(path.isEmpty, isTrue);
-      expect(path.isNotEmpty, isFalse);
+    test(
+      'GlassNavigationPath helpers: isEmpty, isNotEmpty, popToRoot, clear',
+      () {
+        final path = GlassNavigationPath();
+        expect(path.isEmpty, isTrue);
+        expect(path.isNotEmpty, isFalse);
 
-      path.append('item 1');
-      path.append('item 2');
-      expect(path.isEmpty, isFalse);
-      expect(path.isNotEmpty, isTrue);
-      expect(path.length, 2);
+        path.append('item 1');
+        path.append('item 2');
+        expect(path.isEmpty, isFalse);
+        expect(path.isNotEmpty, isTrue);
+        expect(path.length, 2);
 
-      path.popToRoot();
-      expect(path.isEmpty, isTrue);
-      expect(path.length, 0);
+        path.popToRoot();
+        expect(path.isEmpty, isTrue);
+        expect(path.length, 0);
 
-      path.append('item A');
-      expect(path.isNotEmpty, isTrue);
-      path.clear();
-      expect(path.isEmpty, isTrue);
-    });
+        path.append('item A');
+        expect(path.isNotEmpty, isTrue);
+        path.clear();
+        expect(path.isEmpty, isTrue);
+      },
+    );
 
-    testWidgets('GlassNavigationStack.of and programmatic push / pop',
-        (tester) async {
+    testWidgets('GlassNavigationStack.of and programmatic push / pop', (
+      tester,
+    ) async {
       late GlassNavigationStackState stackState;
 
       await tester.pumpWidget(
@@ -225,8 +234,9 @@ void main() {
       expect(nullPush, isNull);
     });
 
-    testWidgets('GlassNavigationStack.of throws assertion outside of stack',
-        (tester) async {
+    testWidgets('GlassNavigationStack.of throws assertion outside of stack', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         CupertinoApp(
           home: Builder(
@@ -243,64 +253,67 @@ void main() {
     });
 
     testWidgets(
-        'GlassNavigationStack didUpdateWidget swaps navigatorKey and path',
-        (tester) async {
-      final key1 = GlobalKey<NavigatorState>();
-      final key2 = GlobalKey<NavigatorState>();
-      final path1 = GlassNavigationPath();
-      final path2 = GlassNavigationPath();
+      'GlassNavigationStack didUpdateWidget swaps navigatorKey and path',
+      (tester) async {
+        final key1 = GlobalKey<NavigatorState>();
+        final key2 = GlobalKey<NavigatorState>();
+        final path1 = GlassNavigationPath();
+        final path2 = GlassNavigationPath();
 
-      await tester.pumpWidget(
-        CupertinoApp(
-          home: GlassNavigationStack(
-            navigatorKey: key1,
-            path: path1,
-            root: const Text('Root 1'),
+        await tester.pumpWidget(
+          CupertinoApp(
+            home: GlassNavigationStack(
+              navigatorKey: key1,
+              path: path1,
+              root: const Text('Root 1'),
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Root 1'), findsOneWidget);
+        expect(find.text('Root 1'), findsOneWidget);
 
-      // Update widget with new key and path
-      await tester.pumpWidget(
-        CupertinoApp(
-          home: GlassNavigationStack(
-            navigatorKey: key2,
-            path: path2,
-            root: const Text('Root 2'),
+        // Update widget with new key and path
+        await tester.pumpWidget(
+          CupertinoApp(
+            home: GlassNavigationStack(
+              navigatorKey: key2,
+              path: path2,
+              root: const Text('Root 2'),
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Root 2'), findsOneWidget);
-    });
+        expect(find.text('Root 2'), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        'GlassNavigationLink without stack pushes directly via Navigator.of',
-        (tester) async {
-      await tester.pumpWidget(
-        CupertinoApp(
-          home: CupertinoPageScaffold(
-            child: GlassNavigationLink(
-              title: const Text('Standard Nav Link'),
-              destination: (context) => const CupertinoPageScaffold(
-                child: Center(child: Text('Standard Destination')),
+      'GlassNavigationLink without stack pushes directly via Navigator.of',
+      (tester) async {
+        await tester.pumpWidget(
+          CupertinoApp(
+            home: CupertinoPageScaffold(
+              child: GlassNavigationLink(
+                title: const Text('Standard Nav Link'),
+                destination: (context) => const CupertinoPageScaffold(
+                  child: Center(child: Text('Standard Destination')),
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Standard Nav Link'), findsOneWidget);
-      await tester.tap(find.text('Standard Nav Link'));
-      await tester.pumpAndSettle();
+        expect(find.text('Standard Nav Link'), findsOneWidget);
+        await tester.tap(find.text('Standard Nav Link'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Standard Destination'), findsOneWidget);
-    });
+        expect(find.text('Standard Destination'), findsOneWidget);
+      },
+    );
 
-    testWidgets('navigationTitle extension wraps with header semantics',
-        (tester) async {
+    testWidgets('navigationTitle extension wraps with header semantics', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         CupertinoApp(
           home: CupertinoPageScaffold(
@@ -314,102 +327,102 @@ void main() {
     });
 
     testWidgets(
-        'supports recursive Push Deeper and syncs path when Navigator pops',
-        (tester) async {
-      final path = GlassNavigationPath();
+      'supports recursive Push Deeper and syncs path when Navigator pops',
+      (tester) async {
+        final path = GlassNavigationPath();
 
-      Widget buildDetail(BuildContext context, String value) {
-        return CupertinoPageScaffold(
-          navigationBar: const CupertinoNavigationBar(middle: Text('Detail')),
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(value),
-                CupertinoButton(
-                  onPressed: () {
-                    GlassNavigationStack.of(context)
-                        .effectivePath
-                        .append('$value -> Deeper');
-                  },
-                  child: const Text('Push Deeper'),
-                ),
-              ],
+        Widget buildDetail(BuildContext context, String value) {
+          return CupertinoPageScaffold(
+            navigationBar: const CupertinoNavigationBar(middle: Text('Detail')),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(value),
+                  CupertinoButton(
+                    onPressed: () {
+                      GlassNavigationStack.of(context).effectivePath
+                          .append('$value -> Deeper');
+                    },
+                    child: const Text('Push Deeper'),
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      }
+          );
+        }
 
-      await tester.pumpWidget(
-        GlassTheme(
-          data: const GlassThemeData.ios27(),
-          child: CupertinoApp(
-            home: GlassNavigationStack(
-              path: path,
-              destinations: {
-                String: (context, val) => buildDetail(context, val as String),
-              },
-              root: const CupertinoPageScaffold(
-                child: Center(
-                  child: GlassNavigationLink<String>(
-                    value: 'Level 1: Optics Architecture',
-                    title: Text('Optics Architecture'),
+        await tester.pumpWidget(
+          GlassTheme(
+            data: const GlassThemeData.ios27(),
+            child: CupertinoApp(
+              home: GlassNavigationStack(
+                path: path,
+                destinations: {
+                  String: (context, val) => buildDetail(context, val as String),
+                },
+                root: const CupertinoPageScaffold(
+                  child: Center(
+                    child: GlassNavigationLink<String>(
+                      value: 'Level 1: Optics Architecture',
+                      title: Text('Optics Architecture'),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Push Level 1
-      await tester.tap(find.text('Optics Architecture'));
-      await tester.pumpAndSettle();
-      expect(find.text('Level 1: Optics Architecture'), findsOneWidget);
-      expect(path.length, 1);
+        // Push Level 1
+        await tester.tap(find.text('Optics Architecture'));
+        await tester.pumpAndSettle();
+        expect(find.text('Level 1: Optics Architecture'), findsOneWidget);
+        expect(path.length, 1);
 
-      // Push Deeper -> Level 2
-      await tester.tap(find.text('Push Deeper'));
-      await tester.pumpAndSettle();
-      expect(
-        find.text('Level 1: Optics Architecture -> Deeper'),
-        findsOneWidget,
-      );
-      expect(path.length, 2);
+        // Push Deeper -> Level 2
+        await tester.tap(find.text('Push Deeper'));
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Level 1: Optics Architecture -> Deeper'),
+          findsOneWidget,
+        );
+        expect(path.length, 2);
 
-      // Push Deeper -> Level 3
-      await tester.tap(find.text('Push Deeper'));
-      await tester.pumpAndSettle();
-      expect(
-        find.text('Level 1: Optics Architecture -> Deeper -> Deeper'),
-        findsOneWidget,
-      );
-      expect(path.length, 3);
+        // Push Deeper -> Level 3
+        await tester.tap(find.text('Push Deeper'));
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Level 1: Optics Architecture -> Deeper -> Deeper'),
+          findsOneWidget,
+        );
+        expect(path.length, 3);
 
-      // Pop via Navigator (simulating back button / swipe-back) -> Level 2
-      final stackState = tester.state<GlassNavigationStackState>(
-        find.byType(GlassNavigationStack),
-      );
-      stackState.pop();
-      await tester.pumpAndSettle();
-      expect(path.length, 2);
-      expect(
-        find.text('Level 1: Optics Architecture -> Deeper'),
-        findsOneWidget,
-      );
+        // Pop via Navigator (simulating back button / swipe-back) -> Level 2
+        final stackState = tester.state<GlassNavigationStackState>(
+          find.byType(GlassNavigationStack),
+        );
+        stackState.pop();
+        await tester.pumpAndSettle();
+        expect(path.length, 2);
+        expect(
+          find.text('Level 1: Optics Architecture -> Deeper'),
+          findsOneWidget,
+        );
 
-      // Pop via path.pop() -> Level 1
-      path.pop();
-      await tester.pumpAndSettle();
-      expect(path.length, 1);
-      expect(find.text('Level 1: Optics Architecture'), findsOneWidget);
+        // Pop via path.pop() -> Level 1
+        path.pop();
+        await tester.pumpAndSettle();
+        expect(path.length, 1);
+        expect(find.text('Level 1: Optics Architecture'), findsOneWidget);
 
-      // Pop to root
-      path.popToRoot();
-      await tester.pumpAndSettle();
-      expect(path.isEmpty, isTrue);
-      expect(find.text('Optics Architecture'), findsOneWidget);
-    });
+        // Pop to root
+        path.popToRoot();
+        await tester.pumpAndSettle();
+        expect(path.isEmpty, isTrue);
+        expect(find.text('Optics Architecture'), findsOneWidget);
+      },
+    );
 
     group('edge cases', () {
       Widget detail(BuildContext context, Object? value) =>
@@ -426,10 +439,9 @@ void main() {
           home: GlassNavigationStack(
             path: path,
             destinations: {String: detail},
-            root: root ??
-                const CupertinoPageScaffold(
-                  child: Center(child: Text('Root')),
-                ),
+            root:
+                root ??
+                const CupertinoPageScaffold(child: Center(child: Text('Root'))),
           ),
         );
       }
@@ -453,8 +465,9 @@ void main() {
         expect(path.isEmpty, isTrue);
       });
 
-      testWidgets('append racing a pop in the same frame stays in sync',
-          (tester) async {
+      testWidgets('append racing a pop in the same frame stays in sync', (
+        tester,
+      ) async {
         final path = GlassNavigationPath();
         await tester.pumpWidget(app(path));
 
@@ -503,35 +516,37 @@ void main() {
       });
 
       testWidgets(
-          'a cancelled swipe-back keeps the path; a completed one pops it',
-          (tester) async {
-        final path = GlassNavigationPath();
-        await tester.pumpWidget(app(path));
-        path.append('a');
-        await tester.pumpAndSettle();
-        expect(path.length, 1);
+        'a cancelled swipe-back keeps the path; a completed one pops it',
+        (tester) async {
+          final path = GlassNavigationPath();
+          await tester.pumpWidget(app(path));
+          path.append('a');
+          await tester.pumpAndSettle();
+          expect(path.length, 1);
 
-        // Short drag from the left edge, then release: route stays.
-        var gesture = await tester.startGesture(const Offset(2, 300));
-        await gesture.moveBy(const Offset(40, 0));
-        await tester.pump();
-        await gesture.up();
-        await tester.pumpAndSettle();
-        expect(path.length, 1);
-        expect(find.text('Detail a'), findsOneWidget);
+          // Short drag from the left edge, then release: route stays.
+          var gesture = await tester.startGesture(const Offset(2, 300));
+          await gesture.moveBy(const Offset(40, 0));
+          await tester.pump();
+          await gesture.up();
+          await tester.pumpAndSettle();
+          expect(path.length, 1);
+          expect(find.text('Detail a'), findsOneWidget);
 
-        // Long drag: route pops and the path follows.
-        gesture = await tester.startGesture(const Offset(2, 300));
-        await gesture.moveBy(const Offset(400, 0));
-        await tester.pump();
-        await gesture.up();
-        await tester.pumpAndSettle();
-        expect(path.length, 0);
-        expect(find.text('Root'), findsOneWidget);
-      });
+          // Long drag: route pops and the path follows.
+          gesture = await tester.startGesture(const Offset(2, 300));
+          await gesture.moveBy(const Offset(400, 0));
+          await tester.pump();
+          await gesture.up();
+          await tester.pumpAndSettle();
+          expect(path.length, 0);
+          expect(find.text('Root'), findsOneWidget);
+        },
+      );
 
-      testWidgets('GlassAppBar.pinned(padding:) moves the pinned back button',
-          (tester) async {
+      testWidgets('GlassAppBar.pinned(padding:) moves the pinned back button', (
+        tester,
+      ) async {
         Future<double> backButtonX(
           WidgetTester tester, {
           EdgeInsetsGeometry? padding,
@@ -546,15 +561,15 @@ void main() {
                 path: path,
                 destinations: {
                   String: (context, v) => CupertinoPageScaffold(
-                        child: Column(
-                          children: [
-                            GlassAppBar.pinned(
-                              title: const Text('Detail'),
-                              padding: padding,
-                            ),
-                          ],
+                    child: Column(
+                      children: [
+                        GlassAppBar.pinned(
+                          title: const Text('Detail'),
+                          padding: padding,
                         ),
-                      ),
+                      ],
+                    ),
+                  ),
                 },
                 root: const CupertinoPageScaffold(child: Text('Root')),
               ),
@@ -587,8 +602,9 @@ void main() {
         expect(rtlX, greaterThan(400));
       });
 
-      testWidgets('works under RTL and flips chevron to chevron_left',
-          (tester) async {
+      testWidgets('works under RTL and flips chevron to chevron_left', (
+        tester,
+      ) async {
         final path = GlassNavigationPath();
         await tester.pumpWidget(
           app(
@@ -617,8 +633,9 @@ void main() {
         expect(path.isEmpty, isTrue);
       });
 
-      testWidgets('resetting navigatorKey to null allocates a fresh key',
-          (tester) async {
+      testWidgets('resetting navigatorKey to null allocates a fresh key', (
+        tester,
+      ) async {
         final customKey = GlobalKey<NavigatorState>();
         await tester.pumpWidget(
           CupertinoApp(
@@ -634,87 +651,86 @@ void main() {
         expect(state.navigatorKey, same(customKey));
 
         await tester.pumpWidget(
-          const CupertinoApp(
-            home: GlassNavigationStack(
-              root: Text('Root'),
-            ),
-          ),
+          const CupertinoApp(home: GlassNavigationStack(root: Text('Root'))),
         );
         expect(state.navigatorKey, isNot(same(customKey)));
       });
 
       testWidgets(
-          '.navigationTitle drives GlassAppBar.pinned title from body or ancestor',
-          (tester) async {
-        // 1. SwiftUI pattern: .navigationTitle attached inside GlassScaffold.body
-        await tester.pumpWidget(
-          CupertinoApp(
-            home: GlassScaffold(
-              appBar: const GlassAppBar.pinned(),
-              body: const Center(child: Text('Body Content'))
-                  .navigationTitle('Body Driven Title'),
-            ),
-          ),
-        );
-        expect(find.text('Body Driven Title'), findsOneWidget);
-
-        // Dynamic update of .navigationTitle inside body
-        await tester.pumpWidget(
-          CupertinoApp(
-            home: GlassScaffold(
-              appBar: const GlassAppBar.pinned(),
-              body: const Center(child: Text('Body Content'))
-                  .navigationTitle('Updated Body Title'),
-            ),
-          ),
-        );
-        await tester.pump();
-        expect(find.text('Updated Body Title'), findsOneWidget);
-
-        // 2. Ancestor pattern: .navigationTitle wrapping GlassScaffold
-        await tester.pumpWidget(
-          CupertinoApp(
-            home: const GlassScaffold(
-              appBar: GlassAppBar.pinned(),
-              body: Center(child: Text('Body Content')),
-            ).navigationTitle('Ancestor Driven Title'),
-          ),
-        );
-        expect(find.text('Ancestor Driven Title'), findsOneWidget);
-      });
-
-      testWidgets(
-          'resolveGlassSolidSurfaceColor shifts to #2C2C2E in elevated dark mode',
-          (tester) async {
-        late Color baseColor;
-        late Color elevatedColor;
-
-        await tester.pumpWidget(
-          GlassTheme(
-            data: const GlassThemeData(brightness: Brightness.dark),
-            child: CupertinoApp(
-              home: Builder(
-                builder: (context) {
-                  baseColor = resolveGlassSolidSurfaceColor(context);
-                  return CupertinoUserInterfaceLevel(
-                    data: CupertinoUserInterfaceLevelData.elevated,
-                    child: Builder(
-                      builder: (innerContext) {
-                        elevatedColor =
-                            resolveGlassSolidSurfaceColor(innerContext);
-                        return const SizedBox.shrink();
-                      },
-                    ),
-                  );
-                },
+        '.navigationTitle drives GlassAppBar.pinned title from body or ancestor',
+        (tester) async {
+          // 1. SwiftUI pattern: .navigationTitle attached inside GlassScaffold.body
+          await tester.pumpWidget(
+            CupertinoApp(
+              home: GlassScaffold(
+                appBar: const GlassAppBar.pinned(),
+                body: const Center(child: Text('Body Content'))
+                    .navigationTitle('Body Driven Title'),
               ),
             ),
-          ),
-        );
+          );
+          expect(find.text('Body Driven Title'), findsOneWidget);
 
-        expect(baseColor, kGlassSolidSurfaceDark);
-        expect(elevatedColor, kGlassSolidSurfaceDarkElevated);
-      });
+          // Dynamic update of .navigationTitle inside body
+          await tester.pumpWidget(
+            CupertinoApp(
+              home: GlassScaffold(
+                appBar: const GlassAppBar.pinned(),
+                body: const Center(child: Text('Body Content'))
+                    .navigationTitle('Updated Body Title'),
+              ),
+            ),
+          );
+          await tester.pump();
+          expect(find.text('Updated Body Title'), findsOneWidget);
+
+          // 2. Ancestor pattern: .navigationTitle wrapping GlassScaffold
+          await tester.pumpWidget(
+            CupertinoApp(
+              home: const GlassScaffold(
+                appBar: GlassAppBar.pinned(),
+                body: Center(child: Text('Body Content')),
+              ).navigationTitle('Ancestor Driven Title'),
+            ),
+          );
+          expect(find.text('Ancestor Driven Title'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'resolveGlassSolidSurfaceColor shifts to #2C2C2E in elevated dark mode',
+        (tester) async {
+          late Color baseColor;
+          late Color elevatedColor;
+
+          await tester.pumpWidget(
+            GlassTheme(
+              data: const GlassThemeData(brightness: Brightness.dark),
+              child: CupertinoApp(
+                home: Builder(
+                  builder: (context) {
+                    baseColor = resolveGlassSolidSurfaceColor(context);
+                    return CupertinoUserInterfaceLevel(
+                      data: CupertinoUserInterfaceLevelData.elevated,
+                      child: Builder(
+                        builder: (innerContext) {
+                          elevatedColor = resolveGlassSolidSurfaceColor(
+                            innerContext,
+                          );
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          );
+
+          expect(baseColor, kGlassSolidSurfaceDark);
+          expect(elevatedColor, kGlassSolidSurfaceDarkElevated);
+        },
+      );
     });
 
     test('GlassThemeData.ios27 applies ios27Light and ios27Dark presets', () {
@@ -723,10 +739,12 @@ void main() {
       expect(runtimeTheme.brightness, Brightness.dark);
 
       const theme = GlassThemeData.ios27();
-      final lightApplied =
-          theme.light.settings!.applyTo(const LiquidGlassSettings());
-      final darkApplied =
-          theme.dark.settings!.applyTo(const LiquidGlassSettings());
+      final lightApplied = theme.light.settings!.applyTo(
+        const LiquidGlassSettings(),
+      );
+      final darkApplied = theme.dark.settings!.applyTo(
+        const LiquidGlassSettings(),
+      );
 
       expect(lightApplied.blur, LiquidGlassSettings.ios27Light.blur);
       expect(lightApplied.thickness, LiquidGlassSettings.ios27Light.thickness);
@@ -747,150 +765,153 @@ void main() {
     });
 
     testWidgets(
-        'initial non-empty path, navigatorKey swap, and Object destination fallback work',
-        (tester) async {
-      final path = GlassNavigationPath(['initial']);
-      final key1 = GlobalKey<NavigatorState>();
-      final key2 = GlobalKey<NavigatorState>();
+      'initial non-empty path, navigatorKey swap, and Object destination fallback work',
+      (tester) async {
+        final path = GlassNavigationPath(['initial']);
+        final key1 = GlobalKey<NavigatorState>();
+        final key2 = GlobalKey<NavigatorState>();
 
-      Widget buildStack(GlobalKey<NavigatorState> navKey) {
-        return CupertinoApp(
-          home: GlassNavigationStack(
-            navigatorKey: navKey,
-            path: path,
-            destinations: {
-              Object: (context, value) => CupertinoPageScaffold(
-                    child: Center(child: Text('Fallback $value')),
-                  ),
-            },
-            root: const CupertinoPageScaffold(
-              child: Center(child: Text('Root Page')),
+        Widget buildStack(GlobalKey<NavigatorState> navKey) {
+          return CupertinoApp(
+            home: GlassNavigationStack(
+              navigatorKey: navKey,
+              path: path,
+              destinations: {
+                Object: (context, value) => CupertinoPageScaffold(
+                  child: Center(child: Text('Fallback $value')),
+                ),
+              },
+              root: const CupertinoPageScaffold(
+                child: Center(child: Text('Root Page')),
+              ),
+            ),
+          );
+        }
+
+        await tester.pumpWidget(buildStack(key1));
+        await tester.pumpAndSettle();
+
+        final state = tester.state<GlassNavigationStackState>(
+          find.byType(GlassNavigationStack),
+        );
+        expect(state.path, same(path));
+        expect(find.text('Fallback initial'), findsOneWidget);
+
+        await tester.pumpWidget(buildStack(key2));
+        await tester.pumpAndSettle();
+        expect(find.text('Fallback initial'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'GlassNavigationStack and GlassScaffold coordinate transitionCornerRadius without double clipping',
+      (tester) async {
+        final path = GlassNavigationPath();
+
+        await tester.pumpWidget(
+          CupertinoApp(
+            home: GlassNavigationStack(
+              path: path,
+              transitionCornerRadius: 48.0,
+              destinations: {
+                String: (context, value) => GlassScaffold(
+                  transitionCornerRadius: value == 'custom' ? 24.0 : null,
+                  appBar: const GlassAppBar.pinned(title: Text('Detail')),
+                  body: Center(child: Text('Detail: $value')),
+                ),
+              },
+              root: const GlassScaffold(
+                appBar: GlassAppBar.pinned(title: Text('Root')),
+                body: Center(child: Text('Root Body')),
+              ),
             ),
           ),
         );
-      }
 
-      await tester.pumpWidget(buildStack(key1));
-      await tester.pumpAndSettle();
+        List<ClipRSuperellipse> activePageClips() => tester
+            .widgetList<ClipRSuperellipse>(
+              find.descendant(
+                of: find.byType(GlassPageTransitionClip, skipOffstage: false),
+                matching: find.byType(ClipRSuperellipse, skipOffstage: false),
+                skipOffstage: false,
+              ),
+            )
+            .where((c) => c.clipBehavior != Clip.none)
+            .toList();
 
-      final state = tester.state<GlassNavigationStackState>(
-        find.byType(GlassNavigationStack),
-      );
-      expect(state.path, same(path));
-      expect(find.text('Fallback initial'), findsOneWidget);
+        // At rest: zero active page transition clips
+        expect(activePageClips(), isEmpty);
 
-      await tester.pumpWidget(buildStack(key2));
-      await tester.pumpAndSettle();
-      expect(find.text('Fallback initial'), findsOneWidget);
-    });
+        // Push 'default': inherits 48.0 from stack, only ONE active clip (no double clipping)
+        path.append('default');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        var midClips = activePageClips();
+        expect(midClips.length, 1);
+        expect(midClips.single.borderRadius, BorderRadius.circular(48.0));
+
+        await tester.pumpAndSettle();
+        expect(activePageClips(), isEmpty);
+
+        // Push 'custom': overrides stack's 48.0 with 24.0, only ONE active clip
+        path.append('custom');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        midClips = activePageClips();
+        expect(midClips.length, 1);
+        expect(midClips.single.borderRadius, BorderRadius.circular(24.0));
+
+        await tester.pumpAndSettle();
+        expect(activePageClips(), isEmpty);
+
+        // Pop back: mid-pop clips the popping route, then unclips at rest
+        path.pop();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+        expect(activePageClips().length, 1);
+
+        await tester.pumpAndSettle();
+        expect(activePageClips(), isEmpty);
+      },
+    );
 
     testWidgets(
-        'GlassNavigationStack and GlassScaffold coordinate transitionCornerRadius without double clipping',
-        (tester) async {
-      final path = GlassNavigationPath();
-
-      await tester.pumpWidget(
-        CupertinoApp(
-          home: GlassNavigationStack(
-            path: path,
-            transitionCornerRadius: 48.0,
-            destinations: {
-              String: (context, value) => GlassScaffold(
-                    transitionCornerRadius: value == 'custom' ? 24.0 : null,
-                    appBar: const GlassAppBar.pinned(title: Text('Detail')),
-                    body: Center(child: Text('Detail: $value')),
+      'GlassNavigationLink forwards transitionCornerRadius outside GlassNavigationStack',
+      (tester) async {
+        await tester.pumpWidget(
+          CupertinoApp(
+            home: CupertinoPageScaffold(
+              child: Center(
+                child: GlassNavigationLink(
+                  title: const Text('Push Custom Radius'),
+                  transitionCornerRadius: 30.0,
+                  destination: (_) => const CupertinoPageScaffold(
+                    child: Center(child: Text('Destination')),
                   ),
-            },
-            root: const GlassScaffold(
-              appBar: GlassAppBar.pinned(title: Text('Root')),
-              body: Center(child: Text('Root Body')),
-            ),
-          ),
-        ),
-      );
-
-      List<ClipRSuperellipse> activePageClips() => tester
-          .widgetList<ClipRSuperellipse>(
-            find.descendant(
-              of: find.byType(GlassPageTransitionClip, skipOffstage: false),
-              matching: find.byType(ClipRSuperellipse, skipOffstage: false),
-              skipOffstage: false,
-            ),
-          )
-          .where((c) => c.clipBehavior != Clip.none)
-          .toList();
-
-      // At rest: zero active page transition clips
-      expect(activePageClips(), isEmpty);
-
-      // Push 'default': inherits 48.0 from stack, only ONE active clip (no double clipping)
-      path.append('default');
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 120));
-
-      var midClips = activePageClips();
-      expect(midClips.length, 1);
-      expect(midClips.single.borderRadius, BorderRadius.circular(48.0));
-
-      await tester.pumpAndSettle();
-      expect(activePageClips(), isEmpty);
-
-      // Push 'custom': overrides stack's 48.0 with 24.0, only ONE active clip
-      path.append('custom');
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 120));
-
-      midClips = activePageClips();
-      expect(midClips.length, 1);
-      expect(midClips.single.borderRadius, BorderRadius.circular(24.0));
-
-      await tester.pumpAndSettle();
-      expect(activePageClips(), isEmpty);
-
-      // Pop back: mid-pop clips the popping route, then unclips at rest
-      path.pop();
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 120));
-      expect(activePageClips().length, 1);
-
-      await tester.pumpAndSettle();
-      expect(activePageClips(), isEmpty);
-    });
-
-    testWidgets(
-        'GlassNavigationLink forwards transitionCornerRadius outside GlassNavigationStack',
-        (tester) async {
-      await tester.pumpWidget(
-        CupertinoApp(
-          home: CupertinoPageScaffold(
-            child: Center(
-              child: GlassNavigationLink(
-                title: const Text('Push Custom Radius'),
-                transitionCornerRadius: 30.0,
-                destination: (_) => const CupertinoPageScaffold(
-                  child: Center(child: Text('Destination')),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.text('Push Custom Radius'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+        await tester.tap(find.text('Push Custom Radius'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      final activeClips = tester
-          .widgetList<ClipRSuperellipse>(
-            find.byType(ClipRSuperellipse, skipOffstage: false),
-          )
-          .where((c) => c.clipBehavior != Clip.none)
-          .toList();
+        final activeClips = tester
+            .widgetList<ClipRSuperellipse>(
+              find.byType(ClipRSuperellipse, skipOffstage: false),
+            )
+            .where((c) => c.clipBehavior != Clip.none)
+            .toList();
 
-      expect(activeClips, isNotEmpty);
-      expect(activeClips.first.borderRadius, BorderRadius.circular(30.0));
+        expect(activeClips, isNotEmpty);
+        expect(activeClips.first.borderRadius, BorderRadius.circular(30.0));
 
-      await tester.pumpAndSettle();
-    });
+        await tester.pumpAndSettle();
+      },
+    );
   });
 }

@@ -1,6 +1,6 @@
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'package:liquid_glass_widgets_example/constants/glass_settings.dart';
 
@@ -24,22 +24,29 @@ class _OverlaysPageState extends State<OverlaysPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(CupertinoIcons.checkmark_circle_fill,
-                color: CupertinoColors.activeGreen, size: 64),
+            Icon(
+              CupertinoIcons.checkmark_circle_fill,
+              color: CupertinoColors.activeGreen,
+              size: 64,
+            ),
             SizedBox(height: 16),
-            Text('Success!',
-                style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: CupertinoColors.label.resolveFrom(context))),
+            Text(
+              'Success!',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: CupertinoColors.label.resolveFrom(context),
+              ),
+            ),
             SizedBox(height: 8),
             Text(
               'This is a basic glass bottom sheet',
               style: TextStyle(
-                  fontSize: 16,
-                  color: CupertinoColors.label
-                      .resolveFrom(context)
-                      .withValues(alpha: 0.7)),
+                fontSize: 16,
+                color: CupertinoColors.label
+                    .resolveFrom(context)
+                    .withValues(alpha: 0.7),
+              ),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 24),
@@ -71,16 +78,17 @@ class _OverlaysPageState extends State<OverlaysPage> {
               child: Text(
                 'Scrollable Content',
                 style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: CupertinoColors.label.resolveFrom(context)),
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: CupertinoColors.label.resolveFrom(context),
+                ),
               ),
             ),
             Expanded(
               child: ListView.separated(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 itemCount: 15,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final hue = hues[index % hues.length];
                   return Container(
@@ -106,21 +114,27 @@ class _OverlaysPageState extends State<OverlaysPage> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Center(
-                            child: Text('${index + 1}',
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: CupertinoColors.label
-                                        .resolveFrom(context))),
+                            child: Text(
+                              '${index + 1}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: CupertinoColors.label.resolveFrom(
+                                  context,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 16),
-                        Text('Item ${index + 1}',
-                            style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: CupertinoColors.label
-                                    .resolveFrom(context))),
+                        Text(
+                          'Item ${index + 1}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: CupertinoColors.label.resolveFrom(context),
+                          ),
+                        ),
                       ],
                     ),
                   );
@@ -130,7 +144,9 @@ class _OverlaysPageState extends State<OverlaysPage> {
             Padding(
               padding: const EdgeInsets.all(24),
               child: _SheetButton(
-                  label: 'Close', onTap: () => Navigator.pop(context)),
+                label: 'Close',
+                onTap: () => Navigator.pop(context),
+              ),
             ),
           ],
         ),
@@ -146,10 +162,7 @@ class _OverlaysPageState extends State<OverlaysPage> {
       title: 'Success',
       message: 'Your changes have been saved successfully.',
       actions: [
-        GlassDialogAction(
-          label: 'OK',
-          onPressed: () => Navigator.pop(context),
-        ),
+        GlassDialogAction(label: 'OK', onPressed: () => Navigator.pop(context)),
       ],
     );
   }
@@ -297,9 +310,7 @@ class _OverlaysPageState extends State<OverlaysPage> {
             slivers: [
               // Space for the app bar + safe area
               SliverToBoxAdapter(
-                child: SizedBox(
-                  height: MediaQuery.paddingOf(context).top + 44,
-                ),
+                child: SizedBox(height: MediaQuery.paddingOf(context).top + 44),
               ),
               // ── Large page title (iOS 26 inline style) ──────────────
               SliverToBoxAdapter(
@@ -373,36 +384,40 @@ class _OverlaysPageState extends State<OverlaysPage> {
                           Column(
                             children: [
                               _QualityBadge(
-                                  label: 'Premium',
-                                  color: CupertinoColors.activeOrange),
+                                label: 'Premium',
+                                color: CupertinoColors.activeOrange,
+                              ),
                               SizedBox(height: 8),
                               GlassMenu(
                                 quality: GlassQuality.premium,
                                 triggerBuilder: (context, toggle) =>
                                     GlassButton(
-                                  icon: Icon(CupertinoIcons.ellipsis),
-                                  onTap: toggle,
-                                  label: 'Premium',
-                                ),
+                                      icon: Icon(CupertinoIcons.ellipsis),
+                                      onTap: toggle,
+                                      label: 'Premium',
+                                    ),
                                 items: [
                                   GlassMenuItem(
                                     icon: Icon(CupertinoIcons.share),
                                     title: 'Share',
                                     onTap: () => setState(
-                                        () => _lastMenuSelection = 'Share'),
+                                      () => _lastMenuSelection = 'Share',
+                                    ),
                                   ),
                                   GlassMenuItem(
                                     icon: Icon(CupertinoIcons.pen),
                                     title: 'Edit',
                                     onTap: () => setState(
-                                        () => _lastMenuSelection = 'Edit'),
+                                      () => _lastMenuSelection = 'Edit',
+                                    ),
                                   ),
                                   GlassMenuItem(
                                     icon: Icon(CupertinoIcons.trash),
                                     title: 'Delete',
                                     isDestructive: true,
                                     onTap: () => setState(
-                                        () => _lastMenuSelection = 'Delete'),
+                                      () => _lastMenuSelection = 'Delete',
+                                    ),
                                   ),
                                 ],
                               ),
@@ -411,37 +426,42 @@ class _OverlaysPageState extends State<OverlaysPage> {
                           Column(
                             children: [
                               _QualityBadge(
-                                  label: 'Standard',
-                                  color: CupertinoColors.white
-                                      .withValues(alpha: 0.38)),
+                                label: 'Standard',
+                                color: CupertinoColors.white.withValues(
+                                  alpha: 0.38,
+                                ),
+                              ),
                               SizedBox(height: 8),
                               GlassMenu(
                                 quality: GlassQuality.standard,
                                 triggerBuilder: (context, toggle) =>
                                     GlassButton(
-                                  icon: Icon(CupertinoIcons.ellipsis),
-                                  onTap: toggle,
-                                  label: 'Standard',
-                                ),
+                                      icon: Icon(CupertinoIcons.ellipsis),
+                                      onTap: toggle,
+                                      label: 'Standard',
+                                    ),
                                 items: [
                                   GlassMenuItem(
                                     icon: Icon(CupertinoIcons.share),
                                     title: 'Share',
                                     onTap: () => setState(
-                                        () => _lastMenuSelection = 'Share'),
+                                      () => _lastMenuSelection = 'Share',
+                                    ),
                                   ),
                                   GlassMenuItem(
                                     icon: Icon(CupertinoIcons.pen),
                                     title: 'Edit',
                                     onTap: () => setState(
-                                        () => _lastMenuSelection = 'Edit'),
+                                      () => _lastMenuSelection = 'Edit',
+                                    ),
                                   ),
                                   GlassMenuItem(
                                     icon: Icon(CupertinoIcons.trash),
                                     title: 'Delete',
                                     isDestructive: true,
                                     onTap: () => setState(
-                                        () => _lastMenuSelection = 'Delete'),
+                                      () => _lastMenuSelection = 'Delete',
+                                    ),
                                   ),
                                 ],
                               ),
@@ -471,8 +491,9 @@ class _OverlaysPageState extends State<OverlaysPage> {
                           Column(
                             children: [
                               _QualityBadge(
-                                  label: 'Premium',
-                                  color: CupertinoColors.activeOrange),
+                                label: 'Premium',
+                                color: CupertinoColors.activeOrange,
+                              ),
                               SizedBox(height: 8),
                               GlassPopover(
                                 quality: GlassQuality.premium,
@@ -480,12 +501,12 @@ class _OverlaysPageState extends State<OverlaysPage> {
                                 popoverHeight: 160,
                                 triggerBuilder: (context, toggle) =>
                                     GlassButton(
-                                  icon: Icon(CupertinoIcons.sparkles),
-                                  onTap: toggle,
-                                  label: 'Premium',
-                                  quality: GlassQuality.premium,
-                                  useOwnLayer: true,
-                                ),
+                                      icon: Icon(CupertinoIcons.sparkles),
+                                      onTap: toggle,
+                                      label: 'Premium',
+                                      quality: GlassQuality.premium,
+                                      useOwnLayer: true,
+                                    ),
                                 contentBuilder: (context, close) => Padding(
                                   padding: EdgeInsets.all(20),
                                   child: Column(
@@ -535,9 +556,11 @@ class _OverlaysPageState extends State<OverlaysPage> {
                           Column(
                             children: [
                               _QualityBadge(
-                                  label: 'Standard',
-                                  color: CupertinoColors.white
-                                      .withValues(alpha: 0.38)),
+                                label: 'Standard',
+                                color: CupertinoColors.white.withValues(
+                                  alpha: 0.38,
+                                ),
+                              ),
                               SizedBox(height: 8),
                               GlassPopover(
                                 quality: GlassQuality.standard,
@@ -545,12 +568,12 @@ class _OverlaysPageState extends State<OverlaysPage> {
                                 popoverHeight: 160,
                                 triggerBuilder: (context, toggle) =>
                                     GlassButton(
-                                  icon: Icon(CupertinoIcons.info_circle),
-                                  onTap: toggle,
-                                  label: 'Standard',
-                                  quality: GlassQuality.standard,
-                                  useOwnLayer: true,
-                                ),
+                                      icon: Icon(CupertinoIcons.info_circle),
+                                      onTap: toggle,
+                                      label: 'Standard',
+                                      quality: GlassQuality.standard,
+                                      useOwnLayer: true,
+                                    ),
                                 contentBuilder: (context, close) => Padding(
                                   padding: EdgeInsets.all(20),
                                   child: Column(
@@ -639,16 +662,18 @@ class _OverlaysPageState extends State<OverlaysPage> {
                                     shape: BoxShape.circle,
                                     gradient: LinearGradient(
                                       colors: [
-                                        CupertinoColors.systemPurple
-                                            .withValues(alpha: 0.8),
+                                        CupertinoColors.systemPurple.withValues(
+                                          alpha: 0.8,
+                                        ),
                                         CupertinoColors.activeBlue,
                                       ],
                                     ),
                                   ),
                                   child: Icon(
                                     CupertinoIcons.person_fill,
-                                    color: CupertinoColors.label
-                                        .resolveFrom(context),
+                                    color: CupertinoColors.label.resolveFrom(
+                                      context,
+                                    ),
                                     size: 28,
                                   ),
                                 ),
@@ -658,8 +683,9 @@ class _OverlaysPageState extends State<OverlaysPage> {
                                   style: TextStyle(
                                     fontSize: 17,
                                     fontWeight: FontWeight.w600,
-                                    color: CupertinoColors.label
-                                        .resolveFrom(context),
+                                    color: CupertinoColors.label.resolveFrom(
+                                      context,
+                                    ),
                                   ),
                                 ),
                                 SizedBox(height: 4),
@@ -678,12 +704,14 @@ class _OverlaysPageState extends State<OverlaysPage> {
                                   width: 120,
                                   height: 36,
                                   shape: const LiquidRoundedSuperellipse(
-                                      borderRadius: 18),
+                                    borderRadius: 18,
+                                  ),
                                   child: Container(
                                     alignment: Alignment.center,
                                     decoration: BoxDecoration(
-                                      color: CupertinoColors.white
-                                          .withValues(alpha: 0.1),
+                                      color: CupertinoColors.white.withValues(
+                                        alpha: 0.1,
+                                      ),
                                       borderRadius: BorderRadius.circular(18),
                                     ),
                                     child: Text(
@@ -849,8 +877,9 @@ class _QualityLabel extends StatelessWidget {
       label,
       style: TextStyle(
         fontSize: 13,
-        color:
-            CupertinoColors.label.resolveFrom(context).withValues(alpha: 0.5),
+        color: CupertinoColors.label
+            .resolveFrom(context)
+            .withValues(alpha: 0.5),
       ),
     );
   }

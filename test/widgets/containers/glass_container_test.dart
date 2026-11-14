@@ -1,5 +1,5 @@
 import 'package:liquid_glass_widgets/widgets/containers/glass_container.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
@@ -27,9 +27,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: const GlassContainer(
-              child: Text(testText),
-            ),
+            child: const GlassContainer(child: Text(testText)),
           ),
         ),
       );
@@ -72,10 +70,7 @@ void main() {
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
-            child: const GlassContainer(
-              width: width,
-              height: height,
-            ),
+            child: const GlassContainer(width: width, height: height),
           ),
         ),
       );
@@ -115,8 +110,9 @@ void main() {
       expect(container.clipBehavior, equals(Clip.none));
     });
 
-    testWidgets('applies alignment to child content (line 226-229)',
-        (tester) async {
+    testWidgets('applies alignment to child content (line 226-229)', (
+      tester,
+    ) async {
       // GlassContainer wraps content in Align when alignment != null
       await tester.pumpWidget(
         createTestApp(
@@ -143,8 +139,9 @@ void main() {
       );
     });
 
-    testWidgets('applies margin outside glass shell (line 262-265)',
-        (tester) async {
+    testWidgets('applies margin outside glass shell (line 262-265)', (
+      tester,
+    ) async {
       // GlassContainer wraps in Padding when margin != null
       await tester.pumpWidget(
         createTestApp(

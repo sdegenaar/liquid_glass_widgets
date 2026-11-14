@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -219,8 +219,11 @@ class _EmailBody extends StatelessWidget {
               ),
               child: Center(
                 child: item.avatarType == AvatarType.store
-                    ? Icon(CupertinoIcons.bag_fill,
-                        color: item.avatarColor, size: 20)
+                    ? Icon(
+                        CupertinoIcons.bag_fill,
+                        color: item.avatarColor,
+                        size: 20,
+                      )
                     : Text(
                         item.initials ?? '?',
                         style: TextStyle(
@@ -351,8 +354,11 @@ class _AttachmentCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
             ),
             child: const Center(
-              child: Icon(CupertinoIcons.doc_fill,
-                  color: Color(0xFF636366), size: 22),
+              child: Icon(
+                CupertinoIcons.doc_fill,
+                color: Color(0xFF636366),
+                size: 22,
+              ),
             ),
           ),
           const SizedBox(width: 12),

@@ -152,26 +152,25 @@ void main() {
       bool extraCollapsesOnSearch = true,
       bool isKeyboardActive = false,
       double keyboardH = 0,
-    }) =>
-        ctrl.computeLayout(
-          totalW: totalW,
-          searching: false,
-          expandWhenActive: true,
-          barHeight: barH,
-          searchBarHeight: searchH,
-          spacing: spacing,
-          hasDismiss: hasDismiss,
-          dismissVisible: dismissVisible,
-          collapsedTabWidth: null,
-          tabPillAnchor: GlassTabPillAnchor.start,
-          extraFullW: extraFullW,
-          extraPos: extraPos,
-          extraCollapsesOnSearch: extraCollapsesOnSearch,
-          isKeyboardActive: isKeyboardActive,
-          keyboardH: keyboardH,
-          tabCount: 3,
-          perTabWidth: null, // expand — preserves legacy semantics
-        );
+    }) => ctrl.computeLayout(
+      totalW: totalW,
+      searching: false,
+      expandWhenActive: true,
+      barHeight: barH,
+      searchBarHeight: searchH,
+      spacing: spacing,
+      hasDismiss: hasDismiss,
+      dismissVisible: dismissVisible,
+      collapsedTabWidth: null,
+      tabPillAnchor: GlassTabPillAnchor.start,
+      extraFullW: extraFullW,
+      extraPos: extraPos,
+      extraCollapsesOnSearch: extraCollapsesOnSearch,
+      isKeyboardActive: isKeyboardActive,
+      keyboardH: keyboardH,
+      tabCount: 3,
+      perTabWidth: null, // expand — preserves legacy semantics
+    );
 
     test('tabW fills full zone (maxTabW) when not searching', () {
       final l = compute();
@@ -202,14 +201,18 @@ void main() {
 
     test('tabW accounts for beforeSearch extra button', () {
       final l = compute(
-          extraFullW: 60, extraPos: GlassExtraButtonPosition.beforeSearch);
+        extraFullW: 60,
+        extraPos: GlassExtraButtonPosition.beforeSearch,
+      );
       // maxTabW = 400 - 64 - 8 - (60 + 8) = 260
       expect(l.targetTabW, closeTo(260, 0.01));
     });
 
     test('tabW accounts for afterSearch extra button', () {
       final l = compute(
-          extraFullW: 60, extraPos: GlassExtraButtonPosition.afterSearch);
+        extraFullW: 60,
+        extraPos: GlassExtraButtonPosition.afterSearch,
+      );
       // maxTabW = 400 - 64 - 8 - (60 + 8) = 260
       expect(l.targetTabW, closeTo(260, 0.01));
     });
@@ -233,26 +236,25 @@ void main() {
       bool extraCollapsesOnSearch = true,
       bool isKeyboardActive = false,
       double keyboardH = 0,
-    }) =>
-        ctrl.computeLayout(
-          totalW: totalW,
-          searching: true,
-          expandWhenActive: true,
-          barHeight: barH,
-          searchBarHeight: searchH,
-          spacing: spacing,
-          hasDismiss: hasDismiss,
-          dismissVisible: dismissVisible,
-          collapsedTabWidth: collapsedTabWidth,
-          tabPillAnchor: anchor,
-          extraFullW: extraFullW,
-          extraPos: extraPos,
-          extraCollapsesOnSearch: extraCollapsesOnSearch,
-          isKeyboardActive: isKeyboardActive,
-          keyboardH: keyboardH,
-          tabCount: 3,
-          perTabWidth: null, // expand — preserves legacy semantics
-        );
+    }) => ctrl.computeLayout(
+      totalW: totalW,
+      searching: true,
+      expandWhenActive: true,
+      barHeight: barH,
+      searchBarHeight: searchH,
+      spacing: spacing,
+      hasDismiss: hasDismiss,
+      dismissVisible: dismissVisible,
+      collapsedTabWidth: collapsedTabWidth,
+      tabPillAnchor: anchor,
+      extraFullW: extraFullW,
+      extraPos: extraPos,
+      extraCollapsesOnSearch: extraCollapsesOnSearch,
+      isKeyboardActive: isKeyboardActive,
+      keyboardH: keyboardH,
+      tabCount: 3,
+      perTabWidth: null, // expand — preserves legacy semantics
+    );
 
     test('tabW = searchBarHeight when collapsedTabWidth is null', () {
       final l = compute();
@@ -271,8 +273,10 @@ void main() {
     });
 
     test('searchLeft (center anchor) positions based on midpoint', () {
-      final l =
-          compute(anchor: GlassTabPillAnchor.center, collapsedTabWidth: 50);
+      final l = compute(
+        anchor: GlassTabPillAnchor.center,
+        collapsedTabWidth: 50,
+      );
       // maxTabW = 400 - 50 - 8 = 342
       // searchLeft = (maxTabW + targetTabW) / 2 + 0 + 8
       //            = (342 + 50) / 2 + 8 = 196 + 8 = 204
@@ -369,15 +373,17 @@ void main() {
 
   group('checkRetarget', () {
     SearchablePillLayout layout(
-            double tabW, double searchLeft, double searchW) =>
-        SearchablePillLayout(
-          targetTabW: tabW,
-          targetSearchLeft: searchLeft,
-          targetSearchW: searchW,
-          floatY: 0,
-          extraTargetW: 0,
-          dismissReserve: 0,
-        );
+      double tabW,
+      double searchLeft,
+      double searchW,
+    ) => SearchablePillLayout(
+      targetTabW: tabW,
+      targetSearchLeft: searchLeft,
+      targetSearchW: searchW,
+      floatY: 0,
+      extraTargetW: 0,
+      dismissReserve: 0,
+    );
 
     setUp(() {
       ctrl.initializePills(tabW: 300, searchLeft: 310, searchW: 50);
@@ -512,26 +518,25 @@ void main() {
       required double? perTabWidth,
       bool searching = false,
       double? collapsedTabWidth,
-    }) =>
-        ctrl.computeLayout(
-          totalW: totalW,
-          searching: searching,
-          expandWhenActive: true,
-          barHeight: barH,
-          searchBarHeight: searchH,
-          spacing: spacing,
-          hasDismiss: false,
-          dismissVisible: false,
-          collapsedTabWidth: collapsedTabWidth,
-          tabPillAnchor: GlassTabPillAnchor.start,
-          extraFullW: 0,
-          extraPos: GlassExtraButtonPosition.beforeSearch,
-          extraCollapsesOnSearch: true,
-          isKeyboardActive: false,
-          keyboardH: 0,
-          tabCount: tabCount,
-          perTabWidth: perTabWidth,
-        );
+    }) => ctrl.computeLayout(
+      totalW: totalW,
+      searching: searching,
+      expandWhenActive: true,
+      barHeight: barH,
+      searchBarHeight: searchH,
+      spacing: spacing,
+      hasDismiss: false,
+      dismissVisible: false,
+      collapsedTabWidth: collapsedTabWidth,
+      tabPillAnchor: GlassTabPillAnchor.start,
+      extraFullW: 0,
+      extraPos: GlassExtraButtonPosition.beforeSearch,
+      extraCollapsesOnSearch: true,
+      isKeyboardActive: false,
+      keyboardH: 0,
+      tabCount: tabCount,
+      perTabWidth: perTabWidth,
+    );
 
     // ── Compact width calculation ───────────────────────────────────────────
 
@@ -601,11 +606,13 @@ void main() {
       expect(exp.targetSearchLeft, 326.0);
     });
 
-    test('search button width is barHeight (compact circle) when not searching',
-        () {
-      final l = compact(tabCount: 2, perTabWidth: 88);
-      expect(l.targetSearchW, barH); // 64
-    });
+    test(
+      'search button width is barHeight (compact circle) when not searching',
+      () {
+        final l = compact(tabCount: 2, perTabWidth: 88);
+        expect(l.targetSearchW, barH); // 64
+      },
+    );
 
     // ── Collapsed state during search ─────────────────────────────────────────
 
@@ -620,11 +627,12 @@ void main() {
     });
 
     test(
-        'when searching without collapsedTabWidth, falls back to searchBarHeight',
-        () {
-      final l = compact(tabCount: 3, perTabWidth: 88, searching: true);
-      expect(l.targetTabW, searchH); // 50
-    });
+      'when searching without collapsedTabWidth, falls back to searchBarHeight',
+      () {
+        final l = compact(tabCount: 3, perTabWidth: 88, searching: true);
+        expect(l.targetTabW, searchH); // 50
+      },
+    );
   });
 
   // ── computeLayout — showPill ───────────────────────────────────────────────
@@ -638,27 +646,26 @@ void main() {
     SearchablePillLayout compute({
       required bool searching,
       bool showPill = true,
-    }) =>
-        ctrl.computeLayout(
-          totalW: totalW,
-          searching: searching,
-          expandWhenActive: false,
-          barHeight: barH,
-          searchBarHeight: searchH,
-          spacing: spacing,
-          hasDismiss: false,
-          dismissVisible: false,
-          collapsedTabWidth: null,
-          tabPillAnchor: GlassTabPillAnchor.start,
-          extraFullW: 0,
-          extraPos: GlassExtraButtonPosition.beforeSearch,
-          extraCollapsesOnSearch: true,
-          isKeyboardActive: false,
-          keyboardH: 0,
-          tabCount: 3,
-          perTabWidth: null,
-          showPill: showPill,
-        );
+    }) => ctrl.computeLayout(
+      totalW: totalW,
+      searching: searching,
+      expandWhenActive: false,
+      barHeight: barH,
+      searchBarHeight: searchH,
+      spacing: spacing,
+      hasDismiss: false,
+      dismissVisible: false,
+      collapsedTabWidth: null,
+      tabPillAnchor: GlassTabPillAnchor.start,
+      extraFullW: 0,
+      extraPos: GlassExtraButtonPosition.beforeSearch,
+      extraCollapsesOnSearch: true,
+      isKeyboardActive: false,
+      keyboardH: 0,
+      tabCount: 3,
+      perTabWidth: null,
+      showPill: showPill,
+    );
 
     test('defaults to shown — the pill slot stays reserved', () {
       final l = compute(searching: false);
@@ -684,10 +691,16 @@ void main() {
       for (final searching in [false, true]) {
         final shown = compute(searching: searching);
         final absent = compute(searching: searching, showPill: false);
-        expect(absent.targetSearchLeft, shown.targetSearchLeft,
-            reason: 'searching=$searching');
-        expect(absent.targetSearchW, shown.targetSearchW,
-            reason: 'searching=$searching');
+        expect(
+          absent.targetSearchLeft,
+          shown.targetSearchLeft,
+          reason: 'searching=$searching',
+        );
+        expect(
+          absent.targetSearchW,
+          shown.targetSearchW,
+          reason: 'searching=$searching',
+        );
       }
     });
   });

@@ -96,8 +96,10 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    _saturationAnimation =
-        CurvedAnimation(parent: _saturationController, curve: Curves.easeOut);
+    _saturationAnimation = CurvedAnimation(
+      parent: _saturationController,
+      curve: Curves.easeOut,
+    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -187,18 +189,18 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   }
 
   SheetGeometry _buildGeometry() => SheetGeometry(
-        mode: widget.mode,
-        halfSize: widget.halfSize,
-        fullSize: widget.fullSize ?? _stripFullSize,
-        peekSize: widget.peekSize,
-        enablePeek: SheetGeometry.resolvePeek(
-          detents: widget.detents,
-          mode: widget.mode,
-        ),
-        enableHalf: widget.detents.contains(GlassSheetDetent.medium),
-        enableFull: widget.detents.contains(GlassSheetDetent.large),
-        dismissible: widget.dismissible,
-      );
+    mode: widget.mode,
+    halfSize: widget.halfSize,
+    fullSize: widget.fullSize ?? _stripFullSize,
+    peekSize: widget.peekSize,
+    enablePeek: SheetGeometry.resolvePeek(
+      detents: widget.detents,
+      mode: widget.mode,
+    ),
+    enableHalf: widget.detents.contains(GlassSheetDetent.medium),
+    enableFull: widget.detents.contains(GlassSheetDetent.large),
+    dismissible: widget.dismissible,
+  );
 
   /// Coerce [requested] to the nearest detent the sheet actually offers.
   ///
@@ -230,8 +232,11 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   // Snap & State Management
   // ════════════════════════════════════════════════════════════════════════
 
-  void _snapToState(GlassSheetState state,
-      {bool animate = true, double velocity = 0}) {
+  void _snapToState(
+    GlassSheetState state, {
+    bool animate = true,
+    double velocity = 0,
+  }) {
     if (!mounted) return;
 
     if (widget.mode == GlassSheetMode.persistent &&
@@ -358,7 +363,11 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     // ALWAYS initialize the gesture arena so swipes can start from anywhere,
     // even from buttons or interactive children.
     _gestureArena.beginPointer(
-        event.position.dy, event.position.dx, _currentPosition, event.kind);
+      event.position.dy,
+      event.position.dx,
+      _currentPosition,
+      event.kind,
+    );
 
     // If the touch is in the handle zone (top 44 pixels), immediately set phase.
     if (event.localPosition.dy <= 44.0) {
@@ -489,7 +498,8 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     _suppressScalingForSession = false;
     _saturationController.reverse();
 
-    final wasDragging = _gestureArena.phase == GesturePhase.contentDrag ||
+    final wasDragging =
+        _gestureArena.phase == GesturePhase.contentDrag ||
         _gestureArena.phase == GesturePhase.handleDrag;
     _gestureArena.reset();
     _frozenState = null;
@@ -535,8 +545,11 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     double newPosition =
         _gestureArena.dragStartSheetPosition - delta / screenHeight;
 
-    newPosition = _geometry.applyResistance(newPosition, screenHeight,
-        resistance: widget.resistance);
+    newPosition = _geometry.applyResistance(
+      newPosition,
+      screenHeight,
+      resistance: widget.resistance,
+    );
     _animationController.value = newPosition;
 
     final snapshot = SheetSnapshot(
@@ -566,10 +579,14 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     // No full detent → never crossfade toward the opaque full state (an
     // over-drag above half just rubber-bands; it isn't an expansion).
     if (!_geometry.enableFull) return 0.0;
-    final halfPos =
-        _geometry.positionForState(GlassSheetState.half, _screenSize.height);
-    final fullPos =
-        _geometry.positionForState(GlassSheetState.full, _screenSize.height);
+    final halfPos = _geometry.positionForState(
+      GlassSheetState.half,
+      _screenSize.height,
+    );
+    final fullPos = _geometry.positionForState(
+      GlassSheetState.full,
+      _screenSize.height,
+    );
     if (fullPos <= halfPos) return 0.0;
     return ((_currentPosition - halfPos) / (fullPos - halfPos)).clamp(0.0, 1.0);
   }
@@ -590,7 +607,9 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     if (states.length < 2) return 1.0;
     final maxPos = _geometry.positionForState(states.last, _screenSize.height);
     final prevPos = _geometry.positionForState(
-        states[states.length - 2], _screenSize.height);
+      states[states.length - 2],
+      _screenSize.height,
+    );
     if (maxPos <= prevPos) return 0.0;
     return ((_currentPosition - prevPos) / (maxPos - prevPos)).clamp(0.0, 1.0);
   }
@@ -617,7 +636,9 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     double dismissOffset = 0.0;
     if (widget.mode == GlassSheetMode.dismissible && !_geometry.enablePeek) {
       final pivotPos = _geometry.positionForState(
-          SheetMorphGeometry.dismissPivotState(_geometry), mqHeight);
+        SheetMorphGeometry.dismissPivotState(_geometry),
+        mqHeight,
+      );
       if (pos < pivotPos) {
         dismissOffset = (pivotPos - pos) * mqHeight;
         pos = pivotPos;
@@ -631,12 +652,16 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     late LiquidGlassSettings effectiveSettings;
     // Disable scaling in full state by lerping effective interactionScale to 1.0
     // Also disable scaling if we are interacting with a child (Smart Silence)
-    final baseInteractionScale =
-        _suppressScalingForSession ? 1.0 : widget.interactionScale;
+    final baseInteractionScale = _suppressScalingForSession
+        ? 1.0
+        : widget.interactionScale;
 
     final effectiveInteractionScale = lerpDouble(baseInteractionScale, 1.0, t)!;
-    final effectiveInteractionStretch =
-        lerpDouble(_suppressScalingForSession ? 0.0 : widget.stretch, 0.0, t)!;
+    final effectiveInteractionStretch = lerpDouble(
+      _suppressScalingForSession ? 0.0 : widget.stretch,
+      0.0,
+      t,
+    )!;
 
     double stretchT = 1.0;
     // Protection against division by zero if halfPos == minPos
@@ -677,8 +702,9 @@ class _GlassModalSheetState extends State<GlassModalSheet>
 
     if (pos < halfPos) {
       final range = halfPos - peekPos;
-      final tProgress =
-          range > 0.0001 ? ((pos - peekPos) / range).clamp(0.0, 1.0) : 1.0;
+      final tProgress = range > 0.0001
+          ? ((pos - peekPos) / range).clamp(0.0, 1.0)
+          : 1.0;
 
       effectiveSettings = LiquidGlassSettings.lerp(sPeek, sHalf, tProgress);
       currentExpandedColor = Color.lerp(cPeek, cHalf, tProgress)!;
@@ -689,8 +715,9 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       glassOpacity = 1.0 - colorOpacity;
     } else {
       final range = fullPos - halfPos;
-      final tProgress =
-          range > 0.0001 ? ((pos - halfPos) / range).clamp(0.0, 1.0) : 1.0;
+      final tProgress = range > 0.0001
+          ? ((pos - halfPos) / range).clamp(0.0, 1.0)
+          : 1.0;
 
       effectiveSettings = LiquidGlassSettings.lerp(sHalf, sFull, tProgress);
       currentExpandedColor = Color.lerp(cHalf, cFull, tProgress)!;
@@ -737,9 +764,11 @@ class _GlassModalSheetState extends State<GlassModalSheet>
         _saturationAnimation.value > 0 &&
         style == GlassStyle.classic) {
       effectiveSettings = effectiveSettings.copyWith(
-        saturation: effectiveSettings.saturation *
+        saturation:
+            effectiveSettings.saturation *
             (1.0 + _saturationAnimation.value * 0.25),
-        lightIntensity: effectiveSettings.lightIntensity *
+        lightIntensity:
+            effectiveSettings.lightIntensity *
             (1.0 + _saturationAnimation.value * 0.35),
       );
     }
@@ -749,8 +778,9 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     // ════════════════════════════════════════════════════════════════════════
     if (pos < halfPos) {
       final range = halfPos - peekPos;
-      final tProgressRaw =
-          range > 0.0001 ? ((pos - peekPos) / range).clamp(0.0, 1.0) : 1.0;
+      final tProgressRaw = range > 0.0001
+          ? ((pos - peekPos) / range).clamp(0.0, 1.0)
+          : 1.0;
 
       // Calibrate for Apple Maps behavior:
       // Morphing should be almost instant (complete within first 15% of movement)
@@ -767,37 +797,56 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       // 2. Resolve Peek-specific width (hPad)
       double peekHPad = peekHMargin;
       if (widget.peekWidth != null && mqHeight > 0) {
-        peekHPad = ((_screenSize.width - widget.peekWidth!) / 2.0)
-            .clamp(0.0, _screenSize.width / 2.0);
+        peekHPad = ((_screenSize.width - widget.peekWidth!) / 2.0).clamp(
+          0.0,
+          _screenSize.width / 2.0,
+        );
       }
 
       if (widget.mode == GlassSheetMode.persistent) {
         // Morph from peek metrics to half metrics
-        effectiveBottom =
-            lerpDouble(peekBMargin, widget.bottomMargin, tProgress)!;
+        effectiveBottom = lerpDouble(
+          peekBMargin,
+          widget.bottomMargin,
+          tProgress,
+        )!;
         hPad = lerpDouble(peekHPad, widget.horizontalMargin, tProgress)!;
 
         // Morph corner radii
-        final targetTRadius =
-            lerpDouble(peekTRadius, topRadiusBase, tProgress)!;
-        final targetBRadius =
-            lerpDouble(peekBRadius, bottomRadiusBase, tProgress)!;
+        final targetTRadius = lerpDouble(
+          peekTRadius,
+          topRadiusBase,
+          tProgress,
+        )!;
+        final targetBRadius = lerpDouble(
+          peekBRadius,
+          bottomRadiusBase,
+          tProgress,
+        )!;
 
         if (_frozenState != null) {
           final pivotScale = _frozenState!.bottomScale;
-          topRadius = lerpDouble(targetTRadius, targetTRadius * pivotScale,
-              _saturationAnimation.value)!;
-          bottomRadius = lerpDouble(targetBRadius, targetBRadius * pivotScale,
-              _saturationAnimation.value)!;
+          topRadius = lerpDouble(
+            targetTRadius,
+            targetTRadius * pivotScale,
+            _saturationAnimation.value,
+          )!;
+          bottomRadius = lerpDouble(
+            targetBRadius,
+            targetBRadius * pivotScale,
+            _saturationAnimation.value,
+          )!;
         } else {
           topRadius = lerpDouble(
-              targetTRadius,
-              targetTRadius * effectiveInteractionScale,
-              _saturationAnimation.value)!;
+            targetTRadius,
+            targetTRadius * effectiveInteractionScale,
+            _saturationAnimation.value,
+          )!;
           bottomRadius = lerpDouble(
-              targetBRadius,
-              targetBRadius * effectiveInteractionScale,
-              _saturationAnimation.value)!;
+            targetBRadius,
+            targetBRadius * effectiveInteractionScale,
+            _saturationAnimation.value,
+          )!;
         }
 
         // Window changes height visually
@@ -830,8 +879,11 @@ class _GlassModalSheetState extends State<GlassModalSheet>
           bottomRadius = peekBRadius;
         } else {
           // Morphing between pivot (peek) and half
-          effectiveBottom =
-              lerpDouble(peekBMargin, widget.bottomMargin, tProgress)!;
+          effectiveBottom = lerpDouble(
+            peekBMargin,
+            widget.bottomMargin,
+            tProgress,
+          )!;
           hPad = lerpDouble(peekHPad, widget.horizontalMargin, tProgress)!;
           effectiveHeight = targetVisualHeight - effectiveBottom;
           topRadius = lerpDouble(peekTRadius, topRadiusBase, tProgress)!;
@@ -846,23 +898,28 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       final halfPhysicalHeight = halfVisualHeight - widget.bottomMargin;
       final frozenBottomOffset =
           (_frozenState?.heightAtFreeze ?? halfPhysicalHeight) *
-              (frozenScale - 1.0) /
-              2.0;
+          (frozenScale - 1.0) /
+          2.0;
       final frozenBottom = widget.bottomMargin - frozenBottomOffset;
 
       // Phase 1: Wrap corners (t: 0.0 -> 0.92) - movement is diagonal towards the screen corners.
       // Phase 2: Final sink (t: 0.92 -> 1.0) - the sheet submerges only when it's fully expanded.
       const transitionEnd = 0.92;
       final marginProgress = (t / transitionEnd).clamp(0.0, 1.0);
-      final sinkProgress =
-          ((t - transitionEnd) / (1.0 - transitionEnd)).clamp(0.0, 1.0);
+      final sinkProgress = ((t - transitionEnd) / (1.0 - transitionEnd)).clamp(
+        0.0,
+        1.0,
+      );
 
       if (_frozenState != null) {
         final baseBottom = lerpDouble(frozenBottom, 0.0, marginProgress)!;
         effectiveBottom = lerpDouble(baseBottom, -extraHeight, sinkProgress)!;
       } else {
-        final baseBottom =
-            lerpDouble(widget.bottomMargin, 0.0, marginProgress)!;
+        final baseBottom = lerpDouble(
+          widget.bottomMargin,
+          0.0,
+          marginProgress,
+        )!;
         effectiveBottom = lerpDouble(baseBottom, -extraHeight, sinkProgress)!;
       }
 
@@ -878,13 +935,15 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       )!;
       // Independent lerp for top and bottom radii
       final baseRadiusTop = lerpDouble(
-          topRadiusBase,
-          topRadiusBase * effectiveInteractionScale,
-          _saturationAnimation.value)!;
+        topRadiusBase,
+        topRadiusBase * effectiveInteractionScale,
+        _saturationAnimation.value,
+      )!;
       final baseRadiusBottom = lerpDouble(
-          bottomRadiusBase,
-          bottomRadiusBase * effectiveInteractionScale,
-          _saturationAnimation.value)!;
+        bottomRadiusBase,
+        bottomRadiusBase * effectiveInteractionScale,
+        _saturationAnimation.value,
+      )!;
 
       topRadius = lerpDouble(baseRadiusTop, topRadiusFull, t)!;
       bottomRadius = sinkProgress > 0
@@ -916,13 +975,14 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   Widget build(BuildContext context) {
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     final style = GlassThemeHelpers.resolveStyle(context);
-    final effectiveExpandedColor = (isDark ? widget.expandedDarkColor : null) ??
+    final effectiveExpandedColor =
+        (isDark ? widget.expandedDarkColor : null) ??
         widget.expandedColor ??
         (isDark
             ? const Color(0xFF1C1C1E)
             : (style == GlassStyle.classic
-                ? CupertinoColors.white
-                : const Color(0xFFF2F2F7)));
+                  ? CupertinoColors.white
+                  : const Color(0xFFF2F2F7)));
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: widget.quality,
@@ -973,13 +1033,19 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     );
 
     return AnimatedBuilder(
-      animation:
-          Listenable.merge([_animationController, _saturationController]),
+      animation: Listenable.merge([
+        _animationController,
+        _saturationController,
+      ]),
       builder: (context, _) {
-        final fullPos =
-            _geometry.positionForState(GlassSheetState.full, mqHeight);
-        final halfPos =
-            _geometry.positionForState(GlassSheetState.half, mqHeight);
+        final fullPos = _geometry.positionForState(
+          GlassSheetState.full,
+          mqHeight,
+        );
+        final halfPos = _geometry.positionForState(
+          GlassSheetState.half,
+          mqHeight,
+        );
         final minPos = _geometry.positionForState(_geometry.minState, mqHeight);
 
         double pos = _animationController.value;
@@ -1043,9 +1109,9 @@ class _GlassModalSheetState extends State<GlassModalSheet>
               );
         final mediaQuery = MediaQuery.of(context);
         EdgeInsets inset(EdgeInsets padding) => padding.copyWith(
-              left: math.max(0.0, padding.left - restingInsets.left),
-              right: math.max(0.0, padding.right - restingInsets.right),
-            );
+          left: math.max(0.0, padding.left - restingInsets.left),
+          right: math.max(0.0, padding.right - restingInsets.right),
+        );
         // On one side of a half-folded display, the sheet is measured against
         // the strip where that side sits on the screen.
         final side = _SheetSubScreen.maybeOf(context);
@@ -1073,8 +1139,9 @@ class _GlassModalSheetState extends State<GlassModalSheet>
 
         final fadedSettings = metrics.effectiveSettings.copyWith(
           glassColor: metrics.effectiveSettings.glassColor.withValues(
-              alpha: metrics.effectiveSettings.glassColor.a *
-                  metrics.glassOpacity),
+            alpha:
+                metrics.effectiveSettings.glassColor.a * metrics.glassOpacity,
+          ),
           blur: metrics.effectiveSettings.blur * metrics.glassOpacity,
           frost: metrics.effectiveSettings.frost * metrics.glassOpacity,
           lightIntensity:

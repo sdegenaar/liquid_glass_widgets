@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -16,9 +16,9 @@ void main() {
   });
 
   Widget shellApp(Widget home) => CupertinoApp(
-        builder: (context, child) => GlassNavigationShell(child: child!),
-        home: home,
-      );
+    builder: (context, child) => GlassNavigationShell(child: child!),
+    home: home,
+  );
 
   /// Settles the route transition and the post-frame registration handover.
   Future<void> settle(WidgetTester tester) async {
@@ -26,10 +26,8 @@ void main() {
     await tester.pump();
   }
 
-  Finder inHost(Finder matching) => find.descendant(
-        of: find.byType(GlassNavPinnedHost),
-        matching: matching,
-      );
+  Finder inHost(Finder matching) =>
+      find.descendant(of: find.byType(GlassNavPinnedHost), matching: matching);
 
   /// What the capsule holding [icon] is painted at, on the side of the
   /// hand-over [scope] selects: the first [Opacity] under the trigger there is
@@ -76,8 +74,9 @@ void main() {
       .any((e) => (e.widget as Opacity).opacity == 0.0);
 
   group('a sheet item in the pinned chrome', () {
-    testWidgets('presents out of the hoisted capsule, which the shell keeps',
-        (tester) async {
+    testWidgets('presents out of the hoisted capsule, which the shell keeps', (
+      tester,
+    ) async {
       await tester.pumpWidget(shellApp(const _Screen()));
       await settle(tester);
       expect(inHost(find.byIcon(CupertinoIcons.add)), findsOneWidget);
@@ -94,8 +93,9 @@ void main() {
       expect(hostCapsuleOpacity(tester), 0.0);
     });
 
-    testWidgets('hands the rest of the chrome back to the route',
-        (tester) async {
+    testWidgets('hands the rest of the chrome back to the route', (
+      tester,
+    ) async {
       await tester.pumpWidget(shellApp(const _Screen()));
       await settle(tester);
       final route = ModalRoute.of(tester.element(find.text('body')))!;
@@ -121,8 +121,9 @@ void main() {
       expect(barPaints(tester, CupertinoIcons.add), isFalse);
     });
 
-    testWidgets('empties the capsule rather than the glyph it was tapped on',
-        (tester) async {
+    testWidgets('empties the capsule rather than the glyph it was tapped on', (
+      tester,
+    ) async {
       await tester.pumpWidget(shellApp(const _Screen()));
       await settle(tester);
 
@@ -157,34 +158,44 @@ void main() {
       await settle(tester);
     });
 
-    testWidgets('presents out of the hoisted capsule for a bar drawing its own',
-        (tester) async {
-      var presented = 0;
-      GlassMorphAnchor? seen;
-      await tester.pumpWidget(shellApp(_OwnBarScreen(
-        onPresent: (anchor) {
-          presented++;
-          seen = anchor;
-        },
-      )));
-      await settle(tester);
+    testWidgets(
+      'presents out of the hoisted capsule for a bar drawing its own',
+      (tester) async {
+        var presented = 0;
+        GlassMorphAnchor? seen;
+        await tester.pumpWidget(
+          shellApp(
+            _OwnBarScreen(
+              onPresent: (anchor) {
+                presented++;
+                seen = anchor;
+              },
+            ),
+          ),
+        );
+        await settle(tester);
 
-      await tester.tap(inHost(find.byIcon(CupertinoIcons.add)));
-      await tester.pump();
+        await tester.tap(inHost(find.byIcon(CupertinoIcons.add)));
+        await tester.pump();
 
-      // The hoisted capsule is the shell's, so a registrant that draws the
-      // items itself still gets a real anchor.
-      expect(presented, 1);
-      expect(seen, isNotNull);
-    });
+        // The hoisted capsule is the shell's, so a registrant that draws the
+        // items itself still gets a real anchor.
+        expect(presented, 1);
+        expect(seen, isNotNull);
+      },
+    );
 
     testWidgets('lets go of a capsule no sheet claimed', (tester) async {
-      await tester.pumpWidget(shellApp(_OwnBarScreen(
-        onPresent: (anchor) => showCupertinoDialog<void>(
-          context: tester.element(find.text('body')),
-          builder: (_) => const SizedBox(),
+      await tester.pumpWidget(
+        shellApp(
+          _OwnBarScreen(
+            onPresent: (anchor) => showCupertinoDialog<void>(
+              context: tester.element(find.text('body')),
+              builder: (_) => const SizedBox(),
+            ),
+          ),
         ),
-      )));
+      );
       await settle(tester);
       final route = ModalRoute.of(tester.element(find.text('body')))!;
       final shell = tester.state<GlassNavigationShellState>(
@@ -203,25 +214,30 @@ void main() {
       expect(find.byType(GlassNavPinnedHost), findsNothing);
     });
 
-    testWidgets('keeps the capsule through a sheet presented frames later',
-        (tester) async {
+    testWidgets('keeps the capsule through a sheet presented frames later', (
+      tester,
+    ) async {
       // A presenter that sizes its sheet to its content measures that
       // content offscreen first, which costs frames between the tap and the
       // push. The hold has to outlast that gap.
-      await tester.pumpWidget(shellApp(_OwnBarScreen(
-        onPresent: (anchor) async {
-          final binding = WidgetsBinding.instance;
-          await binding.endOfFrame;
-          await binding.endOfFrame;
-          final context = tester.element(find.text('body'));
-          if (!context.mounted) return;
-          await GlassModalSheet.show<void>(
-            context: context,
-            morphFrom: anchor,
-            builder: (_) => const SizedBox(height: 200),
-          );
-        },
-      )));
+      await tester.pumpWidget(
+        shellApp(
+          _OwnBarScreen(
+            onPresent: (anchor) async {
+              final binding = WidgetsBinding.instance;
+              await binding.endOfFrame;
+              await binding.endOfFrame;
+              final context = tester.element(find.text('body'));
+              if (!context.mounted) return;
+              await GlassModalSheet.show<void>(
+                context: context,
+                morphFrom: anchor,
+                builder: (_) => const SizedBox(height: 200),
+              );
+            },
+          ),
+        ),
+      );
       await settle(tester);
       final route = ModalRoute.of(tester.element(find.text('body')))!;
       final shell = tester.state<GlassNavigationShellState>(
@@ -245,48 +261,52 @@ void main() {
     });
 
     testWidgets(
-        'dismissing the sheet restores the capsule and re-hoists chrome',
-        (tester) async {
-      await tester.pumpWidget(shellApp(const _Screen()));
-      await settle(tester);
-      final route = ModalRoute.of(tester.element(find.text('body')))!;
-      final shell = tester.state<GlassNavigationShellState>(
-        find.byType(GlassNavigationShell),
-      );
+      'dismissing the sheet restores the capsule and re-hoists chrome',
+      (tester) async {
+        await tester.pumpWidget(shellApp(const _Screen()));
+        await settle(tester);
+        final route = ModalRoute.of(tester.element(find.text('body')))!;
+        final shell = tester.state<GlassNavigationShellState>(
+          find.byType(GlassNavigationShell),
+        );
 
-      await tester.tap(inHost(find.byIcon(CupertinoIcons.add)));
-      await tester.pump();
-      await tester.pump();
+        await tester.tap(inHost(find.byIcon(CupertinoIcons.add)));
+        await tester.pump();
+        await tester.pump();
 
-      expect(hostCapsuleOpacity(tester), 0.0);
-      expect(shell.isHoisting(route), isFalse);
+        expect(hostCapsuleOpacity(tester), 0.0);
+        expect(shell.isHoisting(route), isFalse);
 
-      final navigator = tester.state<NavigatorState>(find.byType(Navigator));
-      navigator.pop();
-      await settle(tester);
+        final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+        navigator.pop();
+        await settle(tester);
 
-      expect(hostCapsuleOpacity(tester), 1.0);
-      expect(shell.isHoisting(route), isTrue);
-      expect(shell.presentingSheetItem(route), isNull);
-      expect(inHost(find.byIcon(CupertinoIcons.bookmark)), findsOneWidget);
-    });
+        expect(hostCapsuleOpacity(tester), 1.0);
+        expect(shell.isHoisting(route), isTrue);
+        expect(shell.presentingSheetItem(route), isNull);
+        expect(inHost(find.byIcon(CupertinoIcons.bookmark)), findsOneWidget);
+      },
+    );
 
-    testWidgets('presents out of the leading capsule when declared in leading',
-        (tester) async {
-      await tester.pumpWidget(shellApp(const _LeadingScreen()));
-      await settle(tester);
-      expect(inHost(find.byIcon(CupertinoIcons.add)), findsOneWidget);
-      expect(hostCapsuleOpacity(tester), 1.0);
+    testWidgets(
+      'presents out of the leading capsule when declared in leading',
+      (tester) async {
+        await tester.pumpWidget(shellApp(const _LeadingScreen()));
+        await settle(tester);
+        expect(inHost(find.byIcon(CupertinoIcons.add)), findsOneWidget);
+        expect(hostCapsuleOpacity(tester), 1.0);
 
-      await tester.tap(inHost(find.byIcon(CupertinoIcons.add)));
-      await tester.pump();
-      await tester.pump();
+        await tester.tap(inHost(find.byIcon(CupertinoIcons.add)));
+        await tester.pump();
+        await tester.pump();
 
-      expect(hostCapsuleOpacity(tester), 0.0);
-    });
+        expect(hostCapsuleOpacity(tester), 0.0);
+      },
+    );
 
-    testWidgets('is reported to a bar that draws its own chrome',
-        (tester) async {
+    testWidgets('is reported to a bar that draws its own chrome', (
+      tester,
+    ) async {
       final seen = <GlassPinnedBarChromeData>[];
       await tester.pumpWidget(shellApp(_ChromeScreen(onBuild: seen.add)));
       await settle(tester);

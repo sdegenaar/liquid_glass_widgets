@@ -50,11 +50,11 @@ Placing refractive glass widgets inside another refractive glass container is an
 
 ## 2. App Lifecycle & Initialization
 
-In `main.dart`, always initialize the shader pipeline before `runApp()`, and wrap the application with `LiquidGlassWidgets.wrap()`.
+In `main.dart`, always initialize the shader pipeline before `runApp()`, and wrap the application with `LiquidGlassWidgets.wrap()`. On Flutter 3.47+ / 3.50+ (`liquid_glass_widgets` ≥ 1.18.0), import `package:cupertino_ui/cupertino_ui.dart` (and `package:material_ui/material_ui.dart` for Material apps) instead of the deprecated `package:flutter/cupertino.dart` and `package:flutter/material.dart` libraries.
 
 ```dart
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() async {
@@ -455,6 +455,7 @@ GlassAppBar.pinned(
 ## 8. Common Agent Pitfalls (Checklist before outputting code)
 
 - [ ] **Did you import the public API only?** (`import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';`). Never import `src/`.
+- [ ] **Did you import `package:cupertino_ui/cupertino_ui.dart` for Cupertino types?** On `liquid_glass_widgets` ≥ 1.18.0 (Flutter ≥ 3.47.0 / 3.50+), use `package:cupertino_ui/cupertino_ui.dart` (and `package:material_ui/material_ui.dart` for Material apps) instead of deprecated `package:flutter/cupertino.dart` / `package:flutter/material.dart`.
 - [ ] **Did you call `await LiquidGlassWidgets.initialize()` in `main()`?** Shaders must be pre-warmed.
 - [ ] **Did you wrap your app in `LiquidGlassWidgets.wrap()`?** Required for theme and accessibility scaling.
 - [ ] **Are you using `GlassScaffold` instead of `Scaffold`?** Prevents z-index glitches with glass nav bars.

@@ -1,11 +1,13 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+
 import '../../constants/glass_defaults.dart';
 import '../../src/renderer/glass_frost_budget.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../theme/glass_theme.dart';
+
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 
@@ -164,11 +166,7 @@ class AdaptiveGlass extends StatelessWidget {
     required LiquidGlassSettings settings,
     required Widget child,
   }) {
-    return _VibrancyFill(
-      shape: shape,
-      settings: settings,
-      child: child,
-    );
+    return _VibrancyFill(shape: shape, settings: settings, child: child);
   }
 
   @override
@@ -176,8 +174,8 @@ class AdaptiveGlass extends StatelessWidget {
     // 1. Resolve Settings
     // In grouped mode, the explicit `settings` field is a const placeholder;
     // we must inherit the real settings from the ancestor layer.
-    final inherited =
-        context.dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
+    final inherited = context
+        .dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>();
     // A running materialize transition dissolves this surface through the
     // settings' visibility channel. Applying it here covers the Frosted and
     // Standard tiers and the widget-level decorations (shadow, backer); the
@@ -327,7 +325,8 @@ class AdaptiveGlass extends StatelessWidget {
     // to provisioning its own layer (effectiveUseOwnLayer = true) so the widget
     // renders safely and seamlessly in premium quality.
     final hasAncestorLayer = InheritedGeometryRenderLink.of(context) != null;
-    final effectiveUseOwnLayer = useOwnLayer ||
+    final effectiveUseOwnLayer =
+        useOwnLayer ||
         GlassIsolationScope.isIsolated(context) ||
         !hasAncestorLayer;
 
@@ -335,7 +334,8 @@ class AdaptiveGlass extends StatelessWidget {
     // the premium shader's toImageSync backdrop can't capture a PlatformView, so
     // over one it must use BackdropFilter (live) instead. The local/cheap checks
     // are evaluated before the platform shader-support query (_canUseImpeller).
-    final bool canUsePremiumShader = !kIsWeb &&
+    final bool canUsePremiumShader =
+        !kIsWeb &&
         !platformViewBackdrop &&
         quality == GlassQuality.premium &&
         _canUseImpeller;
@@ -367,9 +367,10 @@ class AdaptiveGlass extends StatelessWidget {
       if (skipNormalization) {
         normalizedSettings = standardSettings.copyWith(
           glassColor: standardSettings.glassColor.withValues(
-            alpha: (standardSettings.effectiveGlassColor.a *
-                    standardSettings.standardOpacityMultiplier)
-                .clamp(0.0, 1.0),
+            alpha:
+                (standardSettings.effectiveGlassColor.a *
+                        standardSettings.standardOpacityMultiplier)
+                    .clamp(0.0, 1.0),
           ),
         );
       } else {
@@ -377,14 +378,17 @@ class AdaptiveGlass extends StatelessWidget {
         // Thickness scaled down (2D inner shadows look much thicker than 3D bevels).
         // Light intensity scaled down (2D gradients look brighter than 3D speculars).
         normalizedSettings = standardSettings.copyWith(
-          thickness: (standardSettings.effectiveThickness * 0.4)
-              .clamp(0.0, double.infinity),
-          lightIntensity:
-              (standardSettings.effectiveLightIntensity * 0.6).clamp(0.0, 10.0),
+          thickness: (standardSettings.effectiveThickness * 0.4).clamp(
+            0.0,
+            double.infinity,
+          ),
+          lightIntensity: (standardSettings.effectiveLightIntensity * 0.6)
+              .clamp(0.0, 10.0),
           glassColor: standardSettings.glassColor.withValues(
-            alpha: (standardSettings.effectiveGlassColor.a *
-                    standardSettings.standardOpacityMultiplier)
-                .clamp(0.0, 1.0),
+            alpha:
+                (standardSettings.effectiveGlassColor.a *
+                        standardSettings.standardOpacityMultiplier)
+                    .clamp(0.0, 1.0),
           ),
         );
       }
@@ -401,8 +405,10 @@ class AdaptiveGlass extends StatelessWidget {
               blur: normalizedSettings.effectiveBlur,
               saturation: normalizedSettings.effectiveSaturation,
               ambientStrength:
-                  (normalizedSettings.effectiveAmbientStrength * 0.4)
-                      .clamp(0.0, 1.0),
+                  (normalizedSettings.effectiveAmbientStrength * 0.4).clamp(
+                    0.0,
+                    1.0,
+                  ),
             )
           : normalizedSettings;
 
@@ -476,8 +482,8 @@ class AdaptiveGlass extends StatelessWidget {
 
       final shadows =
           (isDark || _FrostedFallback._isFlatEdge(shape) || useFallbackShadow)
-              ? const <BoxShadow>[]
-              : baseSettings.effectiveShadow;
+          ? const <BoxShadow>[]
+          : baseSettings.effectiveShadow;
 
       Widget premium = LiquidGlass.withOwnLayer(
         shape: shape,
@@ -498,9 +504,7 @@ class AdaptiveGlass extends StatelessWidget {
 
       final premiumTracker = _wrapWithBacker(
         baseSettings,
-        PremiumGlassTracker(
-          child: premium,
-        ),
+        PremiumGlassTracker(child: premium),
       );
 
       // If we bypassed the GPU cutout shadow, apply the standard CSS-style shadow instead
@@ -540,7 +544,10 @@ class AdaptiveGlass extends StatelessWidget {
   // bars, which span edge-to-edge and don't need individual elevation.
   // ---------------------------------------------------------------------------
   Widget _wrapWithLightModeShadow(
-      BuildContext context, LiquidGlassSettings baseSettings, Widget glass) {
+    BuildContext context,
+    LiquidGlassSettings baseSettings,
+    Widget glass,
+  ) {
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
 
     // Skip shadow in dark mode or for flat-edge shapes (bars, full-width surfaces).
@@ -588,7 +595,10 @@ class AdaptiveGlass extends StatelessWidget {
   /// settings are unset, so existing recipes are unaffected. Same signature as
   /// [_wrapWithLightModeShadow] so the non-premium call sites just swap names.
   Widget _wrapWithDecorations(
-      BuildContext context, LiquidGlassSettings baseSettings, Widget glass) {
+    BuildContext context,
+    LiquidGlassSettings baseSettings,
+    Widget glass,
+  ) {
     return _wrapWithBacker(
       baseSettings,
       _wrapWithLightModeShadow(context, baseSettings, glass),
@@ -626,11 +636,8 @@ class AdaptiveGlass extends StatelessWidget {
   /// reverted the earlier always-on form.
   static Widget _fadeLightweight(LiquidGlassSettings settings, Widget glass) =>
       settings.visibility >= 1.0
-          ? glass
-          : Opacity(
-              opacity: settings.visibility.clamp(0.0, 1.0),
-              child: glass,
-            );
+      ? glass
+      : Opacity(opacity: settings.visibility.clamp(0.0, 1.0), child: glass);
 
   Widget _wrapWithBacker(LiquidGlassSettings baseSettings, Widget glass) {
     final backerColor = baseSettings.effectiveBackerColor;
@@ -747,15 +754,19 @@ class _VibrancyFill extends StatelessWidget {
     // Apply whitenStrength veil — same ramp as _FrostedFallback so a single
     // whitenStrength value reads consistently across all rendering tiers.
     const double kWhitenVeilGain = 1.5;
-    final double whiten =
-        baseSettings.effectiveWhitenStrength.clamp(0.0, 1.0).toDouble();
+    final double whiten = baseSettings.effectiveWhitenStrength
+        .clamp(0.0, 1.0)
+        .toDouble();
     final double veil = whiten <= 0.0
         ? 0.0
         : (whiten * kWhitenVeilGain).clamp(0.0, 1.0).toDouble();
     final tint = veil <= 0.0
         ? baseSettings.effectiveGlassColor
         : Color.lerp(
-            baseSettings.effectiveGlassColor, const Color(0xFFFFFFFF), veil)!;
+            baseSettings.effectiveGlassColor,
+            const Color(0xFFFFFFFF),
+            veil,
+          )!;
 
     // Alpha: lighter ceiling than _FrostedFallback — nested glass is always
     // behind a parent blur surface and must not look like an opaque panel.
@@ -777,10 +788,7 @@ class _VibrancyFill extends StatelessWidget {
         ),
 
         // 2. Child content clipped to shape.
-        _ShapeClip(
-          shape: shape,
-          child: content,
-        ),
+        _ShapeClip(shape: shape, child: content),
 
         // 3. Specular rim — reuses _FrostedFallback's painter unchanged.
         //    Suppressed for flat-edge shapes (app bars / bottom bars) as in
@@ -902,15 +910,19 @@ class _FrostedFallback extends StatelessWidget {
     // value reads consistently across tiers. Minimal's tint is already a
     // uniform flat fill, so this lerp is the whole whiten here.
     const double kWhitenVeilGain = 1.5;
-    final double whiten =
-        settings.effectiveWhitenStrength.clamp(0.0, 1.0).toDouble();
+    final double whiten = settings.effectiveWhitenStrength
+        .clamp(0.0, 1.0)
+        .toDouble();
     final double veil = whiten <= 0.0
         ? 0.0
         : (whiten * kWhitenVeilGain).clamp(0.0, 1.0).toDouble();
     final tint = veil <= 0.0
         ? settings.effectiveGlassColor
         : Color.lerp(
-            settings.effectiveGlassColor, const Color(0xFFFFFFFF), veil)!;
+            settings.effectiveGlassColor,
+            const Color(0xFFFFFFFF),
+            veil,
+          )!;
 
     final double frostedAlpha = isAccessibilityFallback
         // Accessibility: boost opacity so content remains legible
@@ -919,8 +931,8 @@ class _FrostedFallback extends StatelessWidget {
         // Minimal (developer choice): honour the specified glass color alpha.
         // In clear mode (GlassBodyMode.clear), allow exact alpha down to 0.0 without clamping.
         : settings.bodyMode == GlassBodyMode.clear
-            ? tint.a.clamp(0.0, 1.0)
-            : tint.a.clamp(0.05, 1.0);
+        ? tint.a.clamp(0.0, 1.0)
+        : tint.a.clamp(0.05, 1.0);
     final frostedColor = tint.withValues(alpha: frostedAlpha);
 
     final sat = settings.effectiveSaturation;
@@ -950,7 +962,7 @@ class _FrostedFallback extends StatelessWidget {
     // ────────────────────────────────────────────────────────────────────────
     final bool useBlur =
         (isAccessibilityFallback || !isInteractive || platformViewBackdrop) &&
-            blur > 0;
+        blur > 0;
 
     Widget body;
     if (useBlur) {
@@ -977,8 +989,7 @@ class _FrostedFallback extends StatelessWidget {
 
     return Stack(
       fit: StackFit.passthrough,
-      clipBehavior: Clip
-          .hardEdge, // Locks dirty region to widget bounds — prevents page-wide flicker
+      clipBehavior: Clip.hardEdge, // Locks dirty region to widget bounds — prevents page-wide flicker
       children: [
         if (useBlur)
           // Stationary surfaces: blur + tint clipped to shape.
@@ -1014,10 +1025,11 @@ class _FrostedFallback extends StatelessWidget {
             child: DecoratedBox(
               decoration: ShapeDecoration(
                 shape: shape,
-                color: (GlassTheme.brightnessOf(context) == Brightness.dark
-                        ? CupertinoColors.white
-                        : CupertinoColors.black)
-                    .withValues(alpha: 0.15 * glowIntensity),
+                color:
+                    (GlassTheme.brightnessOf(context) == Brightness.dark
+                            ? CupertinoColors.white
+                            : CupertinoColors.black)
+                        .withValues(alpha: 0.15 * glowIntensity),
               ),
             ),
           ),
@@ -1076,10 +1088,7 @@ class _FrostedFallback extends StatelessWidget {
 // BlendMode.overlay. Zero GPU shader cost on any platform.
 // ---------------------------------------------------------------------------
 class _SpecularRimPainter extends CustomPainter {
-  const _SpecularRimPainter({
-    required this.shape,
-    required this.settings,
-  });
+  const _SpecularRimPainter({required this.shape, required this.settings});
 
   final LiquidShape shape;
   final LiquidGlassSettings settings;
@@ -1116,8 +1125,11 @@ class _SpecularRimPainter extends CustomPainter {
     final gradientScale = aspectAdjustment * (1 - alignmentWithShortestSide);
 
     final inset = ui.lerpDouble(0, .5, gradientScale.clamp(0, 1))!;
-    final secondInset =
-        ui.lerpDouble(lightCoverage, .5, gradientScale.clamp(0, 1))!;
+    final secondInset = ui.lerpDouble(
+      lightCoverage,
+      .5,
+      gradientScale.clamp(0, 1),
+    )!;
 
     final gradient = LinearGradient(
       colors: [
@@ -1279,12 +1291,15 @@ LiquidGlassSettings _withoutNativeMaterial(LiquidGlassSettings settings) {
       settings.blur,
       settings.frost * GlassFrostBudget.blurPerFrost,
     ),
-    lightIntensity: (settings.lightIntensity +
-            const LiquidGlassSettings().lightIntensity *
-                settings.rimLight.clamp(0.0, 1.0))
-        .clamp(0.0, 10.0),
+    lightIntensity:
+        (settings.lightIntensity +
+                const LiquidGlassSettings().lightIntensity *
+                    settings.rimLight.clamp(0.0, 1.0))
+            .clamp(0.0, 10.0),
     ambientStrength:
-        (settings.ambientStrength + settings.bodyShade.clamp(0.0, 1.0))
-            .clamp(0.0, 1.0),
+        (settings.ambientStrength + settings.bodyShade.clamp(0.0, 1.0)).clamp(
+          0.0,
+          1.0,
+        ),
   );
 }

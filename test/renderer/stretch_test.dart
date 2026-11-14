@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/src/renderer/liquid_glass_self_scale_scope.dart';
 import 'package:liquid_glass_widgets/src/engine/stretch.dart';
@@ -132,8 +132,9 @@ void main() {
       expect(widget.hitTestBehavior, HitTestBehavior.opaque);
     });
 
-    testWidgets('passes through to child when stretch=0 and scale=1.0',
-        (tester) async {
+    testWidgets('passes through to child when stretch=0 and scale=1.0', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: LiquidStretch(
@@ -158,8 +159,9 @@ void main() {
       expect(find.byType(LiquidStretch), findsOneWidget);
     });
 
-    testWidgets('carries an ancestor self-scale declaration through',
-        (tester) async {
+    testWidgets('carries an ancestor self-scale declaration through', (
+      tester,
+    ) async {
       late bool seen;
       await tester.pumpWidget(
         MaterialApp(
@@ -177,9 +179,13 @@ void main() {
           ),
         ),
       );
-      expect(seen, isTrue,
-          reason: 'a swiped sheet\'s declaration must reach the glass below '
-              'the press scale, which resolves only the nearest scope (#229)');
+      expect(
+        seen,
+        isTrue,
+        reason:
+            'a swiped sheet\'s declaration must reach the glass below '
+            'the press scale, which resolves only the nearest scope (#229)',
+      );
     });
 
     // The press scale follows a native 56 pt glass circle measured at 120 fps:
@@ -223,8 +229,9 @@ void main() {
             ),
           ),
         );
-        final gesture =
-            await tester.startGesture(tester.getCenter(find.byType(SizedBox)));
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(SizedBox)),
+        );
         await tester.pump();
         return gesture;
       }
@@ -237,8 +244,11 @@ void main() {
         final peak = s.reduce((a, b) => a > b ? a : b);
         expect(peak, inInclusiveRange(1.302, 1.33), reason: 'overshoot');
         for (var i = 31; i < s.length; i++) {
-          expect(s[i], closeTo(1.3, 0.01),
-              reason: 'settled at ${10 * (i + 1)} ms');
+          expect(
+            s[i],
+            closeTo(1.3, 0.01),
+            reason: 'settled at ${10 * (i + 1)} ms',
+          );
         }
       });
 
@@ -250,29 +260,43 @@ void main() {
         final s = await sample(tester, untilMs: 800);
         final low = s.reduce((a, b) => a < b ? a : b);
         expect(low, inInclusiveRange(0.94, 0.985), reason: 'undershoot');
-        expect(s.indexOf(low), lessThan(22),
-            reason: 'undershoot before 220 ms');
-        final rebound =
-            s.sublist(s.indexOf(low)).reduce((a, b) => a > b ? a : b);
+        expect(
+          s.indexOf(low),
+          lessThan(22),
+          reason: 'undershoot before 220 ms',
+        );
+        final rebound = s
+            .sublist(s.indexOf(low))
+            .reduce((a, b) => a > b ? a : b);
         expect(rebound, greaterThan(1.0), reason: 'rebound past rest');
         for (var i = 59; i < s.length; i++) {
-          expect(s[i], closeTo(1.0, 0.01),
-              reason: 'settled at ${10 * (i + 1)} ms');
+          expect(
+            s[i],
+            closeTo(1.0, 0.01),
+            reason: 'settled at ${10 * (i + 1)} ms',
+          );
         }
       });
 
-      testWidgets('a fixed factor keeps the critically damped spring',
-          (tester) async {
+      testWidgets('a fixed factor keeps the critically damped spring', (
+        tester,
+      ) async {
         final gesture = await press(tester, interactionScale: 1.3);
         final pressed = await sample(tester, untilMs: 600);
-        expect(pressed.reduce((a, b) => a > b ? a : b), lessThan(1.301),
-            reason: 'no overshoot');
+        expect(
+          pressed.reduce((a, b) => a > b ? a : b),
+          lessThan(1.301),
+          reason: 'no overshoot',
+        );
         expect(pressed.last, closeTo(1.3, 0.01));
         await gesture.up();
         await tester.pump();
         final released = await sample(tester, untilMs: 800);
-        expect(released.reduce((a, b) => a < b ? a : b), greaterThan(0.999),
-            reason: 'no undershoot');
+        expect(
+          released.reduce((a, b) => a < b ? a : b),
+          greaterThan(0.999),
+          reason: 'no undershoot',
+        );
         expect(released.last, closeTo(1.0, 0.01));
       });
     });
@@ -291,8 +315,9 @@ void main() {
           ),
         ),
       );
-      final gesture =
-          await tester.startGesture(tester.getCenter(find.byType(SizedBox)));
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(SizedBox)),
+      );
       await tester.pump();
       return gesture;
     }
@@ -300,8 +325,9 @@ void main() {
     /// The uniform scale RawLiquidStretch applies to its child.
     double scaleOf(WidgetTester tester) {
       final child = tester.renderObject<RenderBox>(find.byType(SizedBox));
-      final stretch =
-          tester.renderObject<RenderBox>(find.byType(RawLiquidStretch));
+      final stretch = tester.renderObject<RenderBox>(
+        find.byType(RawLiquidStretch),
+      );
       return child.getTransformTo(stretch).entry(0, 0);
     }
 
@@ -319,12 +345,14 @@ void main() {
       expect(scaleOf(tester), closeTo(1 + 17 / 56, 0.001));
     });
 
-    testWidgets('declares itself self-scaled only while below rest',
-        (tester) async {
+    testWidgets('declares itself self-scaled only while below rest', (
+      tester,
+    ) async {
       final gesture = await press(tester, const Size(56, 56));
       bool selfScaled() => tester
           .widget<LiquidGlassSelfScaleScope>(
-              find.byType(LiquidGlassSelfScaleScope))
+            find.byType(LiquidGlassSelfScaleScope),
+          )
           .selfScaled;
 
       await tester.pump(const Duration(seconds: 1));
@@ -340,10 +368,13 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       await tester.pump(const Duration(seconds: 1));
       expect(scaleOf(tester), closeTo(1.0, 0.001));
-      expect(selfScaled(), isFalse,
-          reason:
-              'at rest: selfScaled=false; no push-back scope active either, '
-              'so _hasScale returns false — no UV freeze, no jitter');
+      expect(
+        selfScaled(),
+        isFalse,
+        reason:
+            'at rest: selfScaled=false; no push-back scope active either, '
+            'so _hasScale returns false — no UV freeze, no jitter',
+      );
     });
   });
 

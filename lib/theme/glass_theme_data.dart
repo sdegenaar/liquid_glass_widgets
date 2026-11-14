@@ -1,6 +1,7 @@
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/widgets.dart';
+
 import '../src/renderer/liquid_glass_renderer.dart';
 import '../utils/glass_brightness.dart';
 import 'glass_interaction_settings.dart';
@@ -196,17 +197,17 @@ class GlassGlowColors {
 
   @override
   int get hashCode => Object.hash(
-        primary,
-        secondary,
-        success,
-        warning,
-        danger,
-        info,
-        pressLight,
-        glowBlurRadius,
-        glowSpreadRadius,
-        glowOpacity,
-      );
+    primary,
+    secondary,
+    success,
+    warning,
+    danger,
+    info,
+    pressLight,
+    glowBlurRadius,
+    glowSpreadRadius,
+    glowOpacity,
+  );
 }
 
 /// Theme configuration for a specific brightness (light or dark).
@@ -302,8 +303,11 @@ class GlassThemeVariant {
     }
     return GlassThemeVariant(
       settings: GlassThemeSettings.lerp(a.settings, b.settings, t),
-      indicatorSettings:
-          GlassThemeSettings.lerp(a.indicatorSettings, b.indicatorSettings, t),
+      indicatorSettings: GlassThemeSettings.lerp(
+        a.indicatorSettings,
+        b.indicatorSettings,
+        t,
+      ),
       quality: t < 0.5 ? a.quality : b.quality,
       glowColors: GlassGlowColors.lerp(a.glowColors, b.glowColors, t),
       borderRadius: radius,
@@ -412,7 +416,11 @@ class GlassThemeVariant {
       thickness: 10.0, // Consistent with light/dark
       blur: 8.0, // BackdropFilter sigma — enough frosting to see shapes through
       glassColor: Color.fromRGBO(
-          200, 210, 230, 0.15), // Visible tint for the container overlay
+        200,
+        210,
+        230,
+        0.15,
+      ), // Visible tint for the container overlay
     ),
     quality: GlassQuality.minimal,
     glowColors: GlassGlowColors.fallback,
@@ -431,12 +439,12 @@ class GlassThemeVariant {
 
   @override
   int get hashCode => Object.hash(
-        settings,
-        indicatorSettings,
-        quality,
-        glowColors,
-        borderRadius,
-      );
+    settings,
+    indicatorSettings,
+    quality,
+    glowColors,
+    borderRadius,
+  );
 }
 
 /// Theme data for liquid glass widgets.
@@ -496,9 +504,9 @@ class GlassThemeData {
   const GlassThemeData.classic({
     this.interaction = const GlassInteractionSettings(),
     this.brightness,
-  })  : style = GlassStyle.classic,
-        light = GlassThemeVariant.classicLight,
-        dark = GlassThemeVariant.classicDark;
+  }) : style = GlassStyle.classic,
+       light = GlassThemeVariant.classicLight,
+       dark = GlassThemeVariant.classicDark;
 
   /// Creates glass theme data configured with simulator-calibrated iOS 26.0
   /// `glassEffect(.regular)` optics ([GlassThemeVariant.ios26Light] and
@@ -506,9 +514,9 @@ class GlassThemeData {
   const GlassThemeData.ios26({
     this.interaction = const GlassInteractionSettings(),
     this.brightness,
-  })  : style = GlassStyle.ios26,
-        light = GlassThemeVariant.ios26Light,
-        dark = GlassThemeVariant.ios26Dark;
+  }) : style = GlassStyle.ios26,
+       light = GlassThemeVariant.ios26Light,
+       dark = GlassThemeVariant.ios26Dark;
 
   /// Creates glass theme data configured with authentic iOS 27
   /// `glassEffect(.regular)` optics ([GlassThemeVariant.ios27Light] and
@@ -516,9 +524,9 @@ class GlassThemeData {
   const GlassThemeData.ios27({
     this.interaction = const GlassInteractionSettings(),
     this.brightness,
-  })  : style = GlassStyle.ios27,
-        light = GlassThemeVariant.ios27Light,
-        dark = GlassThemeVariant.ios27Dark;
+  }) : style = GlassStyle.ios27,
+       light = GlassThemeVariant.ios27Light,
+       dark = GlassThemeVariant.ios27Dark;
 
   /// Creates glass theme data from a flat set of common properties.
   ///
@@ -582,7 +590,8 @@ class GlassThemeData {
     return GlassThemeData(
       style: style,
       light: baseLight.copyWith(
-        settings: baseLight.settings?.copyWith(
+        settings:
+            baseLight.settings?.copyWith(
               blur: blur,
               thickness: thickness,
               chromaticAberration: chromaticAberration,
@@ -596,7 +605,8 @@ class GlassThemeData {
         borderRadius: borderRadius,
       ),
       dark: baseDark.copyWith(
-        settings: baseDark.settings?.copyWith(
+        settings:
+            baseDark.settings?.copyWith(
               blur: blur,
               thickness: thickness,
               chromaticAberration: chromaticAberration,
@@ -687,10 +697,12 @@ class GlassThemeData {
   /// and indicator lenses from a single property.
   GlassThemeSettings? settingsFor(BuildContext context) {
     final s = variantFor(context).settings;
-    final isBuiltInLight = identical(s, GlassThemeSettings.ios27Light) ||
+    final isBuiltInLight =
+        identical(s, GlassThemeSettings.ios27Light) ||
         identical(s, GlassThemeSettings.ios26Light) ||
         identical(s, GlassThemeSettings.classicLight);
-    final isBuiltInDark = identical(s, GlassThemeSettings.ios27Dark) ||
+    final isBuiltInDark =
+        identical(s, GlassThemeSettings.ios27Dark) ||
         identical(s, GlassThemeSettings.ios26Dark) ||
         identical(s, GlassThemeSettings.classicDark);
 
@@ -754,8 +766,9 @@ class GlassThemeData {
     // 0x2A = ~16% opacity in dark mode — dark glass surfaces are already
     // luminous, so a slightly dimmer highlight looks more natural.
     // BlendMode.plus compositing keeps both from blowing out.
-    final adaptivePrimary =
-        isDark ? const Color(0x2AFFFFFF) : const Color(0x3DFFFFFF);
+    final adaptivePrimary = isDark
+        ? const Color(0x2AFFFFFF)
+        : const Color(0x3DFFFFFF);
 
     return colors.copyWith(primary: adaptivePrimary);
   }
@@ -774,8 +787,9 @@ class GlassThemeData {
       style: style ?? this.style,
       interaction: interaction ?? this.interaction,
       // Use sentinel so callers can explicitly clear the override with null.
-      brightness:
-          brightness == _sentinel ? this.brightness : brightness as Brightness?,
+      brightness: brightness == _sentinel
+          ? this.brightness
+          : brightness as Brightness?,
     );
   }
 

@@ -100,10 +100,12 @@ void main() {
     group('duration parameter is respected', () {
       // A shorter duration → higher angular frequency → higher stiffness.
       test('shorter duration produces stiffer spring', () {
-        final fast =
-            GlassSpring.bouncy(duration: const Duration(milliseconds: 200));
-        final slow =
-            GlassSpring.bouncy(duration: const Duration(milliseconds: 800));
+        final fast = GlassSpring.bouncy(
+          duration: const Duration(milliseconds: 200),
+        );
+        final slow = GlassSpring.bouncy(
+          duration: const Duration(milliseconds: 800),
+        );
         expect(fast.stiffness, greaterThan(slow.stiffness));
       });
     });
@@ -172,8 +174,9 @@ void main() {
       expect(notifyCount, greaterThan(0));
     });
 
-    testWidgets('value progresses toward target while animating',
-        (tester) async {
+    testWidgets('value progresses toward target while animating', (
+      tester,
+    ) async {
       late SingleSpringController ctrl;
       await tester.pumpWidget(
         _ControllerHarness(
@@ -219,8 +222,9 @@ void main() {
       expect(ctrl.velocity, closeTo(0.0, 0.001));
     });
 
-    testWidgets('setValue sets value immediately without animating',
-        (tester) async {
+    testWidgets('setValue sets value immediately without animating', (
+      tester,
+    ) async {
       late SingleSpringController ctrl;
       await tester.pumpWidget(
         _ControllerHarness(
@@ -315,8 +319,9 @@ void main() {
       expect(ctrl.value, closeTo(valueAtRedirect, 0.15));
     });
 
-    testWidgets('spring setter redirects simulation without throwing',
-        (tester) async {
+    testWidgets('spring setter redirects simulation without throwing', (
+      tester,
+    ) async {
       late SingleSpringController ctrl;
       await tester.pumpWidget(
         _ControllerHarness(
@@ -357,10 +362,7 @@ void main() {
       }
 
       // Removing the widget tree triggers dispose.
-      expect(
-        () async => tester.pumpWidget(const SizedBox()),
-        returnsNormally,
-      );
+      expect(() async => tester.pumpWidget(const SizedBox()), returnsNormally);
     });
   });
 
@@ -511,8 +513,9 @@ void main() {
       expect(renderedValue, closeTo(0.5, 0.001));
     });
 
-    testWidgets('builder is called with increasing values toward target',
-        (tester) async {
+    testWidgets('builder is called with increasing values toward target', (
+      tester,
+    ) async {
       var targetValue = 0.0;
       late StateSetter outerSetState;
       final collectedValues = <double>[];
@@ -567,8 +570,9 @@ void main() {
       expect(find.byKey(sentinel), findsOneWidget);
     });
 
-    testWidgets('spring change redirects animation without throwing',
-        (tester) async {
+    testWidgets('spring change redirects animation without throwing', (
+      tester,
+    ) async {
       var spring = GlassSpring.smooth();
       late StateSetter outerSetState;
 
@@ -626,8 +630,9 @@ void main() {
       expect(capturedVelocity, closeTo(0.0, 0.001));
     });
 
-    testWidgets('builder receives increasing values while animating',
-        (tester) async {
+    testWidgets('builder receives increasing values while animating', (
+      tester,
+    ) async {
       var target = 0.0;
       late StateSetter outerSetState;
       final capturedValues = <double>[];
@@ -662,28 +667,39 @@ void main() {
       expect(capturedValues.last, greaterThan(capturedValues.first));
     });
 
-    test(
-        'active spring (interactive) physically reaches target sooner than released (bouncy)',
-        () {
+    test('active spring (interactive) physically reaches target sooner than released (bouncy)', () {
       // Compare the raw spring physics directly using SpringSimulation.
       // At the same elapsed time (100 ms), the interactive spring (stiffer/faster)
       // should be closer to 1.0 than the bouncy spring (slower default).
       final interactiveSpring = GlassSpring.interactive(); // 150 ms duration
       final bouncySpring = GlassSpring.bouncy(); // 500 ms duration
 
-      final fast =
-          SpringSimulation(interactiveSpring, 0.0, 1.0, 0.0, snapToEnd: true);
-      final slow =
-          SpringSimulation(bouncySpring, 0.0, 1.0, 0.0, snapToEnd: true);
+      final fast = SpringSimulation(
+        interactiveSpring,
+        0.0,
+        1.0,
+        0.0,
+        snapToEnd: true,
+      );
+      final slow = SpringSimulation(
+        bouncySpring,
+        0.0,
+        1.0,
+        0.0,
+        snapToEnd: true,
+      );
 
       // Sample at 50 ms — both should be animating but interactive should lead.
       const t = 0.05; // seconds
       final fastValue = fast.x(t);
       final slowValue = slow.x(t);
 
-      expect(fastValue, greaterThan(slowValue),
-          reason:
-              'interactive spring ($fastValue) should be ahead of bouncy spring ($slowValue) at t=50ms');
+      expect(
+        fastValue,
+        greaterThan(slowValue),
+        reason:
+            'interactive spring ($fastValue) should be ahead of bouncy spring ($slowValue) at t=50ms',
+      );
     });
   });
 
@@ -713,8 +729,9 @@ void main() {
       expect(rendered!.dy, closeTo(7.0, 0.01));
     });
 
-    testWidgets('both axes progress toward target after value change',
-        (tester) async {
+    testWidgets('both axes progress toward target after value change', (
+      tester,
+    ) async {
       var target = Offset.zero;
       late StateSetter outerSetState;
       final dxValues = <double>[];
@@ -816,9 +833,7 @@ void main() {
 
       await tester.pumpWidget(
         MediaQuery(
-          data: const MediaQueryData(
-            disableAnimations: true,
-          ),
+          data: const MediaQueryData(disableAnimations: true),
           child: StatefulBuilder(
             builder: (context, setState) {
               outerSetState = setState;
@@ -857,10 +872,8 @@ void main() {
       final spring = GlassSpring.smooth();
       await tester.pumpWidget(
         _ControllerHarness(
-          build: (vsync) => ctrl = SingleSpringController(
-            vsync: vsync,
-            spring: spring,
-          ),
+          build: (vsync) =>
+              ctrl = SingleSpringController(vsync: vsync, spring: spring),
         ),
       );
       expect(ctrl.spring.mass, spring.mass);
@@ -872,10 +885,8 @@ void main() {
       final spring = GlassSpring.smooth();
       await tester.pumpWidget(
         _ControllerHarness(
-          build: (vsync) => ctrl = SingleSpringController(
-            vsync: vsync,
-            spring: spring,
-          ),
+          build: (vsync) =>
+              ctrl = SingleSpringController(vsync: vsync, spring: spring),
         ),
       );
 
@@ -886,24 +897,25 @@ void main() {
     });
 
     testWidgets(
-        'spring setter while ticker inactive updates spring without starting',
-        (tester) async {
-      late SingleSpringController ctrl;
-      await tester.pumpWidget(
-        _ControllerHarness(
-          build: (vsync) => ctrl = SingleSpringController(
-            vsync: vsync,
-            spring: GlassSpring.smooth(),
+      'spring setter while ticker inactive updates spring without starting',
+      (tester) async {
+        late SingleSpringController ctrl;
+        await tester.pumpWidget(
+          _ControllerHarness(
+            build: (vsync) => ctrl = SingleSpringController(
+              vsync: vsync,
+              spring: GlassSpring.smooth(),
+            ),
           ),
-        ),
-      );
+        );
 
-      // No animation running; setting a new spring should not start the ticker.
-      ctrl.spring = GlassSpring.bouncy();
-      // If ticker were active, further pump would show value change.
-      await tester.pump(const Duration(milliseconds: 16));
-      expect(ctrl.value, closeTo(0.0, 0.001)); // still at initial
-    });
+        // No animation running; setting a new spring should not start the ticker.
+        ctrl.spring = GlassSpring.bouncy();
+        // If ticker were active, further pump would show value change.
+        await tester.pump(const Duration(milliseconds: 16));
+        expect(ctrl.value, closeTo(0.0, 0.001)); // still at initial
+      },
+    );
   });
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -933,8 +945,9 @@ void main() {
       expect(ctrl.value.dx, greaterThan(0));
     });
 
-    testWidgets('velocity getter returns non-zero Offset while animating',
-        (tester) async {
+    testWidgets('velocity getter returns non-zero Offset while animating', (
+      tester,
+    ) async {
       late OffsetSpringController ctrl;
       await tester.pumpWidget(
         _OffsetControllerHarness(

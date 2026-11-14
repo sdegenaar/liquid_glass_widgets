@@ -1,4 +1,5 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../types/glass_quality.dart';
 import '../../types/glass_surface_style.dart';
@@ -161,8 +162,11 @@ class GlassGroupedSection extends StatelessWidget {
   Widget _buildHeader(BuildContext context) {
     if (header == null) return const SizedBox.shrink();
     return Padding(
-      padding:
-          const EdgeInsetsDirectional.only(start: 16.0, end: 16.0, bottom: 6.0),
+      padding: const EdgeInsetsDirectional.only(
+        start: 16.0,
+        end: 16.0,
+        bottom: 6.0,
+      ),
       child: DefaultTextStyle(
         style: TextStyle(
           color: CupertinoColors.secondaryLabel.resolveFrom(context),
@@ -178,8 +182,11 @@ class GlassGroupedSection extends StatelessWidget {
   Widget _buildFooter(BuildContext context) {
     if (footer == null) return const SizedBox.shrink();
     return Padding(
-      padding:
-          const EdgeInsetsDirectional.only(start: 16.0, end: 16.0, top: 6.0),
+      padding: const EdgeInsetsDirectional.only(
+        start: 16.0,
+        end: 16.0,
+        top: 6.0,
+      ),
       child: DefaultTextStyle(
         style: TextStyle(
           color: CupertinoColors.secondaryLabel.resolveFrom(context),
@@ -235,12 +242,12 @@ class GlassGroupedSection extends StatelessWidget {
         // Compute indent based on whether the current tile has a leading widget.
         final double indent =
             ((currentChild is GlassListTile && currentChild.leading != null) ||
-                    (currentChild is GlassNavigationLink &&
-                        currentChild.leading != null) ||
-                    (currentChild is GlassDisclosureGroup &&
-                        currentChild.leading != null))
-                ? (dividerIndent ?? 56.0)
-                : 16.0;
+                (currentChild is GlassNavigationLink &&
+                    currentChild.leading != null) ||
+                (currentChild is GlassDisclosureGroup &&
+                    currentChild.leading != null))
+            ? (dividerIndent ?? 56.0)
+            : 16.0;
         processedChildren.add(
           GlassDivider(
             indent: indent,
@@ -250,7 +257,8 @@ class GlassGroupedSection extends StatelessWidget {
       }
     }
 
-    final effectiveClipBehavior = clipBehavior ??
+    final effectiveClipBehavior =
+        clipBehavior ??
         (surfaceStyle == GlassSurfaceStyle.solid ? Clip.antiAlias : Clip.none);
 
     final card = GlassContainer.card(
@@ -275,18 +283,11 @@ class GlassGroupedSection extends StatelessWidget {
     Widget section = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildHeader(context),
-        card,
-        _buildFooter(context),
-      ],
+      children: [_buildHeader(context), card, _buildFooter(context)],
     );
 
     if (effectiveMargin != EdgeInsets.zero) {
-      section = Padding(
-        padding: effectiveMargin,
-        child: section,
-      );
+      section = Padding(padding: effectiveMargin, child: section);
     }
 
     return section;

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -17,8 +17,9 @@ void main() {
   ScrollableState verticalScrollable(WidgetTester tester) {
     return tester
         .stateList<ScrollableState>(find.byType(Scrollable))
-        .firstWhere((state) =>
-            axisDirectionToAxis(state.axisDirection) == Axis.vertical);
+        .firstWhere(
+          (state) => axisDirectionToAxis(state.axisDirection) == Axis.vertical,
+        );
   }
 
   double contentPixels(WidgetTester tester) =>
@@ -62,8 +63,9 @@ void main() {
               builder: (context) {
                 final scroll = ScrollControllerProvider.of(context);
                 return ListView.builder(
-                  controller:
-                      ownController ? contentController : scroll?.controller,
+                  controller: ownController
+                      ? contentController
+                      : scroll?.controller,
                   physics: ownController ? null : scroll?.physics,
                   itemCount: 120,
                   itemBuilder: (context, index) {
@@ -89,8 +91,9 @@ void main() {
     );
   }
 
-  testWidgets('grows the sheet first, then scrolls content on the same drag',
-      (tester) async {
+  testWidgets('grows the sheet first, then scrolls content on the same drag', (
+    tester,
+  ) async {
     final controller = GlassModalSheetController();
     await tester.pumpWidget(buildSheet(controller: controller));
     await tester.pumpAndSettle();
@@ -101,15 +104,24 @@ void main() {
 
     // 1. Below the top detent the sheet grows and the content holds still.
     await dragBy(tester, gesture, -120);
-    expect(controller.value, greaterThan(startValue),
-        reason: 'the sheet should grow while the content holds still');
-    expect(contentPixels(tester), 0.0,
-        reason: 'content must not scroll below the top detent');
+    expect(
+      controller.value,
+      greaterThan(startValue),
+      reason: 'the sheet should grow while the content holds still',
+    );
+    expect(
+      contentPixels(tester),
+      0.0,
+      reason: 'content must not scroll below the top detent',
+    );
 
     // 2. Without lifting, the same finger carries on into a content scroll.
     await dragBy(tester, gesture, -420);
-    expect(contentPixels(tester), greaterThan(100.0),
-        reason: 'reaching the top detent should hand the drag to the content');
+    expect(
+      contentPixels(tester),
+      greaterThan(100.0),
+      reason: 'reaching the top detent should hand the drag to the content',
+    );
 
     await gesture.up();
     await tester.pumpAndSettle();
@@ -117,40 +129,51 @@ void main() {
   });
 
   testWidgets(
-      'the handover finishes the sheet\'s travel before the finger lifts',
-      (tester) async {
-    final states = <GlassSheetState>[];
-    final controller = GlassModalSheetController();
-    await tester.pumpWidget(
-      buildSheet(controller: controller, onStateChanged: states.add),
-    );
-    await tester.pumpAndSettle();
+    'the handover finishes the sheet\'s travel before the finger lifts',
+    (tester) async {
+      final states = <GlassSheetState>[];
+      final controller = GlassModalSheetController();
+      await tester.pumpWidget(
+        buildSheet(controller: controller, onStateChanged: states.add),
+      );
+      await tester.pumpAndSettle();
 
-    final gesture = await tester.startGesture(const Offset(400, 450));
-    await tester.pump(const Duration(milliseconds: 16));
-    await dragBy(tester, gesture, -540);
-    expect(contentPixels(tester), greaterThan(0.0),
-        reason: 'the drag should have been handed to the content');
+      final gesture = await tester.startGesture(const Offset(400, 450));
+      await tester.pump(const Duration(milliseconds: 16));
+      await dragBy(tester, gesture, -540);
+      expect(
+        contentPixels(tester),
+        greaterThan(0.0),
+        reason: 'the drag should have been handed to the content',
+      );
 
-    // The handover happens at the top-detent THRESHOLD, short of the detent
-    // itself, and this pointer's up will see a scroll rather than a drag —
-    // so the sheet must finish the trip on its own, while the finger is
-    // still down: it arrives at full, and says so, as the content starts to
-    // scroll rather than when the finger eventually lifts.
-    await tester.pump(const Duration(milliseconds: 600));
-    expect(controller.progress, 1.0,
-        reason: 'the sheet should complete its travel to the top detent');
-    expect(states, contains(GlassSheetState.full),
-        reason: 'arriving at full via the handover must be reported');
+      // The handover happens at the top-detent THRESHOLD, short of the detent
+      // itself, and this pointer's up will see a scroll rather than a drag —
+      // so the sheet must finish the trip on its own, while the finger is
+      // still down: it arrives at full, and says so, as the content starts to
+      // scroll rather than when the finger eventually lifts.
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(
+        controller.progress,
+        1.0,
+        reason: 'the sheet should complete its travel to the top detent',
+      );
+      expect(
+        states,
+        contains(GlassSheetState.full),
+        reason: 'arriving at full via the handover must be reported',
+      );
 
-    await gesture.up();
-    await tester.pumpAndSettle();
-    expect(controller.currentState, GlassSheetState.full);
-    expect(controller.progress, 1.0);
-  });
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(controller.currentState, GlassSheetState.full);
+      expect(controller.progress, 1.0);
+    },
+  );
 
-  testWidgets('scrolls content back to its top before collapsing',
-      (tester) async {
+  testWidgets('scrolls content back to its top before collapsing', (
+    tester,
+  ) async {
     final controller = GlassModalSheetController();
     await tester.pumpWidget(
       buildSheet(controller: controller, initialState: GlassSheetState.full),
@@ -178,30 +201,44 @@ void main() {
     // Stop short of the content's top: the sheet must not have moved at all.
     await dragBy(tester, gesture, scrolled - 40);
     expect(contentPixels(tester), greaterThan(0.0));
-    expect(controller.value, closeTo(valueBefore, 0.001),
-        reason: 'the sheet must not collapse while the content can scroll');
+    expect(
+      controller.value,
+      closeTo(valueBefore, 0.001),
+      reason: 'the sheet must not collapse while the content can scroll',
+    );
 
     // Carry on through the top on the same pointer: the sheet takes over for
     // the remaining travel only. The drag anchors still describe the whole
     // gesture, so a sheet that resumed from them would jump by everything the
     // content had scrolled — here about `scrolled / 600` of the screen.
     await dragBy(tester, gesture, 100);
-    expect(contentPixels(tester), 0.0,
-        reason: 'the content should reach its top first');
-    expect(controller.value, lessThan(valueBefore),
-        reason: 'with the content at its top the sheet takes the remainder');
+    expect(
+      contentPixels(tester),
+      0.0,
+      reason: 'the content should reach its top first',
+    );
+    expect(
+      controller.value,
+      lessThan(valueBefore),
+      reason: 'with the content at its top the sheet takes the remainder',
+    );
 
     final travelled = valueBefore - controller.value;
-    expect(travelled, lessThan(0.25),
-        reason: 'the sheet should follow the finger from where it took over, '
-            'not jump by the distance the content scrolled');
+    expect(
+      travelled,
+      lessThan(0.25),
+      reason:
+          'the sheet should follow the finger from where it took over, '
+          'not jump by the distance the content scrolled',
+    );
 
     await gesture.up();
     await tester.pumpAndSettle();
   });
 
-  testWidgets('a single-detent sheet scrolls its content on the first drag',
-      (tester) async {
+  testWidgets('a single-detent sheet scrolls its content on the first drag', (
+    tester,
+  ) async {
     final controller = GlassModalSheetController();
     await tester.pumpWidget(
       buildSheet(
@@ -223,8 +260,9 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('a horizontal scrollable is unaffected below the top detent',
-      (tester) async {
+  testWidgets('a horizontal scrollable is unaffected below the top detent', (
+    tester,
+  ) async {
     final controller = GlassModalSheetController();
     await tester.pumpWidget(
       buildSheet(controller: controller, withCarousel: true),
@@ -234,7 +272,8 @@ void main() {
     final horizontal = tester
         .stateList<ScrollableState>(find.byType(Scrollable))
         .firstWhere(
-            (s) => axisDirectionToAxis(s.axisDirection) == Axis.horizontal);
+          (s) => axisDirectionToAxis(s.axisDirection) == Axis.horizontal,
+        );
     expect(horizontal.position.pixels, 0.0);
 
     // 5. The sheet is at `medium`, where a vertical drag is frozen. The
@@ -245,23 +284,30 @@ void main() {
     final after = tester
         .stateList<ScrollableState>(find.byType(Scrollable))
         .firstWhere(
-            (s) => axisDirectionToAxis(s.axisDirection) == Axis.horizontal);
+          (s) => axisDirectionToAxis(s.axisDirection) == Axis.horizontal,
+        );
     expect(after.position.pixels, greaterThan(0.0));
-    expect(controller.currentState, GlassSheetState.half,
-        reason: 'a horizontal swipe must not move the sheet');
+    expect(
+      controller.currentState,
+      GlassSheetState.half,
+      reason: 'a horizontal swipe must not move the sheet',
+    );
   });
 
-  testWidgets('content on its own controller hands over the same way',
-      (tester) async {
+  testWidgets('content on its own controller hands over the same way', (
+    tester,
+  ) async {
     final controller = GlassModalSheetController();
     final contentController = ScrollController();
     addTearDown(contentController.dispose);
 
-    await tester.pumpWidget(buildSheet(
-      controller: controller,
-      ownController: true,
-      contentController: contentController,
-    ));
+    await tester.pumpWidget(
+      buildSheet(
+        controller: controller,
+        ownController: true,
+        contentController: contentController,
+      ),
+    );
     await tester.pumpAndSettle();
 
     final startValue = controller.value;
@@ -272,8 +318,11 @@ void main() {
     //    grows first rather than the two moving together.
     await dragBy(tester, gesture, -120);
     expect(controller.value, greaterThan(startValue));
-    expect(contentPixels(tester), 0.0,
-        reason: 'foreign controllers must obey the same expand-first gate');
+    expect(
+      contentPixels(tester),
+      0.0,
+      reason: 'foreign controllers must obey the same expand-first gate',
+    );
 
     await dragBy(tester, gesture, -420);
     expect(contentPixels(tester), greaterThan(100.0));
@@ -283,34 +332,39 @@ void main() {
   });
 
   testWidgets(
-      'a fast fling below the top detent does not fling the content list',
-      (tester) async {
-    // Covers _ExpandFirstScrollPhysics.createBallisticSimulation: when the
-    // finger lifts with positive velocity while the content is still at pixel 0
-    // (sheet not yet past the top-detent threshold), the guard returns null so
-    // the list does not scroll. The sheet's own ballistic continues independently.
-    final controller = GlassModalSheetController();
-    await tester.pumpWidget(buildSheet(controller: controller));
-    await tester.pumpAndSettle();
+    'a fast fling below the top detent does not fling the content list',
+    (tester) async {
+      // Covers _ExpandFirstScrollPhysics.createBallisticSimulation: when the
+      // finger lifts with positive velocity while the content is still at pixel 0
+      // (sheet not yet past the top-detent threshold), the guard returns null so
+      // the list does not scroll. The sheet's own ballistic continues independently.
+      final controller = GlassModalSheetController();
+      await tester.pumpWidget(buildSheet(controller: controller));
+      await tester.pumpAndSettle();
 
-    // Short fling: the finger travels only 60 px upward at high velocity.
-    // The sheet starts at `medium` and cannot cross _kTopDetentThreshold in
-    // 60 px, so _ExpandFirstScrollPhysics is still installed when the finger
-    // lifts and createBallisticSimulation is called with velocity > 0,
-    // pixels == 0 → it returns null and the list stays still.
-    await tester.fling(
-      find.byType(GlassModalSheet),
-      const Offset(0, -60),
-      800,
-    );
-    // Pump just a few frames — enough for the ballistic to fire but not enough
-    // for the sheet to finish settling, so we can assert the content mid-flight.
-    await tester.pump(const Duration(milliseconds: 32));
+      // Short fling: the finger travels only 60 px upward at high velocity.
+      // The sheet starts at `medium` and cannot cross _kTopDetentThreshold in
+      // 60 px, so _ExpandFirstScrollPhysics is still installed when the finger
+      // lifts and createBallisticSimulation is called with velocity > 0,
+      // pixels == 0 → it returns null and the list stays still.
+      await tester.fling(
+        find.byType(GlassModalSheet),
+        const Offset(0, -60),
+        800,
+      );
+      // Pump just a few frames — enough for the ballistic to fire but not enough
+      // for the sheet to finish settling, so we can assert the content mid-flight.
+      await tester.pump(const Duration(milliseconds: 32));
 
-    expect(contentPixels(tester), 0.0,
-        reason: 'the fling must not scroll the content while the sheet is '
-            'still expanding below the top detent');
+      expect(
+        contentPixels(tester),
+        0.0,
+        reason:
+            'the fling must not scroll the content while the sheet is '
+            'still expanding below the top detent',
+      );
 
-    await tester.pumpAndSettle();
-  });
+      await tester.pumpAndSettle();
+    },
+  );
 }

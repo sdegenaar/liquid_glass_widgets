@@ -3,7 +3,7 @@
 // NOT part of the public API — do not export from liquid_glass_widgets.dart.
 library;
 
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/widgets.dart';
 
 /// Paints an iOS 26-style keyboard focus ring around a [ShapeBorder].
 ///
@@ -15,10 +15,7 @@ import 'package:flutter/cupertino.dart';
 /// only mounted inside a [ValueListenableBuilder] when focus is active.
 class GlassFocusRingPainter extends CustomPainter {
   /// Creates a new [GlassFocusRingPainter].
-  GlassFocusRingPainter({
-    required this.shape,
-    required this.color,
-  });
+  GlassFocusRingPainter({required this.shape, required this.color});
 
   /// The shape of the focus ring.
   final ShapeBorder shape;

@@ -105,10 +105,9 @@ class GlassMorphController extends ChangeNotifier {
   /// [TickerProviderStateMixin].
   GlassMorphController({
     required TickerProvider vsync,
-    MorphSpeed speed = MorphSpeed.normal,
+    this._speed = MorphSpeed.normal,
     this.style = MorphStyle.teardrop,
-  })  : _speed = speed,
-        _animationController = AnimationController.unbounded(vsync: vsync) {
+  }) : _animationController = AnimationController.unbounded(vsync: vsync) {
     _animationController.addListener(_onTick);
     _animationController.addStatusListener(_onStatusChange);
   }
@@ -307,13 +306,19 @@ class GlassMorphController extends ChangeNotifier {
     // animation completes in a single frame — no bounce, no teardrop neck.
     if (_disableAnimations) {
       return const SpringDescription(
-          mass: 1.0, stiffness: 500.0, damping: 32.4);
+        mass: 1.0,
+        stiffness: 500.0,
+        damping: 32.4,
+      );
     }
     switch (_speed) {
       case MorphSpeed.slow:
         // ω₀ ≈ 7.7 rad/s, ζ ≈ 0.73 — relaxed, fluid motion (~500 ms)
         return const SpringDescription(
-            mass: 1.0, stiffness: 60.0, damping: 11.3);
+          mass: 1.0,
+          stiffness: 60.0,
+          damping: 11.3,
+        );
       case MorphSpeed.normal:
         // ω₀ ≈ 11.0 rad/s, ζ ≈ 0.73 — iOS 26/27 native standard (~350 ms)
         return _isClosing
@@ -322,11 +327,17 @@ class GlassMorphController extends ChangeNotifier {
       case MorphSpeed.fast:
         // ω₀ ≈ 14.1 rad/s, ζ ≈ 0.73 — snappy, responsive (~250 ms)
         return const SpringDescription(
-            mass: 1.0, stiffness: 200.0, damping: 20.5);
+          mass: 1.0,
+          stiffness: 200.0,
+          damping: 20.5,
+        );
       case MorphSpeed.instant:
         // ω₀ ≈ 22 rad/s, ζ ≈ 0.73 — very stiff, near-instant
         return const SpringDescription(
-            mass: 1.0, stiffness: 500.0, damping: 32.4);
+          mass: 1.0,
+          stiffness: 500.0,
+          damping: 32.4,
+        );
     }
   }
 
@@ -338,8 +349,10 @@ class GlassMorphController extends ChangeNotifier {
   /// controller ticking, and the surface repainting, for about half a second
   /// after anything visibly moved: an open settled after 1.2 s, a close after
   /// 0.93 s, while the motion ended at 0.72 s and 0.53 s.
-  static const Tolerance _settleTolerance =
-      Tolerance(distance: 0.001, velocity: 0.05);
+  static const Tolerance _settleTolerance = Tolerance(
+    distance: 0.001,
+    velocity: 0.05,
+  );
 
   void _runSpring(double target, {required double velocityHint}) {
     _animationController.animateWith(

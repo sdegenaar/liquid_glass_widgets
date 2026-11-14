@@ -1,5 +1,6 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/services.dart';
+
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/types/glass_interaction_behavior.dart';
 import '../../types/glass_quality.dart';
@@ -146,7 +147,8 @@ class _GlassPasswordFieldState extends State<GlassPasswordField> {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveSurfaceStyle = widget.surfaceStyle ??
+    final effectiveSurfaceStyle =
+        widget.surfaceStyle ??
         InheritedGlassSurfaceStyle.maybeOf(context) ??
         GlassSurfaceStyle.glass;
     final isSolid = effectiveSurfaceStyle == GlassSurfaceStyle.solid;

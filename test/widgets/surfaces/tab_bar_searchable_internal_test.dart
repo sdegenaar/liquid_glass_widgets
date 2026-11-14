@@ -5,8 +5,8 @@
 //   • DismissPill — render, tap, indicatorColor/settings branches
 //   • SearchableTabIndicator — drag, tap, cancel, didUpdateWidget, search-active state
 //   • SearchPill — collapsed/expanded render, text clear, focus, didUpdateWidget
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/renderer/liquid_glass_renderer.dart';
@@ -77,7 +77,7 @@ Widget _indicator({
           Icon(CupertinoIcons.gear),
         ],
       ),
-      selectedTabBuilder: (_, __, ___) => const SizedBox.shrink(),
+      selectedTabBuilder: (_, _, _) => const SizedBox.shrink(),
       onTabChanged: onTabChanged ?? (_) {},
       quality: GlassQuality.minimal,
       barHeight: 64,
@@ -143,8 +143,9 @@ void main() {
       expect(find.byType(DismissPill), findsOneWidget);
     });
 
-    testWidgets('renders with settings and indicatorColor merged',
-        (tester) async {
+    testWidgets('renders with settings and indicatorColor merged', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrap(
           DismissPill(
@@ -182,8 +183,9 @@ void main() {
       expect(find.byType(Icon), findsWidgets);
     });
 
-    testWidgets('default cancelIconSize is 20 (not the old hardcoded 16)',
-        (tester) async {
+    testWidgets('default cancelIconSize is 20 (not the old hardcoded 16)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrap(
           DismissPill(
@@ -203,8 +205,11 @@ void main() {
           (w) => w is Icon && w.icon == CupertinoIcons.xmark,
         ),
       );
-      expect(icon.size, equals(24.0),
-          reason: 'Default icon size should be 24, not the old hardcoded 16');
+      expect(
+        icon.size,
+        equals(24.0),
+        reason: 'Default icon size should be 24, not the old hardcoded 16',
+      );
     });
 
     testWidgets('uses cancelIcon widget when provided', (tester) async {
@@ -240,51 +245,53 @@ void main() {
       expect(find.byType(SearchableTabIndicator), findsOneWidget);
     });
 
-    testWidgets('propagates backgroundQuality to track AdaptiveGlass.grouped',
-        (tester) async {
-      await tester.pumpWidget(_wrap(
-        SearchableTabIndicator(
-          tabIndex: 0,
-          tabCount: 3,
-          visible: true,
-          childUnselected: const SizedBox(),
-          selectedTabBuilder: (_, __, ___) => const SizedBox.shrink(),
-          onTabChanged: (_) {},
-          quality: GlassQuality.standard,
-          backgroundQuality: GlassQuality.minimal,
-          barHeight: 64,
-          barBorderRadius: 20,
-          tabPadding: EdgeInsets.zero,
-          magnification: 1.0,
-          innerBlur: 0,
-          maskingQuality: MaskingQuality.off,
-          isSearchActive: false,
-          onDismissSearch: () {},
-          enableBackgroundAnimation: true,
-          backgroundPressScale: 1.06,
+    testWidgets('propagates backgroundQuality to track AdaptiveGlass.grouped', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          SearchableTabIndicator(
+            tabIndex: 0,
+            tabCount: 3,
+            visible: true,
+            childUnselected: const SizedBox(),
+            selectedTabBuilder: (_, _, _) => const SizedBox.shrink(),
+            onTabChanged: (_) {},
+            quality: GlassQuality.standard,
+            backgroundQuality: GlassQuality.minimal,
+            barHeight: 64,
+            barBorderRadius: 20,
+            tabPadding: EdgeInsets.zero,
+            magnification: 1.0,
+            innerBlur: 0,
+            maskingQuality: MaskingQuality.off,
+            isSearchActive: false,
+            onDismissSearch: () {},
+            enableBackgroundAnimation: true,
+            backgroundPressScale: 1.06,
+          ),
         ),
-      ));
+      );
       await tester.pump();
 
-      final indicator = tester
-          .widget<SearchableTabIndicator>(find.byType(SearchableTabIndicator));
+      final indicator = tester.widget<SearchableTabIndicator>(
+        find.byType(SearchableTabIndicator),
+      );
       expect(indicator.quality, equals(GlassQuality.standard));
       expect(indicator.backgroundQuality, equals(GlassQuality.minimal));
 
-      final glasses =
-          tester.widgetList<AdaptiveGlass>(find.byType(AdaptiveGlass));
+      final glasses = tester.widgetList<AdaptiveGlass>(
+        find.byType(AdaptiveGlass),
+      );
       expect(glasses.any((g) => g.quality == GlassQuality.minimal), isTrue);
     });
 
-    testWidgets('horizontal drag updates alignment and calls onTabChanged',
-        (tester) async {
+    testWidgets('horizontal drag updates alignment and calls onTabChanged', (
+      tester,
+    ) async {
       final changedIndices = <int>[];
       await tester.pumpWidget(
-        _indicator(
-          tabIndex: 0,
-          tabCount: 3,
-          onTabChanged: changedIndices.add,
-        ),
+        _indicator(tabIndex: 0, tabCount: 3, onTabChanged: changedIndices.add),
       );
       await tester.pump();
 
@@ -305,11 +312,7 @@ void main() {
     testWidgets('tap on different zone calls onTabChanged', (tester) async {
       final changedIndices = <int>[];
       await tester.pumpWidget(
-        _indicator(
-          tabIndex: 0,
-          tabCount: 3,
-          onTabChanged: changedIndices.add,
-        ),
+        _indicator(tabIndex: 0, tabCount: 3, onTabChanged: changedIndices.add),
       );
       await tester.pump();
 
@@ -323,8 +326,9 @@ void main() {
       expect(find.byType(SearchableTabIndicator), findsOneWidget);
     });
 
-    testWidgets('didUpdateWidget — tabIndex change updates alignment',
-        (tester) async {
+    testWidgets('didUpdateWidget — tabIndex change updates alignment', (
+      tester,
+    ) async {
       // Start at tab 0
       await tester.pumpWidget(_indicator(tabIndex: 0, tabCount: 3));
       await tester.pump();
@@ -337,11 +341,10 @@ void main() {
       expect(find.byType(SearchableTabIndicator), findsOneWidget);
     });
 
-    testWidgets('didUpdateWidget — barBorderRadius change rebuilds barShape',
-        (tester) async {
-      await tester.pumpWidget(
-        _indicator(tabIndex: 0, tabCount: 3),
-      );
+    testWidgets('didUpdateWidget — barBorderRadius change rebuilds barShape', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_indicator(tabIndex: 0, tabCount: 3));
       await tester.pump();
 
       // Change barBorderRadius by rebuilding with a stateful wrapper
@@ -352,7 +355,7 @@ void main() {
             tabCount: 3,
             visible: true,
             childUnselected: const SizedBox.shrink(),
-            selectedTabBuilder: (_, __, ___) => const SizedBox.shrink(),
+            selectedTabBuilder: (_, _, _) => const SizedBox.shrink(),
             onTabChanged: (_) {},
             quality: GlassQuality.minimal,
             barHeight: 64,
@@ -372,8 +375,9 @@ void main() {
       expect(find.byType(SearchableTabIndicator), findsOneWidget);
     });
 
-    testWidgets('MaskingQuality.high path renders without throwing',
-        (tester) async {
+    testWidgets('MaskingQuality.high path renders without throwing', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _indicator(
           tabIndex: 0,
@@ -388,23 +392,25 @@ void main() {
     });
 
     testWidgets(
-        'visible=false with MaskingQuality.high renders background-only',
-        (tester) async {
-      await tester.pumpWidget(
-        _indicator(
-          tabIndex: 0,
-          tabCount: 3,
-          visible: false,
-          maskingQuality: MaskingQuality.high,
-        ),
-      );
-      await tester.pump();
-      await tester.pumpAndSettle();
-      expect(find.byType(SearchableTabIndicator), findsOneWidget);
-    });
+      'visible=false with MaskingQuality.high renders background-only',
+      (tester) async {
+        await tester.pumpWidget(
+          _indicator(
+            tabIndex: 0,
+            tabCount: 3,
+            visible: false,
+            maskingQuality: MaskingQuality.high,
+          ),
+        );
+        await tester.pump();
+        await tester.pumpAndSettle();
+        expect(find.byType(SearchableTabIndicator), findsOneWidget);
+      },
+    );
 
-    testWidgets('drag cancel while dragging snaps back cleanly',
-        (tester) async {
+    testWidgets('drag cancel while dragging snaps back cleanly', (
+      tester,
+    ) async {
       final changedIndices = <int>[];
       await tester.pumpWidget(
         _indicator(tabIndex: 1, tabCount: 3, onTabChanged: changedIndices.add),
@@ -425,11 +431,10 @@ void main() {
       expect(find.byType(SearchableTabIndicator), findsOneWidget);
     });
 
-    testWidgets('drag cancel without dragging resets alignment cleanly',
-        (tester) async {
-      await tester.pumpWidget(
-        _indicator(tabIndex: 1, tabCount: 3),
-      );
+    testWidgets('drag cancel without dragging resets alignment cleanly', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_indicator(tabIndex: 1, tabCount: 3));
       await tester.pump();
 
       final center = tester.getCenter(find.byType(SearchableTabIndicator));
@@ -445,98 +450,111 @@ void main() {
     // ── Regression: issue #22 ────────────────────────────────────────────────
 
     testWidgets(
-        'tapping the already-selected tab fires onTabChanged (issue #22)',
-        (tester) async {
-      final changes = <int>[];
+      'tapping the already-selected tab fires onTabChanged (issue #22)',
+      (tester) async {
+        final changes = <int>[];
 
-      await tester.pumpWidget(
-        _indicator(tabIndex: 0, tabCount: 3, onTabChanged: changes.add),
-      );
-      await tester.pump();
+        await tester.pumpWidget(
+          _indicator(tabIndex: 0, tabCount: 3, onTabChanged: changes.add),
+        );
+        await tester.pump();
 
-      // Tap well into the left zone — tab 0 (already active).
-      final rect = tester.getRect(find.byType(SearchableTabIndicator));
-      await tester.tapAt(Offset(rect.left + rect.width * 0.1, rect.center.dy));
-      await tester.pumpAndSettle();
+        // Tap well into the left zone — tab 0 (already active).
+        final rect = tester.getRect(find.byType(SearchableTabIndicator));
+        await tester.tapAt(
+          Offset(rect.left + rect.width * 0.1, rect.center.dy),
+        );
+        await tester.pumpAndSettle();
 
-      expect(changes, contains(0),
-          reason: 'SearchableTabIndicator must fire onTabChanged on repeat tap '
-              'of the active tab (issue #22)');
-    });
+        expect(
+          changes,
+          contains(0),
+          reason:
+              'SearchableTabIndicator must fire onTabChanged on repeat tap '
+              'of the active tab (issue #22)',
+        );
+      },
+    );
 
     testWidgets(
-        'drag ending at centre of 5-tab searchable bar selects tab 2 (issue #23)',
-        (tester) async {
-      // Fixed-width 5-tab indicator so pixel percentages are deterministic.
-      final fiveTabs = List.generate(5, (i) => i);
-      final changes = <int>[];
-      int currentIndex = 0;
+      'drag ending at centre of 5-tab searchable bar selects tab 2 (issue #23)',
+      (tester) async {
+        // Fixed-width 5-tab indicator so pixel percentages are deterministic.
+        final fiveTabs = List.generate(5, (i) => i);
+        final changes = <int>[];
+        int currentIndex = 0;
 
-      late StateSetter outerSetState;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SizedBox(
-              width: 500,
-              height: 80,
-              child: StatefulBuilder(
-                builder: (context, setState) {
-                  outerSetState = setState;
-                  return SearchableTabIndicator(
-                    tabIndex: currentIndex,
-                    tabCount: 5,
-                    visible: true,
-                    childUnselected: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: fiveTabs
-                          .map((_) => const Icon(CupertinoIcons.star))
-                          .toList(),
-                    ),
-                    selectedTabBuilder: (_, __, ___) => const SizedBox.shrink(),
-                    onTabChanged: (i) {
-                      changes.add(i);
-                      outerSetState(() => currentIndex = i);
-                    },
-                    quality: GlassQuality.minimal,
-                    barHeight: 64,
-                    barBorderRadius: 20,
-                    tabPadding: EdgeInsets.zero,
-                    magnification: 1.0,
-                    innerBlur: 0,
-                    maskingQuality: MaskingQuality.off,
-                    isSearchActive: false,
-                    onDismissSearch: () {},
-                    enableBackgroundAnimation: false,
-                    backgroundPressScale: 1.0,
-                  );
-                },
+        late StateSetter outerSetState;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 500,
+                height: 80,
+                child: StatefulBuilder(
+                  builder: (context, setState) {
+                    outerSetState = setState;
+                    return SearchableTabIndicator(
+                      tabIndex: currentIndex,
+                      tabCount: 5,
+                      visible: true,
+                      childUnselected: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: fiveTabs
+                            .map((_) => const Icon(CupertinoIcons.star))
+                            .toList(),
+                      ),
+                      selectedTabBuilder: (_, _, _) => const SizedBox.shrink(),
+                      onTabChanged: (i) {
+                        changes.add(i);
+                        outerSetState(() => currentIndex = i);
+                      },
+                      quality: GlassQuality.minimal,
+                      barHeight: 64,
+                      barBorderRadius: 20,
+                      tabPadding: EdgeInsets.zero,
+                      magnification: 1.0,
+                      innerBlur: 0,
+                      maskingQuality: MaskingQuality.off,
+                      isSearchActive: false,
+                      onDismissSearch: () {},
+                      enableBackgroundAnimation: false,
+                      backgroundPressScale: 1.0,
+                    );
+                  },
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      final rect = tester.getRect(find.byType(SearchableTabIndicator));
-      final startX = rect.left + rect.width * 0.05;
-      final endX = rect.left + rect.width * 0.50; // centre → tab 2
-      await tester.dragFrom(
-          Offset(startX, rect.center.dy), Offset(endX - startX, 0));
-      await tester.pumpAndSettle();
+        final rect = tester.getRect(find.byType(SearchableTabIndicator));
+        final startX = rect.left + rect.width * 0.05;
+        final endX = rect.left + rect.width * 0.50; // centre → tab 2
+        await tester.dragFrom(
+          Offset(startX, rect.center.dy),
+          Offset(endX - startX, 0),
+        );
+        await tester.pumpAndSettle();
 
-      expect(changes, isNotEmpty);
-      expect(changes.last, equals(2),
-          reason: 'Centre of 5-tab bar must snap to tab 2, not tab 3 '
-              '(coordinate space fix — issue #23)');
-    });
+        expect(changes, isNotEmpty);
+        expect(
+          changes.last,
+          equals(2),
+          reason:
+              'Centre of 5-tab bar must snap to tab 2, not tab 3 '
+              '(coordinate space fix — issue #23)',
+        );
+      },
+    );
   });
 
   group('SearchableTabIndicator — search-active state', () {
-    testWidgets('shows dismiss button when isSearchActive=true',
-        (tester) async {
-      await tester.pumpWidget(
-        _indicator(isSearchActive: true),
-      );
+    testWidgets('shows dismiss button when isSearchActive=true', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_indicator(isSearchActive: true));
       await tester.pump();
 
       // Should render a GestureDetector (the dismiss button) around the AdaptiveGlass
@@ -547,7 +565,9 @@ void main() {
       var dismissed = false;
       await tester.pumpWidget(
         _indicator(
-            isSearchActive: true, onDismissSearch: () => dismissed = true),
+          isSearchActive: true,
+          onDismissSearch: () => dismissed = true,
+        ),
       );
       await tester.pump();
 
@@ -569,8 +589,9 @@ void main() {
       expect(find.byKey(const Key('logo-widget')), findsOneWidget);
     });
 
-    testWidgets('shows empty SizedBox when collapsedLogoBuilder is null',
-        (tester) async {
+    testWidgets('shows empty SizedBox when collapsedLogoBuilder is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _indicator(isSearchActive: true, collapsedLogoBuilder: null),
       );
@@ -605,8 +626,9 @@ void main() {
       expect(find.byType(SearchPill), findsOneWidget);
     });
 
-    testWidgets('onSearchToggle called when tapping collapsed pill',
-        (tester) async {
+    testWidgets('onSearchToggle called when tapping collapsed pill', (
+      tester,
+    ) async {
       var toggled = false;
       var toggleValue = false;
       await tester.pumpWidget(
@@ -637,8 +659,7 @@ void main() {
       expect(toggleValue, isTrue);
     });
 
-    testWidgets(
-        'while active and still narrow, a tap on the circle does not '
+    testWidgets('while active and still narrow, a tap on the circle does not '
         'toggle search again', (tester) async {
       var toggles = 0;
       await tester.pumpWidget(
@@ -669,8 +690,9 @@ void main() {
   });
 
   group('SearchPill — expanded state (isActive=true, wide)', () {
-    testWidgets('renders expanded row when active and wide enough',
-        (tester) async {
+    testWidgets('renders expanded row when active and wide enough', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrap(
           SearchPill(
@@ -747,8 +769,10 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           SearchPill(
-            config:
-                _config(controller: ctrl, onChanged: (v) => lastChanged = v),
+            config: _config(
+              controller: ctrl,
+              onChanged: (v) => lastChanged = v,
+            ),
             isActive: true,
             barBorderRadius: 20,
             quality: GlassQuality.minimal,
@@ -771,8 +795,9 @@ void main() {
       expect(lastChanged, '');
     });
 
-    testWidgets('trailingBuilder overrides default mic/clear slot',
-        (tester) async {
+    testWidgets('trailingBuilder overrides default mic/clear slot', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrap(
           SearchPill(
@@ -797,8 +822,9 @@ void main() {
   });
 
   group('SearchPill — didUpdateWidget', () {
-    testWidgets('dismissing (isActive false→true→false) clears and unfocuses',
-        (tester) async {
+    testWidgets('dismissing (isActive false→true→false) clears and unfocuses', (
+      tester,
+    ) async {
       final ctrl = TextEditingController(text: 'hello');
       final focus = FocusNode();
       addTearDown(ctrl.dispose);
@@ -845,8 +871,9 @@ void main() {
       expect(ctrl.text, isEmpty);
     });
 
-    testWidgets('uses external controller and focusNode without owning them',
-        (tester) async {
+    testWidgets('uses external controller and focusNode without owning them', (
+      tester,
+    ) async {
       final ctrl = TextEditingController();
       final focus = FocusNode();
       addTearDown(ctrl.dispose);
@@ -924,13 +951,18 @@ void main() {
       );
     }
 
-    LiquidStretch stretchOf(WidgetTester tester) => tester.widget(find
-        .descendant(
-            of: find.byType(SearchPill), matching: find.byType(LiquidStretch))
-        .first);
+    LiquidStretch stretchOf(WidgetTester tester) => tester.widget(
+      find
+          .descendant(
+            of: find.byType(SearchPill),
+            matching: find.byType(LiquidStretch),
+          )
+          .first,
+    );
 
-    testWidgets('the default collapsed circle presses like a native button',
-        (tester) async {
+    testWidgets('the default collapsed circle presses like a native button', (
+      tester,
+    ) async {
       await tester.pumpWidget(_wrap(pill(), width: 64, height: 64));
       await tester.pump();
       final stretch = stretchOf(tester);
@@ -939,10 +971,12 @@ void main() {
       expect(find.byType(PressAmbientLift), findsOneWidget);
     });
 
-    testWidgets('a customised pressScale keeps the fixed factor and glow',
-        (tester) async {
-      await tester
-          .pumpWidget(_wrap(pill(pressScale: 1.06), width: 64, height: 64));
+    testWidgets('a customised pressScale keeps the fixed factor and glow', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(pill(pressScale: 1.06), width: 64, height: 64),
+      );
       await tester.pump();
       final stretch = stretchOf(tester);
       expect(stretch.pressGrowth, isNull);
@@ -950,30 +984,38 @@ void main() {
       expect(find.byType(PressAmbientLift), findsNothing);
     });
 
-    testWidgets('an explicit 1.04 is a fixed factor, not the native sizing',
-        (tester) async {
-      await tester
-          .pumpWidget(_wrap(pill(pressScale: 1.04), width: 64, height: 64));
+    testWidgets('an explicit 1.04 is a fixed factor, not the native sizing', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(pill(pressScale: 1.04), width: 64, height: 64),
+      );
       await tester.pump();
       expect(stretchOf(tester).pressGrowth, isNull);
     });
 
-    testWidgets('a customised glow colour keeps the directional glow',
-        (tester) async {
+    testWidgets('a customised glow colour keeps the directional glow', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-          _wrap(pill(nativePressHighlight: false), width: 64, height: 64));
+        _wrap(pill(nativePressHighlight: false), width: 64, height: 64),
+      );
       await tester.pump();
       expect(find.byType(PressAmbientLift), findsNothing);
     });
 
-    testWidgets('the expanded field stretches vertically only from its edge',
-        (tester) async {
+    testWidgets('the expanded field stretches vertically only from its edge', (
+      tester,
+    ) async {
       await tester.pumpWidget(_wrap(pill(isActive: true)));
       await tester.pump();
       final stretches = tester
-          .widgetList<LiquidStretch>(find.descendant(
+          .widgetList<LiquidStretch>(
+            find.descendant(
               of: find.byType(SearchPill),
-              matching: find.byType(LiquidStretch)))
+              matching: find.byType(LiquidStretch),
+            ),
+          )
           .toList();
       expect(stretches, hasLength(2));
       expect(stretches.first.axis, Axis.vertical);
@@ -983,14 +1025,18 @@ void main() {
       expect(stretches.last.stretch, 0.22);
     });
 
-    testWidgets('a customised pressScale keeps the still expanded field',
-        (tester) async {
+    testWidgets('a customised pressScale keeps the still expanded field', (
+      tester,
+    ) async {
       await tester.pumpWidget(_wrap(pill(isActive: true, pressScale: 1.06)));
       await tester.pump();
       final stretches = tester
-          .widgetList<LiquidStretch>(find.descendant(
+          .widgetList<LiquidStretch>(
+            find.descendant(
               of: find.byType(SearchPill),
-              matching: find.byType(LiquidStretch)))
+              matching: find.byType(LiquidStretch),
+            ),
+          )
           .toList();
       expect(stretches, hasLength(2));
       expect(stretches.first.stretch, 0.0);
@@ -1011,257 +1057,302 @@ void main() {
       );
     }
 
-    testWidgets('the default circle presses like a native button',
-        (tester) async {
+    testWidgets('the default circle presses like a native button', (
+      tester,
+    ) async {
       await tester.pumpWidget(_wrap(pill(), width: 64, height: 64));
       await tester.pump();
-      final stretch = tester.widget<LiquidStretch>(find.descendant(
+      final stretch = tester.widget<LiquidStretch>(
+        find.descendant(
           of: find.byType(MinimizableTrailingPill),
-          matching: find.byType(LiquidStretch)));
+          matching: find.byType(LiquidStretch),
+        ),
+      );
       expect(stretch.pressGrowth, LiquidStretch.nativePressGrowth);
       expect(stretch.anchorStretchSettings, AnchorStretchSettings.nativeTremor);
       expect(find.byType(PressAmbientLift), findsOneWidget);
     });
 
-    testWidgets('a customised pressScale keeps the fixed factor and glow',
-        (tester) async {
-      await tester
-          .pumpWidget(_wrap(pill(pressScale: 1.06), width: 64, height: 64));
+    testWidgets('a customised pressScale keeps the fixed factor and glow', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(pill(pressScale: 1.06), width: 64, height: 64),
+      );
       await tester.pump();
-      final stretch = tester.widget<LiquidStretch>(find.descendant(
+      final stretch = tester.widget<LiquidStretch>(
+        find.descendant(
           of: find.byType(MinimizableTrailingPill),
-          matching: find.byType(LiquidStretch)));
+          matching: find.byType(LiquidStretch),
+        ),
+      );
       expect(stretch.pressGrowth, isNull);
       expect(find.byType(PressAmbientLift), findsNothing);
     });
   });
 
-  group('SearchableTabIndicator — collapsed search-active native press (#272)',
-      () {
-    Widget indicator({
-      double? pressScale,
-      bool nativePressHighlight = true,
-      bool enableBackgroundAnimation = true,
-      bool platformViewBackdrop = false,
-    }) {
-      return _indicator(
-        isSearchActive: true,
-        backgroundPressScale: pressScale,
-        nativePressHighlight: nativePressHighlight,
-        enableBackgroundAnimation: enableBackgroundAnimation,
-        platformViewBackdrop: platformViewBackdrop,
+  group(
+    'SearchableTabIndicator — collapsed search-active native press (#272)',
+    () {
+      Widget indicator({
+        double? pressScale,
+        bool nativePressHighlight = true,
+        bool enableBackgroundAnimation = true,
+        bool platformViewBackdrop = false,
+      }) {
+        return _indicator(
+          isSearchActive: true,
+          backgroundPressScale: pressScale,
+          nativePressHighlight: nativePressHighlight,
+          enableBackgroundAnimation: enableBackgroundAnimation,
+          platformViewBackdrop: platformViewBackdrop,
+        );
+      }
+
+      LiquidStretch stretchOf(WidgetTester tester) => tester.widget(
+        find
+            .descendant(
+              of: find.byType(SearchableTabIndicator),
+              matching: find.byType(LiquidStretch),
+            )
+            .first,
       );
-    }
 
-    LiquidStretch stretchOf(WidgetTester tester) => tester.widget(find
-        .descendant(
-            of: find.byType(SearchableTabIndicator),
-            matching: find.byType(LiquidStretch))
-        .first);
+      testWidgets('the default collapsed circle presses like a native button', (
+        tester,
+      ) async {
+        await tester.pumpWidget(indicator());
+        await tester.pump();
+        final stretch = stretchOf(tester);
+        expect(stretch.pressGrowth, LiquidStretch.nativePressGrowth);
+        expect(
+          stretch.anchorStretchSettings,
+          AnchorStretchSettings.nativeTremor,
+        );
+        expect(find.byType(PressAmbientLift), findsOneWidget);
+      });
 
-    testWidgets('the default collapsed circle presses like a native button',
-        (tester) async {
-      await tester.pumpWidget(indicator());
-      await tester.pump();
-      final stretch = stretchOf(tester);
-      expect(stretch.pressGrowth, LiquidStretch.nativePressGrowth);
-      expect(stretch.anchorStretchSettings, AnchorStretchSettings.nativeTremor);
-      expect(find.byType(PressAmbientLift), findsOneWidget);
-    });
+      testWidgets('a customised pressScale keeps the fixed factor and glow', (
+        tester,
+      ) async {
+        await tester.pumpWidget(indicator(pressScale: 1.06));
+        await tester.pump();
+        final stretch = stretchOf(tester);
+        expect(stretch.pressGrowth, isNull);
+        expect(stretch.interactionScale, 1.06);
+        expect(find.byType(PressAmbientLift), findsNothing);
+      });
 
-    testWidgets('a customised pressScale keeps the fixed factor and glow',
-        (tester) async {
-      await tester.pumpWidget(indicator(pressScale: 1.06));
-      await tester.pump();
-      final stretch = stretchOf(tester);
-      expect(stretch.pressGrowth, isNull);
-      expect(stretch.interactionScale, 1.06);
-      expect(find.byType(PressAmbientLift), findsNothing);
-    });
+      testWidgets('an explicit 1.04 is a fixed factor, not the native sizing', (
+        tester,
+      ) async {
+        await tester.pumpWidget(indicator(pressScale: 1.04));
+        await tester.pump();
+        expect(stretchOf(tester).pressGrowth, isNull);
+        expect(stretchOf(tester).interactionScale, 1.04);
+        expect(find.byType(PressAmbientLift), findsNothing);
+      });
 
-    testWidgets('an explicit 1.04 is a fixed factor, not the native sizing',
-        (tester) async {
-      await tester.pumpWidget(indicator(pressScale: 1.04));
-      await tester.pump();
-      expect(stretchOf(tester).pressGrowth, isNull);
-      expect(stretchOf(tester).interactionScale, 1.04);
-      expect(find.byType(PressAmbientLift), findsNothing);
-    });
+      testWidgets('a customised glow colour keeps the directional glow', (
+        tester,
+      ) async {
+        await tester.pumpWidget(indicator(nativePressHighlight: false));
+        await tester.pump();
+        final stretch = stretchOf(tester);
+        expect(stretch.pressGrowth, LiquidStretch.nativePressGrowth);
+        expect(find.byType(PressAmbientLift), findsNothing);
+      });
 
-    testWidgets('a customised glow colour keeps the directional glow',
-        (tester) async {
-      await tester.pumpWidget(indicator(nativePressHighlight: false));
-      await tester.pump();
-      final stretch = stretchOf(tester);
-      expect(stretch.pressGrowth, LiquidStretch.nativePressGrowth);
-      expect(find.byType(PressAmbientLift), findsNothing);
-    });
-
-    testWidgets(
+      testWidgets(
         'when enableBackgroundAnimation is false, native press is disabled',
         (tester) async {
-      await tester.pumpWidget(indicator(enableBackgroundAnimation: false));
-      await tester.pump();
-      final stretch = stretchOf(tester);
-      expect(stretch.pressGrowth, isNull);
-      expect(stretch.interactionScale, 1.0);
-      expect(find.byType(PressAmbientLift), findsNothing);
-    });
+          await tester.pumpWidget(indicator(enableBackgroundAnimation: false));
+          await tester.pump();
+          final stretch = stretchOf(tester);
+          expect(stretch.pressGrowth, isNull);
+          expect(stretch.interactionScale, 1.0);
+          expect(find.byType(PressAmbientLift), findsNothing);
+        },
+      );
 
-    testWidgets('platformViewBackdrop zeroes stretch', (tester) async {
-      await tester.pumpWidget(indicator(platformViewBackdrop: true));
-      await tester.pump();
-      final stretch = stretchOf(tester);
-      expect(stretch.stretch, 0.0);
-    });
+      testWidgets('platformViewBackdrop zeroes stretch', (tester) async {
+        await tester.pumpWidget(indicator(platformViewBackdrop: true));
+        await tester.pump();
+        final stretch = stretchOf(tester);
+        expect(stretch.stretch, 0.0);
+      });
 
-    testWidgets(
+      testWidgets(
         'SearchableTabIndicatorState and SearchPillState buildShadowOverlay handle infinite barBorderRadius in light mode',
         (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: ThemeData(brightness: Brightness.light),
+              home: Scaffold(
+                body: AdaptiveLiquidGlassLayer(
+                  settings: const LiquidGlassSettings(shadowElevation: 8),
+                  child: GlassTabBar.searchable(
+                    tabs: const [
+                      GlassTab(label: 'Home', icon: Icon(Icons.home)),
+                      GlassTab(label: 'Search', icon: Icon(Icons.search)),
+                    ],
+                    selectedIndex: 0,
+                    onTabSelected: (_) {},
+                    searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
+                    barBorderRadius: double.infinity,
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final searchIndicatorState = tester
+              .state<SearchableTabIndicatorState>(
+                find.byType(SearchableTabIndicator),
+              );
+          final searchIndicatorContext = tester.element(
+            find.byType(SearchableTabIndicator),
+          );
+          final indicatorOverlay = searchIndicatorState.buildShadowOverlay(
+            searchIndicatorContext,
+          );
+          expect(indicatorOverlay, isNotNull);
+
+          final searchPillState = tester.state<SearchPillState>(
+            find.byType(SearchPill),
+          );
+          final searchPillContext = tester.element(find.byType(SearchPill));
+          final pillOverlay = searchPillState.buildShadowOverlay(
+            searchPillContext,
+            const LiquidRoundedRectangle(borderRadius: double.infinity),
+          );
+          expect(pillOverlay, isNotNull);
+        },
+      );
+    },
+  );
+
+  group('GlassTabBar.searchable indicator brightness', () {
+    testWidgets('default indicator follows dark app theme on a light device', (
+      tester,
+    ) async {
+      tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+      addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(brightness: Brightness.light),
+          theme: ThemeData.dark(),
           home: Scaffold(
-            body: AdaptiveLiquidGlassLayer(
-              settings: const LiquidGlassSettings(shadowElevation: 8),
-              child: GlassTabBar.searchable(
-                tabs: const [
-                  GlassTab(label: 'Home', icon: Icon(Icons.home)),
-                  GlassTab(label: 'Search', icon: Icon(Icons.search)),
-                ],
-                selectedIndex: 0,
-                onTabSelected: (_) {},
-                searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
-                barBorderRadius: double.infinity,
-              ),
+            body: GlassTabBar.searchable(
+              tabs: const [
+                GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
+                GlassTab(label: 'B', icon: Icon(CupertinoIcons.search)),
+              ],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
             ),
           ),
         ),
       );
       await tester.pumpAndSettle();
-
-      final searchIndicatorState = tester.state<SearchableTabIndicatorState>(
-          find.byType(SearchableTabIndicator));
-      final searchIndicatorContext =
-          tester.element(find.byType(SearchableTabIndicator));
-      final indicatorOverlay =
-          searchIndicatorState.buildShadowOverlay(searchIndicatorContext);
-      expect(indicatorOverlay, isNotNull);
-
-      final searchPillState =
-          tester.state<SearchPillState>(find.byType(SearchPill));
-      final searchPillContext = tester.element(find.byType(SearchPill));
-      final pillOverlay = searchPillState.buildShadowOverlay(
-        searchPillContext,
-        const LiquidRoundedRectangle(borderRadius: double.infinity),
-      );
-      expect(pillOverlay, isNotNull);
-    });
-  });
-
-  group('GlassTabBar.searchable indicator brightness', () {
-    testWidgets('default indicator follows dark app theme on a light device',
-        (tester) async {
-      tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
-      addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
-      await tester.pumpWidget(MaterialApp(
-        theme: ThemeData.dark(),
-        home: Scaffold(
-          body: GlassTabBar.searchable(
-            tabs: const [
-              GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
-              GlassTab(label: 'B', icon: Icon(CupertinoIcons.search))
-            ],
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
-          ),
-        ),
-      ));
-      await tester.pumpAndSettle();
       final indicator = tester.widget<AnimatedGlassIndicator>(
-          find.byType(AnimatedGlassIndicator).first);
-      expect(indicator.indicatorColor,
-          CupertinoColors.white.withValues(alpha: .1));
+        find.byType(AnimatedGlassIndicator).first,
+      );
+      expect(
+        indicator.indicatorColor,
+        CupertinoColors.white.withValues(alpha: .1),
+      );
     });
 
-    testWidgets('default indicator follows light app theme on a dark device',
-        (tester) async {
+    testWidgets('default indicator follows light app theme on a dark device', (
+      tester,
+    ) async {
       tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
       addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
-      await tester.pumpWidget(MaterialApp(
-        theme: ThemeData.light(),
-        home: Scaffold(
-          body: GlassTabBar.searchable(
-            tabs: const [
-              GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
-              GlassTab(label: 'B', icon: Icon(CupertinoIcons.search))
-            ],
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData.light(),
+          home: Scaffold(
+            body: GlassTabBar.searchable(
+              tabs: const [
+                GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
+                GlassTab(label: 'B', icon: Icon(CupertinoIcons.search)),
+              ],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
+            ),
           ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
       final indicator = tester.widget<AnimatedGlassIndicator>(
-          find.byType(AnimatedGlassIndicator).first);
-      expect(indicator.indicatorColor,
-          CupertinoColors.black.withValues(alpha: .1));
+        find.byType(AnimatedGlassIndicator).first,
+      );
+      expect(
+        indicator.indicatorColor,
+        CupertinoColors.black.withValues(alpha: .1),
+      );
     });
 
-    testWidgets('explicit indicatorColor is preserved regardless of theme',
-        (tester) async {
+    testWidgets('explicit indicatorColor is preserved regardless of theme', (
+      tester,
+    ) async {
       const customColor = Color(0x3300FF00);
-      await tester.pumpWidget(MaterialApp(
-        theme: ThemeData.light(),
-        home: Scaffold(
-          body: GlassTabBar.searchable(
-            tabs: const [
-              GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
-              GlassTab(label: 'B', icon: Icon(CupertinoIcons.search))
-            ],
-            selectedIndex: 0,
-            onTabSelected: (_) {},
-            indicatorColor: customColor,
-            searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData.light(),
+          home: Scaffold(
+            body: GlassTabBar.searchable(
+              tabs: const [
+                GlassTab(label: 'A', icon: Icon(CupertinoIcons.home)),
+                GlassTab(label: 'B', icon: Icon(CupertinoIcons.search)),
+              ],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              indicatorColor: customColor,
+              searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
+            ),
           ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
       final indicator = tester.widget<AnimatedGlassIndicator>(
-          find.byType(AnimatedGlassIndicator).first);
+        find.byType(AnimatedGlassIndicator).first,
+      );
       expect(indicator.indicatorColor, customColor);
     });
   });
 
   group('PressAmbientLift', () {
     Finder lift(int rgb) => find.descendant(
-          of: find.byType(PressAmbientLift),
-          matching: find.byWidgetPredicate(
-            (w) => w is ColoredBox && w.color.toARGB32() & 0x00FFFFFF == rgb,
-          ),
-        );
+      of: find.byType(PressAmbientLift),
+      matching: find.byWidgetPredicate(
+        (w) => w is ColoredBox && w.color.toARGB32() & 0x00FFFFFF == rgb,
+      ),
+    );
 
     Widget themed({Color? pressLight}) => _wrap(
-          GlassTheme(
-            data: GlassThemeData(
-              brightness: Brightness.light,
-              light: GlassThemeVariant(
-                glowColors: GlassGlowColors(pressLight: pressLight),
-              ),
-            ),
-            child: const PressAmbientLift(child: SizedBox.expand()),
+      GlassTheme(
+        data: GlassThemeData(
+          brightness: Brightness.light,
+          light: GlassThemeVariant(
+            glowColors: GlassGlowColors(pressLight: pressLight),
           ),
-        );
+        ),
+        child: const PressAmbientLift(child: SizedBox.expand()),
+      ),
+    );
 
     testWidgets('lights white by default', (tester) async {
       await tester.pumpWidget(themed());
       expect(lift(0xFFFFFF), findsOneWidget);
     });
 
-    testWidgets("takes the theme's press light, like GlassButton",
-        (tester) async {
+    testWidgets("takes the theme's press light, like GlassButton", (
+      tester,
+    ) async {
       await tester.pumpWidget(themed(pressLight: const Color(0xFFF2CB48)));
       expect(lift(0xF2CB48), findsOneWidget);
       expect(lift(0xFFFFFF), findsNothing);
@@ -1277,7 +1368,9 @@ void main() {
         ),
       );
       expect(
-          fade.opacity.value, closeTo(GlassDefaults.ambientBaseLight, 0.005));
+        fade.opacity.value,
+        closeTo(GlassDefaults.ambientBaseLight, 0.005),
+      );
       await gesture.up();
       await tester.pumpAndSettle();
     });

@@ -15,12 +15,13 @@ void main() {
 
     test('values are standard, premium, minimal', () {
       expect(
-          GlassQuality.values,
-          containsAll([
-            GlassQuality.standard,
-            GlassQuality.premium,
-            GlassQuality.minimal,
-          ]));
+        GlassQuality.values,
+        containsAll([
+          GlassQuality.standard,
+          GlassQuality.premium,
+          GlassQuality.minimal,
+        ]),
+      );
     });
 
     group('GlassQualityExtension.usesLightweightShader', () {
@@ -56,23 +57,28 @@ void main() {
       test('usesLightweightShader implies usesAnyShader', () {
         for (final q in GlassQuality.values) {
           if (q.usesLightweightShader) {
-            expect(q.usesAnyShader, isTrue,
-                reason: '$q uses lightweight shader so must use any shader');
+            expect(
+              q.usesAnyShader,
+              isTrue,
+              reason: '$q uses lightweight shader so must use any shader',
+            );
           }
         }
       });
 
       // minimal is the only one with no shaders at all.
       test('only minimal has usesAnyShader == false', () {
-        final noShader =
-            GlassQuality.values.where((q) => !q.usesAnyShader).toList();
+        final noShader = GlassQuality.values
+            .where((q) => !q.usesAnyShader)
+            .toList();
         expect(noShader, equals([GlassQuality.minimal]));
       });
 
       // only standard uses the lightweight path.
       test('only standard has usesLightweightShader == true', () {
-        final lightweight =
-            GlassQuality.values.where((q) => q.usesLightweightShader).toList();
+        final lightweight = GlassQuality.values
+            .where((q) => q.usesLightweightShader)
+            .toList();
         expect(lightweight, equals([GlassQuality.standard]));
       });
     });
@@ -89,24 +95,31 @@ void main() {
 
     test('values are filled, prominent, and transparent', () {
       expect(
-          GlassButtonStyle.values,
-          containsAll([
-            GlassButtonStyle.filled,
-            GlassButtonStyle.prominent,
-            GlassButtonStyle.transparent,
-          ]));
+        GlassButtonStyle.values,
+        containsAll([
+          GlassButtonStyle.filled,
+          GlassButtonStyle.prominent,
+          GlassButtonStyle.transparent,
+        ]),
+      );
     });
 
     test('filled is distinct from transparent', () {
       expect(
-          GlassButtonStyle.filled, isNot(equals(GlassButtonStyle.transparent)));
+        GlassButtonStyle.filled,
+        isNot(equals(GlassButtonStyle.transparent)),
+      );
     });
 
     test('prominent is distinct from filled and transparent', () {
       expect(
-          GlassButtonStyle.prominent, isNot(equals(GlassButtonStyle.filled)));
-      expect(GlassButtonStyle.prominent,
-          isNot(equals(GlassButtonStyle.transparent)));
+        GlassButtonStyle.prominent,
+        isNot(equals(GlassButtonStyle.filled)),
+      );
+      expect(
+        GlassButtonStyle.prominent,
+        isNot(equals(GlassButtonStyle.transparent)),
+      );
     });
 
     test('can be compared with ==', () {
@@ -133,12 +146,13 @@ void main() {
 
     test('values are soft, medium, sharp', () {
       expect(
-          GlassSpecularSharpness.values,
-          containsAll([
-            GlassSpecularSharpness.soft,
-            GlassSpecularSharpness.medium,
-            GlassSpecularSharpness.sharp,
-          ]));
+        GlassSpecularSharpness.values,
+        containsAll([
+          GlassSpecularSharpness.soft,
+          GlassSpecularSharpness.medium,
+          GlassSpecularSharpness.sharp,
+        ]),
+      );
     });
 
     group('glslIndex', () {
@@ -156,24 +170,32 @@ void main() {
 
       test('glslIndex equals enum index', () {
         for (final s in GlassSpecularSharpness.values) {
-          expect(s.glslIndex, s.index,
-              reason: '${s.name}.glslIndex should equal its enum index');
+          expect(
+            s.glslIndex,
+            s.index,
+            reason: '${s.name}.glslIndex should equal its enum index',
+          );
         }
       });
 
       test('glslIndex values are 0, 1, 2 in order', () {
-        final indices =
-            GlassSpecularSharpness.values.map((s) => s.glslIndex).toList();
+        final indices = GlassSpecularSharpness.values
+            .map((s) => s.glslIndex)
+            .toList();
         expect(indices, [0, 1, 2]);
       });
     });
 
     group('ordering', () {
       test('soft < medium < sharp by index', () {
-        expect(GlassSpecularSharpness.soft.index,
-            lessThan(GlassSpecularSharpness.medium.index));
-        expect(GlassSpecularSharpness.medium.index,
-            lessThan(GlassSpecularSharpness.sharp.index));
+        expect(
+          GlassSpecularSharpness.soft.index,
+          lessThan(GlassSpecularSharpness.medium.index),
+        );
+        expect(
+          GlassSpecularSharpness.medium.index,
+          lessThan(GlassSpecularSharpness.sharp.index),
+        );
       });
     });
   });

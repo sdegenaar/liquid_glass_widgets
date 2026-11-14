@@ -15,30 +15,32 @@ void main() {
   late ui.FragmentShader geometryShader;
   late ui.FragmentShader renderShader;
   setUpAll(() async {
-    geometryShader =
-        (await ui.FragmentProgram.fromAsset(ShaderKeys.blendedGeometry))
-            .fragmentShader();
-    renderShader =
-        (await ui.FragmentProgram.fromAsset(ShaderKeys.liquidGlassRender))
-            .fragmentShader();
+    geometryShader = (await ui.FragmentProgram.fromAsset(
+      ShaderKeys.blendedGeometry,
+    )).fragmentShader();
+    renderShader = (await ui.FragmentProgram.fromAsset(
+      ShaderKeys.liquidGlassRender,
+    )).fragmentShader();
   });
 
   late GeometryRenderLink link;
   setUp(() => link = GeometryRenderLink());
 
   Future<_Layer> pump(WidgetTester tester, Size size) async {
-    await tester.pumpWidget(Align(
-      alignment: Alignment.topLeft,
-      child: _LayerWidget(
-        link: link,
-        renderShader: renderShader,
-        child: _ShapeWidget(
+    await tester.pumpWidget(
+      Align(
+        alignment: Alignment.topLeft,
+        child: _LayerWidget(
           link: link,
-          geometryShader: geometryShader,
-          child: SizedBox.fromSize(size: size),
+          renderShader: renderShader,
+          child: _ShapeWidget(
+            link: link,
+            geometryShader: geometryShader,
+            child: SizedBox.fromSize(size: size),
+          ),
         ),
       ),
-    ));
+    );
     return tester.allRenderObjects.whereType<_Layer>().single;
   }
 
@@ -46,8 +48,9 @@ void main() {
   // recorded bounds are inflated by 2 logical px on each side.
   int matteWidth(Size size, double dpr) => ((size.width + 4) * dpr).ceil();
 
-  testWidgets('a resizing shape over the budget is capped, then settles',
-      (tester) async {
+  testWidgets('a resizing shape over the budget is capped, then settles', (
+    tester,
+  ) async {
     final dpr = tester.view.devicePixelRatio;
     const large = Size(600, 500);
     expect(large.width * large.height * dpr * dpr, greaterThan(_budget));
@@ -83,37 +86,43 @@ void main() {
       required Offset outer,
       required Offset inner,
     }) async {
-      await tester.pumpWidget(Align(
-        alignment: Alignment.topLeft,
-        // Moves layer and shape together, like glass scrolling with its
-        // content.
-        child: Transform.translate(
-          offset: outer,
-          child: _LayerWidget(
-            link: link,
-            renderShader: renderShader,
-            // Moves the shape within the layer.
-            child: Transform.translate(
-              offset: inner,
-              child: _ShapeWidget(
-                link: link,
-                geometryShader: geometryShader,
-                child: const SizedBox(width: 120, height: 48),
+      await tester.pumpWidget(
+        Align(
+          alignment: Alignment.topLeft,
+          // Moves layer and shape together, like glass scrolling with its
+          // content.
+          child: Transform.translate(
+            offset: outer,
+            child: _LayerWidget(
+              link: link,
+              renderShader: renderShader,
+              // Moves the shape within the layer.
+              child: Transform.translate(
+                offset: inner,
+                child: _ShapeWidget(
+                  link: link,
+                  geometryShader: geometryShader,
+                  child: const SizedBox(width: 120, height: 48),
+                ),
               ),
             ),
           ),
         ),
-      ));
+      );
       return (
         tester.allRenderObjects.whereType<_Layer>().single,
         tester.allRenderObjects.whereType<_Shape>().single,
       );
     }
 
-    testWidgets('keeps its matte when it moved together with its layer',
-        (tester) async {
-      var (layer, shape) =
-          await pumpMoved(tester, outer: Offset.zero, inner: Offset.zero);
+    testWidgets('keeps its matte when it moved together with its layer', (
+      tester,
+    ) async {
+      var (layer, shape) = await pumpMoved(
+        tester,
+        outer: Offset.zero,
+        inner: Offset.zero,
+      );
       final matte = layer.matte;
 
       (layer, shape) = await pumpMoved(
@@ -126,10 +135,14 @@ void main() {
       expect(identical(layer.matte, matte), isTrue);
     });
 
-    testWidgets('rebuilds its matte when it moved within its layer',
-        (tester) async {
-      var (layer, shape) =
-          await pumpMoved(tester, outer: Offset.zero, inner: Offset.zero);
+    testWidgets('rebuilds its matte when it moved within its layer', (
+      tester,
+    ) async {
+      var (layer, shape) = await pumpMoved(
+        tester,
+        outer: Offset.zero,
+        inner: Offset.zero,
+      );
       final matte = layer.matte;
 
       (layer, shape) = await pumpMoved(
@@ -158,33 +171,21 @@ void main() {
     // Fixed sizes throughout, so neither the layer nor the remaining shape
     // lays out again: only the removal itself can trigger the rebuild.
     Future<_Layer> pumpShapes({required bool both}) async {
-      await tester.pumpWidget(Align(
-        alignment: Alignment.topLeft,
-        child: SizedBox(
-          width: 300,
-          height: 100,
-          child: _LayerWidget(
-            link: link,
-            renderShader: renderShader,
-            child: Stack(
-              textDirection: TextDirection.ltr,
-              children: [
-                Positioned(
-                  key: const ValueKey('kept'),
-                  left: 0,
-                  top: 0,
-                  width: 80,
-                  height: 40,
-                  child: _ShapeWidget(
-                    link: link,
-                    geometryShader: geometryShader,
-                    child: const SizedBox.expand(),
-                  ),
-                ),
-                if (both)
+      await tester.pumpWidget(
+        Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: 300,
+            height: 100,
+            child: _LayerWidget(
+              link: link,
+              renderShader: renderShader,
+              child: Stack(
+                textDirection: TextDirection.ltr,
+                children: [
                   Positioned(
-                    key: const ValueKey('removed'),
-                    left: 160,
+                    key: const ValueKey('kept'),
+                    left: 0,
                     top: 0,
                     width: 80,
                     height: 40,
@@ -194,11 +195,25 @@ void main() {
                       child: const SizedBox.expand(),
                     ),
                   ),
-              ],
+                  if (both)
+                    Positioned(
+                      key: const ValueKey('removed'),
+                      left: 160,
+                      top: 0,
+                      width: 80,
+                      height: 40,
+                      child: _ShapeWidget(
+                        link: link,
+                        geometryShader: geometryShader,
+                        child: const SizedBox.expand(),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
-      ));
+      );
       return tester.allRenderObjects.whereType<_Layer>().single;
     }
 
@@ -252,11 +267,11 @@ class _LayerWidget extends SingleChildRenderObjectWidget {
 
   @override
   _Layer createRenderObject(BuildContext context) => _Layer(
-        link: link,
-        renderShader: renderShader,
-        settings: const LiquidGlassSettings(thickness: 20, blur: 0),
-        devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
-      );
+    link: link,
+    renderShader: renderShader,
+    settings: const LiquidGlassSettings(thickness: 20, blur: 0),
+    devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+  );
 }
 
 // A shape whose geometry is its own size, rebuilt on every layout.
@@ -332,9 +347,9 @@ class _ShapeWidget extends SingleChildRenderObjectWidget {
 
   @override
   _Shape createRenderObject(BuildContext context) => _Shape(
-        renderLink: link,
-        geometryShader: geometryShader,
-        settings: const LiquidGlassSettings(thickness: 20, blur: 0),
-        devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
-      );
+    renderLink: link,
+    geometryShader: geometryShader,
+    settings: const LiquidGlassSettings(thickness: 20, blur: 0),
+    devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+  );
 }

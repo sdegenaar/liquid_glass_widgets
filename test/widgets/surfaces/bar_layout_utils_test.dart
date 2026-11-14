@@ -15,12 +15,11 @@ void main() {
     required double? tabWidth,
     required int tabCount,
     double maxAvailable = 390.0,
-  }) =>
-      resolveTabPillWidth(
-        tabWidth: tabWidth,
-        tabCount: tabCount,
-        maxAvailable: maxAvailable,
-      );
+  }) => resolveTabPillWidth(
+    tabWidth: tabWidth,
+    tabCount: tabCount,
+    maxAvailable: maxAvailable,
+  );
 
   // ── Expand (null) behaviour ────────────────────────────────────────────────
 
@@ -36,11 +35,7 @@ void main() {
 
     test('works with non-standard maxAvailable', () {
       expect(
-        resolveTabPillWidth(
-          tabWidth: null,
-          tabCount: 2,
-          maxAvailable: 275.0,
-        ),
+        resolveTabPillWidth(tabWidth: null, tabCount: 2, maxAvailable: 275.0),
         275.0,
       );
     });
@@ -79,17 +74,11 @@ void main() {
     });
 
     test('5 tabs × 88 px = 440 > 390 — clamped to 390', () {
-      expect(
-        resolve(tabWidth: 88.0, tabCount: 5, maxAvailable: 390.0),
-        390.0,
-      );
+      expect(resolve(tabWidth: 88.0, tabCount: 5, maxAvailable: 390.0), 390.0);
     });
 
     test('very large tabWidth clamped to maxAvailable', () {
-      expect(
-        resolve(tabWidth: 500.0, tabCount: 2, maxAvailable: 300.0),
-        300.0,
-      );
+      expect(resolve(tabWidth: 500.0, tabCount: 2, maxAvailable: 300.0), 300.0);
     });
 
     test('result is always ≤ maxAvailable regardless of inputs', () {
@@ -128,11 +117,7 @@ void main() {
 
     test('expand (null) with negative maxAvailable → 0, no crash', () {
       expect(
-        resolveTabPillWidth(
-          tabWidth: null,
-          tabCount: 3,
-          maxAvailable: -100.0,
-        ),
+        resolveTabPillWidth(tabWidth: null, tabCount: 3, maxAvailable: -100.0),
         0.0,
       );
     });

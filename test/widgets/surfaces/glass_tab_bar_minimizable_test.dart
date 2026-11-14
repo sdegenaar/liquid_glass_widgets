@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/widgets/surfaces/tab_bar_searchable_internal.dart';
@@ -61,37 +61,43 @@ void main() {
     });
 
     testWidgets(
-        'forwards backgroundQuality to underlying TabBarSearchableLayout',
-        (tester) async {
-      await tester.pumpWidget(createTestApp(
-        child: GlassTabBar.minimizable(
-          tabs: _testTabs,
-          selectedIndex: 0,
-          onTabSelected: (_) {},
-          quality: GlassQuality.premium,
-          backgroundQuality: GlassQuality.minimal,
-        ),
-      ));
-      await tester.pump();
+      'forwards backgroundQuality to underlying TabBarSearchableLayout',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassTabBar.minimizable(
+              tabs: _testTabs,
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              quality: GlassQuality.premium,
+              backgroundQuality: GlassQuality.minimal,
+            ),
+          ),
+        );
+        await tester.pump();
 
-      final layout = tester.widget<TabBarSearchableLayout>(
-        find.byType(TabBarSearchableLayout),
+        final layout = tester.widget<TabBarSearchableLayout>(
+          find.byType(TabBarSearchableLayout),
+        );
+        expect(layout.backgroundQuality, equals(GlassQuality.minimal));
+      },
+    );
+
+    testWidgets('propagates backgroundQuality to MinimizableTrailingPill', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassTabBar.minimizable(
+            tabs: _testTabs,
+            selectedIndex: 0,
+            onTabSelected: (_) {},
+            quality: GlassQuality.premium,
+            backgroundQuality: GlassQuality.minimal,
+            trailingButton: _trailingButton(),
+          ),
+        ),
       );
-      expect(layout.backgroundQuality, equals(GlassQuality.minimal));
-    });
-
-    testWidgets('propagates backgroundQuality to MinimizableTrailingPill',
-        (tester) async {
-      await tester.pumpWidget(createTestApp(
-        child: GlassTabBar.minimizable(
-          tabs: _testTabs,
-          selectedIndex: 0,
-          onTabSelected: (_) {},
-          quality: GlassQuality.premium,
-          backgroundQuality: GlassQuality.minimal,
-          trailingButton: _trailingButton(),
-        ),
-      ));
       await tester.pump();
 
       final pill = tester.widget<MinimizableTrailingPill>(
@@ -109,22 +115,26 @@ void main() {
       expect(find.text('Saved'), findsWidgets);
     });
 
-    testWidgets('minimized shows the selected tab\'s icon in the circle',
-        (tester) async {
+    testWidgets('minimized shows the selected tab\'s icon in the circle', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildBar(minimized: true, selectedIndex: 2));
       await tester.pumpAndSettle();
 
       expect(find.byIcon(CupertinoIcons.bookmark), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('minimized circle draws the icon in selectedIconColor',
-        (tester) async {
-      await tester.pumpWidget(_buildBar(
-        minimized: true,
-        selectedIndex: 2,
-        selectedIconColor: const Color(0xFFFF0000),
-        unselectedIconColor: const Color(0xFF0000FF),
-      ));
+    testWidgets('minimized circle draws the icon in selectedIconColor', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildBar(
+          minimized: true,
+          selectedIndex: 2,
+          selectedIconColor: const Color(0xFFFF0000),
+          unselectedIconColor: const Color(0xFF0000FF),
+        ),
+      );
       await tester.pumpAndSettle();
 
       final iconTheme = tester.widget<IconTheme>(
@@ -140,8 +150,9 @@ void main() {
 
     // ── Trailing button: none (plain minimizing bar) ──────────────────────────
 
-    testWidgets('renders no trailing pill in either state without a button',
-        (tester) async {
+    testWidgets('renders no trailing pill in either state without a button', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildBar());
       await tester.pump();
       expect(find.byIcon(CupertinoIcons.search), findsNothing);
@@ -159,14 +170,18 @@ void main() {
       await tester.pumpWidget(_buildBar(trailingButton: _trailingButton()));
       await tester.pump();
       expect(
-          find.byIcon(CupertinoIcons.square_pencil), findsAtLeastNWidgets(1));
+        find.byIcon(CupertinoIcons.square_pencil),
+        findsAtLeastNWidgets(1),
+      );
 
       await tester.pumpWidget(
         _buildBar(minimized: true, trailingButton: _trailingButton()),
       );
       await tester.pumpAndSettle();
       expect(
-          find.byIcon(CupertinoIcons.square_pencil), findsAtLeastNWidgets(1));
+        find.byIcon(CupertinoIcons.square_pencil),
+        findsAtLeastNWidgets(1),
+      );
     });
 
     // ── Trailing button: app-driven minimized-only pattern ────────────────────
@@ -177,8 +192,9 @@ void main() {
     // animates the difference: the button spring-scales in at its slot as
     // the tab pill shrinks, and unmounts once it has scaled away.
 
-    testWidgets('a conditionally passed button springs in with the minimize',
-        (tester) async {
+    testWidgets('a conditionally passed button springs in with the minimize', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildBar());
       await tester.pump();
       expect(find.byIcon(CupertinoIcons.square_pencil), findsNothing);
@@ -190,25 +206,31 @@ void main() {
       // is mounted and visible.
       await tester.pump(const Duration(milliseconds: 100));
       expect(
-          find.byIcon(CupertinoIcons.square_pencil), findsAtLeastNWidgets(1));
+        find.byIcon(CupertinoIcons.square_pencil),
+        findsAtLeastNWidgets(1),
+      );
     });
 
-    testWidgets('a conditionally removed button unmounts with the expand',
-        (tester) async {
+    testWidgets('a conditionally removed button unmounts with the expand', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _buildBar(minimized: true, trailingButton: _trailingButton()),
       );
       await tester.pump();
       expect(
-          find.byIcon(CupertinoIcons.square_pencil), findsAtLeastNWidgets(1));
+        find.byIcon(CupertinoIcons.square_pencil),
+        findsAtLeastNWidgets(1),
+      );
 
       await tester.pumpWidget(_buildBar());
       await tester.pumpAndSettle();
       expect(find.byIcon(CupertinoIcons.square_pencil), findsNothing);
     });
 
-    testWidgets('a removed button keeps its own icon while disappearing',
-        (tester) async {
+    testWidgets('a removed button keeps its own icon while disappearing', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildBar(trailingButton: _trailingButton()));
       await tester.pump();
 
@@ -222,7 +244,9 @@ void main() {
       // search icon's absence.)
       await tester.pump(const Duration(milliseconds: 50));
       expect(
-          find.byIcon(CupertinoIcons.square_pencil), findsAtLeastNWidgets(1));
+        find.byIcon(CupertinoIcons.square_pencil),
+        findsAtLeastNWidgets(1),
+      );
 
       await tester.pumpAndSettle();
       expect(find.byIcon(CupertinoIcons.square_pencil), findsNothing);
@@ -247,8 +271,9 @@ void main() {
       expect(taps, 1);
     });
 
-    testWidgets('tapping the minimized tab circle calls onMinimizedTabTap',
-        (tester) async {
+    testWidgets('tapping the minimized tab circle calls onMinimizedTabTap', (
+      tester,
+    ) async {
       var taps = 0;
 
       await tester.pumpWidget(
@@ -265,33 +290,36 @@ void main() {
 
     // ── Trailing button: menu mode (Issue #275) ──────────────────────────────
 
-    test('GlassTabBarTrailingButton.menu constructor sets properties correctly',
-        () {
-      final button = GlassTabBarTrailingButton.menu(
-        icon: const Icon(CupertinoIcons.ellipsis),
-        label: 'Actions',
-        menuWidth: 240,
-        menuAlignment: GlassMenuAlignment.topLeft,
-        menuItems: [
-          GlassMenuItem(
-            icon: const Icon(CupertinoIcons.share),
-            title: 'Share',
-            onTap: () {},
-          ),
-        ],
-      );
+    test(
+      'GlassTabBarTrailingButton.menu constructor sets properties correctly',
+      () {
+        final button = GlassTabBarTrailingButton.menu(
+          icon: const Icon(CupertinoIcons.ellipsis),
+          label: 'Actions',
+          menuWidth: 240,
+          menuAlignment: GlassMenuAlignment.topLeft,
+          menuItems: [
+            GlassMenuItem(
+              icon: const Icon(CupertinoIcons.share),
+              title: 'Share',
+              onTap: () {},
+            ),
+          ],
+        );
 
-      expect(button.isMenu, isTrue);
-      expect(button.label, 'Actions');
-      expect(button.enabled, isTrue);
-      expect(button.menuWidth, 240);
-      expect(button.menuAlignment, GlassMenuAlignment.topLeft);
-      expect(button.menuItems?.length, 1);
-      expect(() => button.onTap(), returnsNormally);
-    });
+        expect(button.isMenu, isTrue);
+        expect(button.label, 'Actions');
+        expect(button.enabled, isTrue);
+        expect(button.menuWidth, 240);
+        expect(button.menuAlignment, GlassMenuAlignment.topLeft);
+        expect(button.menuItems?.length, 1);
+        expect(() => button.onTap(), returnsNormally);
+      },
+    );
 
-    testWidgets('tapping trailing button in menu mode opens GlassMenu',
-        (tester) async {
+    testWidgets('tapping trailing button in menu mode opens GlassMenu', (
+      tester,
+    ) async {
       var itemTapped = false;
 
       final menuButton = GlassTabBarTrailingButton.menu(
@@ -335,8 +363,9 @@ void main() {
       expect(find.text('Share Action'), findsNothing);
     });
 
-    testWidgets('disabled trailing menu button does not open menu on tap',
-        (tester) async {
+    testWidgets('disabled trailing menu button does not open menu on tap', (
+      tester,
+    ) async {
       final menuButton = GlassTabBarTrailingButton.menu(
         icon: const Icon(CupertinoIcons.ellipsis),
         enabled: false,
