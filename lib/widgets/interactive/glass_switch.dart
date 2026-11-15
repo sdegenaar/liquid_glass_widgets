@@ -42,6 +42,9 @@ const CupertinoDynamicColor _kOffLabelColor =
   highContrastColor: Color.fromARGB(255, 255, 255, 255),
   darkHighContrastColor: Color.fromARGB(255, 255, 255, 255),
 );
+// Matches CupertinoSwitch (_kCupertinoSwitchDisabledOpacity) and UIKit's
+// disabled UISwitch group alpha.
+const double _kDisabledSwitchOpacity = 0.5;
 
 /// A glass toggle switch with Apple's signature jump animation.
 ///
@@ -97,6 +100,14 @@ const CupertinoDynamicColor _kOffLabelColor =
 ///   height: 32,
 /// )
 /// ```
+///
+/// ### Disabled state:
+/// ```dart
+/// GlassSwitch(
+///   value: isOn,
+///   onChanged: null, // null disables the switch
+/// )
+/// ```
 class GlassSwitch extends StatefulWidget {
   /// Creates a glass switch.
   const GlassSwitch({
@@ -128,7 +139,11 @@ class GlassSwitch extends StatefulWidget {
   final bool value;
 
   /// Called when the user toggles the switch.
-  final ValueChanged<bool> onChanged;
+  ///
+  /// If null, the switch is disabled: it renders at 50% opacity, ignores touch
+  /// and keyboard input without lifting into a glass lens, and is reported as
+  /// disabled to assistive technology.
+  final ValueChanged<bool>? onChanged;
 
   /// The color of the track when the switch is on.
   ///
@@ -269,6 +284,8 @@ class _GlassSwitchState extends State<GlassSwitch>
   final ValueNotifier<bool> _isHovered = ValueNotifier(false);
   final ValueNotifier<bool> _isFocused = ValueNotifier(false);
 
+  bool get _isInteractive => widget.onChanged != null;
+
   @override
   void initState() {
     super.initState();
@@ -305,6 +322,27 @@ class _GlassSwitchState extends State<GlassSwitch>
   @override
   void didUpdateWidget(GlassSwitch oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // If disabled while pressed, dragged, or mid-bloom, clear all active
+    // interaction state immediately so the lifted glass lens unmounts before
+    // the disabled Opacity layer wraps the switch.
+    if (!_isInteractive && oldWidget.onChanged != null) {
+      _isPressed = false;
+      if (_isDragging) {
+        _isDragging = false;
+        _dragAbandonedExternally = true;
+      }
+      _justEndedDrag = false;
+      _dragMidpointHapticFired = false;
+      _dragOvershootPx = 0.0;
+      _releaseOvershootStartPx = 0.0;
+      _overshootController.stop();
+      _overshootController.value = 0.0;
+      _thicknessController.stop();
+      _thicknessController.value = 0.0;
+      _isHovered.value = false;
+      _isFocused.value = false;
+    }
+
     if (widget.value != oldWidget.value) {
       // If the user is mid-drag, an external value change wins — abandon the
       // drag cleanly so the animation takes over without a visual jump.
@@ -320,15 +358,15 @@ class _GlassSwitchState extends State<GlassSwitch>
       final bool justEndedDrag = _justEndedDrag;
       _justEndedDrag = false;
 
-      // Animate position
+      // Animate position (even when disabled, matching UISwitch / CupertinoSwitch)
       _animatePositionTo(
         widget.value ? 1.0 : 0.0,
         fromDrag: justEndedDrag,
       );
 
-      // Trigger the liquid pulse bloom (Grow up and then down)
+      // Trigger the liquid pulse bloom only when interactive
       _isPressed = false;
-      if (!justEndedDrag) {
+      if (!justEndedDrag && _isInteractive) {
         if (_thicknessController.value >= 0.99) {
           _thicknessController.value = 0.0;
         }
@@ -364,6 +402,7 @@ class _GlassSwitchState extends State<GlassSwitch>
         _animatePositionTo(target);
       }
       if (!_isPressed &&
+          _isInteractive &&
           _thicknessController.value > 0.0 &&
           !_thicknessController.isAnimating) {
         unawaited(
@@ -410,7 +449,7 @@ class _GlassSwitchState extends State<GlassSwitch>
   }
 
   void _activateFromKeyboard() {
-    if (!mounted) return;
+    if (!mounted || !_isInteractive) return;
 
     // Toggle the value
     final newValue = !widget.value;
@@ -418,7 +457,7 @@ class _GlassSwitchState extends State<GlassSwitch>
     // Check reduce motion
     final reduceMotion = GlassAccessibilityData.of(context).reduceMotion;
 
-    widget.onChanged(newValue);
+    widget.onChanged!(newValue);
     if (widget.enableHaptics && !reduceMotion) {
       unawaited(HapticFeedback.lightImpact());
     }
@@ -435,7 +474,7 @@ class _GlassSwitchState extends State<GlassSwitch>
   }
 
   void _handleTap() {
-    widget.onChanged(!widget.value);
+    widget.onChanged?.call(!widget.value);
   }
 
   /// Whether the switch is mirrored: in a right-to-left context the thumb
@@ -470,7 +509,7 @@ class _GlassSwitchState extends State<GlassSwitch>
   // ---------------------------------------------------------------------------
 
   void _startPressBloom() {
-    if (_isPressed) return;
+    if (!_isInteractive || _isPressed) return;
     _isPressed = true;
     if (_thicknessController.value >= 0.99) {
       _thicknessController.value = 0.0;
@@ -512,6 +551,7 @@ class _GlassSwitchState extends State<GlassSwitch>
   }
 
   void _onDragStart(DragStartDetails details) {
+    if (!_isInteractive) return;
     _isPressed = false;
     // Flutter has confirmed horizontal movement — commit to drag mode.
     _positionController.stop();
@@ -632,7 +672,7 @@ class _GlassSwitchState extends State<GlassSwitch>
 
     // Notify parent only when the value actually changed.
     if (valueChanging) {
-      widget.onChanged(shouldBeOn);
+      widget.onChanged?.call(shouldBeOn);
     }
 
     // Continue the settle bloom down to 0 so the landing feels weighty.
@@ -682,163 +722,167 @@ class _GlassSwitchState extends State<GlassSwitch>
 
     final baseMediaQuery =
         MediaQuery.maybeOf(context) ?? const MediaQueryData();
+    final isInteractive = _isInteractive;
+
+    // Performance: RepaintBoundary isolates switch animation from parent
+    final Widget switchVisual = RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: Listenable.merge([
+          _positionController,
+          _thicknessController,
+          _overshootController,
+        ]),
+        builder: (context, child) {
+          final position = _positionController.value;
+          final thickness = _thicknessAnimation.value;
+
+          final blendedColor =
+              Color.lerp(inactiveTrackColor, activeTrackColor, position)!;
+
+          final track = Container(
+            width: trackWidth,
+            height: widget.height,
+            decoration: BoxDecoration(
+              color: blendedColor,
+              borderRadius: BorderRadius.circular(widget.height / 2),
+            ),
+          );
+
+          // Calibrated iOS 27 UISwitchModernVisualElement lifted lens
+          // geometry:
+          // - Resting knob (63×28): (2.00, 2.00, 37.00, 24.00) -> ON (24.00, 2.00, 37.00, 24.00)
+          // - Lifted lens (63×28): (-8.67, -5.33, 58.00, 38.33) -> ON (13.67, -5.33, 58.00, 38.33)
+          final vExpand =
+              thickness * (thumbSize * _kNativeLiftedVerticalExpandRatio);
+          final leadStretch =
+              thickness * (thumbSize * _kNativeLiftedWidthExpandRatio);
+
+          // Native pressed inset shifts outward by 0.1667 pt on each side
+          // when lifted (2.0 -> 1.8333 pt).
+          final pressedInset = 2.0 - (0.1667 * thickness);
+          final effectiveTravel =
+              trackWidth - thumbWidth - (pressedInset * 2.0);
+          // Mirrored in RTL: on is the left end of the track.
+          final visualPosition = isRtl ? 1.0 - position : position;
+          final thumbOffset = pressedInset + (effectiveTravel * visualPosition);
+
+          // Symmetric expansion around the knob center ensures true 1:1
+          // finger tracking across the runway (no speed multiplication)
+          // while delivering -8.67 pt left overhang at OFF and +8.67 pt
+          // right overhang at ON.
+          final double anchorOffset = leadStretch / 2.0;
+
+          // Native UISwitchModernVisualElement ±12.0 pt asymptotic
+          // rubber-band overhang when dragging past 0.0 (left) or 1.0 (right),
+          // reaching ±15.6 pt total overhang at 30 pt over-drag.
+          final double overshootPx = _currentOvershootPx;
+          const double maxRubberBand = 12.0;
+          final double rawRubberBand = overshootPx == 0.0
+              ? 0.0
+              : overshootPx.sign *
+                  maxRubberBand *
+                  (1.0 -
+                      1.0 / (1.0 + 0.55 * (overshootPx.abs() / maxRubberBand)));
+          final double rubberBandOffset =
+              isRtl ? -rawRubberBand : rawRubberBand;
+
+          // Native _UIFlexInteraction subtle horizontal stretch &
+          // vertical squash during over-drag.
+          final double flexStretch =
+              (rubberBandOffset.abs() / maxRubberBand) * 0.03 * thickness;
+          final double flexScaleX = 1.0 + flexStretch;
+          final double flexScaleY = 1.0 - flexStretch;
+
+          final thumbLeft = thumbOffset - anchorOffset + rubberBandOffset;
+
+          final thumb = Positioned(
+            left: thumbLeft,
+            top: pressedInset - vExpand,
+            child: Transform.scale(
+              scaleX: flexScaleX,
+              scaleY: flexScaleY,
+              child: _buildThumb(thumbSize, thickness, vExpand, leadStretch,
+                  anchorOffset, effectiveQuality, isDark),
+            ),
+          );
+
+          return SizedBox(
+            width: trackWidth,
+            height: widget.height,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                track,
+                // Painted over the track and under the thumb, so the
+                // thumb covers the mark on its side.
+                if (onOffLabelColors != null)
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: _OnOffLabelsPainter(
+                        onColor: onOffLabelColors.$1,
+                        offColor: onOffLabelColors.$2,
+                        position: position,
+                        reaction: thickness,
+                        thumbWidth: thumbWidth,
+                        textDirection:
+                            isRtl ? TextDirection.rtl : TextDirection.ltr,
+                      ),
+                    ),
+                  ),
+                thumb,
+              ],
+            ),
+          );
+        },
+      ),
+    );
 
     return GlassFocusRegion(
-        enabled: true,
-        focusNode: widget.focusNode,
-        autofocus: widget.autofocus,
-        semanticLabel: widget.semanticLabel ?? 'Switch',
-        isButton: true,
-        toggled: widget.value,
-        semanticOnTap: _handleTap,
-        shape: const StadiumBorder(),
-        isFocusedNotifier: _isFocused,
-        isHoveredNotifier: _isHovered,
-        onKeyboardActivate: _activateFromKeyboard,
-        child: MediaQuery(
-          // Use a responsive 3 px horizontal drag slop (instead of Flutter's
-          // default 18 px kTouchSlop, which is ~90% of the switch's 20 px
-          // runway!) so horizontal drags engage immediately like native UISwitch.
-          data: baseMediaQuery.copyWith(
-            gestureSettings: const DeviceGestureSettings(touchSlop: 3.0),
-          ),
-          child: GestureDetector(
-            excludeFromSemantics: true,
-            // NOTE: We do NOT use onTap here. Having both onTap and onHorizontalDrag*
-            // on the same GestureDetector creates a gesture arena conflict — Flutter
-            // must choose one winner per touch, leading to missed interactions.
-            // Instead, we detect taps manually: onTapDown starts the bloom, onTapUp
-            // fires the toggle if no horizontal drag was confirmed.
-            onTapDown: _onTapDown,
-            onTapUp: _onTapUp,
-            onTapCancel: _onTapCancel,
-            onHorizontalDragDown: _onDragDown,
-            onHorizontalDragCancel: _onDragCancel,
-            onHorizontalDragStart: _onDragStart,
-            onHorizontalDragUpdate: _onDragUpdate,
-            onHorizontalDragEnd: _onDragEnd,
-            // Performance: RepaintBoundary isolates switch animation from parent
-            child: RepaintBoundary(
-              child: AnimatedBuilder(
-                animation: Listenable.merge([
-                  _positionController,
-                  _thicknessController,
-                  _overshootController,
-                ]),
-                builder: (context, child) {
-                  final position = _positionController.value;
-                  final thickness = _thicknessAnimation.value;
-
-                  final blendedColor = Color.lerp(
-                      inactiveTrackColor, activeTrackColor, position)!;
-
-                  final track = Container(
-                    width: trackWidth,
-                    height: widget.height,
-                    decoration: BoxDecoration(
-                      color: blendedColor,
-                      borderRadius: BorderRadius.circular(widget.height / 2),
-                    ),
-                  );
-
-                  // Calibrated iOS 27 UISwitchModernVisualElement lifted lens
-                  // geometry:
-                  // - Resting knob (63×28): (2.00, 2.00, 37.00, 24.00) -> ON (24.00, 2.00, 37.00, 24.00)
-                  // - Lifted lens (63×28): (-8.67, -5.33, 58.00, 38.33) -> ON (13.67, -5.33, 58.00, 38.33)
-                  final vExpand = thickness *
-                      (thumbSize * _kNativeLiftedVerticalExpandRatio);
-                  final leadStretch =
-                      thickness * (thumbSize * _kNativeLiftedWidthExpandRatio);
-
-                  // Native pressed inset shifts outward by 0.1667 pt on each side
-                  // when lifted (2.0 -> 1.8333 pt).
-                  final pressedInset = 2.0 - (0.1667 * thickness);
-                  final effectiveTravel =
-                      trackWidth - thumbWidth - (pressedInset * 2.0);
-                  // Mirrored in RTL: on is the left end of the track.
-                  final visualPosition = isRtl ? 1.0 - position : position;
-                  final thumbOffset =
-                      pressedInset + (effectiveTravel * visualPosition);
-
-                  // Symmetric expansion around the knob center ensures true 1:1
-                  // finger tracking across the runway (no speed multiplication)
-                  // while delivering -8.67 pt left overhang at OFF and +8.67 pt
-                  // right overhang at ON.
-                  final double anchorOffset = leadStretch / 2.0;
-
-                  // Native UISwitchModernVisualElement ±12.0 pt asymptotic
-                  // rubber-band overhang when dragging past 0.0 (left) or 1.0 (right),
-                  // reaching ±15.6 pt total overhang at 30 pt over-drag.
-                  final double overshootPx = _currentOvershootPx;
-                  const double maxRubberBand = 12.0;
-                  final double rawRubberBand = overshootPx == 0.0
-                      ? 0.0
-                      : overshootPx.sign *
-                          maxRubberBand *
-                          (1.0 -
-                              1.0 /
-                                  (1.0 +
-                                      0.55 *
-                                          (overshootPx.abs() / maxRubberBand)));
-                  final double rubberBandOffset =
-                      isRtl ? -rawRubberBand : rawRubberBand;
-
-                  // Native _UIFlexInteraction subtle horizontal stretch &
-                  // vertical squash during over-drag.
-                  final double flexStretch =
-                      (rubberBandOffset.abs() / maxRubberBand) *
-                          0.03 *
-                          thickness;
-                  final double flexScaleX = 1.0 + flexStretch;
-                  final double flexScaleY = 1.0 - flexStretch;
-
-                  final thumbLeft =
-                      thumbOffset - anchorOffset + rubberBandOffset;
-
-                  final thumb = Positioned(
-                    left: thumbLeft,
-                    top: pressedInset - vExpand,
-                    child: Transform.scale(
-                      scaleX: flexScaleX,
-                      scaleY: flexScaleY,
-                      child: _buildThumb(thumbSize, thickness, vExpand,
-                          leadStretch, anchorOffset, effectiveQuality, isDark),
-                    ),
-                  );
-
-                  return SizedBox(
-                    width: trackWidth,
-                    height: widget.height,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        track,
-                        // Painted over the track and under the thumb, so the
-                        // thumb covers the mark on its side.
-                        if (onOffLabelColors != null)
-                          Positioned.fill(
-                            child: CustomPaint(
-                              painter: _OnOffLabelsPainter(
-                                onColor: onOffLabelColors.$1,
-                                offColor: onOffLabelColors.$2,
-                                position: position,
-                                reaction: thickness,
-                                thumbWidth: thumbWidth,
-                                textDirection: isRtl
-                                    ? TextDirection.rtl
-                                    : TextDirection.ltr,
-                              ),
-                            ),
-                          ),
-                        thumb,
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-        ));
+      enabled: isInteractive,
+      focusNode: widget.focusNode,
+      autofocus: widget.autofocus,
+      semanticLabel: widget.semanticLabel ?? 'Switch',
+      isButton: true,
+      toggled: widget.value,
+      semanticOnTap: isInteractive ? _handleTap : null,
+      shape: const StadiumBorder(),
+      isFocusedNotifier: _isFocused,
+      isHoveredNotifier: _isHovered,
+      onKeyboardActivate: isInteractive ? _activateFromKeyboard : null,
+      child: MediaQuery(
+        // Use a responsive 3 px horizontal drag slop (instead of Flutter's
+        // default 18 px kTouchSlop, which is ~90% of the switch's 20 px
+        // runway!) so horizontal drags engage immediately like native UISwitch.
+        data: baseMediaQuery.copyWith(
+          gestureSettings: const DeviceGestureSettings(touchSlop: 3.0),
+        ),
+        child: GestureDetector(
+          excludeFromSemantics: true,
+          // NOTE: We do NOT use onTap here. Having both onTap and onHorizontalDrag*
+          // on the same GestureDetector creates a gesture arena conflict — Flutter
+          // must choose one winner per touch, leading to missed interactions.
+          // Instead, we detect taps manually: onTapDown starts the bloom, onTapUp
+          // fires the toggle if no horizontal drag was confirmed.
+          onTapDown: isInteractive ? _onTapDown : null,
+          onTapUp: isInteractive ? _onTapUp : null,
+          onTapCancel: isInteractive ? _onTapCancel : null,
+          onHorizontalDragDown: isInteractive ? _onDragDown : null,
+          onHorizontalDragCancel: isInteractive ? _onDragCancel : null,
+          onHorizontalDragStart: isInteractive ? _onDragStart : null,
+          onHorizontalDragUpdate: isInteractive ? _onDragUpdate : null,
+          onHorizontalDragEnd: isInteractive ? _onDragEnd : null,
+          // Group-layer 50% opacity when disabled matches UIKit's UISwitch and
+          // CupertinoSwitch so the opaque white thumb does not bleed the track
+          // color underneath it.
+          child: isInteractive
+              ? switchVisual
+              : Opacity(
+                  opacity: _kDisabledSwitchOpacity,
+                  child: switchVisual,
+                ),
+        ),
+      ),
+    );
   }
 
   Widget _buildThumb(
