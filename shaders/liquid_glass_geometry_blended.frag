@@ -113,43 +113,38 @@ void main() {
         // hardware bilinear filtering (FilterQuality.medium) across the outer
         // edge never blends valid normals with RG=(0,0) (which decodes to (-1,-1)).
         fragColor = encodeGeometryData(gradUnit, 0.0, uThickness, 0.0);
-        return;
-    }
-
-    if (uThickness <= 0.0) {
+    } else if (uThickness <= 0.0) {
         fragColor = encodeGeometryData(gradUnit, 0.0, 1.0, 0.0);
-        return;
+    } else {
+        float n_cos = max(uThickness + sdN, 0.0) / uThickness;
+        float n_sin = sqrt(max(0.0, 1.0 - n_cos * n_cos));
+
+        // True surface normal from the SDF gradient — this is what we store.
+        // In blend-group neck zones the displacement vector diverges from this
+        // normal, which is why storing the normal (not displacement) fixes lighting.
+        vec3 normal = normalize(vec3(dx * n_cos, dy * n_cos, n_sin));
+
+        // Fragments just outside the silhouette (0 <= sdN < smoothing * 0.5)
+        // still carry the outer half of the smoothstep's AA coverage. The dome
+        // meets the ground plane there — rimDist is 0 and the surface normal is
+        // horizontal along the gradient (the n_sin == 0 limit of the same
+        // profile), so the texel stays continuous with the rim while alpha
+        // ramps to 0. Clearing alpha at the SDF edge instead truncates the band
+        // at its midpoint — a hard ~0.5 → 0 step that stair-steps the rounded
+        // silhouette, most visibly when the matte is resampled under the
+        // indicator's drag/stretch transform.
+        if (sdN >= 0.0) {
+            vec2 edgeNormal = length(normal.xy) > 1e-4 ? normal.xy : gradUnit;
+            fragColor =
+                encodeGeometryData(edgeNormal, 0.0, uThickness, foregroundAlpha);
+        } else {
+            float rimDist = clamp(-sdN, 0.0, uThickness);
+
+            // Encode normal.xy + linear rimDist progression + alpha.
+            // The render pass recomputes displacement = refract(incident, normal, 1/n)
+            // and circular-arc height from linear rimDist/uThickness with zero 8-bit
+            // sqrt() quantization stepping near the rim.
+            fragColor = encodeGeometryData(normal.xy, rimDist, uThickness, foregroundAlpha);
+        }
     }
-
-    float n_cos = max(uThickness + sdN, 0.0) / uThickness;
-    float n_sin = sqrt(max(0.0, 1.0 - n_cos * n_cos));
-
-    // True surface normal from the SDF gradient — this is what we store.
-    // In blend-group neck zones the displacement vector diverges from this
-    // normal, which is why storing the normal (not displacement) fixes lighting.
-    vec3 normal = normalize(vec3(dx * n_cos, dy * n_cos, n_sin));
-
-    // Fragments just outside the silhouette (0 <= sdN < smoothing * 0.5)
-    // still carry the outer half of the smoothstep's AA coverage. The dome
-    // meets the ground plane there — rimDist is 0 and the surface normal is
-    // horizontal along the gradient (the n_sin == 0 limit of the same
-    // profile), so the texel stays continuous with the rim while alpha
-    // ramps to 0. Clearing alpha at the SDF edge instead truncates the band
-    // at its midpoint — a hard ~0.5 → 0 step that stair-steps the rounded
-    // silhouette, most visibly when the matte is resampled under the
-    // indicator's drag/stretch transform.
-    if (sdN >= 0.0) {
-        vec2 edgeNormal = length(normal.xy) > 1e-4 ? normal.xy : gradUnit;
-        fragColor =
-            encodeGeometryData(edgeNormal, 0.0, uThickness, foregroundAlpha);
-        return;
-    }
-
-    float rimDist = clamp(-sdN, 0.0, uThickness);
-
-    // Encode normal.xy + linear rimDist progression + alpha.
-    // The render pass recomputes displacement = refract(incident, normal, 1/n)
-    // and circular-arc height from linear rimDist/uThickness with zero 8-bit
-    // sqrt() quantization stepping near the rim.
-    fragColor = encodeGeometryData(normal.xy, rimDist, uThickness, foregroundAlpha);
 }

@@ -351,15 +351,14 @@ void main() {
 
     vec4 geometryData = texture(uGeometryTexture, geometryUV);
 
+    // Single-exit main() for Windows HLSL/FXC compatibility (flutter#190809):
+    // avoid early `return;` alongside texture samplers.
     #if DEBUG_GEOMETRY
-        fragColor = geometryData;
-        return;
-    #endif
-
+    fragColor = geometryData;
+    #else
     if (geometryData.a < 0.01) {
-        fragColor = vec4(0);
-        return;
-    }
+        fragColor = vec4(0.0);
+    } else {
 
     // --- V1: Decode true surface normal from geometry texture ---
     //
@@ -1136,4 +1135,6 @@ void main() {
                              rim * (1.0 - refractColor.a) * 0.85);
     }
     fragColor    = vec4(finalColor.rgb * alpha, alpha);
+    } // end geometryData.a >= 0.01
+    #endif
 }

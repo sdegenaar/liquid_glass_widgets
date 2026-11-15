@@ -60,52 +60,56 @@ void main() {
   uv.y = 1.0 - uv.y;
 #endif
 
+  // Hoist centre tap before the sigma branch so both paths share it and main()
+  // has a single exit point (multiple returns alongside samplers can fail
+  // Windows HLSL/FXC compilation; see flutter/flutter#190809).
+  vec4 centerTap = texture(uTexture, uv);
+
   if (sigma < 0.5) {
-    fragColor = texture(uTexture, uv);
-    return;
+    fragColor = centerTap;
+  } else {
+    // 1px step in uv along the blur axis.
+    vec2 axis = (uAxis < 0.5) ? vec2(1.0 / uSize.x, 0.0) : vec2(0.0, 1.0 / uSize.y);
+    float stride = max(1.0, 3.0 * sigma / float(kHalf)); // device px between taps
+
+    // Phase 3A (perf): Replace per-tap exp(-d²/2σ²) with a multiply recurrence.
+    //
+    // The IIR Gaussian trick: given w(i) = exp(-(i*stride)² * inv2s2),
+    //   g1 = exp(-stride² * inv2s2)   [ratio w(1)/w(0)]
+    //   g2 = g1 * g1                  [g2 = exp(-2*stride²*inv2s2)]
+    //
+    // Recurrence (per iteration):
+    //   w ← w * g1
+    //   g1 ← g1 * g2
+    //
+    // Proof: after k steps, g1 = exp(-(2k+1)*stride²*inv2s2), so
+    //   w = exp(-1*inv) * exp(-3*inv) * … * exp(-(2k-1)*inv)
+    //     = exp(-(1+3+…+(2k-1))*inv) = exp(-k²*stride²*inv2s2) = w(k). ✓
+    //
+    // Two multiplies per tap vs one exp() per tap. On Mali/Adreno/Apple GPU,
+    // exp() costs ~4–8× a multiply — this saves kHalf transcendental calls.
+    float inv2s2 = 1.0 / (2.0 * sigma * sigma);
+    float g1 = exp(-stride * stride * inv2s2);
+    float g2 = g1 * g1;
+
+    vec4 acc = centerTap; // centre tap, weight 1
+    float wsum = 1.0;
+    float w = 1.0; // will be multiplied by g1 at top of first iteration
+    for (int i = 1; i <= kHalf; i++) {
+      float d = float(i) * stride;    // device px offset (needed for UV)
+      w *= g1;                        // w = exp(-(i*stride)² * inv2s2) ✓
+      g1 *= g2;                       // advance g1 for next iteration
+      vec2 off = axis * d;            // uv offset
+      vec2 sp = uv + off;
+      vec2 sm = uv - off;
+      // Discard out-of-bounds taps (clamping would smear the edge pixel).
+      float ip = step(0.0, sp.x) * step(sp.x, 1.0) * step(0.0, sp.y) * step(sp.y, 1.0);
+      float im = step(0.0, sm.x) * step(sm.x, 1.0) * step(0.0, sm.y) * step(sm.y, 1.0);
+      acc += texture(uTexture, clamp(sp, 0.0, 1.0)) * (w * ip);
+      acc += texture(uTexture, clamp(sm, 0.0, 1.0)) * (w * im);
+      wsum += w * ip + w * im;
+    }
+
+    fragColor = acc / wsum;
   }
-
-  // 1px step in uv along the blur axis.
-  vec2 axis = (uAxis < 0.5) ? vec2(1.0 / uSize.x, 0.0) : vec2(0.0, 1.0 / uSize.y);
-  float stride = max(1.0, 3.0 * sigma / float(kHalf)); // device px between taps
-
-  // Phase 3A (perf): Replace per-tap exp(-d²/2σ²) with a multiply recurrence.
-  //
-  // The IIR Gaussian trick: given w(i) = exp(-(i*stride)² * inv2s2),
-  //   g1 = exp(-stride² * inv2s2)   [ratio w(1)/w(0)]
-  //   g2 = g1 * g1                  [g2 = exp(-2*stride²*inv2s2)]
-  //
-  // Recurrence (per iteration):
-  //   w ← w * g1
-  //   g1 ← g1 * g2
-  //
-  // Proof: after k steps, g1 = exp(-(2k+1)*stride²*inv2s2), so
-  //   w = exp(-1*inv) * exp(-3*inv) * … * exp(-(2k-1)*inv)
-  //     = exp(-(1+3+…+(2k-1))*inv) = exp(-k²*stride²*inv2s2) = w(k). ✓
-  //
-  // Two multiplies per tap vs one exp() per tap. On Mali/Adreno/Apple GPU,
-  // exp() costs ~4–8× a multiply — this saves kHalf transcendental calls.
-  float inv2s2 = 1.0 / (2.0 * sigma * sigma);
-  float g1 = exp(-stride * stride * inv2s2);
-  float g2 = g1 * g1;
-
-  vec4 acc = texture(uTexture, uv); // centre tap, weight 1
-  float wsum = 1.0;
-  float w = 1.0; // will be multiplied by g1 at top of first iteration
-  for (int i = 1; i <= kHalf; i++) {
-    float d = float(i) * stride;    // device px offset (needed for UV)
-    w *= g1;                        // w = exp(-(i*stride)² * inv2s2) ✓
-    g1 *= g2;                       // advance g1 for next iteration
-    vec2 off = axis * d;            // uv offset
-    vec2 sp = uv + off;
-    vec2 sm = uv - off;
-    // Discard out-of-bounds taps (clamping would smear the edge pixel).
-    float ip = step(0.0, sp.x) * step(sp.x, 1.0) * step(0.0, sp.y) * step(sp.y, 1.0);
-    float im = step(0.0, sm.x) * step(sm.x, 1.0) * step(0.0, sm.y) * step(sm.y, 1.0);
-    acc += texture(uTexture, clamp(sp, 0.0, 1.0)) * (w * ip);
-    acc += texture(uTexture, clamp(sm, 0.0, 1.0)) * (w * im);
-    wsum += w * ip + w * im;
-  }
-
-  fragColor = acc / wsum;
 }

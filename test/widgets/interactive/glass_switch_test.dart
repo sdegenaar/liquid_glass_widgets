@@ -980,6 +980,297 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(GlassSwitch), findsOneWidget);
     });
+
+    group('disabled state (onChanged: null)', () {
+      Finder disabledOpacityFinder() => find.descendant(
+            of: find.byType(GlassSwitch),
+            matching: find.byWidgetPredicate(
+              (widget) => widget is Opacity && widget.opacity == 0.5,
+            ),
+          );
+
+      testWidgets('renders at 50% group opacity only when onChanged is null',
+          (tester) async {
+        await tester.pumpWidget(
+          createTestApp(
+            child: const GlassSwitch(
+              value: true,
+              onChanged: null,
+            ),
+          ),
+        );
+        expect(disabledOpacityFinder(), findsOneWidget);
+
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassSwitch(
+              value: true,
+              onChanged: (_) {},
+            ),
+          ),
+        );
+        expect(disabledOpacityFinder(), findsNothing);
+      });
+
+      testWidgets(
+          'ignores tap, press-hold bloom, drag, flick, and haptics when disabled',
+          (tester) async {
+        final hapticCalls = <MethodCall>[];
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'HapticFeedback.vibrate') {
+              hapticCalls.add(call);
+            }
+            return null;
+          },
+        );
+        addTearDown(() {
+          tester.binding.defaultBinaryMessenger
+              .setMockMethodCallHandler(SystemChannels.platform, null);
+        });
+
+        double parentDragDelta = 0.0;
+        await tester.pumpWidget(
+          createTestApp(
+            child: GestureDetector(
+              onHorizontalDragUpdate: (d) =>
+                  parentDragDelta += d.primaryDelta ?? 0.0,
+              child: AdaptiveLiquidGlassLayer(
+                settings: defaultTestGlassSettings,
+                child: const GlassSwitch(
+                  value: false,
+                  width: 63.0,
+                  height: 28.0,
+                  onChanged: null,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final switchFinder = find.byType(GlassSwitch);
+        final thumbEffectFinder = find.descendant(
+          of: switchFinder,
+          matching: find.byType(GlassEffect),
+        );
+        final restingThumbSize = tester.getSize(thumbEffectFinder);
+        final restingThumbLeft = tester.getRect(thumbEffectFinder).left;
+
+        // Tap does nothing and fires no haptics.
+        await tester.tap(switchFinder);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(hapticCalls, isEmpty);
+        expect(tester.getRect(thumbEffectFinder).left, restingThumbLeft);
+
+        // Press-and-hold does not inflate the liquid glass lens (two pumps:
+        // 110ms to pass kPressTimeout, then 150ms to advance any bloom ticker).
+        final gesture =
+            await tester.startGesture(tester.getCenter(switchFinder));
+        await tester.pump(const Duration(milliseconds: 110));
+        await tester.pump(const Duration(milliseconds: 150));
+        expect(tester.getSize(thumbEffectFinder), restingThumbSize);
+        await gesture.up();
+        await tester.pumpAndSettle();
+
+        // Horizontal drag passes through to an ancestor gesture detector
+        // (e.g. a swipeable GlassListTile) without moving the thumb.
+        await tester.drag(switchFinder, const Offset(40, 0));
+        await tester.pumpAndSettle();
+        expect(parentDragDelta, greaterThan(0.0));
+        expect(tester.getRect(thumbEffectFinder).left, restingThumbLeft);
+        expect(hapticCalls, isEmpty);
+
+        // Fast fling is also ignored.
+        await tester.fling(switchFinder, const Offset(30, 0), 500);
+        await tester.pumpAndSettle();
+        expect(tester.getRect(thumbEffectFinder).left, restingThumbLeft);
+        expect(hapticCalls, isEmpty);
+      });
+
+      testWidgets('cannot receive keyboard focus or activate via Space/Enter',
+          (tester) async {
+        final focusNode = FocusNode();
+        addTearDown(focusNode.dispose);
+
+        await tester.pumpWidget(
+          createTestApp(
+            child: GlassSwitch(
+              value: false,
+              onChanged: null,
+              focusNode: focusNode,
+            ),
+          ),
+        );
+
+        focusNode.requestFocus();
+        await tester.pumpAndSettle();
+        expect(focusNode.hasFocus, isFalse);
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.space);
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets(
+          'reports disabled switch semantics with toggled state and no tap action',
+          (tester) async {
+        final handle = tester.ensureSemantics();
+        try {
+          for (final isOn in [true, false]) {
+            await tester.pumpWidget(
+              createTestApp(
+                child: GlassSwitch(
+                  value: isOn,
+                  onChanged: null,
+                  semanticLabel: 'Test Switch',
+                ),
+              ),
+            );
+
+            expect(
+              tester.getSemantics(find.byType(GlassSwitch)),
+              matchesSemantics(
+                isButton: true,
+                hasEnabledState: true,
+                isEnabled: false,
+                isFocusable: false,
+                hasTapAction: false,
+                hasFocusAction: false,
+                hasToggledState: true,
+                isToggled: isOn,
+                label: 'Test Switch',
+              ),
+            );
+          }
+        } finally {
+          handle.dispose();
+        }
+      });
+
+      testWidgets(
+          'programmatic value change while disabled slides thumb without lens bloom',
+          (tester) async {
+        bool value = false;
+        late StateSetter update;
+
+        await tester.pumpWidget(
+          createTestApp(
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                update = setState;
+                return GlassSwitch(
+                  value: value,
+                  width: 63.0,
+                  height: 28.0,
+                  onChanged: null,
+                );
+              },
+            ),
+          ),
+        );
+
+        final switchFinder = find.byType(GlassSwitch);
+        final thumbEffectFinder = find.descendant(
+          of: switchFinder,
+          matching: find.byType(GlassEffect),
+        );
+        final restingSize = tester.getSize(thumbEffectFinder);
+        final offLeft = tester.getRect(thumbEffectFinder).left;
+
+        update(() => value = true);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+        // Mid-flight: thumb moves horizontally, but stays unlifted (no bloom).
+        expect(tester.getSize(thumbEffectFinder), restingSize);
+        expect(tester.getRect(thumbEffectFinder).left, greaterThan(offLeft));
+
+        await tester.pumpAndSettle();
+        final onLeft = tester.getRect(thumbEffectFinder).left;
+        expect(onLeft, closeTo(offLeft + 22.0, 0.2));
+      });
+
+      testWidgets(
+          'disabling mid-press or mid-drag collapses lifted lens and ignores release',
+          (tester) async {
+        bool isEnabled = true;
+        int callCount = 0;
+        late StateSetter update;
+
+        await tester.pumpWidget(
+          createTestApp(
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                update = setState;
+                return AdaptiveLiquidGlassLayer(
+                  settings: defaultTestGlassSettings,
+                  child: GlassSwitch(
+                    value: false,
+                    width: 63.0,
+                    height: 28.0,
+                    onChanged: isEnabled ? (_) => callCount++ : null,
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+
+        final switchFinder = find.byType(GlassSwitch);
+        final switchRect = tester.getRect(switchFinder);
+        final thumbEffectFinder = find.descendant(
+          of: switchFinder,
+          matching: find.byType(GlassEffect),
+        );
+        final restingSize = tester.getSize(thumbEffectFinder);
+
+        // Start a press and drag past midpoint while enabled so the lens lifts
+        // and the thumb moves across the runway.
+        final gesture = await tester.startGesture(switchRect.center);
+        await tester.pump(const Duration(milliseconds: 110));
+        await tester.pump(const Duration(milliseconds: 150));
+        await gesture.moveBy(const Offset(5, 0)); // clear 3px touchSlop
+        await tester.pump();
+        await gesture.moveBy(const Offset(20, 0));
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(
+          tester.getSize(thumbEffectFinder).width,
+          greaterThan(restingSize.width),
+        );
+        expect(
+          tester.getRect(thumbEffectFinder).left - switchRect.left,
+          greaterThan(10.0),
+        );
+
+        // Disable the switch while the finger is still down.
+        update(() => isEnabled = false);
+        await tester.pump();
+        // Lifted lens collapses immediately on the same frame.
+        expect(tester.getSize(thumbEffectFinder), restingSize);
+        expect(disabledOpacityFinder(), findsOneWidget);
+
+        // Releasing the finger neither throws nor invokes the old callback, and
+        // the thumb settles back to value: false.
+        await gesture.up();
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(callCount, 0);
+        expect(
+          tester.getRect(thumbEffectFinder).left - switchRect.left,
+          closeTo(2.0, 0.2),
+        );
+
+        // Re-enabling restores interactivity.
+        update(() => isEnabled = true);
+        await tester.pumpAndSettle();
+        expect(disabledOpacityFinder(), findsNothing);
+        await tester.tap(switchFinder);
+        await tester.pumpAndSettle();
+        expect(callCount, 1);
+      });
+    });
   });
 
   group('GlassSwitch On/Off Labels', () {

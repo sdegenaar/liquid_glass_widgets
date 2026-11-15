@@ -1,8 +1,22 @@
+
 # Unreleased
 
 ## Bug Fixes
 
 - Preserve independent top and bottom corner radii for vertical rounded rectangles in the Standard glass renderer.
+
+# Unreleased
+
+## Features
+
+- **`GlassSwitch` disabled state (`GlassSwitch.onChanged` is now `ValueChanged<bool>?`) (#485):** Passing `onChanged: null` disables the switch — rendering it at 50% group opacity (matching `UISwitch` and `CupertinoSwitch`), ignoring touch, drag, and keyboard input without lifting into a glass lens, reporting disabled state to assistive technology, and still sliding the thumb on programmatic `value` updates. Direct callers should update `switchWidget.onChanged(v)` to `switchWidget.onChanged?.call(v)`.
+
+# 1.17.4
+
+## Bug Fixes
+
+- **Flutter 3.50.0 / Windows HLSL & Web ANGLE shader single-exit `main()` (`flutter/flutter#190809`):** Refactored `void main()` across all five fragment shaders (`progressive_blur.frag`, `lightweight_glass.frag`, `interactive_indicator.frag`, `liquid_glass_render.frag`, and `liquid_glass_geometry_blended.frag`) to eliminate early/multiple `return;` statements alongside `sampler2D` texture sampling — silencing all four `impellerc` warnings on Flutter `3.50.0` (`flutter build web --wasm`, Windows, and mobile) and preventing `d3dcompiler_47.dll` (FXC) HLSL compilation failures on Windows Direct3D and Chrome ANGLE with zero visual or GPU performance regressions.
+- **Shader CI & test guards (`scripts/validate_shaders.sh`, `test/shaders/single_return_main_test.dart`):** Extended shader validation to enforce single-exit `main()` statically, run Flutter's `impellerc` multi-target runtime stage check (failing on any `[WARNING]`) alongside `glslangValidator`, and guard against regressions in `flutter test` across all platforms.
 
 # 1.17.3
 
