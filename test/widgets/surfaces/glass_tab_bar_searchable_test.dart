@@ -137,6 +137,88 @@ void main() {
       }
     }
 
+    for (final direction in TextDirection.values) {
+      testWidgets(
+          'Reduce Motion updates the search inset immediately when the keyboard '
+          'shows and hides the dismiss pill ($direction)', (tester) async {
+        final focusNode = FocusNode();
+        addTearDown(focusNode.dispose);
+        var keyboardInset = 0.0;
+        late StateSetter update;
+
+        await tester.pumpWidget(createTestApp(
+          child: Directionality(
+            textDirection: direction,
+            child: GlassAccessibilityScope(
+              reduceMotion: true,
+              child: StatefulBuilder(builder: (context, setState) {
+                update = setState;
+                return MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    viewInsets: EdgeInsets.only(bottom: keyboardInset),
+                  ),
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: SizedBox(
+                      width: 390,
+                      child: GlassTabBar.searchable(
+                        tabs: const [GlassTab(label: 'Home')],
+                        selectedIndex: 0,
+                        onTabSelected: (_) {},
+                        isSearchActive: true,
+                        horizontalPadding: 16,
+                        verticalPadding: 0,
+                        barHeight: 48,
+                        searchBarHeight: 48,
+                        spacing: 8,
+                        quality: GlassQuality.minimal,
+                        maskingQuality: MaskingQuality.off,
+                        searchConfig: GlassSearchBarConfig(
+                          focusNode: focusNode,
+                          showsCancelButton: true,
+                          onSearchToggle: (_) {},
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ));
+        await tester.pumpAndSettle();
+        focusNode.requestFocus();
+        await tester.pumpAndSettle();
+
+        final pill = find.byType(SearchPill);
+        final rightWithoutDismiss = tester.getRect(pill).right;
+        expect(focusNode.hasFocus, isTrue);
+        expect(find.byType(DismissPill), findsNothing);
+
+        update(() => keyboardInset = 200);
+        // Retargeting runs after layout; the next frame must use the new inset
+        // without advancing an animation clock.
+        await tester.pump();
+        await tester.pump();
+        final dismiss = tester.getRect(find.byType(DismissPill));
+        expect(dismiss.width, closeTo(48, .1));
+        expect(dismiss.right, closeTo(rightWithoutDismiss, .1));
+        expect(tester.getRect(pill).right, closeTo(dismiss.left - 8, .1));
+        expect(
+            tester.getRect(pill).right, closeTo(rightWithoutDismiss - 56, .1));
+
+        update(() => keyboardInset = 0);
+        await tester.pump();
+        await tester.pump();
+        expect(find.byType(DismissPill), findsNothing);
+        expect(tester.getRect(pill).right, closeTo(rightWithoutDismiss, .1));
+        expect(focusNode.hasFocus, isTrue);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+      });
+    }
+
     // ── Instantiation ─────────────────────────────────────────────────────────
 
     testWidgets('can be instantiated with required parameters', (tester) async {
