@@ -177,11 +177,11 @@ void main() {
   float smoothing = 1.0 / uScale.x;
   float mask = 1.0 - smoothstep(-smoothing, smoothing, dist);
   
-  // Early exit if outside the shape
+  // Skip shading outside the shape without an early return (multiple returns
+  // in main() alongside samplers can fail Windows HLSL/FXC; flutter#190809).
   if (mask <= 0.0) {
     fragColor = vec4(0.0);
-    return;
-  }
+  } else {
   
   // ==========================================================================
   // SURFACE NORMAL
@@ -503,4 +503,5 @@ void main() {
 
     fragColor = vec4(clamp(pmRgb, 0.0, 1.0) * mask, clamp(pmA, 0.0, 1.0) * mask);
   }
+  } // end mask > 0.0
 }
