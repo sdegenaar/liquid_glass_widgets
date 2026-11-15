@@ -251,7 +251,7 @@ class LiquidVerticalRoundedRectangle extends LiquidShape {
   ///
   /// The shader receives individual per-corner radii separately via the
   /// asymmetric data path; this value is used only when a single representative
-  /// radius is needed (e.g. for the lightweight shader fallback).
+  /// radius is needed.
   @override
   double get effectiveRadius => math.max(topRadius, bottomRadius);
 
