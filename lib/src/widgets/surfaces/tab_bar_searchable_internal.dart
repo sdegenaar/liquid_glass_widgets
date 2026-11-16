@@ -843,6 +843,9 @@ class SearchPill extends StatefulWidget {
 }
 
 class SearchPillState extends State<SearchPill> {
+  // Preserve the same text-input client when the pill crosses the width
+  // threshold and moves the field from the hidden compact tree to the glass.
+  final _textFieldKey = GlobalKey();
   late final TextEditingController _controller;
   late final FocusNode _focusNode;
   bool _ownsController = false;
@@ -1263,6 +1266,7 @@ class SearchPillState extends State<SearchPill> {
           const SizedBox(width: 8),
           Expanded(
             child: CupertinoTextField(
+              key: _textFieldKey,
               controller: _controller,
               focusNode: _focusNode,
               autofocus: false,

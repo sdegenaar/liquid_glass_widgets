@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- **`GlassTabBar.searchable` input client retention & keyboard-lifted hit bounds (PR #489):** Preserves the `CupertinoTextField` input client, selection, and IME composing state across the compact/expanded width threshold via a stable `GlobalKey`, and expands the bottom-accessory wrapper's hit-test bounds to the union of the accessory and lifted search/dismiss pills when the keyboard is up. Thanks to [@wow-sven](https://github.com/wow-sven) for the fix (#489).
+
 # 1.17.4
 
 ## Features
