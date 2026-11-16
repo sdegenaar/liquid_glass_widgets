@@ -7,7 +7,6 @@ import '../../types/glass_style.dart';
 import '../../src/widgets/overlays/glass_alert_platter.dart';
 import '../containers/glass_container.dart';
 import '../interactive/glass_button.dart';
-import '../shared/adaptive_liquid_glass_layer.dart';
 import '../../theme/glass_theme.dart';
 import '../../theme/glass_theme_helpers.dart';
 
@@ -286,13 +285,18 @@ class GlassDialog extends StatelessWidget {
     final isNative =
         GlassThemeHelpers.resolveStyle(context) != GlassStyle.classic;
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
-    return showCupertinoDialog<T>(
+    final resolvedBarrierColor = barrierColor != null
+        ? CupertinoDynamicColor.resolve(barrierColor, context)
+        : (isNative
+            ? glassAlertBarrierColor(isDark: isDark)
+            : CupertinoDynamicColor.resolve(
+                kCupertinoModalBarrierColor,
+                context,
+              ));
+    return pushGlassAlertRoute<T>(
       context: context,
       barrierDismissible: barrierDismissible,
-      barrierColor: barrierColor ??
-          (isNative
-              ? glassAlertBarrierColor(isDark: isDark)
-              : kCupertinoModalBarrierColor),
+      barrierColor: resolvedBarrierColor,
       builder: (dialogContext) {
         Widget dialog = GlassDialog(
           title: title,
@@ -365,53 +369,48 @@ class GlassDialog extends StatelessWidget {
           settings: platterSettings,
           quality: effectiveQuality,
           padding: const EdgeInsets.all(20),
-          child: AdaptiveLiquidGlassLayer(
-            settings: buttonSettings,
-            quality: effectiveQuality,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Title
-                if (title != null) ...[
-                  Text(
-                    title!,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: CupertinoColors.label.resolveFrom(context),
-                    ),
-                    textAlign: TextAlign.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Title
+              if (title != null) ...[
+                Text(
+                  title!,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: CupertinoColors.label.resolveFrom(context),
                   ),
-                  const SizedBox(height: 8),
-                ],
-
-                // Message
-                if (message != null) ...[
-                  Text(
-                    message!,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color:
-                          CupertinoColors.secondaryLabel.resolveFrom(context),
-                      height: 1.4,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                ],
-
-                // Custom content
-                if (content != null) ...[
-                  content!,
-                  const SizedBox(height: 8),
-                ],
-
-                const SizedBox(height: 12),
-
-                // Actions
-                _buildActions(context),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
               ],
-            ),
+
+              // Message
+              if (message != null) ...[
+                Text(
+                  message!,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+              ],
+
+              // Custom content
+              if (content != null) ...[
+                content!,
+                const SizedBox(height: 8),
+              ],
+
+              const SizedBox(height: 12),
+
+              // Actions
+              _buildActions(context, buttonSettings, effectiveQuality),
+            ],
           ),
         ),
       ),
@@ -449,12 +448,26 @@ class GlassDialog extends StatelessWidget {
         fontWeight: action.isPrimary ? FontWeight.bold : FontWeight.w600,
       );
 
-  Widget _buildActions(BuildContext context) => LayoutBuilder(
-        builder: (context, constraints) =>
-            _buildActionsIn(context, constraints.maxWidth),
+  Widget _buildActions(
+    BuildContext context,
+    LiquidGlassSettings buttonSettings,
+    GlassQuality effectiveQuality,
+  ) =>
+      LayoutBuilder(
+        builder: (context, constraints) => _buildActionsIn(
+          context,
+          constraints.maxWidth,
+          buttonSettings,
+          effectiveQuality,
+        ),
       );
 
-  Widget _buildActionsIn(BuildContext context, double width) {
+  Widget _buildActionsIn(
+    BuildContext context,
+    double width,
+    LiquidGlassSettings buttonSettings,
+    GlassQuality effectiveQuality,
+  ) {
     // 1-2 actions: Horizontal layout, unless a label does not fit
     if (actions.length <= 2 && _labelsFitSideBySide(context, width)) {
       return Row(
@@ -466,7 +479,12 @@ class GlassDialog extends StatelessWidget {
               padding: EdgeInsetsDirectional.only(
                 start: index > 0 ? 8 : 0,
               ),
-              child: _buildActionButton(action, context),
+              child: _buildActionButton(
+                action,
+                context,
+                buttonSettings,
+                effectiveQuality,
+              ),
             ),
           );
         }).toList(),
@@ -483,13 +501,23 @@ class GlassDialog extends StatelessWidget {
           padding: EdgeInsets.only(
             top: index > 0 ? 8 : 0,
           ),
-          child: _buildActionButton(action, context),
+          child: _buildActionButton(
+            action,
+            context,
+            buttonSettings,
+            effectiveQuality,
+          ),
         );
       }).toList(),
     );
   }
 
-  Widget _buildActionButton(GlassDialogAction action, BuildContext context) {
+  Widget _buildActionButton(
+    GlassDialogAction action,
+    BuildContext context,
+    LiquidGlassSettings buttonSettings,
+    GlassQuality effectiveQuality,
+  ) {
     // Determine button styling based on action type
     var glowColor = _defaultGlowColor;
     if (action.isDestructive) {
@@ -503,6 +531,8 @@ class GlassDialog extends StatelessWidget {
       enabled: action.onPressed != null,
       height: 44,
       shape: _actionButtonShape,
+      settings: buttonSettings,
+      quality: effectiveQuality,
       glowColor: glowColor,
       child: Text(
         action.label,

@@ -26,7 +26,7 @@ Bring Apple's Liquid Glass to your Flutter app — supporting both **iOS 27** an
 
 ```yaml
 dependencies:
-  liquid_glass_widgets: ^1.17.4
+  liquid_glass_widgets: ^1.17.5
 ```
 
 ```bash

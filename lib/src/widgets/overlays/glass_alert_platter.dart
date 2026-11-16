@@ -21,6 +21,7 @@
 // - with the keyboard up, the platter re-centres in the space above it;
 // - action titles are one line, and wrap only at accessibility text sizes.
 
+import 'dart:math' as math;
 import 'dart:ui' show SemanticsRole;
 
 import 'package:flutter/cupertino.dart';
@@ -32,6 +33,7 @@ import '../../../theme/glass_theme_helpers.dart';
 import '../../../types/glass_quality.dart';
 import '../../../types/glass_style.dart';
 import '../../../widgets/containers/glass_container.dart';
+import '../../../widgets/effects/shared/glass_materialize_effect.dart';
 import '../../../widgets/shared/glass_focus_region.dart';
 
 /// Native alert platter width on iOS 26 / iOS 27.
@@ -44,6 +46,100 @@ const double kGlassAlertPlatterWidth = 320;
 /// `#0F0F10` in dark mode (≈ 0.47 black).
 Color glassAlertBarrierColor({required bool isDark}) =>
     isDark ? const Color(0x77000000) : const Color(0x35000000);
+
+/// Route transition for [GlassDialog.show] and native [showGlassActionSheet].
+///
+/// Dissolves the alert platter through [GlassMaterializeEffect] (shader
+/// `visibility` + content channel) instead of `CupertinoDialogRoute`'s default
+/// [FadeTransition], so no ancestor `OpacityLayer` ever wraps the platter's
+/// `BackdropFilterLayer` while `0.0 < animation.value < 1.0`.
+///
+/// - **Entrance**: settles inward from `scaleFrom: 1.06` while materializing
+///   the glass and sharpening content (`contentSigma: 4.0`).
+/// - **Settled exit** (`AnimationStatus.reverse` after reaching rest): holds
+///   `scale: 1.0` and co-dissolves glass and content together (`plain: true`)
+///   so the Cupertino spring tail does not leave an empty frosted platter after
+///   the labels vanish.
+/// - **Mid-entrance cancel**: if dismissed before settling, rewinds the
+///   entrance choreography continuously so scale, content opacity, and content
+///   sigma never snap on reversal.
+Widget buildGlassAlertTransition(
+  BuildContext context,
+  Animation<double> animation,
+  Animation<double> secondaryAnimation,
+  Widget child,
+) {
+  return _GlassAlertTransition(
+    animation: animation,
+    child: child,
+  );
+}
+
+class _GlassAlertTransition extends StatefulWidget {
+  const _GlassAlertTransition({
+    required this.animation,
+    required this.child,
+  });
+
+  final Animation<double> animation;
+  final Widget child;
+
+  @override
+  State<_GlassAlertTransition> createState() => _GlassAlertTransitionState();
+}
+
+class _GlassAlertTransitionState extends State<_GlassAlertTransition> {
+  bool _hasSettled = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: widget.animation,
+      child: widget.child,
+      builder: (context, child) {
+        final value = widget.animation.value;
+        final status = widget.animation.status;
+        if (status == AnimationStatus.completed || value >= 0.99) {
+          _hasSettled = true;
+        } else if (status == AnimationStatus.dismissed) {
+          _hasSettled = false;
+        }
+        final isSettledExit = _hasSettled && status == AnimationStatus.reverse;
+        return GlassMaterializeEffect(
+          progress: value,
+          profile: isSettledExit
+              ? GlassMaterializeProfile.exit
+              : GlassMaterializeProfile.entrance,
+          scaleFrom: isSettledExit ? 1.0 : 1.06,
+          contentSigma: 4.0,
+          plain: isSettledExit,
+          child: child!,
+        );
+      },
+    );
+  }
+}
+
+/// Pushes a [CupertinoDialogRoute] onto the root navigator using
+/// [buildGlassAlertTransition] and a safe [CupertinoLocalizations] fallback.
+Future<T?> pushGlassAlertRoute<T>({
+  required BuildContext context,
+  required bool barrierDismissible,
+  required Color barrierColor,
+  required WidgetBuilder builder,
+}) {
+  return Navigator.of(context, rootNavigator: true).push<T>(
+    CupertinoDialogRoute<T>(
+      context: context,
+      barrierDismissible: barrierDismissible,
+      barrierColor: barrierColor,
+      barrierLabel:
+          glassCupertinoLocalizationsOf(context).modalBarrierDismissLabel,
+      transitionBuilder: buildGlassAlertTransition,
+      builder: builder,
+    ),
+  );
+}
 
 /// Whether text is scaled into the accessibility sizes, where native action
 /// titles wrap instead of truncating. Same threshold as `CupertinoAlertDialog`.
@@ -111,15 +207,48 @@ class GlassAlertPlatter extends StatelessWidget {
   /// the preset's tint, the alert uses the measured one. Measured on the
   /// iOS 26 simulator at both `standard` and `premium` quality: premium's frost
   /// does not remove the preset's tint.
-  LiquidGlassSettings _platterSettings(BuildContext context) {
+  LiquidGlassSettings _platterSettings(
+    BuildContext context,
+    GlassQuality effectiveQuality,
+  ) {
     final resolved = GlassThemeHelpers.resolveSettings(
       context,
       explicit: settings,
       isOverlayPlatter: true,
     );
-    if (settings == null &&
-        GlassThemeHelpers.resolveStyle(context) == GlassStyle.ios26 &&
-        GlassTheme.brightnessOf(context) == Brightness.dark &&
+    if (settings != null) return resolved;
+
+    final style = GlassThemeHelpers.resolveStyle(context);
+    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
+
+    // On GlassQuality.standard, lightweight_glass.frag lacks Premium's odd-row
+    // frost cloud (frost: 14, frostOpacity: 1.0) and luminance-weighted frost
+    // (frostWeight: 0.5, frostClamp: -0.45/-0.49). Preserve the full frost
+    // sigma on standard alerts, and boost ambient darkening + tint floor on
+    // dark ios26 (2% alpha) and ios27 (12% alpha) when using unmodified tints.
+    if (effectiveQuality == GlassQuality.standard &&
+        style != GlassStyle.classic) {
+      if (isDark) {
+        final defaultDarkTint = style == GlassStyle.ios26
+            ? LiquidGlassSettings.ios26Dark.glassColor
+            : LiquidGlassSettings.ios27Dark.glassColor;
+        if (resolved.glassColor == defaultDarkTint) {
+          return resolved.copyWith(
+            blur: 18.0,
+            ambientStrength: 0.75,
+            glassColor: style == GlassStyle.ios26
+                ? const Color(0x18FFFFFF)
+                : const Color(0x22FFFFFF),
+          );
+        }
+      }
+      return resolved.copyWith(
+        blur: math.max(resolved.blur, resolved.frost),
+      );
+    }
+
+    if (style == GlassStyle.ios26 &&
+        isDark &&
         resolved.glassColor == LiquidGlassSettings.ios26Dark.glassColor) {
       return resolved.copyWith(glassColor: const Color(0x05FFFFFF));
     }
@@ -133,7 +262,7 @@ class GlassAlertPlatter extends StatelessWidget {
       widgetQuality: quality,
       fallback: GlassThemeHelpers.nativeStyleQuality(context),
     );
-    final platterSettings = _platterSettings(context);
+    final platterSettings = _platterSettings(context, effectiveQuality);
     final hasHeader = title != null || message != null || content != null;
 
     final messageColor = CupertinoColors.secondaryLabel.resolveFrom(context);
