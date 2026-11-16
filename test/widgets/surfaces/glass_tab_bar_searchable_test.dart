@@ -68,6 +68,227 @@ Widget _buildBar({
 
 void main() {
   group('GlassTabBar.searchable', () {
+    for (final direction in TextDirection.values) {
+      for (final reduceMotion in [false, true]) {
+        testWidgets(
+            'search remains right-anchored during parent resize and reversal '
+            '($direction, reduceMotion: $reduceMotion)', (tester) async {
+          var active = false;
+          late StateSetter update;
+          await tester.pumpWidget(createTestApp(
+            child: Directionality(
+              textDirection: direction,
+              child: GlassAccessibilityScope(
+                reduceMotion: reduceMotion,
+                child: StatefulBuilder(builder: (context, setState) {
+                  update = setState;
+                  return Align(
+                    alignment: Alignment.bottomRight,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutCubic,
+                      width: active ? 390 : 280,
+                      child: GlassTabBar.searchable(
+                        tabs: const [GlassTab(icon: Icon(CupertinoIcons.add))],
+                        selectedIndex: 0,
+                        onTabSelected: (_) {},
+                        isSearchActive: active,
+                        horizontalPadding: 16,
+                        barHeight: 48,
+                        searchBarHeight: 48,
+                        tabWidth: 116,
+                        quality: GlassQuality.minimal,
+                        maskingQuality: MaskingQuality.off,
+                        searchConfig:
+                            GlassSearchBarConfig(onSearchToggle: (_) {}),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ));
+          await tester.pumpAndSettle();
+          final pill = find.byType(SearchPill);
+          final right = tester.getRect(pill).right;
+          Future<void> frames(int count) async {
+            for (var i = 0; i < count; i++) {
+              await tester.pump(const Duration(milliseconds: 16));
+              expect(tester.getRect(pill).right, closeTo(right, .1));
+              expect(tester.takeException(), isNull);
+            }
+          }
+
+          update(() => active = true);
+          await tester.pump();
+          await frames(40);
+          expect(tester.getSize(pill).width, greaterThan(250));
+          update(() => active = false);
+          await tester.pump();
+          await frames(6);
+          update(() => active = true);
+          await tester.pump();
+          await frames(40);
+          update(() => active = false);
+          await tester.pump();
+          await frames(40);
+          expect(tester.getSize(pill).width, closeTo(48, .1));
+        });
+      }
+    }
+
+    for (final direction in TextDirection.values) {
+      testWidgets(
+          'Reduce Motion updates the search inset immediately when the keyboard '
+          'shows and hides the dismiss pill ($direction)', (tester) async {
+        final focusNode = FocusNode();
+        addTearDown(focusNode.dispose);
+        var keyboardInset = 0.0;
+        late StateSetter update;
+
+        await tester.pumpWidget(createTestApp(
+          child: Directionality(
+            textDirection: direction,
+            child: GlassAccessibilityScope(
+              reduceMotion: true,
+              child: StatefulBuilder(builder: (context, setState) {
+                update = setState;
+                return MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    viewInsets: EdgeInsets.only(bottom: keyboardInset),
+                  ),
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: SizedBox(
+                      width: 390,
+                      child: GlassTabBar.searchable(
+                        tabs: const [GlassTab(label: 'Home')],
+                        selectedIndex: 0,
+                        onTabSelected: (_) {},
+                        isSearchActive: true,
+                        horizontalPadding: 16,
+                        verticalPadding: 0,
+                        barHeight: 48,
+                        searchBarHeight: 48,
+                        spacing: 8,
+                        quality: GlassQuality.minimal,
+                        maskingQuality: MaskingQuality.off,
+                        searchConfig: GlassSearchBarConfig(
+                          focusNode: focusNode,
+                          showsCancelButton: true,
+                          onSearchToggle: (_) {},
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ));
+        await tester.pumpAndSettle();
+        focusNode.requestFocus();
+        await tester.pumpAndSettle();
+
+        final pill = find.byType(SearchPill);
+        final rightWithoutDismiss = tester.getRect(pill).right;
+        expect(focusNode.hasFocus, isTrue);
+        expect(find.byType(DismissPill), findsNothing);
+
+        update(() => keyboardInset = 200);
+        // Retargeting runs after layout; the next frame must use the new inset
+        // without advancing an animation clock.
+        await tester.pump();
+        await tester.pump();
+        final dismiss = tester.getRect(find.byType(DismissPill));
+        expect(dismiss.width, closeTo(48, .1));
+        expect(dismiss.right, closeTo(rightWithoutDismiss, .1));
+        expect(tester.getRect(pill).right, closeTo(dismiss.left - 8, .1));
+        expect(
+            tester.getRect(pill).right, closeTo(rightWithoutDismiss - 56, .1));
+
+        update(() => keyboardInset = 0);
+        await tester.pump();
+        await tester.pump();
+        expect(find.byType(DismissPill), findsNothing);
+        expect(tester.getRect(pill).right, closeTo(rightWithoutDismiss, .1));
+        expect(focusNode.hasFocus, isTrue);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+      });
+    }
+
+    testWidgets(
+        'right inset stays synchronized when controller is swapped after initialization',
+        (tester) async {
+      final focusNode = FocusNode();
+      final controllerA = SearchableBottomBarController();
+      final controllerB = SearchableBottomBarController();
+      addTearDown(focusNode.dispose);
+      addTearDown(controllerA.dispose);
+      addTearDown(controllerB.dispose);
+
+      var useB = false;
+      var keyboardInset = 200.0;
+      late StateSetter update;
+
+      await tester.pumpWidget(createTestApp(
+        child: GlassAccessibilityScope(
+          reduceMotion: true,
+          child: StatefulBuilder(builder: (context, setState) {
+            update = setState;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                viewInsets: EdgeInsets.only(bottom: keyboardInset),
+              ),
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: SizedBox(
+                  width: 390,
+                  child: GlassTabBar.searchable(
+                    controller: useB ? controllerB : controllerA,
+                    tabs: const [GlassTab(label: 'Home')],
+                    selectedIndex: 0,
+                    onTabSelected: (_) {},
+                    isSearchActive: true,
+                    horizontalPadding: 16,
+                    verticalPadding: 0,
+                    barHeight: 48,
+                    searchBarHeight: 48,
+                    spacing: 8,
+                    quality: GlassQuality.minimal,
+                    maskingQuality: MaskingQuality.off,
+                    searchConfig: GlassSearchBarConfig(
+                      focusNode: focusNode,
+                      showsCancelButton: true,
+                      onSearchToggle: (_) {},
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+      ));
+      focusNode.requestFocus();
+      await tester.pumpAndSettle();
+
+      final pill = find.byType(SearchPill);
+      final dismiss = tester.getRect(find.byType(DismissPill));
+      expect(tester.getRect(pill).right, closeTo(dismiss.left - 8, .1));
+
+      // Swap to a fresh uninitialized controller while concurrently hiding
+      // the keyboard so targetSearchRight changes from 56 → 0 across the swap.
+      update(() {
+        useB = true;
+        keyboardInset = 0;
+      });
+      await tester.pumpAndSettle();
+      expect(find.byType(DismissPill), findsNothing);
+      expect(tester.getRect(pill).right, closeTo(dismiss.right, .1));
+    });
+
     // ── Instantiation ─────────────────────────────────────────────────────────
 
     testWidgets('can be instantiated with required parameters', (tester) async {

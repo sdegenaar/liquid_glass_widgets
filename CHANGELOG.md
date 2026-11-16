@@ -3,6 +3,8 @@
 ## Bug Fixes
 
 - **`GlassTabBar.searchable` input client retention & keyboard-lifted hit bounds (PR #489):** Preserves the `CupertinoTextField` input client, selection, and IME composing state across the compact/expanded width threshold via a stable `GlobalKey`, and expands the bottom-accessory wrapper's hit-test bounds to the union of the accessory and lifted search/dismiss pills when the keyboard is up. Thanks to [@wow-sven](https://github.com/wow-sven) for the fix (#489).
+- **`GlassTabBar.searchable` right-edge anchor during parent resize (PR #488):** Animates the search pill's right inset and width (preserving in-flight spring velocity on reversal) instead of independent left and width springs so the pill stays anchored to its trailing inset while a parent container resizes. Thanks to [@wow-sven](https://github.com/wow-sven) for the fix (#488).
+- **Backdrop pop and quadratic fade on `GlassQuality.standard` & `GlassQuality.minimal` (`AdaptiveGlass`, `LightweightLiquidGlass`, `GlassMaterializeScope`):** Wired `LiquidGlassSettings.visibility` directly into `lightweight_glass.frag` (`uRimConfig.w`) and moved child `Opacity` inside `LightweightLiquidGlass` and `_FrostedFallback` so no ancestor `OpacityLayer` wraps `BackdropFilterLayer` during `GlassMaterialize` / `GlassMaterializeTransition`; fixed `t²` double-fading of normalized `standard` settings and post-clamp alpha floors on `minimal` / Reduce Transparency; and kept `GlassMaterializeScope.wrapContent` mounted across `0.0 ↔ 1.0` (`ImageFiltered.enabled`) so stateful children preserve state and focus when transitions start or settle.
 
 # 1.17.4
 
