@@ -219,6 +219,76 @@ void main() {
       });
     }
 
+    testWidgets(
+        'right inset stays synchronized when controller is swapped after initialization',
+        (tester) async {
+      final focusNode = FocusNode();
+      final controllerA = SearchableBottomBarController();
+      final controllerB = SearchableBottomBarController();
+      addTearDown(focusNode.dispose);
+      addTearDown(controllerA.dispose);
+      addTearDown(controllerB.dispose);
+
+      var useB = false;
+      var keyboardInset = 200.0;
+      late StateSetter update;
+
+      await tester.pumpWidget(createTestApp(
+        child: GlassAccessibilityScope(
+          reduceMotion: true,
+          child: StatefulBuilder(builder: (context, setState) {
+            update = setState;
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                viewInsets: EdgeInsets.only(bottom: keyboardInset),
+              ),
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: SizedBox(
+                  width: 390,
+                  child: GlassTabBar.searchable(
+                    controller: useB ? controllerB : controllerA,
+                    tabs: const [GlassTab(label: 'Home')],
+                    selectedIndex: 0,
+                    onTabSelected: (_) {},
+                    isSearchActive: true,
+                    horizontalPadding: 16,
+                    verticalPadding: 0,
+                    barHeight: 48,
+                    searchBarHeight: 48,
+                    spacing: 8,
+                    quality: GlassQuality.minimal,
+                    maskingQuality: MaskingQuality.off,
+                    searchConfig: GlassSearchBarConfig(
+                      focusNode: focusNode,
+                      showsCancelButton: true,
+                      onSearchToggle: (_) {},
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+      ));
+      focusNode.requestFocus();
+      await tester.pumpAndSettle();
+
+      final pill = find.byType(SearchPill);
+      final dismiss = tester.getRect(find.byType(DismissPill));
+      expect(tester.getRect(pill).right, closeTo(dismiss.left - 8, .1));
+
+      // Swap to a fresh uninitialized controller while concurrently hiding
+      // the keyboard so targetSearchRight changes from 56 → 0 across the swap.
+      update(() {
+        useB = true;
+        keyboardInset = 0;
+      });
+      await tester.pumpAndSettle();
+      expect(find.byType(DismissPill), findsNothing);
+      expect(tester.getRect(pill).right, closeTo(dismiss.right, .1));
+    });
+
     // ── Instantiation ─────────────────────────────────────────────────────────
 
     testWidgets('can be instantiated with required parameters', (tester) async {

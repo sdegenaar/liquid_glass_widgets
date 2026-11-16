@@ -363,6 +363,7 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
         _controller = SearchableBottomBarController();
         _ownsController = true;
       }
+      _targetSearchRight = null;
       _controller.addListener(_onControllerChanged);
     }
     if (widget.scrollController != old.scrollController) {
@@ -631,10 +632,6 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                 // and the pill's width spring run on independent clocks.
                 final targetSearchRight =
                     totalW - targetSearchLeft - targetSearchW;
-                final previousRight = _targetSearchRight;
-                final rightChanged = previousRight == null ||
-                    (targetSearchRight - previousRight).abs() > .001;
-                if (rightChanged) _targetSearchRight = targetSearchRight;
                 final targetH =
                     searching ? widget.searchBarHeight : widget.barHeight;
                 final extraTargetW = layout.extraTargetW;
@@ -666,6 +663,7 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                     if (!mounted) return;
                     _tabWCtrl.value = targetTabW;
                     _searchRightCtrl.value = targetSearchRight;
+                    _targetSearchRight = targetSearchRight;
                     _searchWCtrl.value = targetSearchW;
                     _controller.initializePills(
                       tabW: targetTabW,
@@ -675,6 +673,10 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                   });
                 } else if (_controller.pillsInitialized) {
                   final retarget = _controller.checkRetarget(layout);
+                  final previousRight = _targetSearchRight;
+                  final rightChanged = previousRight == null ||
+                      (targetSearchRight - previousRight).abs() > .001;
+                  if (rightChanged) _targetSearchRight = targetSearchRight;
                   if (retarget.tabW || rightChanged || retarget.searchW) {
                     final toTabW = targetTabW;
                     final toRight = targetSearchRight;
@@ -886,12 +888,14 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                         ListenableBuilder(
                           listenable: _searchPillListenable,
                           builder: (context, _) {
-                            final right = _controller.pillsInitialized
-                                ? _searchRightCtrl.value
-                                : targetSearchRight;
-                            final width = _controller.pillsInitialized
-                                ? _searchWCtrl.value
-                                : targetSearchW;
+                            final right = (_controller.pillsInitialized
+                                    ? _searchRightCtrl.value
+                                    : targetSearchRight)
+                                .clamp(0.0, totalW);
+                            final width = (_controller.pillsInitialized
+                                    ? _searchWCtrl.value
+                                    : targetSearchW)
+                                .clamp(0.0, totalW);
                             final curSearchLeft =
                                 (totalW - right - width).clamp(0.0, totalW);
                             return Positioned(
