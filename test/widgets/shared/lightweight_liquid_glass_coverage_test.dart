@@ -151,6 +151,7 @@ void main() {
       const LiquidRoundedSuperellipse(borderRadius: 20),
       const LiquidOval(),
       const LiquidRoundedRectangle(borderRadius: 12),
+      const LiquidVerticalRoundedRectangle(topRadius: 30, bottomRadius: 10),
       const LiquidVerticalRoundedSuperellipse(topRadius: 30, bottomRadius: 10),
     ]) {
       testWidgets('${shape.runtimeType} renders without crash', (tester) async {

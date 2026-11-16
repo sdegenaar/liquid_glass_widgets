@@ -52,7 +52,7 @@ When modifying fragment shaders in `shaders/`:
 
 ## 4. Git & Release Conventions
 
-- **No Direct Commits to `main`**: All features and fixes must go through feature branches and pull requests.
+- **No Unprompted Commits to `main`**: Default to feature branches and pull requests unless the user explicitly asks to work or commit directly on `main`.
 - **CHANGELOG Updates**: Non-trivial changes must be documented in `CHANGELOG.md` following the established release format.
 - **Zero Hallucination Rule**: Never introduce speculative parameters or undocumented imports. Verify against the actual Dart source in `lib/`.
 
