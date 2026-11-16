@@ -129,7 +129,8 @@ void main() {
       await tester.pump();
 
       // At glassProgress 0.0, visibility is 0 -> should render zero opacity
-      final opacityWidgets = tester.widgetList<Opacity>(find.byType(Opacity));
+      final opacityWidgets = tester.widgetList<GlassControlledOpacity>(
+          find.byType(GlassControlledOpacity));
       expect(opacityWidgets.any((op) => op.opacity == 0.0), isTrue);
     });
 
@@ -233,7 +234,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Partial Visibility Content'), findsOneWidget);
-      final opacityWidgets = tester.widgetList<Opacity>(find.byType(Opacity));
+      final opacityWidgets = tester.widgetList<GlassControlledOpacity>(
+          find.byType(GlassControlledOpacity));
       expect(opacityWidgets.any((op) => op.opacity == 0.5), isTrue);
     });
 

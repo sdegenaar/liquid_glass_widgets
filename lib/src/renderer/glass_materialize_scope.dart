@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
 import '../engine/liquid_glass_settings.dart';
@@ -72,25 +73,22 @@ class GlassMaterializeScope extends InheritedWidget {
 
   /// Applies the nearest scope's content channel around [child].
   ///
-  /// Returns [child] untouched when no scope is present or the content
-  /// channel is itself at rest. It deliberately does *not* test
-  /// [glassProgress]: the two channels are staggered, so the glass reaches
-  /// 1.0 while the content is still sharpening. Gating this on the glass
-  /// dropped the blur in a single frame at that crossing — the icon snapped
-  /// between sharp and soft with the glass shell unchanged around it.
-  ///
-  /// The opacity and filter widgets are otherwise both always present, even
-  /// at a momentary sigma of zero, so the child's element tree keeps one
-  /// shape for the whole of a transition.
+  /// Returns [child] untouched when no scope is present. When a scope is
+  /// present, [Opacity] and [ImageFiltered] stay mounted at every progress
+  /// (with `enabled: scope.contentSigma > 0.0` so resting content pushes zero
+  /// compositing layers) — keeping the child's element depth constant across
+  /// `0.0 ↔ 1.0` so stateful children (such as focused inputs or scrollables
+  /// inside a materializing dialog) never remount when a transition starts or
+  /// settles.
   static Widget wrapContent(BuildContext context, Widget child) {
     final scope = maybeOf(context);
-    if (scope == null ||
-        (scope.contentOpacity >= 1.0 && scope.contentSigma <= 0.0)) {
+    if (scope == null) {
       return child;
     }
-    return Opacity(
-      opacity: scope.contentOpacity.clamp(0.0, 1.0),
+    return GlassControlledOpacity(
+      opacity: scope.contentOpacity,
       child: ImageFiltered(
+        enabled: scope.contentSigma > 0.0,
         imageFilter: ui.ImageFilter.blur(
           sigmaX: scope.contentSigma,
           sigmaY: scope.contentSigma,
@@ -116,4 +114,47 @@ class GlassMaterializeScope extends InheritedWidget {
       glassProgress != oldWidget.glassProgress ||
       contentOpacity != oldWidget.contentOpacity ||
       contentSigma != oldWidget.contentSigma;
+}
+
+/// An opacity wrapper that stays mounted across `0.0 ↔ 1.0` for stable child
+/// element identity, while setting `alwaysNeedsCompositing = false` (and thus
+/// `isRepaintBoundary = false`) at both `alpha == 0` and `alpha == 255` (`1.0`).
+///
+/// Subclasses Flutter's [RenderOpacity] (`rendering/proxy_box.dart`), which
+/// sets `alwaysNeedsCompositing => child != null && _alpha > 0` and keeps an
+/// [OpacityLayer] + repaint boundary alive even at `opacity == 1.0` — forcing
+/// `needsCompositing = true` on resting glass ancestors when `blur == 0` or
+/// shaders are unloaded. Overriding [RenderOpacity.alwaysNeedsCompositing]
+/// inherits all framework paint, layer-update, and semantics logic verbatim.
+class GlassControlledOpacity extends SingleChildRenderObjectWidget {
+  /// Creates an opacity wrapper that only requests compositing when fractional.
+  const GlassControlledOpacity({
+    required this.opacity,
+    required super.child,
+    super.key,
+  });
+
+  /// Target opacity, clamped to `[0.0, 1.0]`.
+  final double opacity;
+
+  @override
+  RenderOpacity createRenderObject(BuildContext context) =>
+      _RenderGlassControlledOpacity(opacity: opacity.clamp(0.0, 1.0));
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    covariant RenderOpacity renderObject,
+  ) {
+    renderObject.opacity = opacity.clamp(0.0, 1.0);
+  }
+}
+
+class _RenderGlassControlledOpacity extends RenderOpacity {
+  _RenderGlassControlledOpacity({required super.opacity});
+
+  @override
+  bool get alwaysNeedsCompositing =>
+      super.alwaysNeedsCompositing &&
+      ui.Color.getAlphaFromOpacity(opacity) < 255;
 }
