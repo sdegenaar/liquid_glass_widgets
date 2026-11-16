@@ -16,14 +16,21 @@ void main() {
       addTearDown(tester.view.resetViewInsets);
       var active = true;
       var closed = false;
+      var bodyTapped = false;
+      var barTapped = false;
       await tester.pumpWidget(MaterialApp(
         home: StatefulBuilder(builder: (context, setState) {
           return GlassScaffold(
             // The searchable bar owns the keyboard lift.
             resizeToAvoidBottomInset: false,
-            body: const SizedBox.expand(),
+            body: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => bodyTapped = true,
+              child: const SizedBox.expand(),
+            ),
             bottomBar: GlassTabBar.searchable(
               quality: GlassQuality.minimal,
+              onBarTap: () => barTapped = true,
               tabs: const [
                 GlassTab(label: 'Home'),
                 GlassTab(label: 'Training')
@@ -57,6 +64,15 @@ void main() {
       );
       expect(close, findsOneWidget);
       expect(close.hitTestable(), findsOneWidget);
+
+      // Tapping in the body just above the lifted search bar's top padding
+      // must reach the body rather than an oversized accessory wrapper.
+      final closeRect = tester.getRect(close);
+      await tester.tapAt(Offset(closeRect.center.dx, closeRect.top - 30));
+      await tester.pump();
+      expect(bodyTapped, isTrue);
+      expect(barTapped, isFalse);
+
       await tester.tap(close);
       await tester.pumpAndSettle();
       expect(closed, isTrue);
