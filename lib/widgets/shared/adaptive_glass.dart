@@ -211,23 +211,13 @@ class AdaptiveGlass extends StatelessWidget {
     // The content channel fades and blurs the child on the tiers that render
     // it as plain paint. Premium/grouped children flow through [LiquidGlass],
     // which applies the same wrap internally.
-    final content = GlassMaterializeScope.wrapContent(context, child);
-
-    // ---- FULLY DEMATERIALIZED FAST-PATH --------------------------------------
-    // A surface faded to nothing renders nothing, and has to say so before any
-    // tier selection runs. `effectiveBlur` is blur × visibility, so fading a
-    // surface out drives it to zero and would route it into the frosted
-    // fallback below — a renderer with no notion of visibility, which leaves a
-    // solid tinted disc exactly where the glass was supposed to have gone.
     //
-    // Zero opacity rather than the bare child: the premium path wraps content
-    // in `Opacity(settings.visibility)`, so at zero the icon goes with the
-    // glass. Returning the child unwrapped made it pop back into view at the
-    // exact moment the surface finished disappearing.
-    // --------------------------------------------------------------------------
-    if (baseSettings.visibility <= 0.0) {
-      return Opacity(opacity: 0.0, child: content);
-    }
+    // Note: there is intentionally no early `if (visibility <= 0) return Opacity`
+    // branch here — every rendering tier below natively skips painting and
+    // semantics at visibility == 0.0 while keeping the exact same widget tree
+    // mounted across `0.0 ↔ 0.5 ↔ 1.0` so stateful children (e.g. focused
+    // inputs inside GlassDialog.show on frame 0) never remount on frame 1.
+    final content = GlassMaterializeScope.wrapContent(context, child);
 
     // ---- MINIMAL FAST-PATH ---------------------------------------------------
     // GlassQuality.minimal bypasses all custom shaders. Renders via
@@ -367,7 +357,7 @@ class AdaptiveGlass extends StatelessWidget {
       if (skipNormalization) {
         normalizedSettings = standardSettings.copyWith(
           glassColor: standardSettings.glassColor.withValues(
-            alpha: (standardSettings.effectiveGlassColor.a *
+            alpha: (standardSettings.glassColor.a *
                     standardSettings.standardOpacityMultiplier)
                 .clamp(0.0, 1.0),
           ),
@@ -376,38 +366,38 @@ class AdaptiveGlass extends StatelessWidget {
         // Frosting normalization: adapts Premium settings for the 2D shader.
         // Thickness scaled down (2D inner shadows look much thicker than 3D bevels).
         // Light intensity scaled down (2D gradients look brighter than 3D speculars).
+        // Transform raw fields (not effective*) so visibility stays un-baked on
+        // the settings object and fades linearly once in LightweightLiquidGlass.
         normalizedSettings = standardSettings.copyWith(
-          thickness: (standardSettings.effectiveThickness * 0.4)
-              .clamp(0.0, double.infinity),
+          thickness:
+              (standardSettings.thickness * 0.4).clamp(0.0, double.infinity),
           lightIntensity:
-              (standardSettings.effectiveLightIntensity * 0.6).clamp(0.0, 10.0),
+              (standardSettings.lightIntensity * 0.6).clamp(0.0, 10.0),
           glassColor: standardSettings.glassColor.withValues(
-            alpha: (standardSettings.effectiveGlassColor.a *
+            alpha: (standardSettings.glassColor.a *
                     standardSettings.standardOpacityMultiplier)
                 .clamp(0.0, 1.0),
           ),
         );
       }
 
-      // Apply subtle elevation boost to settings (preserves saturation and all
-      // native material fields such as fresnelStrength, edgeAbsorption, and rim).
-      final color = normalizedSettings.effectiveGlassColor;
+      // Apply subtle elevation boost to settings (preserves saturation,
+      // visibility, and all native material fields such as fresnelStrength,
+      // edgeAbsorption, and rim).
       final effectiveSettings = shouldElevate
           ? normalizedSettings.copyWith(
-              glassColor: color,
-              thickness: normalizedSettings.effectiveThickness,
-              lightIntensity: (normalizedSettings.effectiveLightIntensity * 1.2)
-                  .clamp(0.0, 10.0),
-              blur: normalizedSettings.effectiveBlur,
-              saturation: normalizedSettings.effectiveSaturation,
+              lightIntensity:
+                  (normalizedSettings.lightIntensity * 1.2).clamp(0.0, 10.0),
               ambientStrength:
-                  (normalizedSettings.effectiveAmbientStrength * 0.4)
-                      .clamp(0.0, 1.0),
+                  (normalizedSettings.ambientStrength * 0.4).clamp(0.0, 1.0),
             )
           : normalizedSettings;
 
       // If this is a container (allowElevation=false), we are providing a blur
       // for all our children to use. We update the InheritedLiquidGlass tree.
+      // Visibility fades inside LightweightLiquidGlass (uVisibility uniform +
+      // child-only Opacity) so no ancestor OpacityLayer ever wraps its
+      // BackdropFilterLayer.
       if (!allowElevation) {
         final Widget container = LightweightLiquidGlass(
           shape: shape,
@@ -423,11 +413,7 @@ class AdaptiveGlass extends StatelessWidget {
             child: content,
           ),
         );
-        return _wrapWithDecorations(
-          context,
-          baseSettings,
-          _fadeLightweight(baseSettings, container),
-        );
+        return _wrapWithDecorations(context, baseSettings, container);
       }
 
       // Elevated widgets use PATH B (no backgroundKey). They composite via
@@ -441,11 +427,7 @@ class AdaptiveGlass extends StatelessWidget {
         child: content,
       );
 
-      return _wrapWithDecorations(
-        context,
-        baseSettings,
-        _fadeLightweight(baseSettings, lightweightWidget),
-      );
+      return _wrapWithDecorations(context, baseSettings, lightweightWidget);
     }
 
     // Impeller + Premium Path: Use the renderer's native path.
@@ -505,7 +487,7 @@ class AdaptiveGlass extends StatelessWidget {
 
       // If we bypassed the GPU cutout shadow, apply the standard CSS-style shadow instead
       if (useFallbackShadow &&
-          baseSettings.effectiveShadow.isNotEmpty &&
+          _hasConfiguredShadow(baseSettings) &&
           !isDark &&
           !_FrostedFallback._isFlatEdge(shape)) {
         return _wrapWithLightModeShadow(context, baseSettings, premiumTracker);
@@ -539,20 +521,26 @@ class AdaptiveGlass extends StatelessWidget {
   // Suppressed for flat-edge shapes (borderRadius: 0) like app bars and bottom
   // bars, which span edge-to-edge and don't need individual elevation.
   // ---------------------------------------------------------------------------
+  static bool _hasConfiguredShadow(LiquidGlassSettings settings) =>
+      settings.shadow != null
+          ? settings.shadow!.isNotEmpty
+          : settings.shadowElevation > 0;
+
   Widget _wrapWithLightModeShadow(
       BuildContext context, LiquidGlassSettings baseSettings, Widget glass) {
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
 
-    // Skip shadow in dark mode or for flat-edge shapes (bars, full-width surfaces).
-    if (isDark || _FrostedFallback._isFlatEdge(shape)) {
+    // Skip shadow in dark mode, for flat-edge shapes, or when no shadow is
+    // configured at rest. Checking resting configuration (rather than
+    // effectiveShadow, which is empty at visibility == 0.0) keeps the Stack
+    // mounted across 0.0 ↔ 1.0 so [glass] never remounts on frame 1.
+    if (isDark ||
+        _FrostedFallback._isFlatEdge(shape) ||
+        !_hasConfiguredShadow(baseSettings)) {
       return glass;
     }
 
-    // Resolve the shadow from settings (per-widget or inherited).
     final shadows = baseSettings.effectiveShadow;
-    if (shadows.isEmpty) return glass;
-
-    // Extract border radius from the shape for the shadow decoration.
     final borderRadius = _borderRadiusFromShape(shape);
 
     return Stack(
@@ -563,22 +551,23 @@ class AdaptiveGlass extends StatelessWidget {
         glass,
 
         // 2. The drop shadow (painted on top, but inverse-clipped so it only
-        // appears OUTSIDE the glass). This prevents the glass from blurring its
-        // own shadow, which would otherwise create a dirty dark rim.
-        Positioned.fill(
-          child: IgnorePointer(
-            child: ClipPath(
-              clipBehavior: Clip.antiAlias,
-              clipper: _InverseShapeClipper(shape),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: borderRadius,
-                  boxShadow: shadows,
+        // appears OUTSIDE the glass). Omitted when fully dematerialized
+        // (shadows.isEmpty) without shifting [glass]'s slot in the Stack.
+        if (shadows.isNotEmpty)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: ClipPath(
+                clipBehavior: Clip.antiAlias,
+                clipper: _InverseShapeClipper(shape),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: borderRadius,
+                    boxShadow: shadows,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -611,36 +600,18 @@ class AdaptiveGlass extends StatelessWidget {
   // like the shadow, inserting a Stack between a grouped glass and its shared
   // layer would break metaball morphing.
   // ---------------------------------------------------------------------------
-  /// Composites a lightweight-tier surface at its visibility.
-  ///
-  /// The lightweight shader has no visibility uniform — it renders at full
-  /// strength whatever the settings say — so a surface fading out on this tier
-  /// never actually goes. Compositing the finished result is legal here in a
-  /// way it is not on the premium path: this is an ordinary painted shader,
-  /// not a backdrop pass.
-  ///
-  /// Only while it bites. An [Opacity] left in the tree at full visibility is
-  /// a no-op as a blend, but not as a render object: [LightweightLiquidGlass]
-  /// captures its backdrop through a [RenderRepaintBoundary], and an extra
-  /// object in that subtree changes what gets captured. That cost is what
-  /// reverted the earlier always-on form.
-  static Widget _fadeLightweight(LiquidGlassSettings settings, Widget glass) =>
-      settings.visibility >= 1.0
-          ? glass
-          : Opacity(
-              opacity: settings.visibility.clamp(0.0, 1.0),
-              child: glass,
-            );
-
   Widget _wrapWithBacker(LiquidGlassSettings baseSettings, Widget glass) {
-    final backerColor = baseSettings.effectiveBackerColor;
-    if (backerColor == null || backerColor.a == 0) return glass;
+    final configuredBacker = baseSettings.backerColor;
+    if (configuredBacker == null || configuredBacker.a == 0) return glass;
+    final backerColor = baseSettings.effectiveBackerColor!;
 
     return Stack(
       fit: StackFit.passthrough,
       clipBehavior: Clip.none,
       children: [
         // 1. The dimming pad — BEHIND the glass, clipped to the glass shape.
+        // Kept in place even at alpha == 0 (ColoredBox skips paint when
+        // alpha == 0) so [glass] keeps its Stack slot across 0.0 ↔ 1.0.
         Positioned.fill(
           child: IgnorePointer(
             child: _ShapeClip(
@@ -740,22 +711,18 @@ class _VibrancyFill extends StatelessWidget {
     );
     final content = GlassMaterializeScope.wrapContent(context, child);
 
-    if (baseSettings.visibility <= 0.0) {
-      return Opacity(opacity: 0.0, child: content);
-    }
-
-    // Apply whitenStrength veil — same ramp as _FrostedFallback so a single
-    // whitenStrength value reads consistently across all rendering tiers.
+    // Apply whitenStrength veil from resting settings — GlassControlledOpacity
+    // below fades the entire vector stack linearly across 0.0 ↔ 1.0 without
+    // t² double-fading, 0.08 floor snapping, or subtree remounts.
     const double kWhitenVeilGain = 1.5;
     final double whiten =
-        baseSettings.effectiveWhitenStrength.clamp(0.0, 1.0).toDouble();
+        baseSettings.whitenStrength.clamp(0.0, 1.0).toDouble();
     final double veil = whiten <= 0.0
         ? 0.0
         : (whiten * kWhitenVeilGain).clamp(0.0, 1.0).toDouble();
     final tint = veil <= 0.0
-        ? baseSettings.effectiveGlassColor
-        : Color.lerp(
-            baseSettings.effectiveGlassColor, const Color(0xFFFFFFFF), veil)!;
+        ? baseSettings.glassColor
+        : Color.lerp(baseSettings.glassColor, const Color(0xFFFFFFFF), veil)!;
 
     // Alpha: lighter ceiling than _FrostedFallback — nested glass is always
     // behind a parent blur surface and must not look like an opaque panel.
@@ -793,7 +760,7 @@ class _VibrancyFill extends StatelessWidget {
                 child: CustomPaint(
                   painter: _SpecularRimPainter(
                     shape: shape,
-                    settings: baseSettings,
+                    settings: settings,
                   ),
                 ),
               ),
@@ -802,12 +769,10 @@ class _VibrancyFill extends StatelessWidget {
       ],
     );
 
-    return baseSettings.visibility >= 1.0
-        ? stack
-        : Opacity(
-            opacity: baseSettings.visibility.clamp(0.0, 1.0),
-            child: stack,
-          );
+    return GlassControlledOpacity(
+      opacity: baseSettings.visibility,
+      child: stack,
+    );
   }
 }
 
@@ -901,18 +866,17 @@ class _FrostedFallback extends StatelessWidget {
     // ramp uses the same gain as the Standard path so a single whitenStrength
     // value reads consistently across tiers. Minimal's tint is already a
     // uniform flat fill, so this lerp is the whole whiten here.
+    final double visibility = settings.visibility.clamp(0.0, 1.0);
     const double kWhitenVeilGain = 1.5;
-    final double whiten =
-        settings.effectiveWhitenStrength.clamp(0.0, 1.0).toDouble();
+    final double whiten = settings.whitenStrength.clamp(0.0, 1.0).toDouble();
     final double veil = whiten <= 0.0
         ? 0.0
         : (whiten * kWhitenVeilGain).clamp(0.0, 1.0).toDouble();
     final tint = veil <= 0.0
-        ? settings.effectiveGlassColor
-        : Color.lerp(
-            settings.effectiveGlassColor, const Color(0xFFFFFFFF), veil)!;
+        ? settings.glassColor
+        : Color.lerp(settings.glassColor, const Color(0xFFFFFFFF), veil)!;
 
-    final double frostedAlpha = isAccessibilityFallback
+    final double rawFrostedAlpha = isAccessibilityFallback
         // Accessibility: boost opacity so content remains legible
         // even when Reduce Transparency removes blur on older hardware.
         ? (tint.a * 0.5 + 0.40).clamp(0.40, 0.80)
@@ -921,7 +885,11 @@ class _FrostedFallback extends StatelessWidget {
         : settings.bodyMode == GlassBodyMode.clear
             ? tint.a.clamp(0.0, 1.0)
             : tint.a.clamp(0.05, 1.0);
-    final frostedColor = tint.withValues(alpha: frostedAlpha);
+    // Scale post-clamp alpha by visibility so minimal and accessibility floors
+    // (0.05 / 0.40) dissolve smoothly to 0.0 without snapping or t² fading.
+    final frostedColor = tint.withValues(
+      alpha: (rawFrostedAlpha * visibility).clamp(0.0, 1.0),
+    );
 
     final sat = settings.effectiveSaturation;
     final bool needsSaturation = (sat - 1.0).abs() > 0.01;
@@ -1017,7 +985,7 @@ class _FrostedFallback extends StatelessWidget {
                 color: (GlassTheme.brightnessOf(context) == Brightness.dark
                         ? CupertinoColors.white
                         : CupertinoColors.black)
-                    .withValues(alpha: 0.15 * glowIntensity),
+                    .withValues(alpha: 0.15 * glowIntensity * visibility),
               ),
             ),
           ),
@@ -1025,10 +993,15 @@ class _FrostedFallback extends StatelessWidget {
         // Text and contents MUST be strictly clipped to corner radii.
         // Same ClipRRect-over-ClipPath rationale as the blur body
         // above — see the [_ShapeClip] doc comment.
+        // Opacity wraps only the child (sibling above BackdropFilter, never an
+        // ancestor of BackdropFilterLayer) and stays mounted for stable identity.
         _ShapeClip(
           shape: shape,
           platformViewBackdrop: platformViewBackdrop,
-          child: child,
+          child: GlassControlledOpacity(
+            opacity: visibility,
+            child: child,
+          ),
         ),
 
         // Specular Rim: drawn as a pure native overlay vector perfectly on top.

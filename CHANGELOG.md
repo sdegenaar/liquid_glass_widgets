@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- **Backdrop pop and quadratic fade on `GlassQuality.standard` & `GlassQuality.minimal` (`AdaptiveGlass`, `LightweightLiquidGlass`, `GlassMaterializeScope`):** Wired `LiquidGlassSettings.visibility` directly into `lightweight_glass.frag` (`uRimConfig.w`) and moved child `Opacity` inside `LightweightLiquidGlass` and `_FrostedFallback` so no ancestor `OpacityLayer` wraps `BackdropFilterLayer` during `GlassMaterialize` / `GlassMaterializeTransition`; fixed `t²` double-fading of normalized `standard` settings and post-clamp alpha floors on `minimal` / Reduce Transparency; and kept `GlassMaterializeScope.wrapContent` mounted across `0.0 ↔ 1.0` (`ImageFiltered.enabled`) so stateful children preserve state and focus when transitions start or settle.
+
 # 1.17.4
 
 ## Features
