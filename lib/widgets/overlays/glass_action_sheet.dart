@@ -186,7 +186,7 @@ Future<T?> showGlassActionSheet<T>({
   if (style != GlassStyle.classic) {
     // ios26 / ios27: the native action sheet is the alert platter with
     // stacked actions (Cancel included), centred on screen.
-    return showCupertinoDialog<T>(
+    return pushGlassAlertRoute<T>(
       context: context,
       barrierDismissible: barrierDismissible,
       barrierColor: glassAlertBarrierColor(isDark: isDark),
