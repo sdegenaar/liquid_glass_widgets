@@ -481,7 +481,14 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
       backdropLuma: backdropLuma,
       backgroundImage: _backgroundImage,
       backgroundKey: widget.backgroundKey,
-      child: widget.child,
+      // Always keep GlassControlledOpacity mounted so element identity stays
+      // stable across visibility transitions (1.0 ↔ <1.0) with zero compositing
+      // flag overhead at 1.0 or 0.0, and inside BackdropFilterLayer when
+      // 0.0 < alpha < 1.0.
+      child: GlassControlledOpacity(
+        opacity: settings.visibility,
+        child: widget.child,
+      ),
     );
 
     // ClipRRect matches lightweight_glass.frag's circular-arc RRect SDF
@@ -767,11 +774,13 @@ class _RenderLightweightGlass extends RenderProxyBox
 
   @override
   void paint(PaintingContext context, Offset offset) {
-    if (child == null) return;
+    if (child == null || _settings.visibility <= 0.0) return;
 
     if (_shader == null) {
       final paint = Paint()
-        ..color = _settings.effectiveGlassColor.withValues(alpha: 0.15);
+        ..color = _settings.glassColor.withValues(
+          alpha: (0.15 * _settings.visibility).clamp(0.0, 1.0),
+        );
       context.canvas.drawRect(offset & size, paint);
       super.paint(context, offset);
       return;
@@ -890,23 +899,28 @@ class _RenderLightweightGlass extends RenderProxyBox
     // also works over platform views, where BackdropFilter color ops don't
     // apply. The gain calibrates the veil so a single whitenStrength value
     // reads close to the Premium path's gated whiten at the same value.
+    // Material uniforms are uploaded at their resting strength and scaled once
+    // as a premultiplied output in lightweight_glass.frag via uRimConfig.w
+    // (uVisibility). Passing effective* values here as well would fade body
+    // alpha, rim, and specular quadratically (t²), while constant frost/darken
+    // floors in the shader would never reach zero without uVisibility.
     final double whitenStrength =
-        _settings.effectiveWhitenStrength.clamp(0.0, 1.0).toDouble();
+        _settings.whitenStrength.clamp(0.0, 1.0).toDouble();
     const double kWhitenVeilGain = 1.5;
     final double whitenVeil =
         (whitenStrength * kWhitenVeilGain).clamp(0.0, 1.0).toDouble();
     final color = whitenVeil <= 0.0
-        ? _settings.effectiveGlassColor
+        ? _settings.glassColor
         // Whitelisted: Used in Color.lerp for glass veil tint math anchor, not a theme color.
-        : Color.lerp(_settings.effectiveGlassColor, const Color(0xFFFFFFFF),
-            whitenVeil)!;
+        : Color.lerp(
+            _settings.glassColor, const Color(0xFFFFFFFF), whitenVeil)!;
     shader.setFloat(index++, (color.r * 255.0).round().clamp(0, 255) / 255.0);
     shader.setFloat(index++, (color.g * 255.0).round().clamp(0, 255) / 255.0);
     shader.setFloat(index++, (color.b * 255.0).round().clamp(0, 255) / 255.0);
     shader.setFloat(index++, color.a.clamp(0.0, 1.0));
 
     // 8: uThickness (float)
-    shader.setFloat(index++, _settings.effectiveThickness);
+    shader.setFloat(index++, _settings.thickness);
 
     // 9, 10: uLightDirection (vec2) - [cos(angle), -sin(angle)]
     // lightAngle is in radians (per LiquidGlassSettings API).
@@ -915,7 +929,7 @@ class _RenderLightweightGlass extends RenderProxyBox
     shader.setFloat(index++, _cachedLightSin);
 
     // 11: uLightIntensity (float)
-    shader.setFloat(index++, _settings.effectiveLightIntensity);
+    shader.setFloat(index++, _settings.lightIntensity);
 
     // 12: uAmbientStrength (float)
     //
@@ -939,21 +953,21 @@ class _RenderLightweightGlass extends RenderProxyBox
     //
     // This only affects the Skia/Web lightweight shader path.
     // Impeller uses a different physical model and is completely unaffected.
-    final gc = _settings.effectiveGlassColor;
+    final gc = _settings.glassColor;
     final glassLuminance =
         0.2126 * gc.r + 0.7152 * gc.g + 0.0722 * gc.b; // ITU-R Rec.709
     final brightnessIntent = gc.a * glassLuminance * 0.6;
     final effectiveAmbient = math.max(
-      _settings.effectiveAmbientStrength,
+      _settings.ambientStrength,
       brightnessIntent,
     );
     shader.setFloat(index++, effectiveAmbient);
 
     // 13: uSaturation (float)
-    shader.setFloat(index++, _settings.effectiveSaturation);
+    shader.setFloat(index++, _settings.saturation);
 
     // 14: uRefractiveIndex (float)
-    shader.setFloat(index++, _settings.effectiveRefractiveIndex);
+    shader.setFloat(index++, _settings.refractiveIndex);
 
     // 15: uChromaticAberration (float)
     shader.setFloat(index++, (_settings.chromaticAberration).clamp(0.0, 1.0));
@@ -1050,10 +1064,10 @@ class _RenderLightweightGlass extends RenderProxyBox
     shader.setFloat(
         index++, _settings.bodyMode == GlassBodyMode.clear ? 1.0 : 0.0);
 
-    // 35..38 (uRimConfig): (rimShade, rimLight, rimShadeEnds, reserved)
+    // 35..38 (uRimConfig): (rimShade, rimLight, rimShadeEnds, visibility)
     shader.setFloat(index++, _settings.rimShade.clamp(0.0, 4.0));
     shader.setFloat(index++, _settings.rimLight.clamp(0.0, 4.0));
     shader.setFloat(index++, _settings.rimShadeEnds.clamp(0.0, 1.0));
-    shader.setFloat(index++, 0.0);
+    shader.setFloat(index++, _settings.visibility.clamp(0.0, 1.0));
   }
 }

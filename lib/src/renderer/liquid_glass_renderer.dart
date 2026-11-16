@@ -29,7 +29,8 @@ export '../engine/stretch.dart'
         OffsetResistanceExtension,
         RawLiquidStretch;
 
-export 'glass_materialize_scope.dart' show GlassMaterializeScope;
+export 'glass_materialize_scope.dart'
+    show GlassControlledOpacity, GlassMaterializeScope;
 export 'liquid_glass_self_scale_scope.dart' show LiquidGlassSelfScaleScope;
 
 /// Whether to paint the liquid glass geometry texture for debugging purposes.
