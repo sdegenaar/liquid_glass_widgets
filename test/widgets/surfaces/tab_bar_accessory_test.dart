@@ -5,6 +5,85 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/widgets/surfaces/tab_bar_searchable_layout.dart';
 
 void main() {
+  for (final placement in GlassTabBarAccessoryPlacement.values) {
+    testWidgets(
+        'search close is tappable above keyboard with $placement accessory',
+        (tester) async {
+      final focus = FocusNode();
+      final input = TextEditingController();
+      addTearDown(focus.dispose);
+      addTearDown(input.dispose);
+      addTearDown(tester.view.resetViewInsets);
+      var active = true;
+      var closed = false;
+      var bodyTapped = false;
+      var barTapped = false;
+      await tester.pumpWidget(MaterialApp(
+        home: StatefulBuilder(builder: (context, setState) {
+          return GlassScaffold(
+            // The searchable bar owns the keyboard lift.
+            resizeToAvoidBottomInset: false,
+            body: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => bodyTapped = true,
+              child: const SizedBox.expand(),
+            ),
+            bottomBar: GlassTabBar.searchable(
+              quality: GlassQuality.minimal,
+              onBarTap: () => barTapped = true,
+              tabs: const [
+                GlassTab(label: 'Home'),
+                GlassTab(label: 'Training')
+              ],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              isSearchActive: active,
+              searchConfig: GlassSearchBarConfig(
+                controller: input,
+                focusNode: focus,
+                onSearchToggle: (value) => setState(() => active = value),
+                cancelButtonSemanticLabel: 'Close search',
+                onCancelTap: () {
+                  closed = true;
+                  focus.unfocus();
+                  setState(() => active = false);
+                },
+              ),
+              bottomAccessoryPlacement: placement,
+              bottomAccessoryHeight: 50,
+              bottomAccessory: const SizedBox(height: 50),
+            ),
+          );
+        }),
+      ));
+      focus.requestFocus();
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      await tester.pumpAndSettle();
+      final close = find.byWidgetPredicate(
+        (widget) => widget is GlassButton && widget.label == 'Close search',
+      );
+      expect(close, findsOneWidget);
+      expect(close.hitTestable(), findsOneWidget);
+
+      // Tapping in the body just above the lifted search bar's top padding
+      // must reach the body rather than an oversized accessory wrapper.
+      final closeRect = tester.getRect(close);
+      await tester.tapAt(Offset(closeRect.center.dx, closeRect.top - 30));
+      await tester.pump();
+      expect(bodyTapped, isTrue);
+      expect(barTapped, isFalse);
+
+      await tester.tap(close);
+      await tester.pumpAndSettle();
+      expect(closed, isTrue);
+      expect(active, isFalse);
+      expect(focus.hasFocus, isFalse);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpAndSettle();
+    });
+  }
+
   group('GlassTabBar Accessory iOS 26 Layout', () {
     testWidgets('searchable placement uses TweenAnimationBuilder',
         (tester) async {

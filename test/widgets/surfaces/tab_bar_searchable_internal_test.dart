@@ -875,6 +875,68 @@ void main() {
     });
   });
 
+  testWidgets('expanding from an icon retains focus and the text input client',
+      (tester) async {
+    final focus = FocusNode();
+    final input = TextEditingController(text: 'Bench');
+    addTearDown(focus.dispose);
+    addTearDown(input.dispose);
+    final events = <bool>[];
+
+    Widget pill(double width) => _wrap(
+          SearchPill(
+            config: _config(controller: input, focusNode: focus),
+            isActive: true,
+            barBorderRadius: 28,
+            quality: GlassQuality.minimal,
+            enableBackgroundAnimation: true,
+            backgroundPressScale: 1.06,
+            onFocusChanged: events.add,
+          ),
+          width: width,
+          height: 56,
+        );
+
+    await tester.pumpWidget(pill(56));
+    focus.requestFocus();
+    await tester.pump();
+    final editor = tester.state<EditableTextState>(find.byType(EditableText));
+    const editingValue = TextEditingValue(
+      text: 'Bench',
+      selection: TextSelection(baseOffset: 1, extentOffset: 4),
+      composing: TextRange(start: 0, end: 5),
+    );
+    tester.testTextInput.updateEditingValue(editingValue);
+    await tester.pump();
+    expect(input.value, editingValue);
+    expect(tester.testTextInput.isVisible, isTrue);
+    tester.testTextInput.log.clear();
+    events.clear();
+
+    // Cross the compact/expanded threshold in both directions, including
+    // a reversal during the spring animation. No second tap may be needed.
+    for (final width in [80.0, 96.0, 88.0, 120.0, 300.0]) {
+      await tester.pumpWidget(pill(width));
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(tester.state<EditableTextState>(find.byType(EditableText)),
+          same(editor));
+      expect(focus.hasFocus, isTrue);
+      expect(tester.testTextInput.isVisible, isTrue);
+      expect(input.value, editingValue);
+    }
+    expect(events, isNot(contains(false)));
+    expect(
+      tester.testTextInput.log.where((call) =>
+          call.method == 'TextInput.hide' ||
+          call.method == 'TextInput.clearClient' ||
+          call.method == 'TextInput.setClient'),
+      isEmpty,
+    );
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+  });
+
   group('SearchPill — onFocusChanged callback', () {
     testWidgets('notifies parent when focus changes', (tester) async {
       final focus = FocusNode();

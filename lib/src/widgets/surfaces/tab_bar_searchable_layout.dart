@@ -1155,6 +1155,12 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
           accessoryH;
 
       final innerBarContent = barContent;
+      // The inner bar lifts its search and dismiss pills above the keyboard.
+      // Include that lift in every ancestor's hit-test bounds, not just the
+      // inner bar: Clip.none permits painting outside a Stack, not tapping it.
+      final keyboardLift = _controller.searchFocused
+          ? MediaQuery.viewInsetsOf(context).bottom
+          : 0.0;
 
       // Must resolve identically to GlassTabBar.preferredSize's call, or the
       // scaffold reserves a height this engine does not draw.
@@ -1184,9 +1190,15 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutCubic,
           builder: (context, accessoryT, _) {
-            // Outer container height follows the ACCESSORY state.
+            // Outer container height follows the ACCESSORY state, expanding to
+            // the union of the accessory stack and the lifted bar (without
+            // adding accessoryH on top of keyboardLift when expanded).
             final height =
                 ui.lerpDouble(expandedH, collapsedPillH, accessoryT)!;
+            final liftedBarH =
+                (searching ? collapsedPillH : pillH) + keyboardLift;
+            final effectiveHeight =
+                keyboardLift > 0 ? math.max(height, liftedBarH) : height;
 
             // Accessory left/right: constant when expanded, narrows when inline.
             final accessoryLeft = ui.lerpDouble(
@@ -1201,7 +1213,7 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
             )!;
 
             return SizedBox(
-              height: height,
+              height: effectiveHeight,
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
