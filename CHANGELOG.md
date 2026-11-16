@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- **`GlassTabBar.searchable` right-edge anchor during parent resize (PR #488):** Animates the search pill's right inset and width (preserving in-flight spring velocity on reversal) instead of independent left and width springs so the pill stays anchored to its trailing inset while a parent container resizes. Thanks to [@wow-sven](https://github.com/wow-sven) for the fix (#488).
+
 # 1.17.4
 
 ## Features

@@ -68,6 +68,75 @@ Widget _buildBar({
 
 void main() {
   group('GlassTabBar.searchable', () {
+    for (final direction in TextDirection.values) {
+      for (final reduceMotion in [false, true]) {
+        testWidgets(
+            'search remains right-anchored during parent resize and reversal '
+            '($direction, reduceMotion: $reduceMotion)', (tester) async {
+          var active = false;
+          late StateSetter update;
+          await tester.pumpWidget(createTestApp(
+            child: Directionality(
+              textDirection: direction,
+              child: GlassAccessibilityScope(
+                reduceMotion: reduceMotion,
+                child: StatefulBuilder(builder: (context, setState) {
+                  update = setState;
+                  return Align(
+                    alignment: Alignment.bottomRight,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutCubic,
+                      width: active ? 390 : 280,
+                      child: GlassTabBar.searchable(
+                        tabs: const [GlassTab(icon: Icon(CupertinoIcons.add))],
+                        selectedIndex: 0,
+                        onTabSelected: (_) {},
+                        isSearchActive: active,
+                        horizontalPadding: 16,
+                        barHeight: 48,
+                        searchBarHeight: 48,
+                        tabWidth: 116,
+                        quality: GlassQuality.minimal,
+                        maskingQuality: MaskingQuality.off,
+                        searchConfig:
+                            GlassSearchBarConfig(onSearchToggle: (_) {}),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ));
+          await tester.pumpAndSettle();
+          final pill = find.byType(SearchPill);
+          final right = tester.getRect(pill).right;
+          Future<void> frames(int count) async {
+            for (var i = 0; i < count; i++) {
+              await tester.pump(const Duration(milliseconds: 16));
+              expect(tester.getRect(pill).right, closeTo(right, .1));
+              expect(tester.takeException(), isNull);
+            }
+          }
+
+          update(() => active = true);
+          await tester.pump();
+          await frames(40);
+          expect(tester.getSize(pill).width, greaterThan(250));
+          update(() => active = false);
+          await tester.pump();
+          await frames(6);
+          update(() => active = true);
+          await tester.pump();
+          await frames(40);
+          update(() => active = false);
+          await tester.pump();
+          await frames(40);
+          expect(tester.getSize(pill).width, closeTo(48, .1));
+        });
+      }
+    }
+
     // ── Instantiation ─────────────────────────────────────────────────────────
 
     testWidgets('can be instantiated with required parameters', (tester) async {
