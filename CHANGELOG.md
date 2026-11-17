@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- `GlassPageRoute` and `GlassPageTransitionsBuilder` now use the card's rounded shadow during horizontal transitions, removing the straight shadow visible above the leading corner.
+
 # 1.17.5
 
 ## Bug Fixes

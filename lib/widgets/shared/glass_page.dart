@@ -927,25 +927,17 @@ class GlassPageRoute<T> extends CupertinoPageRoute<T> {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    return CupertinoRouteTransitionMixin.buildPageTransitions<T>(
-      this,
-      context,
-      animation,
-      secondaryAnimation,
-      GlassPageTransitionClip(
-        cornerRadius: transitionCornerRadius,
-        primaryAnimation: animation,
-        secondaryAnimation: secondaryAnimation,
-        child: child,
-      ),
-    );
+    return GlassPageTransitionsBuilder(
+      transitionCornerRadius: transitionCornerRadius,
+    ).buildTransitions<T>(this, context, animation, secondaryAnimation, child);
   }
 }
 
 /// A [PageTransitionsBuilder] that provides native iOS parallax slide
 /// transitions with continuous rounded-corner page clipping
 /// ([GlassPageTransitionClip]) during push, pop, and interactive swipe-back
-/// gestures.
+/// gestures. The card owns the horizontal transition shadow, so it follows the
+/// resolved corner radius including overrides on a descendant [GlassPage].
 ///
 /// Plug into `PageTransitionsTheme` in a `MaterialApp` (or router theme) to
 /// apply rounded iOS page transitions app-wide:
@@ -995,7 +987,7 @@ class GlassPageTransitionsBuilder extends PageTransitionsBuilder {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    return CupertinoRouteTransitionMixin.buildPageTransitions<T>(
+    final transition = CupertinoRouteTransitionMixin.buildPageTransitions<T>(
       route,
       context,
       animation,
@@ -1005,6 +997,85 @@ class GlassPageTransitionsBuilder extends PageTransitionsBuilder {
         primaryAnimation: animation,
         secondaryAnimation: secondaryAnimation,
         child: child,
+      ),
+    );
+    if (transition is! CupertinoPageTransition) return transition;
+    return _GlassPageSlide(transition: transition);
+  }
+}
+
+/// Cupertino builds the back-gesture detector inside its slide. Keep that
+/// child and its gesture controller, but let the card paint its own shadow.
+class _GlassPageSlide extends StatefulWidget {
+  const _GlassPageSlide({required this.transition});
+  final CupertinoPageTransition transition;
+
+  @override
+  State<_GlassPageSlide> createState() => _GlassPageSlideState();
+}
+
+class _GlassPageSlideState extends State<_GlassPageSlide> {
+  static final _enter = Tween(begin: const Offset(1, 0), end: Offset.zero);
+  static final _recede =
+      Tween(begin: Offset.zero, end: const Offset(-1 / 3, 0));
+  late CurvedAnimation _primary;
+  late CurvedAnimation _secondary;
+
+  void _configureCurves() {
+    _primary = CurvedAnimation(
+      parent: widget.transition.primaryRouteAnimation,
+      curve: Curves.fastEaseInToSlowEaseOut,
+      reverseCurve: Curves.fastEaseInToSlowEaseOut.flipped,
+    );
+    _secondary = CurvedAnimation(
+      parent: widget.transition.secondaryRouteAnimation,
+      curve: Curves.linearToEaseOut,
+      reverseCurve: Curves.easeInToLinear,
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _configureCurves();
+  }
+
+  @override
+  void didUpdateWidget(_GlassPageSlide oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final old = oldWidget.transition;
+    final next = widget.transition;
+    if (next.primaryRouteAnimation != old.primaryRouteAnimation ||
+        next.secondaryRouteAnimation != old.secondaryRouteAnimation ||
+        next.linearTransition != old.linearTransition) {
+      _primary.dispose();
+      _secondary.dispose();
+      _configureCurves();
+    }
+  }
+
+  @override
+  void dispose() {
+    _primary.dispose();
+    _secondary.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final transition = widget.transition;
+    final linear = transition.linearTransition;
+    final direction = Directionality.of(context);
+    return SlideTransition(
+      position: (linear ? transition.secondaryRouteAnimation : _secondary)
+          .drive(_recede),
+      textDirection: direction,
+      transformHitTests: false,
+      child: SlideTransition(
+        position: (linear ? transition.primaryRouteAnimation : _primary)
+            .drive(_enter),
+        textDirection: direction,
+        child: transition.child,
       ),
     );
   }

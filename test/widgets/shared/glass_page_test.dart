@@ -1,4 +1,7 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -287,6 +290,61 @@ void main() {
       expect(find.text('Push Detail'), findsOneWidget);
       expect(activeClips(), isEmpty);
     });
+
+    for (final useBuilder in [false, true]) {
+      testWidgets('rounded route has one curved shadow (builder: $useBuilder)',
+          (tester) async {
+        final capture = GlobalKey();
+        final navigator = GlobalKey<NavigatorState>();
+        const page = ValueKey('sliding card');
+        const bg = Color(0xffeeeeee);
+        const detail = GlassPage(
+          key: page,
+          background: ColoredBox(color: Color(0xffffffff)),
+          child: SizedBox.expand(),
+        );
+        await tester.pumpWidget(RepaintBoundary(
+          key: capture,
+          child: MaterialApp(
+            navigatorKey: navigator,
+            theme: ThemeData(
+              platform: TargetPlatform.iOS,
+              pageTransitionsTheme: const PageTransitionsTheme(builders: {
+                TargetPlatform.iOS: GlassPageTransitionsBuilder(),
+              }),
+            ),
+            home: const ColoredBox(color: bg),
+          ),
+        ));
+        final route = useBuilder
+            ? MaterialPageRoute<void>(builder: (_) => detail)
+            : GlassPageRoute<void>(builder: (_) => detail);
+        navigator.currentState!.push(route);
+        await tester.pump();
+        await tester.pump(route.transitionDuration * .32);
+        final boundary =
+            tester.renderObject<RenderRepaintBoundary>(find.byKey(capture));
+        final x = tester.getTopLeft(find.byKey(page)).dx.floor();
+
+        await tester.runAsync(() async {
+          final image = await boundary.toImage();
+          try {
+            final data =
+                (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!;
+            int red(int dx, int dy) =>
+                data.getUint8(4 * (dy * image.width + x + dx));
+            // Above the curve, the standard Cupertino shadow would darken
+            // the leading edge. Near the middle only the card shadow remains.
+            expect(red(-3, 2), red(-48, 2));
+            expect(red(-3, 200), lessThan(red(-48, 200)));
+            expect(red(4, 2), lessThan(red(4, 200)));
+          } finally {
+            image.dispose();
+          }
+        });
+        await tester.pumpAndSettle();
+      });
+    }
 
     testWidgets('transitionCornerRadius: 0 disables clipping during transition',
         (tester) async {
