@@ -2,7 +2,7 @@
 
 ## Bug Fixes
 
-- `GlassPageRoute` and `GlassPageTransitionsBuilder` now use the card's rounded shadow during horizontal transitions, removing the straight shadow visible above the leading corner.
+- `GlassPageRoute` and `GlassPageTransitionsBuilder` now use the card's rounded shadow during horizontal transitions, removing the straight shadow visible above the leading corner. Pages with a resolved corner radius of zero keep Flutter's Cupertino edge shadow.
 
 # 1.17.5
 
