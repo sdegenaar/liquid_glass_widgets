@@ -38,11 +38,24 @@ void main() {
     test('sizeT is 0.0 at rest', () => expect(s.sizeT, equals(0.0)));
     test('currentDx is 0.0 at rest', () => expect(s.currentDx, equals(0.0)));
     test('currentDy is 0.0 at rest', () => expect(s.currentDy, equals(0.0)));
-    test('pushDx is 0.0 at rest (no close undershoot)', () {
+    test('pushDx and triggerPushDx are 0.0 at rest', () {
       expect(s.pushDx, equals(0.0));
+      expect(s.triggerPushDx, equals(0.0));
     });
-    test('pushDy is 0.0 at rest (no close undershoot)', () {
+    test('pushDy and triggerPushDy are 0.0 at rest', () {
       expect(s.pushDy, equals(0.0));
+      expect(s.triggerPushDy, equals(0.0));
+    });
+    test('triggerImpactScale is 1.0 at rest', () {
+      expect(s.triggerImpactScale, equals(1.0));
+    });
+    test('triggerWidthProgress is 1.0 at rest', () {
+      expect(s.triggerWidthProgress, equals(1.0));
+    });
+    test('platter is inactive and transparent at rest', () {
+      expect(s.isPlatterActive, isFalse);
+      expect(s.platterOpacity, equals(0.0));
+      expect(s.contentOpacity, equals(0.0));
     });
     test('anchorScale is 1.0 at rest', () {
       expect(s.anchorScale, equals(1.0));
@@ -79,6 +92,14 @@ void main() {
     test('pushDx is 0 when rawValue >= 0 (no close undershoot)', () {
       expect(s.pushDx, equals(0.0));
     });
+    test('triggerWidthProgress is 0.0 when settled open', () {
+      expect(s.triggerWidthProgress, equals(0.0));
+    });
+    test('platter and content are fully visible when settled open', () {
+      expect(s.isPlatterActive, isTrue);
+      expect(s.platterOpacity, equals(1.0));
+      expect(s.contentOpacity, closeTo(1.0, 1e-6));
+    });
   });
 
   // ── Phase transitions ─────────────────────────────────────────────────────
@@ -110,21 +131,19 @@ void main() {
     });
   });
 
-  // ── Close undershoot (rawValue < 0) ───────────────────────────────────────
+  // ── Stateless close undershoot fallback (rawValue < 0, no elapsed clock) ──
 
-  group('LiquidMorphPhysics — close undershoot (rawValue < 0)', () {
+  group('LiquidMorphPhysics — stateless close undershoot (rawValue < 0)', () {
     const undershoot = -0.2;
     late LiquidMorphState s;
     setUp(() => s = _compute(undershoot));
 
     test('containerScale drops below 1.0 during close undershoot', () {
-      // 1.0 + (-0.2 * 0.55) = 0.89
       expect(s.containerScale, lessThan(1.0));
       expect(s.containerScale, closeTo(1.0 + undershoot * 0.55, 0.001));
     });
 
     test('pushDx is non-zero during close undershoot', () {
-      // pushDx = (finalDx + horizontalOffset) * rawValue
       final expected = (_finalDx + _hOffset) * undershoot;
       expect(s.pushDx, closeTo(expected, 0.001));
     });
@@ -135,21 +154,125 @@ void main() {
     });
 
     test('pathT includes closeUndershoot additive term', () {
-      // clampedValue = 0 → backOutCurve(0) = 0, closeUndershoot = -0.2
-      // pathT = 0 + (-0.2) = -0.2
       expect(s.pathT, closeTo(-0.2, 0.001));
     });
 
     test('sizeT includes closeUndershoot additive term', () {
-      // clampedValue = 0 → linearToEaseOut(0) = 0, closeUndershoot = -0.2
-      // sizeT = 0 + (-0.2) = -0.2
       expect(s.sizeT, closeTo(-0.2, 0.001));
     });
 
     test('containerScale clamps correctly for extreme undershoot', () {
-      // rawValue = -1.0 → scale = 1.0 + (-1.0 * 0.55) = 0.45
       final extreme = _compute(-1.0);
       expect(extreme.containerScale, closeTo(0.45, 0.001));
+    });
+  });
+
+  // ── Parallel close recoil & wide-trigger splash (iOS 27 parity) ───────────
+
+  group('LiquidMorphPhysics — parallel close recoil & width splash', () {
+    LiquidMorphState computeCloseAt(
+      double seconds, {
+      double rawValue = 0.25,
+      double finalDx = 0.0,
+      double finalDy = 125.0,
+      bool hasHandedOff = false,
+      bool isSettled = false,
+      bool disableAnimations = false,
+    }) =>
+        LiquidMorphPhysics.compute(
+          rawValue: rawValue,
+          finalDx: finalDx,
+          finalDy: finalDy,
+          isClosing: true,
+          elapsedSeconds: seconds,
+          hasHandedOff: hasHandedOff,
+          isSettled: isSettled,
+          disableAnimations: disableAnimations,
+          phaseStartTriggerWidth: 0.0,
+          closeStartProgress: 1.0,
+        );
+
+    test('recoil starts immediately at t > 0 and peaks near ~180–185 ms', () {
+      final at0 = computeCloseAt(0.0, rawValue: 1.0);
+      final at67 = computeCloseAt(0.067, rawValue: 0.64);
+      final at183 = computeCloseAt(0.183, rawValue: 0.09);
+      final at350 = computeCloseAt(0.350, rawValue: -0.004, hasHandedOff: true);
+      final at540 = computeCloseAt(0.540, rawValue: 0.0, isSettled: true);
+
+      expect(at0.triggerPushDy, equals(0.0));
+      expect(at67.triggerPushDy, lessThan(-2.0),
+          reason: 'Recoil must already be active well before rawValue <= 0');
+      expect(at183.triggerPushDy.abs(), greaterThan(at67.triggerPushDy.abs()));
+      expect(at183.triggerPushDy.abs(), greaterThan(at350.triggerPushDy.abs()),
+          reason: 'Peak recoil must happen at ~183 ms, not ~350–400 ms');
+      expect(at183.triggerImpactScale, lessThan(0.98));
+      expect(at540.triggerPushDy, equals(0.0));
+      expect(at540.triggerImpactScale, equals(1.0));
+    });
+
+    test('soft-saturation bounds peak recoil into ~5–16 px across all sizes',
+        () {
+      final shortMenu = computeCloseAt(0.183, finalDy: 35.0);
+      final mediumMenu = computeCloseAt(0.183, finalDy: 125.0);
+      final tallMenu = computeCloseAt(0.183, finalDy: 220.0);
+      final modalSheet = computeCloseAt(0.183, finalDy: 500.0);
+
+      expect(shortMenu.triggerPushDy.abs(), inInclusiveRange(5.0, 7.0));
+      expect(mediumMenu.triggerPushDy.abs(), inInclusiveRange(9.5, 12.0));
+      expect(tallMenu.triggerPushDy.abs(), inInclusiveRange(12.0, 14.5));
+      expect(modalSheet.triggerPushDy.abs(), inInclusiveRange(14.0, 16.5));
+      expect(modalSheet.triggerPushDy.abs(), lessThan(18.0));
+    });
+
+    test(
+        'triggerWidthProgress expands 0 → 1, crosses 1 near ~320 ms, splashes +1.5..2.5% near ~400 ms',
+        () {
+      final at0 = computeCloseAt(0.0, rawValue: 1.0);
+      final at183 = computeCloseAt(0.183, rawValue: 0.09);
+      final at325 = computeCloseAt(0.325, rawValue: -0.004, hasHandedOff: true);
+      final at400 = computeCloseAt(0.400, rawValue: -0.003, hasHandedOff: true);
+      final settled = computeCloseAt(0.550, rawValue: 0.0, isSettled: true);
+
+      expect(at0.triggerWidthProgress, closeTo(0.0, 1e-6));
+      expect(at183.triggerWidthProgress, inInclusiveRange(0.70, 0.85));
+      expect(at325.triggerWidthProgress, greaterThanOrEqualTo(1.0));
+      expect(at400.triggerWidthProgress, inInclusiveRange(1.014, 1.025));
+      expect(settled.triggerWidthProgress, equals(1.0));
+    });
+
+    test(
+        'contentOpacity fades across close while platterOpacity stays 1.0 down to rawValue = 0.25',
+        () {
+      for (final raw in [1.0, 0.75, 0.5, 0.25, 0.10]) {
+        final s = computeCloseAt(0.1, rawValue: raw);
+        final expectedScale = 0.20 + 0.80 * raw;
+        expect(s.platterScale, closeTo(expectedScale, 1e-6));
+        expect(
+          s.contentOpacity,
+          closeTo((expectedScale - 0.20) / 0.80, 1e-6),
+        );
+        final expectedPlatterOpacity = (raw / 0.25).clamp(0.0, 1.0);
+        expect(s.platterOpacity, closeTo(expectedPlatterOpacity, 1e-6));
+        if (raw >= 0.25) {
+          expect(s.platterOpacity, equals(1.0));
+        } else {
+          expect(s.platterOpacity, greaterThan(s.contentOpacity));
+          expect(s.platterOpacity, lessThan(1.0));
+        }
+        expect(s.isPlatterActive, isTrue);
+      }
+      final handedOff =
+          computeCloseAt(0.30, rawValue: -0.002, hasHandedOff: true);
+      expect(handedOff.isPlatterActive, isFalse);
+      expect(handedOff.platterOpacity, equals(0.0));
+      expect(handedOff.contentOpacity, equals(0.0));
+    });
+
+    test('disableAnimations suppresses trigger recoil and splash', () {
+      final s = computeCloseAt(0.183, disableAnimations: true);
+      expect(s.triggerPushDx, equals(0.0));
+      expect(s.triggerPushDy, equals(0.0));
+      expect(s.triggerImpactScale, equals(1.0));
     });
   });
 
@@ -161,7 +284,6 @@ void main() {
     setUp(() => s = _compute(overshoot));
 
     test('containerScale slightly above 1.0 during open overshoot', () {
-      // 1.0 + (0.05 * 0.10) = 1.005
       expect(s.containerScale, greaterThan(1.0));
       expect(s.containerScale, closeTo(1.0 + (overshoot - 1.0) * 0.10, 0.001));
     });
@@ -187,7 +309,6 @@ void main() {
     });
 
     test('is 0.5 at rawValue = 0.2 (halfway through 40% ease)', () {
-      // (1 - 0.2/0.4).clamp(0,1) = 0.5
       expect(_compute(0.2).anchorScale, closeTo(0.5, 0.001));
     });
 
@@ -258,8 +379,6 @@ void main() {
     });
 
     test('blend is always non-negative (open path)', () {
-      // Only tests the open path; the closing proximity blend is covered
-      // separately in the 'closing trajectory' group below.
       for (final v in [-0.3, 0.0, 0.25, 0.5, 0.75, 1.0, 1.1]) {
         expect(
           _compute(v).blend,
@@ -270,31 +389,26 @@ void main() {
     });
   });
 
-  // ── Spring constants (public contract) ───────────────────────────────────
+  // ── Spring constants (public contract — calibrated iOS 27) ───────────────
 
   group('LiquidMorphPhysics — spring constants', () {
-    test('openSpring has stiffness 120', () {
-      expect(LiquidMorphPhysics.openSpring.stiffness, equals(120.0));
+    test('openSpring matches iOS 27 open profile (ω0 = 17, ζ ≈ 0.76)', () {
+      expect(LiquidMorphPhysics.openSpring.stiffness, equals(289.0));
+      expect(LiquidMorphPhysics.openSpring.damping, equals(25.8));
     });
 
-    test('openSpring has damping 16', () {
-      expect(LiquidMorphPhysics.openSpring.damping, equals(16.0));
-    });
-
-    test(
-        'closeSpring matches iOS 27 dismissal profile (stiffness 120, damping 16)',
+    test('closeSpring matches iOS 27 dismissal profile (ω0 = 18, ζ ≈ 0.86)',
         () {
-      expect(LiquidMorphPhysics.closeSpring.stiffness, equals(120.0));
-      expect(LiquidMorphPhysics.closeSpring.damping, equals(16.0));
+      expect(LiquidMorphPhysics.closeSpring.stiffness, equals(324.0));
+      expect(LiquidMorphPhysics.closeSpring.damping, equals(31.0));
     });
 
-    test('closeVelocityHint is -2.5 (drives spring toward 0 with momentum)',
-        () {
-      expect(LiquidMorphPhysics.closeVelocityHint, equals(-2.5));
+    test('closeVelocityHint is 0.0 (smooth native launch)', () {
+      expect(LiquidMorphPhysics.closeVelocityHint, equals(0.0));
     });
   });
 
-  // ── Geometry scaling ──────────────────────────────────────────────────────
+  // ── Geometry scaling & helpers ────────────────────────────────────────────
 
   group('LiquidMorphPhysics — geometry scaling', () {
     test('doubling finalDx doubles currentDx at same rawValue', () {
@@ -325,10 +439,42 @@ void main() {
         finalDy: 0.0,
         horizontalOffset: 20.0,
       );
-      // currentDx comes from finalDx * pathT — offset does NOT affect it.
       expect(s1.currentDx, closeTo(s2.currentDx, 0.001));
-      // pushDx IS affected by horizontalOffset.
       expect(s2.pushDx, isNot(closeTo(s1.pushDx, 0.001)));
+    });
+  });
+
+  group('LiquidMorphPhysics.computeCornerRadius', () {
+    test(
+        'interpolates monotonically without ever exceeding max(triggerRadius, targetRadius)',
+        () {
+      double prev = 0.0;
+      for (int i = 0; i <= 100; i++) {
+        final t = i / 100.0;
+        final w = lerpDouble(44.0, 220.0, t)!;
+        final h = lerpDouble(44.0, 482.0, t)!;
+        final r = LiquidMorphPhysics.computeCornerRadius(
+          currentSize: Size(w, h),
+          triggerRadius: 22.0,
+          targetRadius: 32.0,
+          progress: t,
+        );
+        expect(r, greaterThanOrEqualTo(prev - 1e-9));
+        expect(r, lessThanOrEqualTo(32.0));
+        prev = r;
+      }
+      expect(prev, closeTo(32.0, 1e-6));
+    });
+
+    test('clamps to shortestSide / 2 for sub-trigger / point-bloom droplets',
+        () {
+      final r = LiquidMorphPhysics.computeCornerRadius(
+        currentSize: const Size(12.0, 16.0),
+        triggerRadius: 22.0,
+        targetRadius: 32.0,
+        progress: 0.1,
+      );
+      expect(r, equals(6.0));
     });
   });
 
@@ -350,7 +496,7 @@ void main() {
         () {
       double prev = 1.1;
       for (int i = 0; i <= 40; i++) {
-        final raw = i / 100.0; // 0.00 → 0.40
+        final raw = i / 100.0;
         final cur = _compute(raw).anchorScale;
         expect(cur, lessThanOrEqualTo(prev),
             reason:
@@ -385,8 +531,6 @@ void main() {
     });
 
     test('returns correct ratio for compose-button → full-sheet', () {
-      // source: 48×48 = 2304 px²,  target: 393×852 = 334 836 px²
-      // ratio = √(334836 / 2304) ≈ 12.05
       final delta = LiquidMorphPhysics.computeScaleDelta(
         sourceSize: const Size(48, 48),
         targetSize: const Size(393, 852),
@@ -407,23 +551,33 @@ void main() {
   });
 
   group('LiquidMorphPhysics.computeAdaptiveBackOutAmplitude', () {
-    test('returns 2.5 when |finalDy| <= 100 px', () {
+    test('returns 2.5 when Euclidean travel <= 100 px', () {
       expect(
-        LiquidMorphPhysics.computeAdaptiveBackOutAmplitude(finalDy: 80.0),
+        LiquidMorphPhysics.computeAdaptiveBackOutAmplitude(
+          finalDx: 60.0,
+          finalDy: 80.0,
+        ),
         closeTo(2.5, 1e-9),
       );
+    });
+
+    test('attenuates when horizontal travel pushes hypot > 100 px', () {
+      final amp = LiquidMorphPhysics.computeAdaptiveBackOutAmplitude(
+        finalDx: 150.0,
+        finalDy: 35.0,
+      );
+      expect(amp, lessThan(2.5));
+      expect(amp, greaterThanOrEqualTo(0.7));
     });
 
     test('is attenuated for large vertical travel (|finalDy| = 388 px)', () {
       final amp = LiquidMorphPhysics.computeAdaptiveBackOutAmplitude(
         finalDy: -388.0,
       );
-      // Expected ≈ 2.5 * 100/388 ≈ 0.644 → clamped to min 0.7
       expect(amp, closeTo(0.7, 1e-6));
     });
 
     test('never falls below the minimum amplitude (0.7)', () {
-      // Extreme travel distance that would otherwise go below min.
       final amp = LiquidMorphPhysics.computeAdaptiveBackOutAmplitude(
         finalDy: -10000.0,
       );
@@ -432,7 +586,7 @@ void main() {
 
     test('never exceeds the base amplitude (2.5)', () {
       final amp = LiquidMorphPhysics.computeAdaptiveBackOutAmplitude(
-        finalDy: -10.0, // very small
+        finalDy: -10.0,
       );
       expect(amp, lessThanOrEqualTo(2.5));
     });
@@ -446,7 +600,7 @@ void main() {
 
     test('is attenuated for scaleDelta > 3.0', () {
       final att = LiquidMorphPhysics.computeBlendAttenuation(12.0);
-      expect(att, closeTo(3.0 / 12.0, 1e-9)); // 0.25
+      expect(att, closeTo(3.0 / 12.0, 1e-9));
       expect(att, lessThan(1.0));
     });
 
@@ -457,9 +611,7 @@ void main() {
   });
 
   group('LiquidMorphPhysics — adaptive mode (scaleDelta = 12.0)', () {
-    // Simulate a compose-button (48×48) → full-sheet (393×852) morph.
     const scaleDelta = 12.0;
-    // finalDy = sheet_center.y - trigger_center.y (upward → negative)
     const finalDy = -388.0;
     const finalDx = 0.0;
 
@@ -475,11 +627,7 @@ void main() {
       for (int i = 0; i <= 35; i++) {
         final raw = i / 100.0;
         final s = computeAdaptive(raw);
-        expect(
-          s.sizeT,
-          lessThan(0.40),
-          reason: 'sizeT not compact at rawValue=$raw (adaptive off?)',
-        );
+        expect(s.sizeT, lessThan(0.40));
       }
     });
 
@@ -496,28 +644,19 @@ void main() {
       for (int i = 0; i <= 100; i++) {
         final raw = i / 100.0;
         final cur = computeAdaptive(raw).sizeT;
-        expect(cur, greaterThanOrEqualTo(prev),
-            reason: 'sizeT not monotonic at rawValue=$raw (adaptive)');
+        expect(cur, greaterThanOrEqualTo(prev));
         prev = cur;
       }
     });
 
     test('close undershoot pushDy magnitude is bounded (< 20 px)', () {
-      // rawValue = -0.15 simulates peak close bounce.
-      // With full travel (388 px), unbounded push would be ~58 px.
-      // Bounded push must be < 20 px.
       final s = LiquidMorphPhysics.compute(
         rawValue: -0.15,
         finalDx: finalDx,
         finalDy: finalDy,
         scaleDelta: scaleDelta,
       );
-      expect(
-        s.pushDy.abs(),
-        lessThan(20.0),
-        reason:
-            'pushDy=${s.pushDy} exceeds 20 px threshold — trigger will jolt',
-      );
+      expect(s.pushDy.abs(), lessThan(20.0));
     });
 
     test('close undershoot pushDy is still non-zero (bounce is visible)', () {
@@ -531,14 +670,12 @@ void main() {
     });
 
     test('blend is attenuated for large-scale morph', () {
-      // At mid-travel the blend should still be > 0 but reduced from the
-      // un-attenuated value that would saturate the SDF viewport.
       final s = computeAdaptive(0.5);
       final fullBlend = LiquidMorphPhysics.compute(
         rawValue: 0.5,
         finalDx: finalDx,
         finalDy: finalDy,
-        scaleDelta: 1.0, // no attenuation
+        scaleDelta: 1.0,
       ).blend;
       expect(s.blend, lessThanOrEqualTo(fullBlend));
     });
@@ -558,13 +695,25 @@ void main() {
           finalDy: _finalDy,
           isClosing: true,
         );
-        expect(s.pathT, lessThanOrEqualTo(1.0),
-            reason: 'pathT exceeded 1.0 at rawValue=$raw on close');
+        expect(s.pathT, lessThanOrEqualTo(1.0));
       }
     });
 
-    test('pathT decreases monotonically from 1.0 to 0.0 on close', () {
-      double prev = -0.1;
+    test('sizeT stays coupled with pathT on close (no early flatline)', () {
+      final atQuarter = LiquidMorphPhysics.compute(
+        rawValue: 0.25,
+        finalDx: _finalDx,
+        finalDy: _finalDy,
+        isClosing: true,
+      );
+      // Previously 1 - linearToEaseOut(0.75) collapsed sizeT to ~0.016 at 0.25,
+      // stalling the platter 145 ms before landing. Now coupled (> 0.15).
+      expect(atQuarter.sizeT, greaterThan(0.15));
+    });
+
+    test('pathT and sizeT increase monotonically with rawValue on [0, 1]', () {
+      double prevPath = -0.1;
+      double prevSize = -0.1;
       for (int i = 0; i <= 100; i++) {
         final raw = i / 100.0;
         final s = LiquidMorphPhysics.compute(
@@ -573,25 +722,10 @@ void main() {
           finalDy: _finalDy,
           isClosing: true,
         );
-        expect(s.pathT, greaterThanOrEqualTo(prev),
-            reason: 'pathT not monotonic at rawValue=$raw on close');
-        prev = s.pathT;
-      }
-    });
-
-    test('sizeT decreases monotonically from 1.0 to 0.0 on close', () {
-      double prev = -0.1;
-      for (int i = 0; i <= 100; i++) {
-        final raw = i / 100.0;
-        final s = LiquidMorphPhysics.compute(
-          rawValue: raw,
-          finalDx: _finalDx,
-          finalDy: _finalDy,
-          isClosing: true,
-        );
-        expect(s.sizeT, greaterThanOrEqualTo(prev),
-            reason: 'sizeT not monotonic at rawValue=$raw on close');
-        prev = s.sizeT;
+        expect(s.pathT, greaterThanOrEqualTo(prevPath));
+        expect(s.sizeT, greaterThanOrEqualTo(prevSize));
+        prevPath = s.pathT;
+        prevSize = s.sizeT;
       }
     });
 
@@ -609,10 +743,6 @@ void main() {
   });
 
   // ── Closing blend bell-curve (separation-driven) ──────────────────────────
-  //
-  // Verifies that closing blend is driven by |pathT - sizeT| separation,
-  // peaking in mid-flight and converging cleanly to 0.0 at both endpoints
-  // (1.0 and 0.0) so there is zero SDF inflation at handoff.
 
   group('LiquidMorphPhysics — closing blend separation curve', () {
     LiquidMorphState closeCompute(double raw) => LiquidMorphPhysics.compute(
@@ -627,7 +757,7 @@ void main() {
     });
 
     test('blend peaks in mid-close and returns to 0.0 at handoff (0.0)', () {
-      final blendAtMid = closeCompute(0.40).blend;
+      final blendAtMid = closeCompute(0.45).blend;
       final blendAtEnd = closeCompute(0.0).blend;
       expect(blendAtMid, greaterThan(10.0),
           reason: 'Expected visible SDF bridge in mid-close');
@@ -646,20 +776,14 @@ void main() {
       for (int i = 0; i <= 100; i++) {
         final raw = i / 100.0;
         final b = closeCompute(raw).blend;
-        expect(b, greaterThanOrEqualTo(0.0),
-            reason: 'Negative blend at rawValue=$raw on close');
-        expect(b, lessThanOrEqualTo(28.0),
-            reason: 'Blend exceeds max at rawValue=$raw on close');
+        expect(b, greaterThanOrEqualTo(0.0));
+        expect(b, lessThanOrEqualTo(28.0));
       }
     });
 
     test('blend is non-negative during close undershoot (rawValue < 0)', () {
       for (final v in [-0.05, -0.1, -0.15, -0.2]) {
-        expect(
-          closeCompute(v).blend,
-          greaterThanOrEqualTo(0.0),
-          reason: 'Negative blend at rawValue=$v during undershoot',
-        );
+        expect(closeCompute(v).blend, greaterThanOrEqualTo(0.0));
       }
     });
   });

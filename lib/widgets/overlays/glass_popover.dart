@@ -4,13 +4,14 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/scheduler.dart';
 import '../../src/utils/glass_localizations.dart';
 import '../../utils/glass_morph_controller.dart';
+import '../../utils/liquid_morph_physics.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/widgets/surfaces/vertical_bar_presentation.dart';
 
 import '../../constants/glass_defaults.dart';
 import '../../types/glass_quality.dart';
 import '../containers/glass_container.dart';
-import '../shared/inherited_liquid_glass.dart';
+import '../shared/adaptive_liquid_glass_layer.dart';
 import 'glass_menu.dart' show GlassMenuAlignment;
 import '../../theme/glass_theme_helpers.dart';
 import '../../theme/glass_theme.dart';
@@ -109,6 +110,8 @@ class GlassPopover extends StatefulWidget {
     this.screenPadding = const EdgeInsets.all(12),
     this.settings,
     this.quality,
+    this.morphSpeed = MorphSpeed.normal,
+    this.platformViewBackdrop = false,
     this.stretch = 0.3,
     this.interactionScale = 1.02,
     this.stretchResistance = 0.08,
@@ -214,7 +217,7 @@ class GlassPopover extends StatefulWidget {
 
   /// Custom glass settings for the popover container.
   ///
-  /// If null, inherits from parent [InheritedLiquidGlass] or uses subtle
+  /// If null, inherits from parent [AdaptiveLiquidGlassLayer] or uses subtle
   /// overlay defaults.
   final LiquidGlassSettings? settings;
 
@@ -223,6 +226,19 @@ class GlassPopover extends StatefulWidget {
   /// If null, inherits from parent quality or defaults via
   /// [GlassThemeHelpers.resolveQuality].
   final GlassQuality? quality;
+
+  /// Speed profile of the liquid glass morph animation.
+  ///
+  /// Defaults to [MorphSpeed.normal], matching the calibrated iOS 27 open and
+  /// close spring profiles.
+  final MorphSpeed morphSpeed;
+
+  /// Whether the popover sits over a platform view (e.g. a native map or video
+  /// player) whose pixels Impeller's shader capture cannot read.
+  ///
+  /// When `true`, routes the glass surface to the live [BackdropFilter] path so
+  /// the platform view beneath is blurred cleanly. Defaults to `false`.
+  final bool platformViewBackdrop;
 
   /// Liquid stretch factor.
   ///

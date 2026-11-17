@@ -56,190 +56,219 @@ class LiquidMorphState {
     required this.blend,
     required this.containerScale,
     required this.phase,
+    this.triggerPushDx = 0.0,
+    this.triggerPushDy = 0.0,
+    this.triggerImpactScale = 1.0,
+    this.triggerWidthProgress = 1.0,
+    this.platterScale = 0.0,
+    this.platterOpacity = 0.0,
+    this.contentOpacity = 0.0,
+    this.isPlatterActive = false,
   });
 
-  /// Position interpolation value — drives the J-curve overshoot.
-  ///
-  /// Computed by [_BackOutCurve]. Can legitimately exceed `[0, 1]` during the
-  /// close undershoot phase. Use this to position Blob B.
+  /// Position interpolation value — drives the J-curve overshoot on open and
+  /// coupled contraction on close.
   final double pathT;
 
-  /// Size interpolation value — drives the teardrop size expansion.
-  ///
-  /// Computed by [Curves.linearToEaseOut] (small-scale morphs) or a
-  /// smootherstep sigmoid (large-scale morphs, `scaleDelta > 3.0`). Stays
-  /// within `[0, 1]` during normal operation (any close undershoot is added
-  /// additively).
+  /// Size interpolation value — drives the teardrop size expansion and coupled
+  /// close contraction.
   final double sizeT;
 
-  /// Absolute horizontal displacement of the menu body (Blob B) from the
+  /// Absolute horizontal displacement of the platter body (Blob B) from the
   /// trigger center, in logical pixels.
   final double currentDx;
 
-  /// Absolute vertical displacement of the menu body (Blob B) from the
+  /// Absolute vertical displacement of the platter body (Blob B) from the
   /// trigger center, in logical pixels.
   final double currentDy;
 
-  /// Horizontal displacement applied to the anchor blob (Blob A) during the
-  /// underdamped closing bounce. Zero during the opening animation.
+  /// Horizontal recoil displacement applied to the anchor/trigger on close.
+  ///
+  /// When driven via [GlassMorphController], mirrors [triggerPushDx] (parallel
+  /// recoil starting at `t = 0 ms` of close, peaking at `~183 ms`).
   final double pushDx;
 
-  /// Vertical displacement applied to the anchor blob (Blob A) during the
-  /// underdamped closing bounce. Zero during the opening animation.
+  /// Vertical recoil displacement applied to the anchor/trigger on close.
+  ///
+  /// When driven via [GlassMorphController], mirrors [triggerPushDy] (parallel
+  /// recoil starting at `t = 0 ms` of close, peaking at `~183 ms`).
   final double pushDy;
+
+  /// Parallel horizontal recoil displacement for the trigger button on close,
+  /// in logical pixels.
+  ///
+  /// Starts immediately when `close()` begins (`t = 0 ms`), peaks around
+  /// `~183 ms` (matching iOS 27 `_kickView` / `MagicMorphView` #2), crosses
+  /// zero around `~483 ms`, and settles smoothly by `~530–550 ms`. Bounded via
+  /// a smooth soft-saturation curve so every menu/popover/sheet travel produces
+  /// a proportional `~5–16 px` physical catch.
+  final double triggerPushDx;
+
+  /// Parallel vertical recoil displacement for the trigger button on close,
+  /// in logical pixels.
+  ///
+  /// Starts immediately when `close()` begins (`t = 0 ms`), peaks around
+  /// `~183 ms`, and settles smoothly by `~530–550 ms`.
+  final double triggerPushDy;
+
+  /// Tactile impact compression scale (`~0.96–1.0`) applied to the trigger in
+  /// parallel with [triggerPushDx] / [triggerPushDy] during close.
+  ///
+  /// `1.0` at rest and throughout open; compresses smoothly toward `~0.965` at
+  /// peak catch (`~183 ms`) and rebounds to `1.0` as the trigger settles.
+  final double triggerImpactScale;
+
+  /// Centered horizontal width progress for wide/pill triggers (`tw > th`),
+  /// matching native iOS 27 `MagicMorphView` #2:
+  ///
+  /// - `1.0` at rest (full `triggerWidth`).
+  /// - Contracts `1.0 → 0.0` (`tw → min(tw, th)` centered on `trigger.center`)
+  ///   on open (`ω₀ ≈ 25 rad/s, ζ ≈ 0.94`).
+  /// - `0.0` while settled open (compact circle at `trigger.center`).
+  /// - Re-expands `0.0 → 1.0` (`min(tw, th) → tw` centered on `trigger.center`)
+  ///   on close (`ω₀ ≈ 13 rad/s, ζ ≈ 0.795`), crossing `1.0` around `~320 ms`,
+  ///   overshooting `+1.6%` (`~1.016`) horizontal splash around `~400 ms`, and
+  ///   settling to `1.0` by `~530–550 ms`.
+  final double triggerWidthProgress;
+
+  /// Uniform platter scale factor (`1.0 → 0.20` on close around
+  /// `trigger.center`, matching iOS 27 `_UIContextMenuView`; `sizeT` on open).
+  final double platterScale;
+
+  /// Glass material visibility factor (`[0.0 – 1.0]`) for the morphing platter
+  /// (Blob B).
+  ///
+  /// - `0.0` when idle at rest or after the closing platter vanishes (`~280 ms`).
+  /// - `1.0` during open and when settled open.
+  /// - On close: stays `1.0` (dense, fully refractive liquid glass) down to
+  ///   `rawValue = 0.25` (`0..~165 ms`) while menu rows fade via
+  ///   [contentOpacity], and dissolves smoothly `(rawValue / 0.25).clamp(0.0, 1.0)`
+  ///   only over the final SDF merge window `rawValue ∈ [0.0, 0.25]`
+  ///   (`~165..283 ms`).
+  ///
+  /// **Important:** Apply this through `GlassMaterializeScope(glassProgress:)`
+  /// or shader visibility — never wrap `AdaptiveLiquidGlassLayer` in a
+  /// fractional `Opacity` widget, which pushes an offscreen `saveLayer` and
+  /// breaks Impeller `BackdropFilter` backdrop sampling.
+  final double platterOpacity;
+
+  /// Opacity (`[0.0 – 1.0]`) for the platter's inner items / content.
+  ///
+  /// - On open: ramps `0.0 → 1.0` across `sizeT ∈ [0.15, 1.0]`.
+  /// - On close: tracks `((platterScale - 0.20) / 0.80).clamp(0.0, 1.0)` all
+  ///   the way to platter vanish (`~280 ms`), matching iOS 27 `_UIContextMenuView`
+  ///   so menu items never vanish prematurely into an empty frosted blob.
+  final double contentOpacity;
+
+  /// Whether the morphing platter (Blob B) is currently active and should be
+  /// painted in the overlay.
+  ///
+  /// Turns `false` around `~280 ms` into a close once the platter vanishes at
+  /// `platterScale <= 0.20`, while `GlassMorphController.isShowing` remains
+  /// `true` until `~550 ms` so the trigger completes its recoil and horizontal
+  /// width splash.
+  final bool isPlatterActive;
 
   /// Scale factor for the anchor (ghost trigger) blob in `[0.0 – 1.0]`.
   ///
   /// Shrinks to `0.0` over the first 40 % of the opening animation so the
-  /// liquid bridge detaches cleanly. Grows back during closing so the real
-  /// trigger button is ready to "catch" the returning menu.
+  /// liquid bridge detaches cleanly. Grows back during closing so the trigger
+  /// blob catches the returning platter.
   final double anchorScale;
 
   /// Metaball merge intensity in SDF blur units, clamped to `[0.0 – 28.0]`.
   ///
   /// Derived from the separation between [pathT] and [sizeT]: zero when the
-  /// blobs perfectly overlap (no swell needed), and maximum when the teardrop
-  /// bridge is at peak stretch. Attenuated proportionally for large-scale
-  /// morphs to prevent excessive SDF merging.
+  /// blobs perfectly overlap, and maximum when the teardrop bridge is at peak
+  /// stretch. Attenuated proportionally for large-scale morphs.
   final double blend;
 
-  /// Scale pulse applied to the menu container (Blob B) during the spring
+  /// Scale pulse applied to the platter container (Blob B) during spring
   /// overshoot phases.
-  ///
-  /// - `1.0` during normal travel.
-  /// - Slightly above `1.0` on open overshoot (negligible — overdamped).
-  /// - Drops below `1.0` on close undershoot to produce the visible squeeze.
   final double containerScale;
 
   /// Semantic lifecycle phase of the morph for this frame.
   final MorphPhase phase;
 }
 
-/// Pure, stateless math engine for liquid glass morphing animations.
+/// Pure, stateless math engine for iOS 27 liquid glass morphing animations.
 ///
-/// This class implements the J-curve back-out position curve and
-/// [Curves.linearToEaseOut] / smootherstep size curve that together create the
-/// iOS 26 liquid teardrop morphing effect.
-///
-/// It is **intentionally stateless** — feed it the raw animation value plus
-/// the source/destination geometry and it returns a fully computed
-/// [LiquidMorphState] for that frame. No `BuildContext`, no `State`, no
-/// `ChangeNotifier` dependencies.
-///
-/// ## Design
-///
-/// Two conceptual blobs drive the morph:
-///
-/// - **Blob A** (anchor / ghost trigger) stays at the trigger position and
-///   shrinks away over the first 40 % of the animation to cleanly break the
-///   liquid bridge.
-/// - **Blob B** (menu body) travels from the trigger center to the menu
-///   center along a J-curve overshoot trajectory, expanding from trigger size
-///   to menu size.
-///
-/// The metaball SDF shader automatically creates the teardrop neck between the
-/// two blobs — there is no explicit neck geometry.
-///
-/// ## Auto-Scaling
-///
-/// When [compute] receives a `scaleDelta` greater than `1.5`, the engine
-/// engages **adaptive mode**:
-///
-/// - The J-curve back-out amplitude is reduced inversely with vertical travel
-///   so the physical overshoot stays within ~10–14 px regardless of the
-///   destination size. This eliminates the 35–40 px "plunge" seen when a
-///   large menu or full-sheet morph uses the small-menu constant.
-/// - The size curve switches from [Curves.linearToEaseOut] to a smootherstep
-///   sigmoid (for `scaleDelta > 3.0`) that keeps the droplet compact through
-///   the detach/travel phases and blossoms rapidly only as it lands.
-/// - Blend attenuation prevents excessive SDF merging at extreme scale ratios.
-/// - Push momentum is bounded to a physical maximum so the trigger bounces
-///   with native-grade subtlety rather than a jarring multi-pixel jolt.
-///
-/// ## Usage
-///
-/// ```dart
-/// // Typically called from an AnimatedBuilder or addListener callback.
-/// final state = LiquidMorphPhysics.compute(
-///   rawValue: controller.value,
-///   finalDx: finalDx,
-///   finalDy: finalDy,
-///   horizontalOffset: _horizontalOffset,
-///   verticalOffset: _verticalOffset,
-/// );
-///
-/// // Apply to the UI:
-/// Positioned(
-///   left: triggerX + state.pushDx,
-///   top:  triggerY + state.pushDy,
-///   child: Transform.scale(scale: state.anchorScale, child: blobA),
-/// )
-/// ```
+/// Calibrated directly against 60 fps `CADisplayLink` `CALayer.presentation()`
+/// traces of native iOS 27 SwiftUI `Menu`, `.popover`, and `.sheet` morphs
+/// (`_UIMorphAnimationContainerView`, `MagicMorphView`, `_UIContextMenuView`).
 class LiquidMorphPhysics {
   // Pure utility class — no instances.
   const LiquidMorphPhysics._();
 
-  // ─── iOS 26 Spring Constants ───────────────────────────────────────────────
+  // ─── Calibrated iOS 27 Spring Constants ────────────────────────────────────
   //
-  // Both open and close use the same underdamped spring profile:
-  //   mass: 1.0, stiffness: 120.0, damping: 16.0
-  //   ω₀ = √(120/1) ≈ 11 rad/s,  ζ = 16/(2×11) ≈ 0.73 — slightly underdamped.
+  // Open platter morph (MagicMorphView #1 / _UIReparentingView):
+  //   ω₀ = 17.0 rad/s, ζ ≈ 0.76  →  stiffness = 289.0, damping = 25.8
   //
-  // The underdamping is intentional: it lets the spring overshoot past 0.0 on
-  // close, which drives the physical "bump" on the trigger icon. The J-curve
-  // position curve and the [closeVelocityHint] amplify this into the satisfying
-  // iOS-native rubber-band momentum feel.
+  // Close platter contraction (_UIContextMenuView):
+  //   ω₀ = 18.0 rad/s, ζ ≈ 0.86  →  stiffness = 324.0, damping = 31.0
 
-  /// Spring profile for the iOS 26 liquid morph **opening** animation.
+  /// Spring profile for the iOS 27 liquid morph **opening** animation
+  /// (`ω₀ = 17.0 rad/s`, `ζ ≈ 0.76`, `response ≈ 0.37 s`).
   static const SpringDescription openSpring = SpringDescription(
     mass: 1.0,
-    stiffness: 120.0,
-    damping: 16.0,
+    stiffness: 289.0,
+    damping: 25.8,
   );
 
-  /// Spring profile for the iOS 26/27 liquid morph **closing** animation.
-  ///
-  /// Matches the native iOS 27 `_UIContextMenuView` / `_UIMagicMorphView`
-  /// dismissal response (`response ≈ 0.35s`, ω₀ ≈ 11.0 rad/s, ζ ≈ 0.73),
-  /// paired with [closeVelocityHint] (`-2.5`) to drive the spring smoothly
-  /// home with an underdamped rubber-band catch on the trigger button.
+  /// Spring profile for the iOS 27 liquid morph **closing** platter animation
+  /// (`ω₀ = 18.0 rad/s`, `ζ ≈ 0.86`, `response ≈ 0.35 s`).
   static const SpringDescription closeSpring = SpringDescription(
     mass: 1.0,
-    stiffness: 120.0,
-    damping: 16.0,
+    stiffness: 324.0,
+    damping: 31.0,
   );
 
   /// Initial velocity hint injected when the close animation starts.
   ///
-  /// A negative value immediately drives the spring toward zero with
-  /// momentum, creating a responsive initial pull and a subtle underdamped
-  /// rubber-band catch on the trigger without slamming shut prematurely.
-  static const double closeVelocityHint = -2.5;
+  /// Native iOS 27 `_UIContextMenuView` dismissal (`ω₀ = 18.0 rad/s, ζ = 0.86`)
+  /// launches smoothly from `0.0` velocity while the trigger's parallel
+  /// `_kickView` recoil spring peaks at `~183 ms`.
+  static const double closeVelocityHint = 0.0;
+
+  // ─── Secondary Parallel Spring Constants (iOS 27 MagicMorphView #2) ────────
+
+  /// Open wide-trigger contraction (`tw → min(tw, th)` around `trigger.center`):
+  /// `ω₀ = 25.0 rad/s, ζ = 0.94` (`response = 0.25 s`).
+  static const double _openTriggerWidthOmega0 = 25.0;
+  static const double _openTriggerWidthZeta = 0.94;
+
+  /// Close wide-trigger re-expansion (`min(tw, th) → tw` around `trigger.center`):
+  /// `ω₀ = 13.0 rad/s, ζ = 0.795` (`response = 0.48 s`, `+1.6%` splash at `~400 ms`).
+  static const double _closeTriggerWidthOmega0 = 13.0;
+  static const double _closeTriggerWidthZeta = 0.795;
+
+  /// Parallel close recoil coupled springs (`_kickView`):
+  /// `S(t; ω=17.0, ζ=0.70) - S(t; ω=18.0, ζ=1.0)` peaks at `t ≈ 180–183 ms`
+  /// with raw amplitude `0.139711`, crossing zero at `~483 ms`.
+  static const double _recoilUnderOmega0 = 17.0;
+  static const double _recoilUnderZeta = 0.70;
+  static const double _recoilCritOmega0 = 18.0;
+  static const double _recoilRawPeak = 0.139711;
+
+  /// Asymptotic ceiling (logical px) and half-saturation travel distance (px)
+  /// for the parallel close trigger recoil:
+  /// `peakPush = _maxRecoilPx * D / (D + _recoilHalfTravelPx)`
+  /// yields `~5.6 px` on short menus (`D = 35`), `~10.9 px` on medium (`D = 125`),
+  /// `~13.1 px` on tall (`D = 220`), and `~15.1 px` on modal sheets (`D = 450+`).
+  static const double _maxRecoilPx = 17.5;
+  static const double _recoilHalfTravelPx = 75.0;
 
   // ─── Tuning constants (intentionally not public) ───────────────────────────
-  //
-  // These constants are calibrated for iOS 26 native parity. Exposing them
-  // as public parameters would allow developers to produce physically broken
-  // animations. Use [GlassMorphController.speed] for safe speed control.
 
   /// Amplitude of the J-curve back-out overshoot for position interpolation.
-  ///
-  /// Applies only for small-scale morphs (scaleDelta ≤ 1.5). Large-scale
-  /// morphs compute an adaptive amplitude via [computeAdaptiveBackOutAmplitude]
-  /// to keep the physical overshoot within a tight iOS-native envelope.
   static const double _backOutAmplitude = 2.5;
 
   /// The minimum adaptive back-out amplitude.
-  ///
-  /// Prevents the overshoot from flattening entirely on very large travel
-  /// distances — the teardrop neck still needs a visible pull to read as liquid.
   static const double _minBackOutAmplitude = 0.7;
 
-  /// Vertical travel threshold below which full [_backOutAmplitude] applies.
-  ///
-  /// Morphs with `|finalDy| <= 100 px` are considered small controls (chips,
-  /// buttons, short menus) and receive the unattenuated 2.5 amplitude.
-  static const double _adaptiveThresholdDy = 100.0;
+  /// Euclidean travel threshold below which full [_backOutAmplitude] applies.
+  static const double _adaptiveThresholdTravel = 100.0;
 
   /// Fraction of the animation over which the anchor blob shrinks to zero.
   static const double _anchorEaseDuration = 0.4;
@@ -250,23 +279,13 @@ class LiquidMorphPhysics {
   /// Maximum SDF blend value to prevent excessive merging on small movements.
   static const double _maxBlend = 28.0;
 
-  /// Maximum travel distance (logical pixels) for the full close push.
-  ///
-  /// When the trigger-to-destination distance exceeds this, the push momentum
-  /// applied to Blob A is scaled down proportionally so the trigger's bounce
-  /// remains a subtle iOS-native nudge rather than a jarring multi-pixel jolt.
+  /// Maximum travel distance (logical pixels) for stateless legacy `rawValue < 0` push.
   static const double _maxPushTravelPx = 80.0;
 
   // ─── Public helpers ────────────────────────────────────────────────────────
 
-  /// Computes the geometric scale ratio from [sourceSize] to [targetSize].
-  ///
-  /// Uses the square root of the area ratio, which treats width and height
-  /// symmetrically:
-  ///
-  /// ```
-  /// Δ_scale = √(targetArea / sourceArea)
-  /// ```
+  /// Computes the geometric scale ratio from [sourceSize] to [targetSize]:
+  /// `Δ_scale = √(targetArea / sourceArea)`.
   ///
   /// Returns `1.0` when [sourceSize] is zero-area (zero-sized triggers).
   static double computeScaleDelta({
@@ -279,64 +298,107 @@ class LiquidMorphPhysics {
     return math.sqrt(targetArea / sourceArea);
   }
 
-  /// Computes the adaptive J-curve back-out amplitude for a given vertical
-  /// travel distance.
+  /// Computes the adaptive J-curve back-out amplitude for a given Euclidean
+  /// travel distance `hypot(finalDx, finalDy)`.
   ///
-  /// For `|finalDy| <= 100 px` (small controls), returns [baseAmplitude] (2.5)
-  /// unchanged. For larger travel distances the amplitude is reduced inversely
-  /// so the peak physical overshoot stays within ~10–14 px instead of
-  /// plunging 35–40 px.
-  ///
-  /// The result is never lower than [_minBackOutAmplitude] (0.7), preserving
-  /// enough J-curve for a visible teardrop neck.
+  /// For travel `<= 100 px`, returns [baseAmplitude] (`2.5`) unchanged. For
+  /// larger travel distances, reduces inversely so physical overshoot stays
+  /// within a tight native envelope on both horizontal and vertical axes,
+  /// floored at [_minBackOutAmplitude] (`0.7`).
   static double computeAdaptiveBackOutAmplitude({
     required double finalDy,
+    double finalDx = 0.0,
     double baseAmplitude = _backOutAmplitude,
   }) {
-    final absDy = finalDy.abs();
-    if (absDy <= _adaptiveThresholdDy) return baseAmplitude;
-    return (baseAmplitude * _adaptiveThresholdDy / absDy)
+    final travel = math.sqrt(finalDx * finalDx + finalDy * finalDy);
+    if (travel <= _adaptiveThresholdTravel) return baseAmplitude;
+    return (baseAmplitude * _adaptiveThresholdTravel / travel)
         .clamp(_minBackOutAmplitude, baseAmplitude);
   }
 
+  /// Computes a monotonic corner radius for a morphing glass surface of
+  /// [currentSize], interpolating smoothly from [triggerRadius] (`progress = 0`)
+  /// to [targetRadius] (`progress = 1`).
+  ///
+  /// Clamped by `min(currentSize.width, currentSize.height) / 2` so small
+  /// droplets remain true circles/pills, and guaranteed **never** to balloon
+  /// above `max(triggerRadius, targetRadius)` mid-flight.
+  static double computeCornerRadius({
+    required Size currentSize,
+    required double triggerRadius,
+    required double targetRadius,
+    required double progress,
+  }) {
+    final shortestHalf =
+        math.max(0.0, math.min(currentSize.width, currentSize.height) / 2.0);
+    final t = progress.clamp(0.0, 1.0);
+    final interpolated = triggerRadius + (targetRadius - triggerRadius) * t;
+    final upperBound = math.max(triggerRadius, targetRadius);
+    return math.min(shortestHalf, interpolated.clamp(0.0, upperBound));
+  }
+
   /// Computes the SDF blend attenuation factor for a given scale ratio.
-  ///
-  /// Returns `1.0` (full blend) when [scaleDelta] <= 3.0 — small menus and
-  /// controls where the teardrop neck should be fully visible. For larger
-  /// ratios, the blend is attenuated inversely to prevent excessive SDF
-  /// merging that would fill the whole viewport.
-  ///
-  /// Clamped to a floor of `0.2` so the teardrop bridge never fully
-  /// disappears.
   static double computeBlendAttenuation(double scaleDelta) {
     if (scaleDelta <= 3.0) return 1.0;
     return (3.0 / scaleDelta).clamp(0.2, 1.0);
   }
 
+  /// Computes the parallel close trigger recoil offset (logical px) at
+  /// speed-scaled [elapsedSeconds] (`>= 0`) for a trigger-to-platter [travel]
+  /// vector, using the smooth soft-saturation curve (`~5–16 px` peak at
+  /// `~183 ms`).
+  static Offset recoilOffsetForElapsed({
+    required Offset travel,
+    required double elapsedSeconds,
+    double closeStartProgress = 1.0,
+  }) {
+    if (elapsedSeconds <= 0.0 || closeStartProgress <= 0.001) {
+      return Offset.zero;
+    }
+    final pulse =
+        _recoilPulse(elapsedSeconds) * closeStartProgress.clamp(0.0, 1.0);
+    final denom = travel.distance + _recoilHalfTravelPx;
+    return Offset(
+      -(_maxRecoilPx * travel.dx / denom) * pulse,
+      -(_maxRecoilPx * travel.dy / denom) * pulse,
+    );
+  }
+
+  /// Computes the tactile trigger impact scale (`~0.96–1.0`) at speed-scaled
+  /// [elapsedSeconds] (`>= 0`) during close.
+  static double impactScaleForElapsed({
+    required Offset travel,
+    required double elapsedSeconds,
+    double closeStartProgress = 1.0,
+  }) {
+    if (elapsedSeconds <= 0.0 || closeStartProgress <= 0.001) return 1.0;
+    final pulse =
+        _recoilPulse(elapsedSeconds) * closeStartProgress.clamp(0.0, 1.0);
+    final travelMag = travel.distance;
+    final impactDepth =
+        0.025 + 0.015 * (travelMag / (travelMag + _recoilHalfTravelPx));
+    return (1.0 - impactDepth * pulse).clamp(0.92, 1.02);
+  }
+
+  /// Computes the wide-trigger centered width re-expansion progress
+  /// (`0.0 → 1.0` with `+1.6%` horizontal splash at `~400 ms`) at speed-scaled
+  /// [elapsedSeconds] (`>= 0`) during close.
+  static double closeTriggerWidthForElapsed(
+    double elapsedSeconds, {
+    double startWidthProgress = 0.0,
+  }) {
+    final sWidth = _stepResponse(
+      elapsedSeconds,
+      _closeTriggerWidthOmega0,
+      _closeTriggerWidthZeta,
+    );
+    final startW = startWidthProgress.clamp(0.0, 1.0);
+    return startW + (1.0 - startW) * sWidth;
+  }
+
   // ─── Core computation ──────────────────────────────────────────────────────
 
   /// Computes the full [LiquidMorphState] for a single animation frame.
-  ///
-  /// ### Parameters
-  ///
-  /// - [rawValue] — the raw, unclamped value from `AnimationController.unbounded`.
-  ///   Legitimately exceeds `[0, 1]` during spring overshoot phases.
-  /// - [finalDx] — target horizontal displacement from the trigger center to
-  ///   the menu center, in logical pixels.
-  /// - [finalDy] — target vertical displacement from the trigger center to
-  ///   the menu center, in logical pixels.
-  /// - [horizontalOffset] — screen-edge clamping correction for horizontal
-  ///   overflow, accumulated by the menu positioning logic.
-  /// - [verticalOffset] — screen-edge clamping correction for vertical overflow.
-  /// - [scaleDelta] — geometric scale ratio of the morph (target area / source
-  ///   area, square-rooted). Use [computeScaleDelta] to derive this from sizes.
-  ///   Values > 1.5 engage adaptive damping. Defaults to `1.0` for backward
-  ///   compatibility — all existing callers without geometry information are
-  ///   unaffected.
-  /// - [adaptiveDamping] — explicit opt-in/opt-out override for adaptive mode.
-  ///   When `null` (default), adaptive mode is inferred from [scaleDelta].
-  /// - [isClosing] — whether the morph animation is closing back to origin.
-  ///   Defaults to `false`. When `true`, avoids reverse-direction J-curve launch.
   static LiquidMorphState compute({
     required double rawValue,
     required double finalDx,
@@ -346,33 +408,30 @@ class LiquidMorphPhysics {
     double scaleDelta = 1.0,
     bool? adaptiveDamping,
     bool isClosing = false,
+    double? elapsedSeconds,
+    bool hasHandedOff = false,
+    bool isSettled = false,
+    bool disableAnimations = false,
+    double phaseStartTriggerWidth = 1.0,
+    double closeStartProgress = 1.0,
   }) {
     final clampedValue = rawValue.clamp(0.0, 1.0);
 
-    // Inject the close undershoot so Blob B bounces past the anchor on close.
-    // The open-side overshoot (rawValue > 1) is intentionally excluded because
-    // it causes an unwanted size wobble during the initial expansion.
+    // Preserve close undershoot additive term for direct/stateless callers.
     final closeUndershoot = rawValue < 0.0 ? rawValue : 0.0;
 
     // ── Adaptive mode detection ───────────────────────────────────────────────
-    // Engages when explicitly requested or when the scale ratio indicates a
-    // large-scale morph (button → sheet, button → tall menu).
     final bool adaptive = adaptiveDamping ?? (scaleDelta > 1.5);
 
-    // ── Effective J-curve amplitude ───────────────────────────────────────────
-    // Small morphs (adaptive = false): full 2.5 amplitude for maximum teardrop.
-    // Large morphs (adaptive = true): damped inversely with vertical travel so
-    // physical overshoot stays within ~10–14 px.
+    // ── Effective J-curve amplitude (Euclidean travel) ────────────────────────
     final double amplitude = adaptive
-        ? computeAdaptiveBackOutAmplitude(finalDy: finalDy)
+        ? computeAdaptiveBackOutAmplitude(
+            finalDx: finalDx + horizontalOffset,
+            finalDy: finalDy + verticalOffset,
+          )
         : _backOutAmplitude;
 
-    // ── J-Curve Position ──────────────────────────────────────────────────────
-    // On open: The back-out curve overshoots past 1.0 before settling at 1.0,
-    // creating the "string pull" teardrop neck at maximum separation.
-    // On close: The surface returns home toward 0.0 following the spring's
-    // natural deceleration profile without any reverse-direction launch, plus
-    // the closing undershoot bounce past 0.0.
+    // ── J-Curve / Close Position ──────────────────────────────────────────────
     final double pathT;
     if (isClosing) {
       pathT = clampedValue + closeUndershoot;
@@ -382,16 +441,13 @@ class LiquidMorphPhysics {
     }
 
     // ── Size ─────────────────────────────────────────────────────────────────
-    // On close: ease-in via inverted linearToEaseOut so the surface visibly
-    // shrinks while returning toward the anchor, opening |pathT - sizeT| in
-    // mid-flight to drive the SDF metaball bridge.
-    // On open:
-    //   Small morphs: linearToEaseOut — starts fast, decelerates to the target.
-    //   Large morphs (scaleDelta > 3): smootherstep — keeps early peel controlled
-    //     through detach/travel, then blossoms into destination bounds.
+    // On close: tightly coupled quadratic curve (`u * (0.62 + 0.38 * u)`) that
+    // stays in lockstep with `pathT` all the way to landing (~280 ms) without
+    // early flatlining, while opening enough mid-flight |pathT - sizeT|
+    // separation to drive the SDF metaball bridge.
     final double rawSizeT;
     if (isClosing) {
-      rawSizeT = 1.0 - Curves.linearToEaseOut.transform(1.0 - clampedValue);
+      rawSizeT = clampedValue * (0.62 + 0.38 * clampedValue);
     } else if (adaptive && scaleDelta > 3.0) {
       rawSizeT = _smootherStep(clampedValue);
     } else {
@@ -399,59 +455,135 @@ class LiquidMorphPhysics {
     }
     final sizeT = rawSizeT + closeUndershoot;
 
-    // ── Closing Momentum Push (Blob A displacement) ───────────────────────────
-    // When the spring overshoots past 0 (rawValue < 0), Blob A is displaced
-    // proportionally to mirror the closing momentum.
-    //
-    // For large-scale morphs the raw displacement would be proportional to the
-    // huge travel distance, producing a jarring multi-pixel jolt on the trigger.
-    // The pushFactor caps the effective travel to [_maxPushTravelPx] so the
-    // bounce remains a subtle iOS-native nudge.
-    final double pushFactor;
-    if (adaptive) {
-      final travelDx = (finalDx + horizontalOffset).abs();
-      final travelDy = (finalDy + verticalOffset).abs();
-      final travelMag = math.sqrt(travelDx * travelDx + travelDy * travelDy);
-      pushFactor = travelMag > 0.0
-          ? (_maxPushTravelPx / travelMag).clamp(0.0, 1.0)
-          : 1.0;
+    // ── Trigger Recoil & Push Momentum ────────────────────────────────────────
+    final travelDx = finalDx + horizontalOffset;
+    final travelDy = finalDy + verticalOffset;
+    final travelMag = math.sqrt(travelDx * travelDx + travelDy * travelDy);
+
+    double pushDx;
+    double pushDy;
+    double triggerPushDx;
+    double triggerPushDy;
+    double triggerImpactScale;
+
+    if (elapsedSeconds != null) {
+      if (isClosing &&
+          !disableAnimations &&
+          !isSettled &&
+          closeStartProgress > 0.001) {
+        final recoilPulse =
+            _recoilPulse(elapsedSeconds) * closeStartProgress.clamp(0.0, 1.0);
+        final denom = travelMag + _recoilHalfTravelPx;
+        triggerPushDx = -(_maxRecoilPx * travelDx / denom) * recoilPulse;
+        triggerPushDy = -(_maxRecoilPx * travelDy / denom) * recoilPulse;
+        pushDx = triggerPushDx;
+        pushDy = triggerPushDy;
+
+        final impactDepth = 0.025 + 0.015 * (travelMag / denom);
+        triggerImpactScale =
+            (1.0 - impactDepth * recoilPulse).clamp(0.92, 1.02);
+      } else {
+        pushDx = 0.0;
+        pushDy = 0.0;
+        triggerPushDx = 0.0;
+        triggerPushDy = 0.0;
+        triggerImpactScale = 1.0;
+      }
     } else {
-      pushFactor = 1.0;
+      // Stateless fallback when called without a controller elapsed clock.
+      final double pushFactor;
+      if (adaptive) {
+        pushFactor = travelMag > 0.0
+            ? (_maxPushTravelPx / travelMag).clamp(0.0, 1.0)
+            : 1.0;
+      } else {
+        pushFactor = 1.0;
+      }
+      pushDx = rawValue < 0.0 ? travelDx * rawValue * pushFactor : 0.0;
+      pushDy = rawValue < 0.0 ? travelDy * rawValue * pushFactor : 0.0;
+      triggerPushDx = pushDx;
+      triggerPushDy = pushDy;
+      triggerImpactScale =
+          rawValue < 0.0 ? (1.0 + rawValue * 0.35).clamp(0.88, 1.0) : 1.0;
     }
-    final pushDx = rawValue < 0.0
-        ? (finalDx + horizontalOffset) * rawValue * pushFactor
-        : 0.0;
-    final pushDy = rawValue < 0.0
-        ? (finalDy + verticalOffset) * rawValue * pushFactor
-        : 0.0;
+
+    // ── Wide-Trigger Centered Width Progress (MagicMorphView #2) ─────────────
+    final double triggerWidthProgress;
+    if (isClosing) {
+      if (disableAnimations || isSettled) {
+        triggerWidthProgress = isSettled ? 1.0 : (1.0 - clampedValue);
+      } else if (elapsedSeconds != null) {
+        final sWidth = _stepResponse(
+          elapsedSeconds,
+          _closeTriggerWidthOmega0,
+          _closeTriggerWidthZeta,
+        );
+        final startW = phaseStartTriggerWidth.clamp(0.0, 1.0);
+        triggerWidthProgress = startW + (1.0 - startW) * sWidth;
+      } else {
+        triggerWidthProgress = 1.0 - clampedValue - closeUndershoot;
+      }
+    } else {
+      if (clampedValue <= 0.001 &&
+          (elapsedSeconds == null || elapsedSeconds <= 0.0)) {
+        triggerWidthProgress = 1.0;
+      } else if (disableAnimations || isSettled) {
+        triggerWidthProgress = clampedValue >= 0.999 ? 0.0 : 1.0 - clampedValue;
+      } else if (elapsedSeconds != null) {
+        final sWidth = _stepResponse(
+          elapsedSeconds,
+          _openTriggerWidthOmega0,
+          _openTriggerWidthZeta,
+        );
+        final startW = phaseStartTriggerWidth.clamp(0.0, 1.0);
+        triggerWidthProgress = (startW * (1.0 - sWidth)).clamp(0.0, 1.0);
+      } else {
+        triggerWidthProgress = (1.0 - (clampedValue / 0.55)).clamp(0.0, 1.0);
+      }
+    }
+
+    // ── Platter Scale, Opacity, & Active Window (_UIContextMenuView) ─────────
+    final double platterScale;
+    final double platterOpacity;
+    final double contentOpacity;
+    final bool isPlatterActive;
+
+    if (isClosing) {
+      platterScale = (0.20 + 0.80 * rawValue).clamp(0.18, 1.0);
+      final bool active = !hasHandedOff && !isSettled && rawValue > 0.001;
+      isPlatterActive = active;
+      final fade =
+          active ? ((platterScale - 0.20) / 0.80).clamp(0.0, 1.0) : 0.0;
+      platterOpacity = active ? (rawValue / 0.25).clamp(0.0, 1.0) : 0.0;
+      contentOpacity = fade;
+    } else {
+      platterScale = sizeT.clamp(0.0, 1.0);
+      isPlatterActive = rawValue > 0.001;
+      platterOpacity = isPlatterActive ? 1.0 : 0.0;
+      contentOpacity = isPlatterActive
+          ? ((platterScale - 0.15) / 0.85).clamp(0.0, 1.0)
+          : 0.0;
+    }
 
     // ── Blob B Displacement ───────────────────────────────────────────────────
     final currentDx = finalDx * pathT;
     final currentDy = finalDy * pathT;
 
     // ── Anchor Scale ─────────────────────────────────────────────────────────
-    // Shrinks the ghost trigger (Blob A) to 0 over the first 40% of the open
-    // animation so the droplet cleanly detaches, and grows it back from 0 to 1
-    // over the final 40% of the close animation as the droplet re-merges.
     final anchorScale =
         (1.0 - (clampedValue / _anchorEaseDuration)).clamp(0.0, 1.0);
 
     // ── Metaball Blend ────────────────────────────────────────────────────────
-    // Separation between pathT (position) and sizeT (size) drives the SDF
-    // smooth-union radius on both open and close, peaking in mid-flight and
-    // converging to 0.0 at rest (0.0) and settled (1.0) so there is zero
-    // artificial SDF inflation at handoff.
     final blendAttenuation = computeBlendAttenuation(scaleDelta);
     final separation = (pathT - sizeT).abs();
     final blend = (separation * _blendMultiplier * blendAttenuation)
         .clamp(0.0, _maxBlend);
 
     // ── Container Scale Pulse ─────────────────────────────────────────────────
-    // Subtle squeeze/swell during spring overshoot phases.
     final containerScale = rawValue > 1.0
-        ? 1.0 + (rawValue - 1.0) * 0.10 // open overshoot (negligible)
+        ? 1.0 + (rawValue - 1.0) * 0.10
         : rawValue < 0.0
-            ? 1.0 + rawValue * 0.55 // close undershoot → visible squeeze
+            ? 1.0 + rawValue * 0.55
             : 1.0;
 
     // ── Phase ─────────────────────────────────────────────────────────────────
@@ -468,6 +600,14 @@ class LiquidMorphPhysics {
       blend: blend,
       containerScale: containerScale,
       phase: phase,
+      triggerPushDx: triggerPushDx,
+      triggerPushDy: triggerPushDy,
+      triggerImpactScale: triggerImpactScale,
+      triggerWidthProgress: triggerWidthProgress,
+      platterScale: platterScale,
+      platterOpacity: platterOpacity,
+      contentOpacity: contentOpacity,
+      isPlatterActive: isPlatterActive,
     );
   }
 
@@ -480,12 +620,40 @@ class LiquidMorphPhysics {
     return MorphPhase.settled;
   }
 
+  /// Closed-form unit step response `0.0 → 1.0` with `v(0) = 0` for a damped
+  /// harmonic oscillator of natural frequency [omega0] and damping [zeta].
+  static double _stepResponse(double t, double omega0, double zeta) {
+    if (t <= 0.0) return 0.0;
+    if (zeta < 1.0 - 1e-6) {
+      final r = zeta * omega0;
+      final w = omega0 * math.sqrt(1.0 - zeta * zeta);
+      const c1 = -1.0;
+      final c2 = -r / w;
+      return 1.0 +
+          math.exp(-r * t) * (c1 * math.cos(w * t) + c2 * math.sin(w * t));
+    }
+    if (zeta > 1.0 + 1e-6) {
+      final s = math.sqrt(zeta * zeta - 1.0);
+      final r1 = -omega0 * (zeta - s);
+      final r2 = -omega0 * (zeta + s);
+      final c2 = r1 / (r2 - r1);
+      final c1 = -1.0 - c2;
+      return 1.0 + c1 * math.exp(r1 * t) + c2 * math.exp(r2 * t);
+    }
+    // Critically damped (ζ == 1.0):
+    return 1.0 - (1.0 + omega0 * t) * math.exp(-omega0 * t);
+  }
+
+  /// Normalized parallel close recoil pulse (`0.0` at `t=0`, `1.0` peak at
+  /// `t ≈ 180–183 ms`, `0.0` zero-crossing at `~483 ms`, settling by `~550 ms`).
+  static double _recoilPulse(double t) {
+    if (t <= 0.0) return 0.0;
+    final sUnder = _stepResponse(t, _recoilUnderOmega0, _recoilUnderZeta);
+    final sCrit = _stepResponse(t, _recoilCritOmega0, 1.0);
+    return (sUnder - sCrit) / _recoilRawPeak;
+  }
+
   /// Smootherstep sigmoid: `t^3 * (10 − 15t + 6t^2)`.
-  ///
-  /// Zero first and second derivatives at t = 0 and t = 1, so the size
-  /// curve starts and ends with zero velocity AND zero acceleration. This
-  /// keeps the droplet compact through the detach/travel phases (slow
-  /// start) and gives it a fast, smooth blossom into the destination.
   static double _smootherStep(double t) {
     final tc = t.clamp(0.0, 1.0);
     return tc * tc * tc * (tc * (tc * 6.0 - 15.0) + 10.0);
@@ -493,14 +661,6 @@ class LiquidMorphPhysics {
 }
 
 /// Back-out easing curve for the J-curve position overshoot.
-///
-/// Creates a pronounced overshoot past `1.0` before snapping back to `1.0`,
-/// which manifests as the teardrop "string pull" effect during the liquid morph.
-///
-/// - [amplitude] controls how far past `1.0` the curve overshoots.
-///   The default value of `2.5` is calibrated for iOS 26 native parity.
-///   Adaptive morphs pass a smaller value derived by
-///   [LiquidMorphPhysics.computeAdaptiveBackOutAmplitude].
 class _BackOutCurve extends Curve {
   const _BackOutCurve(this.amplitude);
   final double amplitude;

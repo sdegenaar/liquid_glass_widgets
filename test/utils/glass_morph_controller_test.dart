@@ -46,7 +46,6 @@ class _HarnessState extends State<_Harness> with TickerProviderStateMixin {
 }
 
 /// Mounts the harness and returns the controller.
-/// The first [pump] is included so the widget tree is fully built.
 Future<GlassMorphController> _mount(
   WidgetTester tester, {
   MorphSpeed speed = MorphSpeed.normal,
@@ -61,7 +60,6 @@ Future<GlassMorphController> _mount(
   return ctrl;
 }
 
-// Pumps one engine frame (16 ms) so that a spring simulation advances.
 Future<void> _pumpFrame(WidgetTester tester) =>
     tester.pump(const Duration(milliseconds: 16));
 
@@ -129,8 +127,6 @@ void main() {
       await tester.pumpAndSettle();
       ctrl.close();
       await tester.pumpAndSettle();
-      // hasHandedOff latched during close.
-      // Re-opening must clear it.
       ctrl.open();
       expect(ctrl.hasHandedOff, isFalse);
     });
@@ -139,7 +135,6 @@ void main() {
         (tester) async {
       final ctrl = await _mount(tester);
       ctrl.open();
-      // Advance 2 engine frames (spring has non-zero dt to integrate)
       await _pumpFrame(tester);
       await _pumpFrame(tester);
       expect(ctrl.value, greaterThan(0.0));
@@ -153,15 +148,20 @@ void main() {
       expect(ctrl.isShowing, isTrue);
     });
 
-    testWidgets('value approaches 1.0 after animation settles', (tester) async {
+    testWidgets('value approaches 1.0 and triggerWidthProgress reaches 0.0',
+        (tester) async {
       final ctrl = await _mount(tester);
       ctrl.open();
       await tester.pumpAndSettle();
       expect(ctrl.value, closeTo(1.0, 0.01));
+      final state = ctrl.computeState(finalDx: 0, finalDy: 120);
+      expect(state.triggerWidthProgress, equals(0.0));
+      expect(state.isPlatterActive, isTrue);
+      expect(state.platterOpacity, equals(1.0));
     });
   });
 
-  // ── close() ───────────────────────────────────────────────────────────────
+  // ── close() & parallel iOS 27 timeline ────────────────────────────────────
 
   group('GlassMorphController — close()', () {
     testWidgets('sets isClosing to true', (tester) async {
@@ -180,6 +180,41 @@ void main() {
       ctrl.close();
       await tester.pumpAndSettle();
       expect(ctrl.value, closeTo(0.0, 0.02));
+      final settled = ctrl.computeState(finalDx: 0, finalDy: 120);
+      expect(settled.triggerWidthProgress, equals(1.0));
+      expect(settled.triggerPushDy, equals(0.0));
+      expect(settled.isPlatterActive, isFalse);
+    });
+
+    testWidgets(
+        'parallel recoil peaks near ~183 ms while platter vanishes near ~285 ms and controller stays showing through ~400 ms width splash',
+        (tester) async {
+      final ctrl = await _mount(tester);
+      ctrl.open();
+      await tester.pumpAndSettle();
+
+      ctrl.close();
+      await tester.pump(); // start ticker at t = 0
+      await tester.pump(const Duration(milliseconds: 183));
+      final at183 = ctrl.computeState(finalDx: 0.0, finalDy: 125.0);
+      expect(at183.triggerPushDy.abs(), greaterThan(9.0),
+          reason: 'Trigger recoil must peak near ~183 ms');
+      expect(at183.isPlatterActive, isTrue);
+
+      // Advance past ~300 ms: platter has vanished (hasHandedOff == true),
+      // while controller is STILL showing to finish width splash (~400 ms).
+      await tester.pump(const Duration(milliseconds: 217)); // t = 400 ms
+      final at400 = ctrl.computeState(finalDx: 0.0, finalDy: 125.0);
+      expect(ctrl.hasHandedOff, isTrue);
+      expect(at400.isPlatterActive, isFalse);
+      expect(at400.platterOpacity, equals(0.0));
+      expect(ctrl.isShowing, isTrue,
+          reason: 'isShowing remains true while trigger splash finishes');
+      expect(at400.triggerWidthProgress, greaterThan(1.01),
+          reason: 'Wide trigger splashes +1.5%..2.5% past rest around 400 ms');
+
+      await tester.pumpAndSettle();
+      expect(ctrl.isShowing, isFalse);
     });
 
     testWidgets('hasHandedOff latches true after close animation',
@@ -213,7 +248,6 @@ void main() {
       ctrl.open();
       await _pumpFrame(tester);
       await _pumpFrame(tester);
-      // Mid-animation, not closing — handoff must not have fired.
       expect(ctrl.hasHandedOff, isFalse);
     });
 
@@ -235,7 +269,6 @@ void main() {
       ctrl.close();
       await tester.pumpAndSettle();
       final afterFirstClose = ctrl.hasHandedOff;
-      // Pump a few more frames — latch must stay latched, not re-fire.
       await _pumpFrame(tester);
       await _pumpFrame(tester);
       expect(ctrl.hasHandedOff, equals(afterFirstClose));
@@ -255,27 +288,20 @@ void main() {
       });
     }
 
-    test(
-        'fast spring has higher stiffness than slow (settles faster by design)',
-        () {
-      // Verify the contract via physics constants rather than animation timing.
-      // GlassMorphController._effectiveSpring uses these values:
-      //   slow:   stiffness=60,  damping=11.3
-      //   normal: stiffness=120, damping=16.0
-      //   fast:   stiffness=200, damping=20.5
-      //   instant: stiffness=500, damping=32.4
-      //
-      // Higher stiffness → higher ω₀ → faster settlement.
-      // This test validates the ordering of the spring constants.
-      // ω₀ = √(stiffness/mass), all at mass=1.
-      const slowStiffness = 60.0;
-      const normalStiffness = 120.0;
-      const fastStiffness = 200.0;
-      const instantStiffness = 500.0;
+    testWidgets('speedMultiplier orders slow < normal < fast < instant',
+        (tester) async {
+      final ctrl = await _mount(tester, speed: MorphSpeed.slow);
+      final slowMul = ctrl.speedMultiplier;
+      ctrl.speed = MorphSpeed.normal;
+      final normalMul = ctrl.speedMultiplier;
+      ctrl.speed = MorphSpeed.fast;
+      final fastMul = ctrl.speedMultiplier;
+      ctrl.speed = MorphSpeed.instant;
+      final instantMul = ctrl.speedMultiplier;
 
-      expect(normalStiffness, greaterThan(slowStiffness));
-      expect(fastStiffness, greaterThan(normalStiffness));
-      expect(instantStiffness, greaterThan(fastStiffness));
+      expect(normalMul, greaterThan(slowMul));
+      expect(fastMul, greaterThan(normalMul));
+      expect(instantMul, greaterThan(fastMul));
     });
   });
 
@@ -289,6 +315,7 @@ void main() {
       expect(state.sizeT, equals(0.0));
       expect(state.anchorScale, equals(1.0));
       expect(state.containerScale, equals(1.0));
+      expect(state.triggerWidthProgress, equals(1.0));
       expect(state.phase, equals(MorphPhase.idle));
     });
 
@@ -296,8 +323,6 @@ void main() {
         (tester) async {
       final ctrl = await _mount(tester);
       ctrl.open();
-      // Pump until value is clearly above 0.4 (anchor scale has zeroed out
-      // and Blob B is in mid-travel — pathT is guaranteed > 0).
       while (ctrl.value < 0.5) {
         await _pumpFrame(tester);
       }
@@ -309,9 +334,10 @@ void main() {
         (tester) async {
       final ctrl = await _mount(tester);
       ctrl.open();
-      await tester.pump(const Duration(milliseconds: 150));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
       final state = ctrl.computeState(finalDx: 80.0, finalDy: 160.0);
-      expect(state.anchorScale, lessThanOrEqualTo(1.0));
+      expect(state.anchorScale, lessThan(1.0));
     });
 
     testWidgets('horizontalOffset and verticalOffset are forwarded correctly',
@@ -362,17 +388,16 @@ void main() {
     testWidgets('velocity is non-zero mid-animation', (tester) async {
       final ctrl = await _mount(tester);
       ctrl.open();
-      // Pump multiple frames so the spring has a genuine non-zero velocity.
       await tester.pump(const Duration(milliseconds: 50));
       await tester.pump(const Duration(milliseconds: 16));
       expect(ctrl.velocity.abs(), greaterThan(0.0));
     });
   });
 
-  // ── MorphPhase enum completeness ──────────────────────────────────────────
+  // ── Enum completeness ─────────────────────────────────────────────────────
 
-  group('MorphPhase enum', () {
-    test('has all expected values', () {
+  group('MorphPhase / MorphSpeed / MorphStyle enums', () {
+    test('MorphPhase has all expected values', () {
       expect(
         MorphPhase.values,
         containsAll([
@@ -384,12 +409,8 @@ void main() {
         ]),
       );
     });
-  });
 
-  // ── MorphSpeed enum completeness ──────────────────────────────────────────
-
-  group('MorphSpeed enum', () {
-    test('has all expected values', () {
+    test('MorphSpeed has all expected values', () {
       expect(
         MorphSpeed.values,
         containsAll([
@@ -400,12 +421,8 @@ void main() {
         ]),
       );
     });
-  });
 
-  // ── MorphStyle enum completeness ──────────────────────────────────────────
-
-  group('MorphStyle enum', () {
-    test('has all expected values', () {
+    test('MorphStyle has all expected values', () {
       expect(
         MorphStyle.values,
         containsAll([
@@ -424,66 +441,46 @@ void main() {
       expect(ctrl.disableAnimations, isFalse);
     });
 
-    testWidgets('setDisableAnimations(true) sets the flag', (tester) async {
+    testWidgets('setDisableAnimations(true/false) toggles flag idempotently',
+        (tester) async {
       final ctrl = await _mount(tester);
+      int notifyCount = 0;
+      ctrl.addListener(() => notifyCount++);
+      ctrl.setDisableAnimations(false);
+      expect(notifyCount, equals(0));
+
       ctrl.setDisableAnimations(true);
       expect(ctrl.disableAnimations, isTrue);
-    });
-
-    testWidgets('setDisableAnimations(false) clears the flag', (tester) async {
-      final ctrl = await _mount(tester);
-      ctrl.setDisableAnimations(true);
       ctrl.setDisableAnimations(false);
       expect(ctrl.disableAnimations, isFalse);
     });
 
-    testWidgets('setDisableAnimations is idempotent (same value is a no-op)',
-        (tester) async {
-      final ctrl = await _mount(tester);
-      // Calling with the current value must not throw or notify.
-      int notifyCount = 0;
-      ctrl.addListener(() => notifyCount++);
-      ctrl.setDisableAnimations(false); // already false — no-op
-      expect(notifyCount, equals(0));
-    });
-
-    testWidgets('open() with disableAnimations=true still settles to ~1.0',
+    testWidgets('open() and close() with disableAnimations=true settle fast',
         (tester) async {
       final ctrl = await _mount(tester);
       ctrl.setDisableAnimations(true);
       ctrl.open();
-      // The instant spring is stiffer than normal but still integrates over
-      // engine frames — pumpAndSettle is the reliable way to let it finish.
       await tester.pumpAndSettle();
       expect(ctrl.value, closeTo(1.0, 0.01));
+      expect(ctrl.phaseElapsedSeconds, equals(0.0));
+
+      ctrl.close();
+      await tester.pumpAndSettle();
+      expect(ctrl.value, closeTo(0.0, 0.01));
     });
 
-    test(
-        'disableAnimations uses instant spring (stiffness=500) — '
-        'same as MorphSpeed.instant, which is the fastest preset', () {
-      // The instant-spring constant (stiffness=500) used by disableAnimations
-      // is identical to MorphSpeed.instant, which already sits above the
-      // fast (200) and normal (120) presets. Verify the ordering.
-      const disabledStiffness = 500.0; // matches _effectiveSpring override
-      const fastStiffness = 200.0;
-      const normalStiffness = 120.0;
-
-      expect(disabledStiffness, greaterThan(fastStiffness));
-      expect(disabledStiffness, greaterThan(normalStiffness));
-    });
-
-    testWidgets('disableAnimations does not affect value at rest',
+    testWidgets('disableAnimations uses instant speedMultiplier (2.5)',
         (tester) async {
       final ctrl = await _mount(tester);
       ctrl.setDisableAnimations(true);
-      // No open() called — value must still be 0.
+      expect(ctrl.speedMultiplier, equals(2.5));
       expect(ctrl.value, equals(0.0));
     });
   });
 
+  // ── Settling ──────────────────────────────────────────────────────────────
+
   group('GlassMorphController — settling', () {
-    /// Pumps 120 Hz frames until the controller stops; returns how long that
-    /// took, in milliseconds.
     Future<int> runUntilStill(
         WidgetTester tester, GlassMorphController c) async {
       var elapsed = 0;
@@ -495,19 +492,18 @@ void main() {
       return elapsed;
     }
 
-    testWidgets('an open stops once nothing visibly moves, on its target',
+    testWidgets('an open stops promptly (~420 ms) without spinning 22 frames',
         (tester) async {
       final ctrl = await _mount(tester);
       ctrl.open();
       final ms = await runUntilStill(tester, ctrl);
 
-      // The default tolerance ran the normal open spring for about 1.2 s.
-      expect(ms, lessThan(950));
+      expect(ms, lessThan(500));
       expect(ctrl.value, 1.0);
       expect(ctrl.velocity, 0.0);
     });
 
-    testWidgets('a close stops on 0 and reports itself settled',
+    testWidgets('a close stops near ~550 ms on 0 and reports itself settled',
         (tester) async {
       final ctrl = await _mount(tester);
       ctrl.open();
@@ -515,8 +511,7 @@ void main() {
       ctrl.close();
       final ms = await runUntilStill(tester, ctrl);
 
-      // The default tolerance ran the normal close spring for about 0.93 s.
-      expect(ms, lessThan(750));
+      expect(ms, inInclusiveRange(480, 620));
       expect(ctrl.value, 0.0);
       expect(ctrl.hasHandedOff, isTrue);
       expect(ctrl.isShowing, isFalse);
@@ -533,7 +528,6 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 16));
 
-      // Still on its way down, nowhere near the open target it abandoned.
       expect(ctrl.value, lessThan(1.0));
       await runUntilStill(tester, ctrl);
       expect(ctrl.value, 0.0);
@@ -548,14 +542,11 @@ void main() {
 
       ctrl.open();
       await runUntilStill(tester, ctrl);
-      // Let any microtask queued by the completion run before asserting.
       await tester.pump(const Duration(milliseconds: 50));
 
       expect(ctrl.value, 1.0);
       expect(ctrl.status, AnimationStatus.completed);
       expect(ctrl.animation.isCompleted, isTrue);
-      // Landing on the target must not report a status after `completed`:
-      // GlassMenu and GlassPopover gate their hide logic on `forward`.
       expect(statuses, [AnimationStatus.forward, AnimationStatus.completed]);
 
       statuses.clear();

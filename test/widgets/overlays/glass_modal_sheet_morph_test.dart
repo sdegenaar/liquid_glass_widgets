@@ -1579,8 +1579,9 @@ void main() {
             peekTopBorderRadius: null,
             platformViewBackdrop: true,
             child: GlassModalSheetScaffold(
-              body: SizedBox.shrink(),
-              sheet: Text('Sheet body'),
+              platformViewBackdrop: true,
+              body: const SizedBox.shrink(),
+              sheet: const Text('Sheet body'),
             ),
           ),
         ),
@@ -2267,10 +2268,10 @@ void main() {
 
     testWidgets('falls back to the slide when blending is unavailable',
         (tester) async {
-      // Headless test runs report ImageFilter.isShaderFilterSupported == false,
-      // which is exactly the Skia/web path: the metaball neck cannot be drawn,
-      // so the sheet must present with its ordinary slide rather than a
-      // degraded morph.
+      GlassModalSheet.debugMorphSupportsBlending = false;
+      addTearDown(() => GlassModalSheet.debugMorphSupportsBlending = null);
+      // Headless Skia runs report ImageFilter.isShaderFilterSupported == false;
+      // forcing false explicitly keeps this test deterministic under --enable-impeller too.
       late GlassMorphAnchor anchor;
       await tester.pumpWidget(
         _app(GlassMorphTrigger(builder: (context, a) {
@@ -2668,6 +2669,259 @@ void main() {
       expect(capturedScope!.glassProgress, closeTo(0.5, 1e-6));
       expect(capturedScope!.contentOpacity, closeTo(0.8, 1e-6));
       expect(capturedScope!.contentSigma, closeTo(2.0, 1e-6));
+    });
+
+    test(
+        'SheetMorphGeometry.blobRect collapses wide triggers into compact circular core at trigger.center',
+        () {
+      const wideCenteredTrigger = Rect.fromLTWH(70.0, 720.0, 260.0, 44.0);
+      const wideLeftTrigger = Rect.fromLTWH(20.0, 720.0, 240.0, 44.0);
+      const sheetDest = Rect.fromLTWH(8.0, 400.0, 384.0, 394.0);
+
+      final originCentered = SheetMorphGeometry.blobRect(
+        trigger: wideCenteredTrigger,
+        destination: sheetDest,
+        pathT: 0.0,
+        sizeT: 0.0,
+        isClosing: true,
+      );
+      expect(originCentered.width, closeTo(44.0, 1e-6));
+      expect(originCentered.height, closeTo(44.0, 1e-6));
+      expect(originCentered.center.dx,
+          closeTo(wideCenteredTrigger.center.dx, 1e-6));
+      expect(originCentered.center.dy,
+          closeTo(wideCenteredTrigger.center.dy, 1e-6));
+
+      final originLeft = SheetMorphGeometry.blobRect(
+        trigger: wideLeftTrigger,
+        destination: sheetDest,
+        pathT: 0.0,
+        sizeT: 0.0,
+        isClosing: true,
+      );
+      expect(originLeft.width, closeTo(44.0, 1e-6));
+      expect(originLeft.height, closeTo(44.0, 1e-6));
+      expect(originLeft.center.dx, closeTo(wideLeftTrigger.center.dx, 1e-6));
+      expect(originLeft.center.dy, closeTo(wideLeftTrigger.center.dy, 1e-6));
+    });
+
+    testWidgets(
+        'wide GlassMorphTrigger (260x44) exhibits bounded ~183ms recoil, seamless handoff, and ~400ms horizontal width splash',
+        (tester) async {
+      const wideKey = Key('wide-sheet-trigger');
+      late GlassMorphAnchor anchor;
+      await tester.pumpWidget(
+        _app(
+          Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 80),
+              child: GlassMorphTrigger(
+                builder: (context, a) {
+                  anchor = a;
+                  return const SizedBox(key: wideKey, width: 260, height: 44);
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final restingCenter = tester.getCenter(find.byKey(wideKey));
+      expect(tester.getRect(find.byKey(wideKey)).width, closeTo(260.0, 0.1));
+
+      GlassModalSheet.show<void>(
+        context: contextOf(tester),
+        builder: (_) => const Text('Sheet body'),
+        morphFrom: anchor,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 32));
+
+      // Verify Blob A uses LiquidRoundedSuperellipse and droplet layer has at most 1 LiquidGlassBlendGroup
+      final dropletBlendGroups = find.descendant(
+        of: find.byType(AdaptiveLiquidGlassLayer).first,
+        matching: find.byType(LiquidGlassBlendGroup),
+      );
+      expect(dropletBlendGroups.evaluate().length, lessThanOrEqualTo(1));
+      final dropletGlasses = tester.widgetList<AdaptiveGlass>(
+        find.descendant(
+          of: find.byType(AdaptiveLiquidGlassLayer),
+          matching: find.byType(AdaptiveGlass),
+        ),
+      );
+      expect(dropletGlasses.first.shape, isA<LiquidRoundedSuperellipse>());
+
+      await tester.pumpAndSettle();
+
+      // Tap dismiss barrier above half detent to close
+      await tester.tapAt(const Offset(200, 40));
+      await tester.pump();
+
+      var maxTriggerRecoil = 0.0;
+      var maxSplashWidth = 260.0;
+      for (var ms = 16; ms <= 580; ms += 16) {
+        await tester.pump(const Duration(milliseconds: 16));
+        final op = tester
+            .widget<Opacity>(
+              find
+                  .ancestor(
+                    of: find.byKey(wideKey),
+                    matching: find.byType(Opacity),
+                  )
+                  .first,
+            )
+            .opacity;
+        if (op > 0.0) {
+          final rect = tester.getRect(find.byKey(wideKey));
+          final recoil = (rect.center - restingCenter).distance;
+          if (recoil > maxTriggerRecoil) maxTriggerRecoil = recoil;
+          if (rect.width > maxSplashWidth) maxSplashWidth = rect.width;
+        }
+      }
+
+      // Bounded physical recoil (never uncapped ~20px+) and +1.5% horizontal splash around ~400ms
+      expect(maxTriggerRecoil, inInclusiveRange(2.0, 17.0));
+      expect(maxSplashWidth, greaterThan(261.5));
+
+      await tester.pumpAndSettle();
+      final finalRect = tester.getRect(find.byKey(wideKey));
+      expect(finalRect.width, closeTo(260.0, 0.2));
+      expect((finalRect.center - restingCenter).distance, lessThan(0.2));
+    });
+
+    testWidgets(
+        'wide GlassMorphTrigger never squashes width below 0.90x on early mid-open dismiss and recoils accurately from top and bottom bars',
+        (tester) async {
+      const topWideKey = Key('top-wide-sheet-trigger');
+      const bottomFabKey = Key('bottom-fab-sheet-trigger');
+      late GlassMorphAnchor topAnchor;
+      late GlassMorphAnchor bottomAnchor;
+
+      await tester.pumpWidget(
+        _app(
+          Stack(
+            children: [
+              Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 40),
+                  child: GlassMorphTrigger(
+                    builder: (context, a) {
+                      topAnchor = a;
+                      return const SizedBox(
+                        key: topWideKey,
+                        width: 260,
+                        height: 44,
+                      );
+                    },
+                  ),
+                ),
+              ),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 24),
+                  child: GlassMorphTrigger(
+                    builder: (context, a) {
+                      bottomAnchor = a;
+                      return const SizedBox(
+                        key: bottomFabKey,
+                        width: 48,
+                        height: 48,
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final topRestingCenter = tester.getCenter(find.byKey(topWideKey));
+      final bottomRestingCenter = tester.getCenter(find.byKey(bottomFabKey));
+
+      // 1a. Early mid-open dismiss (48ms): never squashes wide trigger width < 0.90x
+      GlassModalSheet.show<void>(
+        context: tester.element(find.byKey(topWideKey)),
+        builder: (_) => const Text('Sheet body'),
+        morphFrom: topAnchor,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 48));
+
+      Navigator.of(tester.element(find.byType(GlassSheetMorphPresenter))).pop();
+      await tester.pump();
+
+      var minTopWidth = 260.0;
+      for (var ms = 16; ms <= 300; ms += 16) {
+        await tester.pump(const Duration(milliseconds: 16));
+        final rect = tester.getRect(find.byKey(topWideKey));
+        if (rect.width < minTopWidth) minTopWidth = rect.width;
+      }
+      expect(
+        minTopWidth,
+        greaterThanOrEqualTo(260.0 * 0.90 - 0.5),
+        reason:
+            'Wide GlassMorphTrigger must never squash width below 0.90x even after early mid-open dismiss',
+      );
+      await tester.pumpAndSettle();
+
+      // 1b. Settled top-bar close: recoils upward (dy < 0) and never squashes < 0.90x
+      GlassModalSheet.show<void>(
+        context: tester.element(find.byKey(topWideKey)),
+        builder: (_) => const Text('Sheet body'),
+        morphFrom: topAnchor,
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tapAt(const Offset(200, 40));
+      await tester.pump();
+
+      var minTopDy = 0.0;
+      for (var ms = 16; ms <= 580; ms += 16) {
+        await tester.pump(const Duration(milliseconds: 16));
+        final rect = tester.getRect(find.byKey(topWideKey));
+        if (rect.width < minTopWidth) minTopWidth = rect.width;
+        final dy = rect.center.dy - topRestingCenter.dy;
+        if (dy < minTopDy) minTopDy = dy;
+      }
+      expect(minTopWidth, greaterThanOrEqualTo(260.0 * 0.90 - 0.5));
+      expect(
+        minTopDy,
+        lessThan(-2.0),
+        reason: 'Top-bar trigger recoils upward (dy < 0) as sheet returns up',
+      );
+      await tester.pumpAndSettle();
+
+      // 2. Open from bottom FAB trigger -> close -> verify downward recoil (dy > 0)
+      GlassModalSheet.show<void>(
+        context: tester.element(find.byKey(bottomFabKey)),
+        builder: (_) => const Text('Sheet body'),
+        morphFrom: bottomAnchor,
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tapAt(const Offset(200, 40));
+      await tester.pump();
+
+      var maxBottomDy = 0.0;
+      for (var ms = 16; ms <= 580; ms += 16) {
+        await tester.pump(const Duration(milliseconds: 16));
+        final dy = tester.getCenter(find.byKey(bottomFabKey)).dy -
+            bottomRestingCenter.dy;
+        if (dy > maxBottomDy) maxBottomDy = dy;
+      }
+      expect(
+        maxBottomDy,
+        greaterThan(2.0),
+        reason:
+            'Bottom-bar trigger recoils downward (dy > 0) as sheet falls onto it',
+      );
+      await tester.pumpAndSettle();
     });
   });
 }

@@ -1,3 +1,19 @@
+# Unreleased
+
+## Features
+
+- **`GlassPullDownButton` intrinsic capsule width, recursive submenu selection, and `GlassMenu` passthroughs:** `GlassPullDownButton.buttonWidth` is now `double?` (`null` by default, resolving to `44.0` for icon-only buttons and intrinsic capsule width for labeled buttons without clipping). `onSelected` now recurses into nested `GlassMenuItem.submenu` items, and `GlassPullDownButton` forwards `menuPadding` (defaulting to `EdgeInsets.symmetric(horizontal: 12)` so clamped menus keep a safe screen-edge margin), `menuBorderRadius`, `morphSpeed`, `controller`, and `onClose` to `GlassMenu`.
+- **`GlassPopover` morph speed & platform-view backdrop support (`morphSpeed`, `platformViewBackdrop`):** `GlassPopover` now accepts `morphSpeed` (`MorphSpeed.normal` default) and `platformViewBackdrop` (`false` default), and renders its overlay through `AdaptiveLiquidGlassLayer`.
+- **iOS 27 `GlassMorphController` & `LiquidMorphState` parallel recoil, splash, and platter channels:** Exposes `triggerPushDx` / `triggerPushDy`, `triggerImpactScale`, `triggerWidthProgress`, `platterScale`, `platterOpacity`, `contentOpacity`, and `isPlatterActive` on `LiquidMorphState`, plus `GlassMorphController.speed` setter, `speedMultiplier`, `phaseElapsedSeconds`, and monotonic `GlassMorphController.computeCornerRadius` for custom morphing widgets.
+
+## Bug Fixes
+
+- **iOS 27 Liquid Morph & close-bounce parity (`GlassMenu`, `GlassPullDownButton`, `GlassPopover`, `GlassModalSheet`, `GlassMorphTrigger`, `GlassContextMenu`):**
+  - **Immediate parallel `~183 ms` close catch recoil:** Replaced the sequential post-handoff (`300–400 ms`) trigger bounce and `150–295 ms` front-loaded `sizeT` stall with calibrated iOS 27 open (`ω₀ = 17.0 rad/s, ζ ≈ 0.76`) and close (`ω₀ = 18.0 rad/s, ζ ≈ 0.86`) springs paired with a parallel bounded trigger recoil and tactile compression pulse peaking at `~183 ms` (`GlassContextMenu` upgraded from linear cubic curves to matching iOS 27 `SpringSimulation` physics with Reduce Motion support).
+  - **Wide/long trigger centered contraction, true-width SDF capsule merge, and `~400 ms` horizontal splash:** Wide triggers (`GlassMenu`) and centered triggers (`GlassMenu`, `GlassPopover`) now auto-center around `trigger.center.dx`; wide triggers contract in place toward a compact circular core (`min(width, height)`) on open, collapse menus/popovers/sheets cleanly back into an expanding true-width capsule (`Blob A`) at `trigger.center` on close (never widening `menuWidth` outward or affine-squashing real trigger text below `0.90×`), and splash horizontally (`+1.6%` peak at `~400 ms`) as the trigger catches the droplet.
+  - **Dense glass droplet return, length-invariant content fade, monotonic corner radii, and C⁰ reversals:** Decoupled `platterOpacity` from `contentOpacity` on close so the shrinking platter stays 100% dense refractive glass down to `rawValue = 0.25` (`~165 ms`) before dissolving over the final SDF merge window (`~165–283 ms`), while menu/popover content fades smoothly over `~283 ms` across short, medium, and tall menus (and expanded `submenu` stacks collapse coherently into `trigger.center`). Mid-flight corner radii interpolate monotonically via `LiquidRoundedSuperellipse` (`≤ max(triggerRadius, targetRadius)`), upward-opening bottom-bar menus/popovers recoil downward cleanly, and mid-morph open/close reversals maintain C⁰ position/size continuity.
+  - **Impeller backdrop & blend-group compositing safety:** Eliminated fractional `Opacity` (`saveLayer`) wrappers over `AdaptiveLiquidGlassLayer` and `useOwnLayer: true` platters across `GlassMenu`, `GlassPopover`, and `GlassContextMenu` (routing glass and content dissolve through `GlassMaterializeScope`), and avoided duplicate nested `LiquidGlassBlendGroup` passes on premium Impeller layers.
+
 # 1.17.5
 
 ## Bug Fixes

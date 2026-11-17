@@ -811,14 +811,15 @@ class GlassModalSheet extends StatefulWidget {
   /// spring on its own ticker once the droplet is handed back, so it keeps
   /// easing home after this route is gone.
   ///
-  /// Measured against the profiles in [GlassMorphController], with headroom:
+  /// Measured against the calibrated iOS 27 profiles in [GlassMorphController],
+  /// with headroom:
   ///
   /// | speed   | droplet caught | route |
   /// |---------|----------------|-------|
-  /// | slow    | 408 ms         | 480   |
-  /// | normal  | 304 ms         | 380   |
-  /// | fast    | 240 ms         | 300   |
-  /// | instant | 160 ms         | 210   |
+  /// | slow    | ~437 ms        | 480   |
+  /// | normal  | ~284 ms        | 380   |
+  /// | fast    | ~210 ms        | 300   |
+  /// | instant | ~145 ms        | 210   |
   static Duration _morphRouteDuration(MorphSpeed speed) {
     switch (speed) {
       case MorphSpeed.slow:

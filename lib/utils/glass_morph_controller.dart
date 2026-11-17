@@ -8,101 +8,40 @@ export 'liquid_morph_physics.dart' show LiquidMorphState, MorphPhase;
 
 /// Controls the speed profile of a liquid glass morph animation.
 ///
-/// Each case maps to a tuned spring description that preserves the 0.73
-/// underdamped ratio — so the rubber-band closing bounce is present at every
-/// speed, just scaled proportionally.
+/// Each case maps to calibrated open and close spring descriptions that
+/// preserve the native iOS 27 damping ratios (`ζ ≈ 0.76` open, `ζ ≈ 0.86`
+/// close platter, plus scaled parallel trigger recoil and width springs).
 enum MorphSpeed {
-  /// Slow, deliberate morph. Suitable for tutorials or accessibility contexts.
+  /// Slow, deliberate morph (`0.65×` frequency). Suitable for tutorials.
   slow,
 
-  /// Default iOS 26 speed with native-parity spring response (375 ms profile).
+  /// Default iOS 27 native-parity speed (`1.0×` frequency).
   normal,
 
-  /// Fast, snappy morph. Suitable for power users or high-frequency interactions.
+  /// Fast, snappy morph (`1.35×` frequency) for high-frequency interactions.
   fast,
 
-  /// Near-instant transition. Use when the user has enabled Reduce Motion, or for testing.
+  /// Near-instant transition (`2.5×` frequency). Used for Reduce Motion or tests.
   instant,
 }
 
 /// Describes the visual shape style of the liquid glass morph transition.
-///
-/// Additional styles (e.g. [bloom]) are planned for future releases and will
-/// be powered by the same [LiquidMorphPhysics] engine with a different curve
-/// profile.
 enum MorphStyle {
-  /// Classic iOS 26 liquid teardrop — Blob B pulls away from Blob A along a
+  /// Classic iOS 26/27 liquid teardrop — Blob B pulls away from Blob A along a
   /// J-curve trajectory while the SDF metaball shader creates the bridging neck.
   teardrop,
 
   /// Radial bloom expansion originating from the trigger center outward.
-  ///
-  /// Intended for long-press / force-touch context menus (future release).
   bloom,
 }
 
-/// A Flutter-idiomatic controller for liquid glass morph animations.
+/// A Flutter-idiomatic controller for iOS 27 liquid glass morph animations.
 ///
-/// Works like [AnimationController] but encapsulates the iOS 26 spring physics,
-/// J-curve interpolation, and [LiquidMorphState] computation behind a clean,
-/// semantic API.
-///
-/// ## Lifecycle
-///
-/// [GlassMorphController] must be created inside a [State] that mixes in
-/// [TickerProviderStateMixin] and disposed in [State.dispose].
-///
-/// ```dart
-/// class _MyWidgetState extends State<MyWidget> with TickerProviderStateMixin {
-///   late final GlassMorphController _morph;
-///
-///   @override
-///   void initState() {
-///     super.initState();
-///     _morph = GlassMorphController(vsync: this);
-///     _morph.addListener(_onFrame);
-///   }
-///
-///   @override
-///   void dispose() {
-///     _morph.dispose();
-///     super.dispose();
-///   }
-///
-///   void _open()  => _morph.open();
-///   void _close() => _morph.close();
-///
-///   void _onFrame() {
-///     if (!mounted) return;
-///     setState(() {});
-///   }
-/// }
-/// ```
-///
-/// ## Computing render state
-///
-/// ```dart
-/// final state = _morph.computeState(
-///   finalDx: finalDx,
-///   finalDy: finalDy,
-///   horizontalOffset: _horizontalOffset,
-///   verticalOffset: _verticalOffset,
-/// );
-///
-/// // Use state.pathT, state.anchorScale, state.blend, etc. in your layout.
-/// ```
-///
-/// ## Customisation
-///
-/// Use [speed] and [style] for safe, semantic control. Avoid constructing
-/// [LiquidMorphPhysics] manually with custom spring constants — the physics
-/// parameters are interdependent and incorrect values produce unstable
-/// animations.
+/// Encapsulates the calibrated open/close springs, elapsed phase clock for
+/// parallel trigger recoil (`~183 ms` peak) and centered wide-trigger
+/// contraction/splash (`MagicMorphView` #2), and [LiquidMorphState] computation.
 class GlassMorphController extends ChangeNotifier {
   /// Creates a [GlassMorphController].
-  ///
-  /// [vsync] must be a valid [TickerProvider], typically obtained from
-  /// [TickerProviderStateMixin].
   GlassMorphController({
     required TickerProvider vsync,
     MorphSpeed speed = MorphSpeed.normal,
@@ -116,24 +55,17 @@ class GlassMorphController extends ChangeNotifier {
   // ─── Public parameters ────────────────────────────────────────────────────
 
   /// Speed profile for the morph animation.
-  ///
-  /// Maps to a tuned spring description that preserves the 0.73 underdamped
-  /// ratio. Use [setSpeed] to update this after construction.
   MorphSpeed get speed => _speed;
+  set speed(MorphSpeed value) => setSpeed(value);
   MorphSpeed _speed;
 
-  /// Updates the speed profile on a live controller.
-  ///
-  /// Safe to call at any time, including while an animation is running. The
-  /// new spring profile takes effect on the *next* [open] or [close] call —
-  /// the current simulation is not interrupted.
+  /// Updates the speed profile on a live controller (takes effect on the next
+  /// [open] or [close] call).
   void setSpeed(MorphSpeed speed) {
     _speed = speed;
   }
 
   /// Visual shape style of the morph transition.
-  ///
-  /// Currently only [MorphStyle.teardrop] is fully implemented.
   final MorphStyle style;
 
   // ─── Internal state ───────────────────────────────────────────────────────
@@ -141,23 +73,23 @@ class GlassMorphController extends ChangeNotifier {
   final AnimationController _animationController;
   bool _isClosing = false;
   bool _hasHandedOff = false;
-
-  /// Whether the reduced-motion accessibility flag is currently active.
-  ///
-  /// When `true`, [_effectiveSpring] returns the [MorphSpeed.instant] spring
-  /// regardless of the [speed] parameter, producing a near-instant transition
-  /// that respects the platform accessibility setting.
-  ///
-  /// Set this from `didChangeDependencies()` in your widget using
-  /// `MediaQuery.of(context).disableAnimations`.
   bool _disableAnimations = false;
+
+  /// Unscaled elapsed seconds in the active open/close simulation, captured
+  /// from [AnimationController.lastElapsedDuration] on every tick.
+  double _lastElapsedSeconds = 0.0;
+
+  /// Trigger width progress (`[0, 1]`) captured at the start of the current
+  /// open or close phase so mid-flight reversals remain continuous.
+  double _phaseStartTriggerWidth = 1.0;
+
+  /// Open progress (`[0, 1]`) at the instant [close] was invoked, scaling
+  /// trigger recoil proportionally when an incomplete open is reversed early.
+  double _closeStartProgress = 0.0;
 
   // ─── Public accessors ─────────────────────────────────────────────────────
 
   /// The raw, unclamped spring simulation value.
-  ///
-  /// Mirrors [AnimationController.value]. Can legitimately exceed `[0, 1]`
-  /// during underdamped overshoot phases.
   double get value => _animationController.value;
 
   /// Instantaneous velocity of the spring simulation.
@@ -166,48 +98,49 @@ class GlassMorphController extends ChangeNotifier {
   /// Current [AnimationStatus] of the underlying controller.
   AnimationStatus get status => _animationController.status;
 
-  /// The underlying [AnimationController] for callers that need to listen to
-  /// [AnimationStatus] changes or drive additional [Animation]s from it.
+  /// The underlying [AnimationController].
   AnimationController get animation => _animationController;
 
-  /// Whether the morph overlay should currently be visible.
+  /// Frequency multiplier of the current [speed] relative to [MorphSpeed.normal].
+  double get speedMultiplier {
+    if (_disableAnimations) return 2.5;
+    switch (_speed) {
+      case MorphSpeed.slow:
+        return 0.65;
+      case MorphSpeed.normal:
+        return 1.0;
+      case MorphSpeed.fast:
+        return 1.35;
+      case MorphSpeed.instant:
+        return 2.5;
+    }
+  }
+
+  /// Elapsed time in seconds within the current open/close phase, scaled by
+  /// [speedMultiplier] (`0.0` when [disableAnimations] is active).
+  double get phaseElapsedSeconds =>
+      _disableAnimations ? 0.0 : _lastElapsedSeconds * speedMultiplier;
+
+  /// Whether the morph lifecycle is currently active.
   ///
-  /// `true` from the moment [open] is called until the spring has fully
-  /// settled back at `0.0` after [close].
+  /// `true` from [open] until the closing spring — including the parallel
+  /// trigger recoil and horizontal width splash (~`530–550 ms`) — has fully
+  /// settled back at rest. Use [LiquidMorphState.isPlatterActive] to know when
+  /// the floating platter itself (Blob B) has vanished (~`280 ms` on close).
   bool get isShowing =>
       _animationController.value > 0.001 || (_isClosing && !_hasSettled);
 
   /// Whether the controller is in the closing phase.
   bool get isClosing => _isClosing;
 
-  /// Whether the anchor blob has handed off back to the real trigger.
-  ///
-  /// Latches `true` on the first zero-crossing during close, remaining `true`
-  /// until the next [open] call. Use this to swap the ghost overlay for the
-  /// real trigger widget at the exact right moment.
+  /// Whether the closing platter spring has reached/crossed `0.0` (~`280 ms` at
+  /// [MorphSpeed.normal]), signaling that the floating platter has finished
+  /// collapsing into the trigger.
   bool get hasHandedOff => _hasHandedOff;
 
   // ─── Accessibility ────────────────────────────────────────────────────────
 
   /// Updates the reduced-motion override.
-  ///
-  /// Call this from `State.didChangeDependencies()` to automatically respect
-  /// the platform accessibility setting:
-  ///
-  /// ```dart
-  /// @override
-  /// void didChangeDependencies() {
-  ///   super.didChangeDependencies();
-  ///   _morph.setDisableAnimations(
-  ///     MediaQuery.of(context).disableAnimations,
-  ///   );
-  /// }
-  /// ```
-  ///
-  /// When [disableAnimations] is `true`, both [open] and [close] use the
-  /// [MorphSpeed.instant] spring profile — the overlay appears and disappears
-  /// in a single frame with no bouncing. This satisfies iOS and Android
-  /// "Reduce Motion" / "Remove Animations" accessibility requirements.
   void setDisableAnimations(bool disableAnimations) {
     if (_disableAnimations == disableAnimations) return;
     _disableAnimations = disableAnimations;
@@ -216,53 +149,82 @@ class GlassMorphController extends ChangeNotifier {
   /// Whether reduced-motion override is currently active.
   bool get disableAnimations => _disableAnimations;
 
+  // ─── Control methods ──────────────────────────────────────────────────────
+
   /// Opens the morph animation from the current position.
-  ///
-  /// Resets the handoff latch and runs the spring toward `1.0` from rest.
-  /// Safe to call while the close animation is still running.
   void open() {
+    _phaseStartTriggerWidth = _currentTriggerWidthProgress().clamp(0.0, 1.0);
     _isClosing = false;
     _hasHandedOff = false;
-    _runSpring(1.0, velocityHint: 0.0);
+    _lastElapsedSeconds = 0.0;
+    _runSpring(
+      1.0,
+      velocityHint: 0.0,
+      tolerance:
+          _isInstantProfile ? _instantSettleTolerance : _openSettleTolerance,
+    );
   }
 
-  /// Closes the morph animation with the iOS 26 rubber-band bounce.
-  ///
-  /// Injects [LiquidMorphPhysics.closeVelocityHint] to immediately drive the
-  /// spring toward zero with momentum, creating the satisfying "snap-back" feel.
+  /// Closes the morph animation with the calibrated iOS 27 platter collapse,
+  /// parallel `~183 ms` trigger recoil, and centered wide-trigger splash.
   void close() {
+    _closeStartProgress = _animationController.value.clamp(0.0, 1.0);
+    _phaseStartTriggerWidth = _currentTriggerWidthProgress().clamp(0.0, 1.0);
     _isClosing = true;
-    _runSpring(0.0, velocityHint: LiquidMorphPhysics.closeVelocityHint);
+    _lastElapsedSeconds = 0.0;
+    if (_animationController.value <= 0.0 && _closeStartProgress <= 0.001) {
+      _hasHandedOff = true;
+    }
+    _runSpring(
+      0.0,
+      velocityHint: LiquidMorphPhysics.closeVelocityHint,
+      tolerance:
+          _isInstantProfile ? _instantSettleTolerance : _closeSettleTolerance,
+    );
   }
 
-  /// Immediately resets the controller to its resting closed state (value = 0.0,
-  /// velocity = 0.0) without running an animation.
+  /// Immediately resets the controller to its resting closed state (`0.0`).
   void reset() {
     _animationController.stop();
     _isClosing = false;
     _hasHandedOff = false;
+    _lastElapsedSeconds = 0.0;
+    _phaseStartTriggerWidth = 1.0;
+    _closeStartProgress = 0.0;
     _animationController.value = 0.0;
     notifyListeners();
   }
 
+  // ─── Static geometry helpers (convenience passthroughs) ───────────────────
+
+  /// Computes the geometric scale ratio `√(targetArea / sourceArea)`.
+  static double computeScaleDelta({
+    required Size sourceSize,
+    required Size targetSize,
+  }) =>
+      LiquidMorphPhysics.computeScaleDelta(
+        sourceSize: sourceSize,
+        targetSize: targetSize,
+      );
+
+  /// Computes a monotonic corner radius that never balloons above
+  /// `max(triggerRadius, targetRadius)`.
+  static double computeCornerRadius({
+    required Size currentSize,
+    required double triggerRadius,
+    required double targetRadius,
+    required double progress,
+  }) =>
+      LiquidMorphPhysics.computeCornerRadius(
+        currentSize: currentSize,
+        triggerRadius: triggerRadius,
+        targetRadius: targetRadius,
+        progress: progress,
+      );
+
   // ─── Physics computation ──────────────────────────────────────────────────
 
   /// Computes the current [LiquidMorphState] for the given layout geometry.
-  ///
-  /// Call this once per frame from your [AnimatedBuilder] or [addListener]
-  /// callback to get pre-calculated render values.
-  ///
-  /// - [finalDx] / [finalDy] — target displacement from trigger center to
-  ///   menu center, in logical pixels.
-  /// - [horizontalOffset] / [verticalOffset] — screen-edge clamping
-  ///   corrections from the menu positioning logic.
-  /// - [scaleDelta] — geometric scale ratio (see [LiquidMorphPhysics.computeScaleDelta]).
-  ///   Values > 1.5 engage adaptive damping. Defaults to `1.0` (unchanged
-  ///   baseline behaviour) for backward compatibility.
-  /// - [adaptiveDamping] — explicit override; when `null` (default), inferred
-  ///   from [scaleDelta].
-  /// - [isClosing] — explicit override; when `null` (default), inferred from
-  ///   this controller's own [_isClosing] state.
   LiquidMorphState computeState({
     required double finalDx,
     required double finalDy,
@@ -272,6 +234,11 @@ class GlassMorphController extends ChangeNotifier {
     bool? adaptiveDamping,
     bool? isClosing,
   }) {
+    final bool effectiveClosing = isClosing ?? _isClosing;
+    final bool settled = !_animationController.isAnimating &&
+        (effectiveClosing
+            ? _animationController.value <= 0.001
+            : _animationController.value >= 0.999);
     return LiquidMorphPhysics.compute(
       rawValue: _animationController.value,
       finalDx: finalDx,
@@ -280,7 +247,13 @@ class GlassMorphController extends ChangeNotifier {
       verticalOffset: verticalOffset,
       scaleDelta: scaleDelta,
       adaptiveDamping: adaptiveDamping,
-      isClosing: isClosing ?? _isClosing,
+      isClosing: effectiveClosing,
+      elapsedSeconds: phaseElapsedSeconds,
+      hasHandedOff: _hasHandedOff,
+      isSettled: settled,
+      disableAnimations: _disableAnimations,
+      phaseStartTriggerWidth: _phaseStartTriggerWidth,
+      closeStartProgress: _closeStartProgress,
     );
   }
 
@@ -294,74 +267,108 @@ class GlassMorphController extends ChangeNotifier {
 
   // ─── Private ──────────────────────────────────────────────────────────────
 
-  bool get _hasSettled =>
-      _animationController.value <= 0.001 &&
-      _animationController.velocity.abs() < 0.5;
+  bool get _isInstantProfile =>
+      _disableAnimations || _speed == MorphSpeed.instant;
 
-  /// Returns the spring description for the current [speed].
-  ///
-  /// All springs share the 0.73 underdamped ratio
-  /// (ζ = damping / (2 × √(stiffness × mass))).
+  bool get _hasSettled =>
+      !_animationController.isAnimating && _animationController.value <= 0.001;
+
+  double _currentTriggerWidthProgress() {
+    if (!_animationController.isAnimating &&
+        !_isClosing &&
+        _animationController.value <= 0.001) {
+      return 1.0;
+    }
+    return computeState(finalDx: 0.0, finalDy: 0.0).triggerWidthProgress;
+  }
+
   SpringDescription get _effectiveSpring {
-    // Reduced-motion override: always use the instant (stiffest) spring so the
-    // animation completes in a single frame — no bounce, no teardrop neck.
-    if (_disableAnimations) {
+    if (_isInstantProfile) {
       return const SpringDescription(
-          mass: 1.0, stiffness: 500.0, damping: 32.4);
+        mass: 1.0,
+        stiffness: 1800.0,
+        damping: 80.0,
+      );
     }
     switch (_speed) {
       case MorphSpeed.slow:
-        // ω₀ ≈ 7.7 rad/s, ζ ≈ 0.73 — relaxed, fluid motion (~500 ms)
-        return const SpringDescription(
-            mass: 1.0, stiffness: 60.0, damping: 11.3);
+        // 0.65× frequency scaling of normal open/close profiles
+        return _isClosing
+            ? const SpringDescription(
+                mass: 1.0,
+                stiffness: 137.0,
+                damping: 20.2,
+              )
+            : const SpringDescription(
+                mass: 1.0,
+                stiffness: 122.0,
+                damping: 16.8,
+              );
       case MorphSpeed.normal:
-        // ω₀ ≈ 11.0 rad/s, ζ ≈ 0.73 — iOS 26/27 native standard (~350 ms)
         return _isClosing
             ? LiquidMorphPhysics.closeSpring
             : LiquidMorphPhysics.openSpring;
       case MorphSpeed.fast:
-        // ω₀ ≈ 14.1 rad/s, ζ ≈ 0.73 — snappy, responsive (~250 ms)
-        return const SpringDescription(
-            mass: 1.0, stiffness: 200.0, damping: 20.5);
+        // 1.35× frequency scaling of normal open/close profiles
+        return _isClosing
+            ? const SpringDescription(
+                mass: 1.0,
+                stiffness: 590.0,
+                damping: 41.9,
+              )
+            : const SpringDescription(
+                mass: 1.0,
+                stiffness: 527.0,
+                damping: 34.8,
+              );
       case MorphSpeed.instant:
-        // ω₀ ≈ 22 rad/s, ζ ≈ 0.73 — very stiff, near-instant
         return const SpringDescription(
-            mass: 1.0, stiffness: 500.0, damping: 32.4);
+          mass: 1.0,
+          stiffness: 1800.0,
+          damping: 80.0,
+        );
     }
   }
 
-  /// When a morph counts as settled.
-  ///
-  /// The value spans the whole change in size, so a distance of 0.001 is at
-  /// most half a pixel on a 500 px surface, and 0.05 a second moves it by well
-  /// under a pixel a frame. The default [Tolerance] (0.001 a second) kept the
-  /// controller ticking, and the surface repainting, for about half a second
-  /// after anything visibly moved: an open settled after 1.2 s, a close after
-  /// 0.93 s, while the motion ended at 0.72 s and 0.53 s.
-  static const Tolerance _settleTolerance =
-      Tolerance(distance: 0.001, velocity: 0.05);
+  /// Tightened open settle tolerance (~420 ms at normal speed): stops once
+  /// post-1.0 overshoot falls below ~0.4 %, avoiding 20+ invisible frames.
+  static const Tolerance _openSettleTolerance =
+      Tolerance(distance: 0.004, velocity: 0.10);
 
-  void _runSpring(double target, {required double velocityHint}) {
+  /// Close settle tolerance (~540–550 ms at normal speed): keeps the ticker
+  /// alive past platter vanish (~283 ms) so parallel trigger recoil and wide
+  /// horizontal splash (~400 ms peak) complete smoothly before [isShowing]
+  /// becomes false.
+  static const Tolerance _closeSettleTolerance =
+      Tolerance(distance: 0.0003, velocity: 0.008);
+
+  /// Near-instant settle tolerance for Reduce Motion and [MorphSpeed.instant].
+  static const Tolerance _instantSettleTolerance =
+      Tolerance(distance: 0.002, velocity: 0.05);
+
+  void _runSpring(
+    double target, {
+    required double velocityHint,
+    required Tolerance tolerance,
+  }) {
     _animationController.animateWith(
       SpringSimulation(
         _effectiveSpring,
         _animationController.value,
         target,
         velocityHint,
-        // The spring is "done" within [_settleTolerance] of its target, not on
-        // it. snapToEnd reports the exact target on that final tick, so the
-        // controller lands on 1.0 / 0.0 in the same tick it completes and its
-        // AnimationStatus goes forward -> completed as usual.
         snapToEnd: true,
-        tolerance: _settleTolerance,
+        tolerance: tolerance,
       ),
     );
   }
 
   void _onTick() {
-    // Handoff latch: fires exactly once when the spring first crosses zero
-    // during a close animation. The latch prevents it from re-triggering if
-    // the underdamped spring bounces back above zero briefly.
+    final elapsed = _animationController.lastElapsedDuration;
+    if (elapsed != null) {
+      _lastElapsedSeconds =
+          elapsed.inMicroseconds / Duration.microsecondsPerSecond;
+    }
     if (_isClosing && _animationController.value <= 0.0 && !_hasHandedOff) {
       _hasHandedOff = true;
     }
