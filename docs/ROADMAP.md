@@ -1,6 +1,6 @@
 # Roadmap: 1.x → 2.0
 
-> Last updated: 2026-11-14 (v1.17.4 stable)
+> Last updated: 2026-11-16 (v1.17.5 stable)
 
 This document tracks planned and future work for `liquid_glass_widgets` post-1.0.
 The guiding principle remains: **fewer, better widgets that map 1:1 to real iOS components**.
@@ -9,7 +9,7 @@ For historical version notes, see [`CHANGELOG.md`](../CHANGELOG.md).
 
 ---
 
-## Current Status (1.17.4)
+## Current Status (1.17.5)
 
 | Criterion | Status | Notes |
 |---|---|---|
