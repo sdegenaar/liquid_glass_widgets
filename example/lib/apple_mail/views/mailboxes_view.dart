@@ -5,6 +5,7 @@ import '../models/mail_models.dart';
 import '../theme/mail_theme.dart';
 import 'compose_email_sheet.dart';
 import 'inbox_view.dart';
+import 'package:liquid_glass_widgets_example/widgets/glass_safe_area_slivers.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAILBOXES VIEW (1:1 iOS 26 Mail Screen)
@@ -86,11 +87,7 @@ class _MailboxesViewState extends State<MailboxesView> {
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final topPad = mediaQuery.padding.top;
-    final botPad = mediaQuery.padding.bottom;
     final unreadCount = widget.emails.where((e) => e.isUnread).length;
-
     return GlassScaffold(
       background: ColoredBox(color: kMailBg.resolveFrom(context)),
       appBar: GlassAppBar.pinned(
@@ -128,42 +125,39 @@ class _MailboxesViewState extends State<MailboxesView> {
         ],
       ),
       // Compose button floats in bottom-right corner
-      bottomBar: Padding(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          0,
-          16,
-          botPad > 24 ? botPad - 8 : 16,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            GlassMorphTrigger(
-              builder: (triggerContext, anchor) => GlassButton.custom(
-                onTap: () => _openCompose(context, anchor),
-                width: 52,
-                height: 52,
-                settings: kMailSearchGlass(context),
-                shape: const LiquidOval(),
-                quality: GlassQuality.premium,
-                useOwnLayer: true,
-                child: Center(
-                  child: Icon(
-                    CupertinoIcons.square_pencil,
-                    size: 24,
-                    color: CupertinoColors.label.resolveFrom(context),
+      bottomBar: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.only(bottom: 10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              GlassMorphTrigger(
+                builder: (triggerContext, anchor) => GlassButton.custom(
+                  onTap: () => _openCompose(context, anchor),
+                  width: 52,
+                  height: 52,
+                  settings: kMailSearchGlass(context),
+                  shape: const LiquidOval(),
+                  quality: GlassQuality.premium,
+                  useOwnLayer: true,
+                  child: Center(
+                    child: Icon(
+                      CupertinoIcons.square_pencil,
+                      size: 24,
+                      color: CupertinoColors.label.resolveFrom(context),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       body: CustomScrollView(
         controller: _titleController.scrollController,
         slivers: [
-          SliverToBoxAdapter(child: SizedBox(height: topPad + 44)),
-
           // Large Title "Mailboxes" (collapses automatically on scroll)
           GlassLargeTitle(
             text: 'Mailboxes',
@@ -174,7 +168,7 @@ class _MailboxesViewState extends State<MailboxesView> {
           // Subtitle "Updated Just Now"
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
                 'Updated Just Now',
                 style: TextStyle(
@@ -328,8 +322,8 @@ class _MailboxesViewState extends State<MailboxesView> {
             ),
           ),
 
-          // Bottom scroll clearance for floating compose button
-          SliverToBoxAdapter(child: SizedBox(height: 120 + botPad)),
+          // Bottom scroll clearance for floating compose button,
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );

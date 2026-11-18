@@ -73,7 +73,7 @@ import 'glass_vertical_bar.dart';
 ///       ),
 ///     ),
 ///   ),
-/// )
+/// );
 /// ```
 ///
 /// ## After (one widget)
@@ -91,8 +91,13 @@ import 'glass_vertical_bar.dart';
 ///   body: CustomScrollView(
 ///     controller: _ctrl,
 ///     slivers: [
-///       // No manual spacer needed — GlassScaffold handles it
-///       // ... content
+///       SliverSafeArea(
+///         sliver: SliverMainAxisGroup(
+///           slivers: [
+///             // ... content
+///           ],
+///         ),
+///       ),
 ///     ],
 ///   ),
 /// )
@@ -163,9 +168,28 @@ class GlassScaffold extends StatelessWidget {
   /// The main content of the scaffold.
   ///
   /// When [extendBody] is `true` (the default), the body extends behind the
-  /// app bar and bottom bar. A top spacer is automatically added to push
-  /// initial content below the app bar. When `false`, the body occupies only
-  /// the area between the app bar and bottom bar.
+  /// app bar and bottom bar. The scaffold publishes the combined system and
+  /// bar safe-area insets through the body's [MediaQueryData.padding].
+  /// That override applies only inside the [body] subtree; reading
+  /// [MediaQueryData.padding] in the caller's outer `build` context still sees
+  /// the platform insets alone.
+  /// A [GlassAppBar] includes its default vertical padding in `preferredSize`;
+  /// the platform top safe inset is added once by the scaffold.
+  /// [ListView] consumes those vertical insets automatically. A
+  /// [CustomScrollView] does not, so wrap its content in [SliverSafeArea] (or
+  /// another sliver that consumes [MediaQueryData.padding]). If the first
+  /// sliver is [GlassLargeTitle], that widget owns the top inset internally;
+  /// leave it outside the wrapper and use `SliverSafeArea(top: false, ...)` for
+  /// the remaining slivers. [SafeArea] can likewise handle non-scrollable
+  /// content.
+  /// The viewport itself still starts at the screen edge, allowing content to
+  /// scroll behind the glass chrome.
+  ///
+  /// When `false`, the body is laid out between the app bar and bottom bar, so
+  /// those bars are removed from the body's [MediaQueryData.padding] to avoid
+  /// applying the same inset twice. A body that opts out of safe-area handling
+  /// (for example a full-screen canvas) still receives the complete scaffold
+  /// bounds.
   final Widget body;
 
   // ===========================================================================
@@ -326,16 +350,18 @@ class GlassScaffold extends StatelessWidget {
   /// fills exactly the visible content area without being obscured.
   final bool extendBody;
 
-  /// The preferred height of the app bar, used for padding calculations.
+  /// Fallback height of the app bar used for body and edge-fade inset
+  /// calculations before layout measurement.
   ///
   /// When [appBar] is a [PreferredSizeWidget], this value is overridden by
-  /// [PreferredSizeWidget], this value is overridden by `preferredSize.height`. Defaults to 44.0.
+  /// its `preferredSize.height`. Defaults to 44.0.
   final double appBarHeight;
 
-  /// The height of the bottom bar, used for padding calculations.
+  /// Fallback height of a non-[PreferredSizeWidget] bottom bar.
   ///
-  /// When null, defaults to 60.0 if [bottomBar] is provided. Set this
-  /// explicitly for custom-height bottom bars.
+  /// When null, defaults to 60.0 if [bottomBar] is provided. The scaffold
+  /// measures the rendered bar after layout and keeps updating the body inset
+  /// as its height changes, so this value is only needed for the first frame.
   final double? bottomBarHeight;
 
   /// Whether the body should resize when the keyboard appears.
@@ -431,6 +457,17 @@ class GlassScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return _GlassScaffoldMeasurementHost(scaffold: this);
+  }
+
+  Widget _buildContent(
+    BuildContext context, {
+    required GlobalKey appBarMeasureKey,
+    required GlobalKey bottomBarMeasureKey,
+    required double? measuredAppBarHeight,
+    required double? measuredBottomBarHeight,
+    required VoidCallback onChromeLayoutChanged,
+  }) {
     // Some bars change height from their own internal state — a tab bar
     // minimizing on scroll — without the widget instance being replaced.
     // Their preferredSize is read below, so the scaffold has to know when it
@@ -438,27 +475,53 @@ class GlassScaffold extends StatelessWidget {
     //
     // Only build() re-runs. `body` is the same Widget instance every time, so
     // the element for the app's content is re-parented rather than rebuilt.
-    final bar = bottomBar;
-    final barResize =
-        bar is GlassDynamicPreferredSize ? bar.preferredSizeListenable : null;
-    if (barResize != null) {
+    final resizeListenables = <Listenable>[
+      if (appBar case final GlassDynamicPreferredSize bar)
+        if (bar.preferredSizeListenable case final Listenable listenable)
+          listenable,
+      if (bottomBar case final GlassDynamicPreferredSize bar)
+        if (bar.preferredSizeListenable case final Listenable listenable)
+          listenable,
+    ];
+    if (resizeListenables.isNotEmpty) {
       return ListenableBuilder(
-        listenable: barResize,
-        builder: _buildContent,
+        listenable: Listenable.merge(resizeListenables),
+        builder: (context, child) => _buildScaffoldContent(
+          context,
+          appBarMeasureKey: appBarMeasureKey,
+          bottomBarMeasureKey: bottomBarMeasureKey,
+          measuredAppBarHeight: measuredAppBarHeight,
+          measuredBottomBarHeight: measuredBottomBarHeight,
+          onChromeLayoutChanged: onChromeLayoutChanged,
+        ),
       );
     }
-    return _buildContent(context, null);
+    return _buildScaffoldContent(
+      context,
+      measuredAppBarHeight: measuredAppBarHeight,
+      measuredBottomBarHeight: measuredBottomBarHeight,
+      appBarMeasureKey: appBarMeasureKey,
+      bottomBarMeasureKey: bottomBarMeasureKey,
+      onChromeLayoutChanged: onChromeLayoutChanged,
+    );
   }
 
-  Widget _buildContent(BuildContext context, Widget? _) {
+  Widget _buildScaffoldContent(
+    BuildContext context, {
+    required GlobalKey appBarMeasureKey,
+    required GlobalKey bottomBarMeasureKey,
+    required double? measuredAppBarHeight,
+    required double? measuredBottomBarHeight,
+    required VoidCallback onChromeLayoutChanged,
+  }) {
     final mediaQuery = MediaQuery.of(context);
+    final verticalBar = GlassVerticalBar.maybeOf(context);
     final topPad = mediaQuery.padding.top;
     final botPad = mediaQuery.padding.bottom;
 
     // In iPhone Duo's vertical bar strip a pinned app bar keeps only its
     // title row, and the package's bottom bars leave the bottom edge for the
     // strip — so neither covers what its preferred size says it does.
-    final verticalBar = GlassVerticalBar.maybeOf(context);
     final bar = appBar;
     final appBarInStrip =
         verticalBar != null && bar is GlassAppBar && bar.pinnedActions != null;
@@ -475,18 +538,39 @@ class GlassScaffold extends StatelessWidget {
     // Resolve effective bar heights.
     // If appBar implements PreferredSizeWidget, use its preferred height;
     // otherwise fall back to the explicit appBarHeight parameter.
-    final effectiveAppBarHeight = appBarInStrip
+    final preferredAppBarHeight = appBarInStrip
         ? verticalBar.rowTop + GlassVerticalBarMetrics.rowHeight
         : statusRow != null
             ? math.max(0.0, statusRow.bottom - topPad)
             : appBar is PreferredSizeWidget
                 ? (appBar! as PreferredSizeWidget).preferredSize.height
                 : appBarHeight;
-    final effectiveBottomBarHeight = bottomBarInStrip
+    final preferredBottomBarHeight = bottomBarInStrip
         ? 0.0
         : bottomBar is PreferredSizeWidget
             ? (bottomBar as PreferredSizeWidget).preferredSize.height
             : (bottomBar != null ? (bottomBarHeight ?? 60.0) : 0.0);
+    // A PreferredSizeWidget declares chrome height synchronously and excludes
+    // the system top inset, so the scaffold adds topPad once. GlassAppBar uses
+    // this path: its preferred height contains its own vertical content
+    // padding, and adding topPad publishes the complete app-bar safe area in
+    // the same rebuild. Arbitrary app bars only reveal their complete extent
+    // after measurement.
+    final topOcclusion = appBar == null
+        ? topPad
+        : appBar is PreferredSizeWidget || appBarInStrip || statusRow != null
+            ? topPad + preferredAppBarHeight
+            : measuredAppBarHeight ?? topPad + appBarHeight;
+    final bottomOcclusion = bottomBar == null || bottomBarInStrip
+        ? botPad
+        : bottomBar is PreferredSizeWidget
+            ? preferredBottomBarHeight +
+                (defaultTargetPlatform == TargetPlatform.android ? botPad : 0.0)
+            : measuredBottomBarHeight ??
+                (bottomBarHeight ?? preferredBottomBarHeight) +
+                    (defaultTargetPlatform == TargetPlatform.android
+                        ? botPad
+                        : 0.0);
 
     // Resolve edge fade toggles.
     final doFadeTop = topEdgeFade ?? (edgeFade && appBar != null);
@@ -496,14 +580,25 @@ class GlassScaffold extends StatelessWidget {
     // Calculate fade heights.
     // Only include appBarHeight when an appBar is present — without one, the
     // fade covers just the status bar area + extent.
-    final topFadeHeight = topPad +
-        (appBar != null ? effectiveAppBarHeight : 0.0) +
-        topEdgeFadeExtent;
-    final bottomFadeHeight =
-        effectiveBottomBarHeight + botPad + bottomEdgeFadeExtent;
+    final topFadeHeight = topOcclusion + topEdgeFadeExtent;
+    final bottomFadeHeight = bottomOcclusion + bottomEdgeFadeExtent;
+
+    // Cupertino lays navigation bars out edge to edge and publishes the space
+    // they occupy through MediaQuery. Scrollables consume that padding at
+    // their extremities (and SafeArea consumes it for arbitrary content),
+    // while the viewport can still scroll behind the glass chrome. This is the
+    // single source of truth for body insets, so a bar that resizes only needs
+    // to rebuild this scope rather than callers recalculating padding.
+    final bodyPadding = mediaQuery.padding.copyWith(
+      top: extendBody ? topOcclusion : (appBar == null ? topPad : 0.0),
+      bottom: extendBody ? bottomOcclusion : (bottomBar == null ? botPad : 0.0),
+    );
 
     // Build the body content.
-    Widget bodyContent = body;
+    Widget bodyContent = MediaQuery(
+      data: mediaQuery.copyWith(padding: bodyPadding),
+      child: body,
+    );
 
     // Wrap with edge fading if enabled.
     if (extendBody && (doFadeTop || doFadeBottom)) {
@@ -561,10 +656,10 @@ class GlassScaffold extends StatelessWidget {
         Positioned.fill(child: bodyContent)
       else
         Positioned(
-          top: appBar != null ? topPad + effectiveAppBarHeight : 0,
+          top: appBar != null ? topOcclusion : 0,
           left: 0,
           right: 0,
-          bottom: bottomBar != null ? effectiveBottomBarHeight + botPad : 0,
+          bottom: bottomBar != null ? bottomOcclusion : 0,
           child: bodyContent,
         ),
 
@@ -652,7 +747,13 @@ class GlassScaffold extends StatelessWidget {
           child: GlassIsolationScope(
             isolated: true,
             defaultQuality: GlassQuality.premium,
-            child: appBar!,
+            child: appBar is PreferredSizeWidget
+                ? appBar!
+                : _MeasuredChrome(
+                    measureKey: appBarMeasureKey,
+                    onSizeChanged: onChromeLayoutChanged,
+                    child: appBar!,
+                  ),
           ),
         ),
 
@@ -670,21 +771,37 @@ class GlassScaffold extends StatelessWidget {
           left: 0,
           right: 0,
           bottom: 0,
-          child: SafeArea(
-            top: false,
-            left: false,
-            right: false,
-            // iOS 26 floats pills natively over the home indicator visually
-            // (the 20px gap straddles the indicator).
-            // Android uses a physical nav bar or gesture bar that requires
-            // being pushed up explicitly.
-            bottom: defaultTargetPlatform == TargetPlatform.android,
-            child: GlassIsolationScope(
-              isolated: true,
-              defaultQuality: GlassQuality.premium,
-              child: bottomBar!,
-            ),
-          ),
+          child: bottomBar is PreferredSizeWidget
+              ? SafeArea(
+                  top: false,
+                  left: false,
+                  right: false,
+                  // iOS 26 floats pills natively over the home indicator visually
+                  // (the 20px gap straddles the indicator).
+                  // Android uses a physical nav bar or gesture bar that requires
+                  // being pushed up explicitly.
+                  bottom: defaultTargetPlatform == TargetPlatform.android,
+                  child: GlassIsolationScope(
+                    isolated: true,
+                    defaultQuality: GlassQuality.premium,
+                    child: bottomBar!,
+                  ),
+                )
+              : _MeasuredChrome(
+                  measureKey: bottomBarMeasureKey,
+                  onSizeChanged: onChromeLayoutChanged,
+                  child: SafeArea(
+                    top: false,
+                    left: false,
+                    right: false,
+                    bottom: defaultTargetPlatform == TargetPlatform.android,
+                    child: GlassIsolationScope(
+                      isolated: true,
+                      defaultQuality: GlassQuality.premium,
+                      child: bottomBar!,
+                    ),
+                  ),
+                ),
         ),
     ];
 
@@ -775,5 +892,104 @@ class GlassScaffold extends StatelessWidget {
       transitionCornerRadius: transitionCornerRadius,
       child: scaffold,
     );
+  }
+}
+
+/// Reports a bar's first layout and every later size change.
+///
+/// The notification is produced by layout, not by a widget rebuild, which is
+/// what lets an arbitrary bar animate its own height without the scaffold
+/// having to know its implementation.
+class _MeasuredChrome extends StatelessWidget {
+  const _MeasuredChrome({
+    required this.measureKey,
+    required this.onSizeChanged,
+    required this.child,
+  });
+
+  final GlobalKey measureKey;
+  final VoidCallback onSizeChanged;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return NotificationListener<SizeChangedLayoutNotification>(
+      onNotification: (_) {
+        onSizeChanged();
+        return true;
+      },
+      child: SizeChangedLayoutNotifier(
+        child: SizedBox(key: measureKey, child: child),
+      ),
+    );
+  }
+}
+
+/// Measures the rendered chrome once the first frame is laid out.
+///
+/// A [PreferredSizeWidget] gives the scaffold a synchronous fallback, but
+/// arbitrary bottom bars — including padded or animated wrappers — only expose
+/// their real height through layout. Rebuilding only when that height changes
+/// keeps the body's [MediaQuery] in sync without a per-frame setState loop.
+class _GlassScaffoldMeasurementHost extends StatefulWidget {
+  const _GlassScaffoldMeasurementHost({required this.scaffold});
+
+  final GlassScaffold scaffold;
+
+  @override
+  State<_GlassScaffoldMeasurementHost> createState() =>
+      _GlassScaffoldMeasurementHostState();
+}
+
+class _GlassScaffoldMeasurementHostState
+    extends State<_GlassScaffoldMeasurementHost> {
+  final GlobalKey _appBarKey = GlobalKey(
+    debugLabel: 'glass_scaffold_app_bar_measure',
+  );
+  final GlobalKey _bottomBarKey = GlobalKey(
+    debugLabel: 'glass_scaffold_bottom_bar_measure',
+  );
+
+  double? _appBarHeight;
+  double? _bottomBarHeight;
+  bool _measurementScheduled = false;
+
+  @override
+  Widget build(BuildContext context) {
+    _scheduleMeasurement();
+    return widget.scaffold._buildContent(
+      context,
+      appBarMeasureKey: _appBarKey,
+      bottomBarMeasureKey: _bottomBarKey,
+      measuredAppBarHeight: _appBarHeight,
+      measuredBottomBarHeight: _bottomBarHeight,
+      onChromeLayoutChanged: _scheduleMeasurement,
+    );
+  }
+
+  void _scheduleMeasurement() {
+    if (_measurementScheduled) return;
+    _measurementScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _measurementScheduled = false;
+      if (!mounted) return;
+
+      final appBarHeight = _appBarKey.currentContext?.size?.height;
+      final bottomBarHeight = _bottomBarKey.currentContext?.size?.height;
+      if (_sameExtent(_appBarHeight, appBarHeight) &&
+          _sameExtent(_bottomBarHeight, bottomBarHeight)) {
+        return;
+      }
+
+      setState(() {
+        _appBarHeight = appBarHeight;
+        _bottomBarHeight = bottomBarHeight;
+      });
+    });
+  }
+
+  bool _sameExtent(double? previous, double? next) {
+    if (previous == null || next == null) return previous == next;
+    return (previous - next).abs() < 0.5;
   }
 }

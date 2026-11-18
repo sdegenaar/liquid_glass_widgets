@@ -31,6 +31,7 @@ import 'package:flutter/material.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import '../constants/glass_settings.dart';
+import 'package:liquid_glass_widgets_example/widgets/glass_safe_area_slivers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -64,10 +65,10 @@ class NavBarPatternsDemo extends StatelessWidget {
       appBar: const GlassAppBar.pinned(),
       body: CustomScrollView(
         slivers: [
-          // Top spacer for app bar area
+          glassTopSafeAreaSliver(),
           SliverToBoxAdapter(
             child: SizedBox(
-              height: MediaQuery.paddingOf(context).top + 44 + 8,
+              height: 8,
             ),
           ),
           SliverPadding(
@@ -222,6 +223,7 @@ class NavBarPatternsDemo extends StatelessWidget {
               ],
             ),
           ),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );
@@ -405,8 +407,6 @@ class _InlineTitleDemo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.paddingOf(context).top;
-
     return GlassScaffold(
       background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
@@ -448,11 +448,12 @@ class _InlineTitleDemo extends StatelessWidget {
       ),
       body: CustomScrollView(
         slivers: [
+          glassTopSafeAreaSliver(),
           SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 44 + 16),
+            child: SizedBox(height: 16),
           ),
           _buildDummyContent(),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );
@@ -482,8 +483,6 @@ class _LargeTitleCollapseDemoState extends State<_LargeTitleCollapseDemo> {
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.paddingOf(context).top;
-
     return GlassScaffold(
       background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
@@ -516,16 +515,13 @@ class _LargeTitleCollapseDemoState extends State<_LargeTitleCollapseDemo> {
       body: CustomScrollView(
         controller: _titleController.scrollController,
         slivers: [
-          SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 44),
-          ),
           // Large title fades out as user scrolls — zero boilerplate.
           GlassLargeTitle(
             text: 'Chats',
             controller: _titleController,
           ),
           _buildDummyContent(),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );
@@ -541,7 +537,6 @@ class _SolidBackgroundDemo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.paddingOf(context).top;
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
 
     return GlassScaffold(
@@ -576,11 +571,12 @@ class _SolidBackgroundDemo extends StatelessWidget {
       ),
       body: CustomScrollView(
         slivers: [
+          glassTopSafeAreaSliver(),
           SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 44 + 16),
+            child: SizedBox(height: 16),
           ),
           _buildDummyContent(),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );
@@ -596,8 +592,6 @@ class _FadeOnlyDemo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.paddingOf(context).top;
-
     return GlassScaffold(
       background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
@@ -605,9 +599,7 @@ class _FadeOnlyDemo extends StatelessWidget {
       appBar: const GlassAppBar.pinned(),
       body: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 44),
-          ),
+          glassTopSafeAreaSliver(),
           // Large title as part of content
           SliverToBoxAdapter(
             child: Padding(
@@ -624,7 +616,7 @@ class _FadeOnlyDemo extends StatelessWidget {
             ),
           ),
           _buildDummyContent(),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );
@@ -647,8 +639,6 @@ class _TabBarBottomFadeDemoState extends State<_TabBarBottomFadeDemo> {
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.paddingOf(context).top;
-
     return GlassScaffold(
       background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
@@ -689,11 +679,12 @@ class _TabBarBottomFadeDemoState extends State<_TabBarBottomFadeDemo> {
       ),
       body: CustomScrollView(
         slivers: [
+          glassTopSafeAreaSliver(),
           SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 44 + 16),
+            child: SizedBox(height: 16),
           ),
           _buildDummyContent(),
-          const SliverToBoxAdapter(child: SizedBox(height: 120)),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );
@@ -726,8 +717,6 @@ class _FadeHeaderDemoState extends State<_FadeHeaderDemo> {
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.paddingOf(context).top;
-
     return GlassScaffold(
       background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
@@ -798,12 +787,13 @@ class _FadeHeaderDemoState extends State<_FadeHeaderDemo> {
       body: CustomScrollView(
         controller: _scrollController,
         slivers: [
+          glassTopSafeAreaSliver(),
           // Extra top space for the fixed header overlay.
           SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 90),
+            child: SizedBox(height: 90),
           ),
           _buildDummyContent(),
-          const SliverToBoxAdapter(child: SizedBox(height: 120)),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );
@@ -838,8 +828,6 @@ class _LargeTitleSearchDemoState extends State<_LargeTitleSearchDemo> {
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.paddingOf(context).top;
-
     return GlassScaffold(
       background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
@@ -866,9 +854,6 @@ class _LargeTitleSearchDemoState extends State<_LargeTitleSearchDemo> {
       body: CustomScrollView(
         controller: _titleController.scrollController,
         slivers: [
-          SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 44),
-          ),
           // Phase 1: large title fades out.
           // Phase 2: search bar collapses under nav bar.
           // Both driven automatically by GlassLargeTitleController.
@@ -882,7 +867,7 @@ class _LargeTitleSearchDemoState extends State<_LargeTitleSearchDemo> {
             ),
           ),
           _buildDummyContent(),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );
@@ -990,8 +975,6 @@ class _BarItemTypesDemo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.paddingOf(context).top;
-
     return GlassScaffold(
       background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
@@ -1009,8 +992,9 @@ class _BarItemTypesDemo extends StatelessWidget {
       ),
       body: CustomScrollView(
         slivers: [
+          glassTopSafeAreaSliver(),
           SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 44 + 16),
+            child: SizedBox(height: 16),
           ),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -1050,7 +1034,7 @@ class _BarItemTypesDemo extends StatelessWidget {
             ),
           ),
           _buildDummyContent(),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );
@@ -1186,8 +1170,6 @@ class _LeadingItemsDemo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.paddingOf(context).top;
-
     return GlassScaffold(
       background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
@@ -1207,7 +1189,8 @@ class _LeadingItemsDemo extends StatelessWidget {
       ),
       body: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(child: SizedBox(height: topPad + 44 + 16)),
+          glassTopSafeAreaSliver(),
+          SliverToBoxAdapter(child: SizedBox(height: 16)),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             sliver: SliverList.list(
@@ -1256,7 +1239,7 @@ class _LeadingItemsDemo extends StatelessWidget {
             ),
           ),
           _buildDummyContent(),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );
@@ -1331,10 +1314,9 @@ class _TitleCenteringDemoState extends State<_TitleCenteringDemo> {
       ),
       body: CustomScrollView(
         slivers: [
+          glassTopSafeAreaSliver(),
           SliverToBoxAdapter(
-            child: SizedBox(
-              height: MediaQuery.paddingOf(context).top + 44 + 24,
-            ),
+            child: SizedBox(height: 24),
           ),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -1429,10 +1411,10 @@ class _TitleCenteringDemoState extends State<_TitleCenteringDemo> {
                       : 'Left-aligns to the bar\'s padding edge.',
                   centerTitle: _centered,
                 ),
-                const SizedBox(height: 100),
               ],
             ),
           ),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );
@@ -1625,8 +1607,6 @@ class _NestedNavDemo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.paddingOf(context).top;
-
     return GlassScaffold(
       background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
@@ -1644,8 +1624,9 @@ class _NestedNavDemo extends StatelessWidget {
       ),
       body: CustomScrollView(
         slivers: [
+          glassTopSafeAreaSliver(),
           SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 44 + 16),
+            child: SizedBox(height: 16),
           ),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -1688,7 +1669,7 @@ class _NestedNavDemo extends StatelessWidget {
             ),
           ),
           _buildDummyContent(),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );
@@ -1750,7 +1731,6 @@ class _CustomBarPinningDemo extends StatelessWidget {
             const Positioned.fill(child: ShowcaseBackground()),
             Scaffold(
               backgroundColor: const Color(0x00000000),
-              extendBodyBehindAppBar: true,
               appBar: AppBar(
                 backgroundColor: const Color(0x00000000),
                 // The items were declared once, as data. These slots hold the
@@ -1763,11 +1743,7 @@ class _CustomBarPinningDemo extends StatelessWidget {
               ),
               body: CustomScrollView(
                 slivers: [
-                  SliverToBoxAdapter(
-                    child: SizedBox(
-                      height: MediaQuery.paddingOf(context).top + 44 + 16,
-                    ),
-                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     sliver: SliverList.list(
@@ -1806,7 +1782,7 @@ class _CustomBarPinningDemo extends StatelessWidget {
                     ),
                   ),
                   _buildDummyContent(),
-                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                  glassBottomSafeAreaSliver(),
                 ],
               ),
             ),
@@ -1870,8 +1846,6 @@ class _HeaderMorphDemo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.paddingOf(context).top;
-
     return GlassScaffold(
       background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
@@ -1889,8 +1863,9 @@ class _HeaderMorphDemo extends StatelessWidget {
       ),
       body: CustomScrollView(
         slivers: [
+          glassTopSafeAreaSliver(),
           SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 44 + 16),
+            child: SizedBox(height: 16),
           ),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -2044,7 +2019,7 @@ class _HeaderMorphDemo extends StatelessWidget {
             ),
           ),
           _buildDummyContent(),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );
@@ -2085,8 +2060,6 @@ class _HeaderMorphDestination extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.paddingOf(context).top;
-
     return GlassScaffold(
       background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
@@ -2104,8 +2077,9 @@ class _HeaderMorphDestination extends StatelessWidget {
       ),
       body: CustomScrollView(
         slivers: [
+          glassTopSafeAreaSliver(),
           SliverToBoxAdapter(
-            child: SizedBox(height: topPad + 44 + 16),
+            child: SizedBox(height: 16),
           ),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -2124,7 +2098,7 @@ class _HeaderMorphDestination extends StatelessWidget {
             ),
           ),
           _buildDummyContent(),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );
@@ -2238,8 +2212,6 @@ class _PresentedSheetsDemo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.paddingOf(context).top;
-
     return GlassScaffold(
       background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
@@ -2268,7 +2240,8 @@ class _PresentedSheetsDemo extends StatelessWidget {
       ),
       body: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(child: SizedBox(height: topPad + 44 + 16)),
+          glassTopSafeAreaSliver(),
+          SliverToBoxAdapter(child: SizedBox(height: 16)),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             sliver: SliverList.list(
@@ -2327,7 +2300,7 @@ class _PresentedSheetsDemo extends StatelessWidget {
             ),
           ),
           _buildDummyContent(),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );
@@ -2370,8 +2343,6 @@ class _SheetItemDemo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.paddingOf(context).top;
-
     return GlassScaffold(
       background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
@@ -2415,7 +2386,8 @@ class _SheetItemDemo extends StatelessWidget {
       ),
       body: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(child: SizedBox(height: topPad + 44 + 16)),
+          glassTopSafeAreaSliver(),
+          SliverToBoxAdapter(child: SizedBox(height: 16)),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             sliver: SliverList.list(
@@ -2446,7 +2418,7 @@ class _SheetItemDemo extends StatelessWidget {
             ),
           ),
           _buildDummyContent(),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );
@@ -2570,18 +2542,20 @@ class _PinnedComposeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Text(
-            'A fullscreen dialog with a pinned bar of its own. Its close button '
-            'and Send capsule replace the back button and the Share / More '
-            'capsule of the screen behind, and close the dialog.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              height: 1.4,
-              color: CupertinoColors.secondaryLabel.resolveFrom(context),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Text(
+              'A fullscreen dialog with a pinned bar of its own. Its close button '
+              'and Send capsule replace the back button and the Share / More '
+              'capsule of the screen behind, and close the dialog.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                height: 1.4,
+                color: CupertinoColors.secondaryLabel.resolveFrom(context),
+              ),
             ),
           ),
         ),
@@ -2616,8 +2590,6 @@ class _TintedBarItemDemoState extends State<_TintedBarItemDemo> {
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.paddingOf(context).top;
-
     return GlassScaffold(
       background: const ShowcaseBackground(),
       settings: RecommendedGlassSettings.standard,
@@ -2658,7 +2630,8 @@ class _TintedBarItemDemoState extends State<_TintedBarItemDemo> {
       ),
       body: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(child: SizedBox(height: topPad + 44 + 24)),
+          glassTopSafeAreaSliver(),
+          SliverToBoxAdapter(child: SizedBox(height: 24)),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             sliver: SliverList.list(
@@ -2907,11 +2880,10 @@ class _TintedBarItemDemoState extends State<_TintedBarItemDemo> {
                     ),
                   ),
                 ),
-
-                const SizedBox(height: 100),
               ],
             ),
           ),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );

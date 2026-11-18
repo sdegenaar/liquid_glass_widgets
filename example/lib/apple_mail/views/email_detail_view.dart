@@ -97,9 +97,6 @@ class _EmailDetailViewState extends State<EmailDetailView> {
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.paddingOf(context).top;
-    final botPad = MediaQuery.paddingOf(context).bottom;
-
     return GlassScaffold(
       background: ColoredBox(color: kMailBg.resolveFrom(context)),
       appBar: GlassAppBar.pinned(
@@ -146,7 +143,6 @@ class _EmailDetailViewState extends State<EmailDetailView> {
 
       // ── Bottom triage bar ────────────────────────────────────────────────────
       bottomBar: _DetailBottomBar(
-        bottomPad: botPad,
         onDelete: () {
           widget.onDelete();
           Navigator.of(context).pop();
@@ -155,7 +151,7 @@ class _EmailDetailViewState extends State<EmailDetailView> {
         onCompose: (anchor) => _openReplySheet(context, 'Fwd', anchor),
       ),
 
-      body: _EmailBody(item: _current, topPad: topPad),
+      body: _EmailBody(item: _current),
     );
   }
 }
@@ -165,163 +161,162 @@ class _EmailDetailViewState extends State<EmailDetailView> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _EmailBody extends StatelessWidget {
-  const _EmailBody({required this.item, required this.topPad});
+  const _EmailBody({required this.item});
 
   final MailItem item;
-  final double topPad;
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      children: [
-        SizedBox(height: topPad + 44 + 12),
+      child: ListView(
+        children: [
+          const SizedBox(height: 12),
 
-        // ── "1 Message  |  ✦ Summarise" row ─────────────────────────────────
-        Row(
-          children: [
-            Text(
-              '1 Message',
-              style: TextStyle(
-                fontSize: 13,
-                color: kMailSecondaryLabel.resolveFrom(context),
+          // ── "1 Message  |  ✦ Summarise" row ─────────────────────────────────
+          Row(
+            children: [
+              Text(
+                '1 Message',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: kMailSecondaryLabel.resolveFrom(context),
+                ),
               ),
-            ),
-            const Spacer(),
-            const Icon(CupertinoIcons.sparkles, size: 14, color: kMailBlue),
-            const SizedBox(width: 4),
-            const Text(
-              'Summarise',
-              style: TextStyle(
-                fontSize: 13,
-                color: kMailBlue,
-                fontWeight: FontWeight.w500,
+              const Spacer(),
+              const Icon(CupertinoIcons.sparkles, size: 14, color: kMailBlue),
+              const SizedBox(width: 4),
+              const Text(
+                'Summarise',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: kMailBlue,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
 
-        const SizedBox(height: 12),
-        Container(height: 0.33, color: const Color(0xFF38383A)),
-        const SizedBox(height: 12),
+          const SizedBox(height: 12),
+          Container(height: 0.33, color: const Color(0xFF38383A)),
+          const SizedBox(height: 12),
 
-        // ── Sender row ───────────────────────────────────────────────────────
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Avatar
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: item.avatarColor.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: item.avatarType == AvatarType.store
-                    ? Icon(CupertinoIcons.bag_fill,
-                        color: item.avatarColor, size: 20)
-                    : Text(
-                        item.initials ?? '?',
-                        style: TextStyle(
-                          color: item.avatarColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-              ),
-            ),
-            const SizedBox(width: 10),
-
-            // Name + recipients
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.sender,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: CupertinoColors.label.resolveFrom(context),
-                    ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'To: carmen@degenaar.co... & 1 more',
+          // ── Sender row ───────────────────────────────────────────────────────
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Avatar
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: item.avatarColor.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: item.avatarType == AvatarType.store
+                      ? Icon(CupertinoIcons.bag_fill,
+                          color: item.avatarColor, size: 20)
+                      : Text(
+                          item.initials ?? '?',
                           style: TextStyle(
-                            fontSize: 12,
-                            color: kMailSecondaryLabel.resolveFrom(context),
+                            color: item.avatarColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
+                ),
+              ),
+              const SizedBox(width: 10),
+
+              // Name + recipients
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.sender,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: CupertinoColors.label.resolveFrom(context),
                       ),
-                      Icon(
-                        CupertinoIcons.chevron_right,
-                        size: 10,
-                        color: kMailSecondaryLabel.resolveFrom(context),
-                      ),
-                      if (item.hasAttachment) ...[
-                        const SizedBox(width: 4),
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'To: carmen@degenaar.co... & 1 more',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: kMailSecondaryLabel.resolveFrom(context),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                         Icon(
-                          CupertinoIcons.paperclip,
-                          size: 12,
+                          CupertinoIcons.chevron_right,
+                          size: 10,
                           color: kMailSecondaryLabel.resolveFrom(context),
                         ),
+                        if (item.hasAttachment) ...[
+                          const SizedBox(width: 4),
+                          Icon(
+                            CupertinoIcons.paperclip,
+                            size: 12,
+                            color: kMailSecondaryLabel.resolveFrom(context),
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            // Date
-            Text(
-              item.time,
-              style: TextStyle(
-                fontSize: 13,
-                color: kMailSecondaryLabel.resolveFrom(context),
+              // Date
+              Text(
+                item.time,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: kMailSecondaryLabel.resolveFrom(context),
+                ),
               ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // ── Subject ──────────────────────────────────────────────────────────
+          Text(
+            item.subject,
+            style: TextStyle(
+              fontSize: 21,
+              fontWeight: FontWeight.w700,
+              color: CupertinoColors.label.resolveFrom(context),
+              letterSpacing: -0.4,
             ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // ── Body ─────────────────────────────────────────────────────────────
+          Text(
+            item.body ?? item.snippet,
+            style: TextStyle(
+              fontSize: 16,
+              height: 1.5,
+              color: CupertinoColors.label.resolveFrom(context),
+            ),
+          ),
+
+          // ── Attachment card ──────────────────────────────────────────────────
+          if (item.hasAttachment) ...[
+            const SizedBox(height: 20),
+            _AttachmentCard(),
           ],
-        ),
-
-        const SizedBox(height: 16),
-
-        // ── Subject ──────────────────────────────────────────────────────────
-        Text(
-          item.subject,
-          style: TextStyle(
-            fontSize: 21,
-            fontWeight: FontWeight.w700,
-            color: CupertinoColors.label.resolveFrom(context),
-            letterSpacing: -0.4,
-          ),
-        ),
-
-        const SizedBox(height: 14),
-
-        // ── Body ─────────────────────────────────────────────────────────────
-        Text(
-          item.body ?? item.snippet,
-          style: TextStyle(
-            fontSize: 16,
-            height: 1.5,
-            color: CupertinoColors.label.resolveFrom(context),
-          ),
-        ),
-
-        // ── Attachment card ──────────────────────────────────────────────────
-        if (item.hasAttachment) ...[
-          const SizedBox(height: 20),
-          _AttachmentCard(),
         ],
-
-        const SizedBox(height: 100),
-      ],
+      ),
     );
   }
 }
@@ -403,74 +398,74 @@ class _AttachmentCard extends StatelessWidget {
 //   ← GlassButtonGroup shared →           ← separate →
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _DetailBottomBar extends StatelessWidget {
+class _DetailBottomBar extends StatelessWidget implements PreferredSizeWidget {
   const _DetailBottomBar({
-    required this.bottomPad,
     required this.onDelete,
     required this.onReply,
     required this.onCompose,
   });
 
-  final double bottomPad;
   final VoidCallback onDelete;
   final void Function(GlassMorphAnchor? anchor) onReply;
   final void Function(GlassMorphAnchor? anchor) onCompose;
 
   @override
+  Size get preferredSize => const Size.fromHeight(60);
+
+  @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        8,
-        16,
-        bottomPad > 32 ? bottomPad - 8 : 28,
-      ),
-      child: Row(
-        children: [
-          // Left: three-icon triage capsule
-          GlassButtonGroup.icons(
-            settings: kMailTriggerGlass(context),
-            items: [
-              GlassButtonGroupItem(
-                icon: const Icon(CupertinoIcons.trash, size: 20),
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  onDelete();
-                },
-              ),
-              GlassButtonGroupItem(
-                icon: const Icon(CupertinoIcons.folder, size: 20),
-                onTap: () => HapticFeedback.selectionClick(),
-              ),
-              GlassButtonGroupItem(
-                icon: const Icon(CupertinoIcons.reply, size: 20),
-                onTap: () => onReply(null),
-              ),
-            ],
-          ),
-
-          const Spacer(),
-
-          // Right: compose circle
-          GlassMorphTrigger(
-            builder: (ctx, anchor) => GlassButton.custom(
-              onTap: () => onCompose(anchor),
-              width: 44,
-              height: 44,
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: Row(
+          children: [
+            // Left: three-icon triage capsule
+            GlassButtonGroup.icons(
               settings: kMailTriggerGlass(context),
-              shape: const LiquidOval(),
-              quality: GlassQuality.premium,
-              useOwnLayer: true,
-              child: Center(
-                child: Icon(
-                  CupertinoIcons.square_pencil,
-                  size: 20,
-                  color: CupertinoColors.label.resolveFrom(context),
+              items: [
+                GlassButtonGroupItem(
+                  icon: const Icon(CupertinoIcons.trash, size: 20),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    onDelete();
+                  },
+                ),
+                GlassButtonGroupItem(
+                  icon: const Icon(CupertinoIcons.folder, size: 20),
+                  onTap: () => HapticFeedback.selectionClick(),
+                ),
+                GlassButtonGroupItem(
+                  icon: const Icon(CupertinoIcons.reply, size: 20),
+                  onTap: () => onReply(null),
+                ),
+              ],
+            ),
+
+            const Spacer(),
+
+            // Right: compose circle
+            GlassMorphTrigger(
+              builder: (ctx, anchor) => GlassButton.custom(
+                onTap: () => onCompose(anchor),
+                width: 44,
+                height: 44,
+                settings: kMailTriggerGlass(context),
+                shape: const LiquidOval(),
+                quality: GlassQuality.premium,
+                useOwnLayer: true,
+                child: Center(
+                  child: Icon(
+                    CupertinoIcons.square_pencil,
+                    size: 20,
+                    color: CupertinoColors.label.resolveFrom(context),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

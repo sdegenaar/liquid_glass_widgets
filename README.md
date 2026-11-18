@@ -66,7 +66,7 @@ void main() async {
 >
 > **Migrated to `package:cupertino_ui` on Flutter 3.50+?** Add Flutter's compatibility bridge to your `CupertinoApp` (`builder: (context, child) => CupertinoUiCompatibilityBridge(child: child!)`) so `CupertinoTheme` and localizations propagate into SDK-Cupertino packages.
 
-Then use `GlassScaffold` on each screen — it handles the background, status bar, z-ordering, bar isolation, and scroll edge fading automatically:
+Then use `GlassScaffold` on each screen — it handles the background, status bar, z-ordering, bar isolation, scroll edge fading, and safe-area insets automatically. `GlassAppBar` defaults to `EdgeInsets.symmetric(horizontal: 20, vertical: 10)` and adds the platform top, left and right safe insets to that padding; `GlassScaffold` publishes the complete app-bar occupancy plus the bottom-bar inset through the body's `MediaQuery`, so a default `ListView` avoids both bars without a manual spacer:
 
 ```dart
 GlassScaffold(
@@ -81,9 +81,23 @@ GlassScaffold(
       GlassTab(icon: Icon(CupertinoIcons.square_stack_3d_up_fill), label: 'Surfaces'),
     ],
   ),
-  body: CustomScrollView(slivers: const []),
+  body: CustomScrollView(
+    slivers: [
+      SliverSafeArea(
+        sliver: SliverMainAxisGroup(
+          slivers: [
+            // ...content slivers
+          ],
+        ),
+      ),
+    ],
+  ),
 )
 ```
+
+`ListView` consumes the body `MediaQuery` vertically by default. `CustomScrollView` does not, so wrap its content slivers in `SliverSafeArea` (or an equivalent sliver that consumes the safe area). When the first sliver is `GlassLargeTitle`, leave it outside that wrapper because the large title reserves the top inset internally; use `SliverSafeArea(top: false, ...)` for the remaining slivers. `GlassScaffold` also measures non-`PreferredSizeWidget` bars after layout, so these insets track bars that animate or change height at runtime.
+
+`GlassScaffold` publishes its bar-aware insets only to the `body` subtree. Read `MediaQuery.paddingOf(context)` from inside `body` (or use `GlassLargeTitle`, which reads it internally); a context in the page's outer `build` method still sees only the platform safe area.
 
 ### Choose the Right Surface
 

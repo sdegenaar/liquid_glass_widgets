@@ -53,8 +53,10 @@ abstract final class GlassNavPinnedMetrics {
   /// Height of the toolbar row, matching [GlassAppBar.toolbarHeight].
   static const double toolbarHeight = 44.0;
 
-  /// Horizontal inset, matching [GlassAppBar.padding].
-  static const double horizontalPadding = 8.0;
+  /// Fallback horizontal inset for registrations that omit their own.
+  ///
+  /// Matches [GlassAppBar.padding]'s default of 20 logical pixels on each side.
+  static const double horizontalPadding = 20.0;
 
   /// Stretch factor of the capsule shell, matching `GlassButtonGroup.icons`.
   static const double capsuleStretch = 0.15;
@@ -453,6 +455,7 @@ class GlassNavPinnedHost extends StatelessWidget {
     final inset = state.flowTo.horizontalInset ??
         state.flowFrom.horizontalInset ??
         GlassNavPinnedMetrics.horizontalPadding;
+    final verticalInset = state.flowTo.verticalInset;
 
     // On iPhone Duo's inner display held upright the chrome shares the status
     // bar's row, centred in it, as the route's own bar lays its row out.
@@ -472,7 +475,7 @@ class GlassNavPinnedHost extends StatelessWidget {
     }
 
     return Positioned(
-      top: topPad,
+      top: topPad + verticalInset,
       left: inset,
       right: inset,
       height: barHeight,

@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'package:liquid_glass_widgets_example/constants/glass_settings.dart';
+import 'package:liquid_glass_widgets_example/widgets/glass_safe_area_slivers.dart';
 
 class OverlaysPage extends StatefulWidget {
   const OverlaysPage({super.key});
@@ -290,448 +291,431 @@ class _OverlaysPageState extends State<OverlaysPage> {
           : GlassStatusBarStyle.dark,
       child: GlassScaffold(
         appBar: const GlassAppBar.pinned(),
-        body: GlassScrollEdgeEffect(
-          topFadeHeight: MediaQuery.paddingOf(context).top + 44 + 40,
-          fadeBottom: false,
-          child: CustomScrollView(
-            slivers: [
-              // Space for the app bar + safe area
-              SliverToBoxAdapter(
-                child: SizedBox(
-                  height: MediaQuery.paddingOf(context).top + 44,
-                ),
-              ),
-              // ── Large page title (iOS 26 inline style) ──────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(24, 0, 24, 16),
-                  child: Text(
-                    'Overlays',
-                    style: TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.5,
-                      color: CupertinoColors.label.resolveFrom(context),
-                    ),
+        body: CustomScrollView(
+          slivers: [
+            glassTopSafeAreaSliver(),
+            // ── Large page title (iOS 26 inline style) ──────────────
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                child: Text(
+                  'Overlays',
+                  style: TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                    color: CupertinoColors.label.resolveFrom(context),
                   ),
                 ),
               ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // ── GlassSheet ───────────────────────────────────
-                      const _SectionTitle(title: 'GlassSheet'),
-                      SizedBox(height: 16),
-                      _ActionButton(
-                        label: 'Basic Bottom Sheet',
-                        glowColor: CupertinoColors.activeBlue,
-                        onTap: _showBasicSheet,
-                      ),
-                      SizedBox(height: 12),
-                      _ActionButton(
-                        label: 'Scrollable Content',
-                        glowColor: CupertinoColors.activeGreen,
-                        onTap: _showScrollableSheet,
-                      ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── GlassSheet ───────────────────────────────────
+                    const _SectionTitle(title: 'GlassSheet'),
+                    SizedBox(height: 16),
+                    _ActionButton(
+                      label: 'Basic Bottom Sheet',
+                      glowColor: CupertinoColors.activeBlue,
+                      onTap: _showBasicSheet,
+                    ),
+                    SizedBox(height: 12),
+                    _ActionButton(
+                      label: 'Scrollable Content',
+                      glowColor: CupertinoColors.activeGreen,
+                      onTap: _showScrollableSheet,
+                    ),
 
-                      SizedBox(height: 40),
+                    SizedBox(height: 40),
 
-                      // ── GlassDialog ──────────────────────────────────
-                      const _SectionTitle(title: 'GlassDialog'),
-                      SizedBox(height: 16),
-                      _ActionButton(
-                        label: 'Basic Alert',
-                        glowColor: CupertinoColors.activeGreen,
-                        onTap: _showBasicDialog,
-                      ),
-                      SizedBox(height: 12),
-                      _ActionButton(
-                        label: 'Destructive Confirm',
-                        glowColor: CupertinoColors.systemRed,
-                        onTap: _showDestructiveDialog,
-                      ),
-                      SizedBox(height: 12),
-                      _ActionButton(
-                        label: 'Save Changes (3 Actions)',
-                        glowColor: CupertinoColors.activeOrange,
-                        onTap: _showSaveDialog,
-                      ),
+                    // ── GlassDialog ──────────────────────────────────
+                    const _SectionTitle(title: 'GlassDialog'),
+                    SizedBox(height: 16),
+                    _ActionButton(
+                      label: 'Basic Alert',
+                      glowColor: CupertinoColors.activeGreen,
+                      onTap: _showBasicDialog,
+                    ),
+                    SizedBox(height: 12),
+                    _ActionButton(
+                      label: 'Destructive Confirm',
+                      glowColor: CupertinoColors.systemRed,
+                      onTap: _showDestructiveDialog,
+                    ),
+                    SizedBox(height: 12),
+                    _ActionButton(
+                      label: 'Save Changes (3 Actions)',
+                      glowColor: CupertinoColors.activeOrange,
+                      onTap: _showSaveDialog,
+                    ),
 
-                      SizedBox(height: 40),
+                    SizedBox(height: 40),
 
-                      // ── GlassMenu ────────────────────────────────────
-                      const _SectionTitle(title: 'GlassMenu'),
-                      SizedBox(height: 4),
-                      _QualityLabel(label: 'Premium vs Standard'),
-                      SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Column(
-                            children: [
-                              _QualityBadge(
-                                  label: 'Premium',
-                                  color: CupertinoColors.activeOrange),
-                              SizedBox(height: 8),
-                              GlassMenu(
-                                quality: GlassQuality.premium,
-                                triggerBuilder: (context, toggle) =>
-                                    GlassButton(
-                                  icon: Icon(CupertinoIcons.ellipsis),
-                                  onTap: toggle,
-                                  label: 'Premium',
-                                ),
-                                items: [
-                                  GlassMenuItem(
-                                    icon: Icon(CupertinoIcons.share),
-                                    title: 'Share',
-                                    onTap: () => setState(
-                                        () => _lastMenuSelection = 'Share'),
-                                  ),
-                                  GlassMenuItem(
-                                    icon: Icon(CupertinoIcons.pen),
-                                    title: 'Edit',
-                                    onTap: () => setState(
-                                        () => _lastMenuSelection = 'Edit'),
-                                  ),
-                                  GlassMenuItem(
-                                    icon: Icon(CupertinoIcons.trash),
-                                    title: 'Delete',
-                                    isDestructive: true,
-                                    onTap: () => setState(
-                                        () => _lastMenuSelection = 'Delete'),
-                                  ),
-                                ],
+                    // ── GlassMenu ────────────────────────────────────
+                    const _SectionTitle(title: 'GlassMenu'),
+                    SizedBox(height: 4),
+                    _QualityLabel(label: 'Premium vs Standard'),
+                    SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Column(
+                          children: [
+                            _QualityBadge(
+                                label: 'Premium',
+                                color: CupertinoColors.activeOrange),
+                            SizedBox(height: 8),
+                            GlassMenu(
+                              quality: GlassQuality.premium,
+                              triggerBuilder: (context, toggle) => GlassButton(
+                                icon: Icon(CupertinoIcons.ellipsis),
+                                onTap: toggle,
+                                label: 'Premium',
                               ),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              _QualityBadge(
-                                  label: 'Standard',
-                                  color: CupertinoColors.white
-                                      .withValues(alpha: 0.38)),
-                              SizedBox(height: 8),
-                              GlassMenu(
-                                quality: GlassQuality.standard,
-                                triggerBuilder: (context, toggle) =>
-                                    GlassButton(
-                                  icon: Icon(CupertinoIcons.ellipsis),
-                                  onTap: toggle,
-                                  label: 'Standard',
+                              items: [
+                                GlassMenuItem(
+                                  icon: Icon(CupertinoIcons.share),
+                                  title: 'Share',
+                                  onTap: () => setState(
+                                      () => _lastMenuSelection = 'Share'),
                                 ),
-                                items: [
-                                  GlassMenuItem(
-                                    icon: Icon(CupertinoIcons.share),
-                                    title: 'Share',
-                                    onTap: () => setState(
-                                        () => _lastMenuSelection = 'Share'),
-                                  ),
-                                  GlassMenuItem(
-                                    icon: Icon(CupertinoIcons.pen),
-                                    title: 'Edit',
-                                    onTap: () => setState(
-                                        () => _lastMenuSelection = 'Edit'),
-                                  ),
-                                  GlassMenuItem(
-                                    icon: Icon(CupertinoIcons.trash),
-                                    title: 'Delete',
-                                    isDestructive: true,
-                                    onTap: () => setState(
-                                        () => _lastMenuSelection = 'Delete'),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 16),
-                      _ResultRow(
-                        icon: CupertinoIcons.info_circle_fill,
-                        label: 'Selection: $_lastMenuSelection',
-                      ),
-
-                      SizedBox(height: 40),
-
-                      // ── GlassPopover ──────────────────────────────────
-                      const _SectionTitle(title: 'GlassPopover'),
-                      SizedBox(height: 4),
-                      _QualityLabel(label: 'Premium vs Standard'),
-                      SizedBox(height: 16),
-
-                      // ── Quality comparison row ──
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          // ── Premium quality ──
-                          Column(
-                            children: [
-                              _QualityBadge(
-                                  label: 'Premium',
-                                  color: CupertinoColors.activeOrange),
-                              SizedBox(height: 8),
-                              GlassPopover(
-                                quality: GlassQuality.premium,
-                                popoverWidth: 220,
-                                popoverHeight: 160,
-                                triggerBuilder: (context, toggle) =>
-                                    GlassButton(
-                                  icon: Icon(CupertinoIcons.sparkles),
-                                  onTap: toggle,
-                                  label: 'Premium',
-                                  quality: GlassQuality.premium,
-                                  useOwnLayer: true,
+                                GlassMenuItem(
+                                  icon: Icon(CupertinoIcons.pen),
+                                  title: 'Edit',
+                                  onTap: () => setState(
+                                      () => _lastMenuSelection = 'Edit'),
                                 ),
-                                contentBuilder: (context, close) => Padding(
-                                  padding: EdgeInsets.all(20),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            CupertinoIcons.sparkles,
-                                            color: CupertinoColors.activeOrange,
-                                            size: 20,
-                                          ),
-                                          SizedBox(width: 8),
-                                          Text(
-                                            'Liquid Glass',
-                                            style: TextStyle(
-                                              fontSize: 17,
-                                              fontWeight: FontWeight.w600,
-                                              color: CupertinoColors.label
-                                                  .resolveFrom(context),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      SizedBox(height: 12),
-                                      Text(
-                                        'Premium quality with full '
-                                        'metaball morph blending '
-                                        'between trigger and popover.',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: CupertinoColors.white
-                                              .withValues(alpha: 0.7),
-                                          height: 1.4,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          // ── Standard quality ──
-                          Column(
-                            children: [
-                              _QualityBadge(
-                                  label: 'Standard',
-                                  color: CupertinoColors.white
-                                      .withValues(alpha: 0.38)),
-                              SizedBox(height: 8),
-                              GlassPopover(
-                                quality: GlassQuality.standard,
-                                popoverWidth: 220,
-                                popoverHeight: 160,
-                                triggerBuilder: (context, toggle) =>
-                                    GlassButton(
-                                  icon: Icon(CupertinoIcons.info_circle),
-                                  onTap: toggle,
-                                  label: 'Standard',
-                                  quality: GlassQuality.standard,
-                                  useOwnLayer: true,
-                                ),
-                                contentBuilder: (context, close) => Padding(
-                                  padding: EdgeInsets.all(20),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            CupertinoIcons.info_circle,
-                                            color: CupertinoColors
-                                                .secondaryLabel
-                                                .resolveFrom(context),
-                                            size: 20,
-                                          ),
-                                          SizedBox(width: 8),
-                                          Text(
-                                            'Backdrop Filter',
-                                            style: TextStyle(
-                                              fontSize: 17,
-                                              fontWeight: FontWeight.w600,
-                                              color: CupertinoColors.label
-                                                  .resolveFrom(context),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      SizedBox(height: 12),
-                                      Text(
-                                        'Standard quality uses backdrop '
-                                        'filter — lighter on GPU but '
-                                        'without metaball blending.',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: CupertinoColors.white
-                                              .withValues(alpha: 0.7),
-                                          height: 1.4,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-
-                      SizedBox(height: 24),
-
-                      // ── Self-close use case ──
-                      Text(
-                        'Custom content with close callback',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: CupertinoColors.label
-                              .resolveFrom(context)
-                              .withValues(alpha: 0.5),
-                        ),
-                      ),
-                      SizedBox(height: 12),
-                      Center(
-                        child: GlassPopover(
-                          quality: GlassQuality.premium,
-                          barrierDismissible:
-                              false, // Testing the non-dismissible gap
-                          popoverWidth: 220,
-                          // popoverHeight removed to test auto-height measurement gap
-                          triggerBuilder: (context, toggle) => GlassButton(
-                            icon: Icon(CupertinoIcons.person_circle),
-                            onTap: toggle,
-                            label: 'Profile',
-                            quality: GlassQuality.premium,
-                            useOwnLayer: true,
-                          ),
-                          contentBuilder: (context, close) => Padding(
-                            padding: EdgeInsets.all(20),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 56,
-                                  height: 56,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        CupertinoColors.systemPurple
-                                            .withValues(alpha: 0.8),
-                                        CupertinoColors.activeBlue,
-                                      ],
-                                    ),
-                                  ),
-                                  child: Icon(
-                                    CupertinoIcons.person_fill,
-                                    color: CupertinoColors.label
-                                        .resolveFrom(context),
-                                    size: 28,
-                                  ),
-                                ),
-                                SizedBox(height: 12),
-                                Text(
-                                  'Jane Doe',
-                                  style: TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w600,
-                                    color: CupertinoColors.label
-                                        .resolveFrom(context),
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Flutter Developer',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: CupertinoColors.label
-                                        .resolveFrom(context)
-                                        .withValues(alpha: 0.5),
-                                  ),
-                                ),
-                                SizedBox(height: 16),
-                                GlassButton.custom(
-                                  onTap: close,
-                                  width: 120,
-                                  height: 36,
-                                  shape: const LiquidRoundedSuperellipse(
-                                      borderRadius: 18),
-                                  child: Container(
-                                    alignment: Alignment.center,
-                                    decoration: BoxDecoration(
-                                      color: CupertinoColors.white
-                                          .withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(18),
-                                    ),
-                                    child: Text(
-                                      'Done',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: CupertinoColors.label
-                                            .resolveFrom(context),
-                                      ),
-                                    ),
-                                  ),
+                                GlassMenuItem(
+                                  icon: Icon(CupertinoIcons.trash),
+                                  title: 'Delete',
+                                  isDestructive: true,
+                                  onTap: () => setState(
+                                      () => _lastMenuSelection = 'Delete'),
                                 ),
                               ],
                             ),
+                          ],
+                        ),
+                        Column(
+                          children: [
+                            _QualityBadge(
+                                label: 'Standard',
+                                color: CupertinoColors.white
+                                    .withValues(alpha: 0.38)),
+                            SizedBox(height: 8),
+                            GlassMenu(
+                              quality: GlassQuality.standard,
+                              triggerBuilder: (context, toggle) => GlassButton(
+                                icon: Icon(CupertinoIcons.ellipsis),
+                                onTap: toggle,
+                                label: 'Standard',
+                              ),
+                              items: [
+                                GlassMenuItem(
+                                  icon: Icon(CupertinoIcons.share),
+                                  title: 'Share',
+                                  onTap: () => setState(
+                                      () => _lastMenuSelection = 'Share'),
+                                ),
+                                GlassMenuItem(
+                                  icon: Icon(CupertinoIcons.pen),
+                                  title: 'Edit',
+                                  onTap: () => setState(
+                                      () => _lastMenuSelection = 'Edit'),
+                                ),
+                                GlassMenuItem(
+                                  icon: Icon(CupertinoIcons.trash),
+                                  title: 'Delete',
+                                  isDestructive: true,
+                                  onTap: () => setState(
+                                      () => _lastMenuSelection = 'Delete'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+                    _ResultRow(
+                      icon: CupertinoIcons.info_circle_fill,
+                      label: 'Selection: $_lastMenuSelection',
+                    ),
+
+                    SizedBox(height: 40),
+
+                    // ── GlassPopover ──────────────────────────────────
+                    const _SectionTitle(title: 'GlassPopover'),
+                    SizedBox(height: 4),
+                    _QualityLabel(label: 'Premium vs Standard'),
+                    SizedBox(height: 16),
+
+                    // ── Quality comparison row ──
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // ── Premium quality ──
+                        Column(
+                          children: [
+                            _QualityBadge(
+                                label: 'Premium',
+                                color: CupertinoColors.activeOrange),
+                            SizedBox(height: 8),
+                            GlassPopover(
+                              quality: GlassQuality.premium,
+                              popoverWidth: 220,
+                              popoverHeight: 160,
+                              triggerBuilder: (context, toggle) => GlassButton(
+                                icon: Icon(CupertinoIcons.sparkles),
+                                onTap: toggle,
+                                label: 'Premium',
+                                quality: GlassQuality.premium,
+                                useOwnLayer: true,
+                              ),
+                              contentBuilder: (context, close) => Padding(
+                                padding: EdgeInsets.all(20),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          CupertinoIcons.sparkles,
+                                          color: CupertinoColors.activeOrange,
+                                          size: 20,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Liquid Glass',
+                                          style: TextStyle(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.w600,
+                                            color: CupertinoColors.label
+                                                .resolveFrom(context),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 12),
+                                    Text(
+                                      'Premium quality with full '
+                                      'metaball morph blending '
+                                      'between trigger and popover.',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: CupertinoColors.white
+                                            .withValues(alpha: 0.7),
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // ── Standard quality ──
+                        Column(
+                          children: [
+                            _QualityBadge(
+                                label: 'Standard',
+                                color: CupertinoColors.white
+                                    .withValues(alpha: 0.38)),
+                            SizedBox(height: 8),
+                            GlassPopover(
+                              quality: GlassQuality.standard,
+                              popoverWidth: 220,
+                              popoverHeight: 160,
+                              triggerBuilder: (context, toggle) => GlassButton(
+                                icon: Icon(CupertinoIcons.info_circle),
+                                onTap: toggle,
+                                label: 'Standard',
+                                quality: GlassQuality.standard,
+                                useOwnLayer: true,
+                              ),
+                              contentBuilder: (context, close) => Padding(
+                                padding: EdgeInsets.all(20),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          CupertinoIcons.info_circle,
+                                          color: CupertinoColors.secondaryLabel
+                                              .resolveFrom(context),
+                                          size: 20,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Backdrop Filter',
+                                          style: TextStyle(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.w600,
+                                            color: CupertinoColors.label
+                                                .resolveFrom(context),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 12),
+                                    Text(
+                                      'Standard quality uses backdrop '
+                                      'filter — lighter on GPU but '
+                                      'without metaball blending.',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: CupertinoColors.white
+                                            .withValues(alpha: 0.7),
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 24),
+
+                    // ── Self-close use case ──
+                    Text(
+                      'Custom content with close callback',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: CupertinoColors.label
+                            .resolveFrom(context)
+                            .withValues(alpha: 0.5),
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Center(
+                      child: GlassPopover(
+                        quality: GlassQuality.premium,
+                        barrierDismissible:
+                            false, // Testing the non-dismissible gap
+                        popoverWidth: 220,
+                        // popoverHeight removed to test auto-height measurement gap
+                        triggerBuilder: (context, toggle) => GlassButton(
+                          icon: Icon(CupertinoIcons.person_circle),
+                          onTap: toggle,
+                          label: 'Profile',
+                          quality: GlassQuality.premium,
+                          useOwnLayer: true,
+                        ),
+                        contentBuilder: (context, close) => Padding(
+                          padding: EdgeInsets.all(20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 56,
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      CupertinoColors.systemPurple
+                                          .withValues(alpha: 0.8),
+                                      CupertinoColors.activeBlue,
+                                    ],
+                                  ),
+                                ),
+                                child: Icon(
+                                  CupertinoIcons.person_fill,
+                                  color: CupertinoColors.label
+                                      .resolveFrom(context),
+                                  size: 28,
+                                ),
+                              ),
+                              SizedBox(height: 12),
+                              Text(
+                                'Jane Doe',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w600,
+                                  color: CupertinoColors.label
+                                      .resolveFrom(context),
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Flutter Developer',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: CupertinoColors.label
+                                      .resolveFrom(context)
+                                      .withValues(alpha: 0.5),
+                                ),
+                              ),
+                              SizedBox(height: 16),
+                              GlassButton.custom(
+                                onTap: close,
+                                width: 120,
+                                height: 36,
+                                shape: const LiquidRoundedSuperellipse(
+                                    borderRadius: 18),
+                                child: Container(
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: CupertinoColors.white
+                                        .withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  child: Text(
+                                    'Done',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: CupertinoColors.label
+                                          .resolveFrom(context),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
+                    ),
 
-                      SizedBox(height: 40),
+                    SizedBox(height: 40),
 
-                      // ── GlassActionSheet ─────────────────────────────
-                      const _SectionTitle(title: 'GlassActionSheet'),
-                      SizedBox(height: 16),
-                      _ActionButton(
-                        label: 'Photo Options',
-                        glowColor: CupertinoColors.systemPurple,
-                        onTap: _showPhotoActionSheet,
-                      ),
+                    // ── GlassActionSheet ─────────────────────────────
+                    const _SectionTitle(title: 'GlassActionSheet'),
+                    SizedBox(height: 16),
+                    _ActionButton(
+                      label: 'Photo Options',
+                      glowColor: CupertinoColors.systemPurple,
+                      onTap: _showPhotoActionSheet,
+                    ),
 
-                      SizedBox(height: 40),
+                    SizedBox(height: 40),
 
-                      // ── GlassModalSheet ────────────────────────────
-                      const _SectionTitle(title: 'GlassModalSheet'),
-                      SizedBox(height: 16),
-                      _ActionButton(
-                        label: 'Multi-State Modal Sheet',
-                        glowColor: Colors.teal,
-                        onTap: _showModalSheet,
-                      ),
-
-                      SizedBox(height: 100),
-                    ],
-                  ),
+                    // ── GlassModalSheet ────────────────────────────
+                    const _SectionTitle(title: 'GlassModalSheet'),
+                    SizedBox(height: 16),
+                    _ActionButton(
+                      label: 'Multi-State Modal Sheet',
+                      glowColor: Colors.teal,
+                      onTap: _showModalSheet,
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+            glassBottomSafeAreaSliver(),
+          ],
         ),
       ),
     );

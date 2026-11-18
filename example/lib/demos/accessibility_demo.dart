@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets_example/widgets/glass_safe_area_slivers.dart';
 
 void main() {
   runApp(
@@ -35,6 +36,7 @@ class _AccessibilityDemoState extends State<AccessibilityDemo> {
       ),
       body: CustomScrollView(
         slivers: [
+          glassTopSafeAreaSliver(),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -217,6 +219,7 @@ class _AccessibilityDemoState extends State<AccessibilityDemo> {
               ),
             ),
           ),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );

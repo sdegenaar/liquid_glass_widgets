@@ -1046,6 +1046,15 @@ class _GlassModalSheetState extends State<GlassModalSheet>
               left: math.max(0.0, padding.left - restingInsets.left),
               right: math.max(0.0, padding.right - restingInsets.right),
             );
+        // A sheet is presented below the status bar (and below its own top
+        // gap), so carrying the screen's top padding into its content would
+        // add the safe area twice. Match CupertinoSheetRoute's
+        // MediaQuery.removePadding(removeTop: true) behaviour. The sheet itself
+        // owns no fixed top safe area; an embedded GlassAppBar applies its own
+        // top minimum. The bottom inset remains: at the large detent the sheet
+        // intentionally sinks behind the home indicator, and
+        // scrollables/SafeArea must keep content above it.
+        final contentPadding = inset(mediaQuery.padding).copyWith(top: 0.0);
         // On one side of a half-folded display, the sheet is measured against
         // the strip where that side sits on the screen.
         final side = _SheetSubScreen.maybeOf(context);
@@ -1064,7 +1073,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
           ),
           child: MediaQuery(
             data: mediaQuery.copyWith(
-              padding: inset(mediaQuery.padding),
+              padding: contentPadding,
               viewPadding: inset(mediaQuery.viewPadding),
             ),
             child: focusBridge,

@@ -116,223 +116,228 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
           title: Text('GlassTextField'),
         ),
         body: SingleChildScrollView(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ── Search bar ──────────────────────────────────────────────
-              _section('Search bar', 'Fixed height · text stays centred'),
-              Padding(
-                padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
-                child: GlassTextField.search(
-                  controller: _searchController,
-                  placeholder: 'Search…',
-                  prefixIcon: Icon(
-                    CupertinoIcons.search,
-                    size: 20,
-                    color: CupertinoColors.white.withValues(alpha: 0.60),
-                  ),
-                  useOwnLayer: true,
-                  quality: GlassQuality.premium,
-                ),
-              ),
-
-              SizedBox(height: 8),
-              Divider(
-                  color: CupertinoColors.white.withValues(alpha: 0.12),
-                  indent: 16,
-                  endIndent: 16),
-
-              // ── Expandable input ────────────────────────────────────────
-              _section(
-                'Expandable input',
-                'Pill when single-line · grows to fit · animated radius',
-              ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeOutCubic,
-                  child: GlassTextField(
-                    controller: _expandController,
-                    focusNode: _expandFocusNode,
-                    placeholder: 'Type here until text wraps…',
-                    minLines: 1,
-                    maxLines: _expandHasFocus ? 5 : 1,
-                    height: expandHeight,
-                    iconAlignment: CrossAxisAlignment.end,
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ── Search bar ──────────────────────────────────────────────
+                _section('Search bar', 'Fixed height · text stays centred'),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
+                  child: GlassTextField.search(
+                    controller: _searchController,
+                    placeholder: 'Search…',
                     prefixIcon: Icon(
-                      _expandHasFocus
-                          ? CupertinoIcons.trash
-                          : CupertinoIcons.pencil,
+                      CupertinoIcons.search,
+                      size: 20,
                       color: CupertinoColors.white.withValues(alpha: 0.60),
-                    ),
-                    suffixIcon: _expandHasFocus
-                        ? Icon(CupertinoIcons.paperplane,
-                            color:
-                                CupertinoColors.white.withValues(alpha: 0.70))
-                        : null,
-                    onLineCountChanged: (lines) {
-                      setState(() => _expandLines = lines);
-                    },
-                    shape: LiquidRoundedSuperellipse(
-                      borderRadius: expandRadius,
                     ),
                     useOwnLayer: true,
                     quality: GlassQuality.premium,
-                    keyboardType: TextInputType.multiline,
-                    textInputAction: TextInputAction.newline,
-                    interactionBehavior: GlassInteractionBehavior.full,
-                    onChanged: (_) => setState(() {}),
                   ),
                 ),
-              ),
 
-              SizedBox(height: 8),
-              Divider(
-                  color: CupertinoColors.white.withValues(alpha: 0.12),
-                  indent: 16,
-                  endIndent: 16),
+                SizedBox(height: 8),
+                Divider(
+                    color: CupertinoColors.white.withValues(alpha: 0.12),
+                    indent: 16,
+                    endIndent: 16),
 
-              // ── Chat composer with bottom panel ─────────────────────────
-              _section(
-                'Chat composer',
-                'Bottom panel · attachment bar · animated send button',
-              ),
+                // ── Expandable input ────────────────────────────────────────
+                _section(
+                  'Expandable input',
+                  'Pill when single-line · grows to fit · animated radius',
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                    child: GlassTextField(
+                      controller: _expandController,
+                      focusNode: _expandFocusNode,
+                      placeholder: 'Type here until text wraps…',
+                      minLines: 1,
+                      maxLines: _expandHasFocus ? 5 : 1,
+                      height: expandHeight,
+                      iconAlignment: CrossAxisAlignment.end,
+                      prefixIcon: Icon(
+                        _expandHasFocus
+                            ? CupertinoIcons.trash
+                            : CupertinoIcons.pencil,
+                        color: CupertinoColors.white.withValues(alpha: 0.60),
+                      ),
+                      suffixIcon: _expandHasFocus
+                          ? Icon(CupertinoIcons.paperplane,
+                              color:
+                                  CupertinoColors.white.withValues(alpha: 0.70))
+                          : null,
+                      onLineCountChanged: (lines) {
+                        setState(() => _expandLines = lines);
+                      },
+                      shape: LiquidRoundedSuperellipse(
+                        borderRadius: expandRadius,
+                      ),
+                      useOwnLayer: true,
+                      quality: GlassQuality.premium,
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.newline,
+                      interactionBehavior: GlassInteractionBehavior.full,
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ),
+                ),
 
-              // Message list
-              SizedBox(
-                height: 200,
-                child: ListView.builder(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  reverse: true,
-                  itemCount: _messages.length,
-                  itemBuilder: (context, index) {
-                    final msgIndex = _messages.length - 1 - index;
-                    final isMe = msgIndex % 2 == 0;
-                    return Align(
-                      alignment:
-                          isMe ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        margin: EdgeInsets.symmetric(vertical: 3),
-                        constraints: BoxConstraints(
-                          maxWidth: MediaQuery.of(context).size.width * 0.75,
-                        ),
-                        child: GlassContainer.card(
-                          useOwnLayer: true,
-                          quality: GlassQuality.premium,
-                          shape: const LiquidRoundedSuperellipse(
-                            borderRadius: 16,
+                SizedBox(height: 8),
+                Divider(
+                    color: CupertinoColors.white.withValues(alpha: 0.12),
+                    indent: 16,
+                    endIndent: 16),
+
+                // ── Chat composer with bottom panel ─────────────────────────
+                _section(
+                  'Chat composer',
+                  'Bottom panel · attachment bar · animated send button',
+                ),
+
+                // Message list
+                SizedBox(
+                  height: 200,
+                  child: ListView.builder(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    reverse: true,
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      final msgIndex = _messages.length - 1 - index;
+                      final isMe = msgIndex % 2 == 0;
+                      return Align(
+                        alignment:
+                            isMe ? Alignment.centerRight : Alignment.centerLeft,
+                        child: Container(
+                          margin: EdgeInsets.symmetric(vertical: 3),
+                          constraints: BoxConstraints(
+                            maxWidth: MediaQuery.of(context).size.width * 0.75,
                           ),
-                          settings: LiquidGlassSettings(
-                            glassColor: isMe
-                                ? CupertinoColors.activeBlue
-                                    .withValues(alpha: 0.3)
-                                : CupertinoColors.white.withValues(alpha: 0.15),
-                          ),
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
+                          child: GlassContainer.card(
+                            useOwnLayer: true,
+                            quality: GlassQuality.premium,
+                            shape: const LiquidRoundedSuperellipse(
+                              borderRadius: 16,
                             ),
-                            child: Text(
-                              _messages[msgIndex],
-                              style: TextStyle(
-                                color: CupertinoColors.white,
-                                fontSize: 14,
+                            settings: LiquidGlassSettings(
+                              glassColor: isMe
+                                  ? CupertinoColors.activeBlue
+                                      .withValues(alpha: 0.3)
+                                  : CupertinoColors.white
+                                      .withValues(alpha: 0.15),
+                            ),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              child: Text(
+                                _messages[msgIndex],
+                                style: TextStyle(
+                                  color: CupertinoColors.white,
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              ),
 
-              // Composer
-              Padding(
-                padding: EdgeInsets.fromLTRB(16, 4, 16, 24),
-                child: GlassTextField(
-                  controller: _composerController,
-                  placeholder: 'Message…',
-                  maxLines: 6,
-                  minHeight: 44,
-                  maxHeight: 160,
-                  iconAlignment: CrossAxisAlignment.end,
-                  onLineCountChanged: (lines) {
-                    setState(() => _composerLines = lines);
-                  },
-                  shape: LiquidRoundedSuperellipse(
-                    borderRadius: composerRadius,
-                  ),
-                  useOwnLayer: true,
-                  quality: GlassQuality.premium,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                  interactionBehavior: GlassInteractionBehavior.full,
-                  onChanged: (_) => setState(() {}),
-                  bottom: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+                // Composer
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16, 4, 16, 24),
+                  child: GlassTextField(
+                    controller: _composerController,
+                    placeholder: 'Message…',
+                    maxLines: 6,
+                    minHeight: 44,
+                    maxHeight: 160,
+                    iconAlignment: CrossAxisAlignment.end,
+                    onLineCountChanged: (lines) {
+                      setState(() => _composerLines = lines);
+                    },
+                    shape: LiquidRoundedSuperellipse(
+                      borderRadius: composerRadius,
                     ),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            CupertinoIcons.paperclip,
-                            size: 20,
-                            color: CupertinoColors.white.withValues(alpha: 0.6),
-                          ),
-                          onPressed: () {},
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            CupertinoIcons.camera,
-                            size: 20,
-                            color: CupertinoColors.white.withValues(alpha: 0.6),
-                          ),
-                          onPressed: () {},
-                        ),
-                        const Spacer(),
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 180),
-                          transitionBuilder: (child, animation) =>
-                              FadeTransition(
-                            opacity: animation,
-                            child: ScaleTransition(
-                              scale: animation,
-                              child: child,
-                            ),
-                          ),
-                          child: IconButton(
-                            key: ValueKey(
-                              _composerController.text.isNotEmpty
-                                  ? 'send'
-                                  : 'idle',
-                            ),
+                    useOwnLayer: true,
+                    quality: GlassQuality.premium,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    interactionBehavior: GlassInteractionBehavior.full,
+                    onChanged: (_) => setState(() {}),
+                    bottom: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      child: Row(
+                        children: [
+                          IconButton(
                             icon: Icon(
-                              CupertinoIcons.arrow_up_circle_fill,
-                              size: 28,
-                              color: _composerController.text.isNotEmpty
-                                  ? CupertinoColors.white
-                                  : CupertinoColors.white
-                                      .withValues(alpha: 0.38),
+                              CupertinoIcons.paperclip,
+                              size: 20,
+                              color:
+                                  CupertinoColors.white.withValues(alpha: 0.6),
                             ),
-                            onPressed: _sendMessage,
+                            onPressed: () {},
                           ),
-                        ),
-                      ],
+                          IconButton(
+                            icon: Icon(
+                              CupertinoIcons.camera,
+                              size: 20,
+                              color:
+                                  CupertinoColors.white.withValues(alpha: 0.6),
+                            ),
+                            onPressed: () {},
+                          ),
+                          const Spacer(),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 180),
+                            transitionBuilder: (child, animation) =>
+                                FadeTransition(
+                              opacity: animation,
+                              child: ScaleTransition(
+                                scale: animation,
+                                child: child,
+                              ),
+                            ),
+                            child: IconButton(
+                              key: ValueKey(
+                                _composerController.text.isNotEmpty
+                                    ? 'send'
+                                    : 'idle',
+                              ),
+                              icon: Icon(
+                                CupertinoIcons.arrow_up_circle_fill,
+                                size: 28,
+                                color: _composerController.text.isNotEmpty
+                                    ? CupertinoColors.white
+                                    : CupertinoColors.white
+                                        .withValues(alpha: 0.38),
+                              ),
+                              onPressed: _sendMessage,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

@@ -314,6 +314,8 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
   ///
   /// The track refracts the background behind it via `AdaptiveGlass.grouped`,
   /// and the indicator uses the same jelly-physics spring as [GlassTabBar.bottom].
+  /// The compact 40pt track keeps 20pt horizontal and vertical safe padding by
+  /// default, matching the floating placements.
   ///
   /// For a flat, native-fidelity filter/mode control (matching the default
   /// `UISegmentedControl` appearance), use [GlassSegmentedControl] instead.
@@ -336,9 +338,9 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
     required int selectedIndex,
     required ValueChanged<int> onTabSelected,
     Key? key,
-    // Compact defaults suited for inline placement
-    double horizontalPadding = 0,
-    double verticalPadding = 0,
+    // Compact content with the same 20pt safe padding as the other placements.
+    double horizontalPadding = 20,
+    double verticalPadding = 20,
     double barHeight = 40,
     double barBorderRadius = 100,
     double labelFontSize = 13,

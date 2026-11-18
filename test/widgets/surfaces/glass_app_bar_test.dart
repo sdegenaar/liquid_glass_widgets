@@ -225,7 +225,11 @@ void main() {
       expect(appBar.centerTitle, isTrue);
       expect(appBar.backgroundColor, equals(Colors.transparent));
       expect(appBar.toolbarHeight, equals(44.0));
-      expect(appBar.preferredSize, equals(const Size.fromHeight(44.0)));
+      expect(
+        appBar.padding,
+        equals(const EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
+      );
+      expect(appBar.preferredSize, equals(const Size.fromHeight(64.0)));
       expect(appBar.bottom, isNull);
     });
 
@@ -241,7 +245,7 @@ void main() {
         );
         expect(
           appBar.preferredSize,
-          equals(const Size.fromHeight(44.0 + bottomHeight)),
+          equals(const Size.fromHeight(64.0 + bottomHeight)),
         );
       });
 
@@ -286,7 +290,7 @@ void main() {
         );
         expect(
           appBarWidget.preferredSize.height,
-          equals(44.0 + bottomHeight),
+          equals(64.0 + bottomHeight),
         );
       });
 
@@ -338,7 +342,185 @@ void main() {
       test('custom toolbarHeight is reflected in preferredSize without bottom',
           () {
         const appBar = GlassAppBar(toolbarHeight: 56.0);
-        expect(appBar.preferredSize, equals(const Size.fromHeight(56.0)));
+        expect(appBar.preferredSize, equals(const Size.fromHeight(76.0)));
+      });
+
+      test('vertical padding is included in preferredSize', () {
+        const appBar = GlassAppBar(
+          padding: EdgeInsets.fromLTRB(8, 10, 8, 12),
+        );
+        expect(appBar.preferredSize, equals(const Size.fromHeight(66.0)));
+      });
+
+      test('pinned vertical padding is included in preferredSize', () {
+        const appBar = GlassAppBar.pinned(
+          padding: EdgeInsets.fromLTRB(8, 14, 8, 6),
+        );
+        expect(appBar.preferredSize, equals(const Size.fromHeight(64.0)));
+      });
+
+      testWidgets('lays out with the platform top safe area', (tester) async {
+        Widget app(EdgeInsets padding) => MaterialApp(
+              home: MediaQuery(
+                data: MediaQueryData(
+                  size: const Size(400, 800),
+                  padding: padding,
+                ),
+                child: const Align(
+                  alignment: Alignment.topCenter,
+                  child: SizedBox(
+                    width: 400,
+                    child: GlassAppBar(title: Text('Title')),
+                  ),
+                ),
+              ),
+            );
+
+        await tester.pumpWidget(app(const EdgeInsets.only(top: 8)));
+        expect(
+          tester.getSize(find.byType(GlassAppBar)).height,
+          8 + 20 + 44,
+        );
+
+        await tester.pumpWidget(app(const EdgeInsets.only(top: 32)));
+        expect(
+          tester.getSize(find.byType(GlassAppBar)).height,
+          32 + 20 + 44,
+        );
+      });
+
+      testWidgets('works as a Material Scaffold appBar with a top inset',
+          (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(400, 800),
+                padding: EdgeInsets.only(top: 24),
+              ),
+              child: Scaffold(
+                appBar: const GlassAppBar(title: Text('Title')),
+                body: Builder(
+                  builder: (context) => Text(
+                    'body-top:${MediaQuery.paddingOf(context).top}',
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(tester.takeException(), isNull);
+        expect(
+          tester.getSize(find.byType(GlassAppBar)).height,
+          24 + 64,
+        );
+      });
+
+      testWidgets('content padding adds MediaQuery top, left and right insets',
+          (tester) async {
+        const configuredPadding = EdgeInsets.fromLTRB(5, 3, 7, 9);
+        const mediaQueryPadding = EdgeInsets.fromLTRB(13, 11, 17, 19);
+        const expectedContentPadding = EdgeInsets.fromLTRB(18, 14, 24, 9);
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: MediaQuery(
+              data: MediaQueryData(
+                size: Size(400, 800),
+                padding: mediaQueryPadding,
+              ),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: SizedBox(
+                  width: 400,
+                  child: GlassAppBar(
+                    centerTitle: false,
+                    padding: configuredPadding,
+                    leading: SizedBox(
+                      key: ValueKey('leading'),
+                      width: 44,
+                      height: 44,
+                    ),
+                    actions: [
+                      SizedBox(
+                        key: ValueKey('actions'),
+                        width: 30,
+                        height: 44,
+                      ),
+                    ],
+                    title: Text('Title'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is Padding && widget.padding == expectedContentPadding,
+          ),
+          findsOneWidget,
+          reason: 'the configured padding must be combined with the three '
+              'safe-area sides, not replaced by them',
+        );
+
+        final appBarRect = tester.getRect(find.byType(GlassAppBar));
+        expect(
+          tester.getTopLeft(find.byKey(const ValueKey('leading'))) -
+              appBarRect.topLeft,
+          const Offset(18, 14),
+        );
+        expect(
+          tester.getTopRight(find.byKey(const ValueKey('actions'))).dx -
+              appBarRect.left,
+          appBarRect.width - 24,
+        );
+        expect(
+          tester.getTopLeft(find.text('Title')).dx - appBarRect.left,
+          18 + 44 + 8,
+        );
+        expect(
+          appBarRect.height,
+          14 + 44 + 9,
+          reason: 'the bottom safe inset must not contribute to app-bar '
+              'content padding',
+        );
+      });
+
+      testWidgets('zero padding still applies the three safe-area insets',
+          (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: MediaQuery(
+              data: MediaQueryData(
+                size: Size(400, 800),
+                padding: EdgeInsets.fromLTRB(13, 11, 17, 19),
+              ),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: SizedBox(
+                  width: 400,
+                  child: GlassAppBar(
+                    padding: EdgeInsets.zero,
+                    title: Text('Title'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is Padding &&
+                widget.padding == const EdgeInsets.fromLTRB(13, 11, 17, 0),
+          ),
+          findsOneWidget,
+        );
       });
 
       test(
@@ -351,7 +533,7 @@ void main() {
             child: SizedBox.shrink(),
           ),
         );
-        expect(appBar.preferredSize, equals(const Size.fromHeight(104.0)));
+        expect(appBar.preferredSize, equals(const Size.fromHeight(124.0)));
       });
     });
 

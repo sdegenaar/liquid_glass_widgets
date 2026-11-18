@@ -59,7 +59,7 @@ import 'glass_vertical_bar.dart';
 ///   ],
 /// )
 /// ```
-class GlassToolbar extends StatelessWidget {
+class GlassToolbar extends StatelessWidget implements PreferredSizeWidget {
   /// Creates a glass toolbar.
   const GlassToolbar({
     required this.children,
@@ -112,6 +112,14 @@ class GlassToolbar extends StatelessWidget {
   /// If null, a default iOS-style translucent tint is used.
   final Color? backgroundColor;
 
+  /// The toolbar's rendered height without the bottom system safe-area inset.
+  ///
+  /// [GlassScaffold] adds the system inset once when it publishes the body's
+  /// safe area, so a toolbar used as a scaffold bottom bar clears the content.
+  /// [padding] is applied inside [height], matching the widget's layout.
+  @override
+  Size get preferredSize => Size.fromHeight(height);
+
   static const _defaultSettings = LiquidGlassSettings(
     thickness: 25,
     blur: 20, // High blur for toolbar material
@@ -152,7 +160,7 @@ class GlassToolbar extends StatelessWidget {
     return AdaptiveLiquidGlassLayer(
       settings: effectiveSettings,
       quality: effectiveQuality,
-      child: Container(
+      child: DecoratedBox(
         decoration: BoxDecoration(
           border: Border(
             top: BorderSide(

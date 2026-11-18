@@ -34,6 +34,7 @@ class GlassNavBarRegistration {
     )
     this.presentSheet,
     this.horizontalInset,
+    this.verticalInset = 0.0,
     this.platformViewBackdrop = false,
     this.largeTitleController,
     this.stripRowTop,
@@ -96,9 +97,8 @@ class GlassNavBarRegistration {
 
   /// Inset from each screen edge to the pinned chrome, in logical pixels.
   ///
-  /// Defaults to [GlassNavPinnedMetrics.horizontalPadding], which is what
-  /// [GlassAppBar] insets its own chrome by — so a bar the package draws at
-  /// both ends already agrees with itself and passes nothing.
+  /// [GlassAppBar] always passes its resolved padding. Registrations for custom
+  /// bars fall back to [GlassNavPinnedMetrics.horizontalPadding] when omitted.
   ///
   /// A bar the app draws is the case for it. The chrome hoists and hands back
   /// on its own schedule — a presented sheet gives it to the route, a
@@ -106,6 +106,9 @@ class GlassNavBarRegistration {
   /// while the two renderings land on the same guide. A bar aligned to its
   /// app's page gutter rather than to this default passes that gutter here.
   final double? horizontalInset;
+
+  /// Distance from the top safe edge to the pinned toolbar row.
+  final double verticalInset;
 
   /// Distance from the top of the screen to the row that keeps the items
   /// staying horizontal, in iPhone Duo's vertical bar strip.

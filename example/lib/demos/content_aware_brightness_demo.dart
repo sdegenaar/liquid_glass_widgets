@@ -13,6 +13,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets_example/widgets/glass_safe_area_slivers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -123,66 +124,64 @@ class _ContentAwareBrightnessDemoState
       // ── Body ──────────────────────────────────────────────────────────────
       body: CustomScrollView(
         slivers: [
+          glassTopSafeAreaSliver(),
           // Header
           SliverToBoxAdapter(
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(24, 12, 24, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Content-Aware\nBrightness',
-                      style: TextStyle(
-                        fontSize: 34,
-                        fontWeight: FontWeight.w700,
-                        color: CupertinoColors.label.resolveFrom(context),
-                        letterSpacing: -0.5,
-                        height: 1.1,
-                      ),
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(24, 12, 24, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Content-Aware\nBrightness',
+                    style: TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w700,
+                      color: CupertinoColors.label.resolveFrom(context),
+                      letterSpacing: -0.5,
+                      height: 1.1,
                     ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Scroll down — the bottom bar icons and labels '
-                      'adapt automatically as the content behind them '
-                      'changes from light to dark.',
-                      style: TextStyle(
-                        fontSize: 15,
-                        color:
-                            CupertinoColors.secondaryLabel.resolveFrom(context),
-                        height: 1.4,
-                      ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Scroll down — the bottom bar icons and labels '
+                    'adapt automatically as the content behind them '
+                    'changes from light to dark.',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color:
+                          CupertinoColors.secondaryLabel.resolveFrom(context),
+                      height: 1.4,
                     ),
-                    if (_lastFlip != null)
-                      Padding(
-                        padding: EdgeInsets.only(top: 12),
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
+                  ),
+                  if (_lastFlip != null)
+                    Padding(
+                      padding: EdgeInsets.only(top: 12),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _lastFlip == Brightness.dark
+                              ? const Color(0xFF1C1C1E)
+                              : const Color(0xFFE5E5EA),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Last flip: ${_lastFlip == Brightness.dark ? '☾ Dark' : '☀ Light'}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
                             color: _lastFlip == Brightness.dark
-                                ? const Color(0xFF1C1C1E)
-                                : const Color(0xFFE5E5EA),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'Last flip: ${_lastFlip == Brightness.dark ? '☾ Dark' : '☀ Light'}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: _lastFlip == Brightness.dark
-                                  ? CupertinoColors.white
-                                  : const Color(0xFF1D1D1F),
-                            ),
+                                ? CupertinoColors.white
+                                : const Color(0xFF1D1D1F),
                           ),
                         ),
                       ),
-                    SizedBox(height: 24),
-                  ],
-                ),
+                    ),
+                  SizedBox(height: 24),
+                ],
               ),
             ),
           ),
@@ -194,13 +193,7 @@ class _ContentAwareBrightnessDemoState
               childCount: _bands.length,
             ),
           ),
-
-          // Bottom padding
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: MediaQuery.paddingOf(context).bottom + 120,
-            ),
-          ),
+          glassBottomSafeAreaSliver(),
         ],
       ),
 

@@ -536,6 +536,25 @@ void main() {
   // ===========================================================================
 
   group('GlassGroupedSection', () {
+    testWidgets('defaults to 20pt horizontal margins', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: GlassGroupedSection(
+              children: [
+                GlassListTile(title: const Text('Item')),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final scaffoldRect = tester.getRect(find.byType(Scaffold));
+      final cardRect = tester.getRect(find.byType(GlassContainer));
+      expect(cardRect.left, scaffoldRect.left + 20);
+      expect(cardRect.right, scaffoldRect.right - 20);
+    });
+
     testWidgets('renders all children', (tester) async {
       await tester.pumpWidget(
         MaterialApp(

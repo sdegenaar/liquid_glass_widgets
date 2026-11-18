@@ -15,7 +15,7 @@ Settings for the primary content and the sheet's basic behavior.
 | `mode` | `SheetMode` | `dismissible` | Logic gate for the state machine. `dismissible` allows `resolveTarget` to include `hidden`. `persistent` clamps `minState` to `peek`. |
 | `controller` | `GlassModalSheetController?` | `null` | A synchronization bridge. Attaches to `_GlassModalSheetState` to provide imperative access to the underlying `AnimationController`. |
 | `onStateChanged` | `ValueChanged?` | `null` | Emits when `_currentState` changes. Fired *after* state update but *before* snap animation completes. |
-| `padding` | `EdgeInsetsGeometry?` | `null` | Applied to the content zone via `Padding` widget, positioned below the 44px handle zone. |
+| `padding` | `EdgeInsetsGeometry?` | `null` | Extra visual padding around the content. System/sheet safe areas are automatic; this value is added on top and is not an inset workaround. |
 | `barrierColor` | `Color` | `black54` | (In `show`) The `barrierColor` of the `GeneralDialog`. Tap logic is handled by a `GestureDetector` in the `Scaffold`. |
 | `isDismissible` | `bool` | `true` | (In `show`) Controls `barrierDismissible`. If `true`, the `Scaffold` background triggers `snapToState(SheetState.hidden)`. |
 | `useRootNavigator` | `bool` | `false` | (In `show`) If true, pushes the modal onto the top-level `Navigator`, bypassing local navigation stacks. |
@@ -30,7 +30,17 @@ Settings for the primary content and the sheet's basic behavior.
 ## 2. Mastering Content & Interaction (The Pro Way)
 To make your content feel integrated with the "Liquid Glass" system, use these advanced techniques.
 
-### 2.1. Scrolling Synchronization
+### 2.1. Safe Areas Inside the Sheet
+`GlassModalSheet` follows `CupertinoSheetRoute`'s safe-area model internally:
+
+- The sheet is already presented below the status bar, so the screen's top inset is removed rather than applied a second time.
+- The sheet itself does not reserve a fixed top safe area. An embedded `GlassAppBar` applies its default 20pt horizontal / 10pt vertical padding; because the sheet removed the screen top inset, there is no second status-bar inset. The drag indicator remains an overlay and does not change the content inset.
+- The bottom inset is retained because the large detent intentionally sinks behind the home indicator.
+- Horizontal insets are reduced by the sheet's resting margins where necessary.
+
+A default `ListView` consumes these insets automatically when its `padding` is null. For a `CustomScrollView`, wrap the content slivers in `SliverSafeArea` (or an equivalent sliver); leave a leading `GlassLargeTitle` outside that wrapper because it owns the top inset. For non-scrollable content, use `SafeArea`. Use the `padding` parameter only for extra visual spacing.
+
+### 2.2. Scrolling Synchronization
 If you have a list inside the sheet, you MUST use the provided scroll controller for a seamless experience:
 ```dart
 final scrollData = ScrollControllerProvider.of(context);
@@ -41,7 +51,7 @@ return ListView(
 );
 ```
 
-### 2.2. Reactive UI (Morphing UI)
+### 2.3. Reactive UI (Morphing UI)
 You can animate your own widgets based on how much the sheet is open:
 ```dart
 final state = GlassModalSheetStateProvider.of(context);
@@ -53,12 +63,12 @@ return Opacity(
 );
 ```
 
-### 2.3. Smart Silence (`suppressInteractionOnChildren`)
+### 2.4. Smart Silence (`suppressInteractionOnChildren`)
 When you have buttons or cards inside the sheet:
 - `false` (Default): Touching a button will also trigger the sheet's "squeeze" scale effect. Good for a very fluid, "jiggly" feel.
 - `true`: Touching a button will only trigger the button's own effect. The sheet stays stable. **Recommended for complex forms and Maps-style UI.**
 
-### 2.4. Communication with InteractionNotification
+### 2.5. Communication with InteractionNotification
 You can control the sheet's behavior from deep within the widget tree. Children can dispatch a notification to tell the sheet "I am being touched, don't jitter!".
 
 ```dart

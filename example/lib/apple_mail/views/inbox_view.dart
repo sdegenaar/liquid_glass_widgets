@@ -5,6 +5,7 @@ import '../models/mail_models.dart';
 import '../theme/mail_theme.dart';
 import 'compose_email_sheet.dart';
 import 'email_detail_view.dart';
+import 'package:liquid_glass_widgets_example/widgets/glass_safe_area_slivers.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // INBOX VIEW (Email List + Glass Bottom Utility Bar)
@@ -113,10 +114,6 @@ class _InboxViewState extends State<InboxView> {
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final topPad = mediaQuery.padding.top;
-    final botPad = mediaQuery.padding.bottom;
-
     return GlassScaffold(
       background: ColoredBox(color: kMailBg.resolveFrom(context)),
       appBar: GlassAppBar.pinned(
@@ -291,18 +288,14 @@ class _InboxViewState extends State<InboxView> {
                 setState(() => _isSelectMode = false);
               },
               onDelete: _deleteSelected,
-              bottomPad: botPad,
             )
           : _InboxBottomBar(
-              bottomPad: botPad,
               onOpenCompose: (anchor) => _openCompose(context, anchor),
             ),
       body: GlassSwipeActionScope(
         child: CustomScrollView(
           controller: _titleController.scrollController,
           slivers: [
-            SliverToBoxAdapter(child: SizedBox(height: topPad + 44)),
-
             // Large "Inbox" Header
             GlassLargeTitle(
               text: 'Inbox',
@@ -367,7 +360,7 @@ class _InboxViewState extends State<InboxView> {
                 childCount: widget.emails.length,
               ),
             ),
-            SliverToBoxAdapter(child: SizedBox(height: 96 + botPad)),
+            glassBottomSafeAreaSliver(),
           ],
         ),
       ),
@@ -819,65 +812,29 @@ class _EmailAvatar extends StatelessWidget {
 // INBOX BOTTOM FLOATING UTILITY BAR
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _InboxBottomBar extends StatelessWidget {
+class _InboxBottomBar extends StatelessWidget implements PreferredSizeWidget {
   const _InboxBottomBar({
-    required this.bottomPad,
     required this.onOpenCompose,
   });
 
-  final double bottomPad;
   final void Function(GlassMorphAnchor? anchor) onOpenCompose;
 
   @override
+  Size get preferredSize => const Size.fromHeight(64);
+
+  @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        12,
-        8,
-        12,
-        bottomPad > 32 ? bottomPad - 8 : 32,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Filter Circle Button (☰)
-          GlassButton.custom(
-            onTap: () {},
-            width: 48,
-            height: 48,
-            settings: kMailSearchGlass(context),
-            shape: const LiquidOval(),
-            quality: GlassQuality.premium,
-            useOwnLayer: true,
-            child: Center(
-              child: Icon(
-                CupertinoIcons.line_horizontal_3_decrease,
-                size: 20,
-                color: CupertinoColors.label.resolveFrom(context),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // Search Pill
-          Expanded(
-            child: GlassSearchBar(
-              placeholder: 'Search',
-              height: 48,
-              settings: kMailSearchGlass(context),
-              quality: GlassQuality.premium,
-              useOwnLayer: true,
-              showsCancelButton: true,
-              onChanged: (_) {},
-              onCancel: () {},
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // Compose Circle Button wrapped in GlassMorphTrigger
-          GlassMorphTrigger(
-            builder: (triggerContext, anchor) => GlassButton.custom(
-              onTap: () => onOpenCompose(anchor),
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Filter Circle Button (☰)
+            GlassButton.custom(
+              onTap: () {},
               width: 48,
               height: 48,
               settings: kMailSearchGlass(context),
@@ -886,14 +843,50 @@ class _InboxBottomBar extends StatelessWidget {
               useOwnLayer: true,
               child: Center(
                 child: Icon(
-                  CupertinoIcons.square_pencil,
-                  size: 22,
+                  CupertinoIcons.line_horizontal_3_decrease,
+                  size: 20,
                   color: CupertinoColors.label.resolveFrom(context),
                 ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+
+            // Search Pill
+            Expanded(
+              child: GlassSearchBar(
+                placeholder: 'Search',
+                height: 48,
+                settings: kMailSearchGlass(context),
+                quality: GlassQuality.premium,
+                useOwnLayer: true,
+                showsCancelButton: true,
+                onChanged: (_) {},
+                onCancel: () {},
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            // Compose Circle Button wrapped in GlassMorphTrigger
+            GlassMorphTrigger(
+              builder: (triggerContext, anchor) => GlassButton.custom(
+                onTap: () => onOpenCompose(anchor),
+                width: 48,
+                height: 48,
+                settings: kMailSearchGlass(context),
+                shape: const LiquidOval(),
+                quality: GlassQuality.premium,
+                useOwnLayer: true,
+                child: Center(
+                  child: Icon(
+                    CupertinoIcons.square_pencil,
+                    size: 22,
+                    color: CupertinoColors.label.resolveFrom(context),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -903,68 +896,69 @@ class _InboxBottomBar extends StatelessWidget {
 // BATCH ACTIONS BOTTOM BAR (Selection Mode)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _BatchActionsBar extends StatelessWidget {
+class _BatchActionsBar extends StatelessWidget implements PreferredSizeWidget {
   const _BatchActionsBar({
     required this.selectedCount,
     required this.onMarkRead,
     required this.onDelete,
-    required this.bottomPad,
   });
 
   final int selectedCount;
   final VoidCallback onMarkRead;
   final VoidCallback onDelete;
-  final double bottomPad;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(68);
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        8,
-        16,
-        bottomPad > 32 ? bottomPad - 8 : 32,
-      ),
-      child: GlassContainer.card(
-        useOwnLayer: true,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        shape: const LiquidRoundedRectangle(borderRadius: 28),
-        settings: kMailSearchGlass(context),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            CupertinoButton(
-              padding: EdgeInsets.zero,
-              minimumSize: Size.zero,
-              onPressed: selectedCount > 0 ? onMarkRead : null,
-              child: const Text('Mark', style: TextStyle(fontSize: 16)),
-            ),
-            Expanded(
-              child: Center(
-                child: Text(
-                  selectedCount > 0
-                      ? '$selectedCount Selected'
-                      : 'Select Messages',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: CupertinoColors.secondaryLabel.resolveFrom(context),
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: GlassContainer.card(
+          useOwnLayer: true,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          shape: const LiquidRoundedRectangle(borderRadius: 28),
+          settings: kMailSearchGlass(context),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                onPressed: selectedCount > 0 ? onMarkRead : null,
+                child: const Text('Mark', style: TextStyle(fontSize: 16)),
+              ),
+              Expanded(
+                child: Center(
+                  child: Text(
+                    selectedCount > 0
+                        ? '$selectedCount Selected'
+                        : 'Select Messages',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color:
+                          CupertinoColors.secondaryLabel.resolveFrom(context),
+                    ),
                   ),
                 ),
               ),
-            ),
-            CupertinoButton(
-              padding: EdgeInsets.zero,
-              minimumSize: Size.zero,
-              onPressed: selectedCount > 0 ? onDelete : null,
-              child: const Text(
-                'Trash',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: CupertinoColors.destructiveRed,
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                onPressed: selectedCount > 0 ? onDelete : null,
+                child: const Text(
+                  'Trash',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: CupertinoColors.destructiveRed,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

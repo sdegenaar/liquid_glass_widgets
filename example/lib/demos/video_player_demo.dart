@@ -245,8 +245,6 @@ class _VideoGlassDemoPageState extends State<VideoGlassDemoPage> {
                           ),
                         ),
                       ),
-
-                    SizedBox(height: 80), // Space for bottom bar
                   ],
                 ),
               ),

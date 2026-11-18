@@ -72,89 +72,91 @@ class _GlassBottomBarDemoPageState extends State<GlassBottomBarDemoPage> {
       statusBarStyle: GlassStatusBarStyle.auto,
       child: GlassScaffold(
         extendBody: true,
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Tab $_selectedIndex Selected',
-                  style: const TextStyle(
-                    color: CupertinoColors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    shadows: [
-                      Shadow(
-                        blurRadius: 10,
-                        color: CupertinoColors.black,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // ── Decoupled Track Quality Selector ───────────────────
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: CupertinoColors.black.withValues(alpha: 0.55),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: CupertinoColors.white.withValues(alpha: 0.15),
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Tab $_selectedIndex Selected',
+                    style: const TextStyle(
+                      color: CupertinoColors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      shadows: [
+                        Shadow(
+                          blurRadius: 10,
+                          color: CupertinoColors.black,
+                        ),
+                      ],
                     ),
                   ),
-                  child: Column(
-                    children: [
-                      const Text(
-                        'Decoupled Track Quality',
-                        style: TextStyle(
-                          color: CupertinoColors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                  const SizedBox(height: 24),
+                  // ── Decoupled Track Quality Selector ───────────────────
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.black.withValues(alpha: 0.55),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: CupertinoColors.white.withValues(alpha: 0.15),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text(
+                          'Decoupled Track Quality',
+                          style: TextStyle(
+                            color: CupertinoColors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Track: $_bgQualityLabel  ·  Pill: Premium',
-                        style: TextStyle(
-                          color: CupertinoColors.systemTeal,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                        const SizedBox(height: 6),
+                        Text(
+                          'Track: $_bgQualityLabel  ·  Pill: Premium',
+                          style: TextStyle(
+                            color: CupertinoColors.systemTeal,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      CupertinoSlidingSegmentedControl<int>(
-                        groupValue: _bgQualityIndex,
-                        children: const {
-                          0: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 6),
-                            child:
-                                Text('Inherit', style: TextStyle(fontSize: 12)),
-                          ),
-                          1: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 6),
-                            child:
-                                Text('Minimal', style: TextStyle(fontSize: 12)),
-                          ),
-                          2: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 6),
-                            child: Text('Standard',
-                                style: TextStyle(fontSize: 12)),
-                          ),
-                          3: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 6),
-                            child:
-                                Text('Premium', style: TextStyle(fontSize: 12)),
-                          ),
-                        },
-                        onValueChanged: (v) {
-                          if (v != null) setState(() => _bgQualityIndex = v);
-                        },
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        CupertinoSlidingSegmentedControl<int>(
+                          groupValue: _bgQualityIndex,
+                          children: const {
+                            0: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 6),
+                              child: Text('Inherit',
+                                  style: TextStyle(fontSize: 12)),
+                            ),
+                            1: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 6),
+                              child: Text('Minimal',
+                                  style: TextStyle(fontSize: 12)),
+                            ),
+                            2: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 6),
+                              child: Text('Standard',
+                                  style: TextStyle(fontSize: 12)),
+                            ),
+                            3: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 6),
+                              child: Text('Premium',
+                                  style: TextStyle(fontSize: 12)),
+                            ),
+                          },
+                          onValueChanged: (v) {
+                            if (v != null) setState(() => _bgQualityIndex = v);
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

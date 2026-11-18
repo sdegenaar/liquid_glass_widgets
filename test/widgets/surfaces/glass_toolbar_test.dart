@@ -4,6 +4,35 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() {
   group('GlassToolbar', () {
+    test('preferredSize matches the rendered toolbar height', () {
+      const toolbar = GlassToolbar(
+        height: 50,
+        padding: EdgeInsets.symmetric(vertical: 8),
+        children: [],
+      );
+
+      expect(toolbar.preferredSize.height, 50);
+    });
+
+    testWidgets('layout height matches preferredSize', (tester) async {
+      const toolbar = GlassToolbar(
+        height: 50,
+        padding: EdgeInsets.symmetric(vertical: 8),
+        children: [],
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(width: 400, child: toolbar),
+          ),
+        ),
+      );
+
+      expect(tester.getSize(find.byType(GlassToolbar)).height, 50);
+    });
+
     testWidgets('renders children correctly', (tester) async {
       await tester.pumpWidget(
         MaterialApp(

@@ -7,12 +7,10 @@
 library;
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, TargetPlatform;
-
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import '../constants/sf_symbols.dart';
+import 'package:liquid_glass_widgets_example/widgets/glass_safe_area_slivers.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THEME CONSTANTS
@@ -247,12 +245,6 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Android 3-button nav requires us to push the bar above the opaque buttons.
-    // On iOS and gesture-nav Android, viewPaddingOf returns 0 so no offset applies.
-    final isIOS = defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.macOS;
-    final sysBottom = isIOS ? 0.0 : MediaQuery.viewPaddingOf(context).bottom;
-
     return GlassScaffold(
       background: ColoredBox(color: _kBackground.resolveFrom(context)),
       statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark
@@ -283,142 +275,139 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
       ),
 
       // ── Bottom navigation bar ──────────────────────────────────────────────
-      bottomBar: Padding(
-        padding: EdgeInsets.only(bottom: sysBottom),
-        child: GlassTabBar.searchable(
-          selectedIndex: _selectedTab,
-          isSearchActive: _isSearching,
-          onTabSelected: (index) => setState(() {
-            _selectedTab = index;
-            _isSearching = false;
+      bottomBar: GlassTabBar.searchable(
+        selectedIndex: _selectedTab,
+        isSearchActive: _isSearching,
+        onTabSelected: (index) => setState(() {
+          _selectedTab = index;
+          _isSearching = false;
+        }),
+        selectedIconColor: Color.fromRGBO(255, 90, 130, 1),
+        unselectedIconColor: CupertinoColors.label.resolveFrom(context),
+        labelFontSize: 10,
+        iconSize: 26,
+        magnification: 1.15,
+        iconLabelSpacing: 0,
+        spacing: 8,
+        quality: GlassQuality.premium,
+        interactionBehavior: GlassInteractionBehavior.full,
+        searchConfig: GlassSearchBarConfig(
+          hintText: 'Apple News',
+          onSearchToggle: (active) => setState(() {
+            _isSearching = active;
+            if (!active) _searchFieldFocused = false;
           }),
-          selectedIconColor: Color.fromRGBO(255, 90, 130, 1),
-          unselectedIconColor: CupertinoColors.label.resolveFrom(context),
-          labelFontSize: 10,
-          iconSize: 26,
-          magnification: 1.15,
-          iconLabelSpacing: 0,
-          spacing: 8,
-          quality: GlassQuality.premium,
-          interactionBehavior: GlassInteractionBehavior.full,
-          searchConfig: GlassSearchBarConfig(
-            hintText: 'Apple News',
-            onSearchToggle: (active) => setState(() {
-              _isSearching = active;
-              if (!active) _searchFieldFocused = false;
-            }),
-            onSearchFocusChanged: (focused) =>
-                setState(() => _searchFieldFocused = focused),
-            searchIconColor: CupertinoColors.label.resolveFrom(context),
-            // Slightly larger (26 pt) to match Apple News's proportionally bold
-            // magnifying-glass icon in the collapsed search pill.
-            searchIcon: Icon(
-              CupertinoIcons.search,
-              size: 30,
-              color: CupertinoColors.label.resolveFrom(context),
-            ),
-            textInputAction: TextInputAction.search,
-            autoFocusOnExpand: false,
-            showsCancelButton: true,
-            onMicTap: () {},
+          onSearchFocusChanged: (focused) =>
+              setState(() => _searchFieldFocused = focused),
+          searchIconColor: CupertinoColors.label.resolveFrom(context),
+          // Slightly larger (26 pt) to match Apple News's proportionally bold
+          // magnifying-glass icon in the collapsed search pill.
+          searchIcon: Icon(
+            CupertinoIcons.search,
+            size: 30,
+            color: CupertinoColors.label.resolveFrom(context),
           ),
-          tabs: [
-            GlassTab(
-              label: 'Today',
-              icon: SizedBox(
-                width: 24,
-                height: 24,
-                child: SvgPicture.asset(
-                  'assets/news_logo.svg',
-                  fit: BoxFit.contain,
-                  colorFilter: ColorFilter.mode(
-                    CupertinoColors.label.resolveFrom(context),
-                    BlendMode.srcIn,
-                  ),
-                ),
-              ),
-              activeIcon: SizedBox(
-                width: 24,
-                height: 24,
-                child: SvgPicture.asset(
-                  'assets/news_logo.svg',
-                  fit: BoxFit.contain,
-                  colorFilter: const ColorFilter.mode(
-                    Color.fromRGBO(255, 90, 130, 1),
-                    BlendMode.srcIn,
-                  ),
-                ),
-              ),
-            ),
-            GlassTab(
-              label: 'News+',
-              icon: SizedBox(
-                width: 28,
-                height: 28,
-                child: Icon(SFSymbols.newspaper_fill, size: 28),
-              ),
-              activeIcon: SizedBox(
-                width: 28,
-                height: 28,
-                child: Icon(SFSymbols.newspaper_fill, size: 28),
-              ),
-            ),
-            GlassTab(
-              label: 'Audio',
-              icon: SizedBox(
-                width: 26,
-                height: 26,
-                child: SvgPicture.asset(
-                  'assets/audio.svg',
-                  fit: BoxFit.contain,
-                  colorFilter: ColorFilter.mode(
-                    CupertinoColors.label.resolveFrom(context),
-                    BlendMode.srcIn,
-                  ),
-                ),
-              ),
-              activeIcon: SizedBox(
-                width: 26,
-                height: 26,
-                child: SvgPicture.asset(
-                  'assets/audio.svg',
-                  fit: BoxFit.contain,
-                  colorFilter: const ColorFilter.mode(
-                    Color.fromRGBO(255, 90, 130, 1),
-                    BlendMode.srcIn,
-                  ),
-                ),
-              ),
-            ),
-            GlassTab(
-              label: 'Following',
-              icon: SizedBox(
-                width: 26,
-                height: 26,
-                child: SvgPicture.asset(
-                  'assets/following.svg',
-                  fit: BoxFit.contain,
-                  colorFilter: ColorFilter.mode(
-                    CupertinoColors.label.resolveFrom(context),
-                    BlendMode.srcIn,
-                  ),
-                ),
-              ),
-              activeIcon: SizedBox(
-                width: 26,
-                height: 26,
-                child: SvgPicture.asset(
-                  'assets/following.svg',
-                  fit: BoxFit.contain,
-                  colorFilter: const ColorFilter.mode(
-                    Color.fromRGBO(255, 90, 130, 1),
-                    BlendMode.srcIn,
-                  ),
-                ),
-              ),
-            ),
-          ],
+          textInputAction: TextInputAction.search,
+          autoFocusOnExpand: false,
+          showsCancelButton: true,
+          onMicTap: () {},
         ),
+        tabs: [
+          GlassTab(
+            label: 'Today',
+            icon: SizedBox(
+              width: 24,
+              height: 24,
+              child: SvgPicture.asset(
+                'assets/news_logo.svg',
+                fit: BoxFit.contain,
+                colorFilter: ColorFilter.mode(
+                  CupertinoColors.label.resolveFrom(context),
+                  BlendMode.srcIn,
+                ),
+              ),
+            ),
+            activeIcon: SizedBox(
+              width: 24,
+              height: 24,
+              child: SvgPicture.asset(
+                'assets/news_logo.svg',
+                fit: BoxFit.contain,
+                colorFilter: const ColorFilter.mode(
+                  Color.fromRGBO(255, 90, 130, 1),
+                  BlendMode.srcIn,
+                ),
+              ),
+            ),
+          ),
+          GlassTab(
+            label: 'News+',
+            icon: SizedBox(
+              width: 28,
+              height: 28,
+              child: Icon(SFSymbols.newspaper_fill, size: 28),
+            ),
+            activeIcon: SizedBox(
+              width: 28,
+              height: 28,
+              child: Icon(SFSymbols.newspaper_fill, size: 28),
+            ),
+          ),
+          GlassTab(
+            label: 'Audio',
+            icon: SizedBox(
+              width: 26,
+              height: 26,
+              child: SvgPicture.asset(
+                'assets/audio.svg',
+                fit: BoxFit.contain,
+                colorFilter: ColorFilter.mode(
+                  CupertinoColors.label.resolveFrom(context),
+                  BlendMode.srcIn,
+                ),
+              ),
+            ),
+            activeIcon: SizedBox(
+              width: 26,
+              height: 26,
+              child: SvgPicture.asset(
+                'assets/audio.svg',
+                fit: BoxFit.contain,
+                colorFilter: const ColorFilter.mode(
+                  Color.fromRGBO(255, 90, 130, 1),
+                  BlendMode.srcIn,
+                ),
+              ),
+            ),
+          ),
+          GlassTab(
+            label: 'Following',
+            icon: SizedBox(
+              width: 26,
+              height: 26,
+              child: SvgPicture.asset(
+                'assets/following.svg',
+                fit: BoxFit.contain,
+                colorFilter: ColorFilter.mode(
+                  CupertinoColors.label.resolveFrom(context),
+                  BlendMode.srcIn,
+                ),
+              ),
+            ),
+            activeIcon: SizedBox(
+              width: 26,
+              height: 26,
+              child: SvgPicture.asset(
+                'assets/following.svg',
+                fit: BoxFit.contain,
+                colorFilter: const ColorFilter.mode(
+                  Color.fromRGBO(255, 90, 130, 1),
+                  BlendMode.srcIn,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -431,8 +420,8 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
     return CustomScrollView(
       key: key,
       slivers: [
-        SliverToBoxAdapter(
-            child: SizedBox(height: MediaQuery.paddingOf(context).top + 8)),
+        glassTopSafeAreaSliver(),
+        SliverToBoxAdapter(child: SizedBox(height: 8)),
         SliverToBoxAdapter(child: _buildNewsHeader()),
         SliverToBoxAdapter(child: _buildCategoryChips()),
         SliverToBoxAdapter(
@@ -455,9 +444,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
             childCount: _kMoreArticles.length,
           ),
         ),
-        SliverToBoxAdapter(
-          child: SizedBox(height: MediaQuery.paddingOf(context).bottom + 100),
-        ),
+        glassBottomSafeAreaSliver(),
       ],
     );
   }
@@ -729,8 +716,8 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
     return CustomScrollView(
       key: key,
       slivers: [
-        SliverToBoxAdapter(
-            child: SizedBox(height: MediaQuery.paddingOf(context).top + 8)),
+        glassTopSafeAreaSliver(),
+        SliverToBoxAdapter(child: SizedBox(height: 8)),
         SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(20, 8, 16, 20),
@@ -769,8 +756,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
           ),
         ),
         SliverPadding(
-          padding: EdgeInsets.fromLTRB(
-              16, 0, 16, MediaQuery.paddingOf(context).bottom + 100),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           sliver: SliverGrid(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -784,6 +770,7 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
             ),
           ),
         ),
+        glassBottomSafeAreaSliver(),
       ],
     );
   }
@@ -799,9 +786,8 @@ class _AppleNewsHomeScreenState extends State<AppleNewsHomeScreen> {
       key: key,
       color: _kBackground.resolveFrom(context),
       child: SafeArea(
-        bottom: false,
         child: Padding(
-          padding: EdgeInsets.only(bottom: keyboardH + 50),
+          padding: EdgeInsets.only(bottom: keyboardH),
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,

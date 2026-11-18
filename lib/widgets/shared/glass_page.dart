@@ -303,7 +303,8 @@ class _GlassPageState extends State<GlassPage> {
 
   // ── Push-back scope ────────────────────────────────────────────────────────
   // Tracks whether the route this page sits on is currently being pushed back
-  // by a presented sheet (secondaryAnimation > 0 and not yet fully dismissed).
+  // by a presented sheet: secondaryAnimation is active and the route has the
+  // ScaleTransition that CupertinoSheetRoute wraps around the covered page.
   // When true, LiquidGlassPushBackScope emits active: true into the subtree,
   // allowing RenderLiquidGlassLayer._hasScale() to freeze UV coordinates.
   // When false (at rest, or no route found), the scope is inactive, so a
@@ -326,10 +327,28 @@ class _GlassPageState extends State<GlassPage> {
     final route = _route;
     if (route == null) return;
     final secondary = route.secondaryAnimation;
-    final next = !_isAtRest(route) && (secondary?.value ?? 0.0) > 0.0;
+    // A covering route alone is not enough: ordinary page transitions also
+    // drive secondaryAnimation. Only a transition that scales this route needs
+    // the glass UVs frozen. Limit the search to the route's subtree so an
+    // unrelated ScaleTransition above the Navigator cannot opt every page in.
+    final scaling = _hasScalingRouteTransition(context);
+    final next =
+        scaling && !_isAtRest(route) && (secondary?.value ?? 0.0) > 0.0;
     if (next != _pushBackActive) {
       setState(() => _pushBackActive = next);
     }
+  }
+
+  bool _hasScalingRouteTransition(BuildContext context) {
+    var scaling = false;
+    context.visitAncestorElements((element) {
+      if (element.widget is ScaleTransition) {
+        scaling = true;
+        return false;
+      }
+      return element.widget is! Navigator;
+    });
+    return scaling;
   }
 
   void _subscribeSecondaryAnimation(Animation<double>? animation) {

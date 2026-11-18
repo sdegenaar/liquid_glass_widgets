@@ -351,7 +351,6 @@ class _ShadowClippingDemoPageState extends State<ShadowClippingDemoPage> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 120),
                 ],
               ),
             ),

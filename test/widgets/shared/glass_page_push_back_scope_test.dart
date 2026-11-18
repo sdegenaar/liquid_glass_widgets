@@ -68,7 +68,77 @@ void main() {
       );
     });
 
-    testWidgets('scope becomes active when a sheet is pushed over the page',
+    testWidgets('stays inactive for an ordinary page transition',
+        (tester) async {
+      final navigatorKey = GlobalKey<NavigatorState>();
+
+      await tester.pumpWidget(
+        CupertinoApp(
+          navigatorKey: navigatorKey,
+          home: GlassPage(
+            child: const CupertinoPageScaffold(
+              child: Text('Main page'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      navigatorKey.currentState!.push(
+        CupertinoPageRoute<void>(
+          builder: (_) => const CupertinoPageScaffold(
+            child: Text('Page'),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+
+      expect(
+        glassPagePushBackActive(tester),
+        isFalse,
+        reason: 'A sliding page does not scale its covered page back',
+      );
+    });
+
+    testWidgets('ignores scale transitions above the Navigator',
+        (tester) async {
+      final navigatorKey = GlobalKey<NavigatorState>();
+
+      await tester.pumpWidget(
+        CupertinoApp(
+          navigatorKey: navigatorKey,
+          builder: (context, child) => ScaleTransition(
+            scale: const AlwaysStoppedAnimation<double>(1),
+            child: child!,
+          ),
+          home: GlassPage(
+            child: const CupertinoPageScaffold(
+              child: Text('Main page'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      navigatorKey.currentState!.push(
+        CupertinoPageRoute<void>(
+          builder: (_) => const CupertinoPageScaffold(
+            child: Text('Page'),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+
+      expect(
+        glassPagePushBackActive(tester),
+        isFalse,
+        reason: 'Only a scale applied inside the route subtree is push-back',
+      );
+    });
+
+    testWidgets('scope becomes active when a Cupertino sheet is pushed',
         (tester) async {
       // Build a navigator with our GlassPage as the initial route.
       final navigatorKey = GlobalKey<NavigatorState>();
@@ -88,12 +158,11 @@ void main() {
       // Initially inactive.
       expect(glassPagePushBackActive(tester), isFalse);
 
-      // Push a new route — this drives secondaryAnimation on the root page.
+      // A Cupertino sheet scales the covered page back while it presents.
       navigatorKey.currentState!.push(
-        CupertinoPageRoute<void>(
-          builder: (_) => const CupertinoPageScaffold(
-            child: Text('Sheet'),
-          ),
+        CupertinoSheetRoute<void>(
+          scrollableBuilder: (context, scrollController) =>
+              const CupertinoPageScaffold(child: Text('Sheet')),
         ),
       );
 
@@ -101,24 +170,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 150));
 
-      // The secondary animation on the original GlassPage should be > 0 while
-      // the incoming route is animating in, triggering pushBackActive = true.
-      // (Some frames may still be transitioning; check that we saw the active
-      // state or that it settled properly.)
       final activeDuringTransition = glassPagePushBackActive(tester);
 
       // Let the transition complete.
       await tester.pumpAndSettle();
 
-      // After settling the pushed route is fully presented.
-      // secondaryAnimation is still > 0 (dismissed would require popping).
-      // The scope should be active while a route sits on top.
-      //
-      // Note: In the Flutter test environment CupertinoPageRoute's
-      // secondaryAnimation reaches 1.0 at completion and then the status
-      // changes to `completed`. Whether we see active mid-transition or
-      // post-settle depends on timing; the key invariant we verify here is
-      // that it is NOT stuck active after the sheet is also dismissed.
       expect(activeDuringTransition, isTrue);
 
       // Now pop the route.
@@ -133,6 +189,69 @@ void main() {
         isFalse,
         reason: 'After sheet is dismissed, push-back scope must be inactive',
       );
+    });
+
+    testWidgets(
+        'GlassTabBar keeps its configured padding through an ordinary pop',
+        (tester) async {
+      final navigatorKey = GlobalKey<NavigatorState>();
+      const barKey = ValueKey('glass-tab-bar-under-test');
+
+      await tester.pumpWidget(
+        CupertinoApp(
+          navigatorKey: navigatorKey,
+          home: GlassScaffold(
+            bottomBar: GlassTabBar.bottom(
+              key: barKey,
+              tabs: const [
+                GlassTab(label: 'Home', icon: Icon(CupertinoIcons.house)),
+                GlassTab(label: 'Profile', icon: Icon(CupertinoIcons.person)),
+              ],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              horizontalPadding: 24,
+              verticalPadding: 12,
+            ),
+            body: const SizedBox.expand(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      Offset labelInset() {
+        final bar = find.byKey(barKey, skipOffstage: false);
+        final label = find
+            .descendant(
+              of: bar,
+              matching: find.text('Home', skipOffstage: false),
+            )
+            .first;
+        return tester.getCenter(label) - tester.getRect(bar).topLeft;
+      }
+
+      final restingInset = labelInset();
+
+      navigatorKey.currentState!.push(
+        CupertinoPageRoute<void>(
+          builder: (_) => const CupertinoPageScaffold(
+            child: Text('Detail'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      navigatorKey.currentState!.pop();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+
+      expect(
+        glassPagePushBackActive(tester),
+        isFalse,
+        reason: 'An ordinary slide-out must not freeze premium glass geometry',
+      );
+      final exitingInset = labelInset();
+      expect(exitingInset.dx, closeTo(restingInset.dx, 0.1));
+      expect(exitingInset.dy, closeTo(restingInset.dy, 0.1));
     });
 
     testWidgets(

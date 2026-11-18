@@ -21,10 +21,8 @@
 library;
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, TargetPlatform;
-
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets_example/widgets/glass_safe_area_slivers.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -184,18 +182,6 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // iOS native design floats the pill over the home indicator (ignoring safe area).
-    // Android 3-button nav requires us to clear the opaque system buttons.
-    // On gesture-nav devices safeBottom is 0, so no offset is applied.
-    final isIOS = defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.macOS;
-    final sysBottom = isIOS ? 0.0 : MediaQuery.viewPaddingOf(context).bottom;
-
-    // Content bottom padding: bar (64) + vertical padding (16*2) + accessory (50)
-    // + spacing (8) + extra clearance (8).
-    final double contentPad =
-        _kBarH + 2 * _kPaddingV + 50.0 + _kSpacing + 8.0 + sysBottom;
-
     return GlassScaffold(
       background: ColoredBox(color: _kBackground.resolveFrom(context)),
       statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark
@@ -226,18 +212,14 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
               FadeTransition(opacity: animation, child: child),
           child: !_isSearching
               ? switch (_selectedTab) {
-                  1 => _buildRadioView(
-                      key: const ValueKey('radio'), contentPad: contentPad),
-                  2 => _buildLibraryView(
-                      key: const ValueKey('library'), contentPad: contentPad),
-                  _ => _buildHomeView(
-                      key: const ValueKey('home'), contentPad: contentPad),
+                  1 => _buildRadioView(key: const ValueKey('radio')),
+                  2 => _buildLibraryView(key: const ValueKey('library')),
+                  _ => _buildHomeView(key: const ValueKey('home')),
                 }
               : _searchFieldFocused
                   ? _buildNoRecentSearches(key: const ValueKey('no-recent'))
                   : _buildSearchBrowseView(
-                      key: const ValueKey('search-browse'),
-                      contentPad: contentPad),
+                      key: const ValueKey('search-browse')),
         ),
       ),
 
@@ -330,13 +312,14 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
 
   // ── Page views ────────────────────────────────────────────────────────────
 
-  Widget _buildHomeView({Key? key, required double contentPad}) {
+  Widget _buildHomeView({Key? key}) {
     return CustomScrollView(
       key: key,
       controller: _scrollController,
       slivers: [
+        glassTopSafeAreaSliver(),
         SliverToBoxAdapter(
-          child: SizedBox(height: MediaQuery.paddingOf(context).top + 8 + 50),
+          child: SizedBox(height: 58),
         ),
         SliverToBoxAdapter(
           child: _HeroCard(
@@ -378,12 +361,12 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
             ),
           ),
         ),
-        SliverToBoxAdapter(child: SizedBox(height: contentPad)),
+        glassBottomSafeAreaSliver(),
       ],
     );
   }
 
-  Widget _buildRadioView({Key? key, required double contentPad}) {
+  Widget _buildRadioView({Key? key}) {
     final stations = [
       ('Apple Music 1', 'Global Pop', CupertinoIcons.dot_radiowaves_left_right),
       ('Apple Music Country', 'Country Hits', CupertinoIcons.music_note_2),
@@ -398,8 +381,9 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
       key: key,
       controller: _radioScrollController,
       slivers: [
+        glassTopSafeAreaSliver(),
         SliverToBoxAdapter(
-          child: SizedBox(height: MediaQuery.paddingOf(context).top + 8),
+          child: SizedBox(height: 8),
         ),
         SliverToBoxAdapter(
           child: Padding(
@@ -416,7 +400,7 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
           ),
         ),
         SliverPadding(
-          padding: EdgeInsets.fromLTRB(16, 0, 16, contentPad),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, i) {
@@ -470,11 +454,12 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
             ),
           ),
         ),
+        glassBottomSafeAreaSliver(),
       ],
     );
   }
 
-  Widget _buildLibraryView({Key? key, required double contentPad}) {
+  Widget _buildLibraryView({Key? key}) {
     const sections = [
       'Recently Added',
       'Artists',
@@ -489,8 +474,9 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
       key: key,
       controller: _libraryScrollController,
       slivers: [
+        glassTopSafeAreaSliver(),
         SliverToBoxAdapter(
-          child: SizedBox(height: MediaQuery.paddingOf(context).top + 8),
+          child: SizedBox(height: 8),
         ),
         SliverToBoxAdapter(
           child: Padding(
@@ -507,7 +493,7 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
           ),
         ),
         SliverPadding(
-          padding: EdgeInsets.fromLTRB(0, 0, 0, contentPad),
+          padding: EdgeInsets.zero,
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, i) => Column(
@@ -552,6 +538,7 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
             ),
           ),
         ),
+        glassBottomSafeAreaSliver(),
       ],
     );
   }
@@ -592,12 +579,13 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
     );
   }
 
-  Widget _buildSearchBrowseView({Key? key, required double contentPad}) {
+  Widget _buildSearchBrowseView({Key? key}) {
     return CustomScrollView(
       key: key,
       slivers: [
+        glassTopSafeAreaSliver(),
         SliverToBoxAdapter(
-          child: SizedBox(height: MediaQuery.paddingOf(context).top + 8),
+          child: SizedBox(height: 8),
         ),
         SliverToBoxAdapter(
           child: Padding(
@@ -635,7 +623,7 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
           ),
         ),
         SliverPadding(
-          padding: EdgeInsets.fromLTRB(16, 0, 16, contentPad),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           sliver: SliverGrid(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -652,6 +640,7 @@ class _AppleMusicHomeScreenState extends State<AppleMusicHomeScreen> {
             ),
           ),
         ),
+        glassBottomSafeAreaSliver(),
       ],
     );
   }

@@ -3,8 +3,9 @@ import 'package:flutter/widgets.dart';
 /// Package-internal scope that marks a CupertinoSheet push-back transition.
 ///
 /// Emitted by [GlassPage] when the route it sits on is being pushed back by a
-/// presented sheet (`secondaryAnimation > 0`). **Not exported from the public
-/// barrel** — this is an internal engine primitive.
+/// presented sheet (`secondaryAnimation > 0` plus a route-level
+/// [ScaleTransition]). **Not exported from the public barrel** — this is an
+/// internal engine primitive.
 ///
 /// [RenderLiquidGlassLayer] reads this as a positive gate: UV freezing only
 /// activates when BOTH a uniform scale is detected AND this scope is active.

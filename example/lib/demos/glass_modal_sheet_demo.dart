@@ -74,7 +74,6 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final sysBottom = MediaQuery.viewPaddingOf(context).bottom;
     return GlassScaffold(
       backgroundColor: CupertinoColors.black,
       extendBody: true,
@@ -111,49 +110,46 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
           ],
         ),
       ),
-      bottomBar: Padding(
-        padding: EdgeInsets.only(bottom: sysBottom > 25 ? sysBottom - 25 : 0),
-        child: GlassTabBar.searchable(
-          selectedIndex: _selectedTab,
-          interactionBehavior: GlassInteractionBehavior.scaleOnly,
-          isSearchActive: _isSearching,
-          onTabSelected: (index) => setState(() {
-            _selectedTab = index;
-            _isSearching = false;
-          }),
-          selectedIconColor: CupertinoColors.activeBlue,
-          unselectedIconColor: CupertinoColors.white.withValues(alpha: 0.60),
-          quality: GlassQuality.premium,
-          settings: const LiquidGlassSettings(
-            glassColor: Color(0xAA1C1C1E),
-            blur: 25,
-          ),
-          searchConfig: GlassSearchBarConfig(
-            hintText: 'Search Scenarios',
-            onSearchToggle: (active) => setState(() {
-              _isSearching = active;
-              if (!active) _searchFieldFocused = false;
-            }),
-            onSearchFocusChanged: (focused) =>
-                setState(() => _searchFieldFocused = focused),
-          ),
-          tabs: [
-            GlassTab(
-              label: 'Standard',
-              icon: Icon(CupertinoIcons.layers_alt),
-              activeIcon: Icon(CupertinoIcons.layers_alt_fill),
-            ),
-            GlassTab(
-              label: 'Peek',
-              icon: Icon(CupertinoIcons.chevron_up_chevron_down),
-            ),
-            GlassTab(
-              label: 'Apple Maps',
-              icon: Icon(CupertinoIcons.map),
-              activeIcon: Icon(CupertinoIcons.map_fill),
-            ),
-          ],
+      bottomBar: GlassTabBar.searchable(
+        selectedIndex: _selectedTab,
+        interactionBehavior: GlassInteractionBehavior.scaleOnly,
+        isSearchActive: _isSearching,
+        onTabSelected: (index) => setState(() {
+          _selectedTab = index;
+          _isSearching = false;
+        }),
+        selectedIconColor: CupertinoColors.activeBlue,
+        unselectedIconColor: CupertinoColors.white.withValues(alpha: 0.60),
+        quality: GlassQuality.premium,
+        settings: const LiquidGlassSettings(
+          glassColor: Color(0xAA1C1C1E),
+          blur: 25,
         ),
+        searchConfig: GlassSearchBarConfig(
+          hintText: 'Search Scenarios',
+          onSearchToggle: (active) => setState(() {
+            _isSearching = active;
+            if (!active) _searchFieldFocused = false;
+          }),
+          onSearchFocusChanged: (focused) =>
+              setState(() => _searchFieldFocused = focused),
+        ),
+        tabs: [
+          GlassTab(
+            label: 'Standard',
+            icon: Icon(CupertinoIcons.layers_alt),
+            activeIcon: Icon(CupertinoIcons.layers_alt_fill),
+          ),
+          GlassTab(
+            label: 'Peek',
+            icon: Icon(CupertinoIcons.chevron_up_chevron_down),
+          ),
+          GlassTab(
+            label: 'Apple Maps',
+            icon: Icon(CupertinoIcons.map),
+            activeIcon: Icon(CupertinoIcons.map_fill),
+          ),
+        ],
       ),
     );
   }
@@ -163,12 +159,15 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
       return _buildSearchState();
     }
 
-    return Column(
-      children: [
-        SizedBox(height: MediaQuery.paddingOf(context).top + 12),
-        _buildHeader(),
-        Expanded(child: _buildTabContent()),
-      ],
+    return SafeArea(
+      bottom: false,
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+          _buildHeader(),
+          Expanded(child: _buildTabContent()),
+        ],
+      ),
     );
   }
 
@@ -252,306 +251,309 @@ class _ShowcaseHomeScreenState extends State<ShowcaseHomeScreen> {
   }
 
   Widget _buildTabContent() {
-    return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Main Scenario Tile
-          _buildScenarioTile(
-            title: _getTabName(),
-            description: _getTabDescription(),
-            icon: _getTabIconData(),
-            onTap: () {
-              switch (_selectedTab) {
-                case 0:
-                  _showStandardExperience(context);
-                  break;
-                case 1:
-                  _showStandardPeek(context);
-                  break;
-                case 2:
-                  _showMapsExperience(context);
-                  break;
-              }
-            },
-          ),
-          SizedBox(height: 16),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Main Scenario Tile
+              _buildScenarioTile(
+                title: _getTabName(),
+                description: _getTabDescription(),
+                icon: _getTabIconData(),
+                onTap: () {
+                  switch (_selectedTab) {
+                    case 0:
+                      _showStandardExperience(context);
+                      break;
+                    case 1:
+                      _showStandardPeek(context);
+                      break;
+                    case 2:
+                      _showMapsExperience(context);
+                      break;
+                  }
+                },
+              ),
+              SizedBox(height: 16),
 
-          // Additional Scenarios for Standard Tab
-          if (_selectedTab == 0) ...[
-            _buildMorphTriggerTile(),
-            SizedBox(height: 16),
-            _buildScenarioTile(
-              title: 'Static Modal',
-              description: 'Disabled glow and window scaling',
-              icon: CupertinoIcons.square,
-              onTap: () => _showStaticModal(context),
-              color: CupertinoColors.activeOrange,
-            ),
-            SizedBox(height: 16),
-            _buildScenarioTile(
-              title: 'Smart Silence',
-              description: 'Ignore sheet feedback on child touch',
-              icon: CupertinoIcons.speaker_slash,
-              onTap: () => _showSmartSilence(context),
-              color: CupertinoColors.systemPurple,
-            ),
-            SizedBox(height: 16),
-            _buildScenarioTile(
-              title: 'Gradual Transition',
-              description: 'Smooth glass to color fade',
-              icon: CupertinoIcons.circle,
-              onTap: () => _showGradualTransition(context),
-              color: Colors.teal,
-            ),
-            SizedBox(height: 16),
-            _buildScenarioTile(
-              title: 'Top Fade',
-              description: 'Gradient fade at the top edge',
-              icon: CupertinoIcons.chevron_up,
-              onTap: () => _showTopFade(context),
-              color: Colors.pink,
-            ),
-            SizedBox(height: 16),
-            _buildScenarioTile(
-              title: 'Transparent Barrier',
-              description: 'No dimming behind the sheet',
-              icon: CupertinoIcons.eye_slash,
-              onTap: () => _showTransparentBarrier(context),
-              color: Colors.indigo,
-            ),
-            SizedBox(height: 16),
-            _buildScenarioTile(
-              title: 'Solid Half State',
-              description: 'Opaque brown in Half state',
-              icon: CupertinoIcons.paintbrush,
-              onTap: () => _showSolidHalfState(context),
-              color: Colors.brown,
-            ),
-            SizedBox(height: 16),
-            _buildScenarioTile(
-              title: 'Dual Glass Setup',
-              description: 'Different glass for Half vs Full',
-              icon: CupertinoIcons.circle_lefthalf_fill,
-              onTap: () => _showDualGlassSetup(context),
-              color: Colors.cyan,
-            ),
-            SizedBox(height: 16),
-            _buildScenarioTile(
-              title: 'Custom Dimensions',
-              description: 'Unique Peek/Half/Full sizes',
-              icon: CupertinoIcons.pencil,
-              onTap: () => _showCustomDimensions(context),
-              color: CupertinoColors.activeOrange,
-            ),
-          ],
-
-          // Peek Scenarios
-          if (_selectedTab == 1) ...[
-            _buildScenarioTile(
-              title: 'Glass Card',
-              description: 'Standalone GlassContainer.card component demo',
-              icon: CupertinoIcons.macwindow,
-              onTap: () => _showGlassCard(context),
-              color: CupertinoColors.activeGreen,
-            ),
-            SizedBox(height: 24),
-            const GlassMenuLabel(title: 'MENU CONFIGURATIONS'),
-            SizedBox(height: 12),
-            Row(
-              children: [
-                // 1. Basic configuration (User's original)
-                GlassMenu(
-                  menuWidth: 240,
-                  quality: widget.currentQuality,
-                  settings: LiquidGlassSettings(
-                    glassColor: const Color(0x00000000),
-                    thickness: 30,
-                    blur: 2,
-                    chromaticAberration: .01,
-                    lightAngle: GlassDefaults.lightAngle,
-                    lightIntensity: .5,
-                    ambientStrength: 0,
-                    refractiveIndex: 1.2,
-                    saturation: 1.2,
-                  ),
-                  enableInteractionGlow: true,
-                  glowRadius: 0.6,
-                  interactionScale: 1.00,
-                  triggerBuilder: (context, toggleMenu) => GlassButton(
-                    icon: Icon(CupertinoIcons.line_horizontal_3),
-                    onTap: toggleMenu,
-                  ),
-                  items: [
-                    GlassMenuItem(
-                        title: 'Upgrade plan',
-                        icon: Icon(CupertinoIcons.arrow_up_circle),
-                        onTap: () {}),
-                    GlassMenuItem(
-                        title: 'Settings',
-                        icon: Icon(CupertinoIcons.settings),
-                        onTap: () {}),
-                    GlassMenuItem(
-                        title: 'Offline Pages',
-                        icon: Icon(CupertinoIcons.arrow_down_circle),
-                        onTap: () {}),
-                    GlassMenuItem(
-                        title: 'Members',
-                        icon: Icon(CupertinoIcons.person_2),
-                        onTap: () {}),
-                    GlassMenuItem(
-                        title: 'Trash',
-                        icon: Icon(CupertinoIcons.trash),
-                        onTap: () {}),
-                    GlassMenuItem(
-                        title: 'Help & support',
-                        icon: Icon(CupertinoIcons.question_circle),
-                        onTap: () {}),
-                  ],
+              // Additional Scenarios for Standard Tab
+              if (_selectedTab == 0) ...[
+                _buildMorphTriggerTile(),
+                SizedBox(height: 16),
+                _buildScenarioTile(
+                  title: 'Static Modal',
+                  description: 'Disabled glow and window scaling',
+                  icon: CupertinoIcons.square,
+                  onTap: () => _showStaticModal(context),
+                  color: CupertinoColors.activeOrange,
                 ),
-                SizedBox(width: 16),
-
-                // 2. Pro configuration (Advanced features)
-                GlassMenu(
-                  menuWidth: 260,
-                  menuHeight: 250, // Test scrolling
-                  quality: widget.currentQuality,
-                  selectionColor:
-                      CupertinoColors.activeBlue.withValues(alpha: 0.3),
-                  triggerBuilder: (context, toggle) => GlassButton.custom(
-                    onTap: toggle,
-                    width: 56,
-                    height: 56,
-                    shape: const LiquidOval(),
-                    child: Icon(CupertinoIcons.layers_alt,
-                        color: CupertinoColors.white),
-                  ),
-                  items: [
-                    const GlassMenuLabel(title: 'PRIMARY ACTIONS'),
-                    GlassMenuItem(
-                      title: 'New Project',
-                      subtitle: 'Create from template',
-                      icon: Icon(CupertinoIcons.add),
-                      onTap: () {},
-                    ),
-                    GlassMenuItem(
-                      title: 'Share Workspace',
-                      icon: Icon(CupertinoIcons.share),
-                      iconColor:
-                          CupertinoColors.activeBlue, // Smart inheritance
-                      onTap: () {},
-                    ),
-                    const GlassMenuDivider(),
-                    const GlassMenuLabel(title: 'MANAGEMENT'),
-                    GlassMenuItem(
-                      title: 'Settings',
-                      icon: Icon(CupertinoIcons.settings),
-                      onTap: () {},
-                    ),
-                    const GlassMenuDivider(),
-                    const GlassMenuLabel(title: 'DANGER ZONE'),
-                    GlassMenuItem(
-                      title: 'Delete Forever',
-                      isDestructive: true,
-                      icon: Icon(CupertinoIcons.trash),
-                      onTap: () {},
-                    ),
-                  ],
+                SizedBox(height: 16),
+                _buildScenarioTile(
+                  title: 'Smart Silence',
+                  description: 'Ignore sheet feedback on child touch',
+                  icon: CupertinoIcons.speaker_slash,
+                  onTap: () => _showSmartSilence(context),
+                  color: CupertinoColors.systemPurple,
                 ),
-                SizedBox(width: 16),
+                SizedBox(height: 16),
+                _buildScenarioTile(
+                  title: 'Gradual Transition',
+                  description: 'Smooth glass to color fade',
+                  icon: CupertinoIcons.circle,
+                  onTap: () => _showGradualTransition(context),
+                  color: Colors.teal,
+                ),
+                SizedBox(height: 16),
+                _buildScenarioTile(
+                  title: 'Top Fade',
+                  description: 'Gradient fade at the top edge',
+                  icon: CupertinoIcons.chevron_up,
+                  onTap: () => _showTopFade(context),
+                  color: Colors.pink,
+                ),
+                SizedBox(height: 16),
+                _buildScenarioTile(
+                  title: 'Transparent Barrier',
+                  description: 'No dimming behind the sheet',
+                  icon: CupertinoIcons.eye_slash,
+                  onTap: () => _showTransparentBarrier(context),
+                  color: Colors.indigo,
+                ),
+                SizedBox(height: 16),
+                _buildScenarioTile(
+                  title: 'Solid Half State',
+                  description: 'Opaque brown in Half state',
+                  icon: CupertinoIcons.paintbrush,
+                  onTap: () => _showSolidHalfState(context),
+                  color: Colors.brown,
+                ),
+                SizedBox(height: 16),
+                _buildScenarioTile(
+                  title: 'Dual Glass Setup',
+                  description: 'Different glass for Half vs Full',
+                  icon: CupertinoIcons.circle_lefthalf_fill,
+                  onTap: () => _showDualGlassSetup(context),
+                  color: Colors.cyan,
+                ),
+                SizedBox(height: 16),
+                _buildScenarioTile(
+                  title: 'Custom Dimensions',
+                  description: 'Unique Peek/Half/Full sizes',
+                  icon: CupertinoIcons.pencil,
+                  onTap: () => _showCustomDimensions(context),
+                  color: CupertinoColors.activeOrange,
+                ),
+              ],
 
-                // 3. Photo configuration (Custom Widgets instead of Icons)
-                GlassMenu(
-                  menuWidth: 220,
-                  quality: widget.currentQuality,
-                  stretch: 0.0, // Disable liquid stretch physics
-                  settings: LiquidGlassSettings(
-                    glassColor: const Color(0x00000000),
-                    thickness: 30,
-                    blur: 2,
-                    chromaticAberration: .01,
-                    lightAngle: GlassDefaults.lightAngle,
-                    lightIntensity: .5,
-                    ambientStrength: 0,
-                    refractiveIndex: 1.2,
-                    saturation: 1.2,
-                  ),
-                  enableInteractionGlow: true,
-                  glowRadius: 0.6,
-                  interactionScale: 1.00,
-                  triggerBuilder: (context, toggleMenu) => GlassButton(
-                    icon: Icon(CupertinoIcons.camera),
-                    onTap: toggleMenu,
-                  ),
-                  items: [
-                    GlassMenuItem(
-                        title: 'Alice',
-                        icon: const CircleAvatar(
-                          radius: 12,
-                          backgroundImage:
-                              NetworkImage('https://i.pravatar.cc/100?img=1'),
+              // Peek Scenarios
+              if (_selectedTab == 1) ...[
+                _buildScenarioTile(
+                  title: 'Glass Card',
+                  description: 'Standalone GlassContainer.card component demo',
+                  icon: CupertinoIcons.macwindow,
+                  onTap: () => _showGlassCard(context),
+                  color: CupertinoColors.activeGreen,
+                ),
+                SizedBox(height: 24),
+                const GlassMenuLabel(title: 'MENU CONFIGURATIONS'),
+                SizedBox(height: 12),
+                Row(
+                  children: [
+                    // 1. Basic configuration (User's original)
+                    GlassMenu(
+                      menuWidth: 240,
+                      quality: widget.currentQuality,
+                      settings: LiquidGlassSettings(
+                        glassColor: const Color(0x00000000),
+                        thickness: 30,
+                        blur: 2,
+                        chromaticAberration: .01,
+                        lightAngle: GlassDefaults.lightAngle,
+                        lightIntensity: .5,
+                        ambientStrength: 0,
+                        refractiveIndex: 1.2,
+                        saturation: 1.2,
+                      ),
+                      enableInteractionGlow: true,
+                      glowRadius: 0.6,
+                      interactionScale: 1.00,
+                      triggerBuilder: (context, toggleMenu) => GlassButton(
+                        icon: Icon(CupertinoIcons.line_horizontal_3),
+                        onTap: toggleMenu,
+                      ),
+                      items: [
+                        GlassMenuItem(
+                            title: 'Upgrade plan',
+                            icon: Icon(CupertinoIcons.arrow_up_circle),
+                            onTap: () {}),
+                        GlassMenuItem(
+                            title: 'Settings',
+                            icon: Icon(CupertinoIcons.settings),
+                            onTap: () {}),
+                        GlassMenuItem(
+                            title: 'Offline Pages',
+                            icon: Icon(CupertinoIcons.arrow_down_circle),
+                            onTap: () {}),
+                        GlassMenuItem(
+                            title: 'Members',
+                            icon: Icon(CupertinoIcons.person_2),
+                            onTap: () {}),
+                        GlassMenuItem(
+                            title: 'Trash',
+                            icon: Icon(CupertinoIcons.trash),
+                            onTap: () {}),
+                        GlassMenuItem(
+                            title: 'Help & support',
+                            icon: Icon(CupertinoIcons.question_circle),
+                            onTap: () {}),
+                      ],
+                    ),
+                    SizedBox(width: 16),
+
+                    // 2. Pro configuration (Advanced features)
+                    GlassMenu(
+                      menuWidth: 260,
+                      menuHeight: 250, // Test scrolling
+                      quality: widget.currentQuality,
+                      selectionColor:
+                          CupertinoColors.activeBlue.withValues(alpha: 0.3),
+                      triggerBuilder: (context, toggle) => GlassButton.custom(
+                        onTap: toggle,
+                        width: 56,
+                        height: 56,
+                        shape: const LiquidOval(),
+                        child: Icon(CupertinoIcons.layers_alt,
+                            color: CupertinoColors.white),
+                      ),
+                      items: [
+                        const GlassMenuLabel(title: 'PRIMARY ACTIONS'),
+                        GlassMenuItem(
+                          title: 'New Project',
+                          subtitle: 'Create from template',
+                          icon: Icon(CupertinoIcons.add),
+                          onTap: () {},
                         ),
-                        onTap: () {}),
-                    GlassMenuItem(
-                        title: 'Bob',
-                        icon: const CircleAvatar(
-                          radius: 12,
-                          backgroundImage:
-                              NetworkImage('https://i.pravatar.cc/100?img=2'),
+                        GlassMenuItem(
+                          title: 'Share Workspace',
+                          icon: Icon(CupertinoIcons.share),
+                          iconColor:
+                              CupertinoColors.activeBlue, // Smart inheritance
+                          onTap: () {},
                         ),
-                        onTap: () {}),
-                    GlassMenuItem(
-                        title: 'Charlie',
-                        icon: const CircleAvatar(
-                          radius: 12,
-                          backgroundImage:
-                              NetworkImage('https://i.pravatar.cc/100?img=3'),
+                        const GlassMenuDivider(),
+                        const GlassMenuLabel(title: 'MANAGEMENT'),
+                        GlassMenuItem(
+                          title: 'Settings',
+                          icon: Icon(CupertinoIcons.settings),
+                          onTap: () {},
                         ),
-                        onTap: () {}),
-                    GlassMenuItem(
-                        title: 'Diana',
-                        icon: const CircleAvatar(
-                          radius: 12,
-                          backgroundImage:
-                              NetworkImage('https://i.pravatar.cc/100?img=4'),
+                        const GlassMenuDivider(),
+                        const GlassMenuLabel(title: 'DANGER ZONE'),
+                        GlassMenuItem(
+                          title: 'Delete Forever',
+                          isDestructive: true,
+                          icon: Icon(CupertinoIcons.trash),
+                          onTap: () {},
                         ),
-                        onTap: () {}),
-                    GlassMenuItem(
-                        title: 'Ethan',
-                        icon: const CircleAvatar(
-                          radius: 12,
-                          backgroundImage:
-                              NetworkImage('https://i.pravatar.cc/100?img=5'),
-                        ),
-                        onTap: () {}),
-                    GlassMenuItem(
-                        title: 'Fiona',
-                        icon: const CircleAvatar(
-                          radius: 12,
-                          backgroundImage:
-                              NetworkImage('https://i.pravatar.cc/100?img=9'),
-                        ),
-                        onTap: () {}),
+                      ],
+                    ),
+                    SizedBox(width: 16),
+
+                    // 3. Photo configuration (Custom Widgets instead of Icons)
+                    GlassMenu(
+                      menuWidth: 220,
+                      quality: widget.currentQuality,
+                      stretch: 0.0, // Disable liquid stretch physics
+                      settings: LiquidGlassSettings(
+                        glassColor: const Color(0x00000000),
+                        thickness: 30,
+                        blur: 2,
+                        chromaticAberration: .01,
+                        lightAngle: GlassDefaults.lightAngle,
+                        lightIntensity: .5,
+                        ambientStrength: 0,
+                        refractiveIndex: 1.2,
+                        saturation: 1.2,
+                      ),
+                      enableInteractionGlow: true,
+                      glowRadius: 0.6,
+                      interactionScale: 1.00,
+                      triggerBuilder: (context, toggleMenu) => GlassButton(
+                        icon: Icon(CupertinoIcons.camera),
+                        onTap: toggleMenu,
+                      ),
+                      items: [
+                        GlassMenuItem(
+                            title: 'Alice',
+                            icon: const CircleAvatar(
+                              radius: 12,
+                              backgroundImage: NetworkImage(
+                                  'https://i.pravatar.cc/100?img=1'),
+                            ),
+                            onTap: () {}),
+                        GlassMenuItem(
+                            title: 'Bob',
+                            icon: const CircleAvatar(
+                              radius: 12,
+                              backgroundImage: NetworkImage(
+                                  'https://i.pravatar.cc/100?img=2'),
+                            ),
+                            onTap: () {}),
+                        GlassMenuItem(
+                            title: 'Charlie',
+                            icon: const CircleAvatar(
+                              radius: 12,
+                              backgroundImage: NetworkImage(
+                                  'https://i.pravatar.cc/100?img=3'),
+                            ),
+                            onTap: () {}),
+                        GlassMenuItem(
+                            title: 'Diana',
+                            icon: const CircleAvatar(
+                              radius: 12,
+                              backgroundImage: NetworkImage(
+                                  'https://i.pravatar.cc/100?img=4'),
+                            ),
+                            onTap: () {}),
+                        GlassMenuItem(
+                            title: 'Ethan',
+                            icon: const CircleAvatar(
+                              radius: 12,
+                              backgroundImage: NetworkImage(
+                                  'https://i.pravatar.cc/100?img=5'),
+                            ),
+                            onTap: () {}),
+                        GlassMenuItem(
+                            title: 'Fiona',
+                            icon: const CircleAvatar(
+                              radius: 12,
+                              backgroundImage: NetworkImage(
+                                  'https://i.pravatar.cc/100?img=9'),
+                            ),
+                            onTap: () {}),
+                      ],
+                    ),
                   ],
                 ),
               ],
-            ),
-          ],
 
-          // Apple Maps Style Tab
-          if (_selectedTab == 2) ...[
-            _buildScenarioTile(
-              title: 'Maps Experience',
-              description: 'Interactive map with floating sheet',
-              icon: CupertinoIcons.map,
-              onTap: () => _showMapsExperience(context),
-              color: CupertinoColors.activeBlue,
-            ),
-          ],
-
-          SizedBox(height: 120), // Padding for bottom bar
-        ],
+              // Apple Maps Style Tab
+              if (_selectedTab == 2) ...[
+                _buildScenarioTile(
+                  title: 'Maps Experience',
+                  description: 'Interactive map with floating sheet',
+                  icon: CupertinoIcons.map,
+                  onTap: () => _showMapsExperience(context),
+                  color: CupertinoColors.activeBlue,
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -978,26 +980,34 @@ class MapsExperienceScreen extends StatelessWidget {
             ),
             // Floating Back Button
             Positioned(
-              top: MediaQuery.paddingOf(context).top + 12,
-              left: 16,
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: CupertinoColors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: CupertinoColors.black.withValues(alpha: 0.12),
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
+              top: 0,
+              left: 0,
+              child: SafeArea(
+                bottom: false,
+                right: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 0, 0),
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: CupertinoColors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                CupertinoColors.black.withValues(alpha: 0.12),
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    ],
+                      child: Icon(CupertinoIcons.back,
+                          color: CupertinoColors.black),
+                    ),
                   ),
-                  child:
-                      Icon(CupertinoIcons.back, color: CupertinoColors.black),
                 ),
               ),
             ),
@@ -1050,123 +1060,126 @@ class _BaseScenarioState extends State<BaseScenario> {
   Widget build(BuildContext context) {
     final scrollData = ScrollControllerProvider.of(context);
 
-    return ListView.builder(
-      controller: scrollData?.controller,
-      physics: scrollData?.physics,
-      padding: EdgeInsets.fromLTRB(20, 12, 20, 40),
-      itemCount: 30,
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return Padding(
-            padding: EdgeInsets.only(bottom: 24, top: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.title,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: ListView.builder(
+        controller: scrollData?.controller,
+        physics: scrollData?.physics,
+        itemCount: 30,
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: 24, top: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.title,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  widget.subtitle,
-                  style: TextStyle(
-                      fontSize: 15, color: CupertinoColors.systemGrey),
-                ),
-                SizedBox(height: 25),
-
-                // INTERACTIVE SECTION
-                Row(
-                  children: [
-                    Expanded(
-                      child: _wrapIfSilenced(
-                        child: GlassButton.custom(
-                          height: 50,
-                          useOwnLayer: false,
-                          shape: const LiquidRoundedSuperellipse(
-                            borderRadius: 14,
-                          ),
-                          onTap: () {},
-                          child: Center(child: Text('Action A')),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: _wrapIfSilenced(
-                        child: GlassButton.custom(
-                          height: 50,
-                          useOwnLayer: false,
-                          shape: const LiquidRoundedSuperellipse(
-                            borderRadius: 14,
-                          ),
-                          onTap: () {},
-                          child: Center(child: Text('Action B')),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    _wrapIfSilenced(
-                      child: GlassSwitch(
-                        value: _switchValue,
-                        onChanged: (val) => setState(() => _switchValue = val),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 24),
-                Divider(height: 1),
-              ],
-            ),
-          );
-        }
-
-        return Padding(
-          padding: EdgeInsets.only(bottom: 12),
-          child: GlassContainer.card(
-            useOwnLayer: false,
-            padding: EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: CupertinoColors.activeBlue.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
+                  SizedBox(height: 8),
+                  Text(
+                    widget.subtitle,
+                    style: TextStyle(
+                        fontSize: 15, color: CupertinoColors.systemGrey),
                   ),
-                  child: Icon(CupertinoIcons.star,
-                      color: CupertinoColors.activeBlue),
-                ),
-                SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  SizedBox(height: 25),
+
+                  // INTERACTIVE SECTION
+                  Row(
                     children: [
-                      Text(
-                        'Item #$index',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      Expanded(
+                        child: _wrapIfSilenced(
+                          child: GlassButton.custom(
+                            height: 50,
+                            useOwnLayer: false,
+                            shape: const LiquidRoundedSuperellipse(
+                              borderRadius: 14,
+                            ),
+                            onTap: () {},
+                            child: Center(child: Text('Action A')),
+                          ),
                         ),
                       ),
-                      Text(
-                        'Secondary information or description text goes here.',
-                        style: TextStyle(
-                            color: CupertinoColors.systemGrey, fontSize: 13),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: _wrapIfSilenced(
+                          child: GlassButton.custom(
+                            height: 50,
+                            useOwnLayer: false,
+                            shape: const LiquidRoundedSuperellipse(
+                              borderRadius: 14,
+                            ),
+                            onTap: () {},
+                            child: Center(child: Text('Action B')),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 16),
+                      _wrapIfSilenced(
+                        child: GlassSwitch(
+                          value: _switchValue,
+                          onChanged: (val) =>
+                              setState(() => _switchValue = val),
+                        ),
                       ),
                     ],
                   ),
-                ),
-                Icon(CupertinoIcons.chevron_right,
-                    color: CupertinoColors.systemGrey),
-              ],
+                  SizedBox(height: 24),
+                  Divider(height: 1),
+                ],
+              ),
+            );
+          }
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: GlassContainer.card(
+              useOwnLayer: false,
+              padding: EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.activeBlue.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(CupertinoIcons.star,
+                        color: CupertinoColors.activeBlue),
+                  ),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Item #$index',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(
+                          'Secondary information or description text goes here.',
+                          style: TextStyle(
+                              color: CupertinoColors.systemGrey, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(CupertinoIcons.chevron_right,
+                      color: CupertinoColors.systemGrey),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

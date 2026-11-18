@@ -20,6 +20,7 @@ library;
 
 import 'package:flutter/cupertino.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets_example/widgets/glass_safe_area_slivers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -207,197 +208,193 @@ class _ScrollEdgeStyleDemoState extends State<ScrollEdgeStyleDemo> {
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
+          glassTopSafeAreaSliver(),
           // ── Controls Panel (Padded cleanly below GlassAppBar) ───────────
           SliverToBoxAdapter(
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 44 + 8, 16, 16),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF161726),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: const Color(0xFF2E3048),
-                      width: 1,
-                    ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF161726),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: const Color(0xFF2E3048),
+                    width: 1,
                   ),
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Style description header
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Style description header
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                const Color(0xFF0096C7).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
                               color: const Color(0xFF0096C7)
-                                  .withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: const Color(0xFF0096C7)
-                                    .withValues(alpha: 0.5),
-                                width: 1,
-                              ),
-                            ),
-                            child: Text(
-                              _styleBadgeText(_style),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF5AC8FA),
-                                fontWeight: FontWeight.w600,
-                              ),
+                                  .withValues(alpha: 0.5),
+                              width: 1,
                             ),
                           ),
-                          const Spacer(),
-                          Text(
-                            _styleCaption(_style),
-                            style: TextStyle(
+                          child: Text(
+                            _styleBadgeText(_style),
+                            style: const TextStyle(
                               fontSize: 12,
-                              color: CupertinoColors.secondaryLabel
-                                  .resolveFrom(context),
+                              color: Color(0xFF5AC8FA),
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // 1. Edge Style Selector
-                      _SectionHeader('Edge Style'),
-                      const SizedBox(height: 8),
-                      GlassSegmentedControl(
-                        segments: _segments,
-                        selectedIndex: _styleIndex,
-                        onSegmentSelected: (i) =>
-                            setState(() => _styleIndex = i),
-                      ),
-
-                      const SizedBox(height: 18),
-
-                      // 2. Extent Controls
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _SectionHeader(
-                                    'Top Extent (${_topExtent.round()} px)'),
-                                const SizedBox(height: 4),
-                                GlassSlider(
-                                  value: _topExtent,
-                                  min: -40,
-                                  max: 60,
-                                  onChanged: (v) =>
-                                      setState(() => _topExtent = v),
-                                ),
-                              ],
-                            ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          _styleCaption(_style),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: CupertinoColors.secondaryLabel
+                                .resolveFrom(context),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _SectionHeader(
-                                    'Bottom Extent (${_bottomExtent.round()} px)'),
-                                const SizedBox(height: 4),
-                                GlassSlider(
-                                  value: _bottomExtent,
-                                  min: -40,
-                                  max: 60,
-                                  onChanged: (v) =>
-                                      setState(() => _bottomExtent = v),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
+                    ),
 
-                      // 3. maxSigma slider (Blur only)
-                      AnimatedSize(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeInOut,
-                        child: _style == GlassScrollEdgeStyle.blur
-                            ? Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: 16),
-                                  _SectionHeader(
-                                      'maxSigma (${_maxSigma.round()} px)'),
-                                  const SizedBox(height: 4),
-                                  GlassSlider(
-                                    value: _maxSigma,
-                                    min: 0,
-                                    max: 30,
-                                    onChanged: (v) =>
-                                        setState(() => _maxSigma = v),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Controls blur intensity at the apex of the transition zone.',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: CupertinoColors.secondaryLabel
-                                          .resolveFrom(context),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : const SizedBox.shrink(),
-                      ),
+                    const SizedBox(height: 16),
 
-                      const SizedBox(height: 16),
+                    // 1. Edge Style Selector
+                    _SectionHeader('Edge Style'),
+                    const SizedBox(height: 8),
+                    GlassSegmentedControl(
+                      segments: _segments,
+                      selectedIndex: _styleIndex,
+                      onSegmentSelected: (i) => setState(() => _styleIndex = i),
+                    ),
 
-                      // 4. Edge Toggles
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
+                    const SizedBox(height: 18),
+
+                    // 2. Extent Controls
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Top Fade',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: CupertinoColors.label
-                                      .resolveFrom(context),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              GlassSwitch(
-                                value: _fadeTop,
-                                onChanged: (v) => setState(() => _fadeTop = v),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              Text(
-                                'Bottom Fade',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: CupertinoColors.label
-                                      .resolveFrom(context),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              GlassSwitch(
-                                value: _fadeBottom,
+                              _SectionHeader(
+                                  'Top Extent (${_topExtent.round()} px)'),
+                              const SizedBox(height: 4),
+                              GlassSlider(
+                                value: _topExtent,
+                                min: -40,
+                                max: 60,
                                 onChanged: (v) =>
-                                    setState(() => _fadeBottom = v),
+                                    setState(() => _topExtent = v),
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _SectionHeader(
+                                  'Bottom Extent (${_bottomExtent.round()} px)'),
+                              const SizedBox(height: 4),
+                              GlassSlider(
+                                value: _bottomExtent,
+                                min: -40,
+                                max: 60,
+                                onChanged: (v) =>
+                                    setState(() => _bottomExtent = v),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // 3. maxSigma slider (Blur only)
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      child: _style == GlassScrollEdgeStyle.blur
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 16),
+                                _SectionHeader(
+                                    'maxSigma (${_maxSigma.round()} px)'),
+                                const SizedBox(height: 4),
+                                GlassSlider(
+                                  value: _maxSigma,
+                                  min: 0,
+                                  max: 30,
+                                  onChanged: (v) =>
+                                      setState(() => _maxSigma = v),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Controls blur intensity at the apex of the transition zone.',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: CupertinoColors.secondaryLabel
+                                        .resolveFrom(context),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // 4. Edge Toggles
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Top Fade',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color:
+                                    CupertinoColors.label.resolveFrom(context),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            GlassSwitch(
+                              value: _fadeTop,
+                              onChanged: (v) => setState(() => _fadeTop = v),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Text(
+                              'Bottom Fade',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color:
+                                    CupertinoColors.label.resolveFrom(context),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            GlassSwitch(
+                              value: _fadeBottom,
+                              onChanged: (v) => setState(() => _fadeBottom = v),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -441,9 +438,7 @@ class _ScrollEdgeStyleDemoState extends State<ScrollEdgeStyleDemo> {
               childCount: _items.length,
             ),
           ),
-
-          // Bottom padding to clear bottom tab bar & allow clean scroll-through
-          const SliverToBoxAdapter(child: SizedBox(height: 140)),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );

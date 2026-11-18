@@ -141,11 +141,11 @@ class _ColorFidelityDemoPageState extends State<ColorFidelityDemoPage> {
         appBar: const GlassAppBar.pinned(
           title: Text('Color Fidelity & Quality'),
         ),
-        body: SafeArea(
-          bottom: false,
+        body: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 140),
             children: [
+              const SizedBox(height: 12),
               // ── Header Banner ───────────────────────────────────────────────
               _buildHeaderBanner(),
               const SizedBox(height: 16),

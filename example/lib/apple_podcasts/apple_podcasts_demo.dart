@@ -10,10 +10,8 @@
 library;
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, TargetPlatform;
-
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets_example/widgets/glass_safe_area_slivers.dart';
 
 const _kPodcastsPurple = Color(0xFFB877FF);
 const _kBackground = CupertinoDynamicColor.withBrightness(
@@ -307,16 +305,6 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Match Apple Music demo: iOS floats over home indicator, Android clears nav bar.
-    final isIOS = defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.macOS;
-    final sysBottom = isIOS ? 0.0 : MediaQuery.viewPaddingOf(context).bottom;
-
-    // Content bottom padding: bar (64) + vertical padding (16*2) + accessory (50)
-    // + spacing (8) + extra clearance (8).
-    final double contentPad =
-        _kBarH + 2 * _kPaddingV + 50.0 + _kSpacing + 8.0 + sysBottom;
-
     return GlassScaffold(
       background: ColoredBox(color: _kBackground.resolveFrom(context)),
       statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark
@@ -341,12 +329,10 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: !_isSearching
-              ? _buildHomeView(
-                  key: const ValueKey('home'), contentPad: contentPad)
+              ? _buildHomeView(key: const ValueKey('home'))
               : _searchFieldFocused
                   ? _buildEmptySearch(key: const ValueKey('empty'))
-                  : _buildBrowseView(
-                      key: const ValueKey('browse'), contentPad: contentPad),
+                  : _buildBrowseView(key: const ValueKey('browse')),
         ),
       ),
 
@@ -451,15 +437,14 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
     );
   }
 
-  Widget _buildHomeView({Key? key, required double contentPad}) {
+  Widget _buildHomeView({Key? key}) {
     return CustomScrollView(
       key: key,
       controller: _scrollController,
       slivers: [
+        glassTopSafeAreaSliver(),
         // Extra top pad to account for fixed header overlay
-        SliverToBoxAdapter(
-            child:
-                SizedBox(height: MediaQuery.paddingOf(context).top + 12 + 50)),
+        SliverToBoxAdapter(child: SizedBox(height: 62)),
 
         // ── Up Next ──────────────────────────────────────────────────────────
         _buildSectionHeader('Up Next'),
@@ -596,8 +581,7 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
             );
           },
         ),
-
-        SliverToBoxAdapter(child: SizedBox(height: contentPad)),
+        glassBottomSafeAreaSliver(),
       ],
     );
   }
@@ -651,12 +635,12 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
     );
   }
 
-  Widget _buildBrowseView({Key? key, required double contentPad}) {
+  Widget _buildBrowseView({Key? key}) {
     return CustomScrollView(
       key: key,
       slivers: [
-        SliverToBoxAdapter(
-            child: SizedBox(height: MediaQuery.paddingOf(context).top + 20)),
+        glassTopSafeAreaSliver(),
+        SliverToBoxAdapter(child: SizedBox(height: 20)),
         SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -668,7 +652,7 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
           ),
         ),
         SliverPadding(
-          padding: EdgeInsets.fromLTRB(16, 0, 16, contentPad),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           sliver: SliverGrid.builder(
             itemCount: 8,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -689,6 +673,7 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
             ),
           ),
         ),
+        glassBottomSafeAreaSliver(),
       ],
     );
   }
@@ -698,13 +683,17 @@ class _ApplePodcastsHomeScreenState extends State<ApplePodcastsHomeScreen> {
     return Container(
       key: key,
       color: _kBackground.resolveFrom(context).resolveFrom(context),
-      padding: EdgeInsets.only(bottom: kHeight + 50),
-      child: Center(
-        child: Text('No Recent Searches',
-            style: TextStyle(
-                color: CupertinoColors.label.resolveFrom(context),
-                fontSize: 22,
-                fontWeight: FontWeight.bold)),
+      child: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(bottom: kHeight),
+          child: Center(
+            child: Text('No Recent Searches',
+                style: TextStyle(
+                    color: CupertinoColors.label.resolveFrom(context),
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold)),
+          ),
+        ),
       ),
     );
   }

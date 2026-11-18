@@ -1806,7 +1806,11 @@ void main() {
       final appBar = tester.widget<GlassAppBar>(
         find.byType(GlassAppBar).last,
       );
-      expect(appBar.preferredSize.height, 48.0);
+      expect(
+        appBar.preferredSize.height,
+        48.0 + 20.0,
+        reason: '48pt toolbar plus the default 10pt vertical padding',
+      );
 
       // Automatic back button is 48x48 with 24pt circular radius.
       final backShell = find.ancestor(
@@ -1894,8 +1898,8 @@ void main() {
         matching: find.byType(GlassButton),
       );
       final hoistedTopLeft = tester.getTopLeft(hoistedBellShell);
-      // 44pt standalone button centered in a 56pt bar sits at y = (56 - 44)/2 = 6.
-      expect(hoistedTopLeft.dy, 6.0);
+      // 10pt top padding + (56 - 44) / 2 = 16.
+      expect(hoistedTopLeft.dy, 16.0);
 
       await tester.pumpWidget(shellApp(buildScreen(), enabled: false));
       await settle(tester);

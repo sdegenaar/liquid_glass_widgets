@@ -93,7 +93,9 @@ For any screen featuring liquid glass navigation bars or floating surfaces, **al
 1. **Guaranteed Z-Ordering**: App bars and bottom bars paint above scrolling body content, preventing body cards from overlapping navigation buttons.
 2. **Edge Fading**: Content fades smoothly as it scrolls under bars (`.scrollEdgeEffectStyle(.soft)` matching iOS 26).
 3. **Content-Aware Brightness**: Dynamically flips app bar icons and typography between light and dark depending on the luminosity of the content scrolling underneath.
-4. **Auto-Padding**: Automatically accounts for safe areas and bar heights.
+4. **Automatic Safe Area**: Publishes the system safe area plus the live app-bar/bottom-bar occupancy through the body's `MediaQuery`. `GlassAppBar` defaults to `EdgeInsets.symmetric(horizontal: 20, vertical: 10)` and adds the platform top, left and right safe insets to that padding; that complete app-bar height is included in the scaffold's body inset. `ListView` consumes those vertical insets automatically, even when a bar animates or changes height. A `CustomScrollView` does **not** consume them: wrap its content slivers in `SliverSafeArea` (for example around a `SliverMainAxisGroup`). If the first sliver is `GlassLargeTitle`, leave it outside the wrapper because that widget owns the top inset, then use `SliverSafeArea(top: false, ...)` for the remaining slivers. Never substitute hard-coded bar heights.
+
+   These bar-aware insets exist only inside the `GlassScaffold.body` subtree. A `MediaQuery.paddingOf(context)` call in the page's outer `build` context sees only the platform inset. Read it from a `Builder` inside `body`, or let widgets such as `GlassLargeTitle` read it internally.
 
 ```dart
 class HomeScreen extends StatefulWidget {
@@ -136,11 +138,15 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
 
-      // 4. Scrollable Body Content
+      // 4. Scrollable Body Content.
+      // Leave ListView padding null so it consumes the scaffold's automatic
+      // safe-area padding. A CustomScrollView instead needs its content slivers
+      // wrapped in SliverSafeArea. GlassGroupedSection supplies its own 20pt
+      // horizontal card margin, so no outer gutter is needed.
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         children: [
-          // Content cards in scrolling lists use GlassSurfaceStyle.solid
+          const SizedBox(height: 20),
+          // Content cards in scrolling lists use GlassSurfaceStyle.solid.
           GlassGroupedSection(
             surfaceStyle: GlassSurfaceStyle.solid,
             header: const Text('ACCOUNT'),
@@ -159,12 +165,15 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 20),
         ],
       ),
     );
   }
 }
 ```
+
+For a non-scrollable body, use `SafeArea`—never calculate top/bottom padding from `MediaQuery.padding` or hard-code a bar height. With `extendBody: false`, `GlassScaffold` positions the body between the bars and removes those insets from its child `MediaQuery` to avoid double padding.
 
 ---
 
@@ -216,18 +225,23 @@ GlassModalSheet.show(
   halfSize: 0.5,
   peekSize: 90.0,
   builder: (sheetContext) {
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: const [
-        Text(
-          'Modal Sheet Content',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: ListView(
+        children: const [
+          SizedBox(height: 20),
+          Text(
+            'Modal Sheet Content',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
     );
   },
 );
 ```
+
+`GlassModalSheet` removes the screen's top inset because the sheet already starts below the status bar, reserves the drag-handle zone, and keeps the bottom inset while the large detent sinks behind the home indicator. Leave the sheet's `padding` null for a default scrollable, or use it only for extra visual spacing.
 
 ### GlassDialog
 Presents a native alert dialog:
@@ -458,6 +472,7 @@ GlassAppBar.pinned(
 - [ ] **Did you call `await LiquidGlassWidgets.initialize()` in `main()`?** Shaders must be pre-warmed.
 - [ ] **Did you wrap your app in `LiquidGlassWidgets.wrap()`?** Required for theme and accessibility scaling.
 - [ ] **Are you using `GlassScaffold` instead of `Scaffold`?** Prevents z-index glitches with glass nav bars.
+- [ ] **Did you give `CustomScrollView` a safe area?** `ListView` consumes body `MediaQuery` automatically; wrap `CustomScrollView` content in `SliverSafeArea` (or an equivalent sliver). Leave a leading `GlassLargeTitle` outside that wrapper because it owns the top inset. Never hard-code app-bar height or fixed bar clearance.
 - [ ] **Did you avoid nesting glass in glass?** Never put `GlassButton`, `GlassIconButton`, or a glass-mode `GlassChip` inside a `glass`-mode `GlassContainer.card` or `GlassGroupedSection`. Inside a `solid` card/section (`surfaceStyle: GlassSurfaceStyle.solid`), `GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl` are safe (their glass is transient) and `GlassChip` / `GlassTextField` / `GlassPicker` auto-inherit `solid`.
 - [ ] **Did you use `GlassTabBar.bottom` instead of `GlassBottomBar`?** `GlassBottomBar` is deleted.
 - [ ] **`GlassButton` uses `onTap`, not `onPressed`.** (`GlassButton(onTap: () {})`) — the opposite of `ElevatedButton`.

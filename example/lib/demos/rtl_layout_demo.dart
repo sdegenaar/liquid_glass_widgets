@@ -25,6 +25,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 import '../constants/glass_settings.dart';
+import 'package:liquid_glass_widgets_example/widgets/glass_safe_area_slivers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -77,8 +78,6 @@ class _RtlLayoutDemoState extends State<RtlLayoutDemo> {
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.of(context).padding.top;
-
     return Directionality(
       textDirection: _dir,
       child: GlassScaffold(
@@ -140,9 +139,6 @@ class _RtlLayoutDemoState extends State<RtlLayoutDemo> {
             // Hero: GlassLargeTitle — scale anchor is AlignmentDirectional.bottomStart
             // In RTL the rubber-band overscroll stretches from the physical right.
             // ------------------------------------------------------------------
-            SliverToBoxAdapter(
-              child: SizedBox(height: topPad + 44),
-            ),
             GlassLargeTitle(
               text: _isRtl ? 'تخطيط ي.م.' : 'RTL Widgets',
               controller: _titleController,
@@ -368,13 +364,12 @@ class _RtlLayoutDemoState extends State<RtlLayoutDemo> {
                           ),
                         ],
                       ),
-
-                      const SizedBox(height: 120),
                     ],
                   ),
                 ),
               ),
             ),
+            glassBottomSafeAreaSliver(),
           ],
         ),
       ),

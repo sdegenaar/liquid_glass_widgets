@@ -227,6 +227,11 @@ class GlassLargeTitleController extends ChangeNotifier {
 ///   matching iOS 26's `UINavigationBar` large-title elastic stretch.
 /// - **Self-measuring:** Reports rendered heights to the controller after
 ///   first layout — correct collapse timing under all Dynamic Type settings.
+/// - **Safe areas:** As the first sliver, it reads [MediaQueryData.padding]
+///   internally and reserves the status/chrome inset above the title, and adds
+///   the left/right insets to the title and search paddings so content stays
+///   clear of cutouts. Do not add a leading [SliverToBoxAdapter] spacer when
+///   this widget is present.
 /// - **iPhone Duo:** In the vertical bar strip ([GlassVerticalBar]) the title
 ///   leaves the scroll view for the title row at the top of the content, at
 ///   28pt in its large weight, where the [GlassAppBar.pinned] sharing the
@@ -279,9 +284,9 @@ class GlassLargeTitle extends StatefulWidget {
     this.fontSize = 34.0,
     this.fontWeight = FontWeight.w700,
     this.letterSpacing = -0.5,
-    this.padding = const EdgeInsetsDirectional.fromSTEB(24, 0, 24, 8),
+    this.padding = const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 8),
     this.searchBarPadding =
-        const EdgeInsetsDirectional.symmetric(horizontal: 16, vertical: 4),
+        const EdgeInsetsDirectional.symmetric(horizontal: 20, vertical: 4),
     this.color,
     this.trailing,
     super.key,
@@ -324,8 +329,12 @@ class GlassLargeTitle extends StatefulWidget {
   /// Accepts any [EdgeInsetsGeometry] — pass [EdgeInsetsDirectional] for
   /// correct RTL mirroring (e.g. `EdgeInsetsDirectional.only(start: 32)`).
   ///
-  /// Defaults to `EdgeInsetsDirectional.fromSTEB(24, 0, 24, 8)`, matching
-  /// the iOS 26 large-title insets (start=24, end=24, bottom=8).
+  /// Defaults to `EdgeInsetsDirectional.fromSTEB(20, 0, 20, 8)`, matching the
+  /// default horizontal padding of [GlassAppBar] so the title aligns with its
+  /// bar buttons.
+  ///
+  /// The current left/right [MediaQueryData.padding] is added automatically;
+  /// provide visual padding here only.
   final EdgeInsetsGeometry padding;
 
   /// Padding around the search bar, when [searchBar] is provided.
@@ -333,8 +342,11 @@ class GlassLargeTitle extends StatefulWidget {
   /// Accepts any [EdgeInsetsGeometry] — pass [EdgeInsetsDirectional] for
   /// correct RTL mirroring.
   ///
-  /// Defaults to `EdgeInsetsDirectional.symmetric(horizontal: 16, vertical: 4)`,
-  /// matching iOS 26's search bar insets under a large title.
+  /// Defaults to `EdgeInsetsDirectional.symmetric(horizontal: 20, vertical: 4)`,
+  /// matching the default horizontal padding of [GlassAppBar] so the search bar
+  /// aligns with its bar buttons.
+  ///
+  /// The current left/right [MediaQueryData.padding] is added automatically.
   final EdgeInsetsGeometry searchBarPadding;
 
   /// Title text colour. Defaults to [CupertinoColors.label] resolved from
@@ -613,67 +625,104 @@ class _GlassTitleSliverState extends State<GlassLargeTitle> {
     final searchFadeOut =
         Curves.easeIn.transform((1.0 - searchProgress).clamp(0.0, 1.0));
     final searchHeightFactor = (1.0 - searchProgress).clamp(0.0, 1.0);
+    // A CustomScrollView does not consume MediaQuery insets automatically.
+    // GlassLargeTitle is normally the first sliver, so it owns the system/chrome
+    // insets for itself. The top spacer scrolls with the title and is excluded
+    // from its stretch transform; the horizontal insets are folded into the
+    // title and search paddings so neither can enter a side cutout.
+    final mediaQueryPadding = MediaQuery.paddingOf(context);
+    final topSafeInset = mediaQueryPadding.top;
+    final titlePadding = _withHorizontalSafeInsets(
+      context,
+      widget.padding,
+      mediaQueryPadding,
+    );
+    final searchBarPadding = _withHorizontalSafeInsets(
+      context,
+      widget.searchBarPadding,
+      mediaQueryPadding,
+    );
 
     return SliverToBoxAdapter(
-      child: Transform.scale(
-        scale: stretchScale,
-        alignment: AlignmentDirectional.bottomStart,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ── Large title row ────────────────────────────────────────────
-            Padding(
-              key: _titleKey,
-              padding: widget.padding,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Text(
-                      widget.text,
-                      style: TextStyle(
-                        fontSize: widget.fontSize,
-                        fontWeight: widget.fontWeight,
-                        letterSpacing: widget.letterSpacing,
-                        color: effectiveColor.withValues(alpha: titleFadeOut),
-                        height: 1.1,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (topSafeInset > 0) SizedBox(height: topSafeInset),
+          Transform.scale(
+            scale: stretchScale,
+            alignment: AlignmentDirectional.bottomStart,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ── Large title row ────────────────────────────────────────
+                Padding(
+                  key: _titleKey,
+                  padding: titlePadding,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          widget.text,
+                          style: TextStyle(
+                            fontSize: widget.fontSize,
+                            fontWeight: widget.fontWeight,
+                            letterSpacing: widget.letterSpacing,
+                            color:
+                                effectiveColor.withValues(alpha: titleFadeOut),
+                            height: 1.1,
+                          ),
+                        ),
+                      ),
+                      if (widget.trailing != null) ...[
+                        const SizedBox(width: 8),
+                        Opacity(
+                          opacity: titleFadeOut,
+                          child: widget.trailing,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                // ── Search bar (Phase 2 collapse) ───────────────────────────
+                // Collapses height to zero via ClipRect + Align(heightFactor),
+                // then fades out — replicating UISearchController's collapse
+                // under the navigation bar after the large title scrolls away.
+                if (widget.searchBar != null)
+                  ClipRect(
+                    child: Align(
+                      heightFactor: searchHeightFactor,
+                      alignment: Alignment.topCenter,
+                      child: Opacity(
+                        opacity: searchFadeOut,
+                        child: Padding(
+                          key: _searchBarKey,
+                          padding: searchBarPadding,
+                          child: widget.searchBar,
+                        ),
                       ),
                     ),
                   ),
-                  if (widget.trailing != null) ...[
-                    const SizedBox(width: 8),
-                    Opacity(
-                      opacity: titleFadeOut,
-                      child: widget.trailing,
-                    ),
-                  ],
-                ],
-              ),
+              ],
             ),
-
-            // ── Search bar (Phase 2 collapse) ──────────────────────────────
-            // Collapses height to zero via ClipRect + Align(heightFactor),
-            // then fades out — replicating UISearchController's collapse
-            // under the navigation bar after the large title scrolls away.
-            if (widget.searchBar != null)
-              ClipRect(
-                child: Align(
-                  heightFactor: searchHeightFactor,
-                  alignment: Alignment.topCenter,
-                  child: Opacity(
-                    opacity: searchFadeOut,
-                    child: Padding(
-                      key: _searchBarKey,
-                      padding: widget.searchBarPadding,
-                      child: widget.searchBar,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
+          ),
+        ],
       ),
+    );
+  }
+
+  EdgeInsets _withHorizontalSafeInsets(
+    BuildContext context,
+    EdgeInsetsGeometry padding,
+    EdgeInsets mediaQueryPadding,
+  ) {
+    final resolved = padding.resolve(Directionality.of(context));
+    return resolved.copyWith(
+      left: resolved.left + mediaQueryPadding.left,
+      right: resolved.right + mediaQueryPadding.right,
     );
   }
 }

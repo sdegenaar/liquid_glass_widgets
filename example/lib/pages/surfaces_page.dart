@@ -2,6 +2,7 @@ import 'package:liquid_glass_widgets_example/constants/glass_settings.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:liquid_glass_widgets_example/widgets/glass_safe_area_slivers.dart';
 
 class SurfacesPage extends StatelessWidget {
   const SurfacesPage({super.key});
@@ -15,198 +16,187 @@ class SurfacesPage extends StatelessWidget {
           : GlassStatusBarStyle.dark,
       child: GlassScaffold(
         appBar: const GlassAppBar.pinned(),
-        body: GlassScrollEdgeEffect(
-          topFadeHeight: MediaQuery.paddingOf(context).top + 44 + 40,
-          fadeBottom: false,
-          child: CustomScrollView(
-            slivers: [
-              // Space for the app bar + safe area
-              SliverToBoxAdapter(
-                child: SizedBox(
-                  height: MediaQuery.paddingOf(context).top + 44,
+        body: CustomScrollView(
+          slivers: [
+            glassTopSafeAreaSliver(),
+            // ── Large page title (iOS 26 inline style) ──────────────
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                child: Text(
+                  'Surfaces',
+                  style: TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                    color: CupertinoColors.label.resolveFrom(context),
+                  ),
                 ),
               ),
-              // ── Large page title (iOS 26 inline style) ──────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(24, 0, 24, 16),
-                  child: Text(
-                    'Surfaces',
-                    style: TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.5,
-                      color: CupertinoColors.label.resolveFrom(context),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── GlassAppBar ──────────────────────────────────
+                    const _SectionTitle(title: 'GlassAppBar'),
+                    SizedBox(height: 8),
+                    Text(
+                      'The navigation bar at the top of this page is a live GlassAppBar with leading and title support.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: CupertinoColors.label
+                            .resolveFrom(context)
+                            .withValues(alpha: 0.7),
+                      ),
                     ),
-                  ),
+
+                    SizedBox(height: 40),
+
+                    // ── GlassBottomBar ───────────────────────────────
+                    const _SectionTitle(title: 'GlassBottomBar'),
+                    SizedBox(height: 8),
+                    Text(
+                      'Draggable jelly-physics tab bar with velocity snapping and per-tab glow colors.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: CupertinoColors.label
+                            .resolveFrom(context)
+                            .withValues(alpha: 0.7),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    _DemoLauncher(
+                      title: 'Launch Bottom Bar Demo',
+                      subtitle: 'Full-screen interactive experience',
+                      icon: CupertinoIcons.rectangle_dock,
+                      glowColor: CupertinoColors.activeBlue,
+                      onTap: () => Navigator.of(context).push(
+                        CupertinoPageRoute<void>(
+                          builder: (_) => const _BottomBarDemoPage(),
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: 40),
+
+                    // ── GlassSearchableBottomBar ─────────────────────
+                    const _SectionTitle(title: 'GlassSearchableBottomBar'),
+                    SizedBox(height: 8),
+                    Text(
+                      'Bottom bar with integrated search — tabs spring-collapse into pills when search activates.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: CupertinoColors.label
+                            .resolveFrom(context)
+                            .withValues(alpha: 0.7),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    _DemoLauncher(
+                      title: 'Launch Searchable Bar Demo',
+                      subtitle: 'Full-screen with search interaction',
+                      icon: CupertinoIcons.search,
+                      glowColor: CupertinoColors.systemPurple,
+                      onTap: () => Navigator.of(context).push(
+                        CupertinoPageRoute<void>(
+                          builder: (_) => const _SearchableBarDemoPage(),
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: 40),
+
+                    // ── GlassSegmentedControl / GlassTabBar (Inline) ────────
+                    const _SectionTitle(
+                        title: 'GlassTabBar (Inline) / GlassSegmentedControl'),
+                    SizedBox(height: 16),
+                    const _TabBarDemo(),
+
+                    SizedBox(height: 24),
+
+                    Text(
+                      'Labels Only',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: CupertinoColors.label
+                            .resolveFrom(context)
+                            .withValues(alpha: 0.9),
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    const _TabBarLabelExample(),
+                    SizedBox(height: 24),
+
+                    Text(
+                      'Icons Only',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: CupertinoColors.label
+                            .resolveFrom(context)
+                            .withValues(alpha: 0.9),
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    const _TabBarIconExample(),
+                    SizedBox(height: 24),
+
+                    Text(
+                      'Scrollable (Many Tabs)',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: CupertinoColors.label
+                            .resolveFrom(context)
+                            .withValues(alpha: 0.9),
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    const _TabBarScrollableExample(),
+
+                    SizedBox(height: 40),
+
+                    // ── GlassToolbar ─────────────────────────────────
+                    const _SectionTitle(title: 'GlassToolbar'),
+                    SizedBox(height: 16),
+                    GlassToolbar(
+                      height: 60,
+                      children: [
+                        GlassButton(
+                          icon: Icon(CupertinoIcons.share),
+                          onTap: () {},
+                          label: 'Share',
+                          width: 44,
+                          height: 44,
+                        ),
+                        const Spacer(),
+                        GlassButton(
+                          icon: Icon(CupertinoIcons.add),
+                          onTap: () {},
+                          label: 'Add',
+                          width: 44,
+                          height: 44,
+                        ),
+                        const Spacer(),
+                        GlassButton(
+                          icon: Icon(CupertinoIcons.trash),
+                          onTap: () {},
+                          label: 'Delete',
+                          width: 44,
+                          height: 44,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // ── GlassAppBar ──────────────────────────────────
-                      const _SectionTitle(title: 'GlassAppBar'),
-                      SizedBox(height: 8),
-                      Text(
-                        'The navigation bar at the top of this page is a live GlassAppBar with leading and title support.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: CupertinoColors.label
-                              .resolveFrom(context)
-                              .withValues(alpha: 0.7),
-                        ),
-                      ),
-
-                      SizedBox(height: 40),
-
-                      // ── GlassBottomBar ───────────────────────────────
-                      const _SectionTitle(title: 'GlassBottomBar'),
-                      SizedBox(height: 8),
-                      Text(
-                        'Draggable jelly-physics tab bar with velocity snapping and per-tab glow colors.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: CupertinoColors.label
-                              .resolveFrom(context)
-                              .withValues(alpha: 0.7),
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      _DemoLauncher(
-                        title: 'Launch Bottom Bar Demo',
-                        subtitle: 'Full-screen interactive experience',
-                        icon: CupertinoIcons.rectangle_dock,
-                        glowColor: CupertinoColors.activeBlue,
-                        onTap: () => Navigator.of(context).push(
-                          CupertinoPageRoute<void>(
-                            builder: (_) => const _BottomBarDemoPage(),
-                          ),
-                        ),
-                      ),
-
-                      SizedBox(height: 40),
-
-                      // ── GlassSearchableBottomBar ─────────────────────
-                      const _SectionTitle(title: 'GlassSearchableBottomBar'),
-                      SizedBox(height: 8),
-                      Text(
-                        'Bottom bar with integrated search — tabs spring-collapse into pills when search activates.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: CupertinoColors.label
-                              .resolveFrom(context)
-                              .withValues(alpha: 0.7),
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      _DemoLauncher(
-                        title: 'Launch Searchable Bar Demo',
-                        subtitle: 'Full-screen with search interaction',
-                        icon: CupertinoIcons.search,
-                        glowColor: CupertinoColors.systemPurple,
-                        onTap: () => Navigator.of(context).push(
-                          CupertinoPageRoute<void>(
-                            builder: (_) => const _SearchableBarDemoPage(),
-                          ),
-                        ),
-                      ),
-
-                      SizedBox(height: 40),
-
-                      // ── GlassSegmentedControl / GlassTabBar (Inline) ────────
-                      const _SectionTitle(
-                          title:
-                              'GlassTabBar (Inline) / GlassSegmentedControl'),
-                      SizedBox(height: 16),
-                      const _TabBarDemo(),
-
-                      SizedBox(height: 24),
-
-                      Text(
-                        'Labels Only',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: CupertinoColors.label
-                              .resolveFrom(context)
-                              .withValues(alpha: 0.9),
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      const _TabBarLabelExample(),
-                      SizedBox(height: 24),
-
-                      Text(
-                        'Icons Only',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: CupertinoColors.label
-                              .resolveFrom(context)
-                              .withValues(alpha: 0.9),
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      const _TabBarIconExample(),
-                      SizedBox(height: 24),
-
-                      Text(
-                        'Scrollable (Many Tabs)',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: CupertinoColors.label
-                              .resolveFrom(context)
-                              .withValues(alpha: 0.9),
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      const _TabBarScrollableExample(),
-
-                      SizedBox(height: 40),
-
-                      // ── GlassToolbar ─────────────────────────────────
-                      const _SectionTitle(title: 'GlassToolbar'),
-                      SizedBox(height: 16),
-                      GlassToolbar(
-                        height: 60,
-                        children: [
-                          GlassButton(
-                            icon: Icon(CupertinoIcons.share),
-                            onTap: () {},
-                            label: 'Share',
-                            width: 44,
-                            height: 44,
-                          ),
-                          const Spacer(),
-                          GlassButton(
-                            icon: Icon(CupertinoIcons.add),
-                            onTap: () {},
-                            label: 'Add',
-                            width: 44,
-                            height: 44,
-                          ),
-                          const Spacer(),
-                          GlassButton(
-                            icon: Icon(CupertinoIcons.trash),
-                            onTap: () {},
-                            label: 'Delete',
-                            width: 44,
-                            height: 44,
-                          ),
-                        ],
-                      ),
-
-                      SizedBox(height: 100),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+            glassBottomSafeAreaSliver(),
+          ],
         ),
       ),
     );
@@ -268,58 +258,56 @@ class _BottomBarDemoPageState extends State<_BottomBarDemoPage> {
           : GlassStatusBarStyle.dark,
       child: GlassScaffold(
         extendBody: true,
-        body: SafeArea(
-          bottom: false,
-          child: CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(24, 16, 24, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          GlassButton(
-                            icon: Icon(CupertinoIcons.back),
-                            onTap: () => Navigator.of(context).pop(),
-                            width: 40,
-                            height: 40,
-                            iconSize: 20,
-                          ),
-                          SizedBox(width: 16),
-                          Expanded(
-                            child: Text(
-                              _tabTitles[_selectedIndex],
-                              style: TextStyle(
-                                color:
-                                    CupertinoColors.label.resolveFrom(context),
-                                fontSize: 34,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: -0.5,
-                              ),
+        body: CustomScrollView(
+          slivers: [
+            glassTopSafeAreaSliver(),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(24, 16, 24, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        GlassButton(
+                          icon: Icon(CupertinoIcons.back),
+                          onTap: () => Navigator.of(context).pop(),
+                          width: 40,
+                          height: 40,
+                          iconSize: 20,
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            _tabTitles[_selectedIndex],
+                            style: TextStyle(
+                              color: CupertinoColors.label.resolveFrom(context),
+                              fontSize: 34,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.5,
                             ),
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: EdgeInsets.fromLTRB(24, 24, 24, 120),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) => _ContentRow(
-                      index: index,
-                      color: _tabColors[_selectedIndex],
+                        ),
+                      ],
                     ),
-                    childCount: 12,
-                  ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(24, 24, 24, 0),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => _ContentRow(
+                    index: index,
+                    color: _tabColors[_selectedIndex],
+                  ),
+                  childCount: 12,
+                ),
+              ),
+            ),
+            glassBottomSafeAreaSliver(),
+          ],
         ),
         bottomBar: GlassTabBar.bottom(
           selectedIndex: _selectedIndex,
@@ -396,143 +384,135 @@ class _SearchableBarDemoPageState extends State<_SearchableBarDemoPage> {
       child: GlassScaffold(
         extendBody: true,
         resizeToAvoidBottomInset: false,
-        body: Stack(
-          children: [
-            SafeArea(
-              bottom: false,
-              child: _isSearching
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
+        body: _isSearching
+            ? SafeArea(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(CupertinoIcons.search,
+                          color: CupertinoColors.label
+                              .resolveFrom(context)
+                              .withValues(alpha: 0.3),
+                          size: 64),
+                      SizedBox(height: 16),
+                      Text(
+                        'Search',
+                        style: TextStyle(
+                          color: CupertinoColors.label.resolveFrom(context),
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        'Type to search for anything.',
+                        style: TextStyle(
+                          color: CupertinoColors.label
+                              .resolveFrom(context)
+                              .withValues(alpha: 0.45),
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : CustomScrollView(
+                controller: _scrollController,
+                slivers: [
+                  glassTopSafeAreaSliver(),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(24, 16, 24, 0),
+                      child: Row(
                         children: [
-                          Icon(CupertinoIcons.search,
-                              color: CupertinoColors.label
-                                  .resolveFrom(context)
-                                  .withValues(alpha: 0.3),
-                              size: 64),
-                          SizedBox(height: 16),
-                          Text(
-                            'Search',
-                            style: TextStyle(
-                              color: CupertinoColors.label.resolveFrom(context),
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                            ),
+                          GlassButton(
+                            icon: Icon(CupertinoIcons.back),
+                            onTap: () => Navigator.of(context).pop(),
+                            width: 40,
+                            height: 40,
+                            iconSize: 20,
                           ),
-                          SizedBox(height: 6),
-                          Text(
-                            'Type to search for anything.',
-                            style: TextStyle(
-                              color: CupertinoColors.label
-                                  .resolveFrom(context)
-                                  .withValues(alpha: 0.45),
-                              fontSize: 15,
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              _tabTitles[_selectedIndex],
+                              style: TextStyle(
+                                color:
+                                    CupertinoColors.label.resolveFrom(context),
+                                fontSize: 34,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.5,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    )
-                  : CustomScrollView(
-                      controller: _scrollController,
-                      slivers: [
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: EdgeInsets.fromLTRB(24, 16, 24, 0),
-                            child: Row(
-                              children: [
-                                GlassButton(
-                                  icon: Icon(CupertinoIcons.back),
-                                  onTap: () => Navigator.of(context).pop(),
-                                  width: 40,
-                                  height: 40,
-                                  iconSize: 20,
-                                ),
-                                SizedBox(width: 16),
-                                Expanded(
-                                  child: Text(
-                                    _tabTitles[_selectedIndex],
-                                    style: TextStyle(
-                                      color: CupertinoColors.label
-                                          .resolveFrom(context),
-                                      fontSize: 34,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: -0.5,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        SliverPadding(
-                          padding: EdgeInsets.fromLTRB(24, 24, 24, 140),
-                          sliver: SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) => _ContentRow(
-                                index: index,
-                                color: const Color(0xFFAF52DE),
-                              ),
-                              childCount: 15,
-                            ),
-                          ),
-                        ),
-                      ],
                     ),
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: GlassTabBar.searchable(
-                selectedIndex: _selectedIndex,
-                isSearchActive: _isMiniMode || _isSearching,
-                onTabSelected: (i) {
-                  if (i == _selectedIndex && _isMiniMode) {
-                    if (_scrollController.hasClients) {
-                      _scrollController.animateTo(
-                        0,
-                        duration: const Duration(milliseconds: 400),
-                        curve: Curves.easeOutQuart,
-                      );
-                    }
-                    setState(() {
-                      _isMiniMode = false;
-                      _isSearching = false;
-                    });
-                  } else {
-                    setState(() {
-                      _selectedIndex = i;
-                      _isSearching = false;
-                    });
-                  }
-                },
-                quality: GlassQuality.premium,
-                searchConfig: GlassSearchBarConfig(
-                  hintText: 'Search...',
-                  showsCancelButton: true,
-                  expandWhenActive: !_isMiniMode || _isSearching,
-                  onSearchToggle: (active) {
-                    if (active) {
-                      setState(() => _isSearching = true);
-                    } else {
-                      setState(() => _isSearching = false);
-                      if (_isMiniMode) {
-                        if (_scrollController.hasClients) {
-                          _scrollController.animateTo(
-                            0,
-                            duration: const Duration(milliseconds: 400),
-                            curve: Curves.easeOutQuart,
-                          );
-                        }
-                        setState(() => _isMiniMode = false);
-                      }
-                    }
-                  },
-                ),
-                tabs: _tabs,
+                  ),
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(24, 24, 24, 0),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => _ContentRow(
+                          index: index,
+                          color: const Color(0xFFAF52DE),
+                        ),
+                        childCount: 15,
+                      ),
+                    ),
+                  ),
+                  glassBottomSafeAreaSliver(),
+                ],
               ),
-            ),
-          ],
+        bottomBar: GlassTabBar.searchable(
+          selectedIndex: _selectedIndex,
+          isSearchActive: _isMiniMode || _isSearching,
+          onTabSelected: (i) {
+            if (i == _selectedIndex && _isMiniMode) {
+              if (_scrollController.hasClients) {
+                _scrollController.animateTo(
+                  0,
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeOutQuart,
+                );
+              }
+              setState(() {
+                _isMiniMode = false;
+                _isSearching = false;
+              });
+            } else {
+              setState(() {
+                _selectedIndex = i;
+                _isSearching = false;
+              });
+            }
+          },
+          quality: GlassQuality.premium,
+          searchConfig: GlassSearchBarConfig(
+            hintText: 'Search...',
+            showsCancelButton: true,
+            expandWhenActive: !_isMiniMode || _isSearching,
+            onSearchToggle: (active) {
+              if (active) {
+                setState(() => _isSearching = true);
+              } else {
+                setState(() => _isSearching = false);
+                if (_isMiniMode) {
+                  if (_scrollController.hasClients) {
+                    _scrollController.animateTo(
+                      0,
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeOutQuart,
+                    );
+                  }
+                  setState(() => _isMiniMode = false);
+                }
+              }
+            },
+          ),
+          tabs: _tabs,
         ),
       ),
     );

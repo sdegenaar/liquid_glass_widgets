@@ -20,6 +20,7 @@ import 'package:flutter/services.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 import '../constants/sf_symbols.dart';
+import 'package:liquid_glass_widgets_example/widgets/glass_safe_area_slivers.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PALETTE  (matches iOS 26 dark Messages)
@@ -219,29 +220,20 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.paddingOf(context).top;
-    final botPad = MediaQuery.paddingOf(context).bottom;
-
     return GlassScaffold(
       background: ColoredBox(color: _kBg.resolveFrom(context)),
       statusBarStyle: CupertinoTheme.of(context).brightness == Brightness.dark
           ? GlassStatusBarStyle.light
           : GlassStatusBarStyle.dark,
-      appBarHeight: 52,
-      bottomBarHeight: 60,
       appBar: _NavBar(
-        topPad: topPad,
         titleController: _titleController,
         activeFilter: _activeFilter,
         onFilterChanged: (filter) => setState(() => _activeFilter = filter),
       ),
-      bottomBar: _SearchBar(bottomPad: botPad),
+      bottomBar: const _SearchBar(),
       body: CustomScrollView(
         controller: _titleController.scrollController,
         slivers: [
-          // Status bar space + nav bar height
-          SliverToBoxAdapter(child: SizedBox(height: topPad + 52)),
-
           // Large "Messages" title (collapses on scroll automatically)
           GlassLargeTitle(
             text: 'Messages',
@@ -258,9 +250,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
               childCount: _kConversations.length,
             ),
           ),
-
-          // Bottom padding — ensure last row scrolls above search bar.
-          SliverToBoxAdapter(child: SizedBox(height: 92 + botPad)),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );
@@ -271,18 +261,19 @@ class _MessagesScreenState extends State<MessagesScreen> {
 // NAV BAR
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _NavBar extends StatelessWidget {
+class _NavBar extends StatelessWidget implements PreferredSizeWidget {
   const _NavBar({
-    required this.topPad,
     required this.titleController,
     required this.activeFilter,
     required this.onFilterChanged,
   });
 
-  final double topPad;
   final GlassLargeTitleController titleController;
   final String activeFilter;
   final ValueChanged<String> onFilterChanged;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(52);
 
   @override
   Widget build(BuildContext context) {
@@ -609,8 +600,7 @@ class _Avatar extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _SearchBar extends StatefulWidget {
-  const _SearchBar({required this.bottomPad});
-  final double bottomPad;
+  const _SearchBar();
 
   @override
   State<_SearchBar> createState() => _SearchBarState();
@@ -650,68 +640,67 @@ class _SearchBarState extends State<_SearchBar> {
         // AdaptiveLiquidGlassLayer provides the rendering context.
         // LiquidGlassBlendGroup inside makes the search pill and circle button
         // liquid-merge when they are close together — matching native iOS 26.
-        Padding(
-          // Bottom padding: when there is a large safe-area inset (iOS home indicator)
-          // we subtract 8 so the bar sits at the desired visual height (26px).
-          // On devices with small or no insets (Android gesture nav, iPhone SE),
-          // a minimum padding of 32 ensures it's not too close to the bottom edge.
-          padding: EdgeInsets.fromLTRB(
-              12, 8, 12, widget.bottomPad > 32 ? widget.bottomPad - 8 : 32),
-          child: AdaptiveLiquidGlassLayer(
-            quality: GlassQuality.premium,
-            blendAmount: 20,
-            child: LiquidGlassBlendGroup(
-              blend: 14,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Search pill
-                  Expanded(
-                    child: GlassSearchBar(
-                      focusNode: _focusNode,
-                      placeholder: 'Search',
-                      useOwnLayer:
-                          isLight, // joins blend group in dark, separates in light to show shadow
-                      quality: GlassQuality.premium,
-                      showsCancelButton: true,
-                      height: 48,
-                      onChanged: (_) {},
-                      onCancel: () {},
+        SafeArea(
+          top: false,
+          minimum: const EdgeInsets.only(bottom: 16),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: AdaptiveLiquidGlassLayer(
+              quality: GlassQuality.premium,
+              blendAmount: 20,
+              child: LiquidGlassBlendGroup(
+                blend: 14,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Search pill
+                    Expanded(
+                      child: GlassSearchBar(
+                        focusNode: _focusNode,
+                        placeholder: 'Search',
+                        useOwnLayer:
+                            isLight, // joins blend group in dark, separates in light to show shadow
+                        quality: GlassQuality.premium,
+                        showsCancelButton: true,
+                        height: 48,
+                        onChanged: (_) {},
+                        onCancel: () {},
+                      ),
                     ),
-                  ),
 
-                  // Compose circle
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeInOutCubic,
-                    child: AnimatedOpacity(
-                      opacity: !_isFocused ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 180),
-                      child: !_isFocused
-                          ? Padding(
-                              padding: EdgeInsets.only(left: 10),
-                              child: GlassButton(
-                                onTap: () {},
-                                width: 48,
-                                height: 48,
-                                shape: const LiquidOval(),
-                                quality: GlassQuality.premium,
-                                useOwnLayer: isLight,
-                                stretch: 0.25,
-                                // Light mode: higher ambient so pressed state stays visible.
-                                ambientBaseLight: isLight ? 0.25 : 0.08,
-                                icon: Icon(
-                                  SFSymbols.square_and_pencil,
-                                  color: CupertinoColors.label
-                                      .resolveFrom(context),
-                                  size: 26, // Increased from 22
+                    // Compose circle
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOutCubic,
+                      child: AnimatedOpacity(
+                        opacity: !_isFocused ? 1.0 : 0.0,
+                        duration: const Duration(milliseconds: 180),
+                        child: !_isFocused
+                            ? Padding(
+                                padding: EdgeInsets.only(left: 10),
+                                child: GlassButton(
+                                  onTap: () {},
+                                  width: 48,
+                                  height: 48,
+                                  shape: const LiquidOval(),
+                                  quality: GlassQuality.premium,
+                                  useOwnLayer: isLight,
+                                  stretch: 0.25,
+                                  // Light mode: higher ambient so pressed state stays visible.
+                                  ambientBaseLight: isLight ? 0.25 : 0.08,
+                                  icon: Icon(
+                                    SFSymbols.square_and_pencil,
+                                    color: CupertinoColors.label
+                                        .resolveFrom(context),
+                                    size: 26, // Increased from 22
+                                  ),
                                 ),
-                              ),
-                            )
-                          : const SizedBox.shrink(),
+                              )
+                            : const SizedBox.shrink(),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

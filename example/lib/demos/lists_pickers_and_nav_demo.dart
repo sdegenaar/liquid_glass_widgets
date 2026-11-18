@@ -256,46 +256,63 @@ class _ListsPickersAndNavDemoPageState
     final labelColor = CupertinoColors.label.resolveFrom(context);
     return Stack(
       children: [
-        ListView(
-          key: ValueKey(title),
-          controller: _scroll,
-          padding: const EdgeInsets.fromLTRB(16, 118, 16, 140),
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 34,
-                  fontWeight: FontWeight.w700,
-                  height: 1.2,
-                  color: labelColor,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: ListView(
+            key: ValueKey(title),
+            controller: _scroll,
+            children: [
+              const SizedBox(height: 60),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w700,
+                    height: 1.2,
+                    color: labelColor,
+                  ),
                 ),
               ),
-            ),
-            ...children,
-          ],
+              ...children,
+            ],
+          ),
         ),
         if (onExitDemo != null)
           Positioned(
-            top: 60,
+            top: 0,
             left: 16,
-            child: GlassIconButton(
-              size: 44,
-              useOwnLayer: true,
-              icon: Icon(
-                CupertinoIcons.chevron_left,
-                size: 20,
-                color: labelColor,
+            child: SafeArea(
+              bottom: false,
+              right: false,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: GlassIconButton(
+                  size: 44,
+                  useOwnLayer: true,
+                  icon: Icon(
+                    CupertinoIcons.chevron_left,
+                    size: 20,
+                    color: labelColor,
+                  ),
+                  onPressed: onExitDemo,
+                ),
               ),
-              onPressed: onExitDemo,
             ),
           ),
         if (trailing != null)
           Positioned(
-            top: 60,
+            top: 0,
             right: 16,
-            child: trailing,
+            child: SafeArea(
+              bottom: false,
+              left: false,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: trailing,
+              ),
+            ),
           ),
       ],
     );

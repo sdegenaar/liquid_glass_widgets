@@ -349,30 +349,33 @@ class _ScenarioExtraButtonState extends State<_ScenarioExtraButton> {
           left: 0,
           right: 0,
           bottom: 0,
-          child: GlassTabBar.searchable(
-            selectedIndex: _selectedIndex,
-            isSearchActive: _searching,
-            searchBarHeight: widget.config.searchBarHeight,
-            tabPillAnchor: widget.config.tabPillAnchor,
-            onTabSelected: (i) => setState(() {
-              _selectedIndex = i;
-              _searching = false;
-            }),
-            quality: GlassQuality.premium,
-            extraButton: GlassTabBarExtraButton(
-              icon: Icon(CupertinoIcons.plus),
-              label: 'Add',
-              onTap: () {},
-              size: 64,
-              position: widget.position,
-              collapseOnSearchFocus: _collapseOnSearchFocus,
+          child: SafeArea(
+            top: false,
+            child: GlassTabBar.searchable(
+              selectedIndex: _selectedIndex,
+              isSearchActive: _searching,
+              searchBarHeight: widget.config.searchBarHeight,
+              tabPillAnchor: widget.config.tabPillAnchor,
+              onTabSelected: (i) => setState(() {
+                _selectedIndex = i;
+                _searching = false;
+              }),
+              quality: GlassQuality.premium,
+              extraButton: GlassTabBarExtraButton(
+                icon: Icon(CupertinoIcons.plus),
+                label: 'Add',
+                onTap: () {},
+                size: 64,
+                position: widget.position,
+                collapseOnSearchFocus: _collapseOnSearchFocus,
+              ),
+              searchConfig: GlassSearchBarConfig(
+                hintText: 'Search',
+                showsCancelButton: widget.config.showsCancelButton,
+                onSearchToggle: (v) => setState(() => _searching = v),
+              ),
+              tabs: _kTabs,
             ),
-            searchConfig: GlassSearchBarConfig(
-              hintText: 'Search',
-              showsCancelButton: widget.config.showsCancelButton,
-              onSearchToggle: (v) => setState(() => _searching = v),
-            ),
-            tabs: _kTabs,
           ),
         ),
       ],
@@ -454,22 +457,25 @@ class _ScenarioSpringDesyncState extends State<_ScenarioSpringDesync> {
           left: 0,
           right: 0,
           bottom: 0,
-          child: GlassTabBar.searchable(
-            selectedIndex: _selectedIndex,
-            isSearchActive: _searching,
-            searchBarHeight: widget.config.searchBarHeight,
-            tabPillAnchor: widget.config.tabPillAnchor,
-            onTabSelected: (i) => setState(() {
-              _selectedIndex = i;
-              _searching = false;
-            }),
-            quality: GlassQuality.premium,
-            searchConfig: GlassSearchBarConfig(
-              hintText: 'Search',
-              showsCancelButton: widget.config.showsCancelButton,
-              onSearchToggle: (v) => setState(() => _searching = v),
+          child: SafeArea(
+            top: false,
+            child: GlassTabBar.searchable(
+              selectedIndex: _selectedIndex,
+              isSearchActive: _searching,
+              searchBarHeight: widget.config.searchBarHeight,
+              tabPillAnchor: widget.config.tabPillAnchor,
+              onTabSelected: (i) => setState(() {
+                _selectedIndex = i;
+                _searching = false;
+              }),
+              quality: GlassQuality.premium,
+              searchConfig: GlassSearchBarConfig(
+                hintText: 'Search',
+                showsCancelButton: widget.config.showsCancelButton,
+                onSearchToggle: (v) => setState(() => _searching = v),
+              ),
+              tabs: _kTabs,
             ),
-            tabs: _kTabs,
           ),
         ),
       ],
@@ -528,24 +534,27 @@ class _ScenarioPaddingFlickerState extends State<_ScenarioPaddingFlicker> {
           left: 0,
           right: 0,
           bottom: 0,
-          child: GlassTabBar.searchable(
-            selectedIndex: _selectedIndex,
-            isSearchActive: _searching,
-            horizontalPadding: hPad,
-            verticalPadding: vPad,
-            searchBarHeight: widget.config.searchBarHeight,
-            tabPillAnchor: widget.config.tabPillAnchor,
-            onTabSelected: (i) => setState(() {
-              _selectedIndex = i;
-              _searching = false;
-            }),
-            quality: GlassQuality.premium,
-            searchConfig: GlassSearchBarConfig(
-              hintText: 'Search',
-              showsCancelButton: widget.config.showsCancelButton,
-              onSearchToggle: (v) => setState(() => _searching = v),
+          child: SafeArea(
+            top: false,
+            child: GlassTabBar.searchable(
+              selectedIndex: _selectedIndex,
+              isSearchActive: _searching,
+              horizontalPadding: hPad,
+              verticalPadding: vPad,
+              searchBarHeight: widget.config.searchBarHeight,
+              tabPillAnchor: widget.config.tabPillAnchor,
+              onTabSelected: (i) => setState(() {
+                _selectedIndex = i;
+                _searching = false;
+              }),
+              quality: GlassQuality.premium,
+              searchConfig: GlassSearchBarConfig(
+                hintText: 'Search',
+                showsCancelButton: widget.config.showsCancelButton,
+                onSearchToggle: (v) => setState(() => _searching = v),
+              ),
+              tabs: _kTabs,
             ),
-            tabs: _kTabs,
           ),
         ),
       ],

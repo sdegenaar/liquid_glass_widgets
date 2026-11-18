@@ -88,6 +88,39 @@ void main() {
     });
   });
 
+  group('GlassTabBar — shared safe padding defaults', () {
+    test('every placement defaults to 20pt around the glass', () {
+      final bars = <GlassTabBar>[
+        GlassTabBar.bottom(
+          tabs: [_tab('Home'), _tab('Profile')],
+          selectedIndex: 0,
+          onTabSelected: (_) {},
+        ),
+        GlassTabBar.inline(
+          tabs: [_tab('Home'), _tab('Profile')],
+          selectedIndex: 0,
+          onTabSelected: (_) {},
+        ),
+        GlassTabBar.searchable(
+          tabs: [_tab('Home'), _tab('Profile')],
+          selectedIndex: 0,
+          onTabSelected: (_) {},
+          searchConfig: GlassSearchBarConfig(onSearchToggle: (_) {}),
+        ),
+        GlassTabBar.minimizable(
+          tabs: [_tab('Home'), _tab('Profile')],
+          selectedIndex: 0,
+          onTabSelected: (_) {},
+        ),
+      ];
+
+      for (final bar in bars) {
+        expect(bar.horizontalPadding, 20);
+        expect(bar.verticalPadding, 20);
+      }
+    });
+  });
+
   // -------------------------------------------------------------------------
   // GlassTabBar.bottom() — rendering
   // -------------------------------------------------------------------------

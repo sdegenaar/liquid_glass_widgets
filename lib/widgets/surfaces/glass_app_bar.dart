@@ -109,13 +109,12 @@ class GlassAppBar extends StatelessWidget
     // Whitelisted: Structural transparent default, not a Material colour.
     this.backgroundColor = const Color(0x00000000),
     this.toolbarHeight = 44.0,
-    this.padding = const EdgeInsets.symmetric(horizontal: 8),
+    this.padding = const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
     this.buttonSettings,
     this.largeTitleController,
     this.bottom,
     this.groupBackdrop = true,
   })  : pinnedActions = null,
-        _explicitPinnedPadding = null,
         pinnedLeading = const <GlassBarItem>[],
         pinnedBackButton = true,
         pinnedLeadingItemsSupplementBackButton = false,
@@ -164,8 +163,8 @@ class GlassAppBar extends StatelessWidget
     this.bottom,
     this.groupBackdrop = true,
   })  : assert(buttonSize == null || buttonSize > 0),
-        padding = padding ?? const EdgeInsets.symmetric(horizontal: 8),
-        _explicitPinnedPadding = padding,
+        padding =
+            padding ?? const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         pinnedActions = actions,
         pinnedLeading = leading,
         pinnedBackButton = backButton,
@@ -222,7 +221,8 @@ class GlassAppBar extends StatelessWidget
   /// Typically a [TabBar]. Must implement [PreferredSizeWidget] so the
   /// scaffold can measure the total bar height correctly.
   ///
-  /// When non-null, [preferredSize] is `toolbarHeight + bottom.preferredSize.height`.
+  /// When non-null, [preferredSize] includes this widget's height in addition
+  /// to the resolved toolbar padding.
   final PreferredSizeWidget? bottom;
 
   /// Trailing bar items declared as data, pinned above the [Navigator] by an
@@ -268,10 +268,16 @@ class GlassAppBar extends StatelessWidget
   /// router-specific pop instead, such as `context.pop()`.
   final VoidCallback? onBack;
 
-  /// The total preferred size of the app bar (toolbar + bottom widget).
+  /// The total preferred size of the app bar.
+  ///
+  /// Includes vertical [padding], the effective toolbar row and [bottom], but
+  /// excludes the system status-bar inset. `GlassScaffold` adds that inset once
+  /// when deriving the body's top safe area.
   @override
   Size get preferredSize => Size.fromHeight(
-        _effectiveToolbarHeight + (bottom?.preferredSize.height ?? 0.0),
+        padding.resolve(TextDirection.ltr).vertical +
+            _effectiveToolbarHeight +
+            (bottom?.preferredSize.height ?? 0.0),
       );
 
   /// Whether this app bar fully obstructs the content behind it.
@@ -285,15 +291,22 @@ class GlassAppBar extends StatelessWidget
 
   /// Padding around the app bar content.
   ///
+  /// Defaults to `EdgeInsets.symmetric(horizontal: 20, vertical: 10)`. The
+  /// platform top, left and right safe insets from [MediaQueryData.padding] are
+  /// added automatically, regardless of this value. The bottom safe inset is
+  /// not added because the bottom edge of the bar is not a screen edge.
+  ///
+  /// Vertical padding contributes to [preferredSize], so changing it also
+  /// updates the body inset published by `GlassScaffold`.
+  ///
+  /// Under a [GlassScaffold] with `extendBody: true`, the bar's complete
+  /// rendered height is published through the body's [MediaQueryData.padding],
+  /// so [ListView] and `GlassLargeTitle` start clear of the app bar.
+  ///
   /// A [GlassAppBar.pinned] bar in iPhone Duo's vertical bar strip lays its
   /// title row out to [GlassVerticalBarMetrics] instead, so it lines up with
   /// the chrome the shell draws there.
   final EdgeInsetsGeometry padding;
-
-  /// The [padding] a [GlassAppBar.pinned] caller passed explicitly, or null
-  /// when the default applies. Only an explicit value overrides the shell's
-  /// own horizontal inset for the pinned chrome.
-  final EdgeInsetsGeometry? _explicitPinnedPadding;
 
   /// Default glass settings for buttons inside this app bar.
   ///
@@ -346,18 +359,18 @@ class GlassAppBar extends StatelessWidget
     // host them. Until then — and whenever there is no shell — this bar draws
     // them itself, so a screen renders correctly either way.
     if (pinnedActions != null) {
-      final explicit = _explicitPinnedPadding;
-      final double? customInset;
-      if (explicit == null) {
-        customInset = null;
-      } else {
-        // The chrome insets both sides equally; the leading edge wins so an
-        // asymmetric padding still lines the back button up where asked.
-        final resolved = explicit.resolve(Directionality.of(context));
-        customInset = Directionality.of(context) == TextDirection.rtl
-            ? resolved.right
-            : resolved.left;
-      }
+      final textDirection = Directionality.of(context);
+      final resolvedPadding = padding.resolve(textDirection);
+      final mediaQueryPadding = MediaQuery.paddingOf(context);
+      final leadingSafeInset = textDirection == TextDirection.rtl
+          ? mediaQueryPadding.right
+          : mediaQueryPadding.left;
+      // The chrome insets both sides equally; the leading edge wins so an
+      // asymmetric padding still lines the back button up where asked.
+      final customInset = (textDirection == TextDirection.rtl
+              ? resolvedPadding.right
+              : resolvedPadding.left) +
+          leadingSafeInset;
       return GlassPinnedBarChrome(
         leading: pinnedLeading,
         actions: pinnedActions!,
@@ -369,6 +382,7 @@ class GlassAppBar extends StatelessWidget
         toolbarHeight: _effectiveToolbarHeight,
         buttonSettings: buttonSettings,
         horizontalInset: customInset,
+        verticalInset: resolvedPadding.top,
         largeTitleController: largeTitleController,
         builder: (context, chrome) => _buildBar(context, chrome: chrome),
       );
@@ -398,30 +412,48 @@ class GlassAppBar extends StatelessWidget
     // bar's row instead, beside the status cluster, the title leading.
     final statusRow = chrome == null ? null : StatusBarRow.of(context);
     final inRow = verticalBar != null || statusRow != null;
+    final textDirection = Directionality.of(context);
+    final baseContentPadding = statusRow != null
+        ? EdgeInsets.only(
+            left: statusRow.left,
+            right: statusRow.right,
+            top: statusRow.top,
+          )
+        : verticalBar == null
+            ? padding
+            : verticalBar.edge == GlassVerticalBarEdge.trailing
+                ? EdgeInsetsDirectional.only(
+                    start: verticalBar.titleInset,
+                    end: GlassVerticalBarMetrics.rowInset,
+                    top: verticalBar.rowTop,
+                  )
+                : EdgeInsetsDirectional.only(
+                    start: GlassVerticalBarMetrics.rowInset,
+                    end: verticalBar.titleInset,
+                    top: verticalBar.rowTop,
+                  );
 
-    Widget toolbarRow = SafeArea(
-      top: statusRow == null,
-      bottom: false,
+    // Keep content clear of the status bar and side cutouts even when callers
+    // deliberately pass zero or very small padding. Bottom is excluded because
+    // the app bar does not sit against the screen's bottom edge.
+    final mediaQueryPadding = MediaQuery.paddingOf(context);
+    final contentPadding = baseContentPadding.resolve(textDirection).add(
+          EdgeInsets.only(
+            left: mediaQueryPadding.left,
+            top: statusRow == null ? mediaQueryPadding.top : 0.0,
+            right: mediaQueryPadding.right,
+          ),
+        );
+
+    // Match SafeArea's consumption semantics for descendants while applying
+    // the inset together with the configured padding above.
+    Widget toolbarRow = MediaQuery.removePadding(
+      context: context,
+      removeTop: statusRow == null,
+      removeLeft: true,
+      removeRight: true,
       child: Padding(
-        padding: statusRow != null
-            ? EdgeInsets.only(
-                left: statusRow.left,
-                right: statusRow.right,
-                top: statusRow.top,
-              )
-            : verticalBar == null
-                ? padding
-                : verticalBar.edge == GlassVerticalBarEdge.trailing
-                    ? EdgeInsetsDirectional.only(
-                        start: verticalBar.titleInset,
-                        end: GlassVerticalBarMetrics.rowInset,
-                        top: verticalBar.rowTop,
-                      )
-                    : EdgeInsetsDirectional.only(
-                        start: GlassVerticalBarMetrics.rowInset,
-                        end: verticalBar.titleInset,
-                        top: verticalBar.rowTop,
-                      ),
+        padding: contentPadding,
         child: SizedBox(
           height: inRow
               ? GlassVerticalBarMetrics.rowHeight
@@ -429,7 +461,7 @@ class GlassAppBar extends StatelessWidget
           child: CustomMultiChildLayout(
             delegate: _ToolbarLayout(
               centerTitle: centerTitle && !inRow,
-              textDirection: Directionality.of(context),
+              textDirection: textDirection,
               pinned: chrome != null,
             ),
             children: [

@@ -167,6 +167,94 @@ void main() {
       expect(find.text('Chats'), findsOneWidget);
     });
 
+    testWidgets('reserves the top MediaQuery inset internally', (tester) async {
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: MediaQuery(
+            data: const MediaQueryData(
+              size: Size(400, 800),
+              padding: EdgeInsets.only(top: 40),
+            ),
+            child: CupertinoPageScaffold(
+              child: CustomScrollView(
+                controller: controller.scrollController,
+                slivers: [
+                  GlassLargeTitle(text: 'Safe Title', controller: controller),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        tester.getTopLeft(find.text('Safe Title')).dy,
+        closeTo(40, 0.5),
+        reason: 'GlassLargeTitle owns the first-sliver top safe area',
+      );
+    });
+
+    testWidgets('adds horizontal MediaQuery insets to title and search',
+        (tester) async {
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: MediaQuery(
+            data: const MediaQueryData(
+              size: Size(400, 800),
+              padding: EdgeInsets.fromLTRB(30, 40, 20, 0),
+            ),
+            child: CupertinoPageScaffold(
+              child: CustomScrollView(
+                controller: controller.scrollController,
+                slivers: [
+                  GlassLargeTitle(
+                    text: 'Safe Title',
+                    controller: controller,
+                    searchBar: const SizedBox(
+                      key: Key('safe-search'),
+                      height: 44,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        tester.getTopLeft(find.text('Safe Title')).dx,
+        closeTo(30 + 20, 0.5),
+        reason: 'title padding must include the left safe inset',
+      );
+      final titlePadding = tester
+          .widget<Padding>(
+            find
+                .descendant(
+                  of: find.byType(GlassLargeTitle),
+                  matching: find.byType(Padding),
+                )
+                .first,
+          )
+          .padding
+          .resolve(TextDirection.ltr);
+      expect(titlePadding.left, 30 + 20);
+      expect(titlePadding.right, 20 + 20);
+
+      final searchPaddings = tester
+          .widgetList<Padding>(
+            find.ancestor(
+              of: find.byKey(const Key('safe-search')),
+              matching: find.byType(Padding),
+            ),
+          )
+          .map((padding) => padding.padding.resolve(TextDirection.ltr));
+      expect(
+        searchPaddings,
+        contains(const EdgeInsets.fromLTRB(30 + 20, 4, 20 + 20, 4)),
+      );
+    });
+
     testWidgets('is fully opaque at 0 scroll offset', (tester) async {
       await tester.pumpWidget(buildTestApp(
         child: CustomScrollView(
@@ -510,25 +598,47 @@ void main() {
 
     // ── 2. Default padding resolves symmetrically ──────────────────────────
 
-    testWidgets('default padding resolves to 24 on both sides in LTR',
+    testWidgets('default padding resolves to 20 on both sides in LTR',
         (tester) async {
       final widget = GlassLargeTitle(text: 'T', controller: controller);
       final resolved = widget.padding.resolve(TextDirection.ltr);
-      expect(resolved.left, 24.0);
-      expect(resolved.right, 24.0);
+      expect(resolved.left, 20.0);
+      expect(resolved.right, 20.0);
       expect(resolved.top, 0.0);
       expect(resolved.bottom, 8.0);
     });
 
-    testWidgets('default padding resolves to 24 on both sides in RTL',
+    testWidgets('default padding resolves to 20 on both sides in RTL',
         (tester) async {
-      // start=24 → physical right; end=24 → physical left under RTL.
-      // Both sides are 24 so visual result is symmetric — but the directional
+      // start=20 → physical right; end=20 → physical left under RTL.
+      // Both sides are 20 so visual result is symmetric — but the directional
       // contract is correct (start is the logical leading edge).
       final widget = GlassLargeTitle(text: 'T', controller: controller);
       final resolved = widget.padding.resolve(TextDirection.rtl);
-      expect(resolved.right, 24.0, reason: 'start(24) → physical right in RTL');
-      expect(resolved.left, 24.0, reason: 'end(24) → physical left in RTL');
+      expect(resolved.right, 20.0, reason: 'start(20) → physical right in RTL');
+      expect(resolved.left, 20.0, reason: 'end(20) → physical left in RTL');
+    });
+
+    testWidgets('default title and search bar padding match GlassAppBar',
+        (tester) async {
+      final widget = GlassLargeTitle(
+        text: 'T',
+        controller: controller,
+        searchBar: const SizedBox(),
+      );
+      final appBarPadding = const GlassAppBar().padding.resolve(
+            TextDirection.ltr,
+          );
+      final titlePadding = widget.padding.resolve(TextDirection.ltr);
+      final searchBarPadding =
+          widget.searchBarPadding.resolve(TextDirection.ltr);
+
+      expect(titlePadding.left, appBarPadding.left);
+      expect(titlePadding.right, appBarPadding.right);
+      expect(searchBarPadding.left, appBarPadding.left);
+      expect(searchBarPadding.right, appBarPadding.right);
+      expect(searchBarPadding.top, 4.0);
+      expect(searchBarPadding.bottom, 4.0);
     });
 
     // ── 3. Custom asymmetric EdgeInsetsDirectional padding ─────────────────

@@ -22,6 +22,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets_example/widgets/glass_safe_area_slivers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -245,18 +246,17 @@ class _DemoHomeState extends State<_DemoHome> {
       controller: controller,
       reverse: reverse,
       slivers: [
-        if (!reverse)
-          SliverSafeArea(
-            sliver: SliverToBoxAdapter(child: _buildControls()),
-          ),
+        if (reverse) glassBottomSafeAreaSliver() else glassTopSafeAreaSliver(),
+        if (!reverse) SliverToBoxAdapter(child: _buildControls()),
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 160),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
           sliver: SliverList.separated(
             itemCount: itemCount,
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, i) => _ContentCard(index: i),
           ),
         ),
+        if (reverse) glassTopSafeAreaSliver() else glassBottomSafeAreaSliver(),
       ],
     );
 

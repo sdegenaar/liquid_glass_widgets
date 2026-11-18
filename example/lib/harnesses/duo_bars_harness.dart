@@ -62,6 +62,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets_example/widgets/glass_safe_area_slivers.dart';
 
 /// `KEY=value` lines from `tmp/duo_harness.env` in the app's data container.
 ///
@@ -931,22 +932,12 @@ class _LargeTitleRowsState extends State<_LargeTitleRows> {
 
   @override
   Widget build(BuildContext context) {
-    final padding = MediaQuery.paddingOf(context);
     final vertical = GlassVerticalBar.maybeOf(context) != null;
     return DefaultButtonSettings(
       settings: _glass,
       child: CustomScrollView(
         controller: widget.controller.scrollController,
         slivers: [
-          // Clears a horizontal navigation bar, which in the status bar's row
-          // takes no room below the inset. The strip's title row is the large
-          // title's own to place.
-          if (!vertical)
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: padding.top + (_barInStatusRow(context) ? 0 : 44),
-              ),
-            ),
           GlassLargeTitle(
             text: widget.title,
             controller: widget.controller,
@@ -977,6 +968,7 @@ class _LargeTitleRowsState extends State<_LargeTitleRows> {
               ),
             ),
           ),
+          glassBottomSafeAreaSliver(),
         ],
       ),
     );

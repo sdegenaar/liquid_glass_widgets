@@ -195,11 +195,11 @@ class _IndicatorParityDemoPageState extends State<IndicatorParityDemoPage> {
           ),
 
           // ── Scrollable content ────────────────────────────────────────────
-          SafeArea(
-            bottom: false,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ListView(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 240),
               children: [
+                const SizedBox(height: 16),
                 // Title
                 Text(
                   'Indicator Parity',

@@ -419,17 +419,23 @@ void main() {
         GlassNavigationPath path, {
         TextDirection direction = TextDirection.ltr,
         Widget? root,
+        EdgeInsets mediaQueryPadding = EdgeInsets.zero,
       }) {
         return CupertinoApp(
           builder: (context, child) =>
               Directionality(textDirection: direction, child: child!),
-          home: GlassNavigationStack(
-            path: path,
-            destinations: {String: detail},
-            root: root ??
-                const CupertinoPageScaffold(
-                  child: Center(child: Text('Root')),
-                ),
+          home: Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(padding: mediaQueryPadding),
+              child: GlassNavigationStack(
+                path: path,
+                destinations: {String: detail},
+                root: root ??
+                    const CupertinoPageScaffold(
+                      child: Center(child: Text('Root')),
+                    ),
+              ),
+            ),
           ),
         );
       }
@@ -536,27 +542,34 @@ void main() {
           WidgetTester tester, {
           EdgeInsetsGeometry? padding,
           TextDirection direction = TextDirection.ltr,
+          EdgeInsets mediaQueryPadding = EdgeInsets.zero,
         }) async {
           final path = GlassNavigationPath();
           await tester.pumpWidget(
             CupertinoApp(
               builder: (context, child) =>
                   Directionality(textDirection: direction, child: child!),
-              home: GlassNavigationStack(
-                path: path,
-                destinations: {
-                  String: (context, v) => CupertinoPageScaffold(
-                        child: Column(
-                          children: [
-                            GlassAppBar.pinned(
-                              title: const Text('Detail'),
-                              padding: padding,
+              home: Builder(
+                builder: (context) => MediaQuery(
+                  data: MediaQuery.of(context)
+                      .copyWith(padding: mediaQueryPadding),
+                  child: GlassNavigationStack(
+                    path: path,
+                    destinations: {
+                      String: (context, v) => CupertinoPageScaffold(
+                            child: Column(
+                              children: [
+                                GlassAppBar.pinned(
+                                  title: const Text('Detail'),
+                                  padding: padding,
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                },
-                root: const CupertinoPageScaffold(child: Text('Root')),
+                          ),
+                    },
+                    root: const CupertinoPageScaffold(child: Text('Root')),
+                  ),
+                ),
               ),
             ),
           );
@@ -568,15 +581,25 @@ void main() {
         final defaultX = await backButtonX(tester);
         final wideX = await backButtonX(
           tester,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 28),
         );
-        // An explicit 8 is the same as the default, not "unset".
-        final eightX = await backButtonX(
+        // An explicit 20 is the same as the default, not "unset".
+        final defaultPaddingX = await backButtonX(
           tester,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
         );
         expect(wideX - defaultX, closeTo(8, 0.01));
-        expect(eightX, closeTo(defaultX, 0.01));
+        expect(defaultPaddingX, closeTo(defaultX, 0.01));
+
+        final safeAreaX = await backButtonX(
+          tester,
+          mediaQueryPadding: const EdgeInsets.only(left: 24, right: 24),
+        );
+        expect(
+          safeAreaX - defaultX,
+          closeTo(24, 0.01),
+          reason: 'pinned chrome must honour the leading system safe inset',
+        );
 
         // The leading edge wins under RTL: the button mirrors to the right.
         final rtlX = await backButtonX(

@@ -45,69 +45,67 @@ class ScaffoldMenuRegressionDemo extends StatelessWidget {
             iconSize: 20,
           ),
         ),
-        body: ListView(
-          padding: EdgeInsets.only(
-            top: MediaQuery.paddingOf(context).top + 60,
-            left: 20,
-            right: 20,
-            bottom: 40,
+        body: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: ListView(
+            children: const [
+              SizedBox(height: 16),
+              // ── Title ────────────────────────────────────────────────
+              Text(
+                'Regression Reference',
+                style: TextStyle(
+                  fontSize: 34,
+                  fontWeight: FontWeight.w700,
+                  color: CupertinoColors.white,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'GlassScaffold + GlassMenu — 0.14.x investigations',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Color(0x99FFFFFF),
+                ),
+              ),
+              SizedBox(height: 32),
+
+              // ── Bug 1: GlassScaffold background ──────────────────────
+              _BugSection(
+                number: '1',
+                title: 'GlassScaffold — backgroundColor (FIXED)',
+                description:
+                    'GlassScaffold with no background: was hardcoded transparent, '
+                    'rendering black. Now fixed: use backgroundColor: param '
+                    'or omit for Theme.scaffoldBackgroundColor.',
+              ),
+              SizedBox(height: 16),
+              _ScaffoldBugDemo(),
+
+              SizedBox(height: 40),
+
+              // ── Bug 2: GlassMenu in GlassScaffold ────────────────────
+              _BugSection(
+                number: '2',
+                title: 'GlassMenu — "bleed-through" (NOT a regression)',
+                description:
+                    'User reported buttons visible through expanded GlassMenu '
+                    'in 0.14.x but not 0.13.x. Root cause: the 0.14.0 '
+                    'BackdropGroup isolation change. In 0.13.x all glass layers '
+                    'shared one BackdropGroup, so the menu sampled the scene '
+                    'BEFORE glass buttons were painted — making them invisible. '
+                    'In 0.14.x each LiquidGlassLayer has its own BackdropGroup '
+                    'and captures the fully-composited page. Buttons appear '
+                    'frosted through the glass — which is correct iOS 26 '
+                    'behaviour. The black background (Issue 1) made it look '
+                    'far worse than it actually was.',
+              ),
+              SizedBox(height: 16),
+              _MenuInScaffoldDemo(),
+
+              SizedBox(height: 40),
+            ],
           ),
-          children: const [
-            // ── Title ────────────────────────────────────────────────
-            Text(
-              'Regression Reference',
-              style: TextStyle(
-                fontSize: 34,
-                fontWeight: FontWeight.w700,
-                color: CupertinoColors.white,
-                letterSpacing: -0.5,
-              ),
-            ),
-            SizedBox(height: 4),
-            Text(
-              'GlassScaffold + GlassMenu — 0.14.x investigations',
-              style: TextStyle(
-                fontSize: 15,
-                color: Color(0x99FFFFFF),
-              ),
-            ),
-            SizedBox(height: 32),
-
-            // ── Bug 1: GlassScaffold background ──────────────────────
-            _BugSection(
-              number: '1',
-              title: 'GlassScaffold — backgroundColor (FIXED)',
-              description:
-                  'GlassScaffold with no background: was hardcoded transparent, '
-                  'rendering black. Now fixed: use backgroundColor: param '
-                  'or omit for Theme.scaffoldBackgroundColor.',
-            ),
-            SizedBox(height: 16),
-            _ScaffoldBugDemo(),
-
-            SizedBox(height: 40),
-
-            // ── Bug 2: GlassMenu in GlassScaffold ────────────────────
-            _BugSection(
-              number: '2',
-              title: 'GlassMenu — "bleed-through" (NOT a regression)',
-              description:
-                  'User reported buttons visible through expanded GlassMenu '
-                  'in 0.14.x but not 0.13.x. Root cause: the 0.14.0 '
-                  'BackdropGroup isolation change. In 0.13.x all glass layers '
-                  'shared one BackdropGroup, so the menu sampled the scene '
-                  'BEFORE glass buttons were painted — making them invisible. '
-                  'In 0.14.x each LiquidGlassLayer has its own BackdropGroup '
-                  'and captures the fully-composited page. Buttons appear '
-                  'frosted through the glass — which is correct iOS 26 '
-                  'behaviour. The black background (Issue 1) made it look '
-                  'far worse than it actually was.',
-            ),
-            SizedBox(height: 16),
-            _MenuInScaffoldDemo(),
-
-            SizedBox(height: 40),
-          ],
         ),
       ),
     );
@@ -176,32 +174,34 @@ class _GlassScaffoldBugPage extends StatelessWidget {
               color: CupertinoColors.white, fontWeight: FontWeight.w600),
         ),
       ),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(CupertinoIcons.checkmark_seal_fill,
-                color: CupertinoColors.activeGreen, size: 48),
-            SizedBox(height: 16),
-            Text(
-              'FIXED ✓',
-              style: TextStyle(
-                color: CupertinoColors.activeGreen,
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(CupertinoIcons.checkmark_seal_fill,
+                  color: CupertinoColors.activeGreen, size: 48),
+              SizedBox(height: 16),
+              Text(
+                'FIXED ✓',
+                style: TextStyle(
+                  color: CupertinoColors.activeGreen,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Deep navy (#020715) via backgroundColor: param.',
-              style: TextStyle(
-                color: CupertinoColors.white.withValues(alpha: 0.6),
-                fontSize: 14,
-                height: 1.6,
+              SizedBox(height: 8),
+              Text(
+                'Deep navy (#020715) via backgroundColor: param.',
+                style: TextStyle(
+                  color: CupertinoColors.white.withValues(alpha: 0.6),
+                  fontSize: 14,
+                  height: 1.6,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -1,3 +1,27 @@
+# Unreleased
+
+## Features
+
+- **Unified automatic safe areas for `GlassScaffold`, navigation chrome, and `GlassModalSheet`:** `GlassAppBar` now defaults to `EdgeInsets.symmetric(horizontal: 20, vertical: 10)` and adds the platform top, left and right insets from `MediaQuery.paddingOf` to its configured content padding. Pinned chrome follows the same leading safe inset and vertical content padding, with `GlassNavPinnedMetrics.horizontalPadding` using the same 20pt fallback for registrations that omit their own. `GlassScaffold` publishes the complete app-bar occupancy, including its system top inset, plus the live bottom-bar inset through the body's `MediaQuery`, so `ListView` and `GlassLargeTitle` avoid the app bar without manual spacers. Custom bars are measured after layout, and `GlassDynamicPreferredSize` bars reflow synchronously. `GlassModalSheet` removes the screen's top inset and owns no fixed top safe area; an embedded `GlassAppBar` supplies its own content padding.
+- **`GlassToolbar` implements `PreferredSizeWidget`:** Its rendered height now participates synchronously in scaffold layout and body/fade inset calculations without requiring a separate `bottomBarHeight`.
+- **`GlassLargeTitle` owns its safe-area padding:** It now reserves the top `MediaQuery` inset internally and adds the current left/right insets to both the title and optional search bar, preventing text from entering display cutouts while retaining the existing collapse animation. Its title and search-bar horizontal padding now default to 20pt, matching `GlassAppBar` so content aligns with bar buttons.
+- **`GlassAppBar` vertical padding participates in chrome height:** `preferredSize` now includes resolved vertical padding in addition to the toolbar and optional bottom widget. When padding changes, `GlassScaffold` updates the body's top `MediaQuery` inset in the same rebuild so lower content continues to clear the app bar and its safe area.
+- **Consistent 20pt chrome insets:** `GlassGroupedSection` now defaults to 20pt horizontal margins, and every `GlassTabBar` placement, including `.inline`, defaults to 20pt horizontal and vertical safe padding around its glass.
+
+## Bug Fixes
+
+- **`GlassTabBar` keeps its configured padding during ordinary page exits:** `GlassPage` now restricts its premium-glass UV freeze to scaled Cupertino sheet push-backs instead of any covering route. Slide/fade route transitions no longer leave the glass geometry stale while the page moves, preventing the tab buttons from visibly drifting relative to their 20pt safe padding.
+
+## Documentation & Examples
+
+- Reworked `GlassScaffold` and `GlassModalSheet` examples to use automatic safe-area handling. Removed manual app-bar spacers, `MediaQuery.padding` calculations, fixed bottom-bar clearance, and redundant `SafeArea` wrappers from the demo catalog and Apple-style showcases.
+- Updated example `CustomScrollView`s to consume the scaffold's body safe area at their leading and trailing edges. Examples whose first sliver is `GlassLargeTitle` omit the top inset because the title now owns it internally. Replaced the previous page-level `SafeArea` wrappers.
+- Deferred the example safe-area sliver helpers' `MediaQuery.paddingOf` reads until the sliver builds inside `GlassScaffold.body`, so they receive the bar-aware inset instead of only the platform status-bar inset.
+
+### Migration
+
+- Remove fixed app-bar-height spacers and fixed bottom clearance. Keep `ListView` padding automatic. Wrap `CustomScrollView` content in `SliverSafeArea`; when the first sliver is `GlassLargeTitle`, leave it outside the wrapper and disable the wrapper's top inset.
+
 # 1.17.5
 
 ## Bug Fixes

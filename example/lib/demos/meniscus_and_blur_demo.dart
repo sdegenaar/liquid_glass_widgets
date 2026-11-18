@@ -174,11 +174,11 @@ class _MeniscusAndBlurDemoPageState extends State<MeniscusAndBlurDemoPage> {
             child: const SizedBox.expand(),
           ),
         ),
-        body: SafeArea(
-          bottom: false,
+        body: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
             children: [
+              const SizedBox(height: 12),
               // ── 1. Background picker ─────────────────────────────────────
               _sectionHeader('BACKGROUND'),
               const SizedBox(height: 8),

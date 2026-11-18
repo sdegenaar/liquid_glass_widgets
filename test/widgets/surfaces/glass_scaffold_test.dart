@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets/src/widgets/surfaces/dynamic_preferred_size.dart';
 import 'package:liquid_glass_widgets/widgets/shared/glass_effect.dart';
 
 import '../../shared/test_helpers.dart';
@@ -99,9 +100,9 @@ void main() {
       final scrollEdge = tester.widget<GlassScrollEdgeEffect>(
         find.byType(GlassScrollEdgeEffect),
       );
-      // Without appBar, topFadeHeight = topPad + 0 + 20 (default extent).
+      // Without appBar, topFadeHeight = topPad + 20 (default extent).
       // The key assertion: it should NOT be topPad + 44 + 20.
-      // In test environment, topPad is 0, so topFadeHeight should be 20.
+      // In test environment, topPad is zero.
       expect(scrollEdge.topFadeHeight, 20.0);
     });
 
@@ -124,8 +125,9 @@ void main() {
       final scrollEdge = tester.widget<GlassScrollEdgeEffect>(
         find.byType(GlassScrollEdgeEffect),
       );
-      // With appBar, topFadeHeight = topPad(0) + 44 + 20 = 64.
-      expect(scrollEdge.topFadeHeight, 64.0);
+      // GlassAppBar default vertical padding adds 20pt to the 44pt toolbar,
+      // then the 20pt fade extent.
+      expect(scrollEdge.topFadeHeight, 84.0);
     });
 
     testWidgets(
@@ -782,6 +784,584 @@ void main() {
       expect(scaffold.backgroundColor, isNull);
     });
   });
+
+  group('GlassScaffold safe area', () {
+    testWidgets('does not impose a minimum without GlassAppBar',
+        (tester) async {
+      late EdgeInsets bodyPadding;
+
+      await tester.pumpWidget(
+        _testAppWithPadding(
+          const EdgeInsets.only(top: 8, bottom: 12),
+          GlassScaffold(
+            body: Builder(
+              builder: (context) {
+                bodyPadding = MediaQuery.paddingOf(context);
+                return const SizedBox.expand();
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(bodyPadding.top, 8);
+      expect(bodyPadding.bottom, 12);
+    });
+
+    testWidgets('preserves a top inset greater than 20', (tester) async {
+      late EdgeInsets bodyPadding;
+
+      await tester.pumpWidget(
+        _testAppWithPadding(
+          const EdgeInsets.only(top: 32, bottom: 12),
+          GlassScaffold(
+            body: Builder(
+              builder: (context) {
+                bodyPadding = MediaQuery.paddingOf(context);
+                return const SizedBox.expand();
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(bodyPadding.top, 32);
+    });
+
+    testWidgets('GlassAppBar keeps the platform top inset', (tester) async {
+      late EdgeInsets bodyPadding;
+
+      await tester.pumpWidget(
+        _testAppWithPadding(
+          const EdgeInsets.only(top: 8, bottom: 12),
+          GlassScaffold(
+            appBar: const GlassAppBar(title: Text('Title')),
+            body: Builder(
+              builder: (context) {
+                bodyPadding = MediaQuery.paddingOf(context);
+                return const SizedBox.expand();
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(bodyPadding.top, 8 + 64);
+    });
+
+    testWidgets('GlassAppBar preserves a top inset greater than 20',
+        (tester) async {
+      late EdgeInsets bodyPadding;
+
+      await tester.pumpWidget(
+        _testAppWithPadding(
+          const EdgeInsets.only(top: 32, bottom: 12),
+          GlassScaffold(
+            appBar: const GlassAppBar(title: Text('Title')),
+            body: Builder(
+              builder: (context) {
+                bodyPadding = MediaQuery.paddingOf(context);
+                return const SizedBox.expand();
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(bodyPadding.top, 32 + 64);
+    });
+
+    testWidgets('publishes the complete GlassAppBar safe area to ListView',
+        (tester) async {
+      late EdgeInsets bodyPadding;
+
+      await tester.pumpWidget(
+        _testAppWithPadding(
+          const EdgeInsets.fromLTRB(10, 24, 12, 20),
+          AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: GlassScaffold(
+              appBar: const GlassAppBar(
+                title: Text('Title'),
+                padding: EdgeInsets.fromLTRB(8, 10, 8, 14),
+              ),
+              body: Builder(
+                builder: (context) {
+                  bodyPadding = MediaQuery.paddingOf(context);
+                  return ListView(
+                    children: const [
+                      SizedBox(key: ValueKey('first-item'), height: 20),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final appBarBottom = tester.getBottomLeft(find.byType(GlassAppBar)).dy;
+      expect(bodyPadding.top, closeTo(appBarBottom, 0.5));
+      expect(
+        tester.getTopLeft(find.byKey(const ValueKey('first-item'))).dy,
+        closeTo(appBarBottom, 0.5),
+        reason: 'ListView must consume the complete GlassAppBar safe area',
+      );
+    });
+
+    testWidgets('publishes a wrapped GlassAppBar rendered height to ListView',
+        (tester) async {
+      late EdgeInsets bodyPadding;
+
+      await tester.pumpWidget(
+        _testAppWithPadding(
+          const EdgeInsets.fromLTRB(10, 24, 12, 20),
+          AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: GlassScaffold(
+              appBarHeight: 52,
+              appBar: Builder(
+                builder: (context) => const GlassAppBar(
+                  title: Text('Title'),
+                  toolbarHeight: 52,
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                ),
+              ),
+              body: Builder(
+                builder: (context) {
+                  bodyPadding = MediaQuery.paddingOf(context);
+                  return ListView(
+                    children: const [
+                      SizedBox(key: ValueKey('wrapped-first-item'), height: 20),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final appBarBottom = tester.getBottomLeft(find.byType(GlassAppBar)).dy;
+      expect(bodyPadding.top, closeTo(appBarBottom, 0.5));
+      expect(
+        tester.getTopLeft(find.byKey(const ValueKey('wrapped-first-item'))).dy,
+        closeTo(appBarBottom, 0.5),
+      );
+    });
+
+    testWidgets('GlassLargeTitle clears the complete GlassAppBar safe area',
+        (tester) async {
+      final titleController = GlassLargeTitleController();
+      addTearDown(titleController.dispose);
+      late EdgeInsets bodyPadding;
+
+      await tester.pumpWidget(
+        _testAppWithPadding(
+          const EdgeInsets.fromLTRB(10, 24, 12, 20),
+          AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: GlassScaffold(
+              appBar: GlassAppBar(
+                title: const Text('Inline Title'),
+                largeTitleController: titleController,
+                padding: const EdgeInsets.fromLTRB(8, 10, 8, 14),
+              ),
+              body: Builder(
+                builder: (context) {
+                  bodyPadding = MediaQuery.paddingOf(context);
+                  return CustomScrollView(
+                    controller: titleController.scrollController,
+                    slivers: [
+                      GlassLargeTitle(
+                        text: 'Large Title',
+                        controller: titleController,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final appBarBottom = tester.getBottomLeft(find.byType(GlassAppBar)).dy;
+      expect(bodyPadding.top, closeTo(appBarBottom, 0.5));
+      expect(
+        tester.getTopLeft(find.text('Large Title')).dy,
+        closeTo(appBarBottom, 0.5),
+        reason: 'GlassLargeTitle must reserve the complete app-bar safe area',
+      );
+    });
+
+    testWidgets(
+        'GlassLargeTitle clears a wrapped GlassAppBar rendered safe area',
+        (tester) async {
+      final titleController = GlassLargeTitleController();
+      addTearDown(titleController.dispose);
+      late EdgeInsets bodyPadding;
+
+      await tester.pumpWidget(
+        _testAppWithPadding(
+          const EdgeInsets.fromLTRB(10, 24, 12, 20),
+          AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: GlassScaffold(
+              appBarHeight: 52,
+              appBar: Builder(
+                builder: (context) => GlassAppBar(
+                  title: const Text('Inline Title'),
+                  toolbarHeight: 52,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  largeTitleController: titleController,
+                ),
+              ),
+              body: Builder(
+                builder: (context) {
+                  bodyPadding = MediaQuery.paddingOf(context);
+                  return CustomScrollView(
+                    controller: titleController.scrollController,
+                    slivers: [
+                      GlassLargeTitle(
+                        text: 'Wrapped Large Title',
+                        controller: titleController,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final appBarBottom = tester.getBottomLeft(find.byType(GlassAppBar)).dy;
+      expect(bodyPadding.top, closeTo(appBarBottom, 0.5));
+      expect(
+        tester.getTopLeft(find.text('Wrapped Large Title')).dy,
+        closeTo(appBarBottom, 0.5),
+      );
+    });
+
+    testWidgets('publishes system and bar insets through the body MediaQuery',
+        (tester) async {
+      late EdgeInsets bodyPadding;
+
+      await tester.pumpWidget(
+        _testAppWithPadding(
+          const EdgeInsets.fromLTRB(10, 24, 12, 20),
+          AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: GlassScaffold(
+              appBar: const PreferredSize(
+                preferredSize: Size.fromHeight(60),
+                child: SizedBox(height: 60),
+              ),
+              bottomBar: const PreferredSize(
+                preferredSize: Size.fromHeight(80),
+                child: SizedBox(height: 80),
+              ),
+              body: Builder(
+                builder: (context) {
+                  bodyPadding = MediaQuery.paddingOf(context);
+                  return ListView(
+                    children: const [
+                      SizedBox(key: ValueKey('first-item'), height: 20),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(bodyPadding, const EdgeInsets.fromLTRB(10, 84, 12, 100));
+      expect(
+        tester.getTopLeft(find.byKey(const ValueKey('first-item'))).dy,
+        84,
+        reason: 'ListView default padding must consume the scaffold inset',
+      );
+    });
+
+    testWidgets(
+        'reserves only the rendered bar on iOS, without a second home inset',
+        (tester) async {
+      late EdgeInsets bodyPadding;
+
+      await tester.pumpWidget(
+        _testAppWithPadding(
+          const EdgeInsets.only(top: 24, bottom: 34),
+          GlassScaffold(
+            bottomBar: const PreferredSize(
+              preferredSize: Size.fromHeight(80),
+              child: SizedBox(height: 80),
+            ),
+            body: Builder(
+              builder: (context) {
+                bodyPadding = MediaQuery.paddingOf(context);
+                return const SizedBox.expand();
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        bodyPadding.bottom,
+        80,
+        reason: 'the floating bar is already at the screen edge; the body '
+            'only needs to clear the bar rectangle',
+      );
+    }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+
+    testWidgets('includes the Android navigation inset once', (tester) async {
+      late EdgeInsets bodyPadding;
+
+      await tester.pumpWidget(
+        _testAppWithPadding(
+          const EdgeInsets.only(top: 24, bottom: 34),
+          GlassScaffold(
+            bottomBar: const PreferredSize(
+              preferredSize: Size.fromHeight(80),
+              child: SizedBox(height: 80),
+            ),
+            body: Builder(
+              builder: (context) {
+                bodyPadding = MediaQuery.paddingOf(context);
+                return const SizedBox.expand();
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        bodyPadding.bottom,
+        114,
+        reason: 'the scaffold lifts the bar above Android navigation and the '
+            'body must clear the complete rendered chrome',
+      );
+    }, variant: TargetPlatformVariant.only(TargetPlatform.android));
+
+    testWidgets('removes bar insets when the body is already positioned',
+        (tester) async {
+      late EdgeInsets bodyPadding;
+
+      await tester.pumpWidget(
+        _testAppWithPadding(
+          const EdgeInsets.fromLTRB(10, 24, 12, 20),
+          AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: GlassScaffold(
+              extendBody: false,
+              appBar: const PreferredSize(
+                preferredSize: Size.fromHeight(60),
+                child: SizedBox(height: 60),
+              ),
+              bottomBar: const PreferredSize(
+                preferredSize: Size.fromHeight(80),
+                child: SizedBox(height: 80),
+              ),
+              body: Builder(
+                builder: (context) {
+                  bodyPadding = MediaQuery.paddingOf(context);
+                  return const SizedBox.expand();
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(bodyPadding, const EdgeInsets.fromLTRB(10, 0, 12, 0));
+    });
+
+    testWidgets('tracks a bottom bar whose preferred size changes in place',
+        (tester) async {
+      final barSize = ValueNotifier<double>(60);
+      addTearDown(barSize.dispose);
+      late EdgeInsets bodyPadding;
+
+      await tester.pumpWidget(
+        _testAppWithPadding(
+          const EdgeInsets.only(top: 20, bottom: 16),
+          AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: GlassScaffold(
+              bottomBar: _DynamicPreferredSizeBar(size: barSize),
+              body: Builder(
+                builder: (context) {
+                  bodyPadding = MediaQuery.paddingOf(context);
+                  return const SizedBox.expand();
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(bodyPadding.bottom, 76);
+
+      barSize.value = 104;
+      await tester.pump();
+      await tester.pump();
+
+      expect(bodyPadding.bottom, 120,
+          reason: 'the scaffold must re-read a dynamic bar preferred size');
+    });
+
+    testWidgets('measures a custom bottom bar without a preferred size',
+        (tester) async {
+      final barSize = ValueNotifier<double>(72);
+      addTearDown(barSize.dispose);
+      late EdgeInsets bodyPadding;
+
+      await tester.pumpWidget(
+        _testAppWithPadding(
+          const EdgeInsets.only(top: 20, bottom: 16),
+          GlassScaffold(
+            bottomBar: ValueListenableBuilder<double>(
+              valueListenable: barSize,
+              builder: (context, height, _) => SizedBox(height: height),
+            ),
+            body: Builder(
+              builder: (context) {
+                bodyPadding = MediaQuery.paddingOf(context);
+                return const SizedBox.expand();
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(bodyPadding.bottom, 88,
+          reason: 'actual layout must replace the 60px fallback');
+
+      barSize.value = 96;
+      await tester.pump();
+      await tester.pump();
+
+      expect(bodyPadding.bottom, 112,
+          reason: 'a non-PreferredSizeWidget can still resize at runtime');
+    });
+
+    testWidgets('measures a custom app bar without a preferred size',
+        (tester) async {
+      final barSize = ValueNotifier<double>(70);
+      addTearDown(barSize.dispose);
+      late EdgeInsets bodyPadding;
+
+      await tester.pumpWidget(
+        _testAppWithPadding(
+          const EdgeInsets.only(top: 20, bottom: 16),
+          GlassScaffold(
+            appBar: ValueListenableBuilder<double>(
+              valueListenable: barSize,
+              builder: (context, height, _) => SizedBox(height: height),
+            ),
+            body: Builder(
+              builder: (context) {
+                bodyPadding = MediaQuery.paddingOf(context);
+                return const SizedBox.expand();
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(bodyPadding.top, 70);
+
+      barSize.value = 100;
+      await tester.pump();
+      await tester.pump();
+
+      expect(bodyPadding.top, 100);
+    });
+
+    testWidgets('tracks GlassAppBar vertical padding changes', (tester) async {
+      late StateSetter rebuild;
+      var verticalPadding = 10.0;
+      late EdgeInsets bodyPadding;
+
+      await tester.pumpWidget(
+        _testAppWithPadding(
+          const EdgeInsets.only(top: 20, bottom: 16),
+          AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                rebuild = setState;
+                return GlassScaffold(
+                  appBar: GlassAppBar(
+                    title: const Text('Title'),
+                    padding: EdgeInsets.fromLTRB(
+                      8,
+                      verticalPadding,
+                      8,
+                      verticalPadding,
+                    ),
+                  ),
+                  body: Builder(
+                    builder: (context) {
+                      bodyPadding = MediaQuery.paddingOf(context);
+                      return const SizedBox.expand();
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(bodyPadding.top, 84,
+          reason: '20 status + 44 toolbar + 20 vertical padding');
+
+      rebuild(() => verticalPadding = 20);
+      await tester.pump();
+
+      expect(bodyPadding.top, 104,
+          reason: 'the updated app-bar preferred height must update the body '
+              'safe area in the same rebuild');
+    });
+  });
+}
+
+Widget _testAppWithPadding(EdgeInsets padding, Widget child) {
+  return MaterialApp(
+    home: Builder(
+      builder: (context) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(padding: padding),
+        child: Scaffold(body: child),
+      ),
+    ),
+  );
+}
+
+class _DynamicPreferredSizeBar extends StatelessWidget
+    with GlassDynamicPreferredSize {
+  const _DynamicPreferredSizeBar({required this.size});
+
+  final ValueNotifier<double> size;
+
+  @override
+  Size get preferredSize => Size.fromHeight(size.value);
+
+  @override
+  Listenable get preferredSizeListenable => size;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(height: size.value);
 }
 
 /// A tappable counter used to prove overlay state follows the overlay's key.

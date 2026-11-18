@@ -178,6 +178,7 @@ class GlassPinnedBarChrome extends StatefulWidget {
     this.toolbarHeight,
     this.buttonSettings,
     this.horizontalInset,
+    this.verticalInset = 0.0,
     this.platformViewBackdrop = false,
     this.largeTitleController,
     this.stripRowTop,
@@ -253,6 +254,12 @@ class GlassPinnedBarChrome extends StatefulWidget {
   /// them is invisible — a bar aligned to its app's page gutter otherwise
   /// steps sideways every time a sheet hands the chrome back.
   final double? horizontalInset;
+
+  /// Distance from the top safe edge to the pinned toolbar row.
+  ///
+  /// Mirrors the vertical top padding of the in-route app bar so hoisted chrome
+  /// and the page bar share the same baseline.
+  final double verticalInset;
 
   /// Whether the bar floats over a native platform view — an iOS map, say.
   ///
@@ -416,6 +423,7 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
         toolbarHeight: widget.toolbarHeight,
         buttonSettings: widget.buttonSettings,
         horizontalInset: widget.horizontalInset,
+        verticalInset: widget.verticalInset,
         platformViewBackdrop: widget.platformViewBackdrop,
         largeTitleController: widget.largeTitleController,
         stripRowTop: widget.stripRowTop,

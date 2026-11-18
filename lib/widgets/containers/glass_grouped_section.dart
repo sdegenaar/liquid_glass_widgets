@@ -108,8 +108,9 @@ class GlassGroupedSection extends StatelessWidget {
 
   /// Empty space to surround the section card.
   ///
-  /// Defaults to `EdgeInsets.symmetric(horizontal: 16, vertical: 6)` matching
-  /// iOS grouped table section insets.
+  /// Defaults to `EdgeInsets.symmetric(horizontal: 20, vertical: 6)` so the
+  /// card aligns with the package's other 20pt chrome insets while retaining
+  /// the compact vertical rhythm of grouped table sections.
   final EdgeInsetsGeometry? margin;
 
   /// Shape of the card.
@@ -194,7 +195,7 @@ class GlassGroupedSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveMargin =
-        margin ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 6);
+        margin ?? const EdgeInsets.symmetric(horizontal: 20, vertical: 6);
 
     // Interleave GlassDividers between adjacent children. The divider indent
     // is derived from the preceding tile's leading widget — 56px with a leading

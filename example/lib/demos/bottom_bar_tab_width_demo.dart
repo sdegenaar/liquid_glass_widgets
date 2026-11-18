@@ -195,46 +195,39 @@ class _TabWidthDemoPageState extends State<TabWidthDemoPage> {
               ),
             ),
           ),
-
-          // ── Bottom bar ──────────────────────────────────────────────────────
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _variant == _BarVariant.searchable
-                ? GlassTabBar.searchable(
-                    tabs: _tabs,
-                    selectedIndex: clampedSelected,
-                    isSearchActive: _searching,
-                    tabWidth: _tabWidth,
-                    onTabSelected: (i) => setState(() {
-                      _selected = i;
-                      _searching = false;
-                    }),
-                    quality: GlassQuality.premium,
-                    searchConfig: GlassSearchBarConfig(
-                      hintText: 'Search',
-                      showsCancelButton: true,
-                      onSearchToggle: (v) => setState(() => _searching = v),
-                    ),
-                  )
-                : GlassTabBar.bottom(
-                    tabs: _tabs,
-                    selectedIndex: clampedSelected,
-                    tabWidth: _tabWidth,
-                    onTabSelected: (i) => setState(() => _selected = i),
-                    quality: GlassQuality.premium,
-                    extraButton: _showExtraButton
-                        ? GlassTabBarExtraButton(
-                            icon: Icon(CupertinoIcons.plus),
-                            label: 'Compose',
-                            onTap: () {},
-                          )
-                        : null,
-                  ),
-          ),
         ],
       ),
+      bottomBar: _variant == _BarVariant.searchable
+          ? GlassTabBar.searchable(
+              tabs: _tabs,
+              selectedIndex: clampedSelected,
+              isSearchActive: _searching,
+              tabWidth: _tabWidth,
+              onTabSelected: (i) => setState(() {
+                _selected = i;
+                _searching = false;
+              }),
+              quality: GlassQuality.premium,
+              searchConfig: GlassSearchBarConfig(
+                hintText: 'Search',
+                showsCancelButton: true,
+                onSearchToggle: (v) => setState(() => _searching = v),
+              ),
+            )
+          : GlassTabBar.bottom(
+              tabs: _tabs,
+              selectedIndex: clampedSelected,
+              tabWidth: _tabWidth,
+              onTabSelected: (i) => setState(() => _selected = i),
+              quality: GlassQuality.premium,
+              extraButton: _showExtraButton
+                  ? GlassTabBarExtraButton(
+                      icon: Icon(CupertinoIcons.plus),
+                      label: 'Compose',
+                      onTap: () {},
+                    )
+                  : null,
+            ),
     );
   }
 }

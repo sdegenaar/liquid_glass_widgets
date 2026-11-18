@@ -65,7 +65,13 @@ class GlassModalSheet extends StatefulWidget {
   /// Default: 90.0 (absolute pixels).
   final double peekSize;
 
-  /// Internal padding for the sheet content.
+  /// Extra visual padding around the sheet content.
+  ///
+  /// The sheet removes the screen top inset because it already starts below the
+  /// status bar. An embedded `GlassAppBar` therefore only contributes its own
+  /// content padding; bottom and horizontal sheet insets remain available
+  /// through [MediaQuery].
+  /// A non-null value is added on top of those automatic insets.
   final EdgeInsetsGeometry? padding;
 
   /// Initial state when the sheet is first shown.
@@ -246,6 +252,9 @@ class GlassModalSheet extends StatefulWidget {
   /// Gap between the sheet's top edge and the drag handle pill, in logical
   /// pixels. Defaults to 8. Apple's sheets sit theirs about 5pt down, which
   /// also leaves more room between the pill and a header row beneath it.
+  ///
+  /// This only positions the indicator within the sheet. The sheet itself does
+  /// not add a fixed top content inset.
   final double dragIndicatorTopPadding;
 
   /// Whether to enable a gradient fade effect at the top of the sheet.

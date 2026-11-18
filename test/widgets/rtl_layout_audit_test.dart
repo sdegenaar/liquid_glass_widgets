@@ -135,15 +135,9 @@ void main() {
           ),
         ),
       );
-      final headerPadding =
-          tester.widgetList<Padding>(find.byType(Padding)).firstWhere(
-                (p) => tester
-                    .widgetList(find.descendant(
-                      of: find.byWidget(p),
-                      matching: find.byType(DefaultTextStyle),
-                    ))
-                    .isNotEmpty,
-              );
+      final headerPadding = tester
+          .element(find.byType(DefaultTextStyle))
+          .findAncestorWidgetOfExactType<Padding>()!;
       final insets = _resolve(headerPadding.padding, TextDirection.ltr);
       expect(insets.left, 16);
       expect(insets.right, 16);
@@ -158,15 +152,9 @@ void main() {
           ),
         ),
       );
-      final headerPadding =
-          tester.widgetList<Padding>(find.byType(Padding)).firstWhere(
-                (p) => tester
-                    .widgetList(find.descendant(
-                      of: find.byWidget(p),
-                      matching: find.byType(DefaultTextStyle),
-                    ))
-                    .isNotEmpty,
-              );
+      final headerPadding = tester
+          .element(find.byType(DefaultTextStyle))
+          .findAncestorWidgetOfExactType<Padding>()!;
       final insets = _resolve(headerPadding.padding, TextDirection.rtl);
       // start=16 (logical leading) → physical right in RTL
       expect(insets.right, 16);
