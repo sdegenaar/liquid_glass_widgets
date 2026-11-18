@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 
 import '../../src/renderer/liquid_glass_renderer.dart';
@@ -11,6 +13,7 @@ import '../../theme/glass_theme_helpers.dart';
 import '../../types/glass_quality.dart';
 import '../../types/glass_style.dart';
 import '../containers/glass_container.dart';
+import '../shared/glass_accessibility_scope.dart';
 import '../shared/glass_focus_region.dart';
 import '../shared/glass_interaction_state_mixin.dart';
 import 'glass_menu_item.dart';
@@ -516,6 +519,7 @@ Future<T?> showGlassContextMenu<T>({
   assert(actions.isNotEmpty, 'Context menu actions must not be empty.');
   final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
   final capturedCupertinoTheme = CupertinoTheme.of(context);
+  final capturedReduceMotion = GlassAccessibilityData.of(context).reduceMotion;
   return Navigator.of(context, rootNavigator: true).push<T>(
     _GlassContextMenuRoute<T>(
       targetRect: targetRect,
@@ -539,19 +543,59 @@ Future<T?> showGlassContextMenu<T>({
       commitDuration: commitDuration,
       capturedGlassTheme: capturedGlassTheme,
       capturedCupertinoTheme: capturedCupertinoTheme,
+      capturedReduceMotion: capturedReduceMotion,
     ),
   );
 }
 
-/// Fraction of the route timeline occupied by the row "lift" before the morph
-/// into the preview card begins.
-const double _kLiftSplit = 0.4;
+/// Fraction of the non-interactive route timeline occupied by the row "lift"
+/// (~126ms) before the ~450ms iOS 27 spring morph into the preview & platter.
+const double _kLiftSplit = 0.22;
 
 /// Scale the pressed row reaches at the end of the lift (native iOS ≈ 1.04×).
 const double _kLiftScale = 1.038;
 
 /// Vertical inset above/below the action rows inside the platter.
 const double _kPlatterInset = 10.0;
+
+/// Duration of the open spring settle window in milliseconds.
+const double _kOpenSpringDurationMs = 450.0;
+
+/// Duration of the close spring & catch recoil settle window in milliseconds.
+const double _kCloseSpringDurationMs = 480.0;
+
+/// Native iOS 27 menu open spring (ω0 = 17.0 rad/s, ζ = 0.76).
+const SpringDescription _kOpenPlatterSpring = SpringDescription(
+  mass: 1.0,
+  stiffness: 289.0,
+  damping: 25.84,
+);
+
+/// Native iOS 27 menu close platter spring (ω0 = 18.0 rad/s, ζ = 0.86).
+const SpringDescription _kClosePlatterSpring = SpringDescription(
+  mass: 1.0,
+  stiffness: 324.0,
+  damping: 30.96,
+);
+
+/// Smooth preview-to-row return spring on dismissal (ω0 = 18.0 rad/s, ζ = 0.94).
+const SpringDescription _kCloseCardReturnSpring = SpringDescription(
+  mass: 1.0,
+  stiffness: 324.0,
+  damping: 34.0,
+);
+
+/// Coupled trigger/preview catch recoil springs (peaks ~180ms, settles ~480ms).
+const SpringDescription _kCatchRecoilSpringA = SpringDescription(
+  mass: 1.0,
+  stiffness: 289.0,
+  damping: 23.8,
+);
+const SpringDescription _kCatchRecoilSpringB = SpringDescription(
+  mass: 1.0,
+  stiffness: 324.0,
+  damping: 36.0,
+);
 
 class _GlassContextMenuRoute<T> extends PopupRoute<T> {
   _GlassContextMenuRoute({
@@ -576,6 +620,7 @@ class _GlassContextMenuRoute<T> extends PopupRoute<T> {
     this.commitDuration = const Duration(milliseconds: 520),
     this.capturedGlassTheme,
     this.capturedCupertinoTheme,
+    this.capturedReduceMotion = false,
   });
 
   final Rect targetRect;
@@ -593,6 +638,7 @@ class _GlassContextMenuRoute<T> extends PopupRoute<T> {
   final double backdropBlur;
   final GlassThemeData? capturedGlassTheme;
   final CupertinoThemeData? capturedCupertinoTheme;
+  final bool capturedReduceMotion;
 
   /// Optional override for the dimming scrim. When null the scrim adapts to
   /// the ambient brightness.
@@ -609,15 +655,16 @@ class _GlassContextMenuRoute<T> extends PopupRoute<T> {
   final bool isInteractive;
   final Duration commitDuration;
 
-  // Non-interactive presentations (secondary click) play the lift and morph
-  // back to back: the lift occupies the first `_kLiftSplit` of the timeline
-  // (~128ms) and the morph the rest (~192ms, matching native iOS).
+  // Non-interactive presentations (secondary click) play the lift (~126ms) and
+  // the iOS 27 spring morph (~450ms) back to back; Reduce Motion snaps at 0ms.
   @override
-  Duration get transitionDuration => const Duration(milliseconds: 320);
+  Duration get transitionDuration =>
+      capturedReduceMotion ? Duration.zero : const Duration(milliseconds: 575);
 
-  // The return morph from the open menu back into the row.
+  // The return spring morph + parallel ~180ms catch recoil settle (~480ms).
   @override
-  Duration get reverseTransitionDuration => const Duration(milliseconds: 170);
+  Duration get reverseTransitionDuration =>
+      capturedReduceMotion ? Duration.zero : const Duration(milliseconds: 480);
 
   @override
   bool get barrierDismissible => true;
@@ -627,8 +674,10 @@ class _GlassContextMenuRoute<T> extends PopupRoute<T> {
 
   Timer? _commitTimer;
   bool _isCommitted = false;
+  double _dismissStartValue = 1.0;
 
   bool get isCommitted => _isCommitted;
+  double get dismissStartValue => _dismissStartValue;
 
   @override
   AnimationController createAnimationController() {
@@ -643,11 +692,17 @@ class _GlassContextMenuRoute<T> extends PopupRoute<T> {
   TickerFuture didPush() {
     super.didPush();
     if (isInteractive) {
-      final ticker = controller!.animateTo(
-        _kLiftSplit,
-        duration: const Duration(milliseconds: 360),
-        curve: Curves.easeOutCubic,
-      );
+      final TickerFuture ticker;
+      if (capturedReduceMotion) {
+        controller!.value = _kLiftSplit;
+        ticker = TickerFuture.complete();
+      } else {
+        ticker = controller!.animateTo(
+          _kLiftSplit,
+          duration: const Duration(milliseconds: 360),
+          curve: Curves.easeOutCubic,
+        );
+      }
       if (commitDuration > Duration.zero) {
         _commitTimer = Timer(commitDuration, commitMenu);
       } else {
@@ -656,6 +711,10 @@ class _GlassContextMenuRoute<T> extends PopupRoute<T> {
       return ticker;
     } else {
       _isCommitted = true;
+      if (capturedReduceMotion) {
+        controller!.value = 1.0;
+        return TickerFuture.complete();
+      }
       return controller!.forward();
     }
   }
@@ -668,9 +727,13 @@ class _GlassContextMenuRoute<T> extends PopupRoute<T> {
     if (enableHaptics) {
       HapticFeedback.mediumImpact();
     }
+    if (capturedReduceMotion) {
+      controller!.value = 1.0;
+      return;
+    }
     controller!.animateTo(
       1.0,
-      duration: const Duration(milliseconds: 190),
+      duration: Duration(milliseconds: _kOpenSpringDurationMs.round()),
       curve: Curves.linear,
     );
   }
@@ -682,6 +745,14 @@ class _GlassContextMenuRoute<T> extends PopupRoute<T> {
     if (isActive && navigator?.canPop() == true) {
       navigator?.pop();
     }
+  }
+
+  @override
+  bool didPop(T? result) {
+    _commitTimer?.cancel();
+    _commitTimer = null;
+    _dismissStartValue = controller?.value ?? 1.0;
+    return super.didPop(result);
   }
 
   @override
@@ -964,72 +1035,98 @@ class _GlassContextMenuRouteStaticState
         ? const Color(0x00000000)
         : (isDark ? const Color(0x33FFFFFF) : const Color(0x4D000000));
 
-    Widget buildPlatter({bool isMeasurement = false}) {
-      return DecoratedBox(
-        decoration: BoxDecoration(
+    Widget buildPlatter({
+      bool isMeasurement = false,
+      double glassProgress = 1.0,
+      double contentOpacity = 1.0,
+    }) {
+      final double clampedGlass = glassProgress.clamp(0.0, 1.0);
+      final double clampedContent = contentOpacity.clamp(0.0, 1.0);
+      final outerScope = GlassMaterializeScope.maybeOf(context);
+      final double effectiveGlass =
+          clampedGlass * (outerScope?.glassProgress ?? 1.0);
+      final double effectiveContent =
+          clampedContent * (outerScope?.contentOpacity ?? 1.0);
+      final Color effectivePlatterBorder =
+          platterBorder.withValues(alpha: platterBorder.a * effectiveGlass);
+
+      final Widget platterCard = GlassContainer.card(
+        useOwnLayer: true,
+        padding: EdgeInsets.zero,
+        margin: EdgeInsets.zero,
+        shape: LiquidRoundedSuperellipse(borderRadius: widget.borderRadius),
+        settings: platterSettings,
+        quality: effectivePlatterQuality,
+        child: ClipRSuperellipse(
           borderRadius: BorderRadius.circular(widget.borderRadius),
-          boxShadow: [
-            BoxShadow(
-              color: CupertinoColors.black.withValues(alpha: 0.08),
-              blurRadius: 28.0,
-              offset: const Offset(0, 8.0),
-            ),
-          ],
-        ),
-        child: GlassContainer.card(
-          useOwnLayer: true,
-          padding: EdgeInsets.zero,
-          margin: EdgeInsets.zero,
-          shape: LiquidRoundedSuperellipse(borderRadius: widget.borderRadius),
-          settings: platterSettings,
-          quality: effectivePlatterQuality,
-          child: ClipRSuperellipse(
-            borderRadius: BorderRadius.circular(widget.borderRadius),
-            child: DecoratedBox(
-              position: DecorationPosition.foreground,
-              decoration: ShapeDecoration(
-                shape: RoundedSuperellipseBorder(
-                  borderRadius: BorderRadius.circular(widget.borderRadius),
-                  side: BorderSide(color: platterBorder, width: 0.5),
-                ),
+          child: DecoratedBox(
+            position: DecorationPosition.foreground,
+            decoration: ShapeDecoration(
+              shape: RoundedSuperellipseBorder(
+                borderRadius: BorderRadius.circular(widget.borderRadius),
+                side: BorderSide(color: effectivePlatterBorder, width: 0.5),
               ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: _kPlatterInset),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (int i = 0; i < widget.actions.length; i++)
-                      Padding(
-                        key: isMeasurement ? null : _actionKeys[i],
-                        padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(21.0),
-                            color: !isMeasurement && _hoveredIndex == i
-                                ? (widget.actions[i]
-                                            is GlassContextMenuAction &&
-                                        (widget.actions[i]
-                                                as GlassContextMenuAction)
-                                            .isDestructive
-                                    ? CupertinoColors.destructiveRed
-                                        .withValues(alpha: 0.16)
-                                    : (isDark
-                                            ? CupertinoColors.white
-                                            : CupertinoColors.black)
-                                        .withValues(
-                                            alpha: isDark ? 0.12 : 0.08))
-                                : const Color(0x00000000),
-                          ),
-                          child: widget.actions[i],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: _kPlatterInset),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (int i = 0; i < widget.actions.length; i++)
+                    Padding(
+                      key: isMeasurement ? null : _actionKeys[i],
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(21.0),
+                          color: !isMeasurement && _hoveredIndex == i
+                              ? (widget.actions[i] is GlassContextMenuAction &&
+                                      (widget.actions[i]
+                                              as GlassContextMenuAction)
+                                          .isDestructive
+                                  ? CupertinoColors.destructiveRed
+                                      .withValues(alpha: 0.16)
+                                  : (isDark
+                                          ? CupertinoColors.white
+                                          : CupertinoColors.black)
+                                      .withValues(alpha: isDark ? 0.12 : 0.08))
+                              : const Color(0x00000000),
                         ),
+                        child: widget.actions[i],
                       ),
-                  ],
-                ),
+                    ),
+                ],
               ),
             ),
           ),
         ),
+      );
+
+      final Widget scopedPlatter = isMeasurement
+          ? platterCard
+          : GlassMaterializeScope(
+              glassProgress: effectiveGlass,
+              contentOpacity: effectiveContent,
+              contentSigma: outerScope?.contentSigma ?? 0.0,
+              child: platterCard,
+            );
+
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(widget.borderRadius),
+          boxShadow: effectiveGlass <= 0.0
+              ? null
+              : [
+                  BoxShadow(
+                    color: CupertinoColors.black
+                        .withValues(alpha: 0.08 * effectiveGlass),
+                    blurRadius: 28.0,
+                    offset: const Offset(0, 8.0),
+                  ),
+                ],
+        ),
+        child: scopedPlatter,
       );
     }
 
@@ -1112,6 +1209,9 @@ class _GlassContextMenuRouteStaticState
     final cardColor = widget.backgroundColor ??
         (isDark ? const Color(0xFF1C1C1E) : CupertinoColors.white);
 
+    final bool reduceMotion = (widget.route?.capturedReduceMotion ?? false) ||
+        GlassAccessibilityData.of(context).reduceMotion;
+
     return AnimatedBuilder(
       animation: widget.animation,
       builder: (context, _) {
@@ -1134,34 +1234,108 @@ class _GlassContextMenuRouteStaticState
         double previewAlpha;
         double rowScale;
         double previewScale;
-        double platterOpacity;
+        double platterGlassProgress;
+        double platterContentOpacity;
         double platterScale;
         double scrimAmount;
 
-        if (dismissing) {
-          // Return morph: the card collapses back into the row with the
-          // platter ghosting out first and no shadow at the end (native iOS).
-          // Native order: the platter ghosts out first (~35ms) while the card
-          // holds, then the card eases back into the row (~110ms).
-          final double w = (1.0 - v).clamp(0.0, 1.0);
+        if (reduceMotion) {
+          if (dismissing || (!committed && v == 0.0)) {
+            cardRect = widget.targetRect;
+            cardRadii = rowRadii;
+            shadowFactor = 0.0;
+            rowAlpha = 1.0;
+            previewAlpha = 0.0;
+            rowScale = 1.0;
+            previewScale = 1.0;
+            platterGlassProgress = 0.0;
+            platterContentOpacity = 0.0;
+            platterScale = 1.0;
+            scrimAmount = 0.0;
+          } else if (!committed) {
+            cardRect = liftedRowRect;
+            cardRadii = rowRadii;
+            shadowFactor = 1.0;
+            rowAlpha = 1.0;
+            previewAlpha = 0.0;
+            rowScale = _kLiftScale;
+            previewScale = 1.0;
+            platterGlassProgress = 0.0;
+            platterContentOpacity = 0.0;
+            platterScale = 1.0;
+            scrimAmount = 0.0;
+          } else {
+            cardRect = restingPreviewRect;
+            cardRadii = previewRadii;
+            shadowFactor = 1.0;
+            rowAlpha = hasCustomPreview ? 0.0 : 1.0;
+            previewAlpha = hasCustomPreview ? 1.0 : 0.0;
+            rowScale = hasCustomPreview ? _kLiftScale : 1.0;
+            previewScale = 1.0;
+            platterGlassProgress = 1.0;
+            platterContentOpacity = 1.0;
+            platterScale = 1.0;
+            scrimAmount = 1.0;
+          }
+        } else if (dismissing) {
+          // Authentic iOS 27 spring dismissal:
+          // - Platter scales 1.0 -> 0.20 (ω0 = 18.0, ζ = 0.86) into the
+          //   preview/trigger center with content opacity tracking
+          //   (scale - 0.20) / 0.80.
+          // - Preview/trigger card eases home on a parallel spring with a
+          //   subtle catch recoil peaking at ~180ms and settling cleanly.
+          final double startV = widget.route?.dismissStartValue ?? 1.0;
+          final double closeProgress =
+              startV > 1e-4 ? ((startV - v) / startV).clamp(0.0, 1.0) : 1.0;
+          final double tCloseSec =
+              closeProgress * (_kCloseSpringDurationMs / 1000.0);
+
+          final double rawCloseScale =
+              SpringSimulation(_kClosePlatterSpring, 1.0, 0.20, 0.0)
+                  .x(tCloseSec);
+          platterScale = rawCloseScale.clamp(0.15, 1.05);
+          final double targetContentOpacity =
+              ((rawCloseScale - 0.20) / 0.80).clamp(0.0, 1.0);
+          platterGlassProgress =
+              ((rawCloseScale - 0.20) / 0.65).clamp(0.0, 1.0);
+          platterContentOpacity = platterGlassProgress > 1e-4
+              ? (targetContentOpacity / platterGlassProgress).clamp(0.0, 1.0)
+              : 0.0;
+
           final double u =
-              Curves.easeInOut.transform(((w - 0.2) / 0.65).clamp(0.0, 1.0));
-          final double cf =
-              Curves.easeInOut.transform(((w - 0.18) / 0.55).clamp(0.0, 1.0));
-          cardRect = Rect.lerp(restingPreviewRect, widget.targetRect, u)!;
+              SpringSimulation(_kCloseCardReturnSpring, 0.0, 1.0, 0.0)
+                  .x(tCloseSec)
+                  .clamp(0.0, 1.0);
+          final double recoilPulse =
+              (SpringSimulation(_kCatchRecoilSpringA, 0.0, 1.0, 0.0)
+                          .x(tCloseSec) -
+                      SpringSimulation(_kCatchRecoilSpringB, 0.0, 1.0, 0.0)
+                          .x(tCloseSec))
+                  .clamp(0.0, 0.20);
+          final double recoilDy =
+              (placeBelow ? -1.0 : 1.0) * 35.0 * recoilPulse;
+          final double catchScale = 1.0 - 0.09 * recoilPulse;
+
+          final Rect baseCardRect =
+              Rect.lerp(restingPreviewRect, widget.targetRect, u)!;
+          cardRect = Rect.fromCenter(
+            center: baseCardRect.center.translate(0.0, recoilDy),
+            width: baseCardRect.width * catchScale,
+            height: baseCardRect.height * catchScale,
+          );
           cardRadii = BorderRadius.lerp(previewRadii, rowRadii, u)!;
-          shadowFactor = (1.0 - u) * (1.0 - u);
-          rowAlpha = hasCustomPreview ? cf : 1.0;
-          previewAlpha = hasCustomPreview ? 1.0 - cf : 0.0;
-          rowScale = 1.0;
+          shadowFactor =
+              math.pow((1.0 - tCloseSec / 0.145).clamp(0.0, 1.0), 2).toDouble();
+          rowAlpha = hasCustomPreview ? u : 1.0;
+          previewAlpha = hasCustomPreview ? 1.0 - u : 0.0;
+          rowScale = catchScale;
           previewScale = lerpDouble(
-            1.0,
-            widget.targetRect.width / previewWidth,
-            u,
-          )!;
-          platterOpacity = (1.0 - w / 0.25).clamp(0.0, 1.0);
-          platterScale = 1.0 - 0.12 * (w / 0.25).clamp(0.0, 1.0);
-          scrimAmount = v;
+                1.0,
+                widget.targetRect.width / previewWidth,
+                u,
+              )! *
+              catchScale;
+          scrimAmount = (1.0 - tCloseSec / 0.280).clamp(0.0, 1.0);
         } else if (v <= _kLiftSplit) {
           // Stage 1: the row lifts off the page with a broad soft shadow.
           final double raw = (v / _kLiftSplit).clamp(0.0, 1.0);
@@ -1179,19 +1353,26 @@ class _GlassContextMenuRouteStaticState
           previewAlpha = 0.0;
           rowScale = scale;
           previewScale = 1.0;
-          platterOpacity = 0.0;
-          platterScale = 0.4;
+          platterGlassProgress = 0.0;
+          platterContentOpacity = 0.0;
+          platterScale = 0.25;
           scrimAmount = 0.0;
         } else {
           // Stage 2: the lifted row morphs into the preview card while the
-          // platter pops out beneath it.
-          final double t =
+          // platter springs open from the preview/trigger center
+          // (ω0 = 17.0 rad/s, ζ = 0.76).
+          final double tNorm =
               ((v - _kLiftSplit) / (1.0 - _kLiftSplit)).clamp(0.0, 1.0);
-          final double m = Curves.easeOutCubic
-              .transform(((t - 0.15) / 0.85).clamp(0.0, 1.0));
+          final double tOpenSec = tNorm * (_kOpenSpringDurationMs / 1000.0);
+          final double springOpen = tNorm >= 1.0
+              ? 1.0
+              : SpringSimulation(_kOpenPlatterSpring, 0.0, 1.0, 0.0)
+                  .x(tOpenSec);
+          final double m = springOpen.clamp(0.0, 1.0);
           final double c =
-              Curves.easeInOut.transform(((t - 0.05) / 0.75).clamp(0.0, 1.0));
-          cardRect = Rect.lerp(liftedRowRect, restingPreviewRect, m)!;
+              Curves.easeInOut.transform((tOpenSec / 0.180).clamp(0.0, 1.0));
+
+          cardRect = Rect.lerp(liftedRowRect, restingPreviewRect, springOpen)!;
           cardRadii = BorderRadius.lerp(rowRadii, previewRadii, m)!;
           shadowFactor = 1.0;
           rowAlpha = hasCustomPreview ? 1.0 - c : 1.0;
@@ -1203,11 +1384,12 @@ class _GlassContextMenuRouteStaticState
             1.0,
             m,
           )!;
-          final double pt = ((t - 0.12) / 0.88).clamp(0.0, 1.0);
-          final double pe = Curves.easeOutCubic.transform(pt);
-          platterOpacity = (pt * 3.0).clamp(0.0, 1.0);
-          platterScale = 0.4 + 0.6 * pe;
-          scrimAmount = Curves.easeOut.transform((t / 0.25).clamp(0.0, 1.0));
+          platterScale = 0.25 + 0.75 * springOpen;
+          platterGlassProgress = (springOpen * 2.2).clamp(0.0, 1.0);
+          platterContentOpacity =
+              ((platterScale - 0.25) / 0.75).clamp(0.0, 1.0);
+          scrimAmount =
+              Curves.easeOut.transform((tOpenSec / 0.110).clamp(0.0, 1.0));
         }
 
         final Widget scrimLayer = GestureDetector(
@@ -1227,9 +1409,6 @@ class _GlassContextMenuRouteStaticState
                   color: scrim.withValues(alpha: scrim.a * scrimAmount),
                 ),
         );
-
-        final Alignment platterAnchor =
-            placeBelow ? Alignment.topCenter : Alignment.bottomCenter;
 
         final List<BoxShadow>? cardShadows = shadowFactor <= 0.0
             ? null
@@ -1350,16 +1529,19 @@ class _GlassContextMenuRouteStaticState
               ),
             ),
 
-            // 5. Action platter
-            if (platterOpacity > 0.0)
+            // 5. Action platter — scales from/into the preview/trigger center
+            // and fades through GlassMaterializeScope (no ancestor Opacity
+            // saveLayer over useOwnLayer glass).
+            if (platterGlassProgress > 0.0)
               Positioned.fromRect(
                 rect: restingPlatterRect,
                 child: Transform.scale(
                   scale: platterScale,
-                  alignment: platterAnchor,
-                  child: Opacity(
-                    opacity: platterOpacity,
-                    child: buildPlatter(),
+                  alignment: Alignment.center,
+                  origin: cardRect.center - restingPlatterRect.center,
+                  child: buildPlatter(
+                    glassProgress: platterGlassProgress,
+                    contentOpacity: platterContentOpacity,
                   ),
                 ),
               ),

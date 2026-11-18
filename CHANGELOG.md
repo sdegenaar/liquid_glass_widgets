@@ -1,3 +1,16 @@
+# Unreleased
+
+## Features
+
+- **`GlassPullDownButton` intrinsic capsule width, recursive submenu selection, and `GlassMenu` passthroughs:** `GlassPullDownButton.buttonWidth` is now `double?` (`null` by default, resolving to `44.0` for icon-only buttons and intrinsic capsule width for labeled buttons without clipping). `onSelected` now recurses into nested `GlassMenuItem.submenu` items, and `GlassPullDownButton` forwards `menuPadding` (defaulting to `EdgeInsets.symmetric(horizontal: 12)` so clamped menus keep a safe screen-edge margin), `menuBorderRadius`, `morphSpeed`, `controller`, and `onClose` to `GlassMenu`.
+- **`GlassPopover` morph speed & platform-view backdrop support (`morphSpeed`, `platformViewBackdrop`):** `GlassPopover` now accepts `morphSpeed` (`MorphSpeed.normal` default) and `platformViewBackdrop` (`false` default), and renders its overlay through `AdaptiveLiquidGlassLayer`.
+- **iOS 27 `GlassMorphController` & `LiquidMorphState` morph channels:** Exposes `triggerPushDx` / `triggerPushDy`, `triggerImpactScale`, `triggerWidthProgress`, `platterScale`, `platterOpacity`, `contentOpacity`, `contentBlurSigma`, and `isPlatterActive` on `LiquidMorphState`, plus `GlassMorphController.speed` setter, `speedMultiplier`, `phaseElapsedSeconds`, `phaseStartTriggerWidth`, `openStartProgress`, `closeStartProgress`, `recoilHalfTravelPx`, `verticalOnlyRecoil`, and `GlassMorphController.computeCornerRadius` for custom morphing widgets.
+
+## Bug Fixes
+
+- **iOS 27 Liquid Morph open, teardrop close, and recoil parity (`GlassMenu`, `GlassPullDownButton`, `GlassPopover`, `GlassModalSheet`, `GlassMorphTrigger`, `GlassContextMenu`):** Calibrated open (`ω₀ = 17.0 rad/s, ζ ≈ 0.76`) and close (`ω₀ = 18.0 rad/s, ζ ≈ 0.86`) springs and trajectories against 60 fps native iOS 27 captures — `GlassMenu` inflates as a near-circular bubble that relaxes into its resting superellipse while rows resolve from soft blur to crisp text; `GlassMenu` and `GlassPopover` retract into `trigger.center` as a single concave teardrop with softened content fade, height-adapted droplet envelopes across short to tall platters, outer-edge non-overshoot clamping, and C⁰ mid-flight open/close reversals; wide triggers contract in place on open and splash horizontally (`+1.6%` at `~400 ms`) on close; triggers ride an immediate parallel `~183 ms` catch recoil (`GlassContextMenu` upgraded to matching iOS 27 spring physics with Reduce Motion support); and expanded `submenu` stacks collapse coherently with the root platter.
+- **Impeller overlay backdrop & blend-group compositing (`GlassMenu`, `GlassPopover`, `GlassModalSheet`, `GlassContextMenu`):** Eliminated ancestor fractional `Opacity` (`saveLayer`) wrappers over `AdaptiveLiquidGlassLayer` and `useOwnLayer: true` platters, removed duplicate nested `LiquidGlassBlendGroup` passes on premium Impeller layers, and kept underlying glass triggers suppressed until platter handoff so `BackdropFilter` never double-tints or blurs the resting button during close.
+
 # 1.17.5
 
 ## Bug Fixes

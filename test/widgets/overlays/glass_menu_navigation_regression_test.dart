@@ -419,10 +419,12 @@ void main() {
       expect(triggerRect.left, 140.0);
       expect(triggerRect.top, 40.0);
 
-      // The menu body must open relative to the trigger at 140, NOT double-offset to 240!
+      // Wide trigger ([140, ~422], center ~281) auto-centers the 150px menu at
+      // triggerRect.center.dx (~206..356), NOT double-offset +100px by the sidebar!
+      final expectedMenuLeft = triggerRect.center.dx - 75.0;
       final itemRect = tester.getRect(find.text('NestedMenuItem'));
-      expect(itemRect.left, greaterThanOrEqualTo(100.0));
-      expect(itemRect.left, lessThan(200.0));
+      expect(itemRect.left, greaterThanOrEqualTo(expectedMenuLeft));
+      expect(itemRect.left, lessThan(expectedMenuLeft + 45.0));
     });
   });
 }

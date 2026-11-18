@@ -997,4 +997,180 @@ void main() {
     await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();
   });
+
+  group(
+      'GlassContextMenu iOS 27 spring physics, Reduce Motion & Impeller safety',
+      () {
+    testWidgets(
+        'platter springs open with overshoot, avoids fractional Opacity over useOwnLayer glass, and recoils target on close (~180ms)',
+        (tester) async {
+      await tester.pumpWidget(
+        wrapWithApp(
+          Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 120),
+              child: GlassContextMenu(
+                actions: [
+                  GlassContextMenuAction(
+                    child: const Text('Spring Action'),
+                    onPressed: () {},
+                  ),
+                ],
+                child: Container(
+                  key: const ValueKey('spring_row'),
+                  width: 220,
+                  height: 52,
+                  color: CupertinoColors.systemBlue,
+                  child: const Text('Spring Row'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final restingCenter =
+          tester.getCenter(find.byKey(const ValueKey('spring_row')));
+
+      // Trigger non-interactive open via secondary tap (126ms lift + 450ms spring)
+      await tester.tap(
+        find.byKey(const ValueKey('spring_row')),
+        buttons: kSecondaryMouseButton,
+      );
+      await tester.pump();
+      // Advance to ~190ms (64ms into Stage 2 spring open — mid-materialization)
+      await tester.pump(const Duration(milliseconds: 190));
+
+      final platterContainerFinder = find.byWidgetPredicate(
+        (w) => w is GlassContainer && w.useOwnLayer,
+      );
+      expect(platterContainerFinder, findsOneWidget);
+
+      // Verify zero fractional Opacity ancestor wraps the useOwnLayer platter
+      final ancestorOpacitiesOpen = tester
+          .widgetList<Opacity>(
+            find.ancestor(
+              of: platterContainerFinder,
+              matching: find.byType(Opacity),
+            ),
+          )
+          .where((o) => o.opacity > 0.0 && o.opacity < 1.0);
+      expect(
+        ancestorOpacitiesOpen,
+        isEmpty,
+        reason:
+            'useOwnLayer GlassContainer must never be wrapped in fractional Opacity',
+      );
+
+      // Advance to ~415ms (~289ms into open spring -> peak underdamped overshoot > 1.0)
+      await tester.pump(const Duration(milliseconds: 225));
+      final openPlatterScaleTransform = tester.widget<Transform>(
+        find
+            .ancestor(
+              of: platterContainerFinder,
+              matching: find.byType(Transform),
+            )
+            .first,
+      );
+      expect(
+        openPlatterScaleTransform.transform.storage[0],
+        greaterThan(1.005),
+        reason: 'iOS 27 open spring (ω0=17, ζ=0.76) overshoots past 1.0',
+      );
+
+      // Settle open
+      await tester.pumpAndSettle();
+      final settledTransform = tester.widget<Transform>(
+        find
+            .ancestor(
+              of: platterContainerFinder,
+              matching: find.byType(Transform),
+            )
+            .first,
+      );
+      expect(settledTransform.transform.storage[0], closeTo(1.0, 1e-3));
+
+      // Dismiss by tapping outside
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pump();
+
+      // At 80ms into close: platter is shrinking smoothly with zero fractional Opacity wrapper
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(platterContainerFinder, findsOneWidget);
+      final ancestorOpacitiesClose = tester
+          .widgetList<Opacity>(
+            find.ancestor(
+              of: platterContainerFinder,
+              matching: find.byType(Opacity),
+            ),
+          )
+          .where((o) => o.opacity > 0.0 && o.opacity < 1.0);
+      expect(ancestorOpacitiesClose, isEmpty);
+
+      // Advance to 180ms into close: hero card exhibits upward catch recoil (dy < restingCenter.dy)
+      await tester.pump(const Duration(milliseconds: 100));
+      final liftedOverlayRow = find.text('Spring Row').last;
+      final recoilCenter = tester.getCenter(liftedOverlayRow);
+      expect(
+        recoilCenter.dy,
+        lessThan(restingCenter.dy - 2.0),
+        reason: 'Parallel close catch recoil peaks near ~180ms',
+      );
+
+      await tester.pumpAndSettle();
+      expect(find.text('Spring Action'), findsNothing);
+    });
+
+    testWidgets(
+        'respects Reduce Motion (GlassAccessibilityScope & MediaQuery) with instant open/close',
+        (tester) async {
+      await tester.pumpWidget(
+        GlassAccessibilityScope(
+          reduceMotion: true,
+          child: wrapWithApp(
+            GlassContextMenu(
+              actions: [
+                GlassContextMenuAction(
+                  child: const Text('Instant Action'),
+                  onPressed: () {},
+                ),
+              ],
+              child: const Text(
+                'Reduced Motion Target',
+                key: ValueKey('rm_target'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Secondary click opens immediately on next frame without spring animation
+      await tester.tap(
+        find.byKey(const ValueKey('rm_target')),
+        buttons: kSecondaryMouseButton,
+      );
+      await tester.pump();
+      expect(find.text('Instant Action'), findsOneWidget);
+
+      final platterContainerFinder = find.byWidgetPredicate(
+        (w) => w is GlassContainer && w.useOwnLayer,
+      );
+      final settledTransform = tester.widget<Transform>(
+        find
+            .ancestor(
+              of: platterContainerFinder,
+              matching: find.byType(Transform),
+            )
+            .first,
+      );
+      expect(settledTransform.transform.storage[0], 1.0);
+
+      // Tapping outside dismisses immediately without lingering animation frames
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Instant Action'), findsNothing);
+    });
+  });
 }

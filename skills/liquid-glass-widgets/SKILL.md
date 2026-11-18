@@ -181,7 +181,8 @@ When generating Flutter UI, replace standard Flutter widgets with their native l
 | `ElevatedButton` / `CupertinoButton` | `GlassButton` | Refractive button with squeeze & stretch physics, touch glow, and optional `pressLightColor` (or `GlassGlowColors.pressLight` on `GlassThemeData`). |
 | `IconButton` | `GlassIconButton` | Refractive circular/squircle button with `onPressed`. |
 | `Chip` / `FilterChip` / `ActionChip` | `GlassChip` | Refractive pill (`label` is `String`, not `Widget`) with optional `icon`, `selected`, `onDeleted`, or shader-free pill well (`surfaceStyle: GlassSurfaceStyle.solid` or auto-inherited inside a solid card). |
-| `PopupMenuButton` / Pull-Down Menu | `GlassPullDownButton` | Combined trigger button and `GlassMenu` (`menuSemanticLabel` names the open panel; `GlassMenu` also supports `opaqueColor` and `border`). |
+| `PopupMenuButton` / Pull-Down Menu | `GlassPullDownButton` | Combined trigger button and `GlassMenu`. `buttonWidth` is nullable (`44.0` icon-only default; intrinsic capsule width when `label` is set); `onSelected` recurses into `submenu`s; forwards `menuPadding` (default `horizontal: 12`), `menuBorderRadius`, `morphSpeed`, `controller`, `onClose`, and `menuSemanticLabel` (`GlassMenu` also supports `opaqueColor` and `border`). |
+| Custom popover card / SwiftUI `.popover` | `GlassPopover` | Liquid-morphs custom content (`contentBuilder: (ctx, close) => ...`) from `trigger` or `triggerBuilder`; supports `morphSpeed` and `platformViewBackdrop`. |
 | `CupertinoSegmentedControl` | `GlassSegmentedControl<T>` | Fluid animated glass indicator with jelly physics (`settings:` for track, `indicatorSettings:` for pill). Fine inside `solid` cards; on a `glass` card place it outside. |
 | `Switch` / `CupertinoSwitch` | `GlassSwitch` | Fluid spring jump animation, RTL-aware, honours `MediaQuery.onOffSwitchLabelsOf` (`onLabelColor` / `offLabelColor`). Pass `onChanged: null` to disable. Use `useOwnLayer: true` when standalone. |
 | `Slider` / `CupertinoSlider` | `GlassSlider` | Glass track with draggable jelly thumb and haptic snaps. |
@@ -197,7 +198,7 @@ When generating Flutter UI, replace standard Flutter widgets with their native l
 | `showDatePicker` / `CupertinoDatePicker` | `GlassDatePicker` (`.compact`, `.graphical`, `.wheel`), `GlassMultiDatePicker` | `showGlassDatePicker(...)` returns `DateTime?`. |
 | `Navigator.push` rows / SwiftUI `NavigationStack` | `GlassNavigationStack` + `GlassNavigationLink` + `GlassPageRoute` | Typed `value` routing via `destinations`, or a `destination` builder. Automatically clips pages with rounded superellipse corners during push/pop and swipe-back (`transitionCornerRadius`; use `GlassPageTransitionsBuilder` in `MaterialApp.theme.pageTransitionsTheme`). |
 | `TextField` / `CupertinoTextField` | `GlassTextField` / `GlassSearchBar` / `GlassTextArea` / `GlassPasswordField` / `GlassPicker` | Refractive glass input with press glow/scale (`glass`), or shader-free iOS `tertiarySystemFill` well (`surfaceStyle: GlassSurfaceStyle.solid` or auto-inherited inside a solid card). |
-| `showModalBottomSheet` | `GlassModalSheet.show` | Multi-detent fluid sheet (peek, half, full) with spring physics. |
+| `showModalBottomSheet` | `GlassModalSheet.show` | Multi-detent fluid sheet (peek, half, full) with spring physics and optional `morphFrom` (`GlassMorphTrigger`) liquid-morph presentation. |
 | `showDialog` / `CupertinoAlertDialog` | `GlassDialog.show` | Centered 320 pt iOS 26/27 alert platter with 48 pt capsule `GlassDialogAction` buttons (280 pt on `GlassStyle.classic`). |
 | `showCupertinoModalPopup` / `CupertinoActionSheet` | `showGlassActionSheet` | Centered 320 pt iOS 26/27 action sheet platter with stacked capsule `GlassActionSheetAction` buttons (bottom-docked sheet on `GlassStyle.classic`). |
 | `SnackBar` / Banner | `GlassToast` | Floating glass HUD banner. |
@@ -281,6 +282,7 @@ GlassPullDownButton(
 ```
 
 - A submenu row shows a chevron automatically unless you pass `trailing`.
+- `GlassPullDownButton.onSelected` fires for both top-level items and nested `submenu` items, and omitting `buttonWidth` sizes labeled buttons intrinsically as a capsule (`44.0` when icon-only).
 - Do **not** build nested menus by opening a second `GlassMenu` from an item's `onTap`; use `submenu`.
 - Use `GlassMenuItem.semanticsSelected: true` (alongside a checkmark `trailing`) to announce the active choice to VoiceOver/TalkBack (`semanticsChecked` on macOS where VoiceOver expects radio checked state) without keeping the hover highlight visible, and `semanticLabel` when `trailing` adds visual-only text like keyboard shortcuts.
 

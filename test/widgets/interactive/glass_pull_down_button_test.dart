@@ -444,6 +444,180 @@ void main() {
     );
     expect(find.text('A'), findsOneWidget);
   });
+
+  group(
+      'GlassPullDownButton intrinsic sizing, submenu recursion & passthroughs',
+      () {
+    test('buttonWidth is null and menuPadding defaults to horizontal 12', () {
+      const btn = GlassPullDownButton(
+        items: [GlassMenuItem(title: 'Action', onTap: _noop)],
+      );
+      expect(btn.buttonWidth, isNull);
+      expect(btn.menuPadding, const EdgeInsets.symmetric(horizontal: 12));
+      expect(btn.menuBorderRadius, 32.0);
+      expect(btn.morphSpeed, MorphSpeed.normal);
+    });
+
+    testWidgets(
+        'icon-only defaults to 44pt while labeled button sizes intrinsically inside a Row',
+        (tester) async {
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: CupertinoPageScaffold(
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  GlassPullDownButton(
+                    key: ValueKey('icon_only_pd'),
+                    items: [GlassMenuItem(title: 'One', onTap: _noop)],
+                  ),
+                  SizedBox(width: 12),
+                  GlassPullDownButton(
+                    key: ValueKey('labeled_pd'),
+                    label: 'Select Workspace Options',
+                    items: [GlassMenuItem(title: 'One', onTap: _noop)],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final iconSize =
+          tester.getSize(find.byKey(const ValueKey('icon_only_pd')));
+      final labeledSize =
+          tester.getSize(find.byKey(const ValueKey('labeled_pd')));
+
+      expect(iconSize.width, 44.0);
+      expect(iconSize.height, 44.0);
+      expect(labeledSize.width, greaterThan(160.0));
+      expect(labeledSize.height, 44.0);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('icon-only button with non-square explicit width uses capsule',
+        (tester) async {
+      await tester.pumpWidget(
+        const CupertinoApp(
+          home: CupertinoPageScaffold(
+            child: Center(
+              child: GlassPullDownButton(
+                buttonWidth: 64,
+                buttonHeight: 44,
+                items: [GlassMenuItem(title: 'One', onTap: _noop)],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      final btn = tester.widget<GlassButton>(find.byType(GlassButton));
+      expect(btn.width, 64.0);
+      expect(btn.shape, isA<LiquidRoundedSuperellipse>());
+    });
+
+    testWidgets(
+        'onSelected recurses into nested submenu and doubly-nested submenu items',
+        (tester) async {
+      final selectedTitles = <String>[];
+      var leafTapped = false;
+
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: CupertinoPageScaffold(
+            child: Center(
+              child: GlassPullDownButton(
+                label: 'Actions',
+                onSelected: selectedTitles.add,
+                items: [
+                  GlassMenuItem(
+                    title: 'Share…',
+                    onTap: _noop,
+                    submenu: [
+                      GlassMenuItem(
+                        title: 'More Channels…',
+                        onTap: _noop,
+                        submenu: [
+                          GlassMenuItem(
+                            title: 'Encrypted SMS',
+                            onTap: () => leafTapped = true,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Actions'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Share…'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('More Channels…'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Encrypted SMS'));
+      await tester.pumpAndSettle();
+
+      expect(leafTapped, isTrue);
+      expect(selectedTitles, ['Encrypted SMS']);
+    });
+
+    testWidgets(
+        'forwards menuPadding, menuBorderRadius, menuAlignment, morphSpeed, controller, and onClose to GlassMenu',
+        (tester) async {
+      final menuController = GlassMenuController();
+      var closeCount = 0;
+
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: CupertinoPageScaffold(
+            child: Center(
+              child: GlassPullDownButton(
+                label: 'Menu',
+                menuPadding: const EdgeInsets.all(20),
+                menuBorderRadius: 28.0,
+                menuAlignment: GlassMenuAlignment.topCenter,
+                morphSpeed: MorphSpeed.fast,
+                controller: menuController,
+                onClose: () => closeCount++,
+                items: const [
+                  GlassMenuItem(title: 'First', onTap: _noop),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final glassMenu = tester.widget<GlassMenu>(find.byType(GlassMenu));
+      expect(glassMenu.menuPadding, const EdgeInsets.all(20));
+      expect(glassMenu.menuBorderRadius, 28.0);
+      expect(glassMenu.menuAlignment, GlassMenuAlignment.topCenter);
+      expect(glassMenu.morphSpeed, MorphSpeed.fast);
+      expect(glassMenu.controller, same(menuController));
+
+      menuController.open();
+      await tester.pumpAndSettle();
+      expect(find.text('First'), findsOneWidget);
+
+      menuController.close();
+      await tester.pumpAndSettle();
+      expect(closeCount, 1);
+      expect(find.text('First'), findsNothing);
+    });
+  });
 }
 
 void _noop() {}
