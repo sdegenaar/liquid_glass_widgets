@@ -1885,10 +1885,24 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                     menuHeight: targetHeight,
                   )
               : 0.0;
-      final center = closeBase.center +
+      final Offset pivotCenter = closeBase.center +
           recoilCatch +
           Offset(0.0, closeDriftY) +
           _platterInterruptCenterDelta * interruptDecay;
+      // Native's visible droplet slides sideways until it sits directly under
+      // the trigger (vertical neck, tip pointing at the trigger). The pure
+      // pivot-scale model leaves it ~20 px off to the side for left/right
+      // aligned triggers, which merges as two overlapping circles. Converge the
+      // droplet's x onto the trigger's as it shrinks (rawValue 0.75 → 0.25).
+      final double convergeX = _smoothstep01Local((0.75 - clampedValue) / 0.50);
+      final Offset center = Offset(
+        lerpDouble(
+          pivotCenter.dx,
+          triggerCenter.dx + effectivePush.dx,
+          convergeX,
+        )!,
+        pivotCenter.dy,
+      );
       blobBLeft = center.dx - currentWidth * 0.5;
       blobBTop = center.dy - currentHeight * 0.5;
     } else {
@@ -1996,14 +2010,43 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     final double openAnchorScale = (tw > th * 1.15)
         ? (1.0 - ((clampedValue - 0.25) / 0.35).clamp(0.0, 1.0))
         : (1.0 - (clampedValue / 0.50)).clamp(0.0, 1.0);
-    // (A smaller early trigger blob was tried to mimic native's pointed tip, but
-    // the fixed-width metaball bridge cannot reach a shrunken blob across the
-    // close gap, leaving a detached dot, so Blob A keeps its full size.)
-    final double blobAScale =
-        _morphController.isClosing ? state.triggerImpactScale : openAnchorScale;
+    // Close: native hides the trigger's own glass while the droplet leaves
+    // (frames 1–6 are a single blob; the trigger pill only appears near the end
+    // with a neck into the droplet). Drawing Blob A from t = 0 left a second,
+    // detached circle. Blob A is therefore held back until BOTH rawValue < 0.45
+    // and the droplet is close enough for the metaball bridge to reach it (the
+    // distance depends on alignment: a left/right-aligned droplet sits off to
+    // the side), then grows in from nothing so it emerges from the tip.
+    double closeBlobAGrow = 1.0;
+    if (_morphController.isClosing) {
+      final Rect platterRectNow =
+          Rect.fromLTWH(blobBLeft, blobBTop, currentWidth, currentHeight);
+      final Offset trigNow = triggerCenter + effectivePush;
+      final double r = math.min(
+        currentRadius,
+        math.min(currentWidth, currentHeight) * 0.5,
+      );
+      final Rect inner = platterRectNow.deflate(r);
+      final double ddx = math.max(
+        math.max(inner.left - trigNow.dx, trigNow.dx - inner.right),
+        0.0,
+      );
+      final double ddy = math.max(
+        math.max(inner.top - trigNow.dy, trigNow.dy - inner.bottom),
+        0.0,
+      );
+      // distance from the trigger centre to the rounded droplet surface
+      final double gap = math.max(0.0, math.sqrt(ddx * ddx + ddy * ddy) - r);
+      final double byTime = _smoothstep01Local((0.45 - clampedValue) / 0.10);
+      final double byGap = _smoothstep01Local((26.0 - gap) / 14.0);
+      closeBlobAGrow = math.min(byTime, byGap);
+    }
+    final double blobAScale = _morphController.isClosing
+        ? state.triggerImpactScale * closeBlobAGrow
+        : openAnchorScale;
     final bool showBlobA = !widget.morphFromZero &&
         (_morphController.isClosing
-            ? (isPremium && state.isPlatterActive)
+            ? (isPremium && state.isPlatterActive && closeBlobAGrow > 0.001)
             : openAnchorScale > 0.15);
 
     // Close (premium, non-zero origin): drive the metaball bridge directly so the
@@ -2899,6 +2942,12 @@ const Duration _kSubmenuMorphDuration = Duration(milliseconds: 320);
 const Curve _kSubmenuMorphCurve = Curves.easeOutCubic;
 const double _kBodyVerticalPadding = 12.0;
 const double _kRowGap = 2.0;
+
+/// Smoothstep `3x² − 2x³` on `[0, 1]`.
+double _smoothstep01Local(double x) {
+  final c = x.clamp(0.0, 1.0);
+  return c * c * (3.0 - 2.0 * c);
+}
 
 /// How late (seconds) the drawn trigger capsule trails the close width spring.
 const double _kCloseCapsuleDelay = 0.05;
