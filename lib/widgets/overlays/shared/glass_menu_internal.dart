@@ -1991,6 +1991,14 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
             ? (isPremium && state.isPlatterActive)
             : openAnchorScale > 0.15);
 
+    // Close (premium, non-zero origin): drive the metaball bridge directly so the
+    // platter and trigger read as one teardrop (see
+    // LiquidMorphPhysics.computeCloseBlend); open keeps the controller blend.
+    final double layerBlend =
+        (_morphController.isClosing && !widget.morphFromZero && showBlobA)
+            ? LiquidMorphPhysics.computeCloseBlend(rawValue: rawValue)
+            : state.blend;
+
     final overlay = Stack(
       children: [
         // Invisible full-screen tap-to-close barrier (inactive once closing so
@@ -2022,7 +2030,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
           child: AdaptiveLiquidGlassLayer(
             settings: effectiveSettings,
             quality: effectiveQuality,
-            blendAmount: state.blend,
+            blendAmount: layerBlend,
             platformViewBackdrop: widget.platformViewBackdrop,
             child: Builder(
               builder: (context) {
@@ -2082,7 +2090,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                     LiquidGlassBlendGroup.maybeOf(context) == null;
                 final Widget blobsGrouped = needsInnerBlendGroup
                     ? LiquidGlassBlendGroup(
-                        blend: state.blend,
+                        blend: layerBlend,
                         child: blobs,
                       )
                     : blobs;

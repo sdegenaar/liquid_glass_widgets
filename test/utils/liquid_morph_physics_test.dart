@@ -857,6 +857,30 @@ void main() {
     });
   });
 
+  group('LiquidMorphPhysics — close teardrop blend', () {
+    test('is zero at rest and fully open, holds the max mid-collapse', () {
+      expect(LiquidMorphPhysics.computeCloseBlend(rawValue: 1.0), equals(0.0));
+      expect(LiquidMorphPhysics.computeCloseBlend(rawValue: 0.0), equals(0.0));
+      expect(LiquidMorphPhysics.computeCloseBlend(rawValue: 0.5),
+          closeTo(28.0, 1e-9));
+      expect(LiquidMorphPhysics.computeCloseBlend(rawValue: 0.2),
+          closeTo(28.0, 1e-9));
+    });
+
+    test('ramps smoothly in and out without exceeding the shader max', () {
+      var prev = 0.0;
+      var rising = true;
+      for (var u = 1.0; u >= 0.0; u -= 0.01) {
+        final b = LiquidMorphPhysics.computeCloseBlend(rawValue: u);
+        expect(b, inInclusiveRange(0.0, 28.0));
+        // single plateau: rises, holds, then falls (never zig-zags)
+        if (b < prev - 1e-9) rising = false;
+        if (!rising) expect(b, lessThanOrEqualTo(prev + 1e-9));
+        prev = b;
+      }
+    });
+  });
+
   group('LiquidMorphPhysics — open bubble, content reveal & drift', () {
     const resting = Size(250, 251);
 

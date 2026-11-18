@@ -616,6 +616,23 @@ class LiquidMorphPhysics {
   static double computeMenuOpenSizeProgress(double rawValue) =>
       math.pow(rawValue.clamp(0.0, 1.0), 0.55).toDouble();
 
+  /// SDF smooth-union strength (blur units) between the closing platter and
+  /// the trigger blob.
+  ///
+  /// Native retracts as **one continuous teardrop**: the platter tapers into a
+  /// pointed neck that flows into the trigger. The generic
+  /// `|pathT − sizeT| · 150 · attenuation` blend is almost zero on close for
+  /// large morphs, so the trigger circle and the shrinking platter read as two
+  /// touching shapes with a notch between them. This drives the blend directly:
+  /// it ramps in over `rawValue ∈ [0.97, 0.77]`, holds [_maxBlend], and ramps
+  /// back to 0 over the last `0.08` as the droplet is absorbed.
+  static double computeCloseBlend({required double rawValue}) {
+    final u = rawValue.clamp(0.0, 1.0);
+    final rampIn = _smoothstep01((0.97 - u) / 0.20);
+    final rampOut = 1.0 - _smoothstep01((0.08 - u) / 0.08);
+    return _maxBlend * rampIn * rampOut;
+  }
+
   static double _smoothstep01(double x) {
     final c = x.clamp(0.0, 1.0);
     return c * c * (3.0 - 2.0 * c);
