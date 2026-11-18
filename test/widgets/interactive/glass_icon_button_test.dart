@@ -1,10 +1,8 @@
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/renderer/liquid_glass_renderer.dart';
-import 'package:liquid_glass_widgets/src/engine/stretch.dart';
-import 'package:liquid_glass_widgets/widgets/interactive/glass_icon_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_glass_widgets/widgets/shared/adaptive_liquid_glass_layer.dart';
 
 import '../../shared/test_helpers.dart';
 
@@ -84,21 +82,30 @@ void main() {
       expect(find.byType(GlassIconButton), findsOneWidget);
     });
 
-    testWidgets('renders rounded square shape when specified', (tester) async {
+    testWidgets(
+        'renders LiquidRoundedSuperellipse when roundedSquare shape is specified',
+        (tester) async {
       await tester.pumpWidget(
         createTestApp(
           child: AdaptiveLiquidGlassLayer(
             settings: defaultTestGlassSettings,
             child: GlassIconButton(
-              icon: Icon(Icons.star),
+              icon: const Icon(Icons.star),
               onPressed: () {},
               shape: GlassIconButtonShape.roundedSquare,
+              borderRadius: 14,
             ),
           ),
         ),
       );
 
       expect(find.byType(GlassIconButton), findsOneWidget);
+      final innerButton = tester.widget<GlassButton>(find.byType(GlassButton));
+      expect(innerButton.shape, isA<LiquidRoundedSuperellipse>());
+      expect(
+        (innerButton.shape as LiquidRoundedSuperellipse).borderRadius,
+        equals(14),
+      );
     });
 
     testWidgets('respects custom size', (tester) async {
@@ -174,6 +181,11 @@ void main() {
       expect(button.shape, equals(GlassIconButtonShape.circle));
       expect(button.useOwnLayer, isFalse);
       expect(button.quality, isNull);
+      expect(button.surfaceStyle, isNull);
+      expect(button.color, isNull);
+      expect(button.iconColor, isNull);
+      expect(button.tintColor, isNull);
+      expect(button.style, equals(GlassButtonStyle.filled));
       expect(button.interactionScale, equals(0.95));
       expect(button.anchorStretchSettings, isNull);
     });
@@ -345,6 +357,292 @@ void main() {
         ),
       );
       handle.dispose();
+    });
+  });
+
+  group('GlassIconButton GlassSurfaceStyle.solid & tintColor', () {
+    Widget cupertinoHost({
+      required Widget child,
+      Brightness brightness = Brightness.light,
+      Color primaryColor = CupertinoColors.activeBlue,
+    }) {
+      return GlassTheme(
+        data: GlassThemeData(brightness: brightness),
+        child: CupertinoApp(
+          theme: CupertinoThemeData(
+            brightness: brightness,
+            primaryColor: primaryColor,
+          ),
+          home: CupertinoPageScaffold(
+            child: Center(child: child),
+          ),
+        ),
+      );
+    }
+
+    IconThemeData innerIconThemeOf(WidgetTester tester, [Finder? scope]) {
+      return tester
+          .widget<IconTheme>(
+            find
+                .descendant(
+                  of: scope ?? find.byType(GlassIconButton),
+                  matching: find.byType(IconTheme),
+                )
+                .last,
+          )
+          .data;
+    }
+
+    testWidgets(
+        'solid mode renders zero shaders across filled, prominent, and transparent styles',
+        (tester) async {
+      var tapped = false;
+
+      // 1. Filled solid with roundedSquare superellipse
+      await tester.pumpWidget(
+        cupertinoHost(
+          brightness: Brightness.light,
+          child: GlassIconButton(
+            icon: const Icon(CupertinoIcons.gear_alt_fill),
+            shape: GlassIconButtonShape.roundedSquare,
+            borderRadius: 12,
+            surfaceStyle: GlassSurfaceStyle.solid,
+            onPressed: () => tapped = true,
+          ),
+        ),
+      );
+
+      expect(
+        find.descendant(
+          of: find.byType(GlassIconButton),
+          matching: find.byType(AdaptiveGlass),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(GlassIconButton),
+          matching: find.byType(BackdropFilter),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(GlassIconButton),
+          matching: find.byType(GlassGlow),
+        ),
+        findsNothing,
+      );
+
+      final filledDeco = tester
+          .widget<DecoratedBox>(
+            find.descendant(
+              of: find.byType(GlassIconButton),
+              matching: find.byType(DecoratedBox),
+            ),
+          )
+          .decoration as ShapeDecoration;
+      expect(filledDeco.color, equals(kGlassSolidWellLight));
+      expect(filledDeco.shape, isA<LiquidRoundedSuperellipse>());
+      expect(
+        innerIconThemeOf(tester).color!.toARGB32(),
+        equals(CupertinoColors.label.color.toARGB32()),
+      );
+
+      await tester.tap(find.byType(GlassIconButton));
+      await tester.pumpAndSettle();
+      expect(tapped, isTrue);
+
+      // 2. Prominent solid defaults to primaryColor + white contrasting icon
+      await tester.pumpWidget(
+        cupertinoHost(
+          brightness: Brightness.dark,
+          primaryColor: CupertinoColors.systemBlue,
+          child: GlassIconButton(
+            icon: const Icon(CupertinoIcons.plus),
+            style: GlassButtonStyle.prominent,
+            surfaceStyle: GlassSurfaceStyle.solid,
+            onPressed: () {},
+          ),
+        ),
+      );
+
+      final prominentDeco = tester
+          .widget<DecoratedBox>(
+            find.descendant(
+              of: find.byType(GlassIconButton),
+              matching: find.byType(DecoratedBox),
+            ),
+          )
+          .decoration as ShapeDecoration;
+      expect(
+        prominentDeco.color,
+        equals(CupertinoColors.systemBlue.darkColor),
+      );
+      expect(innerIconThemeOf(tester).color, equals(CupertinoColors.white));
+
+      // 3. Disabled prominent solid keeps white icon and dims via 0.5 Opacity
+      await tester.pumpWidget(
+        cupertinoHost(
+          brightness: Brightness.dark,
+          primaryColor: CupertinoColors.systemBlue,
+          child: const GlassIconButton(
+            icon: Icon(CupertinoIcons.plus),
+            style: GlassButtonStyle.prominent,
+            surfaceStyle: GlassSurfaceStyle.solid,
+            onPressed: null,
+          ),
+        ),
+      );
+      expect(innerIconThemeOf(tester).color, equals(CupertinoColors.white));
+      final opacities = tester.widgetList<Opacity>(
+        find.descendant(
+          of: find.byType(GlassIconButton),
+          matching: find.byType(Opacity),
+        ),
+      );
+      expect(opacities.any((o) => o.opacity == 0.5), isTrue);
+
+      // 4. Transparent solid mounts no resting DecoratedBox
+      await tester.pumpWidget(
+        cupertinoHost(
+          child: GlassIconButton(
+            icon: const Icon(CupertinoIcons.ellipsis),
+            style: GlassButtonStyle.transparent,
+            surfaceStyle: GlassSurfaceStyle.solid,
+            onPressed: () {},
+          ),
+        ),
+      );
+      expect(
+        find.descendant(
+          of: find.byType(GlassIconButton),
+          matching: find.byType(DecoratedBox),
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets(
+        'auto-inherits GlassSurfaceStyle.solid inside solid GlassContainer.card and GlassGroupedSection',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GlassContainer.card(
+                surfaceStyle: GlassSurfaceStyle.solid,
+                child: GlassIconButton(
+                  key: const Key('card_icon_btn'),
+                  icon: const Icon(CupertinoIcons.bell_fill),
+                  onPressed: () {},
+                ),
+              ),
+              GlassGroupedSection(
+                surfaceStyle: GlassSurfaceStyle.solid,
+                children: [
+                  GlassIconButton(
+                    key: const Key('section_icon_btn'),
+                    icon: const Icon(CupertinoIcons.star_fill),
+                    onPressed: () {},
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+
+      for (final key in [
+        const Key('card_icon_btn'),
+        const Key('section_icon_btn'),
+      ]) {
+        expect(
+          find.descendant(
+            of: find.byKey(key),
+            matching: find.byType(AdaptiveGlass),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(key),
+            matching: find.byType(DecoratedBox),
+          ),
+          findsOneWidget,
+        );
+      }
+    });
+
+    testWidgets(
+        'resolves explicit iconColor, contrast-aware bright/dark fills, and glass tintColor',
+        (tester) async {
+      // Bright solid fill -> black icon by default, explicit iconColor overrides
+      await tester.pumpWidget(
+        cupertinoHost(
+          brightness: Brightness.dark,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GlassIconButton(
+                key: const Key('bright_solid_icon'),
+                icon: const Icon(CupertinoIcons.arrow_up),
+                surfaceStyle: GlassSurfaceStyle.solid,
+                color: const Color(0xFFFFFFFF),
+                onPressed: () {},
+              ),
+              GlassIconButton(
+                key: const Key('explicit_icon_color'),
+                icon: const Icon(CupertinoIcons.heart_fill),
+                surfaceStyle: GlassSurfaceStyle.solid,
+                color: const Color(0xFFFFFFFF),
+                iconColor: CupertinoColors.systemPink,
+                onPressed: () {},
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(
+        innerIconThemeOf(tester, find.byKey(const Key('bright_solid_icon')))
+            .color,
+        equals(CupertinoColors.black),
+      );
+      expect(
+        innerIconThemeOf(tester, find.byKey(const Key('explicit_icon_color')))
+            .color!
+            .toARGB32(),
+        equals(CupertinoColors.systemPink.darkColor.toARGB32()),
+      );
+
+      // Glass mode + prominent + bright yellow tintColor -> GlassBodyMode.clear & black icon
+      await tester.pumpWidget(
+        cupertinoHost(
+          brightness: Brightness.dark,
+          child: AdaptiveLiquidGlassLayer(
+            settings: defaultTestGlassSettings,
+            child: GlassIconButton(
+              icon: const Icon(CupertinoIcons.sun_max_fill),
+              style: GlassButtonStyle.prominent,
+              tintColor: const Color(0xFFFFD60A),
+              onPressed: () {},
+            ),
+          ),
+        ),
+      );
+
+      final glass = tester.widget<AdaptiveGlass>(
+        find.descendant(
+          of: find.byType(GlassIconButton),
+          matching: find.byType(AdaptiveGlass),
+        ),
+      );
+      expect(glass.useOwnLayer, isTrue);
+      expect(glass.settings.bodyMode, equals(GlassBodyMode.clear));
+      expect(glass.settings.glassColor.a, closeTo(0.85, 0.005));
+      expect(innerIconThemeOf(tester).color, equals(CupertinoColors.black));
     });
   });
 }

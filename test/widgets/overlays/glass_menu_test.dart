@@ -1,9 +1,13 @@
+import 'dart:math' as math;
+
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show SemanticsAction, SemanticsNode;
+import 'package:flutter/rendering.dart'
+    show RenderOpacity, SemanticsAction, SemanticsNode;
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets/src/renderer/glass_materialize_scope.dart';
 
 void main() {
   for (final fromTrigger in [false, true]) {
@@ -1542,9 +1546,9 @@ void main() {
     expect(containerFinder, findsOneWidget);
 
     final container = tester.widget<GlassContainer>(containerFinder);
-    final shape = container.shape as LiquidRoundedRectangle;
-    // On standard quality, border radius lerps between trigger radius (10.0) and menuBorderRadius (24.0)
-    // rather than locking to full capsule rounding (which would be min(width, height)/2 >= 40.0)
+    final shape = container.shape as LiquidRoundedSuperellipse;
+    // Border radius interpolates monotonically between trigger radius (10.0)
+    // and menuBorderRadius (24.0) without ballooning above max(10.0, 24.0).
     expect(shape.borderRadius, lessThanOrEqualTo(24.0));
     expect(shape.borderRadius, greaterThanOrEqualTo(10.0));
 
@@ -2030,7 +2034,7 @@ void main() {
     });
 
     testWidgets(
-        'GlassMenu items fade smoothly while sizeT > 0.50 and hide before shrinking into button',
+        'GlassMenu items fade smoothly across close (~283ms) and unmount on handoff',
         (tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -2061,13 +2065,27 @@ void main() {
       // Tap item to close
       await tester.tap(find.text('One'));
       await tester.pump();
-      // At 45ms into close (morphSizeT ≈ 0.78 > 0.50), items are still visible and fading smoothly.
+      // At 45ms and 110ms into close, items remain visible and smoothly fading
+      // (no premature 67ms blackout).
       await tester.pump(const Duration(milliseconds: 45));
       expect(find.text('One'), findsOneWidget);
 
-      // By 110ms into close (morphSizeT ≈ 0.35 < 0.50), items are completely hidden so content
-      // is never visible inside the shrinking button.
-      await tester.pump(const Duration(milliseconds: 65));
+      await tester.pump(const Duration(milliseconds: 65)); // 110ms total
+      expect(find.text('One'), findsOneWidget);
+      double itemOpacityAt110 = 1.0;
+      RenderObject? ro = tester.element(find.text('One')).renderObject;
+      while (ro != null) {
+        if (ro is RenderOpacity) {
+          itemOpacityAt110 *= ro.opacity;
+        }
+        ro = ro.parent;
+      }
+      expect(itemOpacityAt110, greaterThan(0.20));
+      expect(itemOpacityAt110, lessThan(0.60));
+
+      // By ~290ms into close, the collapsing platter has reached 0.20 scale and
+      // unmounted cleanly.
+      await tester.pump(const Duration(milliseconds: 180)); // 290ms total
       expect(find.text('One'), findsNothing);
 
       await tester.pumpAndSettle();
@@ -2114,6 +2132,788 @@ void main() {
       await tester.pumpAndSettle();
       final settledOpacity = tester.widget<Opacity>(find.byType(Opacity).first);
       expect(settledOpacity.opacity, equals(1.0));
+    });
+  });
+
+  group('iOS 27 Liquid Morph Parity — Wide Triggers, Lengths, Recoil & Radii',
+      () {
+    List<Widget> buildItems(int count) => [
+          for (var i = 1; i <= count; i++)
+            GlassMenuItem(title: 'Action $i', onTap: () {}),
+        ];
+
+    Finder overlayContainers() => find.descendant(
+          of: find.byType(AdaptiveLiquidGlassLayer),
+          matching: find.byType(GlassContainer),
+        );
+
+    testWidgets(
+        'wide centered trigger (260x44) auto-centers menu, collapses into middle without widening, and splashes horizontally (~400ms)',
+        (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final controller = GlassMenuController();
+      final triggerKey = GlobalKey();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: GlassMenu(
+                controller: controller,
+                autoAdjustToScreen: true,
+                menuPadding: const EdgeInsets.all(12),
+                menuWidth: 220,
+                quality: GlassQuality.premium,
+                triggerBuilder: (context, toggle) => GlassButton.custom(
+                  key: triggerKey,
+                  width: 260,
+                  height: 44,
+                  useOwnLayer: true,
+                  onTap: toggle,
+                  child: const Text('Wide Trigger'),
+                ),
+                items: buildItems(5),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final restingTriggerRect = tester.getRect(find.byKey(triggerKey));
+      expect(restingTriggerRect.width, closeTo(260.0, 0.1));
+      expect(restingTriggerRect.center.dx, closeTo(200.0, 0.1));
+
+      controller.open();
+      await tester.pump();
+
+      // Early in open (~50ms), the trigger's width scale contracts toward the
+      // 44x44 center core while zero fractional Opacity wraps the GlassButton.
+      await tester.pump(const Duration(milliseconds: 50));
+      final openOpacities = tester.widgetList<Opacity>(
+        find.ancestor(
+          of: find.byKey(triggerKey),
+          matching: find.byType(Opacity),
+        ),
+      );
+      expect(
+        openOpacities.every((o) => o.opacity == 0.0 || o.opacity == 1.0),
+        isTrue,
+        reason: 'GlassButton trigger must never have fractional Opacity',
+      );
+
+      await tester.pumpAndSettle();
+
+      // Settled menu must be horizontally centered on the 260x44 wide trigger.
+      final settledMenuRect = tester.getRect(overlayContainers().last);
+      expect(settledMenuRect.width, closeTo(220.0, 0.5));
+      expect(
+        settledMenuRect.center.dx,
+        closeTo(restingTriggerRect.center.dx, 0.5),
+      );
+
+      // Close and sample every 16ms: platter must NEVER widen past 220pt toward
+      // 260pt, and its horizontal center must stay locked to trigger.center.dx!
+      controller.close();
+      await tester.pump();
+
+      double maxSplashWidth = 0.0;
+      double minTriggerPaintedWidth = double.infinity;
+      double minBlobAWidth = double.infinity;
+      double maxBlobAWidth = 0.0;
+      for (int elapsed = 16; elapsed <= 464; elapsed += 16) {
+        await tester.pump(const Duration(milliseconds: 16));
+
+        final elements = overlayContainers().evaluate().toList();
+        for (final element in elements) {
+          final box = element.renderObject as RenderBox;
+          final rect = MatrixUtils.transformRect(
+            box.getTransformTo(null),
+            Offset.zero & box.size,
+          );
+          // Both Blob A (44px capsule) and Blob B (shrinking platter) stay
+          // horizontally centered on trigger.center.dx!
+          expect(
+            rect.center.dx,
+            closeTo(restingTriggerRect.center.dx, 0.5),
+            reason:
+                'Collapsing blob drifted off trigger center X at ${elapsed}ms',
+          );
+          final isBlobA =
+              elements.length == 2 && identical(element, elements.first);
+          if (!isBlobA) {
+            expect(
+              rect.width,
+              lessThanOrEqualTo(220.5),
+              reason:
+                  'Platter widened to ${rect.width} at ${elapsed}ms instead of collapsing into center',
+            );
+          } else {
+            if (box.size.width < minBlobAWidth) minBlobAWidth = box.size.width;
+            if (box.size.width > maxBlobAWidth) maxBlobAWidth = box.size.width;
+          }
+        }
+
+        // Measure painted/transformed trigger width via getRect on triggerKey:
+        final currentTriggerRect = tester.getRect(find.byKey(triggerKey));
+        if (currentTriggerRect.width < minTriggerPaintedWidth) {
+          minTriggerPaintedWidth = currentTriggerRect.width;
+        }
+        if (elapsed >= 336 && elapsed <= 448) {
+          if (currentTriggerRect.width > maxSplashWidth) {
+            maxSplashWidth = currentTriggerRect.width;
+          }
+        }
+        // Trigger stays centered around trigger.center.dx throughout splash!
+        expect(
+          currentTriggerRect.center.dx,
+          closeTo(restingTriggerRect.center.dx, 0.5),
+        );
+      }
+
+      // Real trigger button is NEVER affine-squished horizontally (< 90% width)!
+      expect(
+        minTriggerPaintedWidth,
+        greaterThanOrEqualTo(260.0 * 0.895),
+        reason:
+            'Real wide trigger was affine-squashed to $minTriggerPaintedWidth px!',
+      );
+      // On Impeller (where Blob A is active on close), Blob A expands its true
+      // container width from the center core (< 85px) out to wide capsule (> 220px).
+      if (maxBlobAWidth > 0.0) {
+        expect(minBlobAWidth, lessThan(85.0));
+        expect(maxBlobAWidth, greaterThan(220.0));
+      }
+
+      // Around ~398ms, the wide pill exhibits the calibrated +1%..+2% splash!
+      expect(
+        maxSplashWidth,
+        greaterThan(261.5),
+        reason: 'Wide trigger should splash past 260px around ~400ms',
+      );
+      expect(maxSplashWidth, lessThan(268.0));
+
+      await tester.pumpAndSettle();
+      final finalTriggerRect = tester.getRect(find.byKey(triggerKey));
+      expect(finalTriggerRect.width, closeTo(260.0, 0.2));
+      expect(finalTriggerRect.center, restingTriggerRect.center);
+    });
+
+    testWidgets(
+        'wide left-aligned trigger (240x44) centers menu on trigger.center and returns into middle',
+        (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final controller = GlassMenuController();
+      final triggerKey = GlobalKey();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.topLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 16, top: 100),
+                child: GlassMenu(
+                  controller: controller,
+                  autoAdjustToScreen: true,
+                  menuPadding: const EdgeInsets.all(12),
+                  menuWidth: 220,
+                  quality: GlassQuality.premium,
+                  triggerBuilder: (context, toggle) => GlassButton.custom(
+                    key: triggerKey,
+                    width: 240,
+                    height: 44,
+                    useOwnLayer: true,
+                    onTap: toggle,
+                    child: const Text('Wide Left'),
+                  ),
+                  items: buildItems(5),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final triggerRect = tester.getRect(find.byKey(triggerKey));
+      expect(triggerRect.center.dx, closeTo(136.0, 0.1));
+
+      controller.open();
+      await tester.pumpAndSettle();
+
+      final menuRect = tester.getRect(overlayContainers().last);
+      expect(menuRect.center.dx, closeTo(triggerRect.center.dx, 0.5));
+
+      controller.close();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 160));
+
+      final closingRect = tester.getRect(overlayContainers().last);
+      expect(closingRect.width, lessThan(220.0));
+      expect(closingRect.center.dx, closeTo(triggerRect.center.dx, 1.0));
+
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+        'parallel close catch recoil starts immediately and peaks around ~183ms (not 400ms)',
+        (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final controller = GlassMenuController();
+      final triggerKey = GlobalKey();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 120),
+                child: GlassMenu(
+                  controller: controller,
+                  autoAdjustToScreen: true,
+                  menuWidth: 220,
+                  quality: GlassQuality.premium,
+                  triggerBuilder: (context, toggle) => GlassIconButton(
+                    key: triggerKey,
+                    size: 44,
+                    useOwnLayer: true,
+                    icon: const Icon(Icons.more_horiz),
+                    onPressed: toggle,
+                  ),
+                  items: buildItems(5),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final restCenterY = tester.getCenter(find.byKey(triggerKey)).dy;
+
+      controller.open();
+      await tester.pumpAndSettle();
+
+      controller.close();
+      await tester.pump();
+
+      double peakDisplacement = 0.0;
+      int peakMs = 0;
+      double dispAt48 = 0.0;
+      double dispAt80 = 0.0;
+      double dispAt180 = 0.0;
+      double dispAt390 = 0.0;
+
+      for (int ms = 16; ms <= 512; ms += 16) {
+        await tester.pump(const Duration(milliseconds: 16));
+        final dy =
+            (tester.getCenter(find.byKey(triggerKey)).dy - restCenterY).abs();
+        if (dy > peakDisplacement) {
+          peakDisplacement = dy;
+          peakMs = ms;
+        }
+        if (ms == 48) dispAt48 = dy;
+        if (ms == 80) dispAt80 = dy;
+        if (ms == 176) dispAt180 = dy;
+        if (ms == 384) dispAt390 = dy;
+      }
+
+      // Immediate onset (already moving at 48ms and >2px by 80ms), peak inside
+      // [140ms, 225ms] (~183ms native target), and decaying well before 384ms.
+      expect(dispAt48, greaterThan(0.3));
+      expect(dispAt80, greaterThan(2.0));
+      expect(peakMs, greaterThanOrEqualTo(144));
+      expect(peakMs, lessThanOrEqualTo(224));
+      expect(peakDisplacement, greaterThan(6.0));
+      expect(peakDisplacement, lessThan(16.5));
+      expect(dispAt180, greaterThan(dispAt390 * 3.0));
+
+      await tester.pumpAndSettle();
+      expect(
+        tester.getCenter(find.byKey(triggerKey)).dy,
+        closeTo(restCenterY, 0.05),
+      );
+    });
+
+    for (final count in [2, 5, 10]) {
+      testWidgets(
+          'menu length ($count items) maintains monotonic superellipse radius <= 32pt and smooth ~283ms return',
+          (tester) async {
+        tester.view.physicalSize = const Size(400, 850);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        final controller = GlassMenuController();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 90),
+                  child: GlassMenu(
+                    controller: controller,
+                    autoAdjustToScreen: true,
+                    menuPadding: const EdgeInsets.all(12),
+                    menuWidth: 220,
+                    menuBorderRadius: 32.0,
+                    quality: GlassQuality.premium,
+                    triggerBuilder: (context, toggle) => GlassButton.custom(
+                      width: 260,
+                      height: 44,
+                      useOwnLayer: true,
+                      onTap: toggle,
+                      child: Text('Menu $count'),
+                    ),
+                    items: buildItems(count),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        controller.open();
+        await tester.pump();
+        for (int ms = 16; ms <= 400; ms += 16) {
+          await tester.pump(const Duration(milliseconds: 16));
+          for (final c
+              in tester.widgetList<GlassContainer>(overlayContainers())) {
+            expect(c.shape, isA<LiquidRoundedSuperellipse>());
+            final r = (c.shape as LiquidRoundedSuperellipse).borderRadius;
+            // Native inflates the opening platter as a near-circular bubble:
+            // the radius may exceed the resting 32pt but never half its own
+            // shortest side.
+            final halfShort = math.min(
+                  c.width ?? double.infinity,
+                  c.height ?? double.infinity,
+                ) /
+                2.0;
+            expect(
+              r,
+              lessThanOrEqualTo(math.min(110.001, halfShort + 0.01)),
+              reason:
+                  'Open frame ${ms}ms ($count items) ballooned radius to $r',
+            );
+          }
+        }
+        await tester.pumpAndSettle();
+
+        controller.close();
+        await tester.pump();
+        double prevHeight = double.infinity;
+        for (int ms = 16; ms <= 320; ms += 16) {
+          await tester.pump(const Duration(milliseconds: 16));
+          final containers =
+              tester.widgetList<GlassContainer>(overlayContainers()).toList();
+          if (ms == 80) {
+            expect(
+              find.text('Action 1'),
+              findsOneWidget,
+              reason: 'Items must still be smoothly fading at 80ms ($count)',
+            );
+            // Platter glass stays 100% dense (glassProgress == 1.0) at 80ms
+            // while items fade out, dissolving only over rawValue <= 0.25!
+            final platterScope = tester.widget<GlassMaterializeScope>(
+              find
+                  .ancestor(
+                    of: overlayContainers().last,
+                    matching: find.byType(GlassMaterializeScope),
+                  )
+                  .first,
+            );
+            expect(platterScope.glassProgress, closeTo(1.0, 1e-6));
+          }
+          if (containers.isNotEmpty) {
+            final platter = containers.last;
+            expect(platter.shape, isA<LiquidRoundedSuperellipse>());
+            final r = (platter.shape as LiquidRoundedSuperellipse).borderRadius;
+            // Closing platter rounds toward a circle like native iOS 27: the
+            // radius may exceed the resting 32pt but never half its own
+            // shortest side.
+            final halfShort = math.min(
+                  platter.width ?? double.infinity,
+                  platter.height ?? double.infinity,
+                ) /
+                2.0;
+            expect(
+              r,
+              lessThanOrEqualTo(math.min(110.001, halfShort + 0.01)),
+              reason:
+                  'Close frame ${ms}ms ($count items) ballooned radius to $r',
+            );
+            if (platter.height != null) {
+              expect(
+                platter.height!,
+                lessThanOrEqualTo(prevHeight + 0.01),
+                reason: 'Platter height should contract monotonically on close',
+              );
+              prevHeight = platter.height!;
+            }
+          }
+        }
+
+        // By 320ms, platter and items have vanished cleanly.
+        expect(find.text('Action 1'), findsNothing);
+        expect(overlayContainers(), findsNothing);
+
+        await tester.pumpAndSettle();
+      });
+    }
+
+    testWidgets(
+        'upward-opening menus (bottomCenter, bottomLeft, bottomRight) morph upward and recoil downward (+dy) at ~183ms',
+        (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      for (final (label, align, width) in <(String, Alignment, double)>[
+        ('bottomCenter_wide', Alignment.bottomCenter, 240.0),
+        ('bottomLeft_round', Alignment.bottomLeft, 44.0),
+        ('bottomRight_round', Alignment.bottomRight, 44.0),
+      ]) {
+        final controller = GlassMenuController();
+        final triggerKey = GlobalKey();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Align(
+                alignment: align,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: GlassMenu(
+                    controller: controller,
+                    autoAdjustToScreen: true,
+                    menuPadding: const EdgeInsets.all(12),
+                    menuWidth: 200,
+                    quality: GlassQuality.premium,
+                    triggerBuilder: (context, toggle) => GlassButton.custom(
+                      key: triggerKey,
+                      width: width,
+                      height: 44,
+                      useOwnLayer: true,
+                      onTap: toggle,
+                      child: Text(label),
+                    ),
+                    items: buildItems(5),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final restRect = tester.getRect(find.byKey(triggerKey));
+        controller.open();
+        await tester.pumpAndSettle();
+
+        final openPlatterRect = tester.getRect(overlayContainers().last);
+        // Menu opened UPWARD above the bottom trigger:
+        expect(
+          openPlatterRect.center.dy,
+          lessThan(restRect.center.dy - 60.0),
+          reason: '[$label] Menu should open upward above bottom trigger',
+        );
+        if (width > 100) {
+          expect(
+            openPlatterRect.center.dx,
+            closeTo(restRect.center.dx, 0.5),
+            reason: '[$label] Wide bottom trigger should center menu',
+          );
+        }
+
+        // Close: falling menu impacts from above -> trigger recoils DOWNWARD (+dy > 0)!
+        controller.close();
+        await tester.pump();
+        double maxDownwardDy = 0.0;
+        int peakDownwardMs = 0;
+        for (int ms = 16; ms <= 480; ms += 16) {
+          await tester.pump(const Duration(milliseconds: 16));
+          final dy =
+              tester.getCenter(find.byKey(triggerKey)).dy - restRect.center.dy;
+          if (dy > maxDownwardDy) {
+            maxDownwardDy = dy;
+            peakDownwardMs = ms;
+          }
+        }
+        expect(
+          maxDownwardDy,
+          greaterThan(6.0),
+          reason: '[$label] Upward menu close must recoil downward (+dy > 0)',
+        );
+        expect(peakDownwardMs, inInclusiveRange(144, 224));
+
+        await tester.pumpAndSettle();
+      }
+    });
+
+    testWidgets(
+        'right-edge clamped wide & round triggers stay inside safe right margin and return into trigger.center',
+        (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      for (final width in [160.0, 44.0]) {
+        final controller = GlassMenuController();
+        final triggerKey = GlobalKey();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 14, top: 100),
+                  child: GlassMenu(
+                    controller: controller,
+                    autoAdjustToScreen: true,
+                    menuPadding: const EdgeInsets.all(12),
+                    menuWidth: 240,
+                    quality: GlassQuality.premium,
+                    triggerBuilder: (context, toggle) => GlassButton.custom(
+                      key: triggerKey,
+                      width: width,
+                      height: 44,
+                      useOwnLayer: true,
+                      onTap: toggle,
+                      child: const Text('Right'),
+                    ),
+                    items: buildItems(4),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final restTrigger = tester.getRect(find.byKey(triggerKey));
+        controller.open();
+        await tester.pump();
+
+        for (int ms = 16; ms <= 400; ms += 16) {
+          await tester.pump(const Duration(milliseconds: 16));
+          final platterRect = tester.getRect(overlayContainers().last);
+          expect(
+            platterRect.right,
+            lessThanOrEqualTo(400.0 - 12.0 + 0.5),
+            reason:
+                'Right-edge menu (tw=$width) overflowed safe margin at ${ms}ms',
+          );
+        }
+        await tester.pumpAndSettle();
+
+        controller.close();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 224));
+        if (overlayContainers().evaluate().isNotEmpty) {
+          final nearLanding = tester.getRect(overlayContainers().last);
+          expect(
+            (nearLanding.center.dx - restTrigger.center.dx).abs(),
+            lessThan(25.0),
+            reason:
+                'Clamped right-edge menu (tw=$width) must converge back into trigger.center',
+          );
+        }
+        await tester.pumpAndSettle();
+      }
+    });
+
+    testWidgets(
+        'expanded submenu card contracts coherently with root platter into trigger.center on close',
+        (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final controller = GlassMenuController();
+      final triggerKey = GlobalKey();
+      bool subTapped = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: GlassMenu(
+                controller: controller,
+                autoAdjustToScreen: true,
+                menuWidth: 220,
+                quality: GlassQuality.premium,
+                triggerBuilder: (context, toggle) => GlassButton.custom(
+                  key: triggerKey,
+                  width: 240,
+                  height: 44,
+                  useOwnLayer: true,
+                  onTap: toggle,
+                  child: const Text('Menu With Submenu'),
+                ),
+                items: [
+                  GlassMenuItem(title: 'Copy', onTap: () {}),
+                  GlassMenuItem(
+                    title: 'Share',
+                    onTap: () {},
+                    submenu: [
+                      GlassMenuItem(
+                        title: 'AirDrop',
+                        onTap: () => subTapped = true,
+                      ),
+                      GlassMenuItem(title: 'Messages', onTap: () {}),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final restTrigger = tester.getRect(find.byKey(triggerKey));
+      controller.open();
+      await tester.pumpAndSettle();
+      expect(controller.submenuDepth, equals(0));
+
+      // Expand submenu card
+      await tester.tap(find.text('Share'));
+      await tester.pumpAndSettle();
+      expect(controller.submenuDepth, equals(1));
+      expect(find.text('AirDrop'), findsOneWidget);
+
+      // Tap submenu item to close entire menu
+      await tester.tap(find.text('AirDrop'));
+      expect(subTapped, isTrue);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 120));
+
+      // Submenu card is shrinking & converging toward trigger.center alongside Blob B
+      final cardFinder = find.ancestor(
+        of: find.text('AirDrop'),
+        matching: find.byType(GlassContainer),
+      );
+      expect(cardFinder, findsOneWidget);
+      final cardPaintedRect = tester.getRect(cardFinder.first);
+      expect(cardPaintedRect.width, lessThan(200.0));
+      expect(cardPaintedRect.center.dx, closeTo(restTrigger.center.dx, 2.0));
+
+      await tester.pumpAndSettle();
+      expect(controller.isOpen, isFalse);
+      expect(controller.submenuDepth, equals(0));
+    });
+
+    testWidgets(
+        'mid-open close (83ms) and mid-close reopen (100ms & 350ms) maintain C0 position/size continuity',
+        (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final controller = GlassMenuController();
+      final triggerKey = GlobalKey();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 120),
+                child: GlassMenu(
+                  controller: controller,
+                  autoAdjustToScreen: true,
+                  menuWidth: 220,
+                  quality: GlassQuality.premium,
+                  triggerBuilder: (context, toggle) => GlassButton.custom(
+                    key: triggerKey,
+                    width: 240,
+                    height: 44,
+                    useOwnLayer: true,
+                    onTap: toggle,
+                    child: const Text('Interruptible'),
+                  ),
+                  items: buildItems(5),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // 1. Mid-open close at ~83ms: zero platter jump on reversal frame!
+      controller.open();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 83));
+      final beforeClosePlatter = tester.getRect(overlayContainers().last);
+
+      controller.close();
+      await tester.pump(); // frame 0 of close
+      final afterClosePlatter = tester.getRect(overlayContainers().last);
+      expect(
+        (afterClosePlatter.center - beforeClosePlatter.center).distance,
+        lessThan(0.5),
+      );
+      expect(
+        (afterClosePlatter.width - beforeClosePlatter.width).abs(),
+        lessThan(0.5),
+      );
+      await tester.pumpAndSettle();
+
+      // 2. Mid-close reopen at ~100ms (platter active + recoil active):
+      controller.open();
+      await tester.pumpAndSettle();
+      controller.close();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      final beforeReopen100Platter = tester.getRect(overlayContainers().last);
+      final beforeReopen100Trig = tester.getCenter(find.byKey(triggerKey));
+
+      // Tap trigger mid-close to reopen!
+      await tester.tap(find.byKey(triggerKey), warnIfMissed: false);
+      await tester.pump(); // frame 0 of reopen
+      final afterReopen100Platter = tester.getRect(overlayContainers().last);
+      final afterReopen100Trig = tester.getCenter(find.byKey(triggerKey));
+      expect(
+        (afterReopen100Platter.center - beforeReopen100Platter.center).distance,
+        lessThan(0.5),
+      );
+      expect(
+        (afterReopen100Platter.width - beforeReopen100Platter.width).abs(),
+        lessThan(0.5),
+      );
+      expect(
+        (afterReopen100Trig - beforeReopen100Trig).distance,
+        lessThan(0.5),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Action 1'), findsOneWidget);
+
+      // 3. Mid-close reopen at ~350ms (during wide-trigger splash tail):
+      controller.close();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      final beforeReopen350Trig = tester.getCenter(find.byKey(triggerKey));
+
+      controller.open();
+      await tester.pump();
+      final afterReopen350Trig = tester.getCenter(find.byKey(triggerKey));
+      expect(
+        (afterReopen350Trig - beforeReopen350Trig).distance,
+        lessThan(0.5),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Action 1'), findsOneWidget);
+
+      controller.close();
+      await tester.pumpAndSettle();
     });
   });
 }

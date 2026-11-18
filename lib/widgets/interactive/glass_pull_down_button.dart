@@ -1,13 +1,14 @@
 import 'package:flutter/cupertino.dart';
 
+import '../../src/engine/liquid_glass_settings.dart';
+import '../../src/engine/liquid_shape.dart';
+import '../../theme/glass_theme.dart';
+import '../../theme/glass_theme_helpers.dart';
 import '../../types/glass_quality.dart';
+import '../../utils/glass_morph_controller.dart';
 import '../overlays/glass_menu.dart';
 import '../overlays/glass_menu_item.dart';
 import 'glass_button.dart';
-import '../../theme/glass_theme.dart';
-import '../../theme/glass_theme_helpers.dart';
-import '../../src/engine/liquid_glass_settings.dart';
-import '../../src/engine/liquid_shape.dart';
 
 /// A toolbar button that opens a liquid glass pull-down menu.
 ///
@@ -22,11 +23,16 @@ class GlassPullDownButton extends StatelessWidget {
     this.semanticLabel,
     this.menuSemanticLabel,
     super.key,
-    this.buttonWidth = 44,
+    this.buttonWidth,
     this.buttonHeight = 44,
     this.buttonShape,
     this.menuWidth = 200,
+    this.menuBorderRadius = 32.0,
+    this.menuPadding = const EdgeInsets.symmetric(horizontal: 12),
     this.menuAlignment,
+    this.morphSpeed = MorphSpeed.normal,
+    this.controller,
+    this.onClose,
     this.settings,
     this.quality,
     this.onSelected,
@@ -36,7 +42,8 @@ class GlassPullDownButton extends StatelessWidget {
 
   /// The shape of the trigger button.
   ///
-  /// If null, defaults to [LiquidOval].
+  /// If null, defaults to [LiquidOval] for square/circular triggers or
+  /// [LiquidRoundedSuperellipse] stadium capsule for pill/wide triggers.
   final LiquidShape? buttonShape;
 
   /// The icon widget to display on the button.
@@ -70,11 +77,17 @@ class GlassPullDownButton extends StatelessWidget {
   ///
   /// Accepts [GlassMenuItem] and [GlassMenuDivider] widgets, matching the
   /// [GlassMenu.items] contract directly. [GlassMenuDivider] items are passed
-  /// through as-is; only [GlassMenuItem] instances are wrapped by [onSelected].
+  /// through as-is; [GlassMenuItem] instances (including nested
+  /// [GlassMenuItem.submenu] items) are wrapped by [onSelected].
   final List<Widget> items;
 
-  /// Width of the trigger button.
-  final double buttonWidth;
+  /// Explicit width of the trigger button.
+  ///
+  /// When `null` (default):
+  /// - Icon-only buttons (`label == null || label!.isEmpty`) default to `44.0`.
+  /// - Labeled buttons size intrinsically to fit their icon + label with
+  ///   horizontal capsule padding (constrained to at least [buttonHeight]).
+  final double? buttonWidth;
 
   /// Height of the trigger button.
   final double buttonHeight;
@@ -82,11 +95,36 @@ class GlassPullDownButton extends StatelessWidget {
   /// Width of the expanded menu.
   final double menuWidth;
 
+  /// Border radius of the expanded menu platter.
+  ///
+  /// Forwarded to [GlassMenu.menuBorderRadius]. Defaults to `32.0`.
+  final double menuBorderRadius;
+
+  /// Minimum safe margin between the expanded menu and screen edges when
+  /// [GlassMenu.autoAdjustToScreen] clamps placement.
+  ///
+  /// Forwarded to [GlassMenu.menuPadding]. Defaults to
+  /// `EdgeInsets.symmetric(horizontal: 12)` so edge-clamped menus never touch
+  /// `0px` screen edges.
+  final EdgeInsets menuPadding;
+
   /// Controls where the menu expands relative to the trigger button.
   ///
   /// Defaults to [GlassMenuAlignment.none], which auto-detects the best
   /// alignment based on the trigger's position on screen.
   final GlassMenuAlignment? menuAlignment;
+
+  /// Speed profile for the open/close liquid morph animation.
+  ///
+  /// Forwarded to [GlassMenu.morphSpeed]. Defaults to [MorphSpeed.normal].
+  final MorphSpeed morphSpeed;
+
+  /// Optional imperative controller forwarded to [GlassMenu.controller].
+  final GlassMenuController? controller;
+
+  /// Optional callback invoked when the menu begins closing, forwarded to
+  /// [GlassMenu.onClose].
+  final VoidCallback? onClose;
 
   /// Glass material settings for the trigger button and menu platter.
   final LiquidGlassSettings? settings;
@@ -94,7 +132,7 @@ class GlassPullDownButton extends StatelessWidget {
   /// Quality of the glass effect.
   final GlassQuality? quality;
 
-  /// Callback when a menu item is selected.
+  /// Callback when a menu item (or nested submenu item) is selected.
   ///
   /// This is called in addition to the individual [GlassMenuItem.onTap] callback.
   final ValueChanged<String>? onSelected;
@@ -117,6 +155,47 @@ class GlassPullDownButton extends StatelessWidget {
   /// Defaults to 10.0.
   final double continuousSwipeSlop;
 
+  static List<Widget> _wrapMenuItems(
+    List<Widget> sourceItems,
+    ValueChanged<String> onSelectedCallback,
+  ) {
+    return sourceItems.map((item) {
+      if (item is GlassMenuItem) {
+        final wrappedSubmenu = item.submenu != null
+            ? _wrapMenuItems(item.submenu!, onSelectedCallback)
+            : null;
+        return GlassMenuItem(
+          key: item.key,
+          title: item.title,
+          semanticLabel: item.semanticLabel,
+          icon: item.icon,
+          isDestructive: item.isDestructive,
+          subtitle: item.subtitle,
+          enabled: item.enabled,
+          height: item.height,
+          isPressed: item.isPressed,
+          isSelected: item.isSelected,
+          semanticsSelected: item.semanticsSelected,
+          titleStyle: item.titleStyle,
+          subtitleStyle: item.subtitleStyle,
+          iconColor: item.iconColor,
+          iconSize: item.iconSize,
+          maxLines: item.maxLines,
+          enablePressScale: item.enablePressScale,
+          semanticsChecked: item.semanticsChecked,
+          closeDelay: item.closeDelay,
+          submenu: wrappedSubmenu,
+          trailing: item.trailing,
+          onTap: () {
+            item.onTap.call();
+            onSelectedCallback(item.title);
+          },
+        );
+      }
+      return item;
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     // Inherit quality from parent layer if not explicitly set
@@ -134,7 +213,12 @@ class GlassPullDownButton extends StatelessWidget {
 
     return GlassMenu(
       menuWidth: menuWidth,
+      menuBorderRadius: menuBorderRadius,
+      menuPadding: menuPadding,
       menuAlignment: menuAlignment,
+      morphSpeed: morphSpeed,
+      controller: controller,
+      onClose: onClose,
       menuSemanticLabel: menuSemanticLabel,
       autoAdjustToScreen: true,
       settings: settings,
@@ -143,14 +227,45 @@ class GlassPullDownButton extends StatelessWidget {
       continuousSwipeSlop: continuousSwipeSlop,
       triggerBuilder: (context, toggleMenu) {
         if (label != null && label!.isNotEmpty) {
-          final defaultShape = buttonWidth == buttonHeight
-              ? const LiquidOval()
-              : LiquidRoundedSuperellipse(
-                  borderRadius: (buttonWidth < buttonHeight
-                          ? buttonWidth
-                          : buttonHeight) /
-                      2,
-                );
+          final LiquidShape defaultShape;
+          if (buttonWidth != null) {
+            defaultShape = buttonWidth! == buttonHeight
+                ? const LiquidOval()
+                : LiquidRoundedSuperellipse(
+                    borderRadius: (buttonWidth! < buttonHeight
+                            ? buttonWidth!
+                            : buttonHeight) /
+                        2,
+                  );
+          } else {
+            defaultShape = LiquidRoundedSuperellipse(
+              borderRadius: buttonHeight / 2,
+            );
+          }
+
+          final Widget rowContent = Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconTheme(
+                data: IconThemeData(size: 20, color: effectiveTextColor),
+                child: icon,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label!,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: effectiveTextColor,
+                ),
+              ),
+            ],
+          );
+
           return GlassButton.custom(
             onTap: toggleMenu,
             width: buttonWidth,
@@ -159,73 +274,41 @@ class GlassPullDownButton extends StatelessWidget {
             settings: settings,
             quality: effectiveQuality,
             useOwnLayer: effectiveQuality == GlassQuality.premium,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconTheme(
-                  data: IconThemeData(size: 20, color: effectiveTextColor),
-                  child: icon,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  label!,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: effectiveTextColor,
-                  ),
-                ),
-              ],
-            ),
+            child: buttonWidth == null
+                ? ConstrainedBox(
+                    constraints: BoxConstraints(minWidth: buttonHeight),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: rowContent,
+                    ),
+                  )
+                : rowContent,
           );
         }
+
+        final double effectiveIconWidth = buttonWidth ?? 44.0;
+        final LiquidShape defaultIconShape = effectiveIconWidth == buttonHeight
+            ? const LiquidOval()
+            : LiquidRoundedSuperellipse(
+                borderRadius: (effectiveIconWidth < buttonHeight
+                        ? effectiveIconWidth
+                        : buttonHeight) /
+                    2,
+              );
 
         return GlassButton(
           onTap: toggleMenu,
           icon: icon,
           label: semanticLabel ?? label ?? '',
-          width: buttonWidth,
+          width: effectiveIconWidth,
           height: buttonHeight,
-          shape: buttonShape ?? const LiquidOval(),
+          shape: buttonShape ?? defaultIconShape,
           settings: settings,
           quality: effectiveQuality,
           useOwnLayer: effectiveQuality == GlassQuality.premium,
         );
       },
-      items: items.map((item) {
-        // Wrap GlassMenuItem taps to fire the onSelected callback.
-        // GlassMenuDivider and other non-GlassMenuItem widgets are passed through.
-        if (onSelected != null && item is GlassMenuItem) {
-          return GlassMenuItem(
-            title: item.title,
-            semanticLabel: item.semanticLabel,
-            icon: item.icon,
-            isDestructive: item.isDestructive,
-            subtitle: item.subtitle,
-            enabled: item.enabled,
-            height: item.height,
-            isPressed: item.isPressed,
-            isSelected: item.isSelected,
-            semanticsSelected: item.semanticsSelected,
-            titleStyle: item.titleStyle,
-            subtitleStyle: item.subtitleStyle,
-            iconColor: item.iconColor,
-            iconSize: item.iconSize,
-            maxLines: item.maxLines,
-            enablePressScale: item.enablePressScale,
-            semanticsChecked: item.semanticsChecked,
-            closeDelay: item.closeDelay,
-            submenu: item.submenu,
-            trailing: item.trailing,
-            onTap: () {
-              item.onTap.call();
-              onSelected!(item.title);
-            },
-          );
-        }
-        return item;
-      }).toList(),
+      items: onSelected != null ? _wrapMenuItems(items, onSelected!) : items,
     );
   }
 }

@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -504,6 +507,8 @@ void main() {
     expect(popover.glowIntensity, 0.0);
     expect(popover.onClose, isNull);
     expect(popover.onOpen, isNull);
+    expect(popover.morphSpeed, MorphSpeed.normal);
+    expect(popover.platformViewBackdrop, isFalse);
   });
   // ── Scale-with-morph animation (aligned with GlassMenu PR #97) ─────────────
   testWidgets(
@@ -1009,6 +1014,7 @@ void main() {
 
     // Under standard quality, Blob A is suppressed during close to prevent double-button overlap.
     // There should be exactly 1 GlassContainer inside the overlay (Blob B, the collapsing popover body).
+    expect(find.byType(LiquidGlassLayer), findsOneWidget);
     final overlayContainers = find.descendant(
       of: find.byType(LiquidGlassLayer),
       matching: find.byType(GlassContainer),
@@ -1046,8 +1052,9 @@ void main() {
     await tester.tapAt(const Offset(10, 10));
     await tester.pump(const Duration(milliseconds: 50));
 
+    expect(find.byType(LiquidGlassLayer), findsNothing);
     final overlayContainers = find.descendant(
-      of: find.byType(LiquidGlassLayer),
+      of: find.byType(AdaptiveLiquidGlassLayer),
       matching: find.byType(GlassContainer),
     );
     expect(overlayContainers, findsOneWidget);
@@ -1149,6 +1156,493 @@ void main() {
     await tester.pump(const Duration(milliseconds: 150));
 
     expect(find.text('PlatformPopoverContent'), findsOneWidget);
+
+    await tester.pumpAndSettle();
+  });
+
+  // ── iOS 27 Wide-Trigger Center Morph, Parallel ~183ms Recoil & Radius ─────
+
+  testWidgets(
+      'Wide centered trigger (260x44) auto-centers popover, collapses into trigger center, and splashes horizontally (~400ms)',
+      (tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const triggerKey = Key('wide-center-trigger');
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Align(
+            alignment: const Alignment(0.0, -0.5),
+            child: GlassPopover(
+              popoverWidth: 220,
+              popoverHeight: 160,
+              quality: GlassQuality.standard,
+              trigger: const SizedBox(
+                key: triggerKey,
+                width: 260,
+                height: 44,
+                child: Center(child: Text('WideCentered')),
+              ),
+              contentBuilder: (context, close) =>
+                  const Center(child: Text('PopoverBody')),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final restingTriggerRect = tester.getRect(find.byKey(triggerKey));
+    expect(restingTriggerRect.center.dx, closeTo(200.0, 0.5));
+
+    // Open and settle
+    await tester.tap(find.text('WideCentered'));
+    await tester.pumpAndSettle();
+
+    final overlayContainerFinder = find.descendant(
+      of: find.byType(AdaptiveLiquidGlassLayer),
+      matching: find.byType(GlassContainer),
+    );
+    final openPopoverRect = tester.getRect(overlayContainerFinder.last);
+    // Auto-centered symmetrically over trigger.center.dx (200.0), not left-aligned!
+    expect(
+      openPopoverRect.center.dx,
+      closeTo(restingTriggerRect.center.dx, 0.5),
+    );
+    expect(openPopoverRect.width, closeTo(220.0, 0.5));
+
+    // Close via barrier tap and sample 60fps trajectory
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pump();
+
+    var minClosingWidth = 220.0;
+    var maxSplashTriggerWidth = 260.0;
+    for (var ms = 16; ms <= 560; ms += 16) {
+      await tester.pump(const Duration(milliseconds: 16));
+      if (overlayContainerFinder.evaluate().isNotEmpty) {
+        final rect = tester.getRect(overlayContainerFinder.last);
+        // Must NEVER widen from 220 -> 260 on close; collapses toward 44x44 at center!
+        expect(rect.width, lessThanOrEqualTo(220.5));
+        expect(rect.center.dx, closeTo(restingTriggerRect.center.dx, 1.0));
+        if (rect.width < minClosingWidth) minClosingWidth = rect.width;
+      }
+      final liveTriggerWidth = tester.getRect(find.byKey(triggerKey)).width;
+      if (liveTriggerWidth > maxSplashTriggerWidth) {
+        maxSplashTriggerWidth = liveTriggerWidth;
+      }
+    }
+
+    expect(
+      minClosingWidth,
+      lessThan(80.0),
+      reason:
+          'Popover platter should contract into compact 44px core at trigger center',
+    );
+    expect(
+      maxSplashTriggerWidth,
+      greaterThan(261.5),
+      reason:
+          'Wide trigger should exhibit +1.5% horizontal splash around ~400ms on close',
+    );
+
+    await tester.pumpAndSettle();
+    expect(tester.getRect(find.byKey(triggerKey)).width, closeTo(260.0, 0.2));
+  });
+
+  testWidgets(
+      'Wide left-aligned trigger (240x44) aligns resting left edge but collapses into trigger middle on close',
+      (tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const triggerKey = Key('wide-left-trigger');
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Stack(
+            children: [
+              Positioned(
+                left: 20,
+                top: 120,
+                child: GlassPopover(
+                  popoverWidth: 280,
+                  popoverHeight: 180,
+                  quality: GlassQuality.standard,
+                  trigger: const SizedBox(
+                    key: triggerKey,
+                    width: 240,
+                    height: 44,
+                    child: Text('WideLeft'),
+                  ),
+                  contentBuilder: (context, close) => const Text('LeftBody'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final triggerRect = tester.getRect(find.byKey(triggerKey));
+    expect(triggerRect.left, closeTo(20.0, 0.1));
+    expect(triggerRect.center.dx, closeTo(140.0, 0.1));
+
+    await tester.tap(find.text('WideLeft'));
+    await tester.pumpAndSettle();
+
+    final overlayContainerFinder = find.descendant(
+      of: find.byType(AdaptiveLiquidGlassLayer),
+      matching: find.byType(GlassContainer),
+    );
+    final openRect = tester.getRect(overlayContainerFinder.last);
+    expect(openRect.left, closeTo(20.0, 0.5));
+    expect(openRect.center.dx, closeTo(160.0, 0.5));
+
+    // Close and verify the shrinking platter converges horizontally toward trigger.center (140.0)
+    await tester.tapAt(const Offset(380, 780));
+    await tester.pump();
+
+    double? lastActiveCenterX;
+    for (var ms = 16; ms <= 300; ms += 16) {
+      await tester.pump(const Duration(milliseconds: 16));
+      if (overlayContainerFinder.evaluate().isNotEmpty) {
+        lastActiveCenterX =
+            tester.getRect(overlayContainerFinder.last).center.dx;
+      }
+    }
+
+    expect(lastActiveCenterX, isNotNull);
+    expect(
+      lastActiveCenterX!,
+      closeTo(triggerRect.center.dx, 6.0),
+      reason:
+          'Closing platter should collapse into the middle of the wide left button (140px), not its left edge',
+    );
+
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets(
+      'GlassPopover parallel close recoil peaks near ~183ms within bounded envelope and uses monotonic superellipse radius',
+      (tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const triggerKey = Key('round-trigger');
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Align(
+            alignment: const Alignment(0.0, -0.4),
+            child: GlassPopover(
+              popoverWidth: 260,
+              popoverHeight: 220,
+              popoverBorderRadius: 24.0,
+              quality: GlassQuality.standard,
+              trigger: const SizedBox(
+                key: triggerKey,
+                width: 44,
+                height: 44,
+                child: Center(child: Text('Round')),
+              ),
+              contentBuilder: (context, close) => const Text('Body'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final restingCenter = tester.getCenter(find.byKey(triggerKey));
+
+    // Open frame-by-frame and verify monotonic corner radius (<= max(22, 24) = 24)
+    await tester.tap(find.text('Round'));
+    await tester.pump();
+
+    final overlayContainerFinder = find.descendant(
+      of: find.byType(AdaptiveLiquidGlassLayer),
+      matching: find.byType(GlassContainer),
+    );
+
+    for (var ms = 16; ms <= 450; ms += 16) {
+      await tester.pump(const Duration(milliseconds: 16));
+      for (final container
+          in tester.widgetList<GlassContainer>(overlayContainerFinder)) {
+        expect(container.shape, isA<LiquidRoundedSuperellipse>());
+        final shape = container.shape as LiquidRoundedSuperellipse;
+        expect(
+          shape.borderRadius,
+          lessThanOrEqualTo(24.0 + 1e-6),
+          reason:
+              'Corner radius must never balloon above max(22, 24) at ${ms}ms',
+        );
+      }
+      // AdaptiveLiquidGlassLayer must never be wrapped in a fractional Opacity
+      final layerOpacities = tester.widgetList<Opacity>(
+        find.ancestor(
+          of: find.byType(AdaptiveLiquidGlassLayer),
+          matching: find.byType(Opacity),
+        ),
+      );
+      for (final op in layerOpacities) {
+        expect(op.opacity == 0.0 || op.opacity == 1.0, isTrue);
+      }
+    }
+
+    await tester.pumpAndSettle();
+
+    // Trigger close and record peak recoil timestamp + magnitude
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pump();
+
+    var maxRecoilPx = 0.0;
+    var peakRecoilMs = 0;
+    for (var ms = 16; ms <= 560; ms += 16) {
+      await tester.pump(const Duration(milliseconds: 16));
+      final liveCenter = tester.getCenter(find.byKey(triggerKey));
+      final recoilDist = (liveCenter - restingCenter).distance;
+      if (recoilDist > maxRecoilPx) {
+        maxRecoilPx = recoilDist;
+        peakRecoilMs = ms;
+      }
+      if (overlayContainerFinder.evaluate().isNotEmpty) {
+        final platter =
+            tester.widget<GlassContainer>(overlayContainerFinder.last);
+        final shape = platter.shape as LiquidRoundedSuperellipse;
+        final halfShort = math.min(
+              platter.width ?? double.infinity,
+              platter.height ?? double.infinity,
+            ) /
+            2.0;
+        expect(
+          shape.borderRadius,
+          lessThanOrEqualTo(math.min(140.0 + 1e-6, halfShort + 0.05)),
+        );
+      }
+    }
+
+    expect(
+      peakRecoilMs,
+      inInclusiveRange(150, 220),
+      reason: 'Parallel close trigger recoil must peak near ~183ms, not ~400ms',
+    );
+    expect(
+      maxRecoilPx,
+      inInclusiveRange(5.0, 16.5),
+      reason: 'Close recoil must stay within bounded physical ~5–16px envelope',
+    );
+
+    await tester.pumpAndSettle();
+    expect(
+      (tester.getCenter(find.byKey(triggerKey)) - restingCenter).distance,
+      lessThan(0.2),
+    );
+  });
+
+  testWidgets(
+      'GlassPopover supports morphSpeed and platformViewBackdrop without shader layer',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: GlassPopover(
+              morphSpeed: MorphSpeed.instant,
+              platformViewBackdrop: true,
+              popoverHeight: 120,
+              trigger:
+                  const SizedBox(width: 48, height: 48, child: Text('MapBtn')),
+              contentBuilder: (context, close) => const Text('OverMapContent'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('MapBtn'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('OverMapContent'), findsOneWidget);
+    expect(find.byType(LiquidGlassLayer), findsNothing);
+    expect(find.byType(LiquidGlassBlendGroup), findsNothing);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets(
+      'Bottom-bar upward wide GlassPopover opens upward, recoils downward (~183ms), never squashes text below 0.90x, and keeps premium Blob A continuous',
+      (tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const triggerKey = Key('bottom-wide-popover-trigger');
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Stack(
+            children: [
+              Positioned(
+                left: 80,
+                bottom: 20,
+                child: GlassPopover(
+                  popoverWidth: 220,
+                  popoverHeight: 200,
+                  quality: GlassQuality.premium,
+                  trigger: const SizedBox(
+                    key: triggerKey,
+                    width: 240,
+                    height: 44,
+                    child: Center(child: Text('BottomWidePopover')),
+                  ),
+                  contentBuilder: (context, close) =>
+                      const Center(child: Text('UpwardBody')),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final restingRect = tester.getRect(find.byKey(triggerKey));
+    await tester.tap(find.text('BottomWidePopover'));
+    await tester.pumpAndSettle();
+
+    final overlayContainerFinder = find.descendant(
+      of: find.byType(AdaptiveLiquidGlassLayer),
+      matching: find.byType(GlassContainer),
+    );
+    final openRect = tester.getRect(overlayContainerFinder.last);
+    // Flipped upward above the bottom bar
+    expect(openRect.top, lessThan(restingRect.top - 100.0));
+
+    // Tap above popover to dismiss
+    await tester.tapAt(const Offset(200, 40));
+    await tester.pump();
+
+    var maxDownwardRecoilDy = 0.0;
+    var peakDownwardMs = 0;
+    var minTriggerWidth = 240.0;
+
+    for (var ms = 16; ms <= 560; ms += 16) {
+      await tester.pump(const Duration(milliseconds: 16));
+      final liveRect = tester.getRect(find.byKey(triggerKey));
+      if (liveRect.width < minTriggerWidth) {
+        minTriggerWidth = liveRect.width;
+      }
+      final dy = liveRect.center.dy - restingRect.center.dy;
+      if (dy > maxDownwardRecoilDy) {
+        maxDownwardRecoilDy = dy;
+        peakDownwardMs = ms;
+      }
+
+      // Under Impeller + premium, Blob A stays continuously mounted across early
+      // close (0..120ms) alongside Blob B so the wide capsule SDF-merges smoothly.
+      if (ImageFilter.isShaderFilterSupported && ms <= 112) {
+        expect(overlayContainerFinder, findsNWidgets(2));
+      }
+    }
+
+    expect(
+      minTriggerWidth,
+      greaterThanOrEqualTo(240.0 * 0.90 - 0.5),
+      reason: 'Real wide trigger must never affine-squash below 0.90x width',
+    );
+    expect(
+      maxDownwardRecoilDy,
+      greaterThan(4.0),
+      reason: 'Upward-opened popover must recoil downward (dy > 0) on close',
+    );
+    expect(peakDownwardMs, inInclusiveRange(150, 220));
+
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets(
+      'Right-edge clamped GlassPopover fades content linearly (no t^2 double-fade) and handles mid-morph reversals cleanly',
+      (tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    VoidCallback? closeFn;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Stack(
+            children: [
+              Positioned(
+                right: 14,
+                top: 100,
+                child: GlassPopover(
+                  popoverWidth: 260,
+                  popoverHeight: 180,
+                  quality: GlassQuality.standard,
+                  screenPadding: const EdgeInsets.all(12),
+                  trigger: const SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: Center(child: Text('RightEdge')),
+                  ),
+                  contentBuilder: (context, close) {
+                    closeFn = close;
+                    return const Center(child: Text('RightBody'));
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // Mid-open interruption at 80ms -> close -> reopen -> settle
+    await tester.tap(find.text('RightEdge'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    closeFn?.call();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    await tester.tap(find.text('RightEdge'));
+    await tester.pumpAndSettle();
+
+    final overlayContainerFinder = find.descendant(
+      of: find.byType(AdaptiveLiquidGlassLayer),
+      matching: find.byType(GlassContainer),
+    );
+    final openRect = tester.getRect(overlayContainerFinder.last);
+    expect(openRect.right, lessThanOrEqualTo(400.0 - 12.0 + 0.5));
+
+    // Close and verify composited RenderOpacity of content at ~83ms is ~0.50 (not 0.25 t^2)
+    await tester.tapAt(const Offset(20, 700));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 83));
+
+    final bodyElement = tester.element(find.text('RightBody'));
+    var effectiveOpacity = 1.0;
+    RenderObject? ro = bodyElement.renderObject;
+    while (ro != null) {
+      if (ro is RenderOpacity) {
+        effectiveOpacity *= ro.opacity;
+      }
+      ro = ro.parent;
+    }
+    expect(
+      effectiveOpacity,
+      greaterThan(0.38),
+      reason:
+          'Content opacity at 83ms into close should follow linear fade (~0.52), not t^2 (~0.27)',
+    );
 
     await tester.pumpAndSettle();
   });

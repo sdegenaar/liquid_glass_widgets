@@ -1,6 +1,6 @@
 # Roadmap: 1.x → 2.0
 
-> Last updated: 2026-11-16 (v1.17.5 stable)
+> Last updated: 2026-11-17 (v1.17.5 stable)
 
 This document tracks planned and future work for `liquid_glass_widgets` post-1.0.
 The guiding principle remains: **fewer, better widgets that map 1:1 to real iOS components**.
@@ -15,7 +15,7 @@ For historical version notes, see [`CHANGELOG.md`](../CHANGELOG.md).
 |---|---|---|
 | No known P0/P1 bugs | ✅ Clear | No open crash reports |
 | Dartdoc complete on all public API | ✅ Done | `public_member_api_docs` enforced permanently |
-| Test coverage ≥ 90% | ✅ Done | ~92% line coverage (3,960+ tests) |
+| Test coverage ≥ 90% | ✅ Done | ~92% line coverage (4,220+ tests) |
 | No `Icons.*` (Material) in `lib/` | ✅ Done | Zero hits — fully `CupertinoIcons` |
 | No hardcoded `Colors.*` in `lib/` | ✅ Done | All replaced with `CupertinoColors` or explicit hex `Color` literals |
 | `material.dart` imports in `lib/` | ✅ Done | Zero files (`cupertino_ui` migration staged on `feat/flutter-3.50-migration` for 2.0) |
@@ -39,7 +39,7 @@ For historical version notes, see [`CHANGELOG.md`](../CHANGELOG.md).
 | `GlassStepper` & popover blur ramp | ✅ Done (1.13.0) | Native two-button stepper capsule and `GlassPopover.blurRamp` |
 | Liquid droplet morph & `GlassMaterialize` | ✅ Done (1.14.0) | `morphFrom` / `morphFromRect` on sheets, dialogs, action sheets & popovers; blur-to-sharp materialize |
 | Contacts app HIG benchmark | ✅ Done (1.15.0) | `GlassSwipeActions`, `GlassDisclosureGroup`, `GlassEditScope` / `GlassReorderableList`, `GlassContextMenu`, `GlassFullScreenCover`, `GlassDatePicker`, `GlassNavigationStack` |
-| `GlassSurfaceStyle.solid` cards & wells | ✅ Done (1.15.0–1.17.2) | Shader-free inset-grouped cards (`GlassContainer.card`, `GlassGroupedSection`, `GlassDisclosureGroup.standalone`) and automatic `InheritedGlassSurfaceStyle` `tertiarySystemFill` wells across all inputs, `GlassPicker`, and `GlassChip` (only container default flip awaits 2.0) |
+| `GlassSurfaceStyle.solid` cards & wells | ✅ Done (1.15.0+) | Shader-free inset-grouped cards (`GlassContainer.card`, `GlassGroupedSection`, `GlassDisclosureGroup.standalone`) and automatic `InheritedGlassSurfaceStyle` `tertiarySystemFill` wells and button surfaces across all inputs, `GlassPicker`, `GlassChip`, `GlassButton`, and `GlassIconButton` (only container default flip awaits 2.0) |
 | `GlassStyle` presets & iOS 26/27 alignment | ✅ Done (1.17.0) | `GlassStyle.ios27` (default), `GlassStyle.ios26`, and `GlassStyle.classic` across platters, tab bars, interactive lenses, menus, sheets, and 320 pt alerts |
 | Bezel page clipping & Flutter 3.50 shaders | ✅ Done (1.17.1–1.17.4) | `GlassPageTransitionClip` superellipse transition clipping (#451) and single-exit `main()` HLSL/ANGLE/`impellerc` validation (#190809) |
 | Upstream migration PRs | ✅ Done | PR #1 ([#13162](https://github.com/flutter/packages/pull/13162)) and PR #2 ([#13163](https://github.com/flutter/packages/pull/13163)) staged in `flutter/packages` |
@@ -74,6 +74,7 @@ Features appearing in standard iOS system flows (e.g. stock Contacts app) priori
 - [ ] **`GlassNavigationLinkPicker` (`Picker(.navigationLink)`)** — navigation-link-style drill-down picker, common in Settings-style UIs. *(Note: `Picker(.menu)` is already covered by `GlassPullDownButton` + `GlassMenuItem.semanticsSelected`.)*
 - [ ] **`GlassPalettePicker` (`Picker(.palette)`)** — horizontal swatch/icon row inside `GlassMenu` (in SwiftUI on iOS, `.palette` only renders as a palette inside a `Menu` and falls back to segmented elsewhere); pairs naturally with `GlassColorWell`.
 - [ ] **`GlassPopover` compact adaptation (`.presentationCompactAdaptation(.popover)`)** — explicit opt-in keeping `GlassPopover` anchored beside its trigger on compact iPhone widths without adapting to a sheet.
+- [ ] **`GlassModalSheet` presentation sizing (`.presentationSizing()`)** — regular-width and desktop sizing via a single `GlassSheetSizing` value type (`automatic`, `form`, `page`, `fitted`, `fixed`) rather than loose `maxWidth` parameters. Gated on iPadOS / macOS 27 simulator calibration, covering both vertically centered floating form/page cards (when multi-stop bottom detents are not active, where macOS omits `PresentationPlacement`) and width-capped bottom detent sheets (threading through `restingWidthOf`, `GlassSheetPlacement`, and `SheetMorphGeometry`). `automatic` stays unchanged in `1.x` for backwards compatibility.
 - [ ] **`GlassRefreshable` (`.refreshable()`)** — pull-to-refresh control matching `UIRefreshControl` / SwiftUI `.refreshable()`.
 - [ ] **`GlassGauge` (`Gauge`)** — radial, linear, and capacity gauges (`.accessoryCircular`, `.linearCapacity`, etc.).
 - [ ] **`GlassOutlineGroup` (`OutlineGroup`)** — hierarchical recursive tree wrapper built atop `GlassDisclosureGroup`.
@@ -192,4 +193,4 @@ The following symbols and patterns are scheduled for removal or consolidation in
 - **Flutter `>=3.50.0` & standalone `cupertino_ui` migration** — unpark `feat/flutter-3.50-migration` to migrate all 71 `package:flutter/cupertino.dart` imports (deprecated in Flutter 3.50) to standalone `cupertino_ui` alongside raising the minimum Flutter SDK constraint.
 - **`GlassAppBar.pinned` becomes the plain `GlassAppBar`**, demoting the widget-based `leading`/`actions` constructor to a legacy mode.
 - **Lone pinned bar items render at `44pt`** on both sides, matching the back button and iOS 26/27, rather than `46pt` when `GlassBarItemBackground.shared` is used.
-- **`GlassSurfaceStyle.solid` becomes the default for cards, grouped lists, and date pickers** — `GlassContainer.card`, `GlassGroupedSection`, `GlassReorderableList.grouped`, `GlassDisclosureGroup.standalone`, `GlassDatePicker`, and `GlassMultiDatePicker` flip their default `surfaceStyle` from `GlassSurfaceStyle.glass` to `GlassSurfaceStyle.solid` (flat opaque `#FFFFFF` / `#1C1C1E` cards with 26pt continuous corners, matching native `.insetGrouped` lists). **Automatic child inheritance is already implemented (`1.16.0` / `1.17.2`):** because `GlassTextField`, `GlassTextField.search`, `GlassSearchBar`, `GlassTextArea`, `GlassPasswordField`, `GlassPicker`, and `GlassChip` already default to `surfaceStyle: null` and read `InheritedGlassSurfaceStyle`, flipping those enclosing containers in `2.0.0` automatically switches every nested input/picker well to `GlassSurfaceStyle.solid` (`tertiarySystemFill`), while standalone floating inputs on a page canvas remain `glass`. `GlassContainer()` itself stays glass-first; pass `surfaceStyle: GlassSurfaceStyle.glass` on cards/sections to keep the glass look.
+- **`GlassSurfaceStyle.solid` becomes the default for cards, grouped lists, and date pickers** — `GlassContainer.card`, `GlassGroupedSection`, `GlassReorderableList.grouped`, `GlassDisclosureGroup.standalone`, `GlassDatePicker`, and `GlassMultiDatePicker` flip their default `surfaceStyle` from `GlassSurfaceStyle.glass` to `GlassSurfaceStyle.solid` (flat opaque `#FFFFFF` / `#1C1C1E` cards with 26pt continuous corners, matching native `.insetGrouped` lists). **Automatic child inheritance is already implemented (`1.16.0+`):** because `GlassButton`, `GlassButton.custom`, `GlassIconButton`, `GlassChip`, `GlassTextField`, `GlassTextField.search`, `GlassSearchBar`, `GlassTextArea`, `GlassPasswordField`, and `GlassPicker` already default to `surfaceStyle: null` and read `InheritedGlassSurfaceStyle`, flipping those enclosing containers in `2.0.0` automatically switches nested buttons, chips, and input/picker wells inside solid cards to `GlassSurfaceStyle.solid`, while standalone floating controls on a page canvas remain `glass`. `GlassContainer()` itself stays glass-first; pass `surfaceStyle: GlassSurfaceStyle.glass` on cards/sections to keep the glass look.
