@@ -688,7 +688,7 @@ class _MorphParityHarnessAppState extends State<MorphParityHarnessApp> {
                               icon: const Icon(CupertinoIcons.ellipsis_circle),
                               buttonWidth: 140,
                               buttonHeight: 44,
-                              menuWidth: 220,
+                              menuWidth: 250,
                               menuAlignment: _menuAlignment,
                               quality: buttonQuality,
                               items: _buildMenuItems(_menuLength),
@@ -971,7 +971,7 @@ class _MorphParityHarnessAppState extends State<MorphParityHarnessApp> {
   }) {
     return GlassMenu(
       controller: _roundMenuCtrl,
-      menuWidth: 220,
+      menuWidth: 250,
       menuAlignment: _menuAlignment,
       autoAdjustToScreen: true,
       menuPadding: const EdgeInsets.all(12),
@@ -998,7 +998,7 @@ class _MorphParityHarnessAppState extends State<MorphParityHarnessApp> {
   }) {
     return GlassMenu(
       controller: _pillMenuCtrl,
-      menuWidth: 220,
+      menuWidth: 250,
       menuAlignment: _menuAlignment,
       autoAdjustToScreen: true,
       menuPadding: const EdgeInsets.all(12),
@@ -1042,7 +1042,7 @@ class _MorphParityHarnessAppState extends State<MorphParityHarnessApp> {
   }) {
     return GlassMenu(
       controller: _wideCenterMenuCtrl,
-      menuWidth: 220,
+      menuWidth: 250,
       menuAlignment: _menuAlignment,
       autoAdjustToScreen: true,
       menuPadding: const EdgeInsets.all(12),
@@ -1086,7 +1086,7 @@ class _MorphParityHarnessAppState extends State<MorphParityHarnessApp> {
   }) {
     return GlassMenu(
       controller: _wideLeftMenuCtrl,
-      menuWidth: 220,
+      menuWidth: 250,
       menuAlignment: _menuAlignment,
       autoAdjustToScreen: true,
       menuPadding: const EdgeInsets.all(12),
@@ -1229,7 +1229,7 @@ class _MorphParityHarnessAppState extends State<MorphParityHarnessApp> {
   }) {
     return GlassMenu(
       controller: _rightEdgeMenuCtrl,
-      menuWidth: 220,
+      menuWidth: 250,
       menuAlignment: _menuAlignment,
       autoAdjustToScreen: true,
       menuPadding: const EdgeInsets.all(12),
@@ -1300,7 +1300,7 @@ class _MorphParityHarnessAppState extends State<MorphParityHarnessApp> {
         // 1. Upward Round GlassMenu (44x44)
         GlassMenu(
           controller: _bottomRoundMenuCtrl,
-          menuWidth: 220,
+          menuWidth: 250,
           menuAlignment: _menuAlignment,
           autoAdjustToScreen: true,
           menuPadding: const EdgeInsets.all(12),
@@ -1322,7 +1322,7 @@ class _MorphParityHarnessAppState extends State<MorphParityHarnessApp> {
         // 2. Upward Wide GlassMenu (168x44)
         GlassMenu(
           controller: _bottomWideMenuCtrl,
-          menuWidth: 220,
+          menuWidth: 250,
           menuAlignment: _menuAlignment,
           autoAdjustToScreen: true,
           menuPadding: const EdgeInsets.all(12),
@@ -1450,7 +1450,7 @@ class _MorphParityHarnessAppState extends State<MorphParityHarnessApp> {
           child: switch (_stageTarget) {
             'bottom_wide' => GlassMenu(
                 controller: _bottomWideMenuCtrl,
-                menuWidth: 220,
+                menuWidth: 250,
                 menuAlignment: _menuAlignment,
                 autoAdjustToScreen: true,
                 menuPadding: const EdgeInsets.all(12),
@@ -1476,7 +1476,7 @@ class _MorphParityHarnessAppState extends State<MorphParityHarnessApp> {
               ),
             _ => GlassMenu(
                 controller: _bottomRoundMenuCtrl,
-                menuWidth: 220,
+                menuWidth: 250,
                 menuAlignment: _menuAlignment,
                 autoAdjustToScreen: true,
                 menuPadding: const EdgeInsets.all(12),
