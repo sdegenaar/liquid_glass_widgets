@@ -1,6 +1,6 @@
 # Roadmap: 1.x → 2.0
 
-> Last updated: 2026-11-17 (v1.17.5 stable)
+> Last updated: 2026-11-18 (v1.18.0 stable)
 
 This document tracks planned and future work for `liquid_glass_widgets` post-1.0.
 The guiding principle remains: **fewer, better widgets that map 1:1 to real iOS components**.
@@ -9,13 +9,13 @@ For historical version notes, see [`CHANGELOG.md`](../CHANGELOG.md).
 
 ---
 
-## Current Status (1.17.5)
+## Current Status (1.18.0)
 
 | Criterion | Status | Notes |
 |---|---|---|
 | No known P0/P1 bugs | ✅ Clear | No open crash reports |
 | Dartdoc complete on all public API | ✅ Done | `public_member_api_docs` enforced permanently |
-| Test coverage ≥ 90% | ✅ Done | ~92% line coverage (4,220+ tests) |
+| Test coverage ≥ 90% | ✅ Done | ~92% line coverage (4,250+ tests) |
 | No `Icons.*` (Material) in `lib/` | ✅ Done | Zero hits — fully `CupertinoIcons` |
 | No hardcoded `Colors.*` in `lib/` | ✅ Done | All replaced with `CupertinoColors` or explicit hex `Color` literals |
 | `material.dart` imports in `lib/` | ✅ Done | Zero files (`cupertino_ui` migration staged on `feat/flutter-3.50-migration` for 2.0) |
