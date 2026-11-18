@@ -8,9 +8,12 @@ import '../../theme/glass_theme.dart';
 import '../../theme/glass_theme_data.dart';
 import '../../types/glass_quality.dart';
 import '../../types/glass_button_style.dart';
+import '../../types/glass_surface_style.dart';
 import '../shared/adaptive_glass.dart';
 import '../shared/glass_accessibility_scope.dart';
 import '../shared/glass_focus_region.dart';
+import '../shared/glass_solid_surface.dart';
+import '../shared/inherited_liquid_glass.dart';
 import '../../theme/glass_theme_helpers.dart';
 import '../surfaces/glass_app_bar.dart';
 
@@ -141,6 +144,9 @@ class GlassButton extends StatefulWidget {
     this.settings,
     this.useOwnLayer = false,
     this.quality,
+    this.surfaceStyle,
+    this.color,
+    this.tintColor,
     this.focusNode,
     this.autofocus = false,
     // LiquidStretch properties
@@ -204,6 +210,9 @@ class GlassButton extends StatefulWidget {
     this.settings,
     this.useOwnLayer = false,
     this.quality,
+    this.surfaceStyle,
+    this.color,
+    this.tintColor,
     this.focusNode,
     this.autofocus = false,
     // LiquidStretch properties
@@ -261,7 +270,12 @@ class GlassButton extends StatefulWidget {
 
   /// Color of the icon (only used when [icon] is provided).
   ///
-  /// Defaults to [CupertinoColors.white] for prominent buttons, and [CupertinoColors.label] otherwise.
+  /// Supports [CupertinoDynamicColor]. When null, defaults to a
+  /// luminance-contrasted [CupertinoColors.black] or [CupertinoColors.white]
+  /// for [GlassButtonStyle.prominent] (in [GlassSurfaceStyle.solid] or tinted
+  /// [GlassSurfaceStyle.glass] mode) and opaque custom solid [color]s,
+  /// [CupertinoColors.white] for untinted prominent glass, and
+  /// [CupertinoColors.label] otherwise.
   final Color? iconColor;
 
   // ===========================================================================
@@ -373,9 +387,67 @@ class GlassButton extends StatefulWidget {
 
   /// The visual style of the button.
   ///
-  /// Use [GlassButtonStyle.transparent] when grouping buttons to avoid
-  /// double-drawing glass backgrounds.
+  /// - [GlassButtonStyle.filled] (default): Standard refractive glass
+  ///   (`.buttonStyle(.glass)`) in [GlassSurfaceStyle.glass] mode, or an iOS
+  ///   `tertiarySystemFill` recessed well (`.buttonStyle(.bordered)`) in
+  ///   [GlassSurfaceStyle.solid] mode.
+  /// - [GlassButtonStyle.prominent]: Thicker frosted/accent glass
+  ///   (`.buttonStyle(.glassProminent)`) in [GlassSurfaceStyle.glass] mode, or
+  ///   an opaque accent fill (`.buttonStyle(.borderedProminent)`, defaulting to
+  ///   `CupertinoTheme.of(context).primaryColor`) in [GlassSurfaceStyle.solid]
+  ///   mode.
+  /// - [GlassButtonStyle.transparent]: No resting background
+  ///   (`.buttonStyle(.borderless)`); useful inside [GlassButtonGroup] or for
+  ///   borderless actions.
   final GlassButtonStyle style;
+
+  /// How the button's surface is painted.
+  ///
+  /// If null (the default), inherits from the nearest ancestor
+  /// [InheritedGlassSurfaceStyle] (such as a `solid` `GlassContainer.card` or
+  /// `GlassGroupedSection`), falling back to [GlassSurfaceStyle.glass].
+  ///
+  /// - [GlassSurfaceStyle.glass]: Renders refractive liquid glass via
+  ///   [AdaptiveGlass] and [GlassGlow] (optionally tinted with [tintColor]).
+  /// - [GlassSurfaceStyle.solid]: Bypasses [AdaptiveGlass], [GlassGlow], and
+  ///   backdrop filters completely (zero shader cost) while keeping tactile
+  ///   [LiquidStretch] press inflation, hover/focus highlights, keyboard
+  ///   activation, and `GlassMaterialize` transitions.
+  final GlassSurfaceStyle? surfaceStyle;
+
+  /// Explicit resting fill color override for [GlassSurfaceStyle.solid]
+  /// buttons.
+  ///
+  /// Supports [CupertinoDynamicColor], resolved against the active
+  /// [BuildContext]. In [GlassSurfaceStyle.solid] mode:
+  /// - [GlassButtonStyle.filled]: Defaults to [resolveGlassSolidWellColor]
+  ///   (`#1E767680` light / `#3D767680` dark) when null.
+  /// - [GlassButtonStyle.prominent]: Defaults to [tintColor] or
+  ///   `CupertinoTheme.of(context).primaryColor` when null.
+  /// - [GlassButtonStyle.transparent]: Renders no resting fill when null, or
+  ///   paints [color] when provided.
+  ///
+  /// Ignored in [GlassSurfaceStyle.glass] mode (pass [tintColor] to tint a
+  /// refractive glass button, or set `surfaceStyle: GlassSurfaceStyle.solid`;
+  /// a debug-mode message is printed if [color] is set in glass mode).
+  final Color? color;
+
+  /// Accent tint color for [GlassSurfaceStyle.glass] buttons (mirroring
+  /// SwiftUI's `.tint(...)` on `.buttonStyle(.glass)` and
+  /// `.buttonStyle(.glassProminent)`).
+  ///
+  /// Supports [CupertinoDynamicColor]. When non-null in
+  /// [GlassSurfaceStyle.glass] mode (except [GlassButtonStyle.transparent]),
+  /// floods the glass body via [GlassBodyMode.clear] (`alpha ≈ 0.24` for
+  /// [GlassButtonStyle.filled], `alpha ≈ 0.85` for
+  /// [GlassButtonStyle.prominent], or preserving [tintColor]'s explicit alpha
+  /// when `< 1.0`) and promotes the button to an isolated layer so grouped
+  /// ancestor layers never discard the tint while retaining full refraction,
+  /// frost, blur, and Fresnel rim highlights.
+  ///
+  /// Also honoured as a fallback accent fill in [GlassSurfaceStyle.solid] +
+  /// [GlassButtonStyle.prominent] when [color] is null.
+  final Color? tintColor;
 
   // ===========================================================================
   // LiquidStretch Properties (Animation & Interaction)
@@ -635,8 +707,10 @@ class _GlassButtonState extends State<GlassButton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _saturationController;
   late final CurvedAnimation _saturationAnimation;
+  late final Listenable _overlayListenable;
   final ValueNotifier<bool> _isHovered = ValueNotifier(false);
   final ValueNotifier<bool> _isFocused = ValueNotifier(false);
+  bool _didWarnSurfaceParams = false;
 
   @override
   void initState() {
@@ -652,6 +726,22 @@ class _GlassButtonState extends State<GlassButton>
       parent: _saturationController,
       curve: Curves.easeOut,
     );
+    _overlayListenable = Listenable.merge([
+      _saturationAnimation,
+      _isHovered,
+      _isFocused,
+    ]);
+  }
+
+  @override
+  void didUpdateWidget(GlassButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.surfaceStyle != oldWidget.surfaceStyle ||
+        widget.settings != oldWidget.settings ||
+        widget.quality != oldWidget.quality ||
+        widget.color != oldWidget.color) {
+      _didWarnSurfaceParams = false;
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -745,11 +835,78 @@ class _GlassButtonState extends State<GlassButton>
 
   @override
   Widget build(BuildContext context) {
-    // Resolve quality and theme — hoisted here so stretchWidget can branch on quality
-    final effectiveQuality = GlassThemeHelpers.resolveQuality(
-      context,
-      widgetQuality: widget.quality,
-    );
+    final effectiveSurfaceStyle = widget.surfaceStyle ??
+        InheritedGlassSurfaceStyle.maybeOf(context) ??
+        GlassSurfaceStyle.glass;
+    final isSolid = effectiveSurfaceStyle == GlassSurfaceStyle.solid;
+
+    assert(() {
+      final hasUnusedGlassParams =
+          (widget.surfaceStyle == GlassSurfaceStyle.solid &&
+                  (widget.settings != null || widget.quality != null)) ||
+              (isSolid && widget.settings != null);
+      if (hasUnusedGlassParams) {
+        if (!_didWarnSurfaceParams) {
+          _didWarnSurfaceParams = true;
+          debugPrint(
+            'GlassButton: `settings` / `quality` have no effect when '
+            '`surfaceStyle` is GlassSurfaceStyle.solid (a solid button is a '
+            'flat fill and does not use the glass shader).',
+          );
+        }
+      } else if (!isSolid && widget.color != null) {
+        if (!_didWarnSurfaceParams) {
+          _didWarnSurfaceParams = true;
+          debugPrint(
+            'GlassButton: `color` has no effect when `surfaceStyle` is '
+            'GlassSurfaceStyle.glass. Pass `tintColor` to tint a glass button, '
+            'or set `surfaceStyle: GlassSurfaceStyle.solid` for a flat fill.',
+          );
+        }
+      }
+      return true;
+    }());
+
+    final resolvedColor =
+        CupertinoDynamicColor.maybeResolve(widget.color, context);
+    final resolvedTint =
+        CupertinoDynamicColor.maybeResolve(widget.tintColor, context);
+    final resolvedIconColor =
+        CupertinoDynamicColor.maybeResolve(widget.iconColor, context);
+
+    // Resolve resting solid fill when in GlassSurfaceStyle.solid mode.
+    final Color? solidFillColor = isSolid
+        ? switch (widget.style) {
+            GlassButtonStyle.filled =>
+              resolvedColor ?? resolveGlassSolidWellColor(context),
+            GlassButtonStyle.prominent => resolvedColor ??
+                resolvedTint ??
+                CupertinoDynamicColor.resolve(
+                  CupertinoTheme.of(context).primaryColor,
+                  context,
+                ),
+            GlassButtonStyle.transparent => resolvedColor,
+          }
+        : null;
+
+    // Contrast-aware foreground for prominent buttons (solid or glass) and
+    // solid buttons with an explicit high-alpha fill (`a > 0.5`).
+    final Color? contrastForeground;
+    if (isSolid &&
+        (widget.style == GlassButtonStyle.prominent ||
+            (resolvedColor != null && resolvedColor.a > 0.5))) {
+      contrastForeground = solidFillColor!.computeLuminance() > 0.55
+          ? CupertinoColors.black
+          : CupertinoColors.white;
+    } else if (!isSolid && widget.style == GlassButtonStyle.prominent) {
+      contrastForeground = resolvedTint != null
+          ? (resolvedTint.computeLuminance() > 0.55
+              ? CupertinoColors.black
+              : CupertinoColors.white)
+          : CupertinoColors.white;
+    } else {
+      contrastForeground = null;
+    }
 
     // Resolve interaction settings: explicit widget param > theme > default
     final themeInteraction = GlassThemeData.of(context).interaction;
@@ -761,34 +918,40 @@ class _GlassButtonState extends State<GlassButton>
     // The press light's colour: explicit widget param > the theme's colour
     // for this brightness > white.
     final Color? pressLightColor =
-        widget.pressLightColor ?? resolvedGlowColors.pressLight;
+        CupertinoDynamicColor.maybeResolve(widget.pressLightColor, context) ??
+            resolvedGlowColors.pressLight;
     final Color effectiveAmbientBaseLightColor =
         pressLightColor ?? CupertinoColors.white;
-    final isNativeGlow = widget.glowRadius == null;
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
-    // Native specular sheen is subtle (~10% alpha in light mode, ~7% in dark mode)
-    // to provide a delicate specular highlight on top of ambientBaseLight
-    // without creating a dense, opaque white fog circle. A press light colour
-    // tints it too, at the same strength: left white, its additive glow alone
-    // still washes a pressed button on a tinted page toward white.
-    final double nativeGlowAlpha = isDark ? 0x12 / 0xFF : 0x1A / 0xFF;
-    final nativeGlowColor = pressLightColor == null
-        ? (isDark ? const Color(0x12FFFFFF) : const Color(0x1AFFFFFF))
-        : effectiveAmbientBaseLightColor.withValues(
-            alpha: effectiveAmbientBaseLightColor.a * nativeGlowAlpha,
-          );
-
-    final effectiveGlowColor = widget.glowColor ??
-        (isNativeGlow ? nativeGlowColor : resolvedGlowColors.primary) ??
-        CupertinoColors.white.withValues(alpha: 0.24);
-    final effectiveGlowBlurRadius =
-        widget.glowBlurRadius ?? resolvedGlowColors.glowBlurRadius;
-    final effectiveGlowSpreadRadius =
-        widget.glowSpreadRadius ?? resolvedGlowColors.glowSpreadRadius;
-    final effectiveGlowOpacity =
-        widget.glowOpacity ?? resolvedGlowColors.glowOpacity;
 
     // Build the content widget (either icon or custom child)
+    final Color defaultIconColor = contrastForeground ??
+        (isSolid
+            ? CupertinoColors.label.resolveFrom(context)
+            : (CupertinoTheme.of(context).textTheme.textStyle.color ??
+                CupertinoColors.label));
+
+    final Widget resolvedChild;
+    if (widget.child != null) {
+      resolvedChild = contrastForeground != null
+          ? DefaultTextStyle.merge(
+              style: TextStyle(color: contrastForeground),
+              child: IconTheme.merge(
+                data: IconThemeData(color: contrastForeground),
+                child: widget.child!,
+              ),
+            )
+          : widget.child!;
+    } else {
+      resolvedChild = IconTheme(
+        data: IconThemeData(
+          color: resolvedIconColor ?? defaultIconColor,
+          size: widget.iconSize,
+        ),
+        child: widget.icon ?? const SizedBox.shrink(),
+      );
+    }
+
     final contentWidget = SizedBox(
       height: widget.height,
       width: widget.width,
@@ -796,41 +959,39 @@ class _GlassButtonState extends State<GlassButton>
         alignment: widget.alignment,
         widthFactor: widget.width == null ? 1.0 : null,
         heightFactor: widget.height == null ? 1.0 : null,
-        child: widget.child ??
-            IconTheme(
-              data: IconThemeData(
-                color: widget.iconColor ??
-                    (widget.style == GlassButtonStyle.prominent
-                        ? CupertinoColors.white
-                        : (CupertinoTheme.of(context)
-                                .textTheme
-                                .textStyle
-                                .color ??
-                            CupertinoColors.label)),
-                size: widget.iconSize,
-              ),
-              child: widget.icon ?? const SizedBox.shrink(),
-            ),
+        child: resolvedChild,
       ),
     );
 
-    // 2. Build the inner content (Ambient base + Glow + Icon/Child)
+    // 2. Build the inner content (Ambient base + Glow/Solid + Icon/Child)
     //
     // The ambient base light is the even surface brightening a pressed iOS 26
-    // button keeps for as long as the finger is down, wherever it goes. A
-    // directional glow would hotspot the centre — a pill's glow radius is its
-    // short side — so it is off by default and this carries the highlight.
-    // The default lift is halved in dark mode, where the resting surface is
-    // darker and the same overlay reads as a flash; an explicit value is
-    // honoured unchanged.
+    // button keeps for as long as the finger is down, wherever it goes. On
+    // bright opaque solid fills (e.g. a `#FFFFFF` pill in dark mode) where no
+    // explicit `pressLightColor` was supplied, automatically darken slightly on
+    // press/hover/focus rather than washing white-on-white.
+    final materializeScope =
+        isSolid ? GlassMaterializeScope.maybeOf(context) : null;
+    final double glassProgress =
+        (materializeScope?.glassProgress ?? 1.0).clamp(0.0, 1.0);
+
+    final bool useDarkPressOverlay = widget.pressLightColor == null &&
+        isSolid &&
+        solidFillColor != null &&
+        solidFillColor.a > 0.5 &&
+        solidFillColor.computeLuminance() > 0.65;
+    final Color overlayBaseColor = useDarkPressOverlay
+        ? CupertinoColors.black
+        : effectiveAmbientBaseLightColor;
     final double effectiveAmbientBaseLight = widget.ambientBaseLight ??
-        (GlassTheme.brightnessOf(context) == Brightness.dark
-            ? GlassDefaults.ambientBaseLightDark
-            : GlassDefaults.ambientBaseLight);
+        (useDarkPressOverlay
+            ? 0.12
+            : (isDark
+                ? GlassDefaults.ambientBaseLightDark
+                : GlassDefaults.ambientBaseLight));
 
     final ambientOverlay = AnimatedBuilder(
-      animation:
-          Listenable.merge([_saturationAnimation, _isHovered, _isFocused]),
+      animation: _overlayListenable,
       builder: (context, _) {
         double opacity = _saturationAnimation.value * effectiveAmbientBaseLight;
         if (_isFocused.value) {
@@ -838,18 +999,21 @@ class _GlassButtonState extends State<GlassButton>
         } else if (_isHovered.value) {
           opacity += 0.08;
         }
+        if (isSolid) {
+          opacity *= glassProgress;
+        }
         if (opacity <= 0) return const SizedBox.shrink();
         // Clipped to the button's shape: the fill covers the whole box and
         // relied on the blur layer's clip to hide the corners, so with
-        // `blur: 0` (no blur layer) a pressed pill lit up as a rectangle.
+        // `blur: 0` (no blur layer) or in `solid` mode a pressed pill would
+        // otherwise light up as a rectangle.
         return Positioned.fill(
           child: IgnorePointer(
             child: ClipPath(
               clipper: ShapeBorderClipper(shape: widget.shape),
               child: ColoredBox(
-                color: effectiveAmbientBaseLightColor.withValues(
-                  alpha: (effectiveAmbientBaseLightColor.a * opacity)
-                      .clamp(0.0, 1.0),
+                color: overlayBaseColor.withValues(
+                  alpha: (overlayBaseColor.a * opacity).clamp(0.0, 1.0),
                 ),
               ),
             ),
@@ -858,137 +1022,208 @@ class _GlassButtonState extends State<GlassButton>
       },
     );
 
-    // The overlay sits under the content so the icon or label stays crisp
-    // while the surface behind it brightens, as it does natively.
-    final contentWithAmbient = Stack(
-      alignment: widget.alignment,
-      children: [
-        ambientOverlay,
-        contentWidget,
-      ],
-    );
+    final bool hasStretch = widget.stretch > 0;
+    final Widget surfaceWidget;
+    final bool skipBoundary;
 
-    // Resolve effective glow radius:
-    //   null → native iOS 26 calibrated 1.6 (wide spread spanning across the
-    //          button surface, giving a smooth, subtle gradient rather than a
-    //          concentrated flashlight hotspot; clipped safely by ShapeBorderClipper).
-    //   0.0  → explicitly disabled.
-    //   > 0  → caller's explicit override.
-    final effectiveGlowRadius = widget.glowRadius ?? 1.6;
+    if (isSolid) {
+      // ---- SOLID SURFACE FAST-PATH (0 Shaders, 0 BackdropFilters) -----------
+      final solidContent =
+          GlassMaterializeScope.wrapContent(context, contentWidget);
+      final solidChild = Stack(
+        alignment: widget.alignment,
+        children: [
+          ambientOverlay,
+          solidContent,
+        ],
+      );
+      final effectiveFillColor = solidFillColor?.withValues(
+        alpha: (solidFillColor.a * glassProgress).clamp(0.0, 1.0),
+      );
+      surfaceWidget = solidFillColor != null
+          ? DecoratedBox(
+              decoration: ShapeDecoration(
+                color: effectiveFillColor,
+                shape: widget.shape,
+              ),
+              child: solidChild,
+            )
+          : ClipPath(
+              clipper: ShapeBorderClipper(shape: widget.shape),
+              child: solidChild,
+            );
+      // Vector fill + crisp vector text/icons — skip RepaintBoundary so press
+      // inflation re-rasterizes sharply without allocating an offscreen texture.
+      skipBoundary = true;
+    } else {
+      // ---- GLASS SURFACE PATH -----------------------------------------------
+      final effectiveQuality = GlassThemeHelpers.resolveQuality(
+        context,
+        widgetQuality: widget.quality,
+      );
 
-    // Resolve effective blur: null falls through to 16.0 for a creamy organic falloff.
-    final nativeGlowBlurRadius =
-        widget.glowRadius == null ? 16.0 : effectiveGlowBlurRadius;
+      final isNativeGlow = widget.glowRadius == null;
+      // Native specular sheen is subtle (~10% alpha in light mode, ~7% in dark mode)
+      // to provide a delicate specular highlight on top of ambientBaseLight
+      // without creating a dense, opaque white fog circle. A press light colour
+      // tints it too, at the same strength: left white, its additive glow alone
+      // still washes a pressed button on a tinted page toward white.
+      final double nativeGlowAlpha = isDark ? 0x12 / 0xFF : 0x1A / 0xFF;
+      final nativeGlowColor = pressLightColor == null
+          ? (isDark ? const Color(0x12FFFFFF) : const Color(0x1AFFFFFF))
+          : effectiveAmbientBaseLightColor.withValues(
+              alpha: effectiveAmbientBaseLightColor.a * nativeGlowAlpha,
+            );
 
-    // This part is static relative to the glass saturation pulse.
-    // clipper is passed directly to GlassGlow (not to AdaptiveGlass) so the
-    // spotlight is bounded by the button's shape geometry. This is the same
-    // pattern GlassTabBar uses — the 2D radial gradient is clipped inside
-    // GlassGlowLayer.paint(), leaving the Impeller shader and its texture
-    // headroom completely untouched.
-    final glowContent = GlassGlow(
-      clipper: ShapeBorderClipper(shape: widget.shape),
-      glowColor: effectiveGlowColor,
-      glowRadius: effectiveGlowRadius,
-      glowBlurRadius: nativeGlowBlurRadius,
-      glowSpreadRadius: effectiveGlowSpreadRadius,
-      glowOpacity: effectiveGlowOpacity,
-      hitTestBehavior: widget.glowHitTestBehavior,
-      child: contentWithAmbient,
-    );
+      final effectiveGlowColor = widget.glowColor ??
+          (isNativeGlow ? nativeGlowColor : resolvedGlowColors.primary) ??
+          CupertinoColors.white.withValues(alpha: 0.24);
+      final effectiveGlowBlurRadius =
+          widget.glowBlurRadius ?? resolvedGlowColors.glowBlurRadius;
+      final effectiveGlowSpreadRadius =
+          widget.glowSpreadRadius ?? resolvedGlowColors.glowSpreadRadius;
+      final effectiveGlowOpacity =
+          widget.glowOpacity ?? resolvedGlowColors.glowOpacity;
 
-    // 3. Animate ONLY the glass settings that change during interaction
-    final glassWidget = AnimatedBuilder(
-      animation: _saturationAnimation,
-      child: glowContent,
-      builder: (context, child) {
-        if (widget.style == GlassButtonStyle.transparent) {
-          // Clip interaction glow to the button's shape so it doesn't
-          // bleed into a rectangle.
-          return ClipPath(
-            clipper: _ExpandedShapeClipper(shape: widget.shape, expansion: 0),
-            clipBehavior: Clip.antiAlias,
+      // The overlay sits under the content so the icon or label stays crisp
+      // while the surface behind it brightens, as it does natively.
+      final contentWithAmbient = Stack(
+        alignment: widget.alignment,
+        children: [
+          ambientOverlay,
+          contentWidget,
+        ],
+      );
+
+      // Resolve effective glow radius:
+      //   null → native iOS 26 calibrated 1.6 (wide spread spanning across the
+      //          button surface, giving a smooth, subtle gradient rather than a
+      //          concentrated flashlight hotspot; clipped safely by ShapeBorderClipper).
+      //   0.0  → explicitly disabled.
+      //   > 0  → caller's explicit override.
+      final effectiveGlowRadius = widget.glowRadius ?? 1.6;
+
+      // Resolve effective blur: null falls through to 16.0 for a creamy organic falloff.
+      final nativeGlowBlurRadius =
+          widget.glowRadius == null ? 16.0 : effectiveGlowBlurRadius;
+
+      // This part is static relative to the glass saturation pulse.
+      // clipper is passed directly to GlassGlow (not to AdaptiveGlass) so the
+      // spotlight is bounded by the button's shape geometry. This is the same
+      // pattern GlassTabBar uses — the 2D radial gradient is clipped inside
+      // GlassGlowLayer.paint(), leaving the Impeller shader and its texture
+      // headroom completely untouched.
+      final glowContent = GlassGlow(
+        clipper: ShapeBorderClipper(shape: widget.shape),
+        glowColor: effectiveGlowColor,
+        glowRadius: effectiveGlowRadius,
+        glowBlurRadius: nativeGlowBlurRadius,
+        glowSpreadRadius: effectiveGlowSpreadRadius,
+        glowOpacity: effectiveGlowOpacity,
+        hitTestBehavior: widget.glowHitTestBehavior,
+        child: contentWithAmbient,
+      );
+
+      // 3. Animate ONLY the glass settings that change during interaction
+      surfaceWidget = AnimatedBuilder(
+        animation: _saturationAnimation,
+        child: glowContent,
+        builder: (context, child) {
+          if (widget.style == GlassButtonStyle.transparent) {
+            // Clip interaction glow to the button's shape so it doesn't
+            // bleed into a rectangle.
+            return ClipPath(
+              clipper: _ExpandedShapeClipper(shape: widget.shape, expansion: 0),
+              clipBehavior: Clip.antiAlias,
+              child: child!,
+            );
+          }
+
+          // Resolve settings: widget explicit → app bar default → inherited.
+          final effectiveExplicit =
+              widget.settings ?? DefaultButtonSettings.of(context);
+          var baseSettings = GlassThemeHelpers.resolveSettings(
+            context,
+            explicit: effectiveExplicit,
+          );
+
+          // Prominent style: thicker, more opaque, brighter glass for primary CTAs.
+          // iOS 26's `.glassProminent` is visibly more frosted than `.glass`.
+          if (widget.style == GlassButtonStyle.prominent) {
+            baseSettings = baseSettings.copyWith(
+              thickness: (baseSettings.effectiveThickness * 2.5).clamp(30, 100),
+              glassColor: baseSettings.glassColor.withValues(
+                  alpha: (baseSettings.glassColor.a * 2.5).clamp(0.4, 0.9)),
+              lightIntensity:
+                  (baseSettings.effectiveLightIntensity * 1.5).clamp(0.3, 1.0),
+            );
+          }
+
+          // Tinted glass: flood body via GlassBodyMode.clear so hex colors stay
+          // accurate while preserving active GlassStyle refraction, frost, blur,
+          // and Fresnel rim highlights.
+          if (resolvedTint != null) {
+            final double defaultTintAlpha =
+                widget.style == GlassButtonStyle.prominent ? 0.85 : 0.24;
+            final double effectiveTintAlpha =
+                resolvedTint.a < 1.0 ? resolvedTint.a : defaultTintAlpha;
+            baseSettings = baseSettings.copyWith(
+              glassColor: resolvedTint.withValues(alpha: effectiveTintAlpha),
+              bodyMode: GlassBodyMode.clear,
+            );
+          }
+
+          // Promote to own layer when tinted or prominent so grouped ancestor
+          // layers never discard per-button settings/tint, while preserving the
+          // nested-glass vibrancy fast-path (avoidsRefraction) inside glass
+          // containers and dialogs so nested buttons do not mount extra
+          // BackdropFilters.
+          final avoidsRefraction = context
+                  .dependOnInheritedWidgetOfExactType<InheritedLiquidGlass>()
+                  ?.avoidsRefraction ??
+              false;
+          final effectiveUseOwnLayer = widget.useOwnLayer ||
+              (!avoidsRefraction &&
+                  (resolvedTint != null ||
+                      widget.style == GlassButtonStyle.prominent));
+
+          // Pass glow intensity directly to AdaptiveGlass for Skia shader feedback.
+          // On Impeller, GlassGlow widget is used instead (separate from glass effect).
+          // On Skia/Web, glowIntensity controls shader-based additive brightness.
+          return AdaptiveGlass(
+            shape: widget.shape,
+            settings: baseSettings, // Preserve user's saturation setting!
+            quality: effectiveQuality,
+            useOwnLayer: effectiveUseOwnLayer,
+            glowIntensity: _saturationAnimation.value, // 0.0-1.0 animation
+            // isStationary: true → pass isInteractive:false so _FrostedFallback
+            // keeps its BackdropFilter blur in GlassQuality.minimal (the guard
+            // only bites on the minimal path; standard/premium are unaffected).
+            isInteractive: !widget.isStationary,
+            platformViewBackdrop: widget.platformViewBackdrop,
+            // Give the RepaintBoundary texture extra headroom for the press scale
+            // animation. When effectiveUseOwnLayer is true, the glass layer creates
+            // its own Impeller texture; without this margin, Transform.scale in
+            // LiquidStretch clips at the original texture edge.
+            clipExpansion: effectiveUseOwnLayer &&
+                    (effectiveInteractionScale == null ||
+                        effectiveInteractionScale > 1.0)
+                ? EdgeInsets.all(_pressHeadroom(effectiveInteractionScale))
+                : EdgeInsets.zero,
             child: child!,
           );
-        }
+        },
+      );
 
-        // Resolve settings: widget explicit → app bar default → inherited.
-        final effectiveExplicit =
-            widget.settings ?? DefaultButtonSettings.of(context);
-        var baseSettings = GlassThemeHelpers.resolveSettings(
-          context,
-          explicit: effectiveExplicit,
-        );
-
-        // Prominent style: thicker, more opaque, brighter glass for primary CTAs.
-        // iOS 26's `.glassProminent` is visibly more frosted than `.glass`.
-        if (widget.style == GlassButtonStyle.prominent) {
-          baseSettings = baseSettings.copyWith(
-            thickness: (baseSettings.effectiveThickness * 2.5).clamp(30, 100),
-            glassColor: baseSettings.glassColor.withValues(
-                alpha: (baseSettings.glassColor.a * 2.5).clamp(0.4, 0.9)),
-            lightIntensity:
-                (baseSettings.effectiveLightIntensity * 1.5).clamp(0.3, 1.0),
-          );
-        }
-
-        // useOwnLayer is passed through to AdaptiveGlass, which automatically
-        // promotes interactive elements to own-layer in premium mode (via
-        // isInteractive: true). No need to auto-promote here.
-
-        // Pass glow intensity directly to AdaptiveGlass for Skia shader feedback.
-        // On Impeller, GlassGlow widget is used instead (separate from glass effect).
-        // On Skia/Web, glowIntensity controls shader-based additive brightness.
-        return AdaptiveGlass(
-          shape: widget.shape,
-          settings: baseSettings, // Preserve user's saturation setting!
-          quality: effectiveQuality,
-          useOwnLayer: widget.useOwnLayer,
-          glowIntensity: _saturationAnimation.value, // 0.0-1.0 animation
-          // isStationary: true → pass isInteractive:false so _FrostedFallback
-          // keeps its BackdropFilter blur in GlassQuality.minimal (the guard
-          // only bites on the minimal path; standard/premium are unaffected).
-          isInteractive: !widget.isStationary,
-          platformViewBackdrop: widget.platformViewBackdrop,
-          // Give the RepaintBoundary texture extra headroom for the press scale
-          // animation. When useOwnLayer: true, the glass layer creates its own
-          // Impeller texture; without this margin, Transform.scale in LiquidStretch
-          // clips at the original texture edge (the "top-cut" artefact on nav buttons).
-          // Sized from the scale, so a 56 px button at 1.3 reserves 17 px; texture
-          // only, no GPU cost at rest. Grouped buttons don't need this — they
-          // share the parent layer.
-          clipExpansion: widget.useOwnLayer &&
-                  (effectiveInteractionScale == null ||
-                      effectiveInteractionScale > 1.0)
-              ? EdgeInsets.all(_pressHeadroom(effectiveInteractionScale))
-              : EdgeInsets.zero,
-          child: child!,
-        );
-      },
-    );
-
-    // 4. Wrap with stretch animation and interaction containers
-    // These remain outside the AnimatedBuilder to prevent redundant rebuilds.
-    //
-    // We skip RepaintBoundary when the button can be stretched. The stretch
-    // animation applies a Transform.scale that scales the cached texture:
-    //
-    // - Minimal: always skipped (vector ClipPath — no bitmap to distort).
-    // - Premium + stretch: skipped. Impeller's LiquidGlassLayer compositing
-    //   bakes shape edges into the cached texture; scaling that texture causes
-    //   bilinear interpolation artefacts. This is a known Impeller limitation
-    //   — the fix belongs at the shader/compositing level, not as a per-button
-    //   ClipPath workaround. Standard's 2D shader re-executes within the
-    //   boundary so it stays sharp.
-    // - Premium + no stretch (stretch == 0): kept. No scaling means no
-    //   artefacts, and the boundary gives a pure performance win for the
-    //   expensive Impeller pipeline.
-    // - Standard: always kept. The lightweight shader re-executes at the
-    //   correct resolution even inside a RepaintBoundary.
-
-    final bool hasStretch = widget.stretch > 0;
-    final bool skipBoundary = effectiveQuality == GlassQuality.minimal ||
-        (effectiveQuality == GlassQuality.premium && hasStretch);
+      // 4. Wrap with stretch animation and interaction containers
+      // We skip RepaintBoundary when the button can be stretched in premium/minimal:
+      // - Minimal: always skipped (vector ClipPath — no bitmap to distort).
+      // - Premium + stretch: skipped to avoid scaling cached Impeller edge mattes.
+      // - Premium + no stretch (stretch == 0): kept.
+      // - Standard: always kept.
+      skipBoundary = effectiveQuality == GlassQuality.minimal ||
+          (effectiveQuality == GlassQuality.premium && hasStretch);
+    }
 
     final stretchContent = LiquidStretch(
       // A fixed factor when one is given; otherwise the native sizing.
@@ -1009,7 +1244,7 @@ class _GlassButtonState extends State<GlassButton>
       anchorStretchSettings: widget.anchorStretchSettings ??
           themeInteraction.anchorStretchSettings ??
           AnchorStretchSettings.nativeTremor,
-      child: glassWidget,
+      child: surfaceWidget,
     );
 
     final stretchWidget =
