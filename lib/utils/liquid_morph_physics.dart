@@ -312,6 +312,33 @@ class LiquidMorphPhysics {
   /// glass blob (see [computeCloseHeightEnvelope]).
   static const double _closeHeightEnvelopePx = 400.0;
 
+  /// Seconds between `open()` and the first visible growth in native
+  /// recordings, subtracted from the elapsed time of the open-phase curves
+  /// ([computeOpenCornerRadius], [computeOpenContentOpacity],
+  /// [computeOpenContentBlur]).
+  static const double _openOnsetLagSeconds = 0.02;
+
+  /// Open roundness stays at `1.0` for this long, then relaxes over
+  /// [_openRoundnessRelaxSeconds] (see [computeOpenCornerRadius]).
+  static const double _openRoundnessHoldSeconds = 0.14;
+  static const double _openRoundnessRelaxSeconds = 0.145;
+
+  /// Peak of `S(τ; 24, 0.6) − S(τ; 20, 0.9)` (`≈ 0.2849`), used to normalise
+  /// [computeOpenDrift] to a unit pulse.
+  static const double _openDriftUnitPeak = 0.2849;
+
+  /// Peak vertical drift (px) of the opening platter (see [computeOpenDrift]).
+  /// Native silhouette centres lead the size-synchronous centre by
+  /// `36 / 46 / 51 / 34 / 24 pt` at `33 / 67 / 100 / 133 / 167 ms`.
+  static const double _openDriftPeakPx = 56.0;
+
+  /// Peak drift for menus up to 250 pt tall (see [computeOpenDrift]).
+  static const double _openDriftPeakShortPx = 66.0;
+
+  /// The fitted pulse is evaluated this many seconds ahead of the controller
+  /// clock (native's visible drift leads our phase time by ~15 ms).
+  static const double _openDriftLeadSeconds = 0.015;
+
   // ─── Public helpers ────────────────────────────────────────────────────────
 
   /// Computes the geometric scale ratio from [sourceSize] to [targetSize]:
@@ -477,6 +504,114 @@ class LiquidMorphPhysics {
   }) {
     final u = rawValue.clamp(0.0, 1.0);
     return coreHeight + _closeHeightEnvelopePx * math.pow(u, 1.1);
+  }
+
+  /// Computes the corner radius of the **opening** platter from the time since
+  /// the open began.
+  ///
+  /// Native iOS 27 inflates the menu as a near-circular bubble and only
+  /// relaxes it into the squircle once the size is essentially done: measured
+  /// silhouette roundness `r / (min(w, h) / 2)` is `≈ 0.99` until
+  /// `~140 ms`, then falls `0.86 @ 150 → 0.62 @ 200 → 0.37 @ 250 → ρ₀ @ 285 ms`.
+  /// Holding the resting radius during growth reads as a rounded square.
+  ///
+  /// `ρ(t) = ρ₀ + (1 − ρ₀)·(1 − (t − 0.14) / 0.145)^1.3` for `t > 0.14 s`
+  /// (clamped), with `ρ₀ = targetRadius / (min(restingSize) / 2)`. [elapsedSeconds]
+  /// is the speed-scaled phase time (`GlassMorphController.phaseElapsedSeconds`).
+  static double computeOpenCornerRadius({
+    required Size currentSize,
+    required Size restingSize,
+    required double targetRadius,
+    required double elapsedSeconds,
+  }) {
+    final shortestHalf =
+        math.max(0.0, math.min(currentSize.width, currentSize.height) / 2.0);
+    final restingHalf =
+        math.max(1e-3, math.min(restingSize.width, restingSize.height) / 2.0);
+    final rho0 = (targetRadius / restingHalf).clamp(0.0, 1.0);
+    final t = elapsedSeconds - _openOnsetLagSeconds;
+    // Taller menus leave the bubble shape sooner: native roundness at 133 ms is
+    // ~1.0 for a 251 pt menu but 0.62 for a 521 pt one. Interpolate the hold
+    // (0.14 → 0.07 s) and relax (0.145 → 0.18 s) windows between those two
+    // measured heights (flat outside [250, 520]).
+    final heightF = ((restingSize.height - 250.0) / 270.0).clamp(0.0, 1.0);
+    final hold = _openRoundnessHoldSeconds * (1.0 - 0.5 * heightF);
+    final relax = _openRoundnessRelaxSeconds * (1.0 + 0.24 * heightF);
+    final k = ((t - hold) / relax).clamp(0.0, 1.0);
+    final roundness = rho0 + (1.0 - rho0) * math.pow(1.0 - k, 1.3);
+    return shortestHalf * roundness.clamp(0.0, 1.0);
+  }
+
+  /// Menu-row opacity while the platter **opens**, driven by phase time.
+  ///
+  /// Native shows the rows only after the bubble is almost full size: crisp
+  /// glyph pixels are `≈ 0.04 @ 183 ms`, `0.48 @ 200 ms`, `0.81 @ 217 ms`.
+  /// Smoothstep over `t ∈ [0.12, 0.22] s` (after [_openOnsetLagSeconds]).
+  static double computeOpenContentOpacity({required double elapsedSeconds}) {
+    final t = elapsedSeconds - _openOnsetLagSeconds;
+    return _smoothstep01((t - 0.12) / 0.10);
+  }
+
+  /// Gaussian blur sigma (logical px) of the menu rows while the platter
+  /// **opens**: soft until `~130 ms`, sharp by `~230 ms` (native text arrives
+  /// smeared and resolves as the bubble relaxes), capped at
+  /// [_closeContentBlurMaxSigma].
+  static double computeOpenContentBlur({required double elapsedSeconds}) {
+    final t = elapsedSeconds - _openOnsetLagSeconds;
+    return _closeContentBlurMaxSigma * (1.0 - _smoothstep01((t - 0.13) / 0.10));
+  }
+
+  /// Vertical open drift (logical px, signed by nothing — callers multiply by
+  /// the travel direction) of the opening platter past its resting position.
+  ///
+  /// Native iOS 27's visible glass is dragged by the background `CASDFLayer`
+  /// neck container (`MM1` `TransformView`), whose traced `ty` rises to
+  /// `+46.9 pt` and springs back with a small `−2 pt` undershoot. A
+  /// closed-form two-spring fit to the 60 fps trace (`0.8 px` RMS) is
+  /// `A · [S(τ; ω = 24, ζ = 0.6) − S(τ; ω = 20, ζ = 0.9)]`, peaking `~110 ms`
+  /// after onset. Because it is a pure function of time with zero initial
+  /// velocity it is smooth, unlike a clamped path/size-separation product, so
+  /// it cannot cause an open shake.
+  ///
+  /// Returns `0 … [_openDriftPeakPx]`; [elapsedSeconds] is the speed-scaled
+  /// phase time.
+  static double computeOpenDrift({
+    required double elapsedSeconds,
+    double menuHeight = 520.0,
+  }) {
+    final tau = elapsedSeconds + _openDriftLeadSeconds;
+    if (tau <= 0.0) return 0.0;
+    final diff = _stepResponse(tau, 24.0, 0.6) - _stepResponse(tau, 20.0, 0.9);
+    // The traced tail undershoots by ~2 pt and decays over ~700 ms, but the
+    // open controller settles at ~420 ms. Fade the pulse to exactly zero by
+    // 0.40 s so a settled menu never rests off its true position.
+    final fade = 1.0 - _smoothstep01((elapsedSeconds - 0.26) / 0.14);
+    // Native centre overshoot is ~30 pt for 251 pt menus but ~10 pt for
+    // 521 pt ones (silhouette centre overshoot of 36 / 30 / 26 / 27 pt for
+    // 251 pt menus vs 10 / 19 pt for 521 pt ones), so the
+    // amplitude falls from [_openDriftPeakShortPx] to [_openDriftPeakPx]
+    // between those heights.
+    final heightF = ((menuHeight - 250.0) / 270.0).clamp(0.0, 1.0);
+    final peak = _openDriftPeakShortPx +
+        (_openDriftPeakPx - _openDriftPeakShortPx) * heightF;
+    return peak * diff / _openDriftUnitPeak * fade;
+  }
+
+  /// Open size progress of a large `GlassMenu` morph (`scaleDelta > 3`) as a
+  /// function of the open spring's [rawValue] (`0 – 1`).
+  ///
+  /// Native grows the menu faster than the spring's ease-in: size progress is
+  /// `0.37 / 0.58 / 0.77 / 0.90 / 0.99` at `33 / 67 / 100 / 133 / 167 ms`
+  /// against spring values `0.12 / 0.36 / 0.59 / 0.77 / 0.90`. `raw^0.55`
+  /// maps one onto the other (`0.30 / 0.57 / 0.75 / 0.87 / 0.94`). Only
+  /// `GlassMenu` applies it; [compute]'s shared `sizeT` keeps the smootherstep
+  /// that popovers and sheets rely on for close↔open continuity.
+  static double computeMenuOpenSizeProgress(double rawValue) =>
+      math.pow(rawValue.clamp(0.0, 1.0), 0.55).toDouble();
+
+  static double _smoothstep01(double x) {
+    final c = x.clamp(0.0, 1.0);
+    return c * c * (3.0 - 2.0 * c);
   }
 
   /// Computes the SDF blend attenuation factor for a given scale ratio.

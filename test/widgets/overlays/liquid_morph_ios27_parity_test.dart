@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/cupertino.dart';
@@ -219,7 +220,23 @@ void main() {
               for (final elem in find.byType(GlassContainer).evaluate()) {
                 final gc = elem.widget as GlassContainer;
                 final r = _extractShapeRadius(gc.shape);
-                if (r != null) openRadii.add(r);
+                if (r != null) {
+                  openRadii.add(r);
+                  // Native inflates the opening platter as a near-circular
+                  // bubble: radius may exceed the resting 32pt but never half
+                  // of the blob's own shortest side.
+                  final halfShort = math.min(
+                        gc.width ?? double.infinity,
+                        gc.height ?? double.infinity,
+                      ) /
+                      2.0;
+                  expect(
+                    r,
+                    lessThanOrEqualTo(halfShort + 0.05),
+                    reason:
+                        '[$triggerName/${itemCount}i OPEN f=$f] radius $r exceeds half its short side $halfShort',
+                  );
+                }
                 final box = elem.renderObject as RenderBox?;
                 if (triggerName == 'wide_center_260' &&
                     box != null &&
@@ -239,9 +256,9 @@ void main() {
             for (final r in openRadii) {
               expect(
                 r,
-                lessThanOrEqualTo(32.5),
+                lessThanOrEqualTo(110.5),
                 reason:
-                    '[$triggerName/${itemCount}i OPEN] Corner radius ballooned to $r (> 32pt)!',
+                    '[$triggerName/${itemCount}i OPEN] Corner radius ballooned to $r (> half menu width)!',
               );
             }
 

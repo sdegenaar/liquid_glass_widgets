@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -836,6 +837,112 @@ void main() {
       final k = 0.2 + 0.8 * s;
       final roundness = radiusAt(s) / (resting.width * k / 2);
       expect(roundness, inInclusiveRange(0.70, 0.95));
+    });
+  });
+
+  group('LiquidMorphPhysics — open bubble, content reveal & drift', () {
+    const resting = Size(250, 251);
+
+    double rnd(double t, {Size cur = const Size(250, 251)}) =>
+        LiquidMorphPhysics.computeOpenCornerRadius(
+          currentSize: cur,
+          restingSize: resting,
+          targetRadius: 32.0,
+          elapsedSeconds: t,
+        ) /
+        (math.min(cur.width, cur.height) / 2);
+
+    test('stays a near-circle until ~140 ms then relaxes to the menu radius',
+        () {
+      expect(rnd(0.05), closeTo(1.0, 1e-9));
+      expect(rnd(0.14), closeTo(1.0, 1e-9));
+      // native roundness: 0.86 @150, 0.62 @200, 0.37 @250, rho0 @285
+      expect(rnd(0.17), inInclusiveRange(0.80, 0.98));
+      expect(rnd(0.22), inInclusiveRange(0.50, 0.78));
+      expect(rnd(0.27), inInclusiveRange(0.30, 0.50));
+      expect(rnd(0.40), closeTo(32.0 / 125.0, 1e-9));
+    });
+
+    test('roundness is monotonically non-increasing', () {
+      var prev = 2.0;
+      for (var t = 0.0; t <= 0.5; t += 0.01) {
+        final r = rnd(t);
+        expect(r, lessThanOrEqualTo(prev + 1e-12));
+        prev = r;
+      }
+    });
+
+    test('rows appear late and resolve from a blur, like native', () {
+      expect(LiquidMorphPhysics.computeOpenContentOpacity(elapsedSeconds: 0.1),
+          equals(0.0));
+      expect(LiquidMorphPhysics.computeOpenContentOpacity(elapsedSeconds: 0.2),
+          inInclusiveRange(0.5, 0.95));
+      expect(LiquidMorphPhysics.computeOpenContentOpacity(elapsedSeconds: 0.3),
+          equals(1.0));
+      expect(LiquidMorphPhysics.computeOpenContentBlur(elapsedSeconds: 0.05),
+          equals(8.0));
+      expect(LiquidMorphPhysics.computeOpenContentBlur(elapsedSeconds: 0.3),
+          closeTo(0.0, 1e-9));
+    });
+
+    test(
+        'open drift fits the traced MM1 ty: ~peak at ~110 ms, zero when settled',
+        () {
+      double d(double t) =>
+          LiquidMorphPhysics.computeOpenDrift(elapsedSeconds: t);
+      expect(d(0.0), inInclusiveRange(0.0, 8.0));
+      var peak = 0.0;
+      var peakT = 0.0;
+      for (var t = 0.0; t <= 0.4; t += 0.005) {
+        if (d(t) > peak) {
+          peak = d(t);
+          peakT = t;
+        }
+      }
+      expect(peak, inInclusiveRange(50.0, 57.0));
+      expect(peakT, inInclusiveRange(0.08, 0.14));
+      // Exactly zero well before the open controller settles (~420 ms).
+      expect(d(0.40), equals(0.0));
+      expect(d(0.60), equals(0.0));
+    });
+
+    test('menu open size curve is faster than the shared smootherstep start',
+        () {
+      // spring values at 33/67/100/133/167 ms -> native size progress
+      final spring = [0.12, 0.36, 0.59, 0.77, 0.90];
+      final native = [0.37, 0.58, 0.77, 0.90, 0.99];
+      for (var i = 0; i < spring.length; i++) {
+        final v = LiquidMorphPhysics.computeMenuOpenSizeProgress(spring[i]);
+        expect((v - native[i]).abs(), lessThan(0.10),
+            reason: 'spring ${spring[i]} -> $v vs native ${native[i]}');
+      }
+      expect(LiquidMorphPhysics.computeMenuOpenSizeProgress(0.0), equals(0.0));
+      expect(LiquidMorphPhysics.computeMenuOpenSizeProgress(1.0), equals(1.0));
+      // The shared compute() keeps the compact smootherstep start that
+      // popovers/sheets rely on for close<->open continuity.
+      final shared = LiquidMorphPhysics.compute(
+        rawValue: 0.35,
+        finalDx: 0,
+        finalDy: 400,
+        scaleDelta: 12.0,
+      );
+      expect(shared.sizeT, lessThan(0.40));
+    });
+
+    test('open drift is single-peaked (no shake) with native-like frame steps',
+        () {
+      // Native MM1 ty moves ~10 px per 60 fps frame at its steepest.
+      var prev = LiquidMorphPhysics.computeOpenDrift(elapsedSeconds: 0.0);
+      var rising = true;
+      // up to ~0.28 s: beyond it only the sub-2px traced undershoot remains
+      for (var t = 1 / 60; t <= 0.28; t += 1 / 60) {
+        final cur = LiquidMorphPhysics.computeOpenDrift(elapsedSeconds: t);
+        expect((cur - prev).abs(), lessThan(14.0));
+        if (cur < prev - 1e-9) rising = false;
+        // once it starts falling it must never rise again (no double bounce)
+        if (!rising) expect(cur, lessThanOrEqualTo(prev + 1e-9));
+        prev = cur;
+      }
     });
   });
 

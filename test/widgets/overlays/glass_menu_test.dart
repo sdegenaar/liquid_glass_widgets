@@ -2490,9 +2490,17 @@ void main() {
               in tester.widgetList<GlassContainer>(overlayContainers())) {
             expect(c.shape, isA<LiquidRoundedSuperellipse>());
             final r = (c.shape as LiquidRoundedSuperellipse).borderRadius;
+            // Native inflates the opening platter as a near-circular bubble:
+            // the radius may exceed the resting 32pt but never half its own
+            // shortest side.
+            final halfShort = math.min(
+                  c.width ?? double.infinity,
+                  c.height ?? double.infinity,
+                ) /
+                2.0;
             expect(
               r,
-              lessThanOrEqualTo(32.001),
+              lessThanOrEqualTo(math.min(110.001, halfShort + 0.01)),
               reason:
                   'Open frame ${ms}ms ($count items) ballooned radius to $r',
             );

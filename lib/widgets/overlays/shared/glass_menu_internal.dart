@@ -1620,7 +1620,15 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
       menuWidth,
       targetHeight,
     );
-    final sizeProgress = state.sizeT.clamp(0.0, 1.0);
+    // Same open size curve as _buildMorphingOverlay so a mid-open reversal
+    // captures an exact C0 delta.
+    final sizeProgress = (!_morphController.isClosing &&
+            !_morphController.disableAnimations &&
+            scaleDelta > 3.0)
+        ? LiquidMorphPhysics.computeMenuOpenSizeProgress(
+            _morphController.value,
+          )
+        : state.sizeT.clamp(0.0, 1.0);
     final w = lerpDouble(coreW, menuWidth, sizeProgress)!.clamp(0.0, menuWidth);
     final h =
         lerpDouble(coreH, targetHeight, sizeProgress)!.clamp(0.0, targetHeight);
@@ -1652,9 +1660,19 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
       final driftX =
           (totalDelta.dx * (state.pathT - sizeProgress) * detachRelease)
               .clamp(-maxDrift, maxDrift);
-      final driftY =
+      final oldDriftY =
           (totalDelta.dy * (state.pathT - sizeProgress) * detachRelease)
               .clamp(-maxDrift, maxDrift);
+      // Same time-based platter drift as _buildMorphingOverlay so a mid-open
+      // reversal captures an exact C0 delta.
+      final driftY =
+          (!_morphController.disableAnimations && !widget.morphFromZero)
+              ? totalDelta.dy.sign *
+                  LiquidMorphPhysics.computeOpenDrift(
+                    elapsedSeconds: _morphController.phaseElapsedSeconds,
+                    menuHeight: targetHeight,
+                  )
+              : oldDriftY;
       return Rect.fromLTWH(
         interpolated.left + driftX,
         interpolated.top + driftY,
@@ -1776,7 +1794,14 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                 _platterInterruptSizeDelta != Offset.zero)
             ? math.exp(-22.0 * _morphController.phaseElapsedSeconds)
             : 0.0;
-    final double sizeProgress = state.sizeT.clamp(0.0, 1.0);
+    // Open: native grows large menu morphs faster than the controller's shared
+    // sizeT (see LiquidMorphPhysics.computeMenuOpenSizeProgress). Close keeps
+    // its own pivot scale; popovers/sheets keep the shared curve.
+    final double sizeProgress = (!_morphController.isClosing &&
+            !_morphController.disableAnimations &&
+            scaleDelta > 3.0)
+        ? LiquidMorphPhysics.computeMenuOpenSizeProgress(rawValue)
+        : state.sizeT.clamp(0.0, 1.0);
     // Closing: native scales the platter uniformly about the trigger centre
     // (see LiquidMorphPhysics.computeClosingPlatterRect).
     final Rect? closeBase = _morphController.isClosing
@@ -1816,12 +1841,19 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
             targetRadius: widget.menuBorderRadius,
             sizeProgress: closeSizeProgress,
           )
-        : LiquidMorphPhysics.computeCornerRadius(
-            currentSize: Size(currentWidth, currentHeight),
-            triggerRadius: triggerRadius,
-            targetRadius: widget.menuBorderRadius,
-            progress: radiusProgress,
-          );
+        : (!_morphController.disableAnimations && !widget.morphFromZero)
+            ? LiquidMorphPhysics.computeOpenCornerRadius(
+                currentSize: Size(currentWidth, currentHeight),
+                restingSize: Size(menuWidth, targetHeight),
+                targetRadius: widget.menuBorderRadius,
+                elapsedSeconds: _morphController.phaseElapsedSeconds,
+              )
+            : LiquidMorphPhysics.computeCornerRadius(
+                currentSize: Size(currentWidth, currentHeight),
+                triggerRadius: triggerRadius,
+                targetRadius: widget.menuBorderRadius,
+                progress: radiusProgress,
+              );
 
     final double residualPushDecay = _phaseResidualPush != Offset.zero
         ? math.exp(-18.0 * _morphController.phaseElapsedSeconds)
@@ -1857,8 +1889,21 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
       anchorDriftY =
           (totalDelta.dy * (state.pathT - sizeProgress) * detachRelease)
               .clamp(-maxDrift, maxDrift);
+      // The platter (not Blob A) overshoots toward/past its resting spot like
+      // native's neck-container-dragged glass: a smooth time-based pulse
+      // (LiquidMorphPhysics.computeOpenDrift) along the travel direction,
+      // replacing the ±14px path/size-separation product for the platter.
+      final bool timedDrift =
+          !_morphController.disableAnimations && !widget.morphFromZero;
+      final double platterDriftY = timedDrift
+          ? totalDelta.dy.sign *
+              LiquidMorphPhysics.computeOpenDrift(
+                elapsedSeconds: _morphController.phaseElapsedSeconds,
+                menuHeight: targetHeight,
+              )
+          : anchorDriftY;
       final Offset baseCenter =
-          interpolated.center + Offset(anchorDriftX, anchorDriftY);
+          interpolated.center + Offset(anchorDriftX, platterDriftY);
       final Offset effectiveCenter =
           baseCenter + _platterInterruptCenterDelta * interruptDecay;
       blobBLeft = effectiveCenter.dx - currentWidth * 0.5;
@@ -2206,6 +2251,26 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
         menuWidth > 0.0 ? (currentWidth / menuWidth).clamp(0.20, 1.0) : 1.0;
     final double platterGlassOpacity = state.platterOpacity;
 
+    // Open: native reveals the rows late and smeared (resolving over
+    // ~130–230 ms), driven by phase time. Reduce Motion / settled states keep
+    // the controller's own values.
+    final bool timedOpenContent = !_morphController.isClosing &&
+        !_morphController.disableAnimations &&
+        !widget.morphFromZero;
+    final double phaseT = _morphController.phaseElapsedSeconds;
+    final double contentOpacityNow = timedOpenContent
+        ? math.min(
+            state.contentOpacity,
+            LiquidMorphPhysics.computeOpenContentOpacity(
+                elapsedSeconds: phaseT),
+          )
+        : state.contentOpacity;
+    final double contentBlurNow = timedOpenContent
+        ? (state.isPlatterActive
+            ? LiquidMorphPhysics.computeOpenContentBlur(elapsedSeconds: phaseT)
+            : 0.0)
+        : state.contentBlurSigma;
+
     // On Skia / Web / GlassQuality.standard, AdaptiveGlass routes to
     // LightweightLiquidGlass, which already wraps its child in
     // GlassControlledOpacity(opacity: settings.visibility) (= platterGlassOpacity).
@@ -2218,9 +2283,9 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
             ImageFilter.isShaderFilterSupported);
     final double bodyItemOpacity = usesLightweightGlass
         ? (platterGlassOpacity > 1e-4
-            ? (state.contentOpacity / platterGlassOpacity).clamp(0.0, 1.0)
+            ? (contentOpacityNow / platterGlassOpacity).clamp(0.0, 1.0)
             : 0.0)
-        : state.contentOpacity;
+        : contentOpacityNow;
 
     final outerScope = GlassMaterializeScope.maybeOf(context);
 
@@ -2263,10 +2328,10 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
             effectiveQuality,
             contentScale,
             bodyItemOpacity,
-            state.contentOpacity > 0.01,
+            contentOpacityNow > 0.01,
             teardropShape,
             containerScale,
-            state.contentBlurSigma,
+            contentBlurNow,
           ),
         ),
       ),
