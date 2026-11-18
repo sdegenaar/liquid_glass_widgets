@@ -1,4 +1,7 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -287,6 +290,102 @@ void main() {
       expect(find.text('Push Detail'), findsOneWidget);
       expect(activeClips(), isEmpty);
     });
+
+    for (final useBuilder in [false, true]) {
+      for (final (routeRadius, pageRadius, rounded) in [
+        (null, null, true),
+        (0.0, null, false),
+        (48.0, 0.0, false),
+        (0.0, 48.0, true),
+      ]) {
+        testWidgets(
+            'edge shadow for route=$routeRadius page=$pageRadius (builder: $useBuilder)',
+            (tester) async {
+          final capture = GlobalKey();
+          final navigator = GlobalKey<NavigatorState>();
+          const page = ValueKey('sliding card');
+          const bg = Color(0xffeeeeee);
+          final detail = GlassPage(
+            transitionCornerRadius: pageRadius,
+            key: page,
+            background: const ColoredBox(color: Color(0xffffffff)),
+            child: const SizedBox.expand(),
+          );
+          Future<void> pumpApp(PageTransitionsBuilder transitions) =>
+              tester.pumpWidget(RepaintBoundary(
+                key: capture,
+                child: MaterialApp(
+                  navigatorKey: navigator,
+                  theme: ThemeData(
+                    platform: TargetPlatform.iOS,
+                    pageTransitionsTheme: PageTransitionsTheme(builders: {
+                      TargetPlatform.iOS: transitions,
+                    }),
+                  ),
+                  home: const ColoredBox(color: bg),
+                ),
+              ));
+          await pumpApp(
+              GlassPageTransitionsBuilder(transitionCornerRadius: routeRadius));
+          final route = useBuilder
+              ? MaterialPageRoute<void>(builder: (_) => detail)
+              : GlassPageRoute<void>(
+                  transitionCornerRadius: routeRadius, builder: (_) => detail);
+          navigator.currentState!.push(route);
+          await tester.pump();
+          await tester.pump(route.transitionDuration * .32);
+          Future<List<int>> edgePixels() async {
+            final boundary =
+                tester.renderObject<RenderRepaintBoundary>(find.byKey(capture));
+            final x = tester.getTopLeft(find.byKey(page)).dx.floor();
+            return (await tester.runAsync(() async {
+              final image = await boundary.toImage();
+              try {
+                final data = (await image.toByteData(
+                    format: ui.ImageByteFormat.rawRgba))!;
+                int red(int dx, int dy) =>
+                    data.getUint8(4 * (dy * image.width + x + dx));
+                return [
+                  red(-48, 2),
+                  red(-3, 2),
+                  red(-3, 200),
+                  red(4, 2),
+                  red(4, 200),
+                ];
+              } finally {
+                image.dispose();
+              }
+            }))!;
+          }
+
+          final pixels = await edgePixels();
+          final [background, aboveCorner, besideCard, corner, inside] = pixels;
+          expect(besideCard, lessThan(background));
+          if (rounded) {
+            expect(aboveCorner, background);
+            expect(corner, lessThan(inside));
+          } else {
+            expect(aboveCorner, besideCard);
+            expect(corner, inside);
+
+            // Compare the same frame against an unmodified Flutter route.
+            await tester.pumpAndSettle();
+            navigator.currentState!.pop();
+            await tester.pumpAndSettle();
+            await pumpApp(const CupertinoPageTransitionsBuilder());
+            const plain = ColoredBox(key: page, color: Color(0xffffffff));
+            final reference = useBuilder
+                ? MaterialPageRoute<void>(builder: (_) => plain)
+                : CupertinoPageRoute<void>(builder: (_) => plain);
+            navigator.currentState!.push(reference);
+            await tester.pump();
+            await tester.pump(reference.transitionDuration * .32);
+            expect(await edgePixels(), pixels);
+          }
+          await tester.pumpAndSettle();
+        });
+      }
+    }
 
     testWidgets('transitionCornerRadius: 0 disables clipping during transition',
         (tester) async {

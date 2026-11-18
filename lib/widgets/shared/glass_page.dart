@@ -629,7 +629,13 @@ class _GlassPageTransitionClipState extends State<GlassPageTransitionClip> {
   _GlassPageTransitionClipState? _parentClipState;
   double? _inheritedCornerRadius;
   int _activeChildClips = 0;
+  _GlassPageSlideState? _slide;
+  bool _hasRadius = false;
   bool _isTransitioning = false;
+
+  void _syncShadowOwner() {
+    _slide?._setRounded(this, _activeChildClips == 0 && _hasRadius);
+  }
 
   static bool _isPositionInFlight(Animation<double>? animation) {
     if (animation == null) return false;
@@ -690,6 +696,7 @@ class _GlassPageTransitionClipState extends State<GlassPageTransitionClip> {
 
   void _registerChildClip() {
     _activeChildClips++;
+    _syncShadowOwner();
     if (_activeChildClips == 1 && mounted) {
       final renderObject = context.findRenderObject();
       if (renderObject is RenderClipRSuperellipse) {
@@ -711,6 +718,7 @@ class _GlassPageTransitionClipState extends State<GlassPageTransitionClip> {
 
   void _unregisterChildClip() {
     _activeChildClips--;
+    _syncShadowOwner();
     if (_activeChildClips == 0 && _isTransitioning && mounted) {
       SchedulerBinding.instance.addPostFrameCallback((_) {
         if (mounted) setState(() {});
@@ -736,6 +744,12 @@ class _GlassPageTransitionClipState extends State<GlassPageTransitionClip> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _route = ModalRoute.of(context);
+    final slide = context.findAncestorStateOfType<_GlassPageSlideState>();
+    final owner = slide?.widget.route == _route ? slide : null;
+    if (_slide != owner) {
+      _slide?._setRounded(this, false);
+      _slide = owner;
+    }
     final parentScope = context.dependOnInheritedWidgetOfExactType<
         _InheritedPageTransitionClipScope>();
     final sameRouteParent = (parentScope != null && parentScope.route == _route)
@@ -760,6 +774,7 @@ class _GlassPageTransitionClipState extends State<GlassPageTransitionClip> {
 
   @override
   void dispose() {
+    _slide?._setRounded(this, false);
     _updateParentRegistration(null);
     _subscribePrimary(null);
     _subscribeUserGesture(null);
@@ -773,6 +788,8 @@ class _GlassPageTransitionClipState extends State<GlassPageTransitionClip> {
         _inheritedCornerRadius ??
         GlassPageTransitionClip.resolveDisplayCornerRadius(context);
     final double effectiveRadius = GlassDefaults.safeRadius(rawRadius);
+    _hasRadius = effectiveRadius > 0.0;
+    _syncShadowOwner();
     final bool shouldClip =
         _isTransitioning && _activeChildClips == 0 && effectiveRadius > 0.0;
 
@@ -927,25 +944,18 @@ class GlassPageRoute<T> extends CupertinoPageRoute<T> {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    return CupertinoRouteTransitionMixin.buildPageTransitions<T>(
-      this,
-      context,
-      animation,
-      secondaryAnimation,
-      GlassPageTransitionClip(
-        cornerRadius: transitionCornerRadius,
-        primaryAnimation: animation,
-        secondaryAnimation: secondaryAnimation,
-        child: child,
-      ),
-    );
+    return GlassPageTransitionsBuilder(
+      transitionCornerRadius: transitionCornerRadius,
+    ).buildTransitions<T>(this, context, animation, secondaryAnimation, child);
   }
 }
 
 /// A [PageTransitionsBuilder] that provides native iOS parallax slide
 /// transitions with continuous rounded-corner page clipping
 /// ([GlassPageTransitionClip]) during push, pop, and interactive swipe-back
-/// gestures.
+/// gestures. The card owns the horizontal transition shadow, so it follows the
+/// resolved corner radius including overrides on a descendant [GlassPage].
+/// Square pages retain the standard Cupertino edge shadow.
 ///
 /// Plug into `PageTransitionsTheme` in a `MaterialApp` (or router theme) to
 /// apply rounded iOS page transitions app-wide:
@@ -995,7 +1005,7 @@ class GlassPageTransitionsBuilder extends PageTransitionsBuilder {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    return CupertinoRouteTransitionMixin.buildPageTransitions<T>(
+    final transition = CupertinoRouteTransitionMixin.buildPageTransitions<T>(
       route,
       context,
       animation,
@@ -1007,5 +1017,119 @@ class GlassPageTransitionsBuilder extends PageTransitionsBuilder {
         child: child,
       ),
     );
+    if (transition is! CupertinoPageTransition) return transition;
+    return _GlassPageSlide(route: route, transition: transition);
+  }
+}
+
+/// Cupertino builds the back-gesture detector inside its slide. Keep that
+/// child and its gesture controller, but let the card paint its own shadow.
+class _GlassPageSlide extends StatefulWidget {
+  const _GlassPageSlide({required this.route, required this.transition});
+  final PageRoute<dynamic> route;
+  final CupertinoPageTransition transition;
+
+  @override
+  State<_GlassPageSlide> createState() => _GlassPageSlideState();
+}
+
+class _GlassPageSlideState extends State<_GlassPageSlide> {
+  static final _enter = Tween(begin: const Offset(1, 0), end: Offset.zero);
+  static final _recede =
+      Tween(begin: Offset.zero, end: const Offset(-1 / 3, 0));
+  late CurvedAnimation _primary;
+  late CurvedAnimation _secondary;
+
+  // Only the innermost clips own the page shape. Use a paint-time signal so a
+  // child override takes effect in the same frame without rebuilding the page.
+  final _roundedClips = <_GlassPageTransitionClipState>{};
+  final _squareShadow = ValueNotifier<double>(1);
+  late final _shadowOpacity =
+      Animation<double>.fromValueListenable(_squareShadow);
+
+  void _setRounded(_GlassPageTransitionClipState clip, bool rounded) {
+    if (rounded) {
+      _roundedClips.add(clip);
+    } else {
+      _roundedClips.remove(clip);
+    }
+    _squareShadow.value = _roundedClips.isEmpty ? 1 : 0;
+  }
+
+  void _configureCurves() {
+    _primary = CurvedAnimation(
+      parent: widget.transition.primaryRouteAnimation,
+      curve: Curves.fastEaseInToSlowEaseOut,
+      reverseCurve: Curves.fastEaseInToSlowEaseOut.flipped,
+    );
+    _secondary = CurvedAnimation(
+      parent: widget.transition.secondaryRouteAnimation,
+      curve: Curves.linearToEaseOut,
+      reverseCurve: Curves.easeInToLinear,
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _configureCurves();
+  }
+
+  @override
+  void didUpdateWidget(_GlassPageSlide oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final old = oldWidget.transition;
+    final next = widget.transition;
+    if (next.primaryRouteAnimation != old.primaryRouteAnimation ||
+        next.secondaryRouteAnimation != old.secondaryRouteAnimation ||
+        next.linearTransition != old.linearTransition) {
+      _primary.dispose();
+      _secondary.dispose();
+      _configureCurves();
+    }
+  }
+
+  @override
+  void dispose() {
+    _primary.dispose();
+    _secondary.dispose();
+    _squareShadow.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final transition = widget.transition;
+    final linear = transition.linearTransition;
+    final direction = Directionality.of(context);
+    return Stack(fit: StackFit.passthrough, clipBehavior: Clip.none, children: [
+      // Flutter owns the rectangular gradient, including its gesture timing.
+      // This decoration has no page content or gesture detector of its own.
+      Positioned.fill(
+        child: IgnorePointer(
+          child: FadeTransition(
+            opacity: _shadowOpacity,
+            child: CupertinoPageTransition(
+              primaryRouteAnimation: transition.primaryRouteAnimation,
+              secondaryRouteAnimation: transition.secondaryRouteAnimation,
+              linearTransition: linear,
+              child: const SizedBox.expand(),
+            ),
+          ),
+        ),
+      ),
+      SlideTransition(
+        position: (linear ? transition.secondaryRouteAnimation : _secondary)
+            .drive(_recede),
+        textDirection: direction,
+        transformHitTests: false,
+        child: SlideTransition(
+          position: (linear ? transition.primaryRouteAnimation : _primary)
+              .drive(_enter),
+          textDirection: direction,
+          child: transition.child,
+        ),
+      ),
+    ]);
   }
 }

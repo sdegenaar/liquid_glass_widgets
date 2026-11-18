@@ -9,9 +9,9 @@
 
 ## Bug Fixes
 
+- **`GlassPageRoute` and `GlassPageTransitionsBuilder` rounded transition shadow (PR #496):** Uses the sliding card's superellipse shadow during horizontal transitions instead of Cupertino's rectangular edge gradient, removing the straight shadow visible above and below rounded leading corners while preserving Flutter's Cupertino edge shadow when the resolved corner radius is `0`. Thanks to [@wow-sven](https://github.com/wow-sven) for the fix (#496).
 - **iOS 27 Liquid Morph open, teardrop close, and recoil parity (`GlassMenu`, `GlassPullDownButton`, `GlassPopover`, `GlassModalSheet`, `GlassMorphTrigger`, `GlassContextMenu`):** Calibrated open (`ω₀ = 17.0 rad/s, ζ ≈ 0.76`) and close (`ω₀ = 18.0 rad/s, ζ ≈ 0.86`) springs and trajectories against 60 fps native iOS 27 captures — `GlassMenu` inflates as a near-circular bubble that relaxes into its resting superellipse while rows resolve from soft blur to crisp text; `GlassMenu` and `GlassPopover` retract into `trigger.center` as a single concave teardrop with softened content fade, height-adapted droplet envelopes across short to tall platters, outer-edge non-overshoot clamping, and C⁰ mid-flight open/close reversals; wide triggers contract in place on open and splash horizontally (`+1.6%` at `~400 ms`) on close; triggers ride an immediate parallel `~183 ms` catch recoil (`GlassContextMenu` upgraded to matching iOS 27 spring physics with Reduce Motion support); and expanded `submenu` stacks collapse coherently with the root platter.
 - **Impeller overlay backdrop & blend-group compositing (`GlassMenu`, `GlassPopover`, `GlassModalSheet`, `GlassContextMenu`):** Eliminated ancestor fractional `Opacity` (`saveLayer`) wrappers over `AdaptiveLiquidGlassLayer` and `useOwnLayer: true` platters, removed duplicate nested `LiquidGlassBlendGroup` passes on premium Impeller layers, and kept underlying glass triggers suppressed until platter handoff so `BackdropFilter` never double-tints or blurs the resting button during close.
-
 # 1.17.5
 
 ## Bug Fixes
