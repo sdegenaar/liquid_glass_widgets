@@ -263,16 +263,23 @@ class LiquidMorphPhysics {
 
   /// Asymptotic ceiling (logical px) and half-saturation travel distance (px)
   /// for the parallel close trigger recoil:
-  /// `peakPush = _maxRecoilPx * D / (D + _recoilHalfTravelPx)`.
+  /// `peakPush = _maxRecoilPx * D / (D + recoilHalfTravelPx)`.
   ///
-  /// Native iOS 27's trigger kick (`MagicMorphView` #2, `ty`) peaks at
-  /// `-17.5 pt` and is **independent of menu height**: the same `MM2` curve
-  /// explains 60 fps silhouettes of both a 5- and a 10-item menu. The half
-  /// saturation distance is therefore tiny (`8 px`) so only degenerate
-  /// near-zero travel is attenuated: `~16.3 px` at `D = 104`, `~16.9 px` at
-  /// `D = 219`.
+  /// Native iOS 27's `GlassMenu` trigger kick (`MagicMorphView` #2, `ty`)
+  /// peaks at `-17.5 pt` and is **independent of menu height**: the same `MM2`
+  /// curve explains 60 fps silhouettes of both a 5- and a 10-item menu, so
+  /// [menuRecoilHalfTravelPx] is tiny (`8 px`): `~16.3 px` at `D = 104`,
+  /// `~16.9 px` at `D = 219`. Popovers and sheets keep the original
+  /// proportional calibration ([defaultRecoilHalfTravelPx], `75 px`) because
+  /// their native kick has not been measured.
   static const double _maxRecoilPx = 17.5;
-  static const double _recoilHalfTravelPx = 8.0;
+
+  /// Half-saturation travel for menus (near-constant native kick).
+  static const double menuRecoilHalfTravelPx = 8.0;
+
+  /// Half-saturation travel for popovers, sheets and custom morphs
+  /// (proportional kick, the original calibration).
+  static const double defaultRecoilHalfTravelPx = 75.0;
 
   /// Half-saturation travel (px) of the tactile impact compression depth
   /// (unchanged from the original proportional calibration).
@@ -627,13 +634,14 @@ class LiquidMorphPhysics {
     required Offset travel,
     required double elapsedSeconds,
     double closeStartProgress = 1.0,
+    double recoilHalfTravelPx = defaultRecoilHalfTravelPx,
   }) {
     if (elapsedSeconds <= 0.0 || closeStartProgress <= 0.001) {
       return Offset.zero;
     }
     final pulse =
         _recoilPulse(elapsedSeconds) * closeStartProgress.clamp(0.0, 1.0);
-    final denom = travel.distance + _recoilHalfTravelPx;
+    final denom = travel.distance + recoilHalfTravelPx;
     return Offset(
       -(_maxRecoilPx * travel.dx / denom) * pulse,
       -(_maxRecoilPx * travel.dy / denom) * pulse,
@@ -690,6 +698,7 @@ class LiquidMorphPhysics {
     bool disableAnimations = false,
     double phaseStartTriggerWidth = 1.0,
     double closeStartProgress = 1.0,
+    double recoilHalfTravelPx = defaultRecoilHalfTravelPx,
   }) {
     final clampedValue = rawValue.clamp(0.0, 1.0);
 
@@ -749,7 +758,7 @@ class LiquidMorphPhysics {
           closeStartProgress > 0.001) {
         final recoilPulse =
             _recoilPulse(elapsedSeconds) * closeStartProgress.clamp(0.0, 1.0);
-        final denom = travelMag + _recoilHalfTravelPx;
+        final denom = travelMag + recoilHalfTravelPx;
         triggerPushDx = -(_maxRecoilPx * travelDx / denom) * recoilPulse;
         triggerPushDy = -(_maxRecoilPx * travelDy / denom) * recoilPulse;
         pushDx = triggerPushDx;

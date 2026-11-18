@@ -83,6 +83,12 @@ class GlassMorphController extends ChangeNotifier {
   /// open or close phase so mid-flight reversals remain continuous.
   double _phaseStartTriggerWidth = 1.0;
 
+  /// Half-saturation travel (px) of the close trigger recoil, see
+  /// [LiquidMorphPhysics.defaultRecoilHalfTravelPx] (proportional kick, the
+  /// default) and [LiquidMorphPhysics.menuRecoilHalfTravelPx] (near-constant
+  /// `~17 px` native menu kick, used by `GlassMenu`).
+  double recoilHalfTravelPx = LiquidMorphPhysics.defaultRecoilHalfTravelPx;
+
   /// Open progress (`[0, 1]`) at the instant [close] was invoked, scaling
   /// trigger recoil proportionally when an incomplete open is reversed early.
   double _closeStartProgress = 0.0;
@@ -260,6 +266,7 @@ class GlassMorphController extends ChangeNotifier {
       disableAnimations: _disableAnimations,
       phaseStartTriggerWidth: _phaseStartTriggerWidth,
       closeStartProgress: _closeStartProgress,
+      recoilHalfTravelPx: recoilHalfTravelPx,
     );
   }
 

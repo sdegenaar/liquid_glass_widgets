@@ -137,7 +137,9 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _morphController =
-        GlassMorphController(vsync: this, speed: widget.morphSpeed);
+        GlassMorphController(vsync: this, speed: widget.morphSpeed)
+          // Native menu kick is near-constant (~17 px) regardless of height.
+          ..recoilHalfTravelPx = LiquidMorphPhysics.menuRecoilHalfTravelPx;
     _morphController.addListener(() {
       if (mounted) setState(() {});
 
@@ -2249,7 +2251,14 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     final double menuWidth = widget.menuWidth.toDouble();
     final double contentScale =
         menuWidth > 0.0 ? (currentWidth / menuWidth).clamp(0.20, 1.0) : 1.0;
-    final double platterGlassOpacity = state.platterOpacity;
+    // Close: native keeps the retracting droplet fully opaque until it merges
+    // into the trigger (visible with a pointed tip until ~rawValue 0.06, then a
+    // short dissolve), instead of fading the glass over the last 25%.
+    final double platterGlassOpacity = _morphController.isClosing
+        ? (state.isPlatterActive
+            ? (_morphController.value / 0.06).clamp(0.0, 1.0)
+            : 0.0)
+        : state.platterOpacity;
 
     // Open: native reveals the rows late and smeared (resolving over
     // ~130–230 ms), driven by phase time. Reduce Motion / settled states keep

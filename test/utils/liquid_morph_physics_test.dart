@@ -179,6 +179,7 @@ void main() {
       bool hasHandedOff = false,
       bool isSettled = false,
       bool disableAnimations = false,
+      double recoilHalfTravelPx = LiquidMorphPhysics.defaultRecoilHalfTravelPx,
     }) =>
         LiquidMorphPhysics.compute(
           rawValue: rawValue,
@@ -191,6 +192,7 @@ void main() {
           disableAnimations: disableAnimations,
           phaseStartTriggerWidth: 0.0,
           closeStartProgress: 1.0,
+          recoilHalfTravelPx: recoilHalfTravelPx,
         );
 
     test('recoil starts immediately at t > 0 and peaks near ~180–185 ms', () {
@@ -211,20 +213,35 @@ void main() {
       expect(at540.triggerImpactScale, equals(1.0));
     });
 
-    test(
-        'peak recoil is near-constant (~14–17.5 px) across menu sizes like native MM2 ty',
+    test('default (popover/sheet) recoil keeps the proportional ~5–16 px curve',
         () {
       final shortMenu = computeCloseAt(0.183, finalDy: 35.0);
       final mediumMenu = computeCloseAt(0.183, finalDy: 125.0);
       final tallMenu = computeCloseAt(0.183, finalDy: 220.0);
       final modalSheet = computeCloseAt(0.183, finalDy: 500.0);
 
-      expect(shortMenu.triggerPushDy.abs(), inInclusiveRange(13.0, 15.5));
-      expect(mediumMenu.triggerPushDy.abs(), inInclusiveRange(15.5, 17.5));
-      expect(tallMenu.triggerPushDy.abs(), inInclusiveRange(16.5, 17.5));
-      expect(modalSheet.triggerPushDy.abs(), inInclusiveRange(17.0, 17.5));
+      expect(shortMenu.triggerPushDy.abs(), inInclusiveRange(5.0, 7.0));
+      expect(mediumMenu.triggerPushDy.abs(), inInclusiveRange(9.5, 12.0));
+      expect(tallMenu.triggerPushDy.abs(), inInclusiveRange(12.0, 14.5));
+      expect(modalSheet.triggerPushDy.abs(), inInclusiveRange(14.0, 16.5));
+      expect(modalSheet.triggerPushDy.abs(), lessThan(18.0));
+    });
+
+    test(
+        'menu recoil is near-constant (~14–17.5 px) across sizes like native MM2 ty',
+        () {
+      double dy(double travel) => computeCloseAt(
+            0.183,
+            finalDy: travel,
+            recoilHalfTravelPx: LiquidMorphPhysics.menuRecoilHalfTravelPx,
+          ).triggerPushDy.abs();
+
+      expect(dy(35.0), inInclusiveRange(13.0, 15.5));
+      expect(dy(125.0), inInclusiveRange(15.5, 17.5));
+      expect(dy(220.0), inInclusiveRange(16.5, 17.5));
+      expect(dy(500.0), inInclusiveRange(17.0, 17.5));
       // Never exceeds the traced native peak.
-      expect(modalSheet.triggerPushDy.abs(), lessThanOrEqualTo(17.5));
+      expect(dy(500.0), lessThanOrEqualTo(17.5));
     });
 
     test(
