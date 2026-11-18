@@ -857,6 +857,35 @@ void main() {
     });
   });
 
+  group('LiquidMorphPhysics — close teardrop drift', () {
+    double d(double t, {double h = 250.0}) =>
+        LiquidMorphPhysics.computeCloseDrift(elapsedSeconds: t, menuHeight: h);
+
+    test('fits the traced MM1 ty: ~0 at start, ~49 px peak ~75 ms, decays', () {
+      expect(d(0.0), equals(0.0));
+      // traced (after ~30 ms dead time): 34.5 @ 40, 46.9 @ 60, 44.1 @ 100,
+      // 24.2 @ 150, 10.4 @ 200, 4.0 @ 250 ms after onset
+      expect(d(0.04), inInclusiveRange(28.0, 40.0));
+      expect(d(0.075), inInclusiveRange(46.0, 51.0));
+      expect(d(0.15), inInclusiveRange(18.0, 30.0));
+      expect(d(0.25), inInclusiveRange(2.0, 7.0));
+      expect(d(0.6), lessThan(0.5));
+    });
+
+    test('is single-peaked (no bounce) and grows for tall menus', () {
+      var prev = 0.0;
+      var rising = true;
+      for (var t = 0.0; t <= 0.6; t += 1 / 60) {
+        final v = d(t);
+        if (v < prev - 1e-9) rising = false;
+        if (!rising) expect(v, lessThanOrEqualTo(prev + 1e-9));
+        prev = v;
+      }
+      expect(d(0.075, h: 521.0), greaterThan(d(0.075, h: 251.0)));
+      expect(d(0.075, h: 521.0), lessThanOrEqualTo(63.0));
+    });
+  });
+
   group('LiquidMorphPhysics — close teardrop blend', () {
     test('is zero at rest and fully open, holds the max mid-collapse', () {
       expect(LiquidMorphPhysics.computeCloseBlend(rawValue: 1.0), equals(0.0));

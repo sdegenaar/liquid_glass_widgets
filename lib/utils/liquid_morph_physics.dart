@@ -330,6 +330,14 @@ class LiquidMorphPhysics {
   static const double _openRoundnessHoldSeconds = 0.14;
   static const double _openRoundnessRelaxSeconds = 0.145;
 
+  /// Peak of `S(τ; 20, 1) · (1 − S(τ; 24, 1))` (`≈ 0.2047`), used to normalise
+  /// [computeCloseDrift].
+  static const double _closeDriftUnitPeak = 0.2047;
+
+  /// Peak close drift (px) for menus up to 250 pt tall / 521 pt tall.
+  static const double _closeDriftPeakPx = 49.0;
+  static const double _closeDriftPeakTallPx = 62.0;
+
   /// Peak of `S(τ; 24, 0.6) − S(τ; 20, 0.9)` (`≈ 0.2849`), used to normalise
   /// [computeOpenDrift] to a unit pulse.
   static const double _openDriftUnitPeak = 0.2849;
@@ -631,6 +639,33 @@ class LiquidMorphPhysics {
     final rampIn = _smoothstep01((0.97 - u) / 0.20);
     final rampOut = 1.0 - _smoothstep01((0.08 - u) / 0.08);
     return _maxBlend * rampIn * rampOut;
+  }
+
+  /// Close-phase displacement (logical px, always `>= 0`; callers multiply by
+  /// the travel direction) of the retracting platter *away from the trigger*.
+  ///
+  /// Native's visible glass (`MM1` neck container) is pushed ~`49 pt` away
+  /// from the trigger within ~`75 ms` of the close starting, then springs back
+  /// by ~`300 ms` (traced `MM1 ty`: `31.8 @ 67 ms, 48.6 @ 100, 36.6 @ 150,
+  /// 17.7 @ 200, 6.7 @ 250`). That gap is what the metaball bridge stretches
+  /// into the teardrop's narrow neck; without it the platter overlaps the
+  /// trigger and reads as a round egg.
+  ///
+  /// Closed form fitted to the 60 fps trace (`0.35 px` RMS):
+  /// `A · S(τ; ω = 20, ζ = 1) · (1 − S(τ; ω = 24, ζ = 1))`, peaking
+  /// `≈ 49 px` (`≈ 62 px` for 521 pt menus, whose silhouette top travels
+  /// proportionally further). [elapsedSeconds] is the speed-scaled close time.
+  static double computeCloseDrift({
+    required double elapsedSeconds,
+    double menuHeight = 250.0,
+  }) {
+    if (elapsedSeconds <= 0.0) return 0.0;
+    final unit = _stepResponse(elapsedSeconds, 20.0, 1.0) *
+        (1.0 - _stepResponse(elapsedSeconds, 24.0, 1.0));
+    final heightF = ((menuHeight - 250.0) / 270.0).clamp(0.0, 1.0);
+    final peak = _closeDriftPeakPx +
+        (_closeDriftPeakTallPx - _closeDriftPeakPx) * heightF;
+    return peak * unit / _closeDriftUnitPeak;
   }
 
   static double _smoothstep01(double x) {

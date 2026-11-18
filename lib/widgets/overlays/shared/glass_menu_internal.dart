@@ -1874,8 +1874,20 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     if (closeBase != null) {
       final posT = state.pathT.clamp(0.0, 1.0);
       final recoilCatch = effectivePush * (1.0 - posT);
+      // Native pushes the retracting glass away from the trigger, leaving a gap
+      // the metaball bridge stretches into the teardrop's neck (see
+      // LiquidMorphPhysics.computeCloseDrift).
+      final double closeDriftY =
+          (!_morphController.disableAnimations && !widget.morphFromZero)
+              ? (restingRect.center.dy - triggerCenter.dy).sign *
+                  LiquidMorphPhysics.computeCloseDrift(
+                    elapsedSeconds: _morphController.phaseElapsedSeconds,
+                    menuHeight: targetHeight,
+                  )
+              : 0.0;
       final center = closeBase.center +
           recoilCatch +
+          Offset(0.0, closeDriftY) +
           _platterInterruptCenterDelta * interruptDecay;
       blobBLeft = center.dx - currentWidth * 0.5;
       blobBTop = center.dy - currentHeight * 0.5;
@@ -1984,6 +1996,9 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     final double openAnchorScale = (tw > th * 1.15)
         ? (1.0 - ((clampedValue - 0.25) / 0.35).clamp(0.0, 1.0))
         : (1.0 - (clampedValue / 0.50)).clamp(0.0, 1.0);
+    // (A smaller early trigger blob was tried to mimic native's pointed tip, but
+    // the fixed-width metaball bridge cannot reach a shrunken blob across the
+    // close gap, leaving a detached dot, so Blob A keeps its full size.)
     final double blobAScale =
         _morphController.isClosing ? state.triggerImpactScale : openAnchorScale;
     final bool showBlobA = !widget.morphFromZero &&
