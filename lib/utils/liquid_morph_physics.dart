@@ -102,7 +102,7 @@ class LiquidMorphState {
   /// `~183 ms` (matching iOS 27 `_kickView` / `MagicMorphView` #2), crosses
   /// zero around `~483 ms`, and settles smoothly by `~530–550 ms`. Bounded via
   /// a smooth soft-saturation curve so every menu/popover/sheet travel produces
-  /// a proportional `~5–16 px` physical catch.
+  /// a constant `~16–17 px` physical catch (see `_maxRecoilPx`).
   final double triggerPushDx;
 
   /// Parallel vertical recoil displacement for the trigger button on close,
@@ -263,11 +263,20 @@ class LiquidMorphPhysics {
 
   /// Asymptotic ceiling (logical px) and half-saturation travel distance (px)
   /// for the parallel close trigger recoil:
-  /// `peakPush = _maxRecoilPx * D / (D + _recoilHalfTravelPx)`
-  /// yields `~5.6 px` on short menus (`D = 35`), `~10.9 px` on medium (`D = 125`),
-  /// `~13.1 px` on tall (`D = 220`), and `~15.1 px` on modal sheets (`D = 450+`).
+  /// `peakPush = _maxRecoilPx * D / (D + _recoilHalfTravelPx)`.
+  ///
+  /// Native iOS 27's trigger kick (`MagicMorphView` #2, `ty`) peaks at
+  /// `-17.5 pt` and is **independent of menu height**: the same `MM2` curve
+  /// explains 60 fps silhouettes of both a 5- and a 10-item menu. The half
+  /// saturation distance is therefore tiny (`8 px`) so only degenerate
+  /// near-zero travel is attenuated: `~16.3 px` at `D = 104`, `~16.9 px` at
+  /// `D = 219`.
   static const double _maxRecoilPx = 17.5;
-  static const double _recoilHalfTravelPx = 75.0;
+  static const double _recoilHalfTravelPx = 8.0;
+
+  /// Half-saturation travel (px) of the tactile impact compression depth
+  /// (unchanged from the original proportional calibration).
+  static const double _impactHalfTravelPx = 75.0;
 
   // ─── Tuning constants (intentionally not public) ───────────────────────────
 
@@ -298,6 +307,10 @@ class LiquidMorphPhysics {
 
   /// Maximum blur sigma (logical px) of the menu rows during close.
   static const double _closeContentBlurMaxSigma = 8.0;
+
+  /// Height gained above the trigger core per `rawValue^1.1` by the closing
+  /// glass blob (see [computeCloseHeightEnvelope]).
+  static const double _closeHeightEnvelopePx = 400.0;
 
   // ─── Public helpers ────────────────────────────────────────────────────────
 
@@ -418,6 +431,54 @@ class LiquidMorphPhysics {
     return (28.0 * (1.0 - u)).clamp(0.0, _closeContentBlurMaxSigma);
   }
 
+  /// Computes the rect of the closing platter (Blob B) as native iOS 27 does:
+  /// a **uniform scale** of the resting menu rect by [platterScale]
+  /// (`0.2 + 0.8·rawValue`) about the *trigger centre* [pivot], where the pivot
+  /// keeps its fractional position inside [restingRect].
+  ///
+  /// Verified against the `_UIContextMenuView` trace to `0.1 pt`: its
+  /// `anchorPoint` is exactly the trigger centre expressed in platter-local
+  /// fractions (`0.244, 0.088` for the traced menu), and
+  /// `rect = pivot − anchor · size · scale`. Because the pivot sits near the
+  /// platter's top for top-anchored menus, the top edge sweeps toward the
+  /// trigger centre while the platter shrinks, instead of staying glued to
+  /// the trigger top.
+  static Rect computeClosingPlatterRect({
+    required Offset pivot,
+    required Rect restingRect,
+    required double platterScale,
+    double? maxHeight,
+  }) {
+    final s = platterScale.clamp(0.0, 1.0);
+    final fx = restingRect.width > 0.0
+        ? (pivot.dx - restingRect.left) / restingRect.width
+        : 0.5;
+    final fy = restingRect.height > 0.0
+        ? (pivot.dy - restingRect.top) / restingRect.height
+        : 0.5;
+    final w = restingRect.width * s;
+    final h = math.min(restingRect.height * s, maxHeight ?? double.infinity);
+    return Rect.fromLTWH(pivot.dx - fx * w, pivot.dy - fy * h, w, h);
+  }
+
+  /// Absolute height envelope (logical px) of the closing glass blob:
+  /// `coreHeight + 400 · u^1.1` with `u = rawValue`.
+  ///
+  /// Native glass collapses faster in height than the uniform platter scale
+  /// for tall menus and converges to the *same absolute height regardless of
+  /// the menu size* (`≈109 pt @ 150 ms` for both a 5- and a 10-item menu in
+  /// 60 fps silhouettes), so a tall menu retracts as a droplet of fixed length
+  /// instead of hanging as a tall pill. Short menus (`H · scale` below the
+  /// envelope) are unaffected. Pass the result as
+  /// [computeClosingPlatterRect]'s `maxHeight`.
+  static double computeCloseHeightEnvelope({
+    required double coreHeight,
+    required double rawValue,
+  }) {
+    final u = rawValue.clamp(0.0, 1.0);
+    return coreHeight + _closeHeightEnvelopePx * math.pow(u, 1.1);
+  }
+
   /// Computes the SDF blend attenuation factor for a given scale ratio.
   static double computeBlendAttenuation(double scaleDelta) {
     if (scaleDelta <= 3.0) return 1.0;
@@ -426,8 +487,7 @@ class LiquidMorphPhysics {
 
   /// Computes the parallel close trigger recoil offset (logical px) at
   /// speed-scaled [elapsedSeconds] (`>= 0`) for a trigger-to-platter [travel]
-  /// vector, using the smooth soft-saturation curve (`~5–16 px` peak at
-  /// `~183 ms`).
+  /// vector, using a near-constant `~17 px` peak at `~183 ms`.
   static Offset recoilOffsetForElapsed({
     required Offset travel,
     required double elapsedSeconds,
@@ -457,7 +517,7 @@ class LiquidMorphPhysics {
         _recoilPulse(elapsedSeconds) * closeStartProgress.clamp(0.0, 1.0);
     final travelMag = travel.distance;
     final impactDepth =
-        0.025 + 0.015 * (travelMag / (travelMag + _recoilHalfTravelPx));
+        0.025 + 0.015 * (travelMag / (travelMag + _impactHalfTravelPx));
     return (1.0 - impactDepth * pulse).clamp(0.92, 1.02);
   }
 
@@ -560,7 +620,8 @@ class LiquidMorphPhysics {
         pushDx = triggerPushDx;
         pushDy = triggerPushDy;
 
-        final impactDepth = 0.025 + 0.015 * (travelMag / denom);
+        final impactDepth =
+            0.025 + 0.015 * (travelMag / (travelMag + _impactHalfTravelPx));
         triggerImpactScale =
             (1.0 - impactDepth * recoilPulse).clamp(0.92, 1.02);
       } else {

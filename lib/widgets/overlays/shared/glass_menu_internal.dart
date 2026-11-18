@@ -402,9 +402,18 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
             triggerProgress = 1.0 - detachT;
           }
         } else if (isImpellerPremium && !widget.morphFromZero) {
-          triggerProgress = state.isPlatterActive
-              ? ((0.14 - clampedValue) / 0.14).clamp(0.0, 1.0)
+          // Native brings the real trigger (lighter glass + label) back by
+          // ~190 ms (rawValue ≈ 0.1) while the droplet is still retracting;
+          // ramp over rawValue [0.20, 0.08] instead of waiting for 0. A wide
+          // trigger additionally waits for its capsule to reach ~0.8–0.92 of
+          // full width so its text and endcaps are never visibly squashed by
+          // the 0.90× clamp (the real trigger would otherwise pop in wide).
+          final double reveal = ((0.20 - clampedValue) / 0.12).clamp(0.0, 1.0);
+          final double capsuleReady = tw > th * 1.15
+              ? ((state.triggerWidthProgress - 0.80) / 0.12).clamp(0.0, 1.0)
               : 1.0;
+          triggerProgress =
+              state.isPlatterActive ? math.min(reveal, capsuleReady) : 1.0;
         } else {
           triggerProgress = state.isPlatterActive
               ? ((0.38 - clampedValue) / 0.32).clamp(0.0, 1.0)
@@ -1616,12 +1625,24 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     final h =
         lerpDouble(coreH, targetHeight, sizeProgress)!.clamp(0.0, targetHeight);
     if (_morphController.isClosing) {
+      // Native: uniform platter scale about the trigger centre.
+      final base = LiquidMorphPhysics.computeClosingPlatterRect(
+        pivot: triggerCenter,
+        restingRect: restingRect,
+        platterScale: state.platterScale,
+        maxHeight: LiquidMorphPhysics.computeCloseHeightEnvelope(
+          coreHeight: coreH > 0.0 ? coreH : minTriggerSide,
+          rawValue: _morphController.value,
+        ),
+      );
       final posT = state.pathT.clamp(0.0, 1.0);
       final recoilCatch =
           Offset(state.triggerPushDx, state.triggerPushDy) * (1.0 - posT);
-      final c = Offset.lerp(originRect.center, restingRect.center, posT)! +
-          recoilCatch;
-      return Rect.fromCenter(center: c, width: w, height: h);
+      return Rect.fromCenter(
+        center: base.center + recoilCatch,
+        width: base.width,
+        height: base.height,
+      );
     } else {
       final interpolated = Rect.lerp(originRect, restingRect, sizeProgress)!;
       final totalDelta = restingRect.center - originRect.center;
@@ -1756,11 +1777,31 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
             ? math.exp(-22.0 * _morphController.phaseElapsedSeconds)
             : 0.0;
     final double sizeProgress = state.sizeT.clamp(0.0, 1.0);
-    final double currentWidth = (lerpDouble(coreW, menuWidth, sizeProgress)! +
-            _platterInterruptSizeDelta.dx * interruptDecay)
-        .clamp(0.0, menuWidth);
-    final double currentHeight =
-        (lerpDouble(coreH, targetHeight, sizeProgress)! +
+    // Closing: native scales the platter uniformly about the trigger centre
+    // (see LiquidMorphPhysics.computeClosingPlatterRect).
+    final Rect? closeBase = _morphController.isClosing
+        ? LiquidMorphPhysics.computeClosingPlatterRect(
+            pivot: triggerCenter,
+            restingRect: restingRect,
+            platterScale: state.platterScale,
+            maxHeight: LiquidMorphPhysics.computeCloseHeightEnvelope(
+              coreHeight: coreH > 0.0 ? coreH : minTriggerSide,
+              rawValue: rawValue,
+            ),
+          )
+        : null;
+    final double closeSizeProgress =
+        ((state.platterScale - 0.2) / 0.8).clamp(0.0, 1.0);
+    final double currentWidth = closeBase != null
+        ? (closeBase.width + _platterInterruptSizeDelta.dx * interruptDecay)
+            .clamp(0.0, menuWidth)
+        : (lerpDouble(coreW, menuWidth, sizeProgress)! +
+                _platterInterruptSizeDelta.dx * interruptDecay)
+            .clamp(0.0, menuWidth);
+    final double currentHeight = closeBase != null
+        ? (closeBase.height + _platterInterruptSizeDelta.dy * interruptDecay)
+            .clamp(0.0, targetHeight)
+        : (lerpDouble(coreH, targetHeight, sizeProgress)! +
                 _platterInterruptSizeDelta.dy * interruptDecay)
             .clamp(0.0, targetHeight);
 
@@ -1773,7 +1814,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
             currentSize: Size(currentWidth, currentHeight),
             restingSize: Size(menuWidth, targetHeight),
             targetRadius: widget.menuBorderRadius,
-            sizeProgress: sizeProgress,
+            sizeProgress: closeSizeProgress,
           )
         : LiquidMorphPhysics.computeCornerRadius(
             currentSize: Size(currentWidth, currentHeight),
@@ -1796,10 +1837,10 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     double anchorDriftX = 0.0;
     double anchorDriftY = 0.0;
 
-    if (_morphController.isClosing) {
+    if (closeBase != null) {
       final posT = state.pathT.clamp(0.0, 1.0);
       final recoilCatch = effectivePush * (1.0 - posT);
-      final center = Offset.lerp(originRect.center, restingRect.center, posT)! +
+      final center = closeBase.center +
           recoilCatch +
           _platterInterruptCenterDelta * interruptDecay;
       blobBLeft = center.dx - currentWidth * 0.5;
@@ -1878,8 +1919,15 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     // on premium close stays active across 0..~283 ms expanding min(tw, th) -> tw
     // with true 22px semicircular endcaps so Blob B SDF-merges seamlessly into
     // the middle of the wide capsule before handing off to the real trigger!
+    // Native keeps the widening capsule hidden inside the retracting droplet
+    // for ~50 ms longer than the raw width spring suggests (it fades in as it
+    // emerges), so the *drawn* capsule trails the spring on close and
+    // converges back to it by the ~283 ms handoff (C⁰ with the real trigger).
+    final double blobAWidthProgress = _morphController.isClosing
+        ? _delayedCloseWidthProgress(state.triggerWidthProgress)
+        : state.triggerWidthProgress;
     final double blobAWidth =
-        lerpDouble(minTriggerSide, tw, state.triggerWidthProgress)!
+        lerpDouble(minTriggerSide, tw, blobAWidthProgress)!
             .clamp(1.0, double.infinity);
     final double blobAHeight = th.clamp(1.0, double.infinity);
     final double blobARadius = math.min(
@@ -2301,6 +2349,21 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
         ),
       ),
     );
+  }
+
+  /// Close-phase width progress for the drawn trigger capsule (Blob A): the
+  /// width spring evaluated [_kCloseCapsuleDelay] late, blended back to the
+  /// undelayed [rawProgress] by the handoff so there is no pop.
+  double _delayedCloseWidthProgress(double rawProgress) {
+    if (_morphController.disableAnimations) return rawProgress;
+    final t = _morphController.phaseElapsedSeconds;
+    final delayed = LiquidMorphPhysics.closeTriggerWidthForElapsed(
+      math.max(0.0, t - _kCloseCapsuleDelay),
+      startWidthProgress: _morphController.phaseStartTriggerWidth,
+    );
+    final blend =
+        ((t - _kCloseCapsuleDelay) / _kCloseCapsuleCatchUp).clamp(0.0, 1.0);
+    return lerpDouble(delayed, rawProgress, blend)!;
   }
 
   /// Softens the rows while the platter collapses on close (see
@@ -2739,6 +2802,12 @@ const Duration _kSubmenuMorphDuration = Duration(milliseconds: 320);
 const Curve _kSubmenuMorphCurve = Curves.easeOutCubic;
 const double _kBodyVerticalPadding = 12.0;
 const double _kRowGap = 2.0;
+
+/// How late (seconds) the drawn trigger capsule trails the close width spring.
+const double _kCloseCapsuleDelay = 0.05;
+
+/// Seconds over which the delayed capsule catches back up to the spring.
+const double _kCloseCapsuleCatchUp = 0.23;
 
 const LiquidGlassSettings _kDefaultMenuSettings = LiquidGlassSettings(
   blur: 10,

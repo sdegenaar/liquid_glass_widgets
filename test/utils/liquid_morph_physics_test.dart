@@ -210,18 +210,20 @@ void main() {
       expect(at540.triggerImpactScale, equals(1.0));
     });
 
-    test('soft-saturation bounds peak recoil into ~5–16 px across all sizes',
+    test(
+        'peak recoil is near-constant (~14–17.5 px) across menu sizes like native MM2 ty',
         () {
       final shortMenu = computeCloseAt(0.183, finalDy: 35.0);
       final mediumMenu = computeCloseAt(0.183, finalDy: 125.0);
       final tallMenu = computeCloseAt(0.183, finalDy: 220.0);
       final modalSheet = computeCloseAt(0.183, finalDy: 500.0);
 
-      expect(shortMenu.triggerPushDy.abs(), inInclusiveRange(5.0, 7.0));
-      expect(mediumMenu.triggerPushDy.abs(), inInclusiveRange(9.5, 12.0));
-      expect(tallMenu.triggerPushDy.abs(), inInclusiveRange(12.0, 14.5));
-      expect(modalSheet.triggerPushDy.abs(), inInclusiveRange(14.0, 16.5));
-      expect(modalSheet.triggerPushDy.abs(), lessThan(18.0));
+      expect(shortMenu.triggerPushDy.abs(), inInclusiveRange(13.0, 15.5));
+      expect(mediumMenu.triggerPushDy.abs(), inInclusiveRange(15.5, 17.5));
+      expect(tallMenu.triggerPushDy.abs(), inInclusiveRange(16.5, 17.5));
+      expect(modalSheet.triggerPushDy.abs(), inInclusiveRange(17.0, 17.5));
+      // Never exceeds the traced native peak.
+      expect(modalSheet.triggerPushDy.abs(), lessThanOrEqualTo(17.5));
     });
 
     test(
@@ -834,6 +836,88 @@ void main() {
       final k = 0.2 + 0.8 * s;
       final roundness = radiusAt(s) / (resting.width * k / 2);
       expect(roundness, inInclusiveRange(0.70, 0.95));
+    });
+  });
+
+  group('LiquidMorphPhysics — closing platter pivot geometry', () {
+    // Native `_UIContextMenuView` trace (pill trigger, 5-item menu): resting
+    // platter (32, 228.3, 250x195.3), trigger centre (93, 245.5).
+    const resting = Rect.fromLTWH(32.0, 228.3, 250.0, 195.3);
+    const pivot = Offset(93.0, 245.5);
+
+    test('reproduces the traced CM rect at 0.709 / 0.529 / 0.301 scale', () {
+      final cases = <double, Rect>{
+        0.709: const Rect.fromLTWH(49.8, 233.3, 177.2, 138.5),
+        0.529: const Rect.fromLTWH(60.7, 236.4, 132.3, 103.4),
+        0.301: const Rect.fromLTWH(74.6, 240.3, 75.3, 58.8),
+      };
+      cases.forEach((scale, traced) {
+        final r = LiquidMorphPhysics.computeClosingPlatterRect(
+          pivot: pivot,
+          restingRect: resting,
+          platterScale: scale,
+        );
+        expect(r.left, closeTo(traced.left, 0.2));
+        expect(r.top, closeTo(traced.top, 0.2));
+        expect(r.width, closeTo(traced.width, 0.2));
+        expect(r.height, closeTo(traced.height, 0.2));
+      });
+    });
+
+    test('is the resting rect at scale 1 and keeps the pivot fixed', () {
+      final full = LiquidMorphPhysics.computeClosingPlatterRect(
+        pivot: pivot,
+        restingRect: resting,
+        platterScale: 1.0,
+      );
+      expect(full, equals(resting));
+      for (final s in [0.2, 0.5, 0.9]) {
+        final r = LiquidMorphPhysics.computeClosingPlatterRect(
+          pivot: pivot,
+          restingRect: resting,
+          platterScale: s,
+        );
+        // pivot keeps its fractional position inside the scaled rect
+        expect((pivot.dx - r.left) / r.width,
+            closeTo((pivot.dx - resting.left) / resting.width, 1e-9));
+        expect((pivot.dy - r.top) / r.height,
+            closeTo((pivot.dy - resting.top) / resting.height, 1e-9));
+      }
+    });
+
+    test('maxHeight clamps only the height', () {
+      final r = LiquidMorphPhysics.computeClosingPlatterRect(
+        pivot: pivot,
+        restingRect: resting,
+        platterScale: 0.6,
+        maxHeight: 60.0,
+      );
+      expect(r.height, equals(60.0));
+      expect(r.width, closeTo(resting.width * 0.6, 1e-9));
+    });
+
+    test('height envelope: ~trigger core at rest, ~109pt near rawValue 0.2',
+        () {
+      expect(
+        LiquidMorphPhysics.computeCloseHeightEnvelope(
+            coreHeight: 44.0, rawValue: 0.0),
+        closeTo(44.0, 1e-9),
+      );
+      // Native: both 5- and 10-item menus are ≈109 pt tall at ~150 ms
+      // (rawValue ≈ 0.2).
+      expect(
+        LiquidMorphPhysics.computeCloseHeightEnvelope(
+            coreHeight: 44.0, rawValue: 0.2),
+        inInclusiveRange(95.0, 125.0),
+      );
+      // Monotonic in rawValue.
+      var prev = 0.0;
+      for (var u = 0.0; u <= 1.0; u += 0.1) {
+        final e = LiquidMorphPhysics.computeCloseHeightEnvelope(
+            coreHeight: 44.0, rawValue: u);
+        expect(e, greaterThanOrEqualTo(prev));
+        prev = e;
+      }
     });
   });
 

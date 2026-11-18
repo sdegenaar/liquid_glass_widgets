@@ -413,7 +413,7 @@ void main() {
             );
             expect(
               peakUpwardTriggerDy,
-              inInclusiveRange(-16.5, -4.0),
+              inInclusiveRange(-17.6, -4.0),
               reason:
                   '[$triggerName/${itemCount}i CLOSE] Peak recoil $peakUpwardTriggerDy out of calibrated bounds!',
             );
@@ -660,7 +660,7 @@ void main() {
           expect(blobAWidthAt200ms, greaterThan(240.0 * 0.72));
         }
         expect(contentOpAt83ms, inInclusiveRange(0.35, 0.70));
-        expect(peakDy, inInclusiveRange(-16.5, -4.0));
+        expect(peakDy, inInclusiveRange(-17.6, -4.0));
         expect(peakMs, inInclusiveRange(150.0, 220.0));
         expect(maxSplashW, greaterThan(240.0 * 1.008));
         expect(maxSplashMs, inInclusiveRange(350.0, 450.0));
@@ -782,7 +782,7 @@ void main() {
 
           await tester.pumpAndSettle();
 
-          expect(peakDy, inInclusiveRange(-16.5, -5.0));
+          expect(peakDy, inInclusiveRange(-17.6, -5.0));
           expect(peakDyMs, inInclusiveRange(150.0, 220.0));
           expect(maxSplashW, greaterThan(180.0 * 1.008));
           expect(maxSplashMs, inInclusiveRange(350.0, 450.0));

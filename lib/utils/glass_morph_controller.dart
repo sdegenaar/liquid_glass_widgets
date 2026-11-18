@@ -121,6 +121,12 @@ class GlassMorphController extends ChangeNotifier {
   double get phaseElapsedSeconds =>
       _disableAnimations ? 0.0 : _lastElapsedSeconds * speedMultiplier;
 
+  /// Trigger width progress (`0.0 – 1.0`) captured at the start of the current
+  /// open/close phase. Used with
+  /// [LiquidMorphPhysics.closeTriggerWidthForElapsed] to evaluate the close
+  /// width spring at an offset time.
+  double get phaseStartTriggerWidth => _phaseStartTriggerWidth;
+
   /// Whether the morph lifecycle is currently active.
   ///
   /// `true` from [open] until the closing spring — including the parallel
