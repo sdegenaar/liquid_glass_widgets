@@ -787,4 +787,118 @@ void main() {
       }
     });
   });
+
+  // ── Close shape & content (native iOS 27 fit) ─────────────────────────────
+
+  group('LiquidMorphPhysics — close corner radius (computeCloseCornerRadius)',
+      () {
+    const resting = Size(250, 251);
+    const menuRadius = 32.0;
+
+    double radiusAt(double s) {
+      // blob size follows the platter scale (menu * (0.2 + 0.8 s))
+      final k = 0.2 + 0.8 * s;
+      return LiquidMorphPhysics.computeCloseCornerRadius(
+        currentSize: Size(resting.width * k, resting.height * k),
+        restingSize: resting,
+        targetRadius: menuRadius,
+        sizeProgress: s,
+      );
+    }
+
+    test('equals the resting menu radius at sizeProgress = 1', () {
+      expect(radiusAt(1.0), closeTo(menuRadius, 1e-6));
+    });
+
+    test('is a perfect circle (half the short side) at sizeProgress = 0', () {
+      expect(radiusAt(0.0), closeTo(resting.width * 0.2 / 2, 1e-6));
+    });
+
+    test('roundness (r / halfShort) rises monotonically as the blob shrinks',
+        () {
+      double prevRoundness = 0.0;
+      for (var s = 1.0; s >= 0.0; s -= 0.05) {
+        final k = 0.2 + 0.8 * s;
+        final half = resting.width * k / 2;
+        final roundness = radiusAt(s) / half;
+        expect(roundness, greaterThanOrEqualTo(prevRoundness - 1e-9));
+        expect(roundness, lessThanOrEqualTo(1.0 + 1e-9));
+        prevRoundness = roundness;
+      }
+    });
+
+    test('matches the native silhouette: roundness ~0.8+ at half width', () {
+      // Native 60 fps silhouettes: r / (min(w,h)/2) ≈ 0.77–0.89 once the
+      // platter is ~45 % of its width (rawValue ≈ 0.3 → sizeProgress ≈ 0.3).
+      const s = 0.45;
+      final k = 0.2 + 0.8 * s;
+      final roundness = radiusAt(s) / (resting.width * k / 2);
+      expect(roundness, inInclusiveRange(0.70, 0.95));
+    });
+  });
+
+  group('LiquidMorphPhysics — close content opacity & blur', () {
+    test('rows are fully visible at rawValue = 1 with no blur', () {
+      expect(
+        LiquidMorphPhysics.computeCloseContentOpacity(rawValue: 1.0),
+        closeTo(1.0, 1e-9),
+      );
+      expect(
+        LiquidMorphPhysics.computeCloseContentBlur(rawValue: 1.0),
+        closeTo(0.0, 1e-9),
+      );
+    });
+
+    test('is linear in platter scale (native op) and reaches 0 at rawValue = 0',
+        () {
+      expect(
+        LiquidMorphPhysics.computeCloseContentOpacity(rawValue: 0.636),
+        closeTo(0.636, 1e-9),
+      );
+      expect(
+        LiquidMorphPhysics.computeCloseContentOpacity(rawValue: 0.0),
+        equals(0.0),
+      );
+    });
+
+    test('blur ramps quickly then caps at 8px', () {
+      final b95 = LiquidMorphPhysics.computeCloseContentBlur(rawValue: 0.95);
+      final b50 = LiquidMorphPhysics.computeCloseContentBlur(rawValue: 0.5);
+      expect(b95, closeTo(1.4, 1e-9));
+      expect(b50, equals(8.0));
+    });
+
+    test('closeStartProgress keeps a partial-open close continuous', () {
+      // Closing from 60 % open: the first frame (rawValue == 0.6) must still
+      // show fully opaque, un-blurred rows rather than popping.
+      expect(
+        LiquidMorphPhysics.computeCloseContentOpacity(
+          rawValue: 0.6,
+          closeStartProgress: 0.6,
+        ),
+        closeTo(1.0, 1e-9),
+      );
+      expect(
+        LiquidMorphPhysics.computeCloseContentBlur(
+          rawValue: 0.6,
+          closeStartProgress: 0.6,
+        ),
+        closeTo(0.0, 1e-9),
+      );
+    });
+
+    test('compute() exposes contentBlurSigma only while closing', () {
+      final open = _compute(0.6);
+      expect(open.contentBlurSigma, equals(0.0));
+      final closing = LiquidMorphPhysics.compute(
+        rawValue: 0.7,
+        finalDx: 0,
+        finalDy: 100,
+        isClosing: true,
+        elapsedSeconds: 0.08,
+      );
+      expect(closing.contentBlurSigma, greaterThan(0.0));
+      expect(closing.contentOpacity, closeTo(0.7, 1e-9));
+    });
+  });
 }

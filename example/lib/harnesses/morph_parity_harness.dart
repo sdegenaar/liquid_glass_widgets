@@ -243,7 +243,7 @@ class _MorphParityHarnessAppState extends State<MorphParityHarnessApp> {
 
   void _openTarget(String target, BuildContext? innerCtx) {
     switch (target) {
-      case 'round':
+      case 'round' || 'round_left':
         _roundMenuCtrl.open();
       case 'pill':
         _pillMenuCtrl.open();
@@ -1519,6 +1519,16 @@ class _MorphParityHarnessAppState extends State<MorphParityHarnessApp> {
           child: Align(
             alignment: Alignment.centerLeft,
             child: _buildWideLeftMenuTrigger(
+              labelColor: labelColor,
+              buttonQuality: buttonQuality,
+            ),
+          ),
+        ),
+      'round_left' => Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: _buildRoundMenuTrigger(
               labelColor: labelColor,
               buttonQuality: buttonQuality,
             ),

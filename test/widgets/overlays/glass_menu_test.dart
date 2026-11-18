@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart'
@@ -2527,9 +2529,17 @@ void main() {
             final platter = containers.last;
             expect(platter.shape, isA<LiquidRoundedSuperellipse>());
             final r = (platter.shape as LiquidRoundedSuperellipse).borderRadius;
+            // Closing platter rounds toward a circle like native iOS 27: the
+            // radius may exceed the resting 32pt but never half its own
+            // shortest side.
+            final halfShort = math.min(
+                  platter.width ?? double.infinity,
+                  platter.height ?? double.infinity,
+                ) /
+                2.0;
             expect(
               r,
-              lessThanOrEqualTo(32.001),
+              lessThanOrEqualTo(math.min(110.001, halfShort + 0.01)),
               reason:
                   'Close frame ${ms}ms ($count items) ballooned radius to $r',
             );

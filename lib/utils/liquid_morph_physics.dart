@@ -63,6 +63,7 @@ class LiquidMorphState {
     this.platterScale = 0.0,
     this.platterOpacity = 0.0,
     this.contentOpacity = 0.0,
+    this.contentBlurSigma = 0.0,
     this.isPlatterActive = false,
   });
 
@@ -155,10 +156,19 @@ class LiquidMorphState {
   /// Opacity (`[0.0 – 1.0]`) for the platter's inner items / content.
   ///
   /// - On open: ramps `0.0 → 1.0` across `sizeT ∈ [0.15, 1.0]`.
-  /// - On close: tracks `((platterScale - 0.20) / 0.80).clamp(0.0, 1.0)` all
-  ///   the way to platter vanish (`~280 ms`), matching iOS 27 `_UIContextMenuView`
-  ///   so menu items never vanish prematurely into an empty frosted blob.
+  /// - On close: `((platterScale - 0.20) / 0.80)`, matching the traced iOS 27
+  ///   `_UIContextMenuView` opacity (see
+  ///   [LiquidMorphPhysics.computeCloseContentOpacity]). Combined with
+  ///   [contentBlurSigma] so a soft ghost of the rows remains inside the
+  ///   collapsing platter instead of an empty frosted blob.
   final double contentOpacity;
+
+  /// Gaussian blur sigma (logical px) for the platter's inner items while it
+  /// collapses on close (`0.0` at rest and throughout open).
+  ///
+  /// Native iOS 27 softens the rows immediately on dismissal; see
+  /// [LiquidMorphPhysics.computeCloseContentBlur].
+  final double contentBlurSigma;
 
   /// Whether the morphing platter (Blob B) is currently active and should be
   /// painted in the overlay.
@@ -282,6 +292,13 @@ class LiquidMorphPhysics {
   /// Maximum travel distance (logical pixels) for stateless legacy `rawValue < 0` push.
   static const double _maxPushTravelPx = 80.0;
 
+  /// Exponent of the close-roundness curve fitted to native iOS 27 silhouettes
+  /// (see [computeCloseCornerRadius]).
+  static const double _closeRoundnessExponent = 2.2;
+
+  /// Maximum blur sigma (logical px) of the menu rows during close.
+  static const double _closeContentBlurMaxSigma = 8.0;
+
   // ─── Public helpers ────────────────────────────────────────────────────────
 
   /// Computes the geometric scale ratio from [sourceSize] to [targetSize]:
@@ -335,6 +352,70 @@ class LiquidMorphPhysics {
     final interpolated = triggerRadius + (targetRadius - triggerRadius) * t;
     final upperBound = math.max(triggerRadius, targetRadius);
     return math.min(shortestHalf, interpolated.clamp(0.0, upperBound));
+  }
+
+  /// Computes the corner radius of the closing platter (Blob B) while it
+  /// collapses back into its trigger.
+  ///
+  /// Native iOS 27 does **not** keep the menu's corner radius while the
+  /// platter shrinks: measured on 60 fps silhouettes the roundness
+  /// `r / (min(w, h) / 2)` climbs from `ρ₀ ≈ 0.29` (resting menu) to `≈ 0.85`
+  /// by the time the platter is ~45 % of its width, i.e. the blob is a
+  /// near-circle for most of the collapse. Holding the resting radius makes
+  /// the shrinking platter read as a rounded square.
+  ///
+  /// This follows `ρ(s) = 1 − (1 − ρ₀) · s^[_closeRoundnessExponent]` where
+  /// `s` is [sizeProgress] (`1` = resting menu, `0` = trigger core) and
+  /// `ρ₀ = targetRadius / (min(restingSize) / 2)`. It is `targetRadius`
+  /// exactly at `s = 1` and a perfect circle/pill at `s = 0`.
+  static double computeCloseCornerRadius({
+    required Size currentSize,
+    required Size restingSize,
+    required double targetRadius,
+    required double sizeProgress,
+  }) {
+    final shortestHalf =
+        math.max(0.0, math.min(currentSize.width, currentSize.height) / 2.0);
+    final restingHalf =
+        math.max(1e-3, math.min(restingSize.width, restingSize.height) / 2.0);
+    final rho0 = (targetRadius / restingHalf).clamp(0.0, 1.0);
+    final s = sizeProgress.clamp(0.0, 1.0);
+    final roundness = 1.0 - (1.0 - rho0) * math.pow(s, _closeRoundnessExponent);
+    return shortestHalf * roundness.clamp(0.0, 1.0);
+  }
+
+  /// Computes the menu-row opacity while the platter collapses on close.
+  ///
+  /// Native iOS 27 fades the whole `_UIContextMenuView` exactly linearly in
+  /// platter scale: `op = (scale − 0.2) / 0.8` (traced `0.872 @ 67 ms`,
+  /// `0.636 @ 100 ms`, `0.319 @ 150 ms`, `0.126 @ 200 ms`). Crisp text still
+  /// vanishes within `~35 ms` because the rows are blurred at the same time
+  /// (see [computeCloseContentBlur]).
+  ///
+  /// Normalised by [closeStartProgress] so a close that interrupts a
+  /// partially-open menu keeps the rows continuous.
+  static double computeCloseContentOpacity({
+    required double rawValue,
+    double closeStartProgress = 1.0,
+  }) {
+    final c = closeStartProgress.clamp(0.05, 1.0);
+    return (rawValue / c).clamp(0.0, 1.0);
+  }
+
+  /// Gaussian blur sigma (logical px) applied to the menu rows while the
+  /// platter collapses on close.
+  ///
+  /// Native rows go soft almost immediately (crisp bright glyph pixels fall
+  /// `0.61 → 0.06` in one frame). `σ = 28 · (1 − u)` capped at
+  /// [_closeContentBlurMaxSigma] reproduces that without a visual pop at
+  /// `u = 1`.
+  static double computeCloseContentBlur({
+    required double rawValue,
+    double closeStartProgress = 1.0,
+  }) {
+    final c = closeStartProgress.clamp(0.05, 1.0);
+    final u = (rawValue / c).clamp(0.0, 1.0);
+    return (28.0 * (1.0 - u)).clamp(0.0, _closeContentBlurMaxSigma);
   }
 
   /// Computes the SDF blend attenuation factor for a given scale ratio.
@@ -546,16 +627,27 @@ class LiquidMorphPhysics {
     final double platterScale;
     final double platterOpacity;
     final double contentOpacity;
+    double contentBlurSigma = 0.0;
     final bool isPlatterActive;
 
     if (isClosing) {
       platterScale = (0.20 + 0.80 * rawValue).clamp(0.18, 1.0);
       final bool active = !hasHandedOff && !isSettled && rawValue > 0.001;
       isPlatterActive = active;
-      final fade =
-          active ? ((platterScale - 0.20) / 0.80).clamp(0.0, 1.0) : 0.0;
+      final fade = active
+          ? computeCloseContentOpacity(
+              rawValue: rawValue,
+              closeStartProgress: closeStartProgress,
+            )
+          : 0.0;
       platterOpacity = active ? (rawValue / 0.25).clamp(0.0, 1.0) : 0.0;
       contentOpacity = fade;
+      contentBlurSigma = active
+          ? computeCloseContentBlur(
+              rawValue: rawValue,
+              closeStartProgress: closeStartProgress,
+            )
+          : 0.0;
     } else {
       platterScale = sizeT.clamp(0.0, 1.0);
       isPlatterActive = rawValue > 0.001;
@@ -607,6 +699,7 @@ class LiquidMorphPhysics {
       platterScale: platterScale,
       platterOpacity: platterOpacity,
       contentOpacity: contentOpacity,
+      contentBlurSigma: contentBlurSigma,
       isPlatterActive: isPlatterActive,
     );
   }

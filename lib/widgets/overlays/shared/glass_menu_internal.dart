@@ -1768,12 +1768,19 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
         _triggerBorderRadius ?? (_triggerSize!.shortestSide / 2.0);
     final double radiusProgress =
         _morphController.isClosing ? clampedValue : sizeProgress;
-    final double currentRadius = LiquidMorphPhysics.computeCornerRadius(
-      currentSize: Size(currentWidth, currentHeight),
-      triggerRadius: triggerRadius,
-      targetRadius: widget.menuBorderRadius,
-      progress: radiusProgress,
-    );
+    final double currentRadius = _morphController.isClosing
+        ? LiquidMorphPhysics.computeCloseCornerRadius(
+            currentSize: Size(currentWidth, currentHeight),
+            restingSize: Size(menuWidth, targetHeight),
+            targetRadius: widget.menuBorderRadius,
+            sizeProgress: sizeProgress,
+          )
+        : LiquidMorphPhysics.computeCornerRadius(
+            currentSize: Size(currentWidth, currentHeight),
+            triggerRadius: triggerRadius,
+            targetRadius: widget.menuBorderRadius,
+            progress: radiusProgress,
+          );
 
     final double residualPushDecay = _phaseResidualPush != Offset.zero
         ? math.exp(-18.0 * _morphController.phaseElapsedSeconds)
@@ -2211,6 +2218,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
             state.contentOpacity > 0.01,
             teardropShape,
             containerScale,
+            state.contentBlurSigma,
           ),
         ),
       ),
@@ -2239,6 +2247,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     bool showContent,
     LiquidShape teardropShape,
     double containerScale,
+    double contentBlurSigma,
   ) {
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     final interactive = _submenuStack.isEmpty;
@@ -2271,23 +2280,40 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                 child: Transform.scale(
                   scale: contentScale,
                   alignment: _morphAlignment,
-                  child: _buildListContent(
-                    widget.items,
-                    interactive: interactive,
-                    dimmed: !interactive,
-                    coveredDepth: interactive ? null : 0,
-                    coverProgress: _bodyRecede,
-                    viewportHeight: _targetBodyHeight(),
-                    itemOpacity: contentOpacity,
-                    passiveScrollOffset: interactive
-                        ? 0.0
-                        : _submenuStack.first.sourceScrollOffset,
+                  child: _blurRows(
+                    contentBlurSigma,
+                    _buildListContent(
+                      widget.items,
+                      interactive: interactive,
+                      dimmed: !interactive,
+                      coveredDepth: interactive ? null : 0,
+                      coverProgress: _bodyRecede,
+                      viewportHeight: _targetBodyHeight(),
+                      itemOpacity: contentOpacity,
+                      passiveScrollOffset: interactive
+                          ? 0.0
+                          : _submenuStack.first.sourceScrollOffset,
+                    ),
                   ),
                 ),
               ),
           ],
         ),
       ),
+    );
+  }
+
+  /// Softens the rows while the platter collapses on close (see
+  /// [LiquidMorphState.contentBlurSigma]); a no-op at rest and during open.
+  Widget _blurRows(double sigma, Widget child) {
+    if (sigma < 0.05) return child;
+    return ImageFiltered(
+      imageFilter: ImageFilter.blur(
+        sigmaX: sigma,
+        sigmaY: sigma,
+        tileMode: TileMode.decal,
+      ),
+      child: child,
     );
   }
 

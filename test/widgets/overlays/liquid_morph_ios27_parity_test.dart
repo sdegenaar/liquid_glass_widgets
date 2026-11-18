@@ -347,12 +347,16 @@ void main() {
               closeTo(restTriggerRect.center.dy, 0.25),
             );
 
+            // Native iOS 27 deliberately rounds the collapsing platter toward
+            // a circle (silhouette roundness 0.29 → ~0.9), so the radius may
+            // exceed the resting 32pt but never the blob's own half-width
+            // (menuWidth 220 / 2).
             for (final r in closeRadii) {
               expect(
                 r,
-                lessThanOrEqualTo(32.5),
+                lessThanOrEqualTo(110.5),
                 reason:
-                    '[$triggerName/${itemCount}i CLOSE] Corner radius ballooned to $r (> 32pt)!',
+                    '[$triggerName/${itemCount}i CLOSE] Corner radius ballooned to $r (> half menu width)!',
               );
             }
 
