@@ -25,6 +25,21 @@ class _GlassPopoverState extends State<GlassPopover>
 
   Alignment _morphAlignment = Alignment.topLeft;
 
+  // Mid-flight interruption C0 continuity state (zero when starting from rest).
+  Rect? _lastPlatterRect;
+  double? _lastPlatterRadius;
+  Offset _platterInterruptCenterDelta = Offset.zero;
+  Offset _platterInterruptSizeDelta = Offset.zero;
+  double _platterInterruptRadiusDelta = 0.0;
+
+  void _resetInterruptState() {
+    _lastPlatterRect = null;
+    _lastPlatterRadius = null;
+    _platterInterruptCenterDelta = Offset.zero;
+    _platterInterruptSizeDelta = Offset.zero;
+    _platterInterruptRadiusDelta = 0.0;
+  }
+
   /// Measured intrinsic height of the popover content.
   /// Only used when [widget.popoverHeight] is null.
   double? _measuredContentHeight;
@@ -121,7 +136,7 @@ class _GlassPopoverState extends State<GlassPopover>
     _morphController = GlassMorphController(
       vsync: this,
       speed: widget.morphSpeed,
-    );
+    )..verticalOnlyRecoil = true;
     _morphController.addListener(() {
       // Hide the overlay only once the closing morph — including the parallel
       // trigger recoil and wide-trigger splash (~550 ms) — has fully settled.
@@ -137,6 +152,7 @@ class _GlassPopoverState extends State<GlassPopover>
                 !_morphController.isShowing) {
               _overlayController.hide();
               _blurRamp.value = 0.0;
+              _resetInterruptState();
               setState(() {
                 _horizontalOffset = 0.0;
                 _verticalOffset = 0.0;
@@ -153,6 +169,7 @@ class _GlassPopoverState extends State<GlassPopover>
           // Reset the blur ramp to sharp so the next open blooms in from 0 again
           // (it was frozen mid-value by _closePopover, not wound back).
           _blurRamp.value = 0.0;
+          _resetInterruptState();
           setState(() {
             _horizontalOffset = 0.0;
             _verticalOffset = 0.0;
@@ -272,6 +289,7 @@ class _GlassPopoverState extends State<GlassPopover>
     _morphController.reset();
     _blurRamp.stop();
     _blurRamp.value = 0.0;
+    _resetInterruptState();
     _horizontalOffset = 0.0;
     _verticalOffset = 0.0;
     _measuredContentHeight = null;
@@ -524,7 +542,32 @@ class _GlassPopoverState extends State<GlassPopover>
   /// the morph actually starts opening (immediately for fixed-height popovers,
   /// or after the intrinsic-height measurement pass).
   void _startMorphOpen() {
+    final bool hasPrev = _overlayController.isShowing &&
+        _morphController.isShowing &&
+        _lastPlatterRect != null &&
+        _morphController.value > 0.005 &&
+        _morphController.value < 0.995;
+    final Rect? prevRect = hasPrev ? _lastPlatterRect : null;
+    final double? prevRadius = hasPrev ? _lastPlatterRadius : null;
+
     _morphController.open();
+    if (prevRect != null) {
+      final nextBase = _computeBasePopoverGeometry();
+      if (nextBase != null) {
+        _platterInterruptCenterDelta = prevRect.center - nextBase.rect.center;
+        _platterInterruptSizeDelta = Offset(
+          prevRect.width - nextBase.rect.width,
+          prevRect.height - nextBase.rect.height,
+        );
+        _platterInterruptRadiusDelta =
+            (prevRadius ?? nextBase.radius) - nextBase.radius;
+      }
+    } else {
+      _platterInterruptCenterDelta = Offset.zero;
+      _platterInterruptSizeDelta = Offset.zero;
+      _platterInterruptRadiusDelta = 0.0;
+    }
+
     if (_blurRampEnabled) {
       _blurRamp
         ..duration = widget.blurRampDuration
@@ -536,16 +579,41 @@ class _GlassPopoverState extends State<GlassPopover>
   }
 
   void _closePopover() {
-    if (!mounted || !_overlayController.isShowing) return;
+    if (!mounted ||
+        !_overlayController.isShowing ||
+        _morphController.isClosing) {
+      return;
+    }
+    final bool hasPrev = _morphController.isShowing &&
+        _lastPlatterRect != null &&
+        _morphController.value > 0.005 &&
+        _morphController.value < 0.995;
+    final Rect? prevRect = hasPrev ? _lastPlatterRect : null;
+    final double? prevRadius = hasPrev ? _lastPlatterRadius : null;
+
     // Freeze the blur where it is for the collapse. Ramping it back down here
     // would race the morph and read as the blur "popping off" while the blob is
     // still visibly shrinking; holding it keeps the close visually coherent.
     // It is reset to 0 when the overlay finally hides (see the initState
     // listener), so the next open still ramps from sharp.
     _blurRamp.stop();
-    // GlassMorphController.close() injects the −2.5 velocity hint internally,
-    // maximising the rubber-band bounce amplitude on close.
     _morphController.close();
+    if (prevRect != null) {
+      final nextBase = _computeBasePopoverGeometry();
+      if (nextBase != null) {
+        _platterInterruptCenterDelta = prevRect.center - nextBase.rect.center;
+        _platterInterruptSizeDelta = Offset(
+          prevRect.width - nextBase.rect.width,
+          prevRect.height - nextBase.rect.height,
+        );
+        _platterInterruptRadiusDelta =
+            (prevRadius ?? nextBase.radius) - nextBase.radius;
+      }
+    } else {
+      _platterInterruptCenterDelta = Offset.zero;
+      _platterInterruptSizeDelta = Offset.zero;
+      _platterInterruptRadiusDelta = 0.0;
+    }
     widget.onClose?.call();
   }
 
@@ -758,6 +826,166 @@ class _GlassPopoverState extends State<GlassPopover>
     _verticalOffset = vOffset;
   }
 
+  ({
+    Rect rect,
+    double radius,
+    double blobADriftX,
+    double blobADriftY,
+  })? _computeBasePopoverGeometry() {
+    if (_triggerSize == null || !_contentMeasured) return null;
+    final rawValue = _morphController.value;
+    final tw = _triggerSize!.width;
+    final th = _triggerSize!.height;
+    final compactCore = math.min(tw, th);
+    final popoverWidth = widget.popoverWidth;
+    final popoverHeight = _effectivePopoverHeight();
+    final anchorAlignX = (1.0 + _morphAlignment.x) * 0.5;
+    final anchorAlignY = (1.0 + _morphAlignment.y) * 0.5;
+    final triggerCenterX = _triggerOverlayPosition.dx + tw * 0.5;
+    final triggerCenterY = _triggerOverlayPosition.dy + th * 0.5;
+    final triggerCenter = Offset(triggerCenterX, triggerCenterY);
+    final restingLeft = _triggerOverlayPosition.dx +
+        anchorAlignX * (tw - popoverWidth) +
+        _horizontalOffset;
+    final restingTop = _triggerOverlayPosition.dy +
+        anchorAlignY * (th - popoverHeight) +
+        _verticalOffset;
+    final restingRect =
+        Rect.fromLTWH(restingLeft, restingTop, popoverWidth, popoverHeight);
+    final travelDx = restingRect.center.dx - triggerCenterX;
+    final travelDy = restingRect.center.dy - triggerCenterY;
+    final scaleDelta = LiquidMorphPhysics.computeScaleDelta(
+      sourceSize: Size(compactCore, compactCore),
+      targetSize: Size(popoverWidth, math.max(1.0, popoverHeight)),
+    );
+    final state = _morphController.computeState(
+      finalDx: travelDx,
+      finalDy: travelDy,
+      scaleDelta: scaleDelta,
+      adaptiveDamping: true,
+    );
+    final effectiveQuality = GlassThemeHelpers.resolveQuality(
+      context,
+      widgetQuality: widget.quality,
+      fallback: GlassThemeHelpers.nativeStyleQuality(context),
+    );
+    final bool isPremium = !widget.platformViewBackdrop &&
+        effectiveQuality == GlassQuality.premium &&
+        ImageFilter.isShaderFilterSupported;
+
+    if (_morphController.isClosing && isPremium) {
+      final closedGeo = LiquidMorphPhysics.computeClosingTeardropGeometry(
+        rawValue: rawValue,
+        pathT: state.pathT,
+        triggerCenter: triggerCenter,
+        triggerSize: Size(tw, th),
+        restingRect: restingRect,
+        targetRadius: widget.popoverBorderRadius,
+        effectivePush: Offset(state.triggerPushDx, state.triggerPushDy),
+        elapsedSeconds: _morphController.phaseElapsedSeconds,
+        closeStartProgress: _morphController.closeStartProgress,
+        alignX: _morphAlignment.x,
+        disableAnimations: _morphController.disableAnimations,
+      );
+      return (
+        rect: closedGeo.rect,
+        radius: closedGeo.borderRadius,
+        blobADriftX: 0.0,
+        blobADriftY: 0.0,
+      );
+    }
+
+    final double triggerRadius = _triggerBorderRadius ?? (compactCore * 0.5);
+    if (_morphController.isClosing) {
+      final sizeProgress = ((state.pathT + state.sizeT) * 0.5).clamp(0.0, 1.0);
+      final w =
+          math.max(1.0, lerpDouble(compactCore, popoverWidth, sizeProgress)!);
+      final h =
+          math.max(1.0, lerpDouble(compactCore, popoverHeight, sizeProgress)!);
+      final closePathT = state.pathT.clamp(0.0, 1.0);
+      final recoilCatch = 1.0 - rawValue.clamp(0.0, 1.0);
+      final cx = triggerCenterX +
+          travelDx * closePathT +
+          state.triggerPushDx * recoilCatch;
+      final cy = triggerCenterY +
+          travelDy * closePathT +
+          state.triggerPushDy * recoilCatch;
+      final r = LiquidMorphPhysics.computeCornerRadius(
+        currentSize: Size(w, h),
+        triggerRadius: triggerRadius,
+        targetRadius: widget.popoverBorderRadius,
+        progress: sizeProgress,
+      );
+      return (
+        rect: Rect.fromCenter(center: Offset(cx, cy), width: w, height: h),
+        radius: r,
+        blobADriftX: 0.0,
+        blobADriftY: 0.0,
+      );
+    }
+
+    final sizeProgress = state.sizeT.clamp(0.0, 1.25);
+    final w =
+        math.max(1.0, lerpDouble(compactCore, popoverWidth, sizeProgress)!);
+    final h =
+        math.max(1.0, lerpDouble(compactCore, popoverHeight, sizeProgress)!);
+    final detachRelease = 1.0 - state.anchorScale * 0.55;
+    final effectivePathT =
+        state.sizeT + (state.pathT - state.sizeT) * detachRelease;
+    double blobLeft = triggerCenterX + travelDx * effectivePathT - w * 0.5;
+    double blobTop = triggerCenterY + travelDy * effectivePathT - h * 0.5;
+    final blobADriftX = travelDx *
+        (state.pathT - state.sizeT) *
+        (1.0 - state.anchorScale) *
+        0.35;
+    final blobADriftY = travelDy *
+        (state.pathT - state.sizeT) *
+        (1.0 - state.anchorScale) *
+        0.35;
+
+    if (widget.autoAdjustToScreen && state.pathT > 1.0) {
+      final mediaQuery = MediaQuery.maybeOf(context);
+      final screenWidth = mediaQuery?.size.width ?? double.infinity;
+      final screenHeight = mediaQuery?.size.height ?? double.infinity;
+      final insets = _viewInsets();
+      final overlayOrigin = _triggerGlobalPosition - _triggerOverlayPosition;
+      final minOverlayX =
+          widget.screenPadding.left + insets.left - overlayOrigin.dx;
+      final maxOverlayX = screenWidth.isFinite
+          ? screenWidth -
+              widget.screenPadding.right -
+              insets.right -
+              overlayOrigin.dx
+          : double.infinity;
+      final minOverlayY =
+          widget.screenPadding.top + insets.top - overlayOrigin.dy;
+      final maxOverlayY = screenHeight.isFinite
+          ? screenHeight -
+              widget.screenPadding.bottom -
+              insets.bottom -
+              overlayOrigin.dy
+          : double.infinity;
+      if (maxOverlayX.isFinite && maxOverlayX - minOverlayX >= w) {
+        blobLeft = blobLeft.clamp(minOverlayX, maxOverlayX - w);
+      }
+      if (maxOverlayY.isFinite && maxOverlayY - minOverlayY >= h) {
+        blobTop = blobTop.clamp(minOverlayY, maxOverlayY - h);
+      }
+    }
+    final r = LiquidMorphPhysics.computeCornerRadius(
+      currentSize: Size(w, h),
+      triggerRadius: triggerRadius,
+      targetRadius: widget.popoverBorderRadius,
+      progress: sizeProgress.clamp(0.0, 1.0),
+    );
+    return (
+      rect: Rect.fromLTWH(blobLeft, blobTop, w, h),
+      radius: r,
+      blobADriftX: blobADriftX,
+      blobADriftY: blobADriftY,
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Overlay rendering
   // ---------------------------------------------------------------------------
@@ -842,29 +1070,6 @@ class _GlassPopoverState extends State<GlassPopover>
         : _morphAlignment.y;
     final Alignment contentAnchor = Alignment(contentAlignX, contentAlignY);
 
-    // Safe overlay bounds for clamping open J-curve overshoot near screen edges.
-    final mediaQuery = MediaQuery.maybeOf(context);
-    final screenWidth = mediaQuery?.size.width ?? double.infinity;
-    final screenHeight = mediaQuery?.size.height ?? double.infinity;
-    final insets = _viewInsets();
-    final overlayOrigin = _triggerGlobalPosition - _triggerOverlayPosition;
-    final double minOverlayX =
-        widget.screenPadding.left + insets.left - overlayOrigin.dx;
-    final double maxOverlayX = screenWidth.isFinite
-        ? screenWidth -
-            widget.screenPadding.right -
-            insets.right -
-            overlayOrigin.dx
-        : double.infinity;
-    final double minOverlayY =
-        widget.screenPadding.top + insets.top - overlayOrigin.dy;
-    final double maxOverlayY = screenHeight.isFinite
-        ? screenHeight -
-            widget.screenPadding.bottom -
-            insets.bottom -
-            overlayOrigin.dy
-        : double.infinity;
-
     // InheritedWidget lookups — traverses the element tree; must NOT be inside
     // the AnimatedBuilder's builder closure.
     final effectiveSettings = GlassThemeHelpers.resolveSettings(
@@ -916,66 +1121,45 @@ class _GlassPopoverState extends State<GlassPopover>
         final bool showOverlayLayer =
             !_morphController.isClosing || state.isPlatterActive;
 
-        final double sizeProgress;
-        final double currentWidth;
-        final double currentHeight;
-        double blobLeft;
-        double blobTop;
-        double blobADriftX = 0.0;
-        double blobADriftY = 0.0;
-
-        if (_morphController.isClosing) {
-          sizeProgress =
-              (isPremium ? state.sizeT : (state.pathT + state.sizeT) * 0.5)
-                  .clamp(0.0, 1.0);
-          currentWidth = math.max(
-              1.0, lerpDouble(compactCore, popoverWidth, sizeProgress)!);
-          currentHeight = math.max(
-              1.0, lerpDouble(compactCore, popoverHeight, sizeProgress)!);
-          final double closePathT = state.pathT.clamp(0.0, 1.0);
-          final double recoilCatch = 1.0 - clampedValue;
-          final double blobCenterX = triggerCenterX +
-              travelDx * closePathT +
-              state.triggerPushDx * recoilCatch;
-          final double blobCenterY = triggerCenterY +
-              travelDy * closePathT +
-              state.triggerPushDy * recoilCatch;
-          blobLeft = blobCenterX - currentWidth * 0.5;
-          blobTop = blobCenterY - currentHeight * 0.5;
-        } else {
-          sizeProgress = state.sizeT.clamp(0.0, 1.25);
-          currentWidth = math.max(
-              1.0, lerpDouble(compactCore, popoverWidth, sizeProgress)!);
-          currentHeight = math.max(
-              1.0, lerpDouble(compactCore, popoverHeight, sizeProgress)!);
-          final double detachRelease = 1.0 - state.anchorScale * 0.55;
-          final double effectivePathT =
-              state.sizeT + (state.pathT - state.sizeT) * detachRelease;
-          final double blobCenterX = triggerCenterX + travelDx * effectivePathT;
-          final double blobCenterY = triggerCenterY + travelDy * effectivePathT;
-          blobLeft = blobCenterX - currentWidth * 0.5;
-          blobTop = blobCenterY - currentHeight * 0.5;
-          blobADriftX = travelDx *
-              (state.pathT - state.sizeT) *
-              (1.0 - state.anchorScale) *
-              0.35;
-          blobADriftY = travelDy *
-              (state.pathT - state.sizeT) *
-              (1.0 - state.anchorScale) *
-              0.35;
-
-          if (widget.autoAdjustToScreen && state.pathT > 1.0) {
-            if (maxOverlayX.isFinite &&
-                maxOverlayX - minOverlayX >= currentWidth) {
-              blobLeft =
-                  blobLeft.clamp(minOverlayX, maxOverlayX - currentWidth);
-            }
-            if (maxOverlayY.isFinite &&
-                maxOverlayY - minOverlayY >= currentHeight) {
-              blobTop = blobTop.clamp(minOverlayY, maxOverlayY - currentHeight);
-            }
-          }
+        if (!showOverlayLayer) {
+          _lastPlatterRect = null;
+          _lastPlatterRadius = null;
+          return const SizedBox.shrink();
         }
+
+        final baseGeo = _computeBasePopoverGeometry();
+        if (baseGeo == null) return const SizedBox.shrink();
+
+        final double interruptDecay =
+            (_platterInterruptCenterDelta != Offset.zero ||
+                    _platterInterruptSizeDelta != Offset.zero ||
+                    _platterInterruptRadiusDelta != 0.0)
+                ? math.exp(-22.0 * _morphController.phaseElapsedSeconds)
+                : 0.0;
+
+        final double currentWidth = math.max(
+            1.0,
+            baseGeo.rect.width +
+                _platterInterruptSizeDelta.dx * interruptDecay);
+        final double currentHeight = math.max(
+            1.0,
+            baseGeo.rect.height +
+                _platterInterruptSizeDelta.dy * interruptDecay);
+        final double shortestHalfNow =
+            math.max(0.0, math.min(currentWidth, currentHeight) * 0.5);
+        final double currentRadius =
+            (baseGeo.radius + _platterInterruptRadiusDelta * interruptDecay)
+                .clamp(0.0, shortestHalfNow);
+        final Offset effectiveCenter =
+            baseGeo.rect.center + _platterInterruptCenterDelta * interruptDecay;
+        final double blobLeft = effectiveCenter.dx - currentWidth * 0.5;
+        final double blobTop = effectiveCenter.dy - currentHeight * 0.5;
+        final double blobADriftX = baseGeo.blobADriftX;
+        final double blobADriftY = baseGeo.blobADriftY;
+
+        _lastPlatterRect =
+            Rect.fromLTWH(blobLeft, blobTop, currentWidth, currentHeight);
+        _lastPlatterRadius = currentRadius;
 
         final bool isWideTrigger = tw > th * 1.15;
         final double blobAWidth = math.max(
@@ -995,13 +1179,6 @@ class _GlassPopoverState extends State<GlassPopover>
           math.min(blobAWidth, blobAHeight) * 0.5,
         );
 
-        // Match native iOS 27 MagicMorphView #2:
-        // - On premium close: keep Blob A active throughout 0..~283ms at true
-        //   capsule dimensions (blobAWidth × th) and scale = triggerImpactScale
-        //   so the shrinking popover SDF-blends continuously into the expanding
-        //   centered capsule.
-        // - On open of wide triggers: let blobAWidth contract tw -> compactCore
-        //   first before fading Blob A's scale out over clampedValue 0.25..0.60.
         final bool showBlobA;
         final double blobAScale;
         if (_morphController.isClosing) {
@@ -1012,8 +1189,18 @@ class _GlassPopoverState extends State<GlassPopover>
             showBlobA = true;
             blobAScale = state.triggerImpactScale;
           } else {
-            showBlobA = state.anchorScale > 0.20;
-            blobAScale = state.anchorScale * state.triggerImpactScale;
+            final closeBlobAGrow =
+                LiquidMorphPhysics.computeCloseBlobAEmergence(
+              platterRect: _lastPlatterRect!,
+              platterRadius: currentRadius,
+              triggerCenter: Offset(
+                triggerCenterX + state.triggerPushDx,
+                triggerCenterY + state.triggerPushDy,
+              ),
+              rawValue: rawValue,
+            );
+            showBlobA = closeBlobAGrow > 0.001;
+            blobAScale = closeBlobAGrow * state.triggerImpactScale;
           }
         } else {
           final double openAnchorScale = isWideTrigger
@@ -1022,6 +1209,10 @@ class _GlassPopoverState extends State<GlassPopover>
           showBlobA = openAnchorScale > 0.20;
           blobAScale = openAnchorScale * state.triggerImpactScale;
         }
+
+        final double layerBlend = (_morphController.isClosing && showBlobA)
+            ? LiquidMorphPhysics.computeCloseBlend(rawValue: rawValue)
+            : state.blend;
 
         final bool showBarrier =
             !_morphController.isClosing && clampedValue > 0.3;
@@ -1062,7 +1253,7 @@ class _GlassPopoverState extends State<GlassPopover>
                 child: AdaptiveLiquidGlassLayer(
                   settings: rampedSettings,
                   quality: effectiveQuality,
-                  blendAmount: state.blend,
+                  blendAmount: layerBlend,
                   platformViewBackdrop: widget.platformViewBackdrop,
                   child: Builder(
                     builder: (context) {
@@ -1110,13 +1301,12 @@ class _GlassPopoverState extends State<GlassPopover>
                                     _morphController.isClosing,
                                 child: _buildPopoverContainer(
                                   state: state,
-                                  sizeProgress: sizeProgress.clamp(0.0, 1.0),
+                                  currentRadius: currentRadius,
                                   currentWidth: currentWidth,
                                   currentHeight: currentHeight,
                                   effectiveSettings: rampedSettings,
                                   effectiveQuality: effectiveQuality,
                                   isDark: isDark,
-                                  targetHeight: popoverHeight,
                                   contentAnchor: contentAnchor,
                                 ),
                               ),
@@ -1129,7 +1319,7 @@ class _GlassPopoverState extends State<GlassPopover>
                           LiquidGlassBlendGroup.maybeOf(context) == null;
                       return needsInnerBlendGroup
                           ? LiquidGlassBlendGroup(
-                              blend: state.blend,
+                              blend: layerBlend,
                               child: blobStack,
                             )
                           : blobStack;
@@ -1152,24 +1342,14 @@ class _GlassPopoverState extends State<GlassPopover>
 
   Widget _buildPopoverContainer({
     required LiquidMorphState state,
-    required double sizeProgress,
+    required double currentRadius,
     required double currentWidth,
     required double currentHeight,
     required LiquidGlassSettings effectiveSettings,
     required GlassQuality effectiveQuality,
     required bool isDark,
-    required double targetHeight,
     required Alignment contentAnchor,
   }) {
-    final double triggerRadius =
-        _triggerBorderRadius ?? (_triggerSize!.shortestSide / 2.0);
-    final double currentRadius = LiquidMorphPhysics.computeCornerRadius(
-      currentSize: Size(currentWidth, currentHeight),
-      triggerRadius: triggerRadius,
-      targetRadius: widget.popoverBorderRadius,
-      progress: sizeProgress,
-    );
-
     final teardropShape = LiquidRoundedSuperellipse(
       borderRadius: currentRadius,
     );
@@ -1245,6 +1425,7 @@ class _GlassPopoverState extends State<GlassPopover>
                   if (rawContentOpacity > 0.01)
                     _buildContentWithMeasurement(
                       contentOpacity: effectiveContentOpacity,
+                      contentBlurSigma: state.contentBlurSigma,
                       currentWidth: currentWidth,
                       contentAnchor: contentAnchor,
                     ),
@@ -1259,11 +1440,12 @@ class _GlassPopoverState extends State<GlassPopover>
 
   Widget _buildContentWithMeasurement({
     required double contentOpacity,
+    required double contentBlurSigma,
     required double currentWidth,
     required Alignment contentAnchor,
   }) {
     final double contentScale = widget.popoverWidth > 0.0
-        ? (currentWidth / widget.popoverWidth).clamp(0.0, 1.2)
+        ? (currentWidth / widget.popoverWidth).clamp(0.20, 1.2)
         : 1.0;
 
     final content =
@@ -1289,6 +1471,17 @@ class _GlassPopoverState extends State<GlassPopover>
         width: widget.popoverWidth,
         height: widget.popoverHeight,
         child: content,
+      );
+    }
+
+    if (contentBlurSigma >= 0.05) {
+      measuredContent = ImageFiltered(
+        imageFilter: ImageFilter.blur(
+          sigmaX: contentBlurSigma,
+          sigmaY: contentBlurSigma,
+          tileMode: TileMode.decal,
+        ),
+        child: measuredContent,
       );
     }
 

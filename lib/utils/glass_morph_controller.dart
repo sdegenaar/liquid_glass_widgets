@@ -89,8 +89,19 @@ class GlassMorphController extends ChangeNotifier {
   /// `~17 px` native menu kick, used by `GlassMenu`).
   double recoilHalfTravelPx = LiquidMorphPhysics.defaultRecoilHalfTravelPx;
 
+  /// When `true`, restricts close trigger recoil strictly to the vertical axis
+  /// (`triggerPushDx == 0.0` whenever vertical travel is non-zero), matching
+  /// native iOS 27 `MagicMorphView` #2 (`tx = 0.0`) on side-aligned menus.
+  bool verticalOnlyRecoil = false;
+
+  /// Open progress (`[0, 1]`) at the instant [open] was invoked (`0.0` when
+  /// opening from rest, `> 0.0` when reversing mid-close), used to attenuate
+  /// open-phase drift and roundness holds on partial reopens.
+  double _openStartProgress = 0.0;
+
   /// Open progress (`[0, 1]`) at the instant [close] was invoked, scaling
-  /// trigger recoil proportionally when an incomplete open is reversed early.
+  /// trigger recoil and close drift proportionally when an incomplete open is
+  /// reversed early.
   double _closeStartProgress = 0.0;
 
   // ─── Public accessors ─────────────────────────────────────────────────────
@@ -133,6 +144,14 @@ class GlassMorphController extends ChangeNotifier {
   /// width spring at an offset time.
   double get phaseStartTriggerWidth => _phaseStartTriggerWidth;
 
+  /// Animation progress (`0.0 – 1.0`) captured at the start of the current
+  /// [open] phase (`0.0` when opening from rest).
+  double get openStartProgress => _openStartProgress;
+
+  /// Animation progress (`0.0 – 1.0`) captured at the start of the current
+  /// [close] phase (`1.0` when closing from settled open).
+  double get closeStartProgress => _closeStartProgress;
+
   /// Whether the morph lifecycle is currently active.
   ///
   /// `true` from [open] until the closing spring — including the parallel
@@ -165,6 +184,10 @@ class GlassMorphController extends ChangeNotifier {
 
   /// Opens the morph animation from the current position.
   void open() {
+    final bool inFlight =
+        _animationController.value > 0.001 && !(_isClosing && _hasHandedOff);
+    _openStartProgress =
+        inFlight ? _animationController.value.clamp(0.0, 1.0) : 0.0;
     _phaseStartTriggerWidth = _currentTriggerWidthProgress().clamp(0.0, 1.0);
     _isClosing = false;
     _hasHandedOff = false;
@@ -202,6 +225,7 @@ class GlassMorphController extends ChangeNotifier {
     _hasHandedOff = false;
     _lastElapsedSeconds = 0.0;
     _phaseStartTriggerWidth = 1.0;
+    _openStartProgress = 0.0;
     _closeStartProgress = 0.0;
     _animationController.value = 0.0;
     notifyListeners();
@@ -267,6 +291,7 @@ class GlassMorphController extends ChangeNotifier {
       phaseStartTriggerWidth: _phaseStartTriggerWidth,
       closeStartProgress: _closeStartProgress,
       recoilHalfTravelPx: recoilHalfTravelPx,
+      verticalOnlyRecoil: verticalOnlyRecoil,
     );
   }
 

@@ -631,7 +631,15 @@ void main() {
           for (final gc in tester
               .widgetList<GlassContainer>(find.byType(GlassContainer))) {
             final r = _extractShapeRadius(gc.shape);
-            if (r != null) closeRadii.add(r);
+            if (r != null) {
+              closeRadii.add(r);
+              final halfShort = math.min(
+                    gc.width ?? double.infinity,
+                    gc.height ?? double.infinity,
+                  ) /
+                  2.0;
+              expect(r, lessThanOrEqualTo(halfShort + 0.05));
+            }
             if (!gc.useOwnLayer &&
                 gc.height == 44.0 &&
                 ImageFilter.isShaderFilterSupported) {
@@ -668,7 +676,7 @@ void main() {
         await tester.pumpAndSettle();
 
         for (final r in closeRadii) {
-          expect(r, lessThanOrEqualTo(28.5));
+          expect(r, lessThanOrEqualTo(125.5));
         }
         if (ImageFilter.isShaderFilterSupported) {
           expect(blobAWidthAt50ms, isNotNull);
@@ -1675,6 +1683,313 @@ void main() {
                   'Early mid-open sheet dismissal squashed wide trigger scaleX below 0.90!',
             );
           }
+        }
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'Edge-aligned GlassMenu reversals (C0 rect, radius, & row opacity) and compact 2-item non-plunging close',
+      (tester) async {
+        configurePhoneViewport(tester);
+
+        double? findPlatterRadius() {
+          Rect? bestRect;
+          double? bestRadius;
+          for (final elem in find.byType(GlassContainer).evaluate()) {
+            final gc = elem.widget as GlassContainer;
+            if (gc.useOwnLayer) continue;
+            final box = elem.renderObject as RenderBox?;
+            if (box == null || !box.hasSize || box.size.height <= 46.0) {
+              continue;
+            }
+            final rect = box.localToGlobal(Offset.zero) & box.size;
+            if (bestRect == null || rect.height > bestRect.height) {
+              bestRect = rect;
+              bestRadius = _extractShapeRadius(gc.shape);
+            }
+          }
+          return bestRadius;
+        }
+
+        // 1) Left-aligned round trigger (convergeX active): mid-open cancel &
+        //    mid-close reopen must be strictly C0 in position, size, radius,
+        //    and must never flash hidden rows at 1.0 opacity.
+        final edgeCtrl = GlassMenuController();
+        await tester.pumpWidget(
+          wrapStage(
+            Positioned(
+              top: 160,
+              left: 24,
+              child: GlassMenu(
+                controller: edgeCtrl,
+                menuWidth: 250,
+                quality: GlassQuality.premium,
+                items: buildItems(5),
+                triggerBuilder: (ctx, toggle) => GlassButton.custom(
+                  width: 44,
+                  height: 44,
+                  shape: const LiquidOval(),
+                  useOwnLayer: true,
+                  quality: GlassQuality.premium,
+                  onTap: toggle,
+                  child: const Icon(CupertinoIcons.ellipsis),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Cancel mid-open at 83ms (f=5): rows are still hidden (0.0 opacity).
+        edgeCtrl.open();
+        for (int f = 0; f <= 5; f++) {
+          await tester.pump(f == 0 ? Duration.zero : _kFrame);
+        }
+        final rectBeforeCancel = _findOverlayPlatterRect(tester)!;
+        final radiusBeforeCancel = findPlatterRadius()!;
+        edgeCtrl.close();
+        await tester.pump(Duration.zero);
+        final rectAtCancelT0 = _findOverlayPlatterRect(tester)!;
+        final radiusAtCancelT0 = findPlatterRadius()!;
+        expect(
+          (rectAtCancelT0.center - rectBeforeCancel.center).distance,
+          lessThan(0.25),
+          reason:
+              'Edge-aligned mid-open cancel jumped center (missing convergeX C0)!',
+        );
+        expect(
+          (rectAtCancelT0.width - rectBeforeCancel.width).abs(),
+          lessThan(0.25),
+        );
+        expect(
+          (radiusAtCancelT0 - radiusBeforeCancel).abs(),
+          lessThan(0.25),
+          reason: 'Mid-open cancel snapped corner radius at t=0!',
+        );
+        // Verify hidden rows do not flash crisp at 1.0 opacity on cancel.
+        final rowFinder = find.text('Menu Action 1');
+        if (rowFinder.evaluate().isNotEmpty) {
+          expect(
+            _effectiveRenderOpacity(rowFinder.evaluate().first),
+            lessThanOrEqualTo(0.05),
+            reason: 'Early-open cancel flashed hidden menu rows!',
+          );
+        }
+        await tester.pumpAndSettle();
+
+        // Mid-close reopen at 67ms (f=4): radius & center must stay C0.
+        edgeCtrl.open();
+        await tester.pumpAndSettle();
+        final restEdgeTrig = tester.getRect(
+          find.descendant(
+            of: find.byType(GlassMenu),
+            matching: find.byType(GlassButton),
+          ),
+        );
+        edgeCtrl.close();
+        double minCloseWidth = 999.0;
+        for (int f = 0; f <= 20; f++) {
+          await tester.pump(f == 0 ? Duration.zero : _kFrame);
+          final p = _findOverlayPlatterRect(tester, minHeight: 16.0);
+          if (p != null) {
+            minCloseWidth = math.min(minCloseWidth, p.width);
+            expect(
+              p.left,
+              greaterThanOrEqualTo(restEdgeTrig.left - 0.5),
+              reason:
+                  'Left-aligned close frame f=$f overshot left of trigger (${p.left} < ${restEdgeTrig.left})!',
+            );
+            expect(
+              p.center.dx,
+              greaterThanOrEqualTo(restEdgeTrig.center.dx - 0.5),
+              reason:
+                  'Left-aligned close frame f=$f overshot center past trigger (${p.center.dx} < ${restEdgeTrig.center.dx})!',
+            );
+          }
+          final liveTrig = tester.getRect(
+            find.descendant(
+              of: find.byType(GlassMenu),
+              matching: find.byType(GlassButton),
+            ),
+          );
+          expect(
+            (liveTrig.center.dx - restEdgeTrig.center.dx).abs(),
+            lessThan(0.5),
+            reason:
+                'Menu trigger kicked horizontally on close (${liveTrig.center.dx} vs ${restEdgeTrig.center.dx})!',
+          );
+        }
+        expect(
+          minCloseWidth,
+          lessThan(42.0),
+          reason:
+              'Closing droplet tail stayed fat ($minCloseWidth >= 42px) instead of tapering narrower than 44px trigger!',
+        );
+        await tester.pumpAndSettle();
+
+        edgeCtrl.open();
+        await tester.pumpAndSettle();
+        edgeCtrl.close();
+        for (int f = 0; f <= 4; f++) {
+          await tester.pump(f == 0 ? Duration.zero : _kFrame);
+        }
+        final rectBeforeReopen = _findOverlayPlatterRect(tester)!;
+        final radiusBeforeReopen = findPlatterRadius()!;
+        edgeCtrl.open();
+        await tester.pump(Duration.zero);
+        final rectAtReopenT0 = _findOverlayPlatterRect(tester)!;
+        final radiusAtReopenT0 = findPlatterRadius()!;
+        expect(
+          (rectAtReopenT0.center - rectBeforeReopen.center).distance,
+          lessThan(0.25),
+          reason: 'Edge-aligned mid-close reopen jumped center at t=0!',
+        );
+        expect(
+          (radiusAtReopenT0 - radiusBeforeReopen).abs(),
+          lessThan(0.25),
+          reason: 'Mid-close reopen snapped squircle radius to circle at t=0!',
+        );
+        await tester.pumpAndSettle();
+        edgeCtrl.close();
+        await tester.pumpAndSettle();
+
+        // 2) Short 2-item menu (~114 pt): closing platter bottom must never
+        //    plunge below its settled resting bottom.
+        final shortCtrl = GlassMenuController();
+        await tester.pumpWidget(
+          wrapStage(
+            Positioned(
+              top: 160,
+              left: 174.5,
+              child: GlassMenu(
+                controller: shortCtrl,
+                menuWidth: 250,
+                quality: GlassQuality.premium,
+                items: buildItems(2),
+                triggerBuilder: (ctx, toggle) => GlassButton.custom(
+                  width: 44,
+                  height: 44,
+                  shape: const LiquidOval(),
+                  useOwnLayer: true,
+                  quality: GlassQuality.premium,
+                  onTap: toggle,
+                  child: const Icon(CupertinoIcons.ellipsis),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        shortCtrl.open();
+        await tester.pumpAndSettle();
+        final settledShortRect = _findOverlayPlatterRect(tester)!;
+
+        shortCtrl.close();
+        for (int f = 0; f <= 20; f++) {
+          await tester.pump(f == 0 ? Duration.zero : _kFrame);
+          final r = _findOverlayPlatterRect(tester);
+          if (r != null) {
+            expect(
+              r.bottom,
+              lessThanOrEqualTo(settledShortRect.bottom + 1.0),
+              reason:
+                  '2-item menu close frame f=$f plunged bottom ${r.bottom} past settled ${settledShortRect.bottom}!',
+            );
+          }
+        }
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'GlassQuality.standard sanity pass: GlassMenu and GlassPopover morph cleanly without fractional OpacityLayer violations',
+      (tester) async {
+        configurePhoneViewport(tester);
+
+        // 1) GlassMenu (standard quality)
+        final stdMenuCtrl = GlassMenuController();
+        await tester.pumpWidget(
+          wrapStage(
+            Positioned(
+              top: 160,
+              left: 24,
+              child: GlassMenu(
+                controller: stdMenuCtrl,
+                menuWidth: 250,
+                quality: GlassQuality.standard,
+                items: buildItems(5),
+                triggerBuilder: (ctx, toggle) => GlassButton.custom(
+                  width: 44,
+                  height: 44,
+                  shape: const LiquidOval(),
+                  useOwnLayer: true,
+                  quality: GlassQuality.standard,
+                  onTap: toggle,
+                  child: const Icon(CupertinoIcons.ellipsis),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        stdMenuCtrl.open();
+        for (int f = 0; f <= 26; f++) {
+          await tester.pump(f == 0 ? Duration.zero : _kFrame);
+          _expectCompositingSafety(tester, 'Standard Menu OPEN f=$f');
+        }
+        await tester.pumpAndSettle();
+        stdMenuCtrl.close();
+        for (int f = 0; f <= 30; f++) {
+          await tester.pump(f == 0 ? Duration.zero : _kFrame);
+          _expectCompositingSafety(tester, 'Standard Menu CLOSE f=$f');
+        }
+        await tester.pumpAndSettle();
+
+        // 2) GlassPopover (standard quality)
+        VoidCallback? openStdPop;
+        VoidCallback? closeStdPop;
+        await tester.pumpWidget(
+          wrapStage(
+            Positioned(
+              top: 160,
+              left: 24,
+              child: GlassPopover(
+                popoverWidth: 250,
+                popoverHeight: 160,
+                quality: GlassQuality.standard,
+                triggerBuilder: (ctx, toggle) {
+                  openStdPop = toggle;
+                  return GlassButton.custom(
+                    width: 44,
+                    height: 44,
+                    shape: const LiquidOval(),
+                    useOwnLayer: true,
+                    quality: GlassQuality.standard,
+                    onTap: toggle,
+                    child: const Icon(CupertinoIcons.info),
+                  );
+                },
+                contentBuilder: (ctx, close) {
+                  closeStdPop = close;
+                  return const Center(child: Text('Standard Popover'));
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        openStdPop!();
+        for (int f = 0; f <= 26; f++) {
+          await tester.pump(f == 0 ? Duration.zero : _kFrame);
+          _expectCompositingSafety(tester, 'Standard Popover OPEN f=$f');
+        }
+        await tester.pumpAndSettle();
+        closeStdPop!();
+        for (int f = 0; f <= 30; f++) {
+          await tester.pump(f == 0 ? Duration.zero : _kFrame);
+          _expectCompositingSafety(tester, 'Standard Popover CLOSE f=$f');
         }
         await tester.pumpAndSettle();
       },

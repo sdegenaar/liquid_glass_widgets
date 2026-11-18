@@ -305,6 +305,10 @@ class LiquidMorphPhysics {
   /// Maximum SDF blend value to prevent excessive merging on small movements.
   static const double _maxBlend = 28.0;
 
+  /// Peak SDF blend value on close so the teardrop neck stays slender and
+  /// concave without bloating the trigger/tail waist.
+  static const double _closeMaxBlend = 22.0;
+
   /// Maximum travel distance (logical pixels) for stateless legacy `rawValue < 0` push.
   static const double _maxPushTravelPx = 80.0;
 
@@ -338,21 +342,19 @@ class LiquidMorphPhysics {
   static const double _closeDriftPeakPx = 49.0;
   static const double _closeDriftPeakTallPx = 62.0;
 
-  /// Peak of `S(τ; 24, 0.6) − S(τ; 20, 0.9)` (`≈ 0.2849`), used to normalise
+  /// Peak of `S(τ; 24, 0.6) − S(τ; 20, 0.9)` (`≈ 0.2865`), used to normalise
   /// [computeOpenDrift] to a unit pulse.
-  static const double _openDriftUnitPeak = 0.2849;
+  static const double _openDriftUnitPeak = 0.2865;
 
   /// Peak vertical drift (px) of the opening platter (see [computeOpenDrift]).
   /// Native silhouette centres lead the size-synchronous centre by
   /// `36 / 46 / 51 / 34 / 24 pt` at `33 / 67 / 100 / 133 / 167 ms`.
   static const double _openDriftPeakPx = 56.0;
 
-  /// Peak drift for menus up to 250 pt tall (see [computeOpenDrift]).
-  static const double _openDriftPeakShortPx = 66.0;
-
-  /// The fitted pulse is evaluated this many seconds ahead of the controller
-  /// clock (native's visible drift leads our phase time by ~15 ms).
-  static const double _openDriftLeadSeconds = 0.015;
+  /// Peak drift for 5-item (~250 pt) and 2-item (~104 pt) menus
+  /// (see [computeOpenDrift]).
+  static const double _openDriftPeakMediumPx = 66.0;
+  static const double _openDriftPeakCompactPx = 12.0;
 
   // ─── Public helpers ────────────────────────────────────────────────────────
 
@@ -504,21 +506,28 @@ class LiquidMorphPhysics {
   }
 
   /// Absolute height envelope (logical px) of the closing glass blob:
-  /// `coreHeight + 400 · u^1.1` with `u = rawValue`.
+  /// `coreHeight + 400 · u^1.1` with `u = rawValue`, plus any excess
+  /// [restingHeight] above `coreHeight + 400` decaying rapidly as `u^2.5`.
   ///
   /// Native glass collapses faster in height than the uniform platter scale
   /// for tall menus and converges to the *same absolute height regardless of
   /// the menu size* (`≈109 pt @ 150 ms` for both a 5- and a 10-item menu in
   /// 60 fps silhouettes), so a tall menu retracts as a droplet of fixed length
-  /// instead of hanging as a tall pill. Short menus (`H · scale` below the
+  /// instead of hanging as a tall pill — without snapping height at `u = 1.0`
+  /// when `restingHeight > 444 pt`. Short menus (`H · scale` below the
   /// envelope) are unaffected. Pass the result as
   /// [computeClosingPlatterRect]'s `maxHeight`.
   static double computeCloseHeightEnvelope({
     required double coreHeight,
     required double rawValue,
+    double restingHeight = 0.0,
   }) {
     final u = rawValue.clamp(0.0, 1.0);
-    return coreHeight + _closeHeightEnvelopePx * math.pow(u, 1.1);
+    final baseEnvelope =
+        coreHeight + _closeHeightEnvelopePx * math.pow(u, 1.1).toDouble();
+    final extraAboveEnvelope =
+        math.max(0.0, restingHeight - (coreHeight + _closeHeightEnvelopePx));
+    return baseEnvelope + extraAboveEnvelope * math.pow(u, 2.5).toDouble();
   }
 
   /// Computes the corner radius of the **opening** platter from the time since
@@ -532,19 +541,20 @@ class LiquidMorphPhysics {
   ///
   /// `ρ(t) = ρ₀ + (1 − ρ₀)·(1 − (t − 0.14) / 0.145)^1.3` for `t > 0.14 s`
   /// (clamped), with `ρ₀ = targetRadius / (min(restingSize) / 2)`. [elapsedSeconds]
-  /// is the speed-scaled phase time (`GlassMorphController.phaseElapsedSeconds`).
+  /// is the speed-scaled phase time (`GlassMorphController.phaseElapsedSeconds`),
+  /// shifted forward proportionally by [openStartProgress] on mid-close reopens.
   static double computeOpenCornerRadius({
     required Size currentSize,
     required Size restingSize,
     required double targetRadius,
     required double elapsedSeconds,
+    double openStartProgress = 0.0,
   }) {
     final shortestHalf =
         math.max(0.0, math.min(currentSize.width, currentSize.height) / 2.0);
     final restingHalf =
         math.max(1e-3, math.min(restingSize.width, restingSize.height) / 2.0);
     final rho0 = (targetRadius / restingHalf).clamp(0.0, 1.0);
-    final t = elapsedSeconds - _openOnsetLagSeconds;
     // Taller menus leave the bubble shape sooner: native roundness at 133 ms is
     // ~1.0 for a 251 pt menu but 0.62 for a 521 pt one. Interpolate the hold
     // (0.14 → 0.07 s) and relax (0.145 → 0.18 s) windows between those two
@@ -552,6 +562,8 @@ class LiquidMorphPhysics {
     final heightF = ((restingSize.height - 250.0) / 270.0).clamp(0.0, 1.0);
     final hold = _openRoundnessHoldSeconds * (1.0 - 0.5 * heightF);
     final relax = _openRoundnessRelaxSeconds * (1.0 + 0.24 * heightF);
+    final reopenAdvance = openStartProgress.clamp(0.0, 1.0) * (hold + relax);
+    final t = elapsedSeconds + reopenAdvance - _openOnsetLagSeconds;
     final k = ((t - hold) / relax).clamp(0.0, 1.0);
     final roundness = rho0 + (1.0 - rho0) * math.pow(1.0 - k, 1.3);
     return shortestHalf * roundness.clamp(0.0, 1.0);
@@ -561,9 +573,15 @@ class LiquidMorphPhysics {
   ///
   /// Native shows the rows only after the bubble is almost full size: crisp
   /// glyph pixels are `≈ 0.04 @ 183 ms`, `0.48 @ 200 ms`, `0.81 @ 217 ms`.
-  /// Smoothstep over `t ∈ [0.12, 0.22] s` (after [_openOnsetLagSeconds]).
-  static double computeOpenContentOpacity({required double elapsedSeconds}) {
-    final t = elapsedSeconds - _openOnsetLagSeconds;
+  /// Smoothstep over `t ∈ [0.12, 0.22] s` (after [_openOnsetLagSeconds]),
+  /// advanced proportionally by [openStartProgress] on mid-close reopens.
+  static double computeOpenContentOpacity({
+    required double elapsedSeconds,
+    double openStartProgress = 0.0,
+  }) {
+    final t = elapsedSeconds +
+        openStartProgress.clamp(0.0, 1.0) * 0.22 -
+        _openOnsetLagSeconds;
     return _smoothstep01((t - 0.12) / 0.10);
   }
 
@@ -571,8 +589,13 @@ class LiquidMorphPhysics {
   /// **opens**: soft until `~130 ms`, sharp by `~230 ms` (native text arrives
   /// smeared and resolves as the bubble relaxes), capped at
   /// [_closeContentBlurMaxSigma].
-  static double computeOpenContentBlur({required double elapsedSeconds}) {
-    final t = elapsedSeconds - _openOnsetLagSeconds;
+  static double computeOpenContentBlur({
+    required double elapsedSeconds,
+    double openStartProgress = 0.0,
+  }) {
+    final t = elapsedSeconds +
+        openStartProgress.clamp(0.0, 1.0) * 0.23 -
+        _openOnsetLagSeconds;
     return _closeContentBlurMaxSigma * (1.0 - _smoothstep01((t - 0.13) / 0.10));
   }
 
@@ -584,32 +607,37 @@ class LiquidMorphPhysics {
   /// `+46.9 pt` and springs back with a small `−2 pt` undershoot. A
   /// closed-form two-spring fit to the 60 fps trace (`0.8 px` RMS) is
   /// `A · [S(τ; ω = 24, ζ = 0.6) − S(τ; ω = 20, ζ = 0.9)]`, peaking `~110 ms`
-  /// after onset. Because it is a pure function of time with zero initial
-  /// velocity it is smooth, unlike a clamped path/size-separation product, so
-  /// it cannot cause an open shake.
-  ///
-  /// Returns `0 … [_openDriftPeakPx]`; [elapsedSeconds] is the speed-scaled
-  /// phase time.
+  /// after onset. Starting strictly at `0.0` (`elapsedSeconds == 0`) and
+  /// scaling down for compact (`< 250 pt`) menus (`~13.7 pt` native peak on a
+  /// 2-item `104 pt` menu) and partial mid-close reopens ([openStartProgress])
+  /// keeps open trajectories C¹ smooth and proportional across all heights.
   static double computeOpenDrift({
     required double elapsedSeconds,
     double menuHeight = 520.0,
+    double openStartProgress = 0.0,
   }) {
-    final tau = elapsedSeconds + _openDriftLeadSeconds;
-    if (tau <= 0.0) return 0.0;
-    final diff = _stepResponse(tau, 24.0, 0.6) - _stepResponse(tau, 20.0, 0.9);
+    if (elapsedSeconds <= 0.0) return 0.0;
+    final diff = _stepResponse(elapsedSeconds, 24.0, 0.6) -
+        _stepResponse(elapsedSeconds, 20.0, 0.9);
     // The traced tail undershoots by ~2 pt and decays over ~700 ms, but the
     // open controller settles at ~420 ms. Fade the pulse to exactly zero by
     // 0.40 s so a settled menu never rests off its true position.
     final fade = 1.0 - _smoothstep01((elapsedSeconds - 0.26) / 0.14);
-    // Native centre overshoot is ~30 pt for 251 pt menus but ~10 pt for
-    // 521 pt ones (silhouette centre overshoot of 36 / 30 / 26 / 27 pt for
-    // 251 pt menus vs 10 / 19 pt for 521 pt ones), so the
-    // amplitude falls from [_openDriftPeakShortPx] to [_openDriftPeakPx]
-    // between those heights.
-    final heightF = ((menuHeight - 250.0) / 270.0).clamp(0.0, 1.0);
-    final peak = _openDriftPeakShortPx +
-        (_openDriftPeakPx - _openDriftPeakShortPx) * heightF;
-    return peak * diff / _openDriftUnitPeak * fade;
+    final double peak;
+    if (menuHeight < 250.0) {
+      // Compact menus (< 250 pt): native 2-item (104 pt) peaks at ~13.7 pt
+      // rather than 66 pt; taper smoothly down to 0 below trigger height (48 pt).
+      final tinyScale = ((menuHeight - 48.0) / 56.0).clamp(0.0, 1.0);
+      final compactBase = _openDriftPeakCompactPx * tinyScale;
+      final shortF = ((menuHeight - 104.0) / 146.0).clamp(0.0, 1.0);
+      peak = compactBase + (_openDriftPeakMediumPx - compactBase) * shortF;
+    } else {
+      final heightF = ((menuHeight - 250.0) / 270.0).clamp(0.0, 1.0);
+      peak = _openDriftPeakMediumPx +
+          (_openDriftPeakPx - _openDriftPeakMediumPx) * heightF;
+    }
+    final remainingTravel = 1.0 - openStartProgress.clamp(0.0, 1.0);
+    return peak * diff / _openDriftUnitPeak * fade * remainingTravel;
   }
 
   /// Open size progress of a large `GlassMenu` morph (`scaleDelta > 3`) as a
@@ -624,21 +652,37 @@ class LiquidMorphPhysics {
   static double computeMenuOpenSizeProgress(double rawValue) =>
       math.pow(rawValue.clamp(0.0, 1.0), 0.55).toDouble();
 
+  /// Effective uniform glass scale for a closing menu platter (Blob B) of
+  /// [menuWidth] returning into a trigger of shortest side [minTriggerSide].
+  ///
+  /// Matches `_UIContextMenuView`'s `0.20 + 0.80 · u` down to `u = 0.24`, then
+  /// tapers the `0.20` floor smoothly down to `0.56 · minTriggerSide / menuWidth`
+  /// (`~25 px` for a `44 px` trigger) so the retracting SDF droplet forms a
+  /// slender tail narrower than the trigger instead of stalling at `50 px`.
+  static double computeCloseGlassScale({
+    required double rawValue,
+    required double minTriggerSide,
+    required double menuWidth,
+  }) {
+    final u = rawValue.clamp(0.0, 1.0);
+    if (menuWidth <= 0.0) return (0.20 + 0.80 * u).clamp(0.08, 1.0);
+    final tailScale = (0.56 * minTriggerSide / menuWidth).clamp(0.08, 0.20);
+    final floor = tailScale + (0.20 - tailScale) * _smoothstep01(u / 0.24);
+    return (floor + (1.0 - floor) * u).clamp(0.08, 1.0);
+  }
+
   /// SDF smooth-union strength (blur units) between the closing platter and
   /// the trigger blob.
   ///
   /// Native retracts as **one continuous teardrop**: the platter tapers into a
-  /// pointed neck that flows into the trigger. The generic
-  /// `|pathT − sizeT| · 150 · attenuation` blend is almost zero on close for
-  /// large morphs, so the trigger circle and the shrinking platter read as two
-  /// touching shapes with a notch between them. This drives the blend directly:
-  /// it ramps in over `rawValue ∈ [0.97, 0.77]`, holds [_maxBlend], and ramps
-  /// back to 0 over the last `0.08` as the droplet is absorbed.
+  /// pointed neck that flows into the trigger. Ramps in over `rawValue ∈ [0.97, 0.77]`
+  /// to [_closeMaxBlend] (`22.0`) and tapers smoothly over the final `0.16`
+  /// as the slender tail is absorbed so smooth-union never bloats the waist.
   static double computeCloseBlend({required double rawValue}) {
     final u = rawValue.clamp(0.0, 1.0);
     final rampIn = _smoothstep01((0.97 - u) / 0.20);
-    final rampOut = 1.0 - _smoothstep01((0.08 - u) / 0.08);
-    return _maxBlend * rampIn * rampOut;
+    final rampOut = 1.0 - _smoothstep01((0.16 - u) / 0.16);
+    return _closeMaxBlend * rampIn * rampOut;
   }
 
   /// Close-phase displacement (logical px, always `>= 0`; callers multiply by
@@ -653,19 +697,157 @@ class LiquidMorphPhysics {
   ///
   /// Closed form fitted to the 60 fps trace (`0.35 px` RMS):
   /// `A · S(τ; ω = 20, ζ = 1) · (1 − S(τ; ω = 24, ζ = 1))`, peaking
-  /// `≈ 49 px` (`≈ 62 px` for 521 pt menus, whose silhouette top travels
-  /// proportionally further). [elapsedSeconds] is the speed-scaled close time.
+  /// `≈ 49 px` at `250 pt` (`≈ 62 px` at `521 pt`), tapering smoothly toward
+  /// `0` for compact (`< 250 pt`) menus so short 1–2 item platters never dip
+  /// past their resting bottom, and scaled by [closeStartProgress] on partial
+  /// mid-open cancellations.
   static double computeCloseDrift({
     required double elapsedSeconds,
     double menuHeight = 250.0,
+    double closeStartProgress = 1.0,
   }) {
-    if (elapsedSeconds <= 0.0) return 0.0;
+    if (elapsedSeconds <= 0.0 || closeStartProgress <= 0.001) return 0.0;
     final unit = _stepResponse(elapsedSeconds, 20.0, 1.0) *
         (1.0 - _stepResponse(elapsedSeconds, 24.0, 1.0));
-    final heightF = ((menuHeight - 250.0) / 270.0).clamp(0.0, 1.0);
-    final peak = _closeDriftPeakPx +
-        (_closeDriftPeakTallPx - _closeDriftPeakPx) * heightF;
-    return peak * unit / _closeDriftUnitPeak;
+    final double peak;
+    if (menuHeight < 250.0) {
+      final shortF = ((menuHeight - 95.0) / 155.0).clamp(0.0, 1.0);
+      peak = _closeDriftPeakPx * shortF;
+    } else {
+      final heightF = ((menuHeight - 250.0) / 270.0).clamp(0.0, 1.0);
+      peak = _closeDriftPeakPx +
+          (_closeDriftPeakTallPx - _closeDriftPeakPx) * heightF;
+    }
+    return peak *
+        unit /
+        _closeDriftUnitPeak *
+        closeStartProgress.clamp(0.0, 1.0);
+  }
+
+  /// Computes the gap-gated scale factor (`0.0`, or `0.45 → 1.0`) for the
+  /// trigger's ghost blob (Blob A) during close so it stays hidden while the
+  /// droplet pulls away and emerges inside the smooth-union bridge reach with
+  /// zero detached-dot frames.
+  static double computeCloseBlobAEmergence({
+    required Rect platterRect,
+    required double platterRadius,
+    required Offset triggerCenter,
+    required double rawValue,
+  }) {
+    final u = rawValue.clamp(0.0, 1.0);
+    final r = math.min(
+      platterRadius,
+      math.min(platterRect.width, platterRect.height) * 0.5,
+    );
+    final inner = platterRect.deflate(r);
+    final ddx = math.max(
+      math.max(inner.left - triggerCenter.dx, triggerCenter.dx - inner.right),
+      0.0,
+    );
+    final ddy = math.max(
+      math.max(inner.top - triggerCenter.dy, triggerCenter.dy - inner.bottom),
+      0.0,
+    );
+    final gap = math.max(0.0, math.sqrt(ddx * ddx + ddy * ddy) - r);
+    final byTime = _smoothstep01((0.40 - u) / 0.12);
+    final byGap = _smoothstep01((24.0 - gap) / 11.0);
+    final emerge = math.min(byTime, byGap);
+    return emerge <= 0.001 ? 0.0 : (0.45 + 0.55 * emerge);
+  }
+
+  /// Shared analytical close-phase geometry (`rect` and `borderRadius`) for
+  /// trigger-anchored platters (`GlassMenu` and `GlassPopover`), combining
+  /// uniform pivot scaling ([computeClosingPlatterRect]), slender tail taper
+  /// ([computeCloseGlassScale]), tall-platter droplet height envelope
+  /// ([computeCloseHeightEnvelope]), close neck drift ([computeCloseDrift]),
+  /// diagonal-to-vertical tail convergence, and outer-edge non-overshoot.
+  static ({Rect rect, double borderRadius}) computeClosingTeardropGeometry({
+    required double rawValue,
+    required double pathT,
+    required Offset triggerCenter,
+    required Size triggerSize,
+    required Rect restingRect,
+    required double targetRadius,
+    required Offset effectivePush,
+    required double elapsedSeconds,
+    double closeStartProgress = 1.0,
+    double alignX = 0.0,
+    bool disableAnimations = false,
+    bool morphFromZero = false,
+  }) {
+    final u = rawValue.clamp(0.0, 1.0);
+    final tw = triggerSize.width;
+    final th = triggerSize.height;
+    final minTriggerSide = math.min(tw, th);
+    final menuWidth = restingRect.width;
+    final targetHeight = restingRect.height;
+
+    final closeGlassScale = morphFromZero
+        ? (0.20 + 0.80 * u).clamp(0.18, 1.0)
+        : computeCloseGlassScale(
+            rawValue: rawValue,
+            minTriggerSide: minTriggerSide,
+            menuWidth: menuWidth,
+          );
+    final baseCoreH = minTriggerSide;
+    final taperedCoreH = baseCoreH * (0.65 + 0.35 * _smoothstep01(u / 0.24));
+    final closeBase = computeClosingPlatterRect(
+      pivot: triggerCenter,
+      restingRect: restingRect,
+      platterScale: closeGlassScale,
+      maxHeight: computeCloseHeightEnvelope(
+        coreHeight: taperedCoreH,
+        rawValue: rawValue,
+        restingHeight: targetHeight,
+      ),
+    );
+    final baseWidth = closeBase.width.clamp(0.0, menuWidth);
+    final baseHeight = closeBase.height.clamp(0.0, targetHeight);
+
+    final tailScale = menuWidth > 0.0
+        ? (0.56 * minTriggerSide / menuWidth).clamp(0.08, 0.20)
+        : 0.20;
+    final closeSizeProgress =
+        ((closeGlassScale - tailScale) / (1.0 - tailScale)).clamp(0.0, 1.0);
+    final baseRadius = computeCloseCornerRadius(
+      currentSize: Size(baseWidth, baseHeight),
+      restingSize: Size(menuWidth, targetHeight),
+      targetRadius: targetRadius,
+      sizeProgress: closeSizeProgress,
+    );
+
+    final posT = pathT.clamp(0.0, 1.0);
+    final recoilCatch = effectivePush * (1.0 - posT);
+    final closeDriftY = (!disableAnimations && !morphFromZero)
+        ? (restingRect.center.dy - triggerCenter.dy).sign *
+            computeCloseDrift(
+              elapsedSeconds: elapsedSeconds,
+              menuHeight: targetHeight,
+              closeStartProgress: closeStartProgress,
+            )
+        : 0.0;
+    final rawPivotCenter =
+        closeBase.center + recoilCatch + Offset(0.0, closeDriftY);
+    final convergeX = _smoothstep01((0.36 - u) / 0.28);
+    final trigCenterX = triggerCenter.dx + effectivePush.dx;
+    double closedCenterX =
+        rawPivotCenter.dx + (trigCenterX - rawPivotCenter.dx) * convergeX;
+    if (alignX < -0.1) {
+      final triggerLeft = trigCenterX - tw * 0.5;
+      closedCenterX = math.max(closedCenterX, triggerLeft + baseWidth * 0.5);
+    } else if (alignX > 0.1) {
+      final triggerRight = trigCenterX + tw * 0.5;
+      closedCenterX = math.min(closedCenterX, triggerRight - baseWidth * 0.5);
+    }
+
+    return (
+      rect: Rect.fromCenter(
+        center: Offset(closedCenterX, rawPivotCenter.dy),
+        width: baseWidth,
+        height: baseHeight,
+      ),
+      borderRadius: baseRadius,
+    );
   }
 
   static double _smoothstep01(double x) {
@@ -687,15 +869,19 @@ class LiquidMorphPhysics {
     required double elapsedSeconds,
     double closeStartProgress = 1.0,
     double recoilHalfTravelPx = defaultRecoilHalfTravelPx,
+    bool verticalOnlyRecoil = false,
   }) {
     if (elapsedSeconds <= 0.0 || closeStartProgress <= 0.001) {
       return Offset.zero;
     }
     final pulse =
         _recoilPulse(elapsedSeconds) * closeStartProgress.clamp(0.0, 1.0);
-    final denom = travel.distance + recoilHalfTravelPx;
+    final bool pureY = verticalOnlyRecoil && travel.dy.abs() > 1.0;
+    final effDx = pureY ? 0.0 : travel.dx;
+    final effDist = pureY ? travel.dy.abs() : travel.distance;
+    final denom = effDist + recoilHalfTravelPx;
     return Offset(
-      -(_maxRecoilPx * travel.dx / denom) * pulse,
+      -(_maxRecoilPx * effDx / denom) * pulse,
       -(_maxRecoilPx * travel.dy / denom) * pulse,
     );
   }
@@ -751,6 +937,7 @@ class LiquidMorphPhysics {
     double phaseStartTriggerWidth = 1.0,
     double closeStartProgress = 1.0,
     double recoilHalfTravelPx = defaultRecoilHalfTravelPx,
+    bool verticalOnlyRecoil = false,
   }) {
     final clampedValue = rawValue.clamp(0.0, 1.0);
 
@@ -810,8 +997,11 @@ class LiquidMorphPhysics {
           closeStartProgress > 0.001) {
         final recoilPulse =
             _recoilPulse(elapsedSeconds) * closeStartProgress.clamp(0.0, 1.0);
-        final denom = travelMag + recoilHalfTravelPx;
-        triggerPushDx = -(_maxRecoilPx * travelDx / denom) * recoilPulse;
+        final bool pureY = verticalOnlyRecoil && travelDy.abs() > 1.0;
+        final effDx = pureY ? 0.0 : travelDx;
+        final effMag = pureY ? travelDy.abs() : travelMag;
+        final denom = effMag + recoilHalfTravelPx;
+        triggerPushDx = -(_maxRecoilPx * effDx / denom) * recoilPulse;
         triggerPushDy = -(_maxRecoilPx * travelDy / denom) * recoilPulse;
         pushDx = triggerPushDx;
         pushDy = triggerPushDy;

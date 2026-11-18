@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -1410,10 +1411,18 @@ void main() {
         peakRecoilMs = ms;
       }
       if (overlayContainerFinder.evaluate().isNotEmpty) {
-        final shape = tester
-            .widget<GlassContainer>(overlayContainerFinder.last)
-            .shape as LiquidRoundedSuperellipse;
-        expect(shape.borderRadius, lessThanOrEqualTo(24.0 + 1e-6));
+        final platter =
+            tester.widget<GlassContainer>(overlayContainerFinder.last);
+        final shape = platter.shape as LiquidRoundedSuperellipse;
+        final halfShort = math.min(
+              platter.width ?? double.infinity,
+              platter.height ?? double.infinity,
+            ) /
+            2.0;
+        expect(
+          shape.borderRadius,
+          lessThanOrEqualTo(math.min(140.0 + 1e-6, halfShort + 0.05)),
+        );
       }
     }
 

@@ -39,8 +39,32 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   Offset _lastPushOffset = Offset.zero;
   Offset _phaseResidualPush = Offset.zero;
   Rect? _lastPlatterRect;
+  double? _lastPlatterRadius;
   Offset _platterInterruptCenterDelta = Offset.zero;
   Offset _platterInterruptSizeDelta = Offset.zero;
+  double _platterInterruptRadiusDelta = 0.0;
+  double? _lastContentOpacity;
+  double? _lastContentBlurSigma;
+  double _closeStartContentOpacity = 1.0;
+  double _closeStartContentBlur = 0.0;
+  double? _reopenStartContentOpacity;
+  double? _reopenStartContentBlur;
+
+  void _resetInterruptState() {
+    _lastPushOffset = Offset.zero;
+    _phaseResidualPush = Offset.zero;
+    _lastPlatterRect = null;
+    _lastPlatterRadius = null;
+    _platterInterruptCenterDelta = Offset.zero;
+    _platterInterruptSizeDelta = Offset.zero;
+    _platterInterruptRadiusDelta = 0.0;
+    _lastContentOpacity = null;
+    _lastContentBlurSigma = null;
+    _closeStartContentOpacity = 1.0;
+    _closeStartContentBlur = 0.0;
+    _reopenStartContentOpacity = null;
+    _reopenStartContentBlur = null;
+  }
 
   // --- Granular Update System (Performance + No flicker) ---
   // We cache the outer list but use notifiers to update selection state
@@ -138,8 +162,10 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     super.initState();
     _morphController =
         GlassMorphController(vsync: this, speed: widget.morphSpeed)
-          // Native menu kick is near-constant (~17 px) regardless of height.
-          ..recoilHalfTravelPx = LiquidMorphPhysics.menuRecoilHalfTravelPx;
+          // Native menu kick is near-constant (~17 px) and strictly vertical
+          // (MagicMorphView #2 tx == 0.0 even on left/right-aligned menus).
+          ..recoilHalfTravelPx = LiquidMorphPhysics.menuRecoilHalfTravelPx
+          ..verticalOnlyRecoil = true;
     _morphController.addListener(() {
       if (mounted) setState(() {});
 
@@ -157,11 +183,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
               _overlayController.hide();
               _horizontalOffset = 0.0;
               _verticalOffset = 0.0;
-              _lastPushOffset = Offset.zero;
-              _phaseResidualPush = Offset.zero;
-              _lastPlatterRect = null;
-              _platterInterruptCenterDelta = Offset.zero;
-              _platterInterruptSizeDelta = Offset.zero;
+              _resetInterruptState();
               _resetSubmenus();
             }
           });
@@ -171,11 +193,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
           // open position don't bleed into the next open cycle.
           _horizontalOffset = 0.0;
           _verticalOffset = 0.0;
-          _lastPushOffset = Offset.zero;
-          _phaseResidualPush = Offset.zero;
-          _lastPlatterRect = null;
-          _platterInterruptCenterDelta = Offset.zero;
-          _platterInterruptSizeDelta = Offset.zero;
+          _resetInterruptState();
           _resetSubmenus();
         }
       }
@@ -310,11 +328,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     _isDraggingNotifier.value = false;
     _hasStretched = false;
     _followOffset = Offset.zero;
-    _lastPushOffset = Offset.zero;
-    _phaseResidualPush = Offset.zero;
-    _lastPlatterRect = null;
-    _platterInterruptCenterDelta = Offset.zero;
-    _platterInterruptSizeDelta = Offset.zero;
+    _resetInterruptState();
     _swipePointerId = null;
     _swipeArmed = false;
     _openedOnPointerDown = false;
@@ -404,18 +418,15 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
             triggerProgress = 1.0 - detachT;
           }
         } else if (isImpellerPremium && !widget.morphFromZero) {
-          // Native brings the real trigger (lighter glass + label) back by
-          // ~190 ms (rawValue ≈ 0.1) while the droplet is still retracting;
-          // ramp over rawValue [0.20, 0.08] instead of waiting for 0. A wide
-          // trigger additionally waits for its capsule to reach ~0.8–0.92 of
-          // full width so its text and endcaps are never visibly squashed by
-          // the 0.90× clamp (the real trigger would otherwise pop in wide).
-          final double reveal = ((0.20 - clampedValue) / 0.12).clamp(0.0, 1.0);
-          final double capsuleReady = tw > th * 1.15
-              ? ((state.triggerWidthProgress - 0.80) / 0.12).clamp(0.0, 1.0)
-              : 1.0;
-          triggerProgress =
-              state.isPlatterActive ? math.min(reveal, capsuleReady) : 1.0;
+          // On Impeller premium close, Blob A inside AdaptiveLiquidGlassLayer
+          // carries the full 0..~275 ms SDF capsule merge until
+          // !state.isPlatterActive (uShapeData[] has no per-shape opacity).
+          // Keeping the real trigger at 0.0 while isPlatterActive prevents
+          // placing a useOwnLayer:true GlassButton beneath Blob A's
+          // BackdropFilter (which blurs it into a foggy halo and double-stacks
+          // two glass passes), then swaps cleanly to 1.0 on the exact frame
+          // _buildMorphingOverlay unmounts at !state.isPlatterActive.
+          triggerProgress = state.isPlatterActive ? 0.0 : 1.0;
         } else {
           triggerProgress = state.isPlatterActive
               ? ((0.38 - clampedValue) / 0.32).clamp(0.0, 1.0)
@@ -795,12 +806,17 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
 
     final bool wasInFlight =
         _overlayController.isShowing && _morphController.isShowing;
-    final Rect? prevPlatterRect = (wasInFlight &&
-            _lastPlatterRect != null &&
-            _morphController.value > 0.005 &&
-            _morphController.value < 0.995)
-        ? _lastPlatterRect
-        : null;
+    final bool hasPrevPlatter = wasInFlight &&
+        _lastPlatterRect != null &&
+        _morphController.value > 0.005 &&
+        _morphController.value < 0.995;
+    final Rect? prevPlatterRect = hasPrevPlatter ? _lastPlatterRect : null;
+    final double? prevPlatterRadius =
+        hasPrevPlatter ? _lastPlatterRadius : null;
+    final double? prevContentOpacity =
+        hasPrevPlatter ? _lastContentOpacity : null;
+    final double? prevContentBlur =
+        hasPrevPlatter ? _lastContentBlurSigma : null;
     _phaseResidualPush = wasInFlight ? _lastPushOffset : Offset.zero;
 
     if (!_overlayController.isShowing) {
@@ -810,18 +826,28 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     // for a clean, smooth teardrop expansion with no artificial kick.
     _morphController.open();
     if (prevPlatterRect != null) {
-      final nextBase = _computeBasePlatterRect();
+      final nextBase = _computeBasePlatterGeometry();
       if (nextBase != null) {
-        _platterInterruptCenterDelta = prevPlatterRect.center - nextBase.center;
+        _platterInterruptCenterDelta =
+            prevPlatterRect.center - nextBase.rect.center;
         _platterInterruptSizeDelta = Offset(
-          prevPlatterRect.width - nextBase.width,
-          prevPlatterRect.height - nextBase.height,
+          prevPlatterRect.width - nextBase.rect.width,
+          prevPlatterRect.height - nextBase.rect.height,
         );
+        _platterInterruptRadiusDelta =
+            (prevPlatterRadius ?? nextBase.radius) - nextBase.radius;
       }
+      _reopenStartContentOpacity = prevContentOpacity;
+      _reopenStartContentBlur = prevContentBlur;
     } else {
       _platterInterruptCenterDelta = Offset.zero;
       _platterInterruptSizeDelta = Offset.zero;
+      _platterInterruptRadiusDelta = 0.0;
+      _reopenStartContentOpacity = null;
+      _reopenStartContentBlur = null;
     }
+    _closeStartContentOpacity = 1.0;
+    _closeStartContentBlur = 0.0;
     widget.onLevelChanged?.call(0, _targetBodyHeight());
   }
 
@@ -1174,12 +1200,13 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     LiquidGlassSettings settings,
     GlassQuality quality, {
     double rootCloseOpacity = 1.0,
+    double? borderRadiusOverride,
   }) {
     final level = _submenuStack[levelIndex];
     final isTop = levelIndex == _submenuStack.length - 1;
     final dimmed = !isTop;
     final shape = LiquidRoundedSuperellipse(
-      borderRadius: widget.menuBorderRadius,
+      borderRadius: borderRadiusOverride ?? widget.menuBorderRadius,
     );
     final cardContent = _buildListContent(
       level.list,
@@ -1524,12 +1551,17 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
 
   void _closeMenu() {
     if (!_overlayController.isShowing || _morphController.isClosing) return;
-    final Rect? prevPlatterRect = (_morphController.isShowing &&
-            _lastPlatterRect != null &&
-            _morphController.value > 0.005 &&
-            _morphController.value < 0.995)
-        ? _lastPlatterRect
-        : null;
+    final bool hasPrevPlatter = _morphController.isShowing &&
+        _lastPlatterRect != null &&
+        _morphController.value > 0.005 &&
+        _morphController.value < 0.995;
+    final Rect? prevPlatterRect = hasPrevPlatter ? _lastPlatterRect : null;
+    final double? prevPlatterRadius =
+        hasPrevPlatter ? _lastPlatterRadius : null;
+    final double? prevContentOpacity =
+        hasPrevPlatter ? _lastContentOpacity : null;
+    final double? prevContentBlur =
+        hasPrevPlatter ? _lastContentBlurSigma : null;
     setState(() {
       _hoveredIndex = null;
       _isDragging = false;
@@ -1553,25 +1585,44 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     _phaseResidualPush = _lastPushOffset -
         Offset(stateAfter.triggerPushDx, stateAfter.triggerPushDy);
     if (prevPlatterRect != null) {
-      final nextBase = _computeBasePlatterRect();
+      final nextBase = _computeBasePlatterGeometry();
       if (nextBase != null) {
-        _platterInterruptCenterDelta = prevPlatterRect.center - nextBase.center;
+        _platterInterruptCenterDelta =
+            prevPlatterRect.center - nextBase.rect.center;
         _platterInterruptSizeDelta = Offset(
-          prevPlatterRect.width - nextBase.width,
-          prevPlatterRect.height - nextBase.height,
+          prevPlatterRect.width - nextBase.rect.width,
+          prevPlatterRect.height - nextBase.rect.height,
         );
+        _platterInterruptRadiusDelta =
+            (prevPlatterRadius ?? nextBase.radius) - nextBase.radius;
       }
+      _closeStartContentOpacity = (prevContentOpacity ?? 1.0).clamp(0.0, 1.0);
+      _closeStartContentBlur = (prevContentBlur ?? 0.0).clamp(0.0, 8.0);
     } else {
       _platterInterruptCenterDelta = Offset.zero;
       _platterInterruptSizeDelta = Offset.zero;
+      _platterInterruptRadiusDelta = 0.0;
+      _closeStartContentOpacity = 1.0;
+      _closeStartContentBlur = 0.0;
     }
+    _reopenStartContentOpacity = null;
+    _reopenStartContentBlur = null;
     widget.onClose?.call();
   }
 
-  /// Analytical (un-decayed) Blob B rect for the current controller phase,
-  /// used to capture exact C0 deltas when reversing mid-flight.
-  Rect? _computeBasePlatterRect() {
+  /// Single source of truth for the analytical (un-decayed) Blob B geometry
+  /// (`rect`, `radius`, and anchor drift) in the current controller phase.
+  /// Shared by [_openMenu], [_closeMenu], and [_buildMorphingOverlay] so
+  /// mid-flight open↔close reversals stay strictly C0 continuous.
+  ({
+    Rect rect,
+    double radius,
+    double anchorDriftX,
+    double anchorDriftY,
+    Offset effectivePush,
+  })? _computeBasePlatterGeometry() {
     if (_triggerSize == null) return null;
+    final rawValue = _morphController.value;
     final tw = _triggerSize!.width;
     final th = _triggerSize!.height;
     final minTriggerSide = math.min(tw, th);
@@ -1622,66 +1673,143 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
       menuWidth,
       targetHeight,
     );
-    // Same open size curve as _buildMorphingOverlay so a mid-open reversal
-    // captures an exact C0 delta.
-    final sizeProgress = (!_morphController.isClosing &&
-            !_morphController.disableAnimations &&
-            scaleDelta > 3.0)
-        ? LiquidMorphPhysics.computeMenuOpenSizeProgress(
-            _morphController.value,
-          )
-        : state.sizeT.clamp(0.0, 1.0);
-    final w = lerpDouble(coreW, menuWidth, sizeProgress)!.clamp(0.0, menuWidth);
-    final h =
-        lerpDouble(coreH, targetHeight, sizeProgress)!.clamp(0.0, targetHeight);
+
+    final double residualPushDecay = _phaseResidualPush != Offset.zero
+        ? math.exp(-18.0 * _morphController.phaseElapsedSeconds)
+        : 0.0;
+    final Offset effectivePush =
+        Offset(state.triggerPushDx, state.triggerPushDy) +
+            _phaseResidualPush * residualPushDecay;
+
+    double anchorDriftX = 0.0;
+    double anchorDriftY = 0.0;
+    final Rect baseRect;
+    final double baseRadius;
+
     if (_morphController.isClosing) {
-      // Native: uniform platter scale about the trigger centre.
-      final base = LiquidMorphPhysics.computeClosingPlatterRect(
-        pivot: triggerCenter,
+      final closedGeo = LiquidMorphPhysics.computeClosingTeardropGeometry(
+        rawValue: rawValue,
+        pathT: state.pathT,
+        triggerCenter: triggerCenter,
+        triggerSize: Size(tw, th),
         restingRect: restingRect,
-        platterScale: state.platterScale,
-        maxHeight: LiquidMorphPhysics.computeCloseHeightEnvelope(
-          coreHeight: coreH > 0.0 ? coreH : minTriggerSide,
-          rawValue: _morphController.value,
-        ),
+        targetRadius: widget.menuBorderRadius,
+        effectivePush: effectivePush,
+        elapsedSeconds: _morphController.phaseElapsedSeconds,
+        closeStartProgress: _morphController.closeStartProgress,
+        alignX: _morphAlignment.x,
+        disableAnimations: _morphController.disableAnimations,
+        morphFromZero: widget.morphFromZero,
       );
-      final posT = state.pathT.clamp(0.0, 1.0);
-      final recoilCatch =
-          Offset(state.triggerPushDx, state.triggerPushDy) * (1.0 - posT);
-      return Rect.fromCenter(
-        center: base.center + recoilCatch,
-        width: base.width,
-        height: base.height,
-      );
+      baseRect = closedGeo.rect;
+      baseRadius = closedGeo.borderRadius;
     } else {
+      final sizeProgress =
+          (!_morphController.disableAnimations && scaleDelta > 3.0)
+              ? LiquidMorphPhysics.computeMenuOpenSizeProgress(rawValue)
+              : state.sizeT.clamp(0.0, 1.0);
+      final double baseWidth =
+          lerpDouble(coreW, menuWidth, sizeProgress)!.clamp(0.0, menuWidth);
+      final double baseHeight = lerpDouble(coreH, targetHeight, sizeProgress)!
+          .clamp(0.0, targetHeight);
+      final double triggerRadius =
+          _triggerBorderRadius ?? (_triggerSize!.shortestSide / 2.0);
+      baseRadius =
+          (!_morphController.disableAnimations && !widget.morphFromZero)
+              ? LiquidMorphPhysics.computeOpenCornerRadius(
+                  currentSize: Size(baseWidth, baseHeight),
+                  restingSize: Size(menuWidth, targetHeight),
+                  targetRadius: widget.menuBorderRadius,
+                  elapsedSeconds: _morphController.phaseElapsedSeconds,
+                  openStartProgress: _morphController.openStartProgress,
+                )
+              : LiquidMorphPhysics.computeCornerRadius(
+                  currentSize: Size(baseWidth, baseHeight),
+                  triggerRadius: triggerRadius,
+                  targetRadius: widget.menuBorderRadius,
+                  progress: sizeProgress,
+                );
       final interpolated = Rect.lerp(originRect, restingRect, sizeProgress)!;
       final totalDelta = restingRect.center - originRect.center;
       final maxDrift = isPremiumQuality ? 14.0 : 8.0;
       final detachRelease =
           isPremiumQuality ? (1.0 - state.anchorScale * 0.65) : 1.0;
-      final driftX =
+      anchorDriftX =
           (totalDelta.dx * (state.pathT - sizeProgress) * detachRelease)
               .clamp(-maxDrift, maxDrift);
-      final oldDriftY =
+      anchorDriftY =
           (totalDelta.dy * (state.pathT - sizeProgress) * detachRelease)
               .clamp(-maxDrift, maxDrift);
-      // Same time-based platter drift as _buildMorphingOverlay so a mid-open
-      // reversal captures an exact C0 delta.
-      final driftY =
-          (!_morphController.disableAnimations && !widget.morphFromZero)
-              ? totalDelta.dy.sign *
-                  LiquidMorphPhysics.computeOpenDrift(
-                    elapsedSeconds: _morphController.phaseElapsedSeconds,
-                    menuHeight: targetHeight,
-                  )
-              : oldDriftY;
-      return Rect.fromLTWH(
-        interpolated.left + driftX,
-        interpolated.top + driftY,
-        w,
-        h,
-      );
+      final bool timedDrift =
+          !_morphController.disableAnimations && !widget.morphFromZero;
+      final double platterDriftY = timedDrift
+          ? totalDelta.dy.sign *
+              LiquidMorphPhysics.computeOpenDrift(
+                elapsedSeconds: _morphController.phaseElapsedSeconds,
+                menuHeight: targetHeight,
+                openStartProgress: _morphController.openStartProgress,
+              )
+          : anchorDriftY;
+      final Offset baseCenter =
+          interpolated.center + Offset(anchorDriftX, platterDriftY);
+      double baseLeft = baseCenter.dx - baseWidth * 0.5;
+      double baseTop = baseCenter.dy - baseHeight * 0.5;
+
+      // Keep mid-flight open drift inside screen bounds when
+      // autoAdjustToScreen is enabled.
+      if (widget.autoAdjustToScreen) {
+        final mediaQuery = MediaQuery.maybeOf(context);
+        final screenWidth = mediaQuery?.size.width ?? double.infinity;
+        final screenHeight = mediaQuery?.size.height ?? double.infinity;
+        final flutterView = View.of(context);
+        final mqPadding = EdgeInsets.fromViewPadding(
+          flutterView.padding,
+          flutterView.devicePixelRatio,
+        );
+        if (screenWidth.isFinite) {
+          final originShiftX =
+              _triggerGlobalPosition.dx - _triggerOverlayPosition.dx;
+          final safeLeft =
+              widget.menuPadding.left + mqPadding.left - originShiftX;
+          final safeRight = screenWidth -
+              widget.menuPadding.right -
+              mqPadding.right -
+              baseWidth -
+              originShiftX;
+          final minAllowedX = math.min(originRect.left, safeLeft);
+          final maxAllowedX = math.max(
+            minAllowedX,
+            math.max(originRect.right - baseWidth, safeRight),
+          );
+          baseLeft = baseLeft.clamp(minAllowedX, maxAllowedX);
+        }
+        if (screenHeight.isFinite) {
+          final originShiftY =
+              _triggerGlobalPosition.dy - _triggerOverlayPosition.dy;
+          final safeTop = widget.menuPadding.top + mqPadding.top - originShiftY;
+          final safeBottom = screenHeight -
+              widget.menuPadding.bottom -
+              mqPadding.bottom -
+              baseHeight -
+              originShiftY;
+          final minAllowedY = math.min(originRect.top, safeTop);
+          final maxAllowedY = math.max(
+            minAllowedY,
+            math.max(originRect.bottom - baseHeight, safeBottom),
+          );
+          baseTop = baseTop.clamp(minAllowedY, maxAllowedY);
+        }
+      }
+      baseRect = Rect.fromLTWH(baseLeft, baseTop, baseWidth, baseHeight);
     }
+
+    return (
+      rect: baseRect,
+      radius: baseRadius,
+      anchorDriftX: anchorDriftX,
+      anchorDriftY: anchorDriftY,
+      effectivePush: effectivePush,
+    );
   }
 
   /// Fires [item.onTap] then closes the menu, honouring [GlassMenuItem.closeDelay].
@@ -1742,8 +1870,14 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     // splash (~400 ms) and recoil settle (~550 ms) with zero overlay overdraw.
     if (_morphController.isClosing && !state.isPlatterActive) {
       _lastPlatterRect = null;
+      _lastPlatterRadius = null;
+      _lastContentOpacity = null;
+      _lastContentBlurSigma = null;
       return const SizedBox.shrink();
     }
+
+    final baseGeo = _computeBasePlatterGeometry();
+    if (baseGeo == null) return const SizedBox.shrink();
 
     final effectiveSettings = GlassThemeHelpers.resolveSettings(
       context,
@@ -1766,15 +1900,8 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     final bool isPremium =
         isPremiumQuality && ImageFilter.isShaderFilterSupported;
 
-    // Trigger center and compact origin core (middle of wide buttons, or full
-    // circle for round buttons, or 0x0 point for morphFromZero).
     final Offset triggerCenter =
         _triggerOverlayPosition + _followOffset + Offset(tw * 0.5, th * 0.5);
-    final Rect originRect = Rect.fromCenter(
-      center: triggerCenter,
-      width: coreW,
-      height: coreH,
-    );
 
     final double anchorAlignX = (1.0 + _morphAlignment.x) / 2.0;
     final double anchorAlignY = (1.0 + _morphAlignment.y) / 2.0;
@@ -1793,199 +1920,38 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
 
     final double interruptDecay =
         (_platterInterruptCenterDelta != Offset.zero ||
-                _platterInterruptSizeDelta != Offset.zero)
+                _platterInterruptSizeDelta != Offset.zero ||
+                _platterInterruptRadiusDelta != 0.0 ||
+                _reopenStartContentOpacity != null ||
+                _reopenStartContentBlur != null)
             ? math.exp(-22.0 * _morphController.phaseElapsedSeconds)
             : 0.0;
-    // Open: native grows large menu morphs faster than the controller's shared
-    // sizeT (see LiquidMorphPhysics.computeMenuOpenSizeProgress). Close keeps
-    // its own pivot scale; popovers/sheets keep the shared curve.
-    final double sizeProgress = (!_morphController.isClosing &&
-            !_morphController.disableAnimations &&
-            scaleDelta > 3.0)
-        ? LiquidMorphPhysics.computeMenuOpenSizeProgress(rawValue)
-        : state.sizeT.clamp(0.0, 1.0);
-    // Closing: native scales the platter uniformly about the trigger centre
-    // (see LiquidMorphPhysics.computeClosingPlatterRect).
-    final Rect? closeBase = _morphController.isClosing
-        ? LiquidMorphPhysics.computeClosingPlatterRect(
-            pivot: triggerCenter,
-            restingRect: restingRect,
-            platterScale: state.platterScale,
-            maxHeight: LiquidMorphPhysics.computeCloseHeightEnvelope(
-              coreHeight: coreH > 0.0 ? coreH : minTriggerSide,
-              rawValue: rawValue,
-            ),
-          )
-        : null;
-    final double closeSizeProgress =
-        ((state.platterScale - 0.2) / 0.8).clamp(0.0, 1.0);
-    final double currentWidth = closeBase != null
-        ? (closeBase.width + _platterInterruptSizeDelta.dx * interruptDecay)
-            .clamp(0.0, menuWidth)
-        : (lerpDouble(coreW, menuWidth, sizeProgress)! +
-                _platterInterruptSizeDelta.dx * interruptDecay)
+
+    final double currentWidth =
+        (baseGeo.rect.width + _platterInterruptSizeDelta.dx * interruptDecay)
             .clamp(0.0, menuWidth);
-    final double currentHeight = closeBase != null
-        ? (closeBase.height + _platterInterruptSizeDelta.dy * interruptDecay)
-            .clamp(0.0, targetHeight)
-        : (lerpDouble(coreH, targetHeight, sizeProgress)! +
-                _platterInterruptSizeDelta.dy * interruptDecay)
+    final double currentHeight =
+        (baseGeo.rect.height + _platterInterruptSizeDelta.dy * interruptDecay)
             .clamp(0.0, targetHeight);
+    final double shortestHalfNow =
+        math.max(0.0, math.min(currentWidth, currentHeight) * 0.5);
+    final double currentRadius =
+        (baseGeo.radius + _platterInterruptRadiusDelta * interruptDecay)
+            .clamp(0.0, shortestHalfNow);
 
     final double triggerRadius =
         _triggerBorderRadius ?? (_triggerSize!.shortestSide / 2.0);
-    final double radiusProgress =
-        _morphController.isClosing ? clampedValue : sizeProgress;
-    final double currentRadius = _morphController.isClosing
-        ? LiquidMorphPhysics.computeCloseCornerRadius(
-            currentSize: Size(currentWidth, currentHeight),
-            restingSize: Size(menuWidth, targetHeight),
-            targetRadius: widget.menuBorderRadius,
-            sizeProgress: closeSizeProgress,
-          )
-        : (!_morphController.disableAnimations && !widget.morphFromZero)
-            ? LiquidMorphPhysics.computeOpenCornerRadius(
-                currentSize: Size(currentWidth, currentHeight),
-                restingSize: Size(menuWidth, targetHeight),
-                targetRadius: widget.menuBorderRadius,
-                elapsedSeconds: _morphController.phaseElapsedSeconds,
-              )
-            : LiquidMorphPhysics.computeCornerRadius(
-                currentSize: Size(currentWidth, currentHeight),
-                triggerRadius: triggerRadius,
-                targetRadius: widget.menuBorderRadius,
-                progress: radiusProgress,
-              );
-
-    final double residualPushDecay = _phaseResidualPush != Offset.zero
-        ? math.exp(-18.0 * _morphController.phaseElapsedSeconds)
-        : 0.0;
-    final Offset effectivePush =
-        Offset(state.triggerPushDx, state.triggerPushDy) +
-            _phaseResidualPush * residualPushDecay;
-
-    // Position Blob B coherently between originRect (centered at trigger.center)
-    // and restingRect (including clamp offsets).
-    double blobBLeft;
-    double blobBTop;
-    double anchorDriftX = 0.0;
-    double anchorDriftY = 0.0;
-
-    if (closeBase != null) {
-      final posT = state.pathT.clamp(0.0, 1.0);
-      final recoilCatch = effectivePush * (1.0 - posT);
-      // Native pushes the retracting glass away from the trigger, leaving a gap
-      // the metaball bridge stretches into the teardrop's neck (see
-      // LiquidMorphPhysics.computeCloseDrift).
-      final double closeDriftY =
-          (!_morphController.disableAnimations && !widget.morphFromZero)
-              ? (restingRect.center.dy - triggerCenter.dy).sign *
-                  LiquidMorphPhysics.computeCloseDrift(
-                    elapsedSeconds: _morphController.phaseElapsedSeconds,
-                    menuHeight: targetHeight,
-                  )
-              : 0.0;
-      final Offset pivotCenter = closeBase.center +
-          recoilCatch +
-          Offset(0.0, closeDriftY) +
-          _platterInterruptCenterDelta * interruptDecay;
-      // Native's visible droplet slides sideways until it sits directly under
-      // the trigger (vertical neck, tip pointing at the trigger). The pure
-      // pivot-scale model leaves it ~20 px off to the side for left/right
-      // aligned triggers, which merges as two overlapping circles. Converge the
-      // droplet's x onto the trigger's as it shrinks (rawValue 0.75 → 0.25).
-      final double convergeX = _smoothstep01Local((0.75 - clampedValue) / 0.50);
-      final Offset center = Offset(
-        lerpDouble(
-          pivotCenter.dx,
-          triggerCenter.dx + effectivePush.dx,
-          convergeX,
-        )!,
-        pivotCenter.dy,
-      );
-      blobBLeft = center.dx - currentWidth * 0.5;
-      blobBTop = center.dy - currentHeight * 0.5;
-    } else {
-      final interpolated = Rect.lerp(originRect, restingRect, sizeProgress)!;
-      final totalDelta = restingRect.center - originRect.center;
-      final maxDrift = isPremiumQuality ? 14.0 : 8.0;
-      final detachRelease =
-          isPremiumQuality ? (1.0 - state.anchorScale * 0.65) : 1.0;
-      anchorDriftX =
-          (totalDelta.dx * (state.pathT - sizeProgress) * detachRelease)
-              .clamp(-maxDrift, maxDrift);
-      anchorDriftY =
-          (totalDelta.dy * (state.pathT - sizeProgress) * detachRelease)
-              .clamp(-maxDrift, maxDrift);
-      // The platter (not Blob A) overshoots toward/past its resting spot like
-      // native's neck-container-dragged glass: a smooth time-based pulse
-      // (LiquidMorphPhysics.computeOpenDrift) along the travel direction,
-      // replacing the ±14px path/size-separation product for the platter.
-      final bool timedDrift =
-          !_morphController.disableAnimations && !widget.morphFromZero;
-      final double platterDriftY = timedDrift
-          ? totalDelta.dy.sign *
-              LiquidMorphPhysics.computeOpenDrift(
-                elapsedSeconds: _morphController.phaseElapsedSeconds,
-                menuHeight: targetHeight,
-              )
-          : anchorDriftY;
-      final Offset baseCenter =
-          interpolated.center + Offset(anchorDriftX, platterDriftY);
-      final Offset effectiveCenter =
-          baseCenter + _platterInterruptCenterDelta * interruptDecay;
-      blobBLeft = effectiveCenter.dx - currentWidth * 0.5;
-      blobBTop = effectiveCenter.dy - currentHeight * 0.5;
-
-      // Keep mid-flight J-curve drift inside screen bounds when
-      // autoAdjustToScreen is enabled.
-      if (widget.autoAdjustToScreen) {
-        final mediaQuery = MediaQuery.maybeOf(context);
-        final screenWidth = mediaQuery?.size.width ?? double.infinity;
-        final screenHeight = mediaQuery?.size.height ?? double.infinity;
-        final flutterView = View.of(context);
-        final mqPadding = EdgeInsets.fromViewPadding(
-          flutterView.padding,
-          flutterView.devicePixelRatio,
-        );
-        if (screenWidth.isFinite) {
-          final originShiftX =
-              _triggerGlobalPosition.dx - _triggerOverlayPosition.dx;
-          final safeLeft =
-              widget.menuPadding.left + mqPadding.left - originShiftX;
-          final safeRight = screenWidth -
-              widget.menuPadding.right -
-              mqPadding.right -
-              currentWidth -
-              originShiftX;
-          final minAllowedX = math.min(originRect.left, safeLeft);
-          final maxAllowedX = math.max(
-            minAllowedX,
-            math.max(originRect.right - currentWidth, safeRight),
-          );
-          blobBLeft = blobBLeft.clamp(minAllowedX, maxAllowedX);
-        }
-        if (screenHeight.isFinite) {
-          final originShiftY =
-              _triggerGlobalPosition.dy - _triggerOverlayPosition.dy;
-          final safeTop = widget.menuPadding.top + mqPadding.top - originShiftY;
-          final safeBottom = screenHeight -
-              widget.menuPadding.bottom -
-              mqPadding.bottom -
-              currentHeight -
-              originShiftY;
-          final minAllowedY = math.min(originRect.top, safeTop);
-          final maxAllowedY = math.max(
-            minAllowedY,
-            math.max(originRect.bottom - currentHeight, safeBottom),
-          );
-          blobBTop = blobBTop.clamp(minAllowedY, maxAllowedY);
-        }
-      }
-    }
+    final Offset effectivePush = baseGeo.effectivePush;
+    final double anchorDriftX = baseGeo.anchorDriftX;
+    final double anchorDriftY = baseGeo.anchorDriftY;
+    final Offset effectiveCenter =
+        baseGeo.rect.center + _platterInterruptCenterDelta * interruptDecay;
+    final double blobBLeft = effectiveCenter.dx - currentWidth * 0.5;
+    final double blobBTop = effectiveCenter.dy - currentHeight * 0.5;
 
     _lastPlatterRect =
         Rect.fromLTWH(blobBLeft, blobBTop, currentWidth, currentHeight);
+    _lastPlatterRadius = currentRadius;
 
     // Blob A (MagicMorphView #2): True-width capsule centered on
     // triggerCenter + effectivePush. Contracts tw -> min(tw, th) on open, and
@@ -2017,30 +1983,15 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     // and the droplet is close enough for the metaball bridge to reach it (the
     // distance depends on alignment: a left/right-aligned droplet sits off to
     // the side), then grows in from nothing so it emerges from the tip.
-    double closeBlobAGrow = 1.0;
-    if (_morphController.isClosing) {
-      final Rect platterRectNow =
-          Rect.fromLTWH(blobBLeft, blobBTop, currentWidth, currentHeight);
-      final Offset trigNow = triggerCenter + effectivePush;
-      final double r = math.min(
-        currentRadius,
-        math.min(currentWidth, currentHeight) * 0.5,
-      );
-      final Rect inner = platterRectNow.deflate(r);
-      final double ddx = math.max(
-        math.max(inner.left - trigNow.dx, trigNow.dx - inner.right),
-        0.0,
-      );
-      final double ddy = math.max(
-        math.max(inner.top - trigNow.dy, trigNow.dy - inner.bottom),
-        0.0,
-      );
-      // distance from the trigger centre to the rounded droplet surface
-      final double gap = math.max(0.0, math.sqrt(ddx * ddx + ddy * ddy) - r);
-      final double byTime = _smoothstep01Local((0.45 - clampedValue) / 0.10);
-      final double byGap = _smoothstep01Local((26.0 - gap) / 14.0);
-      closeBlobAGrow = math.min(byTime, byGap);
-    }
+    final double closeBlobAGrow = _morphController.isClosing
+        ? LiquidMorphPhysics.computeCloseBlobAEmergence(
+            platterRect:
+                Rect.fromLTWH(blobBLeft, blobBTop, currentWidth, currentHeight),
+            platterRadius: currentRadius,
+            triggerCenter: triggerCenter + effectivePush,
+            rawValue: rawValue,
+          )
+        : 1.0;
     final double blobAScale = _morphController.isClosing
         ? state.triggerImpactScale * closeBlobAGrow
         : openAnchorScale;
@@ -2154,8 +2105,9 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                     : blobs;
 
                 // ── Submenu cards ─────────────────────────────────────────
-                final cardsOpacity =
-                    _morphController.isClosing ? state.contentOpacity : 1.0;
+                final cardsOpacity = _morphController.isClosing
+                    ? (state.contentOpacity * _closeStartContentOpacity)
+                    : 1.0;
                 final double cardCloseScale =
                     (_morphController.isClosing && menuWidth > 0.0)
                         ? (currentWidth / menuWidth).clamp(0.20, 1.0)
@@ -2182,6 +2134,17 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                                       cardRest.height * 0.5,
                                     ))
                                 : cardRest.topLeft;
+                            final double? cardCloseRadius =
+                                _morphController.isClosing
+                                    ? (currentRadius / cardCloseScale).clamp(
+                                        widget.menuBorderRadius,
+                                        math.min(
+                                              cardRest.width,
+                                              cardRest.height,
+                                            ) *
+                                            0.5,
+                                      )
+                                    : null;
                             return Positioned(
                               left: cardPos.dx,
                               top: cardPos.dy,
@@ -2196,6 +2159,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                                     effectiveSettings,
                                     effectiveQuality,
                                     rootCloseOpacity: cardsOpacity,
+                                    borderRadiusOverride: cardCloseRadius,
                                   ),
                                 ),
                               ),
@@ -2317,34 +2281,63 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     final double menuWidth = widget.menuWidth.toDouble();
     final double contentScale =
         menuWidth > 0.0 ? (currentWidth / menuWidth).clamp(0.20, 1.0) : 1.0;
-    // Close: native keeps the retracting droplet fully opaque until it merges
-    // into the trigger (visible with a pointed tip until ~rawValue 0.06, then a
-    // short dissolve), instead of fading the glass over the last 25%.
-    final double platterGlassOpacity = _morphController.isClosing
-        ? (state.isPlatterActive
-            ? (_morphController.value / 0.06).clamp(0.0, 1.0)
-            : 0.0)
-        : state.platterOpacity;
+    // Note: On Impeller (GlassQuality.premium, useOwnLayer: false), grouped SDF
+    // shapes inside AdaptiveLiquidGlassLayer remain 100% opaque until
+    // !state.isPlatterActive (uShapeData[] has no per-shape opacity).
+    // state.platterOpacity drives the smooth final dissolve on
+    // LightweightLiquidGlass (GlassQuality.standard / Skia) and opaqueColor.
+    final double platterGlassOpacity = state.platterOpacity;
 
     // Open: native reveals the rows late and smeared (resolving over
     // ~130–230 ms), driven by phase time. Reduce Motion / settled states keep
-    // the controller's own values.
+    // the controller's own values. C0 continuity is preserved across both
+    // early-open cancellations (_closeStartContent*) and mid-close reopens
+    // (_reopenStartContent*).
     final bool timedOpenContent = !_morphController.isClosing &&
         !_morphController.disableAnimations &&
         !widget.morphFromZero;
     final double phaseT = _morphController.phaseElapsedSeconds;
-    final double contentOpacityNow = timedOpenContent
+    final double contentInterruptDecay =
+        (_reopenStartContentOpacity != null || _reopenStartContentBlur != null)
+            ? math.exp(-22.0 * phaseT)
+            : 0.0;
+    final double baseOpenOpacity = timedOpenContent
         ? math.min(
             state.contentOpacity,
             LiquidMorphPhysics.computeOpenContentOpacity(
-                elapsedSeconds: phaseT),
+              elapsedSeconds: phaseT,
+              openStartProgress: _morphController.openStartProgress,
+            ),
           )
         : state.contentOpacity;
-    final double contentBlurNow = timedOpenContent
+    final double baseOpenBlur = timedOpenContent
         ? (state.isPlatterActive
-            ? LiquidMorphPhysics.computeOpenContentBlur(elapsedSeconds: phaseT)
+            ? LiquidMorphPhysics.computeOpenContentBlur(
+                elapsedSeconds: phaseT,
+                openStartProgress: _morphController.openStartProgress,
+              )
             : 0.0)
         : state.contentBlurSigma;
+    final double contentOpacityNow = _morphController.isClosing
+        ? (state.contentOpacity * _closeStartContentOpacity).clamp(0.0, 1.0)
+        : (_reopenStartContentOpacity != null
+            ? lerpDouble(
+                baseOpenOpacity,
+                _reopenStartContentOpacity!,
+                contentInterruptDecay,
+              )!
+            : baseOpenOpacity);
+    final double contentBlurNow = _morphController.isClosing
+        ? math.max(state.contentBlurSigma, _closeStartContentBlur)
+        : (_reopenStartContentBlur != null
+            ? lerpDouble(
+                baseOpenBlur,
+                _reopenStartContentBlur!,
+                contentInterruptDecay,
+              )!
+            : baseOpenBlur);
+    _lastContentOpacity = contentOpacityNow;
+    _lastContentBlurSigma = contentBlurNow;
 
     // On Skia / Web / GlassQuality.standard, AdaptiveGlass routes to
     // LightweightLiquidGlass, which already wraps its child in
@@ -2942,12 +2935,6 @@ const Duration _kSubmenuMorphDuration = Duration(milliseconds: 320);
 const Curve _kSubmenuMorphCurve = Curves.easeOutCubic;
 const double _kBodyVerticalPadding = 12.0;
 const double _kRowGap = 2.0;
-
-/// Smoothstep `3x² − 2x³` on `[0, 1]`.
-double _smoothstep01Local(double x) {
-  final c = x.clamp(0.0, 1.0);
-  return c * c * (3.0 - 2.0 * c);
-}
 
 /// How late (seconds) the drawn trigger capsule trails the close width spring.
 const double _kCloseCapsuleDelay = 0.05;

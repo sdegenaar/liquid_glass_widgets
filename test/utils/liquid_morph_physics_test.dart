@@ -884,16 +884,80 @@ void main() {
       expect(d(0.075, h: 521.0), greaterThan(d(0.075, h: 251.0)));
       expect(d(0.075, h: 521.0), lessThanOrEqualTo(63.0));
     });
+
+    test('attenuates for compact (< 250 pt) menus and partial cancellations',
+        () {
+      // 2-item menu (~114 pt) must not receive the 5-item +49 px kick.
+      expect(d(0.075, h: 114.0), inInclusiveRange(3.0, 9.0));
+      expect(d(0.075, h: 68.0), equals(0.0));
+      // Mid-open cancel at 25% progress scales close drift proportionally.
+      expect(
+        LiquidMorphPhysics.computeCloseDrift(
+          elapsedSeconds: 0.075,
+          menuHeight: 250.0,
+          closeStartProgress: 0.25,
+        ),
+        closeTo(d(0.075, h: 250.0) * 0.25, 1e-9),
+      );
+    });
   });
 
-  group('LiquidMorphPhysics — close teardrop blend', () {
-    test('is zero at rest and fully open, holds the max mid-collapse', () {
+  group('LiquidMorphPhysics — close teardrop blend & slender tail scale', () {
+    test(
+        'is zero at rest and fully open, holds 22.0 mid-collapse, tapers waist',
+        () {
       expect(LiquidMorphPhysics.computeCloseBlend(rawValue: 1.0), equals(0.0));
       expect(LiquidMorphPhysics.computeCloseBlend(rawValue: 0.0), equals(0.0));
       expect(LiquidMorphPhysics.computeCloseBlend(rawValue: 0.5),
-          closeTo(28.0, 1e-9));
+          closeTo(22.0, 1e-9));
       expect(LiquidMorphPhysics.computeCloseBlend(rawValue: 0.2),
-          closeTo(28.0, 1e-9));
+          closeTo(22.0, 1e-9));
+      expect(LiquidMorphPhysics.computeCloseBlend(rawValue: 0.08),
+          inInclusiveRange(8.0, 14.0));
+    });
+
+    test('computeCloseGlassScale matches 0.20+0.80u down to 0.24 then tapers',
+        () {
+      expect(
+        LiquidMorphPhysics.computeCloseGlassScale(
+          rawValue: 1.0,
+          minTriggerSide: 44.0,
+          menuWidth: 250.0,
+        ),
+        closeTo(1.0, 1e-9),
+      );
+      expect(
+        LiquidMorphPhysics.computeCloseGlassScale(
+          rawValue: 0.5,
+          minTriggerSide: 44.0,
+          menuWidth: 250.0,
+        ),
+        closeTo(0.6, 1e-9),
+      );
+      // Final tail width (~24.6 px) is narrower than the 44 px trigger.
+      final tailW = 250.0 *
+          LiquidMorphPhysics.computeCloseGlassScale(
+            rawValue: 0.0,
+            minTriggerSide: 44.0,
+            menuWidth: 250.0,
+          );
+      expect(tailW, inInclusiveRange(22.0, 30.0));
+    });
+
+    test(
+        'verticalOnlyRecoil zeroes horizontal push when vertical travel exists',
+        () {
+      final s = LiquidMorphPhysics.compute(
+        rawValue: 0.15,
+        finalDx: 103.0,
+        finalDy: 104.0,
+        isClosing: true,
+        elapsedSeconds: 0.18,
+        recoilHalfTravelPx: LiquidMorphPhysics.menuRecoilHalfTravelPx,
+        verticalOnlyRecoil: true,
+      );
+      expect(s.triggerPushDx, equals(0.0));
+      expect(s.triggerPushDy, lessThan(-14.0));
     });
 
     test('ramps smoothly in and out without exceeding the shader max', () {
@@ -956,11 +1020,11 @@ void main() {
     });
 
     test(
-        'open drift fits the traced MM1 ty: ~peak at ~110 ms, zero when settled',
+        'open drift fits the traced MM1 ty: 0 at start, ~peak at ~110 ms, zero when settled',
         () {
       double d(double t) =>
           LiquidMorphPhysics.computeOpenDrift(elapsedSeconds: t);
-      expect(d(0.0), inInclusiveRange(0.0, 8.0));
+      expect(d(0.0), equals(0.0));
       var peak = 0.0;
       var peakT = 0.0;
       for (var t = 0.0; t <= 0.4; t += 0.005) {
@@ -974,6 +1038,22 @@ void main() {
       // Exactly zero well before the open controller settles (~420 ms).
       expect(d(0.40), equals(0.0));
       expect(d(0.60), equals(0.0));
+      // Compact 2-item (~114 pt) menu scales down to native ~13.7 pt peak.
+      expect(
+        LiquidMorphPhysics.computeOpenDrift(
+          elapsedSeconds: peakT,
+          menuHeight: 114.0,
+        ),
+        inInclusiveRange(12.0, 19.0),
+      );
+      // Mid-close reopen at 70% open attenuates drift to 30%.
+      expect(
+        LiquidMorphPhysics.computeOpenDrift(
+          elapsedSeconds: peakT,
+          openStartProgress: 0.70,
+        ),
+        closeTo(d(peakT) * 0.30, 1e-9),
+      );
     });
 
     test('menu open size curve is faster than the shared smootherstep start',
@@ -1095,6 +1175,24 @@ void main() {
         expect(e, greaterThanOrEqualTo(prev));
         prev = e;
       }
+      // Tall menus (> 444 pt) start at exact restingHeight (no t=0 chop) and
+      // still converge to the ~109–115 pt fixed droplet by rawValue = 0.2.
+      expect(
+        LiquidMorphPhysics.computeCloseHeightEnvelope(
+          coreHeight: 44.0,
+          rawValue: 1.0,
+          restingHeight: 520.0,
+        ),
+        closeTo(520.0, 1e-9),
+      );
+      expect(
+        LiquidMorphPhysics.computeCloseHeightEnvelope(
+          coreHeight: 44.0,
+          rawValue: 0.2,
+          restingHeight: 520.0,
+        ),
+        inInclusiveRange(95.0, 125.0),
+      );
     });
   });
 
