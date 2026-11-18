@@ -1,7 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 
+import '../../types/glass_button_style.dart';
 import '../../types/glass_quality.dart';
+import '../../types/glass_surface_style.dart';
+import '../shared/glass_solid_surface.dart';
 import 'glass_button.dart';
 
 /// A glass morphism icon button following Apple's iOS 26 design patterns.
@@ -92,6 +95,7 @@ class GlassIconButton extends StatelessWidget {
     super.key,
     this.size = 44,
     this.iconSize,
+    this.iconColor,
     this.shape = GlassIconButtonShape.circle,
     this.borderRadius = 12,
     this.glowColor,
@@ -100,6 +104,10 @@ class GlassIconButton extends StatelessWidget {
     this.useOwnLayer = false,
     this.settings,
     this.quality,
+    this.surfaceStyle,
+    this.color,
+    this.tintColor,
+    this.style = GlassButtonStyle.filled,
     this.persistPressOnDrag = true,
     this.anchorStretch = true,
     this.anchorStretchSettings,
@@ -110,8 +118,8 @@ class GlassIconButton extends StatelessWidget {
   });
 
   // Default icon colors are resolved at build time from CupertinoColors.label
-  // so they adapt to light/dark mode. Disabled state uses secondaryLabel
-  // for natural dimming across both appearances.
+  // (or luminance-contrasted white/black for prominent/opaque fills) so they
+  // adapt cleanly across light and dark appearances.
 
   // ===========================================================================
   // Content Properties
@@ -127,6 +135,14 @@ class GlassIconButton extends StatelessWidget {
   ///
   /// If null, defaults to `size * 0.5` (half of button size).
   final double? iconSize;
+
+  /// Explicit color override for the icon.
+  ///
+  /// Supports [CupertinoDynamicColor]. When null, defaults to a
+  /// luminance-contrasted [CupertinoColors.black] or [CupertinoColors.white]
+  /// for [GlassButtonStyle.prominent] and high-alpha solid [color] fills, or
+  /// [CupertinoColors.label] (`tertiaryLabel` when disabled) otherwise.
+  final Color? iconColor;
 
   // ===========================================================================
   // Interaction Properties
@@ -197,10 +213,37 @@ class GlassIconButton extends StatelessWidget {
 
   /// Rendering quality for the glass effect.
   ///
-  /// If null, resolved via [GlassThemeHelpers.resolveQuality] — inherits from
+  /// If null, resolved via `GlassThemeHelpers.resolveQuality` — inherits from
   /// the nearest ancestor layer, then the theme, then the [GlassButton]
   /// widget-class default ([GlassQuality.standard]).
   final GlassQuality? quality;
+
+  /// How the button's surface is painted.
+  ///
+  /// If null (the default), inherits from the nearest ancestor
+  /// [InheritedGlassSurfaceStyle] (such as a `solid` `GlassContainer.card` or
+  /// `GlassGroupedSection`), falling back to [GlassSurfaceStyle.glass].
+  /// See [GlassButton.surfaceStyle] for details.
+  final GlassSurfaceStyle? surfaceStyle;
+
+  /// Explicit resting fill color override in [GlassSurfaceStyle.solid] mode.
+  ///
+  /// Supports [CupertinoDynamicColor]. Ignored in [GlassSurfaceStyle.glass]
+  /// mode (use [tintColor] to tint glass). See [GlassButton.color].
+  final Color? color;
+
+  /// Accent tint color for [GlassSurfaceStyle.glass] buttons (and fallback
+  /// accent for [GlassSurfaceStyle.solid] + [GlassButtonStyle.prominent] when
+  /// [color] is null).
+  ///
+  /// Supports [CupertinoDynamicColor]. See [GlassButton.tintColor].
+  final Color? tintColor;
+
+  /// The visual style of the icon button (`filled`, `prominent`, or
+  /// `transparent`).
+  ///
+  /// Defaults to [GlassButtonStyle.filled]. See [GlassButton.style].
+  final GlassButtonStyle style;
 
   /// Whether the pressed glass distortion persists while the finger is held
   /// down, even if dragged far away from the button.
@@ -242,14 +285,50 @@ class GlassIconButton extends StatelessWidget {
     final effectiveIconSize = iconSize ?? (size * 0.5);
     final isEnabled = onPressed != null;
 
+    final effectiveSurfaceStyle = surfaceStyle ??
+        InheritedGlassSurfaceStyle.maybeOf(context) ??
+        GlassSurfaceStyle.glass;
+    final isSolid = effectiveSurfaceStyle == GlassSurfaceStyle.solid;
+
+    final resolvedExplicitIconColor =
+        CupertinoDynamicColor.maybeResolve(iconColor, context);
+    final resolvedColor = CupertinoDynamicColor.maybeResolve(color, context);
+    final resolvedTint = CupertinoDynamicColor.maybeResolve(tintColor, context);
+
     // Build icon content wrapped in IconTheme so standard Icon widgets
     // inherit the correct size and color automatically.
-    final iconColor = isEnabled
-        ? CupertinoColors.label.resolveFrom(context)
-        : CupertinoColors.tertiaryLabel.resolveFrom(context);
+    final Color effectiveIconColor;
+    if (resolvedExplicitIconColor != null) {
+      effectiveIconColor = resolvedExplicitIconColor;
+    } else if (isSolid && style == GlassButtonStyle.prominent) {
+      final bg = resolvedColor ??
+          resolvedTint ??
+          CupertinoDynamicColor.resolve(
+            CupertinoTheme.of(context).primaryColor,
+            context,
+          );
+      effectiveIconColor = bg.computeLuminance() > 0.55
+          ? CupertinoColors.black
+          : CupertinoColors.white;
+    } else if (isSolid && resolvedColor != null && resolvedColor.a > 0.5) {
+      effectiveIconColor = resolvedColor.computeLuminance() > 0.55
+          ? CupertinoColors.black
+          : CupertinoColors.white;
+    } else if (!isSolid && style == GlassButtonStyle.prominent) {
+      effectiveIconColor = resolvedTint != null
+          ? (resolvedTint.computeLuminance() > 0.55
+              ? CupertinoColors.black
+              : CupertinoColors.white)
+          : CupertinoColors.white;
+    } else {
+      effectiveIconColor = isEnabled
+          ? CupertinoColors.label.resolveFrom(context)
+          : CupertinoColors.tertiaryLabel.resolveFrom(context);
+    }
+
     final iconWidget = IconTheme(
       data: IconThemeData(
-        color: iconColor,
+        color: effectiveIconColor,
         size: effectiveIconSize,
       ),
       child: icon,
@@ -266,6 +345,10 @@ class GlassIconButton extends StatelessWidget {
       settings: settings,
       useOwnLayer: useOwnLayer,
       quality: quality,
+      surfaceStyle: surfaceStyle,
+      color: color,
+      tintColor: tintColor,
+      style: style,
       interactionScale: interactionScale,
       glowColor: glowColor, // Let GlassButton use theme if null
       glowRadius: glowRadius,
@@ -287,7 +370,7 @@ class GlassIconButton extends StatelessWidget {
       case GlassIconButtonShape.circle:
         return _defaultOval;
       case GlassIconButtonShape.roundedSquare:
-        return LiquidRoundedRectangle(
+        return LiquidRoundedSuperellipse(
           borderRadius: borderRadius,
         );
     }

@@ -156,14 +156,14 @@ In iOS 26 and iOS 27, **glass is reserved for the floating navigation and contro
 |---|---|
 | Navigation bars (`GlassAppBar`), tab bars (`GlassTabBar`), toolbars (`GlassToolbar`) | Inset-grouped list cards (`GlassGroupedSection`, `GlassContainer.card`) |
 | Floating action buttons (`GlassButton`, `GlassIconButton`, `GlassPullDownButton`) | List rows (`GlassListTile`), article tiles, media cells |
-| Sheets, dialogs, popovers, menus (`GlassModalSheet`, `GlassDialog`, `GlassMenu`) | Form input wells inside solid cards (auto-inherited) |
+| Sheets, dialogs, popovers, menus (`GlassModalSheet`, `GlassDialog`, `GlassMenu`) | Buttons, chips & form input wells inside solid cards (auto-inherited) |
 | Active lifted lenses (`GlassSwitch`, `GlassSlider`, `GlassSegmentedControl`) | Full-screen backgrounds |
 
 ### Glass Composition Rule: Glass is a Platter, Not a Wrapper
 
-`GlassContainer.card`, `GlassContainer`, and `GlassGroupedSection` are **base surfaces** — do not nest persistently refractive glass widgets (`GlassButton`, `GlassChip`) inside a `glass`-mode container (nested glass sets `avoidsRefraction: true` to prevent double-refraction artifacts).
+`GlassContainer.card`, `GlassContainer`, and `GlassGroupedSection` are **base surfaces** — do not nest persistently refractive glass widgets (`GlassButton`, `GlassIconButton`, `GlassChip`) inside a `glass`-mode container (nested glass sets `avoidsRefraction: true` to prevent double-refraction artifacts).
 
-For Settings screens and scrolling lists, pass `surfaceStyle: GlassSurfaceStyle.solid` to render a flat white (`#FFFFFF`) / dark (`#1C1C1E`) card with 26 pt continuous corners and zero shader cost (`glass` is the 1.x default; `solid` becomes the default in `2.0.0`). Form inputs (`GlassTextField`, `GlassSearchBar`, `GlassTextArea`, `GlassPasswordField`, `GlassPicker`, `GlassChip`) **automatically inherit `GlassSurfaceStyle.solid`** when placed inside a solid section or card, while `GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl` keep their full `premium` lifted lens when touched:
+For Settings screens and scrolling lists, pass `surfaceStyle: GlassSurfaceStyle.solid` to render a flat white (`#FFFFFF`) / dark (`#1C1C1E`) card with 26 pt continuous corners and zero shader cost (`glass` is the 1.x default; `solid` becomes the default in `2.0.0`). Buttons, chips, and form inputs (`GlassButton`, `GlassIconButton`, `GlassChip`, `GlassTextField`, `GlassSearchBar`, `GlassTextArea`, `GlassPasswordField`, `GlassPicker`) **automatically inherit `GlassSurfaceStyle.solid`** when placed inside a solid section or card (while standalone floating `GlassButton` and `GlassIconButton` stay refractive glass and support `tintColor`), and `GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl` keep their full `premium` lifted lens when touched:
 
 ```dart
 GlassGroupedSection(
