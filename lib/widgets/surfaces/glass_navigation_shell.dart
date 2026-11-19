@@ -532,21 +532,68 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
   /// Whether [registrant] sits inside an inactive hidden branch beneath this
   /// shell (such as an inactive [IndexedStack], `StatefulShellRoute.indexedStack`,
   /// `CupertinoTabScaffold`, [Visibility], [Offstage], or [TickerMode] subtree),
-  /// as distinct from [Navigator]'s own `_ModalScope` offstage/ticker state.
+  /// as distinct from [route]'s own `_ModalScope` / `Overlay` machinery.
   bool isBranchOffstage(BuildContext registrant, ModalRoute<dynamic> route) {
     if (registrant is Element && !registrant.mounted) return true;
     final stopAt = context;
+    final subtreeBoundary = route.subtreeContext;
+    final navContext = route.navigator?.context;
 
-    // 1. Walk from [registrant] up to this shell checking `RenderIndexedStack`
-    // (`IndexedStack` / `StatefulShellRoute.indexedStack`) and `Visibility`,
-    // neither of which `_ModalScope` ever builds.
-    Element? childElement = registrant is Element ? registrant : null;
-    var hiddenInTree = false;
-    registrant.visitAncestorElements((element) {
-      if (identical(element, stopAt)) return false;
+    // 1. Walk from [registrant] up to `route.subtreeContext` (all widgets inside
+    // the route's page, below `_ModalScope`'s internal `Offstage` and `Overlay`'s
+    // `TickerMode`). If `subtreeContext` is not yet attached, still check
+    // `Visibility` and `RenderIndexedStack` up to `navContext`.
+    final checkPageOffstageAndTicker = subtreeBoundary != null;
+    if (_isSegmentHidden(
+      registrant,
+      stopAt: stopAt,
+      segmentStop1: subtreeBoundary,
+      segmentStop2: navContext,
+      checkOffstageAndTicker: checkPageOffstageAndTicker,
+    )) {
+      return true;
+    }
+
+    // 2. Jump past `route`'s `Navigator` (skipping `_ModalScope`'s pre-transition
+    // hero warm-up `Offstage`) and check everything between `navContext` and
+    // this shell (`StatefulShellRoute`, `CupertinoTabScaffold`, etc.).
+    if (navContext != null && !identical(navContext, stopAt)) {
+      if (navContext is Element && !navContext.mounted) return false;
+      if (_isSegmentHidden(
+        navContext,
+        stopAt: stopAt,
+        checkOffstageAndTicker: true,
+      )) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  bool _isSegmentHidden(
+    BuildContext start, {
+    required BuildContext stopAt,
+    BuildContext? segmentStop1,
+    BuildContext? segmentStop2,
+    required bool checkOffstageAndTicker,
+  }) {
+    Element? childElement = start is Element ? start : null;
+    var hidden = false;
+    start.visitAncestorElements((element) {
+      if (identical(element, stopAt) ||
+          (segmentStop1 != null && identical(element, segmentStop1)) ||
+          (segmentStop2 != null && identical(element, segmentStop2))) {
+        return false;
+      }
       final w = element.widget;
       if (w is Visibility && !w.visible) {
-        hiddenInTree = true;
+        hidden = true;
+        return false;
+      }
+      if (checkOffstageAndTicker &&
+          ((w is Offstage && w.offstage) || (w is TickerMode && !w.enabled))) {
+        hidden = true;
         return false;
       }
       if (element is MultiChildRenderObjectElement && childElement != null) {
@@ -554,7 +601,7 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
         if (ro is RenderIndexedStack) {
           final slot = childElement!.slot;
           if (slot is IndexedSlot && slot.index != ro.index) {
-            hiddenInTree = true;
+            hidden = true;
             return false;
           }
         }
@@ -562,29 +609,7 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
       childElement = element;
       return true;
     });
-    if (hiddenInTree) return true;
-
-    // 2. Ancestors above the route's `Navigator`: `_ModalScope` lives inside
-    // `Navigator`, so any `Offstage(offstage: true)` or `TickerMode(enabled:
-    // false)` above `Navigator` (e.g. `CupertinoTabScaffold` or a custom
-    // offstage branch container) hides the entire nested stack without ever
-    // colliding with `_ModalScope`'s pre-transition hero warm-up frame.
-    final navContext = route.navigator?.context;
-    if (navContext != null && (navContext is! Element || navContext.mounted)) {
-      var hiddenAboveNavigator = false;
-      navContext.visitAncestorElements((element) {
-        if (identical(element, stopAt)) return false;
-        final w = element.widget;
-        if ((w is Offstage && w.offstage) || (w is TickerMode && !w.enabled)) {
-          hiddenAboveNavigator = true;
-          return false;
-        }
-        return true;
-      });
-      if (hiddenAboveNavigator) return true;
-    }
-
-    return false;
+    return hidden;
   }
 
   _RegistrantEntry? _activeEntryFor(ModalRoute<dynamic> route) {
@@ -607,18 +632,11 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
     if (navContext == null || (navContext is Element && !navContext.mounted)) {
       return false;
     }
-    final stopAt = context;
-    var hidden = false;
-    navContext.visitAncestorElements((element) {
-      if (identical(element, stopAt)) return false;
-      final w = element.widget;
-      if ((w is Offstage && w.offstage) || (w is TickerMode && !w.enabled)) {
-        hidden = true;
-        return false;
-      }
-      return true;
-    });
-    return hidden;
+    return _isSegmentHidden(
+      navContext,
+      stopAt: context,
+      checkOffstageAndTicker: true,
+    );
   }
 
   /// Starts [_clock] when [route]'s own transition does, if it needs one.

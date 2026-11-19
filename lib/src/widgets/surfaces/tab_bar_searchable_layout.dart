@@ -990,6 +990,9 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                               visible: widget.showIndicator &&
                                   !searching &&
                                   widget.extraButton?.selected != true,
+                              showDuringDragWhenHidden: widget.showIndicator &&
+                                  !searching &&
+                                  widget.extraButton?.selected == true,
                               tabIndex: selectedIndex,
                               tabCount: tabs.length,
                               onTabChanged: onTabSelected,

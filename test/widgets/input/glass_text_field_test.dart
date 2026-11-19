@@ -1162,5 +1162,40 @@ void main() {
       expect(searchBar.enableSuggestions, isFalse);
       expect(searchBar.selectionControls, materialTextSelectionHandleControls);
     });
+
+    testWidgets(
+        'renders Material selection handles cleanly on Android inside MaterialApp when selectionControls is provided',
+        (tester) async {
+      final controller = TextEditingController(text: 'hello android world');
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(platform: TargetPlatform.android),
+          home: Scaffold(
+            body: LiquidGlassWidgets.wrap(
+              child: GlassTextField(
+                controller: controller,
+                selectionControls: materialTextSelectionHandleControls,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Double-tap directly over the first word ('hello') to select it and
+      // mount the Material selection handles in the overlay.
+      final wordOffset =
+          tester.getTopLeft(find.byType(EditableText)) + const Offset(24, 10);
+      await tester.tapAt(wordOffset);
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tapAt(wordOffset);
+      await tester.pumpAndSettle();
+
+      final editable = tester.widget<EditableText>(find.byType(EditableText));
+      expect(editable.selectionControls, materialTextSelectionHandleControls);
+      expect(controller.selection.isCollapsed, isFalse);
+      expect(tester.takeException(), isNull);
+    });
   });
 }

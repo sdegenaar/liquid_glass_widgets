@@ -370,6 +370,8 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
                         backgroundQuality: effectiveBackgroundQuality,
                         springDescription: widget.springDescription,
                         visible: widget.showIndicator && !extraSelected,
+                        showDuringDragWhenHidden:
+                            widget.showIndicator && extraSelected,
                         tabIndex: selectedIndex,
                         tabCount: tabs.length,
                         indicatorColor: widget.indicatorColor,

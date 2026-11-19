@@ -53,6 +53,7 @@ void main() {
         );
       }
 
+      await tester.pumpAndSettle();
       handle.dispose();
     });
 
@@ -75,6 +76,7 @@ void main() {
       await tester.pump();
       expect(selected, 2);
 
+      await tester.pumpAndSettle();
       handle.dispose();
     });
 
@@ -107,6 +109,7 @@ void main() {
       await tester.pump();
       expect(selected, 2);
 
+      await tester.pumpAndSettle();
       handle.dispose();
     });
   });
@@ -142,6 +145,7 @@ void main() {
       await tester.pump();
       expect(selected, 1);
 
+      await tester.pumpAndSettle();
       handle.dispose();
     });
 
@@ -180,6 +184,7 @@ void main() {
       await tester.pump();
       expect(selected, 2);
 
+      await tester.pumpAndSettle();
       handle.dispose();
     });
   });
@@ -253,6 +258,7 @@ void main() {
       final extraBtn = tester.widget<GlassButton>(find.byType(GlassButton));
       expect(extraBtn.iconColor, CupertinoColors.activeBlue);
 
+      await tester.pumpAndSettle();
       handle.dispose();
     });
 
@@ -309,6 +315,142 @@ void main() {
         await tester.pump();
         expect(activated.last, expected);
       }
+    });
+
+    testWidgets(
+        'activating previously selected tab from extraButton.selected == true via keyboard or tap fires onTabSelected and retains keyboard focus',
+        (tester) async {
+      var selectedIndex = 0;
+      var extraSelected = true;
+      final selectedEvents = <int>[];
+      late StateSetter updateBar;
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: StatefulBuilder(
+            builder: (context, setBarState) {
+              updateBar = setBarState;
+              return GlassTabBar.bottom(
+                tabs: tabs,
+                selectedIndex: selectedIndex,
+                maskingQuality: MaskingQuality.high,
+                onTabSelected: (index) {
+                  selectedEvents.add(index);
+                  updateBar(() {
+                    selectedIndex = index;
+                    extraSelected = false;
+                  });
+                },
+                extraButton: GlassTabBarExtraButton(
+                  icon: const Icon(CupertinoIcons.compass),
+                  label: 'Explore',
+                  selected: extraSelected,
+                  onTap: () => updateBar(() => extraSelected = true),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // At rest with extraSelected == true, no AnimatedGlassIndicator is painted.
+      expect(find.byType(AnimatedGlassIndicator), findsNothing);
+
+      // 1. Tab to Home (index 0 — ALREADY the bar's selectedIndex!) and press Enter:
+      //    must fire onTabSelected(0), restore the pill indicator, AND preserve primaryFocus!
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      final focusedBeforeEnter = FocusManager.instance.primaryFocus;
+      expect(focusedBeforeEnter, isNotNull);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      expect(selectedEvents, [0]);
+      expect(extraSelected, isFalse);
+      expect(find.byType(AnimatedGlassIndicator), findsWidgets);
+      expect(
+        identical(FocusManager.instance.primaryFocus, focusedBeforeEnter),
+        isTrue,
+        reason:
+            'FocusNode must not be torn down when indicator transitions from hidden to visible',
+      );
+
+      // 2. Switch back to Explore extraButton, then pointer-tap Home (index 0):
+      //    must also fire onTabSelected(0) and re-select Home!
+      updateBar(() => extraSelected = true);
+      await tester.pumpAndSettle();
+      expect(find.byType(AnimatedGlassIndicator), findsNothing);
+
+      await tester.tap(find.text('Home'));
+      await tester.pumpAndSettle();
+      expect(selectedEvents, [0, 0]);
+      expect(extraSelected, isFalse);
+      expect(find.byType(AnimatedGlassIndicator), findsWidgets);
+    });
+
+    testWidgets(
+        'GlassTabBar.searchable supports extraButton.selected, single-stop Tab focus, and RTL Tab reading order',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+      final activated = <int>[];
+      var extraTaps = 0;
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: GlassTabBar.searchable(
+              tabs: tabs,
+              selectedIndex: 0,
+              onTabSelected: activated.add,
+              maskingQuality: MaskingQuality.high,
+              searchConfig: GlassSearchBarConfig(
+                showPill: false,
+                onSearchToggle: (_) {},
+              ),
+              extraButton: GlassTabBarExtraButton(
+                icon: const Icon(CupertinoIcons.sparkles),
+                label: 'AI',
+                position: GlassExtraButtonPosition.afterSearch,
+                selected: true,
+                onTap: () => extraTaps++,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      SemanticsData dataFor(String label) =>
+          tester.getSemantics(find.bySemanticsLabel(label)).getSemanticsData();
+
+      // ignore: deprecated_member_use
+      expect(dataFor('AI').hasFlag(SemanticsFlag.isSelected), isTrue);
+      // ignore: deprecated_member_use
+      expect(dataFor('Home').hasFlag(SemanticsFlag.isSelected), isFalse);
+      expect(find.byType(AnimatedGlassIndicator), findsNothing);
+
+      // Under RTL, ReadingOrderTraversalPolicy traverses right-to-left:
+      // first the rightmost AI extra button, then Home (0), Search (1), Profile (2)
+      // with zero duplicate lens stops.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(extraTaps, 1);
+
+      for (final expected in [0, 1, 2]) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pump();
+        expect(activated.last, expected);
+      }
+
+      await tester.pumpAndSettle();
+      handle.dispose();
     });
   });
 }

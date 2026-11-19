@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
@@ -2038,6 +2039,155 @@ void main() {
         (findBackingBox().decoration as BoxDecoration).color,
         const Color(0x00000000),
       );
+    });
+
+    testWidgets(
+        'trackpad two-finger pan toward empty side yields to PageView and dynamic onDismissed/borderRadius preserves child state',
+        (tester) async {
+      final pageController = PageController(initialPage: 1);
+      addTearDown(pageController.dispose);
+
+      var enableDismiss = false;
+      BorderRadius? currentRadius;
+      late StateSetter updateRow;
+      var childInitCount = 0;
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: SizedBox(
+            width: 360,
+            height: 200,
+            child: PageView(
+              controller: pageController,
+              children: [
+                const Center(child: Text('Trackpad Page 0')),
+                Center(
+                  child: StatefulBuilder(
+                    builder: (context, setRowState) {
+                      updateRow = setRowState;
+                      return SizedBox(
+                        height: 60,
+                        child: GlassSwipeActions(
+                          borderRadius: currentRadius,
+                          onDismissed: enableDismiss ? _noop : null,
+                          trailingActions: const [
+                            GlassSwipeAction(
+                              icon: Icon(CupertinoIcons.trash),
+                              label: Text('Delete'),
+                              onTap: _noop,
+                            ),
+                          ],
+                          child: _MountCounterChild(
+                            label: 'Trackpad Row',
+                            onInit: () => childInitCount++,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(childInitCount, 1);
+
+      // Toggling onDismissed and borderRadius must NOT remount child.
+      updateRow(() {
+        enableDismiss = true;
+        currentRadius = const BorderRadius.all(Radius.circular(14));
+      });
+      await tester.pump();
+      expect(childInitCount, 1);
+
+      // Trackpad two-finger pan right (positive localPan.dx toward empty leading
+      // side) yields the arena so PageView scrolls back to Page 0.
+      final center = tester.getCenter(find.text('Trackpad Row'));
+      final trackpad = TestPointer(1, PointerDeviceKind.trackpad);
+      await tester.sendEventToBinding(trackpad.panZoomStart(center));
+      await tester.sendEventToBinding(
+        trackpad.panZoomUpdate(center, pan: const Offset(40, 0)),
+      );
+      await tester.sendEventToBinding(
+        trackpad.panZoomUpdate(center, pan: const Offset(280, 0)),
+      );
+      await tester.sendEventToBinding(trackpad.panZoomEnd());
+      await tester.pumpAndSettle();
+      expect(pageController.page, 0.0);
+    });
+
+    testWidgets(
+        'solid surface mode alpha-blends custom backgroundColor and keeps base solid surface when transparent',
+        (tester) async {
+      final controller = GlassSwipeController();
+      addTearDown(controller.dispose);
+
+      Color? bg = const Color(0x80102040);
+      late StateSetter updateBg;
+
+      await tester.pumpWidget(
+        CupertinoApp(
+          theme: const CupertinoThemeData(brightness: Brightness.dark),
+          home: GlassTheme(
+            data: const GlassThemeData(dark: GlassThemeVariant.ios27Dark),
+            child: StatefulBuilder(
+              builder: (context, setBgState) {
+                updateBg = setBgState;
+                return Center(
+                  child: SizedBox(
+                    width: 320,
+                    child: GlassGroupedSection(
+                      surfaceStyle: GlassSurfaceStyle.solid,
+                      children: [
+                        GlassListTile(
+                          title: const Text('Solid Row'),
+                          swipeController: controller,
+                          swipeBackgroundColor: bg,
+                          trailingSwipeActions: const [
+                            GlassSwipeAction(
+                              icon: Icon(CupertinoIcons.trash),
+                              label: Text('Delete'),
+                              onTap: _noop,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      controller.openTrailing(animated: false);
+      await tester.pump();
+
+      Color backingColor() {
+        final primarySlot = find.byKey(
+          const ValueKey<String>('glass_swipe_primary_child'),
+        );
+        final box = tester
+            .widgetList<DecoratedBox>(
+              find.descendant(
+                of: primarySlot,
+                matching: find.byType(DecoratedBox),
+              ),
+            )
+            .firstWhere((b) => b.decoration is BoxDecoration);
+        return (box.decoration as BoxDecoration).color!;
+      }
+
+      final blended = backingColor();
+      updateBg(() => bg = const Color(0x00000000));
+      await tester.pump();
+      final baseSolid = backingColor();
+
+      expect(blended, Color.alphaBlend(const Color(0x80102040), baseSolid));
+      expect(baseSolid.a, 1.0);
     });
   });
 }

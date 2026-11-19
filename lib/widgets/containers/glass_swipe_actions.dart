@@ -409,6 +409,7 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
   }
 
   GlassSwipeActionScopeState? _scope;
+  final GlobalKey _childKey = GlobalKey();
 
   /// The row width of the last layout, which sets how wide the buttons can be.
   double? _rowWidth;
@@ -1022,7 +1023,10 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
                         ),
                       ),
                     ),
-                    widget.child,
+                    KeyedSubtree(
+                      key: _childKey,
+                      child: widget.child,
+                    ),
                   ],
                 ),
               ),
@@ -1531,14 +1535,21 @@ class _DirectionalHorizontalDragRecognizer
   bool allowPositiveDelta = true;
   bool allowNegativeDelta = true;
 
-  Offset? _initialGlobalPosition;
+  final Map<int, Offset> _initialLocalPositions = <int, Offset>{};
   bool _accepted = false;
 
   @override
   void addAllowedPointer(PointerDownEvent event) {
-    _initialGlobalPosition = event.position;
-    _accepted = false;
+    if (_initialLocalPositions.isEmpty) _accepted = false;
+    _initialLocalPositions[event.pointer] = event.localPosition;
     super.addAllowedPointer(event);
+  }
+
+  @override
+  void addAllowedPointerPanZoom(PointerPanZoomStartEvent event) {
+    if (_initialLocalPositions.isEmpty) _accepted = false;
+    _initialLocalPositions[event.pointer] = Offset.zero;
+    super.addAllowedPointerPanZoom(event);
   }
 
   @override
@@ -1549,31 +1560,33 @@ class _DirectionalHorizontalDragRecognizer
 
   @override
   void rejectGesture(int pointer) {
-    _initialGlobalPosition = null;
-    _accepted = false;
+    _initialLocalPositions.remove(pointer);
+    if (_initialLocalPositions.isEmpty) _accepted = false;
     super.rejectGesture(pointer);
   }
 
   @override
   void didStopTrackingLastPointer(int pointer) {
-    _initialGlobalPosition = null;
+    _initialLocalPositions.clear();
     _accepted = false;
     super.didStopTrackingLastPointer(pointer);
   }
 
   @override
   void handleEvent(PointerEvent event) {
-    if (!_accepted &&
-        _initialGlobalPosition != null &&
-        (event is PointerMoveEvent || event is PointerPanZoomUpdateEvent)) {
-      final double dx = event is PointerMoveEvent
-          ? event.position.dx - _initialGlobalPosition!.dx
-          : (event as PointerPanZoomUpdateEvent).pan.dx;
-      final double slop = computeHitSlop(event.kind, gestureSettings);
-      if (dx.abs() > slop) {
-        if ((dx > 0 && !allowPositiveDelta) ||
-            (dx < 0 && !allowNegativeDelta)) {
-          resolve(GestureDisposition.rejected);
+    if (!_accepted && _initialLocalPositions.containsKey(event.pointer)) {
+      double? dx;
+      if (event is PointerMoveEvent) {
+        dx = event.localPosition.dx - _initialLocalPositions[event.pointer]!.dx;
+      } else if (event is PointerPanZoomUpdateEvent) {
+        dx = event.localPan.dx;
+      }
+      if (dx != null) {
+        final double slop = computeHitSlop(event.kind, gestureSettings);
+        if (dx.abs() > slop &&
+            ((dx > 0 && !allowPositiveDelta) ||
+                (dx < 0 && !allowNegativeDelta))) {
+          resolvePointer(event.pointer, GestureDisposition.rejected);
           return;
         }
       }

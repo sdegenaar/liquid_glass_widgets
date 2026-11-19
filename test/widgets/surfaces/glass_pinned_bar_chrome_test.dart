@@ -1215,6 +1215,124 @@ void main() {
         expect(inHost(find.byIcon(CupertinoIcons.share)), findsNothing);
       },
     );
+
+    testWidgets(
+      'switching A -> B -> A across Offstage + TickerMode branches inside a single ModalRoute restores Tab A chrome',
+      (tester) async {
+        var currentTab = 0;
+        late StateSetter setTabState;
+
+        await tester.pumpWidget(
+          shellApp(
+            StatefulBuilder(
+              builder: (context, setState) {
+                setTabState = setState;
+                return Stack(
+                  children: [
+                    Offstage(
+                      offstage: currentTab != 0,
+                      child: TickerMode(
+                        enabled: currentTab == 0,
+                        child: const _MaterialBarScreen(
+                          title: 'Offstage A',
+                          actionIcon: CupertinoIcons.add,
+                        ),
+                      ),
+                    ),
+                    Offstage(
+                      offstage: currentTab != 1,
+                      child: TickerMode(
+                        enabled: currentTab == 1,
+                        child: const _MaterialBarScreen(
+                          title: 'Offstage B',
+                          actionIcon: CupertinoIcons.share,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+        await settle(tester);
+
+        expect(inHost(find.byIcon(CupertinoIcons.add)), findsOneWidget);
+        expect(inHost(find.byIcon(CupertinoIcons.share)), findsNothing);
+
+        setTabState(() => currentTab = 1);
+        await settle(tester);
+        expect(inHost(find.byIcon(CupertinoIcons.share)), findsOneWidget);
+        expect(inHost(find.byIcon(CupertinoIcons.add)), findsNothing);
+
+        setTabState(() => currentTab = 0);
+        await settle(tester);
+        expect(inHost(find.byIcon(CupertinoIcons.add)), findsOneWidget);
+        expect(inHost(find.byIcon(CupertinoIcons.share)), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'CupertinoTabScaffold switching A -> B -> A across CupertinoTabView navigators restores Tab A chrome',
+      (tester) async {
+        final tabController = CupertinoTabController(initialIndex: 0);
+        addTearDown(tabController.dispose);
+
+        await tester.pumpWidget(
+          shellApp(
+            CupertinoTabScaffold(
+              controller: tabController,
+              tabBar: CupertinoTabBar(
+                items: const [
+                  BottomNavigationBarItem(
+                    icon: Icon(CupertinoIcons.house),
+                    label: 'A',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(CupertinoIcons.person),
+                    label: 'B',
+                  ),
+                ],
+              ),
+              tabBuilder: (context, index) {
+                return CupertinoTabView(
+                  builder: (_) => GlassScaffold(
+                    appBar: GlassAppBar.pinned(
+                      title: Text('Cupertino Tab $index'),
+                      actions: [
+                        GlassBarItem.icon(
+                          icon: Icon(
+                            index == 0
+                                ? CupertinoIcons.add
+                                : CupertinoIcons.share,
+                          ),
+                          onTap: () {},
+                        ),
+                      ],
+                    ),
+                    body: Center(child: Text('Tab Body $index')),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+        await settle(tester);
+
+        expect(inHost(find.byIcon(CupertinoIcons.add)), findsOneWidget);
+        expect(inHost(find.byIcon(CupertinoIcons.share)), findsNothing);
+
+        tabController.index = 1;
+        await settle(tester);
+        expect(inHost(find.byIcon(CupertinoIcons.share)), findsOneWidget);
+        expect(inHost(find.byIcon(CupertinoIcons.add)), findsNothing);
+
+        tabController.index = 0;
+        await settle(tester);
+        expect(inHost(find.byIcon(CupertinoIcons.add)), findsOneWidget);
+        expect(inHost(find.byIcon(CupertinoIcons.share)), findsNothing);
+      },
+    );
   });
 }
 
