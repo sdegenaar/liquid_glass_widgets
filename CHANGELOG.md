@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- **`GlassMenu` on premium tab bars:** Fully hidden triggers are excluded from the shared glass blend group while the menu is open, removing the leftover button outline and preserving the trigger layout for the closing morph.
+
 # 1.18.0
 
 ## Features
