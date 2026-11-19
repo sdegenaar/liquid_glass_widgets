@@ -1960,6 +1960,85 @@ void main() {
       await tester.pumpAndSettle();
       expect(pageController.page, 0.0);
     });
+
+    testWidgets(
+        'GlassSwipeActions.backgroundColor and GlassListTile.swipeBackgroundColor customize or suppress open-row backing colour',
+        (tester) async {
+      const customNavy = CupertinoDynamicColor.withBrightness(
+        color: Color(0xFFE0ECFF),
+        darkColor: Color(0xFF0A192F),
+      );
+      final controller = GlassSwipeController();
+      addTearDown(controller.dispose);
+
+      Color? currentBg = customNavy;
+      late StateSetter updateBg;
+
+      await tester.pumpWidget(
+        CupertinoApp(
+          theme: const CupertinoThemeData(brightness: Brightness.dark),
+          home: GlassTheme(
+            data: const GlassThemeData(
+              dark: GlassThemeVariant.ios27Dark,
+            ),
+            child: StatefulBuilder(
+              builder: (context, setBgState) {
+                updateBg = setBgState;
+                return Center(
+                  child: SizedBox(
+                    width: 320,
+                    height: 60,
+                    child: GlassListTile.standalone(
+                      title: const Text('Custom Backing Row'),
+                      swipeController: controller,
+                      swipeBackgroundColor: currentBg,
+                      trailingSwipeActions: const [
+                        GlassSwipeAction(
+                          icon: Icon(CupertinoIcons.trash),
+                          label: Text('Delete'),
+                          onTap: _noop,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      controller.openTrailing(animated: false);
+      await tester.pump();
+
+      DecoratedBox findBackingBox() {
+        final primarySlot = find.byKey(
+          const ValueKey<String>('glass_swipe_primary_child'),
+        );
+        return tester
+            .widgetList<DecoratedBox>(
+              find.descendant(
+                of: primarySlot,
+                matching: find.byType(DecoratedBox),
+              ),
+            )
+            .firstWhere((box) => box.decoration is BoxDecoration);
+      }
+
+      // 1. Resolves CupertinoDynamicColor dark variant (#0A192F) when open.
+      expect(
+        (findBackingBox().decoration as BoxDecoration).color,
+        const Color(0xFF0A192F),
+      );
+
+      // 2. Passing transparent (0x00000000) suppresses the open-row highlight completely.
+      updateBg(() => currentBg = const Color(0x00000000));
+      await tester.pump();
+      expect(
+        (findBackingBox().decoration as BoxDecoration).color,
+        const Color(0x00000000),
+      );
+    });
   });
 }
 

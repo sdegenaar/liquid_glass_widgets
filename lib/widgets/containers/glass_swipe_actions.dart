@@ -215,6 +215,7 @@ class GlassSwipeActions extends StatefulWidget {
     this.closeOnTapOutside = true,
     this.clipBehavior = Clip.antiAlias,
     this.style = GlassSwipeActionStyle.tintedGlass,
+    this.backgroundColor,
     this.onDismissed,
   }) : assert(fullSwipeThreshold > 0.0 && fullSwipeThreshold <= 1.0,
             'fullSwipeThreshold must be between 0.0 and 1.0');
@@ -304,6 +305,21 @@ class GlassSwipeActions extends StatefulWidget {
   ///
   /// Defaults to [GlassSwipeActionStyle.tintedGlass].
   final GlassSwipeActionStyle style;
+
+  /// Optional colour painted behind [child] while the row is swiped open.
+  ///
+  /// Supports [CupertinoDynamicColor].
+  ///
+  /// When `null` (the default), uses `Color(0xFF2C2C2E)` in dark mode and
+  /// `Color(0xFFE5E5EA)` in light mode — at 35% opacity in
+  /// [GlassSurfaceStyle.glass] mode and opaque in [GlassSurfaceStyle.solid]
+  /// mode, fading in over the first 24 pt of horizontal travel.
+  ///
+  /// When provided, fades in to the resolved colour's alpha (`backgroundColor.a`)
+  /// behind [child] as the row opens (blended over the solid card surface in
+  /// [GlassSurfaceStyle.solid] mode). Pass `Color(0x00000000)` to suppress the
+  /// open-row highlight completely.
+  final Color? backgroundColor;
 
   /// Optional callback executed when the row is dismissed via full swipe.
   ///
@@ -919,15 +935,28 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
         final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
         final pageColor =
             isDark ? const Color(0xFF000000) : const Color(0xFFF2F2F7);
-        final swipedHighlightColor =
+        final resolvedCustomBg =
+            CupertinoDynamicColor.maybeResolve(widget.backgroundColor, context);
+        final defaultHighlight =
             isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE5E5EA);
-        final Color swipedRowColor = inSolidSurface
-            ? Color.lerp(
-                resolveGlassSolidSurfaceColor(context),
-                swipedHighlightColor,
-                greyProgress,
-              )!
-            : swipedHighlightColor.withValues(alpha: 0.35 * greyProgress);
+        final Color swipedRowColor;
+        if (inSolidSurface) {
+          final baseSolid = resolveGlassSolidSurfaceColor(context);
+          swipedRowColor = resolvedCustomBg != null
+              ? Color.alphaBlend(
+                  resolvedCustomBg.withValues(
+                    alpha: resolvedCustomBg.a * greyProgress,
+                  ),
+                  baseSolid,
+                )
+              : Color.lerp(baseSolid, defaultHighlight, greyProgress)!;
+        } else {
+          swipedRowColor = resolvedCustomBg != null
+              ? resolvedCustomBg.withValues(
+                  alpha: resolvedCustomBg.a * greyProgress,
+                )
+              : defaultHighlight.withValues(alpha: 0.35 * greyProgress);
+        }
 
         Widget body = Stack(
           clipBehavior: Clip.hardEdge,
