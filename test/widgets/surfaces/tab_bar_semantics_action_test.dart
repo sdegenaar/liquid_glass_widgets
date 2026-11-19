@@ -224,8 +224,8 @@ void main() {
 
       // 1. Default (selected: null) -> extra button is a plain action button (no selected state), Home is selected.
       // ignore: deprecated_member_use
-      expect(dataFor('Discover').hasFlag(SemanticsFlag.hasSelectedState),
-          isFalse);
+      expect(
+          dataFor('Discover').hasFlag(SemanticsFlag.hasSelectedState), isFalse);
       // ignore: deprecated_member_use
       expect(dataFor('Home').hasFlag(SemanticsFlag.isSelected), isTrue);
 

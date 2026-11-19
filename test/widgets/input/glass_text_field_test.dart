@@ -1123,8 +1123,8 @@ void main() {
         ),
       );
 
-      CupertinoTextField innerOf(String key) => tester.widget<
-              CupertinoTextField>(
+      CupertinoTextField innerOf(String key) =>
+          tester.widget<CupertinoTextField>(
             find.descendant(
               of: find.byKey(ValueKey(key)),
               matching: find.byType(CupertinoTextField),

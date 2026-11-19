@@ -570,8 +570,7 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
     // offstage branch container) hides the entire nested stack without ever
     // colliding with `_ModalScope`'s pre-transition hero warm-up frame.
     final navContext = route.navigator?.context;
-    if (navContext != null &&
-        (navContext is! Element || navContext.mounted)) {
+    if (navContext != null && (navContext is! Element || navContext.mounted)) {
       var hiddenAboveNavigator = false;
       navContext.visitAncestorElements((element) {
         if (identical(element, stopAt)) return false;

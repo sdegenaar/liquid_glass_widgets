@@ -932,12 +932,11 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                                       // Chrome-plane peer: matches the track background,
                                       // not the indicator pill (effectiveQuality).
                                       quality: effectiveBackgroundQuality,
-                                      iconColor:
-                                          widget.extraButton!.iconColor ??
-                                              (widget.extraButton!.selected ==
-                                                      true
-                                                  ? resolvedSelectedIconColor
-                                                  : resolvedUnselectedIconColor),
+                                      iconColor: widget
+                                              .extraButton!.iconColor ??
+                                          (widget.extraButton!.selected == true
+                                              ? resolvedSelectedIconColor
+                                              : resolvedUnselectedIconColor),
                                       enableBlend: widget.enableBlend,
                                       borderRadius: widget.barBorderRadius ==
                                               TabBarSearchableLayout
