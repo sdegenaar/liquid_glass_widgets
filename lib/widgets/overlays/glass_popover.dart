@@ -131,6 +131,7 @@ class GlassPopover extends StatefulWidget {
     this.blurRampDuration = const Duration(milliseconds: 260),
     this.blurRampCurve = Curves.easeOut,
     this.semanticLabel,
+    this.controller,
   }) : assert(trigger != null || triggerBuilder != null,
             'Either trigger or triggerBuilder must be provided');
 
@@ -346,6 +347,37 @@ class GlassPopover extends StatefulWidget {
   /// [blurRampDuration] is [Duration.zero].
   final Curve blurRampCurve;
 
+  /// Opens and closes the popover from outside its trigger
+  /// ([GlassPopoverController.open] / [GlassPopoverController.close]) —
+  /// the same seam [GlassMenu.controller] gives a menu, for a popover whose
+  /// host decides when it appears (state-driven UI, a guided tour, a section
+  /// opened from elsewhere).
+  ///
+  /// One controller drives one mounted [GlassPopover] at a time.
+  final GlassPopoverController? controller;
+
   @override
   State<GlassPopover> createState() => _GlassPopoverState();
+}
+
+/// Commands a [GlassPopover] to open or close from outside its trigger.
+/// [open] morphs from the trigger's current position exactly as a trigger tap
+/// does; [close] runs the rubber-band collapse and fires [GlassPopover.onClose].
+class GlassPopoverController {
+  _GlassPopoverState? _state;
+
+  void _attach(_GlassPopoverState state) => _state = state;
+
+  void _detach(_GlassPopoverState state) {
+    if (identical(_state, state)) _state = null;
+  }
+
+  /// Whether the popover's overlay is shown (open, or animating closed).
+  bool get isOpen => _state?._overlayController.isShowing ?? false;
+
+  /// Opens the popover, as a tap on its trigger does.
+  void open() => _state?._openPopover();
+
+  /// Closes the popover, as a tap outside it does.
+  void close() => _state?._closePopover();
 }
