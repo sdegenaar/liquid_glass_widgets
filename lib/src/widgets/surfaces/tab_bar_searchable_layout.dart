@@ -241,13 +241,15 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
   /// Lays out the tab [Row] in physical (LTR) order regardless of the ambient
   /// direction, so the first child is on the left — matching the indicator and
   /// gesture coordinate space. RTL ordering is carried by the reversed tab data
-  /// in [_buildBar], not by the ambient direction of these Rows. Scoping the
-  /// pin to the Rows keeps `Directionality.of(context)` intact for the rest of
-  /// the subtree (notably [indicatorExpansion] / [tabPadding] resolution).
+  /// in [_buildBar], not by the layout direction of these Rows. Setting
+  /// `Row(textDirection: TextDirection.ltr)` directly (without overriding the
+  /// inherited [Directionality]) preserves `Directionality.of(context)` on
+  /// descendant [FocusNode]s and [Semantics], so RTL keyboard focus traversal
+  /// (`ReadingOrderTraversalPolicy`) visits the first (rightmost) tab first.
   static Widget _ltrTabRow({required List<Widget> children}) {
-    return Directionality(
+    return Row(
       textDirection: TextDirection.ltr,
-      child: Row(children: children),
+      children: children,
     );
   }
 
@@ -932,7 +934,10 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                                       quality: effectiveBackgroundQuality,
                                       iconColor:
                                           widget.extraButton!.iconColor ??
-                                              resolvedUnselectedIconColor,
+                                              (widget.extraButton!.selected ==
+                                                      true
+                                                  ? resolvedSelectedIconColor
+                                                  : resolvedUnselectedIconColor),
                                       enableBlend: widget.enableBlend,
                                       borderRadius: widget.barBorderRadius ==
                                               TabBarSearchableLayout
@@ -983,7 +988,9 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                               key: _indicatorKey,
                               quality: effectiveQuality,
                               backgroundQuality: effectiveBackgroundQuality,
-                              visible: widget.showIndicator && !searching,
+                              visible: widget.showIndicator &&
+                                  !searching &&
+                                  widget.extraButton?.selected != true,
                               tabIndex: selectedIndex,
                               tabCount: tabs.length,
                               onTabChanged: onTabSelected,
@@ -1321,41 +1328,44 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
         fallbackLabelColor: widget.textStyle?.color,
       );
 
-      return ExcludeSemantics(
-        child: _ltrTabRow(
-          children: [
-            for (var i = 0; i < tabs.length; i++)
-              Expanded(
-                child: (i >= aStart && i <= aEnd)
-                    ? Transform.scale(
-                        scale: _tabProximityScale(pillTabIndex, i, scale),
-                        child: BottomBarTabItem(
-                          tab: tabs[i],
-                          selected: true,
-                          selectedIconColor: activeColors.iconColor,
-                          unselectedIconColor: resolvedUnselectedIconColor,
-                          selectedLabelColor: activeColors.labelColor,
-                          unselectedLabelColor: widget.unselectedLabelColor,
-                          selectedLabelStyle: widget.selectedLabelStyle,
-                          unselectedLabelStyle: widget.unselectedLabelStyle,
-                          iconSize: widget.iconSize,
-                          labelFontSize: widget.labelFontSize,
-                          textStyle: widget.textStyle,
-                          iconLabelSpacing: widget.iconLabelSpacing,
-                          glowDuration: widget.glowDuration,
-                          glowBlurRadius: widget.glowBlurRadius,
-                          glowSpreadRadius: widget.glowSpreadRadius,
-                          glowOpacity: widget.glowOpacity,
-                          onTap: null,
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-          ],
+      return ExcludeFocus(
+        child: ExcludeSemantics(
+          child: _ltrTabRow(
+            children: [
+              for (var i = 0; i < tabs.length; i++)
+                Expanded(
+                  child: (i >= aStart && i <= aEnd)
+                      ? Transform.scale(
+                          scale: _tabProximityScale(pillTabIndex, i, scale),
+                          child: BottomBarTabItem(
+                            tab: tabs[i],
+                            selected: true,
+                            selectedIconColor: activeColors.iconColor,
+                            unselectedIconColor: resolvedUnselectedIconColor,
+                            selectedLabelColor: activeColors.labelColor,
+                            unselectedLabelColor: widget.unselectedLabelColor,
+                            selectedLabelStyle: widget.selectedLabelStyle,
+                            unselectedLabelStyle: widget.unselectedLabelStyle,
+                            iconSize: widget.iconSize,
+                            labelFontSize: widget.labelFontSize,
+                            textStyle: widget.textStyle,
+                            iconLabelSpacing: widget.iconLabelSpacing,
+                            glowDuration: widget.glowDuration,
+                            glowBlurRadius: widget.glowBlurRadius,
+                            glowSpreadRadius: widget.glowSpreadRadius,
+                            glowOpacity: widget.glowOpacity,
+                            onTap: null,
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+            ],
+          ),
         ),
       );
     }
 
+    final bool extraSelected = widget.extraButton?.selected == true;
     return _ltrTabRow(
       children: [
         for (var i = 0; i < tabs.length; i++)
@@ -1363,7 +1373,7 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
             child: BottomBarTabItem(
               tab: tabs[i],
               selected: false,
-              semanticsSelected: i == selectedIndex,
+              semanticsSelected: !extraSelected && i == selectedIndex,
               selectedIconColor: resolvedSelectedIconColor,
               unselectedIconColor: resolvedUnselectedIconColor,
               selectedLabelColor: widget.selectedLabelColor,

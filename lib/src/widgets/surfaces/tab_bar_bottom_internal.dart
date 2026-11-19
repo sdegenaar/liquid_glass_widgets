@@ -515,6 +515,7 @@ class BottomBarExtraBtn extends StatelessWidget {
         // See: https://github.com/sdegenaar/liquid_glass_widgets/issues/203
         isStationary: true,
         enabled: config.enabled,
+        isSelected: config.selected,
       );
     }
 

@@ -175,6 +175,7 @@ class GlassButton extends StatefulWidget {
     this.platformViewBackdrop = false,
     this.canRequestFocus = true,
     this.excludeFromSemantics = false,
+    this.isSelected,
     this.isStationary = false,
   }) : child = null;
 
@@ -241,6 +242,7 @@ class GlassButton extends StatefulWidget {
     this.platformViewBackdrop = false,
     this.canRequestFocus = true,
     this.excludeFromSemantics = false,
+    this.isSelected,
     this.isStationary = false,
   })  : icon = null,
         iconSize = 24.0,
@@ -294,6 +296,14 @@ class GlassButton extends StatefulWidget {
   ///
   /// Defaults to true.
   final bool enabled;
+
+  /// Optional selection state reported to assistive technology (VoiceOver,
+  /// TalkBack).
+  ///
+  /// When `null` (the default), the button omits selection semantics so plain
+  /// action buttons do not announce `"not selected"`. When `true` or `false`,
+  /// the button participates in selection semantics (`Semantics.selected`).
+  final bool? isSelected;
 
   /// Semantic label for accessibility.
   ///
@@ -1272,6 +1282,9 @@ class _GlassButtonState extends State<GlassButton>
           ? widget.label
           : null,
       isButton: !widget.excludeFromSemantics,
+      tracksSelection:
+          !widget.excludeFromSemantics && widget.isSelected != null,
+      isSelected: widget.isSelected ?? false,
       // Route the tap through the Semantics node that carries the label so
       // that label, button role, and tap action all live on the same node.
       // The GestureDetectors below are excluded from semantics to prevent

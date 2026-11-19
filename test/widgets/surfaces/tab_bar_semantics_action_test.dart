@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -180,6 +181,134 @@ void main() {
       expect(selected, 2);
 
       handle.dispose();
+    });
+  });
+
+  group('GlassTabBarExtraButton selection & keyboard focus traversal', () {
+    testWidgets(
+        'extraButton.selected announces extra button as selected and clears pill selection',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+
+      bool? extraSelected;
+      late StateSetter updateBar;
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: StatefulBuilder(
+            builder: (context, setBarState) {
+              updateBar = setBarState;
+              return GlassTabBar.bottom(
+                tabs: const [
+                  GlassTab(label: 'Home', icon: Icon(CupertinoIcons.home)),
+                  GlassTab(label: 'Profile', icon: Icon(CupertinoIcons.person)),
+                ],
+                selectedIndex: 0,
+                selectedIconColor: CupertinoColors.activeBlue,
+                unselectedIconColor: CupertinoColors.systemGrey,
+                onTabSelected: (_) {},
+                extraButton: GlassTabBarExtraButton(
+                  icon: const Icon(CupertinoIcons.search),
+                  label: 'Discover',
+                  selected: extraSelected,
+                  onTap: () {},
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      SemanticsData dataFor(String label) =>
+          tester.getSemantics(find.bySemanticsLabel(label)).getSemanticsData();
+
+      // 1. Default (selected: null) -> extra button is a plain action button (no selected state), Home is selected.
+      // ignore: deprecated_member_use
+      expect(dataFor('Discover').hasFlag(SemanticsFlag.hasSelectedState),
+          isFalse);
+      // ignore: deprecated_member_use
+      expect(dataFor('Home').hasFlag(SemanticsFlag.isSelected), isTrue);
+
+      // 2. selected: false -> extra button participates in selection as unselected; Home stays selected.
+      updateBar(() => extraSelected = false);
+      await tester.pump();
+      // ignore: deprecated_member_use
+      expect(
+          dataFor('Discover').hasFlag(SemanticsFlag.hasSelectedState), isTrue);
+      // ignore: deprecated_member_use
+      expect(dataFor('Discover').hasFlag(SemanticsFlag.isSelected), isFalse);
+      // ignore: deprecated_member_use
+      expect(dataFor('Home').hasFlag(SemanticsFlag.isSelected), isTrue);
+
+      // 3. selected: true -> extra button is selected with selectedIconColor; ALL pill tabs report unselected!
+      updateBar(() => extraSelected = true);
+      await tester.pumpAndSettle();
+      // ignore: deprecated_member_use
+      expect(dataFor('Discover').hasFlag(SemanticsFlag.isSelected), isTrue);
+      // ignore: deprecated_member_use
+      expect(dataFor('Home').hasFlag(SemanticsFlag.isSelected), isFalse);
+      // ignore: deprecated_member_use
+      expect(dataFor('Profile').hasFlag(SemanticsFlag.isSelected), isFalse);
+
+      final extraBtn = tester.widget<GlassButton>(find.byType(GlassButton));
+      expect(extraBtn.iconColor, CupertinoColors.activeBlue);
+
+      handle.dispose();
+    });
+
+    testWidgets(
+        'Tab key visits each tab once (no duplicate lens stops) in MaskingQuality.high and searchable',
+        (tester) async {
+      var activated = <int>[];
+      await tester.pumpWidget(
+        createTestApp(
+          child: GlassTabBar.bottom(
+            tabs: tabs,
+            selectedIndex: 1,
+            onTabSelected: activated.add,
+            maskingQuality: MaskingQuality.high,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Three Tab presses must visit Home (0), Search (1), Profile (2) in order,
+      // and a 4th Tab press wraps back to Home (0) — proving zero duplicate lens stops!
+      for (final expected in [0, 1, 2, 0]) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pump();
+        expect(activated.last, expected);
+      }
+    });
+
+    testWidgets(
+        'under RTL, Tab key starts at first logical tab (rightmost) and traverses right-to-left',
+        (tester) async {
+      final activated = <int>[];
+      await tester.pumpWidget(
+        createTestApp(
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: GlassTabBar.bottom(
+              tabs: tabs,
+              selectedIndex: 0,
+              onTabSelected: activated.add,
+              maskingQuality: MaskingQuality.high,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      for (final expected in [0, 1, 2]) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pump();
+        expect(activated.last, expected);
+      }
     });
   });
 }
