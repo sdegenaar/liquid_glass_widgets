@@ -201,6 +201,7 @@ class GlassSwipeActions extends StatefulWidget {
     required this.child,
     this.leadingActions = const [],
     this.trailingActions = const [],
+    this.enabled = true,
     this.allowsFullSwipe = true,
     this.fullSwipeThreshold = 0.65,
     this.actionWidth,
@@ -226,6 +227,16 @@ class GlassSwipeActions extends StatefulWidget {
 
   /// Actions revealed when swiping from the trailing edge (right in LTR).
   final List<GlassSwipeAction> trailingActions;
+
+  /// Whether horizontal swipe gestures and programmatic opening are enabled.
+  ///
+  /// When `false` (or when both [leadingActions] and [trailingActions] are
+  /// empty), horizontal drags are not claimed in the gesture arena so ancestor
+  /// horizontal scrollables (such as [PageView]) can scroll freely, while
+  /// keeping [GlassSwipeActions] mounted in place so [child] does not remount.
+  ///
+  /// Defaults to `true`.
+  final bool enabled;
 
   /// Whether pulling past [fullSwipeThreshold] automatically executes the
   /// outermost action on release.
@@ -416,6 +427,19 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
       _hasFiredHaptic = false;
       _setSwipeState(GlassSwipeState.idle);
     }
+    if (!widget.enabled && (isOpen || _isDragging)) {
+      _isDragging = false;
+      close();
+    } else if (isOpen && !_isDismissing) {
+      final isRtl = Directionality.of(context) == TextDirection.rtl;
+      final activeOffset = _targetOffset != 0.0 ? _targetOffset : _offset;
+      final directional = isRtl ? -activeOffset : activeOffset;
+      if ((directional > 0 && widget.leadingActions.isEmpty) ||
+          (directional < 0 && widget.trailingActions.isEmpty)) {
+        _isDragging = false;
+        close();
+      }
+    }
   }
 
   @override
@@ -567,7 +591,7 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
 
   /// Programmatically opens the trailing actions.
   void openTrailing({bool animated = true}) {
-    if (!mounted || widget.trailingActions.isEmpty) return;
+    if (!mounted || !widget.enabled || widget.trailingActions.isEmpty) return;
     final totalWidth = _totalStandardWidth(widget.trailingActions);
     final isRtl = Directionality.of(context) == TextDirection.rtl;
     final target = isRtl ? totalWidth : -totalWidth;
@@ -577,7 +601,7 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
 
   /// Programmatically opens the leading actions.
   void openLeading({bool animated = true}) {
-    if (!mounted || widget.leadingActions.isEmpty) return;
+    if (!mounted || !widget.enabled || widget.leadingActions.isEmpty) return;
     final totalWidth = _totalStandardWidth(widget.leadingActions);
     final isRtl = Directionality.of(context) == TextDirection.rtl;
     final target = isRtl ? -totalWidth : totalWidth;
@@ -942,8 +966,10 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
                     availableHeight, inSolidSurface, pageColor),
               ),
 
-            // Sliding Primary Child
+            // Sliding Primary Child (keyed so conditional siblings above and
+            // below never remount widget.child across drag/open/close states).
             Transform.translate(
+              key: const ValueKey<String>('glass_swipe_primary_child'),
               offset: Offset(_offset, 0.0),
               child: ClipRRect(
                 borderRadius: isVisuallyOpen
@@ -958,14 +984,15 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
                     : BorderRadius.zero,
                 child: Stack(
                   children: [
-                    if (isVisuallyOpen)
-                      Positioned.fill(
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: swipedRowColor,
-                          ),
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: isVisuallyOpen
+                              ? swipedRowColor
+                              : const Color(0x00000000),
                         ),
                       ),
+                    ),
                     widget.child,
                   ],
                 ),
@@ -996,13 +1023,40 @@ class GlassSwipeActionsState extends State<GlassSwipeActions>
           );
         }
 
-        body = GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onHorizontalDragStart: _handleDragStart,
-          onHorizontalDragUpdate: (details) =>
-              _handleDragUpdate(details, rowWidth),
-          onHorizontalDragEnd: (details) => _handleDragEnd(details, rowWidth),
-          onHorizontalDragCancel: _handleDragCancel,
+        final canRevealPositive = isRtl
+            ? widget.trailingActions.isNotEmpty
+            : widget.leadingActions.isNotEmpty;
+        final canRevealNegative = isRtl
+            ? widget.leadingActions.isNotEmpty
+            : widget.trailingActions.isNotEmpty;
+        final canDrag = widget.enabled &&
+            (canRevealPositive || canRevealNegative || isOpen);
+
+        body = RawGestureDetector(
+          behavior:
+              canDrag ? HitTestBehavior.opaque : HitTestBehavior.deferToChild,
+          gestures: canDrag
+              ? <Type, GestureRecognizerFactory>{
+                  _DirectionalHorizontalDragRecognizer:
+                      GestureRecognizerFactoryWithHandlers<
+                          _DirectionalHorizontalDragRecognizer>(
+                    () => _DirectionalHorizontalDragRecognizer(
+                      debugOwner: this,
+                    ),
+                    (instance) {
+                      instance
+                        ..allowPositiveDelta = isOpen || canRevealPositive
+                        ..allowNegativeDelta = isOpen || canRevealNegative
+                        ..onStart = _handleDragStart
+                        ..onUpdate =
+                            ((details) => _handleDragUpdate(details, rowWidth))
+                        ..onEnd =
+                            ((details) => _handleDragEnd(details, rowWidth))
+                        ..onCancel = _handleDragCancel;
+                    },
+                  ),
+                }
+              : const <Type, GestureRecognizerFactory>{},
           child: body,
         );
 
@@ -1435,3 +1489,66 @@ TextStyle _swipeActionLabelStyle(double circleDiameter) => TextStyle(
       fontWeight: FontWeight.normal,
       letterSpacing: -0.2,
     );
+
+/// A [HorizontalDragGestureRecognizer] that yields the gesture arena when a
+/// closed row is dragged toward a side with no configured swipe actions, so
+/// ancestor horizontal scrollables (such as [PageView]) can claim the drag.
+class _DirectionalHorizontalDragRecognizer
+    extends HorizontalDragGestureRecognizer {
+  _DirectionalHorizontalDragRecognizer({
+    super.debugOwner,
+  });
+
+  bool allowPositiveDelta = true;
+  bool allowNegativeDelta = true;
+
+  Offset? _initialGlobalPosition;
+  bool _accepted = false;
+
+  @override
+  void addAllowedPointer(PointerDownEvent event) {
+    _initialGlobalPosition = event.position;
+    _accepted = false;
+    super.addAllowedPointer(event);
+  }
+
+  @override
+  void acceptGesture(int pointer) {
+    _accepted = true;
+    super.acceptGesture(pointer);
+  }
+
+  @override
+  void rejectGesture(int pointer) {
+    _initialGlobalPosition = null;
+    _accepted = false;
+    super.rejectGesture(pointer);
+  }
+
+  @override
+  void didStopTrackingLastPointer(int pointer) {
+    _initialGlobalPosition = null;
+    _accepted = false;
+    super.didStopTrackingLastPointer(pointer);
+  }
+
+  @override
+  void handleEvent(PointerEvent event) {
+    if (!_accepted &&
+        _initialGlobalPosition != null &&
+        (event is PointerMoveEvent || event is PointerPanZoomUpdateEvent)) {
+      final double dx = event is PointerMoveEvent
+          ? event.position.dx - _initialGlobalPosition!.dx
+          : (event as PointerPanZoomUpdateEvent).pan.dx;
+      final double slop = computeHitSlop(event.kind, gestureSettings);
+      if (dx.abs() > slop) {
+        if ((dx > 0 && !allowPositiveDelta) ||
+            (dx < 0 && !allowNegativeDelta)) {
+          resolve(GestureDisposition.rejected);
+          return;
+        }
+      }
+    }
+    super.handleEvent(event);
+  }
+}

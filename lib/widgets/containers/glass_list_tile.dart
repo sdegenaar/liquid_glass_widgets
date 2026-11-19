@@ -493,13 +493,11 @@ class _GlassListTileState extends State<GlassListTile>
       );
     }
 
-    final hasSwipeActions = !effectiveIsEditing &&
-        ((widget.leadingSwipeActions != null &&
-                widget.leadingSwipeActions!.isNotEmpty) ||
-            (widget.trailingSwipeActions != null &&
-                widget.trailingSwipeActions!.isNotEmpty));
+    final hasSwipeWrapper = widget.leadingSwipeActions != null ||
+        widget.trailingSwipeActions != null ||
+        widget.swipeController != null;
 
-    if (hasSwipeActions) {
+    if (hasSwipeWrapper) {
       final effectiveStyle = widget.swipeActionStyle ??
           (InheritedGlassSurfaceStyle.maybeOf(context) ==
                   GlassSurfaceStyle.solid
@@ -507,6 +505,7 @@ class _GlassListTileState extends State<GlassListTile>
               : GlassSwipeActionStyle.tintedGlass);
 
       content = GlassSwipeActions(
+        enabled: !effectiveIsEditing,
         leadingActions: widget.leadingSwipeActions ?? const [],
         trailingActions: widget.trailingSwipeActions ?? const [],
         allowsFullSwipe: widget.allowsFullSwipe,

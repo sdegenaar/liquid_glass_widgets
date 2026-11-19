@@ -1808,7 +1808,188 @@ void main() {
       );
       expect(tester.getSize(jordanTile).height, greaterThan(20));
     });
+
+    testWidgets(
+        'empty actions and enabled: false yield horizontal drags to ancestor PageView without remounting child',
+        (tester) async {
+      final pageController = PageController();
+      addTearDown(pageController.dispose);
+
+      var hasActions = false;
+      var swipeEnabled = true;
+      late StateSetter updateRow;
+      var childInitCount = 0;
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: SizedBox(
+            width: 360,
+            height: 200,
+            child: PageView(
+              controller: pageController,
+              children: [
+                Center(
+                  child: StatefulBuilder(
+                    builder: (context, setRowState) {
+                      updateRow = setRowState;
+                      return SizedBox(
+                        height: 60,
+                        child: GlassSwipeActions(
+                          enabled: swipeEnabled,
+                          trailingActions: hasActions
+                              ? [
+                                  GlassSwipeAction(
+                                    icon: const Icon(CupertinoIcons.trash),
+                                    label: const Text('Delete'),
+                                    isDestructive: true,
+                                    onTap: _noop,
+                                  ),
+                                ]
+                              : const [],
+                          child: _MountCounterChild(
+                            label: 'Page 0 Row',
+                            onInit: () => childInitCount++,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const Center(child: Text('Page 1 Content')),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(childInitCount, 1);
+      expect(pageController.page, 0.0);
+
+      // 1. With trailingActions empty, dragging left directly on the row scrolls PageView to Page 1.
+      await tester.drag(find.text('Page 0 Row'), const Offset(-300, 0));
+      await tester.pumpAndSettle();
+      expect(pageController.page, 1.0);
+
+      // Return to Page 0 and add trailingActions: child State must NOT remount.
+      pageController.jumpToPage(0);
+      await tester.pumpAndSettle();
+      final initCountOnPage0 = childInitCount;
+      updateRow(() => hasActions = true);
+      await tester.pump();
+      expect(childInitCount, initCountOnPage0);
+
+      // 2. With trailingActions populated and enabled: true, dragging left opens the row instead of turning the page.
+      await tester.drag(find.text('Page 0 Row'), const Offset(-120, 0));
+      await tester.pumpAndSettle();
+      expect(pageController.page, 0.0);
+      final swipeState =
+          tester.state<GlassSwipeActionsState>(find.byType(GlassSwipeActions));
+      expect(swipeState.isOpen, isTrue);
+
+      // 3. Flipping enabled: false closes the open row, preserves child State, and yields drags to PageView.
+      updateRow(() => swipeEnabled = false);
+      await tester.pumpAndSettle();
+      expect(childInitCount, initCountOnPage0);
+      expect(swipeState.isOpen, isFalse);
+
+      swipeState.openTrailing(animated: false);
+      expect(swipeState.isOpen, isFalse);
+
+      await tester.drag(find.text('Page 0 Row'), const Offset(-300, 0));
+      await tester.pumpAndSettle();
+      expect(pageController.page, 1.0);
+    });
+
+    testWidgets(
+        'one-sided trailingActions yields closed-row drags toward empty leading side to PageView',
+        (tester) async {
+      final pageController = PageController(initialPage: 1);
+      addTearDown(pageController.dispose);
+
+      await tester.pumpWidget(
+        createTestApp(
+          child: SizedBox(
+            width: 360,
+            height: 200,
+            child: PageView(
+              controller: pageController,
+              children: [
+                const Center(child: Text('Page 0')),
+                Center(
+                  child: SizedBox(
+                    height: 60,
+                    child: GlassSwipeActions(
+                      trailingActions: const [
+                        GlassSwipeAction(
+                          icon: Icon(CupertinoIcons.trash),
+                          label: Text('Delete'),
+                          onTap: _noop,
+                        ),
+                      ],
+                      child: const ColoredBox(
+                        color: CupertinoColors.systemBlue,
+                        child: Center(child: Text('Page 1 Swipe Row')),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(pageController.page, 1.0);
+
+      // Swiping left reveals trailingActions while staying on Page 1.
+      await tester.drag(find.text('Page 1 Swipe Row'), const Offset(-120, 0));
+      await tester.pumpAndSettle();
+      final swipeState =
+          tester.state<GlassSwipeActionsState>(find.byType(GlassSwipeActions));
+      expect(swipeState.isOpen, isTrue);
+      expect(pageController.page, 1.0);
+
+      // Swiping right while open closes the row without changing pages.
+      await tester.drag(find.byType(GlassSwipeActions), const Offset(120, 0));
+      await tester.pumpAndSettle();
+      expect(swipeState.isOpen, isFalse);
+      expect(pageController.page, 1.0);
+
+      // Swiping right while closed (empty leading side) yields to PageView -> scrolls to Page 0!
+      await tester.drag(find.text('Page 1 Swipe Row'), const Offset(300, 0));
+      await tester.pumpAndSettle();
+      expect(pageController.page, 0.0);
+    });
   });
+}
+
+class _MountCounterChild extends StatefulWidget {
+  const _MountCounterChild({
+    required this.label,
+    required this.onInit,
+  });
+
+  final String label;
+  final VoidCallback onInit;
+
+  @override
+  State<_MountCounterChild> createState() => _MountCounterChildState();
+}
+
+class _MountCounterChildState extends State<_MountCounterChild> {
+  @override
+  void initState() {
+    super.initState();
+    widget.onInit();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: CupertinoColors.systemGrey,
+      child: Center(child: Text(widget.label)),
+    );
+  }
 }
 
 void _noop() {}
