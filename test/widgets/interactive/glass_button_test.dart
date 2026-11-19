@@ -1529,42 +1529,44 @@ void main() {
       debugPrint = (String? message, {int? wrapWidth}) {
         if (message != null) logs.add(message);
       };
-      addTearDown(() => debugPrint = previousDebugPrint);
-
-      await tester.pumpWidget(
-        cupertinoHost(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              GlassButton(
-                icon: const Icon(CupertinoIcons.star),
-                surfaceStyle: GlassSurfaceStyle.solid,
-                settings: defaultTestGlassSettings,
-                quality: GlassQuality.standard,
-                onTap: () {},
-              ),
-              AdaptiveLiquidGlassLayer(
-                settings: defaultTestGlassSettings,
-                child: GlassButton(
-                  icon: const Icon(CupertinoIcons.heart),
-                  color: const Color(0xFFFF0000),
+      try {
+        await tester.pumpWidget(
+          cupertinoHost(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GlassButton(
+                  icon: const Icon(CupertinoIcons.star),
+                  surfaceStyle: GlassSurfaceStyle.solid,
+                  settings: defaultTestGlassSettings,
+                  quality: GlassQuality.standard,
                   onTap: () {},
                 ),
-              ),
-            ],
+                AdaptiveLiquidGlassLayer(
+                  settings: defaultTestGlassSettings,
+                  child: GlassButton(
+                    icon: const Icon(CupertinoIcons.heart),
+                    color: const Color(0xFFFF0000),
+                    onTap: () {},
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(
-        logs.any((m) =>
-            m.contains('settings') && m.contains('GlassSurfaceStyle.solid')),
-        isTrue,
-      );
-      expect(
-        logs.any((m) => m.contains('tintColor') && m.contains('color')),
-        isTrue,
-      );
+        expect(
+          logs.any((m) =>
+              m.contains('settings') && m.contains('GlassSurfaceStyle.solid')),
+          isTrue,
+        );
+        expect(
+          logs.any((m) => m.contains('tintColor') && m.contains('color')),
+          isTrue,
+        );
+      } finally {
+        debugPrint = previousDebugPrint;
+      }
     });
 
     testWidgets(
@@ -1575,61 +1577,64 @@ void main() {
       debugPrint = (String? message, {int? wrapWidth}) {
         if (message != null) logs.add(message);
       };
-      addTearDown(() => debugPrint = previousDebugPrint);
+      try {
+        for (var i = 0; i < 5; i++) {
+          await tester.pumpWidget(
+            cupertinoHost(
+              child: GlassMaterializeScope(
+                glassProgress: 0.2 * (i + 1),
+                contentOpacity: 1.0,
+                contentSigma: 0.0,
+                child: GlassButton(
+                  icon:
+                      Icon(i.isEven ? CupertinoIcons.star : CupertinoIcons.add),
+                  surfaceStyle: GlassSurfaceStyle.solid,
+                  settings: const LiquidGlassSettings(),
+                  onTap: () {},
+                ),
+              ),
+            ),
+          );
+        }
 
-      for (var i = 0; i < 5; i++) {
+        final solidLogs = logs
+            .where((m) =>
+                m.contains('settings') && m.contains('GlassSurfaceStyle.solid'))
+            .toList();
+        expect(
+          solidLogs,
+          hasLength(1),
+          reason: 'Hint must log once rather than spamming on every rebuild',
+        );
+
+        logs.clear();
+        final editController = GlassEditController();
+        addTearDown(editController.dispose);
+
         await tester.pumpWidget(
           cupertinoHost(
-            child: GlassMaterializeScope(
-              glassProgress: 0.2 * (i + 1),
-              contentOpacity: 1.0,
-              contentSigma: 0.0,
-              child: GlassButton(
-                icon: Icon(i.isEven ? CupertinoIcons.star : CupertinoIcons.add),
+            child: GlassEditScope(
+              controller: editController,
+              child: const GlassContainer.card(
                 surfaceStyle: GlassSurfaceStyle.solid,
-                settings: const LiquidGlassSettings(),
-                onTap: () {},
+                child: GlassEditButton(enableHaptics: false),
               ),
             ),
           ),
         );
+
+        await tester.tap(find.byType(GlassEditButton));
+        await tester.pumpAndSettle();
+
+        expect(
+          logs,
+          isEmpty,
+          reason:
+              'Composite buttons passing internal quality must not trigger false-positive warnings inside ambient solid containers',
+        );
+      } finally {
+        debugPrint = previousDebugPrint;
       }
-
-      final solidLogs = logs
-          .where((m) =>
-              m.contains('settings') && m.contains('GlassSurfaceStyle.solid'))
-          .toList();
-      expect(
-        solidLogs,
-        hasLength(1),
-        reason: 'Hint must log once rather than spamming on every rebuild',
-      );
-
-      logs.clear();
-      final editController = GlassEditController();
-      addTearDown(editController.dispose);
-
-      await tester.pumpWidget(
-        cupertinoHost(
-          child: GlassEditScope(
-            controller: editController,
-            child: const GlassContainer.card(
-              surfaceStyle: GlassSurfaceStyle.solid,
-              child: GlassEditButton(enableHaptics: false),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.byType(GlassEditButton));
-      await tester.pumpAndSettle();
-
-      expect(
-        logs,
-        isEmpty,
-        reason:
-            'Composite buttons passing internal quality must not trigger false-positive warnings inside ambient solid containers',
-      );
     });
   });
 
