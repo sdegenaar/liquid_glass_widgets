@@ -65,4 +65,35 @@ void main() {
     controller.close();
     await tester.pumpAndSettle();
   });
+  testWidgets('a controller swapped on a mounted popover moves over to it', (
+    tester,
+  ) async {
+    final first = GlassPopoverController();
+    final second = GlassPopoverController();
+    Widget host(GlassPopoverController controller) => CupertinoApp(
+          home: Center(
+            child: GlassPopover(
+              controller: controller,
+              popoverWidth: 200,
+              popoverHeight: 100,
+              trigger: const SizedBox(width: 40, height: 40),
+              contentBuilder: (_, __) => const Text('Content'),
+            ),
+          ),
+        );
+    await tester.pumpWidget(host(first));
+    await tester.pumpWidget(host(second));
+
+    // The old controller is detached: it no longer opens the popover.
+    first.open();
+    await tester.pumpAndSettle();
+    expect(find.text('Content'), findsNothing);
+
+    second.open();
+    await tester.pumpAndSettle();
+    expect(second.isOpen, isTrue);
+    expect(find.text('Content'), findsOneWidget);
+    second.close();
+    await tester.pumpAndSettle();
+  });
 }
