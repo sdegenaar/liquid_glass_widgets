@@ -105,6 +105,7 @@ class GlassSearchBar extends StatefulWidget {
     this.onSubmitted,
     this.onCancel,
     this.showsCancelButton = false,
+    this.cancelButtonAlwaysVisible = false,
     this.autofocus = false,
     this.enabled = true,
     this.searchIconColor,
@@ -172,6 +173,14 @@ class GlassSearchBar extends StatefulWidget {
   ///
   /// Defaults to false.
   final bool showsCancelButton;
+
+  /// With [showsCancelButton], keeps the cancel button in place whether or
+  /// not the field has focus — for a search bar that is a mode (the field
+  /// appears when search is switched on and [onCancel] is the way out), so
+  /// the way out never disappears with the keyboard.
+  ///
+  /// Defaults to false: the iOS behaviour, cancel with focus only.
+  final bool cancelButtonAlwaysVisible;
 
   /// Whether the search field should auto-focus.
   ///
@@ -280,7 +289,13 @@ class _GlassSearchBarState extends State<GlassSearchBar> {
   bool _ownsController = false;
   bool _ownsFocusNode = false;
   bool _hasText = false;
-  bool _showCancelButton = false;
+
+  /// Derived from the flags and the focus, so a change of
+  /// [GlassSearchBar.showsCancelButton] or
+  /// [GlassSearchBar.cancelButtonAlwaysVisible] after mount applies too.
+  bool get _showCancelButton =>
+      widget.showsCancelButton &&
+      (widget.cancelButtonAlwaysVisible || _focusNode.hasFocus);
 
   @override
   void initState() {
@@ -318,11 +333,8 @@ class _GlassSearchBarState extends State<GlassSearchBar> {
   }
 
   void _onFocusChanged() {
-    if (widget.showsCancelButton) {
-      final hasFocus = _focusNode.hasFocus;
-      if (hasFocus != _showCancelButton) {
-        setState(() => _showCancelButton = hasFocus);
-      }
+    if (widget.showsCancelButton && !widget.cancelButtonAlwaysVisible) {
+      setState(() {});
     }
   }
 
