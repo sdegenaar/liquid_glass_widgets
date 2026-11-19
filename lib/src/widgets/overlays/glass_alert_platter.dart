@@ -181,6 +181,9 @@ class GlassAlertPlatter extends StatelessWidget {
     this.maxWidth,
     this.forceStacked = false,
     this.semanticsRole = SemanticsRole.alertDialog,
+    this.shape,
+    this.actionShape,
+    this.actionTextStyle,
   });
 
   final List<GlassAlertPlatterAction> actions;
@@ -198,6 +201,16 @@ class GlassAlertPlatter extends StatelessWidget {
   /// [SemanticsRole.dialog] for an action sheet, as `CupertinoAlertDialog` and
   /// `CupertinoActionSheet` report them.
   final SemanticsRole semanticsRole;
+
+  /// The platter's shape; null keeps the native 34 pt continuous corners.
+  final LiquidShape? shape;
+
+  /// The action capsules' shape; null keeps the native capsule (32 pt
+  /// corners for a label wrapped at an accessibility text size).
+  final OutlinedBorder? actionShape;
+
+  /// Merged over the action labels' text style; the colour follows the role.
+  final TextStyle? actionTextStyle;
 
   /// The platter's glass settings.
   ///
@@ -299,7 +312,8 @@ class GlassAlertPlatter extends StatelessWidget {
                     useOwnLayer: true,
                     settings: platterSettings,
                     quality: effectiveQuality,
-                    shape: const LiquidRoundedSuperellipse(borderRadius: 34),
+                    shape: shape ??
+                        const LiquidRoundedSuperellipse(borderRadius: 34),
                     padding: EdgeInsets.zero,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -387,7 +401,7 @@ class GlassAlertPlatter extends StatelessWidget {
         children: [
           for (var i = 0; i < actions.length; i++) ...[
             if (i > 0) const SizedBox(width: 8),
-            Expanded(child: _GlassAlertPlatterButton(action: actions[i])),
+            Expanded(child: _button(actions[i])),
           ],
         ],
       );
@@ -399,11 +413,20 @@ class GlassAlertPlatter extends StatelessWidget {
         for (var i = 0; i < actions.length; i++)
           Padding(
             padding: EdgeInsets.only(top: i > 0 ? 8 : 0),
-            child: _GlassAlertPlatterButton(action: actions[i]),
+            child: _button(actions[i]),
           ),
       ],
     );
   }
+
+  Widget _button(GlassAlertPlatterAction action) => _GlassAlertPlatterButton(
+        action: action,
+        shape: actionShape,
+        textStyle: _styleOf(action),
+      );
+
+  TextStyle _styleOf(GlassAlertPlatterAction action) =>
+      _labelStyle(action).merge(actionTextStyle);
 
   /// Whether every label fits on one line in half the platter's width.
   bool _labelsFitSideBySide(BuildContext context, double width) {
@@ -416,7 +439,7 @@ class GlassAlertPlatter extends StatelessWidget {
       final painter = TextPainter(
         text: TextSpan(
           text: action.label,
-          style: baseStyle.merge(_labelStyle(action)),
+          style: baseStyle.merge(_styleOf(action)),
         ),
         maxLines: 1,
         textDirection: Directionality.of(context),
@@ -439,9 +462,17 @@ TextStyle _labelStyle(GlassAlertPlatterAction action) => TextStyle(
 /// 48 pt tall, fully rounded, filled with a translucent wash that darkens the
 /// platter in light mode and lightens it in dark mode.
 class _GlassAlertPlatterButton extends StatefulWidget {
-  const _GlassAlertPlatterButton({required this.action});
+  const _GlassAlertPlatterButton({
+    required this.action,
+    required this.shape,
+    required this.textStyle,
+  });
 
   final GlassAlertPlatterAction action;
+
+  /// The caller's capsule shape; null keeps the native one.
+  final OutlinedBorder? shape;
+  final TextStyle textStyle;
 
   @override
   State<_GlassAlertPlatterButton> createState() =>
@@ -510,16 +541,17 @@ class _GlassAlertPlatterButtonState extends State<_GlassAlertPlatterButton> {
       maxLines: wraps ? null : 1,
       overflow: wraps ? null : TextOverflow.ellipsis,
       textAlign: TextAlign.center,
-      style: _labelStyle(action).copyWith(color: textColor),
+      style: widget.textStyle.copyWith(color: textColor),
     );
     // A capsule, except that a button grown by a wrapped title takes ≈ 32 pt
     // continuous corners (measured on iOS 27.0 at AX-XXXL) instead of
-    // ballooning into an oval.
-    final ShapeBorder shape = wraps
-        ? const RoundedSuperellipseBorder(
-            borderRadius: BorderRadius.all(Radius.circular(32)),
-          )
-        : const StadiumBorder();
+    // ballooning into an oval. A caller's shape is kept at every text size.
+    final ShapeBorder shape = widget.shape ??
+        (wraps
+            ? const RoundedSuperellipseBorder(
+                borderRadius: BorderRadius.all(Radius.circular(32)),
+              )
+            : const StadiumBorder());
 
     return GlassFocusRegion(
       enabled: enabled,
