@@ -17,6 +17,7 @@ import 'package:liquid_glass_widgets/src/engine/liquid_glass.dart';
 import 'package:liquid_glass_widgets/src/engine/render_liquid_glass_geometry.dart';
 import 'package:liquid_glass_widgets/src/engine/liquid_glass_blend_group.dart';
 import 'package:liquid_glass_widgets/src/engine/rendering/liquid_glass_render_object.dart';
+import 'package:liquid_glass_widgets/src/renderer/glass_materialize_scope.dart';
 
 void main() {
   group('LiquidGlassBlendGroup', () {
@@ -171,6 +172,80 @@ void main() {
       // Replace tree — blend group should be removed without crash.
       await tester.pumpWidget(const CupertinoApp(home: SizedBox()));
       await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+        'inner GlassMaterializeScope unregisters dematerialized grouped shape without double-scaling outer scope (#504)',
+        (tester) async {
+      var innerGlassProgress = 1.0;
+      late StateSetter updateScope;
+
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: GlassMaterializeScope(
+            glassProgress: 0.5,
+            contentOpacity: 1.0,
+            contentSigma: 0.0,
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                updateScope = setState;
+                return LiquidGlassLayer(
+                  settings: const LiquidGlassSettings(thickness: 20),
+                  child: LiquidGlassBlendGroup(
+                    key: blendGroupKey,
+                    blend: 20,
+                    child: Row(
+                      children: [
+                        const LiquidGlass.grouped(
+                          key: ValueKey('shape-a'),
+                          shape: LiquidOval(),
+                          child: SizedBox.square(dimension: 60),
+                        ),
+                        GlassMaterializeScope(
+                          glassProgress: innerGlassProgress * 0.5,
+                          contentOpacity: innerGlassProgress,
+                          contentSigma: 0.0,
+                          child: const LiquidGlass.grouped(
+                            key: ValueKey('shape-b'),
+                            shape: LiquidOval(),
+                            child: SizedBox.square(dimension: 60),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      if (!ImageFilter.isShaderFilterSupported) return;
+
+      final ro = tester.renderObject<RenderLiquidGlassBlendGroup>(
+        find.byKey(blendGroupKey),
+      );
+      final shapeAChildOpacity = tester.widget<Opacity>(
+        find.descendant(
+          of: find.byKey(const ValueKey('shape-a')),
+          matching: find.byType(Opacity),
+        ),
+      );
+      // Outer scope (0.5) applied once (not 0.25!).
+      expect(shapeAChildOpacity.opacity, closeTo(0.5, 0.001));
+      expect(ro.link.shapeEntries.length, 2);
+
+      // Dematerialize only shape-b via inner GlassMaterializeScope -> unregisters from blend group!
+      updateScope(() => innerGlassProgress = 0.0);
+      await tester.pumpAndSettle();
+      expect(ro.link.shapeEntries.length, 1);
+
+      // Restore shape-b -> re-registers in blend group!
+      updateScope(() => innerGlassProgress = 1.0);
+      await tester.pumpAndSettle();
+      expect(ro.link.shapeEntries.length, 2);
     });
   });
 }

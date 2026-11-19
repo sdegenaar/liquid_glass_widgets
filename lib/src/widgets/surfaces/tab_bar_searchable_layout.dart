@@ -844,6 +844,8 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                                 menuWidth: renderedTrailing.menuWidth,
                                 menuHeight: renderedTrailing.menuHeight,
                                 autoAdjustToScreen: true,
+                                platformViewBackdrop:
+                                    widget.platformViewBackdrop,
                                 items: renderedTrailing.menuItems!,
                                 triggerBuilder: (context, toggleMenu) =>
                                     buildTrailingPill(

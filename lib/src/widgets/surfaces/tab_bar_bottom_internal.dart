@@ -525,6 +525,7 @@ class BottomBarExtraBtn extends StatelessWidget {
         menuWidth: config.menuWidth,
         menuHeight: config.menuHeight,
         autoAdjustToScreen: true,
+        platformViewBackdrop: platformViewBackdrop,
         items: config.menuItems!,
         triggerBuilder: (context, toggleMenu) => buildButton(toggleMenu),
       );
