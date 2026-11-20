@@ -25,6 +25,7 @@ Placing refractive glass widgets inside another refractive glass container is an
 - **Exception — `GlassSwitch`, `GlassSlider`, `GlassSegmentedControl`:** their glass is transient (only the thumb or pill turns to glass while it is touched or moving; at rest they look flat), so they are safe inside a `GlassContainer.card` / `GlassGroupedSection` with `surfaceStyle: GlassSurfaceStyle.solid`, which has no glass layer at all. This is the native iOS Settings pattern. On a default `glass` card, prefer placing them outside the card.
 - **Correct Pattern:**
   - In a `solid` card or `GlassGroupedSection`: standard text and icons, `GlassListTile`, `GlassTextField` / `GlassSearchBar` / `GlassTextArea` / `GlassPasswordField` / `GlassPicker` / `GlassChip` / `GlassButton` / `GlassButton.custom` / `GlassIconButton` (all auto-inherit `solid` styling at zero shader cost via `InheritedGlassSurfaceStyle`), `GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl`.
+  - In a `GlassModalSheet` with dense controls or chips (`1.x`): wrap the sheet's `builder` content in `InheritedGlassSurfaceStyle(surfaceStyle: GlassSurfaceStyle.solid, child: ...)` so nested buttons, chips, inputs, and pickers inherit zero-shader solid wells instead of double-refracting over the sheet or allocating per-control shader layers during drags (becomes the default in `2.0.0`).
   - In a `glass` card: standard text, icons, and non-refractive controls (or `GlassListTile`, which has no internal glass layer).
   - Outside the card / on the page platter: `GlassSegmentedControl`, `GlassButton`, `GlassIconButton`, `GlassSlider`, or standalone `GlassSwitch(useOwnLayer: true)`.
 
@@ -71,10 +72,11 @@ void main() async {
       // CRITICAL FOR MATERIAL APPS: Bridges Material ThemeMode without importing flutter/material in the engine
       brightnessResolver: Theme.maybeBrightnessOf,
 
-      // Choose one of three built-in design-era presets:
+      // Choose one of the built-in presets:
       // - const GlassThemeData() or const GlassThemeData.ios27() (default iOS 27 optics)
       // - const GlassThemeData.ios26() (iOS 26.0 optics)
       // - const GlassThemeData.classic() (v1.x classic look & GlassQuality.standard defaults)
+      // - const GlassThemeData.minimal() (shader-free BackdropFilter with neutral light/dark tints)
       // Or customize via GlassThemeData.simple(style: GlassStyle.ios27, ...):
       theme: const GlassThemeData(),
       child: const MyApp(),
@@ -217,14 +219,20 @@ GlassModalSheet.show(
   halfSize: 0.5,
   peekSize: 90.0,
   builder: (sheetContext) {
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: const [
-        Text(
-          'Modal Sheet Content',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-      ],
+    // Wrap dense controls, chips, or inputs in InheritedGlassSurfaceStyle
+    // (1.x opt-in; scheduled to become the default in 2.0.0) so nested controls
+    // render shader-free solid wells instead of double-refracting during drags.
+    return InheritedGlassSurfaceStyle(
+      surfaceStyle: GlassSurfaceStyle.solid,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        children: const [
+          Text(
+            'Modal Sheet Content',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
     );
   },
 );
@@ -460,7 +468,7 @@ GlassAppBar.pinned(
 - [ ] **Did you call `await LiquidGlassWidgets.initialize()` in `main()`?** Shaders must be pre-warmed.
 - [ ] **Did you wrap your app in `LiquidGlassWidgets.wrap()`?** Required for theme and accessibility scaling.
 - [ ] **Are you using `GlassScaffold` instead of `Scaffold`?** Prevents z-index glitches with glass nav bars.
-- [ ] **Did you avoid nesting glass in glass?** Never put glass-mode `GlassButton`, `GlassIconButton`, or `GlassChip` inside a `glass`-mode `GlassContainer.card` or `GlassGroupedSection`. Inside a `solid` card/section (`surfaceStyle: GlassSurfaceStyle.solid`), `GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl` are safe (their glass is transient) and `GlassButton`, `GlassIconButton`, `GlassChip`, `GlassTextField`, and `GlassPicker` auto-inherit `solid`.
+- [ ] **Did you avoid nesting glass in glass?** Never put glass-mode `GlassButton`, `GlassIconButton`, or `GlassChip` inside a `glass`-mode `GlassContainer.card` or `GlassGroupedSection`. Inside a `solid` card/section (`surfaceStyle: GlassSurfaceStyle.solid`) or a `GlassModalSheet` wrapped in `InheritedGlassSurfaceStyle(surfaceStyle: GlassSurfaceStyle.solid, child: ...)`, `GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl` are safe (their glass is transient) and `GlassButton`, `GlassIconButton`, `GlassChip`, `GlassTextField`, and `GlassPicker` auto-inherit `solid`.
 - [ ] **Did you use `GlassTabBar.bottom` instead of `GlassBottomBar`?** `GlassBottomBar` is deleted.
 - [ ] **`GlassButton` uses `onTap`, not `onPressed`.** (`GlassButton(onTap: () {})`) — the opposite of `ElevatedButton`.
 - [ ] **`GlassIconButton` uses `onPressed`, not `onTap`.** (`GlassIconButton(onPressed: () {})`).

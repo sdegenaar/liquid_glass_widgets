@@ -1038,6 +1038,7 @@ class GlassSheetMorphPresenter extends StatefulWidget {
     required this.peekBottomMargin,
     required this.peekWidth,
     required this.peekTopBorderRadius,
+    this.peekBottomRadius,
     required this.platformViewBackdrop,
     required this.child,
     this.expandedDarkColor,
@@ -1130,6 +1131,9 @@ class GlassSheetMorphPresenter extends StatefulWidget {
   /// See [GlassModalSheet.peekTopBorderRadius].
   final double? peekTopBorderRadius;
 
+  /// See [GlassModalSheet.peekBottomRadius].
+  final double? peekBottomRadius;
+
   /// See [GlassModalSheet.platformViewBackdrop]. Suppresses the metaball blend
   /// group, exactly as it does in the sheet and in `GlassMenu`.
   final bool platformViewBackdrop;
@@ -1192,6 +1196,17 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
   /// reading it live would chase a sheet that is no longer the thing on
   /// screen. Null for every dismissal that leaves the sheet at rest.
   Rect? _dismissFrom;
+
+  /// The detent the closing morph starts from, captured once in
+  /// [_onRouteStatus] when the route begins reversing.
+  ///
+  /// Null while opening or settled at rest (so the open morph always targets
+  /// [GlassSheetMorphPresenter.restingState]). On an at-rest dismissal after
+  /// the sheet moved to another detent (e.g. `half` → `full` or `half` →
+  /// `peek`), this holds that live detent so frame 1 of the close droplet
+  /// matches the sheet's actual margins, bottom offset, corner radii, and
+  /// fill opacity instead of snapping back to the initial detent.
+  GlassSheetState? _closeState;
 
   /// Where the active pointer went down, for the slop comparison above.
   Offset? _dragOrigin;
@@ -1408,6 +1423,16 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
     );
   }
 
+  GlassSheetState _resolveCloseState() {
+    final current = widget.controller.currentState;
+    if (current != GlassSheetState.hidden) return current;
+    final lastVisible = widget.controller._lastVisibleState;
+    if (lastVisible != null && lastVisible != GlassSheetState.hidden) {
+      return lastVisible;
+    }
+    return widget.restingState;
+  }
+
   void _onRouteStatus(AnimationStatus status) {
     if (status != AnimationStatus.reverse || _isClosing) return;
     widget.controller._freezeForMorphClose();
@@ -1416,15 +1441,20 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
         .computeState(finalDx: 0.0, finalDy: 0.0)
         .triggerWidthProgress
         .clamp(0.0, 1.0);
+    // Safe to read the sheet's position here: the dismissal pops the route
+    // synchronously from `_snapToState`, before the spring toward hidden has
+    // ticked, so the controller still reports the release position.
+    final dismissFrom = _draggedSincePointerDown ? _releaseRect() : null;
+    final closeState = dismissFrom != null
+        ? SheetMorphGeometry.dismissPivotState(widget.geometry)
+        : _resolveCloseState();
     setState(() {
       _isClosing = true;
       _handedOffToSheet = false;
       _handedBackToTrigger = false;
       _closeStartWidthProgress = currentWidthProgress;
-      // Safe to read the sheet's position here: the dismissal pops the route
-      // synchronously from `_snapToState`, before the spring toward hidden has
-      // ticked, so the controller still reports the release position.
-      _dismissFrom = _draggedSincePointerDown ? _releaseRect() : null;
+      _dismissFrom = dismissFrom;
+      _closeState = closeState;
     });
     _morph.close();
   }
@@ -1737,9 +1767,13 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
     final topRadiusBase = widget.topBorderRadius ?? adaptiveRadius;
     final bottomRadiusBase = widget.bottomBorderRadius ?? adaptiveRadius;
 
-    // A swipe left the sheet somewhere other than its detent; every other way
-    // of closing left it at rest.
-    final destination = _dismissFrom ?? _restingRect(screenSize);
+    // While opening, target the initial detent; while closing, start from the
+    // live detent captured when the route began reversing (or the swipe-release
+    // frame for an interactive drag dismissal).
+    final activeState =
+        _isClosing ? (_closeState ?? widget.restingState) : widget.restingState;
+    final destination =
+        _dismissFrom ?? _restingRect(screenSize, state: activeState);
 
     final trigger = widget.triggerRect;
 
@@ -1794,14 +1828,16 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
         : baseBlob;
 
     // Radii the droplet resolves to: the sheet's own resting corners.
-    final targetTopRadius = switch (widget.restingState) {
+    final targetTopRadius = switch (activeState) {
       GlassSheetState.full => widget.fullTopBorderRadius ?? topRadiusBase,
       GlassSheetState.peek => widget.peekTopBorderRadius ?? topRadiusBase,
       _ => topRadiusBase,
     };
-    final targetBottomRadius = widget.restingState == GlassSheetState.full
-        ? (widget.fullBottomBorderRadius ?? bottomRadiusBase)
-        : bottomRadiusBase;
+    final targetBottomRadius = switch (activeState) {
+      GlassSheetState.full => widget.fullBottomBorderRadius ?? bottomRadiusBase,
+      GlassSheetState.peek => widget.peekBottomRadius ?? bottomRadiusBase,
+      _ => bottomRadiusBase,
+    };
 
     final blobSize = rawBlob.size;
     final topRadius = SheetMorphGeometry.blobRadius(
@@ -1952,6 +1988,7 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
           _buildDroplet(
             context: context,
             state: state,
+            activeState: activeState,
             blob: rawBlob,
             topRadius: topRadius,
             bottomRadius: bottomRadius,
@@ -1968,6 +2005,7 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
   Widget _buildDroplet({
     required BuildContext context,
     required LiquidMorphState state,
+    required GlassSheetState activeState,
     required Rect blob,
     required double topRadius,
     required double bottomRadius,
@@ -1985,7 +2023,7 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
       isOverlayPlatter: true,
     );
     final dropletSettings = SheetMorphGeometry.restingSettings(
-      state: widget.restingState,
+      state: activeState,
       baseSettings: baseSettings,
       enablePeek: enablePeek,
       peekSettings: widget.peekSettings,
@@ -1993,7 +2031,7 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
       fullSettings: widget.fullSettings,
     );
     final fillOpacity = SheetMorphGeometry.restingFillOpacity(
-          state: widget.restingState,
+          state: activeState,
           baseSettings: baseSettings,
           enablePeek: enablePeek,
           peekSettings: widget.peekSettings,

@@ -1,3 +1,17 @@
+# Unreleased
+
+## Features
+
+- **`GlassThemeData.minimal(...)` convenience constructor (#517 follow-up):** Adds `const GlassThemeData.minimal({style, interaction, brightness})` pairing `GlassThemeVariant.minimalLight` and `GlassThemeVariant.minimalDark` for shader-free `GlassQuality.minimal` theming across light and dark modes (matching `.ios27()`, `.ios26()`, and `.classic()`).
+
+## Bug Fixes
+
+- **`GlassModalSheet` morphed close-origin after detent change (#507 follow-up):** When a `morphFrom` sheet opened at `half` is dragged to `full` or `peek` and dismissed at rest (barrier tap, close button, or `Navigator.pop`), frame 1 of the closing droplet morph now starts from the sheet's live resting detent (matching its active margins, bottom offset, corner radii, and fill) instead of snapping back to the initial `restingState`.
+
+## Documentation
+
+- **`GlassModalSheet` solid content opt-in (`1.x`) (#514):** Documented wrapping dense controls, chips, and inputs inside `GlassModalSheet` in `InheritedGlassSurfaceStyle(surfaceStyle: GlassSurfaceStyle.solid, child: ...)` in `docs/GLASS_MODAL_SHEETS_GUIDE.md` and `skills/liquid-glass-widgets/SKILL.md`.
+
 # 1.19.0
 
 ## Features
