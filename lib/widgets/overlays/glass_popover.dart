@@ -301,8 +301,8 @@ class GlassPopover extends StatefulWidget {
   /// Called when the popover begins closing.
   ///
   /// Fires immediately when a close is triggered — tap outside the barrier,
-  /// re-tapping the trigger, or calling the `close` callback — **before** the
-  /// close animation completes.
+  /// re-tapping the trigger, calling the `close` callback, or calling
+  /// [GlassPopoverController.close] — **before** the close animation completes.
   final VoidCallback? onClose;
 
   /// Called when the popover begins opening.
@@ -348,10 +348,14 @@ class GlassPopover extends StatefulWidget {
   final Curve blurRampCurve;
 
   /// Opens and closes the popover from outside its trigger
-  /// ([GlassPopoverController.open] / [GlassPopoverController.close]) —
-  /// the same seam [GlassMenu.controller] gives a menu, for a popover whose
-  /// host decides when it appears (state-driven UI, a guided tour, a section
-  /// opened from elsewhere).
+  /// ([GlassPopoverController.open] / [GlassPopoverController.close] /
+  /// [GlassPopoverController.toggle]) — the same seam `GlassMenu.controller`
+  /// gives a menu, for a popover whose host decides when it appears
+  /// (state-driven UI, a guided tour, a section opened from elsewhere).
+  ///
+  /// For a purely controller-driven anchor that should not intercept taps or
+  /// announce button semantics on its own, pass `triggerBuilder: (_, _) => anchor`
+  /// instead of [trigger].
   ///
   /// One controller drives one mounted [GlassPopover] at a time.
   final GlassPopoverController? controller;
@@ -360,7 +364,9 @@ class GlassPopover extends StatefulWidget {
   State<GlassPopover> createState() => _GlassPopoverState();
 }
 
-/// Commands a [GlassPopover] to open or close from outside its trigger.
+/// Commands a [GlassPopover] to open, close, or toggle from outside its
+/// trigger.
+///
 /// [open] morphs from the trigger's current position exactly as a trigger tap
 /// does; [close] runs the rubber-band collapse and fires [GlassPopover.onClose].
 class GlassPopoverController {
@@ -376,8 +382,22 @@ class GlassPopoverController {
   bool get isOpen => _state?._overlayController.isShowing ?? false;
 
   /// Opens the popover, as a tap on its trigger does.
+  ///
+  /// Safe no-op if the popover is already open/opening, detached, or has not
+  /// yet been laid out (for mount-time opens, call from
+  /// `WidgetsBinding.instance.addPostFrameCallback`). When called while a close
+  /// morph is in progress, reverses cleanly back to open.
   void open() => _state?._openPopover();
 
   /// Closes the popover, as a tap outside it does.
+  ///
+  /// Safe no-op if the popover is already closed, closing, or detached.
   void close() => _state?._closePopover();
+
+  /// Toggles the popover, matching a tap on its trigger.
+  ///
+  /// Unlike checking [isOpen] manually (which stays `true` until the close
+  /// animation finishes), [toggle] reverses cleanly back to open when called
+  /// mid-close.
+  void toggle() => _state?._togglePopover();
 }

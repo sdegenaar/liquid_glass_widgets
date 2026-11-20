@@ -237,8 +237,10 @@ class GlassDialog extends StatelessWidget {
 
   /// Merged over the action labels' text style (size, weight, family).
   ///
-  /// The label's colour still follows its role (default, primary,
-  /// destructive, disabled).
+  /// The label's color still follows its role (default, destructive, or
+  /// disabled). On `ios26` / `ios27`, `isPrimary` is distinguished by
+  /// `FontWeight.w600` (and `FontWeight.bold` on `classic`), so leaving
+  /// [TextStyle.fontWeight] null preserves the primary action's emphasis.
   final TextStyle? actionTextStyle;
 
   /// Rendering quality for the glass effect.
@@ -272,6 +274,10 @@ class GlassDialog extends StatelessWidget {
   ///   `classic`)
   /// - [maxWidth]: Maximum width of dialog (null follows the active style:
   ///   320 on `ios26`/`ios27`, 280 on `classic`)
+  /// - [shape]: Custom dialog shape (null uses the style default)
+  /// - [actionShape]: Custom action button shape (null uses the style default)
+  /// - [actionTextStyle]: Merged over action label styles (role colors still
+  ///   apply)
   ///
   /// Example:
   /// ```dart
@@ -302,6 +308,9 @@ class GlassDialog extends StatelessWidget {
     bool barrierDismissible = false,
     Color? barrierColor,
     double? maxWidth,
+    LiquidShape? shape,
+    LiquidShape? actionShape,
+    TextStyle? actionTextStyle,
   }) {
     final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
     final capturedCupertinoTheme = CupertinoTheme.of(context);
@@ -329,6 +338,9 @@ class GlassDialog extends StatelessWidget {
           settings: settings,
           quality: quality,
           maxWidth: maxWidth,
+          shape: shape,
+          actionShape: actionShape,
+          actionTextStyle: actionTextStyle,
         );
         dialog = CupertinoTheme(
           data: capturedCupertinoTheme,

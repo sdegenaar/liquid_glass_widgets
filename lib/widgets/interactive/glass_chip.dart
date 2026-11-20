@@ -158,13 +158,18 @@ class GlassChip extends StatelessWidget {
   /// non-interactive.
   final VoidCallback? onTap;
 
-  /// Whether the chip is drawn enabled.
+  /// Whether the chip is enabled.
   ///
-  /// Null (the default) derives it from [onTap] and [onDeleted], which draws
-  /// a chip with neither at the disabled 50 % opacity. Pass true to draw such
-  /// a purely informational chip (a tag, a status) at full strength. A chip
-  /// without a handler is inert either way: it is read as its text rather
-  /// than as a button, and takes no touch, focus or press motion.
+  /// - `null` (the default): derives enabled state from [onTap] and
+  ///   [onDeleted]. A chip with neither handler renders at 50% opacity and
+  ///   announces as a disabled button.
+  /// - `true`: draws the chip at full strength. When both [onTap] and
+  ///   [onDeleted] are null, the chip is a purely informational pill (a tag or
+  ///   status): inert to touch/focus/press motion and read by screen readers
+  ///   as static text rather than a button.
+  /// - `false`: forces the chip disabled (50% opacity, inert to touch/focus
+  ///   including [onDeleted], announced as a disabled button) even when
+  ///   handlers are provided.
   final bool? enabled;
 
   /// Called when the delete button is tapped.
@@ -314,6 +319,7 @@ class GlassChip extends StatelessWidget {
   final AnchorStretchSettings anchorStretchSettings;
 
   static const _chipShape = LiquidRoundedRectangle(borderRadius: 100);
+  static void _noOp() {}
 
   @override
   Widget build(BuildContext context) {
@@ -322,6 +328,11 @@ class GlassChip extends StatelessWidget {
         InheritedGlassSurfaceStyle.maybeOf(context) ??
         GlassSurfaceStyle.glass;
     final isSolid = effectiveSurfaceStyle == GlassSurfaceStyle.solid;
+
+    final hasHandlers = onTap != null || onDeleted != null;
+    final effectiveEnabled = enabled ?? hasHandlers;
+    final canInteract = hasHandlers && effectiveEnabled;
+    final isInformational = !hasHandlers && effectiveEnabled;
 
     final baseColor = isDark ? CupertinoColors.white : CupertinoColors.black;
     final defaultContentColor = isSolid
@@ -383,9 +394,10 @@ class GlassChip extends StatelessWidget {
             Semantics(
               container: true,
               button: true,
+              enabled: effectiveEnabled,
               label: deleteSemanticLabel ?? 'Remove ${semanticLabel ?? label}',
               child: GestureDetector(
-                onTap: onDeleted,
+                onTap: canInteract ? onDeleted : null,
                 child: IconTheme(
                   data: IconThemeData(
                     color: effectiveIconColor,
@@ -399,9 +411,6 @@ class GlassChip extends StatelessWidget {
         ],
       ),
     );
-
-    // Determine if chip should be interactive
-    final isInteractive = onTap != null || onDeleted != null;
 
     if (isSolid) {
       assert(() {
@@ -431,21 +440,46 @@ class GlassChip extends StatelessWidget {
         child: chipContent,
       );
 
-      final effectiveTap = onTap ?? (onDeleted != null ? () {} : null);
+      if (isInformational) {
+        return Semantics(
+          label: semanticLabel ?? label,
+          selected: selected ? true : null,
+          child: ExcludeSemantics(child: solidPill),
+        );
+      }
+
+      if (!effectiveEnabled) {
+        return Semantics(
+          container: true,
+          button: true,
+          enabled: false,
+          selected: selected ? true : null,
+          label: semanticLabel ?? label,
+          child: ExcludeSemantics(
+            child: ExcludeFocus(
+              child: IgnorePointer(
+                child: Opacity(opacity: 0.5, child: solidPill),
+              ),
+            ),
+          ),
+        );
+      }
+
+      final effectiveTap = onTap ?? (onDeleted != null ? _noOp : null);
 
       return GestureDetector(
-        onTap: isInteractive ? onTap : null,
+        onTap: onTap,
         behavior: HitTestBehavior.opaque,
         excludeFromSemantics: true,
         child: GlassFocusRegion(
-          enabled: isInteractive,
+          enabled: true,
           focusNode: focusNode,
           autofocus: autofocus,
-          isButton: isInteractive,
+          isButton: true,
           isSelected: selected,
-          semanticOnTap: isInteractive ? effectiveTap : null,
+          semanticOnTap: effectiveTap,
           shape: _chipShape,
-          onKeyboardActivate: isInteractive ? onTap : null,
+          onKeyboardActivate: onTap,
           child: solidPill,
         ),
       );
@@ -481,7 +515,7 @@ class GlassChip extends StatelessWidget {
     final Widget glassChip = IntrinsicWidth(
       child: IntrinsicHeight(
         child: GlassButton.custom(
-          onTap: onTap ?? (onDeleted != null ? () {} : () {}),
+          onTap: onTap ?? _noOp,
           shape: _chipShape,
           settings: settings,
           useOwnLayer: useOwnLayer,
@@ -493,7 +527,9 @@ class GlassChip extends StatelessWidget {
           glowColor: selected
               ? (selectedColor ?? defaultSelectedColor)
               : defaultGlowUnselected,
-          enabled: enabled ?? isInteractive,
+          enabled: effectiveEnabled,
+          isSelected: selected ? true : null,
+          isStationary: !canInteract,
           anchorStretch: effectiveAnchorStretch,
           anchorStretchSettings: effectiveAnchorStretchSettings,
           focusNode: focusNode,
@@ -505,12 +541,27 @@ class GlassChip extends StatelessWidget {
         ),
       ),
     );
-    if (isInteractive) return glassChip;
-    // A chip without a handler is read as its text, not as a button, and
-    // takes no touch or focus.
+    if (canInteract) return glassChip;
+    if (isInformational) {
+      // An informational chip (enabled: true, no handlers) is read as static
+      // text rather than a button, and takes no touch, focus, or press motion.
+      return Semantics(
+        label: semanticLabel ?? label,
+        selected: selected ? true : null,
+        child: ExcludeSemantics(
+          child: ExcludeFocus(child: IgnorePointer(child: glassChip)),
+        ),
+      );
+    }
+    // A disabled chip (enabled: false, or default with no handlers) stays
+    // inert to touch/focus (including onDeleted and press stretch) while
+    // retaining disabled button semantics for assistive technology.
     return Semantics(
+      container: true,
+      button: true,
+      enabled: false,
+      selected: selected ? true : null,
       label: semanticLabel ?? label,
-      selected: selected,
       child: ExcludeSemantics(
         child: ExcludeFocus(child: IgnorePointer(child: glassChip)),
       ),

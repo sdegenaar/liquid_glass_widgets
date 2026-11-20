@@ -575,9 +575,14 @@ class _GlassPopoverState extends State<GlassPopover>
     }
 
     if (_blurRampEnabled) {
-      _blurRamp
-        ..duration = widget.blurRampDuration
-        ..forward(from: 0.0);
+      _blurRamp.duration = widget.blurRampDuration;
+      if (hasPrev) {
+        // Mid-close reversal: continue ramping from the frozen blur value
+        // instead of snapping back to 0.0 while the platter is still large.
+        _blurRamp.forward();
+      } else {
+        _blurRamp.forward(from: 0.0);
+      }
     } else {
       // No ramp — show the blur at full strength from the first painted frame.
       _blurRamp.value = 1.0;
@@ -588,6 +593,23 @@ class _GlassPopoverState extends State<GlassPopover>
     if (!mounted ||
         !_overlayController.isShowing ||
         _morphController.isClosing) {
+      return;
+    }
+    // If close() is called before the intrinsic-height Offstage measurement
+    // pass finishes (e.g. open() followed immediately by close() in the same
+    // frame), cancel the pending open cleanly instead of entering a close
+    // morph that cannot settle to hide().
+    if (!_contentMeasured) {
+      _overlayController.hide();
+      _blurRamp.stop();
+      _blurRamp.value = 0.0;
+      _resetInterruptState();
+      _horizontalOffset = 0.0;
+      _verticalOffset = 0.0;
+      _measuredContentHeight = null;
+      _cachedContent = null;
+      widget.onClose?.call();
+      setState(() {});
       return;
     }
     final bool hasPrev = _morphController.isShowing &&
@@ -624,6 +646,10 @@ class _GlassPopoverState extends State<GlassPopover>
   }
 
   void _openPopover() {
+    if (!mounted ||
+        (_overlayController.isShowing && !_morphController.isClosing)) {
+      return;
+    }
     _updateRouteListener();
     // context.findRenderObject() works correctly here because build() returns
     // AnimatedBuilder at the top level. AnimatedBuilder has no render object of
@@ -1013,7 +1039,12 @@ class _GlassPopoverState extends State<GlassPopover>
           maxHeight: double.infinity,
           child: Builder(builder: (context) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!mounted || _contentMeasured) return;
+              if (!mounted ||
+                  !_overlayController.isShowing ||
+                  _contentMeasured ||
+                  _morphController.isClosing) {
+                return;
+              }
               final renderBox =
                   _contentKey.currentContext?.findRenderObject() as RenderBox?;
               if (renderBox != null && renderBox.hasSize) {
