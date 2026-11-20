@@ -25,6 +25,10 @@ class GlassPasswordField extends StatefulWidget {
     this.autofocus = false,
     this.textInputAction,
     this.inputFormatters,
+    this.autofillHints = const <String>[],
+    this.autocorrect = false,
+    this.enableSuggestions = false,
+    this.selectionControls,
     this.textStyle,
     this.placeholderStyle,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -75,6 +79,20 @@ class GlassPasswordField extends StatefulWidget {
 
   /// Input formatters.
   final List<TextInputFormatter>? inputFormatters;
+
+  /// Autofill hints forwarded to [GlassTextField.autofillHints] (for example
+  /// `[AutofillHints.password]` or `[AutofillHints.newPassword]`).
+  final Iterable<String>? autofillHints;
+
+  /// Whether to enable automatic text correction. Defaults to `false`.
+  final bool autocorrect;
+
+  /// Whether to show input suggestions. Defaults to `false`.
+  final bool enableSuggestions;
+
+  /// Optional custom text selection handle and toolbar controls.
+  /// Mirrors [GlassTextField.selectionControls].
+  final TextSelectionControls? selectionControls;
 
   /// Style for the text.
   final TextStyle? textStyle;
@@ -163,6 +181,10 @@ class _GlassPasswordFieldState extends State<GlassPasswordField> {
       readOnly: widget.readOnly,
       autofocus: widget.autofocus,
       inputFormatters: widget.inputFormatters,
+      autofillHints: widget.autofillHints,
+      autocorrect: widget.autocorrect,
+      enableSuggestions: widget.enableSuggestions,
+      selectionControls: widget.selectionControls,
       textStyle: widget.textStyle,
       placeholderStyle: widget.placeholderStyle,
       padding: widget.padding,

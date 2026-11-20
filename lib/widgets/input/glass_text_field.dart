@@ -91,6 +91,10 @@ class GlassTextField extends StatefulWidget {
     this.onLineCountChanged,
     this.inputFormatters,
     this.textCapitalization = TextCapitalization.none,
+    this.autofillHints = const <String>[],
+    this.autocorrect = true,
+    this.enableSuggestions = true,
+    this.selectionControls,
     this.textStyle,
     this.placeholderStyle,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -137,6 +141,10 @@ class GlassTextField extends StatefulWidget {
     this.onSubmitted,
     this.inputFormatters,
     this.textCapitalization = TextCapitalization.none,
+    this.autofillHints = const <String>[],
+    this.autocorrect = true,
+    this.enableSuggestions = true,
+    this.selectionControls,
     this.textStyle,
     this.placeholderStyle,
     this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -242,6 +250,32 @@ class GlassTextField extends StatefulWidget {
   /// Forwarded to [CupertinoTextField.textCapitalization]. Defaults to
   /// [TextCapitalization.none] to preserve existing behavior.
   final TextCapitalization textCapitalization;
+
+  /// Autofill hints forwarded to [CupertinoTextField.autofillHints] (for example
+  /// `[AutofillHints.username]`, `[AutofillHints.email]`, or
+  /// `[AutofillHints.password]`).
+  ///
+  /// Defaults to an empty list (`const <String>[]`), matching
+  /// [CupertinoTextField]. Pass `null` to explicitly disable autofill.
+  final Iterable<String>? autofillHints;
+
+  /// Whether to enable automatic text correction.
+  ///
+  /// Forwarded to [CupertinoTextField.autocorrect]. Defaults to `true`.
+  final bool autocorrect;
+
+  /// Whether to show input suggestions as the user types.
+  ///
+  /// Forwarded to [CupertinoTextField.enableSuggestions]. Defaults to `true`.
+  final bool enableSuggestions;
+
+  /// Optional custom text selection handle and toolbar controls.
+  ///
+  /// Forwarded to [CupertinoTextField.selectionControls]. When `null` (the
+  /// default), [CupertinoTextField] uses Cupertino selection handles. On
+  /// Android inside a Material app, pass `materialTextSelectionHandleControls`
+  /// (from `package:flutter/material.dart`) for native Material handles.
+  final TextSelectionControls? selectionControls;
 
   /// Called when the user taps outside the text field.
   ///
@@ -710,6 +744,10 @@ class _GlassTextFieldState extends State<GlassTextField> {
                 (event) => FocusManager.instance.primaryFocus?.unfocus(),
             inputFormatters: widget.inputFormatters,
             textCapitalization: widget.textCapitalization,
+            autofillHints: widget.autofillHints,
+            autocorrect: widget.autocorrect,
+            enableSuggestions: widget.enableSuggestions,
+            selectionControls: widget.selectionControls,
             style: defaultTextStyle.merge(widget.textStyle),
             placeholder: widget.placeholder,
             placeholderStyle:

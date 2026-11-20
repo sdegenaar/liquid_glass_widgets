@@ -168,13 +168,15 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
   /// Lays out the tab [Row] in physical (LTR) order regardless of the ambient
   /// direction, so the first child is on the left — matching the indicator and
   /// gesture coordinate space. RTL ordering is carried by the reversed tab data
-  /// in [_buildBar], not by the ambient direction of these Rows. Scoping the
-  /// pin to the Rows keeps `Directionality.of(context)` intact for the rest of
-  /// the subtree (notably [indicatorExpansion] / [tabPadding] resolution).
+  /// in [_buildBar], not by the layout direction of these Rows. Setting
+  /// `Row(textDirection: TextDirection.ltr)` directly (without overriding the
+  /// inherited [Directionality]) preserves `Directionality.of(context)` on
+  /// descendant [FocusNode]s and [Semantics], so RTL keyboard focus traversal
+  /// (`ReadingOrderTraversalPolicy`) visits the first (rightmost) tab first.
   static Widget _ltrTabRow({required List<Widget> children}) {
-    return Directionality(
+    return Row(
       textDirection: TextDirection.ltr,
-      child: Row(children: children),
+      children: children,
     );
   }
 
@@ -302,6 +304,7 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
             final resolvedExtraButton = widget.extraButton != null
                 ? _resolvedExtraButtonConfig()
                 : null;
+            final bool extraSelected = resolvedExtraButton?.selected == true;
             final extraPlacement = resolvedExtraButton?.placement ??
                 GlassExtraButtonPlacement.right;
             final extraOnLeft =
@@ -337,7 +340,9 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
                               // not the indicator pill (effectiveQuality).
                               quality: effectiveBackgroundQuality,
                               iconColor: resolvedExtraButton.iconColor ??
-                                  resolvedUnselectedIconColor,
+                                  (extraSelected
+                                      ? resolvedSelectedIconColor
+                                      : resolvedUnselectedIconColor),
                               enableBlend: widget.enableBlend,
                               borderRadius: widget.barBorderRadius ==
                                       TabBarBottomLayout._kDefaultBorderRadius
@@ -364,7 +369,9 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
                         quality: effectiveQuality,
                         backgroundQuality: effectiveBackgroundQuality,
                         springDescription: widget.springDescription,
-                        visible: widget.showIndicator,
+                        visible: widget.showIndicator && !extraSelected,
+                        showDuringDragWhenHidden:
+                            widget.showIndicator && extraSelected,
                         tabIndex: selectedIndex,
                         tabCount: tabs.length,
                         indicatorColor: widget.indicatorColor,
@@ -413,7 +420,8 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
                                   glowBlurRadius: widget.glowBlurRadius,
                                   glowSpreadRadius: widget.glowSpreadRadius,
                                   glowOpacity: widget.glowOpacity,
-                                  semanticsSelected: i == selectedIndex,
+                                  semanticsSelected:
+                                      !extraSelected && i == selectedIndex,
                                   onTap: null,
                                   // Pointer selection stays with the
                                   // indicator; this is the tap action a screen
@@ -521,37 +529,39 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
       fallbackLabelColor: widget.textStyle?.color,
     );
 
-    return ExcludeSemantics(
-      child: _ltrTabRow(
-        children: [
-          for (var i = 0; i < tabs.length; i++)
-            Expanded(
-              child: (i >= affectedStart && i <= affectedEnd)
-                  ? Transform.scale(
-                      scale: _tabProximityScale(pillTabIndex, i, scale),
-                      child: BottomBarTabItem(
-                        tab: tabs[i],
-                        selected: true,
-                        selectedIconColor: activeColors.iconColor,
-                        unselectedIconColor: resolvedUnselectedIconColor,
-                        selectedLabelColor: activeColors.labelColor,
-                        unselectedLabelColor: widget.unselectedLabelColor,
-                        selectedLabelStyle: widget.selectedLabelStyle,
-                        unselectedLabelStyle: widget.unselectedLabelStyle,
-                        iconSize: widget.iconSize,
-                        labelFontSize: widget.labelFontSize,
-                        textStyle: widget.textStyle,
-                        iconLabelSpacing: widget.iconLabelSpacing,
-                        glowDuration: widget.glowDuration,
-                        glowBlurRadius: widget.glowBlurRadius,
-                        glowSpreadRadius: widget.glowSpreadRadius,
-                        glowOpacity: widget.glowOpacity,
-                        onTap: null,
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-        ],
+    return ExcludeFocus(
+      child: ExcludeSemantics(
+        child: _ltrTabRow(
+          children: [
+            for (var i = 0; i < tabs.length; i++)
+              Expanded(
+                child: (i >= affectedStart && i <= affectedEnd)
+                    ? Transform.scale(
+                        scale: _tabProximityScale(pillTabIndex, i, scale),
+                        child: BottomBarTabItem(
+                          tab: tabs[i],
+                          selected: true,
+                          selectedIconColor: activeColors.iconColor,
+                          unselectedIconColor: resolvedUnselectedIconColor,
+                          selectedLabelColor: activeColors.labelColor,
+                          unselectedLabelColor: widget.unselectedLabelColor,
+                          selectedLabelStyle: widget.selectedLabelStyle,
+                          unselectedLabelStyle: widget.unselectedLabelStyle,
+                          iconSize: widget.iconSize,
+                          labelFontSize: widget.labelFontSize,
+                          textStyle: widget.textStyle,
+                          iconLabelSpacing: widget.iconLabelSpacing,
+                          glowDuration: widget.glowDuration,
+                          glowBlurRadius: widget.glowBlurRadius,
+                          glowSpreadRadius: widget.glowSpreadRadius,
+                          glowOpacity: widget.glowOpacity,
+                          onTap: null,
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+          ],
+        ),
       ),
     );
   }

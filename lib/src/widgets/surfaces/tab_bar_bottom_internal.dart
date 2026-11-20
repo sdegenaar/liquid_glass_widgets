@@ -515,6 +515,7 @@ class BottomBarExtraBtn extends StatelessWidget {
         // See: https://github.com/sdegenaar/liquid_glass_widgets/issues/203
         isStationary: true,
         enabled: config.enabled,
+        isSelected: config.selected,
       );
     }
 
@@ -524,6 +525,7 @@ class BottomBarExtraBtn extends StatelessWidget {
         menuWidth: config.menuWidth,
         menuHeight: config.menuHeight,
         autoAdjustToScreen: true,
+        platformViewBackdrop: platformViewBackdrop,
         items: config.menuItems!,
         triggerBuilder: (context, toggleMenu) => buildButton(toggleMenu),
       );
@@ -577,6 +579,7 @@ class TabIndicator extends StatefulWidget {
     this.interactionGlowOpacity = 1,
     this.interactionScale = 1.0,
     this.platformViewBackdrop = false,
+    this.showDuringDragWhenHidden = false,
     this.springDescription,
     super.key,
   });
@@ -584,6 +587,12 @@ class TabIndicator extends StatefulWidget {
   final int tabIndex;
   final int tabCount;
   final bool visible;
+
+  /// When `true` and [visible] is `false` (for example because
+  /// `extraButton.selected == true`), the glass indicator lens still inflates
+  /// while the user actively drags across the tab pill so they can scrub onto
+  /// a tab natively.
+  final bool showDuringDragWhenHidden;
   final Widget childUnselected;
   final Widget Function(BuildContext, double, Alignment) selectedTabBuilder;
   final Color? indicatorColor;
@@ -649,6 +658,7 @@ class TabIndicatorState extends State<TabIndicator>
   void notifyTabChanged(int index) => widget.onTabChanged(index);
 
   final GlobalKey _iconLayerKey = GlobalKey();
+  final GlobalKey _unselectedTabsKey = GlobalKey();
 
   // Cached shape to avoid recreation on every animation frame
   late LiquidRoundedRectangle _barShape =
@@ -748,6 +758,8 @@ class TabIndicatorState extends State<TabIndicator>
                     // AlignmentDirectional) so that Flutter does not re-apply
                     // the RTL flip and land the pill on the mirror-image tab.
                     final alignment = Alignment(value, 0);
+                    final effectiveVisible = widget.visible ||
+                        (widget.showDuringDragWhenHidden && tabIsDragging);
 
                     return SpringBuilder(
                       spring: GlassSpring.snappy(
@@ -759,33 +771,29 @@ class TabIndicatorState extends State<TabIndicator>
                       //    even when passing back over the selected tab), OR
                       //  - the spring still has meaningful separation from target.
                       // Threshold 0.05 (was 0.10) catches the full deceleration tail.
-                      value: widget.visible &&
+                      value: effectiveVisible &&
                               (tabIsDown ||
                                   tabIsDragging ||
                                   (value - targetAlignment).abs() > 0.05)
                           ? 1.0
                           : 0.0,
                       builder: (context, thickness, child) {
-                        // Lazy evaluation optimization: skip expensive calculations when hidden
+                        // Lazy evaluation optimization: skip dual-layer masking and
+                        // jelly clipper allocations when hidden, while preserving the
+                        // outer glass background and keyed unselected tab subtree so
+                        // toggling `visible` (e.g. `extraButton.selected`) never
+                        // unmounts tab FocusNodes or re-rasterizes the track blur.
                         if (thickness < 0.01 &&
-                            !widget.visible &&
+                            !effectiveVisible &&
                             widget.maskingQuality == MaskingQuality.high) {
-                          // Fast path: indicator is hidden, render simple layout
-                          return Container(
-                            height: widget.barHeight,
-                            decoration: ShapeDecoration(
-                              shape: _barShape,
-                            ),
-                            child: AdaptiveGlass.grouped(
-                              quality:
-                                  widget.backgroundQuality ?? widget.quality,
-                              platformViewBackdrop: widget.platformViewBackdrop,
-                              shape: _barShape,
-                              child: Container(
-                                padding: widget.tabPadding,
-                                child: widget.childUnselected,
-                              ),
-                            ),
+                          return _buildSimpleMode(
+                            alignment: alignment,
+                            targetAlignment: Alignment(targetAlignment, 0),
+                            thickness: 0.0,
+                            velocity: 0.0,
+                            indicatorRadius: indicatorRadius,
+                            indicatorColor: indicatorColor,
+                            effectiveVisible: false,
                           );
                         }
 
@@ -809,6 +817,7 @@ class TabIndicatorState extends State<TabIndicator>
                               velocity: velocity,
                               indicatorRadius: indicatorRadius,
                               indicatorColor: indicatorColor,
+                              effectiveVisible: effectiveVisible,
                             );
 
                           case MaskingQuality.high:
@@ -819,6 +828,7 @@ class TabIndicatorState extends State<TabIndicator>
                               jellyTransform: jellyTransform,
                               indicatorRadius: indicatorRadius,
                               indicatorColor: indicatorColor,
+                              effectiveVisible: effectiveVisible,
                             );
                         }
                       },
@@ -892,6 +902,7 @@ class TabIndicatorState extends State<TabIndicator>
     required double velocity,
     required double indicatorRadius,
     required Color indicatorColor,
+    required bool effectiveVisible,
   }) {
     return SizedBox(
       height: widget.barHeight,
@@ -920,7 +931,10 @@ class TabIndicatorState extends State<TabIndicator>
                   Positioned.fill(
                     child: Container(
                       padding: widget.tabPadding,
-                      child: widget.childUnselected,
+                      child: KeyedSubtree(
+                        key: _unselectedTabsKey,
+                        child: widget.childUnselected,
+                      ),
                     ),
                   ),
                 ],
@@ -929,7 +943,7 @@ class TabIndicatorState extends State<TabIndicator>
           ),
 
           // Glass indicator — on top so it refracts the icon layer AND the glow beneath.
-          if (widget.visible && thickness > 0.05)
+          if (effectiveVisible && thickness > 0.05)
             AnimatedGlassIndicator(
               velocity: velocity,
               itemCount: widget.tabCount,
@@ -953,7 +967,7 @@ class TabIndicatorState extends State<TabIndicator>
           // (settled) tab position regardless of spring thickness. This ensures
           // the selected icon stays vibrant (selected style) at rest, not washed
           // out by the unselected-style icons in the layer below.
-          if (widget.visible)
+          if (effectiveVisible)
             Positioned.fill(
               child: Align(
                 alignment: targetAlignment,
@@ -983,6 +997,7 @@ class TabIndicatorState extends State<TabIndicator>
     required Matrix4 jellyTransform,
     required double indicatorRadius,
     required Color indicatorColor,
+    required bool effectiveVisible,
   }) {
     return SizedBox(
       height: widget.barHeight,
@@ -1015,7 +1030,7 @@ class TabIndicatorState extends State<TabIndicator>
                     quality: widget.quality,
                     indicatorColor: indicatorColor,
                     isBackgroundIndicator: false,
-                    paintBackground: true,
+                    paintBackground: effectiveVisible,
                     paintGlass: false,
                     innerBlur: widget.innerBlur,
                     padding: const EdgeInsets.all(4),
@@ -1057,7 +1072,10 @@ class TabIndicatorState extends State<TabIndicator>
                                   child: Container(
                                     padding: widget.tabPadding,
                                     height: widget.barHeight,
-                                    child: widget.childUnselected,
+                                    child: KeyedSubtree(
+                                      key: _unselectedTabsKey,
+                                      child: widget.childUnselected,
+                                    ),
                                   ),
                                 ),
                                 // Selected (forward clipped — visible INSIDE pill)
@@ -1105,7 +1123,10 @@ class TabIndicatorState extends State<TabIndicator>
                                 child: Container(
                                   padding: widget.tabPadding,
                                   height: widget.barHeight,
-                                  child: widget.childUnselected,
+                                  child: KeyedSubtree(
+                                    key: _unselectedTabsKey,
+                                    child: widget.childUnselected,
+                                  ),
                                 ),
                               ),
                               // Selected (forward clipped — visible INSIDE pill)
