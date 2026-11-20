@@ -147,6 +147,9 @@ class GlassDialog extends StatelessWidget {
     this.settings,
     this.quality,
     this.maxWidth,
+    this.shape,
+    this.actionShape,
+    this.actionTextStyle,
   }) : assert(
           actions.length > 0 && actions.length <= 3,
           'GlassDialog must have 1-3 actions',
@@ -217,6 +220,26 @@ class GlassDialog extends StatelessWidget {
   ///
   /// If null, uses [LiquidGlassSettings] defaults.
   final LiquidGlassSettings? settings;
+
+  /// The dialog's shape.
+  ///
+  /// Null keeps the style's default: 34 pt continuous corners on the `ios26`
+  /// and `ios27` alert platter, a 12 pt superellipse on `classic`.
+  final LiquidShape? shape;
+
+  /// The action buttons' shape.
+  ///
+  /// Null keeps the style's default: the native capsule on `ios26` / `ios27`
+  /// (32 pt corners when an accessibility text size wraps the label) and a
+  /// 12 pt superellipse on `classic`. A given shape is kept at every text
+  /// size.
+  final LiquidShape? actionShape;
+
+  /// Merged over the action labels' text style (size, weight, family).
+  ///
+  /// The label's colour still follows its role (default, primary,
+  /// destructive, disabled).
+  final TextStyle? actionTextStyle;
 
   /// Rendering quality for the glass effect.
   ///
@@ -333,6 +356,9 @@ class GlassDialog extends StatelessWidget {
         settings: settings,
         quality: quality,
         maxWidth: maxWidth,
+        shape: shape,
+        actionShape: actionShape,
+        actionTextStyle: actionTextStyle,
         actions: [
           for (final action in actions)
             GlassAlertPlatterAction(
@@ -368,6 +394,7 @@ class GlassDialog extends StatelessWidget {
           useOwnLayer: true,
           settings: platterSettings,
           quality: effectiveQuality,
+          shape: shape,
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -446,7 +473,7 @@ class GlassDialog extends StatelessWidget {
   TextStyle _labelStyle(GlassDialogAction action) => TextStyle(
         fontSize: 16,
         fontWeight: action.isPrimary ? FontWeight.bold : FontWeight.w600,
-      );
+      ).merge(actionTextStyle);
 
   Widget _buildActions(
     BuildContext context,
@@ -530,7 +557,7 @@ class GlassDialog extends StatelessWidget {
       onTap: action.onPressed ?? () {},
       enabled: action.onPressed != null,
       height: 44,
-      shape: _actionButtonShape,
+      shape: actionShape ?? _actionButtonShape,
       settings: buttonSettings,
       quality: effectiveQuality,
       glowColor: glowColor,
