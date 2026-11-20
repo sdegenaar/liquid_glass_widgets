@@ -1,6 +1,11 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets/src/engine/liquid_glass.dart';
+import 'package:liquid_glass_widgets/src/engine/liquid_glass_blend_group.dart';
+import 'package:liquid_glass_widgets/src/renderer/glass_materialize_scope.dart';
 import 'package:liquid_glass_widgets/src/widgets/surfaces/tab_bar_searchable_internal.dart';
 import 'package:liquid_glass_widgets/src/widgets/surfaces/tab_bar_searchable_layout.dart';
 
@@ -378,6 +383,113 @@ void main() {
       // barHeight 64 + verticalPadding 20 * 2 / minimizedBarHeight 44 + 40.
       expect(expanded.preferredSize.height, 104);
       expect(minimized.preferredSize.height, 84);
+    });
+
+    testWidgets(
+        'premium trailing menu unregisters grouped trigger circle while open and restores it on close (#504)',
+        (tester) async {
+      await tester.runAsync(
+        () => LiquidGlassWidgets.initialize(
+          enablePerformanceMonitor: false,
+          warmUpMode: GlassWarmUpMode.never,
+        ),
+      );
+
+      await tester.pumpWidget(
+        LiquidGlassWidgets.wrap(
+          theme: const GlassThemeData.ios27(),
+          child: CupertinoApp(
+            home: GlassScaffold(
+              enableBackgroundSampling: false,
+              body: const SizedBox.expand(),
+              bottomBar: GlassTabBar.minimizable(
+                barHeight: 64,
+                verticalPadding: 20,
+                backgroundQuality: GlassQuality.premium,
+                selectedIndex: 1,
+                onTabSelected: _noopInt,
+                tabs: const [
+                  GlassTab(
+                    label: 'Timeline',
+                    icon: Icon(CupertinoIcons.calendar),
+                  ),
+                  GlassTab(label: 'Photos', icon: Icon(CupertinoIcons.photo)),
+                  GlassTab(
+                    label: 'Settings',
+                    icon: Icon(CupertinoIcons.settings),
+                  ),
+                ],
+                trailingButton: GlassTabBarTrailingButton.menu(
+                  icon: const Icon(CupertinoIcons.add),
+                  label: 'Add',
+                  menuItems: [
+                    GlassMenuItem(title: 'Take Photo', onTap: () {}),
+                    GlassMenuItem(title: 'Photos', onTap: () {}),
+                    GlassMenuItem(title: 'Smart Import', onTap: () {}),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      GlassMaterializeScope? trailingScope() => GlassMaterializeScope.maybeOf(
+            tester.element(find.byType(MinimizableTrailingPill)),
+          );
+
+      expect(trailingScope()?.glassProgress, 1.0);
+
+      RenderLiquidGlassBlendGroup? barBlendGroup;
+      RenderLiquidGlass? trailingGlassRo;
+      if (ImageFilter.isShaderFilterSupported) {
+        barBlendGroup = tester.renderObject<RenderLiquidGlassBlendGroup>(
+          find
+              .descendant(
+                of: find.byType(GlassTabBar),
+                matching: find.byType(LiquidGlassBlendGroup),
+              )
+              .first,
+        );
+        trailingGlassRo = tester.renderObject<RenderLiquidGlass>(
+          find.descendant(
+            of: find.byType(MinimizableTrailingPill),
+            matching: find.byWidgetPredicate((w) => w is LiquidGlass),
+          ),
+        );
+        // At rest: both the tab pill track and the trailing '+' circle are in the bar's geometry matte.
+        expect(trailingGlassRo.glassVisible, isTrue);
+        expect(barBlendGroup.geometry?.shapes.length, 2);
+      }
+
+      // Open the trailing menu and wait for the morph to settle.
+      await tester.tap(find.byIcon(CupertinoIcons.add));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Take Photo'), findsOneWidget);
+      expect(trailingScope()?.glassProgress, 0.0);
+
+      if (ImageFilter.isShaderFilterSupported) {
+        // While open: the trailing '+' circle is excluded from uShapeData[]
+        // while keeping its registration slot order in link.shapeEntries!
+        expect(trailingGlassRo!.glassVisible, isFalse);
+        expect(barBlendGroup!.link.shapeEntries.length, 2);
+        expect(barBlendGroup.geometry?.shapes.length, 1);
+      }
+
+      // Select an item to close the menu and wait for the close morph + recoil to settle.
+      await tester.tap(find.text('Take Photo'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Take Photo'), findsNothing);
+      expect(trailingScope()?.glassProgress, 1.0);
+
+      if (ImageFilter.isShaderFilterSupported) {
+        // Closed again: trailing '+' circle returns to the bar's geometry matte in original order.
+        expect(trailingGlassRo!.glassVisible, isTrue);
+        expect(barBlendGroup!.geometry?.shapes.length, 2);
+      }
     });
   });
 }

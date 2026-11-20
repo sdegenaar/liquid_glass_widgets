@@ -1893,11 +1893,17 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
     // without changing element depth.
     final Widget portalSheet = ClipPath(
       clipBehavior: inMorph ? Clip.antiAlias : Clip.none,
-      clipper: _MorphBlobClipper(
-        rect: scaledBlob,
-        topRadius: topRadius * state.containerScale,
-        bottomRadius: bottomRadius * state.containerScale,
-      ),
+      // No clipper once handed off: `Clip.none` only stops the painting, and
+      // `RenderClipPath` still hit-tests against its clip. A sheet opened at
+      // half and dragged to full would lose every touch above its half-height
+      // frame.
+      clipper: inMorph
+          ? _MorphBlobClipper(
+              rect: scaledBlob,
+              topRadius: topRadius * state.containerScale,
+              bottomRadius: bottomRadius * state.containerScale,
+            )
+          : null,
       child: Transform(
         transform: inMorph
             ? SheetMorphGeometry.contentPortal(

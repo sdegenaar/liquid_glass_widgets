@@ -1063,6 +1063,277 @@ void main() {
       },
     );
   });
+
+  group('IndexedStack and nested Navigator tab branches', () {
+    testWidgets(
+      'switching A -> B -> A across nested Navigators in an IndexedStack (StatefulShellRoute.indexedStack) restores Tab A chrome',
+      (tester) async {
+        final navKeyA = GlobalKey<NavigatorState>();
+        final navKeyB = GlobalKey<NavigatorState>();
+        var currentTab = 0;
+        late StateSetter setTabState;
+
+        await tester.pumpWidget(
+          shellApp(
+            StatefulBuilder(
+              builder: (context, setState) {
+                setTabState = setState;
+                return IndexedStack(
+                  index: currentTab,
+                  children: [
+                    Navigator(
+                      key: navKeyA,
+                      onGenerateRoute: (_) => CupertinoPageRoute<void>(
+                        builder: (_) => GlassScaffold(
+                          appBar: GlassAppBar.pinned(
+                            title: const Text('Tab A'),
+                            actions: [
+                              GlassBarItem.icon(
+                                icon: const Icon(CupertinoIcons.add),
+                                onTap: () {},
+                              ),
+                            ],
+                          ),
+                          body: const Center(child: Text('Body A')),
+                        ),
+                      ),
+                    ),
+                    Navigator(
+                      key: navKeyB,
+                      onGenerateRoute: (_) => CupertinoPageRoute<void>(
+                        builder: (_) => GlassScaffold(
+                          appBar: GlassAppBar.pinned(
+                            title: const Text('Tab B'),
+                            actions: [
+                              GlassBarItem.icon(
+                                icon: const Icon(CupertinoIcons.share),
+                                onTap: () {},
+                              ),
+                            ],
+                          ),
+                          body: const Center(child: Text('Body B')),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+        await settle(tester);
+
+        // 1. Tab A is active: pinned host shows Tab A's add icon, not Tab B's share icon.
+        expect(inHost(find.byIcon(CupertinoIcons.add)), findsOneWidget);
+        expect(inHost(find.byIcon(CupertinoIcons.share)), findsNothing);
+
+        // 2. Switch to Tab B: pinned host shows Tab B's share icon.
+        setTabState(() => currentTab = 1);
+        await settle(tester);
+        expect(inHost(find.byIcon(CupertinoIcons.share)), findsOneWidget);
+        expect(inHost(find.byIcon(CupertinoIcons.add)), findsNothing);
+
+        // Push a detail route inside Tab B (with a back button and bookmark action).
+        navKeyB.currentState!.push(
+          CupertinoPageRoute<void>(
+            builder: (_) => GlassScaffold(
+              appBar: GlassAppBar.pinned(
+                title: const Text('B Detail'),
+                actions: [
+                  GlassBarItem.icon(
+                    icon: const Icon(CupertinoIcons.bookmark),
+                    onTap: () {},
+                  ),
+                ],
+              ),
+              body: const Center(child: Text('B Detail Body')),
+            ),
+          ),
+        );
+        await settle(tester);
+        expect(inHost(find.byIcon(CupertinoIcons.bookmark)), findsOneWidget);
+        expect(inHost(find.byIcon(CupertinoIcons.back)), findsOneWidget);
+
+        // 3. Switch back to Tab A: pinned host cleanly restores Tab A's add icon
+        // with NO leaked actions or back button from offstage Tab B!
+        setTabState(() => currentTab = 0);
+        await settle(tester);
+        expect(inHost(find.byIcon(CupertinoIcons.add)), findsOneWidget);
+        expect(inHost(find.byIcon(CupertinoIcons.share)), findsNothing);
+        expect(inHost(find.byIcon(CupertinoIcons.bookmark)), findsNothing);
+        expect(inHost(find.byIcon(CupertinoIcons.back)), findsNothing);
+
+        // 4. Switching back to Tab B restores B Detail's back button & bookmark icon.
+        setTabState(() => currentTab = 1);
+        await settle(tester);
+        expect(inHost(find.byIcon(CupertinoIcons.bookmark)), findsOneWidget);
+        expect(inHost(find.byIcon(CupertinoIcons.back)), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'switching A -> B -> A inside an IndexedStack sharing a single ModalRoute restores Tab A chrome',
+      (tester) async {
+        var currentTab = 0;
+        late StateSetter setTabState;
+
+        await tester.pumpWidget(
+          shellApp(
+            StatefulBuilder(
+              builder: (context, setState) {
+                setTabState = setState;
+                return IndexedStack(
+                  index: currentTab,
+                  children: const [
+                    _MaterialBarScreen(
+                      title: 'Single-Route Tab A',
+                      actionIcon: CupertinoIcons.add,
+                    ),
+                    _MaterialBarScreen(
+                      title: 'Single-Route Tab B',
+                      actionIcon: CupertinoIcons.share,
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+        await settle(tester);
+
+        expect(inHost(find.byIcon(CupertinoIcons.add)), findsOneWidget);
+        expect(inHost(find.byIcon(CupertinoIcons.share)), findsNothing);
+
+        setTabState(() => currentTab = 1);
+        await settle(tester);
+        expect(inHost(find.byIcon(CupertinoIcons.share)), findsOneWidget);
+        expect(inHost(find.byIcon(CupertinoIcons.add)), findsNothing);
+
+        setTabState(() => currentTab = 0);
+        await settle(tester);
+        expect(inHost(find.byIcon(CupertinoIcons.add)), findsOneWidget);
+        expect(inHost(find.byIcon(CupertinoIcons.share)), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'switching A -> B -> A across Offstage + TickerMode branches inside a single ModalRoute restores Tab A chrome',
+      (tester) async {
+        var currentTab = 0;
+        late StateSetter setTabState;
+
+        await tester.pumpWidget(
+          shellApp(
+            StatefulBuilder(
+              builder: (context, setState) {
+                setTabState = setState;
+                return Stack(
+                  children: [
+                    Offstage(
+                      offstage: currentTab != 0,
+                      child: TickerMode(
+                        enabled: currentTab == 0,
+                        child: const _MaterialBarScreen(
+                          title: 'Offstage A',
+                          actionIcon: CupertinoIcons.add,
+                        ),
+                      ),
+                    ),
+                    Offstage(
+                      offstage: currentTab != 1,
+                      child: TickerMode(
+                        enabled: currentTab == 1,
+                        child: const _MaterialBarScreen(
+                          title: 'Offstage B',
+                          actionIcon: CupertinoIcons.share,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+        await settle(tester);
+
+        expect(inHost(find.byIcon(CupertinoIcons.add)), findsOneWidget);
+        expect(inHost(find.byIcon(CupertinoIcons.share)), findsNothing);
+
+        setTabState(() => currentTab = 1);
+        await settle(tester);
+        expect(inHost(find.byIcon(CupertinoIcons.share)), findsOneWidget);
+        expect(inHost(find.byIcon(CupertinoIcons.add)), findsNothing);
+
+        setTabState(() => currentTab = 0);
+        await settle(tester);
+        expect(inHost(find.byIcon(CupertinoIcons.add)), findsOneWidget);
+        expect(inHost(find.byIcon(CupertinoIcons.share)), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'CupertinoTabScaffold switching A -> B -> A across CupertinoTabView navigators restores Tab A chrome',
+      (tester) async {
+        final tabController = CupertinoTabController(initialIndex: 0);
+        addTearDown(tabController.dispose);
+
+        await tester.pumpWidget(
+          shellApp(
+            CupertinoTabScaffold(
+              controller: tabController,
+              tabBar: CupertinoTabBar(
+                items: const [
+                  BottomNavigationBarItem(
+                    icon: Icon(CupertinoIcons.house),
+                    label: 'A',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(CupertinoIcons.person),
+                    label: 'B',
+                  ),
+                ],
+              ),
+              tabBuilder: (context, index) {
+                return CupertinoTabView(
+                  builder: (_) => GlassScaffold(
+                    appBar: GlassAppBar.pinned(
+                      title: Text('Cupertino Tab $index'),
+                      actions: [
+                        GlassBarItem.icon(
+                          icon: Icon(
+                            index == 0
+                                ? CupertinoIcons.add
+                                : CupertinoIcons.share,
+                          ),
+                          onTap: () {},
+                        ),
+                      ],
+                    ),
+                    body: Center(child: Text('Tab Body $index')),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+        await settle(tester);
+
+        expect(inHost(find.byIcon(CupertinoIcons.add)), findsOneWidget);
+        expect(inHost(find.byIcon(CupertinoIcons.share)), findsNothing);
+
+        tabController.index = 1;
+        await settle(tester);
+        expect(inHost(find.byIcon(CupertinoIcons.share)), findsOneWidget);
+        expect(inHost(find.byIcon(CupertinoIcons.add)), findsNothing);
+
+        tabController.index = 0;
+        await settle(tester);
+        expect(inHost(find.byIcon(CupertinoIcons.add)), findsOneWidget);
+        expect(inHost(find.byIcon(CupertinoIcons.share)), findsNothing);
+      },
+    );
+  });
 }
 
 /// A screen whose bar is a plain Flutter [AppBar] that still pins.
