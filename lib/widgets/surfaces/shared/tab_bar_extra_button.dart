@@ -57,6 +57,7 @@ class GlassTabBarExtraButton {
     this.position = GlassExtraButtonPosition.beforeSearch,
     this.collapseOnSearchFocus = true,
     this.enabled = true,
+    this.selected,
   })  : menuItems = null,
         menuAlignment = null,
         menuWidth = 200,
@@ -83,6 +84,7 @@ class GlassTabBarExtraButton {
     this.position = GlassExtraButtonPosition.beforeSearch,
     this.collapseOnSearchFocus = true,
     this.enabled = true,
+    this.selected,
     this.menuAlignment,
     this.menuWidth = 200,
     this.menuHeight,
@@ -142,6 +144,19 @@ class GlassTabBarExtraButton {
   ///
   /// When false, the button does not respond to taps. Defaults to true.
   final bool enabled;
+
+  /// Optional selection state when this button represents a navigation
+  /// destination (for example a detached Search tab in [GlassTabBar.bottom]).
+  ///
+  /// - `null` (default): Treated as a plain action button (no `selected`
+  ///   semantics trait; the main tab pill keeps its own selection).
+  /// - `false`: Announces `"not selected"` to screen readers while the main
+  ///   tab pill displays its selected tab normally.
+  /// - `true`: Announces `"selected"` to screen readers, applies the bar's
+  ///   `selectedIconColor` (when [iconColor] is `null`), hides the main tab
+  ///   pill's selection indicator, and clears selection semantics on the pill
+  ///   tabs so only this destination is announced as selected.
+  final bool? selected;
 
   /// When non-null, tapping this button opens a [GlassMenu] pull-down.
   ///

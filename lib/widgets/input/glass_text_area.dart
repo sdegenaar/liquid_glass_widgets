@@ -28,6 +28,10 @@ class GlassTextArea extends StatelessWidget {
     this.textInputAction = TextInputAction.newline,
     this.inputFormatters,
     this.textCapitalization = TextCapitalization.none,
+    this.autofillHints = const <String>[],
+    this.autocorrect = true,
+    this.enableSuggestions = true,
+    this.selectionControls,
     this.textStyle,
     this.placeholderStyle,
     this.padding = const EdgeInsets.all(16),
@@ -92,6 +96,19 @@ class GlassTextArea extends StatelessWidget {
   /// Mirrors [GlassTextField.textCapitalization]. Defaults to
   /// [TextCapitalization.none].
   final TextCapitalization textCapitalization;
+
+  /// Autofill hints forwarded to [GlassTextField.autofillHints].
+  final Iterable<String>? autofillHints;
+
+  /// Whether to enable automatic text correction. Defaults to `true`.
+  final bool autocorrect;
+
+  /// Whether to show input suggestions. Defaults to `true`.
+  final bool enableSuggestions;
+
+  /// Optional custom text selection handle and toolbar controls.
+  /// Mirrors [GlassTextField.selectionControls].
+  final TextSelectionControls? selectionControls;
 
   /// Text style.
   final TextStyle? textStyle;
@@ -176,6 +193,10 @@ class GlassTextArea extends StatelessWidget {
       autofocus: autofocus,
       inputFormatters: inputFormatters,
       textCapitalization: textCapitalization,
+      autofillHints: autofillHints,
+      autocorrect: autocorrect,
+      enableSuggestions: enableSuggestions,
+      selectionControls: selectionControls,
       textStyle: textStyle,
       placeholderStyle: placeholderStyle,
       padding: padding,
