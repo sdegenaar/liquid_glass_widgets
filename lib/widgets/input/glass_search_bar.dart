@@ -108,6 +108,9 @@ class GlassSearchBar extends StatefulWidget {
     this.cancelButtonAlwaysVisible = false,
     this.autofocus = false,
     this.enabled = true,
+    this.autocorrect = true,
+    this.enableSuggestions = true,
+    this.selectionControls,
     this.searchIconColor,
     this.clearIconColor,
     this.cancelButtonColor,
@@ -191,6 +194,16 @@ class GlassSearchBar extends StatefulWidget {
   ///
   /// Defaults to true.
   final bool enabled;
+
+  /// Whether to enable automatic text correction. Defaults to `true`.
+  final bool autocorrect;
+
+  /// Whether to show input suggestions. Defaults to `true`.
+  final bool enableSuggestions;
+
+  /// Optional custom text selection handle and toolbar controls.
+  /// Mirrors [GlassTextField.selectionControls].
+  final TextSelectionControls? selectionControls;
 
   // ===========================================================================
   // Style Properties
@@ -428,6 +441,9 @@ class _GlassSearchBarState extends State<GlassSearchBar> {
             onSubmitted: widget.onSubmitted,
             autofocus: widget.autofocus,
             enabled: widget.enabled,
+            autocorrect: widget.autocorrect,
+            enableSuggestions: widget.enableSuggestions,
+            selectionControls: widget.selectionControls,
             onTapOutside: _handleTapOutside,
             textStyle: widget.textStyle,
             placeholderStyle: widget.placeholderStyle,
