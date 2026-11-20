@@ -274,7 +274,8 @@ class GlassSheet extends StatefulWidget {
   /// - [enableDrag]: Whether the sheet can be dragged down to dismiss (default: true)
   /// - [barrierColor]: Color of the modal barrier (defaults to black54)
   /// - [useRootNavigator]: Whether to show the sheet in the root navigator (default: false)
-  /// - [useSafeArea]: Whether to wrap the content in a safe area (default: true)
+  /// - [useSafeArea]: Whether to keep the sheet above the bottom inset
+  ///   (default: true); the top inset always bounds a tall sheet
   ///
   /// Example:
   /// ```dart
@@ -343,7 +344,10 @@ class GlassSheet extends StatefulWidget {
       pageBuilder: (context, animation, secondaryAnimation) {
         Widget dialog = SafeArea(
           bottom: useSafeArea,
-          top: false,
+          // The top inset bounds the sheet's height, so a long sheet stops
+          // below the status bar and its content scrolls. Always on: it is a
+          // limit, not padding, so it never adds space to a short sheet.
+          top: true,
           left: false,
           right: false,
           child: Align(
