@@ -401,18 +401,46 @@ class GlassThemeVariant {
   /// ```dart
   /// GlassTheme(
   ///   data: GlassThemeData(
-  ///     light: GlassThemeVariant.minimal,
-  ///     dark: GlassThemeVariant.minimal,
+  ///     light: GlassThemeVariant.minimalLight,
+  ///     dark: GlassThemeVariant.minimalDark,
   ///   ),
   ///   child: child!,
   /// )
   /// ```
+  ///
+  /// This variant has one cool tint for both brightnesses; [minimalLight] and
+  /// [minimalDark] take the neutral tint of the iOS 27 glass of each.
   static const GlassThemeVariant minimal = GlassThemeVariant(
     settings: GlassThemeSettings(
       thickness: 10.0, // Consistent with light/dark
       blur: 8.0, // BackdropFilter sigma — enough frosting to see shapes through
       glassColor: Color.fromRGBO(
           200, 210, 230, 0.15), // Visible tint for the container overlay
+    ),
+    quality: GlassQuality.minimal,
+    glowColors: GlassGlowColors.fallback,
+  );
+
+  /// [minimal] for light mode, with the neutral tint of
+  /// [GlassThemeSettings.ios27Light] instead of [minimal]'s cool blue-grey
+  /// one, so the frosted surfaces keep the light glass's milky veil.
+  static const GlassThemeVariant minimalLight = GlassThemeVariant(
+    settings: GlassThemeSettings(
+      thickness: 10.0,
+      blur: 8.0,
+      glassColor: Color(0x87F8F8F8), // GlassThemeSettings.ios27Light's tint
+    ),
+    quality: GlassQuality.minimal,
+    glowColors: GlassGlowColors.fallback,
+  );
+
+  /// [minimal] for dark mode, with the neutral tint of
+  /// [GlassThemeSettings.ios27Dark].
+  static const GlassThemeVariant minimalDark = GlassThemeVariant(
+    settings: GlassThemeSettings(
+      thickness: 10.0,
+      blur: 8.0,
+      glassColor: Color(0x1FFFFFFF), // GlassThemeSettings.ios27Dark's tint
     ),
     quality: GlassQuality.minimal,
     glowColors: GlassGlowColors.fallback,
