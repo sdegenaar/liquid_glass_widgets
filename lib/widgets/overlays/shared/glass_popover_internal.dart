@@ -121,6 +121,7 @@ class _GlassPopoverState extends State<GlassPopover>
   @override
   void initState() {
     super.initState();
+    widget.controller?._attach(this);
     _blurRamp = AnimationController(
       vsync: this,
       // A valid non-zero duration for the controller even when the ramp is
@@ -186,6 +187,7 @@ class _GlassPopoverState extends State<GlassPopover>
 
   @override
   void dispose() {
+    widget.controller?._detach(this);
     _removeRouteListeners();
     _routes = const [];
     _blurRamp.dispose();
@@ -306,6 +308,10 @@ class _GlassPopoverState extends State<GlassPopover>
   @override
   void didUpdateWidget(GlassPopover oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!identical(widget.controller, oldWidget.controller)) {
+      oldWidget.controller?._detach(this);
+      widget.controller?._attach(this);
+    }
     // If the popover is showing and the widget configuration changed, refresh
     // the cached content tree so the user sees up-to-date data. This is the
     // correct lifecycle hook — never do this inside build().
