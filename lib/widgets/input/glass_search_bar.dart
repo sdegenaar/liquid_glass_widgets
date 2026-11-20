@@ -172,15 +172,18 @@ class GlassSearchBar extends StatefulWidget {
   /// Whether to show the cancel button.
   ///
   /// When true, the cancel button slides in from the right when the search
-  /// bar is focused, matching iOS behavior.
+  /// bar is focused, matching iOS behavior. Set [cancelButtonAlwaysVisible]
+  /// to keep it visible even without focus.
   ///
   /// Defaults to false.
   final bool showsCancelButton;
 
-  /// With [showsCancelButton], keeps the cancel button in place whether or
-  /// not the field has focus — for a search bar that is a mode (the field
-  /// appears when search is switched on and [onCancel] is the way out), so
-  /// the way out never disappears with the keyboard.
+  /// With [showsCancelButton] set to `true`, keeps the cancel button in place
+  /// whether or not the field has focus — for a search bar that is a mode (the
+  /// field appears when search is switched on and [onCancel] is the way out),
+  /// so the way out never disappears with the keyboard.
+  ///
+  /// Has no effect unless [showsCancelButton] is also `true`.
   ///
   /// Defaults to false: the iOS behaviour, cancel with focus only.
   final bool cancelButtonAlwaysVisible;
@@ -302,6 +305,7 @@ class _GlassSearchBarState extends State<GlassSearchBar> {
   bool _ownsController = false;
   bool _ownsFocusNode = false;
   bool _hasText = false;
+  bool _lastHasFocus = false;
 
   /// Derived from the flags and the focus, so a change of
   /// [GlassSearchBar.showsCancelButton] or
@@ -327,6 +331,7 @@ class _GlassSearchBarState extends State<GlassSearchBar> {
     }
 
     _hasText = _controller.text.isNotEmpty;
+    _lastHasFocus = _focusNode.hasFocus;
     _controller.addListener(_onTextChanged);
     _focusNode.addListener(_onFocusChanged);
   }
@@ -346,8 +351,12 @@ class _GlassSearchBarState extends State<GlassSearchBar> {
   }
 
   void _onFocusChanged() {
-    if (widget.showsCancelButton && !widget.cancelButtonAlwaysVisible) {
-      setState(() {});
+    final hasFocus = _focusNode.hasFocus;
+    if (hasFocus != _lastHasFocus) {
+      _lastHasFocus = hasFocus;
+      if (widget.showsCancelButton && !widget.cancelButtonAlwaysVisible) {
+        setState(() {});
+      }
     }
   }
 
@@ -474,6 +483,7 @@ class _GlassSearchBarState extends State<GlassSearchBar> {
                     padding: const EdgeInsetsDirectional.only(start: 10),
                     child: GlassButton(
                       onTap: _handleCancel,
+                      enabled: widget.enabled,
                       label: widget.cancelButtonSemanticLabel ??
                           glassCupertinoLocalizationsOf(context)
                               .cancelButtonLabel,

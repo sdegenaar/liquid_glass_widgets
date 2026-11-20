@@ -96,4 +96,162 @@ void main() {
     second.close();
     await tester.pumpAndSettle();
   });
+
+  testWidgets(
+      'intrinsic-height popover cancels cleanly on immediate open() + close()',
+      (tester) async {
+    final controller = GlassPopoverController();
+    var opened = 0;
+    var closed = 0;
+    await tester.pumpWidget(
+      CupertinoApp(
+        home: Center(
+          child: GlassPopover(
+            controller: controller,
+            popoverWidth: 200,
+            // Intentionally omit popoverHeight to exercise Offstage measurement.
+            onOpen: () => opened++,
+            onClose: () => closed++,
+            trigger: const SizedBox(width: 40, height: 40),
+            contentBuilder: (_, __) => const SizedBox(
+              height: 80,
+              child: Text('Intrinsic Content'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Same-frame open then close before the Offstage measurement callback runs.
+    controller.open();
+    controller.close();
+    expect(controller.isOpen, isFalse);
+    expect(opened, 1);
+    expect(closed, 1);
+
+    await tester.pumpAndSettle();
+    expect(controller.isOpen, isFalse);
+    expect(find.text('Intrinsic Content'), findsNothing);
+
+    // Subsequent normal open still measures and opens properly.
+    controller.open();
+    await tester.pumpAndSettle();
+    expect(controller.isOpen, isTrue);
+    expect(find.text('Intrinsic Content'), findsOneWidget);
+    controller.close();
+    await tester.pumpAndSettle();
+    expect(controller.isOpen, isFalse);
+  });
+
+  testWidgets('open() and close() are idempotent', (tester) async {
+    final controller = GlassPopoverController();
+    var opened = 0;
+    var closed = 0;
+    await tester.pumpWidget(
+      CupertinoApp(
+        home: Center(
+          child: GlassPopover(
+            controller: controller,
+            popoverWidth: 200,
+            popoverHeight: 100,
+            onOpen: () => opened++,
+            onClose: () => closed++,
+            trigger: const SizedBox(width: 40, height: 40),
+            contentBuilder: (_, __) => const Text('Idempotent'),
+          ),
+        ),
+      ),
+    );
+
+    controller.open();
+    controller.open();
+    await tester.pumpAndSettle();
+    controller.open();
+    await tester.pump();
+    expect(opened, 1);
+    expect(controller.isOpen, isTrue);
+
+    controller.close();
+    controller.close();
+    expect(closed, 1);
+    await tester.pumpAndSettle();
+    controller.close();
+    expect(closed, 1);
+    expect(controller.isOpen, isFalse);
+  });
+
+  testWidgets('toggle() opens, closes, and reverses mid-close', (tester) async {
+    final controller = GlassPopoverController();
+    var opened = 0;
+    var closed = 0;
+    await tester.pumpWidget(
+      CupertinoApp(
+        home: Center(
+          child: GlassPopover(
+            controller: controller,
+            popoverWidth: 200,
+            popoverHeight: 100,
+            onOpen: () => opened++,
+            onClose: () => closed++,
+            trigger: const SizedBox(width: 40, height: 40),
+            contentBuilder: (_, close) => GestureDetector(
+              onTap: close,
+              child: const Text('Toggle Content'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    controller.toggle();
+    await tester.pumpAndSettle();
+    expect(controller.isOpen, isTrue);
+    expect(opened, 1);
+
+    // Begin closing, then toggle mid-close while isOpen is still true.
+    controller.toggle();
+    await tester.pump(const Duration(milliseconds: 60));
+    expect(closed, 1);
+    expect(controller.isOpen, isTrue);
+
+    controller.toggle();
+    await tester.pumpAndSettle();
+    expect(opened, 2);
+    expect(controller.isOpen, isTrue);
+    expect(find.text('Toggle Content'), findsOneWidget);
+
+    // Closing from contentBuilder callback updates controller.isOpen.
+    await tester.tap(find.text('Toggle Content'));
+    await tester.pumpAndSettle();
+    expect(controller.isOpen, isFalse);
+  });
+
+  testWidgets('detached controller calls are safe no-ops', (tester) async {
+    final controller = GlassPopoverController();
+    expect(controller.isOpen, isFalse);
+    controller.open();
+    controller.close();
+    controller.toggle();
+    expect(controller.isOpen, isFalse);
+
+    Widget buildHost(GlassPopoverController? ctrl) => CupertinoApp(
+          home: Center(
+            child: GlassPopover(
+              controller: ctrl,
+              popoverWidth: 200,
+              popoverHeight: 100,
+              trigger: const SizedBox(width: 40, height: 40),
+              contentBuilder: (_, __) => const Text('Detached'),
+            ),
+          ),
+        );
+
+    await tester.pumpWidget(buildHost(controller));
+    await tester.pumpWidget(buildHost(null));
+
+    controller.open();
+    await tester.pumpAndSettle();
+    expect(controller.isOpen, isFalse);
+    expect(find.text('Detached'), findsNothing);
+  });
 }
