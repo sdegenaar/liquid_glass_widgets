@@ -93,6 +93,7 @@ class GlassListTile extends StatefulWidget {
     this.swipeController,
     this.onSwipeStateChanged,
     this.swipeActionStyle,
+    this.swipeBackgroundColor,
     this.onDismissed,
     this.contextMenuActions,
     this.contextMenuPreviewBuilder,
@@ -143,6 +144,7 @@ class GlassListTile extends StatefulWidget {
     this.swipeController,
     this.onSwipeStateChanged,
     this.swipeActionStyle,
+    this.swipeBackgroundColor,
     this.onDismissed,
     this.contextMenuActions,
     this.contextMenuPreviewBuilder,
@@ -250,6 +252,11 @@ class GlassListTile extends StatefulWidget {
   /// inside a solid surface container (e.g. [GlassGroupedSection] with
   /// [GlassSurfaceStyle.solid]), or [GlassSwipeActionStyle.tintedGlass] otherwise.
   final GlassSwipeActionStyle? swipeActionStyle;
+
+  /// Optional colour painted behind the sliding tile while swiped open.
+  ///
+  /// Forwarded to [GlassSwipeActions.backgroundColor].
+  final Color? swipeBackgroundColor;
 
   /// Optional callback executed when the row is dismissed via full swipe.
   final VoidCallback? onDismissed;
@@ -493,13 +500,11 @@ class _GlassListTileState extends State<GlassListTile>
       );
     }
 
-    final hasSwipeActions = !effectiveIsEditing &&
-        ((widget.leadingSwipeActions != null &&
-                widget.leadingSwipeActions!.isNotEmpty) ||
-            (widget.trailingSwipeActions != null &&
-                widget.trailingSwipeActions!.isNotEmpty));
+    final hasSwipeWrapper = widget.leadingSwipeActions != null ||
+        widget.trailingSwipeActions != null ||
+        widget.swipeController != null;
 
-    if (hasSwipeActions) {
+    if (hasSwipeWrapper) {
       final effectiveStyle = widget.swipeActionStyle ??
           (InheritedGlassSurfaceStyle.maybeOf(context) ==
                   GlassSurfaceStyle.solid
@@ -507,6 +512,7 @@ class _GlassListTileState extends State<GlassListTile>
               : GlassSwipeActionStyle.tintedGlass);
 
       content = GlassSwipeActions(
+        enabled: !effectiveIsEditing,
         leadingActions: widget.leadingSwipeActions ?? const [],
         trailingActions: widget.trailingSwipeActions ?? const [],
         allowsFullSwipe: widget.allowsFullSwipe,
@@ -518,6 +524,7 @@ class _GlassListTileState extends State<GlassListTile>
         controller: widget.swipeController,
         onSwipeStateChanged: widget.onSwipeStateChanged,
         style: effectiveStyle,
+        backgroundColor: widget.swipeBackgroundColor,
         onDismissed: widget.onDismissed ?? widget.onDelete,
         borderRadius: widget._useOwnLayer
             ? const BorderRadius.all(Radius.circular(12))

@@ -444,6 +444,10 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
             : triggerProgress;
         final double scopeFactor =
             useMaterializeForTrigger ? triggerProgress : 1.0;
+        final double glassScopeFactor =
+            useMaterializeForTrigger || triggerProgress <= 0.001
+                ? triggerProgress
+                : 1.0;
 
         // Parallel close recoil (~183 ms peak) and wide-trigger horizontal
         // splash (~398 ms +1.6% peak) driven continuously through ~550 ms,
@@ -511,7 +515,8 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                 child: Opacity(
                   opacity: triggerLayerOpacity,
                   child: GlassMaterializeScope(
-                    glassProgress: scopeFactor * (outer?.glassProgress ?? 1.0),
+                    glassProgress:
+                        glassScopeFactor * (outer?.glassProgress ?? 1.0),
                     contentOpacity:
                         scopeFactor * (outer?.contentOpacity ?? 1.0),
                     contentSigma: outer?.contentSigma ?? 0.0,
