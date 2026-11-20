@@ -259,8 +259,9 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
   }
 
   void _onLinkUpdate() {
-    markGeometryNeedsUpdate();
+    markGeometryNeedsUpdate(force: true);
     markNeedsPaint();
+    _enclosingGlassLayer()?.markNeedsPaint();
   }
 
   void _onShapeTransformChanged(RenderObject renderObject) {

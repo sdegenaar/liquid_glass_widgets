@@ -1,8 +1,17 @@
 # Unreleased
 
+## Features
+
+- **`GlassTextField`, `GlassPasswordField`, `GlassTextArea`, and `GlassSearchBar` input & selection controls (`autofillHints`, `autocorrect`, `enableSuggestions`, `selectionControls`):** Forwards `autofillHints`, `autocorrect`, `enableSuggestions`, and `selectionControls` (`TextSelectionControls?`, e.g. `materialTextSelectionHandleControls` on Android) to the underlying `CupertinoTextField` across all text input widgets (`GlassPasswordField` defaults `autocorrect` and `enableSuggestions` to `false`).
+- **`GlassSwipeActions` `enabled` and `backgroundColor` (`GlassListTile.swipeBackgroundColor`):** Adds `enabled` (`bool`, default `true`) and `backgroundColor` (`Color?`, resolving `CupertinoDynamicColor`; pass `Color(0x00000000)` to suppress the swiped-row backing highlight) to `GlassSwipeActions`, plus `swipeBackgroundColor` on `GlassListTile`.
+- **`GlassTabBarExtraButton.selected` and `GlassButton.isSelected`:** Adds optional `selected` (`bool?`) on `GlassTabBarExtraButton` (and `isSelected` on `GlassButton`) so destination extra buttons in `GlassTabBar.bottom` and `GlassTabBar.searchable` announce their selected state to VoiceOver/TalkBack, adopt `selectedIconColor`, and suppress the main tab pill's selection indicator and tab selection semantics when active.
+
 ## Bug Fixes
 
-- **`GlassMenu` on premium tab bars:** Fully hidden triggers are excluded from the shared glass blend group while the menu is open, removing the leftover button outline and preserving the trigger layout for the closing morph.
+- **`GlassMenu` on premium tab bars (`GlassTabBar.minimizable`, `GlassTabBarTrailingButton.menu`, `LiquidGlass.grouped`) (#504, PR #506):** Excludes fully dematerialized triggers from the shared `LiquidGlassBlendGroup` geometry matte while the menu is open (preserving shape z-order, trigger layout, and nested `GlassMaterializeScope` scaling), eliminating the lingering circular glass rim beneath open menus on Impeller when `backgroundQuality` is `GlassQuality.premium`. Thanks to [@yugai](https://github.com/yugai) for the fix (#504, #506).
+- **`GlassSwipeActions` horizontal drag arena & child state preservation:** Stops claiming horizontal drags in the gesture arena when `enabled` is `false`, when both `leadingActions` and `trailingActions` are empty, or when a closed row is dragged toward an empty side — allowing ancestor horizontal scrollables (`PageView`, horizontal `ListView`) to swipe freely while keeping `child` mounted without state loss across open/close and action changes.
+- **`GlassTabBar` keyboard `Tab` focus traversal and RTL reading order:** Excludes the indicator lens's magnified tab overlay from keyboard focus so hardware `Tab` visits each tab once, and preserves ambient `Directionality` on tab `FocusNode`s so RTL `Tab` traversal starts at the first (rightmost) tab.
+- **`GlassNavigationShell` and `GlassAppBar.pinned` with `IndexedStack` / `StatefulShellRoute.indexedStack`:** Ignores pinned bar registrations inside inactive `IndexedStack`, `Visibility`, `Offstage`, and muted `TickerMode` branches and re-resolves when a kept-alive tab returns onstage, preventing offstage tab bars from leaving stale actions or back buttons on the active tab.
 
 # 1.18.0
 

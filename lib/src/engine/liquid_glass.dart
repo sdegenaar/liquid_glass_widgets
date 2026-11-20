@@ -17,6 +17,7 @@ import '../renderer/glass_materialize_scope.dart';
 import 'internal/transform_tracking_repaint_boundary_mixin.dart';
 import 'liquid_glass_blend_group.dart';
 import 'liquid_glass_layer.dart';
+import 'liquid_glass_render_scope.dart';
 import 'liquid_glass_settings.dart';
 import 'liquid_shape.dart';
 
@@ -191,7 +192,18 @@ class LiquidGlass extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context, [GlassGroupLink? blendGroupLink]) {
-    final settings = LiquidGlassSettings.of(context);
+    final renderScope = LiquidGlassRenderScope.of(context);
+    final nearestMaterialize = GlassMaterializeScope.maybeOf(context);
+    final settings = !identical(
+              nearestMaterialize,
+              renderScope.appliedMaterializeScope,
+            ) &&
+            nearestMaterialize != null
+        ? GlassMaterializeScope.resolveSettings(
+            context,
+            renderScope.rawSettings,
+          )
+        : renderScope.settings;
 
     if (!ImageFilter.isShaderFilterSupported) {
       // No Impeller — render child without glass effect.
@@ -199,12 +211,19 @@ class LiquidGlass extends StatelessWidget {
       return child;
     }
 
+    // Shapes inside a shared LiquidGlassLayer (such as a menu trigger pill
+    // inside GlassTabBar.minimizable) dematerialize individually via an inner
+    // GlassMaterializeScope while sibling shapes in the same layer stay
+    // visible. Marking glassVisible false omits this shape from uShapeData[]
+    // while keeping its slot order and layout intact for the closing morph.
+    final isGlassVisible =
+        ownLayerConfig != null || settings.visibility > 0.001;
+
     return _RawLiquidGlass(
       blendGroupLink: blendGroupLink ?? LiquidGlassBlendGroup.of(context),
       shape: shape,
       glassContainsChild: glassContainsChild,
-      glassVisible: !grouped ||
-          (GlassMaterializeScope.maybeOf(context)?.glassProgress ?? 1.0) > 0.0,
+      glassVisible: isGlassVisible,
       child: ClipPath(
         clipper: ShapeBorderClipper(shape: shape),
         clipBehavior: clipBehavior,
@@ -238,6 +257,7 @@ class _RawLiquidGlass extends SingleChildRenderObjectWidget {
   final bool glassContainsChild;
 
   final GlassGroupLink? blendGroupLink;
+
   final bool glassVisible;
 
   @override
