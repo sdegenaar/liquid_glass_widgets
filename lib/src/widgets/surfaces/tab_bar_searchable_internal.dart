@@ -147,6 +147,7 @@ class SearchableTabIndicator extends StatefulWidget {
     required this.enableBackgroundAnimation,
     required this.backgroundPressScale,
     this.platformViewBackdrop = false,
+    this.showDuringDragWhenHidden = false,
     this.collapsedSemanticLabel,
     super.key,
   });
@@ -154,6 +155,11 @@ class SearchableTabIndicator extends StatefulWidget {
   final int tabIndex;
   final int tabCount;
   final bool visible;
+
+  /// When `true` and [visible] is `false` (for example because
+  /// `extraButton.selected == true`), the glass indicator lens still inflates
+  /// while the user actively drags across the tab pill.
+  final bool showDuringDragWhenHidden;
   final Widget childUnselected;
   final Widget Function(BuildContext, double, Alignment) selectedTabBuilder;
   final Color? indicatorColor;
@@ -237,6 +243,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
   /// RepaintBoundary key for the merged icon layer, so the premium indicator can
   /// refract the icons (capturable) over a PlatformView.
   final GlobalKey _iconLayerKey = GlobalKey();
+  final GlobalKey _unselectedTabsKey = GlobalKey();
 
   // Cached shape to avoid recreation on every animation frame
   late LiquidRoundedRectangle _barShape =
@@ -393,11 +400,13 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                   active: tabIsDragging,
                   builder: (context, value, velocity, child) {
                     final alignment = Alignment(value, 0);
+                    final effectiveVisible = widget.visible ||
+                        (widget.showDuringDragWhenHidden && tabIsDragging);
                     return SpringBuilder(
                       spring: GlassSpring.snappy(
                         duration: const Duration(milliseconds: 300),
                       ),
-                      value: widget.visible &&
+                      value: effectiveVisible &&
                               (tabIsDown ||
                                   tabIsDragging ||
                                   (alignment.x - targetAlignment).abs() > 0.05)
@@ -405,21 +414,16 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                           : 0.0,
                       builder: (context, thickness, _) {
                         if (thickness < 0.01 &&
-                            !widget.visible &&
+                            !effectiveVisible &&
                             widget.maskingQuality == MaskingQuality.high) {
-                          return Container(
-                            height: widget.barHeight,
-                            decoration: ShapeDecoration(shape: _barShape),
-                            child: AdaptiveGlass.grouped(
-                              quality:
-                                  widget.backgroundQuality ?? widget.quality,
-                              platformViewBackdrop: widget.platformViewBackdrop,
-                              shape: _barShape,
-                              child: Container(
-                                padding: widget.tabPadding,
-                                child: widget.childUnselected,
-                              ),
-                            ),
+                          return _buildSimple(
+                            alignment: alignment,
+                            targetAlignment: Alignment(targetAlignment, 0),
+                            thickness: 0.0,
+                            velocity: 0.0,
+                            indicatorRadius: indicatorRadius,
+                            indicatorColor: indicatorColor,
+                            effectiveVisible: false,
                           );
                         }
 
@@ -439,6 +443,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                               velocity: velocity,
                               indicatorRadius: indicatorRadius,
                               indicatorColor: indicatorColor,
+                              effectiveVisible: effectiveVisible,
                             );
                           case MaskingQuality.high:
                             return _buildHighQuality(
@@ -448,6 +453,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                               jellyTransform: jellyTransform,
                               indicatorRadius: indicatorRadius,
                               indicatorColor: indicatorColor,
+                              effectiveVisible: effectiveVisible,
                             );
                         }
                       },
@@ -516,6 +522,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
     required double velocity,
     required double indicatorRadius,
     required Color indicatorColor,
+    required bool effectiveVisible,
   }) {
     return SizedBox(
       height: widget.barHeight,
@@ -543,7 +550,10 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                   Positioned.fill(
                     child: Container(
                       padding: widget.tabPadding,
-                      child: widget.childUnselected,
+                      child: KeyedSubtree(
+                        key: _unselectedTabsKey,
+                        child: widget.childUnselected,
+                      ),
                     ),
                   ),
                 ],
@@ -552,7 +562,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
           ),
 
           // Glass indicator — on top so it refracts the icon layer AND the glow beneath.
-          if (widget.visible && thickness > 0.05)
+          if (effectiveVisible && thickness > 0.05)
             AnimatedGlassIndicator(
               velocity: velocity,
               itemCount: widget.tabCount,
@@ -572,7 +582,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
 
           // Persistent selected-icon overlay — always at TARGET position
           // so the selected icon stays vibrant (selected style) at rest.
-          if (widget.visible)
+          if (effectiveVisible)
             Positioned.fill(
               child: Align(
                 alignment: targetAlignment,
@@ -599,6 +609,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
     required Matrix4 jellyTransform,
     required double indicatorRadius,
     required Color indicatorColor,
+    required bool effectiveVisible,
   }) {
     final effRadius = indicatorRadius;
     return SizedBox(
@@ -632,7 +643,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                     quality: widget.quality,
                     indicatorColor: indicatorColor,
                     isBackgroundIndicator: false,
-                    paintBackground: true,
+                    paintBackground: effectiveVisible,
                     paintGlass: false,
                     innerBlur: widget.innerBlur,
                     padding: const EdgeInsets.all(4),
@@ -681,7 +692,10 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                                   child: Container(
                                     padding: widget.tabPadding,
                                     height: widget.barHeight,
-                                    child: widget.childUnselected,
+                                    child: KeyedSubtree(
+                                      key: _unselectedTabsKey,
+                                      child: widget.childUnselected,
+                                    ),
                                   ),
                                 ),
                                 if (!widget.passthroughOverPlatformView)

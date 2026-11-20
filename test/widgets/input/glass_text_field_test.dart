@@ -1073,4 +1073,129 @@ void main() {
       expect(find.byKey(const Key('suffix')), findsOneWidget);
     });
   });
+
+  group(
+      'autofillHints, autocorrect, enableSuggestions, and selectionControls forwarding',
+      () {
+    testWidgets(
+        'GlassTextField, GlassTextField.search, GlassPasswordField, GlassTextArea, and GlassSearchBar forward input & selection options',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                GlassTextField(
+                  key: const ValueKey('login_user'),
+                  autofillHints: const [AutofillHints.username],
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  selectionControls: materialTextSelectionHandleControls,
+                ),
+                GlassTextField.search(
+                  key: const ValueKey('search_opt'),
+                  autofillHints: null,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  selectionControls: materialTextSelectionHandleControls,
+                ),
+                GlassPasswordField(
+                  key: const ValueKey('password_opt'),
+                  autofillHints: const [AutofillHints.password],
+                  selectionControls: materialTextSelectionHandleControls,
+                ),
+                GlassTextArea(
+                  key: const ValueKey('textarea_opt'),
+                  autofillHints: const [AutofillHints.streetAddressLine1],
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  selectionControls: materialTextSelectionHandleControls,
+                ),
+                GlassSearchBar(
+                  key: const ValueKey('searchbar_opt'),
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  selectionControls: materialTextSelectionHandleControls,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      CupertinoTextField innerOf(String key) =>
+          tester.widget<CupertinoTextField>(
+            find.descendant(
+              of: find.byKey(ValueKey(key)),
+              matching: find.byType(CupertinoTextField),
+            ),
+          );
+
+      final userField = innerOf('login_user');
+      expect(userField.autofillHints, const [AutofillHints.username]);
+      expect(userField.autocorrect, isFalse);
+      expect(userField.enableSuggestions, isFalse);
+      expect(userField.selectionControls, materialTextSelectionHandleControls);
+
+      final searchField = innerOf('search_opt');
+      expect(searchField.autofillHints, isNull);
+      expect(searchField.autocorrect, isFalse);
+      expect(searchField.enableSuggestions, isFalse);
+      expect(
+          searchField.selectionControls, materialTextSelectionHandleControls);
+
+      final passwordField = innerOf('password_opt');
+      expect(passwordField.autofillHints, const [AutofillHints.password]);
+      expect(passwordField.autocorrect, isFalse);
+      expect(passwordField.enableSuggestions, isFalse);
+      expect(
+          passwordField.selectionControls, materialTextSelectionHandleControls);
+
+      final textArea = innerOf('textarea_opt');
+      expect(textArea.autofillHints, const [AutofillHints.streetAddressLine1]);
+      expect(textArea.autocorrect, isFalse);
+      expect(textArea.enableSuggestions, isFalse);
+      expect(textArea.selectionControls, materialTextSelectionHandleControls);
+
+      final searchBar = innerOf('searchbar_opt');
+      expect(searchBar.autocorrect, isFalse);
+      expect(searchBar.enableSuggestions, isFalse);
+      expect(searchBar.selectionControls, materialTextSelectionHandleControls);
+    });
+
+    testWidgets(
+        'renders Material selection handles cleanly on Android inside MaterialApp when selectionControls is provided',
+        (tester) async {
+      final controller = TextEditingController(text: 'hello android world');
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(platform: TargetPlatform.android),
+          home: Scaffold(
+            body: LiquidGlassWidgets.wrap(
+              child: GlassTextField(
+                controller: controller,
+                selectionControls: materialTextSelectionHandleControls,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Double-tap directly over the first word ('hello') to select it and
+      // mount the Material selection handles in the overlay.
+      final wordOffset =
+          tester.getTopLeft(find.byType(EditableText)) + const Offset(24, 10);
+      await tester.tapAt(wordOffset);
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tapAt(wordOffset);
+      await tester.pumpAndSettle();
+
+      final editable = tester.widget<EditableText>(find.byType(EditableText));
+      expect(editable.selectionControls, materialTextSelectionHandleControls);
+      expect(controller.selection.isCollapsed, isFalse);
+      expect(tester.takeException(), isNull);
+    });
+  });
 }

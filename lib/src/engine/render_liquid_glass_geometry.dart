@@ -233,11 +233,15 @@ abstract class RenderLiquidGlassGeometry extends RenderProxyBox {
       return geometry;
     }
 
+    final hadGeometry = geometry != null;
     geometry?.dispose();
     geometry = null;
     geometryState = LiquidGlassGeometryState.updated;
 
     if (shapes.isEmpty) {
+      if (hadGeometry) {
+        _renderLink?.notifyGeometryChanged(this);
+      }
       return null;
     }
 

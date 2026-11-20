@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
+import 'package:flutter/rendering.dart' show RenderIndexedStack;
 import 'package:flutter/scheduler.dart' show SchedulerPhase;
 import 'package:flutter/widgets.dart';
 
@@ -257,8 +258,21 @@ class GlassNavigationShell extends StatefulWidget {
 class GlassNavigationShellState extends State<GlassNavigationShell>
     with TickerProviderStateMixin {
   /// Registrations keyed by route, in registration order.
-  final Map<ModalRoute<dynamic>, GlassNavBarRegistration> _registry =
-      <ModalRoute<dynamic>, GlassNavBarRegistration>{};
+  ///
+  /// Multiple [GlassPinnedBarChrome] widgets may coexist under the same
+  /// [ModalRoute] (for example inside an [IndexedStack] within one screen);
+  /// keeping the per-registrant list lets the shell pick whichever bar is
+  /// currently onstage without an offstage sibling overwriting it.
+  final Map<ModalRoute<dynamic>, List<_RegistrantEntry>> _registry =
+      <ModalRoute<dynamic>, List<_RegistrantEntry>>{};
+
+  /// Registrants that were onstage during the most recent [_orderedEntries]
+  /// pass. When a previously hidden registrant (e.g. an inactive `IndexedStack`
+  /// or `Offstage` tab with `const` children) begins painting onstage, its
+  /// absence from this set triggers one deferred re-resolve — while multiple
+  /// simultaneously visible onstage routes (such as mid-transition or
+  /// non-opaque routes) remain a zero-cost no-op.
+  final Set<BuildContext> _onstageRegistrants = <BuildContext>{};
 
   /// Routes whose animations this shell currently listens to.
   final Set<Animation<double>> _listened = <Animation<double>>{};
@@ -451,23 +465,49 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
   /// Registers or updates [route]'s pinned chrome.
   void register(
     ModalRoute<dynamic> route,
-    GlassNavBarRegistration registration,
-  ) {
-    final existing = _registry[route];
-    _registry[route] = registration;
-    if (existing == null) {
+    GlassNavBarRegistration registration, {
+    BuildContext? registrant,
+  }) {
+    final entries = _registry[route];
+    if (entries == null) {
+      _registry[route] = <_RegistrantEntry>[
+        _RegistrantEntry(registrant: registrant, registration: registration),
+      ];
       _listenTo(route.animation);
       _listenTo(route.secondaryAnimation);
       final listener =
           _clockListeners[route] = (status) => _onRouteStatus(route, status);
       route.animation?.addStatusListener(listener);
+    } else {
+      final index = entries
+          .indexWhere((entry) => identical(entry.registrant, registrant));
+      if (index >= 0) {
+        entries[index].registration = registration;
+      } else {
+        entries.add(
+          _RegistrantEntry(registrant: registrant, registration: registration),
+        );
+      }
     }
     _scheduleNotify();
   }
 
-  /// Removes [route] from the registry.
-  void unregister(ModalRoute<dynamic> route) {
-    if (_registry.remove(route) == null) return;
+  /// Removes [route] (or a specific [registrant] on [route]) from the registry.
+  void unregister(
+    ModalRoute<dynamic> route, {
+    BuildContext? registrant,
+  }) {
+    final entries = _registry[route];
+    if (entries == null) return;
+    if (registrant != null) {
+      _onstageRegistrants.remove(registrant);
+      entries.removeWhere((entry) => identical(entry.registrant, registrant));
+      if (entries.isNotEmpty) {
+        _scheduleNotify();
+        return;
+      }
+    }
+    _registry.remove(route);
     if (identical(_sheetHold?.route, route)) _dropSheetHold();
     _unlisten(route.animation);
     _unlisten(route.secondaryAnimation);
@@ -475,6 +515,128 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
     if (listener != null) route.animation?.removeStatusListener(listener);
     if (identical(_clockRoute, route)) _clockRoute = null;
     _scheduleNotify();
+  }
+
+  /// Called from [GlassPinnedBarChrome]'s paint probe when [registrant] paints
+  /// onstage.
+  ///
+  /// `IndexedStack` and `Offstage` skip painting inactive children without
+  /// rebuilding `const` subtrees; observing when a different registered bar
+  /// begins painting schedules one post-frame re-resolve at zero steady-state
+  /// cost.
+  void notifyRegistrantPainted(BuildContext registrant) {
+    if (_onstageRegistrants.contains(registrant)) return;
+    _scheduleNotify();
+  }
+
+  /// Whether [registrant] sits inside an inactive hidden branch beneath this
+  /// shell (such as an inactive [IndexedStack], `StatefulShellRoute.indexedStack`,
+  /// `CupertinoTabScaffold`, [Visibility], [Offstage], or [TickerMode] subtree),
+  /// as distinct from [route]'s own `_ModalScope` / `Overlay` machinery.
+  bool isBranchOffstage(BuildContext registrant, ModalRoute<dynamic> route) {
+    if (registrant is Element && !registrant.mounted) return true;
+    final stopAt = context;
+    final subtreeBoundary = route.subtreeContext;
+    final navContext = route.navigator?.context;
+
+    // 1. Walk from [registrant] up to `route.subtreeContext` (all widgets inside
+    // the route's page, below `_ModalScope`'s internal `Offstage` and `Overlay`'s
+    // `TickerMode`). If `subtreeContext` is not yet attached, still check
+    // `Visibility` and `RenderIndexedStack` up to `navContext`.
+    final checkPageOffstageAndTicker = subtreeBoundary != null;
+    if (_isSegmentHidden(
+      registrant,
+      stopAt: stopAt,
+      segmentStop1: subtreeBoundary,
+      segmentStop2: navContext,
+      checkOffstageAndTicker: checkPageOffstageAndTicker,
+    )) {
+      return true;
+    }
+
+    // 2. Jump past `route`'s `Navigator` (skipping `_ModalScope`'s pre-transition
+    // hero warm-up `Offstage`) and check everything between `navContext` and
+    // this shell (`StatefulShellRoute`, `CupertinoTabScaffold`, etc.).
+    if (navContext != null && !identical(navContext, stopAt)) {
+      if (navContext is Element && !navContext.mounted) return false;
+      if (_isSegmentHidden(
+        navContext,
+        stopAt: stopAt,
+        checkOffstageAndTicker: true,
+      )) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  bool _isSegmentHidden(
+    BuildContext start, {
+    required BuildContext stopAt,
+    BuildContext? segmentStop1,
+    BuildContext? segmentStop2,
+    required bool checkOffstageAndTicker,
+  }) {
+    Element? childElement = start is Element ? start : null;
+    var hidden = false;
+    start.visitAncestorElements((element) {
+      if (identical(element, stopAt) ||
+          (segmentStop1 != null && identical(element, segmentStop1)) ||
+          (segmentStop2 != null && identical(element, segmentStop2))) {
+        return false;
+      }
+      final w = element.widget;
+      if (w is Visibility && !w.visible) {
+        hidden = true;
+        return false;
+      }
+      if (checkOffstageAndTicker &&
+          ((w is Offstage && w.offstage) || (w is TickerMode && !w.enabled))) {
+        hidden = true;
+        return false;
+      }
+      if (element is MultiChildRenderObjectElement && childElement != null) {
+        final ro = element.renderObject;
+        if (ro is RenderIndexedStack) {
+          final slot = childElement!.slot;
+          if (slot is IndexedSlot && slot.index != ro.index) {
+            hidden = true;
+            return false;
+          }
+        }
+      }
+      childElement = element;
+      return true;
+    });
+    return hidden;
+  }
+
+  _RegistrantEntry? _activeEntryFor(ModalRoute<dynamic> route) {
+    final entries = _registry[route];
+    if (entries == null || entries.isEmpty) return null;
+    for (var i = entries.length - 1; i >= 0; i--) {
+      final entry = entries[i];
+      final registrant = entry.registrant;
+      if (registrant == null) {
+        if (!_isNavigatorBranchOffstage(route)) return entry;
+      } else if (!isBranchOffstage(registrant, route)) {
+        return entry;
+      }
+    }
+    return null;
+  }
+
+  bool _isNavigatorBranchOffstage(ModalRoute<dynamic> route) {
+    final navContext = route.navigator?.context;
+    if (navContext == null || (navContext is Element && !navContext.mounted)) {
+      return false;
+    }
+    return _isSegmentHidden(
+      navContext,
+      stopAt: context,
+      checkOffstageAndTicker: true,
+    );
   }
 
   /// Starts [_clock] when [route]'s own transition does, if it needs one.
@@ -597,13 +759,20 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
   /// Pages-API router works unchanged.
   List<MapEntry<ModalRoute<dynamic>, GlassNavBarRegistration>>
       get _orderedEntries {
-    final entries = _registry.entries
-        .where((e) => _participates(e.key))
-        .toList(growable: false);
+    final entries = <MapEntry<ModalRoute<dynamic>, GlassNavBarRegistration>>[];
     final insertionIndex = <ModalRoute<dynamic>, int>{};
+    _onstageRegistrants.clear();
     var i = 0;
     for (final route in _registry.keys) {
       insertionIndex[route] = i++;
+      if (!_participates(route)) continue;
+      final active = _activeEntryFor(route);
+      if (active != null) {
+        if (active.registrant != null) {
+          _onstageRegistrants.add(active.registrant!);
+        }
+        entries.add(MapEntry(route, active.registration));
+      }
     }
     entries.sort((a, b) {
       final byCoverage = _coverageOf(a.key).compareTo(_coverageOf(b.key));
@@ -639,8 +808,18 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
   /// False under a presentation, even while [presentingSheetItem] is set: the
   /// chrome as a whole has been handed back, and only that item's capsule is
   /// still the shell's.
-  bool isHoisting(ModalRoute<dynamic> route) {
+  bool isHoisting(
+    ModalRoute<dynamic> route, {
+    BuildContext? registrant,
+  }) {
     if (!isActive || !_registry.containsKey(route)) return false;
+    final active = _activeEntryFor(route);
+    if (active == null) return false;
+    if (registrant != null &&
+        active.registrant != null &&
+        !identical(active.registrant, registrant)) {
+      return false;
+    }
     final ordered = _orderedEntries;
     if (ordered.isEmpty) return false;
     return !_isPresentedOver(ordered.first.key);
@@ -1242,4 +1421,15 @@ class _SheetHold {
 class _TickNotifier extends ChangeNotifier {
   /// Notifies listeners that the pinned chrome may have changed.
   void notify() => notifyListeners();
+}
+
+/// One [GlassPinnedBarChrome]'s registration on a [ModalRoute].
+class _RegistrantEntry {
+  _RegistrantEntry({
+    required this.registrant,
+    required this.registration,
+  });
+
+  final BuildContext? registrant;
+  GlassNavBarRegistration registration;
 }

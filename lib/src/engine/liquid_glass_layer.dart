@@ -234,12 +234,15 @@ class _LiquidGlassLayerState extends State<LiquidGlassLayer>
     // [LOCAL PATCH]: a running materialize transition above this layer
     // dissolves its glass through the settings' visibility channel — the one
     // fade the backdrop pass honours. Identity (the same instance) at rest.
+    final appliedScope = GlassMaterializeScope.maybeOf(context);
     final settings =
         GlassMaterializeScope.resolveSettings(context, widget.settings);
 
     if (!ImageFilter.isShaderFilterSupported) {
       return LiquidGlassRenderScope(
         settings: settings,
+        rawSettings: widget.settings,
+        appliedMaterializeScope: appliedScope,
         child: InheritedGeometryRenderLink(
           link: _link,
           child: widget.child,
@@ -258,6 +261,8 @@ class _LiquidGlassLayerState extends State<LiquidGlassLayer>
         expansion: widget.clipExpansion,
         child: LiquidGlassRenderScope(
           settings: settings,
+          rawSettings: widget.settings,
+          appliedMaterializeScope: appliedScope,
           child: InheritedGeometryRenderLink(
             link: _link,
             child: ShaderBuilder(
