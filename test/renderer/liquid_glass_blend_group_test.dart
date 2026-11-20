@@ -235,17 +235,18 @@ void main() {
       );
       // Outer scope (0.5) applied once (not 0.25!).
       expect(shapeAChildOpacity.opacity, closeTo(0.5, 0.001));
-      expect(ro.link.shapeEntries.length, 2);
+      expect(ro.maybeRebuildGeometry()?.shapes.length, 2);
 
-      // Dematerialize only shape-b via inner GlassMaterializeScope -> unregisters from blend group!
+      // Dematerialize only shape-b via inner GlassMaterializeScope -> excluded from geometry matte!
       updateScope(() => innerGlassProgress = 0.0);
       await tester.pumpAndSettle();
-      expect(ro.link.shapeEntries.length, 1);
+      expect(ro.link.shapeEntries.length, 2);
+      expect(ro.maybeRebuildGeometry()?.shapes.length, 1);
 
-      // Restore shape-b -> re-registers in blend group!
+      // Restore shape-b -> rejoins geometry matte in original order!
       updateScope(() => innerGlassProgress = 1.0);
       await tester.pumpAndSettle();
-      expect(ro.link.shapeEntries.length, 2);
+      expect(ro.maybeRebuildGeometry()?.shapes.length, 2);
     });
   });
 }

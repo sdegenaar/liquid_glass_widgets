@@ -458,9 +458,8 @@ void main() {
             matching: find.byWidgetPredicate((w) => w is LiquidGlass),
           ),
         );
-        // At rest: both the tab pill track and the trailing '+' circle are in the bar's blend group.
-        expect(trailingGlassRo.visible, isTrue);
-        expect(barBlendGroup.link.shapeEntries.length, 2);
+        // At rest: both the tab pill track and the trailing '+' circle are in the bar's geometry matte.
+        expect(trailingGlassRo.glassVisible, isTrue);
         expect(barBlendGroup.geometry?.shapes.length, 2);
       }
 
@@ -472,10 +471,10 @@ void main() {
       expect(trailingScope()?.glassProgress, 0.0);
 
       if (ImageFilter.isShaderFilterSupported) {
-        // While open: the trailing '+' circle is unregistered from uShapeData[]
-        // and the bar's geometry matte contains ONLY the tab pill!
-        expect(trailingGlassRo!.visible, isFalse);
-        expect(barBlendGroup!.link.shapeEntries.length, 1);
+        // While open: the trailing '+' circle is excluded from uShapeData[]
+        // while keeping its registration slot order in link.shapeEntries!
+        expect(trailingGlassRo!.glassVisible, isFalse);
+        expect(barBlendGroup!.link.shapeEntries.length, 2);
         expect(barBlendGroup.geometry?.shapes.length, 1);
       }
 
@@ -487,10 +486,9 @@ void main() {
       expect(trailingScope()?.glassProgress, 1.0);
 
       if (ImageFilter.isShaderFilterSupported) {
-        // Closed again: trailing '+' circle returns to the bar's blend group.
-        expect(trailingGlassRo!.visible, isTrue);
-        expect(barBlendGroup!.link.shapeEntries.length, 2);
-        expect(barBlendGroup.geometry?.shapes.length, 2);
+        // Closed again: trailing '+' circle returns to the bar's geometry matte in original order.
+        expect(trailingGlassRo!.glassVisible, isTrue);
+        expect(barBlendGroup!.geometry?.shapes.length, 2);
       }
     });
   });

@@ -211,18 +211,19 @@ class LiquidGlass extends StatelessWidget {
       return child;
     }
 
-    // Grouped shapes inside a shared LiquidGlassLayer (such as a menu trigger
-    // pill inside GlassTabBar.minimizable) dematerialize individually via an
-    // inner GlassMaterializeScope while sibling shapes in the same layer stay
-    // visible. Unregistering when visibility drops to zero removes this shape
-    // from uShapeData[] so its glass rim does not linger under an open menu.
-    final isShapeVisible = settings.visibility > 0.001;
+    // Shapes inside a shared LiquidGlassLayer (such as a menu trigger pill
+    // inside GlassTabBar.minimizable) dematerialize individually via an inner
+    // GlassMaterializeScope while sibling shapes in the same layer stay
+    // visible. Marking glassVisible false omits this shape from uShapeData[]
+    // while keeping its slot order and layout intact for the closing morph.
+    final isGlassVisible =
+        ownLayerConfig != null || settings.visibility > 0.001;
 
     return _RawLiquidGlass(
       blendGroupLink: blendGroupLink ?? LiquidGlassBlendGroup.of(context),
       shape: shape,
       glassContainsChild: glassContainsChild,
-      visible: isShapeVisible,
+      glassVisible: isGlassVisible,
       child: ClipPath(
         clipper: ShapeBorderClipper(shape: shape),
         clipBehavior: clipBehavior,
@@ -248,7 +249,7 @@ class _RawLiquidGlass extends SingleChildRenderObjectWidget {
     required this.shape,
     required this.glassContainsChild,
     required this.blendGroupLink,
-    this.visible = true,
+    required this.glassVisible,
   });
 
   final LiquidShape shape;
@@ -257,7 +258,7 @@ class _RawLiquidGlass extends SingleChildRenderObjectWidget {
 
   final GlassGroupLink? blendGroupLink;
 
-  final bool visible;
+  final bool glassVisible;
 
   @override
   RenderObject createRenderObject(BuildContext context) {
@@ -265,7 +266,7 @@ class _RawLiquidGlass extends SingleChildRenderObjectWidget {
       shape: shape,
       glassContainsChild: glassContainsChild,
       blendGroupLink: blendGroupLink,
-      visible: visible,
+      glassVisible: glassVisible,
     );
   }
 
@@ -278,7 +279,7 @@ class _RawLiquidGlass extends SingleChildRenderObjectWidget {
       ..shape = shape
       ..glassContainsChild = glassContainsChild
       ..blendGroupLink = blendGroupLink
-      ..visible = visible;
+      ..glassVisible = glassVisible;
   }
 }
 
@@ -288,11 +289,11 @@ class RenderLiquidGlass extends RenderProxyBox
     required LiquidShape shape,
     required bool glassContainsChild,
     required GlassGroupLink? blendGroupLink,
-    bool visible = true,
+    bool glassVisible = true,
   })  : _shape = shape,
+        _glassVisible = glassVisible,
         _glassContainsChild = glassContainsChild,
-        _blendGroupLink = blendGroupLink,
-        _visible = visible;
+        _blendGroupLink = blendGroupLink;
 
   late LiquidShape _shape;
   LiquidShape get shape => _shape;
@@ -311,18 +312,13 @@ class RenderLiquidGlass extends RenderProxyBox
     _updateBlendGroupLink();
   }
 
-  bool _visible;
-  bool get visible => _visible;
-  set visible(bool value) {
-    if (_visible == value) return;
-    _visible = value;
-    if (attached) {
-      if (_visible) {
-        _registerWithLink();
-      } else {
-        _unregisterFromParentLayer();
-      }
-    }
+  bool _glassVisible;
+  bool get glassVisible => _glassVisible;
+  set glassVisible(bool value) {
+    if (_glassVisible == value) return;
+    _glassVisible = value;
+    if (!value) transformLayerHandle.layer = null;
+    if (attached) _updateBlendGroupLink();
     markNeedsPaint();
   }
 
@@ -350,7 +346,7 @@ class RenderLiquidGlass extends RenderProxyBox
   }
 
   void _registerWithLink() {
-    if (attached && _visible && _blendGroupLink != null) {
+    if (_blendGroupLink != null) {
       _blendGroupLink!.registerShape(
         this,
         _shape,
@@ -364,13 +360,11 @@ class RenderLiquidGlass extends RenderProxyBox
   }
 
   void _updateBlendGroupLink() {
-    if (attached && _visible) {
-      _blendGroupLink?.updateShape(
-        this,
-        _shape,
-        glassContainsChild: _glassContainsChild,
-      );
-    }
+    _blendGroupLink?.updateShape(
+      this,
+      _shape,
+      glassContainsChild: _glassContainsChild,
+    );
   }
 
   late Path _lastPath;
@@ -391,6 +385,13 @@ class RenderLiquidGlass extends RenderProxyBox
   @override
   // ignore: must_call_super
   void paint(PaintingContext context, Offset offset) {
+    if (!glassVisible) {
+      // Keep the child mounted and paint its independent content channel in
+      // the normal traversal while the blend group omits the glass surface.
+      if (child case final content?) context.paintChild(content, offset);
+      return;
+    }
+
     setUpLayer(offset);
     // Push the tracking layer during the normal paint traversal.
     // We pass an empty painter because the child is NOT drawn here;

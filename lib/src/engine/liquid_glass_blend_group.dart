@@ -315,7 +315,11 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
     var i = 0;
     for (final MapEntry(key: renderObject, value: (shape, glassContainsChild))
         in link.shapeEntries) {
-      if (!renderObject.attached || !renderObject.hasSize) continue;
+      if (!renderObject.glassVisible ||
+          !renderObject.attached ||
+          !renderObject.hasSize) {
+        continue;
+      }
       if (i >= cached.shapes.length) return false;
       final existing = cached.shapes[i++];
       if (!identical(existing.renderObject, renderObject) ||
@@ -417,21 +421,20 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
     final shapes = <ShapeGeometry>[];
     final cachedShapes = geometry?.shapes ?? [];
 
-    var anyShapeChangedInLayer =
-        cachedShapes.length != link.shapeEntries.length;
+    var anyShapeChangedInLayer = false;
 
     Rect? layerBounds;
 
-    for (final (
-          index,
-          MapEntry(
-            key: renderObject,
-            value: (shape, glassContainsChild),
-          )
-        ) in link.shapeEntries.indexed) {
-      if (!renderObject.attached || !renderObject.hasSize) continue;
+    for (final MapEntry(key: renderObject, value: (shape, glassContainsChild))
+        in link.shapeEntries) {
+      if (!renderObject.glassVisible ||
+          !renderObject.attached ||
+          !renderObject.hasSize) {
+        continue;
+      }
 
       try {
+        final index = shapes.length;
         final shapeData = _computeShapeInfo(
           renderObject,
           shape,
@@ -445,9 +448,9 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
         final existingShape =
             cachedShapes.length > index ? cachedShapes[index] : null;
 
-        if (existingShape == null) {
-          anyShapeChangedInLayer = true;
-        } else if (existingShape.shapeBounds != shapeData.shapeBounds ||
+        if (existingShape == null ||
+            !identical(existingShape.renderObject, renderObject) ||
+            existingShape.shapeBounds != shapeData.shapeBounds ||
             existingShape.shape != shapeData.shape) {
           anyShapeChangedInLayer = true;
         }
@@ -467,7 +470,7 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
         blend * .25 + 3 / devicePixelRatio,
       ),
       shapes,
-      anyShapeChangedInLayer,
+      anyShapeChangedInLayer || shapes.length != cachedShapes.length,
     );
   }
 
@@ -480,7 +483,8 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
   }) {
     for (final shapeEntry in link.shapeEntries) {
       final renderObject = shapeEntry.key;
-      if (!renderObject.attached ||
+      if (!renderObject.glassVisible ||
+          !renderObject.attached ||
           renderObject.glassContainsChild != insideGlass) {
         continue;
       }
