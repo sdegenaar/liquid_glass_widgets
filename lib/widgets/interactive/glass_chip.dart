@@ -97,6 +97,7 @@ class GlassChip extends StatelessWidget {
     super.key,
     this.icon,
     this.onTap,
+    this.enabled,
     this.onDeleted,
     this.selected = false,
     this.selectedColor,
@@ -156,6 +157,15 @@ class GlassChip extends StatelessWidget {
   /// If both [onTap] and [onDeleted] are null, the chip will be
   /// non-interactive.
   final VoidCallback? onTap;
+
+  /// Whether the chip is drawn enabled.
+  ///
+  /// Null (the default) derives it from [onTap] and [onDeleted], which draws
+  /// a chip with neither at the disabled 50 % opacity. Pass true to draw such
+  /// a purely informational chip (a tag, a status) at full strength. A chip
+  /// without a handler is inert either way: it is read as its text rather
+  /// than as a button, and takes no touch, focus or press motion.
+  final bool? enabled;
 
   /// Called when the delete button is tapped.
   ///
@@ -468,7 +478,7 @@ class GlassChip extends StatelessWidget {
             ? anchorStretchSettings
             : themeInteraction.anchorStretchSettings ?? anchorStretchSettings;
 
-    return IntrinsicWidth(
+    final Widget glassChip = IntrinsicWidth(
       child: IntrinsicHeight(
         child: GlassButton.custom(
           onTap: onTap ?? (onDeleted != null ? () {} : () {}),
@@ -483,7 +493,7 @@ class GlassChip extends StatelessWidget {
           glowColor: selected
               ? (selectedColor ?? defaultSelectedColor)
               : defaultGlowUnselected,
-          enabled: isInteractive,
+          enabled: enabled ?? isInteractive,
           anchorStretch: effectiveAnchorStretch,
           anchorStretchSettings: effectiveAnchorStretchSettings,
           focusNode: focusNode,
@@ -493,6 +503,16 @@ class GlassChip extends StatelessWidget {
           height: double.infinity, // Expand to intrinsic height
           child: contentWithSelection,
         ),
+      ),
+    );
+    if (isInteractive) return glassChip;
+    // A chip without a handler is read as its text, not as a button, and
+    // takes no touch or focus.
+    return Semantics(
+      label: semanticLabel ?? label,
+      selected: selected,
+      child: ExcludeSemantics(
+        child: ExcludeFocus(child: IgnorePointer(child: glassChip)),
       ),
     );
   }
