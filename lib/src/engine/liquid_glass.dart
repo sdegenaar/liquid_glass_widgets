@@ -300,6 +300,7 @@ class RenderLiquidGlass extends RenderProxyBox
   set shape(LiquidShape value) {
     if (_shape == value) return;
     _shape = value;
+    _cachedShapePath = null;
     markNeedsPaint();
     _updateBlendGroupLink();
   }
@@ -367,13 +368,13 @@ class RenderLiquidGlass extends RenderProxyBox
     );
   }
 
-  late Path _lastPath;
+  Path? _cachedShapePath;
 
   @override
   void performLayout() {
     super.performLayout();
+    _cachedShapePath = null;
     // Notify parent layer when our layout changes
-    _lastPath = shape.getOuterPath(Offset.zero & size);
     _blendGroupLink?.notifyShapeLayoutChanged(this);
   }
 
@@ -417,7 +418,6 @@ class RenderLiquidGlass extends RenderProxyBox
     }
   }
 
-  Path getPath() {
-    return _lastPath;
-  }
+  // The backdrop clip must follow shape-only morphs even without layout.
+  Path getPath() => _cachedShapePath ??= shape.getOuterPath(Offset.zero & size);
 }

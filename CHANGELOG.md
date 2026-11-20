@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- **Premium glass morphs:** Refresh the backdrop clip when the glass shape changes without a layout change, preventing a second contour at the frosted corners of an expanded `GlassMenu`.
+
 # 1.19.0
 
 ## Features
