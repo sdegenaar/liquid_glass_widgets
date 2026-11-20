@@ -164,6 +164,56 @@ void main() {
   });
 
   group('RenderLiquidGlassBlendGroup.gatherShapeData', () {
+    test('a hidden shape leaves the matte and rejoins in its original order',
+        () {
+      final link = GlassGroupLink();
+      final trigger = RenderLiquidGlass(
+        shape: const LiquidOval(),
+        glassContainsChild: false,
+        blendGroupLink: link,
+      );
+      final sibling = RenderLiquidGlass(
+        shape: const LiquidOval(),
+        glassContainsChild: false,
+        blendGroupLink: link,
+      );
+      final blendGroup = blendGroupFor(GeometryRenderLink(), link)
+        ..child = RenderStack(
+          textDirection: TextDirection.ltr,
+          fit: StackFit.expand,
+          children: [trigger, sibling],
+        );
+      blendGroup
+        ..attach(PipelineOwner())
+        ..layout(BoxConstraints.tight(const Size(46, 46)),
+            parentUsesSize: true);
+
+      List<RenderLiquidGlass> matteShapes() => blendGroup
+          .maybeRebuildGeometry()!
+          .shapes
+          .map((shape) => shape.renderObject)
+          .toList();
+
+      expect(matteShapes(), [trigger, sibling]);
+
+      trigger.glassVisible = false;
+      expect(matteShapes(), [sibling]);
+      expect(trigger.attached, isTrue);
+      expect(trigger.size, const Size(46, 46));
+
+      sibling.glassVisible = false;
+      expect(blendGroup.maybeRebuildGeometry(), isNull);
+
+      trigger.glassVisible = true;
+      sibling.glassVisible = true;
+      expect(matteShapes(), [trigger, sibling]);
+
+      blendGroup
+        ..detach()
+        ..dispose();
+      link.dispose();
+    });
+
     test('reserves 3 physical pixels around shapeBounds even without rim/frost',
         () {
       final link = GlassGroupLink();

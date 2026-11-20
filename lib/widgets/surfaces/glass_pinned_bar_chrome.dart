@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/rendering.dart' show RenderProxyBox;
 
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/widgets/surfaces/vertical_bar_title_row.dart';
@@ -336,6 +337,11 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Subscribe to ambient Visibility (including IndexedStack's internal
+    // Visibility.maintain) and TickerMode so switching tabs in an IndexedStack,
+    // StatefulShellRoute.indexedStack, or CupertinoTabScaffold wakes this bar
+    // and re-evaluates which branch owns the pinned chrome.
+    Visibility.of(context);
     // The strip leaves the overlay while the route is offstage, under an
     // opaque route: an overlay child layout builder there still lays out every
     // frame, against the overlay's size from before any resize since, and
@@ -375,12 +381,15 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
       _follow();
     }
 
-    // Deliberately no offstage guard here. Flutter builds a newly pushed route
-    // offstage once before the transition starts, and `offstage` does not
-    // notify dependents when it flips back — so skipping those builds would
-    // strand the route unregistered for the whole transition. Which route is
-    // on top is decided by the shell's ordering instead. (Inactive branches of
-    // a nested navigator are a known gap.)
+    // Deliberately keep hidden-branch bars registered with their `registrant`
+    // context rather than skipping registration: Flutter builds a newly pushed
+    // route offstage once before the transition starts, and kept-alive tab
+    // branches (`IndexedStack`, `StatefulShellRoute.indexedStack`,
+    // `CupertinoTabScaffold`) remain mounted across tab switches. The shell
+    // filters inactive branches (`Visibility`, `Offstage`, `TickerMode`) when
+    // ordering routes, and `Visibility.of` / `TickerMode.valuesOf` above notify
+    // the shell whenever a branch becomes active again.
+    //
     // A bar in a presented route — a modal sheet's — is inside the
     // presentation, which comes up over the stack the shell pins across: the
     // presentation is its container, and the bar draws its own chrome.
@@ -420,6 +429,7 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
         largeTitleController: widget.largeTitleController,
         stripRowTop: widget.stripRowTop,
       ),
+      registrant: context,
     );
   }
 
@@ -453,7 +463,7 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
     final shell = _shell;
     final route = _route;
     final live = widget.enabled && shell != null && route != null;
-    final hoisted = live && shell.isHoisting(route);
+    final hoisted = live && shell.isHoisting(route, registrant: context);
     final presenting = live ? shell.presentingSheetItem(route) : null;
     if (mounted &&
         (hoisted != _handedOver || !identical(presenting, _presenting))) {
@@ -468,7 +478,7 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
     final shell = _shell;
     final route = _route;
     if (shell != null && route != null) {
-      shell.unregister(route);
+      shell.unregister(route, registrant: context);
     }
   }
 
@@ -884,6 +894,42 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
     if (settings != null) {
       bar = DefaultButtonSettings(settings: settings, child: bar);
     }
-    return bar;
+    return _BranchPaintProbe(
+      onPaint: () => _shell?.notifyRegistrantPainted(context),
+      child: bar,
+    );
+  }
+}
+
+class _BranchPaintProbe extends SingleChildRenderObjectWidget {
+  const _BranchPaintProbe({
+    required this.onPaint,
+    required super.child,
+  });
+
+  final VoidCallback onPaint;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderBranchPaintProbe(onPaint: onPaint);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    covariant _RenderBranchPaintProbe renderObject,
+  ) {
+    renderObject.onPaint = onPaint;
+  }
+}
+
+class _RenderBranchPaintProbe extends RenderProxyBox {
+  _RenderBranchPaintProbe({required this.onPaint});
+
+  VoidCallback onPaint;
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    onPaint();
+    super.paint(context, offset);
   }
 }
