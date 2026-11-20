@@ -1,6 +1,6 @@
 # Roadmap: 1.x → 2.0
 
-> Last updated: 2026-11-18 (v1.18.0 stable)
+> Last updated: 2026-11-20 (v1.19.0 stable)
 
 This document tracks planned and future work for `liquid_glass_widgets` post-1.0.
 The guiding principle remains: **fewer, better widgets that map 1:1 to real iOS components**.
@@ -9,7 +9,7 @@ For historical version notes, see [`CHANGELOG.md`](../CHANGELOG.md).
 
 ---
 
-## Current Status (1.18.0)
+## Current Status (1.19.0)
 
 | Criterion | Status | Notes |
 |---|---|---|
@@ -100,6 +100,8 @@ Ideas under consideration. None committed.
 
 ### Enhancements
 
+- [ ] **`GlassModalSheet` morphed close-origin after detent change (near-term follow-up to #507)** — when a `morphFrom` sheet opened at `half` is dragged to `full` or `peek` and dismissed at rest (close button or barrier tap), start frame 1 of the close droplet morph from `controller.currentState` (matching live detent margins, bottom offset, and corner radii) instead of the initial `restingState`.
+- [ ] **`GlassThemeData.minimal(...)` convenience constructor (near-term follow-up to #517)** — add a `const GlassThemeData.minimal({style, interaction, brightness})` named constructor pairing `GlassThemeVariant.minimalLight` and `GlassThemeVariant.minimalDark`, matching `.ios27()`, `.ios26()`, and `.classic()` symmetry.
 - [ ] **Continued iOS 26 / iOS 27 optical & interaction refinement** — iterative tuning passes building on the `1.17.0` foundational `GlassStyle.ios27` / `GlassStyle.ios26` alignment across dynamic transitions, edge-case backdrops, and remaining interactive controls.
 - [ ] **Scroll-driven glass materialisation** — app bar surface transitions from
   transparent to frosted on scroll (`GlassScrollEdgeStyle.blur` itself already shipped in `GlassScrollEdgeEffect`).
