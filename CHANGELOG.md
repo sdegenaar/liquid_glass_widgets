@@ -6,6 +6,7 @@
 
 ## Bug Fixes
 
+- **Premium glass morphs (#520):** Refresh the backdrop clip when the glass shape changes without a layout change, preventing a second contour at the frosted corners of an expanded `GlassMenu`.
 - **`GlassModalSheet` morphed close-origin after detent change (#507 follow-up):** When a `morphFrom` sheet opened at `half` is dragged to `full` or `peek` and dismissed at rest (barrier tap, close button, or `Navigator.pop`), frame 1 of the closing droplet morph now starts from the sheet's live resting detent (matching its active margins, bottom offset, corner radii, and fill) instead of snapping back to the initial `restingState`.
 
 ## Documentation

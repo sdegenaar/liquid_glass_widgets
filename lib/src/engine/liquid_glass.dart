@@ -300,6 +300,7 @@ class RenderLiquidGlass extends RenderProxyBox
   set shape(LiquidShape value) {
     if (_shape == value) return;
     _shape = value;
+    _cachedShapePath = null;
     markNeedsPaint();
     _updateBlendGroupLink();
   }
@@ -369,18 +370,18 @@ class RenderLiquidGlass extends RenderProxyBox
 
   Size? _lastLayoutSize;
   LiquidShape? _lastLayoutShape;
-  late Path _lastPath;
+  Path? _cachedShapePath;
 
   @override
   void performLayout() {
     super.performLayout();
-    // Only rebuild the outer Path and notify the blend group when size or
-    // shape actually changed; no-op relayouts at identical size/shape must not
-    // force a synchronous SDF geometry matte rebuild.
+    // Only invalidate the cached outer Path and notify the blend group when
+    // size or shape actually changed; no-op relayouts at identical size/shape
+    // must not force a synchronous SDF geometry matte rebuild.
     if (_lastLayoutSize != size || _lastLayoutShape != shape) {
       _lastLayoutSize = size;
       _lastLayoutShape = shape;
-      _lastPath = shape.getOuterPath(Offset.zero & size);
+      _cachedShapePath = null;
       _blendGroupLink?.notifyShapeLayoutChanged(this);
     }
   }
@@ -425,12 +426,6 @@ class RenderLiquidGlass extends RenderProxyBox
     }
   }
 
-  Path getPath() {
-    if (_lastLayoutShape != _shape && hasSize) {
-      _lastLayoutShape = _shape;
-      _lastLayoutSize = size;
-      _lastPath = _shape.getOuterPath(Offset.zero & size);
-    }
-    return _lastPath;
-  }
+  // The backdrop clip must follow shape-only morphs even without layout.
+  Path getPath() => _cachedShapePath ??= shape.getOuterPath(Offset.zero & size);
 }
