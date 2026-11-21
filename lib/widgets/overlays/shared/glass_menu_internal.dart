@@ -167,10 +167,9 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
           ..recoilHalfTravelPx = LiquidMorphPhysics.menuRecoilHalfTravelPx
           ..verticalOnlyRecoil = true;
     _morphController.addListener(() {
-      if (mounted) setState(() {});
-
-      // Hide overlay only when the morph controller (including the ~550 ms
-      // trigger recoil and wide-pill splash tail) has FULLY SETTLED.
+      // AnimatedBuilder in build() already listens to _morphController.animation,
+      // so calling setState() here would double-rebuild the entire menu on every
+      // morph tick. Only settle/hide the overlay when the morph finishes.
       if (_overlayController.isShowing &&
           !_morphController.isShowing &&
           _morphController.status != AnimationStatus.forward) {
@@ -185,6 +184,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
               _verticalOffset = 0.0;
               _resetInterruptState();
               _resetSubmenus();
+              setState(() {});
             }
           });
         } else {
@@ -195,6 +195,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
           _verticalOffset = 0.0;
           _resetInterruptState();
           _resetSubmenus();
+          if (mounted) setState(() {});
         }
       }
     });
@@ -343,8 +344,23 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final Widget triggerChild = widget.triggerBuilder != null
+        ? widget.triggerBuilder!(context, _toggleMenu)
+        // A plain trigger (an icon, a text) gets the button role here;
+        // its text, if any, merges into this node as the name.
+        : Semantics(
+            container: true,
+            button: true,
+            label: widget.semanticLabel,
+            child: GestureDetector(
+              onTap: _toggleMenu,
+              child: widget.trigger,
+            ),
+          );
+
     return AnimatedBuilder(
       animation: _morphController.animation,
+      child: triggerChild,
       builder: (context, child) {
         final rawValue = _morphController.value;
 
@@ -479,20 +495,6 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
             : impactScale * widthScale;
         final double triggerScaleY = impactScale;
 
-        final Widget triggerChild = widget.triggerBuilder != null
-            ? widget.triggerBuilder!(context, _toggleMenu)
-            // A plain trigger (an icon, a text) gets the button role here;
-            // its text, if any, merges into this node as the name.
-            : Semantics(
-                container: true,
-                button: true,
-                label: widget.semanticLabel,
-                child: GestureDetector(
-                  onTap: _toggleMenu,
-                  child: widget.trigger,
-                ),
-              );
-
         final outer = GlassMaterializeScope.maybeOf(context);
 
         return OverlayPortal(
@@ -522,7 +524,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                     contentSigma: outer?.contentSigma ?? 0.0,
                     child: IgnorePointer(
                       ignoring: isMenuBlocking,
-                      child: triggerChild,
+                      child: child,
                     ),
                   ),
                 ),
@@ -2091,6 +2093,8 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                           currentWidth,
                           currentHeight,
                           currentRadius,
+                          effectiveQuality,
+                          effectiveSettings,
                         ),
                       ),
                     ),
@@ -2257,17 +2261,18 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     return naturalHeight;
   }
 
-  Widget _buildMorphingContainer(LiquidMorphState state, double clampedValue,
-      double currentWidth, double currentHeight, double currentRadius) {
+  Widget _buildMorphingContainer(
+    LiquidMorphState state,
+    double clampedValue,
+    double currentWidth,
+    double currentHeight,
+    double currentRadius,
+    GlassQuality effectiveQuality,
+    LiquidGlassSettings effectiveSettings,
+  ) {
     if (currentWidth < 1.0 || currentHeight < 1.0) {
       return const SizedBox.shrink();
     }
-
-    final effectiveQuality = GlassThemeHelpers.resolveQuality(
-      context,
-      widgetQuality: widget.quality,
-      fallback: GlassThemeHelpers.nativeStyleQuality(context),
-    );
 
     // Continuous iOS 27 superellipse contour with monotonic corner radius.
     final teardropShape = LiquidRoundedSuperellipse(
@@ -2275,13 +2280,6 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     );
 
     final containerScale = state.containerScale;
-
-    final effectiveSettings = GlassThemeHelpers.resolveSettings(
-      context,
-      explicit: widget.settings,
-      fallback: _kDefaultMenuSettings,
-      isOverlayPlatter: true,
-    );
 
     final double menuWidth = widget.menuWidth.toDouble();
     final double contentScale =
@@ -2530,24 +2528,53 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   }) {
     final coveredOpacity =
         coveredDepth == null ? 1.0 : _coveredRowOpacity(coveredDepth);
-    final rows = Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: _kBodyVerticalPadding),
-        for (var i = 0; i < items.length; i++) ...[
-          Opacity(
-            opacity:
-                coveredDepth != null && _isCoveredRow(coveredDepth, i, items)
-                    ? itemOpacity * coveredOpacity
-                    : itemOpacity,
-            child: interactive ? _buildWrappedItems()[i] : items[i],
-          ),
-          if (i < items.length - 1) const SizedBox(height: _kRowGap),
+    // Hoist wrapped items once per build instead of re-allocating inside the
+    // per-row loop (O(N^2) -> O(N)).
+    final resolvedItems = interactive ? _buildWrappedItems() : items;
+    Widget rows;
+    if (coveredDepth == null) {
+      // Single Column with at most 1 Opacity saveLayer (0 when opaque) instead
+      // of N individual per-row Opacity widgets.
+      rows = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: _kBodyVerticalPadding),
+          for (var i = 0; i < resolvedItems.length; i++) ...[
+            resolvedItems[i],
+            if (i < resolvedItems.length - 1) const SizedBox(height: _kRowGap),
+          ],
+          const SizedBox(height: _kBodyVerticalPadding),
         ],
-        const SizedBox(height: _kBodyVerticalPadding),
-      ],
-    );
+      );
+      if (itemOpacity < 0.999) {
+        rows = Opacity(opacity: itemOpacity, child: rows);
+      }
+    } else {
+      rows = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: _kBodyVerticalPadding),
+          for (var i = 0; i < resolvedItems.length; i++) ...[
+            if (_isCoveredRow(coveredDepth, i, items))
+              Opacity(
+                opacity: itemOpacity * coveredOpacity,
+                child: resolvedItems[i],
+              )
+            else if (itemOpacity < 0.999)
+              Opacity(
+                opacity: itemOpacity,
+                child: resolvedItems[i],
+              )
+            else
+              resolvedItems[i],
+            if (i < resolvedItems.length - 1) const SizedBox(height: _kRowGap),
+          ],
+          const SizedBox(height: _kBodyVerticalPadding),
+        ],
+      );
+    }
     final listBody = SizedBox(
       width: widget.menuWidth,
       height: viewportHeight,
