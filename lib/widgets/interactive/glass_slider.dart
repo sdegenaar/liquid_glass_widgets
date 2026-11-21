@@ -503,8 +503,6 @@ class _GlassSliderState extends State<GlassSlider>
 
         final thumbHeight = widget.thumbRadius * 1.6;
         final thumbWidth = thumbHeight * (37.0 / 24.0);
-        final baseMediaQuery =
-            MediaQuery.maybeOf(context) ?? const MediaQueryData();
 
         return GlassFocusRegion(
           enabled: widget.onChanged != null,
@@ -530,130 +528,137 @@ class _GlassSliderState extends State<GlassSlider>
           isHoveredNotifier: _isHovered,
           // Sliders are adjusted with arrow keys, Space/Enter don't activate them natively
           onKeyboardActivate: null,
-          child: MediaQuery(
-            data: baseMediaQuery.copyWith(
-              gestureSettings: const DeviceGestureSettings(touchSlop: 4.0),
-            ),
-            child: RepaintBoundary(
-              child: GestureDetector(
-                onHorizontalDragDown: _handleDragDown,
-                onHorizontalDragStart: _handleDragStart,
-                onHorizontalDragUpdate: (details) =>
-                    _handleDragUpdate(details, constraints),
-                onHorizontalDragEnd: _handleDragEnd,
-                onHorizontalDragCancel: _handleDragCancel,
-                child: SizedBox(
-                  height: widget.thumbRadius * 2 + 16,
-                  width: constraints.maxWidth,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      // Track (centered vertically)
-                      Positioned.fill(
-                        child: Center(
-                          child: SizedBox(
-                            height: widget.trackHeight,
-                            child: Stack(
-                              children: [
-                                // Full inactive track (iOS 26 & 27 style)
-                                Positioned.fill(
+          child: RepaintBoundary(
+            child: RawGestureDetector(
+              gestures: <Type, GestureRecognizerFactory>{
+                HorizontalDragGestureRecognizer:
+                    GestureRecognizerFactoryWithHandlers<
+                        HorizontalDragGestureRecognizer>(
+                  () => HorizontalDragGestureRecognizer(debugOwner: this),
+                  (HorizontalDragGestureRecognizer instance) {
+                    instance
+                      ..gestureSettings =
+                          const DeviceGestureSettings(touchSlop: 4.0)
+                      ..onDown = _handleDragDown
+                      ..onStart = _handleDragStart
+                      ..onUpdate = (details) {
+                        _handleDragUpdate(details, constraints);
+                      }
+                      ..onEnd = _handleDragEnd
+                      ..onCancel = _handleDragCancel;
+                  },
+                ),
+              },
+              child: SizedBox(
+                height: widget.thumbRadius * 2 + 16,
+                width: constraints.maxWidth,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    // Track (centered vertically)
+                    Positioned.fill(
+                      child: Center(
+                        child: SizedBox(
+                          height: widget.trackHeight,
+                          child: Stack(
+                            children: [
+                              // Full inactive track (iOS 26 & 27 style)
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: inactiveColor,
+                                    borderRadius: BorderRadius.circular(
+                                      widget.trackHeight / 2,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              // Active track (terminates at thumbPosition with
+                              // rounded cap r = trackHeight / 2, matching native
+                              // _UISliderGlassVisualElement when seen through the
+                              // clear lifted lens).
+                              if (normalizedValue > 0)
+                                Positioned(
+                                  left: isRtl
+                                      ? (normalizedValue >= 1.0
+                                          ? 0.0
+                                          : thumbPosition)
+                                      : 0.0,
+                                  right: isRtl
+                                      ? 0.0
+                                      : (normalizedValue >= 1.0
+                                          ? 0.0
+                                          : (constraints.maxWidth -
+                                              thumbPosition)),
+                                  top: 0,
+                                  bottom: 0,
                                   child: Container(
                                     decoration: BoxDecoration(
-                                      color: inactiveColor,
+                                      color: activeColor,
                                       borderRadius: BorderRadius.circular(
                                         widget.trackHeight / 2,
                                       ),
                                     ),
                                   ),
                                 ),
-
-                                // Active track (terminates at thumbPosition with
-                                // rounded cap r = trackHeight / 2, matching native
-                                // _UISliderGlassVisualElement when seen through the
-                                // clear lifted lens).
-                                if (normalizedValue > 0)
-                                  Positioned(
-                                    left: isRtl
-                                        ? (normalizedValue >= 1.0
-                                            ? 0.0
-                                            : thumbPosition)
-                                        : 0.0,
-                                    right: isRtl
-                                        ? 0.0
-                                        : (normalizedValue >= 1.0
-                                            ? 0.0
-                                            : (constraints.maxWidth -
-                                                thumbPosition)),
-                                    top: 0,
-                                    bottom: 0,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: activeColor,
-                                        borderRadius: BorderRadius.circular(
-                                          widget.trackHeight / 2,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
+                            ],
                           ),
                         ),
                       ),
+                    ),
 
-                      // Thumb (iOS 26 & 27: symmetric 1.55x expansion around thumbPosition)
-                      AnimatedBuilder(
-                        animation: Listenable.merge([
-                          _scaleController,
-                          _thicknessController,
-                          _jellyController,
-                        ]),
-                        builder: (context, child) {
-                          final scale = _scaleAnimation.value;
+                    // Thumb (iOS 26 & 27: symmetric 1.55x expansion around thumbPosition)
+                    AnimatedBuilder(
+                      animation: Listenable.merge([
+                        _scaleController,
+                        _thicknessController,
+                        _jellyController,
+                      ]),
+                      builder: (context, child) {
+                        final scale = _scaleAnimation.value;
 
-                          // Calculate actual thumb size after scaling for symmetric centering
-                          final scaledThumbWidth = thumbWidth * scale;
-                          final scaledThumbHeight = thumbHeight * scale;
-                          final leftPosition =
-                              thumbPosition - (scaledThumbWidth / 2);
-                          final topPosition = (widget.thumbRadius * 2 +
-                                  16 -
-                                  scaledThumbHeight) /
-                              2;
+                        // Calculate actual thumb size after scaling for symmetric centering
+                        final scaledThumbWidth = thumbWidth * scale;
+                        final scaledThumbHeight = thumbHeight * scale;
+                        final leftPosition =
+                            thumbPosition - (scaledThumbWidth / 2);
+                        final topPosition =
+                            (widget.thumbRadius * 2 + 16 - scaledThumbHeight) /
+                                2;
 
-                          // Spring-based jelly: velocity from the spring controller
-                          // produces smooth squash/stretch with natural deceleration
-                          // and elastic bounce-back — matching tab bar/bottom bar.
-                          final jellyVelocity = _jellyController.velocity;
-                          final jellyTransform =
-                              DraggableIndicatorPhysics.buildJellyTransform(
-                            velocity: Offset(jellyVelocity, 0),
-                            maxDistortion: 0.6,
-                            // Slider spring tracks 0→1 normalised position,
-                            // producing velocities of ~1-3 units/sec (vs tab bar's
-                            // 10-20+). Scale down so these smaller velocities
-                            // produce visible squash/stretch.
-                            velocityScale: 2,
-                          );
+                        // Spring-based jelly: velocity from the spring controller
+                        // produces smooth squash/stretch with natural deceleration
+                        // and elastic bounce-back — matching tab bar/bottom bar.
+                        final jellyVelocity = _jellyController.velocity;
+                        final jellyTransform =
+                            DraggableIndicatorPhysics.buildJellyTransform(
+                          velocity: Offset(jellyVelocity, 0),
+                          maxDistortion: 0.6,
+                          // Slider spring tracks 0→1 normalised position,
+                          // producing velocities of ~1-3 units/sec (vs tab bar's
+                          // 10-20+). Scale down so these smaller velocities
+                          // produce visible squash/stretch.
+                          velocityScale: 2,
+                        );
 
-                          return Positioned(
-                            left: leftPosition,
-                            top: topPosition,
-                            child: Transform(
-                              alignment: Alignment.center,
-                              transform: jellyTransform,
-                              child: Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  _buildThumbGlass(scale, isDark),
-                                ],
-                              ),
+                        return Positioned(
+                          left: leftPosition,
+                          top: topPosition,
+                          child: Transform(
+                            alignment: Alignment.center,
+                            transform: jellyTransform,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                _buildThumbGlass(scale, isDark),
+                              ],
                             ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
             ),

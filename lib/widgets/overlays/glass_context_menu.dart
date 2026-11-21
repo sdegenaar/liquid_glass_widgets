@@ -977,9 +977,8 @@ class _GlassContextMenuRouteStaticState
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final screenSize = mediaQuery.size;
-    final padding = mediaQuery.padding;
+    final screenSize = MediaQuery.sizeOf(context);
+    final padding = MediaQuery.paddingOf(context);
 
     final bool isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     final GlassStyle style =

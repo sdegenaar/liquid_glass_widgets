@@ -737,9 +737,9 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     // ...nor a previous open's submenu level.
     _resetSubmenus();
     final position = _triggerGlobalPosition;
-    final mediaQuery = MediaQuery.maybeOf(context);
-    final screenWidth = mediaQuery?.size.width ?? double.infinity;
-    final screenHeight = mediaQuery?.size.height ?? double.infinity;
+    final screenSize = MediaQuery.maybeSizeOf(context);
+    final screenWidth = screenSize?.width ?? double.infinity;
+    final screenHeight = screenSize?.height ?? double.infinity;
 
     // Calculate menu height for vertical boundary check
     final menuHeight = _calculateMenuHeight();
@@ -864,9 +864,9 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   Offset _computeClampOffsets(double menuHeight) {
     if (!widget.autoAdjustToScreen || _triggerSize == null) return Offset.zero;
     final position = _triggerGlobalPosition;
-    final mediaQuery = MediaQuery.maybeOf(context);
-    final screenWidth = mediaQuery?.size.width ?? double.infinity;
-    final screenHeight = mediaQuery?.size.height ?? double.infinity;
+    final screenSize = MediaQuery.maybeSizeOf(context);
+    final screenWidth = screenSize?.width ?? double.infinity;
+    final screenHeight = screenSize?.height ?? double.infinity;
     final flutterView = View.of(context);
     final mqPadding = EdgeInsets.fromViewPadding(
       flutterView.padding,
@@ -1448,15 +1448,15 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
       final origin = _triggerGlobalPosition - _triggerOverlayPosition;
       final bounds = _boundsAtDepth(depth)
           .shift(origin - Offset(_horizontalOffset, _verticalOffset));
-      final mq = MediaQuery.of(context);
-      final padding = mq.padding + widget.menuPadding;
+      final mqSize = MediaQuery.sizeOf(context);
+      final padding = MediaQuery.paddingOf(context) + widget.menuPadding;
       double fit(double lo, double hi, double min, double max) =>
           lo < min ? min - lo : (hi > max ? max - hi : 0.0);
       to = Offset(
         fit(bounds.left, bounds.right, padding.left,
-            mq.size.width - padding.right),
+            mqSize.width - padding.right),
         fit(bounds.top, bounds.bottom, padding.top,
-            mq.size.height - padding.bottom),
+            mqSize.height - padding.bottom),
       );
     }
     _contentMorphFromHOffset = _horizontalOffset;
@@ -1765,9 +1765,9 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
       // Keep mid-flight open drift inside screen bounds when
       // autoAdjustToScreen is enabled.
       if (widget.autoAdjustToScreen) {
-        final mediaQuery = MediaQuery.maybeOf(context);
-        final screenWidth = mediaQuery?.size.width ?? double.infinity;
-        final screenHeight = mediaQuery?.size.height ?? double.infinity;
+        final screenSize = MediaQuery.maybeSizeOf(context);
+        final screenWidth = screenSize?.width ?? double.infinity;
+        final screenHeight = screenSize?.height ?? double.infinity;
         final flutterView = View.of(context);
         final mqPadding = EdgeInsets.fromViewPadding(
           flutterView.padding,
@@ -2213,7 +2213,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     // Account for system text scaling when calculating natural height.
     // Without this, increased text size causes items to render taller than
     // the height budget, triggering unwanted scrolling (GitHub issue).
-    final mediaQuery = MediaQuery.maybeOf(context);
+    final screenSize = MediaQuery.maybeSizeOf(context);
 
     // Sum all menu item heights, scaled by text scaler
     final itemHeights = widget.items.fold<double>(
@@ -2228,13 +2228,13 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
         math.min(itemHeights + 24.0 + gaps, _maximumStackHeight);
 
     if (widget.autoAdjustToScreen) {
-      if (mediaQuery != null) {
+      if (screenSize != null) {
         final flutterView = View.of(context);
         final mqPadding = EdgeInsets.fromViewPadding(
             flutterView.padding, flutterView.devicePixelRatio);
 
         // Clamp to screen height minus safe areas and a 20px safety buffer
-        var maxHeight = mediaQuery.size.height -
+        var maxHeight = screenSize.height -
             mqPadding.vertical -
             widget.menuPadding.vertical -
             20.0;
@@ -2248,7 +2248,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
         if (stripTop != null) {
           maxHeight = math.min(
             maxHeight,
-            mediaQuery.size.height -
+            screenSize.height -
                 stripTop -
                 mqPadding.bottom -
                 widget.menuPadding.bottom,
@@ -2817,15 +2817,12 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   double get _maximumStackHeight {
     final external = widget.maxStackHeight ?? double.infinity;
     if (!widget.autoAdjustToScreen) return external;
-    final mq = MediaQuery.of(context);
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final padVertical = MediaQuery.paddingOf(context).vertical;
     return math.min(
         external,
-        math.max(
-            0.0,
-            mq.size.height -
-                mq.padding.vertical -
-                widget.menuPadding.vertical -
-                20));
+        math.max(0.0,
+            screenHeight - padVertical - widget.menuPadding.vertical - 20));
   }
 
   double _visibleListHeight(List<Widget> items) =>
@@ -2839,8 +2836,8 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   /// This method estimates the rendered height to prevent the menu from
   /// becoming scrollable when it shouldn't be.
   double _getScaledItemHeight(Widget item, BuildContext context) {
-    final mediaQuery = MediaQuery.maybeOf(context);
-    final textScaler = mediaQuery?.textScaler ?? TextScaler.noScaling;
+    final textScaler =
+        MediaQuery.maybeTextScalerOf(context) ?? TextScaler.noScaling;
 
     if (item is GlassMenuItem) {
       // The item has 8px vertical padding top + bottom = 16px fixed chrome.

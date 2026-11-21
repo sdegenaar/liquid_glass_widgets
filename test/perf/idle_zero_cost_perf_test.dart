@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets/theme/glass_theme_helpers.dart';
 
 class _PaintCounterBox extends SingleChildRenderObjectWidget {
   const _PaintCounterBox({required this.onPaint, super.child});
@@ -212,6 +213,108 @@ void main() {
         expect(paints, settledPaints, reason: 'No idle repaints expected.');
         expect(tester.binding.hasScheduledFrame, isFalse);
         expect(_countSaveLayerClipPaths(tester), 0);
+      },
+    );
+
+    testWidgets(
+      'Wave 1.6 — keyboard viewInsets changes do not rebuild GlassScaffold, '
+      'GlassSwitch, GlassSlider, GlassMenu trigger, or resolveAdaptiveRadius',
+      (tester) async {
+        final insets = ValueNotifier<EdgeInsets>(EdgeInsets.zero);
+        addTearDown(insets.dispose);
+
+        var radiusBuilds = 0;
+        var menuTriggerBuilds = 0;
+        var scaffoldBodyBuilds = 0;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: ValueListenableBuilder<EdgeInsets>(
+              valueListenable: insets,
+              builder: (context, viewInsets, child) {
+                final base = MediaQuery.of(context);
+                return MediaQuery(
+                  data: base.copyWith(viewInsets: viewInsets),
+                  child: child!,
+                );
+              },
+              child: GlassScaffold(
+                appBar: GlassAppBar(
+                  title: const Text('Keyboard Test'),
+                  actions: [
+                    GlassMenu(
+                      triggerBuilder: (context, toggle) {
+                        menuTriggerBuilds++;
+                        return GlassButton(
+                          icon: const Icon(CupertinoIcons.ellipsis),
+                          onTap: toggle,
+                        );
+                      },
+                      items: [
+                        GlassMenuItem(title: 'One', onTap: () {}),
+                      ],
+                    ),
+                  ],
+                ),
+                body: Builder(
+                  builder: (context) {
+                    scaffoldBodyBuilds++;
+                    return Column(
+                      children: [
+                        Builder(
+                          builder: (ctx) {
+                            radiusBuilds++;
+                            GlassThemeHelpers.resolveAdaptiveRadius(ctx);
+                            return const SizedBox.shrink();
+                          },
+                        ),
+                        GlassSwitch(value: true, onChanged: (_) {}),
+                        GlassSlider(value: 0.5, onChanged: (_) {}),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final r0 = radiusBuilds;
+        final m0 = menuTriggerBuilds;
+        final sb0 = scaffoldBodyBuilds;
+        final rebuiltGlassWidgets = <Type>[];
+        final prevHook = debugOnRebuildDirtyWidget;
+        debugOnRebuildDirtyWidget = (Element e, bool builtOnce) {
+          final w = e.widget;
+          if (w is GlassScaffold ||
+              w is GlassSwitch ||
+              w is GlassSlider ||
+              w is GlassMenu) {
+            rebuiltGlassWidgets.add(w.runtimeType);
+          }
+          prevHook?.call(e, builtOnce);
+        };
+        addTearDown(() => debugOnRebuildDirtyWidget = prevHook);
+
+        // Simulate keyboard animating up across 5 frames.
+        for (final h in [60.0, 120.0, 180.0, 240.0, 300.0]) {
+          insets.value = EdgeInsets.only(bottom: h);
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+
+        expect(radiusBuilds, r0,
+            reason: 'resolveAdaptiveRadius must not rebuild on viewInsets.');
+        expect(menuTriggerBuilds, m0,
+            reason: 'GlassMenu trigger must not rebuild on viewInsets.');
+        expect(scaffoldBodyBuilds, sb0,
+            reason: 'GlassScaffold body must not rebuild on viewInsets.');
+        expect(
+          rebuiltGlassWidgets,
+          isEmpty,
+          reason: 'GlassScaffold, GlassSwitch, GlassSlider, and GlassMenu must '
+              'not rebuild when MediaQuery.viewInsets changes.',
+        );
       },
     );
   });

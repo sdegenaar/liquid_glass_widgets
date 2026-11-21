@@ -451,9 +451,9 @@ class GlassScaffold extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context, Widget? _) {
-    final mediaQuery = MediaQuery.of(context);
-    final topPad = mediaQuery.padding.top;
-    final botPad = mediaQuery.padding.bottom;
+    final padding = MediaQuery.paddingOf(context);
+    final topPad = padding.top;
+    final botPad = padding.bottom;
 
     // In iPhone Duo's vertical bar strip a pinned app bar keeps only its
     // title row, and the package's bottom bars leave the bottom edge for the
