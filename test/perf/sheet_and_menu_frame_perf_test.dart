@@ -175,4 +175,71 @@ void main() {
       },
     );
   });
+
+  group('Wave 2.5 / W0.3 — GlassModalSheet drag rebuilds & ShaderMask gating',
+      () {
+    testWidgets(
+      'GlassModalSheet does not rebuild child subtree during 30-frame drag '
+      'and omits ShaderMask below 0.8 expand progress',
+      (tester) async {
+        var childBuilds = 0;
+        final controller = GlassModalSheetController();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Stack(
+                children: [
+                  GlassModalSheet(
+                    controller: controller,
+                    initialState: GlassSheetState.half,
+                    enableTopFade: true,
+                    child: Builder(
+                      builder: (context) {
+                        childBuilds++;
+                        return const SizedBox.expand(
+                          child: Center(child: Text('Sheet Body')),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Half detent (expandProgress == 0.0 < 0.8): must mount 0 ShaderMasks.
+        expect(
+          find.byType(ShaderMask),
+          findsNothing,
+          reason: 'GlassModalSheet must omit ShaderMask when fadeT == 0.',
+        );
+
+        final buildsBeforeDrag = childBuilds;
+
+        // Drag the sheet vertically across 30 frames (half → toward full).
+        final sheetCenter = tester.getCenter(find.text('Sheet Body'));
+        final gesture = await tester.startGesture(sheetCenter);
+        for (var i = 0; i < 30; i++) {
+          await gesture.moveBy(const Offset(0, -4));
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+        await gesture.up();
+        await tester.pumpAndSettle();
+
+        // Previously: MediaQuery.copyWith + focusBridge rebuilt inside
+        // AnimatedBuilder on every single drag tick (>= 30 child rebuilds).
+        // With W2.5: content is passed via AnimatedBuilder.child and MediaQuery
+        // is omitted when restingInsets == EdgeInsets.zero.
+        expect(
+          childBuilds - buildsBeforeDrag,
+          lessThanOrEqualTo(2),
+          reason: 'GlassModalSheet child subtree must not rebuild on every '
+              'drag animation frame.',
+        );
+      },
+    );
+  });
 }

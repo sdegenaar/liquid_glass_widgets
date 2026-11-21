@@ -1250,7 +1250,14 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
   /// Integrated by hand on [_horizontalTicker]: `animateWith` restarts its
   /// clock on every call, so a chase retargeted per pointer move would freeze
   /// while the finger keeps moving.
-  double _horizontalOffset = 0.0;
+  /// Driven through a [ValueNotifier] so 120 Hz horizontal swipe-chase ticks
+  /// only update the sheet's [Transform] wrapper without rebuilding the
+  /// morph presenter, barrier, droplet, or sheet child tree.
+  final ValueNotifier<double> _horizontalOffsetNotifier =
+      ValueNotifier<double>(0.0);
+  double get _horizontalOffset => _horizontalOffsetNotifier.value;
+  set _horizontalOffset(double value) =>
+      _horizontalOffsetNotifier.value = value;
 
   /// The chase's current velocity, in pixels per second.
   double _horizontalVelocity = 0.0;
@@ -1354,6 +1361,7 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
     _morph.removeListener(_onMorphTick);
     _morph.dispose();
     _horizontalTicker.dispose();
+    _horizontalOffsetNotifier.dispose();
     _sheetProgress?.removeListener(_onSheetProgress);
     // The route can be torn down without the closing morph ever running (a
     // Navigator reset, a hot restart). Leaving the trigger emptied would erase
@@ -1711,7 +1719,6 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
       _horizontalVelocity = 0.0;
       _horizontalTicker.stop();
     }
-    setState(() {});
   }
 
   void _onPointerRelease(PointerEvent event) {
@@ -1920,8 +1927,12 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
     // "resizes from one edge while the other three remain fixed" — it cannot
     // express this). A sheet presented without a morph keeps the plain
     // slide-away it always had.
-    final Widget draggableSheet =
-        _dragTransform(screenSize, sheet, inMorph: inMorph);
+    final Widget draggableSheet = ValueListenableBuilder<double>(
+      valueListenable: _horizontalOffsetNotifier,
+      child: sheet,
+      builder: (context, _, child) =>
+          _dragTransform(screenSize, child!, inMorph: inMorph),
+    );
 
     // During the morph, transform [draggableSheet] from its resting/dismissed
     // [destination] rect into [scaledBlob] and clip it to blob B's superellipse
