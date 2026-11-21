@@ -218,8 +218,7 @@ class LiquidGlassLayer extends StatefulWidget {
   State<LiquidGlassLayer> createState() => _LiquidGlassLayerState();
 }
 
-class _LiquidGlassLayerState extends State<LiquidGlassLayer>
-    with SingleTickerProviderStateMixin {
+class _LiquidGlassLayerState extends State<LiquidGlassLayer> {
   late final GeometryRenderLink _link = GeometryRenderLink();
   late final BackdropKey _backdropKey = BackdropKey();
 

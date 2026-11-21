@@ -25,6 +25,8 @@ import 'glass_tab_bar.dart';
 import 'glass_toolbar.dart';
 import 'glass_vertical_bar.dart';
 
+final Listenable _kEmptyListenable = Listenable.merge(const []);
+
 /// A one-stop-shop scaffold that replaces the manual assembly of [GlassPage],
 /// [Scaffold], [GlassScrollEdgeEffect], and a [Stack] for proper z-ordering.
 ///
@@ -530,7 +532,7 @@ class GlassScaffold extends StatelessWidget {
       // either side of a posture change, so the body is never remounted.
       final largeTitle = appBarInStrip ? bar.largeTitleController : null;
       bodyContent = ListenableBuilder(
-        listenable: Listenable.merge([largeTitle]),
+        listenable: largeTitle ?? _kEmptyListenable,
         builder: (context, child) => edgeEffect(
           largeTitle == null
               ? topFadeHeight

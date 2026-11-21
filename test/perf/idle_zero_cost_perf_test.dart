@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/renderer/glass_backdrop_group_boundary.dart';
@@ -403,5 +404,86 @@ void main() {
         );
       },
     );
+
+    test(
+      'Wave 2.6 — SingleSpringController & OffsetSpringController allocate '
+      '0 Tickers at rest and unify OffsetSpringController onto 1 Ticker',
+      () {
+        final countingVsync = _CountingTickerProvider();
+        final single = SingleSpringController(
+          vsync: countingVsync,
+          spring: GlassSpring.snappy(),
+        );
+        final offset = OffsetSpringController(
+          vsync: countingVsync,
+          spring: GlassSpring.snappy(),
+        );
+
+        // Resting controllers must allocate 0 Tickers.
+        expect(countingVsync.createdCount, 0);
+
+        // First animateTo allocates exactly 1 Ticker each (not 2 for Offset).
+        single.animateTo(1.0);
+        expect(countingVsync.createdCount, 1);
+
+        var offsetNotifies = 0;
+        offset.addListener(() => offsetNotifies++);
+        offset.animateTo(const Offset(10.0, 20.0));
+        expect(
+          countingVsync.createdCount,
+          2,
+          reason:
+              'OffsetSpringController must share 1 Ticker across both axes.',
+        );
+
+        // Driving a single vsync on OffsetSpringController fires listeners once.
+        countingVsync.lastCallback!(const Duration(milliseconds: 16));
+        expect(offsetNotifies, 1);
+
+        single.dispose();
+        offset.dispose();
+      },
+    );
+
+    testWidgets(
+      'Wave 2.6 — GlassButtonGroup omits IntrinsicHeight when showDividers is false',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: GlassButtonGroup(
+                  showDividers: false,
+                  children: [
+                    GlassButton(
+                      icon: const Icon(CupertinoIcons.add),
+                      onTap: () {},
+                    ),
+                    GlassButton(
+                      icon: const Icon(CupertinoIcons.minus),
+                      onTap: () {},
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(IntrinsicHeight), findsNothing);
+      },
+    );
   });
+}
+
+class _CountingTickerProvider implements TickerProvider {
+  int createdCount = 0;
+  TickerCallback? lastCallback;
+
+  @override
+  Ticker createTicker(TickerCallback onTick) {
+    createdCount++;
+    lastCallback = onTick;
+    return Ticker(onTick);
+  }
 }

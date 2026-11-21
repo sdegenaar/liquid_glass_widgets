@@ -15,6 +15,7 @@ class _GlassPopoverState extends State<GlassPopover>
   /// spring's underdamped overshoot. Held at `1.0` (full blur, no animation)
   /// when the ramp is disabled or reduced-motion is active.
   late final AnimationController _blurRamp;
+  late final Listenable _overlayListenable;
 
   Size? _triggerSize;
   double? _triggerBorderRadius;
@@ -138,6 +139,10 @@ class _GlassPopoverState extends State<GlassPopover>
       vsync: this,
       speed: widget.morphSpeed,
     )..verticalOnlyRecoil = true;
+    _overlayListenable = Listenable.merge([
+      _morphController.animation,
+      _blurRamp,
+    ]);
     _morphController.addListener(() {
       // Hide the overlay only once the closing morph — including the parallel
       // trigger recoil and wide-trigger splash (~550 ms) — has fully settled.
@@ -1135,7 +1140,7 @@ class _GlassPopoverState extends State<GlassPopover>
     // Listens to BOTH the morph spring and the blur ramp so the backdrop blur
     // repaints as it eases in, independently of where the morph spring is.
     final overlay = AnimatedBuilder(
-      animation: Listenable.merge([_morphController.animation, _blurRamp]),
+      animation: _overlayListenable,
       builder: (context, child) {
         final rawValue = _morphController.value;
         final clampedValue = rawValue.clamp(0.0, 1.0);

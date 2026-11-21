@@ -258,6 +258,7 @@ class _GlassSwitchState extends State<GlassSwitch>
   late AnimationController _thicknessController;
   late AnimationController _overshootController;
   late Animation<double> _thicknessAnimation;
+  late final Listenable _switchListenable;
 
   // ---------------------------------------------------------------------------
   // Gesture state
@@ -297,6 +298,11 @@ class _GlassSwitchState extends State<GlassSwitch>
         duration: const Duration(milliseconds: 380), vsync: this);
     _overshootController = AnimationController(
         duration: const Duration(milliseconds: 220), vsync: this);
+    _switchListenable = Listenable.merge([
+      _positionController,
+      _thicknessController,
+      _overshootController,
+    ]);
 
     // Pulse animation (0 -> 1 -> 0)
     // Synchronized to grow and settle as the toggle jumps
@@ -725,11 +731,7 @@ class _GlassSwitchState extends State<GlassSwitch>
     // Performance: RepaintBoundary isolates switch animation from parent
     final Widget switchVisual = RepaintBoundary(
       child: AnimatedBuilder(
-        animation: Listenable.merge([
-          _positionController,
-          _thicknessController,
-          _overshootController,
-        ]),
+        animation: _switchListenable,
         builder: (context, child) {
           final position = _positionController.value;
           final thickness = _thicknessAnimation.value;
@@ -1041,15 +1043,15 @@ class _GlassSwitchState extends State<GlassSwitch>
                   child: materialContent,
                 ),
 
-                if (transition > 0.05)
+                // Skip mounting Opacity + GlassGlow on iOS 27 where glow is
+                // fully transparent (avoids a saveLayer + 4 spring controllers).
+                if (transition > 0.05 && !useIos27Lens)
                   Positioned(
                     left: anchorOffset,
                     child: Opacity(
                       opacity: transition,
                       child: GlassGlow(
-                        glowColor: useIos27Lens
-                            ? const Color(0x00000000)
-                            : const Color(0x3DFFFFFF),
+                        glowColor: const Color(0x3DFFFFFF),
                         child: SizedBox(
                           width: thumbWidth,
                           height: thumbHeight,

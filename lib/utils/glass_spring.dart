@@ -102,20 +102,22 @@ class SingleSpringController extends ChangeNotifier {
     double initialValue = 0.0,
     double? lowerBound,
     double? upperBound,
-  })  : _spring = spring,
+  })  : _vsync = vsync,
+        _spring = spring,
         _value = initialValue,
         _lowerBound = lowerBound,
-        _upperBound = upperBound {
-    _ticker = vsync.createTicker(_tick);
-  }
+        _upperBound = upperBound;
 
+  final TickerProvider _vsync;
   SpringDescription _spring;
   double _value;
   double _tickerElapsed = 0.0; // total time since ticker.start()
   double _simStartTime = 0.0; // ticker time when the current sim was created
   double _target = 0.0;
   SpringSimulation? _sim;
-  late final Ticker _ticker;
+  // Lazily allocated on the first animateTo() so resting widgets (e.g. every
+  // LiquidStretch / GlassGlow on screen) pay zero Ticker allocation cost.
+  Ticker? _ticker;
 
   final double? _lowerBound;
   final double? _upperBound;
@@ -139,7 +141,9 @@ class SingleSpringController extends ChangeNotifier {
   set spring(SpringDescription value) {
     if (_spring == value) return;
     _spring = value;
-    if (_ticker.isActive) _startSim(target: _target, fromVelocity: velocity);
+    if (_ticker?.isActive ?? false) {
+      _startSim(target: _target, fromVelocity: velocity);
+    }
   }
 
   /// Animates toward [target], preserving current velocity.
@@ -151,7 +155,7 @@ class SingleSpringController extends ChangeNotifier {
 
   /// Immediately sets the value without animating.
   void setValue(double value) {
-    _ticker.stop();
+    _ticker?.stop();
     _sim = null;
     _value = _clamp(value);
     _tickerElapsed = 0.0;
@@ -161,7 +165,8 @@ class SingleSpringController extends ChangeNotifier {
 
   @override
   void dispose() {
-    _ticker.dispose();
+    _ticker?.dispose();
+    _ticker = null;
     super.dispose();
   }
 
@@ -180,14 +185,15 @@ class SingleSpringController extends ChangeNotifier {
       target,
       fromVelocity,
     );
-    if (!_ticker.isActive) {
+    final ticker = _ticker ??= _vsync.createTicker(_tick);
+    if (!ticker.isActive) {
       // The Dart Ticker resets its elapsed counter to zero on each start().
       // _simStartTime must match so that sim.x/dx are evaluated at t=0 on the
       // first tick — not at (0 - stale_elapsed) which extrapolates backward
       // and can produce astronomically large velocity/position values.
       _tickerElapsed = 0.0;
       _simStartTime = 0.0;
-      _ticker.start();
+      ticker.start();
     } else {
       // Ticker is already running; anchor the new sim to the current position
       // in the ticker timeline so it starts at t=0 relative to now.
@@ -205,7 +211,7 @@ class SingleSpringController extends ChangeNotifier {
         (_tickerElapsed - _simStartTime).clamp(0.0, double.infinity);
     final sim = _sim;
     if (sim == null) {
-      _ticker.stop();
+      _ticker?.stop();
       return;
     }
 
@@ -214,7 +220,7 @@ class SingleSpringController extends ChangeNotifier {
     if (sim.isDone(simElapsed)) {
       _value = _clamp(_target);
       _sim = null;
-      _ticker.stop();
+      _ticker?.stop();
     }
     notifyListeners();
   }
@@ -225,65 +231,140 @@ class SingleSpringController extends ChangeNotifier {
 //                          OffsetMotionConverter — used by GlassGlowLayerState)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// A controller that drives an [Offset] value using two independent
-/// [SingleSpringController]s (one per axis).
+/// A controller that drives an [Offset] value using two independent per-axis
+/// [SpringSimulation]s unified on a single lazy [Ticker].
 ///
-/// Implements [Listenable]; listeners fire whenever either axis ticks.
+/// Implements [Listenable]; listeners fire at most once per vsync even when
+/// both axes are animating simultaneously.
 class OffsetSpringController extends ChangeNotifier {
   /// Creates an [OffsetSpringController].
   ///
-  /// Each axis is driven by an independent [SingleSpringController] so the
-  /// x and y components settle at independent rates when redirected.
+  /// Both axes settle at independent rates when redirected while sharing one
+  /// lazily allocated [Ticker] so listeners are never notified twice per frame.
   OffsetSpringController({
     required TickerProvider vsync,
     required SpringDescription spring,
     Offset initialValue = Offset.zero,
-  }) {
-    _x = SingleSpringController(
-      vsync: vsync,
-      spring: spring,
-      initialValue: initialValue.dx,
-    )..addListener(notifyListeners);
-    _y = SingleSpringController(
-      vsync: vsync,
-      spring: spring,
-      initialValue: initialValue.dy,
-    )..addListener(notifyListeners);
-  }
+  })  : _vsync = vsync,
+        _spring = spring,
+        _valueX = initialValue.dx,
+        _valueY = initialValue.dy,
+        _targetX = initialValue.dx,
+        _targetY = initialValue.dy;
 
-  late final SingleSpringController _x;
-  late final SingleSpringController _y;
+  final TickerProvider _vsync;
+  SpringDescription _spring;
+  double _valueX;
+  double _valueY;
+  double _targetX;
+  double _targetY;
+  double _tickerElapsed = 0.0;
+  double _simStartTimeX = 0.0;
+  double _simStartTimeY = 0.0;
+  SpringSimulation? _simX;
+  SpringSimulation? _simY;
+  Ticker? _ticker;
 
   /// Current animated offset.
-  Offset get value => Offset(_x.value, _y.value);
+  Offset get value => Offset(_valueX, _valueY);
 
   /// Current spring velocity as an [Offset].
-  Offset get velocity => Offset(_x.velocity, _y.velocity);
+  Offset get velocity => Offset(_velocityX, _velocityY);
 
-  /// Animate toward [target], preserving current velocity.
+  double get _velocityX {
+    final sim = _simX;
+    if (sim == null) return 0.0;
+    final t = (_tickerElapsed - _simStartTimeX).clamp(0.0, double.infinity);
+    return sim.dx(t);
+  }
+
+  double get _velocityY {
+    final sim = _simY;
+    if (sim == null) return 0.0;
+    final t = (_tickerElapsed - _simStartTimeY).clamp(0.0, double.infinity);
+    return sim.dx(t);
+  }
+
+  /// Animate toward [target], preserving current per-axis velocity.
   void animateTo(Offset target) {
-    _x.animateTo(target.dx);
-    _y.animateTo(target.dy);
+    _targetX = target.dx;
+    _targetY = target.dy;
+    _startSims(fromVx: _velocityX, fromVy: _velocityY);
   }
 
   /// Immediately set both axes without animating.
   set value(Offset v) {
-    _x.setValue(v.dx);
-    _y.setValue(v.dy);
+    _ticker?.stop();
+    _simX = null;
+    _simY = null;
+    _valueX = v.dx;
+    _valueY = v.dy;
+    _targetX = v.dx;
+    _targetY = v.dy;
+    _tickerElapsed = 0.0;
+    _simStartTimeX = 0.0;
+    _simStartTimeY = 0.0;
+    notifyListeners();
   }
 
-  /// Change the spring for both axes, redirecting any running simulation.
+  /// Change the spring for both axes, redirecting any running simulations.
   set spring(SpringDescription s) {
-    _x.spring = s;
-    _y.spring = s;
+    if (_spring == s) return;
+    _spring = s;
+    if (_ticker?.isActive ?? false) {
+      _startSims(fromVx: _velocityX, fromVy: _velocityY);
+    }
+  }
+
+  void _startSims({required double fromVx, required double fromVy}) {
+    _simX = SpringSimulation(_spring, _valueX, _targetX, fromVx);
+    _simY = SpringSimulation(_spring, _valueY, _targetY, fromVy);
+    final ticker = _ticker ??= _vsync.createTicker(_tick);
+    if (!ticker.isActive) {
+      _tickerElapsed = 0.0;
+      _simStartTimeX = 0.0;
+      _simStartTimeY = 0.0;
+      ticker.start();
+    } else {
+      _simStartTimeX = _tickerElapsed;
+      _simStartTimeY = _tickerElapsed;
+    }
+  }
+
+  void _tick(Duration elapsed) {
+    _tickerElapsed = elapsed.inMicroseconds / Duration.microsecondsPerSecond;
+    final simX = _simX;
+    final simY = _simY;
+    if (simX == null && simY == null) {
+      _ticker?.stop();
+      return;
+    }
+    if (simX != null) {
+      final tX = (_tickerElapsed - _simStartTimeX).clamp(0.0, double.infinity);
+      _valueX = simX.x(tX);
+      if (simX.isDone(tX)) {
+        _valueX = _targetX;
+        _simX = null;
+      }
+    }
+    if (simY != null) {
+      final tY = (_tickerElapsed - _simStartTimeY).clamp(0.0, double.infinity);
+      _valueY = simY.x(tY);
+      if (simY.isDone(tY)) {
+        _valueY = _targetY;
+        _simY = null;
+      }
+    }
+    if (_simX == null && _simY == null) {
+      _ticker?.stop();
+    }
+    notifyListeners();
   }
 
   @override
   void dispose() {
-    _x.removeListener(notifyListeners);
-    _y.removeListener(notifyListeners);
-    _x.dispose();
-    _y.dispose();
+    _ticker?.dispose();
+    _ticker = null;
     super.dispose();
   }
 }

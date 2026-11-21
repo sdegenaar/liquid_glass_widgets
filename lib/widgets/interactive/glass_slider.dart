@@ -351,7 +351,14 @@ class _GlassSliderState extends State<GlassSlider>
       ),
       initialValue: 0.0,
     );
+    _thumbListenable = Listenable.merge([
+      _scaleController,
+      _thicknessController,
+      _jellyController,
+    ]);
   }
+
+  late final Listenable _thumbListenable;
 
   @override
   void dispose() {
@@ -610,11 +617,7 @@ class _GlassSliderState extends State<GlassSlider>
 
                     // Thumb (iOS 26 & 27: symmetric 1.55x expansion around thumbPosition)
                     AnimatedBuilder(
-                      animation: Listenable.merge([
-                        _scaleController,
-                        _thicknessController,
-                        _jellyController,
-                      ]),
+                      animation: _thumbListenable,
                       builder: (context, child) {
                         final scale = _scaleAnimation.value;
 
@@ -817,15 +820,22 @@ class _GlassSliderState extends State<GlassSlider>
                   // Physical material content (centered, original size)
                   materialContent,
 
-                  // Glowing element — only when interactionBehavior includes glow.
-                  if (transition > 0.05 && widget.interactionBehavior.hasGlow)
+                  // Glowing element — only when interactionBehavior includes glow
+                  // and the resolved glow color is non-transparent (skipping
+                  // iOS 27's default 0x00000000 glow avoids a saveLayer + 4 Tickers).
+                  if (transition > 0.05 &&
+                      widget.interactionBehavior.hasGlow &&
+                      (widget.glowColor ??
+                                  (useIos27Lens
+                                      ? const Color(0x00000000)
+                                      : const Color(0x1FFFFFFF)))
+                              .a >
+                          0.0)
                     Opacity(
                       opacity: transition,
                       child: GlassGlow(
                         glowColor: widget.glowColor ??
-                            (useIos27Lens
-                                ? const Color(0x00000000)
-                                : const Color(0x1FFFFFFF)), // white ~12%
+                            const Color(0x1FFFFFFF), // white ~12%
                         glowRadius: widget.glowRadius,
                         child: SizedBox(
                           width: thumbWidth,

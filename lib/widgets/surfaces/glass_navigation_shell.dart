@@ -730,6 +730,7 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
   /// would mutate the tree mid-frame. This mirrors the deferral used by the
   /// modal sheet morph's anchor.
   void _scheduleNotify() {
+    _cachedOrderedEntries = null;
     final phase = WidgetsBinding.instance.schedulerPhase;
     if (phase == SchedulerPhase.persistentCallbacks ||
         phase == SchedulerPhase.midFrameMicrotasks) {
@@ -739,6 +740,7 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
       _notifyQueued = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _notifyQueued = false;
+        _cachedOrderedEntries = null;
         if (mounted) _tick.notify();
       });
     } else {
@@ -750,6 +752,10 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
   // Ordering
   // ---------------------------------------------------------------------------
 
+  List<MapEntry<ModalRoute<dynamic>, GlassNavBarRegistration>>?
+      _cachedOrderedEntries;
+  bool _orderedEntriesResetScheduled = false;
+
   /// The registered routes ordered from topmost to bottom-most.
   ///
   /// Rank comes from `secondaryAnimation`, which measures how much a route is
@@ -757,8 +763,14 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
   /// route being covered by a push animates toward 1. This derives stack order
   /// from the routes themselves, so no [NavigatorObserver] is needed and any
   /// Pages-API router works unchanged.
+  ///
+  /// Cached per frame so multiple [isHoisting] checks plus the overlay build in
+  /// the same frame share one traversal and sort.
   List<MapEntry<ModalRoute<dynamic>, GlassNavBarRegistration>>
       get _orderedEntries {
+    final cached = _cachedOrderedEntries;
+    if (cached != null) return cached;
+
     final entries = <MapEntry<ModalRoute<dynamic>, GlassNavBarRegistration>>[];
     final insertionIndex = <ModalRoute<dynamic>, int>{};
     _onstageRegistrants.clear();
@@ -780,6 +792,14 @@ class GlassNavigationShellState extends State<GlassNavigationShell>
       // Equally covered: the more recently pushed route is on top.
       return insertionIndex[b.key]!.compareTo(insertionIndex[a.key]!);
     });
+    _cachedOrderedEntries = entries;
+    if (!_orderedEntriesResetScheduled) {
+      _orderedEntriesResetScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _orderedEntriesResetScheduled = false;
+        _cachedOrderedEntries = null;
+      });
+    }
     return entries;
   }
 

@@ -386,24 +386,12 @@ class _GlassListTileState extends State<GlassListTile>
   // Interaction state (isPressed, isFocused, pressedAndFocused)
   // is provided by GlassInteractionStateMixin.
 
-  late final AnimationController _confirmController = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 240),
-  );
-  late final Animation<double> _confirmAnimation = CurvedAnimation(
-    parent: _confirmController,
-    curve: Curves.easeOutCubic,
-    reverseCurve: Curves.easeInCubic,
-  );
-
-  late final AnimationController _removeController = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 280),
-  );
-  late final Animation<double> _removeAnimation = CurvedAnimation(
-    parent: _removeController,
-    curve: Curves.easeInOutCubic,
-  );
+  // Lazily created only when edit-mode delete confirmation or row removal
+  // actually runs so resting list tiles allocate 0 AnimationControllers/Tickers.
+  AnimationController? _confirmController;
+  Animation<double>? _confirmAnimation;
+  AnimationController? _removeController;
+  Animation<double>? _removeAnimation;
 
   bool _isDeleteConfirming = false;
 
@@ -411,14 +399,41 @@ class _GlassListTileState extends State<GlassListTile>
   /// doesn't start a second drag for the same touch.
   int? _grabberPointer;
 
-  @override
-  void initState() {
-    super.initState();
-    _confirmController.addStatusListener((status) {
-      if (status == AnimationStatus.dismissed && mounted) {
-        setState(() {});
-      }
-    });
+  AnimationController _ensureConfirmController() {
+    var controller = _confirmController;
+    if (controller == null) {
+      controller = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 240),
+      )..addStatusListener((status) {
+          if (status == AnimationStatus.dismissed && mounted) {
+            setState(() {});
+          }
+        });
+      _confirmController = controller;
+      _confirmAnimation = CurvedAnimation(
+        parent: controller,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      );
+    }
+    return controller;
+  }
+
+  AnimationController _ensureRemoveController() {
+    var controller = _removeController;
+    if (controller == null) {
+      controller = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 280),
+      );
+      _removeController = controller;
+      _removeAnimation = CurvedAnimation(
+        parent: controller,
+        curve: Curves.easeInOutCubic,
+      );
+    }
+    return controller;
   }
 
   @override
@@ -428,20 +443,20 @@ class _GlassListTileState extends State<GlassListTile>
         widget.isEditing ?? GlassEditScope.isEditing(context);
     if (!effectiveIsEditing && _isDeleteConfirming) {
       _isDeleteConfirming = false;
-      _confirmController.value = 0.0;
+      _confirmController?.value = 0.0;
     }
   }
 
   @override
   void dispose() {
-    _confirmController.dispose();
-    _removeController.dispose();
+    _confirmController?.dispose();
+    _removeController?.dispose();
     super.dispose();
   }
 
   void _handleDeletePressed() {
     HapticFeedback.mediumImpact();
-    _removeController.forward().then((_) {
+    _ensureRemoveController().forward().then((_) {
       if (mounted) {
         widget.onDelete?.call();
       }
@@ -455,7 +470,7 @@ class _GlassListTileState extends State<GlassListTile>
 
     if (!effectiveIsEditing && _isDeleteConfirming) {
       _isDeleteConfirming = false;
-      _confirmController.value = 0.0;
+      _confirmController?.value = 0.0;
     }
 
     Widget content = _buildContent(context, effectiveIsEditing);
@@ -533,11 +548,14 @@ class _GlassListTileState extends State<GlassListTile>
       );
     }
 
-    if (_removeController.isAnimating || _removeController.isCompleted) {
+    final removeController = _removeController;
+    if (removeController != null &&
+        (removeController.isAnimating || removeController.isCompleted)) {
+      final removeAnimation = _removeAnimation!;
       content = AnimatedBuilder(
-        animation: _removeAnimation,
+        animation: removeAnimation,
         builder: (context, child) {
-          final double progress = _removeAnimation.value;
+          final double progress = removeAnimation.value;
           return ClipRect(
             child: Align(
               alignment: Alignment.topCenter,
@@ -591,9 +609,9 @@ class _GlassListTileState extends State<GlassListTile>
             setState(() {
               _isDeleteConfirming = !_isDeleteConfirming;
               if (_isDeleteConfirming) {
-                _confirmController.forward();
+                _ensureConfirmController().forward();
               } else {
-                _confirmController.reverse();
+                _confirmController?.reverse();
               }
             });
           },
@@ -812,50 +830,53 @@ class _GlassListTileState extends State<GlassListTile>
         ),
       );
 
-      tile = AnimatedBuilder(
-        animation: _confirmAnimation,
-        builder: (context, child) {
-          final double t = _confirmAnimation.value;
-          if (t <= 0.0 && !_isDeleteConfirming) {
-            return child!;
-          }
+      final confirmAnimation = _confirmAnimation;
+      if (confirmAnimation != null) {
+        tile = AnimatedBuilder(
+          animation: confirmAnimation,
+          builder: (context, child) {
+            final double t = confirmAnimation.value;
+            if (t <= 0.0 && !_isDeleteConfirming) {
+              return child!;
+            }
 
-          return ClipRect(
-            child: Stack(
-              children: [
-                // 1. Platter (the row's own grey background) plus the
-                //    page-colour strip it leaves behind as it slides left.
-                Positioned.fill(
-                  child: CustomPaint(
-                    painter: _DeletePlatterPainter(
-                      platterColor: platterColor,
-                      pageColor: pageColor,
-                      progress: t,
+            return ClipRect(
+              child: Stack(
+                children: [
+                  // 1. Platter (the row's own grey background) plus the
+                  //    page-colour strip it leaves behind as it slides left.
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: _DeletePlatterPainter(
+                        platterColor: platterColor,
+                        pageColor: pageColor,
+                        progress: t,
+                      ),
                     ),
                   ),
-                ),
-                // 2. Main content translated left
-                Transform.translate(
-                  offset: Offset(-_kDeleteShift * t, 0.0),
-                  child: child,
-                ),
-                // 3. Delete cell sliding in from the right with the content
-                Positioned(
-                  right: 0.0,
-                  top: 0.0,
-                  bottom: 0.0,
-                  width: _kDeleteShift,
-                  child: Transform.translate(
-                    offset: Offset((1.0 - t) * _kDeleteShift, 0.0),
-                    child: deleteCell,
+                  // 2. Main content translated left
+                  Transform.translate(
+                    offset: Offset(-_kDeleteShift * t, 0.0),
+                    child: child,
                   ),
-                ),
-              ],
-            ),
-          );
-        },
-        child: tile,
-      );
+                  // 3. Delete cell sliding in from the right with the content
+                  Positioned(
+                    right: 0.0,
+                    top: 0.0,
+                    bottom: 0.0,
+                    width: _kDeleteShift,
+                    child: Transform.translate(
+                      offset: Offset((1.0 - t) * _kDeleteShift, 0.0),
+                      child: deleteCell,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+          child: tile,
+        );
+      }
     }
 
     if (showSelectedHighlight) {
@@ -870,7 +891,7 @@ class _GlassListTileState extends State<GlassListTile>
         onTap: () {
           setState(() {
             _isDeleteConfirming = false;
-            _confirmController.reverse();
+            _confirmController?.reverse();
           });
         },
         child: tile,

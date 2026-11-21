@@ -195,23 +195,32 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
   bool _loggedCreation = false;
   ui.Image? _backgroundImage;
 
-  // Ticker-driven background refresh (same proven pattern as GlassEffect).
-  // Fires every frame while a backgroundKey is active; stops automatically
-  // when no key is present — zero overhead for glass widgets without a background.
-  late final Ticker _ticker;
+  // Lazily allocated only when backgroundKey is non-null so the common case
+  // (backgroundKey == null) allocates 0 Tickers and registers 0 observers.
+  Ticker? _ticker;
+  bool _observingLifecycle = false;
   Size? _lastCaptureSize;
   Offset? _lastCapturePosition;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _initShader();
-    _ticker = createTicker(_handleTick);
-    // Defer ticker start until after first frame so the RepaintBoundary is laid out.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _updateTicker();
-    });
+    if (widget.backgroundKey != null) {
+      _ensureCaptureLifecycle();
+      // Defer ticker start until after first frame so the RepaintBoundary is laid out.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _updateTicker();
+      });
+    }
+  }
+
+  void _ensureCaptureLifecycle() {
+    if (!_observingLifecycle) {
+      WidgetsBinding.instance.addObserver(this);
+      _observingLifecycle = true;
+    }
+    _ticker ??= createTicker(_handleTick);
   }
 
   /// Start the ticker if a live RepaintBoundary is available for sampling.
@@ -223,11 +232,14 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
     // must not start the ticker — treat it the same as a null key.
     final bool hasBoundary = _safeGetBoundary(widget.backgroundKey) != null;
 
-    if (hasBoundary && !_ticker.isActive) {
-      _stableFrameCount = 0; // Reset so auto-suspend counts from scratch.
-      _ticker.start();
-    } else if (!hasBoundary && _ticker.isActive) {
-      _ticker.stop();
+    if (hasBoundary) {
+      _ensureCaptureLifecycle();
+      if (!_ticker!.isActive) {
+        _stableFrameCount = 0; // Reset so auto-suspend counts from scratch.
+        _ticker!.start();
+      }
+    } else if (_ticker?.isActive ?? false) {
+      _ticker!.stop();
       _stableFrameCount = 0;
       _backgroundImage?.dispose();
       _backgroundImage = null;
@@ -263,8 +275,8 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
     if (renderObject == null) {
       // The boundary was removed (e.g. background sampling was disabled at
       // runtime). Stop the ticker immediately — zero cost from this point on.
-      if (_ticker.isActive) {
-        _ticker.stop();
+      if (_ticker?.isActive ?? false) {
+        _ticker!.stop();
         _backgroundImage?.dispose();
         _backgroundImage = null;
         _stableFrameCount = 0;
@@ -304,8 +316,9 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
       // ticker. This saves battery on static surfaces (bottom bars, app bars)
       // where the background never changes after initial capture.
       _stableFrameCount++;
-      if (_stableFrameCount >= _kStableFrameThreshold && _ticker.isActive) {
-        _ticker.stop();
+      if (_stableFrameCount >= _kStableFrameThreshold &&
+          (_ticker?.isActive ?? false)) {
+        _ticker!.stop();
       }
     }
   }
@@ -352,7 +365,7 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
     if (widget.backgroundKey != oldWidget.backgroundKey) {
       // Key object changed — update immediately.
       _updateTicker();
-    } else if (widget.backgroundKey != null && !_ticker.isActive) {
+    } else if (widget.backgroundKey != null && !(_ticker?.isActive ?? false)) {
       // Same key object but ticker is stopped. The RepaintBoundary may have
       // been re-added to the tree (e.g. GlassBackgroundSource re-enabled via
       // the BG Sample toggle). Schedule a post-frame check so the boundary
@@ -377,7 +390,7 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
       case AppLifecycleState.inactive:
       case AppLifecycleState.paused:
       case AppLifecycleState.hidden:
-        if (_ticker.isActive) _ticker.stop();
+        if (_ticker?.isActive ?? false) _ticker!.stop();
         break;
       case AppLifecycleState.resumed:
         // Restart one frame after resume so surfaceChanged has completed
@@ -415,8 +428,12 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
   @override
   void dispose() {
     _isDisposed = true;
-    WidgetsBinding.instance.removeObserver(this);
-    _ticker.dispose();
+    if (_observingLifecycle) {
+      WidgetsBinding.instance.removeObserver(this);
+      _observingLifecycle = false;
+    }
+    _ticker?.dispose();
+    _ticker = null;
     // Null backgroundImage BEFORE disposing the shader to break the GPU
     // texture retention chain during isolate shutdown on Mali GPUs.
     _backgroundImage?.dispose();

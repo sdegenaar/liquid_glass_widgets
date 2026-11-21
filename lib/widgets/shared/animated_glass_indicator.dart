@@ -506,11 +506,7 @@ class AnimatedGlassIndicator extends StatelessWidget {
           : 0.2, // Match GlassSlider/Switch (clear in dark mode, subtle lift in light)
       edgeAlphaMultiplier:
           isStdPath ? 0.15 : 0.4, // Match GlassSlider/Switch (subtle rim)
-      child: const GlassGlow(
-        // Whitelisted: Structural no-glow default.
-        glowColor: Color(0x00000000),
-        child: SizedBox.expand(),
-      ),
+      child: const SizedBox.expand(),
     );
 
     // Drop shadow for the moving glass jelly. GlassEffect itself never paints

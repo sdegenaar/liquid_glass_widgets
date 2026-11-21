@@ -155,7 +155,8 @@ class _GlassEffectState extends State<GlassEffect>
   ui.FragmentShader? _localShader;
   bool _isDisposed = false;
   ui.Image? _backgroundImage;
-  late Ticker _ticker;
+  Ticker? _ticker;
+  bool _observingLifecycle = false;
   Size? _lastCaptureSize;
   Offset? _lastCapturePosition;
   // Web only: guards against overlapping async captures.
@@ -176,21 +177,21 @@ class _GlassEffectState extends State<GlassEffect>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     // Skip shader init when minimal or Impeller-premium — neither path uses
     // _localShader (interactive_indicator.frag).
     if (_needsLocalShader) {
       _initShader();
     }
 
-    _ticker = createTicker(_handleTick);
-
-    // Defer ticker update until after first frame to ensure shader is ready
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _updateTicker();
-      }
-    });
+    // Only schedule the post-frame capture check when already interacting or
+    // configured with a background capture source.
+    if (widget.interactionIntensity > 0.01 && widget.settings.blur > 0.0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _updateTicker();
+        }
+      });
+    }
   }
 
   @override
@@ -229,7 +230,7 @@ class _GlassEffectState extends State<GlassEffect>
       case AppLifecycleState.inactive:
       case AppLifecycleState.paused:
       case AppLifecycleState.hidden:
-        if (_ticker.isActive) _ticker.stop();
+        if (_ticker?.isActive ?? false) _ticker!.stop();
         break;
       case AppLifecycleState.resumed:
         // Restart one frame after resume so surfaceChanged has completed
@@ -257,18 +258,19 @@ class _GlassEffectState extends State<GlassEffect>
         _effectiveKey != null &&
         widget.settings.blur > 0.0;
     if (shouldCapture) {
-      if (!_ticker.isActive) {
-        _ticker.start();
-        // debugPrint(
-        //     '[GlassEffect] 📸 Starting capture loop. Intensity: ${widget.interactionIntensity.toStringAsFixed(2)}');
+      if (!_observingLifecycle) {
+        WidgetsBinding.instance.addObserver(this);
+        _observingLifecycle = true;
+      }
+      final ticker = _ticker ??= createTicker(_handleTick);
+      if (!ticker.isActive) {
+        ticker.start();
       }
     } else {
-      if (_ticker.isActive) {
-        _ticker.stop();
+      if (_ticker?.isActive ?? false) {
+        _ticker!.stop();
         _backgroundImage?.dispose();
         _backgroundImage = null;
-        // debugPrint(
-        //     '[GlassEffect] 📸 Interaction finished, cleared snapshot.');
       }
     }
   }
@@ -424,8 +426,12 @@ class _GlassEffectState extends State<GlassEffect>
   @override
   void dispose() {
     _isDisposed = true;
-    WidgetsBinding.instance.removeObserver(this);
-    _ticker.dispose();
+    if (_observingLifecycle) {
+      WidgetsBinding.instance.removeObserver(this);
+      _observingLifecycle = false;
+    }
+    _ticker?.dispose();
+    _ticker = null;
     // Null backgroundImage BEFORE disposing the shader to break the reference
     // chain: _backgroundImage → render object → engine layer tree → GPU texture.
     // On Mali GPUs, if the shader’s DlRuntimeEffectColorSource retains a
