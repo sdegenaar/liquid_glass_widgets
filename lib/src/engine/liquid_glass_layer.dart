@@ -1091,7 +1091,7 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
           baked,
           Rect.fromLTWH(0, 0, baked.width.toDouble(), baked.height.toDouble()),
           _bakedShadowRect.shift(offset),
-          Paint()..filterQuality = FilterQuality.low,
+          _bakedShadowDrawPaint,
         );
         return;
       }
@@ -1147,23 +1147,39 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
   @visibleForTesting
   ui.Image? get debugBakedShadow => _bakedShadow;
 
+  static final Paint _bakedShadowDrawPaint = Paint()
+    ..filterQuality = FilterQuality.low;
+  static final Paint _shadowLayerPaint = Paint();
+  static final Paint _shadowCutoutPaint = Paint()..blendMode = BlendMode.dstOut;
+
   static Rect _shadowClip(Rect bounds, BoxShadow shadow) =>
-      // Inflated so large blurs aren't cut off.
+      // 3 * blurSigma covers 99.7% of the Gaussian tail (previously blurRadius * 3
+      // inflated to ~5.2 sigma, wasting 21-34% shadow texture area/VRAM).
       bounds
           .shift(shadow.offset)
-          .inflate(shadow.spreadRadius + shadow.blurRadius * 3);
+          .inflate(shadow.spreadRadius + (shadow.blurSigma * 3).ceil());
 
   void _drawShadows(Canvas canvas, Rect bounds, ui.Image geometry) {
+    Rect? area;
+    for (final shadow in shadows) {
+      if (shadow.color.a == 0) continue;
+      final clip = _shadowClip(bounds, shadow);
+      area = area == null ? clip : area.expandToInclude(clip);
+    }
+    if (area == null) return;
+
     final src = Rect.fromLTWH(
       0,
       0,
       geometry.width.toDouble(),
       geometry.height.toDouble(),
     );
+
+    // Single saveLayer + single dstOut cutout for all shadows in this layer
+    // (cuts live animating shadow passes from N saveLayers to 1).
+    canvas.saveLayer(area, _shadowLayerPaint);
     for (final shadow in shadows) {
       if (shadow.color.a == 0) continue;
-
-      canvas.saveLayer(_shadowClip(bounds, shadow), Paint());
 
       // 1. Draw the geometry matte as a blurred, tinted shadow
       final shadowPaint = Paint()
@@ -1179,18 +1195,18 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
         bounds.shift(shadow.offset),
         shadowPaint,
       );
-
-      // 2. GPU Cutout (dstOut): punch out the interior using the same geometry
-      // matte to prevent the glass from blurring its own shadow (dirty rim).
-      canvas.drawImageRect(
-        geometry,
-        src,
-        bounds,
-        Paint()..blendMode = BlendMode.dstOut,
-      );
-
-      canvas.restore();
     }
+
+    // 2. GPU Cutout (dstOut): punch out the interior using the same geometry
+    // matte to prevent the glass from blurring its own shadow (dirty rim).
+    canvas.drawImageRect(
+      geometry,
+      src,
+      bounds,
+      _shadowCutoutPaint,
+    );
+
+    canvas.restore();
   }
 
   @override
