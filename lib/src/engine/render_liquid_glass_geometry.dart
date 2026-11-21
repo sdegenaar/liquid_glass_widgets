@@ -224,11 +224,16 @@ abstract class RenderLiquidGlassGeometry extends RenderProxyBox {
         !anyShapeChangedInLayer &&
         geometry != null) {
       // Nothing about the shapes changed in the group's space, so the layer's
-      // matte is still right and the link is not marked dirty. Only the
-      // recorded Picture is turned into an image (once; rendered caches
-      // return themselves), so later matte rebuilds blit it instead of
-      // replaying the geometry shader.
-      geometry = geometry!.render();
+      // matte is still right and the link is not marked dirty. Only turn the
+      // recorded Picture into an image when the parent layer composites
+      // multiple blend groups (so a moving sibling can blit this static group
+      // without replaying its shader). On a 1-group standalone layer (all
+      // useOwnLayer: true surfaces), the layer's own _geometryImage already
+      // caches the rasterized matte — calling render() here would retain a
+      // duplicate full-size GPU texture in VRAM for nothing.
+      if ((_renderLink?.shapes.length ?? 0) > 1) {
+        geometry = geometry!.render();
+      }
       geometryState = LiquidGlassGeometryState.updated;
       return geometry;
     }

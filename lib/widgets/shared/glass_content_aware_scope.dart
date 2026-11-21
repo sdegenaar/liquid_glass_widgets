@@ -724,7 +724,7 @@ class _GlassContentAwareContentState extends State<GlassContentAwareContent> {
 /// A [RepaintBoundary] subclass whose render object exposes cropped
 /// [OffsetLayer.toImage] captures so [GlassContentAwareScope] only reads back
 /// the control strip union rather than the full viewport.
-class _CroppableRepaintBoundary extends SingleChildRenderObjectWidget {
+class _CroppableRepaintBoundary extends RepaintBoundary {
   const _CroppableRepaintBoundary({super.key, super.child});
 
   @override

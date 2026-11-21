@@ -269,11 +269,23 @@ class _GlassEffectState extends State<GlassEffect>
     } else {
       if (_ticker?.isActive ?? false) {
         _ticker!.stop();
+        _lastCaptureElapsed = null;
         _backgroundImage?.dispose();
         _backgroundImage = null;
       }
     }
   }
+
+  // Minimum interval between periodic re-captures during an active drag when
+  // the background boundary's size and position have not changed (~30 Hz
+  // instead of 120 Hz cuts GPU texture churn by 4×).
+  static const Duration _kMinCaptureInterval = Duration(milliseconds: 33);
+  // Cap captured background texture area at ~1M physical pixels so a
+  // full-screen GlassBackgroundSource on a 3× display does not allocate a
+  // 14 MB RGBA texture every capture; compact bar boundaries stay at full DPR.
+  static const double _kMaxCapturePixels = 1000000.0;
+
+  Duration? _lastCaptureElapsed;
 
   void _handleTick(Duration elapsed) {
     if (_isDisposed) return; // belt-and-suspenders: post-frame callbacks can
@@ -293,15 +305,15 @@ class _GlassEffectState extends State<GlassEffect>
     final currentPos = (key.currentContext?.findRenderObject() as RenderBox?)
         ?.localToGlobal(Offset.zero);
 
-    // Capture on geometry change always; during interaction capture every frame
-    // since toImageSync() is synchronous (no GPU readback, no CPU copy).
     final bool isInteracting = widget.interactionIntensity > 0.05;
-    bool needsCapture = _backgroundImage == null;
-    needsCapture |= _lastCaptureSize != currentSize;
-    needsCapture |= _lastCapturePosition != currentPos;
-    needsCapture |= isInteracting; // every frame during drag — free cost
+    final bool geometryChanged = _backgroundImage == null ||
+        _lastCaptureSize != currentSize ||
+        _lastCapturePosition != currentPos;
+    final bool intervalElapsed = _lastCaptureElapsed == null ||
+        (elapsed - _lastCaptureElapsed!) >= _kMinCaptureInterval;
 
-    if (needsCapture) {
+    if (geometryChanged || (isInteracting && intervalElapsed)) {
+      _lastCaptureElapsed = elapsed;
       _captureBackground(boundary, currentSize, currentPos);
     }
   }
@@ -348,7 +360,11 @@ class _GlassEffectState extends State<GlassEffect>
       // across, eliminating the blocky 3×3 pixel "staircase" aliasing on
       // Retina/3× displays when pixelRatio: 1.0 was used.
       final dpr = _devicePixelRatio;
-      final image = boundary.toImageSync(pixelRatio: dpr);
+      final fullPixels = size.width * size.height * dpr * dpr;
+      final captureDpr = fullPixels > _kMaxCapturePixels
+          ? (dpr * math.sqrt(_kMaxCapturePixels / fullPixels)).clamp(1.0, dpr)
+          : dpr;
+      final image = boundary.toImageSync(pixelRatio: captureDpr);
       // Guard: if the widget was disposed between the toImageSync call and
       // this point (possible during rapid navigation), dispose the image
       // immediately rather than leaking it into a dead State.
@@ -973,14 +989,19 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
     return _cachedInteractiveFilter!;
   }
 
-  // Reusable layer handles — avoid allocations on every paint frame.
+  // Reusable layer handles and cached pill clip path — avoid allocations on
+  // every paint frame.
   final _clipPathLayerHandle = LayerHandle<ClipPathLayer>();
   final _backdropLayerHandle = LayerHandle<BackdropFilterLayer>();
+  Path? _cachedPillPath;
+  Size? _cachedPillPathSize;
+  LiquidShape? _cachedPillPathShape;
 
   @override
   void dispose() {
     _clipPathLayerHandle.layer = null;
     _backdropLayerHandle.layer = null;
+    _cachedPillPath = null;
     super.dispose();
   }
 
@@ -1005,7 +1026,14 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
       // PaintingContext.pushClipPath calls clipPath.shift(offset) internally, so
       // passing `offset & size` here would shift the clip twice — placing it
       // entirely outside the widget's screen bounds whenever offset != zero.
-      final pillPath = _shape.getOuterPath(Offset.zero & size);
+      if (_cachedPillPath == null ||
+          _cachedPillPathSize != size ||
+          _cachedPillPathShape != _shape) {
+        _cachedPillPathSize = size;
+        _cachedPillPathShape = _shape;
+        _cachedPillPath = _shape.getOuterPath(Offset.zero & size);
+      }
+      final pillPath = _cachedPillPath!;
       _clipPathLayerHandle.layer = context.pushClipPath(
         needsCompositing,
         offset,

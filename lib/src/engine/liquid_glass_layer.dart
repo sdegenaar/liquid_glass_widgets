@@ -574,20 +574,51 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
   final _frostClipLayerHandle = LayerHandle<ClipPathLayer>();
   final _frostRowsLayerHandle = LayerHandle<ClipPathLayer>();
 
+  Path? _cachedShapePath;
+  final List<GeometryCache> _cachedShapePathGeometries = [];
+  final List<Matrix4> _cachedShapePathTransforms = [];
+
   /// The union of [shapes]' paths in local coordinates.
+  ///
+  /// Cached across Pass 1 (blur/content clip), Pass 1b (frost clip), and
+  /// subsequent frames whenever the attached geometries and their relative
+  /// transforms are unchanged. Callers must treat the returned [Path] as
+  /// read-only.
   Path _shapePath(
     List<(RenderLiquidGlassGeometry, GeometryCache, Matrix4)> shapes,
   ) {
+    if (_cachedShapePath != null) {
+      var idx = 0;
+      var matches = true;
+      for (final entry in shapes) {
+        if (!entry.$1.attached) continue;
+        if (idx >= _cachedShapePathGeometries.length ||
+            !identical(_cachedShapePathGeometries[idx], entry.$2) ||
+            _cachedShapePathTransforms[idx] != entry.$3) {
+          matches = false;
+          break;
+        }
+        idx++;
+      }
+      if (matches && idx == _cachedShapePathGeometries.length) {
+        return _cachedShapePath!;
+      }
+    }
+
     final path = Path();
+    _cachedShapePathGeometries.clear();
+    _cachedShapePathTransforms.clear();
     for (final geometry in shapes) {
       if (!geometry.$1.attached) continue;
+      _cachedShapePathGeometries.add(geometry.$2);
+      _cachedShapePathTransforms.add(geometry.$3);
       path.addPath(
         geometry.$2.path,
         Offset.zero,
         matrix4: geometry.$3.storage,
       );
     }
-    return path;
+    return _cachedShapePath = path;
   }
 
   EdgeInsets _clipExpansion;
@@ -1238,6 +1269,9 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
     _frostRowsLayerHandle.layer = null;
     _uniformsTransform = null;
     _uniformsPassRect = null;
+    _cachedShapePath = null;
+    _cachedShapePathGeometries.clear();
+    _cachedShapePathTransforms.clear();
     backdropPassClipRectLocal = null;
     super.dispose();
   }
