@@ -1911,7 +1911,9 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
       fallback: GlassThemeHelpers.nativeStyleQuality(context),
     );
 
-    final bool useBlendGroup = effectiveQuality != GlassQuality.minimal &&
+    // LiquidGlassBlendGroup requires a LiquidGlassLayer ancestor, which
+    // AdaptiveLiquidGlassLayer only mounts for GlassQuality.premium.
+    final bool useBlendGroup = effectiveQuality == GlassQuality.premium &&
         !widget.platformViewBackdrop;
 
     final bool isPremiumQuality = effectiveQuality == GlassQuality.premium &&

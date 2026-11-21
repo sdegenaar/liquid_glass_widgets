@@ -2164,8 +2164,10 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
       children: [if (blobA != null) blobA, blobB],
     );
 
+    // LiquidGlassBlendGroup requires a LiquidGlassLayer ancestor, which
+    // AdaptiveLiquidGlassLayer only mounts for GlassQuality.premium.
     final useBlendGroup =
-        quality != GlassQuality.minimal && !widget.platformViewBackdrop;
+        quality == GlassQuality.premium && !widget.platformViewBackdrop;
 
     // Once the droplet has been caught, the real trigger is back on screen and
     // the droplet is standing in front of a button that is already there — two

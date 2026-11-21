@@ -1131,7 +1131,9 @@ class _GlassPopoverState extends State<GlassPopover>
         effectiveQuality == GlassQuality.premium &&
         ImageFilter.isShaderFilterSupported;
 
-    final bool useBlendGroup = effectiveQuality != GlassQuality.minimal &&
+    // LiquidGlassBlendGroup requires a LiquidGlassLayer ancestor, which
+    // AdaptiveLiquidGlassLayer only mounts for GlassQuality.premium.
+    final bool useBlendGroup = effectiveQuality == GlassQuality.premium &&
         !widget.platformViewBackdrop;
 
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
