@@ -164,13 +164,22 @@ class _GlassEffectState extends State<GlassEffect>
   // current when _captureBackgroundSync / _captureBackgroundAsync runs.
   double _devicePixelRatio = 1.0;
 
+  bool get _needsLocalShader {
+    if (widget.quality == GlassQuality.minimal) return false;
+    // Path B (Impeller + premium) renders via LiquidGlass.withOwnLayer and
+    // never uses interactive_indicator.frag (_localShader).
+    final bool isImpeller = !kIsWeb && GlassEffect._canUseImpeller;
+    if (isImpeller && widget.quality == GlassQuality.premium) return false;
+    return true;
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Skip shader init entirely in minimal quality — build() returns early via
-    // the _FrostedFallback path and the shader is never used.
-    if (widget.quality != GlassQuality.minimal) {
+    // Skip shader init when minimal or Impeller-premium — neither path uses
+    // _localShader (interactive_indicator.frag).
+    if (_needsLocalShader) {
       _initShader();
     }
 
@@ -188,7 +197,7 @@ class _GlassEffectState extends State<GlassEffect>
   void didUpdateWidget(covariant GlassEffect oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.quality != widget.quality) {
-      if (_activeShader == null) {
+      if (_needsLocalShader && _activeShader == null) {
         _initShader();
       }
     }

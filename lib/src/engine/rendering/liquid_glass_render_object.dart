@@ -336,10 +336,20 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
     super.detach();
   }
 
+  Size? _lastLayoutSize;
+
   @override
-  void layout(Constraints constraints, {bool parentUsesSize = false}) {
-    needsGeometryUpdate = true;
-    super.layout(constraints, parentUsesSize: parentUsesSize);
+  void performLayout() {
+    super.performLayout();
+    // Only invalidate the cached geometry matte when this layer's own size
+    // actually changes; child shape/transform changes invalidate via
+    // link._dirty and _sameTransformsAsMatte(). Previously overriding layout()
+    // forced a full toImageSync matte rebuild on every parent relayout pass
+    // even when constraints and size were unchanged.
+    if (_lastLayoutSize != size) {
+      _lastLayoutSize = size;
+      needsGeometryUpdate = true;
+    }
   }
 
   ui.Rect _paintBounds = ui.Rect.zero;

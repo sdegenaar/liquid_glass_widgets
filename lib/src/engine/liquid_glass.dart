@@ -367,14 +367,22 @@ class RenderLiquidGlass extends RenderProxyBox
     );
   }
 
+  Size? _lastLayoutSize;
+  LiquidShape? _lastLayoutShape;
   late Path _lastPath;
 
   @override
   void performLayout() {
     super.performLayout();
-    // Notify parent layer when our layout changes
-    _lastPath = shape.getOuterPath(Offset.zero & size);
-    _blendGroupLink?.notifyShapeLayoutChanged(this);
+    // Only rebuild the outer Path and notify the blend group when size or
+    // shape actually changed; no-op relayouts at identical size/shape must not
+    // force a synchronous SDF geometry matte rebuild.
+    if (_lastLayoutSize != size || _lastLayoutShape != shape) {
+      _lastLayoutSize = size;
+      _lastLayoutShape = shape;
+      _lastPath = shape.getOuterPath(Offset.zero & size);
+      _blendGroupLink?.notifyShapeLayoutChanged(this);
+    }
   }
 
   @override
@@ -418,6 +426,11 @@ class RenderLiquidGlass extends RenderProxyBox
   }
 
   Path getPath() {
+    if (_lastLayoutShape != _shape && hasSize) {
+      _lastLayoutShape = _shape;
+      _lastLayoutSize = size;
+      _lastPath = _shape.getOuterPath(Offset.zero & size);
+    }
     return _lastPath;
   }
 }

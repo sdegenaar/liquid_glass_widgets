@@ -494,10 +494,11 @@ extension on LiquidGlassSettings {
 
     // blend is intentionally excluded here — it is set directly on
     // RenderLiquidGlassBlendGroup and triggers a forced geometry rebuild via
-    // its own setter. If blend is ever pulled into LiquidGlassSettings, add it
-    // to this check at that point.
+    // its own setter. refractiveIndex is also excluded because
+    // liquid_glass_geometry_blended.frag encodes pure surface normals/height
+    // and never reads uOpticalProps.x (refractiveIndex is applied in the
+    // render shader only).
     return effectiveThickness != other.effectiveThickness ||
-        refractiveIndex != other.refractiveIndex ||
         // A rim outline or a frost switches the matte's edge (uNativeEdge).
         (frost > 0) != (other.frost > 0) ||
         (rimShade > 0) != (other.rimShade > 0) ||
