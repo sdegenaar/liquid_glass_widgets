@@ -80,6 +80,7 @@ float sdfRRect(in vec2 p, in vec2 b, in float r) {
 // dT == dB and `mix` returns either value unchanged — symmetric shapes are
 // bit-exact identical to a plain `sdfRRect(p, b, r)` call.
 float sdfRRectAsym(in vec2 p, in vec2 b, in float rTop, in float rBottom) {
+    if (rTop == rBottom) return sdfRRect(p, b, rTop);
     float dT = sdfRRect(p, b, rTop);
     float dB = sdfRRect(p, b, rBottom);
     float t = smoothstep(-2.0, 2.0, p.y);
@@ -266,206 +267,247 @@ float sceneSDF(vec2 p, int n, float k) {
     // ── n = 2 ────────────────────────────────────────────────────────────────
     float s1  = sdf1(p);
     float fwd = smoothUnion(s0, s1, k);
-    // bwd(2): smooth(s1, s0) — smoothUnion is commutative for n=2
-    float bwd = smoothUnion(s1, s0, k);
-    if (n == 2) return mix(fwd, bwd, 0.5);
+    // smoothUnion is commutative for n=2, so fwd == bwd exactly.
+    if (n == 2) return fwd;
 
     // ── n = 3 ────────────────────────────────────────────────────────────────
     float s2  = sdf2(p);
     fwd = smoothUnion(fwd, s2, k);
-    // bwd(3): leftFold([s2, s1, s0])
-    // = smooth(smooth(s2, s1), s0)
-    float b3a = smoothUnion(s2, s1, k);
-    bwd       = smoothUnion(b3a, s0, k);
-    if (n == 3) return mix(fwd, bwd, 0.5);
+    if (n == 3) {
+        if (k <= 0.0) return fwd;
+        float bwd = smoothUnion(smoothUnion(s2, s1, k), s0, k);
+        return mix(fwd, bwd, 0.5);
+    }
 
     // ── n = 4 ────────────────────────────────────────────────────────────────
     float s3  = sdf3(p);
     fwd = smoothUnion(fwd, s3, k);
-    // bwd(4): smooth(smooth(smooth(s3, s2), s1), s0)
-    float b4a = smoothUnion(s3, s2, k);
-    float b4b = smoothUnion(b4a, s1, k);
-    bwd       = smoothUnion(b4b, s0, k);
-    if (n == 4) return mix(fwd, bwd, 0.5);
+    if (n == 4) {
+        if (k <= 0.0) return fwd;
+        float bwd = smoothUnion(smoothUnion(smoothUnion(s3, s2, k), s1, k), s0, k);
+        return mix(fwd, bwd, 0.5);
+    }
 
     // ── n = 5 ────────────────────────────────────────────────────────────────
     float s4  = sdf4(p);
     fwd = smoothUnion(fwd, s4, k);
-    float b5a = smoothUnion(s4, s3, k);
-    float b5b = smoothUnion(b5a, s2, k);
-    float b5c = smoothUnion(b5b, s1, k);
-    bwd       = smoothUnion(b5c, s0, k);
-    if (n == 5) return mix(fwd, bwd, 0.5);
+    if (n == 5) {
+        if (k <= 0.0) return fwd;
+        float b = smoothUnion(s4, s3, k);
+        b = smoothUnion(b, s2, k);
+        b = smoothUnion(b, s1, k);
+        b = smoothUnion(b, s0, k);
+        return mix(fwd, b, 0.5);
+    }
 
     // ── n = 6 ────────────────────────────────────────────────────────────────
     float s5  = sdf5(p);
     fwd = smoothUnion(fwd, s5, k);
-    float b6a = smoothUnion(s5, s4, k);
-    float b6b = smoothUnion(b6a, s3, k);
-    float b6c = smoothUnion(b6b, s2, k);
-    float b6d = smoothUnion(b6c, s1, k);
-    bwd       = smoothUnion(b6d, s0, k);
-    if (n == 6) return mix(fwd, bwd, 0.5);
+    if (n == 6) {
+        if (k <= 0.0) return fwd;
+        float b = smoothUnion(s5, s4, k);
+        b = smoothUnion(b, s3, k);
+        b = smoothUnion(b, s2, k);
+        b = smoothUnion(b, s1, k);
+        b = smoothUnion(b, s0, k);
+        return mix(fwd, b, 0.5);
+    }
 
     // ── n = 7 ────────────────────────────────────────────────────────────────
     float s6  = sdf6(p);
     fwd = smoothUnion(fwd, s6, k);
-    float b7a = smoothUnion(s6, s5, k);
-    float b7b = smoothUnion(b7a, s4, k);
-    float b7c = smoothUnion(b7b, s3, k);
-    float b7d = smoothUnion(b7c, s2, k);
-    float b7e = smoothUnion(b7d, s1, k);
-    bwd       = smoothUnion(b7e, s0, k);
-    if (n == 7) return mix(fwd, bwd, 0.5);
+    if (n == 7) {
+        if (k <= 0.0) return fwd;
+        float b = smoothUnion(s6, s5, k);
+        b = smoothUnion(b, s4, k);
+        b = smoothUnion(b, s3, k);
+        b = smoothUnion(b, s2, k);
+        b = smoothUnion(b, s1, k);
+        b = smoothUnion(b, s0, k);
+        return mix(fwd, b, 0.5);
+    }
 
     // ── n = 8 ────────────────────────────────────────────────────────────────
     float s7  = sdf7(p);
     fwd = smoothUnion(fwd, s7, k);
-    float b8a = smoothUnion(s7, s6, k);
-    float b8b = smoothUnion(b8a, s5, k);
-    float b8c = smoothUnion(b8b, s4, k);
-    float b8d = smoothUnion(b8c, s3, k);
-    float b8e = smoothUnion(b8d, s2, k);
-    float b8f = smoothUnion(b8e, s1, k);
-    bwd       = smoothUnion(b8f, s0, k);
-    if (n == 8) return mix(fwd, bwd, 0.5);
-
 #ifdef LGR_OPENGLES_CAP_SHAPES
     // On OpenGL ES / ANGLE (Windows and Android GLES), clamp evaluation to 8
     // shapes maximum to avoid AST node explosion in runtime JIT compilers
     // (e.g. Intel Arc ANGLE / PowerVR GE8320).
-    return mix(fwd, bwd, 0.5);
+    if (k <= 0.0) return fwd;
+    float b8 = smoothUnion(s7, s6, k);
+    b8 = smoothUnion(b8, s5, k);
+    b8 = smoothUnion(b8, s4, k);
+    b8 = smoothUnion(b8, s3, k);
+    b8 = smoothUnion(b8, s2, k);
+    b8 = smoothUnion(b8, s1, k);
+    b8 = smoothUnion(b8, s0, k);
+    return mix(fwd, b8, 0.5);
 #else
+    if (n == 8) {
+        if (k <= 0.0) return fwd;
+        float b = smoothUnion(s7, s6, k);
+        b = smoothUnion(b, s5, k);
+        b = smoothUnion(b, s4, k);
+        b = smoothUnion(b, s3, k);
+        b = smoothUnion(b, s2, k);
+        b = smoothUnion(b, s1, k);
+        b = smoothUnion(b, s0, k);
+        return mix(fwd, b, 0.5);
+    }
+
     // ── n = 9 ────────────────────────────────────────────────────────────────
     float s8  = sdf8(p);
     fwd = smoothUnion(fwd, s8, k);
-    float b9a = smoothUnion(s8, s7, k);
-    float b9b = smoothUnion(b9a, s6, k);
-    float b9c = smoothUnion(b9b, s5, k);
-    float b9d = smoothUnion(b9c, s4, k);
-    float b9e = smoothUnion(b9d, s3, k);
-    float b9f = smoothUnion(b9e, s2, k);
-    float b9g = smoothUnion(b9f, s1, k);
-    bwd       = smoothUnion(b9g, s0, k);
-    if (n == 9) return mix(fwd, bwd, 0.5);
+    if (n == 9) {
+        if (k <= 0.0) return fwd;
+        float b = smoothUnion(s8, s7, k);
+        b = smoothUnion(b, s6, k);
+        b = smoothUnion(b, s5, k);
+        b = smoothUnion(b, s4, k);
+        b = smoothUnion(b, s3, k);
+        b = smoothUnion(b, s2, k);
+        b = smoothUnion(b, s1, k);
+        b = smoothUnion(b, s0, k);
+        return mix(fwd, b, 0.5);
+    }
 
     // ── n = 10 ───────────────────────────────────────────────────────────────
-    float s9   = sdf9(p);
+    float s9  = sdf9(p);
     fwd = smoothUnion(fwd, s9, k);
-    float b10a = smoothUnion(s9, s8, k);
-    float b10b = smoothUnion(b10a, s7, k);
-    float b10c = smoothUnion(b10b, s6, k);
-    float b10d = smoothUnion(b10c, s5, k);
-    float b10e = smoothUnion(b10d, s4, k);
-    float b10f = smoothUnion(b10e, s3, k);
-    float b10g = smoothUnion(b10f, s2, k);
-    float b10h = smoothUnion(b10g, s1, k);
-    bwd        = smoothUnion(b10h, s0, k);
-    if (n == 10) return mix(fwd, bwd, 0.5);
+    if (n == 10) {
+        if (k <= 0.0) return fwd;
+        float b = smoothUnion(s9, s8, k);
+        b = smoothUnion(b, s7, k);
+        b = smoothUnion(b, s6, k);
+        b = smoothUnion(b, s5, k);
+        b = smoothUnion(b, s4, k);
+        b = smoothUnion(b, s3, k);
+        b = smoothUnion(b, s2, k);
+        b = smoothUnion(b, s1, k);
+        b = smoothUnion(b, s0, k);
+        return mix(fwd, b, 0.5);
+    }
 
     // ── n = 11 ───────────────────────────────────────────────────────────────
-    float s10   = sdf10(p);
+    float s10 = sdf10(p);
     fwd = smoothUnion(fwd, s10, k);
-    float b11a  = smoothUnion(s10, s9, k);
-    float b11b  = smoothUnion(b11a, s8, k);
-    float b11c  = smoothUnion(b11b, s7, k);
-    float b11d  = smoothUnion(b11c, s6, k);
-    float b11e  = smoothUnion(b11d, s5, k);
-    float b11f  = smoothUnion(b11e, s4, k);
-    float b11g  = smoothUnion(b11f, s3, k);
-    float b11h  = smoothUnion(b11g, s2, k);
-    float b11i  = smoothUnion(b11h, s1, k);
-    bwd         = smoothUnion(b11i, s0, k);
-    if (n == 11) return mix(fwd, bwd, 0.5);
+    if (n == 11) {
+        if (k <= 0.0) return fwd;
+        float b = smoothUnion(s10, s9, k);
+        b = smoothUnion(b, s8, k);
+        b = smoothUnion(b, s7, k);
+        b = smoothUnion(b, s6, k);
+        b = smoothUnion(b, s5, k);
+        b = smoothUnion(b, s4, k);
+        b = smoothUnion(b, s3, k);
+        b = smoothUnion(b, s2, k);
+        b = smoothUnion(b, s1, k);
+        b = smoothUnion(b, s0, k);
+        return mix(fwd, b, 0.5);
+    }
 
     // ── n = 12 ───────────────────────────────────────────────────────────────
-    float s11   = sdf11(p);
+    float s11 = sdf11(p);
     fwd = smoothUnion(fwd, s11, k);
-    float b12a  = smoothUnion(s11, s10, k);
-    float b12b  = smoothUnion(b12a, s9, k);
-    float b12c  = smoothUnion(b12b, s8, k);
-    float b12d  = smoothUnion(b12c, s7, k);
-    float b12e  = smoothUnion(b12d, s6, k);
-    float b12f  = smoothUnion(b12e, s5, k);
-    float b12g  = smoothUnion(b12f, s4, k);
-    float b12h  = smoothUnion(b12g, s3, k);
-    float b12i  = smoothUnion(b12h, s2, k);
-    float b12j  = smoothUnion(b12i, s1, k);
-    bwd         = smoothUnion(b12j, s0, k);
-    if (n == 12) return mix(fwd, bwd, 0.5);
+    if (n == 12) {
+        if (k <= 0.0) return fwd;
+        float b = smoothUnion(s11, s10, k);
+        b = smoothUnion(b, s9, k);
+        b = smoothUnion(b, s8, k);
+        b = smoothUnion(b, s7, k);
+        b = smoothUnion(b, s6, k);
+        b = smoothUnion(b, s5, k);
+        b = smoothUnion(b, s4, k);
+        b = smoothUnion(b, s3, k);
+        b = smoothUnion(b, s2, k);
+        b = smoothUnion(b, s1, k);
+        b = smoothUnion(b, s0, k);
+        return mix(fwd, b, 0.5);
+    }
 
     // ── n = 13 ───────────────────────────────────────────────────────────────
-    float s12   = sdf12(p);
+    float s12 = sdf12(p);
     fwd = smoothUnion(fwd, s12, k);
-    float b13a  = smoothUnion(s12, s11, k);
-    float b13b  = smoothUnion(b13a, s10, k);
-    float b13c  = smoothUnion(b13b, s9, k);
-    float b13d  = smoothUnion(b13c, s8, k);
-    float b13e  = smoothUnion(b13d, s7, k);
-    float b13f  = smoothUnion(b13e, s6, k);
-    float b13g  = smoothUnion(b13f, s5, k);
-    float b13h  = smoothUnion(b13g, s4, k);
-    float b13i  = smoothUnion(b13h, s3, k);
-    float b13j  = smoothUnion(b13i, s2, k);
-    float b13k  = smoothUnion(b13j, s1, k);
-    bwd         = smoothUnion(b13k, s0, k);
-    if (n == 13) return mix(fwd, bwd, 0.5);
+    if (n == 13) {
+        if (k <= 0.0) return fwd;
+        float b = smoothUnion(s12, s11, k);
+        b = smoothUnion(b, s10, k);
+        b = smoothUnion(b, s9, k);
+        b = smoothUnion(b, s8, k);
+        b = smoothUnion(b, s7, k);
+        b = smoothUnion(b, s6, k);
+        b = smoothUnion(b, s5, k);
+        b = smoothUnion(b, s4, k);
+        b = smoothUnion(b, s3, k);
+        b = smoothUnion(b, s2, k);
+        b = smoothUnion(b, s1, k);
+        b = smoothUnion(b, s0, k);
+        return mix(fwd, b, 0.5);
+    }
 
     // ── n = 14 ───────────────────────────────────────────────────────────────
-    float s13   = sdf13(p);
+    float s13 = sdf13(p);
     fwd = smoothUnion(fwd, s13, k);
-    float b14a  = smoothUnion(s13, s12, k);
-    float b14b  = smoothUnion(b14a, s11, k);
-    float b14c  = smoothUnion(b14b, s10, k);
-    float b14d  = smoothUnion(b14c, s9, k);
-    float b14e  = smoothUnion(b14d, s8, k);
-    float b14f  = smoothUnion(b14e, s7, k);
-    float b14g  = smoothUnion(b14f, s6, k);
-    float b14h  = smoothUnion(b14g, s5, k);
-    float b14i  = smoothUnion(b14h, s4, k);
-    float b14j  = smoothUnion(b14i, s3, k);
-    float b14k  = smoothUnion(b14j, s2, k);
-    float b14l  = smoothUnion(b14k, s1, k);
-    bwd         = smoothUnion(b14l, s0, k);
-    if (n == 14) return mix(fwd, bwd, 0.5);
+    if (n == 14) {
+        if (k <= 0.0) return fwd;
+        float b = smoothUnion(s13, s12, k);
+        b = smoothUnion(b, s11, k);
+        b = smoothUnion(b, s10, k);
+        b = smoothUnion(b, s9, k);
+        b = smoothUnion(b, s8, k);
+        b = smoothUnion(b, s7, k);
+        b = smoothUnion(b, s6, k);
+        b = smoothUnion(b, s5, k);
+        b = smoothUnion(b, s4, k);
+        b = smoothUnion(b, s3, k);
+        b = smoothUnion(b, s2, k);
+        b = smoothUnion(b, s1, k);
+        b = smoothUnion(b, s0, k);
+        return mix(fwd, b, 0.5);
+    }
 
     // ── n = 15 ───────────────────────────────────────────────────────────────
-    float s14   = sdf14(p);
+    float s14 = sdf14(p);
     fwd = smoothUnion(fwd, s14, k);
-    float b15a  = smoothUnion(s14, s13, k);
-    float b15b  = smoothUnion(b15a, s12, k);
-    float b15c  = smoothUnion(b15b, s11, k);
-    float b15d  = smoothUnion(b15c, s10, k);
-    float b15e  = smoothUnion(b15d, s9, k);
-    float b15f  = smoothUnion(b15e, s8, k);
-    float b15g  = smoothUnion(b15f, s7, k);
-    float b15h  = smoothUnion(b15g, s6, k);
-    float b15i  = smoothUnion(b15h, s5, k);
-    float b15j  = smoothUnion(b15i, s4, k);
-    float b15k  = smoothUnion(b15j, s3, k);
-    float b15l  = smoothUnion(b15k, s2, k);
-    float b15m  = smoothUnion(b15l, s1, k);
-    bwd         = smoothUnion(b15m, s0, k);
-    if (n == 15) return mix(fwd, bwd, 0.5);
+    if (n == 15) {
+        if (k <= 0.0) return fwd;
+        float b = smoothUnion(s14, s13, k);
+        b = smoothUnion(b, s12, k);
+        b = smoothUnion(b, s11, k);
+        b = smoothUnion(b, s10, k);
+        b = smoothUnion(b, s9, k);
+        b = smoothUnion(b, s8, k);
+        b = smoothUnion(b, s7, k);
+        b = smoothUnion(b, s6, k);
+        b = smoothUnion(b, s5, k);
+        b = smoothUnion(b, s4, k);
+        b = smoothUnion(b, s3, k);
+        b = smoothUnion(b, s2, k);
+        b = smoothUnion(b, s1, k);
+        b = smoothUnion(b, s0, k);
+        return mix(fwd, b, 0.5);
+    }
 
     // ── n = 16 (MAX_SHAPES) ───────────────────────────────────────────────────
-    float s15   = sdf15(p);
+    float s15 = sdf15(p);
     fwd = smoothUnion(fwd, s15, k);
-    float b16a  = smoothUnion(s15, s14, k);
-    float b16b  = smoothUnion(b16a, s13, k);
-    float b16c  = smoothUnion(b16b, s12, k);
-    float b16d  = smoothUnion(b16c, s11, k);
-    float b16e  = smoothUnion(b16d, s10, k);
-    float b16f  = smoothUnion(b16e, s9, k);
-    float b16g  = smoothUnion(b16f, s8, k);
-    float b16h  = smoothUnion(b16g, s7, k);
-    float b16i  = smoothUnion(b16h, s6, k);
-    float b16j  = smoothUnion(b16i, s5, k);
-    float b16k  = smoothUnion(b16j, s4, k);
-    float b16l  = smoothUnion(b16k, s3, k);
-    float b16m  = smoothUnion(b16l, s2, k);
-    float b16n  = smoothUnion(b16m, s1, k);
-    bwd         = smoothUnion(b16n, s0, k);
-    return mix(fwd, bwd, 0.5);
+    if (k <= 0.0) return fwd;
+    float b = smoothUnion(s15, s14, k);
+    b = smoothUnion(b, s13, k);
+    b = smoothUnion(b, s12, k);
+    b = smoothUnion(b, s11, k);
+    b = smoothUnion(b, s10, k);
+    b = smoothUnion(b, s9, k);
+    b = smoothUnion(b, s8, k);
+    b = smoothUnion(b, s7, k);
+    b = smoothUnion(b, s6, k);
+    b = smoothUnion(b, s5, k);
+    b = smoothUnion(b, s4, k);
+    b = smoothUnion(b, s3, k);
+    b = smoothUnion(b, s2, k);
+    b = smoothUnion(b, s1, k);
+    b = smoothUnion(b, s0, k);
+    return mix(fwd, b, 0.5);
 #endif
 }

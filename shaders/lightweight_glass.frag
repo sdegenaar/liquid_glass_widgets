@@ -102,6 +102,9 @@ const float kThicknessRimBoost    = 0.15;  // Rim opacity boost per unit thickne
 const vec3 LUMA_WEIGHTS = vec3(0.2126, 0.7152, 0.0722);
 
 vec3 applyGlassColorLW(vec3 liquidColor, vec4 glassColor) {
+    if (glassColor.a <= 0.001) {
+        return liquidColor;
+    }
     float backdropLuminance = dot(liquidColor, LUMA_WEIGHTS);
     float glassLuminance    = dot(glassColor.rgb, LUMA_WEIGHTS);
 
@@ -132,6 +135,9 @@ vec3 applyGlassColorLW(vec3 liquidColor, vec4 glassColor) {
 float meniscusAbsorption(
     float distFromEdge, float zone, vec2 surfNormal,
     vec2 lightDir, float strength) {
+    if (strength <= 0.001 || distFromEdge >= zone) {
+        return 1.0;
+    }
     // [1] Hemisphere lens profile: r_norm maps edge→interior to 0→1.
     float r_norm = clamp(distFromEdge / zone, 0.0, 1.0);
     float lensTh = sqrt(max(0.0, 1.0 - r_norm * r_norm));
@@ -304,79 +310,74 @@ void main() {
   // or 0.0. We avoid length(), division, and normalize() entirely.
   // length(surfaceNormal + tangent*0.2) = sqrt(1.0 + 0.04) = 1.0198039
   // 1.0 / 1.0198039 = 0.9805806
-  vec2 anisoN = isEdge 
-      ? (surfaceNormal + vec2(-surfaceNormal.y, surfaceNormal.x) * 0.2) * 0.9805806
-      : vec2(0.0);
-
-  float lightCatch = max(dot(anisoN, uLightDirection), 0.0);
-  float kickCatch  = max(dot(anisoN, -uLightDirection), 0.0);
-
-  float keySpecular;
-  float kickSpecular;
-  if (specLevel == 0) {
-    // soft: n=8 — 3 multiplies
-    float lc2 = lightCatch * lightCatch;
-    float lc4 = lc2 * lc2;
-    keySpecular = lc4 * lc4;
-    float kc2 = kickCatch * kickCatch;
-    float kc4 = kc2 * kc2;
-    kickSpecular = kc4 * kc4;
-  } else if (specLevel == 1) {
-    // medium: n=16 — 4 multiplies (iOS 26 default)
-    float lc2 = lightCatch * lightCatch;
-    float lc4 = lc2 * lc2;
-    float lc8 = lc4 * lc4;
-    keySpecular = lc8 * lc8;
-    float kc2 = kickCatch * kickCatch;
-    float kc4 = kc2 * kc2;
-    float kc8 = kc4 * kc4;
-    kickSpecular = kc8 * kc8;
-  } else {
-    // sharp: n=32 — 5 multiplies
-    float lc2 = lightCatch * lightCatch;
-    float lc4 = lc2 * lc2;
-    float lc8 = lc4 * lc4;
-    float lc16 = lc8 * lc8;
-    keySpecular = lc16 * lc16;
-    float kc2 = kickCatch * kickCatch;
-    float kc4 = kc2 * kc2;
-    float kc8 = kc4 * kc4;
-    float kc16 = kc8 * kc8;
-    kickSpecular = kc16 * kc16;
-  }
-  keySpecular  *= effectiveLightIntensity * densitySpecularBoost;
-  kickSpecular *= effectiveLightIntensity * kKickIntensity * densitySpecularBoost;
-  // ---- STAGE 5: GLASS ALPHA ----
-  // glassColor.a IS the opacity. 
   float glassAlpha = clamp(uGlassColor.a, 0.0, 1.0);
-
-  // ---- STAGE 6: RIM & BEVEL LAYER ----
   float thicknessOffset = (uThickness - kThicknessReference) / kThicknessReference;
-  float totalSpecular = keySpecular + kickSpecular;
-  float rimBaseWithIntensity = max(kMinRimVisibility, kRimBaseOpacity * effectiveLightIntensity * kRimIntensityScale);
-  float rimBrightness = rimBaseWithIntensity + thicknessOffset * 0.10 + (densityFactor * 0.05);
-  vec3 rimColorBase = vec3(1.0) * (rimBrightness + totalSpecular * kRimSpecularMix);
-
-  // Directional light influence for a subtle lit-side bonus.
-  float normalDotLight = max(0.0, dot(surfaceNormal, uLightDirection));
-  float normalDotOpposite = max(0.0, dot(surfaceNormal, -uLightDirection));
-  float directionalInfluence = normalDotLight + normalDotOpposite * 0.8;
-  directionalInfluence *= directionalInfluence; // squared for tighter highlight
-
-  // Constant base rim (structural edge) + small directional bonus.
-  // iOS 26 uses near-invisible rims in light mode — the glass edge is
-  // defined by subtle refraction and shadow, not by an opaque border.
-  //
-  // smoothstep(0.3, 0.5, luma) creates a sharp binary-like transition:
-  //   dark  (luma=0.15) → smoothstep=0.0 → rimFade=1.0  (FULL rim, untouched)
-  //   light (luma=0.85) → smoothstep=1.0 → rimFade=0.08 (near-invisible rim)
-  // Dark mode is completely unaffected.
+  float totalSpecular = 0.0;
   float rimFade = 1.0 - smoothstep(0.3, 0.5, uBackdropLuma) * 0.92;
-  float rimAlphaBase = kRimAlphaBase * rimFade + 0.15 * directionalInfluence * effectiveLightIntensity;
-  rimAlphaBase *= uRefractiveIndex;
-  rimAlphaBase += totalSpecular * kRimAlphaSpecular * rimFade;
-  rimAlphaBase *= (1.0 + thicknessOffset * kThicknessRimBoost) * (1.0 + densityFactor * 0.1);
-  rimAlphaBase *= borderMask;
+  vec3 rimColorBase = vec3(0.0);
+  float rimAlphaBase = 0.0;
+  if (isEdge || borderMask > 0.001) {
+    vec2 anisoN = isEdge
+        ? (surfaceNormal + vec2(-surfaceNormal.y, surfaceNormal.x) * 0.2) * 0.9805806
+        : vec2(0.0);
+
+    float lightCatch = max(dot(anisoN, uLightDirection), 0.0);
+    float kickCatch  = max(dot(anisoN, -uLightDirection), 0.0);
+
+    float keySpecular;
+    float kickSpecular;
+    if (specLevel == 0) {
+      // soft: n=8 — 3 multiplies
+      float lc2 = lightCatch * lightCatch;
+      float lc4 = lc2 * lc2;
+      keySpecular = lc4 * lc4;
+      float kc2 = kickCatch * kickCatch;
+      float kc4 = kc2 * kc2;
+      kickSpecular = kc4 * kc4;
+    } else if (specLevel == 1) {
+      // medium: n=16 — 4 multiplies (iOS 26 default)
+      float lc2 = lightCatch * lightCatch;
+      float lc4 = lc2 * lc2;
+      float lc8 = lc4 * lc4;
+      keySpecular = lc8 * lc8;
+      float kc2 = kickCatch * kickCatch;
+      float kc4 = kc2 * kc2;
+      float kc8 = kc4 * kc4;
+      kickSpecular = kc8 * kc8;
+    } else {
+      // sharp: n=32 — 5 multiplies
+      float lc2 = lightCatch * lightCatch;
+      float lc4 = lc2 * lc2;
+      float lc8 = lc4 * lc4;
+      float lc16 = lc8 * lc8;
+      keySpecular = lc16 * lc16;
+      float kc2 = kickCatch * kickCatch;
+      float kc4 = kc2 * kc2;
+      float kc8 = kc4 * kc4;
+      float kc16 = kc8 * kc8;
+      kickSpecular = kc16 * kc16;
+    }
+    keySpecular  *= effectiveLightIntensity * densitySpecularBoost;
+    kickSpecular *= effectiveLightIntensity * kKickIntensity * densitySpecularBoost;
+
+    // ---- STAGE 6: RIM & BEVEL LAYER ----
+    totalSpecular = keySpecular + kickSpecular;
+    float rimBaseWithIntensity = max(kMinRimVisibility, kRimBaseOpacity * effectiveLightIntensity * kRimIntensityScale);
+    float rimBrightness = rimBaseWithIntensity + thicknessOffset * 0.10 + (densityFactor * 0.05);
+    rimColorBase = vec3(1.0) * (rimBrightness + totalSpecular * kRimSpecularMix);
+
+    // Directional light influence for a subtle lit-side bonus.
+    float normalDotLight = max(0.0, dot(surfaceNormal, uLightDirection));
+    float normalDotOpposite = max(0.0, dot(surfaceNormal, -uLightDirection));
+    float directionalInfluence = normalDotLight + normalDotOpposite * 0.8;
+    directionalInfluence *= directionalInfluence; // squared for tighter highlight
+
+    rimAlphaBase = kRimAlphaBase * rimFade + 0.15 * directionalInfluence * effectiveLightIntensity;
+    rimAlphaBase *= uRefractiveIndex;
+    rimAlphaBase += totalSpecular * kRimAlphaSpecular * rimFade;
+    rimAlphaBase *= (1.0 + thicknessOffset * kThicknessRimBoost) * (1.0 + densityFactor * 0.1);
+    rimAlphaBase *= borderMask;
+  }
 
   // ---- STAGE 7: EXTRAS (fresnel & iOS 26 / iOS 27 native rimLight / rimShade) ----
   // uFresnelStrength (slot 33) scales the grazing-angle rim. Default 1.0 = calibrated
@@ -513,7 +514,11 @@ void main() {
       #endif
 
       vec3 bgRgb;
-      if (uChromaticAberration < 0.001) {
+      if (edgeInfluence < 1e-4) {
+        // Flat interior — zero refraction offset and zero chromatic dispersion,
+        // so refractedUV == uv and we can reuse testRgb directly (0 extra taps).
+        bgRgb = testRgb;
+      } else if (uChromaticAberration < 0.001) {
         // No chromatic aberration — single bilinear fetch.
         bgRgb = texture(uBackground, refractedUV).rgb;
       } else {
