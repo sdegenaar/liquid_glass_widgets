@@ -164,6 +164,35 @@ void main() {
   });
 
   group('RenderLiquidGlassBlendGroup.gatherShapeData', () {
+    test('refreshes the backdrop clip when only the corner radius changes', () {
+      final link = GlassGroupLink();
+      final shape = RenderLiquidGlass(
+        shape: const LiquidRoundedSuperellipse(borderRadius: 64),
+        glassContainsChild: false,
+        blendGroupLink: link,
+      );
+      final blendGroup = blendGroupFor(GeometryRenderLink(), link)
+        ..child = shape;
+      blendGroup
+        ..attach(PipelineOwner())
+        ..layout(BoxConstraints.tight(const Size(200, 188)),
+            parentUsesSize: true);
+      addTearDown(() {
+        blendGroup
+          ..detach()
+          ..dispose();
+        link.dispose();
+      });
+
+      const corner = Offset(12, 12);
+      expect(blendGroup.maybeRebuildGeometry()!.path.contains(corner), isFalse);
+
+      shape.shape = const LiquidRoundedSuperellipse(borderRadius: 32);
+      final geometry = blendGroup.maybeRebuildGeometry()!;
+      expect(geometry.shapes.single.rawCornerRadius, 32);
+      expect(geometry.path.contains(corner), isTrue);
+    });
+
     test('a hidden shape leaves the matte and rejoins in its original order',
         () {
       final link = GlassGroupLink();
