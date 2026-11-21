@@ -718,6 +718,7 @@ class GlassModalSheet extends StatefulWidget {
             peekBottomMargin: peekBottomMargin,
             peekWidth: peekWidth,
             peekTopBorderRadius: peekTopBorderRadius,
+            peekBottomRadius: peekBottomRadius,
             platformViewBackdrop: platformViewBackdrop,
             // The route-level barrier is transparent above; the presenter drives
             // the scrim itself via the liquid spring for single-unified-motion.

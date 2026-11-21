@@ -10,8 +10,14 @@ class _GlassModalSheetState extends State<GlassModalSheet>
 
   // ── State ─────────────────────────────────────────────────────────────────
   late final ValueNotifier<GlassSheetState> _currentStateNotifier;
+  late GlassSheetState _lastVisibleState;
   GlassSheetState get _currentState => _currentStateNotifier.value;
-  set _currentState(GlassSheetState v) => _currentStateNotifier.value = v;
+  set _currentState(GlassSheetState v) {
+    _currentStateNotifier.value = v;
+    if (v != GlassSheetState.hidden) {
+      _lastVisibleState = v;
+    }
+  }
 
   /// The state most recently published to consumers via
   /// [GlassModalSheet.onStateChanged] (and from which haptics and
@@ -87,6 +93,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     );
 
     _currentStateNotifier = ValueNotifier(resolvedInitial);
+    _lastVisibleState = resolvedInitial;
     _settledState = resolvedInitial;
     _geometry = _buildGeometry();
 
