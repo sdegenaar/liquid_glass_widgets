@@ -572,6 +572,7 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
   final _clipRectLayerHandle = LayerHandle<ClipRectLayer>();
   final _clipPathLayerHandle = LayerHandle<ClipPathLayer>();
   final _frostClipLayerHandle = LayerHandle<ClipPathLayer>();
+  final _frostRowsOffsetHandle = LayerHandle<OffsetLayer>();
   final _frostRowsLayerHandle = LayerHandle<ClipPathLayer>();
 
   Path? _cachedShapePath;
@@ -715,13 +716,15 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
   }
 
   @override
-  Matrix4 get matteTransform {
-    if (_unscaledTransform case final frozen?
-        when _hasScale(getTransformTo(null))) {
+  Matrix4 resolveMatteTransform(Matrix4 screenTransform) {
+    if (_unscaledTransform case final frozen? when _hasScale(screenTransform)) {
       return frozen;
     }
-    return getTransformTo(null);
+    return screenTransform;
   }
+
+  @override
+  Matrix4 get matteTransform => resolveMatteTransform(getTransformTo(null));
 
   @override
   Offset get captureOriginInScreenSpace {
@@ -773,7 +776,7 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
         captureImage != null) {
       return false;
     }
-    final transform = getTransformTo(null);
+    final transform = layer?.currentTransform ?? getTransformTo(null);
     final passRect = enclosingBackdropPassRect();
     // Painted this frame where it is now and in the same backdrop pass:
     // the layers are already current.
@@ -800,23 +803,39 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
 
     _uniformsTransform = null;
     _uniformsPassRect = null;
-    final prevFrostRows = frostRowsPath;
+    final prevFrostBase = frostRowsBasePath;
+    final prevFrostPhaseY = frostRowsPhaseOffsetY;
     _updateScaleState(transform, super.captureOriginInScreenSpace);
-    writeScreenUniforms();
-    // uFrost.x switches on frostRowsPath; that needs the full paint.
-    if ((frostRowsPath != null) != (prevFrostRows != null)) {
+    writeScreenUniformsWith(
+      screenTransform: transform,
+      passLogical: passRect,
+    );
+    // uFrost.x switches on frostRowsBasePath; that needs the full paint.
+    if ((frostRowsBasePath != null) != (prevFrostBase != null)) {
       return needsFullPaint();
     }
     // Re-add the clips around changed layers instead of their retained copy.
     if (!_Recomposite.mark(clipLayer)) return needsFullPaint();
-    if (frostRowsPath case final rows?) {
+    if (frostRowsBasePath case final base?) {
       final rowsLayer = _frostRowsLayerHandle.layer;
-      if (rowsLayer == null) return needsFullPaint();
-      if (!identical(rows, prevFrostRows)) {
+      final rowsOffsetLayer = _frostRowsOffsetHandle.layer;
+      if (rowsLayer == null || rowsOffsetLayer == null) {
+        return needsFullPaint();
+      }
+      final baseChanged = !identical(base, prevFrostBase);
+      final phaseChanged = frostRowsPhaseOffsetY != prevFrostPhaseY;
+      if (baseChanged || phaseChanged) {
         if (!_Recomposite.mark(_frostClipLayerHandle.layer)) {
           return needsFullPaint();
         }
-        rowsLayer.clipPath = rows.shift(_paintOffset);
+        if (baseChanged) {
+          _Recomposite.mark(rowsOffsetLayer);
+          rowsLayer.clipPath = base;
+        }
+        if (phaseChanged) {
+          rowsOffsetLayer.offset =
+              _paintOffset + Offset(0, frostRowsPhaseOffsetY);
+        }
       }
     }
     // The filter holds the uniforms it was created with.
@@ -866,9 +885,10 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
     // Under a frost the render shader blurs the ghost itself, from the sharp
     // rows the frost pass leaves (see Pass 1b), so there is no blur pass
     // unless the blur is wider than the shader takes.
-    final frostRows = frostRowsPath;
+    final frostBase = frostRowsBasePath;
+    final frostPhaseY = frostRowsPhaseOffsetY;
     if (settings.effectiveBlur > 0 &&
-        (frostRows == null ||
+        (frostBase == null ||
             settings.effectiveBlur * devicePixelRatio >
                 LiquidGlassRenderObject.frostGhostMaxSigma)) {
       final blurSigma = settings.effectiveBlur;
@@ -905,7 +925,7 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
         },
         oldLayer: _clipPathLayerHandle.layer,
       );
-    } else if (frostRows != null) {
+    } else if (frostBase != null) {
       _blurLayerHandle.layer = null;
       // Straight onto the backdrop, where the frost will read it.
       _clipPathLayerHandle.layer = context.pushClipPath(
@@ -925,15 +945,15 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
 
     // ── Pass 1b: Frost ───────────────────────────────────────────────────────
     // The cloud of iOS 27 glass: a wide blur of the backdrop, written only to
-    // alternate pixel rows of the shape (frostRowsPath), so the sharp
-    // backdrop survives on the rows between. The render shader reads both
-    // and makes the ghost, the clamp and the mix itself (uFrost), which keeps
-    // the frost to one plain blur pass: on Impeller any other filter stage
-    // composed with a backdrop blur measured as costly as a pass over the
-    // whole screen. Not part of the layer's BackdropGroup, so that content
-    // painted inside the glass above is in what it reads, unless the layer
-    // sits in a GlassBackdropGroup.
-    if (frostRows != null) {
+    // alternate pixel rows of the shape (frostRowsBasePath shifted via an
+    // OffsetLayer), so the sharp backdrop survives on the rows between. The
+    // render shader reads both and makes the ghost, the clamp and the mix
+    // itself (uFrost), which keeps the frost to one plain blur pass: on
+    // Impeller any other filter stage composed with a backdrop blur measured
+    // as costly as a pass over the whole screen. Not part of the layer's
+    // BackdropGroup, so that content painted inside the glass above is in what
+    // it reads, unless the layer sits in a GlassBackdropGroup.
+    if (frostBase != null) {
       final frostSigma = settings.effectiveFrost;
       if (_cachedFrost == null || _cachedFrostSigma != frostSigma) {
         _cachedSharedFrost = null;
@@ -1005,16 +1025,25 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
           if (_weightLayerHandle.layer case final weightLayer?) {
             context.pushLayer(weightLayer, (context, offset) {}, offset);
           }
-          _frostRowsLayerHandle.layer = context.pushClipPath(
-            needsCompositing,
-            offset,
-            boundingBox,
-            frostRows,
+          final rowsOffsetLayer = (_frostRowsOffsetHandle.layer ??=
+              _OffsetLayer())
+            ..offset = offset + Offset(0, frostPhaseY);
+          context.pushLayer(
+            rowsOffsetLayer,
             (context, offset) {
-              context.pushLayer(frostLayer, (context, offset) {}, offset);
+              _frostRowsLayerHandle.layer = context.pushClipPath(
+                needsCompositing,
+                offset,
+                boundingBox,
+                frostBase,
+                (context, offset) {
+                  context.pushLayer(frostLayer, (context, offset) {}, offset);
+                },
+                clipBehavior: Clip.hardEdge,
+                oldLayer: _frostRowsLayerHandle.layer,
+              );
             },
-            clipBehavior: Clip.hardEdge,
-            oldLayer: _frostRowsLayerHandle.layer,
+            Offset.zero,
           );
         },
         oldLayer: _frostClipLayerHandle.layer ?? _ClipPathLayer(),
@@ -1023,6 +1052,7 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
       _frostLayerHandle.layer = null;
       _weightLayerHandle.layer = null;
       _frostClipLayerHandle.layer = null;
+      _frostRowsOffsetHandle.layer = null;
       _frostRowsLayerHandle.layer = null;
     }
 
@@ -1266,6 +1296,7 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
     _clipRectLayerHandle.layer = null;
     _clipPathLayerHandle.layer = null;
     _frostClipLayerHandle.layer = null;
+    _frostRowsOffsetHandle.layer = null;
     _frostRowsLayerHandle.layer = null;
     _uniformsTransform = null;
     _uniformsPassRect = null;
@@ -1299,3 +1330,5 @@ mixin _Recomposite on Layer {
 class _ClipRectLayer = ClipRectLayer with _Recomposite;
 
 class _ClipPathLayer = ClipPathLayer with _Recomposite;
+
+class _OffsetLayer = OffsetLayer with _Recomposite;

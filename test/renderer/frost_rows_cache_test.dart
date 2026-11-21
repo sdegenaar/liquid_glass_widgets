@@ -95,6 +95,33 @@ void main() {
     expect(cache.builds, 3);
   });
 
+  test(
+      'resolve tracks phase offset over 60 scroll frames with 0 Path.shift copies',
+      () {
+    final cache = FrostRows();
+    Path? firstBase;
+    for (var frame = 0; frame < 60; frame++) {
+      final transform = _at(0, 400 - frame * 6.37);
+      final resolved = cache.resolve(
+        transform: transform,
+        bounds: _bounds,
+        passPhysical: _pass,
+        dpr: 3,
+      )!;
+      firstBase ??= resolved.base;
+      expect(identical(resolved.base, firstBase), isTrue,
+          reason: 'base Path must never be rebuilt or copied on scroll');
+      expect(cache.builds, 1);
+      expect(cache.shifts, 0,
+          reason: 'resolve() must not clone/shift the Path');
+      // Verify base shifted by phaseOffsetY lands on odd physical rows.
+      if (frame % 15 == 0) {
+        final shifted = resolved.base.shift(Offset(0, resolved.phaseOffsetY));
+        _expectOddRows(shifted, transform, 3);
+      }
+    }
+  });
+
   test('no rows under a rotation or a flip', () {
     final cache = FrostRows();
     expect(

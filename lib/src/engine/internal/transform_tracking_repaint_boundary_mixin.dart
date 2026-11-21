@@ -70,10 +70,19 @@ mixin TransformTrackingRenderObjectMixin on RenderProxyBox {
     super.paint(context, offset);
   }
 
+  /// Optional ancestor to track transforms relative to instead of screen space.
+  ///
+  /// When non-null, [GeometryTransformTrackingLayer] computes
+  /// `getTransformTo(ancestor)` instead of `getTransformTo(null)`, avoiding
+  /// full-tree walks and redundant post-frame callbacks when an entire glass
+  /// subtree translates together (e.g. scrolling cards).
+  RenderObject? get transformTrackingAncestor => null;
+
   GeometryTransformTrackingLayer setUpLayer(Offset offset) {
     // ignore: unnecessary_this
     return (this.layer ??= GeometryTransformTrackingLayer())
       ..renderObject = this
+      ..ancestor = transformTrackingAncestor
       ..onTransformChanged = () {
         if (attached) {
           onTransformChanged();
@@ -88,6 +97,7 @@ class GeometryTransformTrackingLayer extends OffsetLayer {
   GeometryTransformTrackingLayer();
 
   RenderObject? renderObject;
+  RenderObject? ancestor;
   VoidCallback? onTransformChanged;
 
   /// Brings the render object's last paint up to date with its current
@@ -101,6 +111,12 @@ class GeometryTransformTrackingLayer extends OffsetLayer {
   /// ([TransformTrackingRenderObjectMixin.paint]).
   bool Function()? updateAtComposite;
   Matrix4? _lastTransform;
+  RenderObject? _lastAncestor;
+  Matrix4? _currentTransform;
+
+  /// The transform computed during the most recent [addToScene] pass, for
+  /// [updateAtComposite] callbacks to reuse without repeating `getTransformTo`.
+  Matrix4? get currentTransform => _currentTransform;
 
   @override
   bool get alwaysNeedsAddToScene => true;
@@ -108,11 +124,18 @@ class GeometryTransformTrackingLayer extends OffsetLayer {
   @override
   void addToScene(ui.SceneBuilder builder) {
     if (renderObject == null || !renderObject!.attached) return;
+    final targetAncestor = ancestor;
+    if (targetAncestor != null && !targetAncestor.attached) return;
     Matrix4? currentTransform;
     try {
-      currentTransform = renderObject!.getTransformTo(null);
+      currentTransform = renderObject!.getTransformTo(targetAncestor);
     } catch (_) {
       return;
+    }
+    _currentTransform = currentTransform;
+    if (!identical(targetAncestor, _lastAncestor)) {
+      _lastAncestor = targetAncestor;
+      _lastTransform = null;
     }
     final transformChanged =
         !MatrixUtils.matrixEquals(currentTransform, _lastTransform);
