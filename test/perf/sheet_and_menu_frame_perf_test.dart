@@ -118,4 +118,61 @@ void main() {
       },
     );
   });
+
+  group('Wave 1.7 — GlassContextMenu Offstage measurement unmounting', () {
+    testWidgets(
+      'GlassContextMenu unmounts its Offstage measurement pass after frame 1',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: GlassContextMenu(
+                  actions: [
+                    GlassContextMenuAction(
+                      icon: const Icon(CupertinoIcons.doc_on_doc),
+                      onPressed: () {},
+                      child: const Text('Copy'),
+                    ),
+                    GlassContextMenuAction(
+                      icon: const Icon(CupertinoIcons.share),
+                      onPressed: () {},
+                      child: const Text('Share'),
+                    ),
+                  ],
+                  child: const SizedBox(
+                    width: 180,
+                    height: 60,
+                    child: Center(child: Text('Hold me')),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Long-press to open context menu.
+        final gesture =
+            await tester.startGesture(tester.getCenter(find.text('Hold me')));
+        await tester.pump(const Duration(milliseconds: 600));
+        await gesture.up();
+        await tester.pumpAndSettle();
+
+        expect(find.text('Copy'), findsOneWidget);
+        // Once measured after frame 1, the Offstage measurement pass (which
+        // held a duplicate GlassContainer.card) must be unmounted.
+        final offstages = tester
+            .widgetList<Offstage>(find.byType(Offstage))
+            .where((o) => o.offstage)
+            .toList();
+        expect(
+          offstages,
+          isEmpty,
+          reason: 'GlassContextMenu must unmount its Offstage measurement tree '
+              'once preview and platter sizes are captured.',
+        );
+      },
+    );
+  });
 }
