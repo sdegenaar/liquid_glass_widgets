@@ -771,7 +771,8 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('GlassMenu items are wrapped in Opacity when fully open',
+  testWidgets(
+      'GlassMenu items fade via Opacity mid-morph and omit Opacity when fully open',
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -791,16 +792,26 @@ void main() {
 
     await tester.tap(find.text('Fade'));
     await tester.pump();
-    await tester.pumpAndSettle();
-
+    // Mid-open (~160ms): items are fading in via a single Column-level Opacity.
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
     expect(find.text('FadeItem'), findsOneWidget);
-
-    // An Opacity widget wrapping items should exist in the tree.
-    final opacityFinder = find.ancestor(
+    final midMorphOpacity = find.ancestor(
       of: find.text('FadeItem'),
       matching: find.byType(Opacity),
     );
-    expect(opacityFinder, findsWidgets);
+    expect(midMorphOpacity, findsOneWidget);
+
+    // Once settled (itemOpacity == 1.0), unnecessary Opacity wrappers are
+    // omitted to avoid resting saveLayer overhead.
+    await tester.pumpAndSettle();
+    expect(find.text('FadeItem'), findsOneWidget);
+    final settledOpacity = find.ancestor(
+      of: find.text('FadeItem'),
+      matching: find.byType(Opacity),
+    );
+    expect(settledOpacity, findsNothing);
     expect(tester.takeException(), isNull);
   });
 
