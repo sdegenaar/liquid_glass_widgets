@@ -235,8 +235,13 @@ class _LiquidGlassLayerState extends State<LiquidGlassLayer>
     // dissolves its glass through the settings' visibility channel — the one
     // fade the backdrop pass honours. Identity (the same instance) at rest.
     final appliedScope = GlassMaterializeScope.maybeOf(context);
-    final settings =
-        GlassMaterializeScope.resolveSettings(context, widget.settings);
+    // Apply GlassFrostBudget here (in addition to materialize) so both
+    // LiquidGlassRenderScope (consumed by RenderLiquidGlassBlendGroup for
+    // uNativeEdge) and RenderLiquidGlassLayer see the exact same frost state.
+    final settings = GlassFrostBudget.apply(
+      context,
+      GlassMaterializeScope.resolveSettings(context, widget.settings),
+    );
 
     if (!ImageFilter.isShaderFilterSupported) {
       return LiquidGlassRenderScope(
