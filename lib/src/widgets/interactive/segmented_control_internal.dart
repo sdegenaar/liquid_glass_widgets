@@ -27,6 +27,7 @@ import '../../../types/glass_quality.dart';
 import '../../../types/glass_style.dart';
 import '../../../utils/draggable_indicator_physics.dart';
 import '../../../utils/glass_spring.dart';
+import '../../../utils/indicator_jelly.dart';
 import '../../../widgets/shared/animated_glass_indicator.dart';
 import '../../../widgets/surfaces/glass_tab_bar.dart' show GlassSegment;
 import '../../../widgets/shared/glass_focus_region.dart';
@@ -56,6 +57,7 @@ class SegmentedControlContent extends StatefulWidget {
     this.direction = Axis.horizontal,
     this.indicatorSettings,
     this.indicatorPinchStrength = 0.4,
+    this.indicatorJelly,
     this.indicatorExpansion =
         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     this.backgroundKey,
@@ -80,6 +82,14 @@ class SegmentedControlContent extends StatefulWidget {
 
   /// Maximum concave lens pinch strength. Forwarded to [AnimatedGlassIndicator].
   final double indicatorPinchStrength;
+
+  /// Physics of the native iOS jelly that stretches the indicator while it
+  /// travels and squishes it when it lands.
+  ///
+  /// Defaults to [IndicatorJellyPhysics.native], measured from UIKit. Change
+  /// single values with [IndicatorJellyPhysics.copyWith], or pass
+  /// [IndicatorJellyPhysics.disabled] for the classic velocity squash.
+  final IndicatorJellyPhysics? indicatorJelly;
 
   /// Expansion padding applied to the pill during drag — mirrors [GlassTabBar.bottom].
   final EdgeInsetsGeometry indicatorExpansion;
@@ -416,101 +426,123 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
             final alignmentDelta = value - targetAlignment;
             final isMoving = alignmentDelta.abs() > 0.05;
 
-            return SpringBuilder(
-              spring: GlassSpring.snappy(
-                duration: const Duration(milliseconds: 300),
-              ),
-              // Show glass bloom when: pressed, dragging, OR indicator is still
-              // settling toward its target. Threshold 0.05 matches
-              // tab_bar_internal.dart for consistent cross-component behaviour.
-              value: _isDown || isMoving ? 1.0 : 0.0,
-              builder: (context, thickness, child) {
-                final isPremiumQuality = widget.quality == GlassQuality.premium;
-                // While the indicator is in transit to a newly selected segment
-                // (isMoving), the resting pill is not underneath selectedIndex
-                // yet even on the first frame before thickness ramps to 0.15.
-                final glassPhase =
-                    isMoving ? 1.0 : (thickness / 0.15).clamp(0.0, 1.0);
-                final effectiveSegmentsChild =
-                    (needsLensColorShift && glassPhase > 0.0)
-                        ? _buildSegmentsFlex(
-                            selectedStyle: selectedTextStyle.copyWith(
-                              color: Color.lerp(
-                                restingSelectedTextColor,
-                                lensSelectedTextColor,
-                                glassPhase,
-                              ),
-                            ),
-                            unselectedStyle: unselectedTextStyle,
-                            selectedIconColor: Color.lerp(
-                              restingSelectedIconColor,
-                              lensSelectedIconColor,
-                              glassPhase,
-                            )!,
-                            unselectedIconColor: unselectedIconColor,
-                            animateSelectedTextStyle: false,
-                          )
-                        : child!;
+            // Native iOS jelly (see IndicatorJellyPhysics). Horizontal only;
+            // the lead/trail values are directional, so mirror in RTL.
+            final jellyPhysics =
+                widget.indicatorJelly ?? IndicatorJellyPhysics.native;
+            return IndicatorJellyBuilder(
+              target: _mainAlign,
+              lead: value,
+              itemCount: widget.segments.length,
+              dragging: _isDragging,
+              physics: jellyPhysics,
+              builder: (context, nativeJelly) {
+                final IndicatorJelly? jelly =
+                    jellyPhysics.enabled && widget.direction == Axis.horizontal
+                        ? (Directionality.of(context) == TextDirection.rtl
+                            ? nativeJelly.mirrored
+                            : nativeJelly)
+                        : null;
+                return SpringBuilder(
+                  spring: GlassSpring.snappy(
+                    duration: const Duration(milliseconds: 300),
+                  ),
+                  // Show glass bloom when: pressed, dragging, OR indicator is still
+                  // settling toward its target. Threshold 0.05 matches
+                  // tab_bar_internal.dart for consistent cross-component behaviour.
+                  value: _isDown || isMoving ? 1.0 : 0.0,
+                  builder: (context, thickness, child) {
+                    final isPremiumQuality =
+                        widget.quality == GlassQuality.premium;
+                    // While the indicator is in transit to a newly selected segment
+                    // (isMoving), the resting pill is not underneath selectedIndex
+                    // yet even on the first frame before thickness ramps to 0.15.
+                    final glassPhase =
+                        isMoving ? 1.0 : (thickness / 0.15).clamp(0.0, 1.0);
+                    final effectiveSegmentsChild =
+                        (needsLensColorShift && glassPhase > 0.0)
+                            ? _buildSegmentsFlex(
+                                selectedStyle: selectedTextStyle.copyWith(
+                                  color: Color.lerp(
+                                    restingSelectedTextColor,
+                                    lensSelectedTextColor,
+                                    glassPhase,
+                                  ),
+                                ),
+                                unselectedStyle: unselectedTextStyle,
+                                selectedIconColor: Color.lerp(
+                                  restingSelectedIconColor,
+                                  lensSelectedIconColor,
+                                  glassPhase,
+                                )!,
+                                unselectedIconColor: unselectedIconColor,
+                                animateSelectedTextStyle: false,
+                              )
+                            : child!;
 
-                return Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    // Pass 1 — solid background pill, always below labels.
-                    // For non-premium quality the glass effect is also included
-                    // here (single-pass, cheaper path).
-                    AnimatedGlassIndicator(
-                      velocity: velocity,
-                      itemCount: widget.segments.length,
-                      alignment: alignment,
-                      direction: widget.direction,
-                      thickness: thickness,
-                      quality: widget.quality,
-                      indicatorColor: indicatorColor,
-                      isBackgroundIndicator: false,
-                      borderRadius: indicatorRadius,
-                      paintBackground: true,
-                      paintGlass: !isPremiumQuality,
-                      shadows: restingShadows,
-                      settings: widget.indicatorSettings,
-                      pinchStrength: widget.indicatorPinchStrength,
-                      expansion: widget.indicatorExpansion,
-                      backgroundKey: widget.backgroundKey,
-                    ),
-                    // Segment labels paint between the two indicator passes so
-                    // the premium glass layer above can refract them.
-                    effectiveSegmentsChild,
-                    // Pass 2 (premium only) — glass-only pass rendered ABOVE
-                    // the labels so the shader samples and refracts them,
-                    // matching the iOS 26 refraction seen in GlassTabBar.
-                    if (isPremiumQuality)
-                      AnimatedGlassIndicator(
-                        velocity: velocity,
-                        itemCount: widget.segments.length,
-                        alignment: alignment,
-                        direction: widget.direction,
-                        thickness: thickness,
-                        quality: widget.quality,
-                        indicatorColor: indicatorColor,
-                        isBackgroundIndicator: false,
-                        borderRadius: indicatorRadius,
-                        paintBackground: false,
-                        paintGlass: true,
-                        settings: widget.indicatorSettings,
-                        pinchStrength: widget.indicatorPinchStrength,
-                        expansion: widget.indicatorExpansion,
-                        backgroundKey: widget.backgroundKey,
-                      ),
-                  ],
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        // Pass 1 — solid background pill, always below labels.
+                        // For non-premium quality the glass effect is also included
+                        // here (single-pass, cheaper path).
+                        AnimatedGlassIndicator(
+                          velocity: velocity,
+                          jelly: jelly,
+                          itemCount: widget.segments.length,
+                          alignment: alignment,
+                          direction: widget.direction,
+                          thickness: thickness,
+                          quality: widget.quality,
+                          indicatorColor: indicatorColor,
+                          isBackgroundIndicator: false,
+                          borderRadius: indicatorRadius,
+                          paintBackground: true,
+                          paintGlass: !isPremiumQuality,
+                          shadows: restingShadows,
+                          settings: widget.indicatorSettings,
+                          pinchStrength: widget.indicatorPinchStrength,
+                          expansion: widget.indicatorExpansion,
+                          backgroundKey: widget.backgroundKey,
+                        ),
+                        // Segment labels paint between the two indicator passes so
+                        // the premium glass layer above can refract them.
+                        effectiveSegmentsChild,
+                        // Pass 2 (premium only) — glass-only pass rendered ABOVE
+                        // the labels so the shader samples and refracts them,
+                        // matching the iOS 26 refraction seen in GlassTabBar.
+                        if (isPremiumQuality)
+                          AnimatedGlassIndicator(
+                            velocity: velocity,
+                            jelly: jelly,
+                            itemCount: widget.segments.length,
+                            alignment: alignment,
+                            direction: widget.direction,
+                            thickness: thickness,
+                            quality: widget.quality,
+                            indicatorColor: indicatorColor,
+                            isBackgroundIndicator: false,
+                            borderRadius: indicatorRadius,
+                            paintBackground: false,
+                            paintGlass: true,
+                            settings: widget.indicatorSettings,
+                            pinchStrength: widget.indicatorPinchStrength,
+                            expansion: widget.indicatorExpansion,
+                            backgroundKey: widget.backgroundKey,
+                          ),
+                      ],
+                    );
+                  },
+                  child: _buildSegmentsFlex(
+                    selectedStyle: selectedTextStyle,
+                    unselectedStyle: unselectedTextStyle,
+                    selectedIconColor: restingSelectedIconColor,
+                    unselectedIconColor: unselectedIconColor,
+                    animateSelectedTextStyle: true,
+                  ),
                 );
-              },
-              child: _buildSegmentsFlex(
-                selectedStyle: selectedTextStyle,
-                unselectedStyle: unselectedTextStyle,
-                selectedIconColor: restingSelectedIconColor,
-                unselectedIconColor: unselectedIconColor,
-                animateSelectedTextStyle: true,
-              ),
-            );
+              }, // IndicatorJellyBuilder builder
+            ); // IndicatorJellyBuilder
           },
         ),
       ),

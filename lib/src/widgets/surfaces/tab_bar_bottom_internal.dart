@@ -19,6 +19,7 @@ import '../../../types/glass_style.dart';
 import '../../../utils/draggable_indicator_physics.dart';
 import 'tab_bar_drag_gesture_mixin.dart';
 import '../../../utils/glass_spring.dart';
+import '../../../utils/indicator_jelly.dart';
 import '../../../widgets/interactive/glass_button.dart';
 import '../../../widgets/overlays/glass_menu.dart' show GlassMenu;
 import '../../../widgets/shared/adaptive_glass.dart';
@@ -581,6 +582,7 @@ class TabIndicator extends StatefulWidget {
     this.platformViewBackdrop = false,
     this.showDuringDragWhenHidden = false,
     this.springDescription,
+    this.indicatorJelly,
     super.key,
   });
 
@@ -609,6 +611,14 @@ class TabIndicator extends StatefulWidget {
   final MaskingQuality maskingQuality;
   final SpringDescription? springDescription;
   final GlobalKey? backgroundKey;
+
+  /// Physics of the native iOS jelly that stretches the indicator while it
+  /// travels and squishes it when it lands.
+  ///
+  /// Defaults to [IndicatorJellyPhysics.native], measured from UIKit. Change
+  /// single values with [IndicatorJellyPhysics.copyWith], or pass
+  /// [IndicatorJellyPhysics.disabled] for the classic velocity squash.
+  final IndicatorJellyPhysics? indicatorJelly;
 
   /// How far the jelly indicator's leading and trailing edges expand
   /// past the tab boundary as the indicator translates. Higher values
@@ -645,6 +655,8 @@ class TabIndicator extends StatefulWidget {
 @visibleForTesting
 class TabIndicatorState extends State<TabIndicator>
     with TabDragGestureMixin<TabIndicator> {
+  static final Matrix4 _noVelocitySquash = Matrix4.identity();
+
   // ── Mixin interface ────────────────────────────────────────────────────────
   @override
   int get tabCount => widget.tabCount;
@@ -761,78 +773,96 @@ class TabIndicatorState extends State<TabIndicator>
                     final effectiveVisible = widget.visible ||
                         (widget.showDuringDragWhenHidden && tabIsDragging);
 
-                    return SpringBuilder(
-                      spring: GlassSpring.snappy(
-                        duration: const Duration(milliseconds: 300),
-                      ),
-                      // Keep thickness active while:
-                      //  - tabIsDown (tap pressed, 420 ms window for spring travel), OR
-                      //  - tabIsDragging (finger is physically moving — keep glass alive
-                      //    even when passing back over the selected tab), OR
-                      //  - the spring still has meaningful separation from target.
-                      // Threshold 0.05 (was 0.10) catches the full deceleration tail.
-                      value: effectiveVisible &&
-                              (tabIsDown ||
-                                  tabIsDragging ||
-                                  (value - targetAlignment).abs() > 0.05)
-                          ? 1.0
-                          : 0.0,
-                      builder: (context, thickness, child) {
-                        // Lazy evaluation optimization: skip dual-layer masking and
-                        // jelly clipper allocations when hidden, while preserving the
-                        // outer glass background and keyed unselected tab subtree so
-                        // toggling `visible` (e.g. `extraButton.selected`) never
-                        // unmounts tab FocusNodes or re-rasterizes the track blur.
-                        if (thickness < 0.01 &&
-                            !effectiveVisible &&
-                            widget.maskingQuality == MaskingQuality.high) {
-                          return _buildSimpleMode(
-                            alignment: alignment,
-                            targetAlignment: Alignment(targetAlignment, 0),
-                            thickness: 0.0,
-                            velocity: 0.0,
-                            indicatorRadius: indicatorRadius,
-                            indicatorColor: indicatorColor,
-                            effectiveVisible: false,
-                          );
-                        }
+                    // Native iOS jelly: travel stretch, landing squish and
+                    // settle, driven alongside the position spring.
+                    final jellyPhysics =
+                        widget.indicatorJelly ?? IndicatorJellyPhysics.native;
+                    return IndicatorJellyBuilder(
+                      target: tabXAlign,
+                      lead: value,
+                      itemCount: widget.tabCount,
+                      dragging: tabIsDragging,
+                      physics: jellyPhysics,
+                      builder: (context, nativeJelly) {
+                        final jelly = jellyPhysics.enabled ? nativeJelly : null;
+                        return SpringBuilder(
+                          spring: GlassSpring.snappy(
+                            duration: const Duration(milliseconds: 300),
+                          ),
+                          // Keep thickness active while:
+                          //  - tabIsDown (tap pressed, 420 ms window for spring travel), OR
+                          //  - tabIsDragging (finger is physically moving — keep glass alive
+                          //    even when passing back over the selected tab), OR
+                          //  - the spring still has meaningful separation from target.
+                          // Threshold 0.05 (was 0.10) catches the full deceleration tail.
+                          value: effectiveVisible &&
+                                  (tabIsDown ||
+                                      tabIsDragging ||
+                                      (value - targetAlignment).abs() > 0.05)
+                              ? 1.0
+                              : 0.0,
+                          builder: (context, thickness, child) {
+                            // Lazy evaluation optimization: skip dual-layer masking and
+                            // jelly clipper allocations when hidden, while preserving the
+                            // outer glass background and keyed unselected tab subtree so
+                            // toggling `visible` (e.g. `extraButton.selected`) never
+                            // unmounts tab FocusNodes or re-rasterizes the track blur.
+                            if (thickness < 0.01 &&
+                                !effectiveVisible &&
+                                widget.maskingQuality == MaskingQuality.high) {
+                              return _buildSimpleMode(
+                                alignment: alignment,
+                                targetAlignment: Alignment(targetAlignment, 0),
+                                thickness: 0.0,
+                                velocity: 0.0,
+                                indicatorRadius: indicatorRadius,
+                                indicatorColor: indicatorColor,
+                                effectiveVisible: false,
+                              );
+                            }
 
-                        // Calculate jelly transform for the clipper (only when needed)
-                        final jellyTransform =
-                            DraggableIndicatorPhysics.buildJellyTransform(
-                          velocity: Offset(velocity, 0),
-                          maxDistortion: 0.8,
-                          velocityScale: 10,
-                        );
+                            // Calculate jelly transform for the clipper (only when needed)
+                            final jellyTransform = jelly != null
+                                ? _noVelocitySquash
+                                : DraggableIndicatorPhysics.buildJellyTransform(
+                                    velocity: Offset(velocity, 0),
+                                    maxDistortion: 0.8,
+                                    velocityScale: 10,
+                                  );
 
-                        // Switch rendering mode based on masking quality
-                        switch (widget.maskingQuality) {
-                          case MaskingQuality.off:
-                            return _buildSimpleMode(
-                              alignment: alignment,
-                              // Same physical-coordinate reasoning as above:
-                              // targetAlignment is a physical x-value.
-                              targetAlignment: Alignment(targetAlignment, 0),
-                              thickness: thickness,
-                              velocity: velocity,
-                              indicatorRadius: indicatorRadius,
-                              indicatorColor: indicatorColor,
-                              effectiveVisible: effectiveVisible,
-                            );
+                            // Switch rendering mode based on masking quality
+                            switch (widget.maskingQuality) {
+                              case MaskingQuality.off:
+                                return _buildSimpleMode(
+                                  alignment: alignment,
+                                  // Same physical-coordinate reasoning as above:
+                                  // targetAlignment is a physical x-value.
+                                  targetAlignment:
+                                      Alignment(targetAlignment, 0),
+                                  thickness: thickness,
+                                  velocity: velocity,
+                                  jelly: jelly,
+                                  indicatorRadius: indicatorRadius,
+                                  indicatorColor: indicatorColor,
+                                  effectiveVisible: effectiveVisible,
+                                );
 
-                          case MaskingQuality.high:
-                            return _buildHighQualityMode(
-                              alignment: alignment,
-                              thickness: thickness,
-                              velocity: velocity,
-                              jellyTransform: jellyTransform,
-                              indicatorRadius: indicatorRadius,
-                              indicatorColor: indicatorColor,
-                              effectiveVisible: effectiveVisible,
-                            );
-                        }
-                      },
-                    ); // SpringBuilder (thickness)
+                              case MaskingQuality.high:
+                                return _buildHighQualityMode(
+                                  alignment: alignment,
+                                  thickness: thickness,
+                                  velocity: velocity,
+                                  jelly: jelly,
+                                  jellyTransform: jellyTransform,
+                                  indicatorRadius: indicatorRadius,
+                                  indicatorColor: indicatorColor,
+                                  effectiveVisible: effectiveVisible,
+                                );
+                            }
+                          },
+                        ); // SpringBuilder (thickness)
+                      }, // IndicatorJellyBuilder builder
+                    ); // IndicatorJellyBuilder
                   }, // VelocitySpringBuilder builder
                 ), // VelocitySpringBuilder
               ), // GestureDetector
@@ -900,6 +930,7 @@ class TabIndicatorState extends State<TabIndicator>
     required AlignmentGeometry targetAlignment,
     required double thickness,
     required double velocity,
+    IndicatorJelly? jelly,
     required double indicatorRadius,
     required Color indicatorColor,
     required bool effectiveVisible,
@@ -946,6 +977,8 @@ class TabIndicatorState extends State<TabIndicator>
           if (effectiveVisible && thickness > 0.05)
             AnimatedGlassIndicator(
               velocity: velocity,
+              jelly: jelly,
+              clampExpansionToTrack: jelly != null,
               itemCount: widget.tabCount,
               alignment: alignment,
               thickness: thickness,
@@ -994,6 +1027,7 @@ class TabIndicatorState extends State<TabIndicator>
     required AlignmentGeometry alignment,
     required double thickness,
     required double velocity,
+    IndicatorJelly? jelly,
     required Matrix4 jellyTransform,
     required double indicatorRadius,
     required Color indicatorColor,
@@ -1024,6 +1058,8 @@ class TabIndicatorState extends State<TabIndicator>
                   // 1.5. Solid Indicator Background (drawn below icons so selected icons are vibrant)
                   AnimatedGlassIndicator(
                     velocity: velocity,
+                    jelly: jelly,
+                    clampExpansionToTrack: jelly != null,
                     itemCount: widget.tabCount,
                     alignment: alignment,
                     thickness: thickness,
@@ -1066,6 +1102,8 @@ class TabIndicatorState extends State<TabIndicator>
                                     expansion: widget.indicatorExpansion
                                         .resolve(Directionality.of(context)),
                                     transform: jellyTransform,
+                                    jelly: jelly,
+                                    clampExpansionToTrack: jelly != null,
                                     borderRadius: indicatorRadius * 2,
                                     inverse: true,
                                   ),
@@ -1089,6 +1127,8 @@ class TabIndicatorState extends State<TabIndicator>
                                     expansion: widget.indicatorExpansion
                                         .resolve(Directionality.of(context)),
                                     transform: jellyTransform,
+                                    jelly: jelly,
+                                    clampExpansionToTrack: jelly != null,
                                     borderRadius: indicatorRadius * 2,
                                   ),
                                   child: Container(
@@ -1117,6 +1157,8 @@ class TabIndicatorState extends State<TabIndicator>
                                   expansion: widget.indicatorExpansion
                                       .resolve(Directionality.of(context)),
                                   transform: jellyTransform,
+                                  jelly: jelly,
+                                  clampExpansionToTrack: jelly != null,
                                   borderRadius: indicatorRadius * 2,
                                   inverse: true,
                                 ),
@@ -1140,6 +1182,8 @@ class TabIndicatorState extends State<TabIndicator>
                                   expansion: widget.indicatorExpansion
                                       .resolve(Directionality.of(context)),
                                   transform: jellyTransform,
+                                  jelly: jelly,
+                                  clampExpansionToTrack: jelly != null,
                                   borderRadius: indicatorRadius * 2,
                                 ),
                                 child: Container(
@@ -1164,6 +1208,8 @@ class TabIndicatorState extends State<TabIndicator>
           // the merged icon RepaintBoundary AND the glow beneath it.
           AnimatedGlassIndicator(
             velocity: velocity,
+            jelly: jelly,
+            clampExpansionToTrack: jelly != null,
             itemCount: widget.tabCount,
             alignment: alignment,
             thickness: thickness,

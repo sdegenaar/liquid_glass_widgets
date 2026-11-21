@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart' show ValueListenable;
 import '../../renderer/liquid_glass_renderer.dart';
 import '../../types/glass_interaction_behavior.dart';
 import '../../../types/glass_quality.dart';
+import '../../../utils/indicator_jelly.dart';
 import '../../../widgets/shared/adaptive_liquid_glass_layer.dart';
 import '../../../widgets/shared/glass_content_aware_scope.dart';
 import '../../../theme/glass_theme_data.dart';
@@ -60,6 +61,7 @@ class TabBarBottomLayout extends StatefulWidget {
     this.indicatorColor,
     this.indicatorSettings,
     this.indicatorPinchStrength = 0.4,
+    this.indicatorJelly,
     this.selectedIconColor,
     this.unselectedIconColor,
     this.selectedLabelColor,
@@ -118,6 +120,14 @@ class TabBarBottomLayout extends StatefulWidget {
   final Color? indicatorColor;
   final LiquidGlassSettings? indicatorSettings;
   final double indicatorPinchStrength;
+
+  /// Physics of the native iOS jelly that stretches the indicator while it
+  /// travels and squishes it when it lands.
+  ///
+  /// Defaults to [IndicatorJellyPhysics.native], measured from UIKit. Change
+  /// single values with [IndicatorJellyPhysics.copyWith], or pass
+  /// [IndicatorJellyPhysics.disabled] for the classic velocity squash.
+  final IndicatorJellyPhysics? indicatorJelly;
   final Color? selectedIconColor;
   final Color? unselectedIconColor;
   final Color? selectedLabelColor;
@@ -377,6 +387,7 @@ class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
                         indicatorColor: widget.indicatorColor,
                         indicatorSettings: widget.indicatorSettings,
                         indicatorPinchStrength: widget.indicatorPinchStrength,
+                        indicatorJelly: widget.indicatorJelly,
                         onTabChanged: onTabSelected,
                         barHeight: widget.barHeight,
                         barBorderRadius: widget.barBorderRadius,

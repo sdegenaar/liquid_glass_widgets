@@ -8,6 +8,7 @@ import '../../theme/glass_theme_helpers.dart';
 
 import '../../src/types/glass_interaction_behavior.dart';
 import '../../types/glass_quality.dart';
+import '../../utils/indicator_jelly.dart';
 import '../overlays/glass_menu.dart' show GlassMenuAlignment;
 import '../../theme/glass_theme.dart';
 import '../../types/glass_style.dart';
@@ -213,6 +214,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
     Color? indicatorColor,
     LiquidGlassSettings? indicatorSettings,
     double indicatorPinchStrength = 0.4,
+    IndicatorJellyPhysics? indicatorJelly,
     Color? selectedIconColor,
     Color? unselectedIconColor,
     Color? selectedLabelColor,
@@ -272,6 +274,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
           indicatorColor: indicatorColor,
           indicatorSettings: indicatorSettings,
           indicatorPinchStrength: indicatorPinchStrength,
+          indicatorJelly: indicatorJelly,
           selectedIconColor: selectedIconColor,
           unselectedIconColor: unselectedIconColor,
           selectedLabelColor: selectedLabelColor,
@@ -358,6 +361,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
     Color? indicatorColor,
     LiquidGlassSettings? indicatorSettings,
     double indicatorPinchStrength = 0.4,
+    IndicatorJellyPhysics? indicatorJelly,
     double? indicatorBorderRadius,
     Color? selectedIconColor,
     Color? unselectedIconColor,
@@ -415,6 +419,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
           indicatorColor: indicatorColor,
           indicatorSettings: indicatorSettings,
           indicatorPinchStrength: indicatorPinchStrength,
+          indicatorJelly: indicatorJelly,
           indicatorBorderRadius: indicatorBorderRadius,
           selectedIconColor: selectedIconColor,
           unselectedIconColor: unselectedIconColor,
@@ -481,6 +486,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
     Color? indicatorColor,
     LiquidGlassSettings? indicatorSettings,
     double indicatorPinchStrength = 0.4,
+    IndicatorJellyPhysics? indicatorJelly,
     Color? selectedIconColor,
     Color? unselectedIconColor,
     Color? selectedLabelColor,
@@ -552,6 +558,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
           indicatorColor: indicatorColor,
           indicatorSettings: indicatorSettings,
           indicatorPinchStrength: indicatorPinchStrength,
+          indicatorJelly: indicatorJelly,
           selectedIconColor: selectedIconColor,
           unselectedIconColor: unselectedIconColor,
           selectedLabelColor: selectedLabelColor,
@@ -685,6 +692,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
     Color? indicatorColor,
     LiquidGlassSettings? indicatorSettings,
     double indicatorPinchStrength = 0.4,
+    IndicatorJellyPhysics? indicatorJelly,
     Color? selectedIconColor,
     Color? unselectedIconColor,
     Color? selectedLabelColor,
@@ -757,6 +765,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
           indicatorColor: indicatorColor,
           indicatorSettings: indicatorSettings,
           indicatorPinchStrength: indicatorPinchStrength,
+          indicatorJelly: indicatorJelly,
           selectedIconColor: selectedIconColor,
           unselectedIconColor: unselectedIconColor,
           selectedLabelColor: selectedLabelColor,
@@ -819,6 +828,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
       this.backgroundQuality,
       this.indicatorSettings,
       this.indicatorPinchStrength = 0.4,
+      this.indicatorJelly,
       this.indicatorExpansion =
           const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       this.backgroundKey,
@@ -976,6 +986,14 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
   /// Set to `0.0` to disable the effect entirely, or `1.0` to restore the
   /// original full-strength warp.
   final double indicatorPinchStrength;
+
+  /// Physics of the native iOS jelly that stretches the indicator while it
+  /// travels and squishes it when it lands.
+  ///
+  /// Defaults to [IndicatorJellyPhysics.native], measured from UIKit. Change
+  /// single values with [IndicatorJellyPhysics.copyWith], or pass
+  /// [IndicatorJellyPhysics.disabled] for the classic velocity squash.
+  final IndicatorJellyPhysics? indicatorJelly;
 
   /// Expansion padding applied to the active indicator pill during interaction.
   ///
@@ -1488,6 +1506,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
       indicatorColor: widget.indicatorColor,
       indicatorSettings: widget.indicatorSettings,
       indicatorPinchStrength: widget.indicatorPinchStrength,
+      indicatorJelly: widget.indicatorJelly,
       selectedIconColor: widget.selectedIconColor,
       unselectedIconColor: widget.unselectedIconColor,
       selectedLabelColor: widget.selectedLabelColor,
@@ -1547,6 +1566,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
       indicatorColor: widget.indicatorColor,
       indicatorSettings: widget.indicatorSettings,
       indicatorPinchStrength: widget.indicatorPinchStrength,
+      indicatorJelly: widget.indicatorJelly,
       selectedIconColor: widget.selectedIconColor,
       unselectedIconColor: widget.unselectedIconColor,
       selectedLabelColor: widget.selectedLabelColor,
@@ -1634,6 +1654,7 @@ class _GlassTabBarState extends State<GlassTabBar> {
       indicatorColor: widget.indicatorColor,
       indicatorSettings: widget.indicatorSettings,
       indicatorPinchStrength: widget.indicatorPinchStrength,
+      indicatorJelly: widget.indicatorJelly,
       selectedIconColor: widget.selectedIconColor,
       unselectedIconColor: widget.unselectedIconColor,
       selectedLabelColor: widget.selectedLabelColor,

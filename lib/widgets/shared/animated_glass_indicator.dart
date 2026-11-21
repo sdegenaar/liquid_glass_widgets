@@ -12,6 +12,7 @@ import '../../theme/glass_theme.dart';
 import '../../types/glass_quality.dart';
 import '../../types/glass_style.dart';
 import '../../utils/draggable_indicator_physics.dart';
+import '../../utils/indicator_jelly.dart';
 import 'glass_effect.dart';
 
 /// A shared component that renders the interactive "Jelly" indicator
@@ -142,6 +143,18 @@ class AnimatedGlassIndicator extends StatelessWidget {
   /// ([paintBackground] == true); reads through a translucent [indicatorColor].
   final double innerBlur;
 
+  /// Native iOS-style jelly deformation (see [IndicatorJellyPhysics]).
+  ///
+  /// When non-null it replaces the velocity-based squash, and the resting
+  /// pill is deformed too so the landing squish and settle stay visible after
+  /// the glass fades out.
+  final IndicatorJelly? jelly;
+
+  /// Whether the lifted lens' horizontal [expansion] is capped by the room
+  /// left to the ends of the track (plus [padding]), so the lens can reach
+  /// the bar's edge but never grow past it. Used with the native [jelly].
+  final bool clampExpansionToTrack;
+
   /// Creates a new [AnimatedGlassIndicator].
   const AnimatedGlassIndicator({
     super.key,
@@ -165,6 +178,8 @@ class AnimatedGlassIndicator extends StatelessWidget {
     this.pinchStrength = 1.0,
     this.innerBlur = 0.0,
     this.direction = Axis.horizontal,
+    this.jelly,
+    this.clampExpansionToTrack = false,
   });
 
   /// The iOS 27-calibrated default glass settings for all indicator pills.
@@ -558,7 +573,9 @@ class AnimatedGlassIndicator extends StatelessWidget {
     final glassChild = Stack(
       clipBehavior: Clip.none,
       children: [
-        if (paintBackground && isStdPath && backgroundOpacity > 0)
+        if (paintBackground &&
+            (isStdPath || jelly != null) &&
+            backgroundOpacity > 0)
           backgroundIndicator,
         if (paintGlass && fade > 0.05) interactiveIndicator,
         // Native `_UILiquidLensView` inner shadow (`spec.innerShadowOpacity`:
@@ -581,71 +598,121 @@ class AnimatedGlassIndicator extends StatelessWidget {
       ],
     );
 
-    final indicatorBody = Stack(
-      clipBehavior: Clip.none,
-      children: [
-        // Rest-blur: an Apple-style backdrop frost behind the RESTING pill.
-        // Sigma is scaled by backgroundOpacity so it is full when settled and
-        // fades toward zero as the pill morphs into the glass lens (motion stays
-        // crisp). Sits at the bottom of the stack so the (translucent) pill +
-        // icons read on top of the frosted backdrop.
-        //
-        // The ClipRRect + BackdropFilter stay MOUNTED for the whole gesture — we
-        // gate only on [innerBlur] > 0, never on backgroundOpacity. Adding or
-        // removing a clip layer over an iOS PlatformView mid-gesture makes the
-        // engine reconstruct the platform-view clip-view chain, which cancels
-        // the in-flight touch and freezes an interactive bar overlaid on it.
-        // Fading the sigma (rather than unmounting the layer) keeps the look
-        // without the churn; a small sigma floor keeps it a real backdrop layer
-        // so the engine can't drop it on its own either.
-        if (paintBackground && innerBlur > 0)
-          Positioned.fromRelativeRect(
-            rect: rect!,
-            child: ClipRRect(
-              borderRadius: GlassDefaults.safeBorderRadius(borderRadius),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(
-                  sigmaX: (innerBlur * backgroundOpacity)
-                      .clamp(0.001, double.infinity),
-                  sigmaY: (innerBlur * backgroundOpacity)
-                      .clamp(0.001, double.infinity),
+    Widget bodyFor(RelativeRect rect) => Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // Rest-blur: an Apple-style backdrop frost behind the RESTING pill.
+            // Sigma is scaled by backgroundOpacity so it is full when settled and
+            // fades toward zero as the pill morphs into the glass lens (motion stays
+            // crisp). Sits at the bottom of the stack so the (translucent) pill +
+            // icons read on top of the frosted backdrop.
+            //
+            // The ClipRRect + BackdropFilter stay MOUNTED for the whole gesture — we
+            // gate only on [innerBlur] > 0, never on backgroundOpacity. Adding or
+            // removing a clip layer over an iOS PlatformView mid-gesture makes the
+            // engine reconstruct the platform-view clip-view chain, which cancels
+            // the in-flight touch and freezes an interactive bar overlaid on it.
+            // Fading the sigma (rather than unmounting the layer) keeps the look
+            // without the churn; a small sigma floor keeps it a real backdrop layer
+            // so the engine can't drop it on its own either.
+            if (paintBackground && innerBlur > 0)
+              Positioned.fromRelativeRect(
+                rect: rect,
+                child: ClipRRect(
+                  borderRadius: GlassDefaults.safeBorderRadius(borderRadius),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(
+                      sigmaX: (innerBlur * backgroundOpacity)
+                          .clamp(0.001, double.infinity),
+                      sigmaY: (innerBlur * backgroundOpacity)
+                          .clamp(0.001, double.infinity),
+                    ),
+                    child: const SizedBox.expand(),
+                  ),
                 ),
-                child: const SizedBox.expand(),
+              ),
+            // Premium: background pill is rigid (outside Transform). The Impeller
+            // glass lens has enough 3D contrast to carry the jelly on its own.
+            // With a native [jelly] the resting pill moves into the Transform
+            // instead, because the landing squish/settle happens on it.
+            if (paintBackground &&
+                !isStdPath &&
+                jelly == null &&
+                backgroundOpacity > 0)
+              Positioned.fromRelativeRect(
+                rect: rect,
+                child: backgroundIndicator,
+              ),
+            // Jelly-physics Transform.
+            // Standard: wraps both the solid background pill + glass lens so the
+            //   pill itself flexes (the only element with enough visual weight).
+            //   maxDistortion is capped at 0.35 — enough to feel organic, below the
+            //   threshold where 2D ClipPath corners start looking boxy.
+            // Premium: wraps only the glass lens. The 3D SDF shader absorbs the
+            //   full 0.8 distortion naturally via optical pinch.
+            Positioned.fromRelativeRect(
+              rect: rect,
+              child: IgnorePointer(
+                child: jelly != null
+                    ? FractionalTranslation(
+                        translation: Offset(jelly!.offsetX, 0),
+                        child: Transform(
+                          alignment: Alignment.center,
+                          transform: jelly!.matrix,
+                          child: glassChild,
+                        ),
+                      )
+                    : Transform(
+                        alignment: Alignment.center,
+                        transform:
+                            DraggableIndicatorPhysics.buildJellyTransform(
+                          velocity: direction == Axis.horizontal
+                              ? Offset(velocity, 0)
+                              : Offset(0, velocity),
+                          maxDistortion: isStdPath ? 0.35 : 0.8,
+                          velocityScale: 10,
+                        ),
+                        child: glassChild,
+                      ),
               ),
             ),
-          ),
-        // Premium: background pill is rigid (outside Transform). The Impeller
-        // glass lens has enough 3D contrast to carry the jelly on its own.
-        if (paintBackground && !isStdPath && backgroundOpacity > 0)
-          Positioned.fromRelativeRect(
-            rect: rect!,
-            child: backgroundIndicator,
-          ),
-        // Jelly-physics Transform.
-        // Standard: wraps both the solid background pill + glass lens so the
-        //   pill itself flexes (the only element with enough visual weight).
-        //   maxDistortion is capped at 0.35 — enough to feel organic, below the
-        //   threshold where 2D ClipPath corners start looking boxy.
-        // Premium: wraps only the glass lens. The 3D SDF shader absorbs the
-        //   full 0.8 distortion naturally via optical pinch.
-        Positioned.fromRelativeRect(
-          rect: rect!,
-          child: IgnorePointer(
-            child: Transform(
-              alignment: Alignment.center,
-              transform: DraggableIndicatorPhysics.buildJellyTransform(
-                velocity: direction == Axis.horizontal
-                    ? Offset(velocity, 0)
-                    : Offset(0, velocity),
-                maxDistortion: isStdPath ? 0.35 : 0.8,
-                velocityScale: 10,
+          ],
+        );
+
+    final Widget indicatorBody;
+    if (clampExpansionToTrack && !isVertical && exactWidth == null) {
+      final resolvedAlignment = alignment.resolve(Directionality.of(context));
+      final resolvedPadding = padding.resolve(Directionality.of(context));
+      indicatorBody = LayoutBuilder(
+        builder: (context, constraints) {
+          // Cells between the pill and each end of the track, plus the
+          // track's own inset: the lifted lens may grow up to the bar's edge
+          // but never past it, as in UIKit.
+          final cell = constraints.maxWidth;
+          final position = (resolvedAlignment.x + 1) / 2 * (itemCount - 1);
+          final roomLeft =
+              math.max(0.0, resolvedPadding.left + position * cell);
+          final roomRight = math.max(
+            0.0,
+            resolvedPadding.right + (itemCount - 1 - position) * cell,
+          );
+          return bodyFor(
+            RelativeRect.lerp(
+              RelativeRect.fill,
+              RelativeRect.fromLTRB(
+                -math.min(resolvedExpansion.left, roomLeft),
+                -resolvedExpansion.top,
+                -math.min(resolvedExpansion.right, roomRight),
+                -resolvedExpansion.bottom,
               ),
-              child: glassChild,
-            ),
-          ),
-        ),
-      ],
-    );
+              thickness,
+            )!,
+          );
+        },
+      );
+    } else {
+      indicatorBody = bodyFor(rect!);
+    }
 
     Widget positioning;
     if (exactWidth != null && exactOffset != null) {

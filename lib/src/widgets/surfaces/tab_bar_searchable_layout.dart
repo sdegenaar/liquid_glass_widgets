@@ -13,6 +13,7 @@ import '../../renderer/glass_backdrop_group.dart';
 import '../../renderer/liquid_glass_renderer.dart';
 import '../../types/glass_interaction_behavior.dart';
 import '../../../types/glass_quality.dart';
+import '../../../utils/indicator_jelly.dart';
 import '../../../widgets/shared/adaptive_liquid_glass_layer.dart';
 import '../../../widgets/shared/glass_accessibility_scope.dart';
 import '../../../widgets/shared/glass_content_aware_scope.dart';
@@ -83,6 +84,7 @@ class TabBarSearchableLayout extends StatefulWidget {
     this.indicatorColor,
     this.indicatorSettings,
     this.indicatorPinchStrength = 0.4,
+    this.indicatorJelly,
     this.selectedIconColor,
     this.unselectedIconColor,
     this.selectedLabelColor,
@@ -174,6 +176,14 @@ class TabBarSearchableLayout extends StatefulWidget {
   final Color? indicatorColor;
   final LiquidGlassSettings? indicatorSettings;
   final double indicatorPinchStrength;
+
+  /// Physics of the native iOS jelly that stretches the indicator while it
+  /// travels and squishes it when it lands.
+  ///
+  /// Defaults to [IndicatorJellyPhysics.native], measured from UIKit. Change
+  /// single values with [IndicatorJellyPhysics.copyWith], or pass
+  /// [IndicatorJellyPhysics.disabled] for the classic velocity squash.
+  final IndicatorJellyPhysics? indicatorJelly;
   final Color? selectedIconColor;
   final Color? unselectedIconColor;
   final Color? selectedLabelColor;
@@ -1011,6 +1021,7 @@ class _TabBarSearchableLayoutState extends State<TabBarSearchableLayout>
                               indicatorSettings: widget.indicatorSettings,
                               indicatorPinchStrength:
                                   widget.indicatorPinchStrength,
+                              indicatorJelly: widget.indicatorJelly,
                               backgroundKey: widget.backgroundKey,
                               platformViewBackdrop: widget.platformViewBackdrop,
                               passthroughOverPlatformView:
