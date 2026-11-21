@@ -7,7 +7,22 @@
 ## Bug Fixes
 
 - **Premium glass morphs (#520):** Refresh the backdrop clip when the glass shape changes without a layout change, preventing a second contour at the frosted corners of an expanded `GlassMenu`.
+- **`GlassQuality.standard` morph overlays on Impeller:** Gate `LiquidGlassBlendGroup` creation in `GlassModalSheet`, `GlassMenu`, and `GlassPopover` morph overlays strictly on `GlassQuality.premium`, preventing missing-`InheritedGeometryRenderLink` assertions when morphing with `GlassQuality.standard` on Impeller.
 - **`GlassModalSheet` morphed close-origin after detent change (#507 follow-up):** When a `morphFrom` sheet opened at `half` is dragged to `full` or `peek` and dismissed at rest (barrier tap, close button, or `Navigator.pop`), frame 1 of the closing droplet morph now starts from the sheet's live resting detent (matching its active margins, bottom offset, corner radii, and fill) instead of snapping back to the initial `restingState`.
+
+## Performance
+
+- **Fragment shaders & GPU fill-rate (`shaders/`):** Cut worst-case per-pixel texture taps and ALU work across all five fragment shaders with zero visual change — skipped 47-tap `frostAt()` on outer hairlines (`60 → 13` taps), replaced 49-`exp()` frost loops with centre-seeded 5-`exp()` IIR weights plus a symmetric 37-tap disk at `2×` DPR (`σ ≤ 1.25`), added a 1-tap flat-interior fast path in `liquid_glass_render.frag` and `lightweight_glass.frag`, switched `interactive_indicator.frag` from manual 4-tap bilinear filtering to hardware `texture()` (`12 → 3` taps), gated `bwd(K)` and `sdfRRectAsym` branches in `sdf.glsl`, and early-exited Gaussian tail loops in `progressive_blur.frag`.
+- **Compositor passes, backdrop sharing & geometry VRAM:**
+  - Switched resting `GlassTabBar.bottom` and `GlassTabBar.searchable` indicators from `Clip.antiAliasWithSaveLayer` to `Clip.antiAlias` (0 resting `saveLayer`s; promotes only during active drag).
+  - Shared `GlassBackdropGroup` backdrop reads across `GlassScaffold` bars (with zero-`RenderObject` `GlassBackdropGroupOptOut` for scrolling bodies/overlays), `GlassToolbar`, `GlassNavPinnedHost`, and `GlassScrollEdgeEffect` (`ProgressiveBlur` top + bottom strips); omitted idle `Opacity` around `GlassMenu` triggers so bar buttons stay inside the shared backdrop group; merged `GlassQuality.minimal` `_FrostedFallback` from 2 `BackdropFilter` passes to 1; reused `BackdropFilterLayer` via `LayerHandle` in `LightweightLiquidGlass` and `GlassEffect`.
+  - Halved geometry matte VRAM on single-group `useOwnLayer: true` surfaces by skipping duplicate `RenderedGeometryCache` rasterization, tightened baked/live shadow clip bounds from `~5.2σ` to `3σ` with a single merged live `saveLayer`, cached merged `_shapePath` across blur/frost passes, and eliminated per-scroll-frame `FrostRows` `Path.shift()` copies via an `OffsetLayer` plus local-relative `GeometryTransformTrackingLayer` tracking.
+  - Eliminated spurious synchronous SDF matte `toImageSync` rebuilds on no-op relayouts, skipped unused shader compilation in `GlassEffect` on Impeller Premium, and throttled stationary `GlassEffect` background captures to 30 Hz with a 1M-pixel cap.
+- **UI thread, scrolling, sheets, menus & idle cost:**
+  - Cropped `GlassContentAwareScope` GPU→CPU luminance readbacks strictly to registered control bounds at 4 px/cell (`~100×` fewer pixels read back) and skipped stationary scroll-drag ticks.
+  - Pre-built `GlassModalSheet` content outside drag `AnimatedBuilder`s, omitted no-op `MediaQuery` copies, gated `ShaderMask` on `fadeT > 0.001`, replaced `Opacity` with `GlassControlledOpacity`, and drove horizontal morph offsets via `ValueNotifier` (−41% P50 raster / −28% P50 build on Apple Silicon Metal `--profile` sheet drag).
+  - Removed duplicate `GlassMenu` morph rebuilds, collapsed `N` per-item `Opacity` `saveLayer`s to `≤ 1` during fade (`0` at rest), and unmounted `GlassContextMenu`'s `Offstage` measurement pass after frame 1.
+  - Lazily allocated `Ticker`s in `SingleSpringController`, `OffsetSpringController` (unified `2 → 1` Ticker), `GlassListTile`, `LightweightLiquidGlass`, and `GlassEffect` (`7 → 0` resting Tickers per `GlassButton`), replaced hot `MediaQuery.of` dependencies with granular accessors and `RawGestureDetector` (`0` rebuilds on keyboard `viewInsets`), and fixed `GlassQualityAdapter` / `GlassAdaptiveScope` frost-step synchronization and warmup cadence (`90+180 → 30+60` frames).
 
 ## Documentation
 
