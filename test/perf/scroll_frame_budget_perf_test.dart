@@ -104,5 +104,66 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'Wave 2.1 — GlassScaffold shares one BackdropKey across appBar and '
+      'bottomBar while isolating body glass',
+      (tester) async {
+        BackdropKey? appBarKey;
+        BackdropKey? bottomBarKey;
+        BackdropKey? bodyKey;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: GlassScaffold(
+              appBar: GlassAppBar(
+                title: const Text('Shared Chrome'),
+                actions: [
+                  Builder(
+                    builder: (context) {
+                      appBarKey = GlassBackdropGroup.keyOf(context);
+                      return const SizedBox(width: 44, height: 44);
+                    },
+                  ),
+                ],
+              ),
+              bottomBar: Builder(
+                builder: (context) {
+                  bottomBarKey = GlassBackdropGroup.keyOf(context);
+                  return GlassTabBar.bottom(
+                    tabs: tabs,
+                    selectedIndex: 0,
+                    onTabSelected: (_) {},
+                  );
+                },
+              ),
+              body: Builder(
+                builder: (context) {
+                  bodyKey = GlassBackdropGroup.keyOf(context);
+                  return const SizedBox.expand();
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(appBarKey, isNotNull);
+        expect(bottomBarKey, isNotNull);
+        expect(
+          identical(appBarKey, bottomBarKey),
+          isTrue,
+          reason: 'GlassScaffold appBar and bottomBar must share a single '
+              'BackdropKey.',
+        );
+        expect(
+          bodyKey,
+          isNull,
+          reason:
+              'GlassScaffold body must opt out of the chrome BackdropGroup so '
+              'top/bottom bars sample body glass beneath them.',
+        );
+      },
+    );
   });
 }

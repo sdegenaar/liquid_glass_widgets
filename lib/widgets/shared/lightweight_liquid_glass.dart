@@ -9,6 +9,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import '../../constants/glass_defaults.dart';
 import '../../src/engine/internal/transform_tracking_repaint_boundary_mixin.dart';
+import '../../src/renderer/glass_backdrop_group.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../theme/glass_theme.dart';
 
@@ -481,6 +482,7 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
       backdropLuma: backdropLuma,
       backgroundImage: _backgroundImage,
       backgroundKey: widget.backgroundKey,
+      backdropKey: GlassBackdropGroup.keyOf(context),
       // Always keep GlassControlledOpacity mounted so element identity stays
       // stable across visibility transitions (1.0 ↔ <1.0) with zero compositing
       // flag overhead at 1.0 or 0.0, and inside BackdropFilterLayer when
@@ -519,6 +521,7 @@ class _LightweightGlassEffect extends SingleChildRenderObjectWidget {
     required this.backdropLuma,
     this.backgroundImage,
     this.backgroundKey,
+    this.backdropKey,
     required super.child,
   });
 
@@ -532,6 +535,7 @@ class _LightweightGlassEffect extends SingleChildRenderObjectWidget {
   final double backdropLuma;
   final ui.Image? backgroundImage;
   final GlobalKey? backgroundKey;
+  final BackdropKey? backdropKey;
 
   @override
   RenderObject createRenderObject(BuildContext context) {
@@ -546,6 +550,7 @@ class _LightweightGlassEffect extends SingleChildRenderObjectWidget {
       backdropLuma: backdropLuma,
       backgroundImage: backgroundImage,
       backgroundKey: backgroundKey,
+      backdropKey: backdropKey,
     );
   }
 
@@ -564,7 +569,8 @@ class _LightweightGlassEffect extends SingleChildRenderObjectWidget {
       ..indicatorWeight = indicatorWeight
       ..backdropLuma = backdropLuma
       ..backgroundImage = backgroundImage
-      ..backgroundKey = backgroundKey;
+      ..backgroundKey = backgroundKey
+      ..backdropKey = backdropKey;
   }
 }
 
@@ -581,6 +587,7 @@ class _RenderLightweightGlass extends RenderProxyBox
     required double backdropLuma,
     ui.Image? backgroundImage,
     GlobalKey? backgroundKey,
+    BackdropKey? backdropKey,
   })  : _shader = shader,
         _settings = settings,
         _shape = shape,
@@ -591,6 +598,7 @@ class _RenderLightweightGlass extends RenderProxyBox
         _backdropLuma = backdropLuma,
         _backgroundImage = backgroundImage,
         _backgroundKey = backgroundKey,
+        _backdropKey = backdropKey,
         _cachedLightCos = math.cos(settings.lightAngle),
         _cachedLightSin = -math.sin(settings.lightAngle);
 
@@ -706,6 +714,23 @@ class _RenderLightweightGlass extends RenderProxyBox
     markNeedsPaint();
   }
 
+  BackdropKey? _backdropKey;
+  set backdropKey(BackdropKey? value) {
+    if (identical(_backdropKey, value)) return;
+    _backdropKey = value;
+    markNeedsPaint();
+  }
+
+  final LayerHandle<BackdropFilterLayer> _backdropLayerHandle =
+      LayerHandle<BackdropFilterLayer>();
+
+  @override
+  void dispose() {
+    _backdropLayerHandle.layer = null;
+    _cachedBlurFilter = null;
+    super.dispose();
+  }
+
   // ── Cached light direction (Task 1.3) ─────────────────────────────────────
   // Matches the caching pattern in LiquidGlassRenderObject._cachedLightDir.
   // Avoids recomputing cos/sin on every _updateShaderUniforms call.
@@ -726,6 +751,16 @@ class _RenderLightweightGlass extends RenderProxyBox
     if (_cachedBlurFilter != null &&
         _cachedFilterBlur == blurSigma &&
         _cachedFilterSat == sat) {
+      return _cachedBlurFilter!;
+    }
+
+    if ((sat - 1.0).abs() <= 0.01) {
+      _cachedBlurFilter = ui.ImageFilter.blur(
+        sigmaX: blurSigma,
+        sigmaY: blurSigma,
+      );
+      _cachedFilterBlur = blurSigma;
+      _cachedFilterSat = sat;
       return _cachedBlurFilter!;
     }
 
@@ -802,14 +837,19 @@ class _RenderLightweightGlass extends RenderProxyBox
         _settings.effectiveSaturation,
       );
 
+      final backdropLayer = (_backdropLayerHandle.layer ??=
+          BackdropFilterLayer())
+        ..filter = filter
+        ..backdropKey = _backdropKey;
       context.pushLayer(
-        BackdropFilterLayer(filter: filter),
+        backdropLayer,
         (context, offset) {
           _paintGlassContent(context, offset);
         },
         offset,
       );
     } else {
+      _backdropLayerHandle.layer = null;
       _paintGlassContent(context, offset);
     }
   }

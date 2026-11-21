@@ -1283,9 +1283,10 @@ void main() {
       ),
     );
     await tester.pump();
-    // Before tapping: the trigger must be fully opaque.
-    final opacity = tester.widget<Opacity>(find.byType(Opacity).first);
-    expect(opacity.opacity, equals(1.0));
+    // Before tapping: the trigger is fully opaque with no Opacity wrapper
+    // (omitting RenderOpacity at rest keeps triggers inside GlassBackdropGroup).
+    expect(find.byType(Opacity), findsNothing);
+    expect(find.text('Btn'), findsOneWidget);
   });
 
   testWidgets('Trigger dissolves cleanly to 0.0 when menu is fully open',
@@ -1353,8 +1354,10 @@ void main() {
     await tester.tap(find.text('Btn'), warnIfMissed: false);
     await tester.pumpAndSettle();
 
-    final opacity = tester.widget<Opacity>(find.byType(Opacity).first);
-    expect(opacity.opacity, equals(1.0));
+    // Settled trigger omits Opacity (effective opacity 1.0) so it rejoins
+    // any enclosing GlassBackdropGroup cleanly.
+    expect(find.byType(Opacity), findsNothing);
+    expect(find.text('Btn'), findsOneWidget);
   });
 
   testWidgets(
@@ -2141,8 +2144,10 @@ void main() {
       expect(triggerOpacity.opacity, lessThan(1.0));
 
       await tester.pumpAndSettle();
-      final settledOpacity = tester.widget<Opacity>(find.byType(Opacity).first);
-      expect(settledOpacity.opacity, equals(1.0));
+      // Once settled at 1.0, the Opacity wrapper unmounts cleanly so the
+      // trigger rejoins any enclosing GlassBackdropGroup.
+      expect(find.byType(Opacity), findsNothing);
+      expect(find.text('Pull-Down'), findsOneWidget);
     });
   });
 

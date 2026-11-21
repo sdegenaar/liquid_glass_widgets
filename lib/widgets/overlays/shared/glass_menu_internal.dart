@@ -72,6 +72,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   late final ValueNotifier<int?> _hoveredIndexNotifier;
   late final ValueNotifier<bool> _isDraggingNotifier;
   List<Widget>? _cachedWrappedItems;
+  final GlobalKey _triggerChildKey = GlobalKey();
 
   // --- Layered submenus (GlassMenuItem.submenu) ---
   // Every pushed level opens a second glass card OVER the menu body (the way
@@ -495,7 +496,31 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
             : impactScale * widthScale;
         final double triggerScaleY = impactScale;
 
+        // Omit Opacity when fully opaque (idle) so menu triggers inside
+        // GlassAppBar/GlassToolbar stay inside an enclosing GlassBackdropGroup
+        // (RenderOpacity at any alpha — even 1.0 — acts as a render-pass
+        // isolation boundary in GlassBackdropGroupBoundary). Keeping
+        // _triggerChildKey on the trigger preserves its Element/State and
+        // geometry caches across open/close reparenting.
         final outer = GlassMaterializeScope.maybeOf(context);
+        Widget triggerWidget = KeyedSubtree(
+          key: _triggerChildKey,
+          child: GlassMaterializeScope(
+            glassProgress: glassScopeFactor * (outer?.glassProgress ?? 1.0),
+            contentOpacity: scopeFactor * (outer?.contentOpacity ?? 1.0),
+            contentSigma: outer?.contentSigma ?? 0.0,
+            child: IgnorePointer(
+              ignoring: isMenuBlocking,
+              child: child,
+            ),
+          ),
+        );
+        if (triggerLayerOpacity < 0.999) {
+          triggerWidget = Opacity(
+            opacity: triggerLayerOpacity,
+            child: triggerWidget,
+          );
+        }
 
         return OverlayPortal(
           controller: _overlayController,
@@ -514,20 +539,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                 onPointerMove: _handleTriggerPointerMove,
                 onPointerUp: _handleTriggerPointerUp,
                 onPointerCancel: _handleTriggerPointerCancel,
-                child: Opacity(
-                  opacity: triggerLayerOpacity,
-                  child: GlassMaterializeScope(
-                    glassProgress:
-                        glassScopeFactor * (outer?.glassProgress ?? 1.0),
-                    contentOpacity:
-                        scopeFactor * (outer?.contentOpacity ?? 1.0),
-                    contentSigma: outer?.contentSigma ?? 0.0,
-                    child: IgnorePointer(
-                      ignoring: isMenuBlocking,
-                      child: child,
-                    ),
-                  ),
-                ),
+                child: triggerWidget,
               ),
             ),
           ),

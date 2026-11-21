@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets/src/renderer/glass_backdrop_group_boundary.dart';
 import 'package:liquid_glass_widgets/theme/glass_theme_helpers.dart';
 
 class _PaintCounterBox extends SingleChildRenderObjectWidget {
@@ -314,6 +315,91 @@ void main() {
           isEmpty,
           reason: 'GlassScaffold, GlassSwitch, GlassSlider, and GlassMenu must '
               'not rebuild when MediaQuery.viewInsets changes.',
+        );
+      },
+    );
+
+    testWidgets(
+      'Wave 2.1 — idle GlassMenu trigger inside GlassAppBar stays inside '
+      'GlassBackdropGroup (opensRenderPassBelow == false)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: GlassScaffold(
+              appBar: GlassAppBar(
+                title: const Text('Menu Group'),
+                actions: [
+                  GlassMenu(
+                    triggerBuilder: (context, toggle) => GlassButton(
+                      icon: const Icon(CupertinoIcons.ellipsis),
+                      onTap: toggle,
+                    ),
+                    items: [
+                      GlassMenuItem(title: 'Edit', onTap: () {}),
+                    ],
+                  ),
+                ],
+              ),
+              body: const SizedBox.expand(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final buttonRo = tester.renderObject(find.byType(GlassButton));
+        final boundaryRo = tester
+            .renderObjectList<RenderGlassBackdropGroupBoundary>(
+              find.byType(GlassBackdropGroupBoundary, skipOffstage: false),
+            )
+            .last;
+        var blockedByRenderPass = false;
+        RenderObject? cursor = buttonRo.parent;
+        while (cursor != null && cursor != boundaryRo) {
+          if (opensRenderPassBelow(cursor)) {
+            blockedByRenderPass = true;
+            break;
+          }
+          cursor = cursor.parent;
+        }
+        expect(
+          blockedByRenderPass,
+          isFalse,
+          reason:
+              'Idle GlassMenu trigger must not mount RenderOpacity barriers '
+              'that eject it from GlassBackdropGroup.',
+        );
+      },
+    );
+
+    testWidgets(
+      'Wave 2.1 — minimal _FrostedFallback uses at most 1 BackdropFilter '
+      'even when saturation != 1.0',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 160,
+                  height: 60,
+                  child: AdaptiveGlass(
+                    quality: GlassQuality.minimal,
+                    settings: LiquidGlassSettings(blur: 10, saturation: 2.0),
+                    shape: LiquidRoundedSuperellipse(borderRadius: 16),
+                    child: SizedBox.expand(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byType(BackdropFilter),
+          findsOneWidget,
+          reason: '_FrostedFallback must compose blur + saturation into 1 '
+              'BackdropFilter instead of nesting 2.',
         );
       },
     );

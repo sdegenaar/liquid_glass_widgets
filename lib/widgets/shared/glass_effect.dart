@@ -958,12 +958,14 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
     return _cachedInteractiveFilter!;
   }
 
-  // Reusable ClipPathLayer handle — avoids allocation on every paint frame.
+  // Reusable layer handles — avoid allocations on every paint frame.
   final _clipPathLayerHandle = LayerHandle<ClipPathLayer>();
+  final _backdropLayerHandle = LayerHandle<BackdropFilterLayer>();
 
   @override
   void dispose() {
     _clipPathLayerHandle.layer = null;
+    _backdropLayerHandle.layer = null;
     super.dispose();
   }
 
@@ -995,8 +997,11 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
         Offset.zero & size,
         pillPath,
         (context, offset) {
+          final backdropLayer = (_backdropLayerHandle.layer ??=
+              BackdropFilterLayer())
+            ..filter = filter;
           context.pushLayer(
-            BackdropFilterLayer(filter: filter),
+            backdropLayer,
             (context, offset) {
               _paintGlassContent(context, offset);
             },
@@ -1008,6 +1013,7 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
       );
     } else {
       _clipPathLayerHandle.layer = null;
+      _backdropLayerHandle.layer = null;
       _paintGlassContent(context, offset);
     }
   }

@@ -119,3 +119,24 @@ class _GlassBackdropGroupScope extends InheritedWidget {
   bool updateShouldNotify(_GlassBackdropGroupScope oldWidget) =>
       backdropKey != oldWidget.backdropKey;
 }
+
+/// Internal opt-out scope that clears [GlassBackdropGroup.keyOf] without
+/// introducing a [RenderObject], so it can safely wrap [ParentDataWidget]s
+/// such as [Positioned] directly inside a [Stack].
+class GlassBackdropGroupOptOut extends StatelessWidget {
+  /// Creates an opt-out scope that excludes [child] from any enclosing
+  /// [GlassBackdropGroup].
+  const GlassBackdropGroupOptOut({
+    required this.child,
+    super.key,
+  });
+
+  /// The subtree excluded from the enclosing backdrop group.
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => _GlassBackdropGroupScope(
+        backdropKey: null,
+        child: child,
+      );
+}

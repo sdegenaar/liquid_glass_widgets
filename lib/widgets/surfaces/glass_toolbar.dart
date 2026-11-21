@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import '../../src/renderer/glass_backdrop_group.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/widgets/surfaces/vertical_bar_reservation.dart';
 import '../../theme/glass_theme_helpers.dart';
@@ -149,48 +150,51 @@ class GlassToolbar extends StatelessWidget {
         ? CupertinoColors.black.withValues(alpha: 0.12)
         : CupertinoColors.white.withValues(alpha: 0.12);
 
-    return AdaptiveLiquidGlassLayer(
-      settings: effectiveSettings,
-      quality: effectiveQuality,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(
-              color: dividerColor, // Subtle top divider
-              width: 0.5,
-            ),
-          ),
-        ),
-        child: Stack(
-          children: [
-            // Glass Background Layer
-            Positioned.fill(
-              child: AdaptiveGlass(
-                // Toolbar is typically a full-width rectangle
-                shape: const LiquidRoundedRectangle(borderRadius: 0),
-                settings: effectiveSettings,
-                quality: effectiveQuality,
-                useOwnLayer: false,
-                child: Container(color: effectiveBackgroundColor),
+    return GlassBackdropGroup(
+      joinEnclosing: true,
+      child: AdaptiveLiquidGlassLayer(
+        settings: effectiveSettings,
+        quality: effectiveQuality,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(
+                color: dividerColor, // Subtle top divider
+                width: 0.5,
               ),
             ),
+          ),
+          child: Stack(
+            children: [
+              // Glass Background Layer
+              Positioned.fill(
+                child: AdaptiveGlass(
+                  // Toolbar is typically a full-width rectangle
+                  shape: const LiquidRoundedRectangle(borderRadius: 0),
+                  settings: effectiveSettings,
+                  quality: effectiveQuality,
+                  useOwnLayer: false,
+                  child: Container(color: effectiveBackgroundColor),
+                ),
+              ),
 
-            // Content Layer
-            SafeArea(
-              top: false,
-              child: SizedBox(
-                height: height,
-                child: Padding(
-                  padding: padding,
-                  child: Row(
-                    mainAxisAlignment: alignment,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: children,
+              // Content Layer
+              SafeArea(
+                top: false,
+                child: SizedBox(
+                  height: height,
+                  child: Padding(
+                    padding: padding,
+                    child: Row(
+                      mainAxisAlignment: alignment,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: children,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -211,26 +215,29 @@ class GlassToolbar extends StatelessWidget {
         GlassVerticalBarMetrics.inset -
         GlassVerticalBarMetrics.controlExtent;
     final trailingStrip = bar.edge == GlassVerticalBarEdge.trailing;
-    return Align(
-      alignment: trailingStrip
-          ? AlignmentDirectional.bottomEnd
-          : AlignmentDirectional.bottomStart,
-      child: Padding(
-        padding: EdgeInsetsDirectional.only(
-          bottom: bar.bottom,
-          start: trailingStrip ? 0 : outerInset,
-          end: trailingStrip ? outerInset : 0,
-        ),
-        child: VerticalBarBottomReservation(
-          child: SizedBox(
-            width: GlassVerticalBarMetrics.controlExtent,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              spacing: GlassVerticalBarMetrics.spacing,
-              children: [
-                for (final child in children)
-                  if (child is! Spacer && child is! Flexible) child,
-              ],
+    return GlassBackdropGroup(
+      joinEnclosing: true,
+      child: Align(
+        alignment: trailingStrip
+            ? AlignmentDirectional.bottomEnd
+            : AlignmentDirectional.bottomStart,
+        child: Padding(
+          padding: EdgeInsetsDirectional.only(
+            bottom: bar.bottom,
+            start: trailingStrip ? 0 : outerInset,
+            end: trailingStrip ? outerInset : 0,
+          ),
+          child: VerticalBarBottomReservation(
+            child: SizedBox(
+              width: GlassVerticalBarMetrics.controlExtent,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                spacing: GlassVerticalBarMetrics.spacing,
+                children: [
+                  for (final child in children)
+                    if (child is! Spacer && child is! Flexible) child,
+                ],
+              ),
             ),
           ),
         ),
