@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_glass_widgets/utils/glass_morph_controller.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets/utils/liquid_morph_physics.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper: mounts a minimal widget that owns a GlassMorphController.
@@ -557,6 +558,114 @@ void main() {
       expect(ctrl.value, 0.0);
       expect(ctrl.status, AnimationStatus.completed);
       expect(statuses.last, AnimationStatus.completed);
+    });
+
+    testWidgets(
+        'single slow frame past spring settle still advances phaseElapsedSeconds (#522)',
+        (tester) async {
+      final ctrl = await _mount(tester);
+      ctrl.open();
+      // First ticker callback sets the baseline (0 ms).
+      await tester.pump();
+      // Simulate a cold shader-compile stall (600 ms > ~420 ms open settle):
+      // AnimationController._tick calls stop() (nulling lastElapsedDuration)
+      // before notifyListeners(). phaseElapsedSeconds must NOT remain 0.0.
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(ctrl.value, 1.0);
+      expect(ctrl.animation.isAnimating, isFalse);
+      expect(ctrl.phaseElapsedSeconds, greaterThanOrEqualTo(1.0));
+      expect(
+        LiquidMorphPhysics.computeOpenContentOpacity(
+          elapsedSeconds: ctrl.phaseElapsedSeconds,
+        ),
+        1.0,
+      );
+      expect(
+        LiquidMorphPhysics.computeOpenContentBlur(
+          elapsedSeconds: ctrl.phaseElapsedSeconds,
+        ),
+        0.0,
+      );
+      expect(
+        LiquidMorphPhysics.computeOpenCornerRadius(
+          currentSize: const Size(240, 260),
+          restingSize: const Size(240, 260),
+          targetRadius: 24.0,
+          elapsedSeconds: ctrl.phaseElapsedSeconds,
+        ),
+        closeTo(24.0, 0.01),
+      );
+
+      // Same single-frame stall during close() must also settle cleanly.
+      ctrl.close();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+      expect(ctrl.value, 0.0);
+      expect(ctrl.animation.isAnimating, isFalse);
+      expect(ctrl.hasHandedOff, isTrue);
+      expect(ctrl.phaseElapsedSeconds, greaterThanOrEqualTo(1.0));
+    });
+
+    testWidgets(
+        'GlassMenu settles rows and corner radius after a single-frame open stall (#522)',
+        (tester) async {
+      final controller = GlassMenuController();
+      await tester.pumpWidget(
+        LiquidGlassWidgets.wrap(
+          child: MaterialApp(
+            theme: ThemeData.dark(),
+            home: Scaffold(
+              body: Center(
+                child: GlassMenu(
+                  controller: controller,
+                  quality: GlassQuality.premium,
+                  menuWidth: 240,
+                  menuBorderRadius: 24,
+                  trigger: const SizedBox(width: 150, height: 40),
+                  items: [
+                    const GlassMenuLabel(title: 'Agent'),
+                    GlassMenuItem(title: 'build', onTap: () {}),
+                    GlassMenuItem(title: 'plan', onTap: () {}),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      controller.open();
+      await tester.pump();
+      // Single 600 ms stall jumps directly across the ~420 ms open spring.
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump();
+
+      // Rows must be visible at full opacity (not stuck at 0.0 in a round bubble).
+      expect(find.text('build'), findsOneWidget);
+      final buildElement = tester.element(find.text('build'));
+      final opacities = <double>[];
+      buildElement.visitAncestorElements((ancestor) {
+        final w = ancestor.widget;
+        if (w is Opacity) opacities.add(w.opacity);
+        return true;
+      });
+      for (final opacity in opacities) {
+        expect(opacity, closeTo(1.0, 0.01),
+            reason:
+                'menu rows must settle to full opacity after a frame stall');
+      }
+
+      // Menu platter shape must have relaxed to menuBorderRadius (24), not
+      // remained stuck at the initial bubble radius (~120).
+      final containers = tester
+          .widgetList<GlassContainer>(find.byType(GlassContainer))
+          .where((c) => c.width == 240)
+          .toList();
+      expect(containers, isNotEmpty);
+      final shape = containers.first.shape as LiquidRoundedSuperellipse;
+      expect(shape.borderRadius, closeTo(24.0, 0.5));
     });
   });
 }

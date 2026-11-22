@@ -2,6 +2,7 @@
 
 ## Bug Fixes
 
+- **`GlassMenu` & morph overlays settling after slow frames (#522):** Advance `GlassMorphController.phaseElapsedSeconds` to its settled state when `AnimationController` stops on a slow frame (such as cold shader compilation with `GlassWarmUpMode.never`), preventing `GlassMenu` from getting stuck as a blurred round bubble with hidden rows.
 - **Premium glass morphs:** Refresh the backdrop clip when the glass shape changes without a layout change, preventing a second contour at the frosted corners of an expanded `GlassMenu`.
 
 # 1.19.0
