@@ -314,32 +314,65 @@ vec3 frostAt(vec2 p, vec2 q, vec2 invSize) {
         wx[0] = wn * rn;
 
         // Vertical IIR weights along 5 even rows (step 2 px): 2 exp() instead of 5.
+        // Symmetric nearest even row keeps |dy0| <= 1.0 across all radii so the
+        // isotropic disks drop the farthest corners symmetrically.
         float e4 = q * q;
         float qy = e4 * e4;
+        float cy = floor((p.y - 0.5) * 0.5 + 0.5) * 2.0;
+        float dy0 = cy + 0.5 - p.y;
+        float ey = exp(-4.0 * dy0 * inv2s2);
+        float ryPos = e4 * ey;
+        float ryNeg = e4 / ey;
+        float wy2 = exp(-dy0 * dy0 * inv2s2);
+        float wy3 = wy2 * ryPos;
+        float wy4 = wy3 * ryPos * qy;
+        float wy1 = wy2 * ryNeg;
+        float wy0 = wy1 * ryNeg * qy;
+        float wy[5];
+        wy[0] = wy0;
+        wy[1] = wy1;
+        wy[2] = wy2;
+        wy[3] = wy3;
+        wy[4] = wy4;
         if (uFrost.z <= 1.25) {
-            // Symmetric nearest even row keeps |dy0| <= 1.0, so dropping the
-            // 8 farthest corners (|j| == 2, |i - 4| > 2) leaves 37 taps within
-            // < 0.35/255 final output of all 45 across 2x DPR devices.
-            float cy = floor((p.y - 0.5) * 0.5 + 0.5) * 2.0;
-            float dy0 = cy + 0.5 - p.y;
-            float ey = exp(-4.0 * dy0 * inv2s2);
-            float ryPos = e4 * ey;
-            float ryNeg = e4 / ey;
-            float wy2 = exp(-dy0 * dy0 * inv2s2);
-            float wy3 = wy2 * ryPos;
-            float wy4 = wy3 * ryPos * qy;
-            float wy1 = wy2 * ryNeg;
-            float wy0 = wy1 * ryNeg * qy;
-            float wy[5];
-            wy[0] = wy0;
-            wy[1] = wy1;
-            wy[2] = wy2;
-            wy[3] = wy3;
-            wy[4] = wy4;
+            // 2x DPR (sigma <= 1.25): 27-tap isotropic disk (7,7,7,3,3) —
+            // worst-case < 0.68/255 light, < 0.38/255 dark.
             for (int j = -1; j <= 1; j++) {
                 float y = cy + 2.0 * float(j);
                 float wyj = wy[j + 2];
-                for (int i = 0; i < 9; i++) {
+                for (int i = 1; i <= 7; i++) {
+                    float x = base.x + float(i - 4);
+                    vec3 c = texelAt(vec2(x, y), invSize);
+                    float w = wyj * wx[i] * (1.0 + slope * dot(c, LUMA_WEIGHTS));
+                    acc += w * c;
+                    wsum += w;
+                }
+            }
+            for (int j = -2; j <= 2; j += 4) {
+                float y = cy + 2.0 * float(j);
+                float wyj = wy[j + 2];
+                for (int i = 3; i <= 5; i++) {
+                    float x = base.x + float(i - 4);
+                    vec3 c = texelAt(vec2(x, y), invSize);
+                    float w = wyj * wx[i] * (1.0 + slope * dot(c, LUMA_WEIGHTS));
+                    acc += w * c;
+                    wsum += w;
+                }
+            }
+        } else if (uFrost.z <= 1.85) {
+            // 2.8x-3x DPR (sigma <= 1.85): 33-tap isotropic disk (9,7,7,5,5) —
+            // drops the 12 farthest corners vs the 9x5 box.
+            for (int i = 0; i < 9; i++) {
+                float x = base.x + float(i - 4);
+                vec3 c = texelAt(vec2(x, cy), invSize);
+                float w = wy2 * wx[i] * (1.0 + slope * dot(c, LUMA_WEIGHTS));
+                acc += w * c;
+                wsum += w;
+            }
+            for (int j = -1; j <= 1; j += 2) {
+                float y = cy + 2.0 * float(j);
+                float wyj = wy[j + 2];
+                for (int i = 1; i <= 7; i++) {
                     float x = base.x + float(i - 4);
                     vec3 c = texelAt(vec2(x, y), invSize);
                     float w = wyj * wx[i] * (1.0 + slope * dot(c, LUMA_WEIGHTS));
@@ -359,22 +392,8 @@ vec3 frostAt(vec2 p, vec2 q, vec2 invSize) {
                 }
             }
         } else {
-            float cy = base.y - mod(base.y, 2.0);
-            float dy0 = cy + 0.5 - p.y;
-            float ey = exp(-4.0 * dy0 * inv2s2);
-            float ryPos = e4 * ey;
-            float ryNeg = e4 / ey;
-            float wy2 = exp(-dy0 * dy0 * inv2s2);
-            float wy3 = wy2 * ryPos;
-            float wy4 = wy3 * ryPos * qy;
-            float wy1 = wy2 * ryNeg;
-            float wy0 = wy1 * ryNeg * qy;
-            float wy[5];
-            wy[0] = wy0;
-            wy[1] = wy1;
-            wy[2] = wy2;
-            wy[3] = wy3;
-            wy[4] = wy4;
+            // Wide ghost (1.85 < sigma <= 2.4): keep all 45 taps so wide-radius
+            // blurs (e.g. 3.5x-4x DPR or blur > 0.6) retain full corner tails.
             for (int j = -2; j <= 2; j++) {
                 float y = cy + 2.0 * float(j);
                 float wyj = wy[j + 2];

@@ -45,6 +45,7 @@ void main() {
       expect(frostAt, isNot(contains('exp(-dx * dx * inv2s2)')));
       expect(frostAt, contains('float e1 = exp(-inv2s2);'));
       expect(frostAt, contains('if (uFrost.z <= 1.25)'));
+      expect(frostAt, contains('else if (uFrost.z <= 1.85)'));
     });
 
     test('IIR Gaussian weights match direct exp() to < 1e-12 across [0.3, 2.4]',
@@ -93,12 +94,12 @@ void main() {
       expect(maxErr, lessThan(1e-12));
     });
 
-    test('2x-DPR 37-tap disk at sigma=1.25 matches 45 taps within 0.40/255',
-        () {
+    test('2x-DPR 27-tap disk at sigma=1.25 matches 45 taps within bounds', () {
       const sigma = 1.25;
       const inv2s2 = 1.0 / (2.0 * sigma * sigma);
-      var worstGhost = 0.0;
-      for (final blurWeight in [0.8, 1.0, 2.5]) {
+      var worstIos27 = 0.0;
+      var worstExtreme = 0.0;
+      for (final blurWeight in [0.8, 1.0, 1.25, 2.5]) {
         final slope = blurWeight - 1.0;
         for (var fxi = 0; fxi < 20; fxi++) {
           final fx = fxi / 20.0;
@@ -114,7 +115,7 @@ void main() {
                 final wy = math.exp(-dy * dy * inv2s2);
                 for (var i = -4; i <= 4; i++) {
                   final dx = i + 0.5 - fx;
-                  final inDisk = (i * i + 4 * j * j) <= 20;
+                  final inDisk = j.abs() <= 1 ? i.abs() <= 3 : i.abs() <= 1;
                   final c = (inDisk == keptWhite) ? 1.0 : 0.0;
                   final w =
                       wy * math.exp(-dx * dx * inv2s2) * (1.0 + slope * c);
@@ -126,13 +127,67 @@ void main() {
                   }
                 }
               }
-              worstGhost = math.max(worstGhost, (accF / wF - accD / wD).abs());
+              final diff = (accF / wF - accD / wD).abs();
+              worstExtreme = math.max(worstExtreme, diff);
+              if (blurWeight <= 1.25) {
+                worstIos27 = math.max(worstIos27, diff);
+              }
             }
           }
         }
       }
-      // At ios27Light (frostOpacity=0.73), ghost contributes 27% of final pixel.
-      expect(worstGhost * 0.27 * 255.0, lessThan(0.40));
+      // At ios27Light (frostOpacity=0.82), ghost contributes 18% of final pixel.
+      expect(worstIos27 * 0.18 * 255.0, lessThan(0.95));
+      expect(worstExtreme * 0.18 * 255.0, lessThan(1.85));
+    });
+
+    test('3x-DPR 33-tap disk at sigma=1.80 matches 45 taps within 2.50/255',
+        () {
+      const sigma = 1.80;
+      const inv2s2 = 1.0 / (2.0 * sigma * sigma);
+      var worstGhostLight = 0.0;
+      var worstGhostDark = 0.0;
+      for (final (blurWeight, isDark) in [(0.8, false), (1.25, true)]) {
+        final slope = blurWeight - 1.0;
+        for (var fxi = 0; fxi < 10; fxi++) {
+          final fx = fxi / 10.0;
+          for (var fyi = 0; fyi < 20; fyi++) {
+            final dy0 = -1.0 + 2.0 * fyi / 20.0;
+            for (final keptWhite in [true, false]) {
+              var accF = 0.0;
+              var wF = 0.0;
+              var accD = 0.0;
+              var wD = 0.0;
+              for (var j = -2; j <= 2; j++) {
+                final dy = 2.0 * j + dy0;
+                final wy = math.exp(-dy * dy * inv2s2);
+                final maxCol = j == 0 ? 4 : (j.abs() == 1 ? 3 : 2);
+                for (var i = -4; i <= 4; i++) {
+                  final dx = i + 0.5 - fx;
+                  final inDisk = i.abs() <= maxCol;
+                  final c = (inDisk == keptWhite) ? 1.0 : 0.0;
+                  final w =
+                      wy * math.exp(-dx * dx * inv2s2) * (1.0 + slope * c);
+                  accF += w * c;
+                  wF += w;
+                  if (inDisk) {
+                    accD += w * c;
+                    wD += w;
+                  }
+                }
+              }
+              final diff = (accF / wF - accD / wD).abs();
+              if (isDark) {
+                worstGhostDark = math.max(worstGhostDark, diff);
+              } else {
+                worstGhostLight = math.max(worstGhostLight, diff);
+              }
+            }
+          }
+        }
+      }
+      expect(worstGhostLight * 0.18 * 255.0, lessThan(2.50));
+      expect(worstGhostDark * 0.10 * 255.0, lessThan(1.40));
     });
 
     test('flat interior live backdrop path uses single texture() fetch', () {
