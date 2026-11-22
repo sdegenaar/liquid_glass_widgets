@@ -3,6 +3,7 @@
 ## Bug Fixes
 
 - **Premium glass morphs:** Refresh the backdrop clip when the glass shape changes without a layout change, preventing a second contour at the frosted corners of an expanded `GlassMenu`.
+- **`GlassModalSheet` under a `MediaQuery` that isn't the window's size:** The sheet now measures its detents, progress, snap targets and expand-first scroll gate against the `MediaQuery` height it rests by, and converts drags into its own layout pixels. Where the two differed — one side of a half-folded display presented by `show()`, or a page laid out at one width and scaled to the screen — the sheet rested by one height and judged itself by the other: a two-detent sheet at full couldn't scroll its content, a resting half-only sheet with a pixel `halfSize` couldn't either, and drags rubber-banded or fell behind the finger.
 
 # 1.19.0
 
