@@ -6,6 +6,7 @@
 
 ## Bug Fixes
 
+- **`GlassMenu` & morph overlays settling after slow frames (#522):** Advance `GlassMorphController.phaseElapsedSeconds` to its settled state when `AnimationController` stops on a slow frame (such as cold shader compilation with `GlassWarmUpMode.never`), preventing `GlassMenu` from getting stuck as a blurred round bubble with hidden rows.
 - **Premium glass morphs (#520):** Refresh the backdrop clip when the glass shape changes without a layout change, preventing a second contour at the frosted corners of an expanded `GlassMenu`.
 - **`GlassQuality.standard` morph overlays on Impeller:** Gate `LiquidGlassBlendGroup` creation in `GlassModalSheet`, `GlassMenu`, and `GlassPopover` morph overlays strictly on `GlassQuality.premium`, preventing missing-`InheritedGeometryRenderLink` assertions when morphing with `GlassQuality.standard` on Impeller.
 - **`GlassModalSheet` morphed close-origin after detent change (#507 follow-up):** When a `morphFrom` sheet opened at `half` is dragged to `full` or `peek` and dismissed at rest (barrier tap, close button, or `Navigator.pop`), frame 1 of the closing droplet morph now starts from the sheet's live resting detent (matching its active margins, bottom offset, corner radii, and fill) instead of snapping back to the initial `restingState`.

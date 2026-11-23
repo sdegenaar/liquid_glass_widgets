@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/animation.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/physics.dart';
@@ -384,6 +386,19 @@ class GlassMorphController extends ChangeNotifier {
   static const Tolerance _instantSettleTolerance =
       Tolerance(distance: 0.002, velocity: 0.05);
 
+  /// Elapsed-time floor applied when the underlying [AnimationController] has
+  /// settled at its open or close endpoint.
+  ///
+  /// Flutter's `AnimationController._tick` invokes `stop(canceled: false)` —
+  /// clearing `lastElapsedDuration` to `null` — *before* `notifyListeners()`.
+  /// If a slow first frame (e.g. cold shader compilation under
+  /// `GlassWarmUpMode.never`) jumps straight past `Simulation.isDone`,
+  /// `_lastElapsedSeconds` would stay frozen at `0.0` forever, leaving
+  /// `phaseElapsedSeconds`-driven curves (row opacity, blur, corner radius,
+  /// drift, recoil) stuck at `t = 0` (#522). Ten seconds exceeds every phase
+  /// curve's settle window even at [MorphSpeed.slow] (`0.65×`).
+  static const double _kSettledElapsedSeconds = 10.0;
+
   void _runSpring(
     double target, {
     required double velocityHint,
@@ -406,6 +421,14 @@ class GlassMorphController extends ChangeNotifier {
     if (elapsed != null) {
       _lastElapsedSeconds =
           elapsed.inMicroseconds / Duration.microsecondsPerSecond;
+    } else if (!_animationController.isAnimating &&
+        (_isClosing
+            ? _animationController.value <= 0.001
+            : _animationController.value >= 0.999)) {
+      _lastElapsedSeconds = math.max(
+        _lastElapsedSeconds,
+        _kSettledElapsedSeconds,
+      );
     }
     if (_isClosing && _animationController.value <= 0.0 && !_hasHandedOff) {
       _hasHandedOff = true;
