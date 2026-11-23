@@ -128,12 +128,22 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final prevLayoutSize = _layoutSize;
     _layoutSize = MediaQuery.sizeOf(context);
     _verticalBar = GlassVerticalBar.maybeOf(context);
     final stripFullSize = GlassModalSheet._stripFullSize(context);
     if (stripFullSize != _stripFullSize) {
       _stripFullSize = stripFullSize;
       _geometry = _buildGeometry();
+    }
+    if (prevLayoutSize != Size.zero && prevLayoutSize != _layoutSize) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted &&
+            _gestureArena.phase == GesturePhase.idle &&
+            _currentState != GlassSheetState.hidden) {
+          _snapToState(_currentState, animate: true);
+        }
+      });
     }
   }
 
@@ -257,7 +267,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
         const SpringDescription(mass: 1.0, stiffness: 220.0, damping: 30.0),
         _currentPosition,
         targetPosition,
-        velocity / layoutHeight,
+        layoutHeight > 0 ? velocity / layoutHeight : 0.0,
       );
       _animationController.animateWith(simulation);
     } else {

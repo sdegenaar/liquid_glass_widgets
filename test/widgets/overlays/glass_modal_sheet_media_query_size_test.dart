@@ -244,5 +244,46 @@ void main() {
       expect(controller.currentState, GlassSheetState.full);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets(
+        're-snaps a pixel detent when an ancestor MediaQuery.size changes',
+        (tester) async {
+      final sizeNotifier = ValueNotifier<Size>(const Size(800, 600));
+      addTearDown(sizeNotifier.dispose);
+      final controller = GlassModalSheetController();
+
+      await tester.pumpWidget(createTestApp(
+        child: ValueListenableBuilder<Size>(
+          valueListenable: sizeNotifier,
+          builder: (context, size, child) {
+            final media = MediaQuery.of(context);
+            return MediaQuery(
+              data: media.copyWith(size: size),
+              child: child!,
+            );
+          },
+          child: Stack(
+            children: [
+              GlassModalSheet(
+                controller: controller,
+                detents: const {GlassSheetDetent.medium},
+                halfSize: 240,
+                quality: GlassQuality.minimal,
+                child: _list(),
+              ),
+            ],
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      expect(controller.value, closeTo(240 / 600, 0.0001));
+
+      // Shrink the ancestor MediaQuery height without resizing the window.
+      sizeNotifier.value = const Size(800, 480);
+      await tester.pumpAndSettle();
+      expect(controller.value, closeTo(240 / 480, 0.0001));
+      expect(controller.currentState, GlassSheetState.half);
+      expect(tester.takeException(), isNull);
+    });
   });
 }
