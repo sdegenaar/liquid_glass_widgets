@@ -981,7 +981,6 @@ class TabIndicatorState extends State<TabIndicator>
             AnimatedGlassIndicator(
               velocity: velocity,
               jelly: jelly,
-              clampExpansionToTrack: jelly != null,
               itemCount: widget.tabCount,
               alignment: alignment,
               thickness: thickness,
@@ -1058,7 +1057,6 @@ class TabIndicatorState extends State<TabIndicator>
             expansion: resolvedExpansion,
             transform: jellyTransform,
             jelly: jelly,
-            clampExpansionToTrack: jelly != null,
             borderRadius: indicatorRadius * 2,
             inverse: true,
           ),
@@ -1081,7 +1079,6 @@ class TabIndicatorState extends State<TabIndicator>
             expansion: resolvedExpansion,
             transform: jellyTransform,
             jelly: jelly,
-            clampExpansionToTrack: jelly != null,
             borderRadius: indicatorRadius * 2,
           ),
           child: Container(
@@ -1123,7 +1120,6 @@ class TabIndicatorState extends State<TabIndicator>
                   AnimatedGlassIndicator(
                     velocity: velocity,
                     jelly: jelly,
-                    clampExpansionToTrack: jelly != null,
                     itemCount: widget.tabCount,
                     alignment: alignment,
                     thickness: thickness,
@@ -1167,7 +1163,6 @@ class TabIndicatorState extends State<TabIndicator>
           AnimatedGlassIndicator(
             velocity: velocity,
             jelly: jelly,
-            clampExpansionToTrack: jelly != null,
             itemCount: widget.tabCount,
             alignment: alignment,
             thickness: thickness,
