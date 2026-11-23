@@ -68,18 +68,22 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   /// absence leaves to the default. See [GlassModalSheet._stripFullSize].
   double? _stripFullSize;
 
-  /// The view size the drag math divides by, cached because pointer moves
-  /// arrive faster than an inherited lookup is worth. Read it through
-  /// [_screenSize], which refreshes a cache still holding the zero it was
-  /// born with: a sheet built before the window has a size — an app the
-  /// system launched in the background for a push, a test on a zero-size
-  /// view — would otherwise keep that zero for life and divide every drag
-  /// by it.
-  Size _cachedScreenSize = Size.zero;
-  Size get _screenSize {
-    if (_cachedScreenSize.isEmpty && mounted) _updateScreenSize();
-    return _cachedScreenSize;
-  }
+  /// The size the sheet lays out in: its [MediaQuery]'s, which [build]
+  /// positions it by. Every detent position, and every progress, snap target
+  /// and resistance bound measured between them, divides by this one height,
+  /// so the sheet is judged by the same height it rests at — even where an
+  /// ancestor's MediaQuery isn't the window's size (one side of a half-folded
+  /// display, a page laid out at one width and scaled to the screen). Cached
+  /// in [didChangeDependencies] because pointer moves arrive faster than an
+  /// inherited lookup is worth.
+  Size _layoutSize = Size.zero;
+
+  /// The sheet's layout pixels per pointer pixel along a drag: 1 unless an
+  /// ancestor scales the sheet. Pointer positions arrive in the window's
+  /// pixels and the sheet's position is a fraction of [_layoutSize]; this is
+  /// the conversion that keeps the sheet under the finger. Read from each
+  /// touch's hit-test transform in [_onPointerDown].
+  double _layoutPerPointer = 1.0;
 
   @override
   void initState() {
@@ -113,7 +117,6 @@ class _GlassModalSheetState extends State<GlassModalSheet>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _updateScreenSize();
         _lastPhysicalSize = View.of(context).physicalSize;
         _snapToState(_currentState, animate: false);
       }
@@ -125,11 +128,22 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final prevLayoutSize = _layoutSize;
+    _layoutSize = MediaQuery.sizeOf(context);
     _verticalBar = GlassVerticalBar.maybeOf(context);
     final stripFullSize = GlassModalSheet._stripFullSize(context);
     if (stripFullSize != _stripFullSize) {
       _stripFullSize = stripFullSize;
       _geometry = _buildGeometry();
+    }
+    if (prevLayoutSize != Size.zero && prevLayoutSize != _layoutSize) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted &&
+            _gestureArena.phase == GesturePhase.idle &&
+            _currentState != GlassSheetState.hidden) {
+          _snapToState(_currentState, animate: true);
+        }
+      });
     }
   }
 
@@ -186,11 +200,10 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     // Filter system call spam: the spring only jitters if the window size
     // actually changes.
     if (_lastPhysicalSize != view.physicalSize) {
-      _updateScreenSize();
       // A window that had no size is being sized for the first time (an app
       // launched in the background, coming to the foreground), not resized:
-      // there is nothing to re-settle, and the size cache above is all that
-      // first size has to update.
+      // there is nothing to re-settle, and the layout size arrives with the
+      // MediaQuery's next build.
       if (_lastPhysicalSize != Size.zero) {
         _snapToState(_currentState, animate: true);
       }
@@ -233,11 +246,6 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     return requested;
   }
 
-  void _updateScreenSize() {
-    final view = View.of(context);
-    _cachedScreenSize = view.physicalSize / view.devicePixelRatio;
-  }
-
   // ════════════════════════════════════════════════════════════════════════
   // Snap & State Management
   // ════════════════════════════════════════════════════════════════════════
@@ -251,15 +259,15 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       state = GlassSheetState.peek;
     }
 
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final targetPosition = _geometry.positionForState(state, screenHeight);
+    final layoutHeight = _layoutSize.height;
+    final targetPosition = _geometry.positionForState(state, layoutHeight);
 
     if (animate) {
       final simulation = SpringSimulation(
         const SpringDescription(mass: 1.0, stiffness: 220.0, damping: 30.0),
         _currentPosition,
         targetPosition,
-        velocity / screenHeight,
+        layoutHeight > 0 ? velocity / layoutHeight : 0.0,
       );
       _animationController.animateWith(simulation);
     } else {
@@ -319,7 +327,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     final snapshot = SheetSnapshot(
       state: _currentState,
       position: value,
-      screenSize: _screenSize,
+      screenSize: _layoutSize,
     );
     final target = _geometry.resolveTarget(
       snapshot,
@@ -367,6 +375,8 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   // ════════════════════════════════════════════════════════════════════════
 
   void _onPointerDown(PointerDownEvent event) {
+    _layoutPerPointer = _layoutPixelsPerPointerPixel(event);
+
     // ALWAYS initialize the gesture arena so swipes can start from anywhere,
     // even from buttons or interactive children.
     _gestureArena.beginPointer(
@@ -404,6 +414,17 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     }
 
     _frozenState = null;
+  }
+
+  /// How many of the sheet's layout pixels a vertical pointer pixel covers:
+  /// the vertical scale of the transform [event] was hit-tested with, which
+  /// maps window pixels into the receiving Listener's. That is the scale of
+  /// whatever ancestors transform the sheet, and exactly 1 where none do
+  /// (offsets don't enter it). The Listener sits outside the sheet's own
+  /// press scaling, so that scaling never does either.
+  static double _layoutPixelsPerPointerPixel(PointerEvent event) {
+    final scale = event.transform?.entry(1, 1) ?? 1.0;
+    return scale.isFinite && scale > 0 ? scale : 1.0;
   }
 
   void _recordContentMetrics(ScrollMetrics metrics) {
@@ -515,7 +536,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       state: _currentState,
       position: _currentPosition,
       velocity: velocity,
-      screenSize: _screenSize,
+      screenSize: _layoutSize,
     );
     final target = _geometry.resolveTarget(
       snapshot,
@@ -523,7 +544,9 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       velocityThreshold: widget.velocityThreshold,
     );
 
-    _snapToState(target, velocity: velocity);
+    // The flick is judged by the finger's speed; the spring carries on at
+    // the sheet's, in its own layout pixels.
+    _snapToState(target, velocity: velocity * _layoutPerPointer);
   }
 
   void _onPointerCancel(PointerCancelEvent event) {
@@ -539,15 +562,16 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   // ════════════════════════════════════════════════════════════════════════
 
   void _applyDrag(double currentY) {
-    final screenHeight = _screenSize.height;
-    // No sized window means nothing visible is being dragged; dividing by
+    final layoutHeight = _layoutSize.height;
+    // No sized layout means nothing visible is being dragged; dividing by
     // zero here would park the sheet at infinity for good.
-    if (screenHeight <= 0) return;
-    final delta = currentY - _gestureArena.dragStartY;
+    if (layoutHeight <= 0) return;
+    // The finger's travel in the sheet's layout pixels.
+    final delta = (currentY - _gestureArena.dragStartY) * _layoutPerPointer;
     double newPosition =
-        _gestureArena.dragStartSheetPosition - delta / screenHeight;
+        _gestureArena.dragStartSheetPosition - delta / layoutHeight;
 
-    newPosition = _geometry.applyResistance(newPosition, screenHeight,
+    newPosition = _geometry.applyResistance(newPosition, layoutHeight,
         resistance: widget.resistance);
     _animationController.value = newPosition;
 
@@ -555,7 +579,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       state: _currentState,
       position: newPosition,
       velocity: 0,
-      screenSize: _screenSize,
+      screenSize: _layoutSize,
     );
     final target = _geometry.resolveTarget(
       snapshot,
@@ -579,9 +603,9 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     // over-drag above half just rubber-bands; it isn't an expansion).
     if (!_geometry.enableFull) return 0.0;
     final halfPos =
-        _geometry.positionForState(GlassSheetState.half, _screenSize.height);
+        _geometry.positionForState(GlassSheetState.half, _layoutSize.height);
     final fullPos =
-        _geometry.positionForState(GlassSheetState.full, _screenSize.height);
+        _geometry.positionForState(GlassSheetState.full, _layoutSize.height);
     if (fullPos <= halfPos) return 0.0;
     return ((_currentPosition - halfPos) / (fullPos - halfPos)).clamp(0.0, 1.0);
   }
@@ -600,9 +624,9 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     // content as immediately scrollable rather than gating on a transition
     // that can never happen.
     if (states.length < 2) return 1.0;
-    final maxPos = _geometry.positionForState(states.last, _screenSize.height);
+    final maxPos = _geometry.positionForState(states.last, _layoutSize.height);
     final prevPos = _geometry.positionForState(
-        states[states.length - 2], _screenSize.height);
+        states[states.length - 2], _layoutSize.height);
     if (maxPos <= prevPos) return 0.0;
     return ((_currentPosition - prevPos) / (maxPos - prevPos)).clamp(0.0, 1.0);
   }
@@ -779,8 +803,8 @@ class _GlassModalSheetState extends State<GlassModalSheet>
       // 2. Resolve Peek-specific width (hPad)
       double peekHPad = peekHMargin;
       if (widget.peekWidth != null && mqHeight > 0) {
-        peekHPad = ((_screenSize.width - widget.peekWidth!) / 2.0)
-            .clamp(0.0, _screenSize.width / 2.0);
+        peekHPad = ((_layoutSize.width - widget.peekWidth!) / 2.0)
+            .clamp(0.0, _layoutSize.width / 2.0);
       }
 
       if (widget.mode == GlassSheetMode.persistent) {
