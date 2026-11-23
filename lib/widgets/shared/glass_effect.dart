@@ -155,7 +155,8 @@ class _GlassEffectState extends State<GlassEffect>
   ui.FragmentShader? _localShader;
   bool _isDisposed = false;
   ui.Image? _backgroundImage;
-  late Ticker _ticker;
+  Ticker? _ticker;
+  bool _observingLifecycle = false;
   Size? _lastCaptureSize;
   Offset? _lastCapturePosition;
   // Web only: guards against overlapping async captures.
@@ -164,31 +165,40 @@ class _GlassEffectState extends State<GlassEffect>
   // current when _captureBackgroundSync / _captureBackgroundAsync runs.
   double _devicePixelRatio = 1.0;
 
+  bool get _needsLocalShader {
+    if (widget.quality == GlassQuality.minimal) return false;
+    // Path B (Impeller + premium) renders via LiquidGlass.withOwnLayer and
+    // never uses interactive_indicator.frag (_localShader).
+    final bool isImpeller = !kIsWeb && GlassEffect._canUseImpeller;
+    if (isImpeller && widget.quality == GlassQuality.premium) return false;
+    return true;
+  }
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    // Skip shader init entirely in minimal quality — build() returns early via
-    // the _FrostedFallback path and the shader is never used.
-    if (widget.quality != GlassQuality.minimal) {
+    // Skip shader init when minimal or Impeller-premium — neither path uses
+    // _localShader (interactive_indicator.frag).
+    if (_needsLocalShader) {
       _initShader();
     }
 
-    _ticker = createTicker(_handleTick);
-
-    // Defer ticker update until after first frame to ensure shader is ready
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _updateTicker();
-      }
-    });
+    // Only schedule the post-frame capture check when already interacting or
+    // configured with a background capture source.
+    if (widget.interactionIntensity > 0.01 && widget.settings.blur > 0.0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _updateTicker();
+        }
+      });
+    }
   }
 
   @override
   void didUpdateWidget(covariant GlassEffect oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.quality != widget.quality) {
-      if (_activeShader == null) {
+      if (_needsLocalShader && _activeShader == null) {
         _initShader();
       }
     }
@@ -220,7 +230,7 @@ class _GlassEffectState extends State<GlassEffect>
       case AppLifecycleState.inactive:
       case AppLifecycleState.paused:
       case AppLifecycleState.hidden:
-        if (_ticker.isActive) _ticker.stop();
+        if (_ticker?.isActive ?? false) _ticker!.stop();
         break;
       case AppLifecycleState.resumed:
         // Restart one frame after resume so surfaceChanged has completed
@@ -248,21 +258,34 @@ class _GlassEffectState extends State<GlassEffect>
         _effectiveKey != null &&
         widget.settings.blur > 0.0;
     if (shouldCapture) {
-      if (!_ticker.isActive) {
-        _ticker.start();
-        // debugPrint(
-        //     '[GlassEffect] 📸 Starting capture loop. Intensity: ${widget.interactionIntensity.toStringAsFixed(2)}');
+      if (!_observingLifecycle) {
+        WidgetsBinding.instance.addObserver(this);
+        _observingLifecycle = true;
+      }
+      final ticker = _ticker ??= createTicker(_handleTick);
+      if (!ticker.isActive) {
+        ticker.start();
       }
     } else {
-      if (_ticker.isActive) {
-        _ticker.stop();
+      if (_ticker?.isActive ?? false) {
+        _ticker!.stop();
+        _lastCaptureElapsed = null;
         _backgroundImage?.dispose();
         _backgroundImage = null;
-        // debugPrint(
-        //     '[GlassEffect] 📸 Interaction finished, cleared snapshot.');
       }
     }
   }
+
+  // Minimum interval between periodic re-captures during an active drag when
+  // the background boundary's size and position have not changed (~30 Hz
+  // instead of 120 Hz cuts GPU texture churn by 4×).
+  static const Duration _kMinCaptureInterval = Duration(milliseconds: 33);
+  // Cap captured background texture area at ~1M physical pixels so a
+  // full-screen GlassBackgroundSource on a 3× display does not allocate a
+  // 14 MB RGBA texture every capture; compact bar boundaries stay at full DPR.
+  static const double _kMaxCapturePixels = 1000000.0;
+
+  Duration? _lastCaptureElapsed;
 
   void _handleTick(Duration elapsed) {
     if (_isDisposed) return; // belt-and-suspenders: post-frame callbacks can
@@ -282,15 +305,15 @@ class _GlassEffectState extends State<GlassEffect>
     final currentPos = (key.currentContext?.findRenderObject() as RenderBox?)
         ?.localToGlobal(Offset.zero);
 
-    // Capture on geometry change always; during interaction capture every frame
-    // since toImageSync() is synchronous (no GPU readback, no CPU copy).
     final bool isInteracting = widget.interactionIntensity > 0.05;
-    bool needsCapture = _backgroundImage == null;
-    needsCapture |= _lastCaptureSize != currentSize;
-    needsCapture |= _lastCapturePosition != currentPos;
-    needsCapture |= isInteracting; // every frame during drag — free cost
+    final bool geometryChanged = _backgroundImage == null ||
+        _lastCaptureSize != currentSize ||
+        _lastCapturePosition != currentPos;
+    final bool intervalElapsed = _lastCaptureElapsed == null ||
+        (elapsed - _lastCaptureElapsed!) >= _kMinCaptureInterval;
 
-    if (needsCapture) {
+    if (geometryChanged || (isInteracting && intervalElapsed)) {
+      _lastCaptureElapsed = elapsed;
       _captureBackground(boundary, currentSize, currentPos);
     }
   }
@@ -337,7 +360,11 @@ class _GlassEffectState extends State<GlassEffect>
       // across, eliminating the blocky 3×3 pixel "staircase" aliasing on
       // Retina/3× displays when pixelRatio: 1.0 was used.
       final dpr = _devicePixelRatio;
-      final image = boundary.toImageSync(pixelRatio: dpr);
+      final fullPixels = size.width * size.height * dpr * dpr;
+      final captureDpr = fullPixels > _kMaxCapturePixels
+          ? (dpr * math.sqrt(_kMaxCapturePixels / fullPixels)).clamp(1.0, dpr)
+          : dpr;
+      final image = boundary.toImageSync(pixelRatio: captureDpr);
       // Guard: if the widget was disposed between the toImageSync call and
       // this point (possible during rapid navigation), dispose the image
       // immediately rather than leaking it into a dead State.
@@ -415,8 +442,12 @@ class _GlassEffectState extends State<GlassEffect>
   @override
   void dispose() {
     _isDisposed = true;
-    WidgetsBinding.instance.removeObserver(this);
-    _ticker.dispose();
+    if (_observingLifecycle) {
+      WidgetsBinding.instance.removeObserver(this);
+      _observingLifecycle = false;
+    }
+    _ticker?.dispose();
+    _ticker = null;
     // Null backgroundImage BEFORE disposing the shader to break the reference
     // chain: _backgroundImage → render object → engine layer tree → GPU texture.
     // On Mali GPUs, if the shader’s DlRuntimeEffectColorSource retains a
@@ -958,12 +989,19 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
     return _cachedInteractiveFilter!;
   }
 
-  // Reusable ClipPathLayer handle — avoids allocation on every paint frame.
+  // Reusable layer handles and cached pill clip path — avoid allocations on
+  // every paint frame.
   final _clipPathLayerHandle = LayerHandle<ClipPathLayer>();
+  final _backdropLayerHandle = LayerHandle<BackdropFilterLayer>();
+  Path? _cachedPillPath;
+  Size? _cachedPillPathSize;
+  LiquidShape? _cachedPillPathShape;
 
   @override
   void dispose() {
     _clipPathLayerHandle.layer = null;
+    _backdropLayerHandle.layer = null;
+    _cachedPillPath = null;
     super.dispose();
   }
 
@@ -988,15 +1026,25 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
       // PaintingContext.pushClipPath calls clipPath.shift(offset) internally, so
       // passing `offset & size` here would shift the clip twice — placing it
       // entirely outside the widget's screen bounds whenever offset != zero.
-      final pillPath = _shape.getOuterPath(Offset.zero & size);
+      if (_cachedPillPath == null ||
+          _cachedPillPathSize != size ||
+          _cachedPillPathShape != _shape) {
+        _cachedPillPathSize = size;
+        _cachedPillPathShape = _shape;
+        _cachedPillPath = _shape.getOuterPath(Offset.zero & size);
+      }
+      final pillPath = _cachedPillPath!;
       _clipPathLayerHandle.layer = context.pushClipPath(
         needsCompositing,
         offset,
         Offset.zero & size,
         pillPath,
         (context, offset) {
+          final backdropLayer = (_backdropLayerHandle.layer ??=
+              BackdropFilterLayer())
+            ..filter = filter;
           context.pushLayer(
-            BackdropFilterLayer(filter: filter),
+            backdropLayer,
             (context, offset) {
               _paintGlassContent(context, offset);
             },
@@ -1008,6 +1056,7 @@ class _RenderInteractiveIndicator extends RenderProxyBox {
       );
     } else {
       _clipPathLayerHandle.layer = null;
+      _backdropLayerHandle.layer = null;
       _paintGlassContent(context, offset);
     }
   }

@@ -20,6 +20,7 @@ import 'liquid_glass_layer.dart';
 import 'liquid_glass_render_scope.dart';
 import 'liquid_glass_settings.dart';
 import 'liquid_shape.dart';
+import 'render_liquid_glass_geometry.dart';
 
 /// A liquid glass shape.
 ///
@@ -332,16 +333,33 @@ class RenderLiquidGlass extends RenderProxyBox
   }
 
   final transformLayerHandle = LayerHandle<TransformLayer>();
+  RenderLiquidGlassGeometry? _cachedBlendGroup;
+
+  RenderLiquidGlassGeometry? _findEnclosingBlendGroup() {
+    RenderObject? node = parent;
+    while (node != null && node is! RenderLiquidGlassGeometry) {
+      node = node.parent;
+    }
+    return node as RenderLiquidGlassGeometry?;
+  }
+
+  @override
+  RenderObject? get transformTrackingAncestor =>
+      _cachedBlendGroup ?? _findEnclosingBlendGroup();
 
   @override
   void attach(PipelineOwner owner) {
     super.attach(owner);
+    _cachedBlendGroup = _findEnclosingBlendGroup();
+    layer?.ancestor = _cachedBlendGroup;
     _registerWithLink();
   }
 
   @override
   void detach() {
     _unregisterFromParentLayer();
+    _cachedBlendGroup = null;
+    layer?.ancestor = null;
     transformLayerHandle.layer = null;
     super.detach();
   }
@@ -368,14 +386,22 @@ class RenderLiquidGlass extends RenderProxyBox
     );
   }
 
+  Size? _lastLayoutSize;
+  LiquidShape? _lastLayoutShape;
   Path? _cachedShapePath;
 
   @override
   void performLayout() {
     super.performLayout();
-    _cachedShapePath = null;
-    // Notify parent layer when our layout changes
-    _blendGroupLink?.notifyShapeLayoutChanged(this);
+    // Only invalidate the cached outer Path and notify the blend group when
+    // size or shape actually changed; no-op relayouts at identical size/shape
+    // must not force a synchronous SDF geometry matte rebuild.
+    if (_lastLayoutSize != size || _lastLayoutShape != shape) {
+      _lastLayoutSize = size;
+      _lastLayoutShape = shape;
+      _cachedShapePath = null;
+      _blendGroupLink?.notifyShapeLayoutChanged(this);
+    }
   }
 
   @override

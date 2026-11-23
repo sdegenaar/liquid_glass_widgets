@@ -333,6 +333,15 @@ class GlassButtonGroup extends StatelessWidget {
       Widget buildPill({
         VoidCallback? menuToggle,
       }) {
+        final Widget flexRow = Flex(
+          direction: direction,
+          mainAxisSize: MainAxisSize.min,
+          children: _buildItemWidgets(
+            iconColor,
+            menuToggle: menuToggle,
+            menuItemIndex: menuItemIndex,
+          ),
+        );
         return GlassButton.custom(
           onTap: () {}, // Items handle their own taps
           shape: shape,
@@ -349,17 +358,11 @@ class GlassButtonGroup extends StatelessWidget {
           // Reduce stretch for grouped buttons — full stretch looks too dramatic
           // on a wide pill. This matches iOS 26 toolbar feel.
           stretch: 0.15,
-          child: IntrinsicHeight(
-            child: Flex(
-              direction: direction,
-              mainAxisSize: MainAxisSize.min,
-              children: _buildItemWidgets(
-                iconColor,
-                menuToggle: menuToggle,
-                menuItemIndex: menuItemIndex,
-              ),
-            ),
-          ),
+          // Only pay IntrinsicHeight's 2-pass layout when horizontal dividers
+          // need to stretch to the tallest item height.
+          child: (showDividers && direction == Axis.horizontal)
+              ? IntrinsicHeight(child: flexRow)
+              : flexRow,
         );
       }
 
@@ -389,6 +392,11 @@ class GlassButtonGroup extends StatelessWidget {
             ? CupertinoColors.black.withValues(alpha: 0.12)
             : CupertinoColors.white.withValues(alpha: 0.12));
 
+    final Widget childrenFlex = Flex(
+      direction: direction,
+      mainAxisSize: MainAxisSize.min,
+      children: _buildChildrenWithDividers(effectiveBorderColor),
+    );
     return GlassContainer(
       useOwnLayer: useOwnLayer,
       quality: effectiveQuality,
@@ -397,13 +405,9 @@ class GlassButtonGroup extends StatelessWidget {
       shape: LiquidRoundedRectangle(borderRadius: borderRadius),
       padding: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
-      child: IntrinsicHeight(
-        child: Flex(
-          direction: direction,
-          mainAxisSize: MainAxisSize.min,
-          children: _buildChildrenWithDividers(effectiveBorderColor),
-        ),
-      ),
+      child: (showDividers && direction == Axis.horizontal)
+          ? IntrinsicHeight(child: childrenFlex)
+          : childrenFlex,
     );
   }
 

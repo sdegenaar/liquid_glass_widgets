@@ -92,13 +92,9 @@ void main() {
       ));
       final scope = tester.state<GlassContentAwareScopeState>(
           find.byType(GlassContentAwareScope));
-      final boundary = tester.renderObject(
-        find
-            .descendant(
-                of: find.byType(GlassContentAwareContent),
-                matching: find.byType(RepaintBoundary))
-            .first,
-      ) as RenderRepaintBoundary;
+      final boundary = tester.renderObject<RenderRepaintBoundary>(
+        find.byType(GlassContentAwareContent),
+      );
       var flips = 0;
       final sub = scope.register(
         controlBox: () => boundary,

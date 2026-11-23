@@ -162,8 +162,9 @@ class _AdaptiveLiquidGlassLayerState extends State<AdaptiveLiquidGlassLayer> {
 
     // Detect if we should use the full Impeller-native rendering pipeline.
     // platformViewBackdrop is never true here — that case returned above.
-    final bool useFullRenderer = AdaptiveLiquidGlassLayer._canUseImpeller &&
-        effectiveQuality == GlassQuality.premium;
+    final bool isPremium = effectiveQuality == GlassQuality.premium;
+    final bool useFullRenderer =
+        AdaptiveLiquidGlassLayer._canUseImpeller && isPremium;
 
     // Resolve shadow for SDF rendering. Shadows only apply in light mode.
     final bool isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
@@ -175,28 +176,36 @@ class _AdaptiveLiquidGlassLayerState extends State<AdaptiveLiquidGlassLayer> {
     final Widget keyedContent =
         KeyedSubtree(key: _contentKey, child: widget.child);
 
+    final Widget scopeTree = GlassIsolationScope(
+      isolated: false,
+      child: InheritedLiquidGlass(
+        settings: effectiveSettings,
+        quality: effectiveQuality,
+        isBlurProvidedByAncestor:
+            false, // Root never provides the blur; containers do.
+        hasExplicitSettings: widget.settings != null,
+        hasExplicitQuality: widget.quality != null,
+        child: useFullRenderer
+            ? LiquidGlassBlendGroup(
+                blend: widget.blendAmount,
+                child: keyedContent,
+              )
+            : keyedContent,
+      ),
+    );
+
+    // Non-premium tiers (standard / minimal) render via LightweightLiquidGlass
+    // or _FrostedFallback directly — skip mounting PremiumGlassTracker and
+    // LiquidGlassLayer so standard/minimal screens never allocate an unused
+    // engine layer stack or inflate GlassPerformanceMonitor._premiumCount.
+    if (!isPremium) return scopeTree;
+
     return PremiumGlassTracker(
       child: LiquidGlassLayer(
         settings: effectiveSettings,
         shadows: resolvedShadows,
         clipExpansion: widget.clipExpansion,
-        child: GlassIsolationScope(
-          isolated: false,
-          child: InheritedLiquidGlass(
-            settings: effectiveSettings,
-            quality: effectiveQuality,
-            isBlurProvidedByAncestor:
-                false, // Root never provides the blur; containers do.
-            hasExplicitSettings: widget.settings != null,
-            hasExplicitQuality: widget.quality != null,
-            child: useFullRenderer
-                ? LiquidGlassBlendGroup(
-                    blend: widget.blendAmount,
-                    child: keyedContent,
-                  )
-                : keyedContent,
-          ),
-        ),
+        child: scopeTree,
       ),
     );
   }

@@ -73,6 +73,9 @@ vec3 applySaturation(vec3 color, float saturation) {
 //   retaining specular, Fresnel, and rim physics.
 // glassColor.a = 0 naturally returns liquidColor via mix() in all paths.
 vec4 applyGlassColor(vec4 liquidColor, vec4 glassColor, float bodyMode) {
+    if (glassColor.a <= 0.001) {
+        return liquidColor;
+    }
     vec3 directMix = mix(liquidColor.rgb, glassColor.rgb, glassColor.a);
     if (bodyMode > 0.5) {
         return vec4(directMix, liquidColor.a);
