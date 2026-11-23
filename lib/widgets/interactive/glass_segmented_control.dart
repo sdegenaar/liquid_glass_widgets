@@ -463,7 +463,8 @@ class GlassSegmentedControl extends StatefulWidget {
   /// Defaults to [IndicatorJellyPhysics.native], measured from UIKit. Change
   /// single values with [IndicatorJellyPhysics.copyWith], or pass
   /// [IndicatorJellyPhysics.disabled] for the classic velocity squash.
-  /// Not used by [GlassSegmentedControl.scrollable].
+  /// Applies to horizontal controls; not used when [direction] is
+  /// [Axis.vertical] or on [GlassSegmentedControl.scrollable].
   final IndicatorJellyPhysics? indicatorJelly;
 
   /// Expansion padding applied to the active indicator pill during interaction.

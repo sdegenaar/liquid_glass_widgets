@@ -1,10 +1,11 @@
 import 'dart:math' as math;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/physics.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:liquid_glass_widgets/utils/indicator_jelly.dart';
-import 'package:liquid_glass_widgets/widgets/surfaces/shared/tab_bar_types.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets/utils/indicator_jelly.dart'
+    show IndicatorJellyBuilder;
 
 double _right(IndicatorJelly j) => j.offsetX + (j.scaleX - 1) / 2;
 double _left(IndicatorJelly j) => j.offsetX - (j.scaleX - 1) / 2;
@@ -265,7 +266,7 @@ void main() {
               lead: lead,
               itemCount: 5,
               dragging: dragging,
-              builder: (context, jelly) {
+              builder: (context, jelly, _) {
                 jellies.add(jelly);
                 return const SizedBox();
               },
@@ -293,7 +294,7 @@ void main() {
               lead: target,
               itemCount: 5,
               dragging: false,
-              builder: (context, jelly) {
+              builder: (context, jelly, _) {
                 builds++;
                 return const SizedBox();
               },
@@ -312,6 +313,196 @@ void main() {
       }
       expect(lastBuildAt, lessThan(const Duration(milliseconds: 1100)));
       expect(tester.binding.hasScheduledFrame, isFalse);
+    });
+
+    testWidgets('clamps scaleX to a positive floor under extreme compression',
+        (tester) async {
+      final j = IndicatorJelly.resolve(
+        lead: 1.5,
+        trail: 2.5,
+        itemCount: 5,
+        travelDirection: 1,
+        dragging: false,
+        physics: const IndicatorJellyPhysics(maxCompression: 0.9),
+      );
+      expect(j.scaleX, greaterThanOrEqualTo(0.05));
+    });
+
+    test('IndicatorJellyPhysics asserts valid numeric ranges', () {
+      expect(
+        () => IndicatorJellyPhysics(travelStretchBounce: 1.0),
+        throwsAssertionError,
+      );
+      expect(
+        () => IndicatorJellyPhysics(trailingBounce: 1.0),
+        throwsAssertionError,
+      );
+      expect(
+        () => IndicatorJellyPhysics(squishAnchor: 1.5),
+        throwsAssertionError,
+      );
+      expect(
+        () => IndicatorJellyPhysics(maxCompression: 1.0),
+        throwsAssertionError,
+      );
+      expect(
+        () => IndicatorJellyPhysics(maxDragStretch: -0.1),
+        throwsAssertionError,
+      );
+    });
+
+    testWidgets('mid-flight reduceMotion toggle snaps immediately and stops',
+        (tester) async {
+      final reduceMotion = ValueNotifier<bool>(false);
+      addTearDown(reduceMotion.dispose);
+      late IndicatorJelly latest;
+
+      Widget build(double target, double lead) => ValueListenableBuilder<bool>(
+            valueListenable: reduceMotion,
+            builder: (context, reduced, child) => MediaQuery(
+              data: MediaQueryData(disableAnimations: reduced),
+              child: child!,
+            ),
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: IndicatorJellyBuilder(
+                target: target,
+                lead: lead,
+                itemCount: 5,
+                dragging: false,
+                builder: (context, jelly, _) {
+                  latest = jelly;
+                  return const SizedBox();
+                },
+              ),
+            ),
+          );
+
+      await tester.pumpWidget(build(-1, -1));
+      await tester.pumpWidget(build(1, -1));
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(latest.isIdentity, isFalse);
+
+      // Flip reduceMotion on mid-flight without changing widget props.
+      reduceMotion.value = true;
+      await tester.pump();
+      expect(latest.isIdentity, isTrue);
+      // Drain any already-queued frame and verify the ticker stays stopped.
+      await tester.pump(_frame);
+      expect(latest.isIdentity, isTrue);
+      expect(tester.binding.hasScheduledFrame, isFalse);
+    });
+
+    testWidgets('passes child through without rebuilding it on jelly ticks',
+        (tester) async {
+      var childBuilds = 0;
+      Widget build(double target) => Directionality(
+            textDirection: TextDirection.ltr,
+            child: IndicatorJellyBuilder(
+              target: target,
+              lead: target,
+              itemCount: 5,
+              dragging: false,
+              child: Builder(
+                builder: (context) {
+                  childBuilds++;
+                  return const SizedBox();
+                },
+              ),
+              builder: (context, jelly, child) => child!,
+            ),
+          );
+
+      await tester.pumpWidget(build(-1));
+      await tester.pumpWidget(build(1));
+      final afterTargetChange = childBuilds;
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(_frame);
+      }
+      expect(childBuilds, afterTargetChange);
+    });
+  });
+
+  group('Widget integration (GlassTabBar & GlassSegmentedControl)', () {
+    const tabs = <GlassTab>[
+      GlassTab(icon: Icon(CupertinoIcons.home), label: 'Home'),
+      GlassTab(icon: Icon(CupertinoIcons.search), label: 'Search'),
+      GlassTab(icon: Icon(CupertinoIcons.person), label: 'Profile'),
+    ];
+
+    testWidgets('GlassTabBar.bottom supports default and disabled jelly',
+        (tester) async {
+      for (final physics in <IndicatorJellyPhysics?>[
+        null,
+        IndicatorJellyPhysics.disabled,
+      ]) {
+        var selected = 0;
+        await tester.pumpWidget(
+          CupertinoApp(
+            home: StatefulBuilder(
+              builder: (context, setState) => Align(
+                alignment: Alignment.bottomCenter,
+                child: GlassTabBar.bottom(
+                  tabs: tabs,
+                  selectedIndex: selected,
+                  quality: GlassQuality.minimal,
+                  indicatorJelly: physics,
+                  onTabSelected: (i) => setState(() => selected = i),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Profile'));
+        await tester.pumpAndSettle();
+        expect(selected, 2);
+        expect(tester.binding.hasScheduledFrame, isFalse);
+        expect(tester.takeException(), isNull);
+      }
+    });
+
+    testWidgets(
+        'GlassSegmentedControl supports default, disabled, and RTL jelly',
+        (tester) async {
+      for (final direction in [TextDirection.ltr, TextDirection.rtl]) {
+        for (final physics in <IndicatorJellyPhysics?>[
+          null,
+          IndicatorJellyPhysics.disabled,
+        ]) {
+          var selected = 0;
+          await tester.pumpWidget(
+            CupertinoApp(
+              home: Directionality(
+                textDirection: direction,
+                child: StatefulBuilder(
+                  builder: (context, setState) => Center(
+                    child: GlassSegmentedControl(
+                      segments: const [
+                        GlassSegment(label: 'One'),
+                        GlassSegment(label: 'Two'),
+                        GlassSegment(label: 'Three'),
+                      ],
+                      selectedIndex: selected,
+                      quality: GlassQuality.minimal,
+                      indicatorJelly: physics,
+                      onSegmentSelected: (i) => setState(() => selected = i),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.text('Three'));
+          await tester.pumpAndSettle();
+          expect(selected, 2);
+          expect(tester.binding.hasScheduledFrame, isFalse);
+          expect(tester.takeException(), isNull);
+        }
+      }
     });
   });
 }
@@ -425,7 +616,7 @@ Future<_Jump> _runJump(
             itemCount: 5,
             dragging: false,
             physics: physics,
-            builder: (context, jelly) {
+            builder: (context, jelly, _) {
               latest = jelly;
               return const SizedBox();
             },

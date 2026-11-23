@@ -783,7 +783,7 @@ class TabIndicatorState extends State<TabIndicator>
                       itemCount: widget.tabCount,
                       dragging: tabIsDragging,
                       physics: jellyPhysics,
-                      builder: (context, nativeJelly) {
+                      builder: (context, nativeJelly, _) {
                         final jelly = jellyPhysics.enabled ? nativeJelly : null;
                         return SpringBuilder(
                           spring: GlassSpring.snappy(

@@ -436,7 +436,14 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
               itemCount: widget.segments.length,
               dragging: _isDragging,
               physics: jellyPhysics,
-              builder: (context, nativeJelly) {
+              child: _buildSegmentsFlex(
+                selectedStyle: selectedTextStyle,
+                unselectedStyle: unselectedTextStyle,
+                selectedIconColor: restingSelectedIconColor,
+                unselectedIconColor: unselectedIconColor,
+                animateSelectedTextStyle: true,
+              ),
+              builder: (context, nativeJelly, segmentsChild) {
                 final IndicatorJelly? jelly =
                     jellyPhysics.enabled && widget.direction == Axis.horizontal
                         ? (Directionality.of(context) == TextDirection.rtl
@@ -533,13 +540,7 @@ class SegmentedControlContentState extends State<SegmentedControlContent> {
                       ],
                     );
                   },
-                  child: _buildSegmentsFlex(
-                    selectedStyle: selectedTextStyle,
-                    unselectedStyle: unselectedTextStyle,
-                    selectedIconColor: restingSelectedIconColor,
-                    unselectedIconColor: unselectedIconColor,
-                    animateSelectedTextStyle: true,
-                  ),
+                  child: segmentsChild,
                 );
               }, // IndicatorJellyBuilder builder
             ); // IndicatorJellyBuilder

@@ -993,6 +993,7 @@ class GlassTabBar extends StatefulWidget with GlassDynamicPreferredSize {
   /// Defaults to [IndicatorJellyPhysics.native], measured from UIKit. Change
   /// single values with [IndicatorJellyPhysics.copyWith], or pass
   /// [IndicatorJellyPhysics.disabled] for the classic velocity squash.
+  /// Applies to horizontal tab bar layouts (not the vertical strip layout).
   final IndicatorJellyPhysics? indicatorJelly;
 
   /// Expansion padding applied to the active indicator pill during interaction.

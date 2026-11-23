@@ -55,7 +55,15 @@ class IndicatorJellyPhysics {
     this.dragTrailingDuration = const Duration(milliseconds: 260),
     this.maxDragStretch = 0.14,
     this.dragThinning = 1.6,
-  });
+  })  : assert(travelStretchBounce >= -1.0 && travelStretchBounce < 1.0,
+            'travelStretchBounce must be in [-1.0, 1.0)'),
+        assert(trailingBounce >= -1.0 && trailingBounce < 1.0,
+            'trailingBounce must be in [-1.0, 1.0)'),
+        assert(squishAnchor >= 0.0 && squishAnchor <= 1.0,
+            'squishAnchor must be in [0.0, 1.0]'),
+        assert(maxCompression >= 0.0 && maxCompression <= 0.9,
+            'maxCompression must be in [0.0, 0.9]'),
+        assert(maxDragStretch >= 0.0, 'maxDragStretch must be non-negative');
 
   /// The measured native motion (the default).
   static const IndicatorJellyPhysics native = IndicatorJellyPhysics();
@@ -256,8 +264,8 @@ class IndicatorJellyPhysics {
 /// Shape deformation of a sliding indicator pill at one moment: a scale
 /// about the pill's centre plus a horizontal shift of that centre.
 ///
-/// Produced every frame by [IndicatorJellyBuilder] from [IndicatorJellyPhysics];
-/// see there for the motion it describes.
+/// Produced every frame by `IndicatorJellyBuilder` from
+/// [IndicatorJellyPhysics]; see there for the motion it describes.
 @immutable
 class IndicatorJelly {
   /// Creates an [IndicatorJelly].
@@ -319,7 +327,7 @@ class IndicatorJelly {
   }
 
   /// Computes the deformation from the springs driven by
-  /// [IndicatorJellyBuilder].
+  /// `IndicatorJellyBuilder`.
   ///
   /// * [lead] / [trail] — current alignment (−1…1) of the position spring
   ///   and of the trailing-edge spring.
@@ -399,7 +407,7 @@ class IndicatorJelly {
     }
 
     return IndicatorJelly(
-      scaleX: 1 + right - left,
+      scaleX: math.max(1 + right - left, 0.05),
       scaleY: math.max(scaleY, 0.05),
       offsetX: (right + left) / 2,
     );
@@ -431,15 +439,16 @@ class IndicatorJelly {
 typedef IndicatorJellyWidgetBuilder = Widget Function(
   BuildContext context,
   IndicatorJelly jelly,
+  Widget? child,
 );
 
 /// Runs the jelly springs for an indicator whose position spring is driven
 /// elsewhere, and hands the resulting [IndicatorJelly] to [builder].
 ///
 /// Place it inside the builder of the position spring so [lead] is the
-/// current animated position each frame. One ticker drives every spring; it
-/// stops as soon as the shape has settled and only rebuilds when the shape
-/// visibly changes.
+/// current animated position each frame. One lazily allocated ticker drives
+/// every spring; it stops as soon as the shape has settled and only rebuilds
+/// when the shape visibly changes.
 class IndicatorJellyBuilder extends StatefulWidget {
   /// Creates an [IndicatorJellyBuilder].
   const IndicatorJellyBuilder({
@@ -450,6 +459,7 @@ class IndicatorJellyBuilder extends StatefulWidget {
     required this.builder,
     this.physics = IndicatorJellyPhysics.native,
     this.teleportEpoch = 0,
+    this.child,
     super.key,
   });
 
@@ -476,6 +486,9 @@ class IndicatorJellyBuilder extends StatefulWidget {
   /// Called with the current deformation whenever it changes.
   final IndicatorJellyWidgetBuilder builder;
 
+  /// Optional pre-built subtree passed through to [builder].
+  final Widget? child;
+
   @override
   State<IndicatorJellyBuilder> createState() => _IndicatorJellyBuilderState();
 }
@@ -485,7 +498,7 @@ class _IndicatorJellyBuilderState extends State<IndicatorJellyBuilder>
   static const double _shapeTolerance = 5e-4;
   static const double _settleTolerance = 5e-4;
 
-  late final Ticker _ticker;
+  Ticker? _ticker;
   late final _JellySpring _trail;
   final _JellySpring _stretch = _JellySpring(0);
   final _JellySpring _flatten = _JellySpring(0);
@@ -494,6 +507,7 @@ class _IndicatorJellyBuilderState extends State<IndicatorJellyBuilder>
   double _direction = 1.0;
   double? _pendingDirection;
   double _clock = 0;
+  bool _reduceMotion = false;
   IndicatorJelly _shown = IndicatorJelly.identity;
 
   IndicatorJellyPhysics get _physics => widget.physics;
@@ -501,8 +515,19 @@ class _IndicatorJellyBuilderState extends State<IndicatorJellyBuilder>
   @override
   void initState() {
     super.initState();
-    _ticker = createTicker(_onTick);
     _trail = _JellySpring(widget.target);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduceMotion = GlassAccessibilityData.of(context).reduceMotion;
+    if (reduceMotion != _reduceMotion) {
+      _reduceMotion = reduceMotion;
+      if (reduceMotion) {
+        _snapAll();
+      }
+    }
   }
 
   double get _cellsPerUnit => math.max(1, widget.itemCount - 1) / 2;
@@ -541,7 +566,7 @@ class _IndicatorJellyBuilderState extends State<IndicatorJellyBuilder>
     _stretchRelaxAt = null;
     _flattenRelaxAt = null;
     _pendingDirection = null;
-    if (_ticker.isActive) _ticker.stop();
+    if (_ticker?.isActive ?? false) _ticker!.stop();
   }
 
   @override
@@ -550,7 +575,7 @@ class _IndicatorJellyBuilderState extends State<IndicatorJellyBuilder>
     final physics = _physics;
     if (!physics.enabled ||
         widget.teleportEpoch != oldWidget.teleportEpoch ||
-        GlassAccessibilityData.of(context).reduceMotion) {
+        _reduceMotion) {
       _snapAll();
       return;
     }
@@ -594,7 +619,10 @@ class _IndicatorJellyBuilderState extends State<IndicatorJellyBuilder>
       if (delta.abs() > 1e-6) _latchDirection(delta.sign);
     }
 
-    if (_isAnimating && !_ticker.isActive) _ticker.start();
+    if (_isAnimating) {
+      final ticker = _ticker ??= createTicker(_onTick);
+      if (!ticker.isActive) ticker.start();
+    }
   }
 
   bool get _isAnimating =>
@@ -624,7 +652,7 @@ class _IndicatorJellyBuilderState extends State<IndicatorJellyBuilder>
     _flatten.advance(now, _settleTolerance);
 
     final settled = !_isAnimating;
-    if (settled) _ticker.stop();
+    if (settled) _ticker?.stop();
     final next = _resolve();
     if (settled ? next != _shown : !_isClose(next, _shown)) {
       setState(() {});
@@ -656,14 +684,17 @@ class _IndicatorJellyBuilderState extends State<IndicatorJellyBuilder>
 
   @override
   void dispose() {
-    _ticker.dispose();
+    _ticker?.dispose();
+    _ticker = null;
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    _shown = _physics.enabled ? _resolve() : IndicatorJelly.identity;
-    return widget.builder(context, _shown);
+    _shown = (_physics.enabled && !_reduceMotion)
+        ? _resolve()
+        : IndicatorJelly.identity;
+    return widget.builder(context, _shown, widget.child);
   }
 }
 
