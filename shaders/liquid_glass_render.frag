@@ -557,7 +557,15 @@ void main() {
     // edge (at 5.33 pt inside the 38.33 pt lens) to form the native 0.7 pt
     // BackdropView meniscus ring and left/right nose flare without invading the
     // 8 pt white moat.
-    float isBarIndicator = step(48.0 * pxPerPt, uGeometrySize.y);
+    // Compact thumbs (GlassSwitch / GlassSlider) are ~60–65 pt wide × 42–45 pt
+    // tall, whereas GlassSegmentedControl lenses are ≥ ~99 pt wide × ~50 pt
+    // tall and thin below 48 pt vertically during jelly stretch/drag. Checking
+    // either axis keeps segmented controls firmly on the bar-indicator path
+    // throughout vertical jelly deformation instead of strobing across 48 pt.
+    float isBarIndicator = max(
+        step(48.0 * pxPerPt, uGeometrySize.y),
+        step(76.0 * pxPerPt, uGeometrySize.x)
+    );
     vec2 barCaDisp = vec2(0.0);
     float barIconGate = 0.0;
     if (uLensModel > 0.5 && uPinchStrength > 0.001) {
@@ -951,7 +959,7 @@ void main() {
         float topTrough = smoothstep(0.04, 0.16, geometryUV.y)
                         * (1.0 - smoothstep(0.22, 0.52, geometryUV.y))
                         * smoothstep(1.5, 3.5, rimPt);
-        if (uGeometrySize.y < 48.0 * pxPerPt) {
+        if (isBarIndicator < 0.5) {
             float lensLift = 0.105 * (1.0 - 0.45 * topTrough)
                            * clamp(uRimConfig.y, 0.0, 1.0)
                            * (1.0 - clamp(backdropLuma, 0.0, 1.0))

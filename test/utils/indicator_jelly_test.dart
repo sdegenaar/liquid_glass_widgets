@@ -96,6 +96,17 @@ void main() {
         lagging.scaleX,
         lessThanOrEqualTo(1 + IndicatorJellyPhysics.native.maxDragStretch),
       );
+      // Even at maximum drag stretch, vertical thinning stays above ~0.91 so a
+      // lifted 70 pt tab-bar lens never shrinks inside the 62 pt bar platter
+      // and loses its top/bottom pinch moat.
+      final maxDrag = IndicatorJelly.resolve(
+        lead: 1.0,
+        trail: -1.0,
+        itemCount: 4,
+        travelDirection: 1,
+        dragging: true,
+      );
+      expect(maxDrag.scaleY, greaterThanOrEqualTo(0.91));
 
       final overshooting = IndicatorJelly.resolve(
         lead: 0.2,
@@ -256,7 +267,9 @@ void main() {
       expect(run.samples.every((s) => s.jelly.isIdentity), isTrue);
     });
 
-    testWidgets('dragging lags the trailing edge and never squishes',
+    testWidgets(
+        'dragging stretches on acceleration, relaxes at steady speed, and '
+        'bulges vertically on deceleration/reversal (native iOS 27 oscillator)',
         (tester) async {
       final jellies = <IndicatorJelly>[];
       Widget build(double target, double lead, bool dragging) => Directionality(
@@ -264,7 +277,7 @@ void main() {
             child: IndicatorJellyBuilder(
               target: target,
               lead: lead,
-              itemCount: 5,
+              itemCount: 4,
               dragging: dragging,
               builder: (context, jelly, _) {
                 jellies.add(jelly);
@@ -274,14 +287,42 @@ void main() {
           );
 
       await tester.pumpWidget(build(-1, -1, false));
-      for (var i = 1; i <= 30; i++) {
-        final x = -1 + i * 0.04;
+      // Prime drag start
+      await tester.pumpWidget(build(-1, -1, true), duration: _frame);
+
+      // 1. Accelerate sharply rightwards (20 frames ≈ 167 ms) -> stretches wide,
+      //    stays above 0.91 vertically so the top/bottom pinch never drops out.
+      double x = -1.0;
+      double maxStretchX = 1.0;
+      double minStretchY = 1.0;
+      for (var i = 1; i <= 20; i++) {
+        x = (-1.0 + i * 0.07).clamp(-1.0, 1.0);
         await tester.pumpWidget(build(x, x, true), duration: _frame);
+        final j = jellies.last;
+        if (j.scaleX > maxStretchX) maxStretchX = j.scaleX;
+        if (j.scaleY < minStretchY) minStretchY = j.scaleY;
       }
-      final dragged = jellies.last;
-      expect(_left(dragged), lessThan(-0.02));
-      expect(_right(dragged), closeTo(0, 1e-9));
-      expect(jellies.every((j) => j.scaleX >= 1 - 1e-9), isTrue);
+      expect(maxStretchX, greaterThan(1.04));
+      expect(minStretchY, greaterThanOrEqualTo(0.91));
+
+      // 2. Decelerate / hold finger still mid-drag -> squishes narrower &
+      //    bulges taller (scaleX < 1, scaleY > 1), matching real iOS 27.
+      double minSquishX = 1.0;
+      double maxBulgeY = 1.0;
+      for (var i = 0; i < 30; i++) {
+        await tester.pumpWidget(build(x, x, true), duration: _frame);
+        final j = jellies.last;
+        if (j.scaleX < minSquishX) minSquishX = j.scaleX;
+        if (j.scaleY > maxBulgeY) maxBulgeY = j.scaleY;
+      }
+      expect(minSquishX, lessThan(0.97));
+      expect(maxBulgeY, greaterThan(1.04));
+
+      // 3. Release and settle -> ticker stops with zero idle scheduled frames.
+      await tester.pumpWidget(build(x, x, false), duration: _frame);
+      await tester.pumpAndSettle();
+      expect(tester.binding.hasScheduledFrame, isFalse);
+      expect(jellies.last.isIdentity, isTrue);
     });
 
     testWidgets('stops ticking and rebuilding once the shape has settled',
@@ -503,6 +544,67 @@ void main() {
           expect(tester.takeException(), isNull);
         }
       }
+    });
+
+    testWidgets(
+        'GlassTabBar.bottom and .searchable allow outer edge overhang '
+        '(matching native iOS 27 _UILiquidLensView)', (tester) async {
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: Align(
+            alignment: Alignment.bottomCenter,
+            child: GlassTabBar.bottom(
+              tabs: const [
+                GlassTab(label: 'One', icon: Icon(CupertinoIcons.home)),
+                GlassTab(label: 'Two', icon: Icon(CupertinoIcons.search)),
+                GlassTab(label: 'Three', icon: Icon(CupertinoIcons.person)),
+              ],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final bottomIndicators = tester.widgetList<AnimatedGlassIndicator>(
+        find.byType(AnimatedGlassIndicator),
+      );
+      expect(bottomIndicators, isNotEmpty);
+      expect(
+        bottomIndicators.every((i) => !i.clampExpansionToTrack),
+        isTrue,
+      );
+
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: Align(
+            alignment: Alignment.bottomCenter,
+            child: GlassTabBar.searchable(
+              tabs: const [
+                GlassTab(label: 'One', icon: Icon(CupertinoIcons.home)),
+                GlassTab(label: 'Two', icon: Icon(CupertinoIcons.search)),
+                GlassTab(label: 'Three', icon: Icon(CupertinoIcons.person)),
+              ],
+              selectedIndex: 0,
+              onTabSelected: (_) {},
+              searchConfig: GlassSearchBarConfig(
+                onSearchToggle: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final searchableIndicators = tester.widgetList<AnimatedGlassIndicator>(
+        find.byType(AnimatedGlassIndicator),
+      );
+      expect(searchableIndicators, isNotEmpty);
+      expect(
+        searchableIndicators.every((i) => !i.clampExpansionToTrack),
+        isTrue,
+      );
     });
   });
 }
