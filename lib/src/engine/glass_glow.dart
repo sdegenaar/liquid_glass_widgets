@@ -447,6 +447,12 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
     );
   }
 
+  late final Listenable _glowListenable = Listenable.merge([
+    _offsetController,
+    _alphaController,
+    _radiusController,
+  ]);
+
   @override
   Widget build(BuildContext context) {
     final inherited =
@@ -454,11 +460,7 @@ class GlassGlowLayerState extends State<GlassGlowLayer>
     final avoidsRefraction = inherited?.avoidsRefraction ?? false;
 
     return ListenableBuilder(
-      listenable: Listenable.merge([
-        _offsetController,
-        _alphaController,
-        _radiusController,
-      ]),
+      listenable: _glowListenable,
       builder: (context, child) {
         final animatedAlpha = _baseColor.a * _alphaController.value;
 

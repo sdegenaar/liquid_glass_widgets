@@ -10,6 +10,7 @@
 
 import 'dart:ui';
 
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import '../renderer/fragment_shader_extensions.dart';
 import 'internal/transform_tracking_repaint_boundary_mixin.dart';
@@ -275,8 +276,30 @@ class RenderLiquidGlassBlendGroup extends RenderLiquidGlassGeometry
     _enclosingGlassLayer()?.markNeedsPaint();
   }
 
+  LiquidGlassRenderObject? _cachedGlassLayer;
+
+  @override
+  void attach(PipelineOwner owner) {
+    super.attach(owner);
+    _cachedGlassLayer = _findEnclosingGlassLayer();
+    layer?.ancestor = _cachedGlassLayer;
+  }
+
+  @override
+  void detach() {
+    _cachedGlassLayer = null;
+    layer?.ancestor = null;
+    super.detach();
+  }
+
+  @override
+  RenderObject? get transformTrackingAncestor => _enclosingGlassLayer();
+
   /// The glass layer this group paints into, whose space the matte is in.
-  LiquidGlassRenderObject? _enclosingGlassLayer() {
+  LiquidGlassRenderObject? _enclosingGlassLayer() =>
+      _cachedGlassLayer ?? _findEnclosingGlassLayer();
+
+  LiquidGlassRenderObject? _findEnclosingGlassLayer() {
     RenderObject? node = parent;
     while (node != null && node is! LiquidGlassRenderObject) {
       node = node.parent;

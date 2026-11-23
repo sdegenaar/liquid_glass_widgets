@@ -258,6 +258,7 @@ class _GlassSwitchState extends State<GlassSwitch>
   late AnimationController _thicknessController;
   late AnimationController _overshootController;
   late Animation<double> _thicknessAnimation;
+  late final Listenable _switchListenable;
 
   // ---------------------------------------------------------------------------
   // Gesture state
@@ -297,6 +298,11 @@ class _GlassSwitchState extends State<GlassSwitch>
         duration: const Duration(milliseconds: 380), vsync: this);
     _overshootController = AnimationController(
         duration: const Duration(milliseconds: 220), vsync: this);
+    _switchListenable = Listenable.merge([
+      _positionController,
+      _thicknessController,
+      _overshootController,
+    ]);
 
     // Pulse animation (0 -> 1 -> 0)
     // Synchronized to grow and settle as the toggle jumps
@@ -720,18 +726,12 @@ class _GlassSwitchState extends State<GlassSwitch>
           )
         : null;
 
-    final baseMediaQuery =
-        MediaQuery.maybeOf(context) ?? const MediaQueryData();
     final isInteractive = _isInteractive;
 
     // Performance: RepaintBoundary isolates switch animation from parent
     final Widget switchVisual = RepaintBoundary(
       child: AnimatedBuilder(
-        animation: Listenable.merge([
-          _positionController,
-          _thicknessController,
-          _overshootController,
-        ]),
+        animation: _switchListenable,
         builder: (context, child) {
           final position = _positionController.value;
           final thickness = _thicknessAnimation.value;
@@ -849,38 +849,51 @@ class _GlassSwitchState extends State<GlassSwitch>
       isFocusedNotifier: _isFocused,
       isHoveredNotifier: _isHovered,
       onKeyboardActivate: isInteractive ? _activateFromKeyboard : null,
-      child: MediaQuery(
-        // Use a responsive 3 px horizontal drag slop (instead of Flutter's
-        // default 18 px kTouchSlop, which is ~90% of the switch's 20 px
-        // runway!) so horizontal drags engage immediately like native UISwitch.
-        data: baseMediaQuery.copyWith(
-          gestureSettings: const DeviceGestureSettings(touchSlop: 3.0),
-        ),
-        child: GestureDetector(
-          excludeFromSemantics: true,
-          // NOTE: We do NOT use onTap here. Having both onTap and onHorizontalDrag*
-          // on the same GestureDetector creates a gesture arena conflict — Flutter
-          // must choose one winner per touch, leading to missed interactions.
-          // Instead, we detect taps manually: onTapDown starts the bloom, onTapUp
-          // fires the toggle if no horizontal drag was confirmed.
-          onTapDown: isInteractive ? _onTapDown : null,
-          onTapUp: isInteractive ? _onTapUp : null,
-          onTapCancel: isInteractive ? _onTapCancel : null,
-          onHorizontalDragDown: isInteractive ? _onDragDown : null,
-          onHorizontalDragCancel: isInteractive ? _onDragCancel : null,
-          onHorizontalDragStart: isInteractive ? _onDragStart : null,
-          onHorizontalDragUpdate: isInteractive ? _onDragUpdate : null,
-          onHorizontalDragEnd: isInteractive ? _onDragEnd : null,
-          // Group-layer 50% opacity when disabled matches UIKit's UISwitch and
-          // CupertinoSwitch so the opaque white thumb does not bleed the track
-          // color underneath it.
-          child: isInteractive
-              ? switchVisual
-              : Opacity(
-                  opacity: _kDisabledSwitchOpacity,
-                  child: switchVisual,
+      // Use a responsive 3 px horizontal drag slop (instead of Flutter's
+      // default 18 px kTouchSlop, which is ~90% of the switch's 20 px
+      // runway!) via RawGestureDetector so we don't subscribe to MediaQuery.of.
+      child: RawGestureDetector(
+        excludeFromSemantics: true,
+        gestures: isInteractive
+            ? <Type, GestureRecognizerFactory>{
+                TapGestureRecognizer:
+                    GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+                  () => TapGestureRecognizer(debugOwner: this),
+                  (TapGestureRecognizer instance) {
+                    instance
+                      ..gestureSettings =
+                          const DeviceGestureSettings(touchSlop: 3.0)
+                      ..onTapDown = _onTapDown
+                      ..onTapUp = _onTapUp
+                      ..onTapCancel = _onTapCancel;
+                  },
                 ),
-        ),
+                HorizontalDragGestureRecognizer:
+                    GestureRecognizerFactoryWithHandlers<
+                        HorizontalDragGestureRecognizer>(
+                  () => HorizontalDragGestureRecognizer(debugOwner: this),
+                  (HorizontalDragGestureRecognizer instance) {
+                    instance
+                      ..gestureSettings =
+                          const DeviceGestureSettings(touchSlop: 3.0)
+                      ..onDown = _onDragDown
+                      ..onCancel = _onDragCancel
+                      ..onStart = _onDragStart
+                      ..onUpdate = _onDragUpdate
+                      ..onEnd = _onDragEnd;
+                  },
+                ),
+              }
+            : const <Type, GestureRecognizerFactory>{},
+        // Group-layer 50% opacity when disabled matches UIKit's UISwitch and
+        // CupertinoSwitch so the opaque white thumb does not bleed the track
+        // color underneath it.
+        child: isInteractive
+            ? switchVisual
+            : Opacity(
+                opacity: _kDisabledSwitchOpacity,
+                child: switchVisual,
+              ),
       ),
     );
   }
@@ -1030,15 +1043,15 @@ class _GlassSwitchState extends State<GlassSwitch>
                   child: materialContent,
                 ),
 
-                if (transition > 0.05)
+                // Skip mounting Opacity + GlassGlow on iOS 27 where glow is
+                // fully transparent (avoids a saveLayer + 4 spring controllers).
+                if (transition > 0.05 && !useIos27Lens)
                   Positioned(
                     left: anchorOffset,
                     child: Opacity(
                       opacity: transition,
                       child: GlassGlow(
-                        glowColor: useIos27Lens
-                            ? const Color(0x00000000)
-                            : const Color(0x3DFFFFFF),
+                        glowColor: const Color(0x3DFFFFFF),
                         child: SizedBox(
                           width: thumbWidth,
                           height: thumbHeight,

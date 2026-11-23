@@ -535,8 +535,7 @@ class _GlassToastOverlayState extends State<_GlassToastOverlay>
 
   @override
   Widget build(BuildContext context) {
-    final MediaQueryData mediaQuery = MediaQuery.of(context);
-    final EdgeInsets padding = mediaQuery.padding;
+    final EdgeInsets padding = MediaQuery.paddingOf(context);
 
     // Calculate vertical position
     final double verticalPosition = _calculateVerticalPosition(padding);

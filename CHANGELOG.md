@@ -1,8 +1,26 @@
 # Unreleased
 
+## Features
+
+- **`GlassThemeData.minimal(...)` convenience constructor (#517 follow-up):** Adds `const GlassThemeData.minimal({style, interaction, brightness})` pairing `GlassThemeVariant.minimalLight` and `GlassThemeVariant.minimalDark` for shader-free `GlassQuality.minimal` theming across light and dark modes (matching `.ios27()`, `.ios26()`, and `.classic()`).
+
 ## Bug Fixes
 
-- **Premium glass morphs:** Refresh the backdrop clip when the glass shape changes without a layout change, preventing a second contour at the frosted corners of an expanded `GlassMenu`.
+- **Premium glass morphs (#520):** Refresh the backdrop clip when the glass shape changes without a layout change, preventing a second contour at the frosted corners of an expanded `GlassMenu`.
+- **`GlassQuality.standard` morph overlays on Impeller:** Gate `LiquidGlassBlendGroup` creation in `GlassModalSheet`, `GlassMenu`, and `GlassPopover` morph overlays strictly on `GlassQuality.premium`, preventing missing-`InheritedGeometryRenderLink` assertions when morphing with `GlassQuality.standard` on Impeller.
+- **`GlassModalSheet` morphed close-origin after detent change (#507 follow-up):** When a `morphFrom` sheet opened at `half` is dragged to `full` or `peek` and dismissed at rest (barrier tap, close button, or `Navigator.pop`), frame 1 of the closing droplet morph now starts from the sheet's live resting detent (matching its active margins, bottom offset, corner radii, and fill) instead of snapping back to the initial `restingState`.
+
+## Performance
+
+- **Scrolling & bar chrome (`GlassScaffold`, `GlassTabBar`, `GlassAppBar`, `GlassToolbar`, `GlassScrollEdgeEffect`):** Shares backdrop reads across top and bottom bar chrome and progressive blur strips, removes idle `saveLayer` clipping from resting `GlassTabBar` indicators, and caches scroll-edge mask strips to reduce per-frame compositor passes while scrolling.
+- **Sheets & menus (`GlassModalSheet`, `GlassMenu`, `GlassContextMenu`):** Pre-builds sheet content outside drag animations, removes unused fade masks and per-item `Opacity` layers during menu morphs, and unmounts `GlassContextMenu`'s offstage measurement pass after layout — reducing UI rebuilds and offscreen passes during drags and open/close transitions.
+- **Shaders & GPU workload:** Reduces texture fetches and shader ALU work across the glass, indicator, geometry, and progressive blur shaders (skipping frost sampling on outer hairlines, using isotropic frost kernels and hardware filtering where safe, and taking a single-tap path across flat interiors) while preserving visual fidelity.
+- **Memory, readbacks & idle overhead:** Avoids duplicate geometry matte allocations on standalone `useOwnLayer` surfaces, tightens shadow clip bounds, crops `GlassContentAwareScope` luminance reads to control bounds instead of full-screen snapshots, skips unnecessary geometry rebuilds on no-op relayouts, lazily allocates spring/animation tickers so resting controls hold zero active tickers, and narrows `MediaQuery` dependencies so keyboard animations do not rebuild unrelated widgets.
+- **Adaptive quality (`GlassAdaptiveScope` / `GlassQualityAdapter`):** Fixes frost-step synchronization when stepping quality up or down, shortens initial warmup so slower devices adapt sooner, and keeps `GlassFrostBudget` in sync with blended glass groups.
+
+## Documentation
+
+- **`GlassModalSheet` solid content opt-in (`1.x`) (#514):** Documented wrapping dense controls, chips, and inputs inside `GlassModalSheet` in `InheritedGlassSurfaceStyle(surfaceStyle: GlassSurfaceStyle.solid, child: ...)` in `docs/GLASS_MODAL_SHEETS_GUIDE.md` and `skills/liquid-glass-widgets/SKILL.md`.
 
 # 1.19.0
 

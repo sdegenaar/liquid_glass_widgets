@@ -9,6 +9,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import '../../constants/glass_defaults.dart';
 import '../../src/engine/internal/transform_tracking_repaint_boundary_mixin.dart';
+import '../../src/renderer/glass_backdrop_group.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../theme/glass_theme.dart';
 
@@ -194,23 +195,32 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
   bool _loggedCreation = false;
   ui.Image? _backgroundImage;
 
-  // Ticker-driven background refresh (same proven pattern as GlassEffect).
-  // Fires every frame while a backgroundKey is active; stops automatically
-  // when no key is present — zero overhead for glass widgets without a background.
-  late final Ticker _ticker;
+  // Lazily allocated only when backgroundKey is non-null so the common case
+  // (backgroundKey == null) allocates 0 Tickers and registers 0 observers.
+  Ticker? _ticker;
+  bool _observingLifecycle = false;
   Size? _lastCaptureSize;
   Offset? _lastCapturePosition;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _initShader();
-    _ticker = createTicker(_handleTick);
-    // Defer ticker start until after first frame so the RepaintBoundary is laid out.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _updateTicker();
-    });
+    if (widget.backgroundKey != null) {
+      _ensureCaptureLifecycle();
+      // Defer ticker start until after first frame so the RepaintBoundary is laid out.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _updateTicker();
+      });
+    }
+  }
+
+  void _ensureCaptureLifecycle() {
+    if (!_observingLifecycle) {
+      WidgetsBinding.instance.addObserver(this);
+      _observingLifecycle = true;
+    }
+    _ticker ??= createTicker(_handleTick);
   }
 
   /// Start the ticker if a live RepaintBoundary is available for sampling.
@@ -222,11 +232,14 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
     // must not start the ticker — treat it the same as a null key.
     final bool hasBoundary = _safeGetBoundary(widget.backgroundKey) != null;
 
-    if (hasBoundary && !_ticker.isActive) {
-      _stableFrameCount = 0; // Reset so auto-suspend counts from scratch.
-      _ticker.start();
-    } else if (!hasBoundary && _ticker.isActive) {
-      _ticker.stop();
+    if (hasBoundary) {
+      _ensureCaptureLifecycle();
+      if (!_ticker!.isActive) {
+        _stableFrameCount = 0; // Reset so auto-suspend counts from scratch.
+        _ticker!.start();
+      }
+    } else if (_ticker?.isActive ?? false) {
+      _ticker!.stop();
       _stableFrameCount = 0;
       _backgroundImage?.dispose();
       _backgroundImage = null;
@@ -262,8 +275,8 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
     if (renderObject == null) {
       // The boundary was removed (e.g. background sampling was disabled at
       // runtime). Stop the ticker immediately — zero cost from this point on.
-      if (_ticker.isActive) {
-        _ticker.stop();
+      if (_ticker?.isActive ?? false) {
+        _ticker!.stop();
         _backgroundImage?.dispose();
         _backgroundImage = null;
         _stableFrameCount = 0;
@@ -303,8 +316,9 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
       // ticker. This saves battery on static surfaces (bottom bars, app bars)
       // where the background never changes after initial capture.
       _stableFrameCount++;
-      if (_stableFrameCount >= _kStableFrameThreshold && _ticker.isActive) {
-        _ticker.stop();
+      if (_stableFrameCount >= _kStableFrameThreshold &&
+          (_ticker?.isActive ?? false)) {
+        _ticker!.stop();
       }
     }
   }
@@ -351,7 +365,7 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
     if (widget.backgroundKey != oldWidget.backgroundKey) {
       // Key object changed — update immediately.
       _updateTicker();
-    } else if (widget.backgroundKey != null && !_ticker.isActive) {
+    } else if (widget.backgroundKey != null && !(_ticker?.isActive ?? false)) {
       // Same key object but ticker is stopped. The RepaintBoundary may have
       // been re-added to the tree (e.g. GlassBackgroundSource re-enabled via
       // the BG Sample toggle). Schedule a post-frame check so the boundary
@@ -376,7 +390,7 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
       case AppLifecycleState.inactive:
       case AppLifecycleState.paused:
       case AppLifecycleState.hidden:
-        if (_ticker.isActive) _ticker.stop();
+        if (_ticker?.isActive ?? false) _ticker!.stop();
         break;
       case AppLifecycleState.resumed:
         // Restart one frame after resume so surfaceChanged has completed
@@ -414,8 +428,12 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
   @override
   void dispose() {
     _isDisposed = true;
-    WidgetsBinding.instance.removeObserver(this);
-    _ticker.dispose();
+    if (_observingLifecycle) {
+      WidgetsBinding.instance.removeObserver(this);
+      _observingLifecycle = false;
+    }
+    _ticker?.dispose();
+    _ticker = null;
     // Null backgroundImage BEFORE disposing the shader to break the GPU
     // texture retention chain during isolate shutdown on Mali GPUs.
     _backgroundImage?.dispose();
@@ -481,6 +499,7 @@ class _LightweightLiquidGlassState extends State<LightweightLiquidGlass>
       backdropLuma: backdropLuma,
       backgroundImage: _backgroundImage,
       backgroundKey: widget.backgroundKey,
+      backdropKey: GlassBackdropGroup.keyOf(context),
       // Always keep GlassControlledOpacity mounted so element identity stays
       // stable across visibility transitions (1.0 ↔ <1.0) with zero compositing
       // flag overhead at 1.0 or 0.0, and inside BackdropFilterLayer when
@@ -519,6 +538,7 @@ class _LightweightGlassEffect extends SingleChildRenderObjectWidget {
     required this.backdropLuma,
     this.backgroundImage,
     this.backgroundKey,
+    this.backdropKey,
     required super.child,
   });
 
@@ -532,6 +552,7 @@ class _LightweightGlassEffect extends SingleChildRenderObjectWidget {
   final double backdropLuma;
   final ui.Image? backgroundImage;
   final GlobalKey? backgroundKey;
+  final BackdropKey? backdropKey;
 
   @override
   RenderObject createRenderObject(BuildContext context) {
@@ -546,6 +567,7 @@ class _LightweightGlassEffect extends SingleChildRenderObjectWidget {
       backdropLuma: backdropLuma,
       backgroundImage: backgroundImage,
       backgroundKey: backgroundKey,
+      backdropKey: backdropKey,
     );
   }
 
@@ -564,7 +586,8 @@ class _LightweightGlassEffect extends SingleChildRenderObjectWidget {
       ..indicatorWeight = indicatorWeight
       ..backdropLuma = backdropLuma
       ..backgroundImage = backgroundImage
-      ..backgroundKey = backgroundKey;
+      ..backgroundKey = backgroundKey
+      ..backdropKey = backdropKey;
   }
 }
 
@@ -581,6 +604,7 @@ class _RenderLightweightGlass extends RenderProxyBox
     required double backdropLuma,
     ui.Image? backgroundImage,
     GlobalKey? backgroundKey,
+    BackdropKey? backdropKey,
   })  : _shader = shader,
         _settings = settings,
         _shape = shape,
@@ -591,6 +615,7 @@ class _RenderLightweightGlass extends RenderProxyBox
         _backdropLuma = backdropLuma,
         _backgroundImage = backgroundImage,
         _backgroundKey = backgroundKey,
+        _backdropKey = backdropKey,
         _cachedLightCos = math.cos(settings.lightAngle),
         _cachedLightSin = -math.sin(settings.lightAngle);
 
@@ -706,6 +731,23 @@ class _RenderLightweightGlass extends RenderProxyBox
     markNeedsPaint();
   }
 
+  BackdropKey? _backdropKey;
+  set backdropKey(BackdropKey? value) {
+    if (identical(_backdropKey, value)) return;
+    _backdropKey = value;
+    markNeedsPaint();
+  }
+
+  final LayerHandle<BackdropFilterLayer> _backdropLayerHandle =
+      LayerHandle<BackdropFilterLayer>();
+
+  @override
+  void dispose() {
+    _backdropLayerHandle.layer = null;
+    _cachedBlurFilter = null;
+    super.dispose();
+  }
+
   // ── Cached light direction (Task 1.3) ─────────────────────────────────────
   // Matches the caching pattern in LiquidGlassRenderObject._cachedLightDir.
   // Avoids recomputing cos/sin on every _updateShaderUniforms call.
@@ -726,6 +768,16 @@ class _RenderLightweightGlass extends RenderProxyBox
     if (_cachedBlurFilter != null &&
         _cachedFilterBlur == blurSigma &&
         _cachedFilterSat == sat) {
+      return _cachedBlurFilter!;
+    }
+
+    if ((sat - 1.0).abs() <= 0.01) {
+      _cachedBlurFilter = ui.ImageFilter.blur(
+        sigmaX: blurSigma,
+        sigmaY: blurSigma,
+      );
+      _cachedFilterBlur = blurSigma;
+      _cachedFilterSat = sat;
       return _cachedBlurFilter!;
     }
 
@@ -802,14 +854,19 @@ class _RenderLightweightGlass extends RenderProxyBox
         _settings.effectiveSaturation,
       );
 
+      final backdropLayer = (_backdropLayerHandle.layer ??=
+          BackdropFilterLayer())
+        ..filter = filter
+        ..backdropKey = _backdropKey;
       context.pushLayer(
-        BackdropFilterLayer(filter: filter),
+        backdropLayer,
         (context, offset) {
           _paintGlassContent(context, offset);
         },
         offset,
       );
     } else {
+      _backdropLayerHandle.layer = null;
       _paintGlassContent(context, offset);
     }
   }

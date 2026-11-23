@@ -79,11 +79,15 @@ void main() {
     final baked = layer.debugBakedShadow;
     expect(baked, isNotNull, reason: 'the same matte again: baked');
 
-    // The union of the shadows' clips, in whole physical pixels.
+    // The union of the shadows' clips (3 * blurSigma), in whole physical pixels.
     final area = _bounds
         .shift(const Offset(0, 7))
-        .inflate(30)
-        .expandToInclude(_bounds.shift(const Offset(0, 1)).inflate(9));
+        .inflate((shadows[0].blurSigma * 3).ceil().toDouble())
+        .expandToInclude(
+          _bounds
+              .shift(const Offset(0, 1))
+              .inflate((shadows[1].blurSigma * 3).ceil().toDouble()),
+        );
     expect(baked!.width, (area.width * _dpr).ceil());
     expect(baked.height, (area.height * _dpr).ceil());
 

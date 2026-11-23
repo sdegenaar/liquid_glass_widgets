@@ -634,6 +634,11 @@ class _GlassAdaptiveScopeState extends State<GlassAdaptiveScope>
     _effectiveQuality = widget.initialQuality ??
         GlassQualityAdapter.sessionSettledQuality ??
         widget.maxQuality;
+    _frostEnabled = widget.frostStep &&
+            widget.initialQuality == null &&
+            _effectiveQuality == GlassQuality.premium
+        ? (GlassQualityAdapter.sessionSettledFrostEnabled ?? true)
+        : true;
     _createAdapter();
     WidgetsBinding.instance.addObserver(this);
     _adapter.start();
@@ -659,7 +664,12 @@ class _GlassAdaptiveScopeState extends State<GlassAdaptiveScope>
       _effectiveQuality = widget.initialQuality ??
           GlassQualityAdapter.sessionSettledQuality ??
           widget.maxQuality;
-      _frostEnabled = true;
+      _frostEnabled = widget.frostStep &&
+              oldWidget.frostStep == widget.frostStep &&
+              widget.initialQuality == null &&
+              _effectiveQuality == GlassQuality.premium
+          ? (GlassQualityAdapter.sessionSettledFrostEnabled ?? true)
+          : true;
       _createAdapter();
       _adapter.start();
     }
@@ -742,6 +752,8 @@ class _GlassAdaptiveScopeState extends State<GlassAdaptiveScope>
         if (widget.debugLogDiagnostics) _logDiagnostic(diagnostic);
       }
     });
+    // Ensure the post-frame callback drains even if the screen just went idle.
+    SchedulerBinding.instance.ensureVisualUpdate();
   }
 
   void _onQualityChanged(GlassQuality from, GlassQuality to) {
@@ -752,13 +764,20 @@ class _GlassAdaptiveScopeState extends State<GlassAdaptiveScope>
     final p95 = _adapter.lastP95Ms;
     final frames = _adapter.lastFramesMeasured;
     final phase = _adapter.phase;
+    // Also snapshot frostEnabled so step-up transitions (standard → premium
+    // with frostStep: true, where the adapter enters premium with frost off
+    // before recovering frost one step later) stay in sync with the scope.
+    final frostEnabled = _adapter.frostEnabled;
 
     // Defer setState to after the next frame draw to avoid causing the very
     // frame drop we are trying to fix. addPostFrameCallback is properly
     // drained in widget tests (unlike scheduleTask).
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      setState(() => _effectiveQuality = to);
+      setState(() {
+        _effectiveQuality = to;
+        _frostEnabled = frostEnabled;
+      });
 
       // Legacy callback — unchanged signature for backward compatibility.
       widget.onQualityChanged?.call(from, to);
@@ -779,6 +798,8 @@ class _GlassAdaptiveScopeState extends State<GlassAdaptiveScope>
         _logDiagnostic(diagnostic);
       }
     });
+    // Ensure the post-frame callback drains even if the screen just went idle.
+    SchedulerBinding.instance.ensureVisualUpdate();
   }
 
   /// Prints a structured diagnostic block. Always gated on [kDebugMode] —

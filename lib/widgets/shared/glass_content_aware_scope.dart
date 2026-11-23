@@ -305,6 +305,12 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
   Timer? _scrollTimer;
   bool _samplePending = false;
   bool _sampling = false;
+  bool _scrollDirty = false;
+  Size? _lastSampleImageSize;
+
+  /// Physical dimensions of the most recently captured sampling bitmap.
+  @visibleForTesting
+  Size? get lastSampleImageSize => _lastSampleImageSize;
 
   /// Fraction of a control's height trimmed from the top and bottom before
   /// gridding. Glyphs sit in the vertical middle of a control; edge rows
@@ -312,7 +318,9 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
   static const double _kVerticalInsetFraction = 0.18;
 
   /// Capture downscale target: physical pixels per grid cell edge.
-  static const double _kTargetCellPixels = 16.0;
+  /// 4 px per cell height yields ~32+ pixels per bar voting cell while cutting
+  /// GPU→CPU readback area by ~12–16× compared to 16 px.
+  static const double _kTargetCellPixels = 4.0;
 
   /// Registers a glass control to receive content-aware verdicts.
   ///
@@ -386,13 +394,16 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
 
   bool _onScrollNotification(ScrollNotification notification) {
     if (notification is ScrollStartNotification) {
+      _scrollDirty = true;
       _startScrollSampling();
     } else if (notification is ScrollEndNotification) {
+      _scrollDirty = false;
       _stopScrollSampling();
     } else if (notification is ScrollUpdateNotification ||
         notification is OverscrollNotification) {
       // A Start may have been swallowed (e.g. programmatic jumps) — make
       // sure the sampler runs whenever positions are actually moving.
+      _scrollDirty = true;
       _startScrollSampling();
     }
     return false;
@@ -402,6 +413,7 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
     // Content geometry changed without a scroll (new items, viewport
     // resize). One sample keeps idle verdicts honest; the periodic sampler
     // already covers the scrolling case.
+    _scrollDirty = true;
     if (_scrollTimer == null) requestSample();
     return false;
   }
@@ -411,7 +423,11 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
     requestSample();
     _scrollTimer = Timer.periodic(
       widget.sampleInterval,
-      (_) => unawaited(_sample()),
+      (_) {
+        // Skip redundant GPU→CPU readbacks when the user holds a drag still
+        // without changing scroll offset since the previous sample.
+        if (_scrollDirty) unawaited(_sample());
+      },
     );
   }
 
@@ -431,7 +447,9 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
       _scrollTimer!.cancel();
       _scrollTimer = Timer.periodic(
         widget.sampleInterval,
-        (_) => unawaited(_sample()),
+        (_) {
+          if (_scrollDirty) unawaited(_sample());
+        },
       );
     }
   }
@@ -466,11 +484,14 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
     }());
     if (midPaint) return;
     _sampling = true;
+    _scrollDirty = false;
     try {
       // Resolve each registered control's grid cells in boundary-local
-      // coordinates, and the smallest cell height for the downscale factor.
+      // coordinates, the union capture rect, and the smallest cell height for
+      // the downscale factor.
       final work = <(GlassContentAwareSubscription, List<Rect>)>[];
       var minCellExtent = double.infinity;
+      Rect? captureBounds;
       for (final sub in List.of(_subscriptions)) {
         final box = sub._controlBox();
         if (box == null || !box.attached || !box.hasSize) continue;
@@ -484,6 +505,8 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
           rect.bottom - inset,
         ).intersect(Offset.zero & boundary.size);
         if (rect.isEmpty) continue;
+        captureBounds =
+            captureBounds == null ? rect : captureBounds.expandToInclude(rect);
         final cellW = rect.width / sub.gridColumns;
         final cellH = rect.height / sub.gridRows;
         final cells = <Rect>[
@@ -499,15 +522,30 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
         minCellExtent = math.min(minCellExtent, cellH);
         work.add((sub, cells));
       }
-      if (work.isEmpty) return;
+      if (work.isEmpty || captureBounds == null || captureBounds.isEmpty) {
+        return;
+      }
 
-      // Downscale so a cell maps to ~16 physical pixels — enough for a
-      // stable average, cheap enough to read back at scroll rates.
+      // Downscale so a cell maps to ~4 physical pixels and crop strictly to
+      // the union of registered control strips instead of reading back the
+      // entire viewport.
       final pixelRatio =
           (_kTargetCellPixels / math.max(minCellExtent, 1.0)).clamp(0.05, 0.5);
-      final image = await boundary.toImage(pixelRatio: pixelRatio);
+      final ui.Image image;
+      final Offset captureOrigin;
+      if (boundary is _RenderCroppableRepaintBoundary) {
+        image = await boundary.toImageRect(
+          captureBounds,
+          pixelRatio: pixelRatio,
+        );
+        captureOrigin = captureBounds.topLeft;
+      } else {
+        image = await boundary.toImage(pixelRatio: pixelRatio);
+        captureOrigin = Offset.zero;
+      }
       final width = image.width;
       final height = image.height;
+      _lastSampleImageSize = Size(width.toDouble(), height.toDouble());
       final byteData =
           await image.toByteData(format: ui.ImageByteFormat.rawRgba);
       image.dispose();
@@ -524,10 +562,10 @@ class GlassContentAwareScopeState extends State<GlassContentAwareScope> {
         final pixelCells = <Rect>[
           for (final c in cells)
             Rect.fromLTRB(
-              c.left * pixelRatio,
-              c.top * pixelRatio,
-              c.right * pixelRatio,
-              c.bottom * pixelRatio,
+              (c.left - captureOrigin.dx) * pixelRatio,
+              (c.top - captureOrigin.dy) * pixelRatio,
+              (c.right - captureOrigin.dx) * pixelRatio,
+              (c.bottom - captureOrigin.dy) * pixelRatio,
             ),
         ];
         final verdict = GlassContentAwareScope.computeVerdict(
@@ -679,7 +717,26 @@ class _GlassContentAwareContentState extends State<GlassContentAwareContent> {
 
   @override
   Widget build(BuildContext context) {
-    return RepaintBoundary(key: _boundaryKey, child: widget.child);
+    return _CroppableRepaintBoundary(key: _boundaryKey, child: widget.child);
+  }
+}
+
+/// A [RepaintBoundary] subclass whose render object exposes cropped
+/// [OffsetLayer.toImage] captures so [GlassContentAwareScope] only reads back
+/// the control strip union rather than the full viewport.
+class _CroppableRepaintBoundary extends RepaintBoundary {
+  const _CroppableRepaintBoundary({super.key, super.child});
+
+  @override
+  _RenderCroppableRepaintBoundary createRenderObject(BuildContext context) =>
+      _RenderCroppableRepaintBoundary();
+}
+
+class _RenderCroppableRepaintBoundary extends RenderRepaintBoundary {
+  Future<ui.Image> toImageRect(Rect bounds, {double pixelRatio = 1.0}) {
+    assert(!debugNeedsPaint);
+    final offsetLayer = layer! as OffsetLayer;
+    return offsetLayer.toImage(bounds, pixelRatio: pixelRatio);
   }
 }
 

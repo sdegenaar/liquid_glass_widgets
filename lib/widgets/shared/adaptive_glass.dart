@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/cupertino.dart';
 import '../../constants/glass_defaults.dart';
 import '../../src/renderer/glass_frost_budget.dart';
+import '../../src/renderer/glass_backdrop_group.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../theme/glass_theme.dart';
 import 'package:flutter/foundation.dart'
@@ -920,18 +921,24 @@ class _FrostedFallback extends StatelessWidget {
         (isAccessibilityFallback || !isInteractive || platformViewBackdrop) &&
             blur > 0;
 
+    final backdropKey = GlassBackdropGroup.keyOf(context);
     Widget body;
     if (useBlur) {
+      // Compose blur + saturation into a single BackdropFilter pass instead of
+      // nesting two separate BackdropFilters (halves full-screen backdrop reads
+      // on Minimal and Reduce Transparency surfaces).
+      final ui.ImageFilter filter = needsSaturation
+          ? ui.ImageFilter.compose(
+              outer: ui.ColorFilter.matrix(_saturationMatrix(sat)),
+              inner: ui.ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+            )
+          : ui.ImageFilter.blur(sigmaX: blur, sigmaY: blur);
       body = BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+        backdropGroupKey: backdropKey,
+        filter: filter,
         child: DecoratedBox(
           decoration: BoxDecoration(color: frostedColor),
-          child: needsSaturation
-              ? BackdropFilter(
-                  filter: ui.ColorFilter.matrix(_saturationMatrix(sat)),
-                  child: const SizedBox.expand(),
-                )
-              : const SizedBox.expand(),
+          child: const SizedBox.expand(),
         ),
       );
     } else {

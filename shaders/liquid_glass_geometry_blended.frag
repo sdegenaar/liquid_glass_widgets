@@ -59,8 +59,36 @@ void main() {
 
     vec2 fragCoord = FlutterFragCoord().xy;
 
-    float sd = sceneSDF(fragCoord, int(uNumShapes), uBlend);
+    int numShapes = int(uNumShapes);
+    float sd = sceneSDF(fragCoord, numShapes, uBlend);
 
+    float smoothing = 1.5 * max(1.0, uDpr);
+    float edgePad = 0.0;
+    if (uNativeEdge > 1.5) {
+        // Clear interactive lens (e.g. ios27Indicator): keep a ~1.25 logical-pixel
+        // AA ramp so the curved shoulders survive jelly Transform scaling without
+        // stair-stepping, while still expanding by 1 physical pixel at 3x for the
+        // native hairline outline.
+        smoothing = max(1.5, 1.25 * uDpr);
+        edgePad = max(1.0, uDpr / 3.0);
+    } else if (uNativeEdge > 0.5) {
+        // Frosted native platter: ends in a crisp anti-aliased edge while
+        // keeping enough ramp width to avoid diagonal/shoulder stair-stepping.
+        smoothing = max(1.5, 0.85 * uDpr);
+        edgePad = max(1.0, uDpr / 3.0);
+    }
+
+    // For single symmetric non-ellipse shapes (sdfSquircle / sdfRRect), |∇sd| <= 1
+    // everywhere, so sd / gradMag <= sd for sd < 0. Skip the 4 finite-difference
+    // sceneSDF() evaluations in the deep flat interior (where normal.xy == 0 and
+    // rimDist == uThickness) and far exterior (> 2 px outside AA rim).
+    bool unitGradBound = (numShapes == 1) && (uShapeData[0] != 2.0) &&
+                         (uShapeData[5] == uShapeData[6]);
+    if (unitGradBound && uThickness > 0.0 && sd < -(uThickness + edgePad + smoothing)) {
+        fragColor = encodeGeometryData(vec2(0.0), uThickness, uThickness, 1.0);
+    } else if (unitGradBound && sd > (smoothing + edgePad + 2.0)) {
+        fragColor = encodeGeometryData(vec2(0.0), 0.0, uThickness, 0.0);
+    } else {
     // Compute the SDF gradient for surface normal generation.
     //
     // The tap spacing acts as a spatial low-pass filter. To ensure the normal
@@ -69,10 +97,10 @@ void main() {
     // done on a 3x Retina display with a 1.0px tap, the universal tap step
     // is (uDpr / 3.0).
     float stepDist = uDpr / 3.0;
-    float sdPX = sceneSDF(fragCoord + vec2(stepDist, 0.0), int(uNumShapes), uBlend);
-    float sdMX = sceneSDF(fragCoord - vec2(stepDist, 0.0), int(uNumShapes), uBlend);
-    float sdPY = sceneSDF(fragCoord + vec2(0.0, stepDist), int(uNumShapes), uBlend);
-    float sdMY = sceneSDF(fragCoord - vec2(0.0, stepDist), int(uNumShapes), uBlend);
+    float sdPX = sceneSDF(fragCoord + vec2(stepDist, 0.0), numShapes, uBlend);
+    float sdMX = sceneSDF(fragCoord - vec2(stepDist, 0.0), numShapes, uBlend);
+    float sdPY = sceneSDF(fragCoord + vec2(0.0, stepDist), numShapes, uBlend);
+    float sdMY = sceneSDF(fragCoord - vec2(0.0, stepDist), numShapes, uBlend);
 
     // Span is 2.0 * stepDist, so divide by it for the unit gradient.
     float dx = (sdPX - sdMX) / (2.0 * stepDist);
@@ -82,30 +110,8 @@ void main() {
     // Normalize the SDF using the gradient magnitude. This converts a pseudo-SDF
     // (like our continuous superellipse) into a true Euclidean distance metric.
     float sdN = (gradMag > 0.1) ? sd / gradMag : sd;
+    sdN -= edgePad;
 
-    // Apply logical-pixel anti-aliasing using the NORMALIZED distance (sdN).
-    // Using raw `sd` for pseudo-SDFs causes pixelated edges because the field
-    // crosses zero too quickly. `sdN` guarantees exact 1-pixel wide gradients.
-    // 
-    // Note: The physical radius here scales directly by raw `uDpr`, not by `uDpr / 3.0`.
-    // This is correct because we want a 1.5 logical-pixel wide smoothing radius on all
-    // screens. A 1.5 logical-pixel radius naturally maps to `1.5 * uDpr` physical pixels.
-    // This guarantees a pristine edge that survives the 4% bilinear scaling of press 
-    // animations without stair-stepping, on every device density.
-    float smoothing = 1.5 * max(1.0, uDpr);
-    if (uNativeEdge > 1.5) {
-        // Clear interactive lens (e.g. ios27Indicator): keep a ~1.25 logical-pixel
-        // AA ramp so the curved shoulders survive jelly Transform scaling without
-        // stair-stepping, while still expanding by 1 physical pixel at 3x for the
-        // native hairline outline.
-        smoothing = max(1.5, 1.25 * uDpr);
-        sdN -= max(1.0, uDpr / 3.0);
-    } else if (uNativeEdge > 0.5) {
-        // Frosted native platter: ends in a crisp anti-aliased edge while
-        // keeping enough ramp width to avoid diagonal/shoulder stair-stepping.
-        smoothing = max(1.5, 0.85 * uDpr);
-        sdN -= max(1.0, uDpr / 3.0);
-    }
     vec2 gradUnit = (gradMag > 1e-4) ? vec2(dx, dy) / gradMag : vec2(0.0);
     float foregroundAlpha = smoothstep(smoothing * 0.5, -smoothing * 0.5, sdN);
     if (foregroundAlpha < 0.01) {
@@ -147,4 +153,5 @@ void main() {
             fragColor = encodeGeometryData(normal.xy, rimDist, uThickness, foregroundAlpha);
         }
     }
+    } // end unitGradBound early-out
 }

@@ -400,16 +400,14 @@ class GlassThemeVariant {
   ///
   /// ```dart
   /// GlassTheme(
-  ///   data: GlassThemeData(
-  ///     light: GlassThemeVariant.minimalLight,
-  ///     dark: GlassThemeVariant.minimalDark,
-  ///   ),
+  ///   data: const GlassThemeData.minimal(),
   ///   child: child!,
   /// )
   /// ```
   ///
   /// This variant has one cool tint for both brightnesses; [minimalLight] and
-  /// [minimalDark] take the neutral tint of the iOS 27 glass of each.
+  /// [minimalDark] take the neutral tint of the iOS 27 glass of each (paired
+  /// automatically by [GlassThemeData.minimal]).
   static const GlassThemeVariant minimal = GlassThemeVariant(
     settings: GlassThemeSettings(
       thickness: 10.0, // Consistent with light/dark
@@ -547,6 +545,20 @@ class GlassThemeData {
   })  : style = GlassStyle.ios27,
         light = GlassThemeVariant.ios27Light,
         dark = GlassThemeVariant.ios27Dark;
+
+  /// Creates shader-free glass theme data configured with
+  /// [GlassQuality.minimal] ([GlassThemeVariant.minimalLight] and
+  /// [GlassThemeVariant.minimalDark]).
+  ///
+  /// Uses plain `BackdropFilter` blur with brightness-matched neutral iOS 27
+  /// tints and zero custom fragment shaders — ideal for pre-iPhone 13 /
+  /// pre-A15 hardware or strict GPU budgets.
+  const GlassThemeData.minimal({
+    this.style = GlassStyle.ios27,
+    this.interaction = const GlassInteractionSettings(),
+    this.brightness,
+  })  : light = GlassThemeVariant.minimalLight,
+        dark = GlassThemeVariant.minimalDark;
 
   /// Creates glass theme data from a flat set of common properties.
   ///
