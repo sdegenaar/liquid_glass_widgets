@@ -6,6 +6,7 @@ import '../../src/types/glass_interaction_behavior.dart';
 import '../../theme/glass_theme.dart';
 import '../../theme/glass_theme_helpers.dart';
 import '../../types/glass_quality.dart';
+import '../../utils/indicator_jelly.dart';
 import '../../types/glass_style.dart';
 import '../shared/adaptive_liquid_glass_layer.dart';
 import '../surfaces/shared/tab_bar_types.dart' show MaskingQuality;
@@ -200,6 +201,7 @@ class GlassSegmentedControl extends StatefulWidget {
     this.indicatorColor,
     this.indicatorSettings,
     this.indicatorPinchStrength = 0.4,
+    this.indicatorJelly,
     this.indicatorExpansion =
         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     this.settings,
@@ -293,6 +295,7 @@ class GlassSegmentedControl extends StatefulWidget {
     this.dividerSettings,
     this.indicatorShadow,
   })  : isScrollable = true,
+        indicatorJelly = null,
         direction = Axis.horizontal,
         segmentExtent = null,
         interactionBehavior = GlassInteractionBehavior.full,
@@ -453,6 +456,16 @@ class GlassSegmentedControl extends StatefulWidget {
   /// interactive indicator widgets. Set to `0.0` to disable, `1.0` to restore
   /// the original full-strength warp.
   final double indicatorPinchStrength;
+
+  /// Physics of the native iOS jelly that stretches the indicator while it
+  /// travels and squishes it when it lands.
+  ///
+  /// Defaults to [IndicatorJellyPhysics.native], measured from UIKit. Change
+  /// single values with [IndicatorJellyPhysics.copyWith], or pass
+  /// [IndicatorJellyPhysics.disabled] for the classic velocity squash.
+  /// Applies to horizontal controls; not used when [direction] is
+  /// [Axis.vertical] or on [GlassSegmentedControl.scrollable].
+  final IndicatorJellyPhysics? indicatorJelly;
 
   /// Expansion padding applied to the active indicator pill during interaction.
   ///
@@ -728,6 +741,7 @@ class _GlassSegmentedControlState extends State<GlassSegmentedControl> {
             indicatorColor: widget.indicatorColor,
             indicatorSettings: widget.indicatorSettings,
             indicatorPinchStrength: widget.indicatorPinchStrength,
+            indicatorJelly: widget.indicatorJelly,
             indicatorExpansion: widget.indicatorExpansion,
             borderRadius: widget.borderRadius,
             indicatorBorderRadius: widget.indicatorBorderRadius,

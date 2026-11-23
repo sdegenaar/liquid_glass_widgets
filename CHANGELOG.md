@@ -2,6 +2,7 @@
 
 ## Features
 
+- **Native iOS 26 / 27 selection jelly for `GlassTabBar` and `GlassSegmentedControl` (`indicatorJelly`, `IndicatorJellyPhysics`):** The indicator now moves like the native `UITabBar` lens instead of squashing into a tall, narrow blob. On a tap the edge facing the destination is pulled ahead while the lens thins; on landing the pill squishes from the trailing side (≈0.95× after one tab, ≈0.8× after four), bulges, and settles in ≈0.75 s without a rebound, with the leading edge pinned to the bar's end and the lifted lens kept inside the bar. The resting pill and the selected-icon mask follow the same shape. Every value is tunable through `IndicatorJellyPhysics`, and `IndicatorJellyPhysics.disabled` keeps the classic squash.
 - **`GlassThemeData.minimal(...)` convenience constructor (#517 follow-up):** Adds `const GlassThemeData.minimal({style, interaction, brightness})` pairing `GlassThemeVariant.minimalLight` and `GlassThemeVariant.minimalDark` for shader-free `GlassQuality.minimal` theming across light and dark modes (matching `.ios27()`, `.ios26()`, and `.classic()`).
 
 ## Bug Fixes

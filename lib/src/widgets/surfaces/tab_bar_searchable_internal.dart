@@ -16,6 +16,7 @@ import '../../../types/glass_quality.dart';
 import '../../../utils/draggable_indicator_physics.dart';
 import '../../utils/glass_localizations.dart';
 import '../../../utils/glass_spring.dart';
+import '../../../utils/indicator_jelly.dart';
 import '../../../theme/glass_theme.dart';
 import '../../../theme/glass_theme_data.dart';
 import '../../../theme/glass_theme_helpers.dart';
@@ -134,6 +135,7 @@ class SearchableTabIndicator extends StatefulWidget {
     this.indicatorColor,
     this.indicatorSettings,
     this.indicatorPinchStrength = 0.4,
+    this.indicatorJelly,
     this.backgroundKey,
     this.collapsedLogoBuilder,
     this.indicatorExpansion =
@@ -167,6 +169,14 @@ class SearchableTabIndicator extends StatefulWidget {
 
   /// Maximum concave lens pinch strength. Forwarded to [AnimatedGlassIndicator].
   final double indicatorPinchStrength;
+
+  /// Physics of the native iOS jelly that stretches the indicator while it
+  /// travels and squishes it when it lands.
+  ///
+  /// Defaults to [IndicatorJellyPhysics.native], measured from UIKit. Change
+  /// single values with [IndicatorJellyPhysics.copyWith], or pass
+  /// [IndicatorJellyPhysics.disabled] for the classic velocity squash.
+  final IndicatorJellyPhysics? indicatorJelly;
   final ValueChanged<int> onTabChanged;
   final GlassQuality quality;
   final GlassQuality? backgroundQuality;
@@ -225,6 +235,8 @@ class SearchableTabIndicator extends StatefulWidget {
 
 class SearchableTabIndicatorState extends State<SearchableTabIndicator>
     with TabDragGestureMixin<SearchableTabIndicator> {
+  static final Matrix4 _noVelocitySquash = Matrix4.identity();
+
   // ── Mixin interface ────────────────────────────────────────────────────────
   @override
   int get tabCount => widget.tabCount;
@@ -402,64 +414,84 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                     final alignment = Alignment(value, 0);
                     final effectiveVisible = widget.visible ||
                         (widget.showDuringDragWhenHidden && tabIsDragging);
-                    return SpringBuilder(
-                      spring: GlassSpring.snappy(
-                        duration: const Duration(milliseconds: 300),
-                      ),
-                      value: effectiveVisible &&
-                              (tabIsDown ||
-                                  tabIsDragging ||
-                                  (alignment.x - targetAlignment).abs() > 0.05)
-                          ? 1.0
-                          : 0.0,
-                      builder: (context, thickness, _) {
-                        if (thickness < 0.01 &&
-                            !effectiveVisible &&
-                            widget.maskingQuality == MaskingQuality.high) {
-                          return _buildSimple(
-                            alignment: alignment,
-                            targetAlignment: Alignment(targetAlignment, 0),
-                            thickness: 0.0,
-                            velocity: 0.0,
-                            indicatorRadius: indicatorRadius,
-                            indicatorColor: indicatorColor,
-                            effectiveVisible: false,
-                          );
-                        }
+                    // Native iOS jelly (see IndicatorJellyPhysics).
+                    final jellyPhysics =
+                        widget.indicatorJelly ?? IndicatorJellyPhysics.native;
+                    return IndicatorJellyBuilder(
+                      target: tabXAlign,
+                      lead: value,
+                      itemCount: widget.tabCount,
+                      dragging: tabIsDragging,
+                      physics: jellyPhysics,
+                      builder: (context, nativeJelly, _) {
+                        final jelly = jellyPhysics.enabled ? nativeJelly : null;
+                        return SpringBuilder(
+                          spring: GlassSpring.snappy(
+                            duration: const Duration(milliseconds: 300),
+                          ),
+                          value: effectiveVisible &&
+                                  (tabIsDown ||
+                                      tabIsDragging ||
+                                      (alignment.x - targetAlignment).abs() >
+                                          0.05)
+                              ? 1.0
+                              : 0.0,
+                          builder: (context, thickness, _) {
+                            if (thickness < 0.01 &&
+                                !effectiveVisible &&
+                                widget.maskingQuality == MaskingQuality.high) {
+                              return _buildSimple(
+                                alignment: alignment,
+                                targetAlignment: Alignment(targetAlignment, 0),
+                                thickness: 0.0,
+                                velocity: 0.0,
+                                indicatorRadius: indicatorRadius,
+                                indicatorColor: indicatorColor,
+                                effectiveVisible: false,
+                              );
+                            }
 
-                        final jellyTransform =
-                            DraggableIndicatorPhysics.buildJellyTransform(
-                          velocity: Offset(velocity, 0),
-                          maxDistortion: 0.8,
-                          velocityScale: 10,
-                        );
+                            final jellyTransform = jelly != null
+                                ? _noVelocitySquash
+                                : DraggableIndicatorPhysics.buildJellyTransform(
+                                    velocity: Offset(velocity, 0),
+                                    maxDistortion: 0.8,
+                                    velocityScale: 10,
+                                  );
 
-                        switch (widget.maskingQuality) {
-                          case MaskingQuality.off:
-                            return _buildSimple(
-                              alignment: alignment,
-                              targetAlignment: Alignment(targetAlignment, 0),
-                              thickness: thickness,
-                              velocity: velocity,
-                              indicatorRadius: indicatorRadius,
-                              indicatorColor: indicatorColor,
-                              effectiveVisible: effectiveVisible,
-                            );
-                          case MaskingQuality.high:
-                            return _buildHighQuality(
-                              alignment: alignment,
-                              thickness: thickness,
-                              velocity: velocity,
-                              jellyTransform: jellyTransform,
-                              indicatorRadius: indicatorRadius,
-                              indicatorColor: indicatorColor,
-                              effectiveVisible: effectiveVisible,
-                              isResting: thickness < 0.01 &&
-                                  (alignment.x - targetAlignment).abs() < 0.001,
-                            );
-                        }
-                      },
-                    ); // SpringBuilder (thickness)
+                            switch (widget.maskingQuality) {
+                              case MaskingQuality.off:
+                                return _buildSimple(
+                                  alignment: alignment,
+                                  targetAlignment:
+                                      Alignment(targetAlignment, 0),
+                                  thickness: thickness,
+                                  velocity: velocity,
+                                  jelly: jelly,
+                                  indicatorRadius: indicatorRadius,
+                                  indicatorColor: indicatorColor,
+                                  effectiveVisible: effectiveVisible,
+                                );
+                              case MaskingQuality.high:
+                                return _buildHighQuality(
+                                  alignment: alignment,
+                                  thickness: thickness,
+                                  velocity: velocity,
+                                  jelly: jelly,
+                                  jellyTransform: jellyTransform,
+                                  indicatorRadius: indicatorRadius,
+                                  indicatorColor: indicatorColor,
+                                  effectiveVisible: effectiveVisible,
+                                  isResting: thickness < 0.01 &&
+                                      (alignment.x - targetAlignment).abs() <
+                                          0.001 &&
+                                      (jelly == null || jelly.isIdentity),
+                                );
+                            }
+                          },
+                        ); // SpringBuilder (thickness)
+                      }, // IndicatorJellyBuilder builder
+                    ); // IndicatorJellyBuilder
                   }, // VelocitySpringBuilder builder
                 ), // VelocitySpringBuilder
               ), // GestureDetector
@@ -522,6 +554,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
     required Alignment targetAlignment,
     required double thickness,
     required double velocity,
+    IndicatorJelly? jelly,
     required double indicatorRadius,
     required Color indicatorColor,
     required bool effectiveVisible,
@@ -567,6 +600,8 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
           if (effectiveVisible && thickness > 0.05)
             AnimatedGlassIndicator(
               velocity: velocity,
+              jelly: jelly,
+              clampExpansionToTrack: jelly != null,
               itemCount: widget.tabCount,
               alignment: alignment,
               thickness: thickness,
@@ -608,6 +643,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
     required Alignment alignment,
     required double thickness,
     required double velocity,
+    IndicatorJelly? jelly,
     required Matrix4 jellyTransform,
     required double indicatorRadius,
     required Color indicatorColor,
@@ -628,6 +664,8 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
             thickness: thickness,
             expansion: exp,
             transform: jellyTransform,
+            jelly: jelly,
+            clampExpansionToTrack: jelly != null,
             borderRadius: effRadius * 2,
             inverse: true,
           ),
@@ -649,6 +687,8 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
               thickness: thickness,
               expansion: exp,
               transform: jellyTransform,
+              jelly: jelly,
+              clampExpansionToTrack: jelly != null,
               borderRadius: effRadius * 2,
             ),
             child: Container(
@@ -685,6 +725,8 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                   // 1.5. Solid Indicator Background (drawn below icons so selected icons are vibrant)
                   AnimatedGlassIndicator(
                     velocity: velocity,
+                    jelly: jelly,
+                    clampExpansionToTrack: jelly != null,
                     itemCount: widget.tabCount,
                     alignment: alignment,
                     thickness: thickness,
@@ -734,6 +776,8 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
           // the merged icon RepaintBoundary AND the glow beneath it.
           AnimatedGlassIndicator(
             velocity: velocity,
+            jelly: jelly,
+            clampExpansionToTrack: jelly != null,
             itemCount: widget.tabCount,
             alignment: alignment,
             thickness: thickness,
@@ -770,6 +814,8 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                     thickness: thickness,
                     expansion: exp,
                     transform: jellyTransform,
+                    jelly: jelly,
+                    clampExpansionToTrack: jelly != null,
                     borderRadius: indicatorRadius * 2,
                   ),
                   child: Container(

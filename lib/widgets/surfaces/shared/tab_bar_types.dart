@@ -1,4 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
+
+import '../../../utils/indicator_jelly.dart';
 
 // =============================================================================
 // Masking Quality
@@ -77,6 +81,8 @@ class JellyClipper extends CustomClipper<Path> {
     required this.transform,
     required this.borderRadius,
     this.inverse = false,
+    this.jelly,
+    this.clampExpansionToTrack = false,
   });
 
   /// The number of items.
@@ -99,6 +105,14 @@ class JellyClipper extends CustomClipper<Path> {
 
   /// Whether the clipper is inverted.
   final bool inverse;
+
+  /// Native-style jelly deformation. When non-null it replaces [transform]
+  /// so the mask matches the lens exactly.
+  final IndicatorJelly? jelly;
+
+  /// Whether the lifted mask stops at the ends of the clip area, matching
+  /// [AnimatedGlassIndicator.clampExpansionToTrack].
+  final bool clampExpansionToTrack;
 
   /// Threshold for clip recalculation optimization.
   ///
@@ -136,10 +150,17 @@ class JellyClipper extends CustomClipper<Path> {
     );
 
     // Apply expansion based on thickness (drag state)
+    var inflatedLeft = paddedRect.left - (expansion.left * thickness);
+    var inflatedRight = paddedRect.right + (expansion.right * thickness);
+    if (clampExpansionToTrack) {
+      inflatedLeft = math.min(paddedRect.left, math.max(inflatedLeft, 0.0));
+      inflatedRight =
+          math.max(paddedRect.right, math.min(inflatedRight, size.width));
+    }
     final inflatedRect = Rect.fromLTRB(
-      paddedRect.left - (expansion.left * thickness),
+      inflatedLeft,
       paddedRect.top - (expansion.top * thickness),
-      paddedRect.right + (expansion.right * thickness),
+      inflatedRight,
       paddedRect.bottom + (expansion.bottom * thickness),
     );
 
@@ -154,12 +175,19 @@ class JellyClipper extends CustomClipper<Path> {
         Radius.circular(safeRadius > 0 ? safeRadius : 0),
       ));
 
-    // Apply jelly physics transform around the center
-    final center = inflatedRect.center;
-    final centeredTransform = Matrix4.identity()
-      ..translateByDouble(center.dx, center.dy, 0.0, 1.0)
-      ..multiply(transform)
-      ..translateByDouble(-center.dx, -center.dy, 0.0, 1.0);
+    // Apply the jelly transform: the classic velocity squash around the
+    // centre, or the native jelly (scale plus shift).
+    final Matrix4 centeredTransform;
+    final nativeJelly = jelly;
+    if (nativeJelly != null) {
+      centeredTransform = nativeJelly.matrixFor(inflatedRect);
+    } else {
+      final center = inflatedRect.center;
+      centeredTransform = Matrix4.identity()
+        ..translateByDouble(center.dx, center.dy, 0.0, 1.0)
+        ..multiply(transform)
+        ..translateByDouble(-center.dx, -center.dy, 0.0, 1.0);
+    }
 
     final indicatorPath = path.transform(centeredTransform.storage);
 
@@ -180,6 +208,8 @@ class JellyClipper extends CustomClipper<Path> {
         borderRadius == oldClipper.borderRadius &&
         expansion == oldClipper.expansion &&
         transform == oldClipper.transform &&
+        jelly == oldClipper.jelly &&
+        clampExpansionToTrack == oldClipper.clampExpansionToTrack &&
         (alignment.x - oldClipper.alignment.x).abs() < _recalcThreshold &&
         (thickness - oldClipper.thickness).abs() < _recalcThreshold) {
       return false;
@@ -190,6 +220,8 @@ class JellyClipper extends CustomClipper<Path> {
         thickness != oldClipper.thickness ||
         expansion != oldClipper.expansion ||
         transform != oldClipper.transform ||
+        jelly != oldClipper.jelly ||
+        clampExpansionToTrack != oldClipper.clampExpansionToTrack ||
         borderRadius != oldClipper.borderRadius ||
         inverse != oldClipper.inverse;
   }
