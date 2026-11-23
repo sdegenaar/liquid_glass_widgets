@@ -17,7 +17,7 @@
 //   --dart-define=BENCH_ROUNDS=3        rounds over all configurations
 //   --dart-define=BENCH_DARK=true       dark appearance (ios27Dark)
 //   --dart-define=BENCH_CONFIGS=a,b     only these configurations
-//   --dart-define=BENCH_SCENES=scroll   only these scenes
+//   --dart-define=BENCH_SCENES=scroll   only these scenes (scroll, cards, modal, modal_sheet_drag, menu_morph)
 //   --dart-define=BENCH_PAUSE_MS=0      pause between scenes (for recordings)
 //   --dart-define=BENCH_OVERLAY=true    Flutter's performance overlay (recordings)
 import 'package:flutter/cupertino.dart';
@@ -117,10 +117,16 @@ const _images = [
 /// With [cards], every row of the list is itself a glass card, so glass
 /// moves with the content.
 class _BenchScreen extends StatelessWidget {
-  const _BenchScreen({super.key, required this.config, required this.cards});
+  const _BenchScreen({
+    super.key,
+    required this.config,
+    required this.cards,
+    this.withMenu = false,
+  });
 
   final _Config config;
   final bool cards;
+  final bool withMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -206,11 +212,30 @@ class _BenchScreen extends StatelessWidget {
       ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 84),
-        child: GlassIconButton(
-          icon: Icon(CupertinoIcons.pencil, color: ink),
-          onPressed: () {},
-          useOwnLayer: true,
-        ),
+        child: withMenu
+            ? GlassMenu(
+                quality: config.quality,
+                settings: config.settings,
+                triggerBuilder: (context, toggleMenu) => GlassIconButton(
+                  key: const ValueKey('bench-menu-trigger'),
+                  icon: Icon(CupertinoIcons.ellipsis, color: ink),
+                  onPressed: toggleMenu,
+                  useOwnLayer: true,
+                ),
+                items: [
+                  for (var i = 0; i < 6; i++)
+                    GlassMenuItem(
+                      title: 'Action ${i + 1}',
+                      icon: Icon(CupertinoIcons.star, color: ink),
+                      onTap: () {},
+                    ),
+                ],
+              )
+            : GlassIconButton(
+                icon: Icon(CupertinoIcons.pencil, color: ink),
+                onPressed: () {},
+                useOwnLayer: true,
+              ),
       ),
       bottomNavigationBar: SafeArea(
         top: false,
@@ -229,7 +254,11 @@ class _BenchScreen extends StatelessWidget {
   }
 }
 
-Widget _app(_Config config, {required bool cards}) {
+Widget _app(
+  _Config config, {
+  required bool cards,
+  bool withMenu = false,
+}) {
   final variant = GlassThemeVariant(
     settings: _themeSettings(config.settings),
     quality: config.quality,
@@ -243,9 +272,10 @@ Widget _app(_Config config, {required bool cards}) {
         brightness: _dark ? Brightness.dark : Brightness.light,
       ),
       home: _BenchScreen(
-        key: ValueKey('${config.name}-$cards'),
+        key: ValueKey('${config.name}-$cards-$withMenu'),
         config: config,
         cards: cards,
+        withMenu: withMenu,
       ),
     ),
   );
@@ -280,9 +310,15 @@ void main() {
     // which fails a test; here slow frames are the measurement.
     await LiquidGlassWidgets.initialize(enablePerformanceMonitor: false);
 
-    Future<void> scene(String name, _Config config, int round,
-        {required bool cards, required Future<void> Function() action}) async {
-      await tester.pumpWidget(_app(config, cards: cards));
+    Future<void> scene(
+      String name,
+      _Config config,
+      int round, {
+      required bool cards,
+      bool withMenu = false,
+      required Future<void> Function() action,
+    }) async {
+      await tester.pumpWidget(_app(config, cards: cards, withMenu: withMenu));
       await _pumpFor(tester, const Duration(milliseconds: 1500));
       // Warm-up outside the measurement: first use of every shader and image.
       await _fling(tester, 400);
@@ -344,6 +380,72 @@ void main() {
               await _pumpFor(tester, const Duration(milliseconds: 1200));
               Navigator.of(context).pop();
               await _pumpFor(tester, const Duration(milliseconds: 900));
+            }
+          });
+        }
+        if (_runs('modal_sheet_drag')) {
+          await scene('modal_sheet_drag', config, round, cards: false,
+              action: () async {
+            final context = tester.element(find.byType(ListView));
+            GlassModalSheet.show<void>(
+              context: context,
+              settings: config.settings,
+              quality: config.quality,
+              detents: const {GlassSheetDetent.medium, GlassSheetDetent.large},
+              builder: (context) => SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        'Draggable Glass Sheet',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    for (var i = 0; i < 6; i++)
+                      Padding(
+                        key: ValueKey('sheet-row-$i'),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Text('Sheet item $i'),
+                      ),
+                  ],
+                ),
+              ),
+            );
+            await _pumpFor(tester, const Duration(milliseconds: 900));
+            final dragTarget = find.text('Draggable Glass Sheet');
+            for (var i = 0; i < 3; i++) {
+              await tester.timedDrag(
+                dragTarget,
+                const Offset(0, -260),
+                const Duration(milliseconds: 450),
+                warnIfMissed: false,
+              );
+              await _pumpFor(tester, const Duration(milliseconds: 400));
+              await tester.timedDrag(
+                dragTarget,
+                const Offset(0, 260),
+                const Duration(milliseconds: 450),
+                warnIfMissed: false,
+              );
+              await _pumpFor(tester, const Duration(milliseconds: 400));
+            }
+            Navigator.of(context).pop();
+            await _pumpFor(tester, const Duration(milliseconds: 700));
+          });
+        }
+        if (_runs('menu_morph')) {
+          await scene('menu_morph', config, round, cards: false, withMenu: true,
+              action: () async {
+            final trigger = find.byKey(const ValueKey('bench-menu-trigger'));
+            for (var i = 0; i < 3; i++) {
+              await tester.tap(trigger);
+              await _pumpFor(tester, const Duration(milliseconds: 700));
+              await tester.tap(find.text('Action 1'));
+              await _pumpFor(tester, const Duration(milliseconds: 700));
             }
           });
         }

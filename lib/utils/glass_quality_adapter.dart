@@ -209,13 +209,17 @@ class GlassQualityAdapter {
   /// cross-launch persistence should use [initialQuality] with a storage
   /// mechanism of their choice (e.g. `SharedPreferences`).
   static GlassQuality? _sessionSettledQuality;
+  static bool? _sessionSettledFrostEnabled;
 
   /// Clears the in-session quality cache.
   ///
   /// **For testing only.** Call between tests to prevent cache leakage across
   /// test cases.
   @visibleForTesting
-  static void clearSessionCache() => _sessionSettledQuality = null;
+  static void clearSessionCache() {
+    _sessionSettledQuality = null;
+    _sessionSettledFrostEnabled = null;
+  }
 
   /// The currently cached quality for this session, or `null` if Phase 2 has
   /// not yet completed on any adapter instance.
@@ -224,6 +228,10 @@ class GlassQualityAdapter {
   /// the first rendered frame matches the adapter's starting point, avoiding a
   /// one-frame flash from [maxQuality] to the cached lower value.
   static GlassQuality? get sessionSettledQuality => _sessionSettledQuality;
+
+  /// The currently cached frost-enabled state for this session, or `null` if
+  /// not yet settled.
+  static bool? get sessionSettledFrostEnabled => _sessionSettledFrostEnabled;
 
   /// Whether the adapter is using a previously settled quality (either from
   /// [initialQuality] or [_sessionSettledQuality]) and has skipped Phase 2.
@@ -236,16 +244,14 @@ class GlassQualityAdapter {
   /// data. This lets shader compilation, first-route transitions, and provider
   /// initialisation settle so they don't pollute the warmup benchmark.
   ///
-  /// Raised to 90 (≈ 1.5 s at 60 Hz) to give Android GPU clock-scaling and
-  /// shader-cache warm-up enough time to settle before benchmarking starts.
-  /// Community data (P75 ≈ 17–18 ms on capable mid-range Android devices)
-  /// showed that the original 60-frame skip was not long enough to clear
-  /// shader-compile inflation on the Android/Vulkan/Impeller path.
-  static int skipInitialFrames = 90;
+  /// Default: 30 (≈ 0.5 s at 60 Hz, 0.25 s at 120 Hz). Together with
+  /// [warmupFrames] (60), Phase 2 finishes in ~90 frames (~1.5 s at 60 Hz)
+  /// instead of holding struggling devices at full premium for 4.5 s.
+  static int skipInitialFrames = 30;
 
   /// Frames to collect in Phase 2 (warm-up) before making the initial quality
-  /// decision. Default: 180 ≈ 3 seconds at 60 Hz.
-  static int warmupFrames = 180;
+  /// decision. Default: 60 ≈ 1 second at 60 Hz.
+  static int warmupFrames = 60;
 
   /// Size of the rolling window used in Phase 3 for P95 calculation.
   /// Default: 120 ≈ 2 seconds at 60 Hz.
@@ -454,6 +460,12 @@ class GlassQualityAdapter {
       // Keep it within [minQuality, maxQuality] in case the config changed.
       final clamped =
           _floorQuality(_capQuality(maxQuality, cached), minQuality);
+      if (frostStep &&
+          initialQuality == null &&
+          clamped == GlassQuality.premium &&
+          _sessionSettledFrostEnabled != null) {
+        _frostEnabled = _sessionSettledFrostEnabled!;
+      }
       _lastChangeReason = GlassQualityChangeReason.restoredFromCache;
       _lastP75Ms = null;
       _lastP95Ms = null;
@@ -594,10 +606,22 @@ class GlassQualityAdapter {
     //
     // Phase 3 runtime hysteresis will still step down quickly (2 windows,
     // ~4 s) if the device cannot actually sustain premium after warmup.
+    bool dropFrostInWarmup = false;
     if (p75Ms < warmupPremiumThresholdMs) {
       decided = _capQuality(maxQuality, maxQuality); // stay at ceiling
     } else if (p75Ms <= warmupStandardThresholdMs) {
-      decided = _capQuality(maxQuality, GlassQuality.standard);
+      if (frostStep &&
+          maxQuality == GlassQuality.premium &&
+          _currentQuality == GlassQuality.premium &&
+          _frostEnabled) {
+        // With frostStep enabled, drop frost first before giving up premium
+        // lens/rim/highlight. Phase 3 will still step down to standard if
+        // frost-free premium remains over budget.
+        decided = GlassQuality.premium;
+        dropFrostInWarmup = true;
+      } else {
+        decided = _capQuality(maxQuality, GlassQuality.standard);
+      }
     } else {
       decided = _capQuality(maxQuality, GlassQuality.minimal);
     }
@@ -612,14 +636,19 @@ class GlassQualityAdapter {
             minQuality,
           );
 
-    // Write to session cache so remounts within this app process skip Phase 2.
-    _sessionSettledQuality = effective;
-
-    // Record diagnostic data before applying quality.
+    // Record diagnostic data before applying quality / frost step.
     _lastChangeReason = GlassQualityChangeReason.warmupComplete;
     _lastP75Ms = p75Ms;
     _lastP95Ms = null;
     _lastFramesMeasured = _warmupDurations.length;
+
+    if (dropFrostInWarmup && effective == GlassQuality.premium) {
+      _setFrostEnabled(false);
+    }
+
+    // Write to session cache so remounts within this app process skip Phase 2.
+    _sessionSettledQuality = effective;
+    _sessionSettledFrostEnabled = _frostEnabled;
 
     _applyQuality(effective);
 
@@ -740,13 +769,17 @@ class GlassQualityAdapter {
     _lastP95Ms = _lastComputedP95Ms;
     _lastFramesMeasured = windowSize;
     // Back to premium without the frost first; it returns one step later.
-    if (frostStep && next == GlassQuality.premium) _frostEnabled = false;
+    if (frostStep && next == GlassQuality.premium) {
+      _frostEnabled = false;
+      _sessionSettledFrostEnabled = false;
+    }
     _applyQuality(next);
   }
 
   void _setFrostEnabled(bool enabled) {
     if (_frostEnabled == enabled) return;
     _frostEnabled = enabled;
+    _sessionSettledFrostEnabled = enabled;
     _lastChangeAt = DateTime.now();
     _onFrostChanged?.call(enabled);
   }

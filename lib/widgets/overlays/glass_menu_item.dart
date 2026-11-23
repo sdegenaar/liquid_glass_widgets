@@ -377,8 +377,8 @@ class _GlassMenuItemState extends State<GlassMenuItem>
                 color: backgroundColor,
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: Opacity(
-                opacity: widget.enabled ? 1.0 : 0.4,
+              child: _maybeDimDisabled(
+                enabled: widget.enabled,
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     // A submenu row shows a chevron unless the caller supplied
@@ -501,4 +501,10 @@ class _GlassMenuItemState extends State<GlassMenuItem>
       ),
     );
   }
+
+  static Widget _maybeDimDisabled({
+    required bool enabled,
+    required Widget child,
+  }) =>
+      enabled ? child : Opacity(opacity: 0.4, child: child);
 }

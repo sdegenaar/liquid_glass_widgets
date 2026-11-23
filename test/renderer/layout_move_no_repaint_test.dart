@@ -96,6 +96,12 @@ void main() {
       await tester.pump();
       expect(identical(layer.geometryImage, matte), isTrue,
           reason: 'the matte is in local space and did not change');
+      if (settings.frost > 0) {
+        expect(layer.debugFrostRowsBuilds, 1,
+            reason: 'moving must not rebuild the frost-row base path');
+        expect(layer.debugFrostRowsShifts, 0,
+            reason: 'phase shift uses OffsetLayer, never Path.shift()');
+      }
     });
   }
 

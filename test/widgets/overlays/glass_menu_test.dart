@@ -771,7 +771,8 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('GlassMenu items are wrapped in Opacity when fully open',
+  testWidgets(
+      'GlassMenu items fade via Opacity mid-morph and omit Opacity when fully open',
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -791,16 +792,26 @@ void main() {
 
     await tester.tap(find.text('Fade'));
     await tester.pump();
-    await tester.pumpAndSettle();
-
+    // Mid-open (~160ms): items are fading in via a single Column-level Opacity.
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
     expect(find.text('FadeItem'), findsOneWidget);
-
-    // An Opacity widget wrapping items should exist in the tree.
-    final opacityFinder = find.ancestor(
+    final midMorphOpacity = find.ancestor(
       of: find.text('FadeItem'),
       matching: find.byType(Opacity),
     );
-    expect(opacityFinder, findsWidgets);
+    expect(midMorphOpacity, findsOneWidget);
+
+    // Once settled (itemOpacity == 1.0), unnecessary Opacity wrappers are
+    // omitted to avoid resting saveLayer overhead.
+    await tester.pumpAndSettle();
+    expect(find.text('FadeItem'), findsOneWidget);
+    final settledOpacity = find.ancestor(
+      of: find.text('FadeItem'),
+      matching: find.byType(Opacity),
+    );
+    expect(settledOpacity, findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -1272,9 +1283,10 @@ void main() {
       ),
     );
     await tester.pump();
-    // Before tapping: the trigger must be fully opaque.
-    final opacity = tester.widget<Opacity>(find.byType(Opacity).first);
-    expect(opacity.opacity, equals(1.0));
+    // Before tapping: the trigger is fully opaque with no Opacity wrapper
+    // (omitting RenderOpacity at rest keeps triggers inside GlassBackdropGroup).
+    expect(find.byType(Opacity), findsNothing);
+    expect(find.text('Btn'), findsOneWidget);
   });
 
   testWidgets('Trigger dissolves cleanly to 0.0 when menu is fully open',
@@ -1342,8 +1354,10 @@ void main() {
     await tester.tap(find.text('Btn'), warnIfMissed: false);
     await tester.pumpAndSettle();
 
-    final opacity = tester.widget<Opacity>(find.byType(Opacity).first);
-    expect(opacity.opacity, equals(1.0));
+    // Settled trigger omits Opacity (effective opacity 1.0) so it rejoins
+    // any enclosing GlassBackdropGroup cleanly.
+    expect(find.byType(Opacity), findsNothing);
+    expect(find.text('Btn'), findsOneWidget);
   });
 
   testWidgets(
@@ -2130,8 +2144,10 @@ void main() {
       expect(triggerOpacity.opacity, lessThan(1.0));
 
       await tester.pumpAndSettle();
-      final settledOpacity = tester.widget<Opacity>(find.byType(Opacity).first);
-      expect(settledOpacity.opacity, equals(1.0));
+      // Once settled at 1.0, the Opacity wrapper unmounts cleanly so the
+      // trigger rejoins any enclosing GlassBackdropGroup.
+      expect(find.byType(Opacity), findsNothing);
+      expect(find.text('Pull-Down'), findsOneWidget);
     });
   });
 

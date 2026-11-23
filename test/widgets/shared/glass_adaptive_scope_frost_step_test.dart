@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:liquid_glass_widgets/src/engine/liquid_glass_render_scope.dart';
 import 'package:liquid_glass_widgets/src/renderer/glass_frost_budget.dart';
 import 'package:liquid_glass_widgets/utils/glass_quality_adapter.dart';
 
@@ -37,7 +38,8 @@ void main() {
 
   tearDown(() {
     GlassQualityAdapter.skipStaticProbeForTesting = false;
-    GlassQualityAdapter.skipInitialFrames = 90;
+    GlassQualityAdapter.skipInitialFrames = 30;
+    GlassQualityAdapter.warmupFrames = 60;
     GlassQualityAdapter.upgradeWindowCount = 10;
     GlassQualityAdapter.clearSessionCache();
   });
@@ -142,4 +144,102 @@ void main() {
     expect(on.hashCode == off.hashCode, isFalse);
     expect(off.toString(), contains('frostEnabled: false'));
   });
+
+  testWidgets(
+    'Wave 2.2 — step-up from standard to premium syncs frostEnabled=false to scope',
+    (tester) async {
+      final key = GlobalKey();
+      late (GlassAdaptiveScopeData, bool) seen;
+      await tester.pumpWidget(MaterialApp(
+        home: GlassAdaptiveScope(
+          key: key,
+          initialQuality: GlassQuality.standard,
+          frostStep: true,
+          allowStepUp: true,
+          child: Builder(builder: (context) {
+            seen = (
+              GlassAdaptiveScopeData.of(context),
+              GlassFrostBudget.frostEnabledOf(context),
+            );
+            return const SizedBox();
+          }),
+        ),
+      ));
+      final adapter =
+          (key.currentState! as dynamic).adapter as GlassQualityAdapter;
+
+      // Two fast windows step standard → premium with frost disabled first.
+      adapter.simulateFrameTimings(_frames(6, 2000));
+      expect(adapter.currentQuality, GlassQuality.premium);
+      expect(adapter.frostEnabled, isFalse);
+
+      await tester.pump();
+      await tester.pump();
+      expect(seen.$1.effectiveQuality, GlassQuality.premium);
+      expect(seen.$1.frostEnabled, isFalse);
+      expect(seen.$2, isFalse);
+    },
+  );
+
+  testWidgets(
+    'Wave 2.2 — Phase 2 warmup honors frostStep and session cache restores frost state',
+    (tester) async {
+      final key1 = GlobalKey();
+      late (GlassAdaptiveScopeData, bool) seen;
+      final adapter1 = await pumpScope(
+        tester,
+        key1,
+        frostStep: true,
+        onBuild: (v) => seen = v,
+      );
+
+      // Borderline P75 (24 ms, between 20 and 28 ms): drop frost first, keep premium.
+      adapter1.simulateFrameTimings(_frames(3, 24000));
+      await tester.pump();
+      await tester.pump();
+      expect(seen.$1.effectiveQuality, GlassQuality.premium);
+      expect(seen.$1.frostEnabled, isFalse);
+      expect(seen.$2, isFalse);
+
+      // Remount a fresh scope in the same session: should restore frostEnabled=false.
+      final key2 = GlobalKey();
+      await pumpScope(
+        tester,
+        key2,
+        frostStep: true,
+        onBuild: (v) => seen = v,
+      );
+      expect(seen.$1.effectiveQuality, GlassQuality.premium);
+      expect(seen.$1.frostEnabled, isFalse);
+      expect(seen.$2, isFalse);
+    },
+  );
+
+  testWidgets(
+    'Wave 2.2 — LiquidGlassRenderScope receives frost-budgeted settings',
+    (tester) async {
+      late LiquidGlassSettings scopedSettings;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GlassFrostBudget(
+            frostEnabled: false,
+            child: LiquidGlassLayer(
+              settings: const LiquidGlassSettings(frost: 14, blur: 0.6),
+              child: Builder(
+                builder: (context) {
+                  scopedSettings = LiquidGlassRenderScope.of(context).settings;
+                  return const SizedBox(width: 80, height: 40);
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(scopedSettings.frost, 0.0);
+      expect(
+        scopedSettings.blur,
+        closeTo(14 * GlassFrostBudget.blurPerFrost, 1e-6),
+      );
+    },
+  );
 }

@@ -6,12 +6,21 @@ class _GlassModalSheetState extends State<GlassModalSheet>
   late AnimationController _animationController;
   late AnimationController _saturationController;
   late CurvedAnimation _saturationAnimation;
+  late final Listenable _sheetAnimation;
+  final GlobalKey _focusBridgeKey = GlobalKey();
+  final GlobalKey _contentZoneKey = GlobalKey();
   final _progressNotifier = _ProgressNotifier();
 
   // ── State ─────────────────────────────────────────────────────────────────
   late final ValueNotifier<GlassSheetState> _currentStateNotifier;
+  late GlassSheetState _lastVisibleState;
   GlassSheetState get _currentState => _currentStateNotifier.value;
-  set _currentState(GlassSheetState v) => _currentStateNotifier.value = v;
+  set _currentState(GlassSheetState v) {
+    _currentStateNotifier.value = v;
+    if (v != GlassSheetState.hidden) {
+      _lastVisibleState = v;
+    }
+  }
 
   /// The state most recently published to consumers via
   /// [GlassModalSheet.onStateChanged] (and from which haptics and
@@ -91,6 +100,7 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     );
 
     _currentStateNotifier = ValueNotifier(resolvedInitial);
+    _lastVisibleState = resolvedInitial;
     _settledState = resolvedInitial;
     _geometry = _buildGeometry();
 
@@ -102,6 +112,8 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     );
     _saturationAnimation =
         CurvedAnimation(parent: _saturationController, curve: Curves.easeOut);
+    _sheetAnimation =
+        Listenable.merge([_animationController, _saturationController]);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -977,19 +989,70 @@ class _GlassModalSheetState extends State<GlassModalSheet>
     // as scroll position resets, re-initialised controllers, re-fired fetches,
     // etc. The FocusNode is owned internally by the Focus widget's Element and
     // persists correctly without an external key.
-    final focusBridge = Focus(
-      onFocusChange: (hasFocus) {
-        if (hasFocus && _currentState != _geometry.maxState) {
-          _snapToState(_geometry.maxState);
-        }
-      },
-      child: widget.child,
+    final focusBridge = KeyedSubtree(
+      key: _focusBridgeKey,
+      child: Focus(
+        onFocusChange: (hasFocus) {
+          if (hasFocus && _currentState != _geometry.maxState) {
+            _snapToState(_geometry.maxState);
+          }
+        },
+        child: widget.child,
+      ),
+    );
+
+    // Pre-build the content wrapper once outside AnimatedBuilder and pass it
+    // via AnimatedBuilder.child so 120 Hz drag ticks never rebuild or copy
+    // MediaQuery for the sheet's child subtree.
+    final verticalBar = _verticalBar;
+    final textDirection = Directionality.of(context);
+    final bool regularWidth =
+        verticalBar != null && VerticalBarTitleRow.regularWidth(context);
+    final restingInsets = verticalBar == null
+        ? EdgeInsets.zero
+        : _stripSheetInsets(
+            screenSize: mqSize,
+            regularWidth: regularWidth,
+            margin: widget.horizontalMargin,
+            placement: widget.placement,
+            textDirection: textDirection,
+          );
+    final side = _SheetSubScreen.maybeOf(context);
+    Widget contentChild = focusBridge;
+    if (restingInsets != EdgeInsets.zero) {
+      final mediaQuery = MediaQuery.of(context);
+      EdgeInsets inset(EdgeInsets padding) => padding.copyWith(
+            left: math.max(0.0, padding.left - restingInsets.left),
+            right: math.max(0.0, padding.right - restingInsets.right),
+          );
+      contentChild = MediaQuery(
+        data: mediaQuery.copyWith(
+          padding: inset(mediaQuery.padding),
+          viewPadding: inset(mediaQuery.viewPadding),
+        ),
+        child: contentChild,
+      );
+    }
+    final content = GlassVerticalBar(
+      data: _sheetVerticalBar(
+        bar: verticalBar,
+        frame: Rect.fromLTRB(
+          restingInsets.left,
+          (1.0 - _geometry.positionForState(_currentState, mqHeight)) *
+              mqHeight,
+          mqSize.width - restingInsets.right,
+          mqHeight,
+        ).shift(side?.rect.topLeft ?? Offset.zero),
+        screenSize: side?.screenSize ?? mqSize,
+        textDirection: textDirection,
+      ),
+      child: contentChild,
     );
 
     return AnimatedBuilder(
-      animation:
-          Listenable.merge([_animationController, _saturationController]),
-      builder: (context, _) {
+      animation: _sheetAnimation,
+      child: content,
+      builder: (context, cachedContent) {
         final fullPos =
             _geometry.positionForState(GlassSheetState.full, mqHeight);
         final halfPos =
@@ -1030,60 +1093,15 @@ class _GlassModalSheetState extends State<GlassModalSheet>
         // In the strip layout the sheet is a card no wider than the display's
         // shorter side, placed across the rest, and it takes the strip's
         // place where it covers it.
-        final verticalBar = _verticalBar;
-        final textDirection = Directionality.of(context);
         final frameInsets = verticalBar == null
             ? null
             : _stripSheetInsets(
                 screenSize: mqSize,
-                regularWidth: VerticalBarTitleRow.regularWidth(context),
+                regularWidth: regularWidth,
                 margin: metrics.hPad,
                 placement: widget.placement,
                 textDirection: textDirection,
               );
-        // The content's safe area is the sheet's at rest — what is left of
-        // the screen's lateral insets once the sheet's own are taken off —
-        // and its bar follows the sheet's own strip, or stays horizontal.
-        // Built the same way either side of a posture change, so the content
-        // is never remounted.
-        final restingInsets = verticalBar == null
-            ? EdgeInsets.zero
-            : _stripSheetInsets(
-                screenSize: mqSize,
-                regularWidth: VerticalBarTitleRow.regularWidth(context),
-                margin: widget.horizontalMargin,
-                placement: widget.placement,
-                textDirection: textDirection,
-              );
-        final mediaQuery = MediaQuery.of(context);
-        EdgeInsets inset(EdgeInsets padding) => padding.copyWith(
-              left: math.max(0.0, padding.left - restingInsets.left),
-              right: math.max(0.0, padding.right - restingInsets.right),
-            );
-        // On one side of a half-folded display, the sheet is measured against
-        // the strip where that side sits on the screen.
-        final side = _SheetSubScreen.maybeOf(context);
-        final content = GlassVerticalBar(
-          data: _sheetVerticalBar(
-            bar: verticalBar,
-            frame: Rect.fromLTRB(
-              restingInsets.left,
-              (1.0 - _geometry.positionForState(_currentState, mqHeight)) *
-                  mqHeight,
-              mqSize.width - restingInsets.right,
-              mqHeight,
-            ).shift(side?.rect.topLeft ?? Offset.zero),
-            screenSize: side?.screenSize ?? mqSize,
-            textDirection: textDirection,
-          ),
-          child: MediaQuery(
-            data: mediaQuery.copyWith(
-              padding: inset(mediaQuery.padding),
-              viewPadding: inset(mediaQuery.viewPadding),
-            ),
-            child: focusBridge,
-          ),
-        );
 
         final fadedSettings = metrics.effectiveSettings.copyWith(
           glassColor: metrics.effectiveSettings.glassColor.withValues(
@@ -1144,7 +1162,8 @@ class _GlassModalSheetState extends State<GlassModalSheet>
           topFadeHeight: widget.topFadeHeight,
           onDismiss: () => _snapToState(GlassSheetState.hidden),
           suppressInteractionOnChildren: widget.suppressInteractionOnChildren,
-          child: content,
+          contentZoneKey: _contentZoneKey,
+          child: cachedContent!,
         );
 
         // ScrollMetricsNotification covers content that has not been dragged

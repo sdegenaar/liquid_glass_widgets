@@ -246,22 +246,23 @@ vec3 frostAt(vec2 p, vec2 q, vec2 invSize) {
 
     float sigma = max(uFrost.z, 0.3);
     vec2 base = floor(p);
-    // Snap the centre row to the even (sharp) row at or above p.
-    float cy = base.y - mod(base.y, 2.0);
-    // Separable Gaussian weights over 9 columns at 1 px and 5 even rows at
-    // 2 px: +-4 px, which holds the widest sigma the layer leaves to this
-    // pass (2.4 px); a wider blur runs as its own pass first.
-    float inv2s2 = 1.0 / (2.0 * sigma * sigma);
-    float wx[9];
-    for (int i = 0; i < 9; i++) {
-        float dx = base.x + float(i - 4) + 0.5 - p.x;
-        wx[i] = exp(-dx * dx * inv2s2);
-    }
     // Each texel also weighs by its luminance, white uFrost.w times as much
     // as black: below 1 dark detail dominates the ghost.
+    float inv2s2 = 1.0 / (2.0 * sigma * sigma);
     float slope = uFrost.w - 1.0;
     vec3 acc = vec3(0.0);
     float wsum = 0.0;
+
+    // Centre-seeded Gaussian IIR weights along X: mathematically identical to
+    // calling exp(-dx*dx*inv2s2) per column, but uses 3 exp() calls instead of
+    // 9 and avoids fp32 underflow at small sigma because |d0| <= 0.5.
+    float d0 = base.x + 0.5 - p.x;
+    float e1 = exp(-inv2s2);
+    float ex = exp(-2.0 * d0 * inv2s2);
+    float rPos = e1 * ex;
+    float rNeg = e1 / ex;
+    float w4 = exp(-d0 * d0 * inv2s2);
+
     if (uFrost.z <= 0.3) {
         // At the floor sigma of 0.3 px only the three columns around p on
         // the two even rows either side of it carry weight: every other tap
@@ -269,6 +270,11 @@ vec3 frostAt(vec2 p, vec2 q, vec2 invSize) {
         // 0.03/255 of all 45, with the luminance weighting at its extremes
         // (frost_ghost_taps_test.dart). That is the sigma whenever the blur
         // runs as its own pass or is 0. uFrost.z is uniform.
+        float cy = base.y - mod(base.y, 2.0);
+        float wx[9];
+        wx[3] = w4 * rNeg;
+        wx[4] = w4;
+        wx[5] = w4 * rPos;
         for (int j = 0; j <= 1; j++) {
             float y = cy + 2.0 * float(j);
             float dy = y + 0.5 - p.y;
@@ -282,16 +288,122 @@ vec3 frostAt(vec2 p, vec2 q, vec2 invSize) {
             }
         }
     } else {
-        for (int j = -2; j <= 2; j++) {
-            float y = cy + 2.0 * float(j);
-            float dy = y + 0.5 - p.y;
-            float wy = exp(-dy * dy * inv2s2);
+        // Fill all 9 horizontal weights via IIR recurrence (0 extra exp()).
+        float q = e1 * e1;
+        float wx[9];
+        wx[4] = w4;
+        float wp = w4 * rPos;
+        wx[5] = wp;
+        float rp = rPos * q;
+        wp *= rp;
+        wx[6] = wp;
+        rp *= q;
+        wp *= rp;
+        wx[7] = wp;
+        rp *= q;
+        wx[8] = wp * rp;
+        float wn = w4 * rNeg;
+        wx[3] = wn;
+        float rn = rNeg * q;
+        wn *= rn;
+        wx[2] = wn;
+        rn *= q;
+        wn *= rn;
+        wx[1] = wn;
+        rn *= q;
+        wx[0] = wn * rn;
+
+        // Vertical IIR weights along 5 even rows (step 2 px): 2 exp() instead of 5.
+        // Symmetric nearest even row keeps |dy0| <= 1.0 across all radii so the
+        // isotropic disks drop the farthest corners symmetrically.
+        float e4 = q * q;
+        float qy = e4 * e4;
+        float cy = floor((p.y - 0.5) * 0.5 + 0.5) * 2.0;
+        float dy0 = cy + 0.5 - p.y;
+        float ey = exp(-4.0 * dy0 * inv2s2);
+        float ryPos = e4 * ey;
+        float ryNeg = e4 / ey;
+        float wy2 = exp(-dy0 * dy0 * inv2s2);
+        float wy3 = wy2 * ryPos;
+        float wy4 = wy3 * ryPos * qy;
+        float wy1 = wy2 * ryNeg;
+        float wy0 = wy1 * ryNeg * qy;
+        float wy[5];
+        wy[0] = wy0;
+        wy[1] = wy1;
+        wy[2] = wy2;
+        wy[3] = wy3;
+        wy[4] = wy4;
+        if (uFrost.z <= 1.25) {
+            // 2x DPR (sigma <= 1.25): 27-tap isotropic disk (7,7,7,3,3) —
+            // worst-case < 0.68/255 light, < 0.38/255 dark.
+            for (int j = -1; j <= 1; j++) {
+                float y = cy + 2.0 * float(j);
+                float wyj = wy[j + 2];
+                for (int i = 1; i <= 7; i++) {
+                    float x = base.x + float(i - 4);
+                    vec3 c = texelAt(vec2(x, y), invSize);
+                    float w = wyj * wx[i] * (1.0 + slope * dot(c, LUMA_WEIGHTS));
+                    acc += w * c;
+                    wsum += w;
+                }
+            }
+            for (int j = -2; j <= 2; j += 4) {
+                float y = cy + 2.0 * float(j);
+                float wyj = wy[j + 2];
+                for (int i = 3; i <= 5; i++) {
+                    float x = base.x + float(i - 4);
+                    vec3 c = texelAt(vec2(x, y), invSize);
+                    float w = wyj * wx[i] * (1.0 + slope * dot(c, LUMA_WEIGHTS));
+                    acc += w * c;
+                    wsum += w;
+                }
+            }
+        } else if (uFrost.z <= 1.85) {
+            // 2.8x-3x DPR (sigma <= 1.85): 33-tap isotropic disk (9,7,7,5,5) —
+            // drops the 12 farthest corners vs the 9x5 box.
             for (int i = 0; i < 9; i++) {
                 float x = base.x + float(i - 4);
-                vec3 c = texelAt(vec2(x, y), invSize);
-                float w = wy * wx[i] * (1.0 + slope * dot(c, LUMA_WEIGHTS));
+                vec3 c = texelAt(vec2(x, cy), invSize);
+                float w = wy2 * wx[i] * (1.0 + slope * dot(c, LUMA_WEIGHTS));
                 acc += w * c;
                 wsum += w;
+            }
+            for (int j = -1; j <= 1; j += 2) {
+                float y = cy + 2.0 * float(j);
+                float wyj = wy[j + 2];
+                for (int i = 1; i <= 7; i++) {
+                    float x = base.x + float(i - 4);
+                    vec3 c = texelAt(vec2(x, y), invSize);
+                    float w = wyj * wx[i] * (1.0 + slope * dot(c, LUMA_WEIGHTS));
+                    acc += w * c;
+                    wsum += w;
+                }
+            }
+            for (int j = -2; j <= 2; j += 4) {
+                float y = cy + 2.0 * float(j);
+                float wyj = wy[j + 2];
+                for (int i = 2; i <= 6; i++) {
+                    float x = base.x + float(i - 4);
+                    vec3 c = texelAt(vec2(x, y), invSize);
+                    float w = wyj * wx[i] * (1.0 + slope * dot(c, LUMA_WEIGHTS));
+                    acc += w * c;
+                    wsum += w;
+                }
+            }
+        } else {
+            // Wide ghost (1.85 < sigma <= 2.4): keep all 45 taps so wide-radius
+            // blurs (e.g. 3.5x-4x DPR or blur > 0.6) retain full corner tails.
+            for (int j = -2; j <= 2; j++) {
+                float y = cy + 2.0 * float(j);
+                float wyj = wy[j + 2];
+                for (int i = 0; i < 9; i++) {
+                    float x = base.x + float(i - 4);
+                    vec3 c = texelAt(vec2(x, y), invSize);
+                    float w = wyj * wx[i] * (1.0 + slope * dot(c, LUMA_WEIGHTS));
+                    acc += w * c;
+                    wsum += w;
+                }
             }
         }
     }
@@ -368,37 +480,49 @@ void main() {
     // from the true normal in blend-group neck zones (smooth-union joins).
     // The true normal is now decoded and used for both refraction and lighting.
     vec2 normalXY = decodeNormalXY(geometryData);
-    float normalZSq = max(0.0, 1.0 - dot(normalXY, normalXY));
+    float normalLenSq = dot(normalXY, normalXY);
+    float normalZSq = max(0.0, 1.0 - normalLenSq);
     float normalZ   = sqrt(normalZSq);
     vec3  normal    = vec3(normalXY, normalZ);   // unit-length surface normal
+    // Compute normalized 2D rim normal once and reuse across meniscus, hairline,
+    // frost inward inset, specular, touch glint, and rim light.
+    float normalLen = sqrt(normalLenSq);
+    vec2  rimN      = normalXY / max(normalLen, 1e-4);
 
-    // Recompute refraction displacement from the true normal.
-    // This is the same refract() call used in the geometry pass — exact, not
-    // approximated.  Height is still read from the B channel.
-    float height = decodeHeight(geometryData, uThickness);
-    float baseHeight = uThickness * 8.0;
-    vec2  displacement;
-    if (uLensModel > 0.5) {
-        // Paraxial lens: the thin-prism law, deviation = (n - 1) * slope,
-        // with the slope taken as sin(incidence)^2. normalXY is
-        // sin(incidence) and falls off linearly across the bevel, so the
-        // displacement runs up quadratically from the bevel's inner edge and
-        // folds past the point where it outgrows the distance to the rim:
-        // the band shows a mirrored, compressed copy of the interior. That
-        // is the native rim, measured with line probes on a 56 pt circle:
-        // the lens starts 0.6 of the radius out, the fold at 0.76, and the
-        // outer band is an inverted 1.9:1 image of the backdrop from 0.27 to
-        // 0.72 of the radius — thickness 32 (3x px) and n = 1.24 here. The
-        // exact refraction below folds far harder toward the edge.
-        displacement = -normalXY * (uRefractiveIndex - 1.0)
-                     * length(normalXY) * baseHeight;
-    } else {
-        vec3  incident    = vec3(0.0, 0.0, -1.0);
-        float invN        = 1.0 / max(uRefractiveIndex, 0.001);
-        vec3  baseRefract = refract(incident, normal, invN);
-        float refractLen  = (height + baseHeight)
-                          / max(0.001, abs(baseRefract.z));
-        displacement = baseRefract.xy * refractLen;
+    // Distance from the rim, in the same physical-pixel units as uThickness:
+    // geometryData.b stores linear rim progression clamp(-sdN / uThickness, 0, 1),
+    // giving uniform sub-pixel precision across the entire bevel. Circular-arc
+    // normalizedHeight = sqrt(t * (2 - t)) is computed once and reused for both
+    // refraction height and edge lighting.
+    float rimProgress      = geometryData.b;
+    float rimDist          = rimProgress * uThickness;
+    float normalizedHeight = sqrt(max(0.0, rimProgress * (2.0 - rimProgress)));
+    float height           = normalizedHeight * uThickness;
+    float baseHeight       = uThickness * 8.0;
+    vec2  displacement     = vec2(0.0);
+    if (normalLenSq >= 1e-4) {
+        if (uLensModel > 0.5) {
+            // Paraxial lens: the thin-prism law, deviation = (n - 1) * slope,
+            // with the slope taken as sin(incidence)^2. normalXY is
+            // sin(incidence) and falls off linearly across the bevel, so the
+            // displacement runs up quadratically from the bevel's inner edge and
+            // folds past the point where it outgrows the distance to the rim:
+            // the band shows a mirrored, compressed copy of the interior. That
+            // is the native rim, measured with line probes on a 56 pt circle:
+            // the lens starts 0.6 of the radius out, the fold at 0.76, and the
+            // outer band is an inverted 1.9:1 image of the backdrop from 0.27 to
+            // 0.72 of the radius — thickness 32 (3x px) and n = 1.24 here. The
+            // exact refraction below folds far harder toward the edge.
+            displacement = -normalXY * (uRefractiveIndex - 1.0)
+                         * normalLen * baseHeight;
+        } else {
+            vec3  incident    = vec3(0.0, 0.0, -1.0);
+            float invN        = 1.0 / max(uRefractiveIndex, 0.001);
+            vec3  baseRefract = refract(incident, normal, invN);
+            float refractLen  = (height + baseHeight)
+                              / max(0.001, abs(baseRefract.z));
+            displacement = baseRefract.xy * refractLen;
+        }
     }
     // Scale displacement by uRefractScale (uOpticalProps.w) to ensure logical-pixel
     // identical refraction magnitude across all device pixel ratios.
@@ -415,18 +539,12 @@ void main() {
     // large enough that the displacement never came near that bound are
     // unchanged.
     float maxReach = 0.5 * min(uGeometrySize.x, uGeometrySize.y);
-    float reach = length(displacement);
-    if (reach > maxReach) {
+    float reachSq = dot(displacement, displacement);
+    if (reachSq > maxReach * maxReach) {
+        float reach = sqrt(reachSq);
         displacement *= maxReach / reach;
     }
 
-    // Distance from the rim, in the same physical-pixel units as uThickness:
-    // geometryData.b stores linear rim progression clamp(-sdN / uThickness, 0, 1),
-    // giving uniform sub-pixel precision across the entire bevel. Circular-arc
-    // normalizedHeight = sqrt(t * (2 - t)) is reconstructed in 32-bit float.
-    float rimProgress = geometryData.b;
-    float rimDist = rimProgress * uThickness;
-    float normalizedHeight = sqrt(max(0.0, rimProgress * (2.0 - rimProgress)));
     float dprScale = max(0.1, uEdgeConfig.z);
     // dprScale is (devicePixelRatio / 3.0), so 1 logical point = 3.0 * dprScale
     // physical pixels. Convert rimDist to logical points (rimPt):
@@ -653,8 +771,19 @@ void main() {
         }
         refractColor = vec4(0.0, 0.0, 0.0, a);
     } else if (dot(normalXY, normalXY) < 1e-4 && dot(displacement, displacement) < 1e-4) {
-        // Flat interior — zero displacement, sample directly.
-        refractColor = textureBilinear(screenUV, physTexSize, invTexSize);
+        // Flat interior — zero displacement. On the live BackdropFilter path
+        // (uCaptureOffset == 0, uPinchStrength == 0), screenUV lands on exact
+        // texel centers so 1 texture() is bit-exact with 4-tap textureBilinear.
+        if (uPinchStrength <= 0.001 && dot(uCaptureOffset, uCaptureOffset) < 1e-6) {
+            vec4 bg = texture(uBackgroundTexture, screenUV);
+            if (uBackgroundFallback.a > 0.0) {
+                bg.rgb += uBackgroundFallback.rgb * uBackgroundFallback.a * (1.0 - bg.a);
+                bg.a += uBackgroundFallback.a * (1.0 - bg.a);
+            }
+            refractColor = bg;
+        } else {
+            refractColor = textureBilinear(screenUV, physTexSize, invTexSize);
+        }
     } else if (effectiveCA < 0.01) {
         vec2 refractedUV = screenUV + displacement * invTexSize;
         refractColor = textureBilinear(refractedUV, physTexSize, invTexSize);
@@ -763,13 +892,16 @@ void main() {
 
     if (uFrost.x > 0.0) {
         // The frosted, lensed body; the hairline keeps the sharp sample just
-        // outside the shape that it was given above.
-        vec2 p = fragCoord + uCaptureOffset + lensDisplacement;
-        vec2 inward = normalXY / max(length(normalXY), 1e-4)
-                    * max(0.0, 4.0 * dprScale - rimDist);
-        vec2 q = fragCoord + uCaptureOffset - inward;
-        vec3 frost = frostAt(p, q, invTexSize);
-        refractColor.rgb = mix(frost, refractColor.rgb, hairline);
+        // outside the shape that it was given above. When hairline >= 0.999,
+        // mix(frost, refractColor.rgb, hairline) discards frost completely, so
+        // skip the 47-tap frostAt() fetch on pure hairline pixels.
+        if (hairline < 0.999) {
+            vec2 p = fragCoord + uCaptureOffset + lensDisplacement;
+            vec2 inward = rimN * max(0.0, 4.0 * dprScale - rimDist);
+            vec2 q = fragCoord + uCaptureOffset - inward;
+            vec3 frost = frostAt(p, q, invTexSize);
+            refractColor.rgb = mix(frost, refractColor.rgb, hairline);
+        }
         // A frostWeight leaves its weight in the backdrop's alpha; only
         // whether a backdrop was captured at all matters below.
         refractColor.a = step(0.001, refractColor.a);
@@ -866,13 +998,15 @@ void main() {
     //   above WHITEN_HI → gate 1 (fully whitened, lifts to white)
     const float WHITEN_LO = 0.40;
     const float WHITEN_HI = 0.80;
-    float whitenLuma = dot(finalColor.rgb, LUMA_WEIGHTS);
-    // uWhitenGated 1 → gate by luminance (light mode, protects darks);
-    // uWhitenGated 0 → gate = 1, uniform whiten (dark mode, even lift).
-    float whitenGate =
-        mix(1.0, smoothstep(WHITEN_LO, WHITEN_HI, whitenLuma), uWhitenGated);
-    finalColor.rgb = mix(finalColor.rgb, vec3(1.0),
-                         clamp(uWhiten, 0.0, 1.0) * whitenGate * (1.0 - hairline));
+    if (uWhiten > 0.001 && hairline < 0.999) {
+        float whitenLuma = dot(finalColor.rgb, LUMA_WEIGHTS);
+        // uWhitenGated 1 → gate by luminance (light mode, protects darks);
+        // uWhitenGated 0 → gate = 1, uniform whiten (dark mode, even lift).
+        float whitenGate =
+            mix(1.0, smoothstep(WHITEN_LO, WHITEN_HI, whitenLuma), uWhitenGated);
+        finalColor.rgb = mix(finalColor.rgb, vec3(1.0),
+                             clamp(uWhiten, 0.0, 1.0) * whitenGate * (1.0 - hairline));
+    }
     // iOS 27 body shade (uBodyShade): the dark material pulls a bright
     // backdrop down, white to about 184/255, where its tint alone would lift
     // it. Scaled by 1 - shade * luma^2, so darks keep the tint's lift. The
@@ -916,37 +1050,26 @@ void main() {
     //     in the refraction sampling above (lines ~338-350) is already edge-weighted.
     //     No change needed.
 
-    // [1] Hemisphere profile: use normalizedHeight as the radial parameter.
-    //     normalizedHeight ≈ 0 at the interior flat face, ≈ 1 at the rim boundary.
-    //     Invert: r_rim = 1 - normalizedHeight → 1 at rim, 0 interior.
-    float r_rim = clamp(1.0 - normalizedHeight, 0.0, 1.0);
-    float lensThickness = uThickness < 0.01 ? 0.0 : sqrt(max(0.0, 1.0 - r_rim * r_rim));
-    // lensThickness: 1.0 at interior (r_rim=0), 0.0 at rim (r_rim=1) — correct:
-    // interior glass is thinnest, rim is thickest → invert for absorption weight.
-    float rimThickness = 1.0 - lensThickness; // 0 interior → 1 rim
+    float litness = dot(rimN, uLightDirection); // [-1, +1]
 
-    // [2] Light-modulated strength
-    float len2D = max(length(normalXY), 1e-4);
-    vec2  rimN  = normalXY / len2D; // safe normalized 2D rim normal
-    float litness   = dot(rimN, uLightDirection); // [-1, +1]
-    float dirScale  = mix(1.4, 0.6, litness * 0.5 + 0.5);
-
-    float absorption = 1.0 - sqrt(rimThickness) * uEdgeConfig.w * dirScale;
-    finalColor.rgb *= max(0.0, absorption);
+    // [1] Hemisphere profile & [2] Light-modulated absorption strength.
+    // Skip 2x sqrt when edge absorption is off or on the flat interior where
+    // normalizedHeight == 1.0 (rimThickness == 0 → absorption == 1.0).
+    if (uEdgeConfig.w > 0.001 && normalizedHeight < 0.999 && uThickness >= 0.01) {
+        float r_rim = clamp(1.0 - normalizedHeight, 0.0, 1.0);
+        float lensThickness = sqrt(max(0.0, 1.0 - r_rim * r_rim));
+        float rimThickness = 1.0 - lensThickness; // 0 interior → 1 rim
+        float dirScale = mix(1.4, 0.6, litness * 0.5 + 0.5);
+        float absorption = 1.0 - sqrt(rimThickness) * uEdgeConfig.w * dirScale;
+        finalColor.rgb *= max(0.0, absorption);
+    }
 
     // With no light and no ambient term the block below mixes by 0 (the touch
     // glint also scales by uLightIntensity), so skip it: the iOS 27 presets
     // set lightIntensity to 0.
     if (edgeFactor > 0.01 && (uLightIntensity > 0.0 || uAmbientStrength > 0.0)) {
-        // Re-normalize the bilinearly interpolated normal.
-        // Interpolating normals across pixels shrinks their magnitude (the 'chord' effect).
-        // If we don't re-normalize, this magnitude oscillation causes severe flickering
-        // when amplified by non-linear specular curves.
-        float len = max(length(normalXY), 1e-4);
-        vec2 anisoN = normalXY / len;
-
-        float mainLight     = max(0.0, dot(anisoN, uLightDirection));
-        float oppositeLight = max(0.0, dot(anisoN, -uLightDirection));
+        float mainLight     = max(0.0, litness);
+        float oppositeLight = max(0.0, -litness);
         float totalInfluence = mainLight + oppositeLight * 0.8;
 
         // Restore the thin, sharp iOS 26 highlight lobe!
@@ -982,13 +1105,11 @@ void main() {
         float distFactor = smoothstep(touchRadius, 0.0, touchDist);
 
         if (distFactor > 0.001 && touchDist > 1.0) {
-            float len = max(length(normalXY), 1e-4);
-            vec2 anisoN = normalXY / len;
             vec2 touchDir = toFragPx / touchDist;
 
-            // Outward rim normal (anisoN) dotted with outward ray from touch (touchDir).
+            // Outward rim normal (rimN) dotted with outward ray from touch (touchDir).
             // Rim fragments facing the contact point align with touchDir (dot > 0).
-            float rimTouchDot = max(0.0, dot(anisoN, touchDir));
+            float rimTouchDot = max(0.0, dot(rimN, touchDir));
 
             // Tight specular glint curve (x⁶) scaled by touch distance falloff.
             float rtd2 = rimTouchDot * rimTouchDot;
@@ -1052,9 +1173,8 @@ void main() {
         // The lobe on the lit side is a little stronger: on a black page
         // the light material reads +50 there and +32 opposite, the dark
         // material about equal.
-        float along = dot(rimN, uLightDirection);
-        float lit  = max(along, 0.0);
-        float opp  = max(-along, 0.0);
+        float lit  = max(litness, 0.0);
+        float opp  = max(-litness, 0.0);
         float litWeight = isClearIndicator ? 0.84 : 1.0;
         float oppWeight = isClearIndicator ? 1.02 : 0.85;
         float lobe = litWeight * lit * lit * lit + oppWeight * opp * opp * opp;
@@ -1082,8 +1202,10 @@ void main() {
     // than blended, which is how the native line stays a fixed step below
     // any backdrop colour.
     if (hairline > 0.0) {
-        float across = 1.0 - dot(rimN, uLightDirection) * dot(rimN, uLightDirection);
-        across = pow(max(across, 0.0), 1.75);
+        float acrossRaw = max(1.0 - litness * litness, 0.0);
+        // x^1.75 = x * sqrt(x) * sqrt(sqrt(x)), avoiding transcendental pow().
+        float acrossSqrt = sqrt(acrossRaw);
+        float across = acrossRaw * acrossSqrt * sqrt(acrossSqrt);
         float brightBackdrop = smoothstep(0.35, 0.70, backdropLuma);
         float effectiveRimShade = isClearIndicator
             ? mix(

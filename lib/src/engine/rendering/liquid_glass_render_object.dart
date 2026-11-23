@@ -48,6 +48,20 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
 
   final FragmentShader? renderShader;
 
+  /// Unshifted phase-0 frost row path in local coordinates, or null when
+  /// frost is inactive, on the capture path, or rotated/skewed.
+  ///
+  /// Translated by [frostRowsPhaseOffsetY] in compositing via an [OffsetLayer]
+  /// so scrolling never clones/shifts the row [Path] or re-tessellates the
+  /// [ClipPathLayer].
+  @protected
+  Path? frostRowsBasePath;
+
+  /// Vertical phase translation (local logical px) applied to
+  /// [frostRowsBasePath] so its rects land on odd pass-relative physical rows.
+  @protected
+  double frostRowsPhaseOffsetY = 0;
+
   /// With a frost, the alternate pixel rows its blur pass is clipped to, in
   /// local coordinates: every row with an odd y in the enclosing pass, over
   /// the glass's bounds. The render shader reads the frost's cloud from
@@ -55,19 +69,28 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
   /// liquid_glass_render.frag). Null without a frost, on the capture path,
   /// or when the glass is rotated or skewed and rows in local space would
   /// not land on pixel rows.
-  Path? frostRowsPath;
+  ///
+  /// Lazily shifts [frostRowsBasePath] on demand (primarily for tests);
+  /// production compositing uses [frostRowsBasePath] + [frostRowsPhaseOffsetY]
+  /// directly with zero per-frame [Path] copies.
+  Path? get frostRowsPath =>
+      frostRowsBasePath == null ? null : _frostRowsCache.shiftedPath;
 
   /// Widest blur, as a sigma in physical pixels, that the render shader
   /// applies to the copy of the content showing through a frost; a wider
   /// [LiquidGlassSettings.blur] runs as its own pass first.
   static const double frostGhostMaxSigma = 2.4;
 
-  // Built once per size and scale, shifted while the glass moves.
+  // Built once per size and scale; phase-shifted via OffsetLayer while moving.
   final FrostRows _frostRowsCache = FrostRows();
 
   /// How many times the frost rows were built from scratch, for tests.
   @visibleForTesting
   int get debugFrostRowsBuilds => _frostRowsCache.builds;
+
+  /// How many times the frost rows were materialized via [Path.shift], for tests.
+  @visibleForTesting
+  int get debugFrostRowsShifts => _frostRowsCache.shifts;
 
   /// Cached light direction vector — updated only when [settings.lightAngle]
   /// changes. Avoids recomputing cos/sin on every setting change.
@@ -77,6 +100,11 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
   Size get desiredMatteSize;
 
   Matrix4 get matteTransform;
+
+  /// Resolves [matteTransform] using an already-computed [screenTransform] to
+  /// avoid redundant `getTransformTo(null)` tree walks.
+  @protected
+  Matrix4 resolveMatteTransform(Matrix4 screenTransform) => matteTransform;
 
   /// Local-space rect of the backdrop-reading compositor pass this render
   /// object opened on its last paint (the clip around its
@@ -98,10 +126,15 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
   /// inside the backdrop pass can override this to `true`.
   bool get encloseDirectChildrenInPass => false;
 
-  /// Builds [frostRowsPath] for the glass's current bounds and screen
-  /// transform; see [FrostRows].
-  Path? _frostRows(Rect passPhysical, double dpr) => _frostRowsCache.rows(
-        transform: getTransformTo(null),
+  /// Resolves the phase-0 base path and vertical phase offset for the glass's
+  /// current bounds and screen transform without cloning the [Path].
+  ({Path base, double phaseOffsetY})? _resolveFrostRows(
+    Matrix4 screenTransform,
+    Rect passPhysical,
+    double dpr,
+  ) =>
+      _frostRowsCache.resolve(
+        transform: screenTransform,
         bounds: _paintBounds,
         passPhysical: passPhysical,
         dpr: dpr,
@@ -336,10 +369,20 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
     super.detach();
   }
 
+  Size? _lastLayoutSize;
+
   @override
-  void layout(Constraints constraints, {bool parentUsesSize = false}) {
-    needsGeometryUpdate = true;
-    super.layout(constraints, parentUsesSize: parentUsesSize);
+  void performLayout() {
+    super.performLayout();
+    // Only invalidate the cached geometry matte when this layer's own size
+    // actually changes; child shape/transform changes invalidate via
+    // link._dirty and _sameTransformsAsMatte(). Previously overriding layout()
+    // forced a full toImageSync matte rebuild on every parent relayout pass
+    // even when constraints and size were unchanged.
+    if (_lastLayoutSize != size) {
+      _lastLayoutSize = size;
+      needsGeometryUpdate = true;
+    }
   }
 
   ui.Rect _paintBounds = ui.Rect.zero;
@@ -580,7 +623,7 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
               settings.rimShadeEnds,
               settings.lensModel == GlassLensModel.paraxial ? 1.0 : 0.0,
               // Slots 41-44: uFrost.
-              if (frostRowsPath == null) 0.0 else frostOpacity,
+              if (frostRowsBasePath == null) 0.0 else frostOpacity,
               settings.frostClamp.clamp(-1.0, 1.0),
               ghostSigma > frostGhostMaxSigma ? 0.0 : ghostSigma,
               max(settings.blurWeight, 0.0),
@@ -606,11 +649,25 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
   }
 
   /// Writes the uniforms that depend on where the glass is on screen (uSize,
-  /// uGeometryOffset, uGeometrySize, uTouchPosition) and the [frostRowsPath]
-  /// for that position, from the current [matteTransform]. Paint calls it,
-  /// and so does a layer moved without a repaint, while it is composited.
+  /// uGeometryOffset, uGeometrySize, uTouchPosition) and updates
+  /// [frostRowsBasePath]/[frostRowsPhaseOffsetY] for that position, from the
+  /// current [matteTransform]. Paint calls it, and so does a layer moved
+  /// without a repaint, while it is composited.
   @protected
   void writeScreenUniforms() {
+    writeScreenUniformsWith(
+      screenTransform: getTransformTo(null),
+      passLogical: enclosingBackdropPassRect(),
+    );
+  }
+
+  /// Same as [writeScreenUniforms], reusing caller-resolved [screenTransform]
+  /// and [passLogical] to avoid duplicate render-tree walks during compositing.
+  @protected
+  void writeScreenUniformsWith({
+    required Matrix4 screenTransform,
+    required Rect? passLogical,
+  }) {
     final dpr = devicePixelRatio;
     // Map the texture to exactly the bounds it was originally built for
     // (_geometryLocalBounds) rather than the newly expanding current frame
@@ -625,7 +682,7 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
     // Locking the shader mapping to the precise bounds the texture was built
     // with ensures stable pixel positioning for the life of the texture.
     final activeBounds = MatrixUtils.transformRect(
-      matteTransform,
+      resolveMatteTransform(screenTransform),
       _geometryLocalBounds,
     ).snapToPixels(dpr);
 
@@ -637,7 +694,6 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
     // When there is no such ancestor, passLogical is null and passPhysical
     // equals the full screen — uniforms reduce exactly to their previous
     // values (zero regression for top-level surfaces).
-    final passLogical = enclosingBackdropPassRect();
     // Impeller allocates offscreen-pass textures in whole physical pixels;
     // round out so our size matches the actual texture dimensions.
     final passPhysical = passLogical == null
@@ -650,9 +706,14 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
           );
 
     // The capture path draws without a live backdrop, so no frost.
-    frostRowsPath = settings.effectiveFrost > 0 && _captureImage == null
-        ? _frostRows(passPhysical, dpr)
-        : null;
+    if (settings.effectiveFrost > 0 && _captureImage == null) {
+      final resolved = _resolveFrostRows(screenTransform, passPhysical, dpr);
+      frostRowsBasePath = resolved?.base;
+      frostRowsPhaseOffsetY = resolved?.phaseOffsetY ?? 0.0;
+    } else {
+      frostRowsBasePath = null;
+      frostRowsPhaseOffsetY = 0.0;
+    }
 
     renderShader!
       // Slot 0-1: uSize — physical-pixel size of the enclosing compositor
@@ -1149,14 +1210,19 @@ class FrostRows {
   double _scaleY = 0;
   double _dpr = 0;
   double _phase = -1;
+  double _phaseOffsetY = 0;
 
   /// How many times the rows were built from scratch.
   int builds = 0;
 
-  /// The rows for a glass of [bounds] under [transform] (local to screen),
-  /// drawn into a pass at [passPhysical], or null when [transform] rotates,
-  /// skews or flips, and rows in local space would not land on pixel rows.
-  Path? rows({
+  /// How many times the rows were cloned via [Path.shift].
+  int shifts = 0;
+
+  /// Resolves the phase-0 base [Path] and local vertical phase offset without
+  /// cloning or shifting the [Path], or returns `null` when [transform]
+  /// rotates, skews, or flips so rows in local space would not land on pixel
+  /// rows.
+  ({Path base, double phaseOffsetY})? resolve({
     required Matrix4 transform,
     required Rect bounds,
     required Rect passPhysical,
@@ -1184,17 +1250,49 @@ class FrostRows {
       _scaleX = sx;
       _scaleY = sy;
       _dpr = dpr;
+      _phase = -1;
       _shifted = null;
     }
     // Pass-relative physical y of the glass's top edge, modulo two rows.
     // Dart's % is Euclidean, so the phase is in [0, 2).
     final top = bounds.top * sy + storage[13];
     final phase = (top * dpr - passPhysical.top) % 2;
-    if (_shifted == null || phase != _phase) {
+    if (phase != _phase) {
       _phase = phase;
-      _shifted = _base!.shift(Offset(0, -phase / (dpr * sy)));
+      _phaseOffsetY = -phase / (dpr * sy);
+      _shifted = null;
+    }
+    return (base: _base!, phaseOffsetY: _phaseOffsetY);
+  }
+
+  /// Lazily materializes the phase-shifted [Path] for the last [resolve] call.
+  Path? get shiftedPath {
+    final base = _base;
+    if (base == null) return null;
+    if (_shifted == null) {
+      shifts++;
+      _shifted = base.shift(Offset(0, _phaseOffsetY));
     }
     return _shifted;
+  }
+
+  /// The rows for a glass of [bounds] under [transform] (local to screen),
+  /// drawn into a pass at [passPhysical], or null when [transform] rotates,
+  /// skews or flips, and rows in local space would not land on pixel rows.
+  Path? rows({
+    required Matrix4 transform,
+    required Rect bounds,
+    required Rect passPhysical,
+    required double dpr,
+  }) {
+    final resolved = resolve(
+      transform: transform,
+      bounds: bounds,
+      passPhysical: passPhysical,
+      dpr: dpr,
+    );
+    if (resolved == null) return null;
+    return shiftedPath;
   }
 
   /// The odd rows of a glass whose top edge sits on an even pass row:

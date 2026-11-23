@@ -1012,11 +1012,12 @@ void main() {
     // Pump partially into the close animation (e.g. 50ms)
     await tester.pump(const Duration(milliseconds: 50));
 
-    // Under standard quality, Blob A is suppressed during close to prevent double-button overlap.
+    // Under standard quality, Blob A is suppressed during close to prevent double-button overlap,
+    // and AdaptiveLiquidGlassLayer omits the unused Impeller LiquidGlassLayer.
     // There should be exactly 1 GlassContainer inside the overlay (Blob B, the collapsing popover body).
-    expect(find.byType(LiquidGlassLayer), findsOneWidget);
+    expect(find.byType(LiquidGlassLayer), findsNothing);
     final overlayContainers = find.descendant(
-      of: find.byType(LiquidGlassLayer),
+      of: find.byType(AdaptiveLiquidGlassLayer),
       matching: find.byType(GlassContainer),
     );
     expect(overlayContainers, findsOneWidget);
@@ -1089,7 +1090,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 30));
 
     final overlayContainers = find.descendant(
-      of: find.byType(LiquidGlassLayer),
+      of: find.byType(AdaptiveLiquidGlassLayer),
       matching: find.byType(GlassContainer),
     );
     expect(overlayContainers, findsNWidgets(2));

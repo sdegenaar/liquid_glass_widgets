@@ -829,6 +829,8 @@ class TabIndicatorState extends State<TabIndicator>
                               indicatorRadius: indicatorRadius,
                               indicatorColor: indicatorColor,
                               effectiveVisible: effectiveVisible,
+                              isResting: thickness < 0.01 &&
+                                  (value - targetAlignment).abs() < 0.001,
                             );
                         }
                       },
@@ -998,7 +1000,64 @@ class TabIndicatorState extends State<TabIndicator>
     required double indicatorRadius,
     required Color indicatorColor,
     required bool effectiveVisible,
+    required bool isResting,
   }) {
+    // At rest the pill sits cleanly centered on the selected tab, so the
+    // forward/inverse clip boundary falls in empty inter-tab space where
+    // Clip.antiAlias produces identical pixels without two offscreen
+    // saveLayer passes per frame.
+    final clipBehavior =
+        isResting ? Clip.antiAlias : Clip.antiAliasWithSaveLayer;
+    final textDirection = Directionality.of(context);
+    final resolvedAlignment = alignment.resolve(textDirection);
+    final resolvedExpansion = widget.indicatorExpansion.resolve(textDirection);
+    final iconStack = Stack(
+      children: [
+        // Unselected (inverse clipped — visible OUTSIDE pill)
+        ClipPath(
+          clipBehavior: clipBehavior,
+          clipper: JellyClipper(
+            itemCount: widget.tabCount,
+            alignment: resolvedAlignment,
+            thickness: thickness,
+            expansion: resolvedExpansion,
+            transform: jellyTransform,
+            borderRadius: indicatorRadius * 2,
+            inverse: true,
+          ),
+          child: Container(
+            padding: widget.tabPadding,
+            height: widget.barHeight,
+            child: KeyedSubtree(
+              key: _unselectedTabsKey,
+              child: widget.childUnselected,
+            ),
+          ),
+        ),
+        // Selected (forward clipped — visible INSIDE pill)
+        ClipPath(
+          clipBehavior: clipBehavior,
+          clipper: JellyClipper(
+            itemCount: widget.tabCount,
+            alignment: resolvedAlignment,
+            thickness: thickness,
+            expansion: resolvedExpansion,
+            transform: jellyTransform,
+            borderRadius: indicatorRadius * 2,
+          ),
+          child: Container(
+            padding: widget.tabPadding,
+            height: widget.barHeight,
+            child: widget.selectedTabBuilder(
+              context,
+              thickness,
+              resolvedAlignment,
+            ),
+          ),
+        ),
+      ],
+    );
+
     return SizedBox(
       height: widget.barHeight,
       child: Stack(
@@ -1053,107 +1112,9 @@ class TabIndicatorState extends State<TabIndicator>
                     child: widget.platformViewBackdrop
                         ? RepaintBoundary(
                             key: _iconLayerKey,
-                            child: Stack(
-                              children: [
-                                // Unselected (inverse clipped — visible OUTSIDE pill)
-                                ClipPath(
-                                  clipBehavior: Clip.antiAliasWithSaveLayer,
-                                  clipper: JellyClipper(
-                                    itemCount: widget.tabCount,
-                                    alignment: alignment
-                                        .resolve(Directionality.of(context)),
-                                    thickness: thickness,
-                                    expansion: widget.indicatorExpansion
-                                        .resolve(Directionality.of(context)),
-                                    transform: jellyTransform,
-                                    borderRadius: indicatorRadius * 2,
-                                    inverse: true,
-                                  ),
-                                  child: Container(
-                                    padding: widget.tabPadding,
-                                    height: widget.barHeight,
-                                    child: KeyedSubtree(
-                                      key: _unselectedTabsKey,
-                                      child: widget.childUnselected,
-                                    ),
-                                  ),
-                                ),
-                                // Selected (forward clipped — visible INSIDE pill)
-                                ClipPath(
-                                  clipBehavior: Clip.antiAliasWithSaveLayer,
-                                  clipper: JellyClipper(
-                                    itemCount: widget.tabCount,
-                                    alignment: alignment
-                                        .resolve(Directionality.of(context)),
-                                    thickness: thickness,
-                                    expansion: widget.indicatorExpansion
-                                        .resolve(Directionality.of(context)),
-                                    transform: jellyTransform,
-                                    borderRadius: indicatorRadius * 2,
-                                  ),
-                                  child: Container(
-                                    padding: widget.tabPadding,
-                                    height: widget.barHeight,
-                                    child: widget.selectedTabBuilder(
-                                        context,
-                                        thickness,
-                                        alignment.resolve(
-                                            Directionality.of(context))),
-                                  ),
-                                ),
-                              ],
-                            ),
+                            child: iconStack,
                           )
-                        : Stack(
-                            children: [
-                              // Unselected (inverse clipped — visible OUTSIDE pill)
-                              ClipPath(
-                                clipBehavior: Clip.antiAliasWithSaveLayer,
-                                clipper: JellyClipper(
-                                  itemCount: widget.tabCount,
-                                  alignment: alignment
-                                      .resolve(Directionality.of(context)),
-                                  thickness: thickness,
-                                  expansion: widget.indicatorExpansion
-                                      .resolve(Directionality.of(context)),
-                                  transform: jellyTransform,
-                                  borderRadius: indicatorRadius * 2,
-                                  inverse: true,
-                                ),
-                                child: Container(
-                                  padding: widget.tabPadding,
-                                  height: widget.barHeight,
-                                  child: KeyedSubtree(
-                                    key: _unselectedTabsKey,
-                                    child: widget.childUnselected,
-                                  ),
-                                ),
-                              ),
-                              // Selected (forward clipped — visible INSIDE pill)
-                              ClipPath(
-                                clipBehavior: Clip.antiAliasWithSaveLayer,
-                                clipper: JellyClipper(
-                                  itemCount: widget.tabCount,
-                                  alignment: alignment
-                                      .resolve(Directionality.of(context)),
-                                  thickness: thickness,
-                                  expansion: widget.indicatorExpansion
-                                      .resolve(Directionality.of(context)),
-                                  transform: jellyTransform,
-                                  borderRadius: indicatorRadius * 2,
-                                ),
-                                child: Container(
-                                  padding: widget.tabPadding,
-                                  height: widget.barHeight,
-                                  child: widget.selectedTabBuilder(
-                                      context,
-                                      thickness,
-                                      alignment
-                                          .resolve(Directionality.of(context))),
-                                ),
-                              ),
-                            ],
-                          ),
+                        : iconStack,
                   ),
                 ],
               ),

@@ -15,6 +15,7 @@ class _GlassPopoverState extends State<GlassPopover>
   /// spring's underdamped overshoot. Held at `1.0` (full blur, no animation)
   /// when the ramp is disabled or reduced-motion is active.
   late final AnimationController _blurRamp;
+  late final Listenable _overlayListenable;
 
   Size? _triggerSize;
   double? _triggerBorderRadius;
@@ -138,6 +139,10 @@ class _GlassPopoverState extends State<GlassPopover>
       vsync: this,
       speed: widget.morphSpeed,
     )..verticalOnlyRecoil = true;
+    _overlayListenable = Listenable.merge([
+      _morphController.animation,
+      _blurRamp,
+    ]);
     _morphController.addListener(() {
       // Hide the overlay only once the closing morph — including the parallel
       // trigger recoil and wide-trigger splash (~550 ms) — has fully settled.
@@ -706,10 +711,10 @@ class _GlassPopoverState extends State<GlassPopover>
   /// so downstream lerp / arithmetic never yields NaN or Infinity when
   /// [MediaQuery] is unavailable (e.g. in some test environments).
   double _getMaxPopoverHeight([EdgeInsets? precomputedPadding]) {
-    final mediaQuery = MediaQuery.maybeOf(context);
-    if (mediaQuery == null) return 800.0;
+    final screenSize = MediaQuery.maybeSizeOf(context);
+    if (screenSize == null) return 800.0;
 
-    final screenHeight = mediaQuery.size.height;
+    final screenHeight = screenSize.height;
     final insets = precomputedPadding ?? _viewInsets();
     final double safeTop = widget.screenPadding.top + insets.top;
     final double safeBottom = widget.screenPadding.bottom + insets.bottom;
@@ -769,9 +774,9 @@ class _GlassPopoverState extends State<GlassPopover>
     final tw = _triggerSize!.width;
     final th = _triggerSize!.height;
     final triggerCenterX = position.dx + tw * 0.5;
-    final mediaQuery = MediaQuery.maybeOf(context);
-    final screenWidth = mediaQuery?.size.width ?? double.infinity;
-    final screenHeight = mediaQuery?.size.height ?? double.infinity;
+    final screenSize = MediaQuery.maybeSizeOf(context);
+    final screenWidth = screenSize?.width ?? double.infinity;
+    final screenHeight = screenSize?.height ?? double.infinity;
 
     // Compute view insets once and share between max-height and clamping.
     final insets = _viewInsets();
@@ -976,9 +981,9 @@ class _GlassPopoverState extends State<GlassPopover>
         0.35;
 
     if (widget.autoAdjustToScreen && state.pathT > 1.0) {
-      final mediaQuery = MediaQuery.maybeOf(context);
-      final screenWidth = mediaQuery?.size.width ?? double.infinity;
-      final screenHeight = mediaQuery?.size.height ?? double.infinity;
+      final screenSize = MediaQuery.maybeSizeOf(context);
+      final screenWidth = screenSize?.width ?? double.infinity;
+      final screenHeight = screenSize?.height ?? double.infinity;
       final insets = _viewInsets();
       final overlayOrigin = _triggerGlobalPosition - _triggerOverlayPosition;
       final minOverlayX =
@@ -1126,7 +1131,9 @@ class _GlassPopoverState extends State<GlassPopover>
         effectiveQuality == GlassQuality.premium &&
         ImageFilter.isShaderFilterSupported;
 
-    final bool useBlendGroup = effectiveQuality != GlassQuality.minimal &&
+    // LiquidGlassBlendGroup requires a LiquidGlassLayer ancestor, which
+    // AdaptiveLiquidGlassLayer only mounts for GlassQuality.premium.
+    final bool useBlendGroup = effectiveQuality == GlassQuality.premium &&
         !widget.platformViewBackdrop;
 
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
@@ -1135,7 +1142,7 @@ class _GlassPopoverState extends State<GlassPopover>
     // Listens to BOTH the morph spring and the blur ramp so the backdrop blur
     // repaints as it eases in, independently of where the morph spring is.
     final overlay = AnimatedBuilder(
-      animation: Listenable.merge([_morphController.animation, _blurRamp]),
+      animation: _overlayListenable,
       builder: (context, child) {
         final rawValue = _morphController.value;
         final clampedValue = rawValue.clamp(0.0, 1.0);
