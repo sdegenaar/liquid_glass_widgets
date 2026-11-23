@@ -7,6 +7,7 @@
 
 ## Bug Fixes
 
+- **`GlassModalSheet` under a `MediaQuery` that isn't the window's size (#525):** The sheet now measures its detents, progress, snap targets and expand-first scroll gate against the `MediaQuery` height it rests by, and converts drags into its own layout pixels. Where the two differed — one side of a half-folded display presented by `show()`, or a page laid out at one width and scaled to the screen — the sheet rested by one height and judged itself by the other: a two-detent sheet at full couldn't scroll its content, a resting half-only sheet with a pixel `halfSize` couldn't either, and drags rubber-banded or fell behind the finger.
 - **`GlassMenu` & morph overlays settling after slow frames (#522):** Advance `GlassMorphController.phaseElapsedSeconds` to its settled state when `AnimationController` stops on a slow frame (such as cold shader compilation with `GlassWarmUpMode.never`), preventing `GlassMenu` from getting stuck as a blurred round bubble with hidden rows.
 - **Premium glass morphs (#520):** Refresh the backdrop clip when the glass shape changes without a layout change, preventing a second contour at the frosted corners of an expanded `GlassMenu`.
 - **`GlassQuality.standard` morph overlays on Impeller:** Gate `LiquidGlassBlendGroup` creation in `GlassModalSheet`, `GlassMenu`, and `GlassPopover` morph overlays strictly on `GlassQuality.premium`, preventing missing-`InheritedGeometryRenderLink` assertions when morphing with `GlassQuality.standard` on Impeller.
