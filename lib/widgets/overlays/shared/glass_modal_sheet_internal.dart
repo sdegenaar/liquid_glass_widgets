@@ -50,6 +50,7 @@ class _SheetLayout extends StatelessWidget {
   final bool enableSaturationGlow;
   final bool suppressInteractionOnChildren;
   final VoidCallback? onDismiss;
+  final GlobalKey contentZoneKey;
 
   const _SheetLayout({
     required this.interactionScale,
@@ -95,6 +96,7 @@ class _SheetLayout extends StatelessWidget {
     required this.topFadeHeight,
     required this.enableSaturationGlow,
     required this.suppressInteractionOnChildren,
+    required this.contentZoneKey,
     this.onDismiss,
   });
 
@@ -306,7 +308,7 @@ class _SheetLayout extends StatelessWidget {
                                           expandProgress < 0.9)
                                       ? saturationAnimation.value
                                       : 0,
-                                  child: Opacity(
+                                  child: GlassControlledOpacity(
                                     opacity: morphContentOpacity,
                                     child: GlassMaterializeScope(
                                       glassProgress: morphContentOpacity *
@@ -377,16 +379,18 @@ class _SheetLayout extends StatelessWidget {
   }
 
   Widget _applyTopFade(Widget content) {
-    if (!enableTopFade) return content;
+    final keyed = KeyedSubtree(key: contentZoneKey, child: content);
+    if (!enableTopFade) return keyed;
 
-    // Use a smooth fade for the ShaderMask stops to avoid abrupt tree mutations
-    // and provide a seamless transition as the sheet reaches the top.
     final fadeT = ((expandProgressValue - 0.8) / 0.2).clamp(0.0, 1.0);
+    // Omit ShaderMask completely when fadeT == 0 (all peek/half/medium sheets
+    // and 80% of drags) to avoid a full-sheet offscreen saveLayer every frame.
+    // KeyedSubtree(contentZoneKey) preserves the content Element & scroll state
+    // seamlessly when ShaderMask mounts/unmounts across the 0.8 threshold.
+    if (fadeT <= 0.001) return keyed;
 
     return ShaderMask(
       shaderCallback: (Rect bounds) {
-        // When fadeT is 0, the 'transparent' stop is pushed above the bounds (0.0),
-        // effectively making the whole mask opaque.
         final stop = lerpDouble(0.0, topFadeHeight, fadeT)!;
         return LinearGradient(
           begin: Alignment.topCenter,
@@ -399,7 +403,7 @@ class _SheetLayout extends StatelessWidget {
         ).createShader(bounds);
       },
       blendMode: BlendMode.dstIn,
-      child: content,
+      child: keyed,
     );
   }
 }

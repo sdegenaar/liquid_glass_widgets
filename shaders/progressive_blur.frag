@@ -97,6 +97,9 @@ void main() {
     float w = 1.0; // will be multiplied by g1 at top of first iteration
     for (int i = 1; i <= kHalf; i++) {
       float d = float(i) * stride;    // device px offset (needed for UV)
+      // Past 3*sigma the Gaussian tail is < 0.011; break early where stride == 1
+      // on the lower-sigma side of the gradient strip (~15-23% fewer taps).
+      if (d > 3.0 * sigma) break;
       w *= g1;                        // w = exp(-(i*stride)² * inv2s2) ✓
       g1 *= g2;                       // advance g1 for next iteration
       vec2 off = axis * d;            // uv offset

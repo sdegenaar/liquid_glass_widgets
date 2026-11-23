@@ -471,4 +471,62 @@ void main() {
       expect(builtDarkAmount, 0.0);
     });
   });
+
+  testWidgets(
+    'Wave 2.4 — crops capture bitmap to control bounds at 4px cell target',
+    (tester) async {
+      final flips = <Brightness>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GlassContentAwareScope(
+            child: Stack(
+              children: [
+                const Positioned.fill(
+                  child: GlassContentAwareContent(
+                    child: Column(
+                      children: [
+                        // Top 520px is bright white; bottom 80px behind the
+                        // control is dark black — ensures crop origin offset
+                        // is applied accurately.
+                        Expanded(child: ColoredBox(color: Color(0xFFFFFFFF))),
+                        SizedBox(
+                          height: 80,
+                          width: double.infinity,
+                          child: ColoredBox(color: Color(0xFF000000)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: 80,
+                  child: GlassContentAwareBrightness(
+                    onBrightnessChanged: flips.add,
+                    builder: (context, brightness, darkAmount) =>
+                        const SizedBox.expand(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final scopeState = tester.state<GlassContentAwareScopeState>(
+          find.byType(GlassContentAwareScope));
+      await _settleSample(tester, scopeState);
+      await tester.pump();
+
+      expect(flips, [Brightness.dark]);
+      final captured = scopeState.lastSampleImageSize;
+      expect(captured, isNotNull);
+      // Cropped height of an 80pt bar (inset 18% top+bottom -> ~51pt) at 4px
+      // target cell height should be <= 10px tall, not the full 600pt viewport.
+      expect(captured!.height, lessThanOrEqualTo(12.0));
+      expect(captured.width * captured.height, lessThan(1000.0));
+    },
+  );
 }

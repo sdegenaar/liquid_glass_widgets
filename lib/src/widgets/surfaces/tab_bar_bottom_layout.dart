@@ -159,8 +159,7 @@ class TabBarBottomLayout extends StatefulWidget {
   State<TabBarBottomLayout> createState() => _TabBarBottomLayoutState();
 }
 
-class _TabBarBottomLayoutState extends State<TabBarBottomLayout>
-    with TickerProviderStateMixin {
+class _TabBarBottomLayoutState extends State<TabBarBottomLayout> {
   static const _kGestureRegionKey = ValueKey<String>(
     'glass_tab_bar_gesture_region',
   );

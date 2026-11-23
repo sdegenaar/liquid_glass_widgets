@@ -90,34 +90,14 @@ float fastPowInd(float x, float n) {
 // logSize  — uBackgroundSize in logical pixels
 // physSize — uBackgroundSize * uDpr = actual pixel dimensions of the texture
 // invPhys  — 1.0 / physSize (precomputed for efficiency)
+// Hardware-filtered texture lookup with explicit half-texel edge clamping.
+// GlassEffect binds uTexture with FilterQuality.medium (hardware bilinear), so
+// a single texture() fetch replaces the legacy 4-tap manual bilinear gather
+// while preserving ClampToEdge semantics during jelly/stretch overshoot.
 vec4 textureBilinear(vec2 uv, vec2 physSize, vec2 invPhys) {
-    // Convert UV to physical texel coordinate, centre on the texel grid.
-    vec2 px = uv * physSize - 0.5;
-    vec2 f  = fract(px);
-    vec2 p0 = floor(px);
-    vec2 p1 = p0 + vec2(1.0, 0.0);
-    vec2 p2 = p0 + vec2(0.0, 1.0);
-    vec2 p3 = p0 + vec2(1.0, 1.0);
-
-    // Explicitly clamp to texture bounds. In Impeller, custom FragmentShader 
-    // samplers may not use ClampToEdge by default. When the indicator pill 
-    // expands outside the RepaintBoundary bounds (e.g. via jelly overshoot 
-    // or LiquidStretch scaling), out-of-bounds UVs cause extreme wrap-around 
-    // chromatic aliasing (jagged rainbows) on the pill's top/left edges.
-    vec2 maxPx = max(vec2(0.0), physSize - 1.0);
-    p0 = clamp(p0, vec2(0.0), maxPx);
-    p1 = clamp(p1, vec2(0.0), maxPx);
-    p2 = clamp(p2, vec2(0.0), maxPx);
-    p3 = clamp(p3, vec2(0.0), maxPx);
-
-    vec4 c0 = texture(uTexture, (p0 + 0.5) * invPhys);
-    vec4 c1 = texture(uTexture, (p1 + 0.5) * invPhys);
-    vec4 c2 = texture(uTexture, (p2 + 0.5) * invPhys);
-    vec4 c3 = texture(uTexture, (p3 + 0.5) * invPhys);
-
-    vec4 cTop = mix(c0, c1, f.x);
-    vec4 cBot = mix(c2, c3, f.x);
-    return mix(cTop, cBot, f.y);
+    vec2 halfTexel = 0.5 * invPhys;
+    vec2 clampedUV = clamp(uv, halfTexel, max(halfTexel, 1.0 - halfTexel));
+    return texture(uTexture, clampedUV);
 }
 
 void main() {
@@ -368,7 +348,7 @@ void main() {
   float nativeRimShade = 0.0;
   float hairline = 1.0 - smoothstep(0.25, 1.10, distFromEdge);
   if ((uRimLight > 0.001 || uRimShade > 0.001) && activeLens > 0.001 && distFromEdge < 12.0) {
-    float along = dot(surfaceNormal, uLightDirection);
+    float along = edgeLightCatch;
     float lit   = max(along, 0.0);
     float opp   = max(-along, 0.0);
     // Indicator lens weights from liquid_glass_render.frag (isClearIndicator=1):
@@ -391,7 +371,9 @@ void main() {
           1.0);
     }
     if (effectiveRimShade > 0.001 && distFromEdge < 2.2) {
-      float across = fastPowInd(max(0.0, 1.0 - along * along), 1.75);
+      float acrossRaw = max(0.0, 1.0 - along * along);
+      float acrossSqrt = sqrt(acrossRaw);
+      float across = acrossRaw * acrossSqrt * sqrt(acrossSqrt);
       nativeRimShade = clamp(
           effectiveRimShade * 0.314 * mix(effectiveShadeEnds, 1.0, across) * hairline * activeLens,
           0.0,
@@ -404,7 +386,7 @@ void main() {
   float lensThickness = sqrt(max(0.0, 1.0 - r_norm * r_norm)); // hemisphere arc
 
   // [2] Light-modulated strength: weaker on lit side (0.6×), stronger on shadow (1.4×)
-  float litness = dot(surfaceNormal, uLightDirection); // [-1, +1]
+  float litness = edgeLightCatch; // [-1, +1]
   float dirScale = mix(1.4, 0.6, litness * 0.5 + 0.5); // shadow → lit
   float modulatedAbsorption = uEdgeAbsorption * dirScale;
 

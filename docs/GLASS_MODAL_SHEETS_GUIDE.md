@@ -68,6 +68,44 @@ InteractionNotification(event).dispatch(context);
 
 *Internal Logic:* When `suppressInteractionOnChildren` is `true`, the sheet listens for this notification. If caught, it sets `_suppressScalingForSession = true`, forcing the `interactionScale` to `1.0` and `stretch` to `0.0` for the remainder of the pointer session.
 
+### 2.5. Solid Controls & Chips Inside Sheets (`1.x` Opt-In)
+Because `GlassModalSheet` already renders its own refractive glass surface, nesting glass-mode controls (`GlassChip`, `GlassButton`, `GlassIconButton`, `GlassTextField`, `GlassSearchBar`, `GlassTextArea`, `GlassPasswordField`, or `GlassPicker`) directly inside a sheet can cause double-refraction distortion and allocate per-control backdrop shader layers during sheet drags.
+
+In `1.x`, wrap dense sheet content in `InheritedGlassSurfaceStyle(surfaceStyle: GlassSurfaceStyle.solid, ...)`:
+
+```dart
+GlassModalSheet.show(
+  context: context,
+  builder: (sheetContext) => InheritedGlassSurfaceStyle(
+    surfaceStyle: GlassSurfaceStyle.solid,
+    child: ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            GlassChip(label: 'All', selected: true, onTap: () {}),
+            GlassChip(label: 'Favorites', onTap: () {}),
+            GlassChip(label: 'Recent', onTap: () {}),
+          ],
+        ),
+        const SizedBox(height: 16),
+        GlassButton.custom(
+          onTap: () => Navigator.of(sheetContext).pop(),
+          child: const Text('Apply'),
+        ),
+      ],
+    ),
+  ),
+);
+```
+
+- Every descendant input, picker, chip, and button whose `surfaceStyle` is `null` (the default) automatically inherits `GlassSurfaceStyle.solid` — rendering zero-shader `tertiarySystemFill` wells/buttons instead of allocating per-control glass layers.
+- Individual controls inside the sheet can still opt back into glass explicitly by passing `surfaceStyle: GlassSurfaceStyle.glass`.
+- `GlassSwitch`, `GlassSlider`, and `GlassSegmentedControl` only lift into glass while touched or dragged, so they work cleanly inside a solid-scoped sheet as well.
+- Wrapping `GlassModalSheet` content in `InheritedGlassSurfaceStyle(surfaceStyle: GlassSurfaceStyle.solid)` is scheduled to become the default in `2.0.0` (see `docs/ROADMAP.md`).
+
 ---
 
 ## 3. Advanced Geometry & Morphing
@@ -122,7 +160,7 @@ Everything after the morph is unchanged — detents, drag, snap, and the control
 
 **What it lands on.** The droplet aims at the *initial detent's* resting frame, resolved through `SheetGeometry.positionForState` — the same call the sheet's own render metrics use — and takes on that detent's surface, so a glass `medium` sheet hands off to glass and an opaque `large` sheet hands off to colour. At the settled instant the droplet and the sheet occupy the identical frame, and the real sheet (mounted underneath the whole time, never inserted late) takes over.
 
-**Which dismissals morph back.** All of them. A dismissal that leaves the sheet at rest — barrier tap, back gesture, `controller.snapToState(hidden)` — morphs back from its resting frame. A swipe morphs from wherever the finger let go, and the release hands that exact frame to the morph rather than snapping back to the resting one first. A swipe released short of the dismiss threshold springs back to the detent, full size and centred, carrying the finger's release momentum into the spring.
+**Which dismissals morph back.** All of them. A dismissal that leaves the sheet at rest — barrier tap, close button, back gesture, `Navigator.pop()`, or `controller.snapToState(hidden)` — morphs back from the sheet's *current* resting detent frame (matching its live margins, bottom offset, corner radii, and fill even after dragging `half` → `full` or `half` → `peek`). A swipe morphs from wherever the finger let go, and the release hands that exact frame to the morph rather than snapping back to the resting one first. A swipe released short of the dismiss threshold springs back to the detent, full size and centred, carrying the finger's release momentum into the spring.
 
 **How a swipe behaves.** Below the lowest detent the sheet follows the finger on both axes and shrinks with the vertical travel. The curve is measured off iOS 26 (cursor-tracked through iPhone Mirroring) and normalised by the *card's* height, so a small panel shrinks faster per pixel than a tall sheet:
 

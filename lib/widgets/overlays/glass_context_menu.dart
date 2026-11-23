@@ -847,6 +847,17 @@ class _GlassContextMenuRouteStatic extends StatefulWidget {
 
 class _GlassContextMenuRouteStaticState
     extends State<_GlassContextMenuRouteStatic> {
+  static final SpringSimulation _kClosePlatterSim =
+      SpringSimulation(_kClosePlatterSpring, 1.0, 0.20, 0.0);
+  static final SpringSimulation _kCloseCardReturnSim =
+      SpringSimulation(_kCloseCardReturnSpring, 0.0, 1.0, 0.0);
+  static final SpringSimulation _kCatchRecoilSimA =
+      SpringSimulation(_kCatchRecoilSpringA, 0.0, 1.0, 0.0);
+  static final SpringSimulation _kCatchRecoilSimB =
+      SpringSimulation(_kCatchRecoilSpringB, 0.0, 1.0, 0.0);
+  static final SpringSimulation _kOpenPlatterSim =
+      SpringSimulation(_kOpenPlatterSpring, 0.0, 1.0, 0.0);
+
   late final List<GlobalKey> _actionKeys;
   final GlobalKey _previewMeasureKey = GlobalKey();
   final GlobalKey _platterMeasureKey = GlobalKey();
@@ -977,9 +988,8 @@ class _GlassContextMenuRouteStaticState
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final screenSize = mediaQuery.size;
-    final padding = mediaQuery.padding;
+    final screenSize = MediaQuery.sizeOf(context);
+    final padding = MediaQuery.paddingOf(context);
 
     final bool isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
     final GlassStyle style =
@@ -1290,9 +1300,7 @@ class _GlassContextMenuRouteStaticState
           final double tCloseSec =
               closeProgress * (_kCloseSpringDurationMs / 1000.0);
 
-          final double rawCloseScale =
-              SpringSimulation(_kClosePlatterSpring, 1.0, 0.20, 0.0)
-                  .x(tCloseSec);
+          final double rawCloseScale = _kClosePlatterSim.x(tCloseSec);
           platterScale = rawCloseScale.clamp(0.15, 1.05);
           final double targetContentOpacity =
               ((rawCloseScale - 0.20) / 0.80).clamp(0.0, 1.0);
@@ -1302,15 +1310,9 @@ class _GlassContextMenuRouteStaticState
               ? (targetContentOpacity / platterGlassProgress).clamp(0.0, 1.0)
               : 0.0;
 
-          final double u =
-              SpringSimulation(_kCloseCardReturnSpring, 0.0, 1.0, 0.0)
-                  .x(tCloseSec)
-                  .clamp(0.0, 1.0);
+          final double u = _kCloseCardReturnSim.x(tCloseSec).clamp(0.0, 1.0);
           final double recoilPulse =
-              (SpringSimulation(_kCatchRecoilSpringA, 0.0, 1.0, 0.0)
-                          .x(tCloseSec) -
-                      SpringSimulation(_kCatchRecoilSpringB, 0.0, 1.0, 0.0)
-                          .x(tCloseSec))
+              (_kCatchRecoilSimA.x(tCloseSec) - _kCatchRecoilSimB.x(tCloseSec))
                   .clamp(0.0, 0.20);
           final double recoilDy =
               (placeBelow ? -1.0 : 1.0) * 35.0 * recoilPulse;
@@ -1364,10 +1366,8 @@ class _GlassContextMenuRouteStaticState
           final double tNorm =
               ((v - _kLiftSplit) / (1.0 - _kLiftSplit)).clamp(0.0, 1.0);
           final double tOpenSec = tNorm * (_kOpenSpringDurationMs / 1000.0);
-          final double springOpen = tNorm >= 1.0
-              ? 1.0
-              : SpringSimulation(_kOpenPlatterSpring, 0.0, 1.0, 0.0)
-                  .x(tOpenSec);
+          final double springOpen =
+              tNorm >= 1.0 ? 1.0 : _kOpenPlatterSim.x(tOpenSec);
           final double m = springOpen.clamp(0.0, 1.0);
           final double c =
               Curves.easeInOut.transform((tOpenSec / 0.180).clamp(0.0, 1.0));
@@ -1395,7 +1395,7 @@ class _GlassContextMenuRouteStaticState
         final Widget scrimLayer = GestureDetector(
           onTap: () => Navigator.of(context, rootNavigator: true).pop(),
           behavior: HitTestBehavior.opaque,
-          child: widget.backdropBlur > 0.0
+          child: widget.backdropBlur > 0.0 && scrimAmount > 0.001
               ? BackdropFilter(
                   filter: ImageFilter.blur(
                     sigmaX: widget.backdropBlur * scrimAmount,
@@ -1443,31 +1443,35 @@ class _GlassContextMenuRouteStaticState
             // 2. Backdrop scrim (dims the page, including the origin slot).
             Positioned.fill(child: scrimLayer),
 
-            // 3. Hidden measurement pass (offstage)
-            Offstage(
-              offstage: true,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  KeyedSubtree(
-                    key: _previewMeasureKey,
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: screenSize.width - 32.0,
+            // 3. Hidden measurement pass (offstage) — unmounted immediately
+            // once frame 1 records preview and platter dimensions so we don't
+            // keep a duplicate GlassContainer.card(useOwnLayer: true) alive
+            // across the entire context menu animation.
+            if (_measuredPreviewSize == null || _measuredPlatterSize == null)
+              Offstage(
+                offstage: true,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    KeyedSubtree(
+                      key: _previewMeasureKey,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: screenSize.width - 32.0,
+                        ),
+                        child: previewWidget,
                       ),
-                      child: previewWidget,
                     ),
-                  ),
-                  KeyedSubtree(
-                    key: _platterMeasureKey,
-                    child: SizedBox(
-                      width: widget.menuWidth,
-                      child: buildPlatter(isMeasurement: true),
+                    KeyedSubtree(
+                      key: _platterMeasureKey,
+                      child: SizedBox(
+                        width: widget.menuWidth,
+                        child: buildPlatter(isMeasurement: true),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
 
             // 4. Hero morphing card: the row layer fades out while the preview
             // layer fades in, each carrying its own opaque background.

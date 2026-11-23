@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/rendering.dart';
 
+import '../../../src/renderer/glass_backdrop_group.dart';
 import '../../../src/renderer/liquid_glass_renderer.dart';
 import '../../../src/widgets/surfaces/status_bar_row.dart';
 import '../../../src/widgets/surfaces/vertical_bar_title_row.dart';
@@ -466,7 +467,10 @@ class GlassNavPinnedHost extends StatelessWidget {
         child: GlassIsolationScope(
           isolated: true,
           defaultQuality: GlassQuality.premium,
-          child: chrome,
+          child: GlassBackdropGroup(
+            joinEnclosing: true,
+            child: chrome,
+          ),
         ),
       );
     }
@@ -479,7 +483,10 @@ class GlassNavPinnedHost extends StatelessWidget {
       child: GlassIsolationScope(
         isolated: true,
         defaultQuality: GlassQuality.premium,
-        child: chrome,
+        child: GlassBackdropGroup(
+          joinEnclosing: true,
+          child: chrome,
+        ),
       ),
     );
   }

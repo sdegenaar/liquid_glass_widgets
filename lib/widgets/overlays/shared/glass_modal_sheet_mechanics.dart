@@ -536,6 +536,15 @@ class GlassModalSheetController {
   GlassSheetState get currentState =>
       _state?._currentState ?? GlassSheetState.hidden;
 
+  /// The last non-[GlassSheetState.hidden] detent the sheet occupied, or null
+  /// while no sheet is attached.
+  ///
+  /// Preserves the sheet's resting detent across a synchronous dismissal via
+  /// `snapToState(GlassSheetState.hidden)` (such as a barrier tap or close
+  /// button), which updates [currentState] to `hidden` before popping the
+  /// route.
+  GlassSheetState? get _lastVisibleState => _state?._lastVisibleState;
+
   /// Raw sheet position as a screen-height fraction (0.0–1.0).
   ///
   /// Reading during an animation gives the instantaneous value. Setting this

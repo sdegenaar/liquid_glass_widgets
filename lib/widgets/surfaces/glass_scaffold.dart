@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../../theme/glass_theme.dart';
 
+import '../../src/renderer/glass_backdrop_group.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/widgets/surfaces/dynamic_preferred_size.dart';
 import '../../src/widgets/surfaces/status_bar_row.dart';
@@ -23,6 +24,8 @@ import 'glass_navigation_stack.dart' show GlassNavigationTitleScope;
 import 'glass_tab_bar.dart';
 import 'glass_toolbar.dart';
 import 'glass_vertical_bar.dart';
+
+final Listenable _kEmptyListenable = Listenable.merge(const []);
 
 /// A one-stop-shop scaffold that replaces the manual assembly of [GlassPage],
 /// [Scaffold], [GlassScrollEdgeEffect], and a [Stack] for proper z-ordering.
@@ -451,9 +454,9 @@ class GlassScaffold extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context, Widget? _) {
-    final mediaQuery = MediaQuery.of(context);
-    final topPad = mediaQuery.padding.top;
-    final botPad = mediaQuery.padding.bottom;
+    final padding = MediaQuery.paddingOf(context);
+    final topPad = padding.top;
+    final botPad = padding.bottom;
 
     // In iPhone Duo's vertical bar strip a pinned app bar keeps only its
     // title row, and the package's bottom bars leave the bottom edge for the
@@ -529,7 +532,7 @@ class GlassScaffold extends StatelessWidget {
       // either side of a posture change, so the body is never remounted.
       final largeTitle = appBarInStrip ? bar.largeTitleController : null;
       bodyContent = ListenableBuilder(
-        listenable: Listenable.merge([largeTitle]),
+        listenable: largeTitle ?? _kEmptyListenable,
         builder: (context, child) => edgeEffect(
           largeTitle == null
               ? topFadeHeight
@@ -555,29 +558,38 @@ class GlassScaffold extends StatelessWidget {
     // them by identity rather than position. Without keys, toggling header
     // (null → widget → null) shifts the index of appBar and bottomBar,
     // causing Flutter to unmount/remount them — losing animation state.
+    // Keep body glass outside the scaffold's top+bottom chrome BackdropGroup
+    // so appBar and bottomBar sample body glass painted beneath them while
+    // sharing a single backdrop read with each other.
+    final Widget isolatedBodyContent = GlassBackdropGroupOptOut(
+      child: bodyContent,
+    );
+
     final stackChildren = <Widget>[
       // 1. Body (bottom of stack — always below bars).
       if (extendBody)
-        Positioned.fill(child: bodyContent)
+        Positioned.fill(child: isolatedBodyContent)
       else
         Positioned(
           top: appBar != null ? topPad + effectiveAppBarHeight : 0,
           left: 0,
           right: 0,
           bottom: bottomBar != null ? effectiveBottomBarHeight + botPad : 0,
-          child: bodyContent,
+          child: isolatedBodyContent,
         ),
 
       // 2. Body overlays (between body and bars — e.g. floating play pill).
+      // Uses GlassBackdropGroupOptOut (pure InheritedWidget, no RenderObject)
+      // so Positioned overlays keep their StackParentData directly on Stack.
       if (bodyOverlays != null)
         for (final overlay in bodyOverlays!)
-          GlassIsolationScope(
-            // Carry the overlay's key onto the wrapper so the Stack still
-            // matches an overlay by key when the list reorders or changes.
+          GlassBackdropGroupOptOut(
             key: overlay.key == null ? null : ValueKey<Key>(overlay.key!),
-            isolated: true,
-            defaultQuality: GlassQuality.premium,
-            child: overlay,
+            child: GlassIsolationScope(
+              isolated: true,
+              defaultQuality: GlassQuality.premium,
+              child: overlay,
+            ),
           ),
 
       // 2a. Under Reduce Transparency, the strip and the title row turn
@@ -602,35 +614,38 @@ class GlassScaffold extends StatelessWidget {
           top: 0,
           left: 0,
           right: 0,
-          child: SafeArea(
-            bottom: false,
-            child: headerScrollController != null
-                ? AnimatedBuilder(
-                    animation: headerScrollController!,
-                    builder: (context, child) {
-                      // Guard: during AnimatedSwitcher cross-fades, both old
-                      // and new scroll views briefly share the same controller.
-                      // Reading .offset (or .positions.last) throws if there
-                      // are multiple positions. Falling back to 0.0 for that
-                      // brief ~300 ms window is correct UX — the header just
-                      // stays fully visible during the transition.
-                      final offset = headerScrollController!.hasClients &&
-                              headerScrollController!.positions.length == 1
-                          ? headerScrollController!.offset
-                          : 0.0;
-                      // Guard against divide-by-zero if headerFadeDistance == 0.
-                      final opacity = headerFadeDistance > 0
-                          ? (1.0 - offset / headerFadeDistance).clamp(0.0, 1.0)
-                          : (offset > 0 ? 0.0 : 1.0);
-                      return IgnorePointer(
-                        // Disable hit-testing only when fully invisible.
-                        ignoring: opacity == 0.0,
-                        child: Opacity(opacity: opacity, child: child),
-                      );
-                    },
-                    child: header!,
-                  )
-                : header!,
+          child: GlassBackdropGroupOptOut(
+            child: SafeArea(
+              bottom: false,
+              child: headerScrollController != null
+                  ? AnimatedBuilder(
+                      animation: headerScrollController!,
+                      builder: (context, child) {
+                        // Guard: during AnimatedSwitcher cross-fades, both old
+                        // and new scroll views briefly share the same controller.
+                        // Reading .offset (or .positions.last) throws if there
+                        // are multiple positions. Falling back to 0.0 for that
+                        // brief ~300 ms window is correct UX — the header just
+                        // stays fully visible during the transition.
+                        final offset = headerScrollController!.hasClients &&
+                                headerScrollController!.positions.length == 1
+                            ? headerScrollController!.offset
+                            : 0.0;
+                        // Guard against divide-by-zero if headerFadeDistance == 0.
+                        final opacity = headerFadeDistance > 0
+                            ? (1.0 - offset / headerFadeDistance)
+                                .clamp(0.0, 1.0)
+                            : (offset > 0 ? 0.0 : 1.0);
+                        return IgnorePointer(
+                          // Disable hit-testing only when fully invisible.
+                          ignoring: opacity == 0.0,
+                          child: Opacity(opacity: opacity, child: child),
+                        );
+                      },
+                      child: header!,
+                    )
+                  : header!,
+            ),
           ),
         ),
 
@@ -710,7 +725,14 @@ class GlassScaffold extends StatelessWidget {
     };
 
     Widget stackWidget = GlassNavigationTitleScope(
-      child: Stack(clipBehavior: Clip.none, children: stackChildren),
+      // Enclosing GlassBackdropGroup lets non-overlapping chrome bars
+      // (GlassAppBar, GlassTabBar, GlassToolbar — all joinEnclosing: true)
+      // share a single full-screen backdrop read on Impeller while body and
+      // bodyOverlays explicitly opt out above.
+      child: GlassBackdropGroup(
+        enabled: appBar != null && bottomBar != null,
+        child: Stack(clipBehavior: Clip.none, children: stackChildren),
+      ),
     );
 
     // Wrap in GlassContentAwareScope when content-aware brightness is on.

@@ -72,6 +72,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   late final ValueNotifier<int?> _hoveredIndexNotifier;
   late final ValueNotifier<bool> _isDraggingNotifier;
   List<Widget>? _cachedWrappedItems;
+  final GlobalKey _triggerChildKey = GlobalKey();
 
   // --- Layered submenus (GlassMenuItem.submenu) ---
   // Every pushed level opens a second glass card OVER the menu body (the way
@@ -167,10 +168,9 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
           ..recoilHalfTravelPx = LiquidMorphPhysics.menuRecoilHalfTravelPx
           ..verticalOnlyRecoil = true;
     _morphController.addListener(() {
-      if (mounted) setState(() {});
-
-      // Hide overlay only when the morph controller (including the ~550 ms
-      // trigger recoil and wide-pill splash tail) has FULLY SETTLED.
+      // AnimatedBuilder in build() already listens to _morphController.animation,
+      // so calling setState() here would double-rebuild the entire menu on every
+      // morph tick. Only settle/hide the overlay when the morph finishes.
       if (_overlayController.isShowing &&
           !_morphController.isShowing &&
           _morphController.status != AnimationStatus.forward) {
@@ -185,6 +185,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
               _verticalOffset = 0.0;
               _resetInterruptState();
               _resetSubmenus();
+              setState(() {});
             }
           });
         } else {
@@ -195,6 +196,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
           _verticalOffset = 0.0;
           _resetInterruptState();
           _resetSubmenus();
+          if (mounted) setState(() {});
         }
       }
     });
@@ -343,8 +345,23 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final Widget triggerChild = widget.triggerBuilder != null
+        ? widget.triggerBuilder!(context, _toggleMenu)
+        // A plain trigger (an icon, a text) gets the button role here;
+        // its text, if any, merges into this node as the name.
+        : Semantics(
+            container: true,
+            button: true,
+            label: widget.semanticLabel,
+            child: GestureDetector(
+              onTap: _toggleMenu,
+              child: widget.trigger,
+            ),
+          );
+
     return AnimatedBuilder(
       animation: _morphController.animation,
+      child: triggerChild,
       builder: (context, child) {
         final rawValue = _morphController.value;
 
@@ -479,21 +496,31 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
             : impactScale * widthScale;
         final double triggerScaleY = impactScale;
 
-        final Widget triggerChild = widget.triggerBuilder != null
-            ? widget.triggerBuilder!(context, _toggleMenu)
-            // A plain trigger (an icon, a text) gets the button role here;
-            // its text, if any, merges into this node as the name.
-            : Semantics(
-                container: true,
-                button: true,
-                label: widget.semanticLabel,
-                child: GestureDetector(
-                  onTap: _toggleMenu,
-                  child: widget.trigger,
-                ),
-              );
-
+        // Omit Opacity when fully opaque (idle) so menu triggers inside
+        // GlassAppBar/GlassToolbar stay inside an enclosing GlassBackdropGroup
+        // (RenderOpacity at any alpha — even 1.0 — acts as a render-pass
+        // isolation boundary in GlassBackdropGroupBoundary). Keeping
+        // _triggerChildKey on the trigger preserves its Element/State and
+        // geometry caches across open/close reparenting.
         final outer = GlassMaterializeScope.maybeOf(context);
+        Widget triggerWidget = KeyedSubtree(
+          key: _triggerChildKey,
+          child: GlassMaterializeScope(
+            glassProgress: glassScopeFactor * (outer?.glassProgress ?? 1.0),
+            contentOpacity: scopeFactor * (outer?.contentOpacity ?? 1.0),
+            contentSigma: outer?.contentSigma ?? 0.0,
+            child: IgnorePointer(
+              ignoring: isMenuBlocking,
+              child: child,
+            ),
+          ),
+        );
+        if (triggerLayerOpacity < 0.999) {
+          triggerWidget = Opacity(
+            opacity: triggerLayerOpacity,
+            child: triggerWidget,
+          );
+        }
 
         return OverlayPortal(
           controller: _overlayController,
@@ -512,20 +539,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                 onPointerMove: _handleTriggerPointerMove,
                 onPointerUp: _handleTriggerPointerUp,
                 onPointerCancel: _handleTriggerPointerCancel,
-                child: Opacity(
-                  opacity: triggerLayerOpacity,
-                  child: GlassMaterializeScope(
-                    glassProgress:
-                        glassScopeFactor * (outer?.glassProgress ?? 1.0),
-                    contentOpacity:
-                        scopeFactor * (outer?.contentOpacity ?? 1.0),
-                    contentSigma: outer?.contentSigma ?? 0.0,
-                    child: IgnorePointer(
-                      ignoring: isMenuBlocking,
-                      child: triggerChild,
-                    ),
-                  ),
-                ),
+                child: triggerWidget,
               ),
             ),
           ),
@@ -735,9 +749,9 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     // ...nor a previous open's submenu level.
     _resetSubmenus();
     final position = _triggerGlobalPosition;
-    final mediaQuery = MediaQuery.maybeOf(context);
-    final screenWidth = mediaQuery?.size.width ?? double.infinity;
-    final screenHeight = mediaQuery?.size.height ?? double.infinity;
+    final screenSize = MediaQuery.maybeSizeOf(context);
+    final screenWidth = screenSize?.width ?? double.infinity;
+    final screenHeight = screenSize?.height ?? double.infinity;
 
     // Calculate menu height for vertical boundary check
     final menuHeight = _calculateMenuHeight();
@@ -862,9 +876,9 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   Offset _computeClampOffsets(double menuHeight) {
     if (!widget.autoAdjustToScreen || _triggerSize == null) return Offset.zero;
     final position = _triggerGlobalPosition;
-    final mediaQuery = MediaQuery.maybeOf(context);
-    final screenWidth = mediaQuery?.size.width ?? double.infinity;
-    final screenHeight = mediaQuery?.size.height ?? double.infinity;
+    final screenSize = MediaQuery.maybeSizeOf(context);
+    final screenWidth = screenSize?.width ?? double.infinity;
+    final screenHeight = screenSize?.height ?? double.infinity;
     final flutterView = View.of(context);
     final mqPadding = EdgeInsets.fromViewPadding(
       flutterView.padding,
@@ -1446,15 +1460,15 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
       final origin = _triggerGlobalPosition - _triggerOverlayPosition;
       final bounds = _boundsAtDepth(depth)
           .shift(origin - Offset(_horizontalOffset, _verticalOffset));
-      final mq = MediaQuery.of(context);
-      final padding = mq.padding + widget.menuPadding;
+      final mqSize = MediaQuery.sizeOf(context);
+      final padding = MediaQuery.paddingOf(context) + widget.menuPadding;
       double fit(double lo, double hi, double min, double max) =>
           lo < min ? min - lo : (hi > max ? max - hi : 0.0);
       to = Offset(
         fit(bounds.left, bounds.right, padding.left,
-            mq.size.width - padding.right),
+            mqSize.width - padding.right),
         fit(bounds.top, bounds.bottom, padding.top,
-            mq.size.height - padding.bottom),
+            mqSize.height - padding.bottom),
       );
     }
     _contentMorphFromHOffset = _horizontalOffset;
@@ -1763,9 +1777,9 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
       // Keep mid-flight open drift inside screen bounds when
       // autoAdjustToScreen is enabled.
       if (widget.autoAdjustToScreen) {
-        final mediaQuery = MediaQuery.maybeOf(context);
-        final screenWidth = mediaQuery?.size.width ?? double.infinity;
-        final screenHeight = mediaQuery?.size.height ?? double.infinity;
+        final screenSize = MediaQuery.maybeSizeOf(context);
+        final screenWidth = screenSize?.width ?? double.infinity;
+        final screenHeight = screenSize?.height ?? double.infinity;
         final flutterView = View.of(context);
         final mqPadding = EdgeInsets.fromViewPadding(
           flutterView.padding,
@@ -1897,7 +1911,9 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
       fallback: GlassThemeHelpers.nativeStyleQuality(context),
     );
 
-    final bool useBlendGroup = effectiveQuality != GlassQuality.minimal &&
+    // LiquidGlassBlendGroup requires a LiquidGlassLayer ancestor, which
+    // AdaptiveLiquidGlassLayer only mounts for GlassQuality.premium.
+    final bool useBlendGroup = effectiveQuality == GlassQuality.premium &&
         !widget.platformViewBackdrop;
 
     final bool isPremiumQuality = effectiveQuality == GlassQuality.premium &&
@@ -2091,6 +2107,8 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
                           currentWidth,
                           currentHeight,
                           currentRadius,
+                          effectiveQuality,
+                          effectiveSettings,
                         ),
                       ),
                     ),
@@ -2209,7 +2227,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     // Account for system text scaling when calculating natural height.
     // Without this, increased text size causes items to render taller than
     // the height budget, triggering unwanted scrolling (GitHub issue).
-    final mediaQuery = MediaQuery.maybeOf(context);
+    final screenSize = MediaQuery.maybeSizeOf(context);
 
     // Sum all menu item heights, scaled by text scaler
     final itemHeights = widget.items.fold<double>(
@@ -2224,13 +2242,13 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
         math.min(itemHeights + 24.0 + gaps, _maximumStackHeight);
 
     if (widget.autoAdjustToScreen) {
-      if (mediaQuery != null) {
+      if (screenSize != null) {
         final flutterView = View.of(context);
         final mqPadding = EdgeInsets.fromViewPadding(
             flutterView.padding, flutterView.devicePixelRatio);
 
         // Clamp to screen height minus safe areas and a 20px safety buffer
-        var maxHeight = mediaQuery.size.height -
+        var maxHeight = screenSize.height -
             mqPadding.vertical -
             widget.menuPadding.vertical -
             20.0;
@@ -2244,7 +2262,7 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
         if (stripTop != null) {
           maxHeight = math.min(
             maxHeight,
-            mediaQuery.size.height -
+            screenSize.height -
                 stripTop -
                 mqPadding.bottom -
                 widget.menuPadding.bottom,
@@ -2257,17 +2275,18 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     return naturalHeight;
   }
 
-  Widget _buildMorphingContainer(LiquidMorphState state, double clampedValue,
-      double currentWidth, double currentHeight, double currentRadius) {
+  Widget _buildMorphingContainer(
+    LiquidMorphState state,
+    double clampedValue,
+    double currentWidth,
+    double currentHeight,
+    double currentRadius,
+    GlassQuality effectiveQuality,
+    LiquidGlassSettings effectiveSettings,
+  ) {
     if (currentWidth < 1.0 || currentHeight < 1.0) {
       return const SizedBox.shrink();
     }
-
-    final effectiveQuality = GlassThemeHelpers.resolveQuality(
-      context,
-      widgetQuality: widget.quality,
-      fallback: GlassThemeHelpers.nativeStyleQuality(context),
-    );
 
     // Continuous iOS 27 superellipse contour with monotonic corner radius.
     final teardropShape = LiquidRoundedSuperellipse(
@@ -2275,13 +2294,6 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
     );
 
     final containerScale = state.containerScale;
-
-    final effectiveSettings = GlassThemeHelpers.resolveSettings(
-      context,
-      explicit: widget.settings,
-      fallback: _kDefaultMenuSettings,
-      isOverlayPlatter: true,
-    );
 
     final double menuWidth = widget.menuWidth.toDouble();
     final double contentScale =
@@ -2530,24 +2542,53 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   }) {
     final coveredOpacity =
         coveredDepth == null ? 1.0 : _coveredRowOpacity(coveredDepth);
-    final rows = Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: _kBodyVerticalPadding),
-        for (var i = 0; i < items.length; i++) ...[
-          Opacity(
-            opacity:
-                coveredDepth != null && _isCoveredRow(coveredDepth, i, items)
-                    ? itemOpacity * coveredOpacity
-                    : itemOpacity,
-            child: interactive ? _buildWrappedItems()[i] : items[i],
-          ),
-          if (i < items.length - 1) const SizedBox(height: _kRowGap),
+    // Hoist wrapped items once per build instead of re-allocating inside the
+    // per-row loop (O(N^2) -> O(N)).
+    final resolvedItems = interactive ? _buildWrappedItems() : items;
+    Widget rows;
+    if (coveredDepth == null) {
+      // Single Column with at most 1 Opacity saveLayer (0 when opaque) instead
+      // of N individual per-row Opacity widgets.
+      rows = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: _kBodyVerticalPadding),
+          for (var i = 0; i < resolvedItems.length; i++) ...[
+            resolvedItems[i],
+            if (i < resolvedItems.length - 1) const SizedBox(height: _kRowGap),
+          ],
+          const SizedBox(height: _kBodyVerticalPadding),
         ],
-        const SizedBox(height: _kBodyVerticalPadding),
-      ],
-    );
+      );
+      if (itemOpacity < 0.999) {
+        rows = Opacity(opacity: itemOpacity, child: rows);
+      }
+    } else {
+      rows = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: _kBodyVerticalPadding),
+          for (var i = 0; i < resolvedItems.length; i++) ...[
+            if (_isCoveredRow(coveredDepth, i, items))
+              Opacity(
+                opacity: itemOpacity * coveredOpacity,
+                child: resolvedItems[i],
+              )
+            else if (itemOpacity < 0.999)
+              Opacity(
+                opacity: itemOpacity,
+                child: resolvedItems[i],
+              )
+            else
+              resolvedItems[i],
+            if (i < resolvedItems.length - 1) const SizedBox(height: _kRowGap),
+          ],
+          const SizedBox(height: _kBodyVerticalPadding),
+        ],
+      );
+    }
     final listBody = SizedBox(
       width: widget.menuWidth,
       height: viewportHeight,
@@ -2790,15 +2831,12 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   double get _maximumStackHeight {
     final external = widget.maxStackHeight ?? double.infinity;
     if (!widget.autoAdjustToScreen) return external;
-    final mq = MediaQuery.of(context);
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final padVertical = MediaQuery.paddingOf(context).vertical;
     return math.min(
         external,
-        math.max(
-            0.0,
-            mq.size.height -
-                mq.padding.vertical -
-                widget.menuPadding.vertical -
-                20));
+        math.max(0.0,
+            screenHeight - padVertical - widget.menuPadding.vertical - 20));
   }
 
   double _visibleListHeight(List<Widget> items) =>
@@ -2812,8 +2850,8 @@ class _GlassMenuState extends State<GlassMenu> with TickerProviderStateMixin {
   /// This method estimates the rendered height to prevent the menu from
   /// becoming scrollable when it shouldn't be.
   double _getScaledItemHeight(Widget item, BuildContext context) {
-    final mediaQuery = MediaQuery.maybeOf(context);
-    final textScaler = mediaQuery?.textScaler ?? TextScaler.noScaling;
+    final textScaler =
+        MediaQuery.maybeTextScalerOf(context) ?? TextScaler.noScaling;
 
     if (item is GlassMenuItem) {
       // The item has 8px vertical padding top + bottom = 16px fixed chrome.

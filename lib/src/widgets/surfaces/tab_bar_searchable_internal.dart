@@ -454,6 +454,8 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                               indicatorRadius: indicatorRadius,
                               indicatorColor: indicatorColor,
                               effectiveVisible: effectiveVisible,
+                              isResting: thickness < 0.01 &&
+                                  (alignment.x - targetAlignment).abs() < 0.001,
                             );
                         }
                       },
@@ -610,8 +612,54 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
     required double indicatorRadius,
     required Color indicatorColor,
     required bool effectiveVisible,
+    required bool isResting,
   }) {
     final effRadius = indicatorRadius;
+    final clipBehavior =
+        isResting ? Clip.antiAlias : Clip.antiAliasWithSaveLayer;
+    final exp = widget.indicatorExpansion.resolve(Directionality.of(context));
+    final iconStack = Stack(
+      children: [
+        ClipPath(
+          clipBehavior: clipBehavior,
+          clipper: JellyClipper(
+            itemCount: widget.tabCount,
+            alignment: alignment,
+            thickness: thickness,
+            expansion: exp,
+            transform: jellyTransform,
+            borderRadius: effRadius * 2,
+            inverse: true,
+          ),
+          child: Container(
+            padding: widget.tabPadding,
+            height: widget.barHeight,
+            child: KeyedSubtree(
+              key: _unselectedTabsKey,
+              child: widget.childUnselected,
+            ),
+          ),
+        ),
+        if (!widget.passthroughOverPlatformView)
+          ClipPath(
+            clipBehavior: clipBehavior,
+            clipper: JellyClipper(
+              itemCount: widget.tabCount,
+              alignment: alignment,
+              thickness: thickness,
+              expansion: exp,
+              transform: jellyTransform,
+              borderRadius: effRadius * 2,
+            ),
+            child: Container(
+              padding: widget.tabPadding,
+              height: widget.barHeight,
+              child: widget.selectedTabBuilder(context, thickness, alignment),
+            ),
+          ),
+      ],
+    );
+
     return SizedBox(
       height: widget.barHeight,
       child: Stack(
@@ -655,75 +703,28 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
                   ),
 
                   // 2. Icon Content Layer (Unselected + Selected combined for refraction)
-                  // We expand the RepaintBoundary bounds using negative Positioned
-                  // offsets matching the indicator expansion. This ensures that when
-                  // the active glass pill overshoots its bounds during a jelly animation
-                  // or stretch, it never samples outside the captured texture (which
-                  // causes extreme wrap-around chromatic aliasing on Impeller).
-                  Builder(
-                    builder: (context) {
-                      final exp = widget.indicatorExpansion
-                          .resolve(Directionality.of(context));
-                      return Positioned(
-                        top: -exp.top,
-                        bottom: -exp.bottom,
-                        left: -exp.left,
-                        right: -exp.right,
-                        child: RepaintBoundary(
-                          // Keyed so the premium indicator can refract this icon layer
-                          // (capturable) over a PlatformView.
-                          key: _iconLayerKey,
-                          child: Padding(
-                            padding: exp,
-                            child: Stack(
-                              children: [
-                                ClipPath(
-                                  clipBehavior: Clip.antiAliasWithSaveLayer,
-                                  clipper: JellyClipper(
-                                    itemCount: widget.tabCount,
-                                    alignment: alignment,
-                                    thickness: thickness,
-                                    expansion: widget.indicatorExpansion
-                                        .resolve(Directionality.of(context)),
-                                    transform: jellyTransform,
-                                    borderRadius: effRadius * 2,
-                                    inverse: true,
-                                  ),
-                                  child: Container(
-                                    padding: widget.tabPadding,
-                                    height: widget.barHeight,
-                                    child: KeyedSubtree(
-                                      key: _unselectedTabsKey,
-                                      child: widget.childUnselected,
-                                    ),
-                                  ),
-                                ),
-                                if (!widget.passthroughOverPlatformView)
-                                  ClipPath(
-                                    clipBehavior: Clip.antiAliasWithSaveLayer,
-                                    clipper: JellyClipper(
-                                      itemCount: widget.tabCount,
-                                      alignment: alignment,
-                                      thickness: thickness,
-                                      expansion: widget.indicatorExpansion
-                                          .resolve(Directionality.of(context)),
-                                      transform: jellyTransform,
-                                      borderRadius: effRadius * 2,
-                                    ),
-                                    child: Container(
-                                      padding: widget.tabPadding,
-                                      height: widget.barHeight,
-                                      child: widget.selectedTabBuilder(
-                                          context, thickness, alignment),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
+                  // Only wrap in an expanded RepaintBoundary when platformViewBackdrop
+                  // is true so toImageSync() can capture bar icons without overshoot
+                  // wrap-around artifacts. Outside platform views the boundary adds an
+                  // extra GPU compositing layer with no benefit.
+                  if (widget.platformViewBackdrop)
+                    Positioned(
+                      top: -exp.top,
+                      bottom: -exp.bottom,
+                      left: -exp.left,
+                      right: -exp.right,
+                      child: RepaintBoundary(
+                        // Keyed so the premium indicator can refract this icon layer
+                        // (capturable) over a PlatformView.
+                        key: _iconLayerKey,
+                        child: Padding(
+                          padding: exp,
+                          child: iconStack,
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    )
+                  else
+                    Positioned.fill(child: iconStack),
                 ],
               ),
             ),
@@ -742,8 +743,7 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
             paintBackground: false,
             paintGlass: true,
             padding: const EdgeInsets.all(4),
-            expansion:
-                widget.indicatorExpansion.resolve(Directionality.of(context)),
+            expansion: exp,
             settings: widget.indicatorSettings,
             borderRadius: indicatorRadius,
             pinchStrength: widget.indicatorPinchStrength,
@@ -763,13 +763,12 @@ class SearchableTabIndicatorState extends State<SearchableTabIndicator>
             Positioned.fill(
               child: IgnorePointer(
                 child: ClipPath(
-                  clipBehavior: Clip.antiAliasWithSaveLayer,
+                  clipBehavior: clipBehavior,
                   clipper: JellyClipper(
                     itemCount: widget.tabCount,
                     alignment: alignment,
                     thickness: thickness,
-                    expansion: widget.indicatorExpansion
-                        .resolve(Directionality.of(context)),
+                    expansion: exp,
                     transform: jellyTransform,
                     borderRadius: indicatorRadius * 2,
                   ),
