@@ -670,9 +670,7 @@ class _IndicatorJellyBuilderState extends State<IndicatorJellyBuilder>
 /// One spring-driven value of [IndicatorJellyBuilder], evaluated against the
 /// frame clock so every spring shares the position spring's timeline.
 class _JellySpring {
-  _JellySpring(double value)
-      : value = value,
-        target = value;
+  _JellySpring(this.value) : target = value;
 
   double value;
   double target;
