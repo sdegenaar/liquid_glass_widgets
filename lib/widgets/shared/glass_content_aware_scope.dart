@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 
+import '../../src/widgets/overlays/modal_theme_capture.dart';
 import '../../theme/glass_theme.dart';
 import '../../theme/glass_theme_data.dart';
 
@@ -959,11 +960,11 @@ class _GlassContentAwareBrightnessState
         Widget result = Builder(
           builder: (inner) => widget.builder(inner, _brightness, t),
         );
-        result = GlassTheme(
+        result = GlassInternalGlassTheme(
           data: baseTheme.copyWith(light: variant, dark: variant),
           child: result,
         );
-        result = CupertinoTheme(
+        result = GlassInternalCupertinoTheme(
           data: CupertinoTheme.of(context)
               .copyWith(brightness: displayBrightness),
           child: result,

@@ -1,11 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
+import '../../src/widgets/overlays/modal_theme_capture.dart';
 import '../../types/glass_quality.dart';
 import '../../types/glass_surface_style.dart';
 import '../shared/adaptive_glass.dart';
 import '../shared/glass_solid_surface.dart';
 import '../shared/inherited_liquid_glass.dart';
-import '../../theme/glass_theme.dart';
 import '../../theme/glass_theme_helpers.dart';
 
 /// A glass picker widget following iOS design patterns.
@@ -244,34 +244,25 @@ class GlassPicker extends StatelessWidget {
     required Widget Function(T item) itemBuilder,
     String? title,
   }) {
-    final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
-    final capturedCupertinoTheme = CupertinoTheme.of(context);
+    final capturedThemes = CapturedModalThemes.forNavigator(
+      context,
+      useRootNavigator: true,
+    );
     return showCupertinoModalPopup<T>(
       context: context,
       // Exposes the barrier's "Dismiss" action to screen readers, like the
       // package's other sheets and popovers.
       semanticsDismissible: true,
-      builder: (modalContext) {
-        Widget sheet = _GlassPickerSheet<T>(
-          items: items,
-          itemBuilder: itemBuilder,
-          title: title,
-        );
-        sheet = DefaultTextStyle(
-          style: capturedCupertinoTheme.textTheme.textStyle,
-          child: CupertinoTheme(
-            data: capturedCupertinoTheme,
-            child: sheet,
+      builder: (modalContext) => capturedThemes.wrapBuilder(
+        (themedContext) => DefaultTextStyle(
+          style: CupertinoTheme.of(themedContext).textTheme.textStyle,
+          child: _GlassPickerSheet<T>(
+            items: items,
+            itemBuilder: itemBuilder,
+            title: title,
           ),
-        );
-        if (capturedGlassTheme != null) {
-          sheet = GlassTheme(
-            data: capturedGlassTheme,
-            child: sheet,
-          );
-        }
-        return sheet;
-      },
+        ),
+      ),
     );
   }
 }

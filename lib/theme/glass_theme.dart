@@ -57,7 +57,7 @@ import 'glass_theme_data.dart';
 /// Use [GlassTheme.brightnessOf] to resolve brightness inside glass widgets.
 /// Never read [MediaQuery.platformBrightnessOf] or [CupertinoTheme.brightnessOf]
 /// directly in glass widget code — those bypass the cascade.
-class GlassTheme extends InheritedWidget {
+class GlassTheme extends InheritedTheme {
   /// Creates a glass theme.
   ///
   /// The [data] parameter contains theme configuration for light and dark modes.
@@ -118,6 +118,11 @@ class GlassTheme extends InheritedWidget {
     if (override != null) return override;
     // Levels 2-4: framework cascade (Cupertino pin → Material → system).
     return resolveGlassBrightness(context);
+  }
+
+  @override
+  Widget wrap(BuildContext context, Widget child) {
+    return GlassTheme(data: data, child: child);
   }
 
   @override

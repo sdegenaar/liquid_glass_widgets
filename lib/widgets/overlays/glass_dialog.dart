@@ -5,6 +5,7 @@ import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../types/glass_quality.dart';
 import '../../types/glass_style.dart';
 import '../../src/widgets/overlays/glass_alert_platter.dart';
+import '../../src/widgets/overlays/modal_theme_capture.dart';
 import '../containers/glass_container.dart';
 import '../interactive/glass_button.dart';
 import '../../theme/glass_theme.dart';
@@ -312,8 +313,10 @@ class GlassDialog extends StatelessWidget {
     LiquidShape? actionShape,
     TextStyle? actionTextStyle,
   }) {
-    final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
-    final capturedCupertinoTheme = CupertinoTheme.of(context);
+    final capturedThemes = CapturedModalThemes.forNavigator(
+      context,
+      useRootNavigator: true,
+    );
     final isNative =
         GlassThemeHelpers.resolveStyle(context) != GlassStyle.classic;
     final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
@@ -329,8 +332,8 @@ class GlassDialog extends StatelessWidget {
       context: context,
       barrierDismissible: barrierDismissible,
       barrierColor: resolvedBarrierColor,
-      builder: (dialogContext) {
-        Widget dialog = GlassDialog(
+      builder: (dialogContext) => capturedThemes.wrap(
+        GlassDialog(
           title: title,
           message: message,
           content: content,
@@ -341,19 +344,8 @@ class GlassDialog extends StatelessWidget {
           shape: shape,
           actionShape: actionShape,
           actionTextStyle: actionTextStyle,
-        );
-        dialog = CupertinoTheme(
-          data: capturedCupertinoTheme,
-          child: dialog,
-        );
-        if (capturedGlassTheme != null) {
-          dialog = GlassTheme(
-            data: capturedGlassTheme,
-            child: dialog,
-          );
-        }
-        return dialog;
-      },
+        ),
+      ),
     );
   }
 
