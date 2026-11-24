@@ -1,3 +1,9 @@
+# Unreleased
+
+## Bug Fixes
+
+- Fix reopening an intrinsic-height `GlassPopover` after its close animation finishes.
+
 # 1.20.0
 
 ## Features
