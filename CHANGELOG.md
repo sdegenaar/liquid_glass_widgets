@@ -3,6 +3,7 @@
 ## Bug Fixes
 
 - **Live theme & brightness updates in open modals (`GlassModalSheet`, `GlassSheet`, `GlassDialog`, `showGlassActionSheet`, `GlassToast`, `showGlassFullScreenCover`, `showGlassContextMenu`, `GlassPicker.showSheet`, `GlassDatePicker`, `showGlassDatePicker`) (#529):** Only capture user-authored `GlassTheme` and `CupertinoTheme` overrides declared strictly below the target `Navigator` or `Overlay` (skipping internal `GlassScaffold` and `GlassContentAwareScope` wrappers), and keep descendant `CupertinoTheme` brightness synced live with `GlassTheme.brightnessOf` so switching system appearance or app theme updates open modals immediately without remounting content. `GlassTheme` now extends `InheritedTheme` so Flutter's own `showDialog` also preserves subtree `GlassTheme` overrides.
+- Fix reopening an intrinsic-height `GlassPopover` after its close animation finishes.
 
 # 1.20.0
 

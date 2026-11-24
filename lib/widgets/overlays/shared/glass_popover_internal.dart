@@ -157,6 +157,7 @@ class _GlassPopoverState extends State<GlassPopover>
                 _overlayController.isShowing &&
                 !_morphController.isShowing) {
               _overlayController.hide();
+              _morphController.reset();
               _blurRamp.value = 0.0;
               _resetInterruptState();
               setState(() {
@@ -170,6 +171,7 @@ class _GlassPopoverState extends State<GlassPopover>
           });
         } else {
           _overlayController.hide();
+          _morphController.reset();
           // Reset per-open-cycle state so stale values from a previous position
           // never bleed into the next open cycle.
           // Reset the blur ramp to sharp so the next open blooms in from 0 again
