@@ -342,6 +342,7 @@ class GlassButtonGroup extends StatelessWidget {
             menuItemIndex: menuItemIndex,
           ),
         );
+        final shellInteractive = items!.any((item) => item.enabled);
         return GlassButton.custom(
           onTap: () {}, // Items handle their own taps
           shape: shape,
@@ -356,8 +357,15 @@ class GlassButtonGroup extends StatelessWidget {
           width: null, // Size to content
           height: null, // Size to content
           // Reduce stretch for grouped buttons — full stretch looks too dramatic
-          // on a wide pill. This matches iOS 26 toolbar feel.
-          stretch: 0.15,
+          // on a wide pill. This matches iOS 26 toolbar feel. When every item
+          // is disabled, suppress press stretch/glow while keeping the glass
+          // shell at full clarity (no ancestor Opacity).
+          interactionScale: shellInteractive ? null : 1.0,
+          stretch: shellInteractive ? 0.15 : 0.0,
+          glowRadius: shellInteractive ? null : 0.0,
+          glowOpacity: shellInteractive ? null : 0.0,
+          ambientBaseLight: shellInteractive ? null : 0.0,
+          pressLightColor: shellInteractive ? null : const Color(0x00000000),
           // Only pay IntrinsicHeight's 2-pass layout when horizontal dividers
           // need to stretch to the tallest item height.
           child: (showDividers && direction == Axis.horizontal)

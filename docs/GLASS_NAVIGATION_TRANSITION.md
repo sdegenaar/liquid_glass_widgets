@@ -130,17 +130,42 @@ bar.
     ],
   )
   ```
+- **`GlassBarItem.text` is the titled `UIBarButtonItem(title:)` analogue.**
+  It renders a single-line Cupertino navigation-bar label (`17pt`, `-0.41`
+  tracking, `w400` in plain style and `w600` in prominent style, padded by
+  `GlassNavPinnedMetrics.textHorizontalPadding`) inside a capsule that sizes to
+  its text width (at least the cluster's cross extent). Pass `textStyle` for
+  selective typography overrides, and leave `label` null when screen readers
+  should announce `title` directly. When placing a text item in a Material
+  `AppBar.leading` via `GlassPinnedBarChrome`, increase `AppBar.leadingWidth`
+  above Material's `56pt` default so the pill is not constrained to an icon
+  square.
+- **`GlassBarItemStyle.prominent` mirrors `UIBarButtonItem.Style.prominent` /
+  `.buttonStyle(.glassProminent)`.** Available on all five action factories
+  (`.icon`, `.text`, `.custom`, `.menu`, `.sheet`), it defaults `background` to
+  `GlassBarItemBackground.separate` (asserting in debug mode if combined with
+  `shared`) and floods the capsule via `GlassBodyMode.clear` with `tintColor`
+  or `CupertinoTheme.of(context).primaryColor` at
+  `GlassNavPinnedMetrics.prominentTintAlpha` (`0.85`, preserving explicit
+  translucent alphas). Foreground glyphs and text automatically switch between
+  white and black against the resolved fill luminance. When `enabled: false`, a
+  prominent capsule reverts to neutral bar glass with a dimmed foreground,
+  matching native iOS 26/27. Across a route push, a matched plain item morphing
+  into a prominent item (or between two prominent tints) smoothly interpolates
+  the capsule's glass colour; an entering prominent item materializes on its
+  own rather than budding from an adjacent neutral capsule.
 - **`GlassBarItemBackground` decides what glass an item gets.** It collapses
   the two booleans iOS 26 added to `UIBarButtonItem` into their three distinct
-  results: `shared` (the default — `sharesBackground`, items form one capsule),
-  `separate` (`sharesBackground: NO` — its own shell, which at a lone icon's
-  size is the circular button the back button already is), and `none`
-  (`hidesSharedBackground` — no glass, for content that carries its own shape,
-  such as a profile photo). A fourth, `own`, is `none` for content that is
-  itself a glass surface: the shell dissolves it through the surface's own
-  visibility instead of fading it under a layer, which a glass surface cannot
-  survive. Two `own` items matched across a route change take turns rather
-  than cross-fading, since each would sample the other.
+  results: `shared` (the default for `plain` — `sharesBackground`, items form
+  one capsule), `separate` (the default for `prominent` — `sharesBackground: NO`,
+  its own shell, which at a lone icon's size is the circular button the back
+  button already is), and `none` (`hidesSharedBackground` — no glass, for
+  content that carries its own shape, such as a profile photo, or bare
+  accent-coloured text under `prominent`). A fourth, `own`, is `none` for
+  content that is itself a glass surface: the shell dissolves it through the
+  surface's own visibility instead of fading it under a layer, which a glass
+  surface cannot survive. Two `own` items matched across a route change take
+  turns rather than cross-fading, since each would sample the other.
 - **`GlassBarItem.spacer()` splits a capsule.** It mirrors SwiftUI's
   `ToolbarSpacer(.fixed)` and UIKit's `fixedSpace`: the shared items on either
   side of it form separate capsules, the standard gap apart. Across a route
@@ -335,7 +360,7 @@ in a screen.
 | Bar | In the strip |
 |---|---|
 | `GlassAppBar.pinned` / `GlassPinnedBarChrome` | Back button, then the leading and trailing groups in order, stacked from the top of the strip. The title stays in a row at the top of the content, beside any item that stays horizontal |
-| `GlassBarItem` | `.icon`, `.menu` and `.sheet` go vertical; `.custom` stays in the horizontal row. `axisBehavior` overrides either way, mirroring SwiftUI's `axisBehavior(_:)` |
+| `GlassBarItem` | `.icon`, `.menu` and `.sheet` (including `prominent`) go vertical; `.text` and `.custom` stay in the horizontal row. `axisBehavior` overrides either way, mirroring SwiftUI's `axisBehavior(_:)` (a `verticalPreferred` text item fits inside the 48pt strip and overflows with `label ?? title`) |
 | `GlassTabBar.bottom` / `.minimizable` | An icon-only capsule at the bottom of the strip |
 | `GlassTabBar.searchable` | The same capsule, with search as its last slot. The field it opens stays horizontal, in the row at the top of the content: in place of the title on the outer display, beside it on the inner one |
 | `GlassLargeTitle` | The title moves into the row at the top of the content at 28pt, drawn by the `GlassAppBar.pinned` sharing its controller, and scrolls away with the content. A `searchBar` becomes a magnifier at the bottom of the strip, which opens the field along the bottom of the content and hides the bar |
@@ -384,10 +409,10 @@ the navigation bar, so the intended trajectory is:
 
 1. Land the data API additively (this release) — nothing shipped changes.
 2. Bring `GlassBarItem` to parity with the widget API. Menus, `leading`,
-   per-item backgrounds and `GlassBarItem.spacer()` have landed; what remains
-   is text styles.
-3. At the next major, make pinning the default `GlassAppBar` and demote the
-   widget-based `leading`/`actions` constructor to a legacy mode.
+   per-item backgrounds, `GlassBarItem.spacer()`, `GlassBarItem.text`, and
+   `GlassBarItemStyle.prominent` have all landed.
+3. At the next major (2.0.0), make pinning the default `GlassAppBar` and demote
+   the widget-based `leading`/`actions` constructor to a legacy mode.
 
 Screens written against `GlassAppBar.pinned` today are already written for
 that future.

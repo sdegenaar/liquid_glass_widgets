@@ -21,6 +21,9 @@
 ///      and a fullscreen dialog with a pinned bar of its own
 ///  14. Tinted bar items — GlassBarItem.tintColor floods the capsule with a
 ///      design-token colour (iOS 26 prominent action pattern, issue #312)
+///  15. Text & Prominent bar items — GlassBarItem.text and
+///      GlassBarItemStyle.prominent (Cancel / Save, disabled neutral revert,
+///      luminance contrast, and plain ↔ prominent route morph)
 ///
 /// Run standalone:
 ///   flutter run -t lib/demos/nav_bar_patterns_demo.dart
@@ -217,6 +220,15 @@ class NavBarPatternsDemo extends StatelessWidget {
                       'tintColor floods the whole capsule — iOS 26 prominent action (issue #312)',
                   icon: CupertinoIcons.circle_fill,
                   onTap: () => _push(context, const _TintedBarItemDemo()),
+                ),
+                SizedBox(height: 16),
+                _PatternTile(
+                  title: 'Text & Prominent Bar Items',
+                  subtitle:
+                      'GlassBarItem.text & GlassBarItemStyle.prominent — Cancel/Save, disabled revert, and Edit ↔ Done morph',
+                  icon: CupertinoIcons.checkmark_seal_fill,
+                  onTap: () =>
+                      _push(context, const _TextAndProminentItemsDemo()),
                 ),
                 SizedBox(height: 100),
               ],
@@ -3041,6 +3053,301 @@ class _TintPill extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// =============================================================================
+// 15. Text & Prominent Bar Items (UIBarButtonItem.Style.prominent / .text)
+// =============================================================================
+
+enum _ProminentVariant { text, icon, bare }
+
+class _TextAndProminentItemsDemo extends StatefulWidget {
+  const _TextAndProminentItemsDemo();
+
+  @override
+  State<_TextAndProminentItemsDemo> createState() =>
+      _TextAndProminentItemsDemoState();
+}
+
+class _TextAndProminentItemsDemoState
+    extends State<_TextAndProminentItemsDemo> {
+  bool _enabled = true;
+  Color? _tintColor;
+  _ProminentVariant _variant = _ProminentVariant.text;
+  int _saveCount = 0;
+
+  static const _swatches = <({String name, Color? color})>[
+    (name: 'Primary', color: null),
+    (name: 'Green', color: CupertinoColors.systemGreen),
+    (name: 'Orange', color: CupertinoColors.systemOrange),
+    (name: 'Yellow', color: CupertinoColors.systemYellow),
+    (name: 'Pink', color: CupertinoColors.systemPink),
+  ];
+
+  GlassBarItem _buildProminentAction() {
+    switch (_variant) {
+      case _ProminentVariant.text:
+        return GlassBarItem.text(
+          id: 'confirm',
+          title: 'Save',
+          style: GlassBarItemStyle.prominent,
+          tintColor: _tintColor,
+          enabled: _enabled,
+          onTap: () => setState(() => _saveCount++),
+        );
+      case _ProminentVariant.icon:
+        return GlassBarItem.icon(
+          id: 'confirm',
+          icon: const Icon(CupertinoIcons.checkmark),
+          label: 'Save',
+          style: GlassBarItemStyle.prominent,
+          tintColor: _tintColor,
+          enabled: _enabled,
+          onTap: () => setState(() => _saveCount++),
+        );
+      case _ProminentVariant.bare:
+        return GlassBarItem.text(
+          id: 'confirm',
+          title: 'Save',
+          style: GlassBarItemStyle.prominent,
+          background: GlassBarItemBackground.none,
+          tintColor: _tintColor,
+          enabled: _enabled,
+          onTap: () => setState(() => _saveCount++),
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final topPad = MediaQuery.paddingOf(context).top;
+    return GlassScaffold(
+      background: const ShowcaseBackground(),
+      settings: RecommendedGlassSettings.standard,
+      statusBarStyle: GlassStatusBarStyle.auto,
+      appBar: GlassAppBar.pinned(
+        title: const Text('New Event'),
+        leading: [
+          GlassBarItem.text(
+            id: 'cancel',
+            title: 'Cancel',
+            onTap: () => Navigator.of(context).maybePop(),
+          ),
+        ],
+        actions: [
+          GlassBarItem.icon(
+            id: 'share',
+            icon: const Icon(CupertinoIcons.share),
+            label: 'Share',
+            onTap: () {},
+          ),
+          _buildProminentAction(),
+        ],
+      ),
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: SizedBox(height: topPad + 44 + 24)),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            sliver: SliverList.list(
+              children: [
+                Text(
+                  'GlassBarItem.text renders Cupertino 17pt navigation labels '
+                  '(w400 plain, w600 prominent). GlassBarItemStyle.prominent '
+                  'separates its capsule automatically, floods with '
+                  'tintColor ?? primaryColor at 85% alpha, and reverts to '
+                  'neutral glass when disabled.',
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.5,
+                    color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Saved count: $_saveCount',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: CupertinoColors.label.resolveFrom(context),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Prominent Enabled',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: CupertinoColors.label.resolveFrom(context),
+                      ),
+                    ),
+                    GlassSwitch(
+                      value: _enabled,
+                      onChanged: (v) => setState(() => _enabled = v),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                GlassSegmentedControl(
+                  segments: const [
+                    GlassSegment(label: 'Text Pill'),
+                    GlassSegment(label: 'Icon'),
+                    GlassSegment(label: 'Bare'),
+                  ],
+                  selectedIndex: _variant.index,
+                  onSegmentSelected: (i) =>
+                      setState(() => _variant = _ProminentVariant.values[i]),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Tint Colour',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: CupertinoColors.label.resolveFrom(context),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    for (final swatch in _swatches)
+                      GlassButton.custom(
+                        style: _tintColor == swatch.color
+                            ? GlassButtonStyle.prominent
+                            : GlassButtonStyle.filled,
+                        tintColor: swatch.color,
+                        width: 96,
+                        height: 40,
+                        shape: const LiquidRoundedSuperellipse(
+                          borderRadius: 20,
+                        ),
+                        onTap: () => setState(() => _tintColor = swatch.color),
+                        child: Text(
+                          swatch.name,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                GlassButton.custom(
+                  style: GlassButtonStyle.prominent,
+                  width: double.infinity,
+                  height: 50,
+                  shape: const LiquidRoundedSuperellipse(borderRadius: 25),
+                  onTap: () => Navigator.of(context).push(
+                    CupertinoPageRoute<void>(
+                      builder: (_) => const _PlainEditMorphPage(),
+                    ),
+                  ),
+                  child: const Text(
+                    'Push Edit → Done Morph',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 100),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlainEditMorphPage extends StatelessWidget {
+  const _PlainEditMorphPage();
+
+  @override
+  Widget build(BuildContext context) {
+    final topPad = MediaQuery.paddingOf(context).top;
+    return GlassScaffold(
+      background: const ShowcaseBackground(),
+      settings: RecommendedGlassSettings.standard,
+      statusBarStyle: GlassStatusBarStyle.auto,
+      appBar: GlassAppBar.pinned(
+        title: const Text('Contact'),
+        actions: [
+          GlassBarItem.text(
+            id: 'mode',
+            title: 'Edit',
+            onTap: () => Navigator.of(context).push(
+              CupertinoPageRoute<void>(
+                builder: (_) => const _ProminentDoneMorphPage(),
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: EdgeInsets.fromLTRB(24, topPad + 44 + 24, 24, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Tap "Edit" in the top-right to push into edit mode.\n\n'
+              'The matched id ("mode") morphs the plain glass "Edit" pill '
+              'smoothly into a prominent accent-filled "Done" pill — and '
+              'scrubs cleanly back on interactive swipe-to-pop.',
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.5,
+                color: CupertinoColors.secondaryLabel.resolveFrom(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProminentDoneMorphPage extends StatelessWidget {
+  const _ProminentDoneMorphPage();
+
+  @override
+  Widget build(BuildContext context) {
+    final topPad = MediaQuery.paddingOf(context).top;
+    return GlassScaffold(
+      background: const ShowcaseBackground(),
+      settings: RecommendedGlassSettings.standard,
+      statusBarStyle: GlassStatusBarStyle.auto,
+      appBar: GlassAppBar.pinned(
+        title: const Text('Edit Contact'),
+        actions: [
+          GlassBarItem.text(
+            id: 'mode',
+            title: 'Done',
+            style: GlassBarItemStyle.prominent,
+            onTap: () => Navigator.of(context).maybePop(),
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: EdgeInsets.fromLTRB(24, topPad + 44 + 24, 24, 24),
+        child: Text(
+          'Tap "Done" or swipe from the leading edge to morph back to plain '
+          '"Edit".',
+          style: TextStyle(
+            fontSize: 15,
+            height: 1.5,
+            color: CupertinoColors.secondaryLabel.resolveFrom(context),
+          ),
+        ),
+      ),
     );
   }
 }
