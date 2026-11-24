@@ -7,8 +7,8 @@ import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 
 import '../../src/renderer/liquid_glass_renderer.dart';
+import '../../src/widgets/overlays/modal_theme_capture.dart';
 import '../../theme/glass_theme.dart';
-import '../../theme/glass_theme_data.dart';
 import '../../theme/glass_theme_helpers.dart';
 import '../../types/glass_quality.dart';
 import '../../types/glass_style.dart';
@@ -517,10 +517,13 @@ Future<T?> showGlassContextMenu<T>({
   Duration commitDuration = const Duration(milliseconds: 520),
 }) {
   assert(actions.isNotEmpty, 'Context menu actions must not be empty.');
-  final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
-  final capturedCupertinoTheme = CupertinoTheme.of(context);
+  final navigator = Navigator.of(context, rootNavigator: true);
+  final capturedThemes = CapturedModalThemes.capture(
+    from: context,
+    to: navigator.context,
+  );
   final capturedReduceMotion = GlassAccessibilityData.of(context).reduceMotion;
-  return Navigator.of(context, rootNavigator: true).push<T>(
+  return navigator.push<T>(
     _GlassContextMenuRoute<T>(
       targetRect: targetRect,
       actions: actions,
@@ -541,8 +544,7 @@ Future<T?> showGlassContextMenu<T>({
       routeStaticKey: routeStaticKey,
       isInteractive: isInteractive,
       commitDuration: commitDuration,
-      capturedGlassTheme: capturedGlassTheme,
-      capturedCupertinoTheme: capturedCupertinoTheme,
+      capturedThemes: capturedThemes,
       capturedReduceMotion: capturedReduceMotion,
     ),
   );
@@ -618,8 +620,7 @@ class _GlassContextMenuRoute<T> extends PopupRoute<T> {
     this.routeStaticKey,
     this.isInteractive = false,
     this.commitDuration = const Duration(milliseconds: 520),
-    this.capturedGlassTheme,
-    this.capturedCupertinoTheme,
+    this.capturedThemes = const CapturedModalThemes(),
     this.capturedReduceMotion = false,
   });
 
@@ -636,8 +637,7 @@ class _GlassContextMenuRoute<T> extends PopupRoute<T> {
   final LiquidGlassSettings? glassSettings;
   final GlassQuality? quality;
   final double backdropBlur;
-  final GlassThemeData? capturedGlassTheme;
-  final CupertinoThemeData? capturedCupertinoTheme;
+  final CapturedModalThemes capturedThemes;
   final bool capturedReduceMotion;
 
   /// Optional override for the dimming scrim. When null the scrim adapts to
@@ -788,13 +788,7 @@ class _GlassContextMenuRoute<T> extends PopupRoute<T> {
       enableHaptics: enableHaptics,
       animation: animation,
     );
-    if (capturedCupertinoTheme != null) {
-      page = CupertinoTheme(data: capturedCupertinoTheme!, child: page);
-    }
-    if (capturedGlassTheme != null) {
-      page = GlassTheme(data: capturedGlassTheme!, child: page);
-    }
-    return page;
+    return capturedThemes.wrap(page);
   }
 }
 

@@ -896,8 +896,11 @@ class GlassPageRoute<T> extends CupertinoPageRoute<T> {
   /// Continuous superellipse corner radius applied to the page while
   /// transitioning.
   ///
-  /// When `null` (the default), uses
-  /// [GlassDefaults.pageTransitionCornerRadius] (55.0), unless overridden by a
+  /// When `null` (the default), resolves adaptively via
+  /// [GlassPageTransitionClip.resolveDisplayCornerRadius] (e.g. `62.0` pt on
+  /// Pro models, `55.0` pt on Dynamic Island iPhones, `47.33` pt on Notch
+  /// iPhones, `18.0` pt on rounded iPads, falling back to
+  /// [GlassDefaults.pageTransitionCornerRadius]), unless overridden by a
   /// descendant [GlassPage] or `GlassScaffold`.
   ///
   /// Set to `0.0` to disable rounded page clipping for this route.
@@ -982,8 +985,11 @@ class GlassPageTransitionsBuilder extends PageTransitionsBuilder {
   /// Continuous superellipse corner radius applied to the page while
   /// transitioning.
   ///
-  /// When `null` (the default), uses
-  /// [GlassDefaults.pageTransitionCornerRadius] (55.0), unless overridden by a
+  /// When `null` (the default), resolves adaptively via
+  /// [GlassPageTransitionClip.resolveDisplayCornerRadius] (e.g. `62.0` pt on
+  /// Pro models, `55.0` pt on Dynamic Island iPhones, `47.33` pt on Notch
+  /// iPhones, `18.0` pt on rounded iPads, falling back to
+  /// [GlassDefaults.pageTransitionCornerRadius]), unless overridden by a
   /// descendant [GlassPage] or `GlassScaffold`.
   ///
   /// Set to `0.0` to disable rounded page clipping.

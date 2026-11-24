@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import '../../constants/glass_defaults.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/widgets/overlays/glass_alert_platter.dart';
+import '../../src/widgets/overlays/modal_theme_capture.dart';
 
 import '../../theme/glass_theme_data.dart';
 import '../../theme/glass_theme.dart';
@@ -164,24 +165,14 @@ Future<T?> showGlassActionSheet<T>({
   LiquidGlassSettings? settings,
   GlassQuality? quality,
 }) {
-  final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
-  final capturedCupertinoTheme = CupertinoTheme.of(context);
+  final capturedThemes = CapturedModalThemes.forNavigator(
+    context,
+    useRootNavigator: true,
+  );
   final style = GlassThemeHelpers.resolveStyle(context);
   final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
 
-  Widget withAmbientThemes(Widget sheet) {
-    sheet = CupertinoTheme(
-      data: capturedCupertinoTheme,
-      child: sheet,
-    );
-    if (capturedGlassTheme != null) {
-      sheet = GlassTheme(
-        data: capturedGlassTheme,
-        child: sheet,
-      );
-    }
-    return sheet;
-  }
+  Widget withAmbientThemes(Widget sheet) => capturedThemes.wrap(sheet);
 
   if (style != GlassStyle.classic) {
     // ios26 / ios27: the native action sheet is the alert platter with

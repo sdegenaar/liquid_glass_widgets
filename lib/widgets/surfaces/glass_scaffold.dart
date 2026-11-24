@@ -8,6 +8,7 @@ import '../../theme/glass_theme.dart';
 
 import '../../src/renderer/glass_backdrop_group.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
+import '../../src/widgets/overlays/modal_theme_capture.dart';
 import '../../src/widgets/surfaces/dynamic_preferred_size.dart';
 import '../../src/widgets/surfaces/status_bar_row.dart';
 import '../../src/widgets/surfaces/vertical_bar_background.dart';
@@ -762,7 +763,7 @@ class GlassScaffold extends StatelessWidget {
     // while adapting correctly to dark/light mode.
     final CupertinoThemeData currentCupertinoTheme = CupertinoTheme.of(context);
 
-    Widget scaffold = CupertinoTheme(
+    Widget scaffold = GlassInternalCupertinoTheme(
       data: currentCupertinoTheme.copyWith(
         brightness: resolvedBrightness,
       ),
