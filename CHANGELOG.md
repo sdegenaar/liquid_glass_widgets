@@ -1,3 +1,13 @@
+# Unreleased
+
+## Features
+
+- **`GlassBarItem.text` and `GlassBarItemStyle.prominent` (iOS 26 / 27 `UIBarButtonItem.Style.prominent` & `.buttonStyle(.glassProminent)` parity):**
+  - Added `GlassBarItem.text(title: ..., onTap: ...)` (`GlassBarTextItem`) rendering single-line Cupertino navigation-bar labels (`17pt`, `-0.41` tracking, `w400` plain / `w600` prominent, `GlassNavPinnedMetrics.textHorizontalPadding = 14.0`, capsule press stretch `0.15`) across `GlassAppBar.pinned`, `GlassPinnedBarChrome`, and `GlassNavigationShell`. On iPhone Duo, text items remain in the horizontal title row under `GlassBarItemAxisBehavior.automatic` and move into the 48pt vertical strip only with `verticalPreferred` (falling back to `title` in the `•••` overflow menu when `label` is omitted).
+  - Added `enum GlassBarItemStyle { plain, prominent }` and `style` parameter across all five action factories (`.icon`, `.text`, `.custom`, `.menu`, `.sheet`), with nullable `background` defaulting to `GlassBarItemBackground.separate` when `prominent` and `GlassBarItemBackground.shared` when `plain` (asserting eagerly on `prominent` + `shared`).
+  - Enabled prominent capsules flood with `tintColor ?? CupertinoTheme.of(context).primaryColor` (resolving `CupertinoDynamicColor`) at `GlassNavPinnedMetrics.prominentTintAlpha` (`0.85`, preserving explicit translucent alphas) via `GlassBodyMode.clear`, automatically flipping both icon and text foregrounds to high-contrast white/black (`0.55` luminance threshold) in both hoisted (`GlassNavPinnedHost`) and in-route (`GlassPinnedBarChrome`) paths; disabled prominent items revert to neutral bar glass with a dimmed foreground.
+  - Across route pushes/pops, matched plain↔prominent and prominent↔prominent capsules smoothly interpolate their glass fill colour in place, while entering/exiting prominent items materialize independently without budding into neutral shared capsules.
+
 # 1.20.0
 
 ## Features

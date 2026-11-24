@@ -2,8 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart' show RenderProxyBox;
 
 import '../../src/renderer/liquid_glass_renderer.dart';
+import '../../src/widgets/surfaces/bar_item_style_resolver.dart';
 import '../../src/widgets/surfaces/vertical_bar_title_row.dart';
-import '../../theme/glass_theme_helpers.dart';
 import '../interactive/glass_button.dart';
 import '../interactive/glass_button_group.dart';
 import '../overlays/glass_modal_sheet.dart';
@@ -551,7 +551,7 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
       child: GlassMorphTrigger(
         builder: (context, anchor) {
           if (_isPlaceholder(group)) {
-            return _measuringGroup(group, ambientDirection);
+            return _measuringGroup(context, group, ambientDirection);
           }
 
           VoidCallback? tapOf(GlassBarActionItem item) =>
@@ -561,13 +561,7 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
 
           if (!group.glass) {
             final item = group.items.single;
-            Widget content = SizedBox(
-              height: group.crossExtent,
-              child: Directionality(
-                textDirection: ambientDirection,
-                child: item.content,
-              ),
-            );
+            Widget content = _slot(context, group, item, ambientDirection);
             if (!item.enabled) {
               content = Opacity(opacity: 0.5, child: content);
             }
@@ -581,37 +575,31 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
               }
               return Semantics(explicitChildNodes: true, child: content);
             }
+            final hasLabel = item.label != null && item.label!.isNotEmpty;
+            final onTap = item.enabled ? tapOf(item) : null;
             return Semantics(
               button: true,
-              label: item.label,
+              enabled: item.enabled ? null : false,
+              label: hasLabel ? item.label : null,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: item.enabled ? tapOf(item) : null,
-                child: content,
+                onTap: onTap,
+                child: hasLabel ? ExcludeSemantics(child: content) : content,
               ),
             );
           }
-          // For a single-item separate group with a tintColor, fill the capsule
-          // using GlassBodyMode.clear — direct alpha-composite tinting that
-          // preserves the exact design-token hex while retaining the specular
-          // and Fresnel rim, matching iOS 26's coloured bar button behaviour.
-          // The tint replaces the body colour only: it starts from the bar's
-          // button settings, so the capsule keeps the outline and rim its
-          // neighbours get.
-          final tintColor =
-              group.items.length == 1 ? group.items.first.tintColor : null;
-          final groupSettings = tintColor != null
-              ? GlassThemeHelpers.resolveSettings(
-                  context,
-                  explicit: DefaultButtonSettings.of(context),
-                ).copyWith(
-                  glassColor: tintColor,
-                  bodyMode: GlassBodyMode.clear,
-                )
-              : null;
+          // Resolve tinted / prominent capsule settings through the same helper
+          // GlassNavPinnedHost uses so in-route and hoisted shells match across
+          // hand-over.
+          final groupSettings = resolveRestingBarGroupSettings(
+            context,
+            glass: group.glass,
+            items: group.items,
+          );
           return GlassButtonGroup.icons(
             platformViewBackdrop: widget.platformViewBackdrop,
             settings: groupSettings,
+            useOwnLayer: groupSettings != null,
             direction: group.axis,
             borderRadius: group.borderRadius,
             iconSize: GlassNavPinnedMetrics.iconSize,
@@ -620,7 +608,7 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
               for (final item in group.items)
                 if (item is GlassBarMenuItem)
                   GlassButtonGroupItem.menu(
-                    icon: _slot(group, item, ambientDirection),
+                    icon: _slot(context, group, item, ambientDirection),
                     menuItems: item.menuItems,
                     menuAlignment: item.menuAlignment,
                     menuWidth: item.menuWidth,
@@ -630,7 +618,7 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
                   )
                 else
                   GlassButtonGroupItem(
-                    icon: _slot(group, item, ambientDirection),
+                    icon: _slot(context, group, item, ambientDirection),
                     onTap: tapOf(item),
                     label: item.label,
                     enabled: item.enabled,
@@ -645,10 +633,11 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
   /// An unpainted stand-in the size of one group.
   ///
   /// The placeholder lays out the real content and simply isn't painted, so it
-  /// measures exactly what the pinned cluster measures — including custom
-  /// items of arbitrary width. A fixed width per item would only be correct
-  /// for icons, and would mis-constrain a centred title.
+  /// measures exactly what the pinned cluster measures — including text and
+  /// custom items of arbitrary width. A fixed width per item would only be
+  /// correct for icons, and would mis-constrain a centred title.
   Widget _measuringGroup(
+    BuildContext context,
     GlassNavBarGroup group,
     TextDirection ambientDirection,
   ) {
@@ -661,7 +650,7 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
             mainAxisSize: MainAxisSize.min,
             children: [
               for (final item in group.items)
-                _slot(group, item, ambientDirection),
+                _slot(context, group, item, ambientDirection),
             ],
           ),
         ),
@@ -670,30 +659,23 @@ class _GlassPinnedBarChromeState extends State<GlassPinnedBarChrome> {
   }
 
   /// One item as the pinned cluster lays it out: icons in a slot matching
-  /// the group's extent, custom content at its own main-axis size and
-  /// constrained to the group's cross extent.
+  /// the group's extent, text items in a padded pill, and custom content at
+  /// its own main-axis size constrained to the group's cross extent.
   Widget _slot(
+    BuildContext context,
     GlassNavBarGroup group,
     GlassBarActionItem item,
     TextDirection ambientDirection,
   ) {
-    return SizedBox(
-      width: item is GlassBarCustomItem
-          ? (group.axis == Axis.vertical ? group.crossExtent : null)
-          : (group.axis == Axis.horizontal
-              ? group.slotExtent
-              : group.crossExtent),
-      height: item is GlassBarCustomItem
-          ? (group.axis == Axis.horizontal ? group.crossExtent : null)
-          : (group.axis == Axis.vertical
-              ? group.slotExtent
-              : group.crossExtent),
-      child: Center(
-        child: Directionality(
-          textDirection: ambientDirection,
-          child: item.content,
-        ),
-      ),
+    return buildBarItemSlotContent(
+      context,
+      item: item,
+      crossExtent: group.crossExtent,
+      slotExtent: group.slotExtent,
+      iconSize: GlassNavPinnedMetrics.iconSize,
+      axis: group.axis,
+      imposeCrossExtent: true,
+      restoreDirection: ambientDirection,
     );
   }
 

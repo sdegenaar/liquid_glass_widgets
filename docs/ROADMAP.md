@@ -115,10 +115,11 @@ Ideas under consideration. None committed.
 - [ ] **Deprecate `GlassSheet` in favour of `GlassModalSheet`** — `GlassModalSheet` already implements both modal (`GlassSheetMode.dismissible`) and Maps-style persistent (`GlassSheetMode.persistent` + `GlassModalSheetScaffold` hit-through background interaction, matching SwiftUI `.sheet()` + `.presentationBackgroundInteraction(.enabled)`) presentation with detents. Only marking `GlassSheet` `@Deprecated` in `1.18.x` ahead of removal in `2.0.0` remains.
 - [ ] **iPadOS floating tab bar customisation (`TabViewCustomization`)** — tab reordering for regular-width / iPadOS floating tab bars and sidebars (compact iPhone bottom tab bars reserve long-press drag for the lifted magnifying indicator lens).
 - [ ] **`GlassNavigationTransition` pinning as default** — the `.pinned` constructor
-  is the transition vehicle; once `GlassBarItem` reaches parity with the widget API,
-  a major release can make the data-driven API the plain `GlassAppBar`. Remaining
-  parity work: text and `.prominent` item styles (`UIBarButtonItem.Style.prominent` / `ToolbarItem(placement: .confirmationAction)` / `.buttonStyle(.glassProminent)`). The pinned `leading` API and
-  per-item backgrounds landed in 1.2, and `GlassBarItem.spacer()` landed in 1.10.
+  is the transition vehicle; `GlassBarItem` has reached parity with the widget API
+  (pinned `leading` and per-item backgrounds landed in 1.2, `GlassBarItem.spacer()`
+  in 1.10, and `GlassBarItem.text` / `GlassBarItemStyle.prominent` in `Unreleased`),
+  unblocking the major-release flip to make the data-driven API the plain
+  `GlassAppBar` in 2.0.0.
 - [ ] **Unify lone bar-item sizing** (2.0) — a group holding a single item renders
   at the 46pt icon-slot height when its items are
   `GlassBarItemBackground.shared`, and at the 44pt back-button diameter when they
@@ -173,7 +174,7 @@ Ideas under consideration. None committed.
 
 Before cutting `2.0.0`, ship a bridge `1.x` minor so every retiring API has its 1:1 Apple replacement and `@Deprecated` analyzer guidance in place:
 
-- [ ] Ship **`GlassBarItem` text / `.prominent`** item styles (unblocks `GlassAppBar.pinned` becoming default `GlassAppBar`).
+- [x] Ship **`GlassBarItem` text / `.prominent`** item styles (unblocks `GlassAppBar.pinned` becoming default `GlassAppBar`).
 - [ ] Ship **`GlassToggle.button`** (native SwiftUI replacement before deprecating `GlassChip` and `GlassTabBar(isScrollable: true)`).
 - [ ] Ship **`showGlassConfirmationDialog`** with source-anchor popover support (native iOS 26/27 replacement before deprecating `showGlassActionSheet`).
 - [ ] Add `@Deprecated('... Will be removed in 2.0.0.')` annotations across `GlassSheet`, `GlassToast`, `GlassChip`, `showGlassActionSheet`, `GlassTabBar(isScrollable: true)`, and `GlassStyle.classic` (+ `classic*` theme/settings presets). (`GlassCard` and `GlassNavBarRegistration.presentSheet` are already `@Deprecated` in `1.x`.)

@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 
 import '../../../src/renderer/glass_backdrop_group.dart';
 import '../../../src/renderer/liquid_glass_renderer.dart';
+import '../../../src/widgets/surfaces/bar_item_style_resolver.dart';
 import '../../../src/widgets/surfaces/status_bar_row.dart';
 import '../../../src/widgets/surfaces/vertical_bar_title_row.dart';
 import '../../../theme/glass_theme_helpers.dart';
@@ -50,6 +51,14 @@ abstract final class GlassNavPinnedMetrics {
 
   /// Icon size inside both clusters.
   static const double iconSize = 22.0;
+
+  /// Horizontal padding on each side of a [GlassBarItem.text] label inside its
+  /// capsule in a horizontal bar.
+  static const double textHorizontalPadding = kBarItemTextHorizontalPadding;
+
+  /// Default translucent glass fill alpha for [GlassBarItemStyle.prominent]
+  /// bar capsules when the resolved fill colour is fully opaque.
+  static const double prominentTintAlpha = kBarItemProminentTintAlpha;
 
   /// Height of the toolbar row, matching [GlassAppBar.toolbarHeight].
   static const double toolbarHeight = 44.0;
@@ -706,7 +715,12 @@ class GlassNavBarGroup {
       : crossExtent;
 
   /// Press-stretch factor for the shell.
-  double get stretch => background == GlassBarItemBackground.shared
+  ///
+  /// Shared capsules and text pills use [GlassNavPinnedMetrics.capsuleStretch]
+  /// (`0.15`) so wider pills do not over-stretch; circular standalone icons
+  /// keep [GlassNavPinnedMetrics.buttonStretch] (`0.5`).
+  double get stretch => background == GlassBarItemBackground.shared ||
+          items.any((item) => item is GlassBarTextItem)
       ? GlassNavPinnedMetrics.capsuleStretch
       : GlassNavPinnedMetrics.buttonStretch;
 
@@ -870,7 +884,7 @@ List<GlassNavBarGroup> fitGlassNavStripGroups(
     }
     if (!item.hasTap) continue;
     entries.add(GlassMenuItem(
-      title: item.label ?? '',
+      title: item.label ?? (item is GlassBarTextItem ? item.title : ''),
       icon: switch (item) {
         GlassBarIconItem(:final icon) => icon,
         GlassBarSheetItem(:final icon) => icon,
@@ -1105,7 +1119,7 @@ class _PinnedSide extends StatelessWidget {
         state.transition != GlassEffectTransition.identity &&
         !GlassAccessibilityData.of(context).reduceMotion;
     bool buds(GlassNavBarGroup group) =>
-        group.glass && group.items.every((item) => item.tintColor == null);
+        group.glass && !group.items.any(barItemHasCustomShellMaterial);
 
     // The neighbour a group buds from: the one beyond it, which it pushes
     // away, or else the one nearer the edge.
@@ -1641,13 +1655,20 @@ class GlassNavActionSlot {
   /// Whether this item exists only on the outgoing route.
   bool get isExit => toItem == null;
 
-  /// Whether both sides exist but render different content.
+  /// Whether both sides exist but render different content or visual style.
   bool get crossFades {
     final from = fromItem;
     final to = toItem;
-    return from != null &&
-        to != null &&
-        !_sameContent(from.content, to.content);
+    if (from == null || to == null) return false;
+    if (from.style != to.style ||
+        from.tintColor != to.tintColor ||
+        from.enabled != to.enabled) {
+      return true;
+    }
+    if (from is GlassBarTextItem && to is GlassBarTextItem) {
+      return from.title != to.title || from.textStyle != to.textStyle;
+    }
+    return !_sameContent(from.content, to.content);
   }
 
   /// Whether two content widgets draw the same thing.
@@ -2543,9 +2564,9 @@ class _PinnedGroupState extends State<_PinnedGroup> {
               child: _ClusterItem(
                 item: fromItem,
                 enabled: false,
+                crossExtent: fromGroup.crossExtent,
                 slotExtent: fromGroup.slotExtent,
                 axis: fromGroup.axis,
-                tintColor: fromItem.tintColor,
               ),
             ));
           }
@@ -2564,9 +2585,9 @@ class _PinnedGroupState extends State<_PinnedGroup> {
             child: _ClusterItem(
               item: fromItem,
               enabled: false,
+              crossExtent: fromGroup.crossExtent,
               slotExtent: fromGroup.slotExtent,
               axis: fromGroup.axis,
-              tintColor: fromItem.tintColor,
             ),
           ));
         }
@@ -2596,9 +2617,9 @@ class _PinnedGroupState extends State<_PinnedGroup> {
               child: _ClusterItem(
                 item: toItem,
                 enabled: state.settled,
+                crossExtent: toGroup.crossExtent,
                 slotExtent: toGroup.slotExtent,
                 axis: toGroup.axis,
-                tintColor: toItem.tintColor,
                 onMenuTap: identical(toItem, menuItem) ? _menu.open : null,
                 onSheetTap: _presentSheet,
               ),
@@ -2625,9 +2646,9 @@ class _PinnedGroupState extends State<_PinnedGroup> {
             child: _ClusterItem(
               item: toItem,
               enabled: state.settled,
+              crossExtent: toGroup.crossExtent,
               slotExtent: toGroup.slotExtent,
               axis: toGroup.axis,
-              tintColor: toItem.tintColor,
               onMenuTap: identical(toItem, menuItem) ? _menu.open : null,
               onSheetTap: _presentSheet,
             ),
@@ -2717,13 +2738,16 @@ class _PinnedGroupState extends State<_PinnedGroup> {
                       )!,
                       morphScale: morphScale,
                       platformViewBackdrop: platformViewBackdrop,
-                      // Forward tintColor from a single-item separate group.
-                      // Multi-item shared groups never have tintColor
-                      // (asserted in groupGlassNavBarItems), so items.first is
-                      // always the only item.
-                      tintColor: toGroup.items.length == 1
-                          ? toGroup.items.first.tintColor
-                          : null,
+                      interactive: toGroup.items.any((item) => item.enabled),
+                      settings: resolveMorphingBarGroupSettings(
+                        context,
+                        fromGlass: fromGroup.glass,
+                        fromItems: fromGroup.items,
+                        toGlass: toGroup.glass,
+                        toItems: toGroup.items,
+                        t: clampedT,
+                        settled: state.settled,
+                      ),
                     )
                   : cluster,
             );
@@ -2748,20 +2772,9 @@ class _PinnedGroupState extends State<_PinnedGroup> {
     required double borderRadius,
     required double morphScale,
     required bool platformViewBackdrop,
-    Color? tintColor,
+    required bool interactive,
+    LiquidGlassSettings? settings,
   }) {
-    // Build LiquidGlassSettings only when a tint is requested.
-    // GlassBodyMode.clear performs direct alpha-composite tinting, preserving
-    // the exact design-token hex value while retaining specular and Fresnel
-    // rim physics — matching iOS 26's Metal path for coloured bar buttons.
-    // The tint replaces the body colour only: it starts from the bar's button
-    // settings, so the capsule keeps the outline and rim its neighbours get.
-    final settings = tintColor != null
-        ? GlassThemeHelpers.resolveSettings(
-            context,
-            explicit: DefaultButtonSettings.of(context),
-          ).copyWith(glassColor: tintColor, bodyMode: GlassBodyMode.clear)
-        : null;
     return GlassButton.custom(
       onTap: () {},
       platformViewBackdrop: platformViewBackdrop,
@@ -2774,7 +2787,15 @@ class _PinnedGroupState extends State<_PinnedGroup> {
       // sizes to its content.
       width: null,
       height: null,
-      stretch: stretch,
+      // When every item in the capsule is disabled, suppress press lift,
+      // stretch, and glow while keeping the neutral glass shell at full
+      // clarity (never wrapping the glass in an ancestor Opacity).
+      interactionScale: interactive ? null : 1.0,
+      stretch: interactive ? stretch : 0.0,
+      glowRadius: interactive ? null : 0.0,
+      glowOpacity: interactive ? null : 0.0,
+      ambientBaseLight: interactive ? null : 0.0,
+      pressLightColor: interactive ? null : const Color(0x00000000),
       useOwnLayer: !widget.grouped,
       canRequestFocus: false,
       excludeFromSemantics: true,
@@ -2816,15 +2837,16 @@ class _OwnGlassDissolve extends StatelessWidget {
 
 /// One item's content inside the cluster.
 ///
-/// Icons are padded to the standard slot width; custom content is measured at
-/// whatever width it wants, which is what lets it sit in the bar at all.
+/// Icons are padded to the standard slot width; text items size to their
+/// styled label with horizontal pill padding and a minimum width equal to the
+/// shell's cross extent; custom content is measured at whatever width it wants.
 class _ClusterItem extends StatelessWidget {
   const _ClusterItem({
     required this.item,
     required this.enabled,
+    required this.crossExtent,
     required this.slotExtent,
     this.axis = Axis.horizontal,
-    this.tintColor,
     this.onMenuTap,
     this.onSheetTap,
   });
@@ -2832,11 +2854,9 @@ class _ClusterItem extends StatelessWidget {
   final GlassBarActionItem item;
   final bool enabled;
 
-  /// Tint colour forwarded from [GlassBarActionItem.tintColor].
-  ///
-  /// When non-null, the icon/label foreground is set to high-contrast white
-  /// or black so content remains readable over the coloured glass capsule.
-  final Color? tintColor;
+  /// Cross-axis thickness of the group shell (capsule height in a horizontal
+  /// bar, strip width in a vertical strip).
+  final double crossExtent;
 
   /// Length an icon is padded to along the bar, matching the group it sits
   /// in.
@@ -2858,35 +2878,18 @@ class _ClusterItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Promoted to a local so the switch below and the sheet branch further
-    // down can both narrow it.
+    // Promoted to a local so the sheet branch below can narrow it.
     final item = this.item;
     final interactive = enabled && item.enabled;
 
-    Widget slot(Widget icon) => axis == Axis.vertical
-        ? SizedBox(height: slotExtent, child: Center(child: icon))
-        : SizedBox(width: slotExtent, child: Center(child: icon));
-
-    Widget content = switch (item) {
-      GlassBarIconItem(:final icon) => slot(icon),
-      GlassBarMenuItem(:final icon) => slot(icon),
-      GlassBarSheetItem(:final icon) => slot(icon),
-      GlassBarCustomItem(:final child) => child,
-    };
-
-    content = IconTheme.merge(
-      data: IconThemeData(
-        size: GlassNavPinnedMetrics.iconSize,
-        // When a tint colour is active, flip the foreground to high-contrast
-        // white or black so it remains readable over the coloured capsule.
-        // Falls back to the standard CupertinoColors.label when untinted.
-        color: tintColor != null
-            ? (tintColor!.computeLuminance() > 0.35
-                ? const Color(0xFF000000)
-                : const Color(0xFFFFFFFF))
-            : CupertinoColors.label.resolveFrom(context),
-      ),
-      child: content,
+    Widget content = buildBarItemSlotContent(
+      context,
+      item: item,
+      crossExtent: crossExtent,
+      slotExtent: slotExtent,
+      iconSize: GlassNavPinnedMetrics.iconSize,
+      axis: axis,
+      imposeCrossExtent: false,
     );
 
     if (!item.enabled) {
@@ -2909,14 +2912,16 @@ class _ClusterItem extends StatelessWidget {
     final onTap = item is GlassBarSheetItem
         ? () => present == null ? item.onPresent(null) : present(item)
         : (onMenuTap ?? item.onTap);
+    final hasLabel = item.label != null && item.label!.isNotEmpty;
 
     return Semantics(
       button: true,
-      label: item.label,
+      enabled: item.enabled ? null : false,
+      label: hasLabel ? item.label : null,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: interactive ? onTap : null,
-        child: content,
+        child: hasLabel ? ExcludeSemantics(child: content) : content,
       ),
     );
   }

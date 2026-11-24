@@ -437,28 +437,35 @@ CupertinoApp(
 
 ```dart
 GlassAppBar.pinned(
-  title: const Text('Detail'),
+  title: const Text('New Event'),
+  leading: [
+    // Titled bar item (UIBarButtonItem(title:)): plain style shares background
+    GlassBarItem.text(
+      title: 'Cancel',
+      onTap: () => Navigator.of(context).pop(),
+    ),
+  ],
   actions: [
     // GlassBarItem.icon uses `onTap` (not `onPressed`)
     GlassBarItem.icon(
-      icon: const Icon(CupertinoIcons.square_and_arrow_up),
+      icon: const Icon(CupertinoIcons.share),
       onTap: () => _share(),
     ),
-    // Tinted capsule (iOS 26 prominent action): set tintColor + separate background.
-    // The capsule fills with the colour; foreground icon auto-flips to white/black.
-    GlassBarItem.icon(
-      icon: const Icon(CupertinoIcons.checkmark),
+    // Prominent confirmation action (iOS 26/27 UIBarButtonItem.Style.prominent / .glassProminent):
+    // automatically separates its capsule, floods with tintColor ?? primaryColor at 85% alpha,
+    // renders semibold contrast text/icons, and reverts to neutral glass when enabled: false.
+    GlassBarItem.text(
+      title: 'Save',
+      style: GlassBarItemStyle.prominent,
       onTap: _save,
-      background: GlassBarItemBackground.separate,
-      tintColor: CupertinoColors.activeBlue,
     ),
   ],
 )
 ```
 
-> **Note:** Without `GlassNavigationShell`, `GlassAppBar.pinned` falls back gracefully — items render inside the bar in-route, so all screens work either way.
+> **Note:** `GlassBarItemStyle.prominent` works on all five action constructors (`.icon`, `.text`, `.custom`, `.menu`, `.sheet`). Pass `tintColor` to override `CupertinoTheme.of(context).primaryColor`; `background` defaults to `GlassBarItemBackground.separate` when prominent (combining `prominent` with `shared` asserts in debug mode). Without `GlassNavigationShell`, `GlassAppBar.pinned` falls back gracefully — items render inside the bar in-route, so all screens work either way.
 
-> **iPhone Duo:** Under the shell, pinned bars, `GlassTabBar.bottom` / `.searchable`, `GlassToolbar` and `GlassLargeTitle` move into the vertical bar strip on their own; pass a large title's controller to its `GlassAppBar.pinned`, which draws the title there. A `GlassAppBar.pinned` inside a `GlassModalSheet` follows the sheet, whose `placement` mirrors `presentationPlacement(_:)`. Use `GlassBarItem.custom(axisBehavior: GlassBarItemAxisBehavior.verticalPreferred)` for custom content that should go with them, and read `GlassVerticalBar.maybeOf(context)` to fit a bar the package does not draw.
+> **iPhone Duo:** Under the shell, pinned bars, `GlassTabBar.bottom` / `.searchable`, `GlassToolbar` and `GlassLargeTitle` move into the vertical bar strip on their own; pass a large title's controller to its `GlassAppBar.pinned`, which draws the title there. A `GlassAppBar.pinned` inside a `GlassModalSheet` follows the sheet, whose `placement` mirrors `presentationPlacement(_:)`. `GlassBarItem.text` and `GlassBarItem.custom` stay in the horizontal row by default; pass `axisBehavior: GlassBarItemAxisBehavior.verticalPreferred` for items that should go into the 48pt strip, and read `GlassVerticalBar.maybeOf(context)` to fit a bar the package does not draw.
 
 ---
 
@@ -474,10 +481,11 @@ GlassAppBar.pinned(
 - [ ] **`GlassIconButton` uses `onPressed`, not `onTap`.** (`GlassIconButton(onPressed: () {})`).
 - [ ] **`GlassAppBar` uses `actions: [...]` (a List), not `trailing:`.** There is no `trailing` parameter.
 - [ ] **`GlassChip.label` is a `String`, not a `Widget`.** Pass `label: 'text'`, not `label: Text('text')`.
-- [ ] **`GlassBarItem.icon` uses `onTap` (required), not `onPressed`.**
+- [ ] **`GlassBarItem.icon` and `GlassBarItem.text` use `onTap` (required), not `onPressed`.**
+- [ ] **`GlassBarItem.text` uses `title:` (a `String`), not `child:` or `label:`.** Optional `label:` overrides only the screen-reader accessible name and Duo overflow menu entry.
 - [ ] **`GlassBarItem.custom` takes an optional `onTap` — omit it when the child is already a button.** Omitting `onTap` leaves the slot passive; passing a no-op `onTap: () {}` wraps the child in a second, unlabelled button for screen readers.
 - [ ] **Nested menus use `GlassMenuItem(submenu: [...])`.** The parent row still needs `onTap: () {}` (required, never called). Don't open a second `GlassMenu` from `onTap`.
-- [ ] **`tintColor` on `GlassBarItem` requires `background: GlassBarItemBackground.separate`.** A shared-background item cannot be tinted (asserts in debug mode). The foreground icon colour is flipped automatically — do not also set a manual `Icon(color:)` on the child.
+- [ ] **Use `style: GlassBarItemStyle.prominent` for iOS 26/27 confirmation/primary bar actions.** It automatically defaults `background` to `separate` and fills with `tintColor ?? CupertinoTheme.of(context).primaryColor` (reverting to neutral glass when `enabled: false`). Combining `prominent` or `tintColor` with `background: GlassBarItemBackground.shared` asserts in debug mode. The foreground icon/text colour flips automatically — do not also set a manual `Icon(color:)` or `textStyle` colour unless overriding contrast.
 - [ ] **`GlassSwipeAction` uses `onTap`; `GlassContextMenuAction` uses `child` + `onPressed`.** Wrap swipeable lists in `GlassSwipeActionScope`.
 - [ ] **Don't hand-roll `Dismissible`, `ExpansionTile`, `showDatePicker` or a `ReorderableListView` edit mode** — use `GlassSwipeActions`, `GlassDisclosureGroup`, `GlassDatePicker` and `GlassEditScope` + `GlassReorderableList`.
 - [ ] **`GlassReorderableList` items need a stable `key`**, and either `onReorder` or `onReorderItem` must be provided.

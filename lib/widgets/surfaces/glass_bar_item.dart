@@ -49,17 +49,49 @@ enum GlassBarItemBackground {
   own,
 }
 
+/// Visual style of a pinned bar item.
+///
+/// Mirrors UIKit's `UIBarButtonItem.Style` (`.plain` / `.prominent`) and
+/// SwiftUI's `.buttonStyle(.glass)` / `.buttonStyle(.glassProminent)` (as
+/// applied by `ToolbarItem(placement: .confirmationAction)`).
+enum GlassBarItemStyle {
+  /// Standard adaptive glass bar item (the default).
+  plain,
+
+  /// Prominent accent-tinted glass bar item for primary and confirmation
+  /// actions (for example, `"Done"`, `"Save"`, or a confirmation checkmark).
+  ///
+  /// Automatically resolves `background` to [GlassBarItemBackground.separate]
+  /// when omitted so the item stands in its own capsule rather than merging
+  /// with plain neighbours. Floods the capsule with `tintColor` — or the
+  /// ambient `CupertinoTheme.of(context).primaryColor` (resolved for the active
+  /// brightness) when `tintColor` is null — using [GlassBodyMode.clear] at
+  /// translucent prominent opacity, styles text labels in `FontWeight.w600`,
+  /// and automatically flips the foreground icon or text to high-contrast white
+  /// or black based on luminance.
+  ///
+  /// When `enabled` is `false`, the accent fill reverts to neutral bar glass
+  /// with a dimmed foreground, matching native iOS 26/27 so an unavailable
+  /// primary action does not dominate the bar.
+  ///
+  /// Note: unlike standalone `GlassButton(style: GlassButtonStyle.prominent)`
+  /// (which stays neutral frosted glass when untinted for 1.x compatibility),
+  /// [GlassBarItemStyle.prominent] defaults directly to the app's accent colour
+  /// to match native iOS 26/27 `UIBarButtonItem.Style.prominent`.
+  prominent,
+}
+
 /// Whether an item moves into iPhone Duo's vertical bar strip.
 ///
 /// Mirrors SwiftUI's `ToolbarItem.axisBehavior(_:)`. Only read where a
 /// [GlassNavigationShell] has resolved a strip; see [GlassVerticalBar].
 enum GlassBarItemAxisBehavior {
-  /// The system decides, as natively: icons go vertical, and custom content
-  /// stays behind in a horizontal capsule at the top-trailing corner of the
-  /// content, beside the title.
+  /// The system decides, as natively: icons go vertical, and text and custom
+  /// content stay behind in a horizontal capsule at the top-trailing corner of
+  /// the content, beside the title.
   ///
   /// [GlassBarItem.icon], [GlassBarItem.menu] and [GlassBarItem.sheet] go
-  /// vertical; [GlassBarItem.custom] stays horizontal.
+  /// vertical; [GlassBarItem.text] and [GlassBarItem.custom] stay horizontal.
   automatic,
 
   /// The item stays in the horizontal capsule even where its kind would go
@@ -68,9 +100,10 @@ enum GlassBarItemAxisBehavior {
 
   /// The item goes vertical even where its kind would stay horizontal.
   ///
-  /// For [GlassBarItem.custom] content that works squeezed to the strip's
-  /// 48pt width — an unread count, a small avatar. It is laid out at that
-  /// width and whatever height it asks for.
+  /// For [GlassBarItem.custom] or short [GlassBarItem.text] content that works
+  /// squeezed to the strip's 48pt width — an unread count, a small avatar, or
+  /// a brief label. It is laid out at that width and whatever height it asks
+  /// for.
   verticalPreferred,
 }
 
@@ -106,16 +139,61 @@ sealed class GlassBarItem {
   /// transition, so the item stays put while everything around it morphs.
   /// When [id] is null, items are matched positionally from the trailing
   /// edge — the same heuristic UIKit documents as its default.
+  ///
+  /// Set `style` to [GlassBarItemStyle.prominent] for a confirmation or
+  /// primary icon button (for example, a checkmark); its `background`
+  /// automatically defaults to [GlassBarItemBackground.separate].
   const factory GlassBarItem.icon({
     required Widget icon,
     required VoidCallback onTap,
     Object? id,
     String? label,
     bool enabled,
-    GlassBarItemBackground background,
+    GlassBarItemBackground? background,
+    GlassBarItemStyle style,
     Color? tintColor,
     GlassBarItemAxisBehavior axisBehavior,
   }) = GlassBarIconItem;
+
+  /// A text button inside the pinned cluster, mirroring
+  /// `UIBarButtonItem(title:style:target:action:)` and SwiftUI toolbar text
+  /// buttons (`Button("Done") { ... }`).
+  ///
+  /// Renders single-line Cupertino navigation-bar typography (`17pt`,
+  /// `CupertinoColors.label` for [GlassBarItemStyle.plain], or
+  /// `FontWeight.w600` with luminance-adapted white/black contrast for
+  /// [GlassBarItemStyle.prominent]) inside a pill-shaped glass capsule padded
+  /// by `GlassNavPinnedMetrics.textHorizontalPadding` and at least as wide as
+  /// the capsule's height so short labels never narrow below a circle.
+  ///
+  /// Set `style` to [GlassBarItemStyle.prominent] for confirmation actions
+  /// such as `"Done"` or `"Save"` — `background` automatically resolves to
+  /// [GlassBarItemBackground.separate] and the capsule floods with `tintColor`
+  /// (or `CupertinoTheme.of(context).primaryColor` when omitted).
+  ///
+  /// In iPhone Duo's vertical bar strip ([GlassVerticalBar]), text items stay
+  /// in the horizontal title row by default
+  /// ([GlassBarItemAxisBehavior.automatic]), matching native iOS 27.1. Set
+  /// `axisBehavior` to [GlassBarItemAxisBehavior.verticalPreferred] to place a
+  /// short label in the 48pt vertical strip; if it overflows into the strip's
+  /// `•••` menu, `label` (falling back to `title`) supplies the menu entry
+  /// title.
+  ///
+  /// Leave `label` null when screen readers should announce `title` directly;
+  /// supply `label` to replace `title` with a more descriptive accessible name
+  /// (for example, `title: 'Edit'`, `label: 'Edit contacts'`).
+  const factory GlassBarItem.text({
+    required String title,
+    required VoidCallback onTap,
+    Object? id,
+    String? label,
+    bool enabled,
+    GlassBarItemBackground? background,
+    GlassBarItemStyle style,
+    Color? tintColor,
+    TextStyle? textStyle,
+    GlassBarItemAxisBehavior axisBehavior,
+  }) = GlassBarTextItem;
 
   /// An arbitrary widget inside the pinned cluster.
   ///
@@ -142,7 +220,8 @@ sealed class GlassBarItem {
     Object? id,
     String? label,
     bool enabled,
-    GlassBarItemBackground background,
+    GlassBarItemBackground? background,
+    GlassBarItemStyle style,
     Color? tintColor,
     GlassBarItemAxisBehavior axisBehavior,
   }) = GlassBarCustomItem;
@@ -170,7 +249,8 @@ sealed class GlassBarItem {
     LiquidGlassSettings? menuSettings,
     Object? id,
     String? label,
-    GlassBarItemBackground background,
+    GlassBarItemBackground? background,
+    GlassBarItemStyle style,
     Color? tintColor,
     GlassBarItemAxisBehavior axisBehavior,
   }) = GlassBarMenuItem;
@@ -207,7 +287,8 @@ sealed class GlassBarItem {
     Object? id,
     String? label,
     bool enabled,
-    GlassBarItemBackground background,
+    GlassBarItemBackground? background,
+    GlassBarItemStyle style,
     Color? tintColor,
     GlassBarItemAxisBehavior axisBehavior,
   }) = GlassBarSheetItem;
@@ -224,8 +305,9 @@ sealed class GlassBarItem {
 
 /// An item that renders content and can be tapped.
 ///
-/// The shared supertype of [GlassBarIconItem] and [GlassBarCustomItem], so the
-/// cluster can match, measure and lay out both kinds uniformly.
+/// The shared supertype of [GlassBarIconItem], [GlassBarTextItem],
+/// [GlassBarCustomItem], [GlassBarMenuItem], and [GlassBarSheetItem], so the
+/// cluster can match, measure and lay out all kinds uniformly.
 sealed class GlassBarActionItem extends GlassBarItem {
   /// Const base constructor.
   const GlassBarActionItem({
@@ -233,10 +315,22 @@ sealed class GlassBarActionItem extends GlassBarItem {
     this.id,
     this.label,
     this.enabled = true,
-    this.background = GlassBarItemBackground.shared,
+    GlassBarItemBackground? background,
+    this.style = GlassBarItemStyle.plain,
     this.tintColor,
     this.axisBehavior = GlassBarItemAxisBehavior.automatic,
-  });
+  })  : assert(
+          style != GlassBarItemStyle.prominent ||
+              background != GlassBarItemBackground.shared,
+          'GlassBarItemStyle.prominent items render in their own tinted glass '
+          'capsule and cannot use GlassBarItemBackground.shared. Omit '
+          '`background` (which defaults to GlassBarItemBackground.separate for '
+          'prominent items) or pass GlassBarItemBackground.separate.',
+        ),
+        background = background ??
+            (style == GlassBarItemStyle.prominent
+                ? GlassBarItemBackground.separate
+                : GlassBarItemBackground.shared);
 
   /// The tap handler for items that do not want one, mirroring
   /// `GlassButtonGroupItem.menu`.
@@ -244,11 +338,11 @@ sealed class GlassBarActionItem extends GlassBarItem {
 
   /// Called when the item is tapped.
   ///
-  /// Never null: an icon in a navigation bar that does nothing is a bug, so
-  /// [GlassBarItem.icon] requires one. Passive [GlassBarItem.custom] content
-  /// gets an internal no-op instead, keeping every reader of it callable.
-  /// [GlassBarItem.menu] does the same — its tap opens the menu, which the
-  /// cluster drives directly.
+  /// Never null: an icon or text button in a navigation bar that does nothing
+  /// is a bug, so [GlassBarItem.icon] and [GlassBarItem.text] require one.
+  /// Passive [GlassBarItem.custom] content gets an internal no-op instead,
+  /// keeping every reader of it callable. [GlassBarItem.menu] does the same —
+  /// its tap opens the menu, which the cluster drives directly.
   final VoidCallback onTap;
 
   /// Identity used to match this item against items on other routes.
@@ -261,6 +355,8 @@ sealed class GlassBarActionItem extends GlassBarItem {
   /// On passive [GlassBarItem.custom] items, a non-empty [label] names the
   /// slot as a single semantic node (replacing the child's own text
   /// semantics); leave it `null` when the child provides its own semantics.
+  /// On [GlassBarItem.text] items, a non-empty [label] replaces the visible
+  /// `title` for assistive technologies; leave it `null` to read `title`.
   final String? label;
 
   /// Whether the item responds to taps. Disabled items render dimmed.
@@ -268,16 +364,31 @@ sealed class GlassBarActionItem extends GlassBarItem {
 
   /// How this item's glass background is drawn.
   ///
-  /// Defaults to [GlassBarItemBackground.shared], so items form one capsule.
+  /// Defaults to [GlassBarItemBackground.shared] for [GlassBarItemStyle.plain]
+  /// items (so neighbours form one capsule) and
+  /// [GlassBarItemBackground.separate] for [GlassBarItemStyle.prominent] items
+  /// (so a prominent action stands in its own tinted capsule).
   final GlassBarItemBackground background;
 
-  /// Tints the entire glass capsule with this colour, matching iOS 26's
-  /// `.tint()` modifier on a prominent bar button.
+  /// Visual prominence of this item.
   ///
-  /// When non-null, the host widget fills the glass body with this colour
-  /// (using [GlassBodyMode.clear] for accurate on-screen hex fidelity) and
-  /// automatically adjusts the foreground icon/label to high-contrast white
-  /// or black based on the colour's luminance.
+  /// Defaults to [GlassBarItemStyle.plain]. Set to
+  /// [GlassBarItemStyle.prominent] for primary or confirmation actions
+  /// (`UIBarButtonItem.Style.prominent` / `.buttonStyle(.glassProminent)`).
+  final GlassBarItemStyle style;
+
+  /// Tints the entire glass capsule with this colour, matching iOS 26's
+  /// `.tint()` modifier on a bar button.
+  ///
+  /// Supports `CupertinoDynamicColor`, resolved against the active
+  /// `BuildContext`. When non-null on an enabled glass item, the capsule body
+  /// floods with this colour via [GlassBodyMode.clear] and automatically flips
+  /// the foreground icon and text to high-contrast white or black based on the
+  /// colour's luminance.
+  ///
+  /// For [GlassBarItemStyle.prominent] items, [tintColor] overrides the
+  /// default `CupertinoTheme.of(context).primaryColor` fill (and [background]
+  /// already defaults to [GlassBarItemBackground.separate]).
   ///
   /// **Only effective for [GlassBarItemBackground.separate] items.** A shared
   /// capsule is a single glass mesh — tinting one slot while leaving others
@@ -293,21 +404,22 @@ sealed class GlassBarActionItem extends GlassBarItem {
 
   /// Whether this item goes into the vertical strip where there is one.
   ///
-  /// Resolves [GlassBarItemAxisBehavior.automatic] by kind: everything but
-  /// custom content does.
+  /// Resolves [GlassBarItemAxisBehavior.automatic] by kind: icons, menus and
+  /// sheets go vertical; text and custom content stay in the horizontal row.
   bool get goesVertical => switch (axisBehavior) {
         GlassBarItemAxisBehavior.verticalPreferred => true,
         GlassBarItemAxisBehavior.horizontalOnly => false,
-        GlassBarItemAxisBehavior.automatic => this is! GlassBarCustomItem,
+        GlassBarItemAxisBehavior.automatic =>
+          this is! GlassBarCustomItem && this is! GlassBarTextItem,
       };
 
   /// Whether this item has an active tap action of its own.
   ///
-  /// True for [GlassBarItem.icon], [GlassBarItem.menu], and
-  /// [GlassBarItem.sheet], as well as [GlassBarItem.custom] when an [onTap]
-  /// callback was supplied. False for a passive [GlassBarItem.custom], which
-  /// lets its child handle its own gestures and semantics without the cluster
-  /// wrapping it in a button.
+  /// True for [GlassBarItem.icon], [GlassBarItem.text], [GlassBarItem.menu],
+  /// and [GlassBarItem.sheet], as well as [GlassBarItem.custom] when an
+  /// [onTap] callback was supplied. False for a passive [GlassBarItem.custom],
+  /// which lets its child handle its own gestures and semantics without the
+  /// cluster wrapping it in a button.
   bool get hasTap => this is! GlassBarCustomItem || !identical(onTap, _noOp);
 
   /// The widget rendered inside the cluster.
@@ -326,6 +438,7 @@ final class GlassBarIconItem extends GlassBarActionItem {
     super.label,
     super.enabled,
     super.background,
+    super.style,
     super.tintColor,
     super.axisBehavior,
   });
@@ -337,6 +450,44 @@ final class GlassBarIconItem extends GlassBarActionItem {
 
   @override
   Widget get content => icon;
+}
+
+/// A text item in a pinned navigation-bar cluster.
+///
+/// Created via [GlassBarItem.text].
+final class GlassBarTextItem extends GlassBarActionItem {
+  /// Creates a text item. Prefer [GlassBarItem.text].
+  const GlassBarTextItem({
+    required this.title,
+    required super.onTap,
+    super.id,
+    super.label,
+    super.enabled,
+    super.background,
+    super.style,
+    super.tintColor,
+    this.textStyle,
+    super.axisBehavior,
+  });
+
+  /// The visible label displayed inside the bar capsule.
+  final String title;
+
+  /// Optional style merged onto the bar's default typography.
+  ///
+  /// When null, inherits `17pt` (`-0.41` letter spacing, active theme font
+  /// family) with `FontWeight.w400` for [GlassBarItemStyle.plain] and
+  /// `FontWeight.w600` for [GlassBarItemStyle.prominent].
+  final TextStyle? textStyle;
+
+  @override
+  Widget get content => Text(
+        title,
+        maxLines: 1,
+        softWrap: false,
+        overflow: TextOverflow.ellipsis,
+        style: textStyle,
+      );
 }
 
 /// A custom-content item in a pinned navigation-bar cluster.
@@ -351,6 +502,7 @@ final class GlassBarCustomItem extends GlassBarActionItem {
     super.label,
     super.enabled,
     super.background,
+    super.style,
     super.tintColor,
     super.axisBehavior,
   }) : super(onTap: onTap ?? GlassBarActionItem._noOp);
@@ -377,6 +529,7 @@ final class GlassBarMenuItem extends GlassBarActionItem {
     super.id,
     super.label,
     super.background,
+    super.style,
     super.tintColor,
     super.axisBehavior,
   }) : super(onTap: GlassBarActionItem._noOp);
@@ -421,6 +574,7 @@ final class GlassBarSheetItem extends GlassBarActionItem {
     super.label,
     super.enabled,
     super.background,
+    super.style,
     super.tintColor,
     super.axisBehavior,
   }) : super(onTap: GlassBarActionItem._noOp);
