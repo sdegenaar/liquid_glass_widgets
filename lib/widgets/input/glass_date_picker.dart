@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
 import '../../src/renderer/liquid_glass_renderer.dart';
+import '../../src/widgets/overlays/modal_theme_capture.dart';
 import '../../theme/glass_theme.dart';
 import '../../types/glass_quality.dart';
 import '../../types/glass_surface_style.dart';
@@ -528,9 +529,10 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
     PageController popoverPageController = PageController(
       initialPage: _monthToPage(_displayedMonth),
     );
-    final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
-    final capturedCupertinoTheme = CupertinoTheme.of(context);
-    final isDark = GlassTheme.brightnessOf(context) == Brightness.dark;
+    final capturedThemes = CapturedModalThemes.forNavigator(
+      context,
+      useRootNavigator: true,
+    );
 
     showGeneralDialog<void>(
       context: context,
@@ -550,196 +552,195 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
           ),
         );
       },
-      pageBuilder: (modalContext, _, __) {
-        final platterColor =
-            isDark ? const Color(0xE0252528) : const Color(0xECF9F9FB);
-        final platterCapColor =
-            isDark ? const Color(0xFF252528) : const Color(0xFFF7F7FA);
-        final borderColor =
-            isDark ? const Color(0x2EFFFFFF) : const Color(0x18000000);
+      pageBuilder: (modalContext, _, __) => capturedThemes.wrapBuilder(
+        (themedContext) {
+          final isDark =
+              GlassTheme.brightnessOf(themedContext) == Brightness.dark;
+          final platterColor =
+              isDark ? const Color(0xE0252528) : const Color(0xECF9F9FB);
+          final platterCapColor =
+              isDark ? const Color(0xFF252528) : const Color(0xFFF7F7FA);
+          final borderColor =
+              isDark ? const Color(0x2EFFFFFF) : const Color(0x18000000);
 
-        Widget popover = _OnDispose(
-          onDispose: () => popoverPageController.dispose(),
-          child: Stack(
-            children: [
-              Positioned(
-                left: left,
-                top: top,
-                width: popoverWidth,
-                height: popoverHeight,
-                child: Container(
-                  decoration: ShapeDecoration(
-                    shape: RoundedSuperellipseBorder(
-                      borderRadius: BorderRadius.circular(34),
-                      side: BorderSide(color: borderColor, width: 0.67),
+          return _OnDispose(
+            onDispose: () => popoverPageController.dispose(),
+            child: Stack(
+              children: [
+                Positioned(
+                  left: left,
+                  top: top,
+                  width: popoverWidth,
+                  height: popoverHeight,
+                  child: Container(
+                    decoration: ShapeDecoration(
+                      shape: RoundedSuperellipseBorder(
+                        borderRadius: BorderRadius.circular(34),
+                        side: BorderSide(color: borderColor, width: 0.67),
+                      ),
+                      shadows: [
+                        BoxShadow(
+                          color: CupertinoColors.black
+                              .withValues(alpha: isDark ? 0.45 : 0.14),
+                          blurRadius: 36,
+                          offset: const Offset(0, 12),
+                        ),
+                        BoxShadow(
+                          color: CupertinoColors.black
+                              .withValues(alpha: isDark ? 0.25 : 0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                    shadows: [
-                      BoxShadow(
-                        color: CupertinoColors.black
-                            .withValues(alpha: isDark ? 0.45 : 0.14),
-                        blurRadius: 36,
-                        offset: const Offset(0, 12),
-                      ),
-                      BoxShadow(
-                        color: CupertinoColors.black
-                            .withValues(alpha: isDark ? 0.25 : 0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: ClipRSuperellipse(
-                    borderRadius: BorderRadius.circular(34),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
-                      child: ColoredBox(
-                        color: platterColor,
-                        child: isTimePopover
-                            ? Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 7,
-                                  vertical: 16,
-                                ),
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    CupertinoDatePicker(
-                                      mode: CupertinoDatePickerMode.time,
-                                      initialDateTime: _selectedDateTime,
-                                      minimumDate: widget.minimumDate,
-                                      maximumDate: widget.maximumDate,
-                                      minuteInterval: widget.minuteInterval,
-                                      use24hFormat: widget.use24hFormat,
-                                      onDateTimeChanged: (val) {
-                                        final updated = DateTime(
-                                          _selectedDateTime.year,
-                                          _selectedDateTime.month,
-                                          _selectedDateTime.day,
-                                          val.hour,
-                                          val.minute,
-                                        );
-                                        setState(
-                                            () => _selectedDateTime = updated);
-                                        widget.onDateTimeChanged?.call(updated);
-                                      },
-                                    ),
-                                    IgnorePointer(
-                                      child: SizedBox(
-                                        height: 36,
-                                        width: double.infinity,
-                                        child: CustomPaint(
-                                          painter: _WheelCapsuleCapPainter(
-                                            cardColor: platterCapColor,
+                    child: ClipRSuperellipse(
+                      borderRadius: BorderRadius.circular(34),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+                        child: ColoredBox(
+                          color: platterColor,
+                          child: isTimePopover
+                              ? Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 16,
+                                  ),
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      CupertinoDatePicker(
+                                        mode: CupertinoDatePickerMode.time,
+                                        initialDateTime: _selectedDateTime,
+                                        minimumDate: widget.minimumDate,
+                                        maximumDate: widget.maximumDate,
+                                        minuteInterval: widget.minuteInterval,
+                                        use24hFormat: widget.use24hFormat,
+                                        onDateTimeChanged: (val) {
+                                          final updated = DateTime(
+                                            _selectedDateTime.year,
+                                            _selectedDateTime.month,
+                                            _selectedDateTime.day,
+                                            val.hour,
+                                            val.minute,
+                                          );
+                                          setState(() =>
+                                              _selectedDateTime = updated);
+                                          widget.onDateTimeChanged
+                                              ?.call(updated);
+                                        },
+                                      ),
+                                      IgnorePointer(
+                                        child: SizedBox(
+                                          height: 36,
+                                          width: double.infinity,
+                                          child: CustomPaint(
+                                            painter: _WheelCapsuleCapPainter(
+                                              cardColor: platterCapColor,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : StatefulBuilder(
-                                builder: (popoverCtx, setPopoverState) {
-                                  return Padding(
-                                    padding:
-                                        const EdgeInsets.fromLTRB(8, 13, 8, 14),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        _CalendarHeader(
-                                          label:
-                                              '${_effectiveMonthNames[_displayedMonth.month - 1]} ${_displayedMonth.year}',
-                                          tint: _effectiveTint(popoverCtx),
-                                          arrowColor: CupertinoColors.label
-                                              .resolveFrom(popoverCtx),
-                                          pickerOpen: _showMonthYear,
-                                          onToggle: () {
-                                            setState(() {
-                                              _showMonthYear = !_showMonthYear;
-                                              if (!_showMonthYear) {
-                                                popoverPageController.dispose();
-                                                popoverPageController =
-                                                    PageController(
-                                                  initialPage: _monthToPage(
-                                                      _displayedMonth),
-                                                );
-                                                _syncMonthPageController();
-                                              }
-                                            });
-                                            setPopoverState(() {});
-                                          },
-                                          onPrevious: () {
-                                            _changeMonth(
-                                              -1,
+                                    ],
+                                  ),
+                                )
+                              : StatefulBuilder(
+                                  builder: (popoverCtx, setPopoverState) {
+                                    return Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                          8, 13, 8, 14),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          _CalendarHeader(
+                                            label:
+                                                '${_effectiveMonthNames[_displayedMonth.month - 1]} ${_displayedMonth.year}',
+                                            tint: _effectiveTint(popoverCtx),
+                                            arrowColor: CupertinoColors.label
+                                                .resolveFrom(popoverCtx),
+                                            pickerOpen: _showMonthYear,
+                                            onToggle: () {
+                                              setState(() {
+                                                _showMonthYear =
+                                                    !_showMonthYear;
+                                                if (!_showMonthYear) {
+                                                  popoverPageController
+                                                      .dispose();
+                                                  popoverPageController =
+                                                      PageController(
+                                                    initialPage: _monthToPage(
+                                                        _displayedMonth),
+                                                  );
+                                                  _syncMonthPageController();
+                                                }
+                                              });
+                                              setPopoverState(() {});
+                                            },
+                                            onPrevious: () {
+                                              _changeMonth(
+                                                -1,
+                                                controller:
+                                                    popoverPageController,
+                                              );
+                                              setPopoverState(() {});
+                                            },
+                                            onNext: () {
+                                              _changeMonth(
+                                                1,
+                                                controller:
+                                                    popoverPageController,
+                                              );
+                                              setPopoverState(() {});
+                                            },
+                                          ),
+                                          if (_showMonthYear)
+                                            Expanded(
+                                              child: _MonthYearWheel(
+                                                displayedMonth: _displayedMonth,
+                                                monthNames:
+                                                    _effectiveMonthNames,
+                                                compact: true,
+                                                onChanged: (m) {
+                                                  setState(() =>
+                                                      _displayedMonth = m);
+                                                  setPopoverState(() {});
+                                                },
+                                              ),
+                                            )
+                                          else ...[
+                                            const SizedBox(height: 8),
+                                            _buildWeekdayRow(
+                                              popoverCtx,
+                                              cellSize: 42.67,
+                                            ),
+                                            const SizedBox(height: 2),
+                                            _buildPagedCalendarGrid(
+                                              popoverCtx,
                                               controller: popoverPageController,
-                                            );
-                                            setPopoverState(() {});
-                                          },
-                                          onNext: () {
-                                            _changeMonth(
-                                              1,
-                                              controller: popoverPageController,
-                                            );
-                                            setPopoverState(() {});
-                                          },
-                                        ),
-                                        if (_showMonthYear)
-                                          Expanded(
-                                            child: _MonthYearWheel(
-                                              displayedMonth: _displayedMonth,
-                                              monthNames: _effectiveMonthNames,
                                               compact: true,
-                                              onChanged: (m) {
-                                                setState(
-                                                    () => _displayedMonth = m);
+                                              onDayTapped: (d) {
+                                                _onDateSelected(d);
+                                                setPopoverState(() {});
+                                              },
+                                              onMonthSwiped: () {
                                                 setPopoverState(() {});
                                               },
                                             ),
-                                          )
-                                        else ...[
-                                          const SizedBox(height: 8),
-                                          _buildWeekdayRow(
-                                            popoverCtx,
-                                            cellSize: 42.67,
-                                          ),
-                                          const SizedBox(height: 2),
-                                          _buildPagedCalendarGrid(
-                                            popoverCtx,
-                                            controller: popoverPageController,
-                                            compact: true,
-                                            onDayTapped: (d) {
-                                              _onDateSelected(d);
-                                              setPopoverState(() {});
-                                            },
-                                            onMonthSwiped: () {
-                                              setPopoverState(() {});
-                                            },
-                                          ),
+                                          ],
                                         ],
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        );
-        popover = CupertinoTheme(
-          data: capturedCupertinoTheme,
-          child: popover,
-        );
-        if (capturedGlassTheme != null) {
-          popover = GlassTheme(
-            data: capturedGlassTheme,
-            child: popover,
+              ],
+            ),
           );
-        }
-        return popover;
-      },
+        },
+      ),
     ).whenComplete(() {
       if (mounted) {
         setState(() {
@@ -1675,94 +1676,85 @@ Future<DateTime?> showGlassDatePicker({
   GlassSurfaceStyle surfaceStyle = GlassSurfaceStyle.glass,
 }) async {
   DateTime selected = initialDateTime ?? DateTime.now();
-  final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
-  final capturedCupertinoTheme = CupertinoTheme.of(context);
+  final capturedThemes = CapturedModalThemes.forNavigator(
+    context,
+    useRootNavigator: true,
+  );
 
   final result = await showCupertinoModalPopup<DateTime>(
     context: context,
-    builder: (modalContext) {
-      Widget sheet = Container(
-        padding: const EdgeInsets.all(16),
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          color: CupertinoColors.systemBackground.resolveFrom(modalContext),
-          border: Border.all(
-            color: CupertinoColors.white.withValues(alpha: 0.15),
-            width: 0.5,
+    builder: (modalContext) => capturedThemes.wrapBuilder(
+      (themedContext) => DefaultTextStyle(
+        style: CupertinoTheme.of(themedContext).textTheme.textStyle,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            color: CupertinoColors.systemBackground.resolveFrom(themedContext),
+            border: Border.all(
+              color: CupertinoColors.white.withValues(alpha: 0.15),
+              width: 0.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: CupertinoColors.black.withValues(alpha: 0.35),
+                blurRadius: 36,
+                offset: const Offset(0, 12),
+              ),
+            ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: CupertinoColors.black.withValues(alpha: 0.35),
-              blurRadius: 36,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  child: const Text('Cancel'),
-                  onPressed: () => Navigator.of(modalContext).pop(null),
-                ),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: CupertinoColors.label.resolveFrom(modalContext),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    child: const Text('Cancel'),
+                    onPressed: () => Navigator.of(themedContext).pop(null),
                   ),
-                ),
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  child: const Text(
-                    'Done',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: CupertinoColors.label.resolveFrom(themedContext),
+                    ),
                   ),
-                  onPressed: () => Navigator.of(modalContext).pop(selected),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            GlassDatePicker(
-              initialDateTime: selected,
-              mode: mode,
-              style: style,
-              minimumDate: minimumDate,
-              maximumDate: maximumDate,
-              minuteInterval: minuteInterval,
-              use24hFormat: use24hFormat,
-              tintColor: tintColor,
-              settings: settings,
-              quality: quality,
-              surfaceStyle: surfaceStyle,
-              onDateTimeChanged: (val) {
-                selected = val;
-              },
-            ),
-          ],
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    child: const Text(
+                      'Done',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    onPressed: () => Navigator.of(themedContext).pop(selected),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              GlassDatePicker(
+                initialDateTime: selected,
+                mode: mode,
+                style: style,
+                minimumDate: minimumDate,
+                maximumDate: maximumDate,
+                minuteInterval: minuteInterval,
+                use24hFormat: use24hFormat,
+                tintColor: tintColor,
+                settings: settings,
+                quality: quality,
+                surfaceStyle: surfaceStyle,
+                onDateTimeChanged: (val) {
+                  selected = val;
+                },
+              ),
+            ],
+          ),
         ),
-      );
-      sheet = DefaultTextStyle(
-        style: capturedCupertinoTheme.textTheme.textStyle,
-        child: CupertinoTheme(
-          data: capturedCupertinoTheme,
-          child: sheet,
-        ),
-      );
-      if (capturedGlassTheme != null) {
-        sheet = GlassTheme(
-          data: capturedGlassTheme,
-          child: sheet,
-        );
-      }
-      return sheet;
-    },
+      ),
+    ),
   );
 
   return result;

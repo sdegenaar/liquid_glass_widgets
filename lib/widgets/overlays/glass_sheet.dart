@@ -10,6 +10,7 @@ import '../../theme/glass_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/cupertino.dart';
 import '../../src/widgets/overlays/glass_sheet_defaults.dart';
+import '../../src/widgets/overlays/modal_theme_capture.dart';
 import '../../constants/glass_defaults.dart';
 
 /// A glass morphism bottom sheet following Apple's iOS 26 design patterns.
@@ -313,8 +314,10 @@ class GlassSheet extends StatefulWidget {
     bool useSafeArea = true,
     bool enableSaturationGlow = true,
   }) {
-    final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
-    final capturedCupertinoTheme = CupertinoTheme.of(context);
+    final capturedThemes = CapturedModalThemes.forNavigator(
+      context,
+      useRootNavigator: useRootNavigator,
+    );
     final capturedStyle = GlassThemeHelpers.resolveStyle(context);
     final effectiveBarrierColor = barrierColor ??
         (capturedStyle == GlassStyle.classic
@@ -380,17 +383,7 @@ class GlassSheet extends StatefulWidget {
             ),
           ),
         );
-        dialog = CupertinoTheme(
-          data: capturedCupertinoTheme,
-          child: dialog,
-        );
-        if (capturedGlassTheme != null) {
-          dialog = GlassTheme(
-            data: capturedGlassTheme,
-            child: dialog,
-          );
-        }
-        return dialog;
+        return capturedThemes.wrap(dialog);
       },
     );
   }

@@ -20,6 +20,7 @@ import '../shared/adaptive_liquid_glass_layer.dart';
 import '../shared/inherited_liquid_glass.dart';
 import '../../types/interaction_notification.dart';
 import '../../src/widgets/overlays/glass_sheet_defaults.dart';
+import '../../src/widgets/overlays/modal_theme_capture.dart';
 import '../../src/widgets/surfaces/vertical_bar_title_row.dart';
 import '../../constants/glass_defaults.dart';
 import '../shared/glass_accessibility_scope.dart';
@@ -552,19 +553,20 @@ class GlassModalSheet extends StatefulWidget {
     // in that side rather than across the screen.
     final subScreen = _subScreenFor(context);
 
-    // Capture the caller's ambient GlassTheme and CupertinoTheme so a route
-    // pushed above the subtree (or onto the root navigator) preserves the
-    // active GlassStyle and brightness.
-    final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
-    final capturedCupertinoTheme = CupertinoTheme.of(context);
+    // Capture only subtree-local GlassTheme/CupertinoTheme overrides below the
+    // target Navigator so app-level themes stay live on brightness changes.
+    final navigator = Navigator.of(context, rootNavigator: useRootNavigator);
+    final capturedThemes = CapturedModalThemes.capture(
+      from: context,
+      to: navigator.context,
+    );
     final capturedStyle = GlassThemeHelpers.resolveStyle(context);
     final effectiveBarrierColor = barrierColor ??
         (capturedStyle == GlassStyle.classic
             ? GlassDefaults.barrierColor
             : const Color(0x24000000));
 
-    return Navigator.of(context, rootNavigator: useRootNavigator)
-        .push<T>(_GlassModalSheetRoute<T>(
+    return navigator.push<T>(_GlassModalSheetRoute<T>(
       anchorPoint: subScreen?.center,
       barrierDismissible: isDismissible,
       barrierLabel: 'Dismiss',
@@ -599,20 +601,6 @@ class GlassModalSheet extends StatefulWidget {
       },
       pageBuilder: (context, animation, secondaryAnimation) =>
           _inSubScreen(context, subScreen, () {
-        Widget wrapThemes(Widget child) {
-          Widget wrapped = CupertinoTheme(
-            data: capturedCupertinoTheme,
-            child: child,
-          );
-          if (capturedGlassTheme != null) {
-            wrapped = GlassTheme(
-              data: capturedGlassTheme,
-              child: wrapped,
-            );
-          }
-          return wrapped;
-        }
-
         final scaffold = GlassModalSheetScaffold(
           controller: effectiveController,
           halfSize: halfSize,
@@ -676,9 +664,9 @@ class GlassModalSheet extends StatefulWidget {
           sheet: Builder(builder: builder),
         );
 
-        if (!morphing) return wrapThemes(scaffold);
+        if (!morphing) return capturedThemes.wrap(scaffold);
 
-        return wrapThemes(
+        return capturedThemes.wrap(
           GlassSheetMorphPresenter(
             routeAnimation: animation,
             triggerRect: morphTriggerRect,

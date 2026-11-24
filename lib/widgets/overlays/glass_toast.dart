@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
+import '../../src/widgets/overlays/modal_theme_capture.dart';
 
 import '../../theme/glass_theme_data.dart';
 import '../../theme/glass_theme.dart';
@@ -212,8 +213,10 @@ class GlassToast extends StatefulWidget {
     GlassQuality? quality,
   }) {
     final overlayState = Overlay.of(context);
-    final capturedGlassTheme = GlassTheme.maybeOf(context)?.data;
-    final capturedCupertinoTheme = CupertinoTheme.of(context);
+    final capturedThemes = CapturedModalThemes.capture(
+      from: context,
+      to: overlayState.context,
+    );
     late OverlayEntry overlayEntry;
 
     void removeEntry() {
@@ -221,8 +224,8 @@ class GlassToast extends StatefulWidget {
     }
 
     overlayEntry = OverlayEntry(
-      builder: (overlayContext) {
-        Widget toast = _GlassToastOverlay(
+      builder: (overlayContext) => capturedThemes.wrap(
+        _GlassToastOverlay(
           message: message,
           icon: icon,
           type: type,
@@ -233,19 +236,8 @@ class GlassToast extends StatefulWidget {
           settings: settings,
           quality: quality,
           onDismissed: removeEntry,
-        );
-        toast = CupertinoTheme(
-          data: capturedCupertinoTheme,
-          child: toast,
-        );
-        if (capturedGlassTheme != null) {
-          toast = GlassTheme(
-            data: capturedGlassTheme,
-            child: toast,
-          );
-        }
-        return toast;
-      },
+        ),
+      ),
     );
 
     overlayState.insert(overlayEntry);
