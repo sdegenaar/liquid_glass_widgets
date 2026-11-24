@@ -6,6 +6,40 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 void main() {
+  testWidgets('intrinsic-height popover reopens after closing', (tester) async {
+    final controller = GlassPopoverController();
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: GlassPopover(
+            controller: controller,
+            trigger: const Text('Open'),
+            contentBuilder: (context, close) => const Text('Popover Content'),
+          ),
+        ),
+      ),
+    ));
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    expect(find.text('Popover Content'), findsOneWidget);
+
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(find.text('Popover Content'), findsNothing);
+
+    // The completed close must clear its closing state so an immediate
+    // open-close can cancel the next intrinsic measurement pass.
+    controller.open();
+    controller.close();
+    await tester.pumpAndSettle();
+    expect(find.text('Popover Content'), findsNothing);
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    expect(find.text('Popover Content'), findsOneWidget);
+  });
+
   testWidgets('GlassPopover opens on trigger tap and shows content',
       (WidgetTester tester) async {
     await tester.pumpWidget(
