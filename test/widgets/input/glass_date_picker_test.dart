@@ -359,6 +359,193 @@ void main() {
       expect(resultDate, isNotNull);
       expect(resultDate!.day, 22);
     });
+
+    testWidgets(
+        'caps and centers modal sheet at 400px on wide desktop viewports (1440x900)',
+        (tester) async {
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: CupertinoPageScaffold(
+            child: Builder(
+              builder: (context) => CupertinoButton(
+                child: const Text('Pick Date'),
+                onPressed: () {
+                  showGlassDatePicker(
+                    context: context,
+                    initialDateTime: DateTime(2026, 10, 8, 14, 30),
+                    mode: GlassDatePickerMode.dateAndTime,
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Pick Date'));
+      await tester.pumpAndSettle();
+
+      final sheetFinder = find
+          .ancestor(
+            of: find.byType(GlassDatePicker),
+            matching: find.byType(Container),
+          )
+          .last;
+      final sheetRect = tester.getRect(sheetFinder);
+      expect(sheetRect.width, lessThanOrEqualTo(400.0));
+      expect(sheetRect.center.dx, closeTo(720.0, 0.5));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+        'fills available width on phone viewports (390x844) without overflow',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: CupertinoPageScaffold(
+            child: Builder(
+              builder: (context) => CupertinoButton(
+                child: const Text('Pick Date'),
+                onPressed: () {
+                  showGlassDatePicker(
+                    context: context,
+                    initialDateTime: DateTime(2026, 10, 8, 14, 30),
+                    mode: GlassDatePickerMode.dateAndTime,
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Pick Date'));
+      await tester.pumpAndSettle();
+
+      final sheetFinder = find
+          .ancestor(
+            of: find.byType(GlassDatePicker),
+            matching: find.byType(Container),
+          )
+          .last;
+      final sheetRect = tester.getRect(sheetFinder);
+      expect(sheetRect.width, lessThanOrEqualTo(390.0));
+      expect(sheetRect.width, closeTo(390.0, 0.5));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('maxWidth: null opts out to full width on desktop viewports',
+        (tester) async {
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: CupertinoPageScaffold(
+            child: Builder(
+              builder: (context) => CupertinoButton(
+                child: const Text('Pick Date'),
+                onPressed: () {
+                  showGlassDatePicker(
+                    context: context,
+                    initialDateTime: DateTime(2026, 10, 8),
+                    maxWidth: null,
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Pick Date'));
+      await tester.pumpAndSettle();
+
+      final sheetFinder = find
+          .ancestor(
+            of: find.byType(GlassDatePicker),
+            matching: find.byType(Container),
+          )
+          .last;
+      final sheetRect = tester.getRect(sheetFinder);
+      expect(sheetRect.width, greaterThan(1000.0));
+    });
+
+    testWidgets(
+        'header Cancel and Done actions respect tintColor and fall back to primaryColor',
+        (tester) async {
+      const customTint = CupertinoColors.systemPurple;
+      const themePrimary = Color(0xFF007AFF);
+
+      Future<void> openSheet({Color? tint}) async {
+        await tester.pumpWidget(
+          CupertinoApp(
+            theme: const CupertinoThemeData(
+              brightness: Brightness.light,
+              primaryColor: themePrimary,
+            ),
+            home: CupertinoPageScaffold(
+              child: Builder(
+                builder: (context) => CupertinoButton(
+                  child: const Text('Pick Date'),
+                  onPressed: () {
+                    showGlassDatePicker(
+                      context: context,
+                      initialDateTime: DateTime(2026, 10, 8),
+                      tintColor: tint,
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('Pick Date'));
+        await tester.pumpAndSettle();
+      }
+
+      // 1. Explicit tintColor tints both Cancel and Done.
+      await openSheet(tint: customTint);
+      final cancelTinted = tester
+          .renderObject<RenderParagraph>(find.text('Cancel'))
+          .text
+          .style!
+          .color;
+      final doneTinted = tester
+          .renderObject<RenderParagraph>(find.text('Done'))
+          .text
+          .style!
+          .color;
+      expect(cancelTinted?.toARGB32(), customTint.color.toARGB32());
+      expect(doneTinted?.toARGB32(), customTint.color.toARGB32());
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      // 2. Null tintColor keeps CupertinoTheme primaryColor.
+      await openSheet(tint: null);
+      final cancelDefault = tester
+          .renderObject<RenderParagraph>(find.text('Cancel'))
+          .text
+          .style!
+          .color;
+      final doneDefault = tester
+          .renderObject<RenderParagraph>(find.text('Done'))
+          .text
+          .style!
+          .color;
+      expect(cancelDefault, themePrimary);
+      expect(doneDefault, themePrimary);
+    });
   });
 
   group('GlassDatePicker native parity', () {

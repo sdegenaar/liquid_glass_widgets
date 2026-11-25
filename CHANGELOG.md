@@ -10,6 +10,7 @@
 
 ## Bug Fixes
 
+- **`showGlassDatePicker` desktop / iPad modal width & header accent (`maxWidth`):** Added optional `double? maxWidth = 400` to `showGlassDatePicker` so wide desktop and iPad viewports present a compact, centered ~400 px sheet instead of stretching edge-to-edge (phones `<= 400` px behave identically; pass `maxWidth: null` to opt out). Header `Cancel` / `Done` buttons now also adopt `tintColor` (resolving `CupertinoDynamicColor`) when supplied, falling back to `CupertinoTheme.of(context).primaryColor`.
 - **Live theme & brightness updates in open modals (`GlassModalSheet`, `GlassSheet`, `GlassDialog`, `showGlassActionSheet`, `GlassToast`, `showGlassFullScreenCover`, `showGlassContextMenu`, `GlassPicker.showSheet`, `GlassDatePicker`, `showGlassDatePicker`) (#529):** Only capture user-authored `GlassTheme` and `CupertinoTheme` overrides declared strictly below the target `Navigator` or `Overlay` (skipping internal `GlassScaffold` and `GlassContentAwareScope` wrappers), and keep descendant `CupertinoTheme` brightness synced live with `GlassTheme.brightnessOf` so switching system appearance or app theme updates open modals immediately without remounting content. `GlassTheme` now extends `InheritedTheme` so Flutter's own `showDialog` also preserves subtree `GlassTheme` overrides.
 - Fix reopening an intrinsic-height `GlassPopover` after its close animation finishes.
 

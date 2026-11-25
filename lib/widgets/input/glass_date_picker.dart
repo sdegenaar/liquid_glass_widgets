@@ -881,18 +881,20 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
     final weekdays = _effectiveWeekdays;
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: weekdays.map((day) {
-        return SizedBox(
-          width: cellSize,
-          height: 16,
-          child: Center(
-            child: Text(
-              day,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: CupertinoColors.secondaryLabel.resolveFrom(context),
+        return Expanded(
+          child: SizedBox(
+            height: 16,
+            child: Center(
+              child: Text(
+                day,
+                maxLines: 1,
+                softWrap: false,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                ),
               ),
             ),
           ),
@@ -968,115 +970,133 @@ class _GlassDatePickerState extends State<GlassDatePicker> {
 
     final totalCells = ((leadingPaddingDays + daysInMonth) / 7).ceil() * 7;
 
-    final List<Widget> dayWidgets = [];
-    final today = DateTime.now();
-    final effectiveTint = _effectiveTint(context);
-    final labelColor = CupertinoColors.label.resolveFrom(context);
-    final invertedLabelColor =
-        CupertinoColors.systemBackground.resolveFrom(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double effectiveCellDiameter = constraints.maxWidth.isFinite
+            ? math.min(cellSize, constraints.maxWidth / 7)
+            : cellSize;
 
-    for (int i = 0; i < totalCells; i++) {
-      if (i < leadingPaddingDays || i >= leadingPaddingDays + daysInMonth) {
-        // Native iOS 26/27 UICalendarView leaves out-of-month cells blank.
-        dayWidgets.add(SizedBox(width: cellSize, height: cellSize));
-      } else {
-        // Day in current month
-        final dayNum = i - leadingPaddingDays + 1;
-        final cellDate = DateTime(year, month, dayNum);
+        final List<Widget> dayWidgets = [];
+        final today = DateTime.now();
+        final effectiveTint = _effectiveTint(context);
+        final labelColor = CupertinoColors.label.resolveFrom(context);
+        final invertedLabelColor =
+            CupertinoColors.systemBackground.resolveFrom(context);
 
-        final isSelected = cellDate.year == _selectedDateTime.year &&
-            cellDate.month == _selectedDateTime.month &&
-            cellDate.day == _selectedDateTime.day;
-
-        final isToday = cellDate.year == today.year &&
-            cellDate.month == today.month &&
-            cellDate.day == today.day;
-
-        final isDisabled = _isDateDisabled(cellDate);
-
-        // Native iOS 26/27 DatePicker(.graphical) selection rules:
-        // - Selected Today: solid tint circle (#0088FF / #0091FF) + white text
-        // - Selected other day: solid label circle (black in light, white in dark)
-        //   unless an explicit tintColor was supplied
-        // - Unselected Today: translucent tint circle (alpha 0.12) + tint text
-        Color? circleColor;
-        Color textColor;
-        if (isSelected) {
-          if (isToday || widget.tintColor != null) {
-            circleColor = effectiveTint;
-            textColor = CupertinoColors.white;
+        for (int i = 0; i < totalCells; i++) {
+          if (i < leadingPaddingDays || i >= leadingPaddingDays + daysInMonth) {
+            // Native iOS 26/27 UICalendarView leaves out-of-month cells blank.
+            dayWidgets.add(
+              Expanded(child: SizedBox(height: cellSize)),
+            );
           } else {
-            circleColor = labelColor;
-            textColor = invertedLabelColor;
-          }
-        } else if (isDisabled) {
-          textColor = CupertinoColors.tertiaryLabel.resolveFrom(context);
-        } else if (isToday) {
-          circleColor = effectiveTint.withValues(alpha: 0.12);
-          textColor = effectiveTint;
-        } else {
-          textColor = labelColor;
-        }
+            // Day in current month
+            final dayNum = i - leadingPaddingDays + 1;
+            final cellDate = DateTime(year, month, dayNum);
 
-        dayWidgets.add(
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: isDisabled
-                ? null
-                : () {
-                    if (onDayTapped != null) {
-                      onDayTapped(cellDate);
-                    } else {
-                      _onDateSelected(cellDate);
-                    }
-                  },
-            child: SizedBox(
-              width: cellSize,
-              height: cellSize,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  if (circleColor != null)
-                    Container(
-                      width: cellSize,
-                      height: cellSize,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: circleColor,
+            final isSelected = cellDate.year == _selectedDateTime.year &&
+                cellDate.month == _selectedDateTime.month &&
+                cellDate.day == _selectedDateTime.day;
+
+            final isToday = cellDate.year == today.year &&
+                cellDate.month == today.month &&
+                cellDate.day == today.day;
+
+            final isDisabled = _isDateDisabled(cellDate);
+
+            // Native iOS 26/27 DatePicker(.graphical) selection rules:
+            // - Selected Today: solid tint circle (#0088FF / #0091FF) + white text
+            // - Selected other day: solid label circle (black in light, white in dark)
+            //   unless an explicit tintColor was supplied
+            // - Unselected Today: translucent tint circle (alpha 0.12) + tint text
+            Color? circleColor;
+            Color textColor;
+            if (isSelected) {
+              if (isToday || widget.tintColor != null) {
+                circleColor = effectiveTint;
+                textColor = CupertinoColors.white;
+              } else {
+                circleColor = labelColor;
+                textColor = invertedLabelColor;
+              }
+            } else if (isDisabled) {
+              textColor = CupertinoColors.tertiaryLabel.resolveFrom(context);
+            } else if (isToday) {
+              circleColor = effectiveTint.withValues(alpha: 0.12);
+              textColor = effectiveTint;
+            } else {
+              textColor = labelColor;
+            }
+
+            dayWidgets.add(
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: isDisabled
+                      ? null
+                      : () {
+                          if (onDayTapped != null) {
+                            onDayTapped(cellDate);
+                          } else {
+                            _onDateSelected(cellDate);
+                          }
+                        },
+                  child: SizedBox(
+                    height: cellSize,
+                    child: Center(
+                      child: SizedBox(
+                        width: effectiveCellDiameter,
+                        height: effectiveCellDiameter,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            if (circleColor != null)
+                              Container(
+                                width: effectiveCellDiameter,
+                                height: effectiveCellDiameter,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: circleColor,
+                                ),
+                              ),
+                            Text(
+                              '$dayNum',
+                              style: TextStyle(
+                                fontSize: 20,
+                                letterSpacing: -0.45,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
+                                color: textColor,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  Text(
-                    '$dayNum',
-                    style: TextStyle(
-                      fontSize: 20,
-                      letterSpacing: -0.45,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w400,
-                      color: textColor,
-                    ),
                   ),
-                ],
+                ),
               ),
+            );
+          }
+        }
+
+        final List<Widget> rowWidgets = [];
+        for (int r = 0; r < dayWidgets.length; r += 7) {
+          rowWidgets.add(
+            Row(
+              children:
+                  dayWidgets.sublist(r, math.min(r + 7, dayWidgets.length)),
             ),
-          ),
-        );
-      }
-    }
+          );
+          if (r + 7 < dayWidgets.length) {
+            rowWidgets.add(SizedBox(height: rowGap));
+          }
+        }
 
-    final List<Widget> rowWidgets = [];
-    for (int r = 0; r < dayWidgets.length; r += 7) {
-      rowWidgets.add(
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: dayWidgets.sublist(r, math.min(r + 7, dayWidgets.length)),
-        ),
-      );
-      if (r + 7 < dayWidgets.length) {
-        rowWidgets.add(SizedBox(height: rowGap));
-      }
-    }
-
-    return Column(children: rowWidgets);
+        return Column(children: rowWidgets);
+      },
+    );
   }
 
   Widget _buildTimeSection(BuildContext context) {
@@ -1660,6 +1680,16 @@ class _GlassMultiDatePickerState extends State<GlassMultiDatePicker> {
 /// Imperatively displays a modal liquid glass date/time picker sheet.
 ///
 /// [surfaceStyle] is forwarded to the [GlassDatePicker] inside the sheet.
+///
+/// [maxWidth] caps the modal sheet width on wide tablet and desktop viewports
+/// (defaulting to `400.0` logical pixels) while letting the sheet fill the
+/// available width on phones. Pass `null` to opt out and stretch the sheet to
+/// the full viewport width.
+///
+/// When [tintColor] is provided, it tints both the [GlassDatePicker] accent
+/// elements and the `Cancel` / `Done` header actions (resolving
+/// [CupertinoDynamicColor] against the active brightness). When `null`, header
+/// actions keep the ambient `CupertinoTheme.of(context).primaryColor`.
 Future<DateTime?> showGlassDatePicker({
   required BuildContext context,
   DateTime? initialDateTime,
@@ -1674,7 +1704,9 @@ Future<DateTime?> showGlassDatePicker({
   LiquidGlassSettings? settings,
   GlassQuality? quality,
   GlassSurfaceStyle surfaceStyle = GlassSurfaceStyle.glass,
+  double? maxWidth = 400,
 }) async {
+  assert(maxWidth == null || maxWidth > 0, 'maxWidth must be greater than 0.');
   DateTime selected = initialDateTime ?? DateTime.now();
   final capturedThemes = CapturedModalThemes.forNavigator(
     context,
@@ -1684,9 +1716,11 @@ Future<DateTime?> showGlassDatePicker({
   final result = await showCupertinoModalPopup<DateTime>(
     context: context,
     builder: (modalContext) => capturedThemes.wrapBuilder(
-      (themedContext) => DefaultTextStyle(
-        style: CupertinoTheme.of(themedContext).textTheme.textStyle,
-        child: Container(
+      (themedContext) {
+        final actionColor = tintColor != null
+            ? CupertinoDynamicColor.resolve(tintColor, themedContext)
+            : null;
+        final Widget sheet = Container(
           padding: const EdgeInsets.all(16),
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
           decoration: BoxDecoration(
@@ -1712,22 +1746,39 @@ Future<DateTime?> showGlassDatePicker({
                 children: [
                   CupertinoButton(
                     padding: EdgeInsets.zero,
-                    child: const Text('Cancel'),
+                    child: Text(
+                      'Cancel',
+                      style: actionColor != null
+                          ? TextStyle(color: actionColor)
+                          : null,
+                    ),
                     onPressed: () => Navigator.of(themedContext).pop(null),
                   ),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                      color: CupertinoColors.label.resolveFrom(themedContext),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        title,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color:
+                              CupertinoColors.label.resolveFrom(themedContext),
+                        ),
+                      ),
                     ),
                   ),
                   CupertinoButton(
                     padding: EdgeInsets.zero,
-                    child: const Text(
+                    child: Text(
                       'Done',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: actionColor,
+                      ),
                     ),
                     onPressed: () => Navigator.of(themedContext).pop(selected),
                   ),
@@ -1752,8 +1803,21 @@ Future<DateTime?> showGlassDatePicker({
               ),
             ],
           ),
-        ),
-      ),
+        );
+
+        return DefaultTextStyle(
+          style: CupertinoTheme.of(themedContext).textTheme.textStyle,
+          child: maxWidth != null
+              ? Center(
+                  heightFactor: 1.0,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: maxWidth),
+                    child: sheet,
+                  ),
+                )
+              : sheet,
+        );
+      },
     ),
   );
 
@@ -1791,42 +1855,50 @@ class _CalendarHeader extends StatelessWidget {
       child: Row(
         children: [
           const SizedBox(width: 12),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: onToggle,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.4,
-                    color: titleColor,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                AnimatedRotation(
-                  turns: pickerOpen ? 0.25 : 0.0,
-                  duration: const Duration(milliseconds: 200),
-                  child: SizedBox(
-                    width: 8,
-                    height: 12,
-                    child: CustomPaint(
-                      painter: _PickerChevronPainter(
-                        color: tint,
-                        halfWidth: 2.2,
-                        halfHeight: 4.2,
-                        strokeWidth: 2.2,
+          Expanded(
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onToggle,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.4,
+                          color: titleColor,
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 6),
+                    AnimatedRotation(
+                      turns: pickerOpen ? 0.25 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: SizedBox(
+                        width: 8,
+                        height: 12,
+                        child: CustomPaint(
+                          painter: _PickerChevronPainter(
+                            color: tint,
+                            halfWidth: 2.2,
+                            halfHeight: 4.2,
+                            strokeWidth: 2.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-          const Spacer(),
           if (!pickerOpen) ...[
             _navButton(onPrevious, left: true),
             const SizedBox(width: 15.5),
