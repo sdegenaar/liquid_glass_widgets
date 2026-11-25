@@ -9,6 +9,7 @@ import '../../theme/glass_theme.dart';
 import '../../src/renderer/glass_backdrop_group.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
 import '../../src/widgets/overlays/modal_theme_capture.dart';
+import '../../src/widgets/surfaces/app_bar_scroll_under_surface.dart';
 import '../../src/widgets/surfaces/dynamic_preferred_size.dart';
 import '../../src/widgets/surfaces/status_bar_row.dart';
 import '../../src/widgets/surfaces/vertical_bar_background.dart';
@@ -257,7 +258,11 @@ class GlassScaffold extends StatelessWidget {
   /// and [bottomEdgeFade].
   final bool edgeFade;
 
-  /// Whether to fade content at the top edge. When `null`, follows [edgeFade].
+  /// Whether to fade content at the top edge. When `null`, follows [edgeFade]
+  /// when an [appBar] is present, except when [appBar] is a [GlassAppBar]
+  /// rendering its own iOS 27 [GlassAppBarSurfaceStyle.fullBlur] scroll-under
+  /// surface (which suppresses the default soft top fade automatically to
+  /// prevent a double-edge band below the hairline border).
   final bool? topEdgeFade;
 
   /// Whether to fade content at the bottom edge. When `null`, follows
@@ -493,7 +498,32 @@ class GlassScaffold extends StatelessWidget {
             : (bottomBar != null ? (bottomBarHeight ?? 60.0) : 0.0);
 
     // Resolve edge fade toggles.
-    final doFadeTop = topEdgeFade ?? (edgeFade && appBar != null);
+    //
+    // Coordinate with GlassAppBar's iOS 27 scroll-under blurred surface so
+    // default GlassScaffold + GlassAppBar never renders a soft fade leaking
+    // below the bar's crisp hairline border, while honoring callers that
+    // explicitly customized GlassScaffold's top edge (`topEdgeFade: true`,
+    // `edgeStyle: .blur`/`.hard`, or a custom `topEdgeFadeExtent`) and
+    // suppressing automatic blur when `extendBody: false` (where body content
+    // is laid out strictly below the app bar and never scrolls behind it).
+    final scaffoldExplicitTopEdge = topEdgeFade == true ||
+        (topEdgeFade == null &&
+            edgeFade &&
+            (edgeStyle != GlassScrollEdgeStyle.soft ||
+                topEdgeFadeExtent != 20.0));
+    final suppressAutomaticBarFullBlur = !extendBody || scaffoldExplicitTopEdge;
+    final resolvedStyle =
+        themeOverride?.style ?? GlassThemeData.of(context).style;
+    final barOwnsFullBlurSurface = bar is GlassAppBar &&
+        resolveGlassAppBarUsesFullBlur(
+          surfaceStyle: bar.surfaceStyle,
+          backgroundColor: bar.backgroundColor,
+          glassStyle: resolvedStyle,
+          inDuoStripOrStatusRow: appBarInStrip || statusRow != null,
+          scaffoldExplicitTopEdge: suppressAutomaticBarFullBlur,
+        );
+    final doFadeTop =
+        topEdgeFade ?? (edgeFade && appBar != null && !barOwnsFullBlurSurface);
     final doFadeBottom =
         bottomEdgeFade ?? (edgeFade && bottomBar != null && !bottomBarInStrip);
 
@@ -509,8 +539,12 @@ class GlassScaffold extends StatelessWidget {
     // Build the body content.
     Widget bodyContent = body;
 
-    // Wrap with edge fading if enabled.
-    if (extendBody && (doFadeTop || doFadeBottom)) {
+    // Wrap with edge fading if enabled. Keep the wrapper mounted whenever
+    // `barOwnsFullBlurSurface` suppressed `doFadeTop` so posture changes
+    // (e.g. entering/leaving iPhone Duo's vertical bar strip) or live style
+    // toggles never remount `body`. When both `fadeTop` and `fadeBottom` are
+    // false, GlassScrollEdgeEffect returns `body` directly at zero cost.
+    if (extendBody && (doFadeTop || doFadeBottom || barOwnsFullBlurSurface)) {
       Widget edgeEffect(double topFadeHeight, Widget child) =>
           GlassScrollEdgeEffect(
             topFadeHeight: topFadeHeight,
@@ -665,10 +699,13 @@ class GlassScaffold extends StatelessWidget {
           top: 0,
           left: 0,
           right: 0,
-          child: GlassIsolationScope(
-            isolated: true,
-            defaultQuality: GlassQuality.premium,
-            child: appBar!,
+          child: GlassScaffoldTopEdgePolicy(
+            suppressAutomaticFullBlur: suppressAutomaticBarFullBlur,
+            child: GlassIsolationScope(
+              isolated: true,
+              defaultQuality: GlassQuality.premium,
+              child: appBar!,
+            ),
           ),
         ),
 
@@ -725,14 +762,16 @@ class GlassScaffold extends StatelessWidget {
       GlassStatusBarStyle.none => true, // doesn't matter — no region
     };
 
-    Widget stackWidget = GlassNavigationTitleScope(
-      // Enclosing GlassBackdropGroup lets non-overlapping chrome bars
-      // (GlassAppBar, GlassTabBar, GlassToolbar — all joinEnclosing: true)
-      // share a single full-screen backdrop read on Impeller while body and
-      // bodyOverlays explicitly opt out above.
-      child: GlassBackdropGroup(
-        enabled: appBar != null && bottomBar != null,
-        child: Stack(clipBehavior: Clip.none, children: stackChildren),
+    Widget stackWidget = ScrollNotificationObserver(
+      child: GlassNavigationTitleScope(
+        // Enclosing GlassBackdropGroup lets non-overlapping chrome bars
+        // (GlassAppBar, GlassTabBar, GlassToolbar — all joinEnclosing: true)
+        // share a single full-screen backdrop read on Impeller while body and
+        // bodyOverlays explicitly opt out above.
+        child: GlassBackdropGroup(
+          enabled: appBar != null && bottomBar != null,
+          child: Stack(clipBehavior: Clip.none, children: stackChildren),
+        ),
       ),
     );
 

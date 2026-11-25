@@ -236,30 +236,38 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
       _backgroundImage?.dispose();
       _backgroundImage = null;
     }
+    if (!widget.fadeTop && !widget.fadeBottom) return;
     _scheduleCapture();
   }
 
   @override
   void didUpdateWidget(GlassScrollEdgeEffect oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final bool wasActive = oldWidget.fadeTop || oldWidget.fadeBottom;
+    final bool isActive = widget.fadeTop || widget.fadeBottom;
     final bool styleBecameRaster = widget.style != GlassScrollEdgeStyle.blur &&
         oldWidget.style == GlassScrollEdgeStyle.blur;
     final bool fadeColorChanged = widget.fadeColor != oldWidget.fadeColor;
+    final bool becameActive = isActive && !wasActive;
 
-    if (widget.style != GlassScrollEdgeStyle.blur &&
-        (styleBecameRaster || fadeColorChanged)) {
-      if (fadeColorChanged) {
-        _captureGeneration++;
-        _backgroundImage?.dispose();
-        _backgroundImage = null;
-      }
+    if (fadeColorChanged) {
+      _captureGeneration++;
+      _backgroundImage?.dispose();
+      _backgroundImage = null;
+    }
+
+    if (isActive &&
+        widget.style != GlassScrollEdgeStyle.blur &&
+        (styleBecameRaster || fadeColorChanged || becameActive)) {
       _scheduleCapture();
     }
   }
 
   void _scheduleCapture() {
     SchedulerBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _captureBackground();
+      if (mounted && (widget.fadeTop || widget.fadeBottom)) {
+        _captureBackground();
+      }
     });
   }
 
@@ -354,12 +362,13 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
 
   @override
   Widget build(BuildContext context) {
-    // No fading needed — return child directly.
-    if (!widget.fadeTop && !widget.fadeBottom) return widget.child;
+    final bool hasAnyFade = widget.fadeTop || widget.fadeBottom;
+    final Size screenSize = hasAnyFade ? MediaQuery.sizeOf(context) : Size.zero;
+    final bool hasTexture = _backgroundImage != null;
 
-    final screenSize = MediaQuery.sizeOf(context);
-    final hasTexture = _backgroundImage != null;
-
+    // Always keep the Stack wrapper so toggling fadeTop / fadeBottom live
+    // (e.g. across iPhone Duo posture changes or GlassStyle switches) never
+    // remounts [widget.child] or resets scroll/search state.
     return Stack(
       children: [
         // 1. Scroll content — no compositing layer wrapping it.
