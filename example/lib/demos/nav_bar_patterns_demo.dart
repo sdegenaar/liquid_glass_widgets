@@ -230,6 +230,14 @@ class NavBarPatternsDemo extends StatelessWidget {
                   onTap: () =>
                       _push(context, const _TextAndProminentItemsDemo()),
                 ),
+                SizedBox(height: 16),
+                _PatternTile(
+                  title: 'iOS 27 Scroll-Under Blur',
+                  subtitle:
+                      'GlassAppBarSurfaceStyle — transparent at top, full-width blur + 1px hairline as content scrolls beneath',
+                  icon: CupertinoIcons.sparkles,
+                  onTap: () => _push(context, const _ScrollUnderBlurDemo()),
+                ),
                 SizedBox(height: 100),
               ],
             ),
@@ -3347,6 +3355,97 @@ class _ProminentDoneMorphPage extends StatelessWidget {
             color: CupertinoColors.secondaryLabel.resolveFrom(context),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// 16. iOS 27 Scroll-Under Blur Surface (#534)
+// =============================================================================
+
+class _ScrollUnderBlurDemo extends StatefulWidget {
+  const _ScrollUnderBlurDemo();
+
+  @override
+  State<_ScrollUnderBlurDemo> createState() => _ScrollUnderBlurDemoState();
+}
+
+class _ScrollUnderBlurDemoState extends State<_ScrollUnderBlurDemo> {
+  static const List<GlassAppBarSurfaceStyle> _styles = [
+    GlassAppBarSurfaceStyle.automatic,
+    GlassAppBarSurfaceStyle.fullBlur,
+    GlassAppBarSurfaceStyle.transparent,
+  ];
+  int _styleIndex = 0;
+  bool _automaticVisibility = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final topPad = MediaQuery.paddingOf(context).top;
+    return GlassScaffold(
+      background: const ShowcaseBackground(),
+      settings: RecommendedGlassSettings.standard,
+      statusBarStyle: GlassStatusBarStyle.auto,
+      appBar: GlassAppBar.pinned(
+        title: const Text('Scroll-Under Blur'),
+        surfaceStyle: _styles[_styleIndex],
+        automaticSurfaceVisibility: _automaticVisibility,
+        actions: [
+          GlassBarItem.icon(
+            icon: const Icon(CupertinoIcons.search),
+            label: 'Search',
+            onTap: () {},
+          ),
+          GlassBarItem.icon(
+            icon: const Icon(CupertinoIcons.add),
+            label: 'Add',
+            onTap: () {},
+          ),
+        ],
+      ),
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(20, topPad + 44 + 16, 20, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  GlassSegmentedControl(
+                    selectedIndex: _styleIndex,
+                    onSegmentSelected: (index) =>
+                        setState(() => _styleIndex = index),
+                    segments: const [
+                      GlassSegment(label: 'Auto'),
+                      GlassSegment(label: 'Full Blur'),
+                      GlassSegment(label: 'Transparent'),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  GlassGroupedSection(
+                    surfaceStyle: GlassSurfaceStyle.solid,
+                    children: [
+                      GlassListTile(
+                        title: const Text('Automatic Visibility'),
+                        subtitle: const Text(
+                          'Transparent at top; fades in over 10pt on scroll',
+                        ),
+                        trailing: GlassSwitch(
+                          value: _automaticVisibility,
+                          onChanged: (v) =>
+                              setState(() => _automaticVisibility = v),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          _buildDummyContent(),
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        ],
       ),
     );
   }

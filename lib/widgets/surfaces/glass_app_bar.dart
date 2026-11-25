@@ -4,25 +4,80 @@ import 'package:flutter/cupertino.dart';
 
 import '../../src/renderer/glass_backdrop_group.dart';
 import '../../src/renderer/liquid_glass_renderer.dart';
+import '../../src/widgets/surfaces/app_bar_scroll_under_surface.dart';
 import '../../src/widgets/surfaces/status_bar_row.dart';
 import '../../src/widgets/surfaces/vertical_bar_title_row.dart';
+import '../../theme/glass_theme.dart' show GlassTheme;
+import '../../theme/glass_theme_data.dart';
 import '../../types/glass_quality.dart';
+import '../../types/glass_style.dart';
 import '../interactive/glass_button.dart';
+import '../shared/glass_accessibility_scope.dart';
 import '../shared/glass_isolation_scope.dart';
 import 'glass_bar_item.dart';
 import 'glass_large_title.dart' show GlassLargeTitleController;
 import 'glass_navigation_shell.dart';
 import 'glass_navigation_stack.dart' show GlassNavigationTitleScope;
 import 'glass_pinned_bar_chrome.dart';
+import 'glass_scaffold.dart' show GlassScaffold;
 import 'glass_vertical_bar.dart';
 
-/// A navigation bar layout widget following Apple's iOS 26 design patterns.
+/// Surface material style for [GlassAppBar] and [GlassAppBar.pinned].
 ///
-/// [GlassAppBar] renders a solid or transparent bar with leading widget,
-/// centered title, and trailing actions. Glass effects belong on the
-/// individual interactive elements (buttons, pills) — not the bar surface
-/// itself. This matches iOS 26's navigation bar where the bar is a simple
-/// layout container and glass is reserved for buttons.
+/// Controls whether the navigation bar itself stays completely transparent
+/// (delegating edge treatment to [GlassScaffold.edgeStyle]) or paints an
+/// iOS 27 scroll-under blurred surface with a hairline bottom border behind
+/// its title and glass buttons.
+enum GlassAppBarSurfaceStyle {
+  /// Adapts automatically to the active [GlassStyle] and host scaffold.
+  ///
+  /// - Under [GlassStyle.ios27], resolves to [fullBlur] when
+  ///   [GlassAppBar.backgroundColor] is transparent, the bar is not rendered
+  ///   inside iPhone Duo's vertical strip or status row, and any enclosing
+  ///   [GlassScaffold] extends its body behind the bar without explicitly
+  ///   customizing top scroll-edge fading.
+  /// - Under [GlassStyle.ios26] and [GlassStyle.classic], resolves to
+  ///   [transparent], matching native iOS 26 where top scroll edges stay soft
+  ///   and borderless.
+  automatic,
+
+  /// Transparent bar surface (iOS 26 pattern).
+  ///
+  /// Pairs with [GlassScaffold.edgeStyle] (`.soft`, `.blur`, or `.hard`)
+  /// while keeping glass exclusively on the individual bar buttons.
+  transparent,
+
+  /// iOS 27 scroll-under full-width Gaussian blur with a 1-physical-pixel
+  /// hairline bottom border.
+  ///
+  /// The surface paints as a sibling behind the bar's title and glass buttons
+  /// (never wrapping the buttons in a backdrop filter), spans the status bar
+  /// and toolbar bounds, and respects [GlassAccessibilityData.reduceTransparency].
+  ///
+  /// When [GlassAppBar.automaticSurfaceVisibility] is `true` (the default),
+  /// the surface stays completely invisible at scroll offset 0 (zero backdrop
+  /// filter cost) and fades in smoothly over
+  /// [GlassAppBar.surfaceAppearanceExtent] logical pixels as vertical content
+  /// scrolls beneath the bar.
+  fullBlur,
+}
+
+/// A navigation bar layout widget following Apple's iOS 26 / iOS 27 design patterns.
+///
+/// [GlassAppBar] renders a navigation bar with leading widget, centered title,
+/// and trailing actions. Refractive liquid glass effects belong on the
+/// individual interactive elements (buttons, pills) — never wrapping those
+/// buttons inside another refractive glass layer.
+///
+/// Under [GlassStyle.ios27] (the default), [surfaceStyle] defaults to
+/// [GlassAppBarSurfaceStyle.automatic], which renders the native iOS 27
+/// scroll-under blurred bar surface with a 1-physical-pixel hairline bottom
+/// border as a sibling behind the bar's content and glass buttons — completely
+/// transparent at scroll offset 0 (zero backdrop filter cost) and fading in as
+/// vertical content scrolls underneath. Under [GlassStyle.ios26] and
+/// [GlassStyle.classic] — or when `surfaceStyle: GlassAppBarSurfaceStyle.transparent`
+/// is passed — the bar stays completely transparent and defers edge treatment
+/// to [GlassScaffold.edgeStyle].
 ///
 /// ## Large-title collapse (iOS 26 pattern)
 ///
@@ -108,13 +163,25 @@ class GlassAppBar extends StatelessWidget
     this.centerTitle = true,
     // Whitelisted: Structural transparent default, not a Material colour.
     this.backgroundColor = const Color(0x00000000),
+    this.surfaceStyle = GlassAppBarSurfaceStyle.automatic,
+    this.automaticSurfaceVisibility = true,
+    this.surfaceAppearanceExtent = kGlassAppBarSurfaceAppearanceExtent,
+    this.backdropBlurSigma = kGlassAppBarBackdropBlurSigma,
+    this.backdropTint,
+    this.bottomBorder,
+    this.notificationPredicate = defaultScrollNotificationPredicate,
     this.toolbarHeight = 44.0,
     this.padding = const EdgeInsets.symmetric(horizontal: 8),
     this.buttonSettings,
     this.largeTitleController,
     this.bottom,
     this.groupBackdrop = true,
-  })  : pinnedActions = null,
+  })  : assert(
+          surfaceAppearanceExtent >= 0 &&
+              surfaceAppearanceExtent < double.infinity,
+        ),
+        assert(backdropBlurSigma >= 0 && backdropBlurSigma < double.infinity),
+        pinnedActions = null,
         _explicitPinnedPadding = null,
         pinnedLeading = const <GlassBarItem>[],
         pinnedBackButton = true,
@@ -157,6 +224,13 @@ class GlassAppBar extends StatelessWidget
     this.centerTitle = true,
     // Whitelisted: Structural transparent default, not a Material colour.
     this.backgroundColor = const Color(0x00000000),
+    this.surfaceStyle = GlassAppBarSurfaceStyle.automatic,
+    this.automaticSurfaceVisibility = true,
+    this.surfaceAppearanceExtent = kGlassAppBarSurfaceAppearanceExtent,
+    this.backdropBlurSigma = kGlassAppBarBackdropBlurSigma,
+    this.backdropTint,
+    this.bottomBorder,
+    this.notificationPredicate = defaultScrollNotificationPredicate,
     this.toolbarHeight = 44.0,
     EdgeInsetsGeometry? padding,
     this.buttonSettings,
@@ -164,6 +238,11 @@ class GlassAppBar extends StatelessWidget
     this.bottom,
     this.groupBackdrop = true,
   })  : assert(buttonSize == null || buttonSize > 0),
+        assert(
+          surfaceAppearanceExtent >= 0 &&
+              surfaceAppearanceExtent < double.infinity,
+        ),
+        assert(backdropBlurSigma >= 0 && backdropBlurSigma < double.infinity),
         padding = padding ?? const EdgeInsets.symmetric(horizontal: 8),
         _explicitPinnedPadding = padding,
         pinnedActions = actions,
@@ -192,10 +271,79 @@ class GlassAppBar extends StatelessWidget
 
   /// The background color of the app bar.
   ///
-  /// Defaults to [const Color(0x00000000)] to match iOS 26's transparent
-  /// navigation bar pattern. Use an opaque colour for solid bars
-  /// (e.g. WhatsApp conversation, music player).
+  /// Defaults to `const Color(0x00000000)`. When transparent under
+  /// [GlassStyle.ios27], [surfaceStyle] defaults to
+  /// [GlassAppBarSurfaceStyle.automatic], painting the scroll-under blur
+  /// surface behind the bar as content scrolls underneath. Use an opaque
+  /// colour for solid bars (e.g. WhatsApp conversation, music player); a
+  /// non-transparent [backgroundColor] automatically disables the scroll-under
+  /// blur when [surfaceStyle] is [GlassAppBarSurfaceStyle.automatic].
   final Color backgroundColor;
+
+  /// Surface material treatment for the navigation bar.
+  ///
+  /// Defaults to [GlassAppBarSurfaceStyle.automatic], which resolves to
+  /// [GlassAppBarSurfaceStyle.fullBlur] on [GlassStyle.ios27] (unless
+  /// [backgroundColor] is non-transparent, the bar is hosted inside iPhone
+  /// Duo's vertical strip or status row, or an enclosing [GlassScaffold]
+  /// explicitly customized its top scroll-edge effect) and to
+  /// [GlassAppBarSurfaceStyle.transparent] on [GlassStyle.ios26] and
+  /// [GlassStyle.classic].
+  final GlassAppBarSurfaceStyle surfaceStyle;
+
+  /// Whether [GlassAppBarSurfaceStyle.fullBlur] fades in automatically as
+  /// vertical scroll content moves beneath the bar.
+  ///
+  /// Mirrors `CupertinoNavigationBar.automaticBackgroundVisibility`. Defaults
+  /// to `true`: completely invisible at scroll offset 0 (zero backdrop filter
+  /// cost), fading smoothly to full strength over [surfaceAppearanceExtent]
+  /// logical pixels via [ScrollNotificationObserver]. Set to `false` to keep
+  /// the blurred surface and hairline border permanently visible.
+  final bool automaticSurfaceVisibility;
+
+  /// Scroll distance (in logical pixels) over which
+  /// [GlassAppBarSurfaceStyle.fullBlur] interpolates from transparent to full
+  /// strength when [automaticSurfaceVisibility] is `true`.
+  ///
+  /// Defaults to `10.0`, matching Flutter's `CupertinoNavigationBar`. Pass
+  /// `0.0` to snap the surface visible immediately once scroll offset exceeds
+  /// zero.
+  final double surfaceAppearanceExtent;
+
+  /// Maximum Gaussian blur sigma (in logical pixels) for
+  /// [GlassAppBarSurfaceStyle.fullBlur] when fully scrolled under.
+  ///
+  /// Defaults to `20.0`. Set to `0.0` to render only [backdropTint] and
+  /// [bottomBorder] without a [BackdropFilter]. Automatically bypassed when
+  /// [GlassAccessibilityData.reduceTransparency] is active.
+  final double backdropBlurSigma;
+
+  /// Optional translucent tint painted over the backdrop blur for
+  /// [GlassAppBarSurfaceStyle.fullBlur].
+  ///
+  /// Supports [CupertinoDynamicColor], resolved against the active
+  /// [GlassTheme.brightnessOf] brightness. When null, uses a light airy frost
+  /// tint (`#38FFFFFF` light / `#4D1C1C1E` dark) that preserves vivid
+  /// wallpapers while matching native iOS 27 separation, and upgrades to a
+  /// high-opacity fill under [GlassAccessibilityData.reduceTransparency].
+  final Color? backdropTint;
+
+  /// Optional bottom border for [GlassAppBarSurfaceStyle.fullBlur].
+  ///
+  /// Supports [CupertinoDynamicColor] on [BorderSide.color]. When null,
+  /// defaults to a 1-physical-pixel (`1 / devicePixelRatio`) hairline matching
+  /// iOS 27's `UIKit.ScrollEdgeEffectView` (`#1A000000` light / `#1AFFFFFF`
+  /// dark; higher contrast under [GlassAccessibilityData.reduceTransparency]).
+  /// Pass [BorderSide.none] to omit the bottom hairline.
+  final BorderSide? bottomBorder;
+
+  /// Predicate filtering which [ScrollNotification]s drive
+  /// [automaticSurfaceVisibility].
+  ///
+  /// Defaults to [defaultScrollNotificationPredicate] (`notification.depth == 0`).
+  /// Override when wrapping the body in a nested scroll container such as a
+  /// `TabBarView` or `NestedScrollView`.
+  final ScrollNotificationPredicate notificationPredicate;
 
   /// The height of the toolbar row (excluding [bottom]).
   ///
@@ -490,7 +638,7 @@ class GlassAppBar extends StatelessWidget
     // Premium is the default hint — individual buttons can still override
     // with quality: GlassQuality.standard, and GlassAdaptiveScope will
     // cap to the device ceiling regardless.
-    return GlassIsolationScope(
+    final Widget barChrome = GlassIsolationScope(
       isolated: true,
       defaultQuality: GlassQuality.premium,
       child: GlassBackdropGroup(
@@ -498,6 +646,43 @@ class GlassAppBar extends StatelessWidget
         joinEnclosing: true,
         child: content,
       ),
+    );
+
+    final bool usesFullBlur = resolveGlassAppBarUsesFullBlur(
+      surfaceStyle: surfaceStyle,
+      backgroundColor: backgroundColor,
+      glassStyle: GlassThemeData.of(context).style,
+      inDuoStripOrStatusRow: inRow,
+      scaffoldExplicitTopEdge:
+          GlassScaffoldTopEdgePolicy.suppressesAutomaticFullBlurOf(context),
+    );
+
+    // Paint the iOS 27 scroll-under blurred surface as a sibling behind
+    // `barChrome` (and outside its `GlassBackdropGroup`) so both in-route and
+    // hoisted pinned Liquid Glass buttons sit above and refract the blurred
+    // bar cleanly without nesting glass inside BackdropFilter. Keeping the
+    // `Stack` + keyed `barChrome` stable ensures live `GlassStyle` toggles or
+    // iPhone Duo posture changes never remount `barChrome` or `bottom`.
+    return Stack(
+      fit: StackFit.passthrough,
+      children: [
+        if (usesFullBlur)
+          Positioned.fill(
+            key: const ValueKey('glass_app_bar_scroll_under_surface'),
+            child: GlassAppBarScrollUnderSurface(
+              automaticVisibility: automaticSurfaceVisibility,
+              appearanceExtent: surfaceAppearanceExtent,
+              blurSigma: backdropBlurSigma,
+              tint: backdropTint,
+              bottomBorder: bottomBorder,
+              notificationPredicate: notificationPredicate,
+            ),
+          ),
+        KeyedSubtree(
+          key: const ValueKey('glass_app_bar_chrome'),
+          child: barChrome,
+        ),
+      ],
     );
   }
 

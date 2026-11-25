@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 
 import '../../src/renderer/liquid_glass_renderer.dart';
 
+import '../../types/glass_button_style.dart';
 import '../../types/glass_quality.dart';
 import '../../types/glass_style.dart';
 import '../../src/widgets/overlays/glass_alert_platter.dart';
@@ -45,6 +46,47 @@ import '../../theme/glass_theme_helpers.dart';
 ///         // Delete logic
 ///         Navigator.pop(context);
 ///       },
+///     ),
+///   ],
+/// );
+/// ```
+///
+/// ### Primary & Secondary Actions
+/// ```dart
+/// GlassDialog.show(
+///   context: context,
+///   title: 'Subscribe to Pro?',
+///   message: 'Unlock offline syncing across all of your devices.',
+///   actions: [
+///     GlassDialogAction(
+///       label: 'Not Now',
+///       onPressed: () => Navigator.pop(context, false),
+///     ),
+///     GlassDialogAction(
+///       label: 'Continue',
+///       isPrimary: true, // Filled with CupertinoTheme.primaryColor + contrast text
+///       onPressed: () => Navigator.pop(context, true),
+///     ),
+///   ],
+/// );
+/// ```
+///
+/// ### Custom Accent Color
+/// ```dart
+/// GlassDialog.show(
+///   context: context,
+///   title: 'Upgrade Plan?',
+///   message: 'Use a custom brand accent on the recommended action.',
+///   actions: [
+///     GlassDialogAction(
+///       label: 'Cancel',
+///       onPressed: () => Navigator.pop(context),
+///     ),
+///     GlassDialogAction(
+///       label: 'Upgrade',
+///       isPrimary: true,
+///       tintColor: CupertinoColors.systemPurple,
+///       onPressed: () => Navigator.pop(context, true),
 ///     ),
 ///   ],
 /// );
@@ -238,10 +280,12 @@ class GlassDialog extends StatelessWidget {
 
   /// Merged over the action labels' text style (size, weight, family).
   ///
-  /// The label's color still follows its role (default, destructive, or
-  /// disabled). On `ios26` / `ios27`, `isPrimary` is distinguished by
-  /// `FontWeight.w600` (and `FontWeight.bold` on `classic`), so leaving
-  /// [TextStyle.fontWeight] null preserves the primary action's emphasis.
+  /// The label's color still follows its role (default, primary/tinted
+  /// contrast, [GlassDialogAction.foregroundColor], destructive, or disabled).
+  /// On `ios26` / `ios27`, `isPrimary` (or an explicit `tintColor`) is
+  /// distinguished by `FontWeight.w600` (and `FontWeight.bold` on `classic`),
+  /// so leaving [TextStyle.fontWeight] null preserves the primary action's
+  /// emphasis.
   final TextStyle? actionTextStyle;
 
   /// Rendering quality for the glass effect.
@@ -370,11 +414,20 @@ class GlassDialog extends StatelessWidget {
               onPressed: action.onPressed,
               isPrimary: action.isPrimary,
               isDestructive: action.isDestructive,
+              tintColor: action.tintColor,
+              foregroundColor: action.foregroundColor,
             ),
         ],
       );
     }
 
+    return wrapGlassAlertSyncedBrightness(
+      context,
+      builder: _buildClassic,
+    );
+  }
+
+  Widget _buildClassic(BuildContext context) {
     // Inherit quality from parent layer if not explicitly set
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
@@ -390,58 +443,70 @@ class GlassDialog extends StatelessWidget {
     final buttonSettings = settings ??
         GlassThemeHelpers.resolveSettings(context)
             .copyWith(shadow: const [], shadowElevation: 0);
+    final primaryActions = [
+      for (final action in actions)
+        if (action.isPrimary) action,
+    ];
+    final hasSinglePrimary = primaryActions.length == 1;
+    final primaryCallback =
+        hasSinglePrimary ? primaryActions.single.onPressed : null;
 
-    return Center(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth ?? _classicWidth),
-        child: GlassContainer.card(
-          useOwnLayer: true,
-          settings: platterSettings,
-          quality: effectiveQuality,
-          shape: shape,
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Title
-              if (title != null) ...[
-                Text(
-                  title!,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: CupertinoColors.label.resolveFrom(context),
+    return GlassDialogDefaultActionScope(
+      hasPrimaryAction: hasSinglePrimary,
+      onActivatePrimary: primaryCallback,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxWidth ?? _classicWidth),
+          child: GlassContainer.card(
+            useOwnLayer: true,
+            settings: platterSettings,
+            quality: effectiveQuality,
+            shape: shape,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Title
+                if (title != null) ...[
+                  Text(
+                    title!,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: CupertinoColors.label.resolveFrom(context),
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-              ],
+                  const SizedBox(height: 8),
+                ],
 
-              // Message
-              if (message != null) ...[
-                Text(
-                  message!,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: CupertinoColors.secondaryLabel.resolveFrom(context),
-                    height: 1.4,
+                // Message
+                if (message != null) ...[
+                  Text(
+                    message!,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color:
+                          CupertinoColors.secondaryLabel.resolveFrom(context),
+                      height: 1.4,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
+                  const SizedBox(height: 8),
+                ],
+
+                // Custom content
+                if (content != null) ...[
+                  content!,
+                  const SizedBox(height: 8),
+                ],
+
+                const SizedBox(height: 12),
+
+                // Actions
+                _buildActions(context, buttonSettings, effectiveQuality),
               ],
-
-              // Custom content
-              if (content != null) ...[
-                content!,
-                const SizedBox(height: 8),
-              ],
-
-              const SizedBox(height: 12),
-
-              // Actions
-              _buildActions(context, buttonSettings, effectiveQuality),
-            ],
+            ),
           ),
         ),
       ),
@@ -476,7 +541,9 @@ class GlassDialog extends StatelessWidget {
 
   TextStyle _labelStyle(GlassDialogAction action) => TextStyle(
         fontSize: 16,
-        fontWeight: action.isPrimary ? FontWeight.bold : FontWeight.w600,
+        fontWeight: (action.isPrimary || action.tintColor != null)
+            ? FontWeight.bold
+            : FontWeight.w600,
       ).merge(actionTextStyle);
 
   Widget _buildActions(
@@ -549,29 +616,42 @@ class GlassDialog extends StatelessWidget {
     LiquidGlassSettings buttonSettings,
     GlassQuality effectiveQuality,
   ) {
-    // Determine button styling based on action type
+    final enabled = action.onPressed != null;
+    final (accentFill: resolvedTint, foregroundColor: labelColor) =
+        resolveGlassAlertActionColors(
+      context,
+      enabled: enabled,
+      isPrimary: action.isPrimary,
+      isDestructive: action.isDestructive,
+      tintColor: action.tintColor,
+      foregroundColor: action.foregroundColor,
+      isClassic: true,
+    );
+    final hasProminentFill = resolvedTint != null;
+
+    // Determine button glow color based on action type
     var glowColor = _defaultGlowColor;
-    if (action.isDestructive) {
+    if (action.isDestructive && resolvedTint == null) {
       glowColor = _destructiveGlowColor;
-    } else if (action.isPrimary) {
+    } else if (action.isPrimary && resolvedTint == null) {
       glowColor = _primaryGlowColor;
     }
 
     return GlassButton.custom(
       onTap: action.onPressed ?? () {},
-      enabled: action.onPressed != null,
+      enabled: enabled,
       height: 44,
+      style: hasProminentFill
+          ? GlassButtonStyle.prominent
+          : GlassButtonStyle.filled,
+      tintColor: resolvedTint,
       shape: actionShape ?? _actionButtonShape,
       settings: buttonSettings,
       quality: effectiveQuality,
       glowColor: glowColor,
       child: Text(
         action.label,
-        style: _labelStyle(action).copyWith(
-          color: action.isDestructive
-              ? CupertinoColors.destructiveRed
-              : CupertinoColors.label.resolveFrom(context),
-        ),
+        style: _labelStyle(action).copyWith(color: labelColor),
       ),
     );
   }
@@ -587,6 +667,8 @@ class GlassDialogAction {
     required this.onPressed,
     this.isPrimary = false,
     this.isDestructive = false,
+    this.tintColor,
+    this.foregroundColor,
   });
 
   /// Label text for the button.
@@ -596,24 +678,74 @@ class GlassDialogAction {
   ///
   /// If null, the action is disabled: it stays in place, ignores taps, and is
   /// reported as disabled to assistive technology. On [GlassStyle.ios27] and
-  /// [GlassStyle.ios26] its title is drawn in [CupertinoColors.tertiaryLabel],
-  /// as a disabled `UIAlertAction` is; on [GlassStyle.classic] the button is
-  /// dimmed like any disabled [GlassButton].
+  /// [GlassStyle.ios26] a disabled action (including a primary or tinted
+  /// action) reverts to the neutral capsule wash and draws its title in
+  /// [CupertinoColors.tertiaryLabel], matching a disabled `UIAlertAction`; on
+  /// [GlassStyle.classic] the button is dimmed like any disabled [GlassButton].
   final VoidCallback? onPressed;
 
   /// Whether this is the primary (recommended) action.
   ///
-  /// Primary actions are displayed with bold text and blue glow.
-  /// Typically used for the positive/affirmative action.
+  /// Mirrors UIKit's `UIAlertController.preferredAction` and SwiftUI's
+  /// `.keyboardShortcut(.defaultAction)` inside `.alert`:
+  /// - On [GlassStyle.ios27] and [GlassStyle.ios26], an enabled non-destructive
+  ///   primary action fills its capsule with [tintColor] (defaulting to
+  ///   `CupertinoTheme.of(context).primaryColor`) and draws `FontWeight.w600`
+  ///   luminance-contrasted white or black text (overridable via
+  ///   [foregroundColor]).
+  /// - If [isDestructive] is also true (and [tintColor] is null), the action
+  ///   keeps the neutral capsule with `FontWeight.w600` red text, matching
+  ///   native iOS 26/27.
+  /// - When disabled (`onPressed == null`), the capsule reverts to the neutral
+  ///   wash with [CupertinoColors.tertiaryLabel] text.
+  /// - When a single primary action is present and enabled, pressing the
+  ///   hardware `Return` / `Enter` key activates it directly (unless another
+  ///   button or a text input inside [GlassDialog.content] handles the key).
+  /// - On [GlassStyle.classic], renders a prominent tinted [GlassButton].
+  ///
+  /// Apple HIG recommends marking at most one action per dialog as primary.
   ///
   /// Defaults to false.
   final bool isPrimary;
 
   /// Whether this is a destructive action.
   ///
-  /// Destructive actions are displayed with red text and red glow.
+  /// Destructive actions are displayed with red text inside the neutral capsule
+  /// on [GlassStyle.ios27] / [GlassStyle.ios26] (and red text/glow on
+  /// [GlassStyle.classic]), unless an explicit [tintColor] is also supplied.
   /// Typically used for delete, remove, or other dangerous actions.
   ///
   /// Defaults to false.
   final bool isDestructive;
+
+  /// Optional custom accent fill color for this action.
+  ///
+  /// Supports [CupertinoDynamicColor], resolved against the active
+  /// [BuildContext].
+  /// - When [isPrimary] is true (and [isDestructive] is false), [tintColor]
+  ///   overrides the default `CupertinoTheme.of(context).primaryColor` fill.
+  /// - When set on a non-primary or destructive action, explicitly fills that
+  ///   action's capsule with [tintColor] while enabled.
+  /// - When disabled (`onPressed == null`), ignored so disabled actions revert
+  ///   to the neutral capsule wash on `ios27`/`ios26` (and neutral dimmed glass
+  ///   on `classic`).
+  ///
+  /// In `MaterialApp`, `CupertinoTheme.of(context).primaryColor` already
+  /// bridges `Theme.of(context).colorScheme.primary` automatically, so
+  /// `isPrimary: true` follows your Material theme without setting [tintColor];
+  /// set [tintColor] to override it with any custom color.
+  final Color? tintColor;
+
+  /// Optional label color override when this action is enabled.
+  ///
+  /// Supports [CupertinoDynamicColor], resolved against the active
+  /// [BuildContext]. When null, filled capsules with alpha `> 0.5`
+  /// automatically select high-contrast [CupertinoColors.white] or
+  /// [CupertinoColors.black] based on luminance (`> 0.55` flips to black),
+  /// destructive neutral actions use [CupertinoColors.systemRed], and plain
+  /// actions use [CupertinoColors.label].
+  ///
+  /// Ignored when disabled (`onPressed == null`), where [GlassStyle.ios27] and
+  /// [GlassStyle.ios26] use [CupertinoColors.tertiaryLabel].
+  final Color? foregroundColor;
 }

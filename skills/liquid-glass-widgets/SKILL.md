@@ -177,7 +177,7 @@ When generating Flutter UI, replace standard Flutter widgets with their native l
 | Flutter Standard Widget | Liquid Glass Replacement | Key Usage Notes |
 | :--- | :--- | :--- |
 | `Scaffold` | `GlassScaffold` | Handles z-order, edge fading, content-aware brightness, and native rounded page clipping during route transitions (`transitionCornerRadius`). |
-| `AppBar` / `CupertinoNavigationBar` | `GlassAppBar` | Transparent iOS 26 style by default. Supports `.pinned` for gel morph. |
+| `AppBar` / `CupertinoNavigationBar` | `GlassAppBar` | Supports `.pinned` for gel morph and `surfaceStyle` (`GlassAppBarSurfaceStyle.automatic` default: iOS 27 scroll-under full-width blur + 1px hairline under `GlassStyle.ios27`, transparent under `GlassStyle.ios26`/`classic`; override with `.fullBlur` / `.transparent`, `automaticSurfaceVisibility`, `surfaceAppearanceExtent`, `backdropBlurSigma`, `backdropTint`, `bottomBorder`, `notificationPredicate`). |
 | `BottomNavigationBar` / `CupertinoTabBar` | `GlassTabBar.bottom` | Unified glass navigation pill (`GlassBottomBar` is deleted). `settings:` styles the bar platter; `indicatorSettings:` (e.g. `LiquidGlassSettings.classicIndicator`) styles the animated pill; `indicatorJelly:` tunes native iOS 26/27 travel stretch & landing squish (`IndicatorJellyPhysics.native` default, `.disabled` for classic velocity squash). Optional `extraButton: GlassTabBarExtraButton(..., selected: true)` marks a destination extra button as active and suppresses the pill's selection state. |
 | Bottom nav that collapses to selected tab on scroll | `GlassTabBar.minimizable` | Minimizes to a single pill on scroll; supports an optional trailing action button. |
 | `ElevatedButton` / `CupertinoButton` | `GlassButton` / `GlassButton.custom` | Refractive glass button (`style`: `filled`, `prominent`, `transparent`; optional `tintColor` via `GlassBodyMode.clear` and `pressLightColor`), or zero-shader solid button (`surfaceStyle: GlassSurfaceStyle.solid` + optional `color`, or auto-inherited inside a solid card/section) preserving `LiquidStretch` bounce and contrast-aware foregrounds. |
@@ -201,7 +201,7 @@ When generating Flutter UI, replace standard Flutter widgets with their native l
 | `Navigator.push` rows / SwiftUI `NavigationStack` | `GlassNavigationStack` + `GlassNavigationLink` + `GlassPageRoute` | Typed `value` routing via `destinations`, or a `destination` builder. Automatically clips pages with rounded superellipse corners during push/pop and swipe-back (`transitionCornerRadius`; use `GlassPageTransitionsBuilder` in `MaterialApp.theme.pageTransitionsTheme`). |
 | `TextField` / `CupertinoTextField` | `GlassTextField` / `GlassSearchBar` / `GlassTextArea` / `GlassPasswordField` / `GlassPicker` | Refractive glass input with press glow/scale (`glass`), or shader-free iOS `tertiarySystemFill` well (`surfaceStyle: GlassSurfaceStyle.solid` or auto-inherited inside a solid card). Forwards `autofillHints`, `autocorrect`, `enableSuggestions`, and `selectionControls` (e.g. `materialTextSelectionHandleControls` on Android); `GlassSearchBar` also supports `cancelButtonAlwaysVisible`. |
 | `showModalBottomSheet` | `GlassModalSheet.show` | Multi-detent fluid sheet (peek, half, full) with spring physics and optional `morphFrom` (`GlassMorphTrigger`) liquid-morph presentation. |
-| `showDialog` / `CupertinoAlertDialog` | `GlassDialog.show` | Centered 320 pt iOS 26/27 alert platter with 48 pt capsule `GlassDialogAction` buttons (280 pt on `GlassStyle.classic`); optional `shape`, `actionShape`, and `actionTextStyle` overrides. |
+| `showDialog` / `CupertinoAlertDialog` | `GlassDialog.show` | Centered 320 pt iOS 26/27 alert platter with 48 pt capsule `GlassDialogAction` buttons (280 pt on `GlassStyle.classic`); `isPrimary: true` renders a solid accent capsule (`tintColor ?? CupertinoTheme.primaryColor`, auto-contrast white/black or explicit `foregroundColor`, reverting to neutral when disabled); optional `shape`, `actionShape`, and `actionTextStyle` overrides. |
 | `showCupertinoModalPopup` / `CupertinoActionSheet` | `showGlassActionSheet` | Centered 320 pt iOS 26/27 action sheet platter with stacked capsule `GlassActionSheetAction` buttons (bottom-docked sheet on `GlassStyle.classic`). |
 | `SnackBar` / Banner | `GlassToast` | Floating glass HUD banner. |
 
@@ -259,26 +259,28 @@ Presents a native alert dialog:
 ```dart
 GlassDialog.show(
   context: context,
-  title: 'Discard Draft?',
-  message: 'This action cannot be reversed.',
+  title: 'Save Changes?',
+  message: 'Your edits will be saved to iCloud.',
   actions: [
     GlassDialogAction(
       label: 'Cancel',
       onPressed: () => Navigator.of(context).pop(),
     ),
     GlassDialogAction(
-      label: 'Discard',
-      isDestructive: true,
+      label: 'Continue',
+      isPrimary: true, // Native iOS 26/27 prominent filled capsule (CupertinoTheme.primaryColor; override with tintColor / foregroundColor)
       onPressed: () {
         Navigator.of(context).pop();
-        _discardDraft();
+        _saveChanges();
       },
     ),
   ],
 );
 ```
 
-Pass `onPressed: null` on a `GlassDialogAction` to keep it in place as a disabled action (for example, while waiting on valid input).
+- Set `isPrimary: true` (matching `UIAlertController.preferredAction` / SwiftUI `.keyboardShortcut(.defaultAction)`) to fill the action capsule with `tintColor ?? CupertinoTheme.of(context).primaryColor` (which automatically bridges `Theme.of(context).colorScheme.primary` in `MaterialApp`), render high-contrast `FontWeight.w600` text, and bind the hardware `Return`/`Enter` key when a single enabled primary action is present (at most one primary action per dialog). Pass `tintColor` (supporting `CupertinoDynamicColor`) and optional `foregroundColor` to override the accent or text color.
+- Destructive actions (`isDestructive: true`) keep the neutral capsule with `CupertinoColors.systemRed` text (even when `isPrimary: true`, matching native iOS 26/27) unless an explicit `tintColor` is supplied.
+- Pass `onPressed: null` on a `GlassDialogAction` to keep it in place as a disabled action (for example, while waiting on valid input); disabled primary/tinted actions revert to the neutral capsule wash with `CupertinoColors.tertiaryLabel` text.
 
 ### GlassMenu Submenus
 Give a `GlassMenuItem` a `submenu` list to open a native iOS-style card over the parent (the parent recedes and dims; tapping the card's header or the exposed parent collapses one level). Submenus nest. Works in `GlassMenu` and `GlassPullDownButton`:

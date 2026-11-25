@@ -104,8 +104,7 @@ Ideas under consideration. None committed.
 - [x] **`GlassModalSheet` morphed close-origin after detent change (follow-up to #507)** — when a `morphFrom` sheet opened at `half` is dragged to `full` or `peek` and dismissed at rest (close button, barrier tap, or `Navigator.pop`), frame 1 of the close droplet morph starts from the sheet's live detent (`controller.currentState`, matching live detent margins, bottom offset, corner radii, and fill) instead of the initial `restingState`.
 - [x] **`GlassThemeData.minimal(...)` convenience constructor (follow-up to #517)** — added `const GlassThemeData.minimal({style, interaction, brightness})` pairing `GlassThemeVariant.minimalLight` and `GlassThemeVariant.minimalDark`, matching `.ios27()`, `.ios26()`, and `.classic()` symmetry.
 - [ ] **Continued iOS 26 / iOS 27 optical & interaction refinement** — iterative tuning passes building on the `1.17.0` foundational `GlassStyle.ios27` / `GlassStyle.ios26` alignment across dynamic transitions, edge-case backdrops, and remaining interactive controls.
-- [ ] **Scroll-driven glass materialisation** — app bar surface transitions from
-  transparent to frosted on scroll (`GlassScrollEdgeStyle.blur` itself already shipped in `GlassScrollEdgeEffect`).
+- [x] **Scroll-driven glass materialisation (#534)** — `GlassAppBar` / `GlassAppBar.pinned` now support `GlassAppBarSurfaceStyle` (`automatic`, `transparent`, `fullBlur`), `automaticSurfaceVisibility`, `surfaceAppearanceExtent`, `backdropBlurSigma`, `backdropTint`, `bottomBorder`, and `notificationPredicate` with automatic `GlassScaffold` coordination and Reduce Transparency fallback.
 - [ ] **`GlassAppBar` Phase 3 compact search icon** — when `GlassLargeTitle.searchBar`
   and `GlassAppBar.largeTitleController` are in use and `searchBarCollapseProgress == 1.0`,
   show a compact search affordance that re-expands on tap. Blocked by: `GlassAppBar`

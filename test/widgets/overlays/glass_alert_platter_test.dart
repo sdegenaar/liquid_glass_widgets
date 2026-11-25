@@ -1,6 +1,9 @@
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show MaterialApp;
+import 'package:flutter/material.dart' show ColorScheme, MaterialApp, ThemeData;
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/widgets/overlays/glass_alert_platter.dart';
@@ -705,10 +708,10 @@ void main() {
     testWidgets(
         'disabling an action while pressed clears the pressed capsule wash',
         (tester) async {
-      Color capsuleColor() {
+      Color capsuleColor(Finder region) {
         final container = tester.widget<Container>(
           find.descendant(
-            of: saveRegion,
+            of: region,
             matching: find.byWidgetPredicate(
               (w) => w is Container && w.decoration is ShapeDecoration,
             ),
@@ -717,6 +720,46 @@ void main() {
         return (container.decoration! as ShapeDecoration).color!;
       }
 
+      // 1. Plain action disabled mid-press returns to its neutral rest wash.
+      final applyRegion = find.ancestor(
+        of: find.text('Apply'),
+        matching: find.byType(GlassFocusRegion),
+      );
+      await tester.pumpWidget(app(
+        GlassStyle.ios27,
+        GlassDialog(
+          title: 'Tea name',
+          actions: [
+            GlassDialogAction(label: 'Cancel', onPressed: () {}),
+            GlassDialogAction(label: 'Apply', onPressed: () {}),
+          ],
+        ),
+      ));
+
+      final plainRestColor = capsuleColor(applyRegion);
+      final plainGesture =
+          await tester.startGesture(tester.getCenter(applyRegion));
+      await tester.pump();
+      expect(capsuleColor(applyRegion), isNot(equals(plainRestColor)));
+
+      await tester.pumpWidget(app(
+        GlassStyle.ios27,
+        GlassDialog(
+          title: 'Tea name',
+          actions: [
+            GlassDialogAction(label: 'Cancel', onPressed: () {}),
+            const GlassDialogAction(label: 'Apply', onPressed: null),
+          ],
+        ),
+      ));
+      expect(capsuleColor(applyRegion), equals(plainRestColor));
+
+      await plainGesture.up();
+      await tester.pump();
+      expect(capsuleColor(applyRegion), equals(plainRestColor));
+
+      // 2. Primary action disabled mid-press reverts from pressed accent fill
+      //    to the neutral capsule wash and stays neutral on release.
       await tester.pumpWidget(app(
         GlassStyle.ios27,
         GlassDialog(
@@ -732,14 +775,14 @@ void main() {
         ),
       ));
 
-      final restColor = capsuleColor();
+      final primaryRestColor = capsuleColor(saveRegion);
+      expect(primaryRestColor, isNot(equals(plainRestColor)));
 
-      // Press down on the enabled Save action and hold.
-      final gesture = await tester.startGesture(tester.getCenter(saveRegion));
+      final primaryGesture =
+          await tester.startGesture(tester.getCenter(saveRegion));
       await tester.pump();
-      expect(capsuleColor(), isNot(equals(restColor)));
+      expect(capsuleColor(saveRegion), isNot(equals(primaryRestColor)));
 
-      // Rebuild with Save disabled while the pointer is still down.
       await tester.pumpWidget(app(
         GlassStyle.ios27,
         GlassDialog(
@@ -747,11 +790,734 @@ void main() {
           actions: cancelAndDisabledSave(() {}),
         ),
       ));
-      expect(capsuleColor(), equals(restColor));
+      expect(capsuleColor(saveRegion), equals(plainRestColor));
 
-      await gesture.up();
+      await primaryGesture.up();
       await tester.pump();
-      expect(capsuleColor(), equals(restColor));
+      expect(capsuleColor(saveRegion), equals(plainRestColor));
+    });
+  });
+
+  group('prominent primary & custom tinted actions', () {
+    Color capsuleColorOf(WidgetTester tester, String label) {
+      final region = find.ancestor(
+        of: find.text(label),
+        matching: find.byType(GlassFocusRegion),
+      );
+      final container = tester.widget<Container>(
+        find.descendant(
+          of: region,
+          matching: find.byWidgetPredicate(
+            (w) => w is Container && w.decoration is ShapeDecoration,
+          ),
+        ),
+      );
+      return (container.decoration! as ShapeDecoration).color!;
+    }
+
+    TextStyle labelStyleOf(WidgetTester tester, String label) =>
+        tester.widget<Text>(find.text(label)).style!;
+
+    for (final style in [GlassStyle.ios26, GlassStyle.ios27]) {
+      for (final brightness in [Brightness.light, Brightness.dark]) {
+        testWidgets(
+            'isPrimary fills with CupertinoTheme.primaryColor + white w600 ($style, $brightness)',
+            (tester) async {
+          await tester.pumpWidget(
+            CupertinoApp(
+              theme: CupertinoThemeData(
+                brightness: brightness,
+                primaryColor: CupertinoColors.systemBlue,
+              ),
+              home: GlassTheme(
+                data: GlassThemeData(style: style, brightness: brightness),
+                child: CupertinoPageScaffold(
+                  child: GlassDialog(
+                    title: 'Save Changes?',
+                    actions: [
+                      GlassDialogAction(label: 'Cancel', onPressed: () {}),
+                      GlassDialogAction(
+                        label: 'Continue',
+                        isPrimary: true,
+                        onPressed: () {},
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          final ctx = tester.element(find.text('Continue'));
+          final expectedPrimary = CupertinoDynamicColor.resolve(
+            CupertinoColors.systemBlue,
+            ctx,
+          );
+          final expectedNeutral = brightness == Brightness.dark
+              ? CupertinoColors.white
+                  .withValues(alpha: style == GlassStyle.ios26 ? 0.13 : 0.115)
+              : CupertinoColors.black
+                  .withValues(alpha: style == GlassStyle.ios26 ? 0.10 : 0.15);
+
+          expect(capsuleColorOf(tester, 'Continue'), expectedPrimary);
+          expect(labelStyleOf(tester, 'Continue').color, CupertinoColors.white);
+          expect(labelStyleOf(tester, 'Continue').fontWeight, FontWeight.w600);
+
+          expect(capsuleColorOf(tester, 'Cancel'), expectedNeutral);
+          expect(
+            labelStyleOf(tester, 'Cancel').color,
+            CupertinoColors.label.resolveFrom(ctx),
+          );
+          expect(labelStyleOf(tester, 'Cancel').fontWeight, FontWeight.w500);
+        });
+      }
+
+      testWidgets(
+          'disabled primary / tinted action reverts to neutral wash + tertiaryLabel ($style)',
+          (tester) async {
+        await tester.pumpWidget(app(
+          style,
+          GlassDialog(
+            title: 'Subscribe?',
+            actions: [
+              GlassDialogAction(label: 'Cancel', onPressed: () {}),
+              const GlassDialogAction(
+                label: 'Continue',
+                isPrimary: true,
+                tintColor: CupertinoColors.systemPurple,
+                foregroundColor: CupertinoColors.white,
+                onPressed: null,
+              ),
+            ],
+          ),
+        ));
+
+        final ctx = tester.element(find.text('Continue'));
+        expect(
+          capsuleColorOf(tester, 'Continue'),
+          capsuleColorOf(tester, 'Cancel'),
+        );
+        expect(
+          labelStyleOf(tester, 'Continue').color,
+          CupertinoColors.tertiaryLabel.resolveFrom(ctx),
+        );
+        expect(labelStyleOf(tester, 'Continue').fontWeight, FontWeight.w600);
+      });
+
+      testWidgets(
+          'destructive + isPrimary stays neutral capsule with Semibold red text ($style)',
+          (tester) async {
+        await tester.pumpWidget(app(
+          style,
+          GlassDialog(
+            title: 'Delete Item?',
+            actions: [
+              GlassDialogAction(label: 'Cancel', onPressed: () {}),
+              GlassDialogAction(
+                label: 'Delete',
+                isPrimary: true,
+                isDestructive: true,
+                onPressed: () {},
+              ),
+            ],
+          ),
+        ));
+
+        final ctx = tester.element(find.text('Delete'));
+        expect(
+          capsuleColorOf(tester, 'Delete'),
+          capsuleColorOf(tester, 'Cancel'),
+        );
+        expect(
+          labelStyleOf(tester, 'Delete').color,
+          CupertinoColors.systemRed.resolveFrom(ctx),
+        );
+        expect(labelStyleOf(tester, 'Delete').fontWeight, FontWeight.w600);
+      });
+    }
+
+    testWidgets(
+        'custom tintColor resolves CupertinoDynamicColor and flips contrast foreground',
+        (tester) async {
+      // Bright yellow tint → flips foreground to black.
+      await tester.pumpWidget(app(
+        GlassStyle.ios27,
+        GlassDialog(
+          title: 'Notice',
+          actions: [
+            GlassDialogAction(label: 'Cancel', onPressed: () {}),
+            GlassDialogAction(
+              label: 'Highlight',
+              isPrimary: true,
+              tintColor: CupertinoColors.systemYellow,
+              onPressed: () {},
+            ),
+          ],
+        ),
+      ));
+
+      var ctx = tester.element(find.text('Highlight'));
+      expect(
+        capsuleColorOf(tester, 'Highlight'),
+        CupertinoColors.systemYellow.resolveFrom(ctx),
+      );
+      expect(labelStyleOf(tester, 'Highlight').color, CupertinoColors.black);
+
+      // Dark-mode dynamic purple tint → resolves dark variant + white text.
+      await tester.pumpWidget(app(
+        GlassStyle.ios27,
+        GlassDialog(
+          title: 'Upgrade Plan',
+          actions: [
+            GlassDialogAction(label: 'Cancel', onPressed: () {}),
+            GlassDialogAction(
+              label: 'Upgrade',
+              tintColor: CupertinoColors.systemPurple,
+              onPressed: () {},
+            ),
+          ],
+        ),
+        brightness: Brightness.dark,
+      ));
+
+      ctx = tester.element(find.text('Upgrade'));
+      expect(
+        capsuleColorOf(tester, 'Upgrade'),
+        CupertinoColors.systemPurple.resolveFrom(ctx),
+      );
+      expect(labelStyleOf(tester, 'Upgrade').color, CupertinoColors.white);
+      expect(labelStyleOf(tester, 'Upgrade').fontWeight, FontWeight.w600);
+
+      // Translucent tint (alpha <= 0.5) keeps ambient label contrast.
+      final softWash = CupertinoColors.systemBlue.withValues(alpha: 0.2);
+      await tester.pumpWidget(app(
+        GlassStyle.ios27,
+        GlassDialog(
+          title: 'Soft Tint',
+          actions: [
+            GlassDialogAction(
+              label: 'Soft',
+              tintColor: softWash,
+              onPressed: () {},
+            ),
+          ],
+        ),
+      ));
+      ctx = tester.element(find.text('Soft'));
+      expect(capsuleColorOf(tester, 'Soft'), softWash);
+      expect(
+        labelStyleOf(tester, 'Soft').color,
+        CupertinoColors.label.resolveFrom(ctx),
+      );
+    });
+
+    testWidgets(
+        'explicit foregroundColor overrides auto-contrast and destructive tint fills explicitly',
+        (tester) async {
+      const customFg = CupertinoDynamicColor.withBrightness(
+        color: Color(0xFFFFF8E1),
+        darkColor: Color(0xFF1A1A1A),
+      );
+
+      await tester.pumpWidget(app(
+        GlassStyle.ios27,
+        GlassDialog(
+          title: 'Confirm',
+          actions: [
+            GlassDialogAction(
+              label: 'Brand',
+              isPrimary: true,
+              tintColor: const Color(0xFF00A896),
+              foregroundColor: customFg,
+              onPressed: () {},
+            ),
+            GlassDialogAction(
+              label: 'Delete',
+              isDestructive: true,
+              tintColor: CupertinoColors.systemRed,
+              onPressed: () {},
+            ),
+          ],
+        ),
+      ));
+
+      final ctx = tester.element(find.text('Delete'));
+      expect(capsuleColorOf(tester, 'Brand'), const Color(0xFF00A896));
+      expect(
+        labelStyleOf(tester, 'Brand').color?.toARGB32(),
+        const Color(0xFFFFF8E1).toARGB32(),
+      );
+      expect(
+        capsuleColorOf(tester, 'Delete'),
+        CupertinoColors.systemRed.resolveFrom(ctx),
+      );
+      expect(labelStyleOf(tester, 'Delete').color, CupertinoColors.white);
+    });
+
+    testWidgets(
+        'pressed prominent capsule drops to 0.40 alpha and hover applies subtle feedback',
+        (tester) async {
+      FocusManager.instance.highlightStrategy =
+          FocusHighlightStrategy.alwaysTraditional;
+      addTearDown(
+        () => FocusManager.instance.highlightStrategy =
+            FocusHighlightStrategy.automatic,
+      );
+
+      const brand = Color(0xFF0088FF);
+      await tester.pumpWidget(app(
+        GlassStyle.ios27,
+        GlassDialog(
+          title: 'Confirm',
+          actions: [
+            GlassDialogAction(label: 'Cancel', onPressed: () {}),
+            GlassDialogAction(
+              label: 'Continue',
+              isPrimary: true,
+              tintColor: brand,
+              onPressed: () {},
+            ),
+          ],
+        ),
+      ));
+
+      expect(capsuleColorOf(tester, 'Continue'), brand);
+      final neutralRest = capsuleColorOf(tester, 'Cancel');
+
+      // Hover prominent capsule → 0.85 alpha.
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      await tester.pump();
+      await mouse.moveTo(tester.getCenter(find.text('Continue')));
+      await tester.pump();
+      expect(
+        capsuleColorOf(tester, 'Continue').a,
+        closeTo(0.85, 0.01),
+      );
+
+      // Hover plain capsule → restAlpha + 0.04.
+      await mouse.moveTo(tester.getCenter(find.text('Cancel')));
+      await tester.pump();
+      expect(
+        capsuleColorOf(tester, 'Cancel').a,
+        closeTo(neutralRest.a + 0.04, 0.01),
+      );
+      await mouse.removePointer();
+      await tester.pump();
+
+      // Press prominent capsule → 0.40 alpha (measured on iOS 27.0).
+      final press =
+          await tester.startGesture(tester.getCenter(find.text('Continue')));
+      await tester.pump();
+      expect(
+        capsuleColorOf(tester, 'Continue').a,
+        closeTo(0.40, 0.01),
+      );
+      await press.up();
+      await tester.pump();
+      expect(capsuleColorOf(tester, 'Continue'), brand);
+    });
+
+    testWidgets(
+        'GlassStyle.classic forwards prominent style, tintColor, and foregroundColor to GlassButton',
+        (tester) async {
+      await tester.pumpWidget(app(
+        GlassStyle.classic,
+        GlassDialog(
+          title: 'Confirm',
+          actions: [
+            GlassDialogAction(label: 'Cancel', onPressed: () {}),
+            GlassDialogAction(
+              label: 'Continue',
+              isPrimary: true,
+              tintColor: CupertinoColors.systemYellow,
+              onPressed: () {},
+            ),
+            GlassDialogAction(
+              label: 'Delete',
+              isPrimary: true,
+              isDestructive: true,
+              onPressed: () {},
+            ),
+          ],
+        ),
+      ));
+
+      GlassButton buttonOf(String label) => tester.widget<GlassButton>(
+            find.ancestor(
+              of: find.text(label),
+              matching: find.byType(GlassButton),
+            ),
+          );
+
+      final ctx = tester.element(find.text('Continue'));
+      expect(buttonOf('Cancel').style, GlassButtonStyle.filled);
+      expect(buttonOf('Cancel').tintColor, isNull);
+
+      expect(buttonOf('Continue').style, GlassButtonStyle.prominent);
+      expect(
+        buttonOf('Continue').tintColor,
+        CupertinoColors.systemYellow.resolveFrom(ctx),
+      );
+      expect(labelStyleOf(tester, 'Continue').color, CupertinoColors.black);
+
+      // Destructive + isPrimary without explicit tint stays filled + resolved red.
+      expect(buttonOf('Delete').style, GlassButtonStyle.filled);
+      expect(buttonOf('Delete').tintColor, isNull);
+      expect(
+        labelStyleOf(tester, 'Delete').color,
+        CupertinoColors.destructiveRed.resolveFrom(ctx),
+      );
+    });
+
+    testWidgets(
+        'open GlassDialog.show updates prominent capsule color live on brightness switch',
+        (tester) async {
+      final brightness = ValueNotifier<Brightness>(Brightness.light);
+      addTearDown(brightness.dispose);
+
+      await tester.pumpWidget(
+        ValueListenableBuilder<Brightness>(
+          valueListenable: brightness,
+          builder: (context, currentBrightness, _) => GlassTheme(
+            data: GlassThemeData.ios27(brightness: currentBrightness),
+            child: CupertinoApp(
+              theme: CupertinoThemeData(
+                brightness: currentBrightness,
+                primaryColor: CupertinoColors.systemBlue,
+              ),
+              home: CupertinoPageScaffold(
+                child: Builder(
+                  builder: (ctx) => CupertinoButton(
+                    onPressed: () => GlassDialog.show<void>(
+                      context: ctx,
+                      title: 'Sync',
+                      actions: [
+                        GlassDialogAction(
+                          label: 'Cancel',
+                          onPressed: () => Navigator.of(ctx).pop(),
+                        ),
+                        GlassDialogAction(
+                          label: 'Continue',
+                          isPrimary: true,
+                          onPressed: () => Navigator.of(ctx).pop(),
+                        ),
+                      ],
+                    ),
+                    child: const Text('Open'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      expect(
+        capsuleColorOf(tester, 'Continue').toARGB32(),
+        CupertinoColors.systemBlue.color.toARGB32(),
+      );
+
+      brightness.value = Brightness.dark;
+      await tester.pumpAndSettle();
+      expect(
+        capsuleColorOf(tester, 'Continue').toARGB32(),
+        CupertinoColors.systemBlue.darkColor.toARGB32(),
+      );
+    });
+
+    testWidgets(
+        'MaterialApp colorScheme.primary automatically drives isPrimary capsule fill',
+        (tester) async {
+      const customPrimary = Color(0xFF006A6A);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(
+            colorScheme: const ColorScheme.light(primary: customPrimary),
+          ),
+          home: GlassDialog(
+            title: 'Subscribe?',
+            actions: [
+              GlassDialogAction(label: 'Cancel', onPressed: () {}),
+              GlassDialogAction(
+                label: 'Continue',
+                isPrimary: true,
+                onPressed: () {},
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(
+        capsuleColorOf(tester, 'Continue').toARGB32(),
+        customPrimary.toARGB32(),
+      );
+      expect(labelStyleOf(tester, 'Continue').color, CupertinoColors.white);
+      expect(labelStyleOf(tester, 'Continue').fontWeight, FontWeight.w600);
+    });
+
+    testWidgets(
+        'MaterialApp dark mode pastel colorScheme.primary auto-flips label to black',
+        (tester) async {
+      final darkScheme = ColorScheme.fromSeed(
+        seedColor: const Color(0xFF6750A4),
+        brightness: Brightness.dark,
+      );
+      expect(darkScheme.primary.computeLuminance(), greaterThan(0.55));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(colorScheme: darkScheme),
+          home: GlassTheme(
+            data: const GlassThemeData.ios27(brightness: Brightness.dark),
+            child: GlassDialog(
+              title: 'Continue?',
+              actions: [
+                GlassDialogAction(label: 'Cancel', onPressed: () {}),
+                GlassDialogAction(
+                  label: 'Continue',
+                  isPrimary: true,
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        capsuleColorOf(tester, 'Continue').toARGB32(),
+        darkScheme.primary.toARGB32(),
+      );
+      expect(labelStyleOf(tester, 'Continue').color, CupertinoColors.black);
+    });
+
+    testWidgets(
+        'direct GlassDialog syncs CupertinoTheme brightness with GlassTheme.brightnessOf',
+        (tester) async {
+      // Light CupertinoApp host with an explicit dark GlassTheme override.
+      await tester.pumpWidget(
+        CupertinoApp(
+          theme: const CupertinoThemeData(
+            brightness: Brightness.light,
+            primaryColor: CupertinoColors.systemBlue,
+          ),
+          home: GlassTheme(
+            data: const GlassThemeData.ios27(brightness: Brightness.dark),
+            child: GlassDialog(
+              title: 'Dark Override',
+              actions: [
+                GlassDialogAction(label: 'Cancel', onPressed: () {}),
+                GlassDialogAction(
+                  label: 'Continue',
+                  isPrimary: true,
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        capsuleColorOf(tester, 'Continue').toARGB32(),
+        CupertinoColors.systemBlue.darkColor.toARGB32(),
+      );
+      expect(
+        labelStyleOf(tester, 'Cancel').color?.toARGB32(),
+        CupertinoColors.label.darkColor.toARGB32(),
+      );
+    });
+
+    testWidgets(
+        'Increase Contrast (highContrast: true) resolves high-contrast accent variants',
+        (tester) async {
+      for (final brightness in [Brightness.light, Brightness.dark]) {
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(highContrast: true),
+            child: CupertinoApp(
+              theme: CupertinoThemeData(
+                brightness: brightness,
+                primaryColor: CupertinoColors.systemBlue,
+              ),
+              home: GlassTheme(
+                data: GlassThemeData.ios27(brightness: brightness),
+                child: GlassDialog(
+                  title: 'High Contrast',
+                  actions: [
+                    GlassDialogAction(
+                      label: 'Continue',
+                      isPrimary: true,
+                      onPressed: () {},
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final expected = brightness == Brightness.dark
+            ? CupertinoColors.systemBlue.darkHighContrastColor
+            : CupertinoColors.systemBlue.highContrastColor;
+        expect(
+          capsuleColorOf(tester, 'Continue').toARGB32(),
+          expected.toARGB32(),
+        );
+      }
+    });
+
+    group('hardware keyboard Return / Enter primary activation', () {
+      for (final style in GlassStyle.values) {
+        testWidgets('Enter activates single enabled isPrimary action ($style)',
+            (tester) async {
+          var cancels = 0;
+          var confirms = 0;
+          await tester.pumpWidget(app(
+            style,
+            GlassDialog(
+              title: 'Confirm',
+              actions: [
+                GlassDialogAction(
+                  label: 'Cancel',
+                  onPressed: () => cancels++,
+                ),
+                GlassDialogAction(
+                  label: 'Continue',
+                  isPrimary: true,
+                  onPressed: () => confirms++,
+                ),
+              ],
+            ),
+          ));
+          await tester.pump();
+
+          await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+          await tester.pump();
+          expect(confirms, 1);
+          expect(cancels, 0);
+
+          await tester.sendKeyEvent(LogicalKeyboardKey.numpadEnter);
+          await tester.pump();
+          expect(confirms, 2);
+          expect(cancels, 0);
+        });
+      }
+
+      testWidgets(
+          'Tab to Cancel + Enter activates Cancel instead of primary action',
+          (tester) async {
+        var cancels = 0;
+        var confirms = 0;
+        await tester.pumpWidget(app(
+          GlassStyle.ios27,
+          GlassDialog(
+            title: 'Confirm',
+            actions: [
+              GlassDialogAction(label: 'Cancel', onPressed: () => cancels++),
+              GlassDialogAction(
+                label: 'Continue',
+                isPrimary: true,
+                onPressed: () => confirms++,
+              ),
+            ],
+          ),
+        ));
+        await tester.pump();
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pump();
+        expect(cancels, 1);
+        expect(confirms, 0);
+      });
+
+      testWidgets(
+          'disabled primary action and Shift+Enter do not trigger primary callback',
+          (tester) async {
+        var confirms = 0;
+        await tester.pumpWidget(app(
+          GlassStyle.ios27,
+          GlassDialog(
+            title: 'Confirm',
+            actions: [
+              GlassDialogAction(label: 'Cancel', onPressed: () {}),
+              const GlassDialogAction(
+                label: 'Continue',
+                isPrimary: true,
+                onPressed: null,
+              ),
+            ],
+          ),
+        ));
+        await tester.pump();
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pump();
+        expect(confirms, 0);
+
+        // Enable primary action and test Shift+Enter is ignored.
+        await tester.pumpWidget(app(
+          GlassStyle.ios27,
+          GlassDialog(
+            title: 'Confirm',
+            actions: [
+              GlassDialogAction(label: 'Cancel', onPressed: () {}),
+              GlassDialogAction(
+                label: 'Continue',
+                isPrimary: true,
+                onPressed: () => confirms++,
+              ),
+            ],
+          ),
+        ));
+        await tester.pump();
+
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.pump();
+        expect(confirms, 0);
+      });
+
+      testWidgets(
+          'autofocused CupertinoTextField in content keeps focus and owns Enter',
+          (tester) async {
+        final focusNode = FocusNode();
+        addTearDown(focusNode.dispose);
+        var confirms = 0;
+
+        await tester.pumpWidget(app(
+          GlassStyle.ios27,
+          GlassDialog(
+            title: 'Rename',
+            content: CupertinoTextField(
+              focusNode: focusNode,
+              autofocus: true,
+            ),
+            actions: [
+              GlassDialogAction(label: 'Cancel', onPressed: () {}),
+              GlassDialogAction(
+                label: 'Save',
+                isPrimary: true,
+                onPressed: () => confirms++,
+              ),
+            ],
+          ),
+        ));
+        await tester.pump();
+        await tester.pump();
+
+        expect(focusNode.hasFocus, isTrue);
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pump();
+        expect(confirms, 0);
+      });
     });
   });
 }
