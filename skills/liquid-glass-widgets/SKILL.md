@@ -93,7 +93,7 @@ For any screen featuring liquid glass navigation bars or floating surfaces, **al
 
 `GlassScaffold` solves complex compositing challenges automatically:
 1. **Guaranteed Z-Ordering**: App bars and bottom bars paint above scrolling body content, preventing body cards from overlapping navigation buttons.
-2. **Edge Fading**: Content fades smoothly as it scrolls under bars (`.scrollEdgeEffectStyle(.soft)` matching iOS 26).
+2. **Edge Fading & iOS 27 Scroll-Under Coordination**: Coordinates automatically with `GlassAppBar`'s iOS 27 scroll-under blur + hairline (`GlassAppBarSurfaceStyle.automatic`) while keeping bottom-bar and iOS 26 soft/blur/hard edge fading (`.scrollEdgeEffectStyle`).
 3. **Content-Aware Brightness**: Dynamically flips app bar icons and typography between light and dark depending on the luminosity of the content scrolling underneath.
 4. **Auto-Padding**: Automatically accounts for safe areas and bar heights.
 
@@ -197,11 +197,11 @@ When generating Flutter UI, replace standard Flutter widgets with their native l
 | `ReorderableListView` + edit toggle | `GlassEditScope` + `GlassEditButton` + `GlassReorderableList.grouped` | Edit mode with delete badges, reorder grabbers, selection. See Section 6. |
 | Long-press context menu / SwiftUI `.contextMenu` | `GlassContextMenu` (or `.glassContextMenu()`, `GlassListTile.contextMenuActions`) | Row-lift menu with optional `previewBuilder`. Use `GlassPullDownButton` for tap-triggered menus. |
 | Full-screen `showDialog` / `.fullScreenCover` | `showGlassFullScreenCover` + `GlassFullScreenCover` | Edge-to-edge slide-up cover with swipe-down dismiss. |
-| `showDatePicker` / `CupertinoDatePicker` | `GlassDatePicker` (`.compact`, `.graphical`, `.wheel`), `GlassMultiDatePicker` | `showGlassDatePicker(...)` returns `DateTime?`. |
+| `showDatePicker` / `CupertinoDatePicker` | `GlassDatePicker` (`.compact`, `.graphical`, `.wheel`), `GlassMultiDatePicker` | `showGlassDatePicker(...)` returns `DateTime?` (caps modal width to `maxWidth = 400` on desktop/iPad by default and tints header actions via `tintColor`). |
 | `Navigator.push` rows / SwiftUI `NavigationStack` | `GlassNavigationStack` + `GlassNavigationLink` + `GlassPageRoute` | Typed `value` routing via `destinations`, or a `destination` builder. Automatically clips pages with rounded superellipse corners during push/pop and swipe-back (`transitionCornerRadius`; use `GlassPageTransitionsBuilder` in `MaterialApp.theme.pageTransitionsTheme`). |
 | `TextField` / `CupertinoTextField` | `GlassTextField` / `GlassSearchBar` / `GlassTextArea` / `GlassPasswordField` / `GlassPicker` | Refractive glass input with press glow/scale (`glass`), or shader-free iOS `tertiarySystemFill` well (`surfaceStyle: GlassSurfaceStyle.solid` or auto-inherited inside a solid card). Forwards `autofillHints`, `autocorrect`, `enableSuggestions`, and `selectionControls` (e.g. `materialTextSelectionHandleControls` on Android); `GlassSearchBar` also supports `cancelButtonAlwaysVisible`. |
 | `showModalBottomSheet` | `GlassModalSheet.show` | Multi-detent fluid sheet (peek, half, full) with spring physics and optional `morphFrom` (`GlassMorphTrigger`) liquid-morph presentation. |
-| `showDialog` / `CupertinoAlertDialog` | `GlassDialog.show` | Centered 320 pt iOS 26/27 alert platter with 48 pt capsule `GlassDialogAction` buttons (280 pt on `GlassStyle.classic`); `isPrimary: true` renders a solid accent capsule (`tintColor ?? CupertinoTheme.primaryColor`, auto-contrast white/black or explicit `foregroundColor`, reverting to neutral when disabled); optional `shape`, `actionShape`, and `actionTextStyle` overrides. |
+| `showDialog` / `CupertinoAlertDialog` | `GlassDialog.show` | Centered 320 pt iOS 26/27 alert platter with 48 pt capsule `GlassDialogAction` buttons (280 pt on `GlassStyle.classic`); `isPrimary: true` renders a solid accent capsule (`tintColor ?? CupertinoTheme.primaryColor`, auto-contrast white/black or explicit `foregroundColor`, hardware `Return`/`Enter` activation, reverting to neutral when disabled); optional `shape`, `actionShape`, and `actionTextStyle` overrides. |
 | `showCupertinoModalPopup` / `CupertinoActionSheet` | `showGlassActionSheet` | Centered 320 pt iOS 26/27 action sheet platter with stacked capsule `GlassActionSheetAction` buttons (bottom-docked sheet on `GlassStyle.classic`). |
 | `SnackBar` / Banner | `GlassToast` | Floating glass HUD banner. |
 
