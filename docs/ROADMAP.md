@@ -1,6 +1,6 @@
 # Roadmap: 1.x → 2.0
 
-> Last updated: 2026-11-23 (v1.20.0 stable)
+> Last updated: 2026-11-25 (v1.21.0 stable)
 
 This document tracks planned and future work for `liquid_glass_widgets` post-1.0.
 The guiding principle remains: **fewer, better widgets that map 1:1 to real iOS components**.
@@ -9,13 +9,13 @@ For historical version notes, see [`CHANGELOG.md`](../CHANGELOG.md).
 
 ---
 
-## Current Status (1.20.0)
+## Current Status (1.21.0)
 
 | Criterion | Status | Notes |
 |---|---|---|
 | No known P0/P1 bugs | ✅ Clear | No open crash reports |
 | Dartdoc complete on all public API | ✅ Done | `public_member_api_docs` enforced permanently |
-| Test coverage ≥ 90% | ✅ Done | ~92% line coverage (4,380+ tests) |
+| Test coverage ≥ 90% | ✅ Done | ~92% line coverage (4,570+ tests) |
 | No `Icons.*` (Material) in `lib/` | ✅ Done | Zero hits — fully `CupertinoIcons` |
 | No hardcoded `Colors.*` in `lib/` | ✅ Done | All replaced with `CupertinoColors` or explicit hex `Color` literals |
 | `material.dart` imports in `lib/` | ✅ Done | Zero files (`cupertino_ui` migration staged on `feat/flutter-3.50-migration` for 2.0) |
@@ -116,7 +116,7 @@ Ideas under consideration. None committed.
 - [ ] **`GlassNavigationTransition` pinning as default** — the `.pinned` constructor
   is the transition vehicle; `GlassBarItem` has reached parity with the widget API
   (pinned `leading` and per-item backgrounds landed in 1.2, `GlassBarItem.spacer()`
-  in 1.10, and `GlassBarItem.text` / `GlassBarItemStyle.prominent` in `Unreleased`),
+  in 1.10, and `GlassBarItem.text` / `GlassBarItemStyle.prominent` in `1.21.0`),
   unblocking the major-release flip to make the data-driven API the plain
   `GlassAppBar` in 2.0.0.
 - [ ] **Unify lone bar-item sizing** (2.0) — a group holding a single item renders

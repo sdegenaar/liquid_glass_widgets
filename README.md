@@ -26,7 +26,7 @@ Bring Apple's Liquid Glass to your Flutter app — supporting both **iOS 27** an
 
 ```yaml
 dependencies:
-  liquid_glass_widgets: ^1.20.0
+  liquid_glass_widgets: ^1.21.0
 ```
 
 ```bash
@@ -99,7 +99,7 @@ GlassScaffold(
 ## AI Coding & Vibecoding Support
 
 Building with **Antigravity**, **Cursor**, **Claude Code**, or **GitHub Copilot**?
-Install the official skill to help your agent use the current `1.17.x` APIs instead of hand-rolled `BackdropFilter` stacks:
+Install the official skill to help your agent use the current APIs instead of hand-rolled `BackdropFilter` stacks:
 
 - **Antigravity / Gemini CLI**:
   ```bash
@@ -116,7 +116,7 @@ Install the official skill to help your agent use the current `1.17.x` APIs inst
 - **Unified `GlassStyle` System (`ios27` & `ios26`)** — Defaults to `GlassStyle.ios27` (`LiquidGlassSettings.ios27Light` / `ios27Dark` and `ios27Indicator`), or switch your entire app to iOS 26 (`const GlassThemeData.ios26()`) in one line.
 - **iOS 27 & 26 Optical Modelling (best effort)** — Calibrated against native iOS on a best-effort basis: paraxial lens refraction (`GlassLensModel.paraxial`), luminance-weighted frost, directional `rimShade` perimeter hairlines, `rimLight` specular lobes, and tab-bar platter pinch with chromatic icon dispersion on Impeller (`GlassQuality.premium`), plus a lighter single-pass `GlassQuality.standard` shader for Skia, Web, and dense scrolling lists.
 - **Liquid Morph Engine** — Standalone spring-physics system powering native teardrop morphing for `GlassMenu`, `GlassPullDownButton`, `GlassPopover`, and `GlassModalSheet.show(morphFrom:)`. See [`docs/LIQUID_MORPH_ENGINE.md`](docs/LIQUID_MORPH_ENGINE.md).
-- **Pinned Navigation Chrome & Bezel Transitions** — `GlassNavigationShell` morphs pinned bar items across routes, `GlassBarItem.spacer()` splits and merges capsules like SwiftUI's `ToolbarSpacer(.fixed)`, and `GlassPageTransitionsBuilder` clips transitioning pages to the active iPhone display-bezel superellipse. See [`docs/GLASS_NAVIGATION_TRANSITION.md`](docs/GLASS_NAVIGATION_TRANSITION.md).
+- **Pinned Navigation Chrome & Bezel Transitions** — `GlassNavigationShell` morphs pinned bar items across routes (including `GlassBarItem.text`, `GlassBarItemStyle.prominent`, and `GlassBarItem.spacer()` like SwiftUI's `ToolbarSpacer(.fixed)`), `GlassAppBar` supports iOS 27 scroll-under blur + hairline surfaces (`GlassAppBarSurfaceStyle`), and `GlassPageTransitionsBuilder` clips transitioning pages to the active iPhone display-bezel superellipse. See [`docs/GLASS_NAVIGATION_TRANSITION.md`](docs/GLASS_NAVIGATION_TRANSITION.md).
 - **Native List & Form Patterns** — `GlassListTile`, `GlassSwipeActions`, `GlassReorderableList` with `GlassEditScope` / `GlassEditButton`, `GlassDisclosureGroup`, `GlassContextMenu`, `GlassFullScreenCover`, and `GlassDatePicker` (`.compact` / `.graphical` / `.wheel`), plus `GlassSurfaceStyle.solid` for zero-shader inset-grouped cards.
 - **Cross-Platform & Zero External Dependencies** — Runs on iOS, Android, macOS, Web, Windows, and Linux using only the pure Flutter SDK (`flutter: sdk: flutter`).
 - **Accessibility, Keyboard & RTL Support** — Reads Reduce Motion and Increase Contrast, supports iOS On/Off switch labels (`I`/`O`), keyboard Tab/Space/Enter focus, VoiceOver/TalkBack semantics, and RTL layouts.
