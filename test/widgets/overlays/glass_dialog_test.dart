@@ -175,6 +175,22 @@ void main() {
       expect(action.label, equals('OK'));
       expect(action.isPrimary, isFalse);
       expect(action.isDestructive, isFalse);
+      expect(action.tintColor, isNull);
+      expect(action.foregroundColor, isNull);
+    });
+
+    test('can configure custom tintColor and foregroundColor', () {
+      final action = GlassDialogAction(
+        label: 'Subscribe',
+        onPressed: () {},
+        isPrimary: true,
+        tintColor: CupertinoColors.systemPurple,
+        foregroundColor: CupertinoColors.white,
+      );
+
+      expect(action.isPrimary, isTrue);
+      expect(action.tintColor, equals(CupertinoColors.systemPurple));
+      expect(action.foregroundColor, equals(CupertinoColors.white));
     });
 
     test('can be marked as primary', () {
