@@ -1498,6 +1498,24 @@ void main() {
       );
     });
 
+    testDuo('starts the strip level with the title row of a fitted sheet',
+        (tester) async {
+      setScreen(tester);
+      await tester.pumpWidget(shellApp(const _Screen(title: 'Root')));
+      await settle(tester);
+      GlassModalSheet.show<void>(
+        context: tester.element(find.text('Root body')),
+        detents: const {GlassSheetDetent.fitted},
+        builder: (_) => const SizedBox(height: 200, child: _SheetBody()),
+      );
+      await settle(tester);
+      final top = sheet(tester).top;
+      expect(
+        tester.getCenter(find.byIcon(CupertinoIcons.xmark)).dy,
+        closeTo(top + 16 + 24, 0.05),
+      );
+    });
+
     testDuo('spans the outer display in landscape', (tester) async {
       setScreen(
         tester,

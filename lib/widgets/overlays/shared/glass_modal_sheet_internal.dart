@@ -52,6 +52,10 @@ class _SheetLayout extends StatelessWidget {
   final VoidCallback? onDismiss;
   final GlobalKey contentZoneKey;
 
+  /// How the content fits a [GlassSheetDetent.fitted] sheet, or null to
+  /// fill the sheet.
+  final _SheetContentFit? contentFit;
+
   const _SheetLayout({
     required this.interactionScale,
     required this.enableInteractionGlow,
@@ -98,6 +102,7 @@ class _SheetLayout extends StatelessWidget {
     required this.suppressInteractionOnChildren,
     required this.contentZoneKey,
     this.onDismiss,
+    this.contentFit,
   });
 
   @override
@@ -120,6 +125,7 @@ class _SheetLayout extends StatelessWidget {
         scrollController: scrollController,
         isFullScreen: contentScrollProgress > _kTopDetentThreshold,
         padding: padding,
+        fit: contentFit,
         child: child,
       ),
     );
@@ -216,7 +222,12 @@ class _SheetLayout extends StatelessWidget {
                 state: currentStateNotifier.value,
                 progress: expandProgressValue,
                 isExpanded: expandProgressValue > 0.9,
-                submergedBottom: effectiveBottom < 0 ? -effectiveBottom : 0.0,
+                // A fitted sheet measures its content. Content that pads by
+                // this distance while the sheet slides away would change its
+                // own measured height.
+                submergedBottom: contentFit != null || effectiveBottom >= 0
+                    ? 0.0
+                    : -effectiveBottom,
               ),
               child: LiquidStretch(
                 interactionScale: interactionScale,
@@ -354,7 +365,7 @@ class _SheetLayout extends StatelessWidget {
                                               top: 0,
                                               left: 0,
                                               right: 0,
-                                              height: 44,
+                                              height: _kHandleZoneHeight,
                                               child: handleZone,
                                             ),
                                         ],
@@ -494,12 +505,14 @@ class _SheetContent extends StatelessWidget {
   final ScrollController scrollController;
   final bool isFullScreen;
   final EdgeInsetsGeometry? padding;
+  final _SheetContentFit? fit;
 
   const _SheetContent({
     required this.child,
     required this.scrollController,
     required this.isFullScreen,
     this.padding,
+    this.fit,
   });
 
   @override
@@ -519,12 +532,89 @@ class _SheetContent extends StatelessWidget {
           parent: ScrollConfiguration.of(context),
           physics: physics,
         ),
-        child: Padding(
-          padding: padding ?? EdgeInsets.zero,
-          child: child,
+        child: _FittedSheetContent(
+          fit: fit,
+          child: Padding(padding: padding ?? EdgeInsets.zero, child: child),
         ),
       ),
     );
+  }
+}
+
+/// How a [GlassSheetDetent.fitted] sheet lays out and measures its content.
+class _SheetContentFit {
+  const _SheetContentFit({
+    required this.maxHeight,
+    required this.onMeasured,
+  });
+
+  /// Maximum visible content height of the fitted detent.
+  final double maxHeight;
+
+  /// Receives the content's natural height after each layout.
+  final ValueChanged<double> onMeasured;
+}
+
+/// Measures content at its natural height up to the fitted detent's cap.
+///
+/// Measures by laying the content out, never through intrinsic dimensions,
+/// which [LayoutBuilder] and viewports cannot report. The content's
+/// constraints do not depend on the sheet's own height, so the content is not
+/// laid out again while the sheet moves, and a sheet that grows can learn it
+/// needs to.
+///
+/// The header follows the top edge throughout resizing and over-drag.
+class _FittedSheetContent extends SingleChildRenderObjectWidget {
+  const _FittedSheetContent({required this.fit, required super.child});
+
+  final _SheetContentFit? fit;
+
+  @override
+  _RenderFittedSheetContent createRenderObject(BuildContext context) =>
+      _RenderFittedSheetContent(fit);
+
+  @override
+  void updateRenderObject(
+      BuildContext context, _RenderFittedSheetContent renderObject) {
+    renderObject.fit = fit;
+  }
+}
+
+class _RenderFittedSheetContent extends RenderProxyBox {
+  _RenderFittedSheetContent(this._fit);
+
+  _SheetContentFit? _fit;
+  set fit(_SheetContentFit? value) {
+    final previous = _fit;
+    _fit = value;
+    if (previous?.maxHeight != value?.maxHeight) {
+      markNeedsLayout();
+    }
+  }
+
+  @override
+  Size computeDryLayout(covariant BoxConstraints constraints) =>
+      constraints.biggest;
+
+  @override
+  void performLayout() {
+    size = constraints.biggest;
+    final child = this.child;
+    if (child == null) return;
+    final fit = _fit;
+    if (fit == null) {
+      child.layout(constraints);
+      return;
+    }
+    child.layout(
+      BoxConstraints(
+        minWidth: size.width,
+        maxWidth: size.width,
+        maxHeight: math.max(0.0, fit.maxHeight),
+      ),
+      parentUsesSize: true,
+    );
+    fit.onMeasured(child.size.height);
   }
 }
 
@@ -709,6 +799,10 @@ class SheetStateInfo {
   /// The distance in logical pixels that the sheet's bottom edge is submerged
   /// past the bottom of the device screen (e.g. to hide bottom rounded corners
   /// in [GlassSheetState.full]), or 0.0 if resting at or above the screen edge.
+  ///
+  /// Always 0.0 for a [GlassSheetDetent.fitted] sheet, which measures its
+  /// content: content that padded by this distance while the sheet slides
+  /// away would change its own measured height.
   final double submergedBottom;
 
   /// Creates a [SheetStateInfo] snapshot.
@@ -771,12 +865,16 @@ class GlassModalSheetScaffold extends StatelessWidget {
   final Widget sheet;
 
   /// Height in the 'half' state (0.0 - 1.0 fraction or absolute pixels). Default: 0.45.
+  /// Has no effect on a [GlassSheetDetent.fitted] sheet.
   final double halfSize;
 
   /// Maximum sheet height in 'full' state. If null, defaults to screen height minus 90px.
+  /// A [GlassSheetDetent.fitted] sheet is never taller than this.
   final double? fullSize;
 
-  /// Initial state when the scaffold is first displayed.
+  /// Initial state when the scaffold is first displayed. A
+  /// [GlassSheetDetent.fitted] sheet opens at its fitted height for any value
+  /// except [GlassSheetState.hidden].
   final GlassSheetState initialState;
 
   /// Minimum visible height in the 'peek' state.
@@ -910,8 +1008,9 @@ class GlassModalSheetScaffold extends StatelessWidget {
   final LiquidGlassSettings? fullStateContentSettings;
 
   /// The resting detents offered (small = peek floor, medium = half glass,
-  /// large = full opaque).
-  /// Must be non-empty. Forwarded to the sheet.
+  /// large = full opaque, fitted = the content's height).
+  /// Must be non-empty, and [GlassSheetDetent.fitted] must be the only
+  /// detent. Forwarded to the sheet; see [GlassModalSheet.detents].
   final Set<GlassSheetDetent> detents;
 
   /// Whether the sheet can be swiped down to dismiss. When false the sheet
@@ -1003,7 +1102,8 @@ class GlassModalSheetScaffold extends StatelessWidget {
   }) : assert(
             detents.length > 0,
             'GlassModalSheetScaffold needs at least one detent — add medium '
-            'and/or large (small alone is a floor, not a resting height).');
+            'and/or large, or fitted (small alone is a floor, not a resting '
+            'height).');
 
   @override
   Widget build(BuildContext context) {

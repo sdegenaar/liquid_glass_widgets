@@ -238,6 +238,21 @@ GlassModalSheet.show(
 );
 ```
 
+For a sheet that follows its content height, pass
+`detents: const {GlassSheetDetent.fitted}`. The sheet is never taller than
+`fullSize`; `halfSize` has no effect. `GlassSheetDetent.fitted` must be the
+only detent, in `GlassSheetMode.dismissible`; any other set that holds it
+asserts in debug.
+The sheet opens at its fitted height for any `initialState` except `hidden`,
+and reports `GlassSheetState.half`. The same detent works on the embedded
+sheet, its scaffold, and `GlassModalSheet.show`, including morph
+presentations. Use a `Column(mainAxisSize: MainAxisSize.min)` for naturally
+sized content. For longer content, put a scroll view inside `Flexible` and use
+the controller and physics from `ScrollControllerProvider.of(context)!`.
+Bottom safe-area or keyboard padding supplied by the child counts toward the
+fitted height. For a minimum height, wrap the child in a `ConstrainedBox` with
+a `minHeight`.
+
 ### GlassDialog
 Presents a native alert dialog:
 

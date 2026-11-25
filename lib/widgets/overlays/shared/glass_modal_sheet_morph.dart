@@ -1401,6 +1401,7 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
     // moment a glass surface can be swapped without a glitch frame.
     if (!_isClosing && !_handedOffToSheet && _morph.value >= 0.999) {
       _handedOffToSheet = true;
+      widget.controller._endMorphOpen();
     }
     _syncTrigger();
     setState(() {});
@@ -1454,7 +1455,7 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
     // ticked, so the controller still reports the release position.
     final dismissFrom = _draggedSincePointerDown ? _releaseRect() : null;
     final closeState = dismissFrom != null
-        ? SheetMorphGeometry.dismissPivotState(widget.geometry)
+        ? SheetMorphGeometry.dismissPivotState(_geometry)
         : _resolveCloseState();
     setState(() {
       _isClosing = true;
@@ -1463,6 +1464,13 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
       _closeStartWidthProgress = currentWidthProgress;
       _dismissFrom = dismissFrom;
       _closeState = closeState;
+      if (_dismissFrom == null && _geometry.fitsContent) {
+        // A close can interrupt the spring following a content resize. Freeze
+        // its visible frame even if the content changes again during close.
+        final size = MediaQuery.sizeOf(context);
+        _dismissFrom =
+            widget.controller._fittedFrame(_restingRect(size), size.height);
+      }
     });
     _morph.close();
   }
@@ -1487,6 +1495,11 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
     );
   }
 
+  // The fitted detent is first measured during the child sheet's layout.
+  // Subsequent morph frames and swipe releases share its current geometry.
+  SheetGeometry get _geometry =>
+      widget.controller._fittedGeometry ?? widget.geometry;
+
   /// How far the sheet has been dragged below the detent a swipe falls from.
   ///
   /// Zero until the sheet has mounted and attached itself to the controller —
@@ -1497,11 +1510,14 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
     if (!mounted) return 0.0;
     final position = widget.controller._livePosition;
     if (position == null) return 0.0;
+    // A fitted sheet that follows growing content sits below its target too.
+    // Only a slide takes the swipe-away transform.
+    if (widget.controller._fittedFollowsContent) return 0.0;
     final height = MediaQuery.sizeOf(context).height;
     return SheetMorphGeometry.dismissTravel(
       position: position,
-      minPosition: widget.geometry.positionForState(
-        SheetMorphGeometry.dismissPivotState(widget.geometry),
+      minPosition: _geometry.positionForState(
+        SheetMorphGeometry.dismissPivotState(_geometry),
         height,
       ),
     );
@@ -1514,7 +1530,7 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
   /// already a half-sized (or peek-sized) card by the time it is falling.
   Rect _pivotRect(Size screenSize) => _restingRect(
         screenSize,
-        state: SheetMorphGeometry.dismissPivotState(widget.geometry),
+        state: SheetMorphGeometry.dismissPivotState(_geometry),
       );
 
   /// Layers the swipe-away scale and sideways offset over the real sheet.
@@ -1750,7 +1766,7 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
     final adaptiveRadius = GlassThemeHelpers.resolveAdaptiveRadius(context);
     return SheetMorphGeometry.restingRect(
       state: state ?? widget.restingState,
-      geometry: widget.geometry,
+      geometry: _geometry,
       screenSize: screenSize,
       horizontalMargin: widget.horizontalMargin,
       bottomMargin: widget.bottomMargin,
@@ -2026,7 +2042,7 @@ class _GlassSheetMorphPresenterState extends State<GlassSheetMorphPresenter>
     final trigger = widget.triggerRect;
     final blobSize = blob.size;
 
-    final enablePeek = widget.geometry.enablePeek;
+    final enablePeek = _geometry.enablePeek;
     final baseSettings = GlassThemeHelpers.resolveSettings(
       context,
       explicit: widget.settings,

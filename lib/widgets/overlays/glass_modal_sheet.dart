@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/physics.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
@@ -49,6 +50,8 @@ class GlassModalSheet extends StatefulWidget {
   // ===========================================================================
 
   /// Height in the 'half' state (0.0 - 1.0 fraction or absolute pixels). Default: 0.45.
+  ///
+  /// Has no effect on a [GlassSheetDetent.fitted] sheet.
   final double halfSize;
 
   /// Maximum sheet height in 'full' state.
@@ -56,6 +59,8 @@ class GlassModalSheet extends StatefulWidget {
   /// - If 0.0 < value <= 1.0: Treated as fraction of screen height.
   /// - If value > 1.0: Treated as absolute pixels.
   /// - If null: Defaults to screen height minus 90px (iOS Page Sheet style).
+  ///
+  /// A [GlassSheetDetent.fitted] sheet is never taller than this.
   final double? fullSize;
 
   /// Minimum visible height in the 'peek' state.
@@ -70,6 +75,9 @@ class GlassModalSheet extends StatefulWidget {
   final EdgeInsetsGeometry? padding;
 
   /// Initial state when the sheet is first shown.
+  ///
+  /// A [GlassSheetDetent.fitted] sheet opens at its fitted height for any
+  /// value except [GlassSheetState.hidden].
   final GlassSheetState initialState;
 
   // ===========================================================================
@@ -211,6 +219,13 @@ class GlassModalSheet extends StatefulWidget {
   ///   • `{large}`              → full-only opaque, opens straight to full (Maps / Music)
   ///   • `{medium, large}`      → the default two-stop sheet
   ///   • `{small, medium, large}` → adds the maps-style peek floor underneath
+  ///   • `{fitted}`             → one stop at the height of [child]
+  ///
+  /// [GlassSheetDetent.fitted] must be the only detent, in
+  /// [GlassSheetMode.dismissible]. The sheet follows later changes in the
+  /// child's height, up to [fullSize]. The drag handle overlays the top of
+  /// the child and sets a minimum height of 44 logical pixels while it shows.
+  /// Wrap the child in a [ConstrainedBox] for a larger minimum.
   ///
   /// Must be non-empty. [GlassSheetMode.persistent] keeps its peek floor even
   /// when [GlassSheetDetent.small] is absent — a persistent sheet is defined by
@@ -318,8 +333,8 @@ class GlassModalSheet extends StatefulWidget {
     this.placement = GlassSheetPlacement.automatic,
   }) : assert(
             detents.length > 0,
-            'GlassModalSheet needs at least one detent — add medium and/or large '
-            '(small alone is a floor, not a resting height).');
+            'GlassModalSheet needs at least one detent — add medium and/or large, '
+            'or fitted (small alone is a floor, not a resting height).');
 
   /// The width a sheet presented from [context] rests at, at [state].
   ///
@@ -490,13 +505,18 @@ class GlassModalSheet extends StatefulWidget {
     AnimationStyle? sheetAnimationStyle,
   }) {
     assert(
+        !detents.contains(GlassSheetDetent.fitted) ||
+            SheetGeometry.resolveFitsContent(detents: detents, mode: mode),
+        _fittedDetentMessage);
+    assert(
         morphFrom == null || morphFromRect == null,
         'Pass either morphFrom (the GlassMorphAnchor from a GlassMorphTrigger) '
         'or morphFromRect (an explicit global rect) — not both.');
     assert(
         detents.isNotEmpty,
         'GlassModalSheet.show() needs at least one detent — add medium '
-        'and/or large (small alone is a floor, not a resting height).');
+        'and/or large, or fitted (small alone is a floor, not a resting '
+        'height).');
     assert(() {
       if (mode == GlassSheetMode.persistent &&
           barrierColor == const Color(0x00000000)) {
@@ -511,14 +531,11 @@ class GlassModalSheet extends StatefulWidget {
 
     // Fall back to an offered detent if the caller asked to open on one
     // that isn't in the set (the assert guarantees the set is non-empty).
-    GlassSheetState resolvedInitialState = initialState;
-    if (initialState == GlassSheetState.half &&
-        !detents.contains(GlassSheetDetent.medium)) {
-      resolvedInitialState = GlassSheetState.full;
-    } else if (initialState == GlassSheetState.full &&
-        !detents.contains(GlassSheetDetent.large)) {
-      resolvedInitialState = GlassSheetState.half;
-    }
+    final resolvedInitialState = SheetGeometry.resolveInitialState(
+      initialState,
+      detents: detents,
+      mode: mode,
+    );
 
     final effectiveController = controller ?? GlassModalSheetController();
     bool isClosing = false;
@@ -685,8 +702,8 @@ class GlassModalSheet extends StatefulWidget {
                 detents: detents,
                 mode: mode,
               ),
-              enableHalf: detents.contains(GlassSheetDetent.medium),
-              enableFull: detents.contains(GlassSheetDetent.large),
+              enableHalf: SheetGeometry.resolveHalf(detents: detents),
+              enableFull: SheetGeometry.resolveFull(detents: detents),
               dismissible: dismissible,
             ),
             horizontalMargin: horizontalMargin,
