@@ -88,26 +88,27 @@ bool resolveGlassAppBarUsesFullBlur({
 
 /// Internal scope published by [GlassScaffold] around its `appBar` slot so
 /// [GlassAppBarSurfaceStyle.automatic] yields whenever the caller explicitly
-/// customized [GlassScaffold]'s top scroll-edge effect.
+/// customized [GlassScaffold]'s top scroll-edge effect or disabled
+/// [GlassScaffold.extendBody] (so content never scrolls behind the bar).
 class GlassScaffoldTopEdgePolicy extends InheritedWidget {
   const GlassScaffoldTopEdgePolicy({
     super.key,
-    required this.prefersScaffoldTopEdge,
+    required this.suppressAutomaticFullBlur,
     required super.child,
   });
 
-  final bool prefersScaffoldTopEdge;
+  final bool suppressAutomaticFullBlur;
 
-  static bool prefersScaffoldTopEdgeOf(BuildContext context) {
+  static bool suppressesAutomaticFullBlurOf(BuildContext context) {
     return context
             .dependOnInheritedWidgetOfExactType<GlassScaffoldTopEdgePolicy>()
-            ?.prefersScaffoldTopEdge ??
+            ?.suppressAutomaticFullBlur ??
         false;
   }
 
   @override
   bool updateShouldNotify(GlassScaffoldTopEdgePolicy oldWidget) =>
-      prefersScaffoldTopEdge != oldWidget.prefersScaffoldTopEdge;
+      suppressAutomaticFullBlur != oldWidget.suppressAutomaticFullBlur;
 }
 
 Color _resolveColorForBrightness(

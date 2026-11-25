@@ -34,7 +34,8 @@ enum GlassAppBarSurfaceStyle {
   /// - Under [GlassStyle.ios27], resolves to [fullBlur] when
   ///   [GlassAppBar.backgroundColor] is transparent, the bar is not rendered
   ///   inside iPhone Duo's vertical strip or status row, and any enclosing
-  ///   [GlassScaffold] has not explicitly customized top scroll-edge fading.
+  ///   [GlassScaffold] extends its body behind the bar without explicitly
+  ///   customizing top scroll-edge fading.
   /// - Under [GlassStyle.ios26] and [GlassStyle.classic], resolves to
   ///   [transparent], matching native iOS 26 where top scroll edges stay soft
   ///   and borderless.
@@ -175,8 +176,11 @@ class GlassAppBar extends StatelessWidget
     this.largeTitleController,
     this.bottom,
     this.groupBackdrop = true,
-  })  : assert(surfaceAppearanceExtent >= 0),
-        assert(backdropBlurSigma >= 0),
+  })  : assert(
+          surfaceAppearanceExtent >= 0 &&
+              surfaceAppearanceExtent < double.infinity,
+        ),
+        assert(backdropBlurSigma >= 0 && backdropBlurSigma < double.infinity),
         pinnedActions = null,
         _explicitPinnedPadding = null,
         pinnedLeading = const <GlassBarItem>[],
@@ -234,8 +238,11 @@ class GlassAppBar extends StatelessWidget
     this.bottom,
     this.groupBackdrop = true,
   })  : assert(buttonSize == null || buttonSize > 0),
-        assert(surfaceAppearanceExtent >= 0),
-        assert(backdropBlurSigma >= 0),
+        assert(
+          surfaceAppearanceExtent >= 0 &&
+              surfaceAppearanceExtent < double.infinity,
+        ),
+        assert(backdropBlurSigma >= 0 && backdropBlurSigma < double.infinity),
         padding = padding ?? const EdgeInsets.symmetric(horizontal: 8),
         _explicitPinnedPadding = padding,
         pinnedActions = actions,
@@ -647,7 +654,7 @@ class GlassAppBar extends StatelessWidget
       glassStyle: GlassThemeData.of(context).style,
       inDuoStripOrStatusRow: inRow,
       scaffoldExplicitTopEdge:
-          GlassScaffoldTopEdgePolicy.prefersScaffoldTopEdgeOf(context),
+          GlassScaffoldTopEdgePolicy.suppressesAutomaticFullBlurOf(context),
     );
 
     // Paint the iOS 27 scroll-under blurred surface as a sibling behind

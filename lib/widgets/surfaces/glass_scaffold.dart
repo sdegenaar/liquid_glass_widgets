@@ -503,12 +503,15 @@ class GlassScaffold extends StatelessWidget {
     // default GlassScaffold + GlassAppBar never renders a soft fade leaking
     // below the bar's crisp hairline border, while honoring callers that
     // explicitly customized GlassScaffold's top edge (`topEdgeFade: true`,
-    // `edgeStyle: .blur`/`.hard`, or a custom `topEdgeFadeExtent`).
+    // `edgeStyle: .blur`/`.hard`, or a custom `topEdgeFadeExtent`) and
+    // suppressing automatic blur when `extendBody: false` (where body content
+    // is laid out strictly below the app bar and never scrolls behind it).
     final scaffoldExplicitTopEdge = topEdgeFade == true ||
         (topEdgeFade == null &&
             edgeFade &&
             (edgeStyle != GlassScrollEdgeStyle.soft ||
                 topEdgeFadeExtent != 20.0));
+    final suppressAutomaticBarFullBlur = !extendBody || scaffoldExplicitTopEdge;
     final resolvedStyle =
         themeOverride?.style ?? GlassThemeData.of(context).style;
     final barOwnsFullBlurSurface = bar is GlassAppBar &&
@@ -517,7 +520,7 @@ class GlassScaffold extends StatelessWidget {
           backgroundColor: bar.backgroundColor,
           glassStyle: resolvedStyle,
           inDuoStripOrStatusRow: appBarInStrip || statusRow != null,
-          scaffoldExplicitTopEdge: scaffoldExplicitTopEdge,
+          scaffoldExplicitTopEdge: suppressAutomaticBarFullBlur,
         );
     final doFadeTop =
         topEdgeFade ?? (edgeFade && appBar != null && !barOwnsFullBlurSurface);
@@ -697,7 +700,7 @@ class GlassScaffold extends StatelessWidget {
           left: 0,
           right: 0,
           child: GlassScaffoldTopEdgePolicy(
-            prefersScaffoldTopEdge: scaffoldExplicitTopEdge,
+            suppressAutomaticFullBlur: suppressAutomaticBarFullBlur,
             child: GlassIsolationScope(
               isolated: true,
               defaultQuality: GlassQuality.premium,

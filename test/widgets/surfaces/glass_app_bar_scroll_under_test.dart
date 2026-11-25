@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:liquid_glass_widgets/src/widgets/surfaces/app_bar_scroll_under_surface.dart';
+import 'package:liquid_glass_widgets/src/widgets/surfaces/vertical_bar_regions.dart';
 
 import '../../shared/test_helpers.dart';
 
@@ -1160,6 +1161,151 @@ void main() {
         expect(surfaceSize.height, closeTo(62.0 + 44.0 + 36.0, 1e-3));
       },
     );
+
+    testWidgets(
+      'GlassScaffold(extendBody: false) suppresses automatic fullBlur while '
+      'still honoring explicit surfaceStyle: fullBlur',
+      (tester) async {
+        final controller = ScrollController();
+        addTearDown(controller.dispose);
+
+        Widget buildNoExtend(GlassAppBar appBar) => MediaQuery(
+              data: const MediaQueryData(
+                size: Size(402, 874),
+                devicePixelRatio: 3.0,
+                padding: EdgeInsets.only(top: 62, bottom: 34),
+              ),
+              child: CupertinoApp(
+                home: GlassTheme(
+                  data: const GlassThemeData.ios27(),
+                  child: GlassScaffold(
+                    extendBody: false,
+                    appBar: appBar,
+                    body: ListView.builder(
+                      controller: controller,
+                      itemCount: 30,
+                      itemExtent: 60,
+                      itemBuilder: (_, i) => Text('Item $i'),
+                    ),
+                  ),
+                ),
+              ),
+            );
+
+        // Automatic backs off because body does not extend behind the bar.
+        await tester.pumpWidget(
+          buildNoExtend(const GlassAppBar(title: Text('No Extend'))),
+        );
+        controller.jumpTo(80.0);
+        await tester.pump();
+        expect(find.byType(GlassAppBarScrollUnderSurface), findsNothing);
+
+        // Explicit fullBlur is still respected if explicitly requested.
+        await tester.pumpWidget(
+          buildNoExtend(
+            const GlassAppBar(
+              title: Text('Explicit Full Blur'),
+              surfaceStyle: GlassAppBarSurfaceStyle.fullBlur,
+            ),
+          ),
+        );
+        controller.jumpTo(90.0);
+        await tester.pump();
+        expect(findScrollUnderBackdropFilter(), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'ScrollController(initialScrollOffset: 200) activates surface on mount '
+      'via ScrollMetricsNotification',
+      (tester) async {
+        final controller = ScrollController(initialScrollOffset: 200.0);
+        addTearDown(controller.dispose);
+
+        await tester.pumpWidget(
+          buildScrollableScaffold(controller: controller),
+        );
+        await tester.pump();
+
+        expect(findScrollUnderBackdropFilter(), findsOneWidget);
+        final dec = tester
+            .widget<DecoratedBox>(findScrollUnderDecoratedBox())
+            .decoration as BoxDecoration;
+        expect(dec.color!.toARGB32(), kGlassAppBarBlurTintLight.toARGB32());
+      },
+    );
+
+    testWidgets(
+      'iPhone Duo vertical bar strip suppresses even explicit fullBlur on '
+      'GlassAppBar.pinned',
+      (tester) async {
+        GlassNavigationShellState.debugPinningSupported = true;
+        addTearDown(() {
+          GlassNavigationShellState.debugPinningSupported = null;
+          VerticalBarRegions.instance.debugReset();
+        });
+
+        const dpr = 3.0;
+        const size = Size(466, 678);
+        const viewPad = FakeViewPadding(right: 84 * dpr, bottom: 34 * dpr);
+        tester.view
+          ..devicePixelRatio = dpr
+          ..physicalSize = size * dpr
+          ..viewPadding = viewPad
+          ..padding = viewPad;
+        addTearDown(tester.view.reset);
+
+        final controller = ScrollController();
+        addTearDown(controller.dispose);
+
+        await tester.pumpWidget(
+          GlassTheme(
+            data: const GlassThemeData.ios27(),
+            child: CupertinoApp(
+              builder: (context, child) => GlassNavigationShell(child: child!),
+              home: GlassScaffold(
+                appBar: const GlassAppBar.pinned(
+                  title: Text('Duo'),
+                  surfaceStyle: GlassAppBarSurfaceStyle.fullBlur,
+                  automaticSurfaceVisibility: false,
+                ),
+                body: ListView.builder(
+                  controller: controller,
+                  itemCount: 30,
+                  itemExtent: 60,
+                  itemBuilder: (_, i) => Text('Row $i'),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final ctx = tester.element(find.byType(GlassAppBar));
+        expect(GlassVerticalBar.maybeOf(ctx), isNotNull);
+        expect(find.byType(GlassAppBarScrollUnderSurface), findsNothing);
+      },
+      variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+    );
+
+    test('rejects infinite surfaceAppearanceExtent and backdropBlurSigma', () {
+      expect(
+        () => GlassAppBar(surfaceAppearanceExtent: double.infinity),
+        throwsAssertionError,
+      );
+      expect(
+        () => GlassAppBar(backdropBlurSigma: double.infinity),
+        throwsAssertionError,
+      );
+      expect(
+        () => GlassAppBar.pinned(surfaceAppearanceExtent: double.infinity),
+        throwsAssertionError,
+      );
+      expect(
+        () => GlassAppBar.pinned(backdropBlurSigma: double.infinity),
+        throwsAssertionError,
+      );
+    });
   });
 }
 
