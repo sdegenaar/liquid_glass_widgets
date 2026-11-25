@@ -123,6 +123,23 @@ class JellyClipper extends CustomClipper<Path> {
 
   @override
   Path getClip(Size size) {
+    final lens = lensGeometry(size);
+    final indicatorPath =
+        (Path()..addRRect(lens.rrect)).transform(lens.transform.storage);
+
+    if (inverse) {
+      return Path()
+        ..fillType = PathFillType.evenOdd
+        ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
+        ..addPath(indicatorPath, Offset.zero);
+    }
+
+    return indicatorPath;
+  }
+
+  /// The lens in [size]: its rounded rectangle and the jelly transform
+  /// applied to it, the geometry [getClip] clips to.
+  ({RRect rrect, Matrix4 transform}) lensGeometry(Size size) {
     // AnimatedGlassIndicator pads the WHOLE track before dividing it into
     // equal-width cells. Use the same order here: insetting each cell instead
     // makes the mask narrower than the lens, with a position-dependent offset.
@@ -168,12 +185,10 @@ class JellyClipper extends CustomClipper<Path> {
     final maxRadius = (inflatedRect.shortestSide / 2) - 0.1;
     final safeRadius = borderRadius > maxRadius ? maxRadius : borderRadius;
 
-    // Create rounded rect path
-    final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        inflatedRect,
-        Radius.circular(safeRadius > 0 ? safeRadius : 0),
-      ));
+    final rrect = RRect.fromRectAndRadius(
+      inflatedRect,
+      Radius.circular(safeRadius > 0 ? safeRadius : 0),
+    );
 
     // Apply the jelly transform: the classic velocity squash around the
     // centre, or the native jelly (scale plus shift).
@@ -189,16 +204,7 @@ class JellyClipper extends CustomClipper<Path> {
         ..translateByDouble(-center.dx, -center.dy, 0.0, 1.0);
     }
 
-    final indicatorPath = path.transform(centeredTransform.storage);
-
-    if (inverse) {
-      return Path()
-        ..fillType = PathFillType.evenOdd
-        ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
-        ..addPath(indicatorPath, Offset.zero);
-    }
-
-    return indicatorPath;
+    return (rrect: rrect, transform: centeredTransform);
   }
 
   @override
