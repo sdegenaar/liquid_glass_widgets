@@ -181,6 +181,7 @@ class _OverlaysPageState extends State<OverlaysPage> {
       actions: [
         GlassDialogAction(
           label: 'Don\'t Save',
+          isDestructive: true,
           onPressed: () => Navigator.pop(context),
         ),
         GlassDialogAction(
@@ -190,6 +191,27 @@ class _OverlaysPageState extends State<OverlaysPage> {
         GlassDialogAction(
           label: 'Save',
           isPrimary: true,
+          onPressed: () => Navigator.pop(context),
+        ),
+      ],
+    );
+  }
+
+  void _showProminentDialog() {
+    GlassDialog.show(
+      context: context,
+      title: 'Upgrade to Pro?',
+      message:
+          'Unlock unlimited cloud sync and custom glass themes across all devices.',
+      actions: [
+        GlassDialogAction(
+          label: 'Not Now',
+          onPressed: () => Navigator.pop(context),
+        ),
+        GlassDialogAction(
+          label: 'Continue',
+          isPrimary: true,
+          tintColor: CupertinoColors.systemPurple,
           onPressed: () => Navigator.pop(context),
         ),
       ],
@@ -358,6 +380,12 @@ class _OverlaysPageState extends State<OverlaysPage> {
                         label: 'Save Changes (3 Actions)',
                         glowColor: CupertinoColors.activeOrange,
                         onTap: _showSaveDialog,
+                      ),
+                      SizedBox(height: 12),
+                      _ActionButton(
+                        label: 'Prominent Custom Accent',
+                        glowColor: CupertinoColors.systemPurple,
+                        onTap: _showProminentDialog,
                       ),
 
                       SizedBox(height: 40),

@@ -11,6 +11,12 @@
 // - actions: 48 pt tall filled capsules inset 16 pt on every side, 8 pt apart,
 //   SF Medium 17 (Semibold for the preferred action); two actions share a row
 //   when their labels fit, otherwise they stack;
+// - preferredAction (iOS 26.0 & iOS 27.0): non-destructive preferred actions
+//   fill their capsule with the alert's tint / systemBlue (`#0088FF` light /
+//   `#0091FF` dark at 100% alpha, dropping to 40% alpha while pressed) and
+//   draw Semibold contrast text; destructive preferred actions stay in the
+//   neutral capsule with Semibold red text; disabled preferred actions revert
+//   to the neutral capsule wash with Semibold `tertiaryLabel` text;
 // - a UIKit action sheet shown without a source view is this same platter with
 //   stacked actions (Cancel included), centred on screen.
 //
@@ -25,6 +31,8 @@ import 'dart:math' as math;
 import 'dart:ui' show SemanticsRole;
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart'
+    show HardwareKeyboard, KeyDownEvent, LogicalKeyboardKey;
 
 import '../../../src/renderer/liquid_glass_renderer.dart';
 import '../../../src/utils/glass_localizations.dart';
@@ -35,6 +43,7 @@ import '../../../types/glass_style.dart';
 import '../../../widgets/containers/glass_container.dart';
 import '../../../widgets/effects/shared/glass_materialize_effect.dart';
 import '../../../widgets/shared/glass_focus_region.dart';
+import 'modal_theme_capture.dart';
 
 /// Native alert platter width on iOS 26 / iOS 27.
 const double kGlassAlertPlatterWidth = 320;
@@ -149,6 +158,174 @@ bool _isInAccessibilityMode(BuildContext context) {
   return scaled != null && scaled > defaultFontSize * 1.4;
 }
 
+/// Luminance threshold above which prominent/tinted alert action foregrounds
+/// flip from white to black (matches `GlassButton`, `GlassIconButton`, and
+/// `GlassBarItem`).
+const double _kAlertProminentContrastLuminanceThreshold = 0.55;
+
+/// Alpha multiplier applied to a filled prominent alert capsule while pressed,
+/// measured from `_UIAlertControllerFilledBackgroundView` on the iOS 27.0
+/// simulator (`UIView.alpha = 0.400` in both light and dark modes).
+const double _kAlertProminentPressedAlphaFactor = 0.40;
+
+/// Subtle alpha multiplier applied to a filled prominent alert capsule on
+/// desktop/iPad pointer hover.
+const double _kAlertProminentHoverAlphaFactor = 0.85;
+
+/// Resolves the resting fill and foreground colors for a dialog action button.
+///
+/// Shared between [GlassAlertPlatter] (`ios26`/`ios27`) and [GlassDialog]'s
+/// `GlassStyle.classic` path so prominence, `CupertinoDynamicColor`
+/// resolution, luminance contrast flipping, destructive rules, and disabled
+/// fallbacks stay strictly aligned.
+({Color? accentFill, Color foregroundColor}) resolveGlassAlertActionColors(
+  BuildContext context, {
+  required bool enabled,
+  required bool isPrimary,
+  required bool isDestructive,
+  Color? tintColor,
+  Color? foregroundColor,
+  bool isClassic = false,
+}) {
+  // Prominent accent fill (measured on iOS 26.0 and iOS 27.0):
+  // - Disabled actions always revert to the neutral capsule wash / glass.
+  // - Explicit `tintColor` fills the capsule (even on destructive or
+  //   non-primary actions).
+  // - `isPrimary` without `isDestructive` fills with `CupertinoTheme`'s
+  //   `primaryColor`, matching `UIAlertController.preferredAction`;
+  //   destructive preferred actions stay in the neutral capsule with Semibold
+  //   red text.
+  final Color? accentFill;
+  if (enabled && tintColor != null) {
+    accentFill = CupertinoDynamicColor.resolve(tintColor, context);
+  } else if (enabled && isPrimary && !isDestructive) {
+    accentFill = CupertinoDynamicColor.resolve(
+      CupertinoTheme.of(context).primaryColor,
+      context,
+    );
+  } else {
+    accentFill = null;
+  }
+
+  final resolvedForeground =
+      CupertinoDynamicColor.maybeResolve(foregroundColor, context);
+  final Color resolvedTextColor;
+  if (!enabled && !isClassic) {
+    // A disabled action keeps its weight, reverts to the neutral capsule, and
+    // dims its title to tertiaryLabel, matching disabled UIAlertAction.
+    resolvedTextColor = CupertinoColors.tertiaryLabel.resolveFrom(context);
+  } else if (enabled && resolvedForeground != null) {
+    resolvedTextColor = resolvedForeground;
+  } else if (accentFill != null && accentFill.a > 0.5) {
+    resolvedTextColor = accentFill.computeLuminance() >
+            _kAlertProminentContrastLuminanceThreshold
+        ? CupertinoColors.black
+        : CupertinoColors.white;
+  } else if (isDestructive) {
+    resolvedTextColor =
+        (isClassic ? CupertinoColors.destructiveRed : CupertinoColors.systemRed)
+            .resolveFrom(context);
+  } else {
+    resolvedTextColor = CupertinoColors.label.resolveFrom(context);
+  }
+
+  return (accentFill: accentFill, foregroundColor: resolvedTextColor);
+}
+
+/// Keeps a dialog's descendant [CupertinoTheme] brightness synchronized with
+/// [GlassTheme.brightnessOf] (the package's single brightness authority) even
+/// when [GlassDialog] is mounted directly rather than through `GlassDialog.show`.
+Widget wrapGlassAlertSyncedBrightness(
+  BuildContext context, {
+  required WidgetBuilder builder,
+}) {
+  final resolvedBrightness = GlassTheme.brightnessOf(context);
+  final currentCupertino = CupertinoTheme.of(context);
+  final effectiveCupertinoBrightness =
+      currentCupertino.brightness ?? MediaQuery.platformBrightnessOf(context);
+  final effectiveCupertino = effectiveCupertinoBrightness == resolvedBrightness
+      ? currentCupertino
+      : currentCupertino.copyWith(brightness: resolvedBrightness);
+  return GlassInternalCupertinoTheme(
+    data: effectiveCupertino,
+    child: Builder(builder: builder),
+  );
+}
+
+/// Handles hardware-keyboard Return/Enter activation for a dialog's primary
+/// action, mirroring UIKit's `UIAlertController.preferredAction` and SwiftUI's
+/// `.keyboardShortcut(.defaultAction)`.
+///
+/// Only activates when a single `isPrimary` action is present and enabled,
+/// plain Enter / Numpad Enter is pressed without modifiers, and no descendant
+/// focused button or [EditableText] handles the key first.
+class GlassDialogDefaultActionScope extends StatefulWidget {
+  const GlassDialogDefaultActionScope({
+    required this.hasPrimaryAction,
+    required this.onActivatePrimary,
+    required this.child,
+    super.key,
+  });
+
+  final bool hasPrimaryAction;
+  final VoidCallback? onActivatePrimary;
+  final Widget child;
+
+  @override
+  State<GlassDialogDefaultActionScope> createState() =>
+      _GlassDialogDefaultActionScopeState();
+}
+
+class _GlassDialogDefaultActionScopeState
+    extends State<GlassDialogDefaultActionScope> {
+  late final FocusScopeNode _scopeNode = FocusScopeNode(
+    debugLabel: 'GlassDialogDefaultActionScope',
+  );
+
+  @override
+  void dispose() {
+    _scopeNode.dispose();
+    super.dispose();
+  }
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    final key = event.logicalKey;
+    if (key != LogicalKeyboardKey.enter &&
+        key != LogicalKeyboardKey.numpadEnter) {
+      return KeyEventResult.ignored;
+    }
+    final keyboard = HardwareKeyboard.instance;
+    if (keyboard.isShiftPressed ||
+        keyboard.isControlPressed ||
+        keyboard.isAltPressed ||
+        keyboard.isMetaPressed) {
+      return KeyEventResult.ignored;
+    }
+    // Only act as the dialog's fallback Return-key handler when no descendant
+    // (such as a Tab-focused action button or a text input inside `content`)
+    // holds primary focus; otherwise let the key bubble to WidgetsApp's
+    // Shortcuts so the focused descendant handles it.
+    if (FocusManager.instance.primaryFocus != _scopeNode) {
+      return KeyEventResult.ignored;
+    }
+    final callback = widget.onActivatePrimary;
+    if (callback == null) return KeyEventResult.ignored;
+    callback();
+    return KeyEventResult.handled;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FocusScope(
+      node: _scopeNode,
+      autofocus: widget.hasPrimaryAction,
+      onKeyEvent: _handleKeyEvent,
+      child: widget.child,
+    );
+  }
+}
+
 /// One action row of a [GlassAlertPlatter].
 class GlassAlertPlatterAction {
   const GlassAlertPlatterAction({
@@ -156,6 +333,8 @@ class GlassAlertPlatterAction {
     required this.onPressed,
     this.isPrimary = false,
     this.isDestructive = false,
+    this.tintColor,
+    this.foregroundColor,
     this.icon,
   });
 
@@ -165,6 +344,8 @@ class GlassAlertPlatterAction {
   final VoidCallback? onPressed;
   final bool isPrimary;
   final bool isDestructive;
+  final Color? tintColor;
+  final Color? foregroundColor;
   final Widget? icon;
 }
 
@@ -270,6 +451,13 @@ class GlassAlertPlatter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return wrapGlassAlertSyncedBrightness(
+      context,
+      builder: _buildPlatter,
+    );
+  }
+
+  Widget _buildPlatter(BuildContext context) {
     final effectiveQuality = GlassThemeHelpers.resolveQuality(
       context,
       widgetQuality: quality,
@@ -279,109 +467,121 @@ class GlassAlertPlatter extends StatelessWidget {
     final hasHeader = title != null || message != null || content != null;
 
     final messageColor = CupertinoColors.secondaryLabel.resolveFrom(context);
+    final primaryActions = [
+      for (final action in actions)
+        if (action.isPrimary) action,
+    ];
+    final hasSinglePrimary = primaryActions.length == 1;
+    final primaryCallback =
+        hasSinglePrimary ? primaryActions.single.onPressed : null;
 
     // Native centres the platter in the safe area (its centre sits at
     // (safeTop + height - safeBottom) / 2, i.e. y = 451 on a 874 pt iPhone),
     // and in the space above the keyboard while one is up.
-    return AnimatedPadding(
-      padding: MediaQuery.viewInsetsOf(context),
-      duration: const Duration(milliseconds: 100),
-      curve: Curves.decelerate,
-      child: MediaQuery.removeViewInsets(
-        context: context,
-        removeLeft: true,
-        removeTop: true,
-        removeRight: true,
-        removeBottom: true,
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints:
-                  BoxConstraints(maxWidth: maxWidth ?? kGlassAlertPlatterWidth),
-              child: Semantics(
-                role: semanticsRole,
-                scopesRoute: true,
-                namesRoute: true,
-                explicitChildNodes: true,
-                label: glassCupertinoLocalizationsOf(context).alertDialogLabel,
-                // Replaces the host app's default text style, which under a
-                // MaterialApp is the red, underlined error style.
-                child: DefaultTextStyle(
-                  style: CupertinoTheme.of(context).textTheme.textStyle,
-                  child: GlassContainer.card(
-                    useOwnLayer: true,
-                    settings: platterSettings,
-                    quality: effectiveQuality,
-                    shape: shape ??
-                        const LiquidRoundedSuperellipse(borderRadius: 34),
-                    padding: EdgeInsets.zero,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Native scrolls the title and message together when
-                        // they outgrow the screen, keeping the actions visible.
-                        if (hasHeader)
-                          Flexible(
-                            child: SingleChildScrollView(
-                              padding: const EdgeInsetsDirectional.fromSTEB(
-                                  30, 22, 30, 4.33),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (title != null)
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: Text(
-                                        title!,
-                                        style: TextStyle(
-                                          fontSize: 17,
-                                          fontWeight: FontWeight.w600,
-                                          color: CupertinoColors.label
-                                              .resolveFrom(context),
+    return GlassDialogDefaultActionScope(
+      hasPrimaryAction: hasSinglePrimary,
+      onActivatePrimary: primaryCallback,
+      child: AnimatedPadding(
+        padding: MediaQuery.viewInsetsOf(context),
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.decelerate,
+        child: MediaQuery.removeViewInsets(
+          context: context,
+          removeLeft: true,
+          removeTop: true,
+          removeRight: true,
+          removeBottom: true,
+          child: SafeArea(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                    maxWidth: maxWidth ?? kGlassAlertPlatterWidth),
+                child: Semantics(
+                  role: semanticsRole,
+                  scopesRoute: true,
+                  namesRoute: true,
+                  explicitChildNodes: true,
+                  label:
+                      glassCupertinoLocalizationsOf(context).alertDialogLabel,
+                  // Replaces the host app's default text style, which under a
+                  // MaterialApp is the red, underlined error style.
+                  child: DefaultTextStyle(
+                    style: CupertinoTheme.of(context).textTheme.textStyle,
+                    child: GlassContainer.card(
+                      useOwnLayer: true,
+                      settings: platterSettings,
+                      quality: effectiveQuality,
+                      shape: shape ??
+                          const LiquidRoundedSuperellipse(borderRadius: 34),
+                      padding: EdgeInsets.zero,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Native scrolls the title and message together when
+                          // they outgrow the screen, keeping the actions visible.
+                          if (hasHeader)
+                            Flexible(
+                              child: SingleChildScrollView(
+                                padding: const EdgeInsetsDirectional.fromSTEB(
+                                    30, 22, 30, 4.33),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (title != null)
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: Text(
+                                          title!,
+                                          style: TextStyle(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.w600,
+                                            color: CupertinoColors.label
+                                                .resolveFrom(context),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  if (title != null && message != null)
-                                    const SizedBox(height: 7.33),
-                                  if (message != null)
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: Text(
-                                        message!,
+                                    if (title != null && message != null)
+                                      const SizedBox(height: 7.33),
+                                    if (message != null)
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: Text(
+                                          message!,
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            color: messageColor,
+                                          ),
+                                        ),
+                                      ),
+                                    if (content != null) ...[
+                                      if (title != null || message != null)
+                                        const SizedBox(height: 8),
+                                      // Plain text in custom content reads as
+                                      // message text.
+                                      DefaultTextStyle.merge(
                                         style: TextStyle(
                                           fontSize: 15,
                                           color: messageColor,
                                         ),
+                                        child: content!,
                                       ),
-                                    ),
-                                  if (content != null) ...[
-                                    if (title != null || message != null)
-                                      const SizedBox(height: 8),
-                                    // Plain text in custom content reads as
-                                    // message text.
-                                    DefaultTextStyle.merge(
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        color: messageColor,
-                                      ),
-                                      child: content!,
-                                    ),
+                                    ],
                                   ],
-                                ],
+                                ),
                               ),
                             ),
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(
+                                16, hasHeader ? 16 : 22, 16, 16),
+                            child: LayoutBuilder(
+                              builder: (context, constraints) =>
+                                  _buildActions(context, constraints.maxWidth),
+                            ),
                           ),
-                        Padding(
-                          padding: EdgeInsets.fromLTRB(
-                              16, hasHeader ? 16 : 22, 16, 16),
-                          child: LayoutBuilder(
-                            builder: (context, constraints) =>
-                                _buildActions(context, constraints.maxWidth),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -455,12 +655,16 @@ class GlassAlertPlatter extends StatelessWidget {
 
 TextStyle _labelStyle(GlassAlertPlatterAction action) => TextStyle(
       fontSize: 17,
-      fontWeight: action.isPrimary ? FontWeight.w600 : FontWeight.w500,
+      fontWeight: (action.isPrimary || action.tintColor != null)
+          ? FontWeight.w600
+          : FontWeight.w500,
     );
 
 /// A flat, filled capsule action (`_UIAlertControllerFilledBackgroundView`):
-/// 48 pt tall, fully rounded, filled with a translucent wash that darkens the
-/// platter in light mode and lightens it in dark mode.
+/// 48 pt tall, fully rounded, filled with either a prominent accent colour
+/// (`tintColor` or `CupertinoTheme.primaryColor` for enabled non-destructive
+/// primary actions) or a translucent neutral wash that darkens the platter in
+/// light mode and lightens it in dark mode.
 class _GlassAlertPlatterButton extends StatefulWidget {
   const _GlassAlertPlatterButton({
     required this.action,
@@ -481,13 +685,25 @@ class _GlassAlertPlatterButton extends StatefulWidget {
 
 class _GlassAlertPlatterButtonState extends State<_GlassAlertPlatterButton> {
   bool _pressed = false;
+  final ValueNotifier<bool> _hovered = ValueNotifier<bool>(false);
 
   @override
   void didUpdateWidget(covariant _GlassAlertPlatterButton oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.action.onPressed == null && _pressed) {
-      _pressed = false;
+    if (widget.action.onPressed == null) {
+      if (_pressed) {
+        _pressed = false;
+      }
+      if (_hovered.value) {
+        _hovered.value = false;
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    _hovered.dispose();
+    super.dispose();
   }
 
   void _handleTapDown(TapDownDetails _) {
@@ -521,18 +737,17 @@ class _GlassAlertPlatterButtonState extends State<_GlassAlertPlatterButton> {
     final action = widget.action;
     final enabled = action.onPressed != null;
     final isPressed = enabled && _pressed;
-    final fill = isDark
-        ? CupertinoColors.white
-            .withValues(alpha: isPressed ? restDark + 0.085 : restDark)
-        : CupertinoColors.black
-            .withValues(alpha: isPressed ? restLight + 0.10 : restLight);
-    // A disabled action keeps its fill and weight and dims its title to
-    // tertiaryLabel, which UIKit reports for a disabled UIAlertAction.
-    final textColor = !enabled
-        ? CupertinoColors.tertiaryLabel.resolveFrom(context)
-        : action.isDestructive
-            ? CupertinoColors.systemRed.resolveFrom(context)
-            : CupertinoColors.label.resolveFrom(context);
+
+    final (:accentFill, foregroundColor: textColor) =
+        resolveGlassAlertActionColors(
+      context,
+      enabled: enabled,
+      isPrimary: action.isPrimary,
+      isDestructive: action.isDestructive,
+      tintColor: action.tintColor,
+      foregroundColor: action.foregroundColor,
+    );
+
     // One line, as native, except at accessibility sizes where native wraps the
     // title and grows the button rather than truncating it.
     final wraps = _isInAccessibilityMode(context);
@@ -543,6 +758,20 @@ class _GlassAlertPlatterButtonState extends State<_GlassAlertPlatterButton> {
       textAlign: TextAlign.center,
       style: widget.textStyle.copyWith(color: textColor),
     );
+    final Widget buttonChild = action.icon == null
+        ? label
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconTheme(
+                data: IconThemeData(color: textColor, size: 20),
+                child: action.icon!,
+              ),
+              const SizedBox(width: 12),
+              Flexible(child: label),
+            ],
+          );
+
     // A capsule, except that a button grown by a wrapped title takes ≈ 32 pt
     // continuous corners (measured on iOS 27.0 at AX-XXXL) instead of
     // ballooning into an oval. A caller's shape is kept at every text size.
@@ -556,6 +785,7 @@ class _GlassAlertPlatterButtonState extends State<_GlassAlertPlatterButton> {
     return GlassFocusRegion(
       enabled: enabled,
       isButton: true,
+      isHoveredNotifier: _hovered,
       semanticLabel: action.label,
       shape: shape,
       onKeyboardActivate: action.onPressed,
@@ -567,26 +797,45 @@ class _GlassAlertPlatterButtonState extends State<_GlassAlertPlatterButton> {
         onTapDown: enabled ? _handleTapDown : null,
         onTapUp: enabled ? _handleTapUp : null,
         onTapCancel: enabled ? _handleTapCancel : null,
-        child: Container(
-          // 48 pt at regular text sizes; taller only when a wrapped title
-          // needs the room.
-          constraints: const BoxConstraints(minHeight: 48),
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-          decoration: ShapeDecoration(color: fill, shape: shape),
-          child: action.icon == null
-              ? label
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconTheme(
-                      data: IconThemeData(color: textColor, size: 20),
-                      child: action.icon!,
-                    ),
-                    const SizedBox(width: 12),
-                    Flexible(child: label),
-                  ],
-                ),
+        child: ValueListenableBuilder<bool>(
+          valueListenable: _hovered,
+          child: buttonChild,
+          builder: (context, hovered, child) {
+            final isHovered = enabled && hovered;
+            final Color fill;
+            if (accentFill != null) {
+              if (isPressed) {
+                fill = accentFill.withValues(
+                  alpha: (accentFill.a * _kAlertProminentPressedAlphaFactor)
+                      .clamp(0.0, 1.0),
+                );
+              } else if (isHovered) {
+                fill = accentFill.withValues(
+                  alpha: (accentFill.a * _kAlertProminentHoverAlphaFactor)
+                      .clamp(0.0, 1.0),
+                );
+              } else {
+                fill = accentFill;
+              }
+            } else {
+              final restAlpha = isDark ? restDark : restLight;
+              final effectiveAlpha = isPressed
+                  ? restAlpha + (isDark ? 0.085 : 0.10)
+                  : (isHovered ? restAlpha + 0.04 : restAlpha);
+              fill = (isDark ? CupertinoColors.white : CupertinoColors.black)
+                  .withValues(alpha: effectiveAlpha);
+            }
+
+            return Container(
+              // 48 pt at regular text sizes; taller only when a wrapped title
+              // needs the room.
+              constraints: const BoxConstraints(minHeight: 48),
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+              decoration: ShapeDecoration(color: fill, shape: shape),
+              child: child,
+            );
+          },
         ),
       ),
     );
